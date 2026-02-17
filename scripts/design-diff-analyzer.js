@@ -88,7 +88,58 @@ function analyzeDiff(diff) {
   return changes;
 }
 
-function generateTasks(changes) {
+function analyzeIntent(changes) {
+  const intent = {
+    patterns: [],
+    systems: [],
+    recommendations: []
+  };
+  
+  // Detect color-coding system for types
+  const accentColorIntro = changes.colors.filter(c => 
+    c.to.includes('accent-') && !c.from.includes('accent-')
+  );
+  
+  if (accentColorIntro.length >= 4) {
+    const colors = [...new Set(accentColorIntro.map(c => c.to))];
+    intent.systems.push({
+      type: 'color-coding',
+      description: 'Type-based color system',
+      colors: colors,
+      explanation: 'Each entity type (Project, Procedure, Person, Topic) has its own accent color. This color should be used consistently for: icons, active states, badges, and any UI element representing that type.',
+      critical: '⚠️ IMPORTANT: Active states must use the color **dynamically** based on the note type, not hardcoded. Example: if a Project is selected, use accent-red; if a Procedure is selected, use accent-purple.'
+    });
+  }
+  
+  // Detect contrast improvements
+  const contrastChanges = changes.colors.filter(c =>
+    c.from === '$--muted-foreground' && c.to === '$--foreground'
+  );
+  
+  if (contrastChanges.length > 3) {
+    intent.patterns.push({
+      type: 'contrast-improvement',
+      description: 'Increased text contrast for better readability',
+      count: contrastChanges.length
+    });
+  }
+  
+  // Detect spacing improvements
+  if (changes.spacing.length > 0) {
+    const avgIncrease = changes.spacing.reduce((sum, s) => sum + (s.to - s.from), 0) / changes.spacing.length;
+    if (avgIncrease > 0) {
+      intent.patterns.push({
+        type: 'spacing-increase',
+        description: 'Increased spacing for less cluttered UI',
+        avgIncrease: Math.round(avgIncrease)
+      });
+    }
+  }
+  
+  return intent;
+}
+
+function generateTasks(changes, intent) {
   const tasks = [];
   
   // Color changes → update theme.json or CSS variables
@@ -97,10 +148,18 @@ function generateTasks(changes) {
       `  - ${c.type}: ${c.from} → ${c.to}`
     ).join('\n');
     
+    let details = `Color changes detected:\n${colorList}\n\nUpdate src/theme.json or CSS variables to match the design.`;
+    
+    // Add intent explanation if color-coding system detected
+    const colorSystem = intent.systems.find(s => s.type === 'color-coding');
+    if (colorSystem) {
+      details += `\n\n${colorSystem.explanation}\n\n${colorSystem.critical}`;
+    }
+    
     tasks.push({
       priority: 'high',
       description: 'Update color palette',
-      details: `Color changes detected:\n${colorList}\n\nUpdate src/theme.json or CSS variables to match the design.`
+      details: details
     });
   }
   
@@ -133,12 +192,34 @@ function generateTasks(changes) {
   return tasks;
 }
 
-function formatOutput(tasks, changes) {
+function formatOutput(tasks, changes, intent) {
   if (tasks.length === 0 && changes.content.length === 0) {
     return null;
   }
   
   let output = '🎨 Design changes detected:\n\n';
+  
+  // Add design intent analysis
+  if (intent.systems.length > 0 || intent.patterns.length > 0) {
+    output += '🧠 Design Intent Analysis:\n\n';
+    
+    intent.systems.forEach(system => {
+      output += `📐 ${system.description}\n`;
+      output += `${system.explanation}\n`;
+      if (system.critical) {
+        output += `\n${system.critical}\n`;
+      }
+      output += '\n';
+    });
+    
+    intent.patterns.forEach(pattern => {
+      output += `• ${pattern.description}`;
+      if (pattern.count) output += ` (${pattern.count} changes)`;
+      if (pattern.avgIncrease) output += ` (+${pattern.avgIncrease}px avg)`;
+      output += '\n';
+    });
+    output += '\n';
+  }
   
   if (tasks.length > 0) {
     output += '📋 Implementation tasks:\n\n';
@@ -156,7 +237,7 @@ function formatOutput(tasks, changes) {
     output += '\n';
   }
   
-  return { output, tasks };
+  return { output, tasks, intent };
 }
 
 function main() {
@@ -168,8 +249,9 @@ function main() {
   }
   
   const changes = analyzeDiff(diff);
-  const tasks = generateTasks(changes);
-  const result = formatOutput(tasks, changes);
+  const intent = analyzeIntent(changes);
+  const tasks = generateTasks(changes, intent);
+  const result = formatOutput(tasks, changes, intent);
   
   if (!result) {
     console.log('No significant design changes detected');
@@ -181,7 +263,7 @@ function main() {
   // Output JSON for automation
   if (process.argv.includes('--json')) {
     console.log('\n---JSON---');
-    console.log(JSON.stringify({ tasks, changes }, null, 2));
+    console.log(JSON.stringify({ tasks, changes, intent }, null, 2));
   }
   
   process.exit(tasks.length > 0 ? 1 : 0); // Exit 1 if there are tasks to implement
