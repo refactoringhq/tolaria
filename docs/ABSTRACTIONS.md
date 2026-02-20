@@ -35,6 +35,7 @@ Entity type is inferred from the folder structure. The vault is organized by typ
 
 ```
 ~/Laputa/
+├── type/           → "Type"       ← type definition documents
 ├── project/        → "Project"
 ├── responsibility/ → "Responsibility"
 ├── procedure/      → "Procedure"
@@ -50,6 +51,22 @@ Entity type is inferred from the folder structure. The vault is organized by typ
 ```
 
 Mapping logic lives in `vault.rs:parse_md_file()`. If a folder doesn't match any known type, the folder name is capitalized and used as-is.
+
+### Types as Files
+
+Each entity type can have a corresponding **type document** in the `type/` folder (e.g., `type/project.md`, `type/person.md`). Type documents:
+
+- Have `Is A: Type` in their frontmatter
+- Describe what the type means, its expected properties, and how it relates to other types
+- Are navigable entities — they appear in the sidebar under "Types" and can be opened/edited like any other note
+- Serve as the "definition" for their type category
+
+**Type relationship**: When any entry has an `isA` value (e.g., "Project"), the Rust backend automatically adds a `"Type"` entry to its `relationships` map pointing to `[[type/project]]`. This makes the type navigable from the Inspector panel.
+
+**UI behavior**:
+- Clicking a section group header (e.g., "Projects") pins the type document at the top of the NoteList if it exists, with instances listed below
+- Viewing a type document in entity view shows an "Instances" group listing all entries of that type
+- The Type field in the Inspector properties panel is rendered as a clickable chip that navigates to the type document
 
 ### Frontmatter Format
 
