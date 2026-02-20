@@ -4,6 +4,7 @@ import type { FrontmatterValue } from './Inspector'
 import type { ParsedFrontmatter } from '../utils/frontmatter'
 import { EditableValue, EditableList } from './EditableValue'
 import { Button } from '@/components/ui/button'
+import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 
 const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
   Active: { bg: 'var(--accent-green-light)', color: 'var(--accent-green)' },
@@ -55,6 +56,7 @@ export function DynamicPropertiesPanel({
   onUpdateProperty,
   onDeleteProperty,
   onAddProperty,
+  onNavigate,
 }: {
   entry: VaultEntry
   content: string | null
@@ -62,6 +64,7 @@ export function DynamicPropertiesPanel({
   onUpdateProperty?: (key: string, value: FrontmatterValue) => void
   onDeleteProperty?: (key: string) => void
   onAddProperty?: (key: string, value: FrontmatterValue) => void
+  onNavigate?: (target: string) => void
 }) {
   const [editingKey, setEditingKey] = useState<string | null>(null)
   const [showAddDialog, setShowAddDialog] = useState(false)
@@ -203,7 +206,24 @@ export function DynamicPropertiesPanel({
         {entry.isA && (
           <div className="flex items-center justify-between">
             <span className="font-mono-overline shrink-0 text-muted-foreground">Type</span>
-            <span className="text-right text-[12px] text-secondary-foreground">{entry.isA}</span>
+            {onNavigate ? (
+              <button
+                className="border-none text-right cursor-pointer hover:opacity-80"
+                style={{
+                  background: getTypeLightColor(entry.isA),
+                  color: getTypeColor(entry.isA),
+                  borderRadius: 6,
+                  padding: '2px 8px',
+                  fontSize: 12,
+                  fontWeight: 500,
+                }}
+                onClick={() => onNavigate(`type/${entry.isA!.toLowerCase()}`)}
+              >
+                {entry.isA}
+              </button>
+            ) : (
+              <span className="text-right text-[12px] text-secondary-foreground">{entry.isA}</span>
+            )}
           </div>
         )}
 

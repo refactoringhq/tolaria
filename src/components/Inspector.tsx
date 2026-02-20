@@ -105,7 +105,7 @@ function RelationshipGroup({ label, refs, entries, onNavigate }: { label: string
 function DynamicRelationshipsPanel({ frontmatter, entries, onNavigate }: { frontmatter: ParsedFrontmatter; entries: VaultEntry[]; onNavigate: (target: string) => void }) {
   const relationshipEntries = useMemo(() => {
     return Object.entries(frontmatter)
-      .filter(([key, value]) => RELATIONSHIP_KEYS.has(key) || containsWikilinks(value))
+      .filter(([key, value]) => key !== 'Type' && (RELATIONSHIP_KEYS.has(key) || containsWikilinks(value)))
       .map(([key, value]) => {
         const refs: string[] = []
         if (typeof value === 'string' && isWikilink(value)) refs.push(value)
@@ -298,6 +298,7 @@ export function Inspector({
                 onUpdateProperty={onUpdateFrontmatter ? handleUpdateProperty : undefined}
                 onDeleteProperty={onDeleteProperty ? handleDeleteProperty : undefined}
                 onAddProperty={onAddProperty ? handleAddProperty : undefined}
+                onNavigate={onNavigate}
               />
               <DynamicRelationshipsPanel frontmatter={frontmatter} entries={entries} onNavigate={onNavigate} />
               <BacklinksPanel backlinks={backlinks} onNavigate={onNavigate} />
