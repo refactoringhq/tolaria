@@ -24,6 +24,9 @@ tauri-plugin-log = "2"
 gray_matter = "0.2"
 walkdir = "2"
 chrono = { version = "0.4", features = ["serde"] }
+reqwest = { version = "0.12", features = ["json", "stream"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+futures-util = "0.3"
 
 [dev-dependencies]
 tempfile = "3"

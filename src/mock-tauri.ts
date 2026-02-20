@@ -832,6 +832,14 @@ const mockHandlers: Record<string, (args: any) => any> = {
   git_push: () => {
     return 'Everything up-to-date'
   },
+  ai_chat: (args: { request: { messages: any[]; model?: string } }) => {
+    const lastMsg = args.request.messages[args.request.messages.length - 1]?.content ?? ''
+    return {
+      content: `[Mock] Responding to: "${lastMsg.slice(0, 80)}"`,
+      model: args.request.model ?? 'claude-3-5-haiku-20241022',
+      stop_reason: 'end_turn',
+    }
+  },
 }
 
 export function isTauri(): boolean {

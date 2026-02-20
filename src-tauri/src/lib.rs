@@ -1,7 +1,9 @@
+pub mod ai_chat;
 pub mod frontmatter;
 pub mod git;
 pub mod vault;
 
+use ai_chat::{AiChatRequest, AiChatResponse};
 use git::{GitCommit, ModifiedFile};
 use vault::VaultEntry;
 use frontmatter::FrontmatterValue;
@@ -51,6 +53,11 @@ fn git_push(vault_path: String) -> Result<String, String> {
     git::git_push(&vault_path)
 }
 
+#[tauri::command]
+async fn ai_chat(request: AiChatRequest) -> Result<AiChatResponse, String> {
+    ai_chat::send_chat(request).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -73,7 +80,8 @@ pub fn run() {
             get_modified_files,
             get_file_diff,
             git_commit,
-            git_push
+            git_push,
+            ai_chat
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
