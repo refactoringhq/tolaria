@@ -207,34 +207,45 @@ describe('Sidebar', () => {
     expect(screen.getByText('Types')).toBeInTheDocument()
   })
 
-  it('shows entity names under their section groups', () => {
+  it('shows entity names under their section groups after expanding', () => {
     render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
+    // Sections start collapsed by default — expand them first
+    fireEvent.click(screen.getByLabelText('Expand Projects'))
+    fireEvent.click(screen.getByLabelText('Expand Responsibilities'))
+    fireEvent.click(screen.getByLabelText('Expand Experiments'))
+    fireEvent.click(screen.getByLabelText('Expand Procedures'))
     expect(screen.getByText('Build Laputa App')).toBeInTheDocument()
     expect(screen.getByText('Grow Newsletter')).toBeInTheDocument()
     expect(screen.getByText('Stock Screener')).toBeInTheDocument()
     expect(screen.getByText('Write Weekly Essays')).toBeInTheDocument()
   })
 
-  it('shows People and Events as section groups', () => {
+  it('shows People and Events items after expanding', () => {
     render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
+    fireEvent.click(screen.getByLabelText('Expand People'))
+    fireEvent.click(screen.getByLabelText('Expand Events'))
     expect(screen.getByText('Alice')).toBeInTheDocument()
     expect(screen.getByText('Kickoff Meeting')).toBeInTheDocument()
   })
 
   it('collapses and expands sections', () => {
     render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
-    expect(screen.getByText('Build Laputa App')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByLabelText('Collapse Projects'))
+    // Start collapsed — items hidden
     expect(screen.queryByText('Build Laputa App')).not.toBeInTheDocument()
 
+    // Expand
     fireEvent.click(screen.getByLabelText('Expand Projects'))
     expect(screen.getByText('Build Laputa App')).toBeInTheDocument()
+
+    // Collapse
+    fireEvent.click(screen.getByLabelText('Collapse Projects'))
+    expect(screen.queryByText('Build Laputa App')).not.toBeInTheDocument()
   })
 
   it('calls onSelect when clicking an entity', () => {
     const onSelect = vi.fn()
     render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={onSelect} />)
+    fireEvent.click(screen.getByLabelText('Expand Projects'))
     fireEvent.click(screen.getByText('Build Laputa App'))
     expect(onSelect).toHaveBeenCalledWith({
       kind: 'entity',
@@ -262,9 +273,10 @@ describe('Sidebar', () => {
     })
   })
 
-  it('renders Topics section with topic entries', () => {
+  it('renders Topics section with topic entries after expanding', () => {
     render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
     expect(screen.getByText('Topics')).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('Expand Topics'))
     expect(screen.getByText('Software Development')).toBeInTheDocument()
     expect(screen.getByText('Trading')).toBeInTheDocument()
   })
@@ -272,6 +284,7 @@ describe('Sidebar', () => {
   it('calls onSelect with topic kind when clicking a topic', () => {
     const onSelect = vi.fn()
     render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={onSelect} />)
+    fireEvent.click(screen.getByLabelText('Expand Topics'))
     fireEvent.click(screen.getByText('Software Development'))
     expect(onSelect).toHaveBeenCalledWith({
       kind: 'topic',
@@ -382,8 +395,9 @@ describe('Sidebar', () => {
       expect(screen.getByText('Recipes')).toBeInTheDocument()
     })
 
-    it('shows instances of custom types under their section', () => {
+    it('shows instances of custom types under their section after expanding', () => {
       render(<Sidebar entries={entriesWithCustomTypes} selection={defaultSelection} onSelect={() => {}} onCreateType={() => {}} />)
+      fireEvent.click(screen.getByLabelText('Expand Recipes'))
       expect(screen.getByText('Pasta Carbonara')).toBeInTheDocument()
     })
 
@@ -451,15 +465,17 @@ describe('Sidebar', () => {
 
     it('hides a section when its toggle is clicked off', () => {
       render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
-      // People section should be visible initially
-      expect(screen.getByText('Alice')).toBeInTheDocument()
+      // People section header should be visible initially
+      expect(screen.getByText('People')).toBeInTheDocument()
 
       // Open customize popover and toggle People off
       fireEvent.click(screen.getByTitle('Customize sections'))
       fireEvent.click(screen.getByLabelText('Toggle People'))
 
-      // People section and its items should be gone
-      expect(screen.queryByText('Alice')).not.toBeInTheDocument()
+      // People section header should be gone (use getAllByText to handle popover)
+      const peopleElements = screen.queryAllByText('People')
+      // Only the toggle label in the popover should remain, not the section header
+      expect(peopleElements.length).toBeLessThanOrEqual(1)
     })
 
     it('re-shows a section when its toggle is clicked on again', () => {
@@ -468,11 +484,12 @@ describe('Sidebar', () => {
       // Hide People
       fireEvent.click(screen.getByTitle('Customize sections'))
       fireEvent.click(screen.getByLabelText('Toggle People'))
-      expect(screen.queryByText('Alice')).not.toBeInTheDocument()
 
       // Show People again
       fireEvent.click(screen.getByLabelText('Toggle People'))
-      expect(screen.getByText('Alice')).toBeInTheDocument()
+      // People section should be visible again — popover toggle + section header = 2 "People" texts
+      const peopleElements = screen.getAllByText('People')
+      expect(peopleElements.length).toBe(2)
     })
 
     it('persists hidden sections in localStorage', () => {
@@ -490,13 +507,13 @@ describe('Sidebar', () => {
       localStorage.setItem('laputa-hidden-sections', JSON.stringify(['Person', 'Event']))
       render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
 
-      // People and Events sections should be hidden
-      expect(screen.queryByText('Alice')).not.toBeInTheDocument()
-      expect(screen.queryByText('Kickoff Meeting')).not.toBeInTheDocument()
+      // People and Events section headers should be hidden
+      expect(screen.queryByText('People')).not.toBeInTheDocument()
+      expect(screen.queryByText('Events')).not.toBeInTheDocument()
 
-      // Other sections should still be visible
-      expect(screen.getByText('Build Laputa App')).toBeInTheDocument()
-      expect(screen.getByText('Software Development')).toBeInTheDocument()
+      // Other section headers should still be visible
+      expect(screen.getByText('Projects')).toBeInTheDocument()
+      expect(screen.getByText('Topics')).toBeInTheDocument()
     })
 
     it('does not affect All Notes or other sidebar filters when sections are hidden', () => {
@@ -520,6 +537,54 @@ describe('Sidebar', () => {
 
       fireEvent.mouseDown(screen.getByTestId('outside'))
       expect(screen.queryByText('Show in sidebar')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('section ordering by type order property', () => {
+    const entriesWithOrder: VaultEntry[] = [
+      ...mockEntries,
+      // Type entries with order values — reversed from default
+      {
+        path: '/vault/type/project.md', filename: 'project.md', title: 'Project', isA: 'Type',
+        aliases: [], belongsTo: [], relatedTo: [], status: null, owner: null, cadence: null,
+        archived: false, modifiedAt: 1700000000, createdAt: null, fileSize: 200, snippet: '',
+        relationships: {}, icon: null, color: null, order: 5,
+      },
+      {
+        path: '/vault/type/topic.md', filename: 'topic.md', title: 'Topic', isA: 'Type',
+        aliases: [], belongsTo: [], relatedTo: [], status: null, owner: null, cadence: null,
+        archived: false, modifiedAt: 1700000000, createdAt: null, fileSize: 200, snippet: '',
+        relationships: {}, icon: null, color: null, order: 0,
+      },
+      {
+        path: '/vault/type/person.md', filename: 'person.md', title: 'Person', isA: 'Type',
+        aliases: [], belongsTo: [], relatedTo: [], status: null, owner: null, cadence: null,
+        archived: false, modifiedAt: 1700000000, createdAt: null, fileSize: 200, snippet: '',
+        relationships: {}, icon: null, color: null, order: 1,
+      },
+    ]
+
+    it('sorts sections by order from Type entries', () => {
+      render(<Sidebar entries={entriesWithOrder} selection={defaultSelection} onSelect={() => {}} />)
+      // Get all section header labels
+      const headers = screen.getAllByText(/^(Topics|People|Projects|Experiments|Responsibilities|Procedures|Events|Types)$/)
+      const labels = headers.map((el) => el.textContent)
+
+      // Topics (order: 0) and People (order: 1) should come before Projects (order: 5)
+      const topicsIdx = labels.indexOf('Topics')
+      const peopleIdx = labels.indexOf('People')
+      const projectsIdx = labels.indexOf('Projects')
+
+      expect(topicsIdx).toBeLessThan(projectsIdx)
+      expect(peopleIdx).toBeLessThan(projectsIdx)
+      expect(topicsIdx).toBeLessThan(peopleIdx)
+    })
+
+    it('renders drag handle on section headers', () => {
+      render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
+      const dragHandles = screen.getAllByLabelText(/^Drag to reorder/)
+      // Should have one drag handle per visible section group
+      expect(dragHandles.length).toBeGreaterThan(0)
     })
   })
 })

@@ -100,7 +100,7 @@ export const Sidebar = memo(function Sidebar({ entries, selection, onSelect, onS
   }, [showCustomize])
 
   const toggleSection = (type: string) => {
-    setCollapsed((prev) => ({ ...prev, [type]: !prev[type] }))
+    setCollapsed((prev) => ({ ...prev, [type]: !(prev[type] ?? true) }))
   }
 
   // Build a map of type name → type entry for quick lookup of icon/color
