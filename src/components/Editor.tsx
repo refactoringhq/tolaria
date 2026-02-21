@@ -55,6 +55,36 @@ interface EditorProps {
 
 // --- Custom Inline Content: WikiLink ---
 
+// Module-level cache so the WikiLink renderer (defined outside React) can access entries
+const _wikilinkEntriesRef: { current: VaultEntry[] } = { current: [] }
+
+const TYPE_COLOR_MAP: Record<string, string> = {
+  red: 'var(--accent-red)',
+  orange: 'var(--accent-orange)',
+  yellow: 'var(--accent-yellow)',
+  green: 'var(--accent-green)',
+  blue: 'var(--accent-blue)',
+  purple: 'var(--accent-purple)',
+}
+
+function resolveWikilinkColor(target: string): string | undefined {
+  const entries = _wikilinkEntriesRef.current
+  if (!entries.length) return undefined
+  // Find the target entry by title or filename slug
+  const entry = entries.find(
+    e => e.title === target || e.filename.replace(/\.md$/, '') === target
+  )
+  if (!entry) return undefined
+  // If entry is itself a Type, use its own color
+  if (entry.isA === 'Type' && entry.color) return TYPE_COLOR_MAP[entry.color]
+  // Otherwise look up the type entry
+  if (entry.isA) {
+    const typeEntry = entries.find(e => e.isA === 'Type' && e.title === entry.isA)
+    if (typeEntry?.color) return TYPE_COLOR_MAP[typeEntry.color]
+  }
+  return undefined
+}
+
 const WikiLink = createReactInlineContentSpec(
   {
     type: "wikilink" as const,
@@ -64,14 +94,19 @@ const WikiLink = createReactInlineContentSpec(
     content: "none",
   },
   {
-    render: (props) => (
-      <span
-        className="wikilink"
-        data-target={props.inlineContent.props.target}
-      >
-        {props.inlineContent.props.target}
-      </span>
-    ),
+    render: (props) => {
+      const target = props.inlineContent.props.target
+      const color = resolveWikilinkColor(target)
+      return (
+        <span
+          className="wikilink"
+          data-target={target}
+          style={color ? { color, textDecorationColor: color } : undefined}
+        >
+          {target}
+        </span>
+      )
+    },
   }
 )
 
@@ -89,6 +124,11 @@ function SingleEditorView({ editor, entries, onNavigateWikilink }: { editor: Ret
   const navigateRef = useRef(onNavigateWikilink)
   navigateRef.current = onNavigateWikilink
   const { cssVars } = useEditorTheme()
+
+  // Keep module-level ref in sync so WikiLink renderer can access vault entries
+  useEffect(() => {
+    _wikilinkEntriesRef.current = entries
+  }, [entries])
 
   useEffect(() => {
     const container = document.querySelector('.editor__blocknote-container')
@@ -205,10 +245,13 @@ export const Editor = memo(function Editor({
     }
     const cleanup = editor.onMount(() => {
       editorMountedRef.current = true
-      // Execute any pending content swap that was queued before mount
+      // Execute any pending content swap that was queued before mount.
+      // Defer via queueMicrotask so BlockNote's internal flushSync calls
+      // don't collide with React's commit phase.
       if (pendingSwapRef.current) {
-        pendingSwapRef.current()
+        const swap = pendingSwapRef.current
         pendingSwapRef.current = null
+        queueMicrotask(swap)
       }
     })
     return cleanup
