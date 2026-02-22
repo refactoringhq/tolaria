@@ -1,35 +1,49 @@
-# Rename Note Tab — Done Summary
+# Dynamic Vault Management — Done
 
 ## What was built
-Double-click a tab title to rename the note. The tab shows an inline text input (Enter saves, Escape cancels). Renaming updates the note's title, filename, H1 heading, frontmatter `title:` field, and all wiki links (`[[OldName]]` → `[[NewName]]`) across the entire vault.
 
-## Commits on `task/rename-note-tab`
-1. `caa26b6` — design: rename-note-tab wireframes (`design/rename-note-tab.pen`)
-2. `68dfab4` — feat: add `rename_note` Tauri command with wiki link updates (Rust backend)
-3. `5a8eb6a` — feat: rename note via double-click on tab — frontend wiring
-4. `ee00c2c` — test: Playwright e2e tests for rename tab feature
+Removed all hardcoded vault paths from source code. Users can now add, switch, and create vaults from within the app. First launch shows a welcome screen when no vaults are configured.
 
-## Architecture decisions
-- **Slug generation**: title → lowercase, non-alphanumeric chars replaced with hyphens, leading/trailing hyphens stripped. Same logic in Rust backend and TypeScript mock.
-- **Wiki link matching**: regex matches both title-based (`[[Old Title]]`) and path-stem-based (`[[note/old-title]]`) references, preserving pipe aliases (`[[Old Title|display]]` → `[[New Title|display]]`).
-- **State flow**: `onRenameTab` flows from TabBar → Editor → App → `useNoteActions.handleRenameNote` → Tauri backend → `useVaultLoader.replaceEntry` (updates entries + allContent atomically).
-- **H1 + frontmatter**: The rename updates both the first `# Heading` line and the `title:` frontmatter field if present.
-- **Toast feedback**: Shows "Renamed" or "Renamed — updated N wiki links" on success, "Failed to rename note" on error.
+## Changes
 
-## Code health
-- **TabBar.tsx**: Improved from CC 23→18 by extracting `TabItem` component and `tabStyle` helper.
-- **Rust `vault.rs`**: Passed code health after extracting helpers (`build_wikilink_pattern`, `WikilinkReplacement` struct, `collect_md_files`, etc.) to keep CC under thresholds.
-- **useNoteActions.ts**: Pre-existing CC=37 (threshold 9) increased to 42. Extracted `performRename` and `buildRenamedEntry` as module-level functions. Proper fix requires splitting the monolithic hook (separate concern).
-- **App.tsx / useVaultLoader.ts**: Minor LOC/CC increases on already-above-threshold functions.
+### Rust backend (`src-tauri/`)
+- **`src/settings.rs`** (new): Vault config management — `load_settings`, `save_settings`, `get_vaults`, `add_vault`, `remove_vault`, `init_vault`. Settings stored in `<app_config_dir>/settings.json` as `{vaults: [{label, path}]}`.
+- **`src/lib.rs`**: Added 4 new Tauri commands (`get_vaults`, `add_vault`, `remove_vault`, `init_vault`), registered `tauri-plugin-dialog`, updated startup trash purge to iterate configured vaults instead of hardcoded `~/Laputa`.
+- **`Cargo.toml`**: Added `tauri-plugin-dialog` dependency.
+- **`capabilities/default.json`**: Added `dialog:default` permission.
 
-## Test results
-- `pnpm test` — 119/119 passed
-- `cargo test` — 147/147 passed (including 7 new rename tests)
-- `npx vite build` — success
-- Playwright e2e — 2/2 rename-tab tests pass
+### Frontend (`src/`)
+- **`components/WelcomeScreen.tsx`** (new): Full-screen welcome shown when vault list is empty. Two buttons: "Open Existing Folder" and "Create New Vault".
+- **`hooks/useVaultConfig.ts`** (new): React hook wrapping the Rust vault config commands — load, add, remove, init, with error state management.
+- **`App.tsx`**: Replaced hardcoded `VAULTS` array with `useVaultConfig()`. Shows `WelcomeScreen` on empty state. Wires up folder picker via `@tauri-apps/plugin-dialog` (Tauri) or `window.prompt` (browser mock).
+- **`components/StatusBar.tsx`**: Vault dropdown now has "Add vault..." option at bottom and per-vault remove buttons (trash icon, only shown when multiple vaults exist).
+- **`mock-tauri.ts`**: Added mock handlers for `get_vaults`, `add_vault`, `remove_vault`, `init_vault`.
 
-## Visual verification
-Tested on `localhost:5173` via Playwright:
-- Double-click → inline input appears with current title selected
-- Type new name → Enter → tab title updates, note list updates, breadcrumb updates, toast shows "Renamed"
-- Double-click → type → Escape → title reverts, no changes made
+### Edge cases handled
+- Selected folder doesn't exist → error surfaced to user
+- Folder already a git repo → opened as-is, git init skipped
+- Duplicate vault path → deduplicated silently (canonical paths)
+- All vaults removed → WelcomeScreen shown again
+- git init failure → error surfaced to user
+- New empty vault → `.gitkeep` created automatically
+
+### Tests
+- **`WelcomeScreen.test.tsx`**: 6 tests (render, buttons, error display)
+- **`useVaultConfig.test.ts`**: 8 tests (load, add, remove, deduplicate, error, clear)
+- **`StatusBar.test.tsx`**: 5 new tests for add/remove vault UI
+- **`settings.rs`**: 6 Rust tests (roundtrip, init_vault, edge cases)
+- **`App.test.tsx`**: Updated mock to include vault config commands
+- Total: 387 frontend tests pass, 156 Rust tests pass
+
+### Design
+- **`design/dynamic-vault-management.pen`**: Two new frames — Welcome Screen and Vault Picker Menu wireframes.
+
+## Coverage
+- Frontend: 80.47% lines (threshold: 70%)
+- Rust: 86.25% lines (threshold: 85%)
+
+## Product decisions
+- Label for new vaults: derived from folder name (e.g. `/Users/luca/Laputa` → "Laputa")
+- Remove vault only removes from the config list — does not delete any files
+- Single-vault state hides the remove button to prevent accidental removal to empty state
+- Browser mock returns a single "Demo v2" vault so the app works in `pnpm dev` mode
