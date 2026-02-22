@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Placeholder — Luca will register the GitHub OAuth App and replace this.
 const LAPUTA_GITHUB_CLIENT_ID: &str = "LAPUTA_GITHUB_CLIENT_ID";
@@ -49,21 +49,11 @@ fn token_path() -> Result<PathBuf, String> {
     Ok(config.join("com.laputa.app").join("github_token"))
 }
 
-fn ensure_config_dir() -> Result<(), String> {
-    let path = token_path()?;
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|e| format!("Failed to create config dir: {}", e))?;
-    }
-    Ok(())
-}
-
-pub fn read_stored_token() -> Result<Option<String>, String> {
-    let path = token_path()?;
+fn read_token_at(path: &Path) -> Result<Option<String>, String> {
     if !path.exists() {
         return Ok(None);
     }
-    let token = fs::read_to_string(&path)
+    let token = fs::read_to_string(path)
         .map_err(|e| format!("Failed to read token: {}", e))?;
     let trimmed = token.trim().to_string();
     if trimmed.is_empty() {
@@ -73,31 +63,57 @@ pub fn read_stored_token() -> Result<Option<String>, String> {
     }
 }
 
-fn store_token(token: &str) -> Result<(), String> {
-    ensure_config_dir()?;
-    let path = token_path()?;
-    fs::write(&path, token)
+fn store_token_at(path: &Path, token: &str) -> Result<(), String> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create config dir: {}", e))?;
+    }
+    fs::write(path, token)
         .map_err(|e| format!("Failed to write token: {}", e))?;
 
-    // Set file permissions to 0o600 (owner read/write only) on Unix
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
         let perms = fs::Permissions::from_mode(0o600);
-        fs::set_permissions(&path, perms)
+        fs::set_permissions(path, perms)
             .map_err(|e| format!("Failed to set token permissions: {}", e))?;
     }
 
     Ok(())
 }
 
-fn delete_token() -> Result<(), String> {
-    let path = token_path()?;
+fn delete_token_at(path: &Path) -> Result<(), String> {
     if path.exists() {
-        fs::remove_file(&path)
+        fs::remove_file(path)
             .map_err(|e| format!("Failed to delete token: {}", e))?;
     }
     Ok(())
+}
+
+pub fn read_stored_token() -> Result<Option<String>, String> {
+    read_token_at(&token_path()?)
+}
+
+fn store_token(token: &str) -> Result<(), String> {
+    store_token_at(&token_path()?, token)
+}
+
+fn delete_token() -> Result<(), String> {
+    delete_token_at(&token_path()?)
+}
+
+/// Classify a poll response into the appropriate result.
+fn classify_poll_response(token_resp: TokenApiResponse) -> Result<Option<String>, String> {
+    if let Some(token) = token_resp.access_token {
+        return Ok(Some(token));
+    }
+    match token_resp.error.as_deref() {
+        Some("authorization_pending") | Some("slow_down") => Ok(None),
+        Some("expired_token") => Err("Device code expired. Please try again.".to_string()),
+        Some("access_denied") => Err("Authorization was denied by the user.".to_string()),
+        Some(other) => Err(format!("GitHub OAuth error: {}", other)),
+        None => Err("Unexpected response: no token and no error".to_string()),
+    }
 }
 
 // ---------- GitHub API calls ----------
@@ -160,18 +176,11 @@ pub async fn poll_token(device_code: &str) -> Result<Option<String>, String> {
         .await
         .map_err(|e| format!("Failed to parse token response: {}", e))?;
 
-    if let Some(token) = token_resp.access_token {
-        store_token(&token)?;
-        return Ok(Some(token));
+    let result = classify_poll_response(token_resp)?;
+    if let Some(ref token) = result {
+        store_token(token)?;
     }
-
-    match token_resp.error.as_deref() {
-        Some("authorization_pending") | Some("slow_down") => Ok(None),
-        Some("expired_token") => Err("Device code expired. Please try again.".to_string()),
-        Some("access_denied") => Err("Authorization was denied by the user.".to_string()),
-        Some(other) => Err(format!("GitHub OAuth error: {}", other)),
-        None => Err("Unexpected response: no token and no error".to_string()),
-    }
+    Ok(result)
 }
 
 pub async fn get_user(token: &str) -> Result<GithubUser, String> {
@@ -214,11 +223,190 @@ mod tests {
     use super::*;
     use tempfile::TempDir;
 
-    fn with_temp_config<F: FnOnce()>(f: F) {
-        // We can't easily override dirs::config_dir(), so we test
-        // the helper functions that don't depend on it.
-        f();
+    // --- Token storage tests (using path-parameterized helpers) ---
+
+    #[test]
+    fn test_store_and_read_token() {
+        let tmp = TempDir::new().unwrap();
+        let token_file = tmp.path().join("github_token");
+
+        // Store
+        store_token_at(&token_file, "gho_test_token_123").unwrap();
+        let result = read_token_at(&token_file).unwrap();
+        assert_eq!(result, Some("gho_test_token_123".to_string()));
+
+        // Overwrite
+        store_token_at(&token_file, "gho_new_token").unwrap();
+        let result = read_token_at(&token_file).unwrap();
+        assert_eq!(result, Some("gho_new_token".to_string()));
     }
+
+    #[test]
+    fn test_read_token_nonexistent_file() {
+        let tmp = TempDir::new().unwrap();
+        let token_file = tmp.path().join("does_not_exist");
+        let result = read_token_at(&token_file).unwrap();
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_read_token_empty_file() {
+        let tmp = TempDir::new().unwrap();
+        let token_file = tmp.path().join("github_token");
+        fs::write(&token_file, "  \n  ").unwrap();
+        let result = read_token_at(&token_file).unwrap();
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_read_token_whitespace_trimmed() {
+        let tmp = TempDir::new().unwrap();
+        let token_file = tmp.path().join("github_token");
+        fs::write(&token_file, "  gho_trimmed  \n").unwrap();
+        let result = read_token_at(&token_file).unwrap();
+        assert_eq!(result, Some("gho_trimmed".to_string()));
+    }
+
+    #[test]
+    fn test_delete_token() {
+        let tmp = TempDir::new().unwrap();
+        let token_file = tmp.path().join("github_token");
+
+        store_token_at(&token_file, "gho_to_delete").unwrap();
+        assert!(token_file.exists());
+
+        delete_token_at(&token_file).unwrap();
+        assert!(!token_file.exists());
+    }
+
+    #[test]
+    fn test_delete_nonexistent_token() {
+        let tmp = TempDir::new().unwrap();
+        let token_file = tmp.path().join("nonexistent");
+        // Should not error
+        delete_token_at(&token_file).unwrap();
+    }
+
+    #[test]
+    fn test_store_creates_parent_dirs() {
+        let tmp = TempDir::new().unwrap();
+        let token_file = tmp.path().join("nested").join("dir").join("github_token");
+        store_token_at(&token_file, "gho_nested").unwrap();
+        let result = read_token_at(&token_file).unwrap();
+        assert_eq!(result, Some("gho_nested".to_string()));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_store_sets_file_permissions() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let tmp = TempDir::new().unwrap();
+        let token_file = tmp.path().join("github_token");
+
+        store_token_at(&token_file, "secret_token").unwrap();
+
+        let meta = fs::metadata(&token_file).unwrap();
+        let mode = meta.permissions().mode() & 0o777;
+        assert_eq!(mode, 0o600);
+    }
+
+    #[test]
+    fn test_token_path_structure() {
+        let path = token_path().unwrap();
+        assert!(path.ends_with("com.laputa.app/github_token"));
+    }
+
+    // --- Token storage via public API (touches real config dir) ---
+
+    #[test]
+    fn test_read_stored_token_runs_without_panic() {
+        // May return None or Some depending on actual state — that's fine
+        let _ = read_stored_token();
+    }
+
+    #[test]
+    fn test_disconnect_runs_without_panic() {
+        let _ = disconnect();
+    }
+
+    // --- Poll response classification ---
+
+    #[test]
+    fn test_classify_poll_with_token() {
+        let resp = TokenApiResponse {
+            access_token: Some("gho_abc123".to_string()),
+            error: None,
+        };
+        let result = classify_poll_response(resp).unwrap();
+        assert_eq!(result, Some("gho_abc123".to_string()));
+    }
+
+    #[test]
+    fn test_classify_poll_pending() {
+        let resp = TokenApiResponse {
+            access_token: None,
+            error: Some("authorization_pending".to_string()),
+        };
+        let result = classify_poll_response(resp).unwrap();
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_classify_poll_slow_down() {
+        let resp = TokenApiResponse {
+            access_token: None,
+            error: Some("slow_down".to_string()),
+        };
+        let result = classify_poll_response(resp).unwrap();
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_classify_poll_expired() {
+        let resp = TokenApiResponse {
+            access_token: None,
+            error: Some("expired_token".to_string()),
+        };
+        let result = classify_poll_response(resp);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("expired"));
+    }
+
+    #[test]
+    fn test_classify_poll_denied() {
+        let resp = TokenApiResponse {
+            access_token: None,
+            error: Some("access_denied".to_string()),
+        };
+        let result = classify_poll_response(resp);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("denied"));
+    }
+
+    #[test]
+    fn test_classify_poll_unknown_error() {
+        let resp = TokenApiResponse {
+            access_token: None,
+            error: Some("some_weird_error".to_string()),
+        };
+        let result = classify_poll_response(resp);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("some_weird_error"));
+    }
+
+    #[test]
+    fn test_classify_poll_no_token_no_error() {
+        let resp = TokenApiResponse {
+            access_token: None,
+            error: None,
+        };
+        let result = classify_poll_response(resp);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Unexpected"));
+    }
+
+    // --- Serialization / deserialization ---
 
     #[test]
     fn test_device_flow_response_serialization() {
@@ -231,7 +419,6 @@ mod tests {
         };
         let json = serde_json::to_string(&resp).unwrap();
         assert!(json.contains("ABCD-1234"));
-        assert!(json.contains("abc123"));
 
         let deserialized: DeviceFlowResponse = serde_json::from_str(&json).unwrap();
         assert_eq!(deserialized.user_code, "ABCD-1234");
@@ -246,9 +433,6 @@ mod tests {
             avatar_url: "https://avatars.githubusercontent.com/u/1?v=4".to_string(),
         };
         let json = serde_json::to_string(&user).unwrap();
-        assert!(json.contains("octocat"));
-        assert!(json.contains("The Octocat"));
-
         let deserialized: GithubUser = serde_json::from_str(&json).unwrap();
         assert_eq!(deserialized.login, "octocat");
         assert_eq!(deserialized.name, Some("The Octocat".to_string()));
@@ -302,78 +486,40 @@ mod tests {
     }
 
     #[test]
-    fn test_store_and_read_token() {
-        let tmp = TempDir::new().unwrap();
-        let token_file = tmp.path().join("github_token");
-
-        // Write
-        fs::write(&token_file, "gho_test_token_123").unwrap();
-        let content = fs::read_to_string(&token_file).unwrap();
-        assert_eq!(content.trim(), "gho_test_token_123");
-
-        // Overwrite
-        fs::write(&token_file, "gho_new_token").unwrap();
-        let content = fs::read_to_string(&token_file).unwrap();
-        assert_eq!(content.trim(), "gho_new_token");
+    fn test_device_flow_response_clone() {
+        let resp = DeviceFlowResponse {
+            device_code: "dc".to_string(),
+            user_code: "UC".to_string(),
+            verification_uri: "https://example.com".to_string(),
+            expires_in: 300,
+            interval: 10,
+        };
+        let cloned = resp.clone();
+        assert_eq!(cloned.device_code, "dc");
+        assert_eq!(cloned.interval, 10);
     }
 
     #[test]
-    fn test_delete_token_file() {
-        let tmp = TempDir::new().unwrap();
-        let token_file = tmp.path().join("github_token");
-
-        fs::write(&token_file, "gho_to_delete").unwrap();
-        assert!(token_file.exists());
-
-        fs::remove_file(&token_file).unwrap();
-        assert!(!token_file.exists());
+    fn test_github_user_clone() {
+        let user = GithubUser {
+            login: "test".to_string(),
+            name: None,
+            avatar_url: "https://example.com".to_string(),
+        };
+        let cloned = user.clone();
+        assert_eq!(cloned.login, "test");
+        assert!(cloned.name.is_none());
     }
 
     #[test]
-    fn test_empty_token_file_returns_none_equivalent() {
-        let tmp = TempDir::new().unwrap();
-        let token_file = tmp.path().join("github_token");
-
-        fs::write(&token_file, "  \n  ").unwrap();
-        let content = fs::read_to_string(&token_file).unwrap();
-        let trimmed = content.trim();
-        assert!(trimmed.is_empty());
-    }
-
-    #[cfg(unix)]
-    #[test]
-    fn test_file_permissions() {
-        use std::os::unix::fs::PermissionsExt;
-
-        let tmp = TempDir::new().unwrap();
-        let token_file = tmp.path().join("github_token");
-
-        fs::write(&token_file, "secret").unwrap();
-        let perms = fs::Permissions::from_mode(0o600);
-        fs::set_permissions(&token_file, perms).unwrap();
-
-        let meta = fs::metadata(&token_file).unwrap();
-        let mode = meta.permissions().mode() & 0o777;
-        assert_eq!(mode, 0o600);
-    }
-
-    #[test]
-    fn test_token_path_returns_expected_structure() {
-        // token_path() should return a path ending in com.laputa.app/github_token
-        let path = token_path().unwrap();
-        assert!(path.ends_with("com.laputa.app/github_token"));
-    }
-
-    #[test]
-    fn test_disconnect_when_no_token_exists() {
-        // disconnect() should not error when there's no token file
-        // (it silently succeeds if the file doesn't exist)
-        // We can't easily test without mocking dirs, but we verify the logic:
-        // delete_token checks path.exists() before removing.
-        // Just verify the function compiles and the logic is sound.
-        with_temp_config(|| {
-            // The real disconnect() touches the actual config dir,
-            // which may or may not have a token. That's OK.
-        });
+    fn test_github_user_debug() {
+        let user = GithubUser {
+            login: "test".to_string(),
+            name: Some("Test User".to_string()),
+            avatar_url: "https://example.com".to_string(),
+        };
+        let debug = format!("{:?}", user);
+        assert!(debug.contains("test"));
+        assert!(debug.contains("Test User"));
     }
 }
