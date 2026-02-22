@@ -9,7 +9,7 @@ import { NoteItem, getTypeIcon } from './NoteItem'
 import { SortDropdown } from './SortDropdown'
 import {
   type SortOption, type SortDirection, type SortConfig, type RelationshipGroup,
-  DEFAULT_DIRECTIONS, getSortComparator,
+  getSortComparator,
   buildRelationshipGroups, filterEntries,
   sortByModified, relativeDate, getDisplayDate,
   loadSortPreferences, saveSortPreferences,
