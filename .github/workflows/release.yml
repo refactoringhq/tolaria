@@ -1,27 +1,22 @@
 name: Release
 
+# Triggers on every merge to main — auto-builds and publishes a new release
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
 
+# Skip if this is a CI-internal commit
 jobs:
   release:
-    name: Build & Release (macOS)
+    name: Build & Publish Release
+    runs-on: macos-latest
     permissions:
-      contents: write
-    strategy:
-      matrix:
-        include:
-          - target: aarch64-apple-darwin
-            runner: macos-latest
-          - target: x86_64-apple-darwin
-            runner: macos-latest
-
-    runs-on: ${{ matrix.runner }}
+      contents: write  # required to create releases and push tags
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -37,21 +32,61 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build and release
+      # Compute version: 0.YYYYMMDD.<run_number>
+      # Examples: 0.20260222.42 → 0.20260301.99
+      # Increment prefix in package.json for major/minor bumps.
+      - name: Compute version
+        id: version
+        run: |
+          BASE=$(node -p "require('./package.json').version.split('.')[0]")
+          DATE=$(date +%Y%m%d)
+          RUN=${{ github.run_number }}
+          VERSION="${BASE}.${DATE}.${RUN}"
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "TAG=v${VERSION}" >> $GITHUB_OUTPUT
+          echo "Computed version: ${VERSION}"
+
+      # Patch version in-place before build (no commit needed)
+      - name: Patch version in tauri.conf.json and package.json
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          # package.json
+          node -e "
+            const fs = require('fs');
+            const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            p.version = '${VERSION}';
+            fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
+          "
+          # tauri.conf.json
+          node -e "
+            const fs = require('fs');
+            const t = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8'));
+            t.version = '${VERSION}';
+            fs.writeFileSync('src-tauri/tauri.conf.json', JSON.stringify(t, null, 2) + '\n');
+          "
+          # src-tauri/Cargo.toml — update version field
+          sed -i '' "s/^version = \".*\"/version = \"${VERSION}\"/" src-tauri/Cargo.toml
+          echo "Patched to version ${VERSION}"
+
+      # Build universal macOS binary (arm64 + x86_64) and publish release
+      - name: Build and publish release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          # No Apple code signing (personal use — users right-click → Open on first run)
+          # To add signing later: set APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD,
+          # APPLE_SIGNING_IDENTITY, APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'Laputa v__VERSION__'
-          releaseBody: 'See the assets below to download and install this version.'
+          tagName: ${{ steps.version.outputs.TAG }}
+          releaseName: 'Laputa ${{ steps.version.outputs.TAG }}'
+          releaseBody: 'Auto-release from main. See commit history for changes.'
           releaseDraft: false
           prerelease: false
-          args: --target ${{ matrix.target }}
+          args: --target universal-apple-darwin
