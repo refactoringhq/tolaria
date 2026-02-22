@@ -1,35 +1,39 @@
-# Rename Note Tab — Done Summary
+# GitHub OAuth — Task Complete
 
 ## What was built
-Double-click a tab title to rename the note. The tab shows an inline text input (Enter saves, Escape cancels). Renaming updates the note's title, filename, H1 heading, frontmatter `title:` field, and all wiki links (`[[OldName]]` → `[[NewName]]`) across the entire vault.
 
-## Commits on `task/rename-note-tab`
-1. `caa26b6` — design: rename-note-tab wireframes (`design/rename-note-tab.pen`)
-2. `68dfab4` — feat: add `rename_note` Tauri command with wiki link updates (Rust backend)
-3. `5a8eb6a` — feat: rename note via double-click on tab — frontend wiring
-4. `ee00c2c` — test: Playwright e2e tests for rename tab feature
+GitHub Device Flow authentication, allowing users to connect their GitHub account from the Settings panel. Token is stored locally with secure file permissions. This enables future vault-from-GitHub features.
 
-## Architecture decisions
-- **Slug generation**: title → lowercase, non-alphanumeric chars replaced with hyphens, leading/trailing hyphens stripped. Same logic in Rust backend and TypeScript mock.
-- **Wiki link matching**: regex matches both title-based (`[[Old Title]]`) and path-stem-based (`[[note/old-title]]`) references, preserving pipe aliases (`[[Old Title|display]]` → `[[New Title|display]]`).
-- **State flow**: `onRenameTab` flows from TabBar → Editor → App → `useNoteActions.handleRenameNote` → Tauri backend → `useVaultLoader.replaceEntry` (updates entries + allContent atomically).
-- **H1 + frontmatter**: The rename updates both the first `# Heading` line and the `title:` frontmatter field if present.
-- **Toast feedback**: Shows "Renamed" or "Renamed — updated N wiki links" on success, "Failed to rename note" on error.
+## Files changed
 
-## Code health
-- **TabBar.tsx**: Improved from CC 23→18 by extracting `TabItem` component and `tabStyle` helper.
-- **Rust `vault.rs`**: Passed code health after extracting helpers (`build_wikilink_pattern`, `WikilinkReplacement` struct, `collect_md_files`, etc.) to keep CC under thresholds.
-- **useNoteActions.ts**: Pre-existing CC=37 (threshold 9) increased to 42. Extracted `performRename` and `buildRenamedEntry` as module-level functions. Proper fix requires splitting the monolithic hook (separate concern).
-- **App.tsx / useVaultLoader.ts**: Minor LOC/CC increases on already-above-threshold functions.
+### Rust backend
+- **`src-tauri/src/github_auth.rs`** (new) — Device flow start, token polling, user fetch, disconnect, secure token storage (0o600 permissions). Includes path-parameterized storage helpers for testability.
+- **`src-tauri/src/lib.rs`** — Registered 5 new Tauri commands: `github_start_device_flow`, `github_poll_token`, `github_get_user`, `github_disconnect`, `github_get_stored_token`
+
+### Frontend
+- **`src/hooks/useGithubAuth.ts`** (new) — Hook managing the full device flow lifecycle: init check for stored token, connect (start flow + poll), disconnect, cancel, error handling
+- **`src/components/SettingsPanel.tsx`** (new) — Settings dialog with GitHub section showing all states: disconnected, loading, device flow (with user code + "Open GitHub" button), connected (with avatar + user info), error (with retry)
+- **`src/components/StatusBar.tsx`** — Made Settings gear icon functional (was disabled placeholder)
+- **`src/App.tsx`** — Wired SettingsPanel dialog + state
+- **`src/mock-tauri.ts`** — Added mock handlers for all 5 GitHub commands (simulates 3-poll auth flow)
+
+### Tests
+- **`src/hooks/useGithubAuth.test.ts`** (new) — 9 tests: init states, connect flow, cancel, disconnect, error handling, polling success/failure
+- **`src/components/SettingsPanel.test.tsx`** (new) — 21 tests: all UI states, user interactions, edge cases
+- **`src-tauri/src/github_auth.rs`** — 28 inline Rust tests: token storage CRUD, poll classification, serialization, permissions
+
+### Design
+- **`design/github-oauth.pen`** — 3 new frames: Settings (Disconnected), Device Flow In Progress, Settings (Connected)
 
 ## Test results
-- `pnpm test` — 119/119 passed
-- `cargo test` — 147/147 passed (including 7 new rename tests)
-- `npx vite build` — success
-- Playwright e2e — 2/2 rename-tab tests pass
+- **Frontend**: 392 tests passing, coverage 84.5% (above 70% threshold)
+- **Rust**: 177 tests passing, coverage 86.37% (above 85% threshold)
+- **CodeScene**: Quality gates passed, no code health regressions
 
-## Visual verification
-Tested on `localhost:5173` via Playwright:
-- Double-click → inline input appears with current title selected
-- Type new name → Enter → tab title updates, note list updates, breadcrumb updates, toast shows "Renamed"
-- Double-click → type → Escape → title reverts, no changes made
+## Product decisions
+- **Client ID**: Stored as compile-time constant `LAPUTA_GITHUB_CLIENT_ID` — placeholder for Luca to replace after registering the OAuth App
+- **Token storage**: File at `~/.config/com.laputa.app/github_token` (macOS: `~/Library/Application Support/com.laputa.app/github_token`) with 0o600 permissions, not localStorage, for security
+- **Settings access**: Gear icon in StatusBar (was already there but disabled) — natural location next to vault switcher
+- **Polling interval**: Minimum 5s enforced per GitHub spec; auto-expires after `expires_in` seconds
+- **Revoked token handling**: If stored token fails user fetch on init, silently falls back to disconnected state (user can reconnect)
+- **Scope**: `read:user,repo` — read user profile + repo access for future vault-from-GitHub features
