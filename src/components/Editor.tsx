@@ -35,6 +35,7 @@ interface EditorProps {
   onLoadDiffAtCommit?: (path: string, commitHash: string) => Promise<string>
   isModified?: (path: string) => boolean
   onCreateNote?: () => void
+  onContentChange?: (path: string, content: string) => void
   // Inspector props
   inspectorCollapsed: boolean
   onToggleInspector: () => void
@@ -193,6 +194,7 @@ function SingleEditorView({ editor, entries, onNavigateWikilink }: { editor: Ret
 
 export const Editor = memo(function Editor({
   tabs, activeTabPath, entries, onSwitchTab, onCloseTab, onReorderTabs, onNavigateWikilink, onLoadDiff, onLoadDiffAtCommit, isModified, onCreateNote,
+  onContentChange,
   inspectorCollapsed, onToggleInspector, inspectorWidth, onInspectorResize,
   inspectorEntry, inspectorContent, allContent, gitHistory,
   onUpdateFrontmatter, onDeleteProperty, onAddProperty,
@@ -237,6 +239,28 @@ export const Editor = memo(function Editor({
       })
     },
   })
+  // --- Debounced autosave ---
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const onContentChangeRef = useRef(onContentChange)
+  onContentChangeRef.current = onContentChange
+
+  const debouncedSave = useCallback((path: string, content: string) => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      onContentChangeRef.current?.(path, content)
+      if (isTauri()) {
+        invoke('write_note', { path, content }).catch((err: unknown) =>
+          console.error('Autosave failed:', err)
+        )
+      }
+    }, 1000)
+  }, [])
+
+  // Clean up timer on unmount
+  useEffect(() => () => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+  }, [])
+
   // Cache parsed blocks per tab path for instant switching
   const tabCacheRef = useRef<Map<string, any[]>>(new Map())
   const prevActivePathRef = useRef<string | null>(null)
@@ -282,6 +306,7 @@ export const Editor = memo(function Editor({
     if (!tab) return
 
     const applyBlocks = (blocks: any[]) => {
+      isSwappingRef.current = true
       try {
         const current = editor.document
         if (current.length > 0 && blocks.length > 0) {
@@ -297,6 +322,8 @@ export const Editor = memo(function Editor({
         } catch (err2) {
           console.error('Fallback also failed:', err2)
         }
+      } finally {
+        isSwappingRef.current = false
       }
     }
 
@@ -358,6 +385,27 @@ export const Editor = memo(function Editor({
     }
     tabPathsRef.current = currentPaths
   }, [tabs])
+
+  // Autosave: subscribe to editor changes and debounce-write to disk
+  const isSwappingRef = useRef(false)
+  useEffect(() => {
+    const unsubscribe = editor.onChange(() => {
+      // Skip change events triggered by tab-switching content swaps
+      if (isSwappingRef.current) return
+      const path = prevActivePathRef.current
+      if (!path) return
+      const tab = tabs.find(t => t.entry.path === path)
+      if (!tab) return
+      // Serialize current blocks back to markdown
+      const blocks = editor.document
+      const markdown = editor.blocksToMarkdownLossy(blocks)
+      // Reconstruct full file content: original frontmatter + body
+      const [fm] = splitFrontmatter(tab.content)
+      const fullContent = fm ? `${fm}\n\n${markdown}` : markdown
+      debouncedSave(path, fullContent)
+    })
+    return unsubscribe
+  }, [editor, tabs, debouncedSave])
 
   // Focus editor when a new note is created (signaled via custom event)
   useEffect(() => {

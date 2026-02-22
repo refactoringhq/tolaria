@@ -7,7 +7,7 @@ pub mod vault;
 use ai_chat::{AiChatRequest, AiChatResponse};
 use git::{GitCommit, ModifiedFile};
 use settings::VaultConfig;
-use vault::{VaultEntry, RenameResult};
+use vault::{VaultEntry, RenameResult, write_note as vault_write_note};
 use frontmatter::FrontmatterValue;
 
 #[tauri::command]
@@ -68,6 +68,11 @@ async fn ai_chat(request: AiChatRequest) -> Result<AiChatResponse, String> {
 #[tauri::command]
 fn save_image(vault_path: String, filename: String, data: String) -> Result<String, String> {
     vault::save_image(&vault_path, &filename, &data)
+}
+
+#[tauri::command]
+fn write_note(path: String, content: String) -> Result<(), String> {
+    vault_write_note(&path, &content)
 }
 
 #[tauri::command]
@@ -147,6 +152,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             list_vault,
             get_note_content,
+            write_note,
             update_frontmatter,
             delete_frontmatter_property,
             rename_note,

@@ -10,9 +10,12 @@ const mockEditor = vi.hoisted(() => ({
   document: [{ id: '1', type: 'paragraph', content: [], props: {}, children: [] }],
   insertInlineContent: vi.fn(),
   onMount: vi.fn((cb: () => void) => { cb(); return () => {} }),
+  onChange: vi.fn(() => () => {}),
   prosemirrorView: {} as any,
   blocksToHTMLLossy: vi.fn(() => ''),
+  blocksToMarkdownLossy: vi.fn(() => ''),
   _tiptapEditor: { commands: { setContent: vi.fn() } },
+  focus: vi.fn(),
 }))
 
 // Mock BlockNote components

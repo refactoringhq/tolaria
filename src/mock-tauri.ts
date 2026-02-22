@@ -1673,6 +1673,13 @@ const mockHandlers: Record<string, (args: any) => any> = {
       stop_reason: 'end_turn',
     }
   },
+  write_note: (args: { path: string; content: string }) => {
+    MOCK_CONTENT[args.path] = args.content
+    if (typeof window !== 'undefined') {
+      window.__mockContent = MOCK_CONTENT
+    }
+    return null
+  },
   save_image: (args: { vault_path?: string; filename: string; data: string }) => {
     // Return a plausible file path matching the real Rust backend behavior
     const vault = args.vault_path ?? '/Users/luca/Laputa'

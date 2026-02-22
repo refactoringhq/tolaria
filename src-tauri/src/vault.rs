@@ -808,6 +808,17 @@ pub fn save_image(vault_path: &str, filename: &str, data: &str) -> Result<String
     Ok(target_path.to_string_lossy().to_string())
 }
 
+/// Write (or overwrite) a note file to disk, creating parent directories as needed.
+pub fn write_note(path: &str, content: &str) -> Result<(), String> {
+    let file_path = Path::new(path);
+    if let Some(parent) = file_path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create directories for {}: {}", path, e))?;
+    }
+    fs::write(file_path, content)
+        .map_err(|e| format!("Failed to write note {}: {}", path, e))
+}
+
 /// Result of a rename operation
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RenameResult {
@@ -2117,5 +2128,43 @@ References:
         let content = fs::read_to_string(&result.new_path).unwrap();
         assert!(content.contains("title: New Name"));
         assert!(content.contains("# New Name"));
+    }
+
+    // --- write_note tests ---
+
+    #[test]
+    fn test_write_note_creates_file() {
+        let dir = TempDir::new().unwrap();
+        let file_path = dir.path().join("note/my-note.md");
+        let content = "---\ntitle: My Note\nis_a: Note\n---\n\n# My Note\n\n";
+
+        let result = write_note(file_path.to_str().unwrap(), content);
+        assert!(result.is_ok());
+        assert!(file_path.exists());
+        assert_eq!(fs::read_to_string(&file_path).unwrap(), content);
+    }
+
+    #[test]
+    fn test_write_note_creates_parent_directories() {
+        let dir = TempDir::new().unwrap();
+        let file_path = dir.path().join("deep/nested/dir/note.md");
+        let content = "# Nested Note\n";
+
+        let result = write_note(file_path.to_str().unwrap(), content);
+        assert!(result.is_ok());
+        assert!(file_path.exists());
+        assert_eq!(fs::read_to_string(&file_path).unwrap(), content);
+    }
+
+    #[test]
+    fn test_write_note_overwrites_existing() {
+        let dir = TempDir::new().unwrap();
+        let file_path = dir.path().join("note.md");
+        create_test_file(dir.path(), "note.md", "old content");
+
+        let new_content = "new content";
+        let result = write_note(file_path.to_str().unwrap(), new_content);
+        assert!(result.is_ok());
+        assert_eq!(fs::read_to_string(&file_path).unwrap(), new_content);
     }
 }

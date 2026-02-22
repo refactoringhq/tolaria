@@ -79,9 +79,16 @@ vi.mock('@blocknote/react', () => ({
   useCreateBlockNote: () => ({
     tryParseMarkdownToBlocks: async () => [],
     replaceBlocks: () => {},
+    insertBlocks: () => {},
     document: [],
     insertInlineContent: () => {},
     onMount: (cb: () => void) => { cb(); return () => {} },
+    onChange: () => () => {},
+    prosemirrorView: {},
+    blocksToHTMLLossy: () => '',
+    blocksToMarkdownLossy: () => '',
+    _tiptapEditor: { commands: { setContent: () => {} } },
+    focus: () => {},
   }),
   SuggestionMenuController: () => null,
 }))
