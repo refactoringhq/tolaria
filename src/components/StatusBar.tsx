@@ -11,6 +11,7 @@ interface StatusBarProps {
   vaultPath: string
   vaults: VaultOption[]
   onSwitchVault: (path: string) => void
+  onOpenSettings?: () => void
 }
 
 function VaultMenuItem({ vault, isActive, onSelect }: { vault: VaultOption; isActive: boolean; onSelect: () => void }) {
@@ -64,7 +65,7 @@ const ICON_STYLE = { display: 'flex', alignItems: 'center', gap: 4 } as const
 const DISABLED_STYLE = { display: 'flex', alignItems: 'center', opacity: 0.4, cursor: 'not-allowed' } as const
 const SEP_STYLE = { color: 'var(--border)' } as const
 
-export function StatusBar({ noteCount, vaultPath, vaults, onSwitchVault }: StatusBarProps) {
+export function StatusBar({ noteCount, vaultPath, vaults, onSwitchVault, onOpenSettings }: StatusBarProps) {
   return (
     <footer style={{ height: 30, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--sidebar)', borderTop: '1px solid var(--border)', padding: '0 8px', fontSize: 11, color: 'var(--muted-foreground)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -80,7 +81,7 @@ export function StatusBar({ noteCount, vaultPath, vaults, onSwitchVault }: Statu
         <span style={ICON_STYLE}><Sparkles size={13} style={{ color: 'var(--accent-purple)' }} />Claude Sonnet 4</span>
         <span style={ICON_STYLE}><FileText size={13} />{noteCount.toLocaleString()} notes</span>
         <span style={DISABLED_STYLE} title="Coming soon"><Bell size={14} /></span>
-        <span style={DISABLED_STYLE} title="Coming soon"><Settings size={14} /></span>
+        <span role="button" onClick={onOpenSettings} style={{ ...ICON_STYLE, cursor: 'pointer' }} title="Settings"><Settings size={14} /></span>
       </div>
     </footer>
   )

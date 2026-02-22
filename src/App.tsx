@@ -7,6 +7,7 @@ import { CreateTypeDialog } from './components/CreateTypeDialog'
 import { QuickOpenPalette } from './components/QuickOpenPalette'
 import { Toast } from './components/Toast'
 import { CommitDialog } from './components/CommitDialog'
+import { SettingsPanel } from './components/SettingsPanel'
 import { StatusBar } from './components/StatusBar'
 import { useVaultLoader } from './hooks/useVaultLoader'
 import { useNoteActions, generateUntitledName } from './hooks/useNoteActions'
@@ -57,6 +58,7 @@ function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [vaultPath, setVaultPath] = useState(VAULTS[0].path)
   const [showAIChat, setShowAIChat] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
 
   const vault = useVaultLoader(vaultPath)
   const notes = useNoteActions(vault.addEntry, vault.updateContent, vault.entries, setToastMessage)
@@ -184,11 +186,12 @@ function App() {
           />
         </div>
       </div>
-      <StatusBar noteCount={vault.entries.length} vaultPath={vaultPath} vaults={VAULTS} onSwitchVault={handleSwitchVault} />
+      <StatusBar noteCount={vault.entries.length} vaultPath={vaultPath} vaults={VAULTS} onSwitchVault={handleSwitchVault} onOpenSettings={() => setShowSettings(true)} />
       <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
       <QuickOpenPalette open={showQuickOpen} entries={vault.entries} onSelect={notes.handleSelectNote} onClose={() => setShowQuickOpen(false)} />
       <CreateTypeDialog open={showCreateTypeDialog} onClose={() => setShowCreateTypeDialog(false)} onCreate={handleCreateType} />
       <CommitDialog open={showCommitDialog} modifiedCount={vault.modifiedFiles.length} onCommit={handleCommitPush} onClose={() => setShowCommitDialog(false)} />
+      <SettingsPanel open={showSettings} onClose={() => setShowSettings(false)} />
     </div>
   )
 }

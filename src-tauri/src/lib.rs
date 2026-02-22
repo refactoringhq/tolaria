@@ -1,10 +1,12 @@
 pub mod ai_chat;
 pub mod frontmatter;
 pub mod git;
+pub mod github_auth;
 pub mod vault;
 
 use ai_chat::{AiChatRequest, AiChatResponse};
 use git::{GitCommit, ModifiedFile};
+use github_auth::{DeviceFlowResponse, GithubUser};
 use vault::{VaultEntry, RenameResult};
 use frontmatter::FrontmatterValue;
 
@@ -78,6 +80,31 @@ fn purge_trash(vault_path: String) -> Result<Vec<String>, String> {
     vault::purge_trash(&vault_path)
 }
 
+#[tauri::command]
+async fn github_start_device_flow() -> Result<DeviceFlowResponse, String> {
+    github_auth::start_device_flow().await
+}
+
+#[tauri::command]
+async fn github_poll_token(device_code: String) -> Result<Option<String>, String> {
+    github_auth::poll_token(&device_code).await
+}
+
+#[tauri::command]
+async fn github_get_user(token: String) -> Result<GithubUser, String> {
+    github_auth::get_user(&token).await
+}
+
+#[tauri::command]
+fn github_disconnect() -> Result<(), String> {
+    github_auth::disconnect()
+}
+
+#[tauri::command]
+fn github_get_stored_token() -> Result<Option<String>, String> {
+    github_auth::read_stored_token()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -128,7 +155,12 @@ pub fn run() {
             git_push,
             ai_chat,
             save_image,
-            purge_trash
+            purge_trash,
+            github_start_device_flow,
+            github_poll_token,
+            github_get_user,
+            github_disconnect,
+            github_get_stored_token
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

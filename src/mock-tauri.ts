@@ -1640,6 +1640,8 @@ index abc1234..${shortHash} 100644
 }
 
 let mockHasChanges = true
+let mockGithubToken: string | null = null
+let mockGithubPollCount = 0
 
 const mockHandlers: Record<string, (args: any) => any> = {
   list_vault: () => MOCK_ENTRIES,
@@ -1678,6 +1680,40 @@ const mockHandlers: Record<string, (args: any) => any> = {
     const vault = args.vault_path ?? '/Users/luca/Laputa'
     const timestamp = Date.now()
     return `${vault}/attachments/${timestamp}-${args.filename}`
+  },
+  github_start_device_flow: () => {
+    mockGithubPollCount = 0
+    return {
+      device_code: 'mock_device_code_abc123',
+      user_code: 'MOCK-1234',
+      verification_uri: 'https://github.com/login/device',
+      expires_in: 900,
+      interval: 5,
+    }
+  },
+  github_poll_token: () => {
+    mockGithubPollCount++
+    // Simulate authorization after 3 polls
+    if (mockGithubPollCount >= 3) {
+      mockGithubToken = 'gho_mock_token_for_testing'
+      return mockGithubToken
+    }
+    return null
+  },
+  github_get_user: () => {
+    if (!mockGithubToken) throw new Error('Not authenticated')
+    return {
+      login: 'lucaong',
+      name: 'Luca Rossi',
+      avatar_url: 'https://avatars.githubusercontent.com/u/1?v=4',
+    }
+  },
+  github_disconnect: () => {
+    mockGithubToken = null
+    mockGithubPollCount = 0
+  },
+  github_get_stored_token: () => {
+    return mockGithubToken
   },
   rename_note: (args: { vault_path: string; old_path: string; new_title: string }) => {
     const oldContent = MOCK_CONTENT[args.old_path] ?? ''
