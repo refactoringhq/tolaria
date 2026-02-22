@@ -1,10 +1,12 @@
 pub mod ai_chat;
 pub mod frontmatter;
 pub mod git;
+pub mod settings;
 pub mod vault;
 
 use ai_chat::{AiChatRequest, AiChatResponse};
 use git::{GitCommit, ModifiedFile};
+use settings::VaultConfig;
 use vault::{VaultEntry, RenameResult};
 use frontmatter::FrontmatterValue;
 
@@ -78,9 +80,30 @@ fn purge_trash(vault_path: String) -> Result<Vec<String>, String> {
     vault::purge_trash(&vault_path)
 }
 
+#[tauri::command]
+fn get_vaults() -> Result<Vec<VaultConfig>, String> {
+    settings::get_vaults()
+}
+
+#[tauri::command]
+fn add_vault(path: String) -> Result<VaultConfig, String> {
+    settings::add_vault(&path)
+}
+
+#[tauri::command]
+fn remove_vault(path: String) -> Result<(), String> {
+    settings::remove_vault(&path)
+}
+
+#[tauri::command]
+fn init_vault(path: String) -> Result<(), String> {
+    settings::init_vault(&path)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -96,19 +119,26 @@ pub fn run() {
                 app.handle().plugin(tauri_plugin_process::init())?;
             }
 
-            // Purge trashed files older than 30 days on startup
-            let vault_path = dirs::home_dir()
-                .map(|h| h.join("Laputa"))
-                .unwrap_or_default();
-            if vault_path.is_dir() {
-                match vault::purge_trash(vault_path.to_str().unwrap_or_default()) {
-                    Ok(deleted) if !deleted.is_empty() => {
-                        log::info!("Purged {} trashed files on startup", deleted.len());
+            // Purge trashed files older than 30 days on startup — for all configured vaults
+            match settings::get_vaults() {
+                Ok(vaults) => {
+                    for v in &vaults {
+                        let vault_path = std::path::Path::new(&v.path);
+                        if vault_path.is_dir() {
+                            match vault::purge_trash(&v.path) {
+                                Ok(deleted) if !deleted.is_empty() => {
+                                    log::info!("Purged {} trashed files from {} on startup", deleted.len(), v.label);
+                                }
+                                Err(e) => {
+                                    log::warn!("Failed to purge trash in {}: {}", v.label, e);
+                                }
+                                _ => {}
+                            }
+                        }
                     }
-                    Err(e) => {
-                        log::warn!("Failed to purge trash on startup: {}", e);
-                    }
-                    _ => {}
+                }
+                Err(e) => {
+                    log::warn!("Failed to load vault settings for trash purge: {}", e);
                 }
             }
 
@@ -128,7 +158,11 @@ pub fn run() {
             git_push,
             ai_chat,
             save_image,
-            purge_trash
+            purge_trash,
+            get_vaults,
+            add_vault,
+            remove_vault,
+            init_vault
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

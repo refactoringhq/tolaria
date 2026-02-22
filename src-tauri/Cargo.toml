@@ -32,6 +32,7 @@ regex = "1"
 dirs = "5"
 tauri-plugin-updater = "2.10.0"
 tauri-plugin-process = "2.3.1"
+tauri-plugin-dialog = "2.6.0"
 
 [dev-dependencies]
 tempfile = "3"
