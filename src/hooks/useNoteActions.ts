@@ -106,6 +106,12 @@ const NO_STATUS_TYPES = new Set(['Topic', 'Person'])
 function addEntryWithMock(entry: VaultEntry, content: string, addEntry: (e: VaultEntry, c: string) => void) {
   if (!isTauri()) addMockEntry(entry, content)
   addEntry(entry, content)
+  // Persist to disk when running inside Tauri
+  if (isTauri()) {
+    invoke('write_note', { path: entry.path, content }).catch((err) =>
+      console.error('Failed to write note to disk:', err)
+    )
+  }
 }
 
 export function buildNoteContent(title: string, type: string, status: string | null): string {
@@ -115,17 +121,17 @@ export function buildNoteContent(title: string, type: string, status: string | n
   return `${lines.join('\n')}\n\n# ${title}\n\n`
 }
 
-export function resolveNewNote(title: string, type: string): { entry: VaultEntry; content: string } {
+export function resolveNewNote(title: string, type: string, vaultPath: string): { entry: VaultEntry; content: string } {
   const folder = TYPE_FOLDER_MAP[type] || slugify(type)
   const slug = slugify(title)
   const status = NO_STATUS_TYPES.has(type) ? null : 'Active'
-  const entry = buildNewEntry({ path: `/Users/luca/Laputa/${folder}/${slug}.md`, slug, title, type, status })
+  const entry = buildNewEntry({ path: `${vaultPath}/${folder}/${slug}.md`, slug, title, type, status })
   return { entry, content: buildNoteContent(title, type, status) }
 }
 
-export function resolveNewType(typeName: string): { entry: VaultEntry; content: string } {
+export function resolveNewType(typeName: string, vaultPath: string): { entry: VaultEntry; content: string } {
   const slug = slugify(typeName)
-  const entry = buildNewEntry({ path: `/Users/luca/Laputa/type/${slug}.md`, slug, title: typeName, type: 'Type', status: null })
+  const entry = buildNewEntry({ path: `${vaultPath}/type/${slug}.md`, slug, title: typeName, type: 'Type', status: null })
   return { entry, content: `---\nIs A: Type\n---\n\n# ${typeName}\n\n` }
 }
 
@@ -141,6 +147,7 @@ export function useNoteActions(
   updateContent: (path: string, content: string) => void,
   entries: VaultEntry[],
   setToastMessage: (msg: string | null) => void,
+  vaultPath: string,
 ) {
   const tabMgmt = useTabManagement()
   const { setTabs, handleSelectNote, activeTabPathRef, handleSwitchTab } = tabMgmt
@@ -159,16 +166,16 @@ export function useNoteActions(
   }, [entries, handleSelectNote])
 
   const handleCreateNote = useCallback((title: string, type: string) => {
-    const { entry, content } = resolveNewNote(title, type)
+    const { entry, content } = resolveNewNote(title, type, vaultPath)
     addEntryWithMock(entry, content, addEntry)
     handleSelectNote(entry)
-  }, [handleSelectNote, addEntry])
+  }, [handleSelectNote, addEntry, vaultPath])
 
   const handleCreateType = useCallback((typeName: string) => {
-    const { entry, content } = resolveNewType(typeName)
+    const { entry, content } = resolveNewType(typeName, vaultPath)
     addEntryWithMock(entry, content, addEntry)
     handleSelectNote(entry)
-  }, [handleSelectNote, addEntry])
+  }, [handleSelectNote, addEntry, vaultPath])
 
   const runFrontmatterOp = useCallback(async (op: 'update' | 'delete', path: string, key: string, value?: FrontmatterValue) => {
     try {

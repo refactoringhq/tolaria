@@ -175,7 +175,7 @@ describe('buildNoteContent', () => {
 
 describe('resolveNewNote', () => {
   it('uses TYPE_FOLDER_MAP for known types', () => {
-    const { entry, content } = resolveNewNote('My Project', 'Project')
+    const { entry, content } = resolveNewNote('My Project', 'Project', '/Users/luca/Laputa')
     expect(entry.path).toBe('/Users/luca/Laputa/project/my-project.md')
     expect(entry.isA).toBe('Project')
     expect(entry.status).toBe('Active')
@@ -184,30 +184,40 @@ describe('resolveNewNote', () => {
   })
 
   it('falls back to slugified type for custom types', () => {
-    const { entry } = resolveNewNote('First Recipe', 'Recipe')
+    const { entry } = resolveNewNote('First Recipe', 'Recipe', '/Users/luca/Laputa')
     expect(entry.path).toBe('/Users/luca/Laputa/recipe/first-recipe.md')
   })
 
   it('omits status for Topic type', () => {
-    const { entry, content } = resolveNewNote('Machine Learning', 'Topic')
+    const { entry, content } = resolveNewNote('Machine Learning', 'Topic', '/Users/luca/Laputa')
     expect(entry.status).toBeNull()
     expect(content).not.toContain('status:')
   })
 
   it('omits status for Person type', () => {
-    const { entry } = resolveNewNote('John Doe', 'Person')
+    const { entry } = resolveNewNote('John Doe', 'Person', '/Users/luca/Laputa')
     expect(entry.status).toBeNull()
+  })
+
+  it('uses provided vaultPath instead of hardcoded path', () => {
+    const { entry } = resolveNewNote('My Note', 'Note', '/custom/vault')
+    expect(entry.path).toBe('/custom/vault/note/my-note.md')
   })
 })
 
 describe('resolveNewType', () => {
   it('creates a type entry in the type folder', () => {
-    const { entry, content } = resolveNewType('Recipe')
+    const { entry, content } = resolveNewType('Recipe', '/Users/luca/Laputa')
     expect(entry.path).toBe('/Users/luca/Laputa/type/recipe.md')
     expect(entry.isA).toBe('Type')
     expect(entry.status).toBeNull()
     expect(content).toContain('Is A: Type')
     expect(content).toContain('# Recipe')
+  })
+
+  it('uses provided vaultPath instead of hardcoded path', () => {
+    const { entry } = resolveNewType('Book', '/custom/vault')
+    expect(entry.path).toBe('/custom/vault/type/book.md')
   })
 })
 
@@ -223,7 +233,7 @@ describe('useNoteActions hook', () => {
   it('handleCreateNote calls addEntry and creates correct entry', () => {
     const entries: VaultEntry[] = []
     const { result } = renderHook(() =>
-      useNoteActions(addEntry, updateContent, entries, setToastMessage)
+      useNoteActions(addEntry, updateContent, entries, setToastMessage, '/Users/luca/Laputa')
     )
 
     act(() => {
@@ -238,10 +248,41 @@ describe('useNoteActions hook', () => {
     expect(createdContent).toContain('title: Test Note')
   })
 
+  it('handleCreateNote registers mock content in non-Tauri mode', async () => {
+    const { addMockEntry } = await import('../mock-tauri')
+    const entries: VaultEntry[] = []
+    const { result } = renderHook(() =>
+      useNoteActions(addEntry, updateContent, entries, setToastMessage, '/Users/luca/Laputa')
+    )
+
+    act(() => {
+      result.current.handleCreateNote('Persisted Note', 'Note')
+    })
+
+    expect(addMockEntry).toHaveBeenCalledTimes(1)
+    const [mockEntry, mockContent] = (addMockEntry as ReturnType<typeof vi.fn>).mock.calls[0]
+    expect(mockEntry.path).toContain('note/persisted-note.md')
+    expect(mockContent).toContain('title: Persisted Note')
+  })
+
+  it('handleCreateNote uses provided vaultPath for entry path', () => {
+    const entries: VaultEntry[] = []
+    const { result } = renderHook(() =>
+      useNoteActions(addEntry, updateContent, entries, setToastMessage, '/my/vault')
+    )
+
+    act(() => {
+      result.current.handleCreateNote('Custom Path Note', 'Project')
+    })
+
+    const [createdEntry] = addEntry.mock.calls[0]
+    expect(createdEntry.path).toBe('/my/vault/project/custom-path-note.md')
+  })
+
   it('handleCreateType creates type entry', () => {
     const entries: VaultEntry[] = []
     const { result } = renderHook(() =>
-      useNoteActions(addEntry, updateContent, entries, setToastMessage)
+      useNoteActions(addEntry, updateContent, entries, setToastMessage, '/Users/luca/Laputa')
     )
 
     act(() => {
@@ -259,7 +300,7 @@ describe('useNoteActions hook', () => {
     const entries = [target]
 
     const { result } = renderHook(() =>
-      useNoteActions(addEntry, updateContent, entries, setToastMessage)
+      useNoteActions(addEntry, updateContent, entries, setToastMessage, '/Users/luca/Laputa')
     )
 
     await act(async () => {
@@ -275,7 +316,7 @@ describe('useNoteActions hook', () => {
     const entries: VaultEntry[] = []
 
     const { result } = renderHook(() =>
-      useNoteActions(addEntry, updateContent, entries, setToastMessage)
+      useNoteActions(addEntry, updateContent, entries, setToastMessage, '/Users/luca/Laputa')
     )
 
     act(() => {
@@ -289,7 +330,7 @@ describe('useNoteActions hook', () => {
   it('handleUpdateFrontmatter calls mock and shows toast on success', async () => {
     const entries: VaultEntry[] = []
     const { result } = renderHook(() =>
-      useNoteActions(addEntry, updateContent, entries, setToastMessage)
+      useNoteActions(addEntry, updateContent, entries, setToastMessage, '/Users/luca/Laputa')
     )
 
     await act(async () => {
@@ -303,7 +344,7 @@ describe('useNoteActions hook', () => {
   it('handleDeleteProperty calls mock and shows toast on success', async () => {
     const entries: VaultEntry[] = []
     const { result } = renderHook(() =>
-      useNoteActions(addEntry, updateContent, entries, setToastMessage)
+      useNoteActions(addEntry, updateContent, entries, setToastMessage, '/Users/luca/Laputa')
     )
 
     await act(async () => {

@@ -75,7 +75,7 @@ function App() {
 
   // Use a placeholder path for the vault loader when no vault is selected
   const vault = useVaultLoader(vaultPath ?? '')
-  const notes = useNoteActions(vault.addEntry, vault.updateContent, vault.entries, setToastMessage)
+  const notes = useNoteActions(vault.addEntry, vault.updateContent, vault.entries, setToastMessage, vaultPath ?? '')
 
   const entryActions = useEntryActions({
     entries: vault.entries,
@@ -235,6 +235,7 @@ function App() {
             onLoadDiffAtCommit={vault.loadDiffAtCommit}
             isModified={vault.isFileModified}
             onCreateNote={handleCreateNoteImmediate}
+            onContentChange={vault.updateContent}
             inspectorCollapsed={layout.inspectorCollapsed}
             onToggleInspector={() => layout.setInspectorCollapsed((c) => !c)}
             inspectorWidth={layout.inspectorWidth}
