@@ -8,8 +8,8 @@ import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 import { NoteItem, getTypeIcon } from './NoteItem'
 import { SortDropdown } from './SortDropdown'
 import {
-  type SortOption, type RelationshipGroup,
-  getSortComparator,
+  type SortOption, type SortDirection, type SortConfig, type RelationshipGroup,
+  DEFAULT_DIRECTIONS, getSortComparator,
   buildRelationshipGroups, filterEntries,
   sortByModified, relativeDate, getDisplayDate,
   loadSortPreferences, saveSortPreferences,
@@ -52,13 +52,13 @@ function PinnedCard({ entry, typeEntryMap, onSelectNote, showDate }: {
 function RelationshipGroupSection({ group, isCollapsed, sortPrefs, onToggle, handleSortChange, renderItem }: {
   group: RelationshipGroup
   isCollapsed: boolean
-  sortPrefs: Record<string, SortOption>
+  sortPrefs: Record<string, SortConfig>
   onToggle: () => void
-  handleSortChange: (groupLabel: string, option: SortOption) => void
+  handleSortChange: (groupLabel: string, option: SortOption, direction: SortDirection) => void
   renderItem: (entry: VaultEntry) => React.ReactNode
 }) {
-  const groupSort = sortPrefs[group.label] ?? 'modified'
-  const sortedEntries = [...group.entries].sort(getSortComparator(groupSort))
+  const groupConfig = sortPrefs[group.label] ?? { option: 'modified' as SortOption, direction: 'desc' as SortDirection }
+  const sortedEntries = [...group.entries].sort(getSortComparator(groupConfig.option, groupConfig.direction))
   return (
     <div>
       <div className="flex w-full items-center justify-between bg-muted" style={{ height: 32, padding: '0 16px' }}>
@@ -67,7 +67,7 @@ function RelationshipGroupSection({ group, isCollapsed, sortPrefs, onToggle, han
           <span className="font-mono-label text-muted-foreground" style={{ fontWeight: 400 }}>{group.entries.length}</span>
         </button>
         <span className="flex items-center gap-1.5">
-          <SortDropdown groupLabel={group.label} current={groupSort} onChange={handleSortChange} />
+          <SortDropdown groupLabel={group.label} current={groupConfig.option} direction={groupConfig.direction} onChange={handleSortChange} />
           <button className="flex items-center border-none bg-transparent cursor-pointer p-0 text-muted-foreground" onClick={onToggle}>
             {isCollapsed ? <CaretRight size={12} /> : <CaretDown size={12} />}
           </button>
@@ -117,8 +117,8 @@ function useTypeEntryMap(entries: VaultEntry[]) {
 
 function EntityView({ entity, groups, query, collapsedGroups, sortPrefs, onToggleGroup, onSortChange, renderItem, typeEntryMap, onSelectNote }: {
   entity: VaultEntry; groups: RelationshipGroup[]; query: string
-  collapsedGroups: Set<string>; sortPrefs: Record<string, SortOption>
-  onToggleGroup: (label: string) => void; onSortChange: (label: string, opt: SortOption) => void
+  collapsedGroups: Set<string>; sortPrefs: Record<string, SortConfig>
+  onToggleGroup: (label: string) => void; onSortChange: (label: string, opt: SortOption, dir: SortDirection) => void
   renderItem: (entry: VaultEntry) => React.ReactNode
   typeEntryMap: Record<string, VaultEntry>; onSelectNote: (entry: VaultEntry) => void
 }) {
@@ -174,10 +174,10 @@ function countExpiredTrash(entries: VaultEntry[]): number {
 
 interface NoteListDataParams {
   entries: VaultEntry[]; selection: SidebarSelection; allContent: Record<string, string>
-  query: string; listSort: SortOption; modifiedFiles?: ModifiedFile[]
+  query: string; listSort: SortOption; listDirection: SortDirection; modifiedFiles?: ModifiedFile[]
 }
 
-function useNoteListData({ entries, selection, allContent, query, listSort, modifiedFiles }: NoteListDataParams) {
+function useNoteListData({ entries, selection, allContent, query, listSort, listDirection, modifiedFiles }: NoteListDataParams) {
   const isEntityView = selection.kind === 'entity'
   const isTrashView = selection.kind === 'filter' && selection.filter === 'trash'
 
@@ -188,9 +188,9 @@ function useNoteListData({ entries, selection, allContent, query, listSort, modi
 
   const searched = useMemo(() => {
     if (isEntityView) return []
-    const sorted = [...filterEntries(entries, selection, modifiedFiles)].sort(getSortComparator(listSort))
+    const sorted = [...filterEntries(entries, selection, modifiedFiles)].sort(getSortComparator(listSort, listDirection))
     return filterByQuery(sorted, query)
-  }, [entries, selection, modifiedFiles, isEntityView, listSort, query])
+  }, [entries, selection, modifiedFiles, isEntityView, listSort, listDirection, query])
 
   const searchedGroups = useMemo(() => {
     if (!isEntityView) return []
@@ -212,10 +212,10 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
   const [search, setSearch] = useState('')
   const [searchVisible, setSearchVisible] = useState(false)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
-  const [sortPrefs, setSortPrefs] = useState<Record<string, SortOption>>(loadSortPreferences)
+  const [sortPrefs, setSortPrefs] = useState<Record<string, SortConfig>>(loadSortPreferences)
 
-  const handleSortChange = useCallback((groupLabel: string, option: SortOption) => {
-    setSortPrefs((prev) => { const next = { ...prev, [groupLabel]: option }; saveSortPreferences(next); return next })
+  const handleSortChange = useCallback((groupLabel: string, option: SortOption, direction: SortDirection) => {
+    setSortPrefs((prev) => { const next = { ...prev, [groupLabel]: { option, direction } }; saveSortPreferences(next); return next })
   }, [])
 
   const toggleGroup = useCallback((label: string) => {
@@ -224,8 +224,10 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
 
   const typeEntryMap = useTypeEntryMap(entries)
   const query = search.trim().toLowerCase()
-  const listSort = sortPrefs['__list__'] ?? 'modified'
-  const { isEntityView, isTrashView, typeDocument, searched, searchedGroups, expiredTrashCount } = useNoteListData({ entries, selection, allContent, query, listSort, modifiedFiles })
+  const listConfig = sortPrefs['__list__'] ?? { option: 'modified' as SortOption, direction: 'desc' as SortDirection }
+  const listSort = listConfig.option
+  const listDirection = listConfig.direction
+  const { isEntityView, isTrashView, typeDocument, searched, searchedGroups, expiredTrashCount } = useNoteListData({ entries, selection, allContent, query, listSort, listDirection, modifiedFiles })
 
   const renderItem = useCallback((entry: VaultEntry) => (
     <NoteItem key={entry.path} entry={entry} isSelected={selectedNote?.path === entry.path} typeEntryMap={typeEntryMap} onSelectNote={onSelectNote} />
@@ -236,7 +238,7 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
       <div className="flex h-[45px] shrink-0 items-center justify-between border-b border-border px-4" data-tauri-drag-region style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
         <h3 className="m-0 min-w-0 flex-1 truncate text-[14px] font-semibold">{resolveHeaderTitle(selection, typeDocument)}</h3>
         <div className="flex items-center gap-3" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-          {!isEntityView && <SortDropdown groupLabel="__list__" current={listSort} onChange={handleSortChange} />}
+          {!isEntityView && <SortDropdown groupLabel="__list__" current={listSort} direction={listDirection} onChange={handleSortChange} />}
           <button className="flex items-center text-muted-foreground transition-colors hover:text-foreground" onClick={() => { setSearchVisible(!searchVisible); if (searchVisible) setSearch('') }} title="Search notes">
             <MagnifyingGlass size={16} />
           </button>

@@ -53,6 +53,19 @@ export function sortByModified(a: VaultEntry, b: VaultEntry): number {
 }
 
 export type SortOption = 'modified' | 'created' | 'title' | 'status'
+export type SortDirection = 'asc' | 'desc'
+
+export interface SortConfig {
+  option: SortOption
+  direction: SortDirection
+}
+
+export const DEFAULT_DIRECTIONS: Record<SortOption, SortDirection> = {
+  modified: 'desc',
+  created: 'desc',
+  title: 'asc',
+  status: 'asc',
+}
 
 export const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'modified', label: 'Modified' },
@@ -65,36 +78,51 @@ const STATUS_ORDER: Record<string, number> = {
   Active: 0, Paused: 1, Done: 2, Finished: 3,
 }
 
-export function getSortComparator(option: SortOption): (a: VaultEntry, b: VaultEntry) => number {
+export function getSortComparator(option: SortOption, direction?: SortDirection): (a: VaultEntry, b: VaultEntry) => number {
+  const dir = direction ?? DEFAULT_DIRECTIONS[option]
+  const flip = dir === 'asc' ? 1 : -1
   switch (option) {
     case 'modified':
-      return sortByModified
+      return (a, b) => flip * ((getDisplayDate(a) ?? 0) - (getDisplayDate(b) ?? 0))
     case 'created':
-      return (a, b) => (b.createdAt ?? b.modifiedAt ?? 0) - (a.createdAt ?? a.modifiedAt ?? 0)
+      return (a, b) => flip * ((a.createdAt ?? a.modifiedAt ?? 0) - (b.createdAt ?? b.modifiedAt ?? 0))
     case 'title':
-      return (a, b) => a.title.localeCompare(b.title)
+      return (a, b) => flip * a.title.localeCompare(b.title)
     case 'status':
       return (a, b) => {
         const sa = STATUS_ORDER[a.status ?? ''] ?? 999
         const sb = STATUS_ORDER[b.status ?? ''] ?? 999
-        if (sa !== sb) return sa - sb
-        return sortByModified(a, b)
+        if (sa !== sb) return flip * (sa - sb)
+        // Tiebreaker: always newest first regardless of direction
+        return (getDisplayDate(b) ?? 0) - (getDisplayDate(a) ?? 0)
       }
   }
 }
 
 const SORT_STORAGE_KEY = 'laputa-sort-preferences'
 
-export function loadSortPreferences(): Record<string, SortOption> {
+export function loadSortPreferences(): Record<string, SortConfig> {
   try {
     const raw = localStorage.getItem(SORT_STORAGE_KEY)
-    return raw ? JSON.parse(raw) : {}
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    const result: Record<string, SortConfig> = {}
+    for (const [key, value] of Object.entries(parsed)) {
+      if (typeof value === 'string') {
+        // Migrate old format: bare SortOption string → SortConfig
+        const opt = value as SortOption
+        result[key] = { option: opt, direction: DEFAULT_DIRECTIONS[opt] }
+      } else {
+        result[key] = value as SortConfig
+      }
+    }
+    return result
   } catch {
     return {}
   }
 }
 
-export function saveSortPreferences(prefs: Record<string, SortOption>) {
+export function saveSortPreferences(prefs: Record<string, SortConfig>) {
   try {
     localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify(prefs))
   } catch { /* ignore */ }
