@@ -335,6 +335,38 @@ describe('getSortComparator', () => {
     const sorted = [a, b].sort(getSortComparator('status'))
     expect(sorted.map((e) => e.title)).toEqual(['NewerActive', 'OlderActive'])
   })
+
+  it('sorts by modified date ascending when direction is asc', () => {
+    const a = makeEntry({ title: 'A', modifiedAt: 1000 })
+    const b = makeEntry({ title: 'B', modifiedAt: 3000 })
+    const c = makeEntry({ title: 'C', modifiedAt: 2000 })
+    const sorted = [a, b, c].sort(getSortComparator('modified', 'asc'))
+    expect(sorted.map((e) => e.title)).toEqual(['A', 'C', 'B'])
+  })
+
+  it('sorts by title descending when direction is desc', () => {
+    const a = makeEntry({ title: 'Zebra' })
+    const b = makeEntry({ title: 'Alpha' })
+    const c = makeEntry({ title: 'Middle' })
+    const sorted = [a, b, c].sort(getSortComparator('title', 'desc'))
+    expect(sorted.map((e) => e.title)).toEqual(['Zebra', 'Middle', 'Alpha'])
+  })
+
+  it('sorts by created date ascending when direction is asc', () => {
+    const a = makeEntry({ title: 'A', createdAt: 3000, modifiedAt: 1000 })
+    const b = makeEntry({ title: 'B', createdAt: 1000, modifiedAt: 3000 })
+    const c = makeEntry({ title: 'C', createdAt: 2000, modifiedAt: 2000 })
+    const sorted = [a, b, c].sort(getSortComparator('created', 'asc'))
+    expect(sorted.map((e) => e.title)).toEqual(['B', 'C', 'A'])
+  })
+
+  it('sorts by status descending (null first, Done before Active)', () => {
+    const a = makeEntry({ title: 'Done', status: 'Done', modifiedAt: 1000 })
+    const b = makeEntry({ title: 'Active', status: 'Active', modifiedAt: 1000 })
+    const c = makeEntry({ title: 'NoStatus', status: null, modifiedAt: 1000 })
+    const sorted = [a, b, c].sort(getSortComparator('status', 'desc'))
+    expect(sorted.map((e) => e.title)).toEqual(['NoStatus', 'Done', 'Active'])
+  })
 })
 
 describe('NoteList sort controls', () => {
@@ -423,6 +455,71 @@ describe('NoteList sort controls', () => {
     expect(screen.getByTestId('sort-menu-__list__')).toBeInTheDocument()
     fireEvent.click(screen.getByTestId('sort-option-title'))
     expect(screen.queryByTestId('sort-menu-__list__')).not.toBeInTheDocument()
+  })
+
+  it('shows direction arrows in sort dropdown menu', () => {
+    render(
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />
+    )
+    fireEvent.click(screen.getByTestId('sort-button-__list__'))
+    // Each option should have asc and desc direction buttons
+    expect(screen.getByTestId('sort-dir-asc-modified')).toBeInTheDocument()
+    expect(screen.getByTestId('sort-dir-desc-modified')).toBeInTheDocument()
+    expect(screen.getByTestId('sort-dir-asc-title')).toBeInTheDocument()
+    expect(screen.getByTestId('sort-dir-desc-title')).toBeInTheDocument()
+  })
+
+  it('reverses sort order when clicking direction arrow', () => {
+    const entries = [
+      makeEntry({ path: '/a.md', title: 'Zebra', modifiedAt: 3000 }),
+      makeEntry({ path: '/b.md', title: 'Alpha', modifiedAt: 1000 }),
+      makeEntry({ path: '/c.md', title: 'Middle', modifiedAt: 2000 }),
+    ]
+    render(
+      <NoteList entries={entries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />
+    )
+    // Default sort: modified descending (Zebra first at 3000)
+    let titles = screen.getAllByText(/Zebra|Alpha|Middle/).map((el) => el.textContent)
+    expect(titles).toEqual(['Zebra', 'Middle', 'Alpha'])
+
+    // Click the asc arrow for modified to reverse
+    fireEvent.click(screen.getByTestId('sort-button-__list__'))
+    fireEvent.click(screen.getByTestId('sort-dir-asc-modified'))
+
+    // Now ascending: Alpha (1000) first
+    titles = screen.getAllByText(/Zebra|Alpha|Middle/).map((el) => el.textContent)
+    expect(titles).toEqual(['Alpha', 'Middle', 'Zebra'])
+  })
+
+  it('persists sort direction via saveSortPreferences', () => {
+    const entries = [
+      makeEntry({ path: '/a.md', title: 'Zebra', modifiedAt: 3000 }),
+      makeEntry({ path: '/b.md', title: 'Alpha', modifiedAt: 1000 }),
+    ]
+    render(
+      <NoteList entries={entries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />
+    )
+    // Select title sort with desc direction
+    fireEvent.click(screen.getByTestId('sort-button-__list__'))
+    fireEvent.click(screen.getByTestId('sort-dir-desc-title'))
+
+    // Verify direction took effect: desc title means Z before A
+    const titles = screen.getAllByText(/Zebra|Alpha/).map((el) => el.textContent)
+    expect(titles).toEqual(['Zebra', 'Alpha'])
+  })
+
+  it('shows direction icon on the sort button that reflects current direction', () => {
+    render(
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />
+    )
+    // Default: modified desc → should have ArrowDown icon
+    expect(screen.getByTestId('sort-direction-icon-__list__')).toBeInTheDocument()
+
+    // Switch to title (default asc) and verify icon changes
+    fireEvent.click(screen.getByTestId('sort-button-__list__'))
+    fireEvent.click(screen.getByTestId('sort-option-title'))
+    // Title default is asc → should show ArrowUp icon
+    expect(screen.getByTestId('sort-direction-icon-__list__')).toBeInTheDocument()
   })
 
   it('sorts relationship subsection entries when sort option changed', () => {
