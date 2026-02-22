@@ -53,6 +53,10 @@ vi.mock('./mock-tauri', () => ({
     if (cmd === 'get_modified_files') return []
     if (cmd === 'get_note_content') return mockAllContent['/vault/project/test.md'] || ''
     if (cmd === 'get_file_history') return []
+    if (cmd === 'get_vaults') return [{ label: 'Demo v2', path: '/vault' }]
+    if (cmd === 'add_vault') return { label: 'New', path: '/new' }
+    if (cmd === 'remove_vault') return null
+    if (cmd === 'init_vault') return null
     return null
   }),
   addMockEntry: vi.fn(),

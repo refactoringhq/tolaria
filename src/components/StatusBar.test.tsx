@@ -73,4 +73,55 @@ describe('StatusBar', () => {
     fireEvent.click(vaultButton)
     expect(screen.queryByText('Work Vault')).not.toBeInTheDocument()
   })
+
+  it('shows "Add vault..." option when onAddVault is provided', () => {
+    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onAddVault={vi.fn()} />)
+
+    fireEvent.click(screen.getByTitle('Switch vault'))
+    expect(screen.getByText('Add vault...')).toBeInTheDocument()
+  })
+
+  it('calls onAddVault when "Add vault..." is clicked', () => {
+    const onAddVault = vi.fn()
+    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onAddVault={onAddVault} />)
+
+    fireEvent.click(screen.getByTitle('Switch vault'))
+    fireEvent.click(screen.getByText('Add vault...'))
+
+    expect(onAddVault).toHaveBeenCalledOnce()
+  })
+
+  it('shows remove buttons when onRemoveVault is provided and multiple vaults exist', () => {
+    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onRemoveVault={vi.fn()} />)
+
+    fireEvent.click(screen.getByTitle('Switch vault'))
+    const removeButtons = screen.getAllByTitle(/Remove .+ from list/)
+    expect(removeButtons.length).toBe(2)
+  })
+
+  it('does not show remove buttons with single vault', () => {
+    const singleVault = [{ label: 'Only', path: '/only' }]
+    render(<StatusBar noteCount={100} vaultPath="/only" vaults={singleVault} onSwitchVault={vi.fn()} onRemoveVault={vi.fn()} />)
+
+    fireEvent.click(screen.getByTitle('Switch vault'))
+    expect(screen.queryByTitle(/Remove .+ from list/)).not.toBeInTheDocument()
+  })
+
+  it('calls onRemoveVault with correct path when remove button is clicked', () => {
+    const onRemoveVault = vi.fn()
+    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onRemoveVault={onRemoveVault} />)
+
+    fireEvent.click(screen.getByTitle('Switch vault'))
+    const removeWork = screen.getByTitle('Remove Work Vault from list')
+    fireEvent.click(removeWork)
+
+    expect(onRemoveVault).toHaveBeenCalledWith('/Users/luca/Work')
+  })
+
+  it('does not show "Add vault..." when onAddVault is not provided', () => {
+    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} />)
+
+    fireEvent.click(screen.getByTitle('Switch vault'))
+    expect(screen.queryByText('Add vault...')).not.toBeInTheDocument()
+  })
 })
