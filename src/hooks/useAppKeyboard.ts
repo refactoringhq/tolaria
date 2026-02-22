@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 
 interface KeyboardActions {
   onQuickOpen: () => void
