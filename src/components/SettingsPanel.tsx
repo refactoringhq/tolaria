@@ -1,6 +1,8 @@
+import { useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { useGithubAuth, type GithubUser } from '../hooks/useGithubAuth'
+import { isTauri } from '../mock-tauri'
 
 interface SettingsPanelProps {
   open: boolean
@@ -35,6 +37,15 @@ function GitHubLoading() {
   )
 }
 
+async function openUrl(url: string) {
+  if (isTauri()) {
+    const { openUrl: tauriOpen } = await import('@tauri-apps/plugin-opener')
+    await tauriOpen(url)
+  } else {
+    window.open(url, '_blank')
+  }
+}
+
 function GitHubDeviceFlow({
   userCode,
   verificationUri,
@@ -44,9 +55,10 @@ function GitHubDeviceFlow({
   verificationUri: string
   onCancel: () => void
 }) {
-  const handleOpenGitHub = () => {
-    window.open(verificationUri, '_blank')
-  }
+  // Auto-open browser when device flow starts
+  useEffect(() => {
+    openUrl(verificationUri)
+  }, [verificationUri])
 
   return (
     <div className="space-y-3">
@@ -59,8 +71,8 @@ function GitHubDeviceFlow({
         </code>
       </div>
       <div className="flex items-center gap-2">
-        <Button size="sm" onClick={handleOpenGitHub} className="flex-1">
-          Open GitHub
+        <Button size="sm" variant="outline" onClick={() => openUrl(verificationUri)} className="flex-1">
+          Open GitHub again
         </Button>
         <Button size="sm" variant="outline" onClick={onCancel}>
           Cancel

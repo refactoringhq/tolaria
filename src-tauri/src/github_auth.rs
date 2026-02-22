@@ -2,8 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// Placeholder — Luca will register the GitHub OAuth App and replace this.
-const LAPUTA_GITHUB_CLIENT_ID: &str = "LAPUTA_GITHUB_CLIENT_ID";
+const LAPUTA_GITHUB_CLIENT_ID: &str = "Ov23liwee215tDMs9u4L";
 
 /// Scope: read user profile + repo access for vault-from-GitHub features.
 const GITHUB_SCOPE: &str = "read:user,repo";
