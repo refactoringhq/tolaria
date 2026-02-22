@@ -9602,6 +9602,588 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "rnt0",
+      "name": "Rename Tab — Normal tab state",
+      "width": 800,
+      "height": 120,
+      "layout": "vertical",
+      "fill": "$--sidebar",
+      "theme": {
+        "Mode": "Light"
+      },
+      "children": [
+        {
+          "type": "text",
+          "id": "rnt1",
+          "name": "frameLabel",
+          "content": "Normal state: tabs show note title. Double-click to rename.",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "normal",
+          "fill": "$--muted-foreground",
+          "padding": [
+            8,
+            12
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "rnt2",
+          "name": "Tab Bar Normal",
+          "width": "fill_container",
+          "height": 45,
+          "fill": "$--sidebar",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "$--sidebar-border"
+          },
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "rnt3",
+              "name": "Tab Active",
+              "height": "fill_container",
+              "fill": "$--background",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "right": 1
+                },
+                "fill": "$--border"
+              },
+              "gap": 6,
+              "padding": [
+                0,
+                14
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "rnt4",
+                  "fill": "$--foreground",
+                  "content": "Weekly Review",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "icon_font",
+                  "id": "rnt5",
+                  "width": 14,
+                  "height": 14,
+                  "iconFontName": "x",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "rnt6",
+              "name": "Tab Inactive",
+              "height": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "right": 1,
+                  "bottom": 1
+                },
+                "fill": "$--sidebar-border"
+              },
+              "gap": 6,
+              "padding": [
+                0,
+                14
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "rnt7",
+                  "fill": "$--muted-foreground",
+                  "content": "Laputa App",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "icon_font",
+                  "id": "rnt8",
+                  "opacity": 0,
+                  "width": 14,
+                  "height": 14,
+                  "iconFontName": "x",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "rnt9",
+              "name": "tabSpacer",
+              "width": "fill_container",
+              "height": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "$--border"
+              }
+            },
+            {
+              "type": "frame",
+              "id": "rnta",
+              "name": "tabControls",
+              "height": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1,
+                  "left": 1
+                },
+                "fill": "$--border"
+              },
+              "gap": 12,
+              "padding": [
+                0,
+                12
+              ],
+              "justifyContent": "space_around",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "rntb",
+                  "width": 16,
+                  "height": 16,
+                  "iconFontName": "plus",
+                  "iconFontFamily": "phosphor",
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "rntc",
+          "name": "interactionNote",
+          "content": "Double-click tab title → enters edit mode",
+          "fontFamily": "Inter",
+          "fontSize": 10,
+          "fontWeight": "normal",
+          "fill": "$--muted-foreground",
+          "padding": [
+            4,
+            12
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "rne0",
+      "name": "Rename Tab — Double-clicked (editing mode)",
+      "width": 800,
+      "height": 120,
+      "layout": "vertical",
+      "fill": "$--sidebar",
+      "theme": {
+        "Mode": "Light"
+      },
+      "children": [
+        {
+          "type": "text",
+          "id": "rne1",
+          "name": "frameLabel",
+          "content": "Editing mode: tab title replaced with inline input field, text selected.",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "normal",
+          "fill": "$--muted-foreground",
+          "padding": [
+            8,
+            12
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "rne2",
+          "name": "Tab Bar Editing",
+          "width": "fill_container",
+          "height": 45,
+          "fill": "$--sidebar",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "$--sidebar-border"
+          },
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "rne3",
+              "name": "Tab Active (Editing)",
+              "height": "fill_container",
+              "fill": "$--background",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "right": 1
+                },
+                "fill": "$--border"
+              },
+              "gap": 6,
+              "padding": [
+                0,
+                14
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "rne4",
+                  "name": "Inline Input",
+                  "fill": "$--background",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$--ring"
+                  },
+                  "cornerRadius": 3,
+                  "padding": [
+                    2,
+                    6
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "rne5",
+                      "fill": "$--foreground",
+                      "content": "Weekly Review",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500",
+                      "highlight": "$--primary",
+                      "highlightOpacity": 0.2
+                    }
+                  ]
+                },
+                {
+                  "type": "icon_font",
+                  "id": "rne6",
+                  "width": 14,
+                  "height": 14,
+                  "iconFontName": "x",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "rne7",
+              "name": "Tab Inactive",
+              "height": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "right": 1,
+                  "bottom": 1
+                },
+                "fill": "$--sidebar-border"
+              },
+              "gap": 6,
+              "padding": [
+                0,
+                14
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "rne8",
+                  "fill": "$--muted-foreground",
+                  "content": "Laputa App",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "icon_font",
+                  "id": "rne9",
+                  "opacity": 0,
+                  "width": 14,
+                  "height": 14,
+                  "iconFontName": "x",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "rnea",
+              "name": "tabSpacer",
+              "width": "fill_container",
+              "height": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "$--border"
+              }
+            },
+            {
+              "type": "frame",
+              "id": "rneb",
+              "name": "tabControls",
+              "height": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1,
+                  "left": 1
+                },
+                "fill": "$--border"
+              },
+              "gap": 12,
+              "padding": [
+                0,
+                12
+              ],
+              "justifyContent": "space_around",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "rnec",
+                  "width": 16,
+                  "height": 16,
+                  "iconFontName": "plus",
+                  "iconFontFamily": "phosphor",
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "rned",
+          "name": "interactionNote",
+          "content": "Enter → save & rename file + update wiki links | Escape → cancel | Blur → save",
+          "fontFamily": "Inter",
+          "fontSize": 10,
+          "fontWeight": "normal",
+          "fill": "$--muted-foreground",
+          "padding": [
+            4,
+            12
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "rns0",
+      "name": "Rename Tab — Saved (updated name)",
+      "width": 800,
+      "height": 120,
+      "layout": "vertical",
+      "fill": "$--sidebar",
+      "theme": {
+        "Mode": "Light"
+      },
+      "children": [
+        {
+          "type": "text",
+          "id": "rns1",
+          "name": "frameLabel",
+          "content": "After save: tab shows updated title. File renamed, wiki links updated across vault.",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "normal",
+          "fill": "$--muted-foreground",
+          "padding": [
+            8,
+            12
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "rns2",
+          "name": "Tab Bar Saved",
+          "width": "fill_container",
+          "height": 45,
+          "fill": "$--sidebar",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "$--sidebar-border"
+          },
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "rns3",
+              "name": "Tab Active (Renamed)",
+              "height": "fill_container",
+              "fill": "$--background",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "right": 1
+                },
+                "fill": "$--border"
+              },
+              "gap": 6,
+              "padding": [
+                0,
+                14
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "rns4",
+                  "fill": "$--foreground",
+                  "content": "Sprint Retrospective",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "icon_font",
+                  "id": "rns5",
+                  "width": 14,
+                  "height": 14,
+                  "iconFontName": "x",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "rns6",
+              "name": "Tab Inactive",
+              "height": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "right": 1,
+                  "bottom": 1
+                },
+                "fill": "$--sidebar-border"
+              },
+              "gap": 6,
+              "padding": [
+                0,
+                14
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "rns7",
+                  "fill": "$--muted-foreground",
+                  "content": "Laputa App",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "icon_font",
+                  "id": "rns8",
+                  "opacity": 0,
+                  "width": 14,
+                  "height": 14,
+                  "iconFontName": "x",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "rns9",
+              "name": "tabSpacer",
+              "width": "fill_container",
+              "height": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "$--border"
+              }
+            },
+            {
+              "type": "frame",
+              "id": "rnsa",
+              "name": "tabControls",
+              "height": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1,
+                  "left": 1
+                },
+                "fill": "$--border"
+              },
+              "gap": 12,
+              "padding": [
+                0,
+                12
+              ],
+              "justifyContent": "space_around",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "rnsb",
+                  "width": 16,
+                  "height": 16,
+                  "iconFontName": "plus",
+                  "iconFontFamily": "phosphor",
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "rnsc",
+          "name": "interactionNote",
+          "content": "File: weekly-review.md → sprint-retrospective.md | [[Weekly Review]] → [[Sprint Retrospective]] in all notes",
+          "fontFamily": "Inter",
+          "fontSize": 10,
+          "fontWeight": "normal",
+          "fill": "$--muted-foreground",
+          "padding": [
+            4,
+            12
+          ]
+        }
+      ]
     }
   ],
   "themes": {
