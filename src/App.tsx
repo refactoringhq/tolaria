@@ -8,10 +8,12 @@ import { QuickOpenPalette } from './components/QuickOpenPalette'
 import { Toast } from './components/Toast'
 import { CommitDialog } from './components/CommitDialog'
 import { StatusBar } from './components/StatusBar'
+import { WelcomeScreen } from './components/WelcomeScreen'
 import { useVaultLoader } from './hooks/useVaultLoader'
 import { useNoteActions, generateUntitledName } from './hooks/useNoteActions'
 import { useAppKeyboard } from './hooks/useAppKeyboard'
 import { useEntryActions } from './hooks/useEntryActions'
+import { useVaultConfig } from './hooks/useVaultConfig'
 import { isTauri } from './mock-tauri'
 import { useKeyboardNavigation } from './hooks/useKeyboardNavigation'
 import { useUpdater } from './hooks/useUpdater'
@@ -27,14 +29,16 @@ declare global {
 
 const DEFAULT_SELECTION: SidebarSelection = { kind: 'filter', filter: 'all' }
 
-const VAULTS = isTauri()
-  ? [
-      { label: 'Demo v2', path: '/Users/luca/Workspace/laputa-app/demo-vault-v2' },
-      { label: 'Laputa', path: '/Users/luca/Laputa' },
-    ]
-  : [
-      { label: 'Demo v2', path: '/Users/luca/Workspace/laputa-app/demo-vault-v2' },
-    ]
+async function openFolderDialog(): Promise<string | null> {
+  if (isTauri()) {
+    const { open } = await import('@tauri-apps/plugin-dialog')
+    const selected = await open({ directory: true, multiple: false, title: 'Choose vault folder' })
+    return selected ?? null
+  }
+  // In mock/browser mode, prompt the user
+  const path = window.prompt('Enter vault folder path:')
+  return path || null
+}
 
 function useLayoutPanels() {
   const [sidebarWidth, setSidebarWidth] = useState(250)
@@ -55,10 +59,22 @@ function App() {
   const [showQuickOpen, setShowQuickOpen] = useState(false)
   const [showCommitDialog, setShowCommitDialog] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
-  const [vaultPath, setVaultPath] = useState(VAULTS[0].path)
+  const [vaultPath, setVaultPath] = useState<string | null>(null)
   const [showAIChat, setShowAIChat] = useState(false)
 
-  const vault = useVaultLoader(vaultPath)
+  const vaultConfig = useVaultConfig()
+
+  // Set initial vault path once config loads
+  useEffect(() => {
+    if (vaultConfig.loading) return
+    if (vaultPath) return // Already set
+    if (vaultConfig.vaults.length > 0) {
+      setVaultPath(vaultConfig.vaults[0].path)
+    }
+  }, [vaultConfig.loading, vaultConfig.vaults, vaultPath])
+
+  // Use a placeholder path for the vault loader when no vault is selected
+  const vault = useVaultLoader(vaultPath ?? '')
   const notes = useNoteActions(vault.addEntry, vault.updateContent, vault.entries, setToastMessage)
 
   const entryActions = useEntryActions({
@@ -83,6 +99,44 @@ function App() {
     notes.closeAllTabs()
   }, [notes])
 
+  const handleAddVaultFromDialog = useCallback(async () => {
+    try {
+      const selected = await openFolderDialog()
+      if (!selected) return
+      // Init git if needed, then add to config
+      await vaultConfig.initVault(selected)
+      const vault = await vaultConfig.addVault(selected)
+      handleSwitchVault(vault.path)
+    } catch (err) {
+      setToastMessage(String(err))
+    }
+  }, [vaultConfig, handleSwitchVault])
+
+  const handleCreateVault = useCallback(async () => {
+    try {
+      const selected = await openFolderDialog()
+      if (!selected) return
+      await vaultConfig.initVault(selected)
+      const vault = await vaultConfig.addVault(selected)
+      handleSwitchVault(vault.path)
+    } catch (err) {
+      setToastMessage(String(err))
+    }
+  }, [vaultConfig, handleSwitchVault])
+
+  const handleRemoveVault = useCallback(async (path: string) => {
+    await vaultConfig.removeVault(path)
+    // If the removed vault was active, switch to another or show welcome
+    if (vaultPath === path) {
+      const remaining = vaultConfig.vaults.filter((v) => v.path !== path)
+      if (remaining.length > 0) {
+        handleSwitchVault(remaining[0].path)
+      } else {
+        setVaultPath(null)
+      }
+    }
+  }, [vaultConfig, vaultPath, handleSwitchVault])
+
   useEffect(() => {
     if (!notes.activeTabPath) { setGitHistory([]); return }
     vault.loadGitHistory(notes.activeTabPath).then(setGitHistory)
@@ -98,7 +152,7 @@ function App() {
   }, [notes])
 
   const handleRenameTab = useCallback((path: string, newTitle: string) => {
-    notes.handleRenameNote(path, newTitle, vaultPath, vault.replaceEntry)
+    notes.handleRenameNote(path, newTitle, vaultPath ?? '', vault.replaceEntry)
   }, [notes, vaultPath, vault])
 
   useAppKeyboard({
@@ -137,6 +191,25 @@ function App() {
   }, [vault])
 
   const activeTab = notes.tabs.find((t) => t.entry.path === notes.activeTabPath) ?? null
+
+  // Show welcome screen when no vaults are configured
+  if (!vaultConfig.loading && vaultConfig.vaults.length === 0) {
+    return (
+      <>
+        <WelcomeScreen
+          onOpenFolder={handleAddVaultFromDialog}
+          onCreateVault={handleCreateVault}
+          error={vaultConfig.error}
+        />
+        <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
+      </>
+    )
+  }
+
+  // Show nothing while loading config
+  if (vaultConfig.loading || !vaultPath) {
+    return null
+  }
 
   return (
     <div className="app-shell">
@@ -184,7 +257,14 @@ function App() {
           />
         </div>
       </div>
-      <StatusBar noteCount={vault.entries.length} vaultPath={vaultPath} vaults={VAULTS} onSwitchVault={handleSwitchVault} />
+      <StatusBar
+        noteCount={vault.entries.length}
+        vaultPath={vaultPath}
+        vaults={vaultConfig.vaults}
+        onSwitchVault={handleSwitchVault}
+        onAddVault={handleAddVaultFromDialog}
+        onRemoveVault={handleRemoveVault}
+      />
       <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
       <QuickOpenPalette open={showQuickOpen} entries={vault.entries} onSelect={notes.handleSelectNote} onClose={() => setShowQuickOpen(false)} />
       <CreateTypeDialog open={showCreateTypeDialog} onClose={() => setShowCreateTypeDialog(false)} onCreate={handleCreateType} />

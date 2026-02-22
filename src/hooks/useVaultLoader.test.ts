@@ -26,7 +26,7 @@ const mockGitHistory: GitCommit[] = [
   { hash: 'abc1234567', shortHash: 'abc1234', message: 'initial commit', author: 'luca', date: 1700000000 },
 ]
 
-function defaultMockInvoke(cmd: string, args?: Record<string, unknown>) {
+function defaultMockInvoke(cmd: string, args?: Record<string, unknown>): Promise<any> {
   if (cmd === 'list_vault') return Promise.resolve(mockEntries)
   if (cmd === 'get_all_content') return Promise.resolve(mockContent)
   if (cmd === 'get_modified_files') return Promise.resolve(mockModifiedFiles)
@@ -46,7 +46,7 @@ vi.mock('@tauri-apps/api/core', () => ({
 
 vi.mock('../mock-tauri', () => ({
   isTauri: () => false,
-  mockInvoke: (...args: any[]) => mockInvokeFn(...args),
+  mockInvoke: (cmd: string, args?: any) => mockInvokeFn(cmd, args),
 }))
 
 describe('useVaultLoader', () => {
@@ -164,7 +164,7 @@ describe('useVaultLoader', () => {
     })
 
     it('returns empty array on error', async () => {
-      mockInvokeFn.mockImplementation((cmd: string) => {
+      mockInvokeFn.mockImplementation((cmd: string): Promise<any> => {
         if (cmd === 'get_file_history') return Promise.reject(new Error('fail'))
         if (cmd === 'list_vault') return Promise.resolve([])
         if (cmd === 'get_all_content') return Promise.resolve({})

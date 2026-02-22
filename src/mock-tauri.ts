@@ -1679,6 +1679,20 @@ const mockHandlers: Record<string, (args: any) => any> = {
     const timestamp = Date.now()
     return `${vault}/attachments/${timestamp}-${args.filename}`
   },
+  get_vaults: () => {
+    // In mock mode, return a single demo vault so the app works in the browser
+    return [{ label: 'Demo v2', path: '/Users/luca/Workspace/laputa-app/demo-vault-v2' }]
+  },
+  add_vault: (args: { path: string }) => {
+    const label = args.path.split('/').pop() ?? 'Vault'
+    return { label, path: args.path }
+  },
+  remove_vault: () => {
+    return null
+  },
+  init_vault: () => {
+    return null
+  },
   rename_note: (args: { vault_path: string; old_path: string; new_title: string }) => {
     const oldContent = MOCK_CONTENT[args.old_path] ?? ''
     const slug = args.new_title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
