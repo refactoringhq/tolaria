@@ -1,0 +1,375 @@
+{
+  "version": 2.8,
+  "children": [
+    {
+      "type": "frame",
+      "id": "beforeAfter",
+      "x": 0,
+      "y": 0,
+      "name": "Inspector — Is a Removed (Before / After)",
+      "width": 700,
+      "height": 500,
+      "fill": "#FFFFFF",
+      "layout": "horizontal",
+      "gap": 40,
+      "padding": 24,
+      "children": [
+        {
+          "type": "frame",
+          "id": "beforePanel",
+          "name": "Before",
+          "width": 300,
+          "height": 452,
+          "fill": "#FAFAFA",
+          "layout": "vertical",
+          "gap": 8,
+          "padding": 16,
+          "cornerRadius": 8,
+          "stroke": "#E5E5E5",
+          "strokeWidth": 1,
+          "children": [
+            {
+              "type": "text",
+              "id": "beforeTitle",
+              "content": "BEFORE",
+              "fontSize": 10,
+              "fontWeight": 700,
+              "letterSpacing": 1.2,
+              "fill": "#999999"
+            },
+            {
+              "type": "frame",
+              "id": "beforeSep1",
+              "width": 268,
+              "height": 1,
+              "fill": "#E5E5E5"
+            },
+            {
+              "type": "frame",
+              "id": "beforeRow1",
+              "layout": "horizontal",
+              "width": 268,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "beforeTypeLabel",
+                  "content": "TYPE",
+                  "fontSize": 10,
+                  "fontWeight": 600,
+                  "letterSpacing": 1.2,
+                  "fill": "#999999",
+                  "width": 80
+                },
+                {
+                  "type": "frame",
+                  "id": "beforeTypePill",
+                  "fill": "#E8F5E9",
+                  "cornerRadius": 6,
+                  "padding": 4,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "beforeTypeVal",
+                      "content": "Project",
+                      "fontSize": 12,
+                      "fontWeight": 500,
+                      "fill": "#388E3C"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "beforeRow2",
+              "layout": "horizontal",
+              "width": 268,
+              "fill": "#FFF3E0",
+              "cornerRadius": 4,
+              "padding": 6,
+              "stroke": "#FF9800",
+              "strokeWidth": 1,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "beforeIsALabel",
+                  "content": "is_a",
+                  "fontSize": 10,
+                  "fontWeight": 600,
+                  "letterSpacing": 1.2,
+                  "fill": "#E65100",
+                  "width": 80
+                },
+                {
+                  "type": "text",
+                  "id": "beforeIsAVal",
+                  "content": "Project",
+                  "fontSize": 13,
+                  "fill": "#E65100"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "beforeDupNote",
+              "content": "⚠ Duplicate! 'is_a' duplicates 'Type'",
+              "fontSize": 11,
+              "fill": "#E65100",
+              "fontWeight": 500
+            },
+            {
+              "type": "frame",
+              "id": "beforeRow3",
+              "layout": "horizontal",
+              "width": 268,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "beforeStatusLabel",
+                  "content": "STATUS",
+                  "fontSize": 10,
+                  "fontWeight": 600,
+                  "letterSpacing": 1.2,
+                  "fill": "#999999",
+                  "width": 80
+                },
+                {
+                  "type": "frame",
+                  "id": "beforeStatusPill",
+                  "fill": "#E8F5E9",
+                  "cornerRadius": 16,
+                  "padding": 4,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "beforeStatusVal",
+                      "content": "ACTIVE",
+                      "fontSize": 10,
+                      "fontWeight": 600,
+                      "letterSpacing": 1.2,
+                      "fill": "#388E3C"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "beforeRow4",
+              "layout": "horizontal",
+              "width": 268,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "beforeModLabel",
+                  "content": "MODIFIED",
+                  "fontSize": 10,
+                  "fontWeight": 600,
+                  "letterSpacing": 1.2,
+                  "fill": "#999999",
+                  "width": 80
+                },
+                {
+                  "type": "text",
+                  "id": "beforeModVal",
+                  "content": "Feb 23, 2026",
+                  "fontSize": 12,
+                  "fill": "#666666"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "beforeRow5",
+              "layout": "horizontal",
+              "width": 268,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "beforeWordsLabel",
+                  "content": "WORDS",
+                  "fontSize": 10,
+                  "fontWeight": 600,
+                  "letterSpacing": 1.2,
+                  "fill": "#999999",
+                  "width": 80
+                },
+                {
+                  "type": "text",
+                  "id": "beforeWordsVal",
+                  "content": "342",
+                  "fontSize": 12,
+                  "fill": "#666666"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "afterPanel",
+          "name": "After",
+          "width": 300,
+          "height": 452,
+          "fill": "#FAFAFA",
+          "layout": "vertical",
+          "gap": 8,
+          "padding": 16,
+          "cornerRadius": 8,
+          "stroke": "#388E3C",
+          "strokeWidth": 2,
+          "children": [
+            {
+              "type": "text",
+              "id": "afterTitle",
+              "content": "AFTER",
+              "fontSize": 10,
+              "fontWeight": 700,
+              "letterSpacing": 1.2,
+              "fill": "#388E3C"
+            },
+            {
+              "type": "frame",
+              "id": "afterSep1",
+              "width": 268,
+              "height": 1,
+              "fill": "#E5E5E5"
+            },
+            {
+              "type": "frame",
+              "id": "afterRow1",
+              "layout": "horizontal",
+              "width": 268,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "afterTypeLabel",
+                  "content": "TYPE",
+                  "fontSize": 10,
+                  "fontWeight": 600,
+                  "letterSpacing": 1.2,
+                  "fill": "#999999",
+                  "width": 80
+                },
+                {
+                  "type": "frame",
+                  "id": "afterTypePill",
+                  "fill": "#E8F5E9",
+                  "cornerRadius": 6,
+                  "padding": 4,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "afterTypeVal",
+                      "content": "Project",
+                      "fontSize": 12,
+                      "fontWeight": 500,
+                      "fill": "#388E3C"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "afterNote",
+              "content": "✓ 'is_a' removed — only 'Type' shown",
+              "fontSize": 11,
+              "fill": "#388E3C",
+              "fontWeight": 500
+            },
+            {
+              "type": "frame",
+              "id": "afterRow3",
+              "layout": "horizontal",
+              "width": 268,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "afterStatusLabel",
+                  "content": "STATUS",
+                  "fontSize": 10,
+                  "fontWeight": 600,
+                  "letterSpacing": 1.2,
+                  "fill": "#999999",
+                  "width": 80
+                },
+                {
+                  "type": "frame",
+                  "id": "afterStatusPill",
+                  "fill": "#E8F5E9",
+                  "cornerRadius": 16,
+                  "padding": 4,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "afterStatusVal",
+                      "content": "ACTIVE",
+                      "fontSize": 10,
+                      "fontWeight": 600,
+                      "letterSpacing": 1.2,
+                      "fill": "#388E3C"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "afterRow4",
+              "layout": "horizontal",
+              "width": 268,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "afterModLabel",
+                  "content": "MODIFIED",
+                  "fontSize": 10,
+                  "fontWeight": 600,
+                  "letterSpacing": 1.2,
+                  "fill": "#999999",
+                  "width": 80
+                },
+                {
+                  "type": "text",
+                  "id": "afterModVal",
+                  "content": "Feb 23, 2026",
+                  "fontSize": 12,
+                  "fill": "#666666"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "afterRow5",
+              "layout": "horizontal",
+              "width": 268,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "afterWordsLabel",
+                  "content": "WORDS",
+                  "fontSize": 10,
+                  "fontWeight": 600,
+                  "letterSpacing": 1.2,
+                  "fill": "#999999",
+                  "width": 80
+                },
+                {
+                  "type": "text",
+                  "id": "afterWordsVal",
+                  "content": "342",
+                  "fontSize": 12,
+                  "fill": "#666666"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "themes": {},
+  "variables": {},
+  "fonts": []
+}
