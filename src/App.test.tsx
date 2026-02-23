@@ -143,10 +143,10 @@ describe('App', () => {
       expect(screen.getByText('All Notes')).toBeInTheDocument()
     })
 
-    // Cmd+S shows toast
+    // Cmd+S with no pending changes shows "Nothing to save"
     fireEvent.keyDown(window, { key: 's', metaKey: true })
     await waitFor(() => {
-      expect(screen.getByText('Saved')).toBeInTheDocument()
+      expect(screen.getByText('Nothing to save')).toBeInTheDocument()
     })
   })
 

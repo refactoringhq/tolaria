@@ -56,7 +56,6 @@ interface EditorProps {
   onUnarchiveNote?: (path: string) => void
   onRenameTab?: (path: string, newTitle: string) => void
   onContentChange?: (path: string, content: string) => void
-  onFlushSave?: () => void
 }
 
 // --- Custom Inline Content: WikiLink ---
@@ -205,7 +204,6 @@ export const Editor = memo(function Editor({
   onArchiveNote, onUnarchiveNote,
   onRenameTab,
   onContentChange,
-  onFlushSave,
 }: EditorProps) {
   const [diffMode, setDiffMode] = useState(false)
   const [diffContent, setDiffContent] = useState<string | null>(null)
@@ -269,7 +267,7 @@ export const Editor = memo(function Editor({
     return cleanup
   }, [editor])
 
-  // Suppress auto-save during programmatic content swaps (tab switching / initial load)
+  // Suppress onChange during programmatic content swaps (tab switching / initial load)
   const suppressChangeRef = useRef(false)
 
   // Keep refs to callbacks for the onChange handler
@@ -310,8 +308,6 @@ export const Editor = memo(function Editor({
     // Save current editor state for the tab we're leaving
     if (prevPath && prevPath !== activeTabPath && editorMountedRef.current) {
       cache.set(prevPath, editor.document)
-      // Flush any pending debounced save for the tab we're leaving
-      onFlushSave?.()
     }
     prevActivePathRef.current = activeTabPath
 

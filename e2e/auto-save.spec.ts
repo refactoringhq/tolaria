@@ -8,7 +8,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('editor loads and renders note content for editing', async ({ page }) => {
-  await page.screenshot({ path: 'test-results/auto-save-01-initial.png', fullPage: true })
+  await page.screenshot({ path: 'test-results/save-01-initial.png', fullPage: true })
 
   // 1. Click a note in the note list panel
   const noteList = page.locator('.app__note-list')
@@ -26,7 +26,7 @@ test('editor loads and renders note content for editing', async ({ page }) => {
   const isEditable = await editor.getAttribute('contenteditable')
   expect(isEditable).toBe('true')
 
-  await page.screenshot({ path: 'test-results/auto-save-02-note-open.png', fullPage: true })
+  await page.screenshot({ path: 'test-results/save-02-note-open.png', fullPage: true })
 
   // 3. Verify the editor has content (not empty)
   const editorText = await page.evaluate(() => {
@@ -39,5 +39,30 @@ test('editor loads and renders note content for editing', async ({ page }) => {
   const tabBar = page.locator('.editor')
   await expect(tabBar).toBeVisible()
 
-  await page.screenshot({ path: 'test-results/auto-save-03-editor-ready.png', fullPage: true })
+  await page.screenshot({ path: 'test-results/save-03-editor-ready.png', fullPage: true })
+})
+
+test('Cmd+S triggers explicit save and shows toast', async ({ page }) => {
+  // Open a note
+  const noteList = page.locator('.app__note-list')
+  await expect(noteList).toBeVisible({ timeout: 5000 })
+  const firstNote = noteList.locator('div.cursor-pointer').first()
+  await firstNote.click()
+  await page.waitForTimeout(1000)
+
+  // Type some content to make the editor dirty
+  const editor = page.locator('.bn-editor')
+  await editor.click()
+  await page.keyboard.type('Hello from Cmd+S test')
+  await page.waitForTimeout(300)
+
+  // Press Cmd+S
+  await page.keyboard.press('Meta+s')
+  await page.waitForTimeout(500)
+
+  // Verify toast appears with "Saved" message
+  const toast = page.locator('text=Saved')
+  await expect(toast).toBeVisible({ timeout: 3000 })
+
+  await page.screenshot({ path: 'test-results/save-04-cmd-s-saved.png', fullPage: true })
 })
