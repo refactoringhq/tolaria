@@ -36,3 +36,4 @@ tauri-plugin-process = "2.3.1"
 
 [dev-dependencies]
 tempfile = "3"
+mockito = "1"
