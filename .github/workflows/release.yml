@@ -2,24 +2,50 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_NAME: Laputa
+  BUNDLE_ID: com.tauri.dev
 
 jobs:
-  release:
-    name: Build & Release (macOS)
-    permissions:
-      contents: write
+  # ─────────────────────────────────────────────────────────────
+  # Phase 1: Compute the version string once
+  # ─────────────────────────────────────────────────────────────
+  version:
+    name: Compute version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      tag: ${{ steps.ver.outputs.tag }}
+    steps:
+      - id: ver
+        run: |
+          VERSION="0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION"    >> "$GITHUB_OUTPUT"
+          echo "### Version: \`$VERSION\`" >> "$GITHUB_STEP_SUMMARY"
+
+  # ─────────────────────────────────────────────────────────────
+  # Phase 2: Build each architecture in parallel
+  # ─────────────────────────────────────────────────────────────
+  build:
+    name: Build (${{ matrix.arch }})
+    needs: version
+    runs-on: macos-latest
     strategy:
+      fail-fast: true
       matrix:
         include:
-          - target: aarch64-apple-darwin
-            runner: macos-latest
-          - target: x86_64-apple-darwin
-            runner: macos-latest
-
-    runs-on: ${{ matrix.runner }}
-
+          - arch: aarch64
+            target: aarch64-apple-darwin
+          - arch: x86_64
+            target: x86_64-apple-darwin
     steps:
       - uses: actions/checkout@v4
 
@@ -39,19 +65,387 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
-      - name: Install dependencies
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build and release
-        uses: tauri-apps/tauri-action@v0
+      # Stamp the computed version into tauri.conf.json and Cargo.toml
+      - name: Set version
+        run: |
+          VERSION="${{ needs.version.outputs.version }}"
+          # tauri.conf.json
+          jq --arg v "$VERSION" '.version = $v' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
+          # Cargo.toml
+          sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" src-tauri/Cargo.toml
+
+      - name: Build frontend
+        run: pnpm build
+
+      - name: Build Tauri app
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          pnpm tauri build --target ${{ matrix.target }}
+
+      # Upload the .app bundle so the merge job can lipo them together.
+      # Also upload the per-arch .tar.gz updater artifact and its .sig.
+      - name: Upload arch artifacts
+        uses: actions/upload-artifact@v4
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'Laputa v__VERSION__'
-          releaseBody: 'See the assets below to download and install this version.'
-          releaseDraft: false
+          name: app-${{ matrix.arch }}
+          path: |
+            src-tauri/target/${{ matrix.target }}/release/bundle/macos/${{ env.APP_NAME }}.app
+          retention-days: 1
+
+      - name: Upload updater artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: updater-${{ matrix.arch }}
+          path: |
+            src-tauri/target/${{ matrix.target }}/release/bundle/macos/${{ env.APP_NAME }}.app.tar.gz
+            src-tauri/target/${{ matrix.target }}/release/bundle/macos/${{ env.APP_NAME }}.app.tar.gz.sig
+          retention-days: 1
+
+      - name: Upload dmg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dmg-${{ matrix.arch }}
+          path: |
+            src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+          retention-days: 1
+
+  # ─────────────────────────────────────────────────────────────
+  # Phase 3: Merge into universal binary, re-package, and release
+  # ─────────────────────────────────────────────────────────────
+  release:
+    name: Universal binary & GitHub Release
+    needs: [version, build]
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # for release notes generation
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create universal binary
+        run: |
+          set -euo pipefail
+          mkdir -p universal
+
+          ARM_APP="app-aarch64/${{ env.APP_NAME }}.app"
+          X86_APP="app-x86_64/${{ env.APP_NAME }}.app"
+
+          # Copy the aarch64 .app as base (preserves bundle structure)
+          cp -R "$ARM_APP" "universal/${{ env.APP_NAME }}.app"
+
+          # Find the main executable inside the .app bundle
+          EXEC_NAME="${{ env.APP_NAME }}"
+          # Tauri uses lowercase binary name
+          EXEC_NAME_LOWER=$(echo "$EXEC_NAME" | tr '[:upper:]' '[:lower:]')
+          ARM_BIN="$ARM_APP/Contents/MacOS/$EXEC_NAME_LOWER"
+          X86_BIN="$X86_APP/Contents/MacOS/$EXEC_NAME_LOWER"
+          UNI_BIN="universal/${{ env.APP_NAME }}.app/Contents/MacOS/$EXEC_NAME_LOWER"
+
+          # If the binary is the product name (case-sensitive), try that too
+          if [ ! -f "$ARM_BIN" ]; then
+            ARM_BIN="$ARM_APP/Contents/MacOS/$EXEC_NAME"
+            X86_BIN="$X86_APP/Contents/MacOS/$EXEC_NAME"
+            UNI_BIN="universal/${{ env.APP_NAME }}.app/Contents/MacOS/$EXEC_NAME"
+          fi
+
+          echo "Merging: $ARM_BIN + $X86_BIN → $UNI_BIN"
+          lipo -create "$ARM_BIN" "$X86_BIN" -output "$UNI_BIN"
+          lipo -info "$UNI_BIN"
+
+      - name: Create universal .dmg
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.version.outputs.version }}"
+          DMG_NAME="${{ env.APP_NAME }}_${VERSION}_universal.dmg"
+
+          hdiutil create -volname "${{ env.APP_NAME }}" \
+            -srcfolder "universal/${{ env.APP_NAME }}.app" \
+            -ov -format UDZO \
+            "universal/$DMG_NAME"
+
+          echo "DMG_PATH=universal/$DMG_NAME" >> "$GITHUB_ENV"
+          echo "DMG_NAME=$DMG_NAME" >> "$GITHUB_ENV"
+
+      - name: Create universal updater tarball and sign
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          # Create tar.gz of the universal .app
+          TARBALL="universal/${{ env.APP_NAME }}.app.tar.gz"
+          tar -czf "$TARBALL" -C universal "${{ env.APP_NAME }}.app"
+
+          # Install tauri-cli for signing
+          npm install -g @tauri-apps/cli
+
+          # Sign the tarball using Tauri's signer
+          tauri signer sign "$TARBALL" --private-key "$TAURI_SIGNING_PRIVATE_KEY" --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
+
+          echo "TARBALL_PATH=$TARBALL" >> "$GITHUB_ENV"
+          echo "SIG_PATH=${TARBALL}.sig" >> "$GITHUB_ENV"
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          set -euo pipefail
+
+          # Find the previous release tag
+          PREV_TAG=$(git tag --sort=-version:refname | head -n 1 || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            # No previous tag — use all commits on main
+            NOTES=$(git log --oneline --no-merges -20)
+          else
+            NOTES=$(git log --oneline --no-merges "${PREV_TAG}..HEAD")
+          fi
+
+          # Write to file for the release body
+          {
+            echo "## What's Changed"
+            echo ""
+            echo "$NOTES" | while IFS= read -r line; do
+              echo "- $line"
+            done
+            echo ""
+            echo "---"
+            echo "*Built from \`$(git rev-parse --short HEAD)\` on $(date -u +%Y-%m-%d)*"
+          } > release_notes.md
+
+          cat release_notes.md
+
+      - name: Build latest.json
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.version.outputs.version }}"
+          TAG="${{ needs.version.outputs.tag }}"
+          REPO="refactoringhq/laputa-app"
+
+          # Read signatures
+          UNI_SIG=$(cat "${SIG_PATH}")
+          ARM_SIG=$(cat updater-aarch64/${{ env.APP_NAME }}.app.tar.gz.sig)
+          X86_SIG=$(cat updater-x86_64/${{ env.APP_NAME }}.app.tar.gz.sig)
+
+          # The universal tarball URL
+          UNI_URL="https://github.com/${REPO}/releases/download/${TAG}/${{ env.APP_NAME }}.app.tar.gz"
+
+          # Per-arch URLs (fallback)
+          ARM_URL="https://github.com/${REPO}/releases/download/${TAG}/${{ env.APP_NAME }}_aarch64.app.tar.gz"
+          X86_URL="https://github.com/${REPO}/releases/download/${TAG}/${{ env.APP_NAME }}_x86_64.app.tar.gz"
+
+          cat > latest.json << MANIFEST
+          {
+            "version": "${VERSION}",
+            "notes": "See https://refactoringhq.github.io/laputa-app/ for full release notes.",
+            "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "platforms": {
+              "darwin-aarch64": {
+                "signature": "${ARM_SIG}",
+                "url": "${ARM_URL}"
+              },
+              "darwin-x86_64": {
+                "signature": "${X86_SIG}",
+                "url": "${X86_URL}"
+              },
+              "darwin-universal": {
+                "signature": "${UNI_SIG}",
+                "url": "${UNI_URL}"
+              }
+            }
+          }
+          MANIFEST
+
+          echo "latest.json:"
+          cat latest.json
+
+      - name: Rename per-arch updater artifacts
+        run: |
+          cp "updater-aarch64/${{ env.APP_NAME }}.app.tar.gz" "universal/${{ env.APP_NAME }}_aarch64.app.tar.gz"
+          cp "updater-aarch64/${{ env.APP_NAME }}.app.tar.gz.sig" "universal/${{ env.APP_NAME }}_aarch64.app.tar.gz.sig"
+          cp "updater-x86_64/${{ env.APP_NAME }}.app.tar.gz" "universal/${{ env.APP_NAME }}_x86_64.app.tar.gz"
+          cp "updater-x86_64/${{ env.APP_NAME }}.app.tar.gz.sig" "universal/${{ env.APP_NAME }}_x86_64.app.tar.gz.sig"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          name: Laputa ${{ needs.version.outputs.version }}
+          body_path: release_notes.md
+          draft: false
           prerelease: false
-          args: --target ${{ matrix.target }}
+          files: |
+            ${{ env.DMG_PATH }}
+            ${{ env.TARBALL_PATH }}
+            ${{ env.SIG_PATH }}
+            universal/${{ env.APP_NAME }}_aarch64.app.tar.gz
+            universal/${{ env.APP_NAME }}_aarch64.app.tar.gz.sig
+            universal/${{ env.APP_NAME }}_x86_64.app.tar.gz
+            universal/${{ env.APP_NAME }}_x86_64.app.tar.gz.sig
+            latest.json
+            dmg-aarch64/*.dmg
+            dmg-x86_64/*.dmg
+
+  # ─────────────────────────────────────────────────────────────
+  # Phase 4: Update GitHub Pages with release history
+  # ─────────────────────────────────────────────────────────────
+  pages:
+    name: Update release history page
+    needs: [version, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Initialize gh-pages if needed
+        run: |
+          if [ ! -f index.html ]; then
+            echo "Initializing gh-pages branch"
+          fi
+
+      - name: Fetch release data and rebuild page
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # Fetch all releases as JSON
+          gh api repos/${{ github.repository }}/releases --paginate > releases.json
+
+          # Build the HTML page
+          cat > index.html << 'HTMLEOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Laputa — Release History</title>
+            <style>
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: #F7F6F3;
+                color: #37352F;
+                line-height: 1.6;
+                padding: 2rem;
+                max-width: 720px;
+                margin: 0 auto;
+              }
+              h1 {
+                font-size: 1.75rem;
+                font-weight: 600;
+                margin-bottom: 0.5rem;
+              }
+              .subtitle {
+                color: #787774;
+                margin-bottom: 2rem;
+              }
+              .release {
+                background: #fff;
+                border: 1px solid #E9E9E7;
+                border-radius: 8px;
+                padding: 1.25rem 1.5rem;
+                margin-bottom: 1rem;
+              }
+              .release h2 {
+                font-size: 1.125rem;
+                font-weight: 600;
+                margin-bottom: 0.25rem;
+              }
+              .release .meta {
+                font-size: 0.8125rem;
+                color: #787774;
+                margin-bottom: 0.75rem;
+              }
+              .release .body {
+                font-size: 0.875rem;
+                white-space: pre-wrap;
+              }
+              .release .body ul { padding-left: 1.25rem; }
+              .release .downloads {
+                margin-top: 0.75rem;
+                display: flex;
+                gap: 0.5rem;
+                flex-wrap: wrap;
+              }
+              .release .downloads a {
+                display: inline-block;
+                padding: 0.375rem 0.75rem;
+                background: #155DFF;
+                color: #fff;
+                border-radius: 6px;
+                text-decoration: none;
+                font-size: 0.8125rem;
+                font-weight: 500;
+              }
+              .release .downloads a:hover { background: #1248CC; }
+              .empty { color: #787774; text-align: center; padding: 3rem; }
+            </style>
+          </head>
+          <body>
+            <h1>Laputa Release History</h1>
+            <p class="subtitle">Auto-updated on every release</p>
+            <div id="releases"></div>
+            <script>
+          HTMLEOF
+
+          # Inline the releases JSON into the page
+          echo "    const releases = $(cat releases.json);" >> index.html
+
+          cat >> index.html << 'HTMLEOF2'
+              const container = document.getElementById('releases');
+              if (!releases.length) {
+                container.innerHTML = '<p class="empty">No releases yet.</p>';
+              } else {
+                releases.forEach(r => {
+                  const date = new Date(r.published_at).toLocaleDateString('en-US', {
+                    year: 'numeric', month: 'long', day: 'numeric'
+                  });
+                  const dmgAssets = (r.assets || []).filter(a => a.name.endsWith('.dmg'));
+                  const downloads = dmgAssets.map(a =>
+                    `<a href="${a.browser_download_url}">${a.name}</a>`
+                  ).join('');
+                  const body = (r.body || '').replace(/^## /gm, '').replace(/^- /gm, '• ');
+                  container.innerHTML += `
+                    <div class="release">
+                      <h2>${r.name || r.tag_name}</h2>
+                      <div class="meta">${date} · ${r.tag_name}</div>
+                      <div class="body">${body}</div>
+                      ${downloads ? `<div class="downloads">${downloads}</div>` : ''}
+                    </div>`;
+                });
+              }
+            </script>
+          </body>
+          </html>
+          HTMLEOF2
+
+      - name: Commit and push
+        run: |
+          git add index.html
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "Update release history for ${{ needs.version.outputs.tag }}"
+          git push
