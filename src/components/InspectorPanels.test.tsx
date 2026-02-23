@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { DynamicRelationshipsPanel, BacklinksPanel, GitHistoryPanel } from './InspectorPanels'
+import { DynamicRelationshipsPanel, BacklinksPanel, ReferencedByPanel, GitHistoryPanel } from './InspectorPanels'
+import type { ReferencedByItem } from './InspectorPanels'
 import type { VaultEntry, GitCommit } from '../types'
 
 const makeEntry = (overrides: Partial<VaultEntry> = {}): VaultEntry => ({
@@ -222,6 +223,69 @@ describe('BacklinksPanel', () => {
     const backlinks = [makeEntry(), makeEntry({ path: '/vault/b.md', title: 'B' })]
     render(<BacklinksPanel backlinks={backlinks} onNavigate={onNavigate} />)
     expect(screen.getByText('2')).toBeInTheDocument()
+  })
+})
+
+describe('ReferencedByPanel', () => {
+  const onNavigate = vi.fn()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('shows "No references" when items is empty', () => {
+    render(<ReferencedByPanel items={[]} onNavigate={onNavigate} />)
+    expect(screen.getByText('No references')).toBeInTheDocument()
+  })
+
+  it('renders referenced-by entries grouped by relationship key', () => {
+    const items: ReferencedByItem[] = [
+      { entry: makeEntry({ path: '/vault/proc/a.md', title: 'Write Essays', isA: 'Procedure' }), viaKey: 'Belongs to' },
+      { entry: makeEntry({ path: '/vault/essay/b.md', title: 'On Writing Well', isA: 'Essay' }), viaKey: 'Belongs to' },
+      { entry: makeEntry({ path: '/vault/exp/c.md', title: 'SEO Experiment', isA: 'Experiment' }), viaKey: 'Related to' },
+    ]
+    render(<ReferencedByPanel items={items} onNavigate={onNavigate} />)
+
+    expect(screen.getByText('Write Essays')).toBeInTheDocument()
+    expect(screen.getByText('On Writing Well')).toBeInTheDocument()
+    expect(screen.getByText('SEO Experiment')).toBeInTheDocument()
+    expect(screen.getByText(/via Belongs to/)).toBeInTheDocument()
+    expect(screen.getByText(/via Related to/)).toBeInTheDocument()
+  })
+
+  it('shows count badge when items exist', () => {
+    const items: ReferencedByItem[] = [
+      { entry: makeEntry({ path: '/vault/a.md', title: 'A' }), viaKey: 'Has' },
+      { entry: makeEntry({ path: '/vault/b.md', title: 'B' }), viaKey: 'Has' },
+      { entry: makeEntry({ path: '/vault/c.md', title: 'C' }), viaKey: 'Topics' },
+    ]
+    render(<ReferencedByPanel items={items} onNavigate={onNavigate} />)
+    expect(screen.getByText('3')).toBeInTheDocument()
+  })
+
+  it('navigates when clicking a referenced-by entry', () => {
+    const items: ReferencedByItem[] = [
+      { entry: makeEntry({ path: '/vault/a.md', title: 'My Note' }), viaKey: 'Belongs to' },
+    ]
+    render(<ReferencedByPanel items={items} onNavigate={onNavigate} />)
+    fireEvent.click(screen.getByText('My Note'))
+    expect(onNavigate).toHaveBeenCalledWith('My Note')
+  })
+
+  it('dims archived entries in referenced-by', () => {
+    const items: ReferencedByItem[] = [
+      { entry: makeEntry({ path: '/vault/a.md', title: 'Old Note', archived: true }), viaKey: 'Has' },
+    ]
+    render(<ReferencedByPanel items={items} onNavigate={onNavigate} />)
+    expect(screen.getByTitle('Archived')).toBeInTheDocument()
+  })
+
+  it('shows trashed indicator for trashed entries', () => {
+    const items: ReferencedByItem[] = [
+      { entry: makeEntry({ path: '/vault/a.md', title: 'Trash Note', trashed: true }), viaKey: 'Has' },
+    ]
+    render(<ReferencedByPanel items={items} onNavigate={onNavigate} />)
+    expect(screen.getByTitle('Trashed')).toBeInTheDocument()
   })
 })
 

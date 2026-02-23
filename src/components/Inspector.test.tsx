@@ -324,4 +324,250 @@ This is a test note with some words to count.
       expect(row.className).not.toContain('cursor-pointer')
     })
   })
+
+  describe('Referenced By (bidirectional relationships)', () => {
+    const targetEntry: VaultEntry = {
+      path: '/Users/luca/Laputa/responsibility/grow-newsletter.md',
+      filename: 'grow-newsletter.md',
+      title: 'Grow Newsletter',
+      isA: 'Responsibility',
+      aliases: [],
+      belongsTo: [],
+      relatedTo: [],
+      status: 'Active',
+      owner: null,
+      cadence: null,
+      archived: false,
+      trashed: false,
+      trashedAt: null,
+      modifiedAt: 1707900000,
+      createdAt: null,
+      fileSize: 500,
+      snippet: '',
+      relationships: { 'Type': ['[[type/responsibility]]'] },
+      icon: null,
+      color: null,
+      order: null,
+    }
+
+    const essayEntry: VaultEntry = {
+      path: '/Users/luca/Laputa/essay/on-writing.md',
+      filename: 'on-writing.md',
+      title: 'On Writing Well',
+      isA: 'Essay',
+      aliases: [],
+      belongsTo: ['[[responsibility/grow-newsletter]]'],
+      relatedTo: [],
+      status: null,
+      owner: null,
+      cadence: null,
+      archived: false,
+      trashed: false,
+      trashedAt: null,
+      modifiedAt: 1707900000,
+      createdAt: null,
+      fileSize: 300,
+      snippet: '',
+      relationships: { 'Belongs to': ['[[responsibility/grow-newsletter]]'], 'Type': ['[[type/essay]]'] },
+      icon: null,
+      color: null,
+      order: null,
+    }
+
+    const procedureEntry: VaultEntry = {
+      path: '/Users/luca/Laputa/procedure/write-essays.md',
+      filename: 'write-essays.md',
+      title: 'Write Weekly Essays',
+      isA: 'Procedure',
+      aliases: [],
+      belongsTo: ['[[responsibility/grow-newsletter]]'],
+      relatedTo: [],
+      status: null,
+      owner: null,
+      cadence: null,
+      archived: false,
+      trashed: false,
+      trashedAt: null,
+      modifiedAt: 1707900000,
+      createdAt: null,
+      fileSize: 400,
+      snippet: '',
+      relationships: { 'Belongs to': ['[[responsibility/grow-newsletter]]'], 'Type': ['[[type/procedure]]'] },
+      icon: null,
+      color: null,
+      order: null,
+    }
+
+    const experimentEntry: VaultEntry = {
+      path: '/Users/luca/Laputa/experiment/seo.md',
+      filename: 'seo.md',
+      title: 'SEO Experiment',
+      isA: 'Experiment',
+      aliases: [],
+      belongsTo: [],
+      relatedTo: ['[[responsibility/grow-newsletter]]'],
+      status: null,
+      owner: null,
+      cadence: null,
+      archived: false,
+      trashed: false,
+      trashedAt: null,
+      modifiedAt: 1707900000,
+      createdAt: null,
+      fileSize: 200,
+      snippet: '',
+      relationships: { 'Related to': ['[[responsibility/grow-newsletter]]'], 'Type': ['[[type/experiment]]'] },
+      icon: null,
+      color: null,
+      order: null,
+    }
+
+    const targetContent = `---
+title: Grow Newsletter
+is_a: Responsibility
+Status: Active
+---
+
+# Grow Newsletter
+`
+
+    it('shows entries that reference the current note via frontmatter relationships', () => {
+      render(
+        <Inspector
+          {...defaultProps}
+          entry={targetEntry}
+          content={targetContent}
+          entries={[targetEntry, essayEntry, procedureEntry, experimentEntry]}
+          allContent={{}}
+        />
+      )
+      expect(screen.getByText('On Writing Well')).toBeInTheDocument()
+      expect(screen.getByText('Write Weekly Essays')).toBeInTheDocument()
+      expect(screen.getByText('SEO Experiment')).toBeInTheDocument()
+    })
+
+    it('groups referenced-by entries by relationship key', () => {
+      render(
+        <Inspector
+          {...defaultProps}
+          entry={targetEntry}
+          content={targetContent}
+          entries={[targetEntry, essayEntry, experimentEntry]}
+          allContent={{}}
+        />
+      )
+      expect(screen.getByText(/via Belongs to/)).toBeInTheDocument()
+      expect(screen.getByText(/via Related to/)).toBeInTheDocument()
+    })
+
+    it('shows count badge for referenced-by entries', () => {
+      render(
+        <Inspector
+          {...defaultProps}
+          entry={targetEntry}
+          content={targetContent}
+          entries={[targetEntry, essayEntry, procedureEntry]}
+          allContent={{}}
+        />
+      )
+      // 2 entries reference via Belongs to
+      expect(screen.getByText('2')).toBeInTheDocument()
+    })
+
+    it('shows "No references" when no entries reference the current note', () => {
+      render(
+        <Inspector
+          {...defaultProps}
+          entry={targetEntry}
+          content={targetContent}
+          entries={[targetEntry]}
+          allContent={{}}
+        />
+      )
+      expect(screen.getByText('No references')).toBeInTheDocument()
+    })
+
+    it('navigates when clicking a referenced-by entry', () => {
+      const onNavigate = vi.fn()
+      render(
+        <Inspector
+          {...defaultProps}
+          entry={targetEntry}
+          content={targetContent}
+          entries={[targetEntry, essayEntry]}
+          allContent={{}}
+          onNavigate={onNavigate}
+        />
+      )
+      fireEvent.click(screen.getByText('On Writing Well'))
+      expect(onNavigate).toHaveBeenCalledWith('On Writing Well')
+    })
+
+    it('skips Type relationships in referenced-by computation', () => {
+      const typeEntry: VaultEntry = {
+        ...targetEntry,
+        path: '/Users/luca/Laputa/type/responsibility.md',
+        filename: 'responsibility.md',
+        title: 'Responsibility',
+        isA: 'Type',
+        relationships: {},
+      }
+      // essayEntry has Type: [[type/responsibility]] — should NOT show as referenced-by
+      render(
+        <Inspector
+          {...defaultProps}
+          entry={typeEntry}
+          content="---\nIs A: Type\n---\n# Responsibility\n"
+          entries={[typeEntry, essayEntry]}
+          allContent={{}}
+        />
+      )
+      // On Writing Well references responsibility via "Belongs to" (path match), not via "Type"
+      // But the Type entry is at type/responsibility.md, so wikilinks to
+      // responsibility/grow-newsletter won't match. Should show "No references"
+      expect(screen.getByText('No references')).toBeInTheDocument()
+    })
+
+    it('resolves references via aliased wikilinks', () => {
+      const aliasedTarget: VaultEntry = {
+        ...targetEntry,
+        aliases: ['Newsletter'],
+      }
+      const referrer: VaultEntry = {
+        ...essayEntry,
+        relationships: { 'Topics': ['[[Newsletter]]'], 'Type': ['[[type/essay]]'] },
+      }
+      render(
+        <Inspector
+          {...defaultProps}
+          entry={aliasedTarget}
+          content={targetContent}
+          entries={[aliasedTarget, referrer]}
+          allContent={{}}
+        />
+      )
+      expect(screen.getByText('On Writing Well')).toBeInTheDocument()
+      expect(screen.getByText(/via Topics/)).toBeInTheDocument()
+    })
+
+    it('does not show self-references', () => {
+      const selfRef: VaultEntry = {
+        ...targetEntry,
+        relationships: {
+          ...targetEntry.relationships,
+          'Notes': ['[[responsibility/grow-newsletter]]'],
+        },
+      }
+      render(
+        <Inspector
+          {...defaultProps}
+          entry={selfRef}
+          content={targetContent}
+          entries={[selfRef]}
+          allContent={{}}
+        />
+      )
+      expect(screen.getByText('No references')).toBeInTheDocument()
+    })
+  })
 })
