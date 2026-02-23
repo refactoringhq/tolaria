@@ -128,6 +128,22 @@ describe('StatusBar', () => {
     expect(screen.getByText('Connect GitHub repo')).toBeInTheDocument()
   })
 
+  it('shows modified count when modifiedCount is > 0', () => {
+    render(<StatusBar noteCount={100} modifiedCount={3} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} />)
+    expect(screen.getByTestId('status-modified-count')).toBeInTheDocument()
+    expect(screen.getByText('3 pending')).toBeInTheDocument()
+  })
+
+  it('does not show modified count when modifiedCount is 0', () => {
+    render(<StatusBar noteCount={100} modifiedCount={0} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} />)
+    expect(screen.queryByTestId('status-modified-count')).not.toBeInTheDocument()
+  })
+
+  it('does not show modified count when modifiedCount is not provided', () => {
+    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} />)
+    expect(screen.queryByTestId('status-modified-count')).not.toBeInTheDocument()
+  })
+
   it('closes menu after clicking "Open local folder"', () => {
     render(
       <StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onOpenLocalFolder={vi.fn()} />

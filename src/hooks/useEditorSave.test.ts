@@ -107,6 +107,43 @@ describe('useEditorSave', () => {
     })
   })
 
+  it('calls onAfterSave callback after successful save', async () => {
+    const onAfterSave = vi.fn()
+    const { result } = renderHook(() =>
+      useEditorSave({ updateVaultContent, setTabs, setToastMessage, onAfterSave })
+    )
+
+    act(() => {
+      result.current.handleContentChange('/test/note.md', 'new content')
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(onAfterSave).toHaveBeenCalledOnce()
+  })
+
+  it('does not call onAfterSave when save fails', async () => {
+    mockInvokeFn.mockRejectedValueOnce(new Error('Disk full'))
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const onAfterSave = vi.fn()
+    const { result } = renderHook(() =>
+      useEditorSave({ updateVaultContent, setTabs, setToastMessage, onAfterSave })
+    )
+
+    act(() => {
+      result.current.handleContentChange('/test/note.md', 'content')
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(onAfterSave).not.toHaveBeenCalled()
+    consoleSpy.mockRestore()
+  })
+
   it('handleContentChange buffers the latest content', () => {
     const { result } = renderSaveHook()
 

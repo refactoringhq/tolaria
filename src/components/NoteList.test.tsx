@@ -716,6 +716,47 @@ describe('filterEntries — trash', () => {
   })
 })
 
+describe('NoteList — modified indicators', () => {
+  it('shows modified indicator dot for entries in modifiedFiles', () => {
+    const modifiedFiles = [
+      { path: mockEntries[0].path, relativePath: 'project/26q1-laputa-app.md', status: 'modified' as const },
+    ]
+    render(
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} modifiedFiles={modifiedFiles} onCreateNote={vi.fn()} />
+    )
+    const indicators = screen.getAllByTestId('modified-indicator')
+    expect(indicators).toHaveLength(1)
+    // The indicator's parent div contains the title text
+    const noteRow = indicators[0].closest('[data-testid="modified-indicator"]')!.parentElement!.parentElement!
+    expect(noteRow.textContent).toContain('Build Laputa App')
+  })
+
+  it('does not show modified indicator when modifiedFiles is empty', () => {
+    render(
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} modifiedFiles={[]} onCreateNote={vi.fn()} />
+    )
+    expect(screen.queryByTestId('modified-indicator')).not.toBeInTheDocument()
+  })
+
+  it('shows multiple modified indicators for multiple modified files', () => {
+    const modifiedFiles = [
+      { path: mockEntries[0].path, relativePath: 'project/26q1-laputa-app.md', status: 'modified' as const },
+      { path: mockEntries[1].path, relativePath: 'note/facebook-ads-strategy.md', status: 'modified' as const },
+    ]
+    render(
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} modifiedFiles={modifiedFiles} onCreateNote={vi.fn()} />
+    )
+    expect(screen.getAllByTestId('modified-indicator')).toHaveLength(2)
+  })
+
+  it('does not show modified indicator when modifiedFiles prop is undefined', () => {
+    render(
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
+    )
+    expect(screen.queryByTestId('modified-indicator')).not.toBeInTheDocument()
+  })
+})
+
 describe('NoteList — trash view', () => {
   const trashSelection: SidebarSelection = { kind: 'filter', filter: 'trash' }
 
