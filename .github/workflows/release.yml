@@ -41,8 +41,6 @@ jobs:
         include:
           - arch: aarch64
             target: aarch64-apple-darwin
-          - arch: x86_64
-            target: x86_64-apple-darwin
     steps:
       - uses: actions/checkout@v4
 
@@ -131,8 +129,7 @@ jobs:
             echo "$NOTES" | while IFS= read -r line; do echo "- $line"; done
             echo ""
             echo "---"
-            echo "**Apple Silicon (M1/M2/M3):** download \`*_aarch64.dmg\`"
-            echo "**Intel Mac:** download \`*_x86_64.dmg\`"
+            echo "**Requires Apple Silicon (M1/M2/M3)**"
             echo ""
             echo "*Built from \`$(git rev-parse --short HEAD)\` on $(date -u +%Y-%m-%d)*"
           } > release_notes.md
@@ -144,9 +141,7 @@ jobs:
           REPO="refactoringhq/laputa-app"
 
           ARM_SIG=$(cat updater-aarch64/*.app.tar.gz.sig)
-          X86_SIG=$(cat updater-x86_64/*.app.tar.gz.sig)
           ARM_DMG=$(ls dmg-aarch64/*.dmg | xargs basename)
-          X86_DMG=$(ls dmg-x86_64/*.dmg | xargs basename)
 
           cat > latest.json << EOF
           {
@@ -157,10 +152,6 @@ jobs:
               "darwin-aarch64": {
                 "signature": "${ARM_SIG}",
                 "url": "https://github.com/${REPO}/releases/download/${TAG}/${ARM_DMG}"
-              },
-              "darwin-x86_64": {
-                "signature": "${X86_SIG}",
-                "url": "https://github.com/${REPO}/releases/download/${TAG}/${X86_DMG}"
               }
             }
           }
@@ -177,11 +168,8 @@ jobs:
           prerelease: false
           files: |
             dmg-aarch64/*.dmg
-            dmg-x86_64/*.dmg
             updater-aarch64/*.app.tar.gz
             updater-aarch64/*.app.tar.gz.sig
-            updater-x86_64/*.app.tar.gz
-            updater-x86_64/*.app.tar.gz.sig
             latest.json
 
   # ─────────────────────────────────────────────────────────────
