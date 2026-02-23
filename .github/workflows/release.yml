@@ -311,32 +311,19 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-          fetch-depth: 0
 
-      - name: Configure git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Initialize gh-pages if needed
-        run: |
-          if [ ! -f index.html ]; then
-            echo "Initializing gh-pages branch"
-          fi
-
-      - name: Fetch release data and rebuild page
+      - name: Build release history page
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          mkdir -p _site
 
           # Fetch all releases as JSON
-          gh api repos/${{ github.repository }}/releases --paginate > releases.json
+          gh api repos/${{ github.repository }}/releases --paginate > _site/releases.json
 
           # Build the HTML page
-          cat > index.html << 'HTMLEOF'
+          cat > _site/index.html << 'HTMLEOF'
           <!DOCTYPE html>
           <html lang="en">
           <head>
@@ -354,15 +341,8 @@ jobs:
                 max-width: 720px;
                 margin: 0 auto;
               }
-              h1 {
-                font-size: 1.75rem;
-                font-weight: 600;
-                margin-bottom: 0.5rem;
-              }
-              .subtitle {
-                color: #787774;
-                margin-bottom: 2rem;
-              }
+              h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+              .subtitle { color: #787774; margin-bottom: 2rem; }
               .release {
                 background: #fff;
                 border: 1px solid #E9E9E7;
@@ -370,36 +350,19 @@ jobs:
                 padding: 1.25rem 1.5rem;
                 margin-bottom: 1rem;
               }
-              .release h2 {
-                font-size: 1.125rem;
-                font-weight: 600;
-                margin-bottom: 0.25rem;
-              }
-              .release .meta {
-                font-size: 0.8125rem;
-                color: #787774;
-                margin-bottom: 0.75rem;
-              }
-              .release .body {
-                font-size: 0.875rem;
-                white-space: pre-wrap;
-              }
-              .release .body ul { padding-left: 1.25rem; }
+              .release h2 { font-size: 1.125rem; font-weight: 600; margin-bottom: 0.25rem; }
+              .release .meta { font-size: 0.8125rem; color: #787774; margin-bottom: 0.75rem; }
+              .release .body { font-size: 0.875rem; white-space: pre-wrap; }
               .release .downloads {
                 margin-top: 0.75rem;
-                display: flex;
-                gap: 0.5rem;
-                flex-wrap: wrap;
+                display: flex; gap: 0.5rem; flex-wrap: wrap;
               }
               .release .downloads a {
                 display: inline-block;
                 padding: 0.375rem 0.75rem;
-                background: #155DFF;
-                color: #fff;
-                border-radius: 6px;
-                text-decoration: none;
-                font-size: 0.8125rem;
-                font-weight: 500;
+                background: #155DFF; color: #fff;
+                border-radius: 6px; text-decoration: none;
+                font-size: 0.8125rem; font-weight: 500;
               }
               .release .downloads a:hover { background: #1248CC; }
               .empty { color: #787774; text-align: center; padding: 3rem; }
@@ -410,42 +373,41 @@ jobs:
             <p class="subtitle">Auto-updated on every release</p>
             <div id="releases"></div>
             <script>
-          HTMLEOF
-
-          # Inline the releases JSON into the page
-          echo "    const releases = $(cat releases.json);" >> index.html
-
-          cat >> index.html << 'HTMLEOF2'
-              const container = document.getElementById('releases');
-              if (!releases.length) {
-                container.innerHTML = '<p class="empty">No releases yet.</p>';
-              } else {
+              fetch('releases.json').then(r => r.json()).then(releases => {
+                const el = document.getElementById('releases');
+                if (!releases.length) {
+                  el.innerHTML = '<p class="empty">No releases yet.</p>';
+                  return;
+                }
                 releases.forEach(r => {
                   const date = new Date(r.published_at).toLocaleDateString('en-US', {
                     year: 'numeric', month: 'long', day: 'numeric'
                   });
-                  const dmgAssets = (r.assets || []).filter(a => a.name.endsWith('.dmg'));
-                  const downloads = dmgAssets.map(a =>
-                    `<a href="${a.browser_download_url}">${a.name}</a>`
+                  const dmgs = (r.assets || []).filter(a => a.name.endsWith('.dmg'));
+                  const links = dmgs.map(a =>
+                    '<a href="' + a.browser_download_url + '">' + a.name + '</a>'
                   ).join('');
-                  const body = (r.body || '').replace(/^## /gm, '').replace(/^- /gm, '• ');
-                  container.innerHTML += `
-                    <div class="release">
-                      <h2>${r.name || r.tag_name}</h2>
-                      <div class="meta">${date} · ${r.tag_name}</div>
-                      <div class="body">${body}</div>
-                      ${downloads ? `<div class="downloads">${downloads}</div>` : ''}
-                    </div>`;
+                  const body = (r.body || '')
+                    .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/^## /gm, '').replace(/^- /gm, '\u2022 ');
+                  const div = document.createElement('div');
+                  div.className = 'release';
+                  div.innerHTML =
+                    '<h2>' + (r.name || r.tag_name) + '</h2>' +
+                    '<div class="meta">' + date + ' \u00b7 ' + r.tag_name + '</div>' +
+                    '<div class="body">' + body + '</div>' +
+                    (links ? '<div class="downloads">' + links + '</div>' : '');
+                  el.appendChild(div);
                 });
-              }
+              });
             </script>
           </body>
           </html>
-          HTMLEOF2
+          HTMLEOF
 
-      - name: Commit and push
-        run: |
-          git add index.html
-          git diff --cached --quiet && echo "No changes" && exit 0
-          git commit -m "Update release history for ${{ needs.version.outputs.tag }}"
-          git push
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./_site
+          commit_message: "Update release history for ${{ needs.version.outputs.tag }}"
