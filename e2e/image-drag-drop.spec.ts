@@ -37,9 +37,6 @@ test('drag & drop image into editor inserts image block', async ({ page }) => {
   const box = await editorContainer.boundingBox()
   expect(box).toBeTruthy()
 
-  // Read the file as a buffer for the DataTransfer
-  const fileBuffer = fs.readFileSync(testImagePath)
-
   // Use Playwright's page.dispatchEvent with a custom script to simulate file drop
   await page.evaluate(async ({ base64, x, y }) => {
     const container = document.querySelector('.editor__blocknote-container')
