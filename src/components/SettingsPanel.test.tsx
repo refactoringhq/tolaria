@@ -8,6 +8,7 @@ const emptySettings: Settings = {
   openai_key: null,
   google_key: null,
   github_token: null,
+  github_username: null,
 }
 
 const populatedSettings: Settings = {
@@ -15,6 +16,7 @@ const populatedSettings: Settings = {
   openai_key: 'sk-openai-test456',
   google_key: null,
   github_token: null,
+  github_username: null,
 }
 
 describe('SettingsPanel', () => {
@@ -77,6 +79,7 @@ describe('SettingsPanel', () => {
       openai_key: null,
       google_key: null,
       github_token: null,
+      github_username: null,
     })
     expect(onClose).toHaveBeenCalled()
   })
@@ -96,6 +99,7 @@ describe('SettingsPanel', () => {
       openai_key: 'sk-openai-test456',
       google_key: null,
       github_token: null,
+      github_username: null,
     })
   })
 
@@ -136,6 +140,7 @@ describe('SettingsPanel', () => {
       openai_key: null,
       google_key: null,
       github_token: null,
+      github_username: null,
     })
   })
 

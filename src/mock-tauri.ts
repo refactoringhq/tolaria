@@ -4,7 +4,7 @@
  * this provides realistic test data so the UI can be verified visually.
  */
 
-import type { VaultEntry, GitCommit, ModifiedFile, Settings } from './types'
+import type { VaultEntry, GitCommit, ModifiedFile, Settings, DeviceFlowStart, DeviceFlowPollResult, GitHubUser } from './types'
 
 // --- Vault API detection (for reading real files in browser dev mode) ---
 let vaultApiAvailable: boolean | null = null
@@ -1707,7 +1707,11 @@ let mockSettings: Settings = {
   openai_key: null,
   google_key: null,
   github_token: 'gho_mock_token_for_testing',
+  github_username: 'lucaong',
 }
+
+// Track mock device flow state: poll returns 'pending' once, then 'complete'
+let mockDeviceFlowPollCount = 0
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock handler map accepts heterogeneous arg types
 const mockHandlers: Record<string, (args: any) => any> = {
@@ -1772,6 +1776,7 @@ const mockHandlers: Record<string, (args: any) => any> = {
       openai_key: s.openai_key?.trim() || null,
       google_key: s.google_key?.trim() || null,
       github_token: s.github_token?.trim() || null,
+      github_username: s.github_username?.trim() || null,
     }
     return null
   },
@@ -1831,6 +1836,28 @@ const mockHandlers: Record<string, (args: any) => any> = {
   purge_trash: () => [],
   migrate_is_a_to_type: () => 0,
   create_vault_dir: () => null,
+  github_device_flow_start: (): DeviceFlowStart => {
+    mockDeviceFlowPollCount = 0
+    return {
+      device_code: 'mock_device_code_abc123',
+      user_code: 'ABCD-1234',
+      verification_uri: 'https://github.com/login/device',
+      expires_in: 900,
+      interval: 5,
+    }
+  },
+  github_device_flow_poll: (): DeviceFlowPollResult => {
+    mockDeviceFlowPollCount++
+    if (mockDeviceFlowPollCount <= 1) {
+      return { status: 'pending', access_token: null, error: 'authorization_pending' }
+    }
+    return { status: 'complete', access_token: 'gho_mock_oauth_token_xyz', error: null }
+  },
+  github_get_user: (): GitHubUser => ({
+    login: 'lucaong',
+    name: 'Luca Ongaro',
+    avatar_url: 'https://avatars.githubusercontent.com/u/123456?v=4',
+  }),
 }
 
 export function isTauri(): boolean {

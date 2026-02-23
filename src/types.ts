@@ -45,6 +45,27 @@ export interface Settings {
   openai_key: string | null
   google_key: string | null
   github_token: string | null
+  github_username: string | null
+}
+
+export interface DeviceFlowStart {
+  device_code: string
+  user_code: string
+  verification_uri: string
+  expires_in: number
+  interval: number
+}
+
+export interface DeviceFlowPollResult {
+  status: 'pending' | 'complete' | 'expired' | 'error'
+  access_token: string | null
+  error: string | null
+}
+
+export interface GitHubUser {
+  login: string
+  name: string | null
+  avatar_url: string
 }
 
 export interface GithubRepo {

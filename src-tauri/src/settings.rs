@@ -8,6 +8,7 @@ pub struct Settings {
     pub openai_key: Option<String>,
     pub google_key: Option<String>,
     pub github_token: Option<String>,
+    pub github_username: Option<String>,
 }
 
 fn settings_path() -> Result<PathBuf, String> {
@@ -49,6 +50,10 @@ fn save_settings_at(path: &PathBuf, settings: Settings) -> Result<(), String> {
             .github_token
             .map(|k| k.trim().to_string())
             .filter(|k| !k.is_empty()),
+        github_username: settings
+            .github_username
+            .map(|k| k.trim().to_string())
+            .filter(|k| !k.is_empty()),
     };
 
     let json = serde_json::to_string_pretty(&cleaned)
@@ -87,7 +92,8 @@ mod tests {
                     anthropic_key: None,
                     openai_key: None,
                     google_key: None,
-                    github_token: None
+                    github_token: None,
+                    github_username: None
                 }
             )
         );
@@ -100,12 +106,14 @@ mod tests {
             openai_key: None,
             google_key: Some("AIza-test".to_string()),
             github_token: Some("gho_xyz789".to_string()),
+            github_username: Some("lucaong".to_string()),
         };
         let json = serde_json::to_string(&settings).unwrap();
         let parsed: Settings = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed.anthropic_key, settings.anthropic_key);
         assert_eq!(parsed.google_key, settings.google_key);
         assert_eq!(parsed.github_token, settings.github_token);
+        assert_eq!(parsed.github_username, settings.github_username);
     }
 
     #[test]
@@ -123,22 +131,25 @@ mod tests {
             openai_key: Some("sk-openai".to_string()),
             google_key: None,
             github_token: Some("gho_token123".to_string()),
+            github_username: Some("lucaong".to_string()),
         });
         assert_eq!(loaded.anthropic_key.as_deref(), Some("sk-ant-key"));
         assert_eq!(loaded.openai_key.as_deref(), Some("sk-openai"));
         assert_eq!(loaded.github_token.as_deref(), Some("gho_token123"));
+        assert_eq!(loaded.github_username.as_deref(), Some("lucaong"));
     }
 
     #[test]
     fn test_save_trims_whitespace() {
         let loaded = save_and_reload(Settings {
             anthropic_key: Some("  sk-ant-test  ".to_string()),
-            openai_key: None,
-            google_key: None,
             github_token: Some("  gho_abc  ".to_string()),
+            github_username: Some("  lucaong  ".to_string()),
+            ..Default::default()
         });
         assert_eq!(loaded.anthropic_key.as_deref(), Some("sk-ant-test"));
         assert_eq!(loaded.github_token.as_deref(), Some("gho_abc"));
+        assert_eq!(loaded.github_username.as_deref(), Some("lucaong"));
     }
 
     #[test]
@@ -146,11 +157,12 @@ mod tests {
         let loaded = save_and_reload(Settings {
             anthropic_key: Some("".to_string()),
             openai_key: Some("   ".to_string()),
-            google_key: None,
-            github_token: None,
+            github_username: Some("".to_string()),
+            ..Default::default()
         });
         assert!(loaded.anthropic_key.is_none());
         assert!(loaded.openai_key.is_none());
+        assert!(loaded.github_username.is_none());
     }
 
     #[test]

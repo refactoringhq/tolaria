@@ -2,6 +2,9 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::process::Command;
 
+/// GitHub OAuth App client ID. Replace with your registered GitHub App's client_id.
+const GITHUB_CLIENT_ID: &str = "Ov23liCuBz7Z5hKk6T8c";
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GithubRepo {
     pub name: String,
@@ -119,6 +122,133 @@ pub async fn github_create_repo(
         html_url: created.html_url,
         updated_at: created.updated_at,
     })
+}
+
+// --- OAuth Device Flow ---
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DeviceFlowStart {
+    pub device_code: String,
+    pub user_code: String,
+    pub verification_uri: String,
+    pub expires_in: u64,
+    pub interval: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DeviceFlowPollResult {
+    pub status: String,
+    pub access_token: Option<String>,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GitHubUser {
+    pub login: String,
+    pub name: Option<String>,
+    pub avatar_url: String,
+}
+
+/// Starts the GitHub OAuth device flow. Returns device code info for user authorization.
+pub async fn github_device_flow_start() -> Result<DeviceFlowStart, String> {
+    let client = reqwest::Client::new();
+    let response = client
+        .post("https://github.com/login/device/code")
+        .header("Accept", "application/json")
+        .form(&[("client_id", GITHUB_CLIENT_ID), ("scope", "repo")])
+        .send()
+        .await
+        .map_err(|e| format!("Device flow request failed: {}", e))?;
+
+    if !response.status().is_success() {
+        let body = response.text().await.unwrap_or_default();
+        return Err(format!("Device flow start failed: {}", body));
+    }
+
+    response
+        .json::<DeviceFlowStart>()
+        .await
+        .map_err(|e| format!("Failed to parse device flow response: {}", e))
+}
+
+/// Polls GitHub for the device flow authorization result.
+pub async fn github_device_flow_poll(device_code: &str) -> Result<DeviceFlowPollResult, String> {
+    let client = reqwest::Client::new();
+    let response = client
+        .post("https://github.com/login/oauth/access_token")
+        .header("Accept", "application/json")
+        .form(&[
+            ("client_id", GITHUB_CLIENT_ID),
+            ("device_code", device_code),
+            (
+                "grant_type",
+                "urn:ietf:params:oauth:grant-type:device_code",
+            ),
+        ])
+        .send()
+        .await
+        .map_err(|e| format!("Device flow poll failed: {}", e))?;
+
+    if !response.status().is_success() {
+        let body = response.text().await.unwrap_or_default();
+        return Err(format!("Device flow poll HTTP error: {}", body));
+    }
+
+    #[derive(Deserialize)]
+    struct RawResponse {
+        access_token: Option<String>,
+        error: Option<String>,
+    }
+
+    let raw: RawResponse = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse poll response: {}", e))?;
+
+    if let Some(token) = raw.access_token {
+        Ok(DeviceFlowPollResult {
+            status: "complete".to_string(),
+            access_token: Some(token),
+            error: None,
+        })
+    } else {
+        let error = raw.error.unwrap_or_else(|| "unknown".to_string());
+        let status = match error.as_str() {
+            "authorization_pending" | "slow_down" => "pending",
+            "expired_token" => "expired",
+            _ => "error",
+        };
+        Ok(DeviceFlowPollResult {
+            status: status.to_string(),
+            access_token: None,
+            error: Some(error),
+        })
+    }
+}
+
+/// Gets the authenticated GitHub user's profile.
+pub async fn github_get_user(token: &str) -> Result<GitHubUser, String> {
+    let client = reqwest::Client::new();
+    let response = client
+        .get("https://api.github.com/user")
+        .header("Authorization", format!("Bearer {}", token))
+        .header("Accept", "application/vnd.github+json")
+        .header("User-Agent", "Laputa-App")
+        .header("X-GitHub-Api-Version", "2022-11-28")
+        .send()
+        .await
+        .map_err(|e| format!("GitHub user request failed: {}", e))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Err(format!("GitHub API error {}: {}", status, body));
+    }
+
+    response
+        .json::<GitHubUser>()
+        .await
+        .map_err(|e| format!("Failed to parse user response: {}", e))
 }
 
 /// Clones a GitHub repo to a local path using HTTPS + token auth.

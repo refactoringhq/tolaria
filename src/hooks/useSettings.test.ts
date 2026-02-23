@@ -8,6 +8,7 @@ const defaultSettings: Settings = {
   openai_key: null,
   google_key: null,
   github_token: null,
+  github_username: null,
 }
 
 const savedSettings: Settings = {
@@ -15,6 +16,7 @@ const savedSettings: Settings = {
   openai_key: null,
   google_key: 'AIza-test',
   github_token: null,
+  github_username: null,
 }
 
 let mockSettingsStore: Settings = { ...defaultSettings }
@@ -74,6 +76,7 @@ describe('useSettings', () => {
       openai_key: 'sk-openai-new',
       google_key: null,
       github_token: null,
+      github_username: null,
     }
 
     await act(async () => {

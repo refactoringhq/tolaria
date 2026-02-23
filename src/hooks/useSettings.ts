@@ -12,6 +12,7 @@ const EMPTY_SETTINGS: Settings = {
   openai_key: null,
   google_key: null,
   github_token: null,
+  github_username: null,
 }
 
 export function useSettings() {

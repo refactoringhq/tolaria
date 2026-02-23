@@ -9,7 +9,7 @@ pub mod vault;
 use ai_chat::{AiChatRequest, AiChatResponse};
 use frontmatter::FrontmatterValue;
 use git::{GitCommit, ModifiedFile};
-use github::GithubRepo;
+use github::{DeviceFlowPollResult, DeviceFlowStart, GitHubUser, GithubRepo};
 use settings::Settings;
 use vault::{RenameResult, VaultEntry};
 
@@ -139,6 +139,21 @@ fn create_vault_dir(path: String) -> Result<(), String> {
     std::fs::create_dir_all(&path).map_err(|e| format!("Failed to create directory: {e}"))
 }
 
+#[tauri::command]
+async fn github_device_flow_start() -> Result<DeviceFlowStart, String> {
+    github::github_device_flow_start().await
+}
+
+#[tauri::command]
+async fn github_device_flow_poll(device_code: String) -> Result<DeviceFlowPollResult, String> {
+    github::github_device_flow_poll(&device_code).await
+}
+
+#[tauri::command]
+async fn github_get_user(token: String) -> Result<GitHubUser, String> {
+    github::github_get_user(&token).await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -171,11 +186,9 @@ mod tests {
         let vault_path = tmp.path().join("existing");
         std::fs::create_dir(&vault_path).unwrap();
 
-        // Calling create_vault_dir on an existing dir should succeed
         let result = create_vault_dir(vault_path.to_string_lossy().to_string());
         assert!(result.is_ok());
     }
-}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -250,7 +263,10 @@ pub fn run() {
             github_list_repos,
             github_create_repo,
             clone_repo,
-            create_vault_dir
+            create_vault_dir,
+            github_device_flow_start,
+            github_device_flow_poll,
+            github_get_user
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
