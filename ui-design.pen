@@ -10708,6 +10708,3183 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "srtDD",
+      "x": 0,
+      "y": 0,
+      "name": "Sort Dropdown — Direction Arrows",
+      "clip": true,
+      "width": 260,
+      "height": 280,
+      "fill": "$--popover",
+      "cornerRadius": "$--radius-md",
+      "stroke": {
+        "align": "outside",
+        "thickness": 1,
+        "fill": "$--border"
+      },
+      "layout": "vertical",
+      "padding": [
+        8,
+        0
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "srtH1",
+          "name": "dropdownHeader",
+          "width": "fill_container",
+          "height": 28,
+          "padding": [
+            0,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "srtHL",
+              "name": "headerLabel",
+              "content": "Sort by",
+              "fontSize": 11,
+              "fontWeight": 600,
+              "fill": "$--muted-foreground",
+              "fontFamily": "$--font-primary",
+              "textTransform": "uppercase",
+              "letterSpacing": 0.5
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "srtR1",
+          "name": "row-modified",
+          "width": "fill_container",
+          "height": 36,
+          "padding": [
+            0,
+            12
+          ],
+          "alignItems": "center",
+          "fill": "$--muted",
+          "children": [
+            {
+              "type": "text",
+              "id": "srtT1",
+              "name": "label-modified",
+              "content": "Modified",
+              "fontSize": 13,
+              "fontWeight": 500,
+              "fill": "$--popover-foreground",
+              "fontFamily": "$--font-primary",
+              "width": "fill_container"
+            },
+            {
+              "type": "frame",
+              "id": "srtA1",
+              "name": "arrows-modified",
+              "gap": 2,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "srtU1",
+                  "name": "arrow-up-active",
+                  "content": "↑",
+                  "fontSize": 13,
+                  "fontWeight": 700,
+                  "fill": "$--accent-blue"
+                },
+                {
+                  "type": "text",
+                  "id": "srtD1",
+                  "name": "arrow-down",
+                  "content": "↓",
+                  "fontSize": 13,
+                  "fontWeight": 400,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "srtR2",
+          "name": "row-title",
+          "width": "fill_container",
+          "height": 36,
+          "padding": [
+            0,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "srtT2",
+              "name": "label-title",
+              "content": "Title",
+              "fontSize": 13,
+              "fontWeight": 400,
+              "fill": "$--popover-foreground",
+              "fontFamily": "$--font-primary",
+              "width": "fill_container"
+            },
+            {
+              "type": "frame",
+              "id": "srtA2",
+              "name": "arrows-title",
+              "gap": 2,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "srtU2",
+                  "name": "arrow-up",
+                  "content": "↑",
+                  "fontSize": 13,
+                  "fontWeight": 400,
+                  "fill": "$--muted-foreground"
+                },
+                {
+                  "type": "text",
+                  "id": "srtD2",
+                  "name": "arrow-down",
+                  "content": "↓",
+                  "fontSize": 13,
+                  "fontWeight": 400,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "srtR3",
+          "name": "row-created",
+          "width": "fill_container",
+          "height": 36,
+          "padding": [
+            0,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "srtT3",
+              "name": "label-created",
+              "content": "Created",
+              "fontSize": 13,
+              "fontWeight": 400,
+              "fill": "$--popover-foreground",
+              "fontFamily": "$--font-primary",
+              "width": "fill_container"
+            },
+            {
+              "type": "frame",
+              "id": "srtA3",
+              "name": "arrows-created",
+              "gap": 2,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "srtU3",
+                  "name": "arrow-up",
+                  "content": "↑",
+                  "fontSize": 13,
+                  "fontWeight": 400,
+                  "fill": "$--muted-foreground"
+                },
+                {
+                  "type": "text",
+                  "id": "srtD3",
+                  "name": "arrow-down",
+                  "content": "↓",
+                  "fontSize": 13,
+                  "fontWeight": 400,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "srtR4",
+          "name": "row-type",
+          "width": "fill_container",
+          "height": 36,
+          "padding": [
+            0,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "srtT4",
+              "name": "label-type",
+              "content": "Type",
+              "fontSize": 13,
+              "fontWeight": 400,
+              "fill": "$--popover-foreground",
+              "fontFamily": "$--font-primary",
+              "width": "fill_container"
+            },
+            {
+              "type": "frame",
+              "id": "srtA4",
+              "name": "arrows-type",
+              "gap": 2,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "srtU4",
+                  "name": "arrow-up",
+                  "content": "↑",
+                  "fontSize": 13,
+                  "fontWeight": 400,
+                  "fill": "$--muted-foreground"
+                },
+                {
+                  "type": "text",
+                  "id": "srtD4",
+                  "name": "arrow-down",
+                  "content": "↓",
+                  "fontSize": 13,
+                  "fontWeight": 400,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "srtSP",
+          "name": "separator",
+          "width": "fill_container",
+          "height": 1,
+          "fill": "$--border"
+        },
+        {
+          "type": "frame",
+          "id": "srtAN",
+          "name": "annotation",
+          "width": "fill_container",
+          "padding": [
+            6,
+            12
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "srtAT",
+              "name": "annotation-text",
+              "content": "Click ↑↓ to toggle direction. Blue = active.",
+              "fontSize": 11,
+              "fill": "$--muted-foreground",
+              "fontFamily": "$--font-primary"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "srtBN",
+      "x": 300,
+      "y": 0,
+      "name": "Sort Button — With Direction Indicator",
+      "clip": true,
+      "width": 400,
+      "height": 200,
+      "fill": "$--background",
+      "cornerRadius": "$--radius-md",
+      "stroke": {
+        "align": "outside",
+        "thickness": 1,
+        "fill": "$--border"
+      },
+      "layout": "vertical",
+      "padding": [
+        16,
+        16
+      ],
+      "gap": 16,
+      "children": [
+        {
+          "type": "frame",
+          "id": "srtBH",
+          "name": "noteListHeader",
+          "width": "fill_container",
+          "height": 36,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "srtBC",
+              "name": "noteCount",
+              "content": "42 notes",
+              "fontSize": 12,
+              "fill": "$--muted-foreground",
+              "fontFamily": "$--font-primary",
+              "width": "fill_container"
+            },
+            {
+              "type": "frame",
+              "id": "srtBB",
+              "name": "sortButton",
+              "padding": [
+                4,
+                8
+              ],
+              "cornerRadius": "$--radius-sm",
+              "fill": "$--muted",
+              "alignItems": "center",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "srtBL",
+                  "name": "sortLabel",
+                  "content": "Modified",
+                  "fontSize": 12,
+                  "fontWeight": 500,
+                  "fill": "$--foreground",
+                  "fontFamily": "$--font-primary"
+                },
+                {
+                  "type": "text",
+                  "id": "srtBA",
+                  "name": "directionArrow",
+                  "content": "↓",
+                  "fontSize": 12,
+                  "fontWeight": 600,
+                  "fill": "$--accent-blue"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "srtSP2",
+          "name": "divider",
+          "width": "fill_container",
+          "height": 1,
+          "fill": "$--border"
+        },
+        {
+          "type": "frame",
+          "id": "srtEX",
+          "name": "exampleNotes",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 2,
+          "children": [
+            {
+              "type": "frame",
+              "id": "srtN1",
+              "name": "noteRow1",
+              "width": "fill_container",
+              "height": 32,
+              "padding": [
+                0,
+                8
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "srtNT1",
+                  "name": "noteTitle1",
+                  "content": "Meeting Notes — Feb 22",
+                  "fontSize": 13,
+                  "fill": "$--foreground",
+                  "fontFamily": "$--font-primary",
+                  "width": "fill_container"
+                },
+                {
+                  "type": "text",
+                  "id": "srtND1",
+                  "name": "noteDate1",
+                  "content": "2 min ago",
+                  "fontSize": 11,
+                  "fill": "$--muted-foreground",
+                  "fontFamily": "$--font-primary"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "srtN2",
+              "name": "noteRow2",
+              "width": "fill_container",
+              "height": 32,
+              "padding": [
+                0,
+                8
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "srtNT2",
+                  "name": "noteTitle2",
+                  "content": "Project Roadmap",
+                  "fontSize": 13,
+                  "fill": "$--foreground",
+                  "fontFamily": "$--font-primary",
+                  "width": "fill_container"
+                },
+                {
+                  "type": "text",
+                  "id": "srtND2",
+                  "name": "noteDate2",
+                  "content": "1 hr ago",
+                  "fontSize": 11,
+                  "fill": "$--muted-foreground",
+                  "fontFamily": "$--font-primary"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "srtN3",
+              "name": "noteRow3",
+              "width": "fill_container",
+              "height": 32,
+              "padding": [
+                0,
+                8
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "srtNT3",
+                  "name": "noteTitle3",
+                  "content": "Weekly Review",
+                  "fontSize": 13,
+                  "fill": "$--foreground",
+                  "fontFamily": "$--font-primary",
+                  "width": "fill_container"
+                },
+                {
+                  "type": "text",
+                  "id": "srtND3",
+                  "name": "noteDate3",
+                  "content": "Yesterday",
+                  "fontSize": 11,
+                  "fill": "$--muted-foreground",
+                  "fontFamily": "$--font-primary"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "srtAN2",
+          "name": "annotation",
+          "width": "fill_container",
+          "padding": [
+            6,
+            0
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "srtAT2",
+              "name": "annotation-text",
+              "content": "Sort button shows property + direction arrow. Click to open dropdown.",
+              "fontSize": 11,
+              "fill": "$--muted-foreground",
+              "fontFamily": "$--font-primary"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ghv01",
+      "x": 68,
+      "y": 0,
+      "name": "GitHub Vault — Modal empty state",
+      "clip": true,
+      "width": 560,
+      "height": 480,
+      "fill": "$--background",
+      "cornerRadius": 12,
+      "layout": "vertical",
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "$--border"
+      },
+      "children": [
+        {
+          "type": "frame",
+          "id": "ghv01-hdr",
+          "name": "Header",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "$--background",
+          "padding": [
+            0,
+            24
+          ],
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "ghv01-title",
+              "name": "title",
+              "content": "Connect GitHub Repo",
+              "fontSize": 16,
+              "fontWeight": 600,
+              "fill": "$--foreground"
+            },
+            {
+              "type": "frame",
+              "id": "ghv01-close",
+              "name": "closeBtn",
+              "width": 24,
+              "height": 24,
+              "cornerRadius": 4,
+              "alignItems": "center",
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv01-x",
+                  "content": "X",
+                  "fontSize": 14,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv01-tabs",
+          "name": "TabBar",
+          "width": "fill_container",
+          "height": 44,
+          "fill": "$--background",
+          "padding": [
+            0,
+            24
+          ],
+          "gap": 0,
+          "alignItems": "end",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "frame",
+              "id": "ghv01-tab-clone",
+              "name": "Tab: Clone Existing",
+              "padding": [
+                8,
+                16
+              ],
+              "alignItems": "center",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 2
+                },
+                "fill": "$--accent-blue"
+              },
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv01-tab-clone-lbl",
+                  "content": "Clone Existing",
+                  "fontSize": 13,
+                  "fontWeight": 500,
+                  "fill": "$--foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ghv01-tab-create",
+              "name": "Tab: Create New",
+              "padding": [
+                8,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv01-tab-create-lbl",
+                  "content": "Create New",
+                  "fontSize": 13,
+                  "fontWeight": 400,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv01-body",
+          "name": "Body: Empty State",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "padding": [
+            32,
+            24
+          ],
+          "gap": 16,
+          "alignItems": "center",
+          "justifyContent": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "ghv01-icon",
+              "name": "githubIcon",
+              "width": 48,
+              "height": 48,
+              "cornerRadius": 24,
+              "fill": "$--accent",
+              "alignItems": "center",
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv01-gh",
+                  "content": "GH",
+                  "fontSize": 20,
+                  "fontWeight": 600,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "ghv01-heading",
+              "content": "Clone an existing GitHub repository",
+              "fontSize": 15,
+              "fontWeight": 600,
+              "fill": "$--foreground",
+              "textAlign": "center"
+            },
+            {
+              "type": "text",
+              "id": "ghv01-desc",
+              "content": "Search your repos or paste a URL to clone a GitHub repo as a vault.",
+              "fontSize": 13,
+              "fill": "$--muted-foreground",
+              "textAlign": "center",
+              "width": 360
+            },
+            {
+              "type": "frame",
+              "id": "ghv01-search",
+              "name": "SearchInput",
+              "width": 400,
+              "height": 40,
+              "cornerRadius": 8,
+              "fill": "$--input",
+              "stroke": {
+                "align": "inside",
+                "thickness": 1,
+                "fill": "$--border"
+              },
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv01-placeholder",
+                  "content": "Search repos or paste URL...",
+                  "fontSize": 13,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv01-footer",
+          "name": "Footer",
+          "width": "fill_container",
+          "height": 56,
+          "padding": [
+            0,
+            24
+          ],
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "top": 1
+            },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "ghv01-hint",
+              "content": "Connected as @lucaong",
+              "fontSize": 11,
+              "fill": "$--muted-foreground"
+            },
+            {
+              "type": "frame",
+              "id": "ghv01-btns",
+              "name": "buttons",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ghv01-cancel",
+                  "name": "cancelBtn",
+                  "padding": [
+                    6,
+                    16
+                  ],
+                  "cornerRadius": 6,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$--border"
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ghv01-cancel-lbl",
+                      "content": "Cancel",
+                      "fontSize": 13,
+                      "fill": "$--foreground"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ghv02",
+      "x": 700,
+      "y": 0,
+      "name": "GitHub Vault — Clone repo list",
+      "clip": true,
+      "width": 560,
+      "height": 540,
+      "fill": "$--background",
+      "cornerRadius": 12,
+      "layout": "vertical",
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "$--border"
+      },
+      "children": [
+        {
+          "type": "frame",
+          "id": "ghv02-hdr",
+          "name": "Header",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "$--background",
+          "padding": [
+            0,
+            24
+          ],
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "ghv02-title",
+              "content": "Connect GitHub Repo",
+              "fontSize": 16,
+              "fontWeight": 600,
+              "fill": "$--foreground"
+            },
+            {
+              "type": "frame",
+              "id": "ghv02-close",
+              "name": "closeBtn",
+              "width": 24,
+              "height": 24,
+              "cornerRadius": 4,
+              "alignItems": "center",
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv02-x",
+                  "content": "X",
+                  "fontSize": 14,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv02-tabs",
+          "name": "TabBar",
+          "width": "fill_container",
+          "height": 44,
+          "fill": "$--background",
+          "padding": [
+            0,
+            24
+          ],
+          "gap": 0,
+          "alignItems": "end",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "frame",
+              "id": "ghv02-tab-clone",
+              "name": "Tab: Clone Existing (active)",
+              "padding": [
+                8,
+                16
+              ],
+              "alignItems": "center",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 2
+                },
+                "fill": "$--accent-blue"
+              },
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv02-tab-clone-lbl",
+                  "content": "Clone Existing",
+                  "fontSize": 13,
+                  "fontWeight": 500,
+                  "fill": "$--foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ghv02-tab-create",
+              "name": "Tab: Create New",
+              "padding": [
+                8,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv02-tab-create-lbl",
+                  "content": "Create New",
+                  "fontSize": 13,
+                  "fontWeight": 400,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv02-body",
+          "name": "Body: Repo List",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "padding": [
+            16,
+            24
+          ],
+          "gap": 12,
+          "children": [
+            {
+              "type": "frame",
+              "id": "ghv02-search",
+              "name": "SearchInput (filled)",
+              "width": "fill_container",
+              "height": 40,
+              "cornerRadius": 8,
+              "fill": "$--input",
+              "stroke": {
+                "align": "inside",
+                "thickness": 1,
+                "fill": "$--ring"
+              },
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv02-search-val",
+                  "content": "laputa",
+                  "fontSize": 13,
+                  "fill": "$--foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ghv02-list",
+              "name": "RepoList",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 2,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ghv02-repo1",
+                  "name": "RepoItem: selected",
+                  "width": "fill_container",
+                  "height": 56,
+                  "cornerRadius": 6,
+                  "fill": "$--accent",
+                  "padding": [
+                    8,
+                    12
+                  ],
+                  "layout": "vertical",
+                  "gap": 4,
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ghv02-repo1-row",
+                      "name": "topRow",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ghv02-repo1-name",
+                          "content": "lucaong/laputa-vault",
+                          "fontSize": 13,
+                          "fontWeight": 600,
+                          "fill": "$--foreground"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ghv02-repo1-badge",
+                          "name": "privateBadge",
+                          "padding": [
+                            2,
+                            6
+                          ],
+                          "cornerRadius": 4,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1,
+                            "fill": "$--border"
+                          },
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ghv02-repo1-priv",
+                              "content": "Private",
+                              "fontSize": 10,
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "ghv02-repo1-desc",
+                      "content": "Personal knowledge vault — markdown + YAML frontmatter",
+                      "fontSize": 12,
+                      "fill": "$--muted-foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ghv02-repo2",
+                  "name": "RepoItem: unselected",
+                  "width": "fill_container",
+                  "height": 56,
+                  "cornerRadius": 6,
+                  "padding": [
+                    8,
+                    12
+                  ],
+                  "layout": "vertical",
+                  "gap": 4,
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ghv02-repo2-row",
+                      "name": "topRow",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ghv02-repo2-name",
+                          "content": "lucaong/laputa-app",
+                          "fontSize": 13,
+                          "fontWeight": 500,
+                          "fill": "$--foreground"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ghv02-repo2-badge",
+                          "name": "publicBadge",
+                          "padding": [
+                            2,
+                            6
+                          ],
+                          "cornerRadius": 4,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1,
+                            "fill": "$--border"
+                          },
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ghv02-repo2-pub",
+                              "content": "Public",
+                              "fontSize": 10,
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "ghv02-repo2-desc",
+                      "content": "Laputa desktop app — Tauri + React + CodeMirror 6",
+                      "fontSize": 12,
+                      "fill": "$--muted-foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ghv02-repo3",
+                  "name": "RepoItem: unselected 2",
+                  "width": "fill_container",
+                  "height": 56,
+                  "cornerRadius": 6,
+                  "padding": [
+                    8,
+                    12
+                  ],
+                  "layout": "vertical",
+                  "gap": 4,
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ghv02-repo3-row",
+                      "name": "topRow",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ghv02-repo3-name",
+                          "content": "lucaong/dotfiles",
+                          "fontSize": 13,
+                          "fontWeight": 500,
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "ghv02-repo3-desc",
+                      "content": "My macOS dotfiles and config",
+                      "fontSize": 12,
+                      "fill": "$--muted-foreground"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ghv02-path",
+              "name": "LocalPathPicker",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv02-path-lbl",
+                  "content": "Clone to:",
+                  "fontSize": 12,
+                  "fontWeight": 500,
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "frame",
+                  "id": "ghv02-path-input",
+                  "name": "pathInput",
+                  "width": "fill_container",
+                  "height": 36,
+                  "cornerRadius": 6,
+                  "fill": "$--input",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$--border"
+                  },
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ghv02-path-val",
+                      "content": "~/Vaults/laputa-vault",
+                      "fontSize": 12,
+                      "fill": "$--foreground"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv02-footer",
+          "name": "Footer",
+          "width": "fill_container",
+          "height": 56,
+          "padding": [
+            0,
+            24
+          ],
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "top": 1
+            },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "ghv02-hint",
+              "content": "3 repos found",
+              "fontSize": 11,
+              "fill": "$--muted-foreground"
+            },
+            {
+              "type": "frame",
+              "id": "ghv02-btns",
+              "name": "buttons",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ghv02-cancel",
+                  "name": "cancelBtn",
+                  "padding": [
+                    6,
+                    16
+                  ],
+                  "cornerRadius": 6,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$--border"
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ghv02-cancel-lbl",
+                      "content": "Cancel",
+                      "fontSize": 13,
+                      "fill": "$--foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ghv02-clone-btn",
+                  "name": "cloneBtn",
+                  "padding": [
+                    6,
+                    16
+                  ],
+                  "cornerRadius": 6,
+                  "fill": "$--primary",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ghv02-clone-lbl",
+                      "content": "Clone & Open",
+                      "fontSize": 13,
+                      "fontWeight": 500,
+                      "fill": "#FFFFFF"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ghv03",
+      "x": 68,
+      "y": 600,
+      "name": "GitHub Vault — Create new repo",
+      "clip": true,
+      "width": 560,
+      "height": 440,
+      "fill": "$--background",
+      "cornerRadius": 12,
+      "layout": "vertical",
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "$--border"
+      },
+      "children": [
+        {
+          "type": "frame",
+          "id": "ghv03-hdr",
+          "name": "Header",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "$--background",
+          "padding": [
+            0,
+            24
+          ],
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "ghv03-title",
+              "content": "Connect GitHub Repo",
+              "fontSize": 16,
+              "fontWeight": 600,
+              "fill": "$--foreground"
+            },
+            {
+              "type": "frame",
+              "id": "ghv03-close",
+              "name": "closeBtn",
+              "width": 24,
+              "height": 24,
+              "cornerRadius": 4,
+              "alignItems": "center",
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv03-x",
+                  "content": "X",
+                  "fontSize": 14,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv03-tabs",
+          "name": "TabBar",
+          "width": "fill_container",
+          "height": 44,
+          "fill": "$--background",
+          "padding": [
+            0,
+            24
+          ],
+          "gap": 0,
+          "alignItems": "end",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "frame",
+              "id": "ghv03-tab-clone",
+              "name": "Tab: Clone Existing",
+              "padding": [
+                8,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv03-tab-clone-lbl",
+                  "content": "Clone Existing",
+                  "fontSize": 13,
+                  "fontWeight": 400,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ghv03-tab-create",
+              "name": "Tab: Create New (active)",
+              "padding": [
+                8,
+                16
+              ],
+              "alignItems": "center",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 2
+                },
+                "fill": "$--accent-blue"
+              },
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv03-tab-create-lbl",
+                  "content": "Create New",
+                  "fontSize": 13,
+                  "fontWeight": 500,
+                  "fill": "$--foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv03-body",
+          "name": "Body: Create Form",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "padding": [
+            24,
+            24
+          ],
+          "gap": 20,
+          "children": [
+            {
+              "type": "frame",
+              "id": "ghv03-name-field",
+              "name": "RepoNameField",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv03-name-lbl",
+                  "content": "Repository name",
+                  "fontSize": 12,
+                  "fontWeight": 500,
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "frame",
+                  "id": "ghv03-name-input",
+                  "name": "nameInput",
+                  "width": "fill_container",
+                  "height": 40,
+                  "cornerRadius": 8,
+                  "fill": "$--input",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$--border"
+                  },
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ghv03-name-val",
+                      "content": "my-vault",
+                      "fontSize": 13,
+                      "fill": "$--foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "ghv03-name-hint",
+                  "content": "github.com/lucaong/my-vault",
+                  "fontSize": 11,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ghv03-vis-field",
+              "name": "VisibilityToggle",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv03-vis-lbl",
+                  "content": "Visibility",
+                  "fontSize": 12,
+                  "fontWeight": 500,
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "frame",
+                  "id": "ghv03-vis-opts",
+                  "name": "options",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ghv03-opt-priv",
+                      "name": "PrivateOption (selected)",
+                      "padding": [
+                        6,
+                        12
+                      ],
+                      "cornerRadius": 6,
+                      "fill": "$--accent",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "$--accent-blue"
+                      },
+                      "gap": 6,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ghv03-opt-priv-icon",
+                          "content": "Lock",
+                          "fontSize": 13,
+                          "fill": "$--accent-blue"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ghv03-opt-priv-lbl",
+                          "content": "Private",
+                          "fontSize": 13,
+                          "fontWeight": 500,
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ghv03-opt-pub",
+                      "name": "PublicOption",
+                      "padding": [
+                        6,
+                        12
+                      ],
+                      "cornerRadius": 6,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "$--border"
+                      },
+                      "gap": 6,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ghv03-opt-pub-icon",
+                          "content": "Globe",
+                          "fontSize": 13,
+                          "fill": "$--muted-foreground"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ghv03-opt-pub-lbl",
+                          "content": "Public",
+                          "fontSize": 13,
+                          "fill": "$--muted-foreground"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ghv03-path-field",
+              "name": "LocalPathField",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv03-path-lbl",
+                  "content": "Clone to:",
+                  "fontSize": 12,
+                  "fontWeight": 500,
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "frame",
+                  "id": "ghv03-path-input",
+                  "name": "pathInput",
+                  "width": "fill_container",
+                  "height": 36,
+                  "cornerRadius": 6,
+                  "fill": "$--input",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$--border"
+                  },
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ghv03-path-val",
+                      "content": "~/Vaults/my-vault",
+                      "fontSize": 12,
+                      "fill": "$--foreground"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv03-footer",
+          "name": "Footer",
+          "width": "fill_container",
+          "height": 56,
+          "padding": [
+            0,
+            24
+          ],
+          "alignItems": "center",
+          "justifyContent": "end",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "top": 1
+            },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "frame",
+              "id": "ghv03-btns",
+              "name": "buttons",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ghv03-cancel",
+                  "name": "cancelBtn",
+                  "padding": [
+                    6,
+                    16
+                  ],
+                  "cornerRadius": 6,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$--border"
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ghv03-cancel-lbl",
+                      "content": "Cancel",
+                      "fontSize": 13,
+                      "fill": "$--foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ghv03-create-btn",
+                  "name": "createBtn",
+                  "padding": [
+                    6,
+                    16
+                  ],
+                  "cornerRadius": 6,
+                  "fill": "$--primary",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ghv03-create-lbl",
+                      "content": "Create & Clone",
+                      "fontSize": 13,
+                      "fontWeight": 500,
+                      "fill": "#FFFFFF"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ghv04",
+      "x": 700,
+      "y": 600,
+      "name": "GitHub Vault — Clone in progress",
+      "clip": true,
+      "width": 560,
+      "height": 320,
+      "fill": "$--background",
+      "cornerRadius": 12,
+      "layout": "vertical",
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "$--border"
+      },
+      "children": [
+        {
+          "type": "frame",
+          "id": "ghv04-hdr",
+          "name": "Header",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "$--background",
+          "padding": [
+            0,
+            24
+          ],
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "ghv04-title",
+              "content": "Cloning Repository...",
+              "fontSize": 16,
+              "fontWeight": 600,
+              "fill": "$--foreground"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv04-body",
+          "name": "Body: Progress",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "padding": [
+            32,
+            24
+          ],
+          "gap": 20,
+          "alignItems": "center",
+          "justifyContent": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "ghv04-spinner",
+              "name": "spinner",
+              "width": 40,
+              "height": 40,
+              "cornerRadius": 20,
+              "stroke": {
+                "align": "inside",
+                "thickness": 3,
+                "fill": "$--accent-blue"
+              }
+            },
+            {
+              "type": "text",
+              "id": "ghv04-status",
+              "content": "Cloning lucaong/laputa-vault...",
+              "fontSize": 14,
+              "fontWeight": 500,
+              "fill": "$--foreground",
+              "textAlign": "center"
+            },
+            {
+              "type": "text",
+              "id": "ghv04-sub",
+              "content": "Receiving objects: 67% (1,234/1,842)",
+              "fontSize": 12,
+              "fill": "$--muted-foreground",
+              "textAlign": "center"
+            },
+            {
+              "type": "frame",
+              "id": "ghv04-bar-bg",
+              "name": "progressBarBg",
+              "width": 360,
+              "height": 4,
+              "cornerRadius": 2,
+              "fill": "$--accent",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ghv04-bar-fill",
+                  "name": "progressBarFill",
+                  "width": 241,
+                  "height": 4,
+                  "cornerRadius": 2,
+                  "fill": "$--accent-blue"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv04-footer",
+          "name": "Footer",
+          "width": "fill_container",
+          "height": 56,
+          "padding": [
+            0,
+            24
+          ],
+          "alignItems": "center",
+          "justifyContent": "end",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "top": 1
+            },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "frame",
+              "id": "ghv04-cancel",
+              "name": "cancelBtn",
+              "padding": [
+                6,
+                16
+              ],
+              "cornerRadius": 6,
+              "stroke": {
+                "align": "inside",
+                "thickness": 1,
+                "fill": "$--border"
+              },
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv04-cancel-lbl",
+                  "content": "Cancel",
+                  "fontSize": 13,
+                  "fill": "$--foreground"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "SC_all",
+      "name": "Sidebar Collapse — All panels visible",
+      "x": 68,
+      "y": 8000,
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "$--background",
+      "theme": {
+        "Mode": "Light"
+      },
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "SC_all_title",
+          "name": "macOS Title Bar",
+          "width": "fill_container",
+          "height": 38,
+          "fill": "$--sidebar",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "$--border"
+          },
+          "padding": [
+            0,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "SC_all_tl",
+              "name": "trafficLights",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "ellipse",
+                  "id": "SC_all_c",
+                  "fill": "#FF5F57",
+                  "width": 12,
+                  "height": 12
+                },
+                {
+                  "type": "ellipse",
+                  "id": "SC_all_m",
+                  "fill": "#FEBC2E",
+                  "width": 12,
+                  "height": 12
+                },
+                {
+                  "type": "ellipse",
+                  "id": "SC_all_x",
+                  "fill": "#28C840",
+                  "width": 12,
+                  "height": 12
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "SC_all_content",
+          "name": "Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "children": [
+            {
+              "type": "frame",
+              "id": "SC_all_sb",
+              "name": "Panel: Sidebar",
+              "clip": true,
+              "width": 250,
+              "height": "fill_container",
+              "fill": "$--sidebar",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "right": 1
+                },
+                "fill": "$--border"
+              },
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "SC_all_sb_hdr",
+                  "name": "SidebarHeader",
+                  "width": "fill_container",
+                  "height": 32,
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "alignItems": "center",
+                  "justifyContent": "flex_end",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "SC_all_sb_btn",
+                      "name": "collapseBtn",
+                      "width": 24,
+                      "height": 24,
+                      "cornerRadius": 4,
+                      "fill": "transparent",
+                      "alignItems": "center",
+                      "justifyContent": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "SC_all_sb_btn_icon",
+                          "name": "chevronIcon",
+                          "width": 14,
+                          "height": 14,
+                          "iconFontName": "caret-left-bold",
+                          "iconFontFamily": "phosphor",
+                          "fill": "$--muted-foreground"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "SC_all_sb_nav",
+                  "name": "NavItems",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 1,
+                  "padding": [
+                    4,
+                    8
+                  ],
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "$--border"
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "SC_all_sb_t1",
+                      "text": "All Notes",
+                      "fontSize": 13,
+                      "fill": "$--foreground",
+                      "width": "fill_container",
+                      "padding": [
+                        6,
+                        12
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "SC_all_sb_t2",
+                      "text": "Favorites",
+                      "fontSize": 13,
+                      "fill": "$--muted-foreground",
+                      "width": "fill_container",
+                      "padding": [
+                        6,
+                        12
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "SC_all_sb_t3",
+                      "text": "Archive",
+                      "fontSize": 13,
+                      "fill": "$--muted-foreground",
+                      "width": "fill_container",
+                      "padding": [
+                        6,
+                        12
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "SC_all_sb_t4",
+                      "text": "Trash",
+                      "fontSize": 13,
+                      "fill": "$--muted-foreground",
+                      "width": "fill_container",
+                      "padding": [
+                        6,
+                        12
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "SC_all_sb_sec",
+                  "name": "Sections",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "padding": [
+                    8,
+                    8
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "SC_all_sb_sh",
+                      "text": "SECTIONS",
+                      "fontSize": 11,
+                      "fill": "$--muted-foreground",
+                      "letterSpacing": 1.2,
+                      "width": "fill_container",
+                      "padding": [
+                        4,
+                        12
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "SC_all_sb_s1",
+                      "text": "Projects",
+                      "fontSize": 13,
+                      "fill": "$--foreground",
+                      "width": "fill_container",
+                      "padding": [
+                        6,
+                        12
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "SC_all_sb_s2",
+                      "text": "Experiments",
+                      "fontSize": 13,
+                      "fill": "$--muted-foreground",
+                      "width": "fill_container",
+                      "padding": [
+                        6,
+                        12
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "SC_all_nl",
+              "name": "Panel: NoteList",
+              "clip": true,
+              "width": 300,
+              "height": "fill_container",
+              "fill": "$--background",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "right": 1
+                },
+                "fill": "$--border"
+              },
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "SC_all_nl_hdr",
+                  "name": "NoteListHeader",
+                  "width": "fill_container",
+                  "height": 40,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "justifyContent": "space_between",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "$--border"
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "SC_all_nl_title",
+                      "text": "All Notes",
+                      "fontSize": 14,
+                      "fontWeight": 600,
+                      "fill": "$--foreground"
+                    },
+                    {
+                      "type": "text",
+                      "id": "SC_all_nl_count",
+                      "text": "42 notes",
+                      "fontSize": 12,
+                      "fill": "$--muted-foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "SC_all_nl_list",
+                  "name": "NoteItems",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 0,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "SC_all_nl_n1",
+                      "name": "noteItem1",
+                      "width": "fill_container",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "fill": "$--accent",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SC_all_nl_n1t",
+                          "text": "My First Project",
+                          "fontSize": 13,
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "SC_all_nl_n2",
+                      "name": "noteItem2",
+                      "width": "fill_container",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SC_all_nl_n2t",
+                          "text": "Weekly Review",
+                          "fontSize": 13,
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "SC_all_nl_n3",
+                      "name": "noteItem3",
+                      "width": "fill_container",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SC_all_nl_n3t",
+                          "text": "Meeting Notes",
+                          "fontSize": 13,
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "SC_all_ed",
+              "name": "Panel: Editor",
+              "clip": true,
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "$--background",
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "SC_all_ed_tabs",
+                  "name": "TabBar",
+                  "width": "fill_container",
+                  "height": 36,
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "alignItems": "center",
+                  "gap": 4,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "$--border"
+                  },
+                  "fill": "$--background",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "SC_all_ed_tab1",
+                      "name": "activeTab",
+                      "padding": [
+                        6,
+                        12
+                      ],
+                      "cornerRadius": [
+                        6,
+                        6,
+                        0,
+                        0
+                      ],
+                      "fill": "$--background",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": {
+                          "bottom": 2
+                        },
+                        "fill": "$--primary"
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SC_all_ed_tab1t",
+                          "text": "My First Project",
+                          "fontSize": 12,
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "SC_all_ed_content",
+                  "name": "EditorContent",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "padding": [
+                    24,
+                    48
+                  ],
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "SC_all_ed_h1",
+                      "text": "My First Project",
+                      "fontSize": 28,
+                      "fontWeight": 700,
+                      "fill": "$--foreground",
+                      "width": "fill_container"
+                    },
+                    {
+                      "type": "text",
+                      "id": "SC_all_ed_p1",
+                      "text": "This is the editor area with full markdown editing support.",
+                      "fontSize": 15,
+                      "fill": "$--foreground",
+                      "width": "fill_container",
+                      "lineHeight": 1.6
+                    },
+                    {
+                      "type": "text",
+                      "id": "SC_all_ed_p2",
+                      "text": "The editor expands to fill all available space when panels are collapsed.",
+                      "fontSize": 15,
+                      "fill": "$--muted-foreground",
+                      "width": "fill_container",
+                      "lineHeight": 1.6
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "SC_nosb",
+      "name": "Sidebar Collapse — Sidebar collapsed",
+      "x": 68,
+      "y": 9000,
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "$--background",
+      "theme": {
+        "Mode": "Light"
+      },
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "SC_nosb_title",
+          "name": "macOS Title Bar",
+          "width": "fill_container",
+          "height": 38,
+          "fill": "$--sidebar",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "$--border"
+          },
+          "padding": [
+            0,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "SC_nosb_tl",
+              "name": "trafficLights",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "ellipse",
+                  "id": "SC_nosb_c",
+                  "fill": "#FF5F57",
+                  "width": 12,
+                  "height": 12
+                },
+                {
+                  "type": "ellipse",
+                  "id": "SC_nosb_m",
+                  "fill": "#FEBC2E",
+                  "width": 12,
+                  "height": 12
+                },
+                {
+                  "type": "ellipse",
+                  "id": "SC_nosb_x",
+                  "fill": "#28C840",
+                  "width": 12,
+                  "height": 12
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "SC_nosb_content",
+          "name": "Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "children": [
+            {
+              "type": "frame",
+              "id": "SC_nosb_nl",
+              "name": "Panel: NoteList",
+              "clip": true,
+              "width": 300,
+              "height": "fill_container",
+              "fill": "$--background",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "right": 1
+                },
+                "fill": "$--border"
+              },
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "SC_nosb_nl_hdr",
+                  "name": "NoteListHeader",
+                  "width": "fill_container",
+                  "height": 40,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "justifyContent": "space_between",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "$--border"
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "SC_nosb_nl_title",
+                      "text": "All Notes",
+                      "fontSize": 14,
+                      "fontWeight": 600,
+                      "fill": "$--foreground"
+                    },
+                    {
+                      "type": "text",
+                      "id": "SC_nosb_nl_count",
+                      "text": "42 notes",
+                      "fontSize": 12,
+                      "fill": "$--muted-foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "SC_nosb_nl_list",
+                  "name": "NoteItems",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 0,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "SC_nosb_nl_n1",
+                      "name": "noteItem1",
+                      "width": "fill_container",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "fill": "$--accent",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SC_nosb_nl_n1t",
+                          "text": "My First Project",
+                          "fontSize": 13,
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "SC_nosb_nl_n2",
+                      "name": "noteItem2",
+                      "width": "fill_container",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SC_nosb_nl_n2t",
+                          "text": "Weekly Review",
+                          "fontSize": 13,
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "SC_nosb_nl_n3",
+                      "name": "noteItem3",
+                      "width": "fill_container",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SC_nosb_nl_n3t",
+                          "text": "Meeting Notes",
+                          "fontSize": 13,
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "SC_nosb_ed",
+              "name": "Panel: Editor",
+              "clip": true,
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "$--background",
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "SC_nosb_ed_tabs",
+                  "name": "TabBar",
+                  "width": "fill_container",
+                  "height": 36,
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "alignItems": "center",
+                  "gap": 4,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "$--border"
+                  },
+                  "fill": "$--background",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "SC_nosb_ed_tab1",
+                      "name": "activeTab",
+                      "padding": [
+                        6,
+                        12
+                      ],
+                      "cornerRadius": [
+                        6,
+                        6,
+                        0,
+                        0
+                      ],
+                      "fill": "$--background",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": {
+                          "bottom": 2
+                        },
+                        "fill": "$--primary"
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SC_nosb_ed_tab1t",
+                          "text": "My First Project",
+                          "fontSize": 12,
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "SC_nosb_ed_content",
+                  "name": "EditorContent",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "padding": [
+                    24,
+                    48
+                  ],
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "SC_nosb_ed_h1",
+                      "text": "My First Project",
+                      "fontSize": 28,
+                      "fontWeight": 700,
+                      "fill": "$--foreground",
+                      "width": "fill_container"
+                    },
+                    {
+                      "type": "text",
+                      "id": "SC_nosb_ed_p1",
+                      "text": "This is the editor area with full markdown editing support.",
+                      "fontSize": 15,
+                      "fill": "$--foreground",
+                      "width": "fill_container",
+                      "lineHeight": 1.6
+                    },
+                    {
+                      "type": "text",
+                      "id": "SC_nosb_ed_p2",
+                      "text": "The editor expands to fill all available space when panels are collapsed.",
+                      "fontSize": 15,
+                      "fill": "$--muted-foreground",
+                      "width": "fill_container",
+                      "lineHeight": 1.6
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "SC_edonly",
+      "name": "Sidebar Collapse — Editor only",
+      "x": 68,
+      "y": 10000,
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "$--background",
+      "theme": {
+        "Mode": "Light"
+      },
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "SC_edonly_title",
+          "name": "macOS Title Bar",
+          "width": "fill_container",
+          "height": 38,
+          "fill": "$--background",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "$--border"
+          },
+          "padding": [
+            0,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "SC_edonly_tl",
+              "name": "trafficLights",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "ellipse",
+                  "id": "SC_edonly_c",
+                  "fill": "#FF5F57",
+                  "width": 12,
+                  "height": 12
+                },
+                {
+                  "type": "ellipse",
+                  "id": "SC_edonly_m",
+                  "fill": "#FEBC2E",
+                  "width": 12,
+                  "height": 12
+                },
+                {
+                  "type": "ellipse",
+                  "id": "SC_edonly_x",
+                  "fill": "#28C840",
+                  "width": 12,
+                  "height": 12
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "SC_edonly_content",
+          "name": "Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "children": [
+            {
+              "type": "frame",
+              "id": "SC_edonly_ed",
+              "name": "Panel: Editor",
+              "clip": true,
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "$--background",
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "SC_edonly_ed_tabs",
+                  "name": "TabBar",
+                  "width": "fill_container",
+                  "height": 36,
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "alignItems": "center",
+                  "gap": 4,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "$--border"
+                  },
+                  "fill": "$--background",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "SC_edonly_ed_tab1",
+                      "name": "activeTab",
+                      "padding": [
+                        6,
+                        12
+                      ],
+                      "cornerRadius": [
+                        6,
+                        6,
+                        0,
+                        0
+                      ],
+                      "fill": "$--background",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": {
+                          "bottom": 2
+                        },
+                        "fill": "$--primary"
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SC_edonly_ed_tab1t",
+                          "text": "My First Project",
+                          "fontSize": 12,
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "SC_edonly_ed_content",
+                  "name": "EditorContent",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "padding": [
+                    24,
+                    48
+                  ],
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "SC_edonly_ed_h1",
+                      "text": "My First Project",
+                      "fontSize": 28,
+                      "fontWeight": 700,
+                      "fill": "$--foreground",
+                      "width": "fill_container"
+                    },
+                    {
+                      "type": "text",
+                      "id": "SC_edonly_ed_p1",
+                      "text": "This is the editor area with full markdown editing support.",
+                      "fontSize": 15,
+                      "fill": "$--foreground",
+                      "width": "fill_container",
+                      "lineHeight": 1.6
+                    },
+                    {
+                      "type": "text",
+                      "id": "SC_edonly_ed_p2",
+                      "text": "The editor expands to fill all available space when panels are collapsed.",
+                      "fontSize": 15,
+                      "fill": "$--muted-foreground",
+                      "width": "fill_container",
+                      "lineHeight": 1.6
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "SC_ednl",
+      "name": "Sidebar Collapse — Editor + notes",
+      "x": 68,
+      "y": 11000,
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "$--background",
+      "theme": {
+        "Mode": "Light"
+      },
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "SC_ednl_title",
+          "name": "macOS Title Bar",
+          "width": "fill_container",
+          "height": 38,
+          "fill": "$--background",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "$--border"
+          },
+          "padding": [
+            0,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "SC_ednl_tl",
+              "name": "trafficLights",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "ellipse",
+                  "id": "SC_ednl_c",
+                  "fill": "#FF5F57",
+                  "width": 12,
+                  "height": 12
+                },
+                {
+                  "type": "ellipse",
+                  "id": "SC_ednl_m",
+                  "fill": "#FEBC2E",
+                  "width": 12,
+                  "height": 12
+                },
+                {
+                  "type": "ellipse",
+                  "id": "SC_ednl_x",
+                  "fill": "#28C840",
+                  "width": 12,
+                  "height": 12
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "SC_ednl_content",
+          "name": "Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "children": [
+            {
+              "type": "frame",
+              "id": "SC_ednl_nl",
+              "name": "Panel: NoteList",
+              "clip": true,
+              "width": 300,
+              "height": "fill_container",
+              "fill": "$--background",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "right": 1
+                },
+                "fill": "$--border"
+              },
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "SC_ednl_nl_hdr",
+                  "name": "NoteListHeader",
+                  "width": "fill_container",
+                  "height": 40,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "justifyContent": "space_between",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "$--border"
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "SC_ednl_nl_title",
+                      "text": "All Notes",
+                      "fontSize": 14,
+                      "fontWeight": 600,
+                      "fill": "$--foreground"
+                    },
+                    {
+                      "type": "text",
+                      "id": "SC_ednl_nl_count",
+                      "text": "42 notes",
+                      "fontSize": 12,
+                      "fill": "$--muted-foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "SC_ednl_nl_list",
+                  "name": "NoteItems",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 0,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "SC_ednl_nl_n1",
+                      "name": "noteItem1",
+                      "width": "fill_container",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "fill": "$--accent",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SC_ednl_nl_n1t",
+                          "text": "My First Project",
+                          "fontSize": 13,
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "SC_ednl_nl_n2",
+                      "name": "noteItem2",
+                      "width": "fill_container",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SC_ednl_nl_n2t",
+                          "text": "Weekly Review",
+                          "fontSize": 13,
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "SC_ednl_nl_n3",
+                      "name": "noteItem3",
+                      "width": "fill_container",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SC_ednl_nl_n3t",
+                          "text": "Meeting Notes",
+                          "fontSize": 13,
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "SC_ednl_ed",
+              "name": "Panel: Editor",
+              "clip": true,
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "$--background",
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "SC_ednl_ed_tabs",
+                  "name": "TabBar",
+                  "width": "fill_container",
+                  "height": 36,
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "alignItems": "center",
+                  "gap": 4,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "$--border"
+                  },
+                  "fill": "$--background",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "SC_ednl_ed_tab1",
+                      "name": "activeTab",
+                      "padding": [
+                        6,
+                        12
+                      ],
+                      "cornerRadius": [
+                        6,
+                        6,
+                        0,
+                        0
+                      ],
+                      "fill": "$--background",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": {
+                          "bottom": 2
+                        },
+                        "fill": "$--primary"
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SC_ednl_ed_tab1t",
+                          "text": "My First Project",
+                          "fontSize": 12,
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "SC_ednl_ed_content",
+                  "name": "EditorContent",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "padding": [
+                    24,
+                    48
+                  ],
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "SC_ednl_ed_h1",
+                      "text": "My First Project",
+                      "fontSize": 28,
+                      "fontWeight": 700,
+                      "fill": "$--foreground",
+                      "width": "fill_container"
+                    },
+                    {
+                      "type": "text",
+                      "id": "SC_ednl_ed_p1",
+                      "text": "This is the editor area with full markdown editing support.",
+                      "fontSize": 15,
+                      "fill": "$--foreground",
+                      "width": "fill_container",
+                      "lineHeight": 1.6
+                    },
+                    {
+                      "type": "text",
+                      "id": "SC_ednl_ed_p2",
+                      "text": "The editor expands to fill all available space when panels are collapsed.",
+                      "fontSize": 15,
+                      "fill": "$--muted-foreground",
+                      "width": "fill_container",
+                      "lineHeight": 1.6
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
   "themes": {
