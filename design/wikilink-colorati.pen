@@ -1,0 +1,165 @@
+{
+  "children": [
+    {
+      "type": "frame",
+      "id": "wlc01",
+      "x": 0,
+      "y": 0,
+      "name": "Wikilink Colors — Editor View (Light)",
+      "theme": { "Mode": "Light" },
+      "clip": true,
+      "width": 760,
+      "height": 440,
+      "fill": "$--background",
+      "layout": "vertical",
+      "padding": [32, 40],
+      "gap": 12,
+      "children": [
+        {
+          "type": "text",
+          "id": "wlc02",
+          "content": "Build Laputa App",
+          "fontSize": 28,
+          "fontWeight": 700,
+          "fill": "$--foreground"
+        },
+        {
+          "type": "text",
+          "id": "wlc03",
+          "content": "Wiki-Links",
+          "fontSize": 20,
+          "fontWeight": 600,
+          "fill": "$--foreground"
+        },
+        {
+          "type": "frame",
+          "id": "wlc10",
+          "layout": "horizontal",
+          "gap": 0,
+          "width": "fill_container",
+          "height": "hug_contents",
+          "children": [
+            { "type": "text", "id": "wlc10a", "content": "See ", "fontSize": 15, "fill": "$--foreground" },
+            { "type": "text", "id": "wlc10b", "content": "Stock Screener — EMA200 Wick Bounce", "fontSize": 15, "fill": "$--accent-red", "textDecoration": "underline" },
+            { "type": "text", "id": "wlc10c", "content": " for the experiment approach.", "fontSize": 15, "fill": "$--foreground" }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "wlc11",
+          "layout": "horizontal",
+          "gap": 0,
+          "width": "fill_container",
+          "height": "hug_contents",
+          "children": [
+            { "type": "text", "id": "wlc11a", "content": "Contact ", "fontSize": 15, "fill": "$--foreground" },
+            { "type": "text", "id": "wlc11b", "content": "Matteo Cellini", "fontSize": 15, "fill": "$--accent-yellow", "textDecoration": "underline" },
+            { "type": "text", "id": "wlc11c", "content": " for sponsorship data.", "fontSize": 15, "fill": "$--foreground" }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "wlc12",
+          "layout": "horizontal",
+          "gap": 0,
+          "width": "fill_container",
+          "height": "hug_contents",
+          "children": [
+            { "type": "text", "id": "wlc12a", "content": "Link to ", "fontSize": 15, "fill": "$--foreground" },
+            { "type": "text", "id": "wlc12b", "content": "Grow Newsletter", "fontSize": 15, "fill": "$--accent-purple", "textDecoration": "underline" },
+            { "type": "text", "id": "wlc12c", "content": " responsibility.", "fontSize": 15, "fill": "$--foreground" }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "wlc13",
+          "layout": "horizontal",
+          "gap": 0,
+          "width": "fill_container",
+          "height": "hug_contents",
+          "children": [
+            { "type": "text", "id": "wlc13a", "content": "Check ", "fontSize": 15, "fill": "$--foreground" },
+            { "type": "text", "id": "wlc13b", "content": "Software Development", "fontSize": 15, "fill": "$--accent-green", "textDecoration": "underline" },
+            { "type": "text", "id": "wlc13c", "content": " for tech notes.", "fontSize": 15, "fill": "$--foreground" }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "wlc14",
+          "layout": "horizontal",
+          "gap": 0,
+          "width": "fill_container",
+          "height": "hug_contents",
+          "children": [
+            { "type": "text", "id": "wlc14a", "content": "See ", "fontSize": 15, "fill": "$--foreground" },
+            { "type": "text", "id": "wlc14b", "content": "Laputa App Design Session", "fontSize": 15, "fill": "$--accent-yellow", "textDecoration": "underline" },
+            { "type": "text", "id": "wlc14c", "content": " event recap.", "fontSize": 15, "fill": "$--foreground" }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "wlc15",
+          "name": "Legend",
+          "layout": "horizontal",
+          "gap": 16,
+          "width": "fill_container",
+          "height": "hug_contents",
+          "padding": [12, 0, 0, 0],
+          "children": [
+            { "type": "text", "id": "wlc15a", "content": "Experiment", "fontSize": 12, "fill": "$--accent-red" },
+            { "type": "text", "id": "wlc15b", "content": "Person / Event", "fontSize": 12, "fill": "$--accent-yellow" },
+            { "type": "text", "id": "wlc15c", "content": "Responsibility", "fontSize": 12, "fill": "$--accent-purple" },
+            { "type": "text", "id": "wlc15d", "content": "Topic", "fontSize": 12, "fill": "$--accent-green" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "wlc20",
+      "x": 800,
+      "y": 0,
+      "name": "Wikilink Colors — Broken Link State",
+      "theme": { "Mode": "Light" },
+      "clip": true,
+      "width": 500,
+      "height": 200,
+      "fill": "$--background",
+      "layout": "vertical",
+      "padding": [32, 40],
+      "gap": 12,
+      "children": [
+        {
+          "type": "text",
+          "id": "wlc21",
+          "content": "Broken Wikilink",
+          "fontSize": 20,
+          "fontWeight": 600,
+          "fill": "$--foreground"
+        },
+        {
+          "type": "frame",
+          "id": "wlc22",
+          "layout": "horizontal",
+          "gap": 0,
+          "width": "fill_container",
+          "height": "hug_contents",
+          "children": [
+            { "type": "text", "id": "wlc22a", "content": "Also see ", "fontSize": 15, "fill": "$--foreground" },
+            { "type": "text", "id": "wlc22b", "content": "Non-Existent Note", "fontSize": 15, "fill": "$--muted-foreground", "textDecoration": "underline", "opacity": 0.7 },
+            { "type": "text", "id": "wlc22c", "content": " which is a broken link.", "fontSize": 15, "fill": "$--foreground" }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "wlc23",
+          "content": "Broken links show muted color + dashed underline + reduced opacity",
+          "fontSize": 12,
+          "fill": "$--muted-foreground",
+          "fontStyle": "italic"
+        }
+      ]
+    }
+  ],
+  "variables": {}
+}

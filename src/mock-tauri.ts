@@ -122,6 +122,10 @@ status: Active
 See [[Stock Screener — EMA200 Wick Bounce]] for the experiment approach.
 Contact [[Matteo Cellini]] for sponsorship data.
 Link to [[Grow Newsletter]] responsibility.
+Check [[Software Development]] for tech notes.
+See [[Laputa App Design Session]] event recap.
+Read [[Write Weekly Essays]] procedure.
+Also see [[Non-Existent Note]] which is a broken link.
 
 ## Paragraphs & Spacing
 This is a normal paragraph with enough text to test line wrapping and spacing between elements. The paragraph should have comfortable line height and spacing from the heading above.

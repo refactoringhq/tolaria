@@ -1,6 +1,5 @@
-/* Wikilink inline content */
+/* Wikilink inline content — color is set via inline style per note type */
 .wikilink {
-  color: var(--accent-blue, #2196f3);
   cursor: pointer;
   text-decoration: underline;
   text-decoration-style: dotted;
@@ -10,8 +9,18 @@
 }
 
 .wikilink:hover {
-  background: var(--accent-blue-bg, rgba(33, 150, 243, 0.1));
   text-decoration-style: solid;
+  opacity: 0.85;
+}
+
+/* Broken wikilink: dashed underline + lower opacity */
+.wikilink--broken {
+  text-decoration-style: dashed;
+  opacity: 0.7;
+}
+
+.wikilink--broken:hover {
+  opacity: 0.55;
 }
 
 /* BlockNote container */

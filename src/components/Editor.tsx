@@ -15,6 +15,7 @@ import { TabBar } from './TabBar'
 import { BreadcrumbBar } from './BreadcrumbBar'
 import { useEditorTheme } from '../hooks/useTheme'
 import { splitFrontmatter, preProcessWikilinks, injectWikilinks, restoreWikilinksInBlocks, countWords } from '../utils/wikilinks'
+import { resolveWikilinkColor as resolveColor } from '../utils/wikilinkColors'
 import './Editor.css'
 import './EditorTheme.css'
 
@@ -63,31 +64,8 @@ interface EditorProps {
 // Module-level cache so the WikiLink renderer (defined outside React) can access entries
 const _wikilinkEntriesRef: { current: VaultEntry[] } = { current: [] }
 
-const TYPE_COLOR_MAP: Record<string, string> = {
-  red: 'var(--accent-red)',
-  orange: 'var(--accent-orange)',
-  yellow: 'var(--accent-yellow)',
-  green: 'var(--accent-green)',
-  blue: 'var(--accent-blue)',
-  purple: 'var(--accent-purple)',
-}
-
-function findEntryByTarget(entries: VaultEntry[], target: string): VaultEntry | undefined {
-  return entries.find(e => e.title === target || e.filename.replace(/\.md$/, '') === target)
-}
-
-function lookupColorForEntry(entries: VaultEntry[], entry: VaultEntry): string | undefined {
-  if (entry.isA === 'Type' && entry.color) return TYPE_COLOR_MAP[entry.color]
-  if (!entry.isA) return undefined
-  const typeEntry = entries.find(e => e.isA === 'Type' && e.title === entry.isA)
-  return typeEntry?.color ? TYPE_COLOR_MAP[typeEntry.color] : undefined
-}
-
-function resolveWikilinkColor(target: string): string | undefined {
-  const entries = _wikilinkEntriesRef.current
-  if (!entries.length) return undefined
-  const entry = findEntryByTarget(entries, target)
-  return entry ? lookupColorForEntry(entries, entry) : undefined
+function resolveWikilinkColor(target: string) {
+  return resolveColor(_wikilinkEntriesRef.current, target)
 }
 
 const WikiLink = createReactInlineContentSpec(
@@ -101,12 +79,12 @@ const WikiLink = createReactInlineContentSpec(
   {
     render: (props) => {
       const target = props.inlineContent.props.target
-      const color = resolveWikilinkColor(target)
+      const { color, isBroken } = resolveWikilinkColor(target)
       return (
         <span
-          className="wikilink"
+          className={`wikilink${isBroken ? ' wikilink--broken' : ''}`}
           data-target={target}
-          style={color ? { color, textDecorationColor: color } : undefined}
+          style={{ color, textDecorationColor: color }}
         >
           {target}
         </span>
