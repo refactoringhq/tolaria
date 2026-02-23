@@ -168,37 +168,58 @@ The app has a **Tauri mock layer** (`src/mock-tauri.ts`): when running in a brow
 
 **Key rule**: passing unit tests ≠ working app. If you can't see it working AND interact with it successfully, it's not done.
 
-### Native App QA (MANDATORY for ALL features — not just Tauri-specific)
+### Native App QA (MANDATORY — Stage 1 of 2, before firing done signal)
 
-⚠️ **CRITICAL**: The browser/Chrome test environment uses `mock-tauri.ts` which silently swallows Tauri commands. Bugs that only appear on a real vault with real files **will never surface in Chrome**. You MUST test in the running Tauri app on a real vault.
+⚠️ **CRITICAL**: The browser/Chrome uses `mock-tauri.ts` which silently swallows Tauri commands. Bugs on real vaults NEVER surface in Chrome. You MUST test on the native Tauri app with Luca's real vault.
 
-**Required for every task, no exceptions.** The completion signal must NOT be sent until native QA passes on a real vault.
+**QA is a two-stage process**: you do Stage 1, Brian does Stage 2 independently before merging.
 
-Use the `laputa-qa` skill scripts:
+#### Stage 1 — Your QA (required before firing laputa-task-done)
 
+**Step 1: Acquire the QA lockfile** (ensures only one laputa instance runs at a time):
 ```bash
-# Focus the running Laputa app
-bash ~/.openclaw/skills/laputa-qa/scripts/focus-app.sh laputa
-
-# Take a screenshot and verify visually
-bash ~/.openclaw/skills/laputa-qa/scripts/screenshot.sh /tmp/before.png
-
-# Test a keyboard shortcut (e.g. Cmd+1)
-bash ~/.openclaw/skills/laputa-qa/scripts/shortcut.sh "command" "1"
-sleep 0.3
-bash ~/.openclaw/skills/laputa-qa/scripts/screenshot.sh /tmp/after.png
-
-# Click at coordinates (multiply displayed pixel coords × 2.56 for retina)
-bash ~/.openclaw/skills/laputa-qa/scripts/click.sh 400 300
+LOCK=/tmp/laputa-qa.lock
+WAITED=0
+while [ -f "$LOCK" ]; do
+  sleep 10; WAITED=$((WAITED+10))
+  if [ $WAITED -ge 300 ]; then echo "QA lock timeout after 5min"; exit 1; fi
+done
+echo "$$" > "$LOCK"
+trap "rm -f $LOCK" EXIT
 ```
 
-**Native QA is ALWAYS required.** Specifically:
-- Switch the running app to Luca's real vault (`~/Laputa`), not the demo vault
-- If the task touches file save/read: verify actual file content changed on disk with `cat` or `git diff`
-- If the task touches UI: click through the feature with `cliclick`, don't just screenshot
-- If the task fixes a bug: reproduce the original bug on the real vault, confirm it's gone
+**Step 2: Kill other laputa instances and start fresh**:
+```bash
+pkill -x laputa 2>/dev/null || true
+sleep 1
+# Start native app from your worktree
+pnpm tauri dev --port <port>
+# Wait for it to open (~30s)
+```
 
-**Required before firing the completion system event.** If QA reveals a bug, fix it first — do not send the done signal.
+**Step 3: Test on ~/Laputa (not demo vault)**:
+- Switch vault to `~/Laputa` from the vault picker if needed
+- Take screenshot, verify feature is visually present
+- **Click through the happy path** with `cliclick` — real mouse interaction
+- **If task touches save/edit**: `git -C ~/Laputa diff` must show changed files after Cmd+S
+- **If task fixes a bug**: reproduce original bug scenario on ~/Laputa, confirm it's gone
+- Take final screenshot
+
+**Step 4: Release lock and fire signal** (only if QA passed):
+```bash
+rm -f /tmp/laputa-qa.lock
+openclaw system event --text "laputa-task-done:<task_id>:<slug>" --mode now
+```
+
+If QA fails: fix the bug, re-run QA. Do NOT fire the done signal until QA passes on ~/Laputa.
+
+Use the `laputa-qa` skill scripts:
+```bash
+bash ~/.openclaw/skills/laputa-qa/scripts/focus-app.sh laputa
+bash ~/.openclaw/skills/laputa-qa/scripts/screenshot.sh /tmp/before.png
+bash ~/.openclaw/skills/laputa-qa/scripts/shortcut.sh "command" "s"   # Cmd+S
+bash ~/.openclaw/skills/laputa-qa/scripts/click.sh 400 300            # × 2.56 for retina
+```
 
 ### Playwright for Testing & Verification
 - `npx playwright test` — runs all E2E tests
