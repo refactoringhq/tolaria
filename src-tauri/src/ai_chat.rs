@@ -177,10 +177,7 @@ mod tests {
     #[test]
     fn test_extract_response_text_all_none() {
         let resp = AnthropicResponse {
-            content: vec![
-                ContentBlock { text: None },
-                ContentBlock { text: None },
-            ],
+            content: vec![ContentBlock { text: None }, ContentBlock { text: None }],
             model: "test".to_string(),
             stop_reason: None,
         };

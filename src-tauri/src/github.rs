@@ -207,10 +207,7 @@ async fn github_device_flow_poll_with_base(
         .form(&[
             ("client_id", GITHUB_CLIENT_ID),
             ("device_code", device_code),
-            (
-                "grant_type",
-                "urn:ietf:params:oauth:grant-type:device_code",
-            ),
+            ("grant_type", "urn:ietf:params:oauth:grant-type:device_code"),
         ])
         .send()
         .await
@@ -713,8 +710,7 @@ mod tests {
             .create_async()
             .await;
 
-        let result =
-            github_create_repo_with_base("token", "new-repo", true, &server.url()).await;
+        let result = github_create_repo_with_base("token", "new-repo", true, &server.url()).await;
         mock.assert_async().await;
         assert!(result.is_ok());
         let repo = result.unwrap();
@@ -753,8 +749,7 @@ mod tests {
             .create_async()
             .await;
 
-        let result =
-            github_create_repo_with_base("token", "new-repo", false, &server.url()).await;
+        let result = github_create_repo_with_base("token", "new-repo", false, &server.url()).await;
         mock.assert_async().await;
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("GitHub API error 500"));
@@ -810,8 +805,7 @@ mod tests {
             .create_async()
             .await;
 
-        let result =
-            github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
+        let result = github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
         mock.assert_async().await;
         assert!(result.is_ok());
         let poll = result.unwrap();
@@ -831,8 +825,7 @@ mod tests {
             .create_async()
             .await;
 
-        let result =
-            github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
+        let result = github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
         mock.assert_async().await;
         assert!(result.is_ok());
         let poll = result.unwrap();
@@ -852,8 +845,7 @@ mod tests {
             .create_async()
             .await;
 
-        let result =
-            github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
+        let result = github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
         mock.assert_async().await;
         assert!(result.is_ok());
         let poll = result.unwrap();
@@ -872,8 +864,7 @@ mod tests {
             .create_async()
             .await;
 
-        let result =
-            github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
+        let result = github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
         mock.assert_async().await;
         assert!(result.is_ok());
         let poll = result.unwrap();
@@ -892,8 +883,7 @@ mod tests {
             .create_async()
             .await;
 
-        let result =
-            github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
+        let result = github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
         mock.assert_async().await;
         assert!(result.is_ok());
         let poll = result.unwrap();
@@ -911,8 +901,7 @@ mod tests {
             .create_async()
             .await;
 
-        let result =
-            github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
+        let result = github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
         mock.assert_async().await;
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Device flow poll HTTP error"));
@@ -929,8 +918,7 @@ mod tests {
             .create_async()
             .await;
 
-        let result =
-            github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
+        let result = github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
         mock.assert_async().await;
         assert!(result.is_ok());
         let poll = result.unwrap();
