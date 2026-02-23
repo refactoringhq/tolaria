@@ -1,0 +1,550 @@
+{
+  "version": "2.8",
+  "themes": { "Mode": ["Dark"] },
+  "variables": {},
+  "fonts": [],
+  "children": [
+    {
+      "type": "frame",
+      "id": "pi01",
+      "name": "Properties Inspector — Editable Properties",
+      "width": 320,
+      "height": 520,
+      "layout": "vertical",
+      "fill": "$--background",
+      "theme": { "Mode": "Light" },
+      "children": [
+        {
+          "type": "text",
+          "id": "pi02",
+          "name": "frameLabel",
+          "content": "Editable properties section: interactive hover states, cursor pointer, click-to-edit inputs. Properties from frontmatter YAML that the user can modify.",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "normal",
+          "fill": "$--muted-foreground",
+          "padding": [8, 12]
+        },
+        {
+          "type": "frame",
+          "id": "pi03",
+          "name": "Inspector Header",
+          "width": "fill_container",
+          "height": 45,
+          "fill": "$--background",
+          "stroke": { "align": "inside", "thickness": { "bottom": 1 }, "fill": "$--border" },
+          "gap": 8,
+          "padding": [0, 12],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon_font",
+              "id": "pi04",
+              "width": 16,
+              "height": 16,
+              "iconFontName": "sliders-horizontal",
+              "iconFontFamily": "lucide",
+              "fill": "$--muted-foreground"
+            },
+            {
+              "type": "text",
+              "id": "pi05",
+              "content": "Properties",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "600",
+              "fill": "$--muted-foreground",
+              "width": "fill_container"
+            },
+            {
+              "type": "icon_font",
+              "id": "pi06",
+              "width": 16,
+              "height": 16,
+              "iconFontName": "x",
+              "iconFontFamily": "lucide",
+              "fill": "$--muted-foreground"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "pi07",
+          "name": "Properties Section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "padding": [12, 12],
+          "gap": 10,
+          "children": [
+            {
+              "type": "frame",
+              "id": "pi08",
+              "name": "Type Row",
+              "width": "fill_container",
+              "justifyContent": "space-between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pi09",
+                  "content": "TYPE",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 10,
+                  "fontWeight": "500",
+                  "letterSpacing": 1.2,
+                  "fill": "$--muted-foreground"
+                },
+                {
+                  "type": "frame",
+                  "id": "pi10",
+                  "name": "Type Badge",
+                  "fill": "$--accent-blue-light",
+                  "cornerRadius": 6,
+                  "padding": [2, 8],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "pi11",
+                      "content": "Project",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500",
+                      "fill": "$--accent-blue"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pi12",
+              "name": "Editable Row — Status (hover state)",
+              "width": "fill_container",
+              "justifyContent": "space-between",
+              "alignItems": "center",
+              "cornerRadius": 4,
+              "fill": "$--bg-hover-subtle",
+              "padding": [4, 6],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pi13",
+                  "content": "STATUS",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 10,
+                  "fontWeight": "500",
+                  "letterSpacing": 1.2,
+                  "fill": "$--muted-foreground"
+                },
+                {
+                  "type": "frame",
+                  "id": "pi14",
+                  "name": "Status Badge",
+                  "fill": "$--accent-green-light",
+                  "cornerRadius": 16,
+                  "padding": [1, 6],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "pi15",
+                      "content": "ACTIVE",
+                      "fontFamily": "IBM Plex Mono",
+                      "fontSize": 10,
+                      "fontWeight": "600",
+                      "letterSpacing": 1.2,
+                      "fill": "$--accent-green"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pi16",
+              "name": "Editable Row — Owner (normal state)",
+              "width": "fill_container",
+              "justifyContent": "space-between",
+              "alignItems": "center",
+              "cornerRadius": 4,
+              "padding": [4, 6],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pi17",
+                  "content": "OWNER",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 10,
+                  "fontWeight": "500",
+                  "letterSpacing": 1.2,
+                  "fill": "$--muted-foreground"
+                },
+                {
+                  "type": "text",
+                  "id": "pi18",
+                  "content": "Luca Rossi",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal",
+                  "fill": "$--foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pi19",
+              "name": "Editable Row — Tags (normal state)",
+              "width": "fill_container",
+              "justifyContent": "space-between",
+              "alignItems": "center",
+              "cornerRadius": 4,
+              "padding": [4, 6],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pi20",
+                  "content": "TAGS",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 10,
+                  "fontWeight": "500",
+                  "letterSpacing": 1.2,
+                  "fill": "$--muted-foreground"
+                },
+                {
+                  "type": "frame",
+                  "id": "pi21",
+                  "name": "Tag Pills",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "pi22",
+                      "fill": "$--accent-blue-light",
+                      "cornerRadius": 12,
+                      "padding": [2, 8],
+                      "children": [
+                        { "type": "text", "id": "pi23", "content": "React", "fontFamily": "Inter", "fontSize": 11, "fontWeight": "500", "fill": "$--accent-blue" }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "pi24",
+                      "fill": "$--accent-blue-light",
+                      "cornerRadius": 12,
+                      "padding": [2, 8],
+                      "children": [
+                        { "type": "text", "id": "pi25", "content": "TypeScript", "fontFamily": "Inter", "fontSize": 11, "fontWeight": "500", "fill": "$--accent-blue" }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pi26",
+              "name": "Add Property Button",
+              "width": "fill_container",
+              "height": 32,
+              "stroke": { "align": "inside", "thickness": 1, "fill": "$--border" },
+              "cornerRadius": 6,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pi27",
+                  "content": "+ Add property",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "pi28",
+          "name": "Separator",
+          "width": "fill_container",
+          "height": 1,
+          "fill": "$--border"
+        },
+        {
+          "type": "frame",
+          "id": "pi29",
+          "name": "Info Section — Read-only Metadata",
+          "width": "fill_container",
+          "layout": "vertical",
+          "padding": [12, 12],
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "pi30",
+              "content": "INFO",
+              "fontFamily": "IBM Plex Mono",
+              "fontSize": 10,
+              "fontWeight": "500",
+              "letterSpacing": 1.2,
+              "fill": "$--muted-foreground",
+              "padding": [0, 0, 4, 0]
+            },
+            {
+              "type": "frame",
+              "id": "pi31",
+              "name": "Info Row — Modified (read-only, muted)",
+              "width": "fill_container",
+              "justifyContent": "space-between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pi32",
+                  "content": "MODIFIED",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 10,
+                  "fontWeight": "500",
+                  "letterSpacing": 1.2,
+                  "fill": "$--text-muted"
+                },
+                {
+                  "type": "text",
+                  "id": "pi33",
+                  "content": "Feb 14, 2026",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal",
+                  "fill": "$--text-muted"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pi34",
+              "name": "Info Row — Created (read-only, muted)",
+              "width": "fill_container",
+              "justifyContent": "space-between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pi35",
+                  "content": "CREATED",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 10,
+                  "fontWeight": "500",
+                  "letterSpacing": 1.2,
+                  "fill": "$--text-muted"
+                },
+                {
+                  "type": "text",
+                  "id": "pi36",
+                  "content": "Jan 5, 2026",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal",
+                  "fill": "$--text-muted"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pi37",
+              "name": "Info Row — Words (read-only, muted)",
+              "width": "fill_container",
+              "justifyContent": "space-between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pi38",
+                  "content": "WORDS",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 10,
+                  "fontWeight": "500",
+                  "letterSpacing": 1.2,
+                  "fill": "$--text-muted"
+                },
+                {
+                  "type": "text",
+                  "id": "pi39",
+                  "content": "1,247",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal",
+                  "fill": "$--text-muted"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pi40",
+              "name": "Info Row — File Size (read-only, muted)",
+              "width": "fill_container",
+              "justifyContent": "space-between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pi41",
+                  "content": "SIZE",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 10,
+                  "fontWeight": "500",
+                  "letterSpacing": 1.2,
+                  "fill": "$--text-muted"
+                },
+                {
+                  "type": "text",
+                  "id": "pi42",
+                  "content": "4.2 KB",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal",
+                  "fill": "$--text-muted"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "pi50",
+      "name": "Properties Inspector — Info Section Detail",
+      "width": 320,
+      "height": 400,
+      "layout": "vertical",
+      "fill": "$--background",
+      "theme": { "Mode": "Light" },
+      "children": [
+        {
+          "type": "text",
+          "id": "pi51",
+          "name": "frameLabel",
+          "content": "Info section for read-only derived metadata. Labels and values use --text-muted color. No hover states, no cursor pointer, no click interaction. Visually distinct from editable properties above.",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "normal",
+          "fill": "$--muted-foreground",
+          "padding": [8, 12]
+        },
+        {
+          "type": "frame",
+          "id": "pi52",
+          "name": "Comparison Side by Side",
+          "width": "fill_container",
+          "layout": "vertical",
+          "padding": [12, 12],
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "pi53",
+              "name": "Editable Property Example",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pi54",
+                  "content": "EDITABLE (interactive)",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 9,
+                  "fontWeight": "600",
+                  "letterSpacing": 1.5,
+                  "fill": "$--accent-green"
+                },
+                {
+                  "type": "frame",
+                  "id": "pi55",
+                  "name": "Row — cursor:pointer, hover:bg-muted, rounded",
+                  "width": "fill_container",
+                  "justifyContent": "space-between",
+                  "alignItems": "center",
+                  "cornerRadius": 4,
+                  "fill": "$--bg-hover-subtle",
+                  "padding": [4, 6],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "pi56",
+                      "content": "OWNER",
+                      "fontFamily": "IBM Plex Mono",
+                      "fontSize": 10,
+                      "fontWeight": "500",
+                      "letterSpacing": 1.2,
+                      "fill": "$--muted-foreground"
+                    },
+                    {
+                      "type": "text",
+                      "id": "pi57",
+                      "content": "Luca Rossi",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal",
+                      "fill": "$--foreground"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pi58",
+              "name": "Read-only Property Example",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pi59",
+                  "content": "READ-ONLY (muted, no interaction)",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 9,
+                  "fontWeight": "600",
+                  "letterSpacing": 1.5,
+                  "fill": "$--text-muted"
+                },
+                {
+                  "type": "frame",
+                  "id": "pi60",
+                  "name": "Row — cursor:default, no hover, muted color",
+                  "width": "fill_container",
+                  "justifyContent": "space-between",
+                  "alignItems": "center",
+                  "padding": [4, 6],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "pi61",
+                      "content": "MODIFIED",
+                      "fontFamily": "IBM Plex Mono",
+                      "fontSize": 10,
+                      "fontWeight": "500",
+                      "letterSpacing": 1.2,
+                      "fill": "$--text-muted"
+                    },
+                    {
+                      "type": "text",
+                      "id": "pi62",
+                      "content": "Feb 14, 2026",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal",
+                      "fill": "$--text-muted"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

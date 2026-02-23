@@ -1,56 +1,34 @@
-# Vault from GitHub — Implementation Summary
+# Properties Inspector: Editable vs Read-Only Distinction
 
-## What was built
+## What was implemented
 
-A "Vault from GitHub" feature that lets users create or clone a vault from a GitHub repository, directly from within the Laputa app.
+Split the Properties panel into two visually distinct sections:
 
-## Architecture
+### 1. Editable Properties (top section)
+- Frontmatter properties the user can modify
+- Interactive styling: `hover:bg-muted` background on row hover, cursor pointer, click-to-edit
+- Includes: Type badge, Status pill, boolean toggles, array tag pills, text fields
+- "Add property" button for user-defined properties
 
-### Rust Backend (`src-tauri/src/github.rs`)
-- `github_list_repos` — Paginated GitHub API call to list authenticated user's repos (up to 1000)
-- `github_create_repo` — Creates a new GitHub repo via API with auto_init
-- `clone_repo` — Clones a repo locally using HTTPS + OAuth token injection, configures remote auth
-- Helper functions: `inject_token_into_url`, `configure_remote_auth`
-- All three exposed as Tauri commands in `lib.rs`
+### 2. Info Section (bottom section, separated by border)
+- Read-only derived metadata with "Info" header
+- Muted styling: `--text-muted` color for both labels and values
+- No hover states, no click interaction
+- Fields: Modified date, Created date, Word count, File size (formatted as B/KB/MB)
 
-### Frontend (`src/components/GitHubVaultModal.tsx`)
-- Two-tab modal: "Clone Existing" and "Create New"
-- Clone tab: searchable repo list with Private/Public badges, auto-fill clone path
-- Create tab: repo name, Private/Public toggle, auto-fill clone path
-- Loading and cloning progress states
-- No-token state redirects to Settings
-- Integrated into `App.tsx` via StatusBar vault menu
+### Other changes
+- Added `is_a` and `Is A` to SKIP_KEYS to prevent duplication (already shown via TypeRow)
+- Added `formatFileSize()` helper for human-readable file sizes
+- Created `design/properties-inspector.pen` with wireframe frames
+- Updated `docs/ABSTRACTIONS.md` with new Inspector section documentation
 
-### Settings Extension
-- Added `github_token` field to Settings (Rust + TypeScript)
-- GitHub Token input field in SettingsPanel
-- Refactored `settings.rs` to use testable internal functions (`get_settings_at`, `save_settings_at`)
+## Commits on this branch
+1. `design: properties-inspector wireframes` — 2 frames showing editable vs read-only distinction
+2. `feat: distinguish editable from read-only properties in inspector` — main implementation + 12 new tests
+3. `fix: hide is_a/Is A from editable properties` — prevent TypeRow duplication
+4. `docs: update abstractions for properties inspector Info section`
 
-### Mock Data (`src/mock-tauri.ts`)
-- 5 realistic mock repos for browser-mode testing
-- Mock handlers for all 3 GitHub commands
-
-## Design Decisions
-
-1. **HTTPS+token auth over SSH**: Simpler for users (no SSH key setup), token injected into remote URL
-2. **Auto-fill clone path**: `~/Vaults/<repo-name>` — sensible default, editable
-3. **Private by default** for new repos — safer default for personal vaults
-4. **No OAuth flow**: GitHub token entered manually in Settings — ships faster, no server dependency
-5. **Extra vaults tracked in state**: Cloned vaults added to vault switcher dynamically (not persisted across sessions yet)
-
-## Test Coverage
-
-- **Frontend**: 80.79% statements, 83.34% lines (threshold: 70%)
-- **Rust**: 86.20% lines (threshold: 85%)
-- 12 GitHubVaultModal component tests
-- 12 Rust github.rs unit tests
-- 9 Rust settings.rs unit tests (refactored for coverage)
-- E2E Playwright verification: vault menu, modal tabs, repo list, search filter, repo selection
-
-## Commits (6 total)
-1. `design: vault-from-github wireframes`
-2. `feat: add Rust backend for GitHub vault operations`
-3. `feat: GitHub vault modal with clone/create flows`
-4. `test: add GitHubVaultModal component tests`
-5. `test: improve Rust test coverage for settings and github modules`
-6. `fix: remove unused GithubRepo import in mock-tauri.ts`
+## Test coverage
+- 469 tests passing (12 new tests for this feature)
+- CodeScene quality gates: passed on all commits
+- `pnpm build`: succeeds

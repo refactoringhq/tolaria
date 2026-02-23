@@ -128,6 +128,23 @@ describe('DynamicPropertiesPanel', () => {
     expect(screen.getByText('cadence')).toBeInTheDocument()
   })
 
+  it('skips is_a key since it is shown via TypeRow', () => {
+    render(
+      <DynamicPropertiesPanel
+        entry={makeEntry({ isA: 'Project' })}
+        content=""
+        frontmatter={{ is_a: 'Project', Status: 'Active' }}
+      />
+    )
+    // Type is shown via TypeRow, is_a should NOT appear as a separate editable property
+    const editableRows = screen.getAllByTestId('editable-property')
+    const editableLabels = editableRows.map(row => row.querySelector('span')?.textContent?.replace('×', '').trim())
+    expect(editableLabels).not.toContain('is_a')
+    // But Type row should still show
+    expect(screen.getByText('Type')).toBeInTheDocument()
+    expect(screen.getByText('Project')).toBeInTheDocument()
+  })
+
   it('renders boolean property as toggle', () => {
     render(
       <DynamicPropertiesPanel
@@ -355,5 +372,134 @@ describe('DynamicPropertiesPanel', () => {
     fireEvent.click(screen.getByText('+ Add property'))
     fireEvent.click(screen.getByText('Cancel'))
     expect(screen.getByText('+ Add property')).toBeInTheDocument()
+  })
+
+  describe('editable vs read-only distinction', () => {
+    it('renders Info section header', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{}}
+        />
+      )
+      expect(screen.getByText('Info')).toBeInTheDocument()
+    })
+
+    it('renders Modified and Words in read-only Info section', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry({ modifiedAt: 1700000000 })}
+          content="---\ntitle: Test\n---\nOne two three"
+          frontmatter={{}}
+        />
+      )
+      const readOnlyRows = screen.getAllByTestId('readonly-property')
+      const labels = readOnlyRows.map(row => row.querySelector('span')?.textContent)
+      expect(labels).toContain('Modified')
+      expect(labels).toContain('Words')
+    })
+
+    it('renders Created date in Info section', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry({ createdAt: 1700000000 })}
+          content=""
+          frontmatter={{}}
+        />
+      )
+      const readOnlyRows = screen.getAllByTestId('readonly-property')
+      const labels = readOnlyRows.map(row => row.querySelector('span')?.textContent)
+      expect(labels).toContain('Created')
+    })
+
+    it('renders file size in Info section', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry({ fileSize: 4300 })}
+          content=""
+          frontmatter={{}}
+        />
+      )
+      expect(screen.getByText('Size')).toBeInTheDocument()
+      expect(screen.getByText('4.2 KB')).toBeInTheDocument()
+    })
+
+    it('shows em dash for null timestamps in Info section', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry({ modifiedAt: null, createdAt: null })}
+          content=""
+          frontmatter={{}}
+        />
+      )
+      // Two em dashes for null Modified and Created
+      const dashes = screen.getAllByText('\u2014')
+      expect(dashes.length).toBeGreaterThanOrEqual(2)
+    })
+
+    it('editable properties have hover styling via data-testid', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ cadence: 'Weekly', owner: 'Luca' }}
+          onUpdateProperty={onUpdateProperty}
+          onDeleteProperty={onDeleteProperty}
+        />
+      )
+      const editableRows = screen.getAllByTestId('editable-property')
+      expect(editableRows.length).toBe(2)
+      // Editable rows have hover:bg-muted class for interactivity
+      editableRows.forEach(row => {
+        expect(row.className).toContain('hover:bg-muted')
+      })
+    })
+
+    it('read-only rows do not have hover styling', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{}}
+        />
+      )
+      const readOnlyRows = screen.getAllByTestId('readonly-property')
+      readOnlyRows.forEach(row => {
+        expect(row.className).not.toContain('hover:bg-muted')
+      })
+    })
+
+    it('formats file sizes correctly', () => {
+      // Small file — bytes
+      const { rerender } = render(
+        <DynamicPropertiesPanel
+          entry={makeEntry({ fileSize: 500 })}
+          content=""
+          frontmatter={{}}
+        />
+      )
+      expect(screen.getByText('500 B')).toBeInTheDocument()
+
+      // KB range
+      rerender(
+        <DynamicPropertiesPanel
+          entry={makeEntry({ fileSize: 2048 })}
+          content=""
+          frontmatter={{}}
+        />
+      )
+      expect(screen.getByText('2.0 KB')).toBeInTheDocument()
+
+      // MB range
+      rerender(
+        <DynamicPropertiesPanel
+          entry={makeEntry({ fileSize: 1048576 })}
+          content=""
+          frontmatter={{}}
+        />
+      )
+      expect(screen.getByText('1.0 MB')).toBeInTheDocument()
+    })
   })
 })

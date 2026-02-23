@@ -28,7 +28,7 @@ export const RELATIONSHIP_KEYS = new Set([
 ])
 
 // Keys to skip showing in Properties
-const SKIP_KEYS = new Set(['aliases', 'notion_id', 'workspace'])
+const SKIP_KEYS = new Set(['aliases', 'notion_id', 'workspace', 'is_a', 'Is A'])
 
 // eslint-disable-next-line react-refresh/only-export-components -- utility co-located with component
 export function containsWikilinks(value: FrontmatterValue): boolean {
@@ -61,6 +61,14 @@ function parseNewValue(rawValue: string): FrontmatterValue {
   if (!rawValue.includes(',')) return rawValue.trim() || ''
   const items = rawValue.split(',').map(s => s.trim()).filter(s => s)
   return items.length === 1 ? items[0] : items
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  const kb = bytes / 1024
+  if (kb < 1024) return `${kb.toFixed(1)} KB`
+  const mb = kb / 1024
+  return `${mb.toFixed(1)} MB`
 }
 
 function isStatusKey(key: string): boolean {
@@ -165,7 +173,7 @@ function PropertyRow({ propKey, value, editingKey, onStartEdit, onSave, onSaveLi
   onUpdate?: (key: string, value: FrontmatterValue) => void; onDelete?: (key: string) => void
 }) {
   return (
-    <div className="group/prop flex items-center justify-between">
+    <div className="group/prop flex items-center justify-between rounded px-1.5 py-0.5 transition-colors hover:bg-muted" data-testid="editable-property">
       <span className="font-mono-overline flex shrink-0 items-center gap-1 text-muted-foreground">
         {propKey}
         {onDelete && (
@@ -191,11 +199,11 @@ function PropertyValueCell({ propKey, value, isEditing, onStartEdit, onSave, onS
   return <EditableValue {...editProps} />
 }
 
-function StaticRow({ label, value }: { label: string; value: string }) {
+function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="font-mono-overline shrink-0 text-muted-foreground">{label}</span>
-      <span className="text-right text-[12px] text-secondary-foreground">{value}</span>
+    <div className="flex items-center justify-between px-1.5" data-testid="readonly-property">
+      <span className="font-mono-overline shrink-0" style={{ color: 'var(--text-muted)' }}>{label}</span>
+      <span className="text-right text-[12px]" style={{ color: 'var(--text-muted)' }}>{value}</span>
     </div>
   )
 }
@@ -256,19 +264,28 @@ export function DynamicPropertiesPanel({
   }, [onAddProperty])
 
   return (
-    <div>
+    <div className="flex flex-col gap-3">
+      {/* Editable properties section */}
       <div className="flex flex-col gap-2">
         <TypeRow isA={entry.isA} onNavigate={onNavigate} />
         {propertyEntries.map(([key, value]) => (
           <PropertyRow key={key} propKey={key} value={value} editingKey={editingKey} onStartEdit={setEditingKey} onSave={handleSaveValue} onSaveList={handleSaveList} onUpdate={onUpdateProperty} onDelete={onDeleteProperty} />
         ))}
-        <StaticRow label="Modified" value={formatDate(entry.modifiedAt)} />
-        <StaticRow label="Words" value={String(wordCount)} />
       </div>
       {showAddDialog
         ? <AddPropertyForm onAdd={handleAdd} onCancel={() => setShowAddDialog(false)} />
         : <AddPropertyButton onClick={() => setShowAddDialog(true)} disabled={!onAddProperty} />
       }
+      {/* Read-only Info section */}
+      <div className="border-t border-border pt-3">
+        <h4 className="font-mono-overline mb-2 text-muted-foreground">Info</h4>
+        <div className="flex flex-col gap-1.5">
+          <InfoRow label="Modified" value={formatDate(entry.modifiedAt)} />
+          <InfoRow label="Created" value={formatDate(entry.createdAt)} />
+          <InfoRow label="Words" value={String(wordCount)} />
+          <InfoRow label="Size" value={formatFileSize(entry.fileSize)} />
+        </div>
+      </div>
     </div>
   )
 }

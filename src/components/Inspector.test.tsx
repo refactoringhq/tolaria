@@ -279,4 +279,49 @@ This is a test note with some words to count.
     )
     expect(screen.getByText('No revision history')).toBeInTheDocument()
   })
+
+  it('shows separate Info section with read-only metadata', () => {
+    render(
+      <Inspector
+        {...defaultProps}
+        entry={mockEntry}
+        content={mockContent}
+      />
+    )
+    expect(screen.getByText('Info')).toBeInTheDocument()
+    expect(screen.getByText('Modified')).toBeInTheDocument()
+    expect(screen.getByText('Created')).toBeInTheDocument()
+    expect(screen.getByText('Size')).toBeInTheDocument()
+  })
+
+  it('renders editable properties with interactive styling', () => {
+    render(
+      <Inspector
+        {...defaultProps}
+        entry={mockEntry}
+        content={mockContent}
+      />
+    )
+    const editableRows = screen.getAllByTestId('editable-property')
+    expect(editableRows.length).toBeGreaterThan(0)
+    editableRows.forEach(row => {
+      expect(row.className).toContain('hover:bg-muted')
+    })
+  })
+
+  it('renders read-only properties with muted non-interactive styling', () => {
+    render(
+      <Inspector
+        {...defaultProps}
+        entry={mockEntry}
+        content={mockContent}
+      />
+    )
+    const readOnlyRows = screen.getAllByTestId('readonly-property')
+    expect(readOnlyRows.length).toBe(4) // Modified, Created, Words, Size
+    readOnlyRows.forEach(row => {
+      expect(row.className).not.toContain('hover:bg-muted')
+      expect(row.className).not.toContain('cursor-pointer')
+    })
+  })
 })

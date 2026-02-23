@@ -259,7 +259,10 @@ In brief: `src/theme.json` defines editor typography and styling as nested JSON.
 
 The Inspector panel (`src/components/Inspector.tsx`) is composed of four sub-panels:
 
-1. **DynamicPropertiesPanel** (`src/components/DynamicPropertiesPanel.tsx`): Renders frontmatter as editable key-value pairs. Uses `EditableValue` for inline editing.
+1. **DynamicPropertiesPanel** (`src/components/DynamicPropertiesPanel.tsx`): Renders frontmatter as editable key-value pairs with two distinct sections:
+   - **Editable properties** (top): frontmatter fields the user can modify — shown with interactive hover styling (`hover:bg-muted`), cursor pointer, and click-to-edit. Includes Type badge, Status pill, boolean toggles, array tag pills, and text fields.
+   - **Info section** (bottom, separated by border): read-only derived metadata — Modified, Created, Words, File Size. Uses muted text color (`--text-muted`) with no hover states or click interaction. These fields are computed from file metadata and content, not from frontmatter.
+   - Keys in `SKIP_KEYS` (`aliases`, `notion_id`, `workspace`, `is_a`, `Is A`) are hidden from the editable section since they are either internal or already displayed elsewhere (e.g., `is_a` is shown via the TypeRow badge).
 2. **Relationships**: Shows `belongs_to` and `related_to` wikilinks as clickable chips.
 3. **Backlinks**: Scans `allContent` for notes that reference the current note via `[[title]]` or `[[path]]`.
 4. **Git History**: Shows the last few commits from `gitHistory` state.
