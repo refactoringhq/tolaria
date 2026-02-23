@@ -102,12 +102,12 @@ const schema = BlockNoteSchema.create({
 })
 
 /** Single BlockNote editor view — content is swapped via replaceBlocks */
-function SingleEditorView({ editor, entries, onNavigateWikilink, onChange, vaultPath }: { editor: ReturnType<typeof useCreateBlockNote>; entries: VaultEntry[]; onNavigateWikilink: (target: string) => void; onChange?: () => void; vaultPath?: string }) {
+function SingleEditorView({ editor, entries, onNavigateWikilink, onChange }: { editor: ReturnType<typeof useCreateBlockNote>; entries: VaultEntry[]; onNavigateWikilink: (target: string) => void; onChange?: () => void }) {
   const navigateRef = useRef(onNavigateWikilink)
   useEffect(() => { navigateRef.current = onNavigateWikilink }, [onNavigateWikilink])
   const { cssVars } = useEditorTheme()
   const containerRef = useRef<HTMLDivElement>(null)
-  const { isDragOver } = useImageDrop({ editor, containerRef, vaultPath })
+  const { isDragOver } = useImageDrop({ containerRef })
 
   // Keep module-level ref in sync so WikiLink renderer can access vault entries
   useEffect(() => {
@@ -535,7 +535,6 @@ export const Editor = memo(function Editor({
                 entries={entries}
                 onNavigateWikilink={onNavigateWikilink}
                 onChange={handleEditorChange}
-                vaultPath={vaultPath}
               />
             </div>
           )}

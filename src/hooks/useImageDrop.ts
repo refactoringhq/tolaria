@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, type RefObject } from 'react'
+import { useEffect, useState, type RefObject } from 'react'
 import { invoke, convertFileSrc } from '@tauri-apps/api/core'
 import { isTauri } from '../mock-tauri'
 
@@ -35,19 +35,11 @@ export async function uploadImageFile(file: File, vaultPath?: string): Promise<s
 }
 
 interface UseImageDropOptions {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  editor: any
   containerRef: RefObject<HTMLDivElement | null>
-  vaultPath?: string
 }
 
-export function useImageDrop({ editor, containerRef, vaultPath }: UseImageDropOptions) {
+export function useImageDrop({ containerRef }: UseImageDropOptions) {
   const [isDragOver, setIsDragOver] = useState(false)
-  const vaultPathRef = useRef(vaultPath)
-
-  useEffect(() => {
-    vaultPathRef.current = vaultPath
-  }, [vaultPath])
 
   useEffect(() => {
     const container = containerRef.current
@@ -66,38 +58,10 @@ export function useImageDrop({ editor, containerRef, vaultPath }: UseImageDropOp
       }
     }
 
-    const handleDrop = async (e: DragEvent) => {
-      e.preventDefault()
+    const handleDrop = () => {
+      // Only reset visual state; BlockNote's native dropFile plugin handles
+      // the actual upload (via editor.uploadFile) and block insertion.
       setIsDragOver(false)
-      if (!e.dataTransfer) return
-
-      const files = Array.from(e.dataTransfer.files).filter(f => IMAGE_MIME_TYPES.includes(f.type))
-      if (files.length === 0) return
-
-      // Try to position cursor at the drop location
-      try {
-        const view = editor._tiptapEditor.view
-        const dropPos = view.posAtCoords({ left: e.clientX, top: e.clientY })
-        if (dropPos) {
-          editor._tiptapEditor.commands.setTextSelection(dropPos.pos)
-        }
-      } catch {
-        // If positioning fails, we insert at the current cursor — still fine
-      }
-
-      for (const file of files) {
-        try {
-          const url = await uploadImageFile(file, vaultPathRef.current)
-          const currentBlock = editor.getTextCursorPosition().block
-          editor.insertBlocks(
-            [{ type: 'image' as const, props: { url } }],
-            currentBlock,
-            'after',
-          )
-        } catch (err) {
-          console.error('Failed to upload dropped image:', err)
-        }
-      }
     }
 
     container.addEventListener('dragover', handleDragOver)
@@ -109,7 +73,7 @@ export function useImageDrop({ editor, containerRef, vaultPath }: UseImageDropOp
       container.removeEventListener('dragleave', handleDragLeave)
       container.removeEventListener('drop', handleDrop)
     }
-  }, [editor, containerRef])
+  }, [containerRef])
 
   return { isDragOver }
 }
