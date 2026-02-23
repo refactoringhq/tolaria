@@ -7,12 +7,14 @@ const defaultSettings: Settings = {
   anthropic_key: null,
   openai_key: null,
   google_key: null,
+  github_token: null,
 }
 
 const savedSettings: Settings = {
   anthropic_key: 'sk-ant-test123',
   openai_key: null,
   google_key: 'AIza-test',
+  github_token: null,
 }
 
 let mockSettingsStore: Settings = { ...defaultSettings }
@@ -71,6 +73,7 @@ describe('useSettings', () => {
       anthropic_key: 'sk-ant-new',
       openai_key: 'sk-openai-new',
       google_key: null,
+      github_token: null,
     }
 
     await act(async () => {

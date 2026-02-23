@@ -44,6 +44,17 @@ export interface Settings {
   anthropic_key: string | null
   openai_key: string | null
   google_key: string | null
+  github_token: string | null
+}
+
+export interface GithubRepo {
+  name: string
+  full_name: string
+  description: string | null
+  private: boolean
+  clone_url: string
+  html_url: string
+  updated_at: string | null
 }
 
 export type SidebarSelection =

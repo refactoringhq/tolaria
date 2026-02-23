@@ -27,6 +27,9 @@ dist-ssr
 /test-results/
 /playwright-report/
 
+# Coverage reports
+/coverage/
+
 # Laputa vault cache
 .laputa-cache.json
 

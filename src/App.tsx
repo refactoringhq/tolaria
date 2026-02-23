@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { NoteList } from './components/NoteList'
 import { Editor } from './components/Editor'
@@ -9,6 +9,7 @@ import { Toast } from './components/Toast'
 import { CommitDialog } from './components/CommitDialog'
 import { StatusBar } from './components/StatusBar'
 import { SettingsPanel } from './components/SettingsPanel'
+import { GitHubVaultModal } from './components/GitHubVaultModal'
 import { useVaultLoader } from './hooks/useVaultLoader'
 import { useSettings } from './hooks/useSettings'
 import { useNoteActions, generateUntitledName } from './hooks/useNoteActions'
@@ -19,6 +20,7 @@ import { useKeyboardNavigation } from './hooks/useKeyboardNavigation'
 import { useUpdater } from './hooks/useUpdater'
 import { setApiKey } from './utils/ai-chat'
 import type { SidebarSelection, GitCommit } from './types'
+import type { VaultOption } from './components/StatusBar'
 import './App.css'
 
 // Type declaration for mock content storage
@@ -30,7 +32,7 @@ declare global {
 
 const DEFAULT_SELECTION: SidebarSelection = { kind: 'filter', filter: 'all' }
 
-const VAULTS = isTauri()
+const DEFAULT_VAULTS: VaultOption[] = isTauri()
   ? [
       { label: 'Demo v2', path: '/Users/luca/Workspace/laputa-app/demo-vault-v2' },
       { label: 'Laputa', path: '/Users/luca/Laputa' },
@@ -58,9 +60,13 @@ function App() {
   const [showQuickOpen, setShowQuickOpen] = useState(false)
   const [showCommitDialog, setShowCommitDialog] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
-  const [vaultPath, setVaultPath] = useState(VAULTS[0].path)
+  const [vaultPath, setVaultPath] = useState(DEFAULT_VAULTS[0].path)
   const [showAIChat, setShowAIChat] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showGitHubVault, setShowGitHubVault] = useState(false)
+  const [extraVaults, setExtraVaults] = useState<VaultOption[]>([])
+
+  const allVaults = useMemo(() => [...DEFAULT_VAULTS, ...extraVaults], [extraVaults])
 
   const vault = useVaultLoader(vaultPath)
   const { settings, saveSettings } = useSettings()
@@ -93,6 +99,15 @@ function App() {
     setGitHistory([])
     notes.closeAllTabs()
   }, [notes])
+
+  const handleVaultCloned = useCallback((path: string, label: string) => {
+    setExtraVaults(prev => {
+      if (prev.some(v => v.path === path)) return prev
+      return [...prev, { label, path }]
+    })
+    handleSwitchVault(path)
+    setToastMessage(`Vault "${label}" cloned and opened`)
+  }, [handleSwitchVault])
 
   useEffect(() => {
     if (!notes.activeTabPath) { setGitHistory([]); return }
@@ -197,12 +212,19 @@ function App() {
           />
         </div>
       </div>
-      <StatusBar noteCount={vault.entries.length} vaultPath={vaultPath} vaults={VAULTS} onSwitchVault={handleSwitchVault} onOpenSettings={() => setShowSettings(true)} />
+      <StatusBar noteCount={vault.entries.length} vaultPath={vaultPath} vaults={allVaults} onSwitchVault={handleSwitchVault} onOpenSettings={() => setShowSettings(true)} onConnectGitHub={() => setShowGitHubVault(true)} hasGitHub={!!settings.github_token} />
       <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
       <QuickOpenPalette open={showQuickOpen} entries={vault.entries} onSelect={notes.handleSelectNote} onClose={() => setShowQuickOpen(false)} />
       <CreateTypeDialog open={showCreateTypeDialog} onClose={() => setShowCreateTypeDialog(false)} onCreate={handleCreateType} />
       <CommitDialog open={showCommitDialog} modifiedCount={vault.modifiedFiles.length} onCommit={handleCommitPush} onClose={() => setShowCommitDialog(false)} />
       <SettingsPanel open={showSettings} settings={settings} onSave={saveSettings} onClose={() => setShowSettings(false)} />
+      <GitHubVaultModal
+        open={showGitHubVault}
+        githubToken={settings.github_token}
+        onClose={() => setShowGitHubVault(false)}
+        onVaultCloned={handleVaultCloned}
+        onOpenSettings={() => { setShowGitHubVault(false); setShowSettings(true) }}
+      />
     </div>
   )
 }

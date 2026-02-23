@@ -73,12 +73,14 @@ export function SettingsPanel({ open, settings, onSave, onClose }: SettingsPanel
   const [anthropicKey, setAnthropicKey] = useState('')
   const [openaiKey, setOpenaiKey] = useState('')
   const [googleKey, setGoogleKey] = useState('')
+  const [githubToken, setGithubToken] = useState('')
 
   useEffect(() => {
     if (open) {
       setAnthropicKey(settings.anthropic_key ?? '')
       setOpenaiKey(settings.openai_key ?? '')
       setGoogleKey(settings.google_key ?? '')
+      setGithubToken(settings.github_token ?? '')
     }
   }, [open, settings])
 
@@ -89,6 +91,7 @@ export function SettingsPanel({ open, settings, onSave, onClose }: SettingsPanel
       anthropic_key: anthropicKey.trim() || null,
       openai_key: openaiKey.trim() || null,
       google_key: googleKey.trim() || null,
+      github_token: githubToken.trim() || null,
     }
     onSave(trimmed)
     onClose()
@@ -163,6 +166,25 @@ export function SettingsPanel({ open, settings, onSave, onClose }: SettingsPanel
             value={googleKey}
             onChange={setGoogleKey}
             onClear={() => setGoogleKey('')}
+          />
+
+          <div style={{ height: 1, background: 'var(--border)' }} />
+
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 4 }}>
+              GitHub
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
+              Personal access token for cloning and syncing vaults with GitHub.
+            </div>
+          </div>
+
+          <KeyField
+            label="GitHub Token"
+            placeholder="ghp_... or gho_..."
+            value={githubToken}
+            onChange={setGithubToken}
+            onClear={() => setGithubToken('')}
           />
         </div>
 

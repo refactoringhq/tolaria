@@ -7,12 +7,14 @@ const emptySettings: Settings = {
   anthropic_key: null,
   openai_key: null,
   google_key: null,
+  github_token: null,
 }
 
 const populatedSettings: Settings = {
   anthropic_key: 'sk-ant-api03-test123',
   openai_key: 'sk-openai-test456',
   google_key: null,
+  github_token: null,
 }
 
 describe('SettingsPanel', () => {
@@ -74,6 +76,7 @@ describe('SettingsPanel', () => {
       anthropic_key: 'sk-ant-test',
       openai_key: null,
       google_key: null,
+      github_token: null,
     })
     expect(onClose).toHaveBeenCalled()
   })
@@ -92,6 +95,7 @@ describe('SettingsPanel', () => {
       anthropic_key: null,
       openai_key: 'sk-openai-test456',
       google_key: null,
+      github_token: null,
     })
   })
 
@@ -131,6 +135,7 @@ describe('SettingsPanel', () => {
       anthropic_key: 'sk-ant-test',
       openai_key: null,
       google_key: null,
+      github_token: null,
     })
   })
 

@@ -1,0 +1,1269 @@
+{
+  "version": "2.8",
+  "children": [
+    {
+      "type": "frame",
+      "id": "ghv01",
+      "x": 68,
+      "y": 0,
+      "name": "GitHub Vault — Modal empty state",
+      "clip": true,
+      "width": 560,
+      "height": 480,
+      "fill": "$--background",
+      "cornerRadius": 12,
+      "layout": "vertical",
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "$--border"
+      },
+      "children": [
+        {
+          "type": "frame",
+          "id": "ghv01-hdr",
+          "name": "Header",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "$--background",
+          "padding": [0, 24],
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "bottom": 1 },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "ghv01-title",
+              "name": "title",
+              "content": "Connect GitHub Repo",
+              "fontSize": 16,
+              "fontWeight": 600,
+              "fill": "$--foreground"
+            },
+            {
+              "type": "frame",
+              "id": "ghv01-close",
+              "name": "closeBtn",
+              "width": 24,
+              "height": 24,
+              "cornerRadius": 4,
+              "alignItems": "center",
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv01-x",
+                  "content": "X",
+                  "fontSize": 14,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv01-tabs",
+          "name": "TabBar",
+          "width": "fill_container",
+          "height": 44,
+          "fill": "$--background",
+          "padding": [0, 24],
+          "gap": 0,
+          "alignItems": "end",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "bottom": 1 },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "frame",
+              "id": "ghv01-tab-clone",
+              "name": "Tab: Clone Existing",
+              "padding": [8, 16],
+              "alignItems": "center",
+              "stroke": {
+                "align": "inside",
+                "thickness": { "bottom": 2 },
+                "fill": "$--accent-blue"
+              },
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv01-tab-clone-lbl",
+                  "content": "Clone Existing",
+                  "fontSize": 13,
+                  "fontWeight": 500,
+                  "fill": "$--foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ghv01-tab-create",
+              "name": "Tab: Create New",
+              "padding": [8, 16],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv01-tab-create-lbl",
+                  "content": "Create New",
+                  "fontSize": 13,
+                  "fontWeight": 400,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv01-body",
+          "name": "Body: Empty State",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "padding": [32, 24],
+          "gap": 16,
+          "alignItems": "center",
+          "justifyContent": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "ghv01-icon",
+              "name": "githubIcon",
+              "width": 48,
+              "height": 48,
+              "cornerRadius": 24,
+              "fill": "$--accent",
+              "alignItems": "center",
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv01-gh",
+                  "content": "GH",
+                  "fontSize": 20,
+                  "fontWeight": 600,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "ghv01-heading",
+              "content": "Clone an existing GitHub repository",
+              "fontSize": 15,
+              "fontWeight": 600,
+              "fill": "$--foreground",
+              "textAlign": "center"
+            },
+            {
+              "type": "text",
+              "id": "ghv01-desc",
+              "content": "Search your repos or paste a URL to clone a GitHub repo as a vault.",
+              "fontSize": 13,
+              "fill": "$--muted-foreground",
+              "textAlign": "center",
+              "width": 360
+            },
+            {
+              "type": "frame",
+              "id": "ghv01-search",
+              "name": "SearchInput",
+              "width": 400,
+              "height": 40,
+              "cornerRadius": 8,
+              "fill": "$--input",
+              "stroke": {
+                "align": "inside",
+                "thickness": 1,
+                "fill": "$--border"
+              },
+              "padding": [0, 12],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv01-placeholder",
+                  "content": "Search repos or paste URL...",
+                  "fontSize": 13,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv01-footer",
+          "name": "Footer",
+          "width": "fill_container",
+          "height": 56,
+          "padding": [0, 24],
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "top": 1 },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "ghv01-hint",
+              "content": "Connected as @lucaong",
+              "fontSize": 11,
+              "fill": "$--muted-foreground"
+            },
+            {
+              "type": "frame",
+              "id": "ghv01-btns",
+              "name": "buttons",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ghv01-cancel",
+                  "name": "cancelBtn",
+                  "padding": [6, 16],
+                  "cornerRadius": 6,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$--border"
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ghv01-cancel-lbl",
+                      "content": "Cancel",
+                      "fontSize": 13,
+                      "fill": "$--foreground"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ghv02",
+      "x": 700,
+      "y": 0,
+      "name": "GitHub Vault — Clone repo list",
+      "clip": true,
+      "width": 560,
+      "height": 540,
+      "fill": "$--background",
+      "cornerRadius": 12,
+      "layout": "vertical",
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "$--border"
+      },
+      "children": [
+        {
+          "type": "frame",
+          "id": "ghv02-hdr",
+          "name": "Header",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "$--background",
+          "padding": [0, 24],
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "bottom": 1 },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "ghv02-title",
+              "content": "Connect GitHub Repo",
+              "fontSize": 16,
+              "fontWeight": 600,
+              "fill": "$--foreground"
+            },
+            {
+              "type": "frame",
+              "id": "ghv02-close",
+              "name": "closeBtn",
+              "width": 24,
+              "height": 24,
+              "cornerRadius": 4,
+              "alignItems": "center",
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv02-x",
+                  "content": "X",
+                  "fontSize": 14,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv02-tabs",
+          "name": "TabBar",
+          "width": "fill_container",
+          "height": 44,
+          "fill": "$--background",
+          "padding": [0, 24],
+          "gap": 0,
+          "alignItems": "end",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "bottom": 1 },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "frame",
+              "id": "ghv02-tab-clone",
+              "name": "Tab: Clone Existing (active)",
+              "padding": [8, 16],
+              "alignItems": "center",
+              "stroke": {
+                "align": "inside",
+                "thickness": { "bottom": 2 },
+                "fill": "$--accent-blue"
+              },
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv02-tab-clone-lbl",
+                  "content": "Clone Existing",
+                  "fontSize": 13,
+                  "fontWeight": 500,
+                  "fill": "$--foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ghv02-tab-create",
+              "name": "Tab: Create New",
+              "padding": [8, 16],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv02-tab-create-lbl",
+                  "content": "Create New",
+                  "fontSize": 13,
+                  "fontWeight": 400,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv02-body",
+          "name": "Body: Repo List",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "padding": [16, 24],
+          "gap": 12,
+          "children": [
+            {
+              "type": "frame",
+              "id": "ghv02-search",
+              "name": "SearchInput (filled)",
+              "width": "fill_container",
+              "height": 40,
+              "cornerRadius": 8,
+              "fill": "$--input",
+              "stroke": {
+                "align": "inside",
+                "thickness": 1,
+                "fill": "$--ring"
+              },
+              "padding": [0, 12],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv02-search-val",
+                  "content": "laputa",
+                  "fontSize": 13,
+                  "fill": "$--foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ghv02-list",
+              "name": "RepoList",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 2,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ghv02-repo1",
+                  "name": "RepoItem: selected",
+                  "width": "fill_container",
+                  "height": 56,
+                  "cornerRadius": 6,
+                  "fill": "$--accent",
+                  "padding": [8, 12],
+                  "layout": "vertical",
+                  "gap": 4,
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ghv02-repo1-row",
+                      "name": "topRow",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ghv02-repo1-name",
+                          "content": "lucaong/laputa-vault",
+                          "fontSize": 13,
+                          "fontWeight": 600,
+                          "fill": "$--foreground"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ghv02-repo1-badge",
+                          "name": "privateBadge",
+                          "padding": [2, 6],
+                          "cornerRadius": 4,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1,
+                            "fill": "$--border"
+                          },
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ghv02-repo1-priv",
+                              "content": "Private",
+                              "fontSize": 10,
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "ghv02-repo1-desc",
+                      "content": "Personal knowledge vault — markdown + YAML frontmatter",
+                      "fontSize": 12,
+                      "fill": "$--muted-foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ghv02-repo2",
+                  "name": "RepoItem: unselected",
+                  "width": "fill_container",
+                  "height": 56,
+                  "cornerRadius": 6,
+                  "padding": [8, 12],
+                  "layout": "vertical",
+                  "gap": 4,
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ghv02-repo2-row",
+                      "name": "topRow",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ghv02-repo2-name",
+                          "content": "lucaong/laputa-app",
+                          "fontSize": 13,
+                          "fontWeight": 500,
+                          "fill": "$--foreground"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ghv02-repo2-badge",
+                          "name": "publicBadge",
+                          "padding": [2, 6],
+                          "cornerRadius": 4,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1,
+                            "fill": "$--border"
+                          },
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ghv02-repo2-pub",
+                              "content": "Public",
+                              "fontSize": 10,
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "ghv02-repo2-desc",
+                      "content": "Laputa desktop app — Tauri + React + CodeMirror 6",
+                      "fontSize": 12,
+                      "fill": "$--muted-foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ghv02-repo3",
+                  "name": "RepoItem: unselected 2",
+                  "width": "fill_container",
+                  "height": 56,
+                  "cornerRadius": 6,
+                  "padding": [8, 12],
+                  "layout": "vertical",
+                  "gap": 4,
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ghv02-repo3-row",
+                      "name": "topRow",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ghv02-repo3-name",
+                          "content": "lucaong/dotfiles",
+                          "fontSize": 13,
+                          "fontWeight": 500,
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "ghv02-repo3-desc",
+                      "content": "My macOS dotfiles and config",
+                      "fontSize": 12,
+                      "fill": "$--muted-foreground"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ghv02-path",
+              "name": "LocalPathPicker",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv02-path-lbl",
+                  "content": "Clone to:",
+                  "fontSize": 12,
+                  "fontWeight": 500,
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "frame",
+                  "id": "ghv02-path-input",
+                  "name": "pathInput",
+                  "width": "fill_container",
+                  "height": 36,
+                  "cornerRadius": 6,
+                  "fill": "$--input",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$--border"
+                  },
+                  "padding": [0, 10],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ghv02-path-val",
+                      "content": "~/Vaults/laputa-vault",
+                      "fontSize": 12,
+                      "fill": "$--foreground"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv02-footer",
+          "name": "Footer",
+          "width": "fill_container",
+          "height": 56,
+          "padding": [0, 24],
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "top": 1 },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "ghv02-hint",
+              "content": "3 repos found",
+              "fontSize": 11,
+              "fill": "$--muted-foreground"
+            },
+            {
+              "type": "frame",
+              "id": "ghv02-btns",
+              "name": "buttons",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ghv02-cancel",
+                  "name": "cancelBtn",
+                  "padding": [6, 16],
+                  "cornerRadius": 6,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$--border"
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ghv02-cancel-lbl",
+                      "content": "Cancel",
+                      "fontSize": 13,
+                      "fill": "$--foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ghv02-clone-btn",
+                  "name": "cloneBtn",
+                  "padding": [6, 16],
+                  "cornerRadius": 6,
+                  "fill": "$--primary",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ghv02-clone-lbl",
+                      "content": "Clone & Open",
+                      "fontSize": 13,
+                      "fontWeight": 500,
+                      "fill": "#FFFFFF"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ghv03",
+      "x": 68,
+      "y": 600,
+      "name": "GitHub Vault — Create new repo",
+      "clip": true,
+      "width": 560,
+      "height": 440,
+      "fill": "$--background",
+      "cornerRadius": 12,
+      "layout": "vertical",
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "$--border"
+      },
+      "children": [
+        {
+          "type": "frame",
+          "id": "ghv03-hdr",
+          "name": "Header",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "$--background",
+          "padding": [0, 24],
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "bottom": 1 },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "ghv03-title",
+              "content": "Connect GitHub Repo",
+              "fontSize": 16,
+              "fontWeight": 600,
+              "fill": "$--foreground"
+            },
+            {
+              "type": "frame",
+              "id": "ghv03-close",
+              "name": "closeBtn",
+              "width": 24,
+              "height": 24,
+              "cornerRadius": 4,
+              "alignItems": "center",
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv03-x",
+                  "content": "X",
+                  "fontSize": 14,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv03-tabs",
+          "name": "TabBar",
+          "width": "fill_container",
+          "height": 44,
+          "fill": "$--background",
+          "padding": [0, 24],
+          "gap": 0,
+          "alignItems": "end",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "bottom": 1 },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "frame",
+              "id": "ghv03-tab-clone",
+              "name": "Tab: Clone Existing",
+              "padding": [8, 16],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv03-tab-clone-lbl",
+                  "content": "Clone Existing",
+                  "fontSize": 13,
+                  "fontWeight": 400,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ghv03-tab-create",
+              "name": "Tab: Create New (active)",
+              "padding": [8, 16],
+              "alignItems": "center",
+              "stroke": {
+                "align": "inside",
+                "thickness": { "bottom": 2 },
+                "fill": "$--accent-blue"
+              },
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv03-tab-create-lbl",
+                  "content": "Create New",
+                  "fontSize": 13,
+                  "fontWeight": 500,
+                  "fill": "$--foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv03-body",
+          "name": "Body: Create Form",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "padding": [24, 24],
+          "gap": 20,
+          "children": [
+            {
+              "type": "frame",
+              "id": "ghv03-name-field",
+              "name": "RepoNameField",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv03-name-lbl",
+                  "content": "Repository name",
+                  "fontSize": 12,
+                  "fontWeight": 500,
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "frame",
+                  "id": "ghv03-name-input",
+                  "name": "nameInput",
+                  "width": "fill_container",
+                  "height": 40,
+                  "cornerRadius": 8,
+                  "fill": "$--input",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$--border"
+                  },
+                  "padding": [0, 12],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ghv03-name-val",
+                      "content": "my-vault",
+                      "fontSize": 13,
+                      "fill": "$--foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "ghv03-name-hint",
+                  "content": "github.com/lucaong/my-vault",
+                  "fontSize": 11,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ghv03-vis-field",
+              "name": "VisibilityToggle",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv03-vis-lbl",
+                  "content": "Visibility",
+                  "fontSize": 12,
+                  "fontWeight": 500,
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "frame",
+                  "id": "ghv03-vis-opts",
+                  "name": "options",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ghv03-opt-priv",
+                      "name": "PrivateOption (selected)",
+                      "padding": [6, 12],
+                      "cornerRadius": 6,
+                      "fill": "$--accent",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "$--accent-blue"
+                      },
+                      "gap": 6,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ghv03-opt-priv-icon",
+                          "content": "Lock",
+                          "fontSize": 13,
+                          "fill": "$--accent-blue"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ghv03-opt-priv-lbl",
+                          "content": "Private",
+                          "fontSize": 13,
+                          "fontWeight": 500,
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ghv03-opt-pub",
+                      "name": "PublicOption",
+                      "padding": [6, 12],
+                      "cornerRadius": 6,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "$--border"
+                      },
+                      "gap": 6,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ghv03-opt-pub-icon",
+                          "content": "Globe",
+                          "fontSize": 13,
+                          "fill": "$--muted-foreground"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ghv03-opt-pub-lbl",
+                          "content": "Public",
+                          "fontSize": 13,
+                          "fill": "$--muted-foreground"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ghv03-path-field",
+              "name": "LocalPathField",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv03-path-lbl",
+                  "content": "Clone to:",
+                  "fontSize": 12,
+                  "fontWeight": 500,
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "frame",
+                  "id": "ghv03-path-input",
+                  "name": "pathInput",
+                  "width": "fill_container",
+                  "height": 36,
+                  "cornerRadius": 6,
+                  "fill": "$--input",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$--border"
+                  },
+                  "padding": [0, 10],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ghv03-path-val",
+                      "content": "~/Vaults/my-vault",
+                      "fontSize": 12,
+                      "fill": "$--foreground"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv03-footer",
+          "name": "Footer",
+          "width": "fill_container",
+          "height": 56,
+          "padding": [0, 24],
+          "alignItems": "center",
+          "justifyContent": "end",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "top": 1 },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "frame",
+              "id": "ghv03-btns",
+              "name": "buttons",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ghv03-cancel",
+                  "name": "cancelBtn",
+                  "padding": [6, 16],
+                  "cornerRadius": 6,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$--border"
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ghv03-cancel-lbl",
+                      "content": "Cancel",
+                      "fontSize": 13,
+                      "fill": "$--foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ghv03-create-btn",
+                  "name": "createBtn",
+                  "padding": [6, 16],
+                  "cornerRadius": 6,
+                  "fill": "$--primary",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ghv03-create-lbl",
+                      "content": "Create & Clone",
+                      "fontSize": 13,
+                      "fontWeight": 500,
+                      "fill": "#FFFFFF"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ghv04",
+      "x": 700,
+      "y": 600,
+      "name": "GitHub Vault — Clone in progress",
+      "clip": true,
+      "width": 560,
+      "height": 320,
+      "fill": "$--background",
+      "cornerRadius": 12,
+      "layout": "vertical",
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "$--border"
+      },
+      "children": [
+        {
+          "type": "frame",
+          "id": "ghv04-hdr",
+          "name": "Header",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "$--background",
+          "padding": [0, 24],
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "bottom": 1 },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "ghv04-title",
+              "content": "Cloning Repository...",
+              "fontSize": 16,
+              "fontWeight": 600,
+              "fill": "$--foreground"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv04-body",
+          "name": "Body: Progress",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "padding": [32, 24],
+          "gap": 20,
+          "alignItems": "center",
+          "justifyContent": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "ghv04-spinner",
+              "name": "spinner",
+              "width": 40,
+              "height": 40,
+              "cornerRadius": 20,
+              "stroke": {
+                "align": "inside",
+                "thickness": 3,
+                "fill": "$--accent-blue"
+              }
+            },
+            {
+              "type": "text",
+              "id": "ghv04-status",
+              "content": "Cloning lucaong/laputa-vault...",
+              "fontSize": 14,
+              "fontWeight": 500,
+              "fill": "$--foreground",
+              "textAlign": "center"
+            },
+            {
+              "type": "text",
+              "id": "ghv04-sub",
+              "content": "Receiving objects: 67% (1,234/1,842)",
+              "fontSize": 12,
+              "fill": "$--muted-foreground",
+              "textAlign": "center"
+            },
+            {
+              "type": "frame",
+              "id": "ghv04-bar-bg",
+              "name": "progressBarBg",
+              "width": 360,
+              "height": 4,
+              "cornerRadius": 2,
+              "fill": "$--accent",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ghv04-bar-fill",
+                  "name": "progressBarFill",
+                  "width": 241,
+                  "height": 4,
+                  "cornerRadius": 2,
+                  "fill": "$--accent-blue"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ghv04-footer",
+          "name": "Footer",
+          "width": "fill_container",
+          "height": 56,
+          "padding": [0, 24],
+          "alignItems": "center",
+          "justifyContent": "end",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "top": 1 },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "frame",
+              "id": "ghv04-cancel",
+              "name": "cancelBtn",
+              "padding": [6, 16],
+              "cornerRadius": 6,
+              "stroke": {
+                "align": "inside",
+                "thickness": 1,
+                "fill": "$--border"
+              },
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ghv04-cancel-lbl",
+                  "content": "Cancel",
+                  "fontSize": 13,
+                  "fill": "$--foreground"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "--accent": {
+      "type": "color",
+      "value": [{ "value": "#EBEBEA" }, { "value": "#252545", "theme": { "Mode": "Dark" } }]
+    },
+    "--accent-blue": {
+      "type": "color",
+      "value": [{ "value": "#2383E2" }, { "value": "#4a9eff", "theme": { "Mode": "Dark" } }]
+    },
+    "--background": {
+      "type": "color",
+      "value": [{ "value": "#FFFFFF" }, { "value": "#0f0f1a", "theme": { "Mode": "Dark" } }]
+    },
+    "--border": {
+      "type": "color",
+      "value": [{ "value": "#E9E9E7" }, { "value": "#2a2a4a", "theme": { "Mode": "Dark" } }]
+    },
+    "--foreground": {
+      "type": "color",
+      "value": [{ "value": "#37352F" }, { "value": "#e0e0e0", "theme": { "Mode": "Dark" } }]
+    },
+    "--input": {
+      "type": "color",
+      "value": [{ "value": "#F7F6F3" }, { "value": "#1a1a30", "theme": { "Mode": "Dark" } }]
+    },
+    "--muted-foreground": {
+      "type": "color",
+      "value": [{ "value": "#787774" }, { "value": "#9090a0", "theme": { "Mode": "Dark" } }]
+    },
+    "--primary": {
+      "type": "color",
+      "value": [{ "value": "#2383E2" }, { "value": "#4a9eff", "theme": { "Mode": "Dark" } }]
+    },
+    "--ring": {
+      "type": "color",
+      "value": [{ "value": "#2383E2" }, { "value": "#4a9eff", "theme": { "Mode": "Dark" } }]
+    }
+  }
+}

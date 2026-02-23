@@ -1,47 +1,56 @@
-# Settings Panel — AI Provider Keys + Local Config Storage
+# Vault from GitHub — Implementation Summary
 
 ## What was built
 
-### Rust Backend (`src-tauri/src/settings.rs`)
-- `Settings` struct: `{ anthropic_key, openai_key, google_key }` as `Option<String>`
-- `get_settings()` — reads from `<app_config_dir>/settings.json`, returns defaults if missing
-- `save_settings()` — writes JSON, trims whitespace, converts empty strings to `None`
-- Registered as Tauri commands in `lib.rs`
+A "Vault from GitHub" feature that lets users create or clone a vault from a GitHub repository, directly from within the Laputa app.
 
-### Frontend Hook (`src/hooks/useSettings.ts`)
-- `useSettings()` — loads settings on mount, exposes `settings`, `loaded`, `saveSettings`
-- Uses the standard `tauriCall` pattern (Tauri invoke or mock fallback)
+## Architecture
 
-### Settings Panel (`src/components/SettingsPanel.tsx`)
-- Modal with 3 API key fields (Anthropic, OpenAI, Google AI)
-- Password-type inputs with reveal/hide toggle and clear button
-- Saves on button click or Cmd+Enter, closes on Escape or backdrop click
-- Trims whitespace, converts empty to null before saving
-- Footer shows "⌘, to open settings" hint
+### Rust Backend (`src-tauri/src/github.rs`)
+- `github_list_repos` — Paginated GitHub API call to list authenticated user's repos (up to 1000)
+- `github_create_repo` — Creates a new GitHub repo via API with auto_init
+- `clone_repo` — Clones a repo locally using HTTPS + OAuth token injection, configures remote auth
+- Helper functions: `inject_token_into_url`, `configure_remote_auth`
+- All three exposed as Tauri commands in `lib.rs`
 
-### Integration
-- **StatusBar**: Gear icon now clickable (was disabled), opens Settings panel
-- **useAppKeyboard**: Cmd+, shortcut opens Settings
-- **AIChatPanel**: Anthropic key synced from settings to localStorage via `useEffect` in App.tsx
-- **mock-tauri.ts**: Added `get_settings` / `save_settings` mock handlers
+### Frontend (`src/components/GitHubVaultModal.tsx`)
+- Two-tab modal: "Clone Existing" and "Create New"
+- Clone tab: searchable repo list with Private/Public badges, auto-fill clone path
+- Create tab: repo name, Private/Public toggle, auto-fill clone path
+- Loading and cloning progress states
+- No-token state redirects to Settings
+- Integrated into `App.tsx` via StatusBar vault menu
 
-### Design
-- `design/settings-panel.pen` — Settings modal wireframe with header, 3 key fields, footer
+### Settings Extension
+- Added `github_token` field to Settings (Rust + TypeScript)
+- GitHub Token input field in SettingsPanel
+- Refactored `settings.rs` to use testable internal functions (`get_settings_at`, `save_settings_at`)
 
-### Tests (19 new tests)
-- `SettingsPanel.test.tsx` — 14 tests: render, save, clear, keyboard, backdrop
-- `useSettings.test.ts` — 5 tests: load, save, error handling
-- Updated `App.test.tsx` with settings command mocks
+### Mock Data (`src/mock-tauri.ts`)
+- 5 realistic mock repos for browser-mode testing
+- Mock handlers for all 3 GitHub commands
 
-## Product Decisions
-- Keys stored via Tauri app config dir (not localStorage) for persistence across sessions
-- Anthropic key synced to localStorage so existing AIChatPanel code works unchanged
-- All 3 provider key fields shown even though only Anthropic is currently used (ready for future)
-- Settings modal pattern matches existing app modals (CommitDialog, CreateTypeDialog)
+## Design Decisions
 
-## Verification
-- `pnpm test` — 386 tests pass
-- `pnpm test:coverage` — 81.78% stmts, 84.28% lines (threshold: 70%)
-- `cargo test` — 152 tests pass
-- `cargo llvm-cov --lib --fail-under-lines 85` — 87.28% line coverage
-- `pnpm build` — succeeds
+1. **HTTPS+token auth over SSH**: Simpler for users (no SSH key setup), token injected into remote URL
+2. **Auto-fill clone path**: `~/Vaults/<repo-name>` — sensible default, editable
+3. **Private by default** for new repos — safer default for personal vaults
+4. **No OAuth flow**: GitHub token entered manually in Settings — ships faster, no server dependency
+5. **Extra vaults tracked in state**: Cloned vaults added to vault switcher dynamically (not persisted across sessions yet)
+
+## Test Coverage
+
+- **Frontend**: 80.79% statements, 83.34% lines (threshold: 70%)
+- **Rust**: 86.20% lines (threshold: 85%)
+- 12 GitHubVaultModal component tests
+- 12 Rust github.rs unit tests
+- 9 Rust settings.rs unit tests (refactored for coverage)
+- E2E Playwright verification: vault menu, modal tabs, repo list, search filter, repo selection
+
+## Commits (6 total)
+1. `design: vault-from-github wireframes`
+2. `feat: add Rust backend for GitHub vault operations`
+3. `feat: GitHub vault modal with clone/create flows`
+4. `test: add GitHubVaultModal component tests`
+5. `test: improve Rust test coverage for settings and github modules`
+6. `fix: remove unused GithubRepo import in mock-tauri.ts`

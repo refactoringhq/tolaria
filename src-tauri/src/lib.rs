@@ -1,11 +1,13 @@
 pub mod ai_chat;
 pub mod frontmatter;
 pub mod git;
+pub mod github;
 pub mod settings;
 pub mod vault;
 
 use ai_chat::{AiChatRequest, AiChatResponse};
 use git::{GitCommit, ModifiedFile};
+use github::GithubRepo;
 use settings::Settings;
 use vault::{VaultEntry, RenameResult};
 use frontmatter::FrontmatterValue;
@@ -90,6 +92,21 @@ fn save_settings(settings: Settings) -> Result<(), String> {
     settings::save_settings(settings)
 }
 
+#[tauri::command]
+async fn github_list_repos(token: String) -> Result<Vec<GithubRepo>, String> {
+    github::github_list_repos(&token).await
+}
+
+#[tauri::command]
+async fn github_create_repo(token: String, name: String, private: bool) -> Result<GithubRepo, String> {
+    github::github_create_repo(&token, &name, private).await
+}
+
+#[tauri::command]
+fn clone_repo(url: String, token: String, local_path: String) -> Result<String, String> {
+    github::clone_repo(&url, &token, &local_path)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -142,7 +159,10 @@ pub fn run() {
             save_image,
             purge_trash,
             get_settings,
-            save_settings
+            save_settings,
+            github_list_repos,
+            github_create_repo,
+            clone_repo
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

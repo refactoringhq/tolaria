@@ -1645,6 +1645,7 @@ let mockSettings: Settings = {
   anthropic_key: null,
   openai_key: null,
   google_key: null,
+  github_token: 'gho_mock_token_for_testing',
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock handler map accepts heterogeneous arg types
@@ -1693,6 +1694,7 @@ const mockHandlers: Record<string, (args: any) => any> = {
       anthropic_key: s.anthropic_key?.trim() || null,
       openai_key: s.openai_key?.trim() || null,
       google_key: s.google_key?.trim() || null,
+      github_token: s.github_token?.trim() || null,
     }
     return null
   },
@@ -1732,6 +1734,23 @@ const mockHandlers: Record<string, (args: any) => any> = {
     }
     return { new_path: newPath, updated_files: updatedFiles }
   },
+  github_list_repos: () => [
+    { name: 'laputa-vault', full_name: 'lucaong/laputa-vault', description: 'Personal knowledge vault — markdown + YAML frontmatter', private: true, clone_url: 'https://github.com/lucaong/laputa-vault.git', html_url: 'https://github.com/lucaong/laputa-vault', updated_at: '2026-02-20T10:30:00Z' },
+    { name: 'laputa-app', full_name: 'lucaong/laputa-app', description: 'Laputa desktop app — Tauri + React + CodeMirror 6', private: false, clone_url: 'https://github.com/lucaong/laputa-app.git', html_url: 'https://github.com/lucaong/laputa-app', updated_at: '2026-02-19T15:00:00Z' },
+    { name: 'dotfiles', full_name: 'lucaong/dotfiles', description: 'My macOS dotfiles and config', private: false, clone_url: 'https://github.com/lucaong/dotfiles.git', html_url: 'https://github.com/lucaong/dotfiles', updated_at: '2026-01-15T08:00:00Z' },
+    { name: 'notes-archive', full_name: 'lucaong/notes-archive', description: 'Archived notes from 2024', private: true, clone_url: 'https://github.com/lucaong/notes-archive.git', html_url: 'https://github.com/lucaong/notes-archive', updated_at: '2025-12-01T12:00:00Z' },
+    { name: 'obsidian-vault', full_name: 'lucaong/obsidian-vault', description: null, private: true, clone_url: 'https://github.com/lucaong/obsidian-vault.git', html_url: 'https://github.com/lucaong/obsidian-vault', updated_at: '2025-11-05T09:00:00Z' },
+  ],
+  github_create_repo: (args: { name: string; private: boolean }) => ({
+    name: args.name,
+    full_name: `lucaong/${args.name}`,
+    description: 'Laputa vault',
+    private: args.private,
+    clone_url: `https://github.com/lucaong/${args.name}.git`,
+    html_url: `https://github.com/lucaong/${args.name}`,
+    updated_at: new Date().toISOString(),
+  }),
+  clone_repo: (args: { url: string; local_path: string }) => `Cloned to ${args.local_path}`,
 }
 
 export function isTauri(): boolean {
