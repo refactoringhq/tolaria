@@ -2,6 +2,9 @@ import '@testing-library/jest-dom/vitest'
 import { vi } from 'vitest'
 import { createElement, type ReactNode, type ComponentType } from 'react'
 
+// Mock scrollIntoView for jsdom (not implemented)
+Element.prototype.scrollIntoView = vi.fn()
+
 // Mock @tauri-apps/plugin-opener for test environment
 vi.mock('@tauri-apps/plugin-opener', () => ({
   openUrl: vi.fn(),

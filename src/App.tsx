@@ -6,6 +6,7 @@ import { ResizeHandle } from './components/ResizeHandle'
 import { CreateTypeDialog } from './components/CreateTypeDialog'
 import { QuickOpenPalette } from './components/QuickOpenPalette'
 import { CommandPalette } from './components/CommandPalette'
+import { SearchPanel } from './components/SearchPanel'
 import { Toast } from './components/Toast'
 import { CommitDialog } from './components/CommitDialog'
 import { StatusBar } from './components/StatusBar'
@@ -104,6 +105,7 @@ function App() {
     entries: vault.entries, allContent: vault.allContent,
     modifiedCount: vault.modifiedFiles.length, selection,
     onQuickOpen: dialogs.openQuickOpen, onCommandPalette: dialogs.openCommandPalette,
+    onSearch: dialogs.openSearch,
     onCreateNote: notes.handleCreateNoteImmediate, onSave: handleSave,
     onOpenSettings: dialogs.openSettings,
     onTrashNote: entryActions.handleTrashNote, onArchiveNote: entryActions.handleArchiveNote,
@@ -171,6 +173,7 @@ function App() {
       <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
       <QuickOpenPalette open={dialogs.showQuickOpen} entries={vault.entries} onSelect={notes.handleSelectNote} onClose={dialogs.closeQuickOpen} />
       <CommandPalette open={dialogs.showCommandPalette} commands={commands} onClose={dialogs.closeCommandPalette} />
+      <SearchPanel open={dialogs.showSearch} vaultPath={vaultSwitcher.vaultPath} entries={vault.entries} onSelectNote={notes.handleSelectNote} onClose={dialogs.closeSearch} />
       <CreateTypeDialog open={dialogs.showCreateTypeDialog} onClose={dialogs.closeCreateType} onCreate={handleCreateType} />
       <CommitDialog open={commitFlow.showCommitDialog} modifiedCount={vault.modifiedFiles.length} onCommit={commitFlow.handleCommitPush} onClose={commitFlow.closeCommitDialog} />
       <SettingsPanel open={dialogs.showSettings} settings={settings} onSave={saveSettings} onClose={dialogs.closeSettings} />

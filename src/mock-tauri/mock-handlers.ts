@@ -204,6 +204,24 @@ export const mockHandlers: Record<string, (args: any) => any> = {
     return { status: 'complete', access_token: 'gho_mock_oauth_token_xyz', error: null }
   },
   github_get_user: (): GitHubUser => ({ login: 'lucaong', name: 'Luca Ongaro', avatar_url: 'https://avatars.githubusercontent.com/u/123456?v=4' }),
+  search_vault: (args: { query: string; mode: string }) => {
+    const q = (args.query ?? '').toLowerCase()
+    if (!q) return { results: [], elapsed_ms: 0, query: q, mode: args.mode }
+    const matches = MOCK_ENTRIES
+      .filter(e => {
+        const content = MOCK_CONTENT[e.path] ?? ''
+        return e.title.toLowerCase().includes(q) || content.toLowerCase().includes(q)
+      })
+      .slice(0, 20)
+      .map((e, i) => ({
+        title: e.title,
+        path: e.path,
+        snippet: e.snippet || '',
+        score: 1.0 - i * 0.05,
+        note_type: e.isA,
+      }))
+    return { results: matches, elapsed_ms: 42, query: q, mode: args.mode }
+  },
 }
 
 export function addMockEntry(_entry: VaultEntry, content: string): void {

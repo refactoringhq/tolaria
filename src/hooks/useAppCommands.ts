@@ -18,6 +18,7 @@ interface AppCommandsConfig {
   selection: SidebarSelection
   onQuickOpen: () => void
   onCommandPalette: () => void
+  onSearch: () => void
   onCreateNote: () => void
   onSave: () => void
   onOpenSettings: () => void
@@ -39,6 +40,7 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
   useAppKeyboard({
     onQuickOpen: config.onQuickOpen,
     onCommandPalette: config.onCommandPalette,
+    onSearch: config.onSearch,
     onCreateNote: config.onCreateNote,
     onSave: config.onSave,
     onOpenSettings: config.onOpenSettings,

@@ -2,12 +2,13 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useAppKeyboard } from './useAppKeyboard'
 
-function fireKey(key: string, mods: { altKey?: boolean; metaKey?: boolean; ctrlKey?: boolean } = {}) {
+function fireKey(key: string, mods: { altKey?: boolean; metaKey?: boolean; ctrlKey?: boolean; shiftKey?: boolean } = {}) {
   const event = new KeyboardEvent('keydown', {
     key,
     altKey: mods.altKey ?? false,
     metaKey: mods.metaKey ?? false,
     ctrlKey: mods.ctrlKey ?? false,
+    shiftKey: mods.shiftKey ?? false,
     bubbles: true,
     cancelable: true,
   })
@@ -18,6 +19,7 @@ function makeActions() {
   return {
     onQuickOpen: vi.fn(),
     onCommandPalette: vi.fn(),
+    onSearch: vi.fn(),
     onCreateNote: vi.fn(),
     onSave: vi.fn(),
     onOpenSettings: vi.fn(),
@@ -93,5 +95,20 @@ describe('useAppKeyboard', () => {
     renderHook(() => useAppKeyboard(actions))
     fireKey('k', { metaKey: true })
     expect(actions.onCommandPalette).toHaveBeenCalled()
+  })
+
+  it('Cmd+Shift+F triggers search', () => {
+    const actions = makeActions()
+    renderHook(() => useAppKeyboard(actions))
+    fireKey('f', { metaKey: true, shiftKey: true })
+    expect(actions.onSearch).toHaveBeenCalled()
+  })
+
+  it('Cmd+Shift+F does not trigger other shortcuts', () => {
+    const actions = makeActions()
+    renderHook(() => useAppKeyboard(actions))
+    fireKey('f', { metaKey: true, shiftKey: true })
+    expect(actions.onQuickOpen).not.toHaveBeenCalled()
+    expect(actions.onCreateNote).not.toHaveBeenCalled()
   })
 })

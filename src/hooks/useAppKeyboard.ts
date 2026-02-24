@@ -4,6 +4,7 @@ import type { ViewMode } from './useViewMode'
 interface KeyboardActions {
   onQuickOpen: () => void
   onCommandPalette: () => void
+  onSearch: () => void
   onCreateNote: () => void
   onSave: () => void
   onOpenSettings: () => void
@@ -46,7 +47,7 @@ function handleCmdKey(e: KeyboardEvent, keyMap: Record<string, ShortcutHandler>)
 }
 
 export function useAppKeyboard({
-  onQuickOpen, onCommandPalette, onCreateNote, onSave, onOpenSettings, onTrashNote, onArchiveNote,
+  onQuickOpen, onCommandPalette, onSearch, onCreateNote, onSave, onOpenSettings, onTrashNote, onArchiveNote,
   onSetViewMode, activeTabPathRef, handleCloseTabRef,
 }: KeyboardActions) {
   useEffect(() => {
@@ -68,11 +69,17 @@ export function useAppKeyboard({
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd+Shift+F: full-text search (distinct from Cmd+F browser find)
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'f') {
+        e.preventDefault()
+        onSearch()
+        return
+      }
       if (!handleViewModeKey(e, onSetViewMode)) {
         handleCmdKey(e, cmdKeyMap)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onQuickOpen, onCommandPalette, onCreateNote, onSave, onOpenSettings, onTrashNote, onArchiveNote, activeTabPathRef, handleCloseTabRef, onSetViewMode])
+  }, [onQuickOpen, onCommandPalette, onSearch, onCreateNote, onSave, onOpenSettings, onTrashNote, onArchiveNote, activeTabPathRef, handleCloseTabRef, onSetViewMode])
 }

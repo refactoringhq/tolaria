@@ -80,6 +80,23 @@ export interface GithubRepo {
   updated_at: string | null
 }
 
+export interface SearchResult {
+  title: string
+  path: string
+  snippet: string
+  score: number
+  noteType: string | null
+}
+
+export interface SearchResponse {
+  results: SearchResult[]
+  elapsedMs: number
+  query: string
+  mode: string
+}
+
+export type SearchMode = 'keyword' | 'semantic' | 'hybrid'
+
 export type SidebarSelection =
   | { kind: 'filter'; filter: 'all' | 'favorites' | 'archived' | 'trash' | 'changes' }
   | { kind: 'sectionGroup'; type: string }
