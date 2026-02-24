@@ -12,7 +12,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import {
   FileText, Star, Wrench, Flask, Target, ArrowsClockwise,
-  Users, CalendarBlank, Tag, TagSimple, Trash, StackSimple, Archive, CaretLeft,
+  Users, CalendarBlank, Tag, TagSimple, Trash, StackSimple, Archive, CaretLeft, GitDiff,
 } from '@phosphor-icons/react'
 import { GitCommitHorizontal, SlidersHorizontal } from 'lucide-react'
 import {
@@ -296,6 +296,9 @@ export const Sidebar = memo(function Sidebar({
           <NavItem icon={Archive} label="Archive" count={archivedCount} isActive={isSelectionActive(selection, { kind: 'filter', filter: 'archived' })} badgeClassName="text-muted-foreground" badgeStyle={{ background: 'var(--muted)' }} onClick={() => onSelect({ kind: 'filter', filter: 'archived' })} />
           <NavItem icon={TagSimple} label="Untagged" disabled />
           <NavItem icon={Trash} label="Trash" count={trashedCount} isActive={isSelectionActive(selection, { kind: 'filter', filter: 'trash' })} activeClassName="bg-destructive/10 text-destructive" badgeClassName="text-muted-foreground" badgeStyle={{ background: 'var(--muted)' }} onClick={() => onSelect({ kind: 'filter', filter: 'trash' })} />
+          {modifiedCount > 0 && (
+            <NavItem icon={GitDiff} label="Changes" count={modifiedCount} isActive={isSelectionActive(selection, { kind: 'filter', filter: 'changes' })} activeClassName="bg-[color:var(--accent-orange)]/10 text-[var(--accent-orange)]" badgeClassName="text-white" badgeStyle={{ background: 'var(--accent-orange)' }} onClick={() => onSelect({ kind: 'filter', filter: 'changes' })} />
+          )}
         </div>
 
         {/* Sections header + visibility popover */}

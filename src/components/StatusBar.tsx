@@ -15,6 +15,7 @@ interface StatusBarProps {
   onOpenSettings?: () => void
   onOpenLocalFolder?: () => void
   onConnectGitHub?: () => void
+  onClickPending?: () => void
   hasGitHub?: boolean
 }
 
@@ -104,7 +105,7 @@ const ICON_STYLE = { display: 'flex', alignItems: 'center', gap: 4 } as const
 const DISABLED_STYLE = { display: 'flex', alignItems: 'center', opacity: 0.4, cursor: 'not-allowed' } as const
 const SEP_STYLE = { color: 'var(--border)' } as const
 
-export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onSwitchVault, onOpenSettings, onOpenLocalFolder, onConnectGitHub, hasGitHub }: StatusBarProps) {
+export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onSwitchVault, onOpenSettings, onOpenLocalFolder, onConnectGitHub, onClickPending, hasGitHub }: StatusBarProps) {
   return (
     <footer style={{ height: 30, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--sidebar)', borderTop: '1px solid var(--border)', padding: '0 8px', fontSize: 11, color: 'var(--muted-foreground)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -118,7 +119,15 @@ export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onS
         {modifiedCount > 0 && (
           <>
             <span style={SEP_STYLE}>|</span>
-            <span style={ICON_STYLE} data-testid="status-modified-count"><CircleDot size={13} style={{ color: 'var(--accent-orange)' }} />{modifiedCount} pending</span>
+            <span
+              role="button"
+              onClick={onClickPending}
+              style={{ ...ICON_STYLE, cursor: 'pointer', padding: '2px 4px', borderRadius: 3, background: 'transparent' }}
+              title="View pending changes"
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              data-testid="status-modified-count"
+            ><CircleDot size={13} style={{ color: 'var(--accent-orange)' }} />{modifiedCount} pending</span>
           </>
         )}
       </div>

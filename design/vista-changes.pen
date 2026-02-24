@@ -1,0 +1,496 @@
+{
+  "children": [
+    {
+      "type": "frame",
+      "id": "vc001",
+      "x": 0,
+      "y": 0,
+      "name": "Changes — sidebar section with pending notes",
+      "clip": true,
+      "width": 550,
+      "height": 500,
+      "fill": "$--background",
+      "layout": "horizontal",
+      "children": [
+        {
+          "type": "frame",
+          "id": "vc002",
+          "name": "Sidebar",
+          "width": 250,
+          "height": "fill_container",
+          "fill": "$--sidebar",
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "vc003",
+              "name": "Filters",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 1,
+              "padding": [8, 8],
+              "stroke": {
+                "align": "inside",
+                "thickness": { "bottom": 1 },
+                "fill": "$--border"
+              },
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vc004",
+                  "name": "filterAll",
+                  "width": "fill_container",
+                  "cornerRadius": 6,
+                  "gap": 8,
+                  "padding": [6, 16],
+                  "alignItems": "center",
+                  "children": [
+                    { "type": "text", "id": "vc005", "text": "All Notes", "fontSize": 13, "fill": "$--foreground" }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "vc006",
+                  "name": "filterFavorites",
+                  "width": "fill_container",
+                  "cornerRadius": 6,
+                  "gap": 8,
+                  "padding": [6, 16],
+                  "alignItems": "center",
+                  "children": [
+                    { "type": "text", "id": "vc007", "text": "Favorites", "fontSize": 13, "fill": "$--foreground" }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "vc008",
+                  "name": "filterTrash",
+                  "width": "fill_container",
+                  "cornerRadius": 6,
+                  "gap": 8,
+                  "padding": [6, 16],
+                  "alignItems": "center",
+                  "children": [
+                    { "type": "text", "id": "vc009", "text": "Trash", "fontSize": 13, "fill": "$--foreground" }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "vc010",
+                  "name": "filterChanges-active",
+                  "width": "fill_container",
+                  "fill": "#F5750018",
+                  "cornerRadius": 6,
+                  "gap": 8,
+                  "padding": [6, 16],
+                  "alignItems": "center",
+                  "justifyContent": "space-between",
+                  "children": [
+                    { "type": "text", "id": "vc011", "text": "Changes", "fontSize": 13, "fontWeight": 500, "fill": "$--accent-orange" },
+                    {
+                      "type": "frame",
+                      "id": "vc012",
+                      "name": "badge",
+                      "fill": "$--accent-orange",
+                      "cornerRadius": 9999,
+                      "padding": [0, 6],
+                      "height": 20,
+                      "alignItems": "center",
+                      "children": [
+                        { "type": "text", "id": "vc013", "text": "3", "fontSize": 10, "fontWeight": 600, "fill": "$--white" }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "vc014",
+          "name": "NoteList: Changes",
+          "width": 300,
+          "height": "fill_container",
+          "fill": "$--card",
+          "layout": "vertical",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "right": 1 },
+            "fill": "$--border"
+          },
+          "children": [
+            {
+              "type": "frame",
+              "id": "vc015",
+              "name": "header",
+              "width": "fill_container",
+              "height": 45,
+              "padding": [0, 16],
+              "alignItems": "center",
+              "stroke": { "align": "inside", "thickness": { "bottom": 1 }, "fill": "$--border" },
+              "children": [
+                { "type": "text", "id": "vc016", "text": "Changes", "fontSize": 14, "fontWeight": 600, "fill": "$--foreground" }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vc017",
+              "name": "note1-modified",
+              "width": "fill_container",
+              "padding": [10, 16],
+              "gap": 4,
+              "layout": "vertical",
+              "stroke": { "align": "inside", "thickness": { "bottom": 1 }, "fill": "$--border" },
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vc018",
+                  "name": "titleRow",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    { "type": "ellipse", "id": "vc019", "name": "modifiedDot", "fill": "$--accent-orange", "width": 6, "height": 6 },
+                    { "type": "text", "id": "vc020", "text": "Build Laputa App", "fontSize": 13, "fontWeight": 600, "fill": "$--foreground" }
+                  ]
+                },
+                { "type": "text", "id": "vc021", "text": "This paragraph has bold text, italic text…", "fontSize": 12, "fill": "$--muted-foreground" }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vc022",
+              "name": "note2-modified",
+              "width": "fill_container",
+              "padding": [10, 16],
+              "gap": 4,
+              "layout": "vertical",
+              "stroke": { "align": "inside", "thickness": { "bottom": 1 }, "fill": "$--border" },
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vc023",
+                  "name": "titleRow",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    { "type": "ellipse", "id": "vc024", "name": "modifiedDot", "fill": "$--accent-orange", "width": 6, "height": 6 },
+                    { "type": "text", "id": "vc025", "text": "Facebook Ads Strategy", "fontSize": 13, "fontWeight": 600, "fill": "$--foreground" }
+                  ]
+                },
+                { "type": "text", "id": "vc026", "text": "Lookalike audiences from newsletter subscribers…", "fontSize": 12, "fill": "$--muted-foreground" }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vc027",
+              "name": "note3-added",
+              "width": "fill_container",
+              "padding": [10, 16],
+              "gap": 4,
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vc028",
+                  "name": "titleRow",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    { "type": "ellipse", "id": "vc029", "name": "modifiedDot", "fill": "$--accent-orange", "width": 6, "height": 6 },
+                    { "type": "text", "id": "vc030", "text": "AI Agents Primer", "fontSize": 13, "fontWeight": 600, "fill": "$--foreground" }
+                  ]
+                },
+                { "type": "text", "id": "vc031", "text": "AI agents are autonomous systems that can plan…", "fontSize": 12, "fill": "$--muted-foreground" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "vc100",
+      "x": 600,
+      "y": 0,
+      "name": "Changes — empty state (0 pending)",
+      "clip": true,
+      "width": 550,
+      "height": 400,
+      "fill": "$--background",
+      "layout": "horizontal",
+      "children": [
+        {
+          "type": "frame",
+          "id": "vc101",
+          "name": "Sidebar (no Changes item)",
+          "width": 250,
+          "height": "fill_container",
+          "fill": "$--sidebar",
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "vc102",
+              "name": "Filters",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 1,
+              "padding": [8, 8],
+              "stroke": { "align": "inside", "thickness": { "bottom": 1 }, "fill": "$--border" },
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vc103",
+                  "name": "filterAll-active",
+                  "width": "fill_container",
+                  "fill": "#4a9eff18",
+                  "cornerRadius": 6,
+                  "gap": 8,
+                  "padding": [6, 16],
+                  "alignItems": "center",
+                  "children": [
+                    { "type": "text", "id": "vc104", "text": "All Notes", "fontSize": 13, "fontWeight": 500, "fill": "$--primary" }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "vc105",
+                  "name": "filterFavorites",
+                  "width": "fill_container",
+                  "cornerRadius": 6,
+                  "gap": 8,
+                  "padding": [6, 16],
+                  "alignItems": "center",
+                  "children": [
+                    { "type": "text", "id": "vc106", "text": "Favorites", "fontSize": 13, "fill": "$--foreground" }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "vc107",
+                  "name": "filterTrash",
+                  "width": "fill_container",
+                  "cornerRadius": 6,
+                  "gap": 8,
+                  "padding": [6, 16],
+                  "alignItems": "center",
+                  "children": [
+                    { "type": "text", "id": "vc108", "text": "Trash", "fontSize": 13, "fill": "$--foreground" }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vc109",
+              "name": "annotation",
+              "width": "fill_container",
+              "padding": [12, 16],
+              "children": [
+                { "type": "text", "id": "vc110", "text": "← No \"Changes\" item when 0 pending", "fontSize": 11, "fill": "$--muted-foreground", "fontStyle": "italic" }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "vc111",
+          "name": "NoteList: All Notes",
+          "width": 300,
+          "height": "fill_container",
+          "fill": "$--card",
+          "layout": "vertical",
+          "stroke": { "align": "inside", "thickness": { "right": 1 }, "fill": "$--border" },
+          "children": [
+            {
+              "type": "frame",
+              "id": "vc112",
+              "name": "header",
+              "width": "fill_container",
+              "height": 45,
+              "padding": [0, 16],
+              "alignItems": "center",
+              "stroke": { "align": "inside", "thickness": { "bottom": 1 }, "fill": "$--border" },
+              "children": [
+                { "type": "text", "id": "vc113", "text": "Notes", "fontSize": 14, "fontWeight": 600, "fill": "$--foreground" }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vc114",
+              "name": "notesList",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vc115",
+                  "name": "note-no-dot",
+                  "width": "fill_container",
+                  "padding": [10, 16],
+                  "gap": 4,
+                  "layout": "vertical",
+                  "stroke": { "align": "inside", "thickness": { "bottom": 1 }, "fill": "$--border" },
+                  "children": [
+                    { "type": "text", "id": "vc116", "text": "Build Laputa App", "fontSize": 13, "fontWeight": 600, "fill": "$--foreground" },
+                    { "type": "text", "id": "vc117", "text": "No orange dot — all committed", "fontSize": 12, "fill": "$--muted-foreground" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "vc200",
+      "x": 0,
+      "y": 560,
+      "name": "Changes — real-time update (note disappears after save)",
+      "clip": true,
+      "width": 800,
+      "height": 300,
+      "fill": "$--background",
+      "layout": "horizontal",
+      "gap": 40,
+      "padding": [20, 20],
+      "children": [
+        {
+          "type": "frame",
+          "id": "vc201",
+          "name": "Before: 3 pending",
+          "width": 340,
+          "height": "fill_container",
+          "fill": "$--card",
+          "layout": "vertical",
+          "cornerRadius": 8,
+          "stroke": { "align": "inside", "thickness": 1, "fill": "$--border" },
+          "children": [
+            {
+              "type": "frame",
+              "id": "vc202",
+              "name": "header",
+              "width": "fill_container",
+              "height": 36,
+              "padding": [0, 12],
+              "alignItems": "center",
+              "stroke": { "align": "inside", "thickness": { "bottom": 1 }, "fill": "$--border" },
+              "children": [
+                { "type": "text", "id": "vc203", "text": "Changes (before save)", "fontSize": 12, "fontWeight": 600, "fill": "$--foreground" }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vc204",
+              "name": "item1",
+              "width": "fill_container",
+              "padding": [8, 12],
+              "gap": 6,
+              "alignItems": "center",
+              "stroke": { "align": "inside", "thickness": { "bottom": 1 }, "fill": "$--border" },
+              "children": [
+                { "type": "ellipse", "id": "vc205", "fill": "$--accent-orange", "width": 6, "height": 6 },
+                { "type": "text", "id": "vc206", "text": "Build Laputa App", "fontSize": 12, "fill": "$--foreground" }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vc207",
+              "name": "item2-highlight",
+              "width": "fill_container",
+              "padding": [8, 12],
+              "gap": 6,
+              "fill": "#F5750010",
+              "alignItems": "center",
+              "stroke": { "align": "inside", "thickness": { "bottom": 1 }, "fill": "$--border" },
+              "children": [
+                { "type": "ellipse", "id": "vc208", "fill": "$--accent-orange", "width": 6, "height": 6 },
+                { "type": "text", "id": "vc209", "text": "Facebook Ads Strategy ← saving…", "fontSize": 12, "fontWeight": 500, "fill": "$--accent-orange" }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vc210",
+              "name": "item3",
+              "width": "fill_container",
+              "padding": [8, 12],
+              "gap": 6,
+              "alignItems": "center",
+              "children": [
+                { "type": "ellipse", "id": "vc211", "fill": "$--accent-orange", "width": 6, "height": 6 },
+                { "type": "text", "id": "vc212", "text": "AI Agents Primer", "fontSize": 12, "fill": "$--foreground" }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "vc220",
+          "name": "After: 2 pending (note committed)",
+          "width": 340,
+          "height": "fill_container",
+          "fill": "$--card",
+          "layout": "vertical",
+          "cornerRadius": 8,
+          "stroke": { "align": "inside", "thickness": 1, "fill": "$--border" },
+          "children": [
+            {
+              "type": "frame",
+              "id": "vc221",
+              "name": "header",
+              "width": "fill_container",
+              "height": 36,
+              "padding": [0, 12],
+              "alignItems": "center",
+              "stroke": { "align": "inside", "thickness": { "bottom": 1 }, "fill": "$--border" },
+              "children": [
+                { "type": "text", "id": "vc222", "text": "Changes (after save + commit)", "fontSize": 12, "fontWeight": 600, "fill": "$--foreground" }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vc223",
+              "name": "item1",
+              "width": "fill_container",
+              "padding": [8, 12],
+              "gap": 6,
+              "alignItems": "center",
+              "stroke": { "align": "inside", "thickness": { "bottom": 1 }, "fill": "$--border" },
+              "children": [
+                { "type": "ellipse", "id": "vc224", "fill": "$--accent-orange", "width": 6, "height": 6 },
+                { "type": "text", "id": "vc225", "text": "Build Laputa App", "fontSize": 12, "fill": "$--foreground" }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vc226",
+              "name": "item2",
+              "width": "fill_container",
+              "padding": [8, 12],
+              "gap": 6,
+              "alignItems": "center",
+              "children": [
+                { "type": "ellipse", "id": "vc227", "fill": "$--accent-orange", "width": 6, "height": 6 },
+                { "type": "text", "id": "vc228", "text": "AI Agents Primer", "fontSize": 12, "fill": "$--foreground" }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vc229",
+              "name": "removedNote",
+              "width": "fill_container",
+              "padding": [12, 12],
+              "children": [
+                { "type": "text", "id": "vc230", "text": "Facebook Ads Strategy removed (committed)", "fontSize": 11, "fontStyle": "italic", "fill": "$--muted-foreground" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {}
+}

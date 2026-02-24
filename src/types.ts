@@ -79,7 +79,7 @@ export interface GithubRepo {
 }
 
 export type SidebarSelection =
-  | { kind: 'filter'; filter: 'all' | 'favorites' | 'archived' | 'trash' }
+  | { kind: 'filter'; filter: 'all' | 'favorites' | 'archived' | 'trash' | 'changes' }
   | { kind: 'sectionGroup'; type: string }
   | { kind: 'entity'; entry: VaultEntry }
   | { kind: 'topic'; entry: VaultEntry }

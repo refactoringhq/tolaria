@@ -133,4 +133,20 @@ describe('StatusBar', () => {
     // Menu should close after clicking an action
     expect(screen.queryByText('Open local folder')).not.toBeInTheDocument()
   })
+
+  it('calls onClickPending when clicking the pending count', () => {
+    const onClickPending = vi.fn()
+    render(
+      <StatusBar noteCount={100} modifiedCount={5} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onClickPending={onClickPending} />
+    )
+    fireEvent.click(screen.getByTestId('status-modified-count'))
+    expect(onClickPending).toHaveBeenCalledOnce()
+  })
+
+  it('pending count has title for accessibility', () => {
+    render(
+      <StatusBar noteCount={100} modifiedCount={3} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onClickPending={vi.fn()} />
+    )
+    expect(screen.getByTitle('View pending changes')).toBeInTheDocument()
+  })
 })

@@ -99,6 +99,7 @@ function resolveHeaderTitle(selection: SidebarSelection, typeDocument: VaultEntr
   if (typeDocument) return typeDocument.title
   if (selection.kind === 'filter' && selection.filter === 'archived') return 'Archive'
   if (selection.kind === 'filter' && selection.filter === 'trash') return 'Trash'
+  if (selection.kind === 'filter' && selection.filter === 'changes') return 'Changes'
   return 'Notes'
 }
 
@@ -146,13 +147,13 @@ function ListViewHeader({ typeDocument, isTrashView, expiredTrashCount, typeEntr
   )
 }
 
-function ListView({ typeDocument, isTrashView, expiredTrashCount, searched, query, renderItem, typeEntryMap, onClickNote }: {
-  typeDocument: VaultEntry | null; isTrashView: boolean; expiredTrashCount: number
+function ListView({ typeDocument, isTrashView, isChangesView, expiredTrashCount, searched, query, renderItem, typeEntryMap, onClickNote }: {
+  typeDocument: VaultEntry | null; isTrashView: boolean; isChangesView?: boolean; expiredTrashCount: number
   searched: VaultEntry[]; query: string
   renderItem: (entry: VaultEntry) => React.ReactNode
   typeEntryMap: Record<string, VaultEntry>; onClickNote: (entry: VaultEntry, e: React.MouseEvent) => void
 }) {
-  const emptyText = isTrashView ? 'Trash is empty' : (query ? 'No matching notes' : 'No notes found')
+  const emptyText = isChangesView ? 'No pending changes' : isTrashView ? 'Trash is empty' : (query ? 'No matching notes' : 'No notes found')
   const hasHeader = typeDocument || (isTrashView && expiredTrashCount > 0)
 
   if (searched.length === 0) {
@@ -208,11 +209,13 @@ function routeNoteClick(
 interface NoteListDataParams {
   entries: VaultEntry[]; selection: SidebarSelection; allContent: Record<string, string>
   query: string; listSort: SortOption; listDirection: SortDirection
+  modifiedPathSet: Set<string>
 }
 
-function useNoteListData({ entries, selection, allContent, query, listSort, listDirection }: NoteListDataParams) {
+function useNoteListData({ entries, selection, allContent, query, listSort, listDirection, modifiedPathSet }: NoteListDataParams) {
   const isEntityView = selection.kind === 'entity'
   const isTrashView = selection.kind === 'filter' && selection.filter === 'trash'
+  const isChangesView = selection.kind === 'filter' && selection.filter === 'changes'
 
   const typeDocument = useMemo(() => {
     if (selection.kind !== 'sectionGroup') return null
@@ -221,9 +224,13 @@ function useNoteListData({ entries, selection, allContent, query, listSort, list
 
   const searched = useMemo(() => {
     if (isEntityView) return []
+    if (isChangesView) {
+      const sorted = [...entries.filter((e) => modifiedPathSet.has(e.path))].sort(getSortComparator(listSort, listDirection))
+      return filterByQuery(sorted, query)
+    }
     const sorted = [...filterEntries(entries, selection)].sort(getSortComparator(listSort, listDirection))
     return filterByQuery(sorted, query)
-  }, [entries, selection, isEntityView, listSort, listDirection, query])
+  }, [entries, selection, isEntityView, isChangesView, listSort, listDirection, query, modifiedPathSet])
 
   const searchedGroups = useMemo(() => {
     if (!isEntityView) return []
@@ -236,7 +243,7 @@ function useNoteListData({ entries, selection, allContent, query, listSort, list
     [isTrashView, searched],
   )
 
-  return { isEntityView, isTrashView, typeDocument, searched, searchedGroups, expiredTrashCount }
+  return { isEntityView, isTrashView, isChangesView, typeDocument, searched, searchedGroups, expiredTrashCount }
 }
 
 // --- Main component ---
@@ -265,7 +272,7 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
   const listConfig = sortPrefs['__list__'] ?? { option: 'modified' as SortOption, direction: 'desc' as SortDirection }
   const listSort = listConfig.option
   const listDirection = listConfig.direction
-  const { isEntityView, isTrashView, typeDocument, searched, searchedGroups, expiredTrashCount } = useNoteListData({ entries, selection, allContent, query, listSort, listDirection })
+  const { isEntityView, isTrashView, isChangesView, typeDocument, searched, searchedGroups, expiredTrashCount } = useNoteListData({ entries, selection, allContent, query, listSort, listDirection, modifiedPathSet })
 
   const handleClickNote = useCallback((entry: VaultEntry, e: React.MouseEvent) => {
     routeNoteClick(entry, e, onSelectNote, onReplaceActiveTab)
@@ -300,7 +307,7 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
         {isEntityView && selection.kind === 'entity' ? (
           <EntityView entity={selection.entry} groups={searchedGroups} query={query} collapsedGroups={collapsedGroups} sortPrefs={sortPrefs} onToggleGroup={toggleGroup} onSortChange={handleSortChange} renderItem={renderItem} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
         ) : (
-          <ListView typeDocument={typeDocument} isTrashView={isTrashView} expiredTrashCount={expiredTrashCount} searched={searched} query={query} renderItem={renderItem} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
+          <ListView typeDocument={typeDocument} isTrashView={isTrashView} isChangesView={isChangesView} expiredTrashCount={expiredTrashCount} searched={searched} query={query} renderItem={renderItem} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
         )}
       </div>
     </div>

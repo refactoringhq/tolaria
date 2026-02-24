@@ -896,4 +896,52 @@ describe('NoteList — virtual list with large datasets', () => {
     fireEvent.click(screen.getByText('Note 50'))
     expect(noopReplace).toHaveBeenCalledWith(entries[50])
   })
+
+  describe('changes filter', () => {
+    const changesSelection: SidebarSelection = { kind: 'filter', filter: 'changes' }
+    const modifiedFiles = [
+      { path: mockEntries[0].path, relativePath: 'project/26q1-laputa-app.md', status: 'modified' as const },
+      { path: mockEntries[1].path, relativePath: 'note/facebook-ads-strategy.md', status: 'modified' as const },
+    ]
+
+    it('shows only modified notes in changes view', () => {
+      render(
+        <NoteList entries={mockEntries} selection={changesSelection} selectedNote={null} modifiedFiles={modifiedFiles} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
+      )
+      expect(screen.getByText('Build Laputa App')).toBeInTheDocument()
+      expect(screen.getByText('Facebook Ads Strategy')).toBeInTheDocument()
+      expect(screen.queryByText('Matteo Cellini')).not.toBeInTheDocument()
+      expect(screen.queryByText('Kickoff Meeting')).not.toBeInTheDocument()
+    })
+
+    it('shows header title "Changes"', () => {
+      render(
+        <NoteList entries={mockEntries} selection={changesSelection} selectedNote={null} modifiedFiles={modifiedFiles} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
+      )
+      expect(screen.getByText('Changes')).toBeInTheDocument()
+    })
+
+    it('shows empty state when no modified files', () => {
+      render(
+        <NoteList entries={mockEntries} selection={changesSelection} selectedNote={null} modifiedFiles={[]} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
+      )
+      expect(screen.getByText('No pending changes')).toBeInTheDocument()
+    })
+
+    it('updates list when modifiedFiles changes', () => {
+      const { rerender } = render(
+        <NoteList entries={mockEntries} selection={changesSelection} selectedNote={null} modifiedFiles={modifiedFiles} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
+      )
+      expect(screen.getByText('Build Laputa App')).toBeInTheDocument()
+      expect(screen.getByText('Facebook Ads Strategy')).toBeInTheDocument()
+
+      // Simulate one file being committed (removed from modifiedFiles)
+      const fewerModified = [modifiedFiles[0]]
+      rerender(
+        <NoteList entries={mockEntries} selection={changesSelection} selectedNote={null} modifiedFiles={fewerModified} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
+      )
+      expect(screen.getByText('Build Laputa App')).toBeInTheDocument()
+      expect(screen.queryByText('Facebook Ads Strategy')).not.toBeInTheDocument()
+    })
+  })
 })
