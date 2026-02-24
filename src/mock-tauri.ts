@@ -1704,6 +1704,10 @@ let mockHasChanges = true
 /** Tracks paths saved since the last mock commit — used by get_modified_files */
 const mockSavedSinceCommit = new Set<string>()
 
+function trimOrNull(value: string | null | undefined): string | null {
+  return value?.trim() || null
+}
+
 let mockSettings: Settings = {
   anthropic_key: null,
   openai_key: null,
@@ -1779,11 +1783,11 @@ const mockHandlers: Record<string, (args: any) => any> = {
   save_settings: (args: { settings: Settings }) => {
     const s = args.settings
     mockSettings = {
-      anthropic_key: s.anthropic_key?.trim() || null,
-      openai_key: s.openai_key?.trim() || null,
-      google_key: s.google_key?.trim() || null,
-      github_token: s.github_token?.trim() || null,
-      github_username: s.github_username?.trim() || null,
+      anthropic_key: trimOrNull(s.anthropic_key),
+      openai_key: trimOrNull(s.openai_key),
+      google_key: trimOrNull(s.google_key),
+      github_token: trimOrNull(s.github_token),
+      github_username: trimOrNull(s.github_username),
     }
     return null
   },
@@ -1891,32 +1895,39 @@ export function updateMockContent(path: string, content: string) {
   }
 }
 
+// Vault API routes: maps command names to their API endpoints.
+// If extract is provided, it transforms the JSON response before returning.
+const VAULT_API_ROUTES: Record<string, {
+  endpoint: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic JSON extraction
+  extract?: (json: any) => unknown
+}> = {
+  list_vault: { endpoint: '/api/vault/list' },
+  get_note_content: { endpoint: '/api/vault/content', extract: (json) => json.content },
+  get_all_content: { endpoint: '/api/vault/all-content' },
+}
+
+async function tryVaultApi<T>(cmd: string, args?: Record<string, unknown>): Promise<T | undefined> {
+  const route = VAULT_API_ROUTES[cmd]
+  if (!route || !args?.path) return undefined
+
+  const res = await fetch(`${route.endpoint}?path=${encodeURIComponent(args.path as string)}`)
+  if (!res.ok) return undefined
+
+  const json = await res.json()
+  return (route.extract ? route.extract(json) : json) as T
+}
+
 export async function mockInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  // Try the vault API first for commands that read vault data
-  const apiAvailable = await checkVaultApi()
-  if (apiAvailable) {
+  if (await checkVaultApi()) {
     try {
-      if (cmd === 'list_vault' && args?.path) {
-        const res = await fetch(`/api/vault/list?path=${encodeURIComponent(args.path as string)}`)
-        if (res.ok) return (await res.json()) as T
-      }
-      if (cmd === 'get_note_content' && args?.path) {
-        const res = await fetch(`/api/vault/content?path=${encodeURIComponent(args.path as string)}`)
-        if (res.ok) {
-          const { content } = await res.json()
-          return content as T
-        }
-      }
-      if (cmd === 'get_all_content' && args?.path) {
-        const res = await fetch(`/api/vault/all-content?path=${encodeURIComponent(args.path as string)}`)
-        if (res.ok) return (await res.json()) as T
-      }
+      const result = await tryVaultApi<T>(cmd, args)
+      if (result !== undefined) return result
     } catch (err) {
       console.warn(`[mock-tauri] Vault API call failed for ${cmd}, falling back to mock:`, err)
     }
   }
 
-  // Fall back to hardcoded mock handlers
   const handler = mockHandlers[cmd]
   if (handler) {
     await new Promise((r) => setTimeout(r, 100))
