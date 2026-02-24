@@ -5,6 +5,8 @@
   height: 100vh;
   width: 100vw;
   overflow: hidden;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--border-primary);
 }
 
 .app {
