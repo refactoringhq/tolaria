@@ -37,3 +37,7 @@ dist-ssr
 demo-vault/
 select_demo_notes*.py
 final_selection.py
+
+# Claude Code task signals
+.claude-done
+.claude-blocked
