@@ -7,7 +7,7 @@ use std::process::Command;
 /// Enable "Device authorization flow" under Optional features. Webhook can be disabled.
 const GITHUB_CLIENT_ID: &str = "Ov23liwee215tDMs9u4L";
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct GithubRepo {
     pub name: String,
     pub full_name: String,
@@ -72,17 +72,6 @@ async fn github_list_repos_with_base(
     Ok(all_repos)
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-struct CreateRepoResponse {
-    name: String,
-    full_name: String,
-    description: Option<String>,
-    private: bool,
-    clone_url: String,
-    html_url: String,
-    updated_at: Option<String>,
-}
-
 /// Creates a new GitHub repository for the authenticated user.
 pub async fn github_create_repo(
     token: &str,
@@ -126,25 +115,15 @@ async fn github_create_repo_with_base(
         return Err(format!("GitHub API error {}: {}", status, body));
     }
 
-    let created: CreateRepoResponse = response
-        .json()
+    response
+        .json::<GithubRepo>()
         .await
-        .map_err(|e| format!("Failed to parse GitHub response: {}", e))?;
-
-    Ok(GithubRepo {
-        name: created.name,
-        full_name: created.full_name,
-        description: created.description,
-        private: created.private,
-        clone_url: created.clone_url,
-        html_url: created.html_url,
-        updated_at: created.updated_at,
-    })
+        .map_err(|e| format!("Failed to parse GitHub response: {}", e))
 }
 
 // --- OAuth Device Flow ---
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct DeviceFlowStart {
     pub device_code: String,
     pub user_code: String,
@@ -153,14 +132,14 @@ pub struct DeviceFlowStart {
     pub interval: u64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct DeviceFlowPollResult {
     pub status: String,
     pub access_token: Option<String>,
     pub error: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct GitHubUser {
     pub login: String,
     pub name: Option<String>,
@@ -379,89 +358,147 @@ mod tests {
     use super::*;
     use std::process::Command as StdCommand;
 
+    // ── Mock helpers ─────────────────────────────────────────────────────────
+
+    async fn mock_json(
+        method: &str,
+        path: &str,
+        status: usize,
+        body: &str,
+    ) -> (mockito::ServerGuard, mockito::Mock) {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock(method, path)
+            .with_status(status)
+            .with_header("content-type", "application/json")
+            .with_body(body)
+            .create_async()
+            .await;
+        (server, mock)
+    }
+
+    async fn mock_poll(body: &str) -> DeviceFlowPollResult {
+        let (server, mock) =
+            mock_json("POST", "/login/oauth/access_token", 200, body).await;
+        let result = github_device_flow_poll_with_base("dev_code_xyz", &server.url())
+            .await
+            .unwrap();
+        mock.assert_async().await;
+        result
+    }
+
+    async fn mock_user(status: usize, body: &str) -> Result<GitHubUser, String> {
+        let (server, mock) = mock_json("GET", "/user", status, body).await;
+        let result = github_get_user_with_base("token", &server.url()).await;
+        mock.assert_async().await;
+        result
+    }
+
+    fn clone_err_contains(url: &str, expected: &str) {
+        let dir = tempfile::TempDir::new().unwrap();
+        let dest = dir.path().join("dest");
+        let result = clone_repo(url, "token", dest.to_str().unwrap());
+        assert!(result.unwrap_err().contains(expected));
+    }
+
+    async fn mock_list_repos(status: usize, body: &str) -> Result<Vec<GithubRepo>, String> {
+        let (server, mock) = mock_json(
+            "GET",
+            "/user/repos?per_page=100&sort=updated&page=1",
+            status,
+            body,
+        )
+        .await;
+        let result = github_list_repos_with_base("token", &server.url()).await;
+        mock.assert_async().await;
+        result
+    }
+
+    async fn mock_create_repo(
+        status: usize,
+        body: &str,
+    ) -> Result<GithubRepo, String> {
+        let (server, mock) = mock_json("POST", "/user/repos", status, body).await;
+        let result =
+            github_create_repo_with_base("token", "repo", false, &server.url()).await;
+        mock.assert_async().await;
+        result
+    }
+
+    async fn mock_device_start(status: usize, body: &str) -> Result<DeviceFlowStart, String> {
+        let (server, mock) =
+            mock_json("POST", "/login/device/code", status, body).await;
+        let result = github_device_flow_start_with_base(&server.url()).await;
+        mock.assert_async().await;
+        result
+    }
+
     // ── Sync/pure logic tests ────────────────────────────────────────────────
 
     #[test]
     fn test_inject_token_basic_github_url() {
-        let url = "https://github.com/user/repo.git";
-        let token = "gho_abc123";
-        let result = inject_token_into_url(url, token).unwrap();
-        assert_eq!(result, "https://oauth2:gho_abc123@github.com/user/repo.git");
+        let result = inject_token_into_url("https://github.com/user/repo.git", "gho_abc123");
+        assert_eq!(
+            result.unwrap(),
+            "https://oauth2:gho_abc123@github.com/user/repo.git"
+        );
     }
 
     #[test]
     fn test_inject_token_generic_https_url() {
-        let url = "https://gitlab.com/user/repo.git";
-        let token = "glpat-abc";
-        let result = inject_token_into_url(url, token).unwrap();
-        assert_eq!(result, "https://oauth2:glpat-abc@gitlab.com/user/repo.git");
+        let result = inject_token_into_url("https://gitlab.com/user/repo.git", "glpat-abc");
+        assert_eq!(
+            result.unwrap(),
+            "https://oauth2:glpat-abc@gitlab.com/user/repo.git"
+        );
     }
 
     #[test]
     fn test_inject_token_ssh_url_rejected() {
-        let url = "git@github.com:user/repo.git";
-        let result = inject_token_into_url(url, "token");
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Unsupported URL format"));
+        let err = inject_token_into_url("git@github.com:user/repo.git", "token").unwrap_err();
+        assert!(err.contains("Unsupported URL format"));
     }
 
     #[test]
     fn test_inject_token_http_url_rejected() {
-        let url = "http://github.com/user/repo.git";
-        let result = inject_token_into_url(url, "token");
-        assert!(result.is_err());
+        assert!(inject_token_into_url("http://github.com/user/repo.git", "token").is_err());
     }
 
     #[test]
     fn test_inject_token_github_without_dot_git() {
-        let url = "https://github.com/user/repo";
-        let result = inject_token_into_url(url, "tok").unwrap();
-        assert_eq!(result, "https://oauth2:tok@github.com/user/repo");
+        let result = inject_token_into_url("https://github.com/user/repo", "tok");
+        assert_eq!(result.unwrap(), "https://oauth2:tok@github.com/user/repo");
     }
 
     #[test]
     fn test_clone_repo_nonempty_dest() {
         let dir = tempfile::TempDir::new().unwrap();
-        let path = dir.path();
-        std::fs::write(path.join("existing.txt"), "data").unwrap();
+        std::fs::write(dir.path().join("existing.txt"), "data").unwrap();
 
         let result = clone_repo(
             "https://github.com/test/repo.git",
             "token",
-            path.to_str().unwrap(),
+            dir.path().to_str().unwrap(),
         );
-        assert!(result.is_err());
         assert!(result.unwrap_err().contains("not empty"));
     }
 
     #[test]
     fn test_clone_repo_ssh_url_rejected() {
-        let dir = tempfile::TempDir::new().unwrap();
-        let dest = dir.path().join("new-clone");
-
-        let result = clone_repo(
-            "git@github.com:user/repo.git",
-            "token",
-            dest.to_str().unwrap(),
-        );
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Unsupported URL format"));
+        clone_err_contains("git@github.com:user/repo.git", "Unsupported URL format");
     }
 
     #[test]
     fn test_clone_repo_empty_dest_allowed() {
-        // An empty existing directory should not be rejected
         let dir = tempfile::TempDir::new().unwrap();
         let dest = dir.path().join("empty-dir");
         std::fs::create_dir(&dest).unwrap();
 
-        // This will fail at the git clone step (invalid URL) but should pass the directory check
         let result = clone_repo(
             "https://github.com/nonexistent/repo.git",
             "token",
             dest.to_str().unwrap(),
         );
-        assert!(result.is_err());
         // Should fail at git clone, not at directory check
         assert!(result.unwrap_err().contains("git clone failed"));
     }
@@ -471,31 +508,24 @@ mod tests {
         let dir = tempfile::TempDir::new().unwrap();
         let path = dir.path();
 
-        // Initialize a git repo
         StdCommand::new("git")
             .args(["init"])
             .current_dir(path)
             .output()
             .unwrap();
         StdCommand::new("git")
-            .args([
-                "remote",
-                "add",
-                "origin",
-                "https://github.com/user/repo.git",
-            ])
+            .args(["remote", "add", "origin", "https://github.com/user/repo.git"])
             .current_dir(path)
             .output()
             .unwrap();
 
-        let result = configure_remote_auth(
+        configure_remote_auth(
             path.to_str().unwrap(),
             "https://github.com/user/repo.git",
             "gho_test123",
-        );
-        assert!(result.is_ok());
+        )
+        .unwrap();
 
-        // Verify the remote URL was updated
         let output = StdCommand::new("git")
             .args(["remote", "get-url", "origin"])
             .current_dir(path)
@@ -505,10 +535,10 @@ mod tests {
         assert_eq!(url, "https://oauth2:gho_test123@github.com/user/repo.git");
     }
 
-    // ── Serialization/struct tests ───────────────────────────────────────────
+    // ── Serialization roundtrip tests ────────────────────────────────────────
 
     #[test]
-    fn test_github_repo_serialization() {
+    fn test_github_repo_serialization_roundtrip() {
         let repo = GithubRepo {
             name: "test-repo".to_string(),
             full_name: "user/test-repo".to_string(),
@@ -519,25 +549,23 @@ mod tests {
             updated_at: Some("2026-02-20T10:00:00Z".to_string()),
         };
         let json = serde_json::to_string(&repo).unwrap();
-        let parsed: GithubRepo = serde_json::from_str(&json).unwrap();
-        assert_eq!(parsed.name, "test-repo");
-        assert_eq!(parsed.full_name, "user/test-repo");
-        assert!(parsed.private);
-        assert_eq!(parsed.description, Some("A test repo".to_string()));
+        assert_eq!(serde_json::from_str::<GithubRepo>(&json).unwrap(), repo);
     }
 
     #[test]
     fn test_github_repo_deserialization_null_fields() {
         let json = r#"{"name":"r","full_name":"u/r","description":null,"private":false,"clone_url":"https://x","html_url":"https://y","updated_at":null}"#;
         let repo: GithubRepo = serde_json::from_str(json).unwrap();
+
         assert_eq!(repo.name, "r");
+        assert!(!repo.private);
+
         assert!(repo.description.is_none());
         assert!(repo.updated_at.is_none());
-        assert!(!repo.private);
     }
 
     #[test]
-    fn test_device_flow_start_serialization() {
+    fn test_device_flow_start_serialization_roundtrip() {
         let start = DeviceFlowStart {
             device_code: "dc_123".to_string(),
             user_code: "ABCD-1234".to_string(),
@@ -546,128 +574,90 @@ mod tests {
             interval: 5,
         };
         let json = serde_json::to_string(&start).unwrap();
-        let parsed: DeviceFlowStart = serde_json::from_str(&json).unwrap();
-        assert_eq!(parsed.device_code, "dc_123");
-        assert_eq!(parsed.user_code, "ABCD-1234");
-        assert_eq!(parsed.verification_uri, "https://github.com/login/device");
-        assert_eq!(parsed.expires_in, 900);
-        assert_eq!(parsed.interval, 5);
+        assert_eq!(
+            serde_json::from_str::<DeviceFlowStart>(&json).unwrap(),
+            start
+        );
     }
 
     #[test]
-    fn test_device_flow_poll_result_complete() {
-        let result = DeviceFlowPollResult {
+    fn test_device_flow_poll_result_roundtrip() {
+        let complete = DeviceFlowPollResult {
             status: "complete".to_string(),
             access_token: Some("gho_abc123".to_string()),
             error: None,
         };
-        let json = serde_json::to_string(&result).unwrap();
-        let parsed: DeviceFlowPollResult = serde_json::from_str(&json).unwrap();
-        assert_eq!(parsed.status, "complete");
-        assert_eq!(parsed.access_token, Some("gho_abc123".to_string()));
-        assert!(parsed.error.is_none());
-    }
+        let json = serde_json::to_string(&complete).unwrap();
+        assert_eq!(
+            serde_json::from_str::<DeviceFlowPollResult>(&json).unwrap(),
+            complete
+        );
 
-    #[test]
-    fn test_device_flow_poll_result_pending() {
-        let result = DeviceFlowPollResult {
+        let pending = DeviceFlowPollResult {
             status: "pending".to_string(),
             access_token: None,
             error: Some("authorization_pending".to_string()),
         };
-        let json = serde_json::to_string(&result).unwrap();
-        let parsed: DeviceFlowPollResult = serde_json::from_str(&json).unwrap();
-        assert_eq!(parsed.status, "pending");
-        assert!(parsed.access_token.is_none());
-        assert_eq!(parsed.error, Some("authorization_pending".to_string()));
+        let json = serde_json::to_string(&pending).unwrap();
+        assert_eq!(
+            serde_json::from_str::<DeviceFlowPollResult>(&json).unwrap(),
+            pending
+        );
     }
 
     #[test]
-    fn test_github_user_serialization() {
+    fn test_github_user_serialization_roundtrip() {
         let user = GitHubUser {
             login: "lucaong".to_string(),
             name: Some("Luca Ongaro".to_string()),
             avatar_url: "https://avatars.githubusercontent.com/u/123".to_string(),
         };
         let json = serde_json::to_string(&user).unwrap();
-        let parsed: GitHubUser = serde_json::from_str(&json).unwrap();
-        assert_eq!(parsed.login, "lucaong");
-        assert_eq!(parsed.name, Some("Luca Ongaro".to_string()));
+        assert_eq!(serde_json::from_str::<GitHubUser>(&json).unwrap(), user);
     }
 
     #[test]
     fn test_github_user_deserialization_null_name() {
-        let json = r#"{"login":"bot","name":null,"avatar_url":"https://x"}"#;
-        let user: GitHubUser = serde_json::from_str(json).unwrap();
+        let user: GitHubUser =
+            serde_json::from_str(r#"{"login":"bot","name":null,"avatar_url":"https://x"}"#)
+                .unwrap();
         assert_eq!(user.login, "bot");
         assert!(user.name.is_none());
     }
 
-    // ── HTTP mock tests ──────────────────────────────────────────────────────
+    // ── HTTP mock: list repos ────────────────────────────────────────────────
 
     #[tokio::test]
     async fn test_github_list_repos_success() {
-        let mut server = mockito::Server::new_async().await;
-        let mock = server
-            .mock("GET", "/user/repos?per_page=100&sort=updated&page=1")
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(
-                r#"[{"name":"my-repo","full_name":"user/my-repo","description":"A repo","private":false,"clone_url":"https://github.com/user/my-repo.git","html_url":"https://github.com/user/my-repo","updated_at":"2026-02-01T00:00:00Z"}]"#,
-            )
-            .create_async()
-            .await;
+        let repos = mock_list_repos(
+            200,
+            r#"[{"name":"my-repo","full_name":"user/my-repo","description":"A repo","private":false,"clone_url":"https://github.com/user/my-repo.git","html_url":"https://github.com/user/my-repo","updated_at":"2026-02-01T00:00:00Z"}]"#,
+        )
+        .await
+        .unwrap();
 
-        let result = github_list_repos_with_base("token123", &server.url()).await;
-        mock.assert_async().await;
-        assert!(result.is_ok());
-        let repos = result.unwrap();
         assert_eq!(repos.len(), 1);
         assert_eq!(repos[0].name, "my-repo");
-        assert_eq!(repos[0].full_name, "user/my-repo");
-        assert!(!repos[0].private);
     }
 
     #[tokio::test]
     async fn test_github_list_repos_empty() {
-        let mut server = mockito::Server::new_async().await;
-        let mock = server
-            .mock("GET", "/user/repos?per_page=100&sort=updated&page=1")
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body("[]")
-            .create_async()
-            .await;
-
-        let result = github_list_repos_with_base("token123", &server.url()).await;
-        mock.assert_async().await;
-        assert!(result.is_ok());
-        assert!(result.unwrap().is_empty());
+        let repos = mock_list_repos(200, "[]").await.unwrap();
+        assert!(repos.is_empty());
     }
 
     #[tokio::test]
     async fn test_github_list_repos_auth_error() {
-        let mut server = mockito::Server::new_async().await;
-        let mock = server
-            .mock("GET", "/user/repos?per_page=100&sort=updated&page=1")
-            .with_status(401)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"message":"Bad credentials"}"#)
-            .create_async()
-            .await;
-
-        let result = github_list_repos_with_base("bad_token", &server.url()).await;
-        mock.assert_async().await;
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("GitHub API error"));
+        let err = mock_list_repos(401, r#"{"message":"Bad credentials"}"#)
+            .await
+            .unwrap_err();
+        assert!(err.contains("GitHub API error"));
     }
 
     #[tokio::test]
     async fn test_github_list_repos_paginated() {
-        // Return 100 repos on page 1 (triggers pagination), then fewer on page 2
         let mut server = mockito::Server::new_async().await;
 
-        // Build 100 repos for page 1
         let repos_page1: Vec<serde_json::Value> = (0..100)
             .map(|i| {
                 serde_json::json!({
@@ -689,7 +679,6 @@ mod tests {
             .with_body(serde_json::to_string(&repos_page1).unwrap())
             .create_async()
             .await;
-
         let mock2 = server
             .mock("GET", "/user/repos?per_page=100&sort=updated&page=2")
             .with_status(200)
@@ -700,223 +689,127 @@ mod tests {
             .create_async()
             .await;
 
-        let result = github_list_repos_with_base("token", &server.url()).await;
+        let repos = github_list_repos_with_base("token", &server.url())
+            .await
+            .unwrap();
         mock1.assert_async().await;
         mock2.assert_async().await;
-        assert!(result.is_ok());
-        let repos = result.unwrap();
+
         assert_eq!(repos.len(), 101);
         assert_eq!(repos[100].name, "extra-repo");
     }
 
+    // ── HTTP mock: create repo ───────────────────────────────────────────────
+
     #[tokio::test]
     async fn test_github_create_repo_success() {
-        let mut server = mockito::Server::new_async().await;
-        let mock = server
-            .mock("POST", "/user/repos")
-            .with_status(201)
-            .with_header("content-type", "application/json")
-            .with_body(
-                r#"{"name":"new-repo","full_name":"user/new-repo","description":"Laputa vault","private":true,"clone_url":"https://github.com/user/new-repo.git","html_url":"https://github.com/user/new-repo","updated_at":"2026-02-01T00:00:00Z"}"#,
-            )
-            .create_async()
-            .await;
+        let repo = mock_create_repo(
+            201,
+            r#"{"name":"new-repo","full_name":"user/new-repo","description":"Laputa vault","private":true,"clone_url":"https://github.com/user/new-repo.git","html_url":"https://github.com/user/new-repo","updated_at":"2026-02-01T00:00:00Z"}"#,
+        )
+        .await
+        .unwrap();
 
-        let result = github_create_repo_with_base("token", "new-repo", true, &server.url()).await;
-        mock.assert_async().await;
-        assert!(result.is_ok());
-        let repo = result.unwrap();
         assert_eq!(repo.name, "new-repo");
         assert!(repo.private);
     }
 
     #[tokio::test]
     async fn test_github_create_repo_name_exists() {
-        let mut server = mockito::Server::new_async().await;
-        let mock = server
-            .mock("POST", "/user/repos")
-            .with_status(422)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"message":"Validation Failed","errors":[{"resource":"Repository","code":"custom","field":"name","message":"name already exists on this account"}]}"#)
-            .create_async()
-            .await;
-
-        let result =
-            github_create_repo_with_base("token", "existing-repo", false, &server.url()).await;
-        mock.assert_async().await;
-        assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .contains("Repository name already exists"));
+        let err = mock_create_repo(
+            422,
+            r#"{"message":"Validation Failed","errors":[{"resource":"Repository","code":"custom","field":"name","message":"name already exists on this account"}]}"#,
+        )
+        .await
+        .unwrap_err();
+        assert!(err.contains("Repository name already exists"));
     }
 
     #[tokio::test]
     async fn test_github_create_repo_server_error() {
-        let mut server = mockito::Server::new_async().await;
-        let mock = server
-            .mock("POST", "/user/repos")
-            .with_status(500)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"message":"Internal Server Error"}"#)
-            .create_async()
-            .await;
-
-        let result = github_create_repo_with_base("token", "new-repo", false, &server.url()).await;
-        mock.assert_async().await;
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("GitHub API error 500"));
+        let err = mock_create_repo(500, r#"{"message":"Internal Server Error"}"#)
+            .await
+            .unwrap_err();
+        assert!(err.contains("GitHub API error 500"));
     }
+
+    // ── HTTP mock: device flow start ─────────────────────────────────────────
 
     #[tokio::test]
     async fn test_github_device_flow_start_success() {
-        let mut server = mockito::Server::new_async().await;
-        let mock = server
-            .mock("POST", "/login/device/code")
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(
-                r#"{"device_code":"dev_abc","user_code":"ABCD-1234","verification_uri":"https://github.com/login/device","expires_in":900,"interval":5}"#,
-            )
-            .create_async()
-            .await;
+        let start = mock_device_start(
+            200,
+            r#"{"device_code":"dev_abc","user_code":"ABCD-1234","verification_uri":"https://github.com/login/device","expires_in":900,"interval":5}"#,
+        )
+        .await
+        .unwrap();
 
-        let result = github_device_flow_start_with_base(&server.url()).await;
-        mock.assert_async().await;
-        assert!(result.is_ok());
-        let start = result.unwrap();
-        assert_eq!(start.device_code, "dev_abc");
-        assert_eq!(start.user_code, "ABCD-1234");
-        assert_eq!(start.expires_in, 900);
-        assert_eq!(start.interval, 5);
+        assert_eq!(start, DeviceFlowStart {
+            device_code: "dev_abc".to_string(),
+            user_code: "ABCD-1234".to_string(),
+            verification_uri: "https://github.com/login/device".to_string(),
+            expires_in: 900,
+            interval: 5,
+        });
     }
 
     #[tokio::test]
     async fn test_github_device_flow_start_error() {
-        let mut server = mockito::Server::new_async().await;
-        let mock = server
-            .mock("POST", "/login/device/code")
-            .with_status(400)
-            .with_body("bad request")
-            .create_async()
-            .await;
-
-        let result = github_device_flow_start_with_base(&server.url()).await;
-        mock.assert_async().await;
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Device flow start failed"));
+        let err = mock_device_start(400, "bad request").await.unwrap_err();
+        assert!(err.contains("Device flow start failed"));
     }
 
     #[tokio::test]
     async fn test_github_device_flow_start_404_gives_clear_message() {
-        let mut server = mockito::Server::new_async().await;
-        let mock = server
-            .mock("POST", "/login/device/code")
-            .with_status(404)
-            .with_body(r#"{"error":"Not Found"}"#)
-            .create_async()
-            .await;
-
-        let result = github_device_flow_start_with_base(&server.url()).await;
-        mock.assert_async().await;
-        assert!(result.is_err());
-        let err = result.unwrap_err();
+        let err = mock_device_start(404, r#"{"error":"Not Found"}"#)
+            .await
+            .unwrap_err();
         assert!(err.contains("device flow not available"));
         assert!(err.contains("Device authorization flow"));
     }
 
+    // ── HTTP mock: device flow poll ──────────────────────────────────────────
+
     #[tokio::test]
     async fn test_github_device_flow_poll_complete() {
-        let mut server = mockito::Server::new_async().await;
-        let mock = server
-            .mock("POST", "/login/oauth/access_token")
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"access_token":"gho_secret123","token_type":"bearer","scope":"repo"}"#)
-            .create_async()
-            .await;
-
-        let result = github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
-        mock.assert_async().await;
-        assert!(result.is_ok());
-        let poll = result.unwrap();
-        assert_eq!(poll.status, "complete");
-        assert_eq!(poll.access_token, Some("gho_secret123".to_string()));
-        assert!(poll.error.is_none());
+        let poll = mock_poll(
+            r#"{"access_token":"gho_secret123","token_type":"bearer","scope":"repo"}"#,
+        )
+        .await;
+        assert_eq!(poll, DeviceFlowPollResult {
+            status: "complete".to_string(),
+            access_token: Some("gho_secret123".to_string()),
+            error: None,
+        });
     }
 
     #[tokio::test]
     async fn test_github_device_flow_poll_pending() {
-        let mut server = mockito::Server::new_async().await;
-        let mock = server
-            .mock("POST", "/login/oauth/access_token")
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"error":"authorization_pending","error_description":"The authorization request is still pending."}"#)
-            .create_async()
-            .await;
-
-        let result = github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
-        mock.assert_async().await;
-        assert!(result.is_ok());
-        let poll = result.unwrap();
+        let poll = mock_poll(
+            r#"{"error":"authorization_pending","error_description":"The authorization request is still pending."}"#,
+        )
+        .await;
         assert_eq!(poll.status, "pending");
-        assert!(poll.access_token.is_none());
         assert_eq!(poll.error, Some("authorization_pending".to_string()));
     }
 
     #[tokio::test]
     async fn test_github_device_flow_poll_slow_down() {
-        let mut server = mockito::Server::new_async().await;
-        let mock = server
-            .mock("POST", "/login/oauth/access_token")
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"error":"slow_down"}"#)
-            .create_async()
-            .await;
-
-        let result = github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
-        mock.assert_async().await;
-        assert!(result.is_ok());
-        let poll = result.unwrap();
+        let poll = mock_poll(r#"{"error":"slow_down"}"#).await;
         assert_eq!(poll.status, "pending");
         assert_eq!(poll.error, Some("slow_down".to_string()));
     }
 
     #[tokio::test]
     async fn test_github_device_flow_poll_expired() {
-        let mut server = mockito::Server::new_async().await;
-        let mock = server
-            .mock("POST", "/login/oauth/access_token")
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"error":"expired_token"}"#)
-            .create_async()
-            .await;
-
-        let result = github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
-        mock.assert_async().await;
-        assert!(result.is_ok());
-        let poll = result.unwrap();
+        let poll = mock_poll(r#"{"error":"expired_token"}"#).await;
         assert_eq!(poll.status, "expired");
         assert_eq!(poll.error, Some("expired_token".to_string()));
     }
 
     #[tokio::test]
     async fn test_github_device_flow_poll_other_error() {
-        let mut server = mockito::Server::new_async().await;
-        let mock = server
-            .mock("POST", "/login/oauth/access_token")
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"error":"access_denied"}"#)
-            .create_async()
-            .await;
-
-        let result = github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
-        mock.assert_async().await;
-        assert!(result.is_ok());
-        let poll = result.unwrap();
+        let poll = mock_poll(r#"{"error":"access_denied"}"#).await;
         assert_eq!(poll.status, "error");
         assert_eq!(poll.error, Some("access_denied".to_string()));
     }
@@ -931,84 +824,55 @@ mod tests {
             .create_async()
             .await;
 
-        let result = github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
+        let err = github_device_flow_poll_with_base("dev_code_xyz", &server.url())
+            .await
+            .unwrap_err();
         mock.assert_async().await;
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Device flow poll HTTP error"));
+        assert!(err.contains("Device flow poll HTTP error"));
     }
 
     #[tokio::test]
     async fn test_github_device_flow_poll_unknown_error() {
-        let mut server = mockito::Server::new_async().await;
-        let mock = server
-            .mock("POST", "/login/oauth/access_token")
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{}"#)
-            .create_async()
-            .await;
-
-        let result = github_device_flow_poll_with_base("dev_code_xyz", &server.url()).await;
-        mock.assert_async().await;
-        assert!(result.is_ok());
-        let poll = result.unwrap();
+        let poll = mock_poll(r#"{}"#).await;
         assert_eq!(poll.status, "error");
         assert_eq!(poll.error, Some("unknown".to_string()));
     }
 
+    // ── HTTP mock: get user ──────────────────────────────────────────────────
+
     #[tokio::test]
     async fn test_github_get_user_success() {
-        let mut server = mockito::Server::new_async().await;
-        let mock = server
-            .mock("GET", "/user")
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(
-                r#"{"login":"lucaong","name":"Luca Ongaro","avatar_url":"https://avatars.githubusercontent.com/u/12345"}"#,
-            )
-            .create_async()
-            .await;
+        let user = mock_user(
+            200,
+            r#"{"login":"lucaong","name":"Luca Ongaro","avatar_url":"https://avatars.githubusercontent.com/u/12345"}"#,
+        )
+        .await
+        .unwrap();
 
-        let result = github_get_user_with_base("gho_token", &server.url()).await;
-        mock.assert_async().await;
-        assert!(result.is_ok());
-        let user = result.unwrap();
-        assert_eq!(user.login, "lucaong");
-        assert_eq!(user.name, Some("Luca Ongaro".to_string()));
+        assert_eq!(user, GitHubUser {
+            login: "lucaong".to_string(),
+            name: Some("Luca Ongaro".to_string()),
+            avatar_url: "https://avatars.githubusercontent.com/u/12345".to_string(),
+        });
     }
 
     #[tokio::test]
     async fn test_github_get_user_unauthorized() {
-        let mut server = mockito::Server::new_async().await;
-        let mock = server
-            .mock("GET", "/user")
-            .with_status(401)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"message":"Bad credentials"}"#)
-            .create_async()
-            .await;
-
-        let result = github_get_user_with_base("bad_token", &server.url()).await;
-        mock.assert_async().await;
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("GitHub API error 401"));
+        let err = mock_user(401, r#"{"message":"Bad credentials"}"#)
+            .await
+            .unwrap_err();
+        assert!(err.contains("GitHub API error 401"));
     }
 
     #[tokio::test]
     async fn test_github_get_user_null_name() {
-        let mut server = mockito::Server::new_async().await;
-        let mock = server
-            .mock("GET", "/user")
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"login":"bot-account","name":null,"avatar_url":"https://avatars.githubusercontent.com/u/99"}"#)
-            .create_async()
-            .await;
+        let user = mock_user(
+            200,
+            r#"{"login":"bot-account","name":null,"avatar_url":"https://avatars.githubusercontent.com/u/99"}"#,
+        )
+        .await
+        .unwrap();
 
-        let result = github_get_user_with_base("token", &server.url()).await;
-        mock.assert_async().await;
-        assert!(result.is_ok());
-        let user = result.unwrap();
         assert_eq!(user.login, "bot-account");
         assert!(user.name.is_none());
     }
