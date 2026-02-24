@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { NoteList } from './components/NoteList'
 import { Editor } from './components/Editor'
@@ -16,19 +16,16 @@ import { useSettings } from './hooks/useSettings'
 import { useNoteActions } from './hooks/useNoteActions'
 import { useEditorSave } from './hooks/useEditorSave'
 import { useCommitFlow } from './hooks/useCommitFlow'
-import { useAppKeyboard } from './hooks/useAppKeyboard'
 import { useViewMode } from './hooks/useViewMode'
 import { useEntryActions } from './hooks/useEntryActions'
-import { useCommandRegistry } from './hooks/useCommandRegistry'
-import { isTauri } from './mock-tauri'
-import { pickFolder } from './utils/vault-dialog'
-
-import { useKeyboardNavigation } from './hooks/useKeyboardNavigation'
+import { useAppCommands } from './hooks/useAppCommands'
+import { useDialogs } from './hooks/useDialogs'
+import { useVaultSwitcher } from './hooks/useVaultSwitcher'
+import { useGitHistory } from './hooks/useGitHistory'
 import { useUpdater } from './hooks/useUpdater'
 import { UpdateBanner } from './components/UpdateBanner'
 import { setApiKey } from './utils/ai-chat'
-import type { SidebarSelection, GitCommit } from './types'
-import type { VaultOption } from './components/StatusBar'
+import type { SidebarSelection } from './types'
 import './App.css'
 
 // Type declaration for mock content storage
@@ -39,15 +36,6 @@ declare global {
 }
 
 const DEFAULT_SELECTION: SidebarSelection = { kind: 'filter', filter: 'all' }
-
-const DEFAULT_VAULTS: VaultOption[] = isTauri()
-  ? [
-      { label: 'Demo v2', path: '/Users/luca/Workspace/laputa-app/demo-vault-v2' },
-      { label: 'Laputa', path: '/Users/luca/Laputa' },
-    ]
-  : [
-      { label: 'Demo v2', path: '/Users/luca/Workspace/laputa-app/demo-vault-v2' },
-    ]
 
 function useLayoutPanels() {
   const [sidebarWidth, setSidebarWidth] = useState(250)
@@ -63,26 +51,21 @@ function useLayoutPanels() {
 function App() {
   const [selection, setSelection] = useState<SidebarSelection>(DEFAULT_SELECTION)
   const layout = useLayoutPanels()
-  const [gitHistory, setGitHistory] = useState<GitCommit[]>([])
-  const [showCreateTypeDialog, setShowCreateTypeDialog] = useState(false)
-  const [showQuickOpen, setShowQuickOpen] = useState(false)
-  const [showCommandPalette, setShowCommandPalette] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
-  const [vaultPath, setVaultPath] = useState(DEFAULT_VAULTS[0].path)
-  const [showAIChat, setShowAIChat] = useState(false)
-  const [showSettings, setShowSettings] = useState(false)
-  const [showGitHubVault, setShowGitHubVault] = useState(false)
-  const [extraVaults, setExtraVaults] = useState<VaultOption[]>([])
+  const dialogs = useDialogs()
 
-  const allVaults = useMemo(() => [...DEFAULT_VAULTS, ...extraVaults], [extraVaults])
+  // onSwitch closure captures `notes` declared below — safe because it's only
+  // called on user interaction, never during render (refs inside the hook
+  // guarantee the latest closure is always used).
+  const vaultSwitcher = useVaultSwitcher({
+    onSwitch: () => { setSelection(DEFAULT_SELECTION); notes.closeAllTabs() },
+    onToast: (msg) => setToastMessage(msg),
+  })
 
-  const vault = useVaultLoader(vaultPath)
+  const vault = useVaultLoader(vaultSwitcher.vaultPath)
   const { settings, saveSettings } = useSettings()
 
-  // Sync Anthropic key from settings to localStorage for AIChatPanel
-  useEffect(() => {
-    setApiKey(settings.anthropic_key ?? '')
-  }, [settings.anthropic_key])
+  useEffect(() => { setApiKey(settings.anthropic_key ?? '') }, [settings.anthropic_key])
 
   const notes = useNoteActions({ addEntry: vault.addEntry, updateContent: vault.updateContent, entries: vault.entries, setToastMessage, updateEntry: vault.updateEntry })
 
@@ -93,69 +76,15 @@ function App() {
     onAfterSave: vault.loadModifiedFiles,
   })
 
-  const commitFlow = useCommitFlow({
-    savePending,
-    loadModifiedFiles: vault.loadModifiedFiles,
-    commitAndPush: vault.commitAndPush,
-    setToastMessage,
-  })
+  const commitFlow = useCommitFlow({ savePending, loadModifiedFiles: vault.loadModifiedFiles, commitAndPush: vault.commitAndPush, setToastMessage })
 
   const entryActions = useEntryActions({
-    entries: vault.entries,
-    updateEntry: vault.updateEntry,
+    entries: vault.entries, updateEntry: vault.updateEntry,
     handleUpdateFrontmatter: notes.handleUpdateFrontmatter,
-    handleDeleteProperty: notes.handleDeleteProperty,
-    setToastMessage,
+    handleDeleteProperty: notes.handleDeleteProperty, setToastMessage,
   })
 
-  const handleCreateNoteImmediate = notes.handleCreateNoteImmediate
-
-  const handleSwitchVault = useCallback((path: string) => {
-    setVaultPath(path)
-    setSelection(DEFAULT_SELECTION)
-    setGitHistory([])
-    notes.closeAllTabs()
-  }, [notes])
-
-  const handleVaultCloned = useCallback((path: string, label: string) => {
-    setExtraVaults(prev => {
-      if (prev.some(v => v.path === path)) return prev
-      return [...prev, { label, path }]
-    })
-    handleSwitchVault(path)
-    setToastMessage(`Vault "${label}" cloned and opened`)
-  }, [handleSwitchVault])
-
-  const addAndSwitchVault = useCallback((path: string, label: string) => {
-    setExtraVaults(prev => {
-      if (prev.some(v => v.path === path)) return prev
-      return [...prev, { label, path }]
-    })
-    handleSwitchVault(path)
-  }, [handleSwitchVault])
-
-  const handleOpenLocalFolder = useCallback(async () => {
-    try {
-      const path = await pickFolder('Open vault folder')
-      if (!path) return
-      const label = path.split('/').pop() || 'Local Vault'
-      addAndSwitchVault(path, label)
-      setToastMessage(`Vault "${label}" opened`)
-    } catch (err) {
-      console.error('Failed to open local folder:', err)
-      setToastMessage(`Failed to open folder: ${err}`)
-    }
-  }, [addAndSwitchVault])
-
-  useEffect(() => {
-    if (!notes.activeTabPath) { setGitHistory([]); return }
-    vault.loadGitHistory(notes.activeTabPath).then(setGitHistory)
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- vault object is unstable; loadGitHistory is the actual dep
-  }, [notes.activeTabPath, vault.loadGitHistory])
-
-  const openCreateTypeDialog = useCallback(() => {
-    setShowCreateTypeDialog(true)
-  }, [])
+  const gitHistory = useGitHistory(notes.activeTabPath, vault.loadGitHistory)
 
   const handleCreateType = useCallback((name: string) => {
     notes.handleCreateType(name)
@@ -164,54 +93,29 @@ function App() {
 
   const handleRenameTab = useCallback(async (path: string, newTitle: string) => {
     await savePendingForPath(path)
-    await notes.handleRenameNote(path, newTitle, vaultPath, vault.replaceEntry).then(vault.loadModifiedFiles)
-  }, [notes, vaultPath, vault, savePendingForPath])
+    await notes.handleRenameNote(path, newTitle, vaultSwitcher.vaultPath, vault.replaceEntry).then(vault.loadModifiedFiles)
+  }, [notes, vaultSwitcher.vaultPath, vault, savePendingForPath])
 
   const { setViewMode } = useViewMode()
 
-  useAppKeyboard({
-    onQuickOpen: () => setShowQuickOpen(true),
-    onCommandPalette: () => setShowCommandPalette(true),
-    onCreateNote: handleCreateNoteImmediate,
-    onSave: handleSave,
-    onOpenSettings: () => setShowSettings(true),
-    onTrashNote: entryActions.handleTrashNote,
-    onArchiveNote: entryActions.handleArchiveNote,
-    onSetViewMode: setViewMode,
-    activeTabPathRef: notes.activeTabPathRef,
-    handleCloseTabRef: notes.handleCloseTabRef,
-  })
-
-  const commands = useCommandRegistry({
-    activeTabPath: notes.activeTabPath,
-    entries: vault.entries,
-    modifiedCount: vault.modifiedFiles.length,
-    onQuickOpen: () => setShowQuickOpen(true),
-    onCreateNote: handleCreateNoteImmediate,
-    onSave: handleSave,
-    onOpenSettings: () => setShowSettings(true),
-    onTrashNote: entryActions.handleTrashNote,
-    onArchiveNote: entryActions.handleArchiveNote,
+  const commands = useAppCommands({
+    activeTabPath: notes.activeTabPath, activeTabPathRef: notes.activeTabPathRef,
+    handleCloseTabRef: notes.handleCloseTabRef, tabs: notes.tabs,
+    entries: vault.entries, allContent: vault.allContent,
+    modifiedCount: vault.modifiedFiles.length, selection,
+    onQuickOpen: dialogs.openQuickOpen, onCommandPalette: dialogs.openCommandPalette,
+    onCreateNote: notes.handleCreateNoteImmediate, onSave: handleSave,
+    onOpenSettings: dialogs.openSettings,
+    onTrashNote: entryActions.handleTrashNote, onArchiveNote: entryActions.handleArchiveNote,
     onUnarchiveNote: entryActions.handleUnarchiveNote,
-    onCommitPush: commitFlow.openCommitDialog,
-    onSetViewMode: setViewMode,
+    onCommitPush: commitFlow.openCommitDialog, onSetViewMode: setViewMode,
     onToggleInspector: () => layout.setInspectorCollapsed(c => !c),
-    onSelect: setSelection,
-    onCloseTab: notes.handleCloseTab,
+    onSelect: setSelection, onCloseTab: notes.handleCloseTab,
+    onSwitchTab: notes.handleSwitchTab, onReplaceActiveTab: notes.handleReplaceActiveTab,
+    onSelectNote: notes.handleSelectNote,
   })
 
   const { status: updateStatus, actions: updateActions } = useUpdater()
-
-  useKeyboardNavigation({
-    tabs: notes.tabs,
-    activeTabPath: notes.activeTabPath,
-    entries: vault.entries,
-    selection,
-    allContent: vault.allContent,
-    onSwitchTab: notes.handleSwitchTab,
-    onReplaceActiveTab: notes.handleReplaceActiveTab,
-    onSelectNote: notes.handleSelectNote,
-  })
 
   const activeTab = notes.tabs.find((t) => t.entry.path === notes.activeTabPath) ?? null
 
@@ -220,11 +124,11 @@ function App() {
       <UpdateBanner status={updateStatus} actions={updateActions} />
       <div className="app">
         <div className="app__sidebar" style={{ width: layout.sidebarWidth }}>
-          <Sidebar entries={vault.entries} selection={selection} onSelect={setSelection} onSelectNote={notes.handleSelectNote} onCreateType={handleCreateNoteImmediate} onCreateNewType={openCreateTypeDialog} onCustomizeType={entryActions.handleCustomizeType} onReorderSections={entryActions.handleReorderSections} modifiedCount={vault.modifiedFiles.length} onCommitPush={commitFlow.openCommitDialog} />
+          <Sidebar entries={vault.entries} selection={selection} onSelect={setSelection} onSelectNote={notes.handleSelectNote} onCreateType={notes.handleCreateNoteImmediate} onCreateNewType={dialogs.openCreateType} onCustomizeType={entryActions.handleCustomizeType} onReorderSections={entryActions.handleReorderSections} modifiedCount={vault.modifiedFiles.length} onCommitPush={commitFlow.openCommitDialog} />
         </div>
         <ResizeHandle onResize={layout.handleSidebarResize} />
         <div className="app__note-list" style={{ width: layout.noteListWidth }}>
-          <NoteList entries={vault.entries} selection={selection} selectedNote={activeTab?.entry ?? null} allContent={vault.allContent} modifiedFiles={vault.modifiedFiles} getNoteStatus={vault.getNoteStatus} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={notes.handleReplaceActiveTab} onCreateNote={handleCreateNoteImmediate} />
+          <NoteList entries={vault.entries} selection={selection} selectedNote={activeTab?.entry ?? null} allContent={vault.allContent} modifiedFiles={vault.modifiedFiles} getNoteStatus={vault.getNoteStatus} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={notes.handleReplaceActiveTab} onCreateNote={notes.handleCreateNoteImmediate} />
         </div>
         <ResizeHandle onResize={layout.handleNoteListResize} />
         <div className="app__editor">
@@ -239,7 +143,7 @@ function App() {
             onLoadDiff={vault.loadDiff}
             onLoadDiffAtCommit={vault.loadDiffAtCommit}
             getNoteStatus={vault.getNoteStatus}
-            onCreateNote={handleCreateNoteImmediate}
+            onCreateNote={notes.handleCreateNoteImmediate}
             inspectorCollapsed={layout.inspectorCollapsed}
             onToggleInspector={() => layout.setInspectorCollapsed((c) => !c)}
             inspectorWidth={layout.inspectorWidth}
@@ -251,9 +155,9 @@ function App() {
             onUpdateFrontmatter={notes.handleUpdateFrontmatter}
             onDeleteProperty={notes.handleDeleteProperty}
             onAddProperty={notes.handleAddProperty}
-            showAIChat={showAIChat}
-            onToggleAIChat={() => setShowAIChat(c => !c)}
-            vaultPath={vaultPath}
+            showAIChat={dialogs.showAIChat}
+            onToggleAIChat={dialogs.toggleAIChat}
+            vaultPath={vaultSwitcher.vaultPath}
             onTrashNote={entryActions.handleTrashNote}
             onRestoreNote={entryActions.handleRestoreNote}
             onArchiveNote={entryActions.handleArchiveNote}
@@ -263,19 +167,19 @@ function App() {
           />
         </div>
       </div>
-      <StatusBar noteCount={vault.entries.length} modifiedCount={vault.modifiedFiles.length} vaultPath={vaultPath} vaults={allVaults} onSwitchVault={handleSwitchVault} onOpenSettings={() => setShowSettings(true)} onOpenLocalFolder={handleOpenLocalFolder} onConnectGitHub={() => setShowGitHubVault(true)} onClickPending={() => setSelection({ kind: 'filter', filter: 'changes' })} hasGitHub={!!settings.github_token} />
+      <StatusBar noteCount={vault.entries.length} modifiedCount={vault.modifiedFiles.length} vaultPath={vaultSwitcher.vaultPath} vaults={vaultSwitcher.allVaults} onSwitchVault={vaultSwitcher.switchVault} onOpenSettings={dialogs.openSettings} onOpenLocalFolder={vaultSwitcher.handleOpenLocalFolder} onConnectGitHub={dialogs.openGitHubVault} onClickPending={() => setSelection({ kind: 'filter', filter: 'changes' })} hasGitHub={!!settings.github_token} />
       <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
-      <QuickOpenPalette open={showQuickOpen} entries={vault.entries} onSelect={notes.handleSelectNote} onClose={() => setShowQuickOpen(false)} />
-      <CommandPalette open={showCommandPalette} commands={commands} onClose={() => setShowCommandPalette(false)} />
-      <CreateTypeDialog open={showCreateTypeDialog} onClose={() => setShowCreateTypeDialog(false)} onCreate={handleCreateType} />
+      <QuickOpenPalette open={dialogs.showQuickOpen} entries={vault.entries} onSelect={notes.handleSelectNote} onClose={dialogs.closeQuickOpen} />
+      <CommandPalette open={dialogs.showCommandPalette} commands={commands} onClose={dialogs.closeCommandPalette} />
+      <CreateTypeDialog open={dialogs.showCreateTypeDialog} onClose={dialogs.closeCreateType} onCreate={handleCreateType} />
       <CommitDialog open={commitFlow.showCommitDialog} modifiedCount={vault.modifiedFiles.length} onCommit={commitFlow.handleCommitPush} onClose={commitFlow.closeCommitDialog} />
-      <SettingsPanel open={showSettings} settings={settings} onSave={saveSettings} onClose={() => setShowSettings(false)} />
+      <SettingsPanel open={dialogs.showSettings} settings={settings} onSave={saveSettings} onClose={dialogs.closeSettings} />
       <GitHubVaultModal
-        open={showGitHubVault}
+        open={dialogs.showGitHubVault}
         githubToken={settings.github_token}
-        onClose={() => setShowGitHubVault(false)}
-        onVaultCloned={handleVaultCloned}
-        onOpenSettings={() => { setShowGitHubVault(false); setShowSettings(true) }}
+        onClose={dialogs.closeGitHubVault}
+        onVaultCloned={vaultSwitcher.handleVaultCloned}
+        onOpenSettings={() => { dialogs.closeGitHubVault(); dialogs.openSettings() }}
       />
     </div>
   )
