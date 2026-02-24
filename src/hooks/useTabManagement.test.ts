@@ -205,6 +205,28 @@ describe('useTabManagement', () => {
       expect(result.current.tabs.map(t => t.entry.title)).toEqual(['C', 'A', 'B'])
     })
 
+    it('preserves active tab after reorder', async () => {
+      const { result } = renderHook(() => useTabManagement())
+
+      await act(async () => {
+        await result.current.handleSelectNote(makeEntry({ path: '/vault/a.md', title: 'A' }))
+      })
+      await act(async () => {
+        await result.current.handleSelectNote(makeEntry({ path: '/vault/b.md', title: 'B' }))
+      })
+      await act(async () => {
+        await result.current.handleSelectNote(makeEntry({ path: '/vault/c.md', title: 'C' }))
+      })
+
+      // C is active (last opened). Move it to the front.
+      act(() => {
+        result.current.handleReorderTabs(2, 0)
+      })
+
+      expect(result.current.tabs.map(t => t.entry.title)).toEqual(['C', 'A', 'B'])
+      expect(result.current.activeTabPath).toBe('/vault/c.md')
+    })
+
     it('persists tab order to localStorage', async () => {
       const { result } = renderHook(() => useTabManagement())
 

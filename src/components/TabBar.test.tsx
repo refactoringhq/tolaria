@@ -132,6 +132,71 @@ describe('TabBar', () => {
     expect(screen.getAllByTestId('tab-modified-indicator')).toHaveLength(3)
   })
 
+  it('does not reorder on drag cancel (dragEnd without drop)', () => {
+    const onReorderTabs = vi.fn()
+    const tabs = makeTabs(['Alpha', 'Beta', 'Gamma'])
+    render(
+      <TabBar
+        tabs={tabs}
+        activeTabPath={tabs[0].entry.path}
+        {...defaultProps}
+        onReorderTabs={onReorderTabs}
+      />
+    )
+
+    const alphaTab = screen.getByText('Alpha').closest('[draggable]')!
+    const betaTab = screen.getByText('Beta').closest('[draggable]')!
+
+    fireEvent.dragStart(alphaTab, {
+      dataTransfer: { effectAllowed: 'move', setData: vi.fn() },
+    })
+
+    const rect = betaTab.getBoundingClientRect()
+    fireEvent.dragOver(betaTab, {
+      clientX: rect.left + rect.width * 0.75,
+      dataTransfer: { dropEffect: 'move' },
+    })
+
+    // Cancel via dragEnd (Escape or release outside tab bar)
+    fireEvent.dragEnd(alphaTab)
+
+    expect(onReorderTabs).not.toHaveBeenCalled()
+  })
+
+  it('reorders from last toward first position', () => {
+    const onReorderTabs = vi.fn()
+    const tabs = makeTabs(['Alpha', 'Beta', 'Gamma'])
+    render(
+      <TabBar
+        tabs={tabs}
+        activeTabPath={tabs[2].entry.path}
+        {...defaultProps}
+        onReorderTabs={onReorderTabs}
+      />
+    )
+
+    const gammaTab = screen.getByText('Gamma').closest('[draggable]')!
+    const alphaTab = screen.getByText('Alpha').closest('[draggable]')!
+
+    fireEvent.dragStart(gammaTab, {
+      dataTransfer: { effectAllowed: 'move', setData: vi.fn() },
+    })
+
+    // jsdom returns zero-sized rects, so clientX always hits "right half"
+    // (insert after index 0 → insert index 1). This still validates
+    // that dragging the last tab toward the front produces a reorder.
+    const rect = alphaTab.getBoundingClientRect()
+    fireEvent.dragOver(alphaTab, {
+      clientX: rect.left + rect.width * 0.75,
+      dataTransfer: { dropEffect: 'move' },
+    })
+
+    fireEvent.drop(alphaTab, { dataTransfer: {} })
+
+    // Gamma (2) dragged onto Alpha (0) → reorder from 2 to 1
+    expect(onReorderTabs).toHaveBeenCalledWith(2, 1)
+  })
+
   it('switches tab on click', () => {
     const onSwitchTab = vi.fn()
     const tabs = makeTabs(['Alpha', 'Beta'])

@@ -100,16 +100,25 @@ function computeInsertIndex(e: React.DragEvent<HTMLDivElement>, index: number): 
 function useTabDrag(onReorderTabs?: (from: number, to: number) => void) {
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [dropIndex, setDropIndex] = useState<number | null>(null)
+  // Refs mirror state so event handlers always read the latest values,
+  // avoiding stale closures when dragover and drop fire in the same frame.
+  const dragIndexRef = useRef<number | null>(null)
+  const dropIndexRef = useRef<number | null>(null)
   const dragNodeRef = useRef<HTMLDivElement | null>(null)
+  const onReorderRef = useRef(onReorderTabs)
+  useEffect(() => { onReorderRef.current = onReorderTabs })
 
   const resetDrag = useCallback(() => {
     if (dragNodeRef.current) dragNodeRef.current.style.opacity = ''
     dragNodeRef.current = null
+    dragIndexRef.current = null
+    dropIndexRef.current = null
     setDragIndex(null)
     setDropIndex(null)
   }, [])
 
   const handleDragStart = useCallback((e: React.DragEvent<HTMLDivElement>, index: number) => {
+    dragIndexRef.current = index
     setDragIndex(index)
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', String(index))
@@ -122,20 +131,32 @@ function useTabDrag(onReorderTabs?: (from: number, to: number) => void) {
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>, index: number) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
-    if (dragIndex === null || dragIndex === index) { setDropIndex(null); return }
-    setDropIndex(computeInsertIndex(e, index))
-  }, [dragIndex])
+    const currentDrag = dragIndexRef.current
+    if (currentDrag === null || currentDrag === index) {
+      dropIndexRef.current = null
+      setDropIndex(null)
+      return
+    }
+    const idx = computeInsertIndex(e, index)
+    dropIndexRef.current = idx
+    setDropIndex(idx)
+  }, [])
 
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
-    const toIndex = computeDropTarget(dragIndex, dropIndex)
-    if (toIndex !== null && onReorderTabs) onReorderTabs(dragIndex!, toIndex)
+    const toIndex = computeDropTarget(dragIndexRef.current, dropIndexRef.current)
+    if (toIndex !== null && onReorderRef.current) {
+      onReorderRef.current(dragIndexRef.current!, toIndex)
+    }
     resetDrag()
-  }, [dragIndex, dropIndex, onReorderTabs, resetDrag])
+  }, [resetDrag])
 
   const handleBarDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     const related = e.relatedTarget as HTMLElement | null
-    if (!e.currentTarget.contains(related)) setDropIndex(null)
+    if (!e.currentTarget.contains(related)) {
+      dropIndexRef.current = null
+      setDropIndex(null)
+    }
   }, [])
 
   return { dragIndex, dropIndex, handleDragStart, handleDragEnd: resetDrag, handleDragOver, handleDrop, handleBarDragLeave }
