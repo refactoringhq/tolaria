@@ -119,6 +119,11 @@ export function Inspector({
   const backlinks = useBacklinks(entry, entries, allContent)
   const referencedBy = useReferencedBy(entry, entries)
   const frontmatter = useMemo(() => parseFrontmatter(content), [content])
+  const typeEntryMap = useMemo(() => {
+    const map: Record<string, VaultEntry> = {}
+    for (const e of entries) { if (e.isA === 'Type') map[e.title] = e }
+    return map
+  }, [entries])
 
   const handleUpdateProperty = useCallback((key: string, value: FrontmatterValue) => {
     if (entry && onUpdateFrontmatter) onUpdateFrontmatter(entry.path, key, value)
@@ -148,13 +153,13 @@ export function Inspector({
                 onNavigate={onNavigate}
               />
               <DynamicRelationshipsPanel
-                frontmatter={frontmatter} entries={entries} onNavigate={onNavigate}
+                frontmatter={frontmatter} entries={entries} typeEntryMap={typeEntryMap} onNavigate={onNavigate}
                 onAddProperty={onAddProperty ? handleAddProperty : undefined}
                 onUpdateProperty={onUpdateFrontmatter ? handleUpdateProperty : undefined}
                 onDeleteProperty={onDeleteProperty ? handleDeleteProperty : undefined}
               />
-              <ReferencedByPanel items={referencedBy} onNavigate={onNavigate} />
-              <BacklinksPanel backlinks={backlinks} onNavigate={onNavigate} />
+              <ReferencedByPanel items={referencedBy} typeEntryMap={typeEntryMap} onNavigate={onNavigate} />
+              <BacklinksPanel backlinks={backlinks} typeEntryMap={typeEntryMap} onNavigate={onNavigate} />
               <GitHistoryPanel commits={gitHistory} onViewCommitDiff={onViewCommitDiff} />
             </>
           ) : (

@@ -44,6 +44,7 @@ describe('DynamicRelationshipsPanel', () => {
   it('shows "No relationships" when frontmatter has no relations', () => {
     render(
       <DynamicRelationshipsPanel
+        typeEntryMap={{}}
         frontmatter={{ Status: 'Active', title: 'Test' }}
         entries={entries}
         onNavigate={onNavigate}
@@ -55,6 +56,7 @@ describe('DynamicRelationshipsPanel', () => {
   it('renders relationship groups with wikilinks', () => {
     render(
       <DynamicRelationshipsPanel
+        typeEntryMap={{}}
         frontmatter={{
           'Belongs to': ['[[project/my-project]]'],
           'Related to': ['[[topic/ai]]'],
@@ -70,6 +72,7 @@ describe('DynamicRelationshipsPanel', () => {
   it('navigates when clicking a relationship link', () => {
     render(
       <DynamicRelationshipsPanel
+        typeEntryMap={{}}
         frontmatter={{ 'Belongs to': ['[[project/my-project]]'] }}
         entries={entries}
         onNavigate={onNavigate}
@@ -84,6 +87,7 @@ describe('DynamicRelationshipsPanel', () => {
   it('renders single string wikilink value', () => {
     render(
       <DynamicRelationshipsPanel
+        typeEntryMap={{}}
         frontmatter={{ Owner: '[[person/luca]]' }}
         entries={[makeEntry({ path: '/vault/person/luca.md', filename: 'luca.md', title: 'Luca', isA: 'Person' })]  }
         onNavigate={onNavigate}
@@ -96,6 +100,7 @@ describe('DynamicRelationshipsPanel', () => {
   it('renders + Link existing button when onAddProperty provided', () => {
     render(
       <DynamicRelationshipsPanel
+        typeEntryMap={{}}
         frontmatter={{}}
         entries={entries}
         onNavigate={onNavigate}
@@ -108,6 +113,7 @@ describe('DynamicRelationshipsPanel', () => {
   it('opens add relationship form when button clicked', () => {
     render(
       <DynamicRelationshipsPanel
+        typeEntryMap={{}}
         frontmatter={{}}
         entries={entries}
         onNavigate={onNavigate}
@@ -122,6 +128,7 @@ describe('DynamicRelationshipsPanel', () => {
   it('adds relationship via form', () => {
     render(
       <DynamicRelationshipsPanel
+        typeEntryMap={{}}
         frontmatter={{}}
         entries={entries}
         onNavigate={onNavigate}
@@ -138,6 +145,7 @@ describe('DynamicRelationshipsPanel', () => {
   it('cancels add relationship form', () => {
     render(
       <DynamicRelationshipsPanel
+        typeEntryMap={{}}
         frontmatter={{}}
         entries={entries}
         onNavigate={onNavigate}
@@ -155,6 +163,7 @@ describe('DynamicRelationshipsPanel', () => {
     })
     render(
       <DynamicRelationshipsPanel
+        typeEntryMap={{}}
         frontmatter={{ 'Belongs to': ['[[project/old]]'] }}
         entries={[archivedEntry]}
         onNavigate={onNavigate}
@@ -170,6 +179,7 @@ describe('DynamicRelationshipsPanel', () => {
     })
     render(
       <DynamicRelationshipsPanel
+        typeEntryMap={{}}
         frontmatter={{ 'Belongs to': ['[[project/trash]]'] }}
         entries={[trashedEntry]}
         onNavigate={onNavigate}
@@ -181,6 +191,7 @@ describe('DynamicRelationshipsPanel', () => {
   it('handles aliased wikilinks [[path|Display]]', () => {
     render(
       <DynamicRelationshipsPanel
+        typeEntryMap={{}}
         frontmatter={{ 'Belongs to': ['[[project/my-project|My Cool Project]]'] }}
         entries={entries}
         onNavigate={onNavigate}
@@ -200,6 +211,7 @@ describe('DynamicRelationshipsPanel', () => {
     it('shows remove buttons on relation refs when editing is enabled', () => {
       render(
         <DynamicRelationshipsPanel
+          typeEntryMap={{}}
           frontmatter={{ 'Belongs to': ['[[project/my-project]]'] }}
           entries={entries}
           onNavigate={onNavigate}
@@ -213,6 +225,7 @@ describe('DynamicRelationshipsPanel', () => {
     it('does not show remove buttons when editing is disabled', () => {
       render(
         <DynamicRelationshipsPanel
+          typeEntryMap={{}}
           frontmatter={{ 'Belongs to': ['[[project/my-project]]'] }}
           entries={entries}
           onNavigate={onNavigate}
@@ -224,6 +237,7 @@ describe('DynamicRelationshipsPanel', () => {
     it('calls onDeleteProperty when removing the last ref in a group', () => {
       render(
         <DynamicRelationshipsPanel
+          typeEntryMap={{}}
           frontmatter={{ 'Belongs to': ['[[project/my-project]]'] }}
           entries={entries}
           onNavigate={onNavigate}
@@ -238,6 +252,7 @@ describe('DynamicRelationshipsPanel', () => {
     it('calls onUpdateProperty with remaining refs when removing one of many', () => {
       render(
         <DynamicRelationshipsPanel
+          typeEntryMap={{}}
           frontmatter={{ 'Related to': ['[[project/my-project]]', '[[topic/ai]]'] }}
           entries={entries}
           onNavigate={onNavigate}
@@ -253,6 +268,7 @@ describe('DynamicRelationshipsPanel', () => {
     it('calls onUpdateProperty with string when two refs become one', () => {
       render(
         <DynamicRelationshipsPanel
+          typeEntryMap={{}}
           frontmatter={{ 'Has': ['[[project/my-project]]', '[[topic/ai]]'] }}
           entries={entries}
           onNavigate={onNavigate}
@@ -269,6 +285,7 @@ describe('DynamicRelationshipsPanel', () => {
     it('shows inline add button for each relationship group when editing is enabled', () => {
       render(
         <DynamicRelationshipsPanel
+          typeEntryMap={{}}
           frontmatter={{ 'Belongs to': ['[[project/my-project]]'] }}
           entries={entries}
           onNavigate={onNavigate}
@@ -282,6 +299,7 @@ describe('DynamicRelationshipsPanel', () => {
     it('opens inline add input when add button clicked', () => {
       render(
         <DynamicRelationshipsPanel
+          typeEntryMap={{}}
           frontmatter={{ 'Belongs to': ['[[project/my-project]]'] }}
           entries={entries}
           onNavigate={onNavigate}
@@ -296,6 +314,7 @@ describe('DynamicRelationshipsPanel', () => {
     it('adds a note to an existing relationship via inline add', () => {
       render(
         <DynamicRelationshipsPanel
+          typeEntryMap={{}}
           frontmatter={{ 'Belongs to': ['[[project/my-project]]'] }}
           entries={entries}
           onNavigate={onNavigate}
@@ -313,6 +332,7 @@ describe('DynamicRelationshipsPanel', () => {
     it('does not add duplicate refs', () => {
       render(
         <DynamicRelationshipsPanel
+          typeEntryMap={{}}
           frontmatter={{ 'Belongs to': ['[[AI]]'] }}
           entries={entries}
           onNavigate={onNavigate}
@@ -330,6 +350,7 @@ describe('DynamicRelationshipsPanel', () => {
     it('closes inline add on Escape', () => {
       render(
         <DynamicRelationshipsPanel
+          typeEntryMap={{}}
           frontmatter={{ 'Belongs to': ['[[project/my-project]]'] }}
           entries={entries}
           onNavigate={onNavigate}
@@ -354,7 +375,7 @@ describe('BacklinksPanel', () => {
   })
 
   it('shows "No backlinks" when empty', () => {
-    render(<BacklinksPanel backlinks={[]} onNavigate={onNavigate} />)
+    render(<BacklinksPanel typeEntryMap={{}} backlinks={[]} onNavigate={onNavigate} />)
     expect(screen.getByText('No backlinks')).toBeInTheDocument()
   })
 
@@ -363,21 +384,21 @@ describe('BacklinksPanel', () => {
       makeEntry({ title: 'Referencing Note', isA: 'Note' }),
       makeEntry({ title: 'Another Note', isA: 'Project', path: '/vault/project/another.md' }),
     ]
-    render(<BacklinksPanel backlinks={backlinks} onNavigate={onNavigate} />)
+    render(<BacklinksPanel typeEntryMap={{}} backlinks={backlinks} onNavigate={onNavigate} />)
     expect(screen.getByText('Referencing Note')).toBeInTheDocument()
     expect(screen.getByText('Another Note')).toBeInTheDocument()
   })
 
   it('navigates when clicking backlink', () => {
     const backlinks = [makeEntry({ title: 'Reference' })]
-    render(<BacklinksPanel backlinks={backlinks} onNavigate={onNavigate} />)
+    render(<BacklinksPanel typeEntryMap={{}} backlinks={backlinks} onNavigate={onNavigate} />)
     fireEvent.click(screen.getByText('Reference'))
     expect(onNavigate).toHaveBeenCalledWith('Reference')
   })
 
   it('shows count when backlinks exist', () => {
     const backlinks = [makeEntry(), makeEntry({ path: '/vault/b.md', title: 'B' })]
-    render(<BacklinksPanel backlinks={backlinks} onNavigate={onNavigate} />)
+    render(<BacklinksPanel typeEntryMap={{}} backlinks={backlinks} onNavigate={onNavigate} />)
     expect(screen.getByText('2')).toBeInTheDocument()
   })
 })
@@ -390,7 +411,7 @@ describe('ReferencedByPanel', () => {
   })
 
   it('shows "No references" when items is empty', () => {
-    render(<ReferencedByPanel items={[]} onNavigate={onNavigate} />)
+    render(<ReferencedByPanel typeEntryMap={{}} items={[]} onNavigate={onNavigate} />)
     expect(screen.getByText('No references')).toBeInTheDocument()
   })
 
@@ -400,7 +421,7 @@ describe('ReferencedByPanel', () => {
       { entry: makeEntry({ path: '/vault/essay/b.md', title: 'On Writing Well', isA: 'Essay' }), viaKey: 'Belongs to' },
       { entry: makeEntry({ path: '/vault/exp/c.md', title: 'SEO Experiment', isA: 'Experiment' }), viaKey: 'Related to' },
     ]
-    render(<ReferencedByPanel items={items} onNavigate={onNavigate} />)
+    render(<ReferencedByPanel typeEntryMap={{}} items={items} onNavigate={onNavigate} />)
 
     expect(screen.getByText('Write Essays')).toBeInTheDocument()
     expect(screen.getByText('On Writing Well')).toBeInTheDocument()
@@ -415,7 +436,7 @@ describe('ReferencedByPanel', () => {
       { entry: makeEntry({ path: '/vault/b.md', title: 'B' }), viaKey: 'Has' },
       { entry: makeEntry({ path: '/vault/c.md', title: 'C' }), viaKey: 'Topics' },
     ]
-    render(<ReferencedByPanel items={items} onNavigate={onNavigate} />)
+    render(<ReferencedByPanel typeEntryMap={{}} items={items} onNavigate={onNavigate} />)
     expect(screen.getByText('3')).toBeInTheDocument()
   })
 
@@ -423,7 +444,7 @@ describe('ReferencedByPanel', () => {
     const items: ReferencedByItem[] = [
       { entry: makeEntry({ path: '/vault/a.md', title: 'My Note' }), viaKey: 'Belongs to' },
     ]
-    render(<ReferencedByPanel items={items} onNavigate={onNavigate} />)
+    render(<ReferencedByPanel typeEntryMap={{}} items={items} onNavigate={onNavigate} />)
     fireEvent.click(screen.getByText('My Note'))
     expect(onNavigate).toHaveBeenCalledWith('My Note')
   })
@@ -432,7 +453,7 @@ describe('ReferencedByPanel', () => {
     const items: ReferencedByItem[] = [
       { entry: makeEntry({ path: '/vault/a.md', title: 'Old Note', archived: true }), viaKey: 'Has' },
     ]
-    render(<ReferencedByPanel items={items} onNavigate={onNavigate} />)
+    render(<ReferencedByPanel typeEntryMap={{}} items={items} onNavigate={onNavigate} />)
     expect(screen.getByTitle('Archived')).toBeInTheDocument()
   })
 
@@ -440,7 +461,7 @@ describe('ReferencedByPanel', () => {
     const items: ReferencedByItem[] = [
       { entry: makeEntry({ path: '/vault/a.md', title: 'Trash Note', trashed: true }), viaKey: 'Has' },
     ]
-    render(<ReferencedByPanel items={items} onNavigate={onNavigate} />)
+    render(<ReferencedByPanel typeEntryMap={{}} items={items} onNavigate={onNavigate} />)
     expect(screen.getByTitle('Trashed')).toBeInTheDocument()
   })
 })

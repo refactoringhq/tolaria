@@ -2,24 +2,12 @@ import { useMemo, useCallback, useState, useRef } from 'react'
 import type { ComponentType, SVGAttributes } from 'react'
 import { wikilinkTarget, wikilinkDisplay } from '../utils/wikilink'
 import type { VaultEntry, GitCommit } from '../types'
-import {
-  Wrench, Flask, Target, ArrowsClockwise,
-  Users, CalendarBlank, Tag, FileText, StackSimple, Trash, X, Plus,
-} from '@phosphor-icons/react'
+import { Trash, X, Plus } from '@phosphor-icons/react'
 import type { ParsedFrontmatter } from '../utils/frontmatter'
 import { RELATIONSHIP_KEYS, containsWikilinks } from './DynamicPropertiesPanel'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
+import { getTypeIcon } from './NoteItem'
 import type { FrontmatterValue } from './Inspector'
-
-const TYPE_ICON_MAP: Record<string, ComponentType<SVGAttributes<SVGSVGElement>>> = {
-  Project: Wrench, Experiment: Flask, Responsibility: Target,
-  Procedure: ArrowsClockwise, Person: Users, Event: CalendarBlank,
-  Topic: Tag, Type: StackSimple,
-}
-
-function getTypeIcon(isA: string | undefined): ComponentType<SVGAttributes<SVGSVGElement>> {
-  return (isA && TYPE_ICON_MAP[isA]) || FileText
-}
 
 function isWikilink(value: string): boolean {
   return /^\[\[.*\]\]$/.test(value)
@@ -92,18 +80,19 @@ function entryStatusTitle(entry: VaultEntry | undefined): string | undefined {
   return undefined
 }
 
-function resolveRefProps(ref: string, entries: VaultEntry[]) {
+function resolveRefProps(ref: string, entries: VaultEntry[], typeEntryMap: Record<string, VaultEntry>) {
   const resolved = resolveRef(ref, entries)
-  const refType = resolved?.isA ?? undefined
+  const refType = resolved?.isA ?? null
+  const te = typeEntryMap[refType ?? '']
   return {
     label: wikilinkDisplay(ref),
-    typeColor: refType ? getTypeColor(refType) : 'var(--accent-blue)',
-    bgColor: refType ? getTypeLightColor(refType) : 'var(--accent-blue-light)',
+    typeColor: getTypeColor(refType, te?.color),
+    bgColor: getTypeLightColor(refType, te?.color),
     isArchived: resolved?.archived ?? false,
     isTrashed: resolved?.trashed ?? false,
     target: wikilinkTarget(ref),
     title: entryStatusTitle(resolved),
-    TypeIcon: getTypeIcon(refType),
+    TypeIcon: getTypeIcon(refType, te?.icon),
   }
 }
 
@@ -173,8 +162,9 @@ function InlineAddNote({ entries, onAdd }: {
   )
 }
 
-function RelationshipGroup({ label, refs, entries, onNavigate, onRemoveRef, onAddRef }: {
-  label: string; refs: string[]; entries: VaultEntry[]; onNavigate: (target: string) => void
+function RelationshipGroup({ label, refs, entries, typeEntryMap, onNavigate, onRemoveRef, onAddRef }: {
+  label: string; refs: string[]; entries: VaultEntry[]; typeEntryMap: Record<string, VaultEntry>
+  onNavigate: (target: string) => void
   onRemoveRef?: (ref: string) => void; onAddRef?: (noteTitle: string) => void
 }) {
   if (refs.length === 0) return null
@@ -183,7 +173,7 @@ function RelationshipGroup({ label, refs, entries, onNavigate, onRemoveRef, onAd
       <span className="font-mono-overline mb-1 block text-muted-foreground">{label}</span>
       <div className="flex flex-col gap-1">
         {refs.map((ref, idx) => {
-          const props = resolveRefProps(ref, entries)
+          const props = resolveRefProps(ref, entries, typeEntryMap)
           return (
             <LinkButton
               key={`${ref}-${idx}`}
@@ -254,8 +244,9 @@ function AddRelationshipForm({ entries, onAddProperty }: {
   )
 }
 
-export function DynamicRelationshipsPanel({ frontmatter, entries, onNavigate, onAddProperty, onUpdateProperty, onDeleteProperty }: {
-  frontmatter: ParsedFrontmatter; entries: VaultEntry[]; onNavigate: (target: string) => void
+export function DynamicRelationshipsPanel({ frontmatter, entries, typeEntryMap, onNavigate, onAddProperty, onUpdateProperty, onDeleteProperty }: {
+  frontmatter: ParsedFrontmatter; entries: VaultEntry[]; typeEntryMap: Record<string, VaultEntry>
+  onNavigate: (target: string) => void
   onAddProperty?: (key: string, value: FrontmatterValue) => void
   onUpdateProperty?: (key: string, value: FrontmatterValue) => void
   onDeleteProperty?: (key: string) => void
@@ -291,7 +282,7 @@ export function DynamicRelationshipsPanel({ frontmatter, entries, onNavigate, on
         ? <p className="m-0 text-[13px] text-muted-foreground">No relationships</p>
         : relationshipEntries.map(({ key, refs }) => (
           <RelationshipGroup
-            key={key} label={key} refs={refs} entries={entries} onNavigate={onNavigate}
+            key={key} label={key} refs={refs} entries={entries} typeEntryMap={typeEntryMap} onNavigate={onNavigate}
             onRemoveRef={canEdit ? (ref) => handleRemoveRef(key, ref) : undefined}
             onAddRef={canEdit ? (noteTitle) => handleAddRef(key, noteTitle) : undefined}
           />
@@ -305,7 +296,7 @@ export function DynamicRelationshipsPanel({ frontmatter, entries, onNavigate, on
   )
 }
 
-export function BacklinksPanel({ backlinks, onNavigate }: { backlinks: VaultEntry[]; onNavigate: (target: string) => void }) {
+export function BacklinksPanel({ backlinks, typeEntryMap, onNavigate }: { backlinks: VaultEntry[]; typeEntryMap: Record<string, VaultEntry>; onNavigate: (target: string) => void }) {
   return (
     <div>
       <h4 className="font-mono-overline mb-2 text-muted-foreground">
@@ -315,9 +306,12 @@ export function BacklinksPanel({ backlinks, onNavigate }: { backlinks: VaultEntr
         ? <p className="m-0 text-[13px] text-muted-foreground">No backlinks</p>
         : (
           <div className="flex flex-col gap-0.5">
-            {backlinks.map((e) => (
-              <LinkButton key={e.path} label={e.title} typeColor={e.isA ? getTypeColor(e.isA) : 'var(--accent-blue)'} isArchived={e.archived} isTrashed={e.trashed} onClick={() => onNavigate(e.title)} title={e.trashed ? 'Trashed' : e.archived ? 'Archived' : undefined} TypeIcon={getTypeIcon(e.isA ?? undefined)} />
-            ))}
+            {backlinks.map((e) => {
+              const te = typeEntryMap[e.isA ?? '']
+              return (
+                <LinkButton key={e.path} label={e.title} typeColor={getTypeColor(e.isA, te?.color)} isArchived={e.archived} isTrashed={e.trashed} onClick={() => onNavigate(e.title)} title={e.trashed ? 'Trashed' : e.archived ? 'Archived' : undefined} TypeIcon={getTypeIcon(e.isA, te?.icon)} />
+              )
+            })}
           </div>
         )
       }
@@ -330,8 +324,9 @@ export interface ReferencedByItem {
   viaKey: string
 }
 
-export function ReferencedByPanel({ items, onNavigate }: {
+export function ReferencedByPanel({ items, typeEntryMap, onNavigate }: {
   items: ReferencedByItem[]
+  typeEntryMap: Record<string, VaultEntry>
   onNavigate: (target: string) => void
 }) {
   const grouped = useMemo(() => {
@@ -359,18 +354,21 @@ export function ReferencedByPanel({ items, onNavigate }: {
                   via {viaKey}
                 </span>
                 <div className="flex flex-col gap-0.5">
-                  {groupEntries.map((e) => (
-                    <LinkButton
-                      key={e.path}
-                      label={e.title}
-                      typeColor={e.isA ? getTypeColor(e.isA) : 'var(--accent-blue)'}
-                      isArchived={e.archived}
-                      isTrashed={e.trashed}
-                      onClick={() => onNavigate(e.title)}
-                      title={e.trashed ? 'Trashed' : e.archived ? 'Archived' : undefined}
-                      TypeIcon={getTypeIcon(e.isA ?? undefined)}
-                    />
-                  ))}
+                  {groupEntries.map((e) => {
+                    const te = typeEntryMap[e.isA ?? '']
+                    return (
+                      <LinkButton
+                        key={e.path}
+                        label={e.title}
+                        typeColor={getTypeColor(e.isA, te?.color)}
+                        isArchived={e.archived}
+                        isTrashed={e.trashed}
+                        onClick={() => onNavigate(e.title)}
+                        title={e.trashed ? 'Trashed' : e.archived ? 'Archived' : undefined}
+                        TypeIcon={getTypeIcon(e.isA, te?.icon)}
+                      />
+                    )
+                  })}
                 </div>
               </div>
             ))}
