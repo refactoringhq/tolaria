@@ -133,16 +133,114 @@ describe('useVaultLoader', () => {
     })
   })
 
-  describe('isFileModified', () => {
-    it('returns true for modified files', async () => {
+  describe('getNoteStatus', () => {
+    it('returns modified for git-modified files', async () => {
       const { result } = renderHook(() => useVaultLoader('/vault'))
 
       await waitFor(() => {
         expect(result.current.modifiedFiles).toHaveLength(1)
       })
 
-      expect(result.current.isFileModified('/vault/note/hello.md')).toBe(true)
-      expect(result.current.isFileModified('/vault/note/other.md')).toBe(false)
+      expect(result.current.getNoteStatus('/vault/note/hello.md')).toBe('modified')
+      expect(result.current.getNoteStatus('/vault/note/other.md')).toBe('clean')
+    })
+
+    it('returns new for freshly added entries', async () => {
+      const { result } = renderHook(() => useVaultLoader('/vault'))
+
+      await waitFor(() => {
+        expect(result.current.entries).toHaveLength(1)
+      })
+
+      const newEntry: VaultEntry = {
+        ...mockEntries[0],
+        path: '/vault/note/brand-new.md',
+        filename: 'brand-new.md',
+        title: 'Brand New',
+      }
+
+      act(() => {
+        result.current.addEntry(newEntry, '# Brand New')
+      })
+
+      expect(result.current.getNoteStatus('/vault/note/brand-new.md')).toBe('new')
+    })
+
+    it('returns clean after markSaved clears new status', async () => {
+      const { result } = renderHook(() => useVaultLoader('/vault'))
+
+      await waitFor(() => {
+        expect(result.current.entries).toHaveLength(1)
+      })
+
+      const newEntry: VaultEntry = {
+        ...mockEntries[0],
+        path: '/vault/note/brand-new.md',
+        filename: 'brand-new.md',
+        title: 'Brand New',
+      }
+
+      act(() => {
+        result.current.addEntry(newEntry, '# Brand New')
+      })
+
+      expect(result.current.getNoteStatus('/vault/note/brand-new.md')).toBe('new')
+
+      act(() => {
+        result.current.markSaved('/vault/note/brand-new.md')
+      })
+
+      expect(result.current.getNoteStatus('/vault/note/brand-new.md')).toBe('clean')
+    })
+
+    it('new status takes priority over git modified', async () => {
+      // If a path is both new and in modifiedFiles, it should show as new
+      mockInvokeFn.mockImplementation(((cmd: string) => {
+        if (cmd === 'list_vault') return Promise.resolve(mockEntries)
+        if (cmd === 'get_all_content') return Promise.resolve(mockContent)
+        if (cmd === 'get_modified_files') return Promise.resolve([
+          { path: '/vault/note/new.md', relativePath: 'note/new.md', status: 'modified' },
+        ])
+        return Promise.resolve(null)
+      }) as typeof defaultMockInvoke)
+
+      const { result } = renderHook(() => useVaultLoader('/vault'))
+
+      await waitFor(() => {
+        expect(result.current.modifiedFiles).toHaveLength(1)
+      })
+
+      const newEntry: VaultEntry = {
+        ...mockEntries[0],
+        path: '/vault/note/new.md',
+        filename: 'new.md',
+        title: 'New',
+      }
+
+      act(() => {
+        result.current.addEntry(newEntry, '# New')
+      })
+
+      expect(result.current.getNoteStatus('/vault/note/new.md')).toBe('new')
+    })
+
+    it('ignores untracked git status for orange dot', async () => {
+      mockInvokeFn.mockImplementation(((cmd: string) => {
+        if (cmd === 'list_vault') return Promise.resolve(mockEntries)
+        if (cmd === 'get_all_content') return Promise.resolve(mockContent)
+        if (cmd === 'get_modified_files') return Promise.resolve([
+          { path: '/vault/note/hello.md', relativePath: 'note/hello.md', status: 'untracked' },
+        ])
+        return Promise.resolve(null)
+      }) as typeof defaultMockInvoke)
+
+      const { result } = renderHook(() => useVaultLoader('/vault'))
+
+      await waitFor(() => {
+        expect(result.current.modifiedFiles).toHaveLength(1)
+      })
+
+      expect(result.current.getNoteStatus('/vault/note/hello.md')).toBe('clean')
     })
   })
 

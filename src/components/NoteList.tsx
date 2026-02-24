@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, memo } from 'react'
 import { Virtuoso } from 'react-virtuoso'
-import type { VaultEntry, SidebarSelection, ModifiedFile } from '../types'
+import type { VaultEntry, SidebarSelection, NoteStatus } from '../types'
 import { Input } from '@/components/ui/input'
 import {
   MagnifyingGlass, Plus, CaretDown, CaretRight, Warning,
@@ -21,7 +21,7 @@ interface NoteListProps {
   selection: SidebarSelection
   selectedNote: VaultEntry | null
   allContent: Record<string, string>
-  modifiedFiles?: ModifiedFile[]
+  getNoteStatus?: (path: string) => NoteStatus
   onSelectNote: (entry: VaultEntry) => void
   onReplaceActiveTab: (entry: VaultEntry) => void
   onCreateNote: () => void
@@ -248,16 +248,13 @@ function useNoteListData({ entries, selection, allContent, query, listSort, list
 
 // --- Main component ---
 
-function NoteListInner({ entries, selection, selectedNote, allContent, modifiedFiles, onSelectNote, onReplaceActiveTab, onCreateNote }: NoteListProps) {
+const defaultGetNoteStatus = (): NoteStatus => 'clean'
+
+function NoteListInner({ entries, selection, selectedNote, allContent, getNoteStatus = defaultGetNoteStatus, onSelectNote, onReplaceActiveTab, onCreateNote }: NoteListProps) {
   const [search, setSearch] = useState('')
   const [searchVisible, setSearchVisible] = useState(false)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const [sortPrefs, setSortPrefs] = useState<Record<string, SortConfig>>(loadSortPreferences)
-
-  const modifiedPathSet = useMemo(
-    () => new Set((modifiedFiles ?? []).map((f) => f.path)),
-    [modifiedFiles],
-  )
 
   const handleSortChange = useCallback((groupLabel: string, option: SortOption, direction: SortDirection) => {
     setSortPrefs((prev) => { const next = { ...prev, [groupLabel]: { option, direction } }; saveSortPreferences(next); return next })
@@ -279,8 +276,8 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
   }, [onSelectNote, onReplaceActiveTab])
 
   const renderItem = useCallback((entry: VaultEntry) => (
-    <NoteItem key={entry.path} entry={entry} isSelected={selectedNote?.path === entry.path} isModified={modifiedPathSet.has(entry.path)} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
-  ), [selectedNote?.path, handleClickNote, typeEntryMap, modifiedPathSet])
+    <NoteItem key={entry.path} entry={entry} isSelected={selectedNote?.path === entry.path} noteStatus={getNoteStatus(entry.path)} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
+  ), [selectedNote?.path, handleClickNote, typeEntryMap, getNoteStatus])
 
   return (
     <div className="flex flex-col overflow-hidden border-r border-border bg-card text-foreground" style={{ height: '100%' }}>

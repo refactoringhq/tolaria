@@ -1,5 +1,5 @@
 import { useMemo, type ComponentType, type SVGAttributes } from 'react'
-import type { VaultEntry } from '../types'
+import type { VaultEntry, NoteStatus } from '../types'
 import { cn } from '@/lib/utils'
 import {
   Wrench, Flask, Target, ArrowsClockwise,
@@ -46,10 +46,15 @@ function TrashDateLine({ entry }: { entry: VaultEntry }) {
   )
 }
 
-export function NoteItem({ entry, isSelected, isModified, typeEntryMap, onClickNote }: {
+const NOTE_STATUS_DOT: Record<string, { color: string; testId: string; title: string }> = {
+  new: { color: 'var(--accent-green)', testId: 'new-indicator', title: 'New (unsaved)' },
+  modified: { color: 'var(--accent-orange)', testId: 'modified-indicator', title: 'Modified (uncommitted)' },
+}
+
+export function NoteItem({ entry, isSelected, noteStatus = 'clean', typeEntryMap, onClickNote }: {
   entry: VaultEntry
   isSelected: boolean
-  isModified?: boolean
+  noteStatus?: NoteStatus
   typeEntryMap: Record<string, VaultEntry>
   onClickNote: (entry: VaultEntry, e: React.MouseEvent) => void
 }) {
@@ -75,12 +80,12 @@ export function NoteItem({ entry, isSelected, isModified, typeEntryMap, onClickN
       <TypeIcon width={14} height={14} className="absolute right-3 top-2.5" style={{ color: typeColor }} data-testid="type-icon" />
       <div className="pr-5">
         <div className={cn("truncate text-[13px] text-foreground", isSelected ? "font-semibold" : "font-medium")}>
-          {isModified && (
+          {noteStatus !== 'clean' && (
             <span
               className="mr-1.5 inline-block align-middle"
-              style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-orange)', verticalAlign: 'middle' }}
-              data-testid="modified-indicator"
-              title="Modified (uncommitted)"
+              style={{ width: 6, height: 6, borderRadius: '50%', background: NOTE_STATUS_DOT[noteStatus].color, verticalAlign: 'middle' }}
+              data-testid={NOTE_STATUS_DOT[noteStatus].testId}
+              title={NOTE_STATUS_DOT[noteStatus].title}
             />
           )}
           {entry.title}

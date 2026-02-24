@@ -1,5 +1,5 @@
 import { memo, useState, useRef, useCallback, useEffect } from 'react'
-import type { VaultEntry } from '../types'
+import type { VaultEntry, NoteStatus } from '../types'
 import { cn } from '@/lib/utils'
 import { X } from 'lucide-react'
 import { Plus, Columns, ArrowsOutSimple } from '@phosphor-icons/react'
@@ -12,7 +12,7 @@ interface Tab {
 interface TabBarProps {
   tabs: Tab[]
   activeTabPath: string | null
-  isModified?: (path: string) => boolean
+  getNoteStatus?: (path: string) => NoteStatus
   onSwitchTab: (path: string) => void
   onCloseTab: (path: string) => void
   onCreateNote?: () => void
@@ -173,11 +173,29 @@ function DropIndicator({ side }: { side: 'left' | 'right' }) {
   )
 }
 
-function TabItem({ tab, isActive, isEditing, isModified, isDragging, showDropBefore, showDropAfter, onSwitch, onClose, onDoubleClick, onRenameSave, onRenameCancel, dragProps }: {
+const STATUS_DOT: Record<string, { color: string; testId: string; title: string }> = {
+  new: { color: 'var(--accent-green)', testId: 'tab-new-indicator', title: 'New (unsaved)' },
+  modified: { color: 'var(--accent-orange)', testId: 'tab-modified-indicator', title: 'Modified (uncommitted)' },
+}
+
+function StatusDot({ status }: { status: NoteStatus }) {
+  const cfg = STATUS_DOT[status]
+  if (!cfg) return null
+  return (
+    <span
+      className="shrink-0"
+      style={{ width: 6, height: 6, borderRadius: '50%', background: cfg.color }}
+      data-testid={cfg.testId}
+      title={cfg.title}
+    />
+  )
+}
+
+function TabItem({ tab, isActive, isEditing, noteStatus, isDragging, showDropBefore, showDropAfter, onSwitch, onClose, onDoubleClick, onRenameSave, onRenameCancel, dragProps }: {
   tab: Tab
   isActive: boolean
   isEditing: boolean
-  isModified: boolean
+  noteStatus: NoteStatus
   isDragging: boolean
   showDropBefore: boolean
   showDropAfter: boolean
@@ -215,14 +233,7 @@ function TabItem({ tab, isActive, isEditing, isModified, isDragging, showDropBef
           {tab.entry.title}
         </span>
       )}
-      {isModified && (
-        <span
-          className="shrink-0"
-          style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-orange)' }}
-          data-testid="tab-modified-indicator"
-          title="Modified (uncommitted)"
-        />
-      )}
+      <StatusDot status={noteStatus} />
       <button
         className={cn(
           "shrink-0 rounded-sm p-0 bg-transparent border-none text-muted-foreground cursor-pointer transition-opacity hover:bg-accent hover:text-foreground",
@@ -264,7 +275,7 @@ function TabBarActions({ onCreateNote }: { onCreateNote?: () => void }) {
 // --- Main TabBar ---
 
 export const TabBar = memo(function TabBar({
-  tabs, activeTabPath, isModified, onSwitchTab, onCloseTab, onCreateNote, onReorderTabs, onRenameTab,
+  tabs, activeTabPath, getNoteStatus, onSwitchTab, onCloseTab, onCreateNote, onReorderTabs, onRenameTab,
 }: TabBarProps) {
   const { dragIndex, dropIndex, handleDragStart, handleDragEnd, handleDragOver, handleDrop, handleBarDragLeave } = useTabDrag(onReorderTabs)
   const [editingPath, setEditingPath] = useState<string | null>(null)
@@ -282,7 +293,7 @@ export const TabBar = memo(function TabBar({
           tab={tab}
           isActive={tab.entry.path === activeTabPath}
           isEditing={editingPath === tab.entry.path}
-          isModified={isModified?.(tab.entry.path) ?? false}
+          noteStatus={getNoteStatus?.(tab.entry.path) ?? 'clean'}
           isDragging={dragIndex !== null}
           showDropBefore={dropIndex === index}
           showDropAfter={dropIndex === index + 1 && index === tabs.length - 1}

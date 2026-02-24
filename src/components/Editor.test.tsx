@@ -206,11 +206,24 @@ describe('Editor', () => {
         {...defaultProps}
         tabs={[mockTab]}
         activeTabPath={mockEntry.path}
-        isModified={() => true}
+        getNoteStatus={() => 'modified'}
       />
     )
     // Modified indicator shows "M" in the breadcrumb
     expect(screen.getByText('M')).toBeInTheDocument()
+  })
+
+  it('shows new indicator when file is new', () => {
+    render(
+      <Editor
+        {...defaultProps}
+        tabs={[mockTab]}
+        activeTabPath={mockEntry.path}
+        getNoteStatus={() => 'new'}
+      />
+    )
+    // New indicator shows "N" in the breadcrumb
+    expect(screen.getByText('N')).toBeInTheDocument()
   })
 
   it('renders diff toggle button when file is modified', () => {
@@ -219,7 +232,7 @@ describe('Editor', () => {
         {...defaultProps}
         tabs={[mockTab]}
         activeTabPath={mockEntry.path}
-        isModified={() => true}
+        getNoteStatus={() => 'modified'}
         onLoadDiff={async () => '+ added line'}
       />
     )

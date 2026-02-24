@@ -1,0 +1,90 @@
+{"version":"2.8","children":[
+  {"type":"frame","id":"dp01","x":0,"y":0,"name":"NoteStatus — NoteList (New vs Modified)","width":340,"height":"fit_content(600)","fill":"$--card","layout":"vertical","children":[
+    {"type":"text","id":"dp01t","fill":"$--muted-foreground","content":"NoteList — New vs Modified vs Clean","fontFamily":"Inter","fontSize":10,"fontWeight":"600","textTransform":"uppercase","letterSpacing":1,"width":"fill_container","padding":[8,16]},
+    {"type":"frame","id":"dp02","name":"Note Item — New (green dot)","width":"fill_container","stroke":{"align":"inside","thickness":{"bottom":1},"fill":"$--border"},"layout":"vertical","gap":4,"padding":[14,16],"children":[
+      {"type":"frame","id":"dp02r","name":"titleRow","width":"fill_container","justifyContent":"space_between","alignItems":"center","children":[
+        {"type":"frame","id":"dp02tg","gap":6,"alignItems":"center","children":[
+          {"type":"ellipse","id":"dp02dot","name":"New Indicator (green)","width":6,"height":6,"fill":"$--accent-green"},
+          {"type":"text","id":"dp02ti","fill":"$--foreground","content":"Untitled Note","fontFamily":"Inter","fontSize":13,"fontWeight":"500"}
+        ]},
+        {"type":"text","id":"dp02d","fill":"$--muted-foreground","content":"just now","fontFamily":"Inter","fontSize":11}
+      ]},
+      {"type":"text","id":"dp02s","fill":"$--muted-foreground","content":"New note created in this session, never saved to disk","fontFamily":"Inter","fontSize":12,"width":"fill_container"}
+    ]},
+    {"type":"frame","id":"dp03","name":"Note Item — Modified (orange dot)","width":"fill_container","stroke":{"align":"inside","thickness":{"bottom":1},"fill":"$--border"},"layout":"vertical","gap":4,"padding":[14,16],"children":[
+      {"type":"frame","id":"dp03r","name":"titleRow","width":"fill_container","justifyContent":"space_between","alignItems":"center","children":[
+        {"type":"frame","id":"dp03tg","gap":6,"alignItems":"center","children":[
+          {"type":"ellipse","id":"dp03dot","name":"Modified Indicator (orange)","width":6,"height":6,"fill":"$--accent-orange"},
+          {"type":"text","id":"dp03ti","fill":"$--foreground","content":"Build Laputa App","fontFamily":"Inter","fontSize":13,"fontWeight":"500"}
+        ]},
+        {"type":"text","id":"dp03d","fill":"$--muted-foreground","content":"2 hours ago","fontFamily":"Inter","fontSize":11}
+      ]},
+      {"type":"text","id":"dp03s","fill":"$--muted-foreground","content":"Existing note with uncommitted git changes","fontFamily":"Inter","fontSize":12,"width":"fill_container"}
+    ]},
+    {"type":"frame","id":"dp04","name":"Note Item — Clean (no dot)","width":"fill_container","stroke":{"align":"inside","thickness":{"bottom":1},"fill":"$--border"},"layout":"vertical","gap":4,"padding":[14,16],"children":[
+      {"type":"frame","id":"dp04r","name":"titleRow","width":"fill_container","justifyContent":"space_between","alignItems":"center","children":[
+        {"type":"frame","id":"dp04tg","gap":6,"alignItems":"center","children":[
+          {"type":"text","id":"dp04ti","fill":"$--foreground","content":"Meeting Notes","fontFamily":"Inter","fontSize":13,"fontWeight":"500"}
+        ]},
+        {"type":"text","id":"dp04d","fill":"$--muted-foreground","content":"yesterday","fontFamily":"Inter","fontSize":11}
+      ]},
+      {"type":"text","id":"dp04s","fill":"$--muted-foreground","content":"No indicator — clean, committed note","fontFamily":"Inter","fontSize":12,"width":"fill_container"}
+    ]}
+  ]},
+  {"type":"frame","id":"dp10","x":360,"y":0,"name":"NoteStatus — TabBar (New vs Modified)","width":600,"height":"fit_content(200)","fill":"$--sidebar","layout":"vertical","children":[
+    {"type":"text","id":"dp10t","fill":"$--muted-foreground","content":"TabBar — Green vs Orange Status Dots","fontFamily":"Inter","fontSize":10,"fontWeight":"600","textTransform":"uppercase","letterSpacing":1,"width":"fill_container","padding":[8,16]},
+    {"type":"frame","id":"dp11","name":"Tab Row","width":"fill_container","height":45,"alignItems":"center","children":[
+      {"type":"frame","id":"dp11a","name":"Active Tab (new)","height":"fill_container","fill":"$--background","stroke":{"align":"inside","thickness":{"right":1},"fill":"$--border"},"padding":[0,12],"gap":6,"alignItems":"center","children":[
+        {"type":"text","id":"dp11at","fill":"$--foreground","content":"Untitled Note","fontFamily":"Inter","fontSize":12,"fontWeight":"500"},
+        {"type":"ellipse","id":"dp11adot","name":"New dot (green)","width":6,"height":6,"fill":"$--accent-green"},
+        {"type":"text","id":"dp11ax","fill":"$--muted-foreground","content":"×","fontFamily":"Inter","fontSize":14}
+      ]},
+      {"type":"frame","id":"dp11b","name":"Inactive Tab (modified)","height":"fill_container","stroke":{"align":"inside","thickness":{"right":1,"bottom":1},"fill":"$--sidebar-border"},"padding":[0,12],"gap":6,"alignItems":"center","children":[
+        {"type":"text","id":"dp11bt","fill":"$--muted-foreground","content":"Build Laputa App","fontFamily":"Inter","fontSize":12},
+        {"type":"ellipse","id":"dp11bdot","name":"Modified dot (orange)","width":6,"height":6,"fill":"$--accent-orange"}
+      ]},
+      {"type":"frame","id":"dp11c","name":"Inactive Tab (clean)","height":"fill_container","stroke":{"align":"inside","thickness":{"right":1,"bottom":1},"fill":"$--sidebar-border"},"padding":[0,12],"gap":6,"alignItems":"center","children":[
+        {"type":"text","id":"dp11ct","fill":"$--muted-foreground","content":"Meeting Notes","fontFamily":"Inter","fontSize":12}
+      ]}
+    ]}
+  ]},
+  {"type":"frame","id":"dp20","x":360,"y":220,"name":"NoteStatus — BreadcrumbBar (N vs M badge)","width":600,"height":"fit_content(200)","fill":"$--background","layout":"vertical","children":[
+    {"type":"text","id":"dp20t","fill":"$--muted-foreground","content":"BreadcrumbBar — Status Badge","fontFamily":"Inter","fontSize":10,"fontWeight":"600","textTransform":"uppercase","letterSpacing":1,"width":"fill_container","padding":[8,16]},
+    {"type":"frame","id":"dp21","name":"Breadcrumb — New Note","width":"fill_container","padding":[8,16],"gap":8,"alignItems":"center","children":[
+      {"type":"text","id":"dp21type","fill":"$--muted-foreground","content":"Note","fontFamily":"Inter","fontSize":12},
+      {"type":"text","id":"dp21sep","fill":"$--muted-foreground","content":"/","fontFamily":"Inter","fontSize":12},
+      {"type":"text","id":"dp21title","fill":"$--foreground","content":"Untitled Note","fontFamily":"Inter","fontSize":12,"fontWeight":"500"},
+      {"type":"frame","id":"dp21badge","name":"New Badge","fill":"$--accent-green","cornerRadius":3,"padding":[1,5],"children":[
+        {"type":"text","id":"dp21bl","fill":"#ffffff","content":"N","fontFamily":"Inter","fontSize":10,"fontWeight":"700"}
+      ]}
+    ]},
+    {"type":"frame","id":"dp22","name":"Breadcrumb — Modified Note","width":"fill_container","padding":[8,16],"gap":8,"alignItems":"center","stroke":{"align":"inside","thickness":{"top":1},"fill":"$--border"},"children":[
+      {"type":"text","id":"dp22type","fill":"$--muted-foreground","content":"Project","fontFamily":"Inter","fontSize":12},
+      {"type":"text","id":"dp22sep","fill":"$--muted-foreground","content":"/","fontFamily":"Inter","fontSize":12},
+      {"type":"text","id":"dp22title","fill":"$--foreground","content":"Build Laputa App","fontFamily":"Inter","fontSize":12,"fontWeight":"500"},
+      {"type":"frame","id":"dp22badge","name":"Modified Badge","fill":"$--accent-yellow","cornerRadius":3,"padding":[1,5],"children":[
+        {"type":"text","id":"dp22bl","fill":"#ffffff","content":"M","fontFamily":"Inter","fontSize":10,"fontWeight":"700"}
+      ]}
+    ]}
+  ]},
+  {"type":"frame","id":"dp30","x":0,"y":640,"name":"NoteStatus — State Transitions","width":960,"height":"fit_content(300)","fill":"$--card","layout":"vertical","children":[
+    {"type":"text","id":"dp30t","fill":"$--muted-foreground","content":"State Transition Flow","fontFamily":"Inter","fontSize":10,"fontWeight":"600","textTransform":"uppercase","letterSpacing":1,"width":"fill_container","padding":[8,16]},
+    {"type":"frame","id":"dp31","name":"Flow","width":"fill_container","padding":[16,16],"gap":16,"alignItems":"center","children":[
+      {"type":"frame","id":"dp31a","name":"Create","fill":"$--accent-green","cornerRadius":8,"padding":[12,20],"children":[
+        {"type":"text","id":"dp31at","fill":"#ffffff","content":"Create Note → Green Dot","fontFamily":"Inter","fontSize":13,"fontWeight":"600"}
+      ]},
+      {"type":"text","id":"dp31arr1","fill":"$--muted-foreground","content":"→","fontFamily":"Inter","fontSize":20,"fontWeight":"700"},
+      {"type":"frame","id":"dp31b","name":"Save","fill":"$--muted","cornerRadius":8,"padding":[12,20],"children":[
+        {"type":"text","id":"dp31bt","fill":"$--foreground","content":"Cmd+S → Dot Removed","fontFamily":"Inter","fontSize":13,"fontWeight":"600"}
+      ]},
+      {"type":"text","id":"dp31arr2","fill":"$--muted-foreground","content":"→","fontFamily":"Inter","fontSize":20,"fontWeight":"700"},
+      {"type":"frame","id":"dp31c","name":"Edit+Save","fill":"$--accent-orange","cornerRadius":8,"padding":[12,20],"children":[
+        {"type":"text","id":"dp31ct","fill":"#ffffff","content":"Edit Existing → Orange Dot","fontFamily":"Inter","fontSize":13,"fontWeight":"600"}
+      ]},
+      {"type":"text","id":"dp31arr3","fill":"$--muted-foreground","content":"→","fontFamily":"Inter","fontSize":20,"fontWeight":"700"},
+      {"type":"frame","id":"dp31d","name":"Commit","fill":"$--muted","cornerRadius":8,"padding":[12,20],"children":[
+        {"type":"text","id":"dp31dt","fill":"$--foreground","content":"Git Commit → Dot Removed","fontFamily":"Inter","fontSize":13,"fontWeight":"600"}
+      ]}
+    ]}
+  ]}
+],"variables":{}}

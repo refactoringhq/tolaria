@@ -5,7 +5,7 @@ import { createReactInlineContentSpec, useCreateBlockNote, SuggestionMenuControl
 import { BlockNoteView } from '@blocknote/mantine'
 import '@blocknote/mantine/style.css'
 import { uploadImageFile, useImageDrop } from '../hooks/useImageDrop'
-import type { VaultEntry, GitCommit } from '../types'
+import type { VaultEntry, GitCommit, NoteStatus } from '../types'
 import { Inspector, type FrontmatterValue } from './Inspector'
 import { AIChatPanel } from './AIChatPanel'
 import { DiffView } from './DiffView'
@@ -34,7 +34,7 @@ interface EditorProps {
   onNavigateWikilink: (target: string) => void
   onLoadDiff?: (path: string) => Promise<string>
   onLoadDiffAtCommit?: (path: string, commitHash: string) => Promise<string>
-  isModified?: (path: string) => boolean
+  getNoteStatus?: (path: string) => NoteStatus
   onCreateNote?: () => void
   // Inspector props
   inspectorCollapsed: boolean
@@ -182,7 +182,7 @@ function SingleEditorView({ editor, entries, onNavigateWikilink, onChange }: { e
 }
 
 export const Editor = memo(function Editor({
-  tabs, activeTabPath, entries, onSwitchTab, onCloseTab, onReorderTabs, onNavigateWikilink, onLoadDiff, onLoadDiffAtCommit, isModified, onCreateNote,
+  tabs, activeTabPath, entries, onSwitchTab, onCloseTab, onReorderTabs, onNavigateWikilink, onLoadDiff, onLoadDiffAtCommit, getNoteStatus, onCreateNote,
   inspectorCollapsed, onToggleInspector, inspectorWidth, onInspectorResize,
   inspectorEntry, inspectorContent, allContent, gitHistory,
   onUpdateFrontmatter, onDeleteProperty, onAddProperty,
@@ -392,7 +392,8 @@ export const Editor = memo(function Editor({
 
   const activeTab = tabs.find((t) => t.entry.path === activeTabPath) ?? null
   const isLoadingNewTab = activeTabPath !== null && !activeTab
-  const showDiffToggle = activeTab && (diffMode || isModified?.(activeTab.entry.path))
+  const activeStatus = activeTab ? getNoteStatus?.(activeTab.entry.path) ?? 'clean' : 'clean'
+  const showDiffToggle = activeTab && (diffMode || activeStatus === 'modified')
 
   useEffect(() => {
     setDiffMode(false)
@@ -432,14 +433,13 @@ export const Editor = memo(function Editor({
     }
   }, [activeTabPath, onLoadDiffAtCommit])
 
-  const activeModified = activeTab ? isModified?.(activeTab.entry.path) ?? false : false
   const wordCount = activeTab ? countWords(activeTab.content) : 0
 
   const tabBar = (
     <TabBar
       tabs={tabs}
       activeTabPath={activeTabPath}
-      isModified={isModified}
+      getNoteStatus={getNoteStatus}
       onSwitchTab={onSwitchTab}
       onCloseTab={onCloseTab}
       onCreateNote={onCreateNote}
@@ -452,7 +452,7 @@ export const Editor = memo(function Editor({
     <BreadcrumbBar
       entry={activeTab.entry}
       wordCount={wordCount}
-      isModified={activeModified}
+      noteStatus={activeStatus}
       showDiffToggle={!!showDiffToggle}
       diffMode={diffMode}
       diffLoading={diffLoading}

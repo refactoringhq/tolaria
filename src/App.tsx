@@ -87,7 +87,7 @@ function App() {
     updateVaultContent: vault.updateContent,
     setTabs: notes.setTabs,
     setToastMessage,
-    onAfterSave: vault.loadModifiedFiles,
+    onAfterSave: vault.loadModifiedFiles, onNoteSaved: vault.markSaved,
   })
 
   const commitFlow = useCommitFlow({
@@ -207,7 +207,7 @@ function App() {
         </div>
         <ResizeHandle onResize={layout.handleSidebarResize} />
         <div className="app__note-list" style={{ width: layout.noteListWidth }}>
-          <NoteList entries={vault.entries} selection={selection} selectedNote={activeTab?.entry ?? null} allContent={vault.allContent} modifiedFiles={vault.modifiedFiles} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={notes.handleReplaceActiveTab} onCreateNote={handleCreateNoteImmediate} />
+          <NoteList entries={vault.entries} selection={selection} selectedNote={activeTab?.entry ?? null} allContent={vault.allContent} getNoteStatus={vault.getNoteStatus} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={notes.handleReplaceActiveTab} onCreateNote={handleCreateNoteImmediate} />
         </div>
         <ResizeHandle onResize={layout.handleNoteListResize} />
         <div className="app__editor">
@@ -221,7 +221,7 @@ function App() {
             onNavigateWikilink={notes.handleNavigateWikilink}
             onLoadDiff={vault.loadDiff}
             onLoadDiffAtCommit={vault.loadDiffAtCommit}
-            isModified={vault.isFileModified}
+            getNoteStatus={vault.getNoteStatus}
             onCreateNote={handleCreateNoteImmediate}
             inspectorCollapsed={layout.inspectorCollapsed}
             onToggleInspector={() => layout.setInspectorCollapsed((c) => !c)}

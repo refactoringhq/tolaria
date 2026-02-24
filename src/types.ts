@@ -26,6 +26,8 @@ export interface VaultEntry {
   order: number | null
 }
 
+export type NoteStatus = 'new' | 'modified' | 'clean'
+
 export interface GitCommit {
   hash: string
   shortHash: string
