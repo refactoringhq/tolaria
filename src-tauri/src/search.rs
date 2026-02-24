@@ -30,8 +30,7 @@ struct QmdResult {
 
 fn find_qmd_binary() -> Option<String> {
     let candidates = [
-        dirs::home_dir()
-            .map(|h| h.join(".bun/bin/qmd").to_string_lossy().to_string()),
+        dirs::home_dir().map(|h| h.join(".bun/bin/qmd").to_string_lossy().to_string()),
         Some("/usr/local/bin/qmd".to_string()),
         Some("/opt/homebrew/bin/qmd".to_string()),
     ];
@@ -67,10 +66,7 @@ fn extract_clean_snippet(raw_snippet: &str) -> String {
     // qmd snippets start with "@@ -N,N @@ (N before, N after)\n"
     // We want just the content lines
     let lines: Vec<&str> = raw_snippet.lines().collect();
-    let content_start = lines
-        .iter()
-        .position(|l| !l.starts_with("@@"))
-        .unwrap_or(0);
+    let content_start = lines.iter().position(|l| !l.starts_with("@@")).unwrap_or(0);
     let content: String = lines[content_start..]
         .iter()
         .filter(|l| !l.starts_with("---"))
@@ -93,9 +89,7 @@ fn detect_collection_name(vault_path: &str) -> String {
         None => return "laputa".to_string(),
     };
 
-    let output = Command::new(&qmd_bin)
-        .args(["collection", "list"])
-        .output();
+    let output = Command::new(&qmd_bin).args(["collection", "list"]).output();
 
     match output {
         Ok(o) if o.status.success() => {
@@ -117,13 +111,11 @@ fn detect_collection_name(vault_path: &str) -> String {
             }
             vault_name
         }
-        _ => {
-            Path::new(vault_path)
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("laputa")
-                .to_lowercase()
-        }
+        _ => Path::new(vault_path)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("laputa")
+            .to_lowercase(),
     }
 }
 

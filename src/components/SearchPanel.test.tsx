@@ -3,14 +3,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SearchPanel } from './SearchPanel'
 import type { VaultEntry } from '../types'
 
-// Mock the invoke function
+// Mock the mock-tauri module (component uses mockInvoke when isTauri() is false)
 vi.mock('../mock-tauri', () => ({
-  invoke: vi.fn(),
+  mockInvoke: vi.fn(),
   isTauri: () => false,
 }))
 
-import { invoke } from '../mock-tauri'
-const mockInvoke = vi.mocked(invoke)
+import { mockInvoke } from '../mock-tauri'
+const mockInvokeFn = vi.mocked(mockInvoke)
 
 const MOCK_ENTRIES: VaultEntry[] = [
   {
@@ -108,7 +108,7 @@ describe('SearchPanel', () => {
   })
 
   it('performs search on query input with debounce', async () => {
-    mockInvoke.mockResolvedValue({
+    mockInvokeFn.mockResolvedValue({
       results: [
         { title: 'How to Design AI-first APIs', path: '/vault/essay/ai-apis.md', snippet: '...designing APIs for AI...', score: 0.87, note_type: 'Essay' },
       ],
@@ -123,7 +123,7 @@ describe('SearchPanel', () => {
     fireEvent.change(input, { target: { value: 'api design' } })
 
     await waitFor(() => {
-      expect(mockInvoke).toHaveBeenCalledWith('search_vault', {
+      expect(mockInvokeFn).toHaveBeenCalledWith('search_vault', {
         vaultPath: '/vault',
         query: 'api design',
         mode: 'keyword',
@@ -137,7 +137,7 @@ describe('SearchPanel', () => {
   })
 
   it('shows no results message when search returns empty', async () => {
-    mockInvoke.mockResolvedValue({ results: [], elapsed_ms: 10 })
+    mockInvokeFn.mockResolvedValue({ results: [], elapsed_ms: 10 })
 
     render(
       <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />
@@ -152,7 +152,7 @@ describe('SearchPanel', () => {
   })
 
   it('navigates results with arrow keys', async () => {
-    mockInvoke.mockResolvedValue({
+    mockInvokeFn.mockResolvedValue({
       results: [
         { title: 'Result One', path: '/vault/essay/ai-apis.md', snippet: 'First result', score: 0.9, note_type: null },
         { title: 'Result Two', path: '/vault/event/retreat.md', snippet: 'Second result', score: 0.8, note_type: null },
@@ -175,12 +175,14 @@ describe('SearchPanel', () => {
     fireEvent.keyDown(window, { key: 'ArrowDown' })
 
     // The second item should now have bg-accent class
-    const resultTwo = screen.getByText('Result Two').closest('[class*="cursor-pointer"]')!
-    expect(resultTwo.className).toContain('bg-accent')
+    await waitFor(() => {
+      const resultTwo = screen.getByText('Result Two').closest('[class*="cursor-pointer"]')!
+      expect(resultTwo.className).toContain('bg-accent')
+    })
   })
 
   it('selects result on Enter and calls onSelectNote', async () => {
-    mockInvoke.mockResolvedValue({
+    mockInvokeFn.mockResolvedValue({
       results: [
         { title: 'How to Design AI-first APIs', path: '/vault/essay/ai-apis.md', snippet: 'First', score: 0.9, note_type: null },
       ],
@@ -232,7 +234,7 @@ describe('SearchPanel', () => {
   })
 
   it('shows result count and elapsed time', async () => {
-    mockInvoke.mockResolvedValue({
+    mockInvokeFn.mockResolvedValue({
       results: [
         { title: 'Result', path: '/vault/essay/ai-apis.md', snippet: 'Content', score: 0.9, note_type: null },
       ],
@@ -252,7 +254,7 @@ describe('SearchPanel', () => {
   })
 
   it('displays note type badge from vault entries', async () => {
-    mockInvoke.mockResolvedValue({
+    mockInvokeFn.mockResolvedValue({
       results: [
         { title: 'How to Design AI-first APIs', path: '/vault/essay/ai-apis.md', snippet: 'Content', score: 0.9, note_type: null },
       ],

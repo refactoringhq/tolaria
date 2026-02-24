@@ -1,8 +1,26 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import type { SearchResult, SearchMode, VaultEntry } from '../types'
-import { invoke } from '../mock-tauri'
+import type { SearchMode, SearchResult, VaultEntry } from '../types'
+import { invoke } from '@tauri-apps/api/core'
+import { isTauri, mockInvoke } from '../mock-tauri'
+
+interface SearchResultData {
+  title: string
+  path: string
+  snippet: string
+  score: number
+  note_type: string | null
+}
+
+interface SearchResponseData {
+  results: SearchResultData[]
+  elapsed_ms: number
+}
+
+function searchCall(args: Record<string, unknown>): Promise<SearchResponseData> {
+  return isTauri() ? invoke<SearchResponseData>('search_vault', args) : mockInvoke<SearchResponseData>('search_vault', args)
+}
 
 interface SearchPanelProps {
   open: boolean
@@ -46,16 +64,13 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
     setLoading(true)
     setSearchError(null)
     try {
-      const response = await invoke<{
-        results: Array<{ title: string; path: string; snippet: string; score: number; note_type: string | null }>
-        elapsed_ms: number
-      }>('search_vault', {
+      const response = await searchCall({
         vaultPath,
         query: q,
         mode: m,
         limit: 20,
       })
-      const mapped = response.results.map(r => ({
+      const mapped = response.results.map((r: SearchResultData) => ({
         title: r.title,
         path: r.path,
         snippet: r.snippet,
