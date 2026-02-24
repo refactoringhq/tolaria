@@ -3,6 +3,7 @@ import type { ViewMode } from './useViewMode'
 
 interface KeyboardActions {
   onQuickOpen: () => void
+  onCommandPalette: () => void
   onCreateNote: () => void
   onSave: () => void
   onOpenSettings: () => void
@@ -45,7 +46,7 @@ function handleCmdKey(e: KeyboardEvent, keyMap: Record<string, ShortcutHandler>)
 }
 
 export function useAppKeyboard({
-  onQuickOpen, onCreateNote, onSave, onOpenSettings, onTrashNote, onArchiveNote,
+  onQuickOpen, onCommandPalette, onCreateNote, onSave, onOpenSettings, onTrashNote, onArchiveNote,
   onSetViewMode, activeTabPathRef, handleCloseTabRef,
 }: KeyboardActions) {
   useEffect(() => {
@@ -55,6 +56,7 @@ export function useAppKeyboard({
     }
 
     const cmdKeyMap: Record<string, ShortcutHandler> = {
+      k: onCommandPalette,
       p: onQuickOpen,
       n: onCreateNote,
       s: onSave,
@@ -72,5 +74,5 @@ export function useAppKeyboard({
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onQuickOpen, onCreateNote, onSave, onOpenSettings, onTrashNote, onArchiveNote, activeTabPathRef, handleCloseTabRef, onSetViewMode])
+  }, [onQuickOpen, onCommandPalette, onCreateNote, onSave, onOpenSettings, onTrashNote, onArchiveNote, activeTabPathRef, handleCloseTabRef, onSetViewMode])
 }

@@ -5,6 +5,7 @@ import { Editor } from './components/Editor'
 import { ResizeHandle } from './components/ResizeHandle'
 import { CreateTypeDialog } from './components/CreateTypeDialog'
 import { QuickOpenPalette } from './components/QuickOpenPalette'
+import { CommandPalette } from './components/CommandPalette'
 import { Toast } from './components/Toast'
 import { CommitDialog } from './components/CommitDialog'
 import { StatusBar } from './components/StatusBar'
@@ -18,6 +19,7 @@ import { useCommitFlow } from './hooks/useCommitFlow'
 import { useAppKeyboard } from './hooks/useAppKeyboard'
 import { useViewMode } from './hooks/useViewMode'
 import { useEntryActions } from './hooks/useEntryActions'
+import { useCommandRegistry } from './hooks/useCommandRegistry'
 import { isTauri } from './mock-tauri'
 import { pickFolder } from './utils/vault-dialog'
 
@@ -64,6 +66,7 @@ function App() {
   const [gitHistory, setGitHistory] = useState<GitCommit[]>([])
   const [showCreateTypeDialog, setShowCreateTypeDialog] = useState(false)
   const [showQuickOpen, setShowQuickOpen] = useState(false)
+  const [showCommandPalette, setShowCommandPalette] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [vaultPath, setVaultPath] = useState(DEFAULT_VAULTS[0].path)
   const [showAIChat, setShowAIChat] = useState(false)
@@ -173,6 +176,7 @@ function App() {
 
   useAppKeyboard({
     onQuickOpen: () => setShowQuickOpen(true),
+    onCommandPalette: () => setShowCommandPalette(true),
     onCreateNote: handleCreateNoteImmediate,
     onSave: handleSave,
     onOpenSettings: () => setShowSettings(true),
@@ -181,6 +185,24 @@ function App() {
     onSetViewMode: setViewMode,
     activeTabPathRef: notes.activeTabPathRef,
     handleCloseTabRef: notes.handleCloseTabRef,
+  })
+
+  const commands = useCommandRegistry({
+    activeTabPath: notes.activeTabPath,
+    entries: vault.entries,
+    modifiedCount: vault.modifiedFiles.length,
+    onQuickOpen: () => setShowQuickOpen(true),
+    onCreateNote: handleCreateNoteImmediate,
+    onSave: handleSave,
+    onOpenSettings: () => setShowSettings(true),
+    onTrashNote: entryActions.handleTrashNote,
+    onArchiveNote: entryActions.handleArchiveNote,
+    onUnarchiveNote: entryActions.handleUnarchiveNote,
+    onCommitPush: commitFlow.openCommitDialog,
+    onSetViewMode: setViewMode,
+    onToggleInspector: () => layout.setInspectorCollapsed(c => !c),
+    onSelect: setSelection,
+    onCloseTab: notes.handleCloseTab,
   })
 
   const { status: updateStatus, actions: updateActions } = useUpdater()
@@ -249,6 +271,7 @@ function App() {
       <StatusBar noteCount={vault.entries.length} modifiedCount={vault.modifiedFiles.length} vaultPath={vaultPath} vaults={allVaults} onSwitchVault={handleSwitchVault} onOpenSettings={() => setShowSettings(true)} onOpenLocalFolder={handleOpenLocalFolder} onConnectGitHub={() => setShowGitHubVault(true)} onClickPending={() => setSelection({ kind: 'filter', filter: 'changes' })} hasGitHub={!!settings.github_token} />
       <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
       <QuickOpenPalette open={showQuickOpen} entries={vault.entries} onSelect={notes.handleSelectNote} onClose={() => setShowQuickOpen(false)} />
+      <CommandPalette open={showCommandPalette} commands={commands} onClose={() => setShowCommandPalette(false)} />
       <CreateTypeDialog open={showCreateTypeDialog} onClose={() => setShowCreateTypeDialog(false)} onCreate={handleCreateType} />
       <CommitDialog open={commitFlow.showCommitDialog} modifiedCount={vault.modifiedFiles.length} onCommit={commitFlow.handleCommitPush} onClose={commitFlow.closeCommitDialog} />
       <SettingsPanel open={showSettings} settings={settings} onSave={saveSettings} onClose={() => setShowSettings(false)} />
