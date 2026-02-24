@@ -129,10 +129,10 @@ describe('Inspector', () => {
     expect(pill).toHaveStyle({ borderRadius: '16px' })
   })
 
-  it('computes word count from content minus frontmatter', () => {
+  it('computes word count from content minus frontmatter and title', () => {
     render(<Inspector {...defaultProps} entry={mockEntry} content={mockContent} />)
-    // "Test Project" (# stripped) + "This is a test note with some words to count." = 12 words
-    expect(screen.getByText('12')).toBeInTheDocument()
+    // Title "# Test Project" excluded; body: "This is a test note with some words to count." = 10 words
+    expect(screen.getByText('10')).toBeInTheDocument()
   })
 
   it('shows "Add property" button as disabled placeholder', () => {

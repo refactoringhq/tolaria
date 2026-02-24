@@ -222,10 +222,9 @@ describe('countWords', () => {
       '',
       'Only these five words count.',
     ].join('\n')
-    // Body: "# My Note\n\nOnly these five words count."
-    // After stripping '#': " My Note\n\nOnly these five words count."
-    // Words: My, Note, Only, these, five, words, count. = 7
-    expect(countWords(content)).toBe(7)
+    // Title "# My Note" is excluded from word count
+    // Body: "Only these five words count." = 5 words
+    expect(countWords(content)).toBe(5)
   })
 
   it('ignores frontmatter values containing dashes', () => {
@@ -254,14 +253,46 @@ describe('countWords', () => {
       '',
       'After the rule.',
     ].join('\n')
-    // Body includes: Title, Before, the, rule., After, the, rule.
-    // The --- horizontal rule is stripped by the markdown char filter
-    expect(countWords(content)).toBe(7)
+    // Title "# Title" is excluded; body: Before, the, rule., After, the, rule. = 6
+    expect(countWords(content)).toBe(6)
   })
 
   it('returns 0 when content is only frontmatter with no trailing body', () => {
     const content = '---\ntitle: Hello\nstatus: Active\ntags: [a, b, c]\n---'
     expect(countWords(content)).toBe(0)
+  })
+
+  it('excludes title heading from word count', () => {
+    const content = '---\ntitle: Hello World\n---\n\n# Hello World\n\nThree body words.'
+    expect(countWords(content)).toBe(3)
+  })
+
+  it('counts correctly when no title heading is present', () => {
+    const content = '---\ntitle: Test\n---\n\nFour words in body.'
+    expect(countWords(content)).toBe(4)
+  })
+
+  it('excludes wikilinks from word count', () => {
+    const content = '---\ntitle: Test\n---\n\n# Test\n\nSee [[My Note]] for details.'
+    // Title excluded, wikilink excluded: See, for, details. = 3
+    expect(countWords(content)).toBe(3)
+  })
+
+  it('excludes multiple wikilinks from word count', () => {
+    const content = 'Check [[note-a]] and [[note-b]] here.'
+    // wikilinks excluded: Check, and, here. = 3
+    expect(countWords(content)).toBe(3)
+  })
+
+  it('returns 0 for note with only title and no body', () => {
+    const content = '---\ntitle: Empty\n---\n\n# Empty\n'
+    expect(countWords(content)).toBe(0)
+  })
+
+  it('does not strip ## or ### subheadings as title', () => {
+    const content = '---\ntitle: Test\n---\n\n## Subheading\n\nBody text here.'
+    // ## is not a title heading; "Subheading" counts: Subheading, Body, text, here. = 4
+    expect(countWords(content)).toBe(4)
   })
 })
 
