@@ -360,4 +360,50 @@ describe('wikilink autocomplete', () => {
       ' ',
     ])
   })
+
+  it('deduplicates entries with the same path', async () => {
+    const dupEntries: VaultEntry[] = [
+      { ...mockEntry, title: 'Dup Note', filename: 'dup.md', path: '/vault/dup.md', aliases: [] },
+      { ...mockEntry, title: 'Dup Note Copy', filename: 'dup.md', path: '/vault/dup.md', aliases: [] },
+      { ...mockEntry, title: 'Other Note', filename: 'other.md', path: '/vault/other.md', aliases: [] },
+    ]
+    capturedGetItems = null
+    mockFilterSuggestionItems.mockImplementation((items: unknown[]) => items)
+    render(
+      <Editor
+        {...defaultProps}
+        tabs={[mockTab]}
+        activeTabPath={mockEntry.path}
+        entries={dupEntries}
+      />
+    )
+    const items = await capturedGetItems!('Note')
+    const paths = items.map((i: { path: string }) => i.path)
+    expect(new Set(paths).size).toBe(paths.length)
+    mockFilterSuggestionItems.mockImplementation((items: unknown[]) => items)
+  })
+
+  it('disambiguates entries with the same title by appending folder name', async () => {
+    const sameTitle: VaultEntry[] = [
+      { ...mockEntry, title: 'Standup', filename: 'standup.md', path: '/vault/work/standup.md', aliases: [] },
+      { ...mockEntry, title: 'Standup', filename: 'standup.md', path: '/vault/personal/standup.md', aliases: [] },
+    ]
+    capturedGetItems = null
+    mockFilterSuggestionItems.mockImplementation((items: unknown[]) => items)
+    render(
+      <Editor
+        {...defaultProps}
+        tabs={[mockTab]}
+        activeTabPath={mockEntry.path}
+        entries={sameTitle}
+      />
+    )
+    const items = await capturedGetItems!('Standup')
+    expect(items).toHaveLength(2)
+    const titles = items.map((i: { title: string }) => i.title)
+    expect(new Set(titles).size).toBe(2)
+    expect(titles).toContain('Standup (work)')
+    expect(titles).toContain('Standup (personal)')
+    mockFilterSuggestionItems.mockImplementation((items: unknown[]) => items)
+  })
 })

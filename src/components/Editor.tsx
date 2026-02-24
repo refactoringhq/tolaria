@@ -14,7 +14,7 @@ import { TabBar } from './TabBar'
 import { BreadcrumbBar } from './BreadcrumbBar'
 import { useEditorTheme } from '../hooks/useTheme'
 import { splitFrontmatter, preProcessWikilinks, injectWikilinks, restoreWikilinksInBlocks, countWords } from '../utils/wikilinks'
-import { preFilterWikilinks, MAX_RESULTS, MIN_QUERY_LENGTH } from '../utils/wikilinkSuggestions'
+import { preFilterWikilinks, deduplicateByPath, disambiguateTitles, MAX_RESULTS, MIN_QUERY_LENGTH } from '../utils/wikilinkSuggestions'
 import { resolveWikilinkColor as resolveColor } from '../utils/wikilinkColors'
 import './Editor.css'
 import './EditorTheme.css'
@@ -132,12 +132,13 @@ function SingleEditorView({ editor, entries, onNavigateWikilink, onChange }: { e
   }, [editor])
 
   const baseItems = useMemo(
-    () => entries.map(entry => ({
+    () => deduplicateByPath(entries.map(entry => ({
       title: entry.title,
-      aliases: [entry.filename.replace(/\.md$/, ''), ...entry.aliases],
+      aliases: [...new Set([entry.filename.replace(/\.md$/, ''), ...entry.aliases])],
       group: entry.isA || 'Note',
       entryTitle: entry.title,
-    })),
+      path: entry.path,
+    }))),
     [entries]
   )
 
@@ -157,7 +158,8 @@ function SingleEditorView({ editor, entries, onNavigateWikilink, onChange }: { e
         ])
       },
     }))
-    return filterSuggestionItems(items, query).slice(0, MAX_RESULTS)
+    const filtered = filterSuggestionItems(items, query).slice(0, MAX_RESULTS)
+    return disambiguateTitles(deduplicateByPath(filtered))
   }, [baseItems, editor])
 
   return (
