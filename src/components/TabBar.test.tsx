@@ -112,24 +112,33 @@ describe('TabBar', () => {
 
   it('shows modified indicator dot on modified tabs', () => {
     const tabs = makeTabs(['Alpha', 'Beta'])
-    const isModified = (path: string) => path === tabs[0].entry.path
-    render(<TabBar tabs={tabs} activeTabPath={tabs[0].entry.path} isModified={isModified} {...defaultProps} />)
+    const getNoteStatus = (path: string) => path === tabs[0].entry.path ? 'modified' as const : 'clean' as const
+    render(<TabBar tabs={tabs} activeTabPath={tabs[0].entry.path} getNoteStatus={getNoteStatus} {...defaultProps} />)
     const indicators = screen.getAllByTestId('tab-modified-indicator')
     expect(indicators).toHaveLength(1)
   })
 
   it('does not show modified indicator when no tabs are modified', () => {
     const tabs = makeTabs(['Alpha', 'Beta'])
-    const isModified = () => false
-    render(<TabBar tabs={tabs} activeTabPath={tabs[0].entry.path} isModified={isModified} {...defaultProps} />)
+    const getNoteStatus = () => 'clean' as const
+    render(<TabBar tabs={tabs} activeTabPath={tabs[0].entry.path} getNoteStatus={getNoteStatus} {...defaultProps} />)
     expect(screen.queryByTestId('tab-modified-indicator')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('tab-new-indicator')).not.toBeInTheDocument()
   })
 
   it('shows modified indicator on multiple tabs', () => {
     const tabs = makeTabs(['Alpha', 'Beta', 'Gamma'])
-    const isModified = () => true
-    render(<TabBar tabs={tabs} activeTabPath={tabs[0].entry.path} isModified={isModified} {...defaultProps} />)
+    const getNoteStatus = () => 'modified' as const
+    render(<TabBar tabs={tabs} activeTabPath={tabs[0].entry.path} getNoteStatus={getNoteStatus} {...defaultProps} />)
     expect(screen.getAllByTestId('tab-modified-indicator')).toHaveLength(3)
+  })
+
+  it('shows green new indicator on new tabs', () => {
+    const tabs = makeTabs(['Alpha', 'Beta'])
+    const getNoteStatus = (path: string) => path === tabs[0].entry.path ? 'new' as const : 'clean' as const
+    render(<TabBar tabs={tabs} activeTabPath={tabs[0].entry.path} getNoteStatus={getNoteStatus} {...defaultProps} />)
+    expect(screen.getAllByTestId('tab-new-indicator')).toHaveLength(1)
+    expect(screen.queryByTestId('tab-modified-indicator')).not.toBeInTheDocument()
   })
 
   it('does not reorder on drag cancel (dragEnd without drop)', () => {

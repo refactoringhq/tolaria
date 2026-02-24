@@ -716,43 +716,50 @@ describe('filterEntries — trash', () => {
   })
 })
 
-describe('NoteList — modified indicators', () => {
-  it('shows modified indicator dot for entries in modifiedFiles', () => {
-    const modifiedFiles = [
-      { path: mockEntries[0].path, relativePath: 'project/26q1-laputa-app.md', status: 'modified' as const },
-    ]
+describe('NoteList — status indicators', () => {
+  it('shows modified indicator dot for modified notes', () => {
+    const getNoteStatus = (path: string) => path === mockEntries[0].path ? 'modified' as const : 'clean' as const
     render(
-      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} modifiedFiles={modifiedFiles} onCreateNote={vi.fn()} />
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} getNoteStatus={getNoteStatus} onCreateNote={vi.fn()} />
     )
     const indicators = screen.getAllByTestId('modified-indicator')
     expect(indicators).toHaveLength(1)
-    // The indicator's parent div contains the title text
     const noteRow = indicators[0].closest('[data-testid="modified-indicator"]')!.parentElement!.parentElement!
     expect(noteRow.textContent).toContain('Build Laputa App')
   })
 
-  it('does not show modified indicator when modifiedFiles is empty', () => {
+  it('does not show indicator when all notes are clean', () => {
+    const getNoteStatus = () => 'clean' as const
     render(
-      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} modifiedFiles={[]} onCreateNote={vi.fn()} />
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} getNoteStatus={getNoteStatus} onCreateNote={vi.fn()} />
     )
     expect(screen.queryByTestId('modified-indicator')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('new-indicator')).not.toBeInTheDocument()
   })
 
   it('shows multiple modified indicators for multiple modified files', () => {
-    const modifiedFiles = [
-      { path: mockEntries[0].path, relativePath: 'project/26q1-laputa-app.md', status: 'modified' as const },
-      { path: mockEntries[1].path, relativePath: 'note/facebook-ads-strategy.md', status: 'modified' as const },
-    ]
+    const modifiedPaths = new Set([mockEntries[0].path, mockEntries[1].path])
+    const getNoteStatus = (path: string) => modifiedPaths.has(path) ? 'modified' as const : 'clean' as const
     render(
-      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} modifiedFiles={modifiedFiles} onCreateNote={vi.fn()} />
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} getNoteStatus={getNoteStatus} onCreateNote={vi.fn()} />
     )
     expect(screen.getAllByTestId('modified-indicator')).toHaveLength(2)
   })
 
-  it('does not show modified indicator when modifiedFiles prop is undefined', () => {
+  it('does not show indicator when getNoteStatus prop is undefined', () => {
     render(
       <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
+    expect(screen.queryByTestId('modified-indicator')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('new-indicator')).not.toBeInTheDocument()
+  })
+
+  it('shows green new indicator for new notes', () => {
+    const getNoteStatus = (path: string) => path === mockEntries[0].path ? 'new' as const : 'clean' as const
+    render(
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} getNoteStatus={getNoteStatus} onCreateNote={vi.fn()} />
+    )
+    expect(screen.getAllByTestId('new-indicator')).toHaveLength(1)
     expect(screen.queryByTestId('modified-indicator')).not.toBeInTheDocument()
   })
 })

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { isTauri, mockInvoke } from '../mock-tauri'
-import type { VaultEntry, GitCommit, ModifiedFile } from '../types'
+import type { VaultEntry, GitCommit, ModifiedFile, NoteStatus } from '../types'
 
 function tauriCall<T>(command: string, tauriArgs: Record<string, unknown>, mockArgs?: Record<string, unknown>): Promise<T> {
   return isTauri() ? invoke<T>(command, tauriArgs) : mockInvoke<T>(command, mockArgs ?? tauriArgs)
@@ -30,18 +30,46 @@ async function commitWithPush(vaultPath: string, message: string): Promise<strin
   }
 }
 
+function useNewNoteTracker() {
+  const [newPaths, setNewPaths] = useState<Set<string>>(new Set())
+
+  const trackNew = useCallback((path: string) => {
+    setNewPaths((prev) => new Set(prev).add(path))
+  }, [])
+
+  const markSaved = useCallback((path: string) => {
+    setNewPaths((prev) => {
+      if (!prev.has(path)) return prev
+      const next = new Set(prev)
+      next.delete(path)
+      return next
+    })
+  }, [])
+
+  const clear = useCallback(() => setNewPaths(new Set()), [])
+
+  return { newPaths, trackNew, markSaved, clear }
+}
+
+export function resolveNoteStatus(path: string, newPaths: Set<string>, modifiedFiles: ModifiedFile[]): NoteStatus {
+  if (newPaths.has(path)) return 'new'
+  if (modifiedFiles.some((f) => f.path === path && f.status === 'modified')) return 'modified'
+  return 'clean'
+}
+
 export function useVaultLoader(vaultPath: string) {
   const [entries, setEntries] = useState<VaultEntry[]>([])
   const [allContent, setAllContent] = useState<Record<string, string>>({})
   const [modifiedFiles, setModifiedFiles] = useState<ModifiedFile[]>([])
+  const tracker = useNewNoteTracker()
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- clear stale data then load new vault
-    setEntries([]); setAllContent({}); setModifiedFiles([])
+    setEntries([]); setAllContent({}); setModifiedFiles([]); tracker.clear()
     loadVaultData(vaultPath)
       .then(({ entries: e, allContent: c }) => { setEntries(e); setAllContent(c) })
       .catch((err) => console.warn('Vault scan failed:', err))
-  }, [vaultPath])
+  }, [vaultPath]) // eslint-disable-line react-hooks/exhaustive-deps -- tracker.clear is stable
 
   const loadModifiedFiles = useCallback(async () => {
     try {
@@ -57,24 +85,18 @@ export function useVaultLoader(vaultPath: string) {
   const addEntry = useCallback((entry: VaultEntry, content: string) => {
     setEntries((prev) => [entry, ...prev])
     setAllContent((prev) => ({ ...prev, [entry.path]: content }))
-  }, [])
+    tracker.trackNew(entry.path)
+  }, [tracker])
 
-  const updateContent = useCallback((path: string, content: string) => {
-    setAllContent((prev) => ({ ...prev, [path]: content }))
-  }, [])
+  const updateContent = useCallback((path: string, content: string) =>
+    setAllContent((prev) => ({ ...prev, [path]: content })), [])
 
-  const updateEntry = useCallback((path: string, patch: Partial<VaultEntry>) => {
-    setEntries((prev) => prev.map((e) => e.path === path ? { ...e, ...patch } : e))
-  }, [])
+  const updateEntry = useCallback((path: string, patch: Partial<VaultEntry>) =>
+    setEntries((prev) => prev.map((e) => e.path === path ? { ...e, ...patch } : e)), [])
 
   const replaceEntry = useCallback((oldPath: string, patch: Partial<VaultEntry> & { path: string }, newContent: string) => {
     setEntries((prev) => prev.map((e) => e.path === oldPath ? { ...e, ...patch } : e))
-    setAllContent((prev) => {
-      const next = { ...prev }
-      delete next[oldPath]
-      next[patch.path] = newContent
-      return next
-    })
+    setAllContent((prev) => { const next = { ...prev }; delete next[oldPath]; next[patch.path] = newContent; return next })
   }, [])
 
   const loadGitHistory = useCallback(async (path: string): Promise<GitCommit[]> => {
@@ -83,34 +105,21 @@ export function useVaultLoader(vaultPath: string) {
   }, [vaultPath])
 
   const loadDiffAtCommit = useCallback((path: string, commitHash: string): Promise<string> =>
-    tauriCall<string>('get_file_diff_at_commit', { vaultPath, path, commitHash }, { path, commitHash }),
-  [vaultPath])
+    tauriCall<string>('get_file_diff_at_commit', { vaultPath, path, commitHash }, { path, commitHash }), [vaultPath])
 
   const loadDiff = useCallback((path: string): Promise<string> =>
-    tauriCall<string>('get_file_diff', { vaultPath, path }, { path }),
-  [vaultPath])
+    tauriCall<string>('get_file_diff', { vaultPath, path }, { path }), [vaultPath])
 
-  const isFileModified = useCallback((path: string): boolean =>
-    modifiedFiles.some((f) => f.path === path),
-  [modifiedFiles])
+  const getNoteStatus = useCallback((path: string): NoteStatus =>
+    resolveNoteStatus(path, tracker.newPaths, modifiedFiles), [tracker.newPaths, modifiedFiles])
 
   const commitAndPush = useCallback((message: string): Promise<string> =>
-    commitWithPush(vaultPath, message),
-  [vaultPath])
+    commitWithPush(vaultPath, message), [vaultPath])
 
   return {
-    entries,
-    allContent,
-    modifiedFiles,
-    addEntry,
-    updateEntry,
-    replaceEntry,
-    updateContent,
-    loadModifiedFiles,
-    loadGitHistory,
-    loadDiff,
-    loadDiffAtCommit,
-    isFileModified,
-    commitAndPush,
+    entries, allContent, modifiedFiles,
+    addEntry, updateEntry, replaceEntry, updateContent,
+    loadModifiedFiles, loadGitHistory, loadDiff, loadDiffAtCommit,
+    getNoteStatus, markSaved: tracker.markSaved, commitAndPush,
   }
 }

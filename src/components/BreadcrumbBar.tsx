@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import type { VaultEntry } from '../types'
+import type { VaultEntry, NoteStatus } from '../types'
 import { cn } from '@/lib/utils'
 import {
   MagnifyingGlass,
@@ -17,7 +17,7 @@ import {
 interface BreadcrumbBarProps {
   entry: VaultEntry
   wordCount: number
-  isModified: boolean
+  noteStatus: NoteStatus
   showDiffToggle: boolean
   diffMode: boolean
   diffLoading: boolean
@@ -37,7 +37,7 @@ const DISABLED_ICON_STYLE = { opacity: 0.4, cursor: 'not-allowed' } as const
 function BreadcrumbActions({ entry, showDiffToggle, diffMode, diffLoading, onToggleDiff,
   showAIChat, onToggleAIChat, inspectorCollapsed, onToggleInspector,
   onTrash, onRestore, onArchive, onUnarchive,
-}: Omit<BreadcrumbBarProps, 'wordCount' | 'isModified'>) {
+}: Omit<BreadcrumbBarProps, 'wordCount' | 'noteStatus'>) {
   return (
     <div className="flex items-center" style={{ gap: 12 }}>
       <button
@@ -143,7 +143,7 @@ function BreadcrumbActions({ entry, showDiffToggle, diffMode, diffLoading, onTog
 }
 
 export const BreadcrumbBar = memo(function BreadcrumbBar({
-  entry, wordCount, isModified, ...actionProps
+  entry, wordCount, noteStatus, ...actionProps
 }: BreadcrumbBarProps) {
   return (
     <div
@@ -162,7 +162,13 @@ export const BreadcrumbBar = memo(function BreadcrumbBar({
         <span className="font-medium text-foreground">{entry.title}</span>
         <span className="text-muted-foreground" style={{ margin: '0 4px' }}>&middot;</span>
         <span className="text-muted-foreground">{wordCount.toLocaleString()} words</span>
-        {isModified && (
+        {noteStatus === 'new' && (
+          <>
+            <span className="text-muted-foreground" style={{ margin: '0 4px' }}>&middot;</span>
+            <span className="font-semibold" style={{ color: 'var(--accent-green)' }}>N</span>
+          </>
+        )}
+        {noteStatus === 'modified' && (
           <>
             <span className="text-muted-foreground" style={{ margin: '0 4px' }}>&middot;</span>
             <span className="font-semibold" style={{ color: 'var(--accent-yellow)' }}>M</span>

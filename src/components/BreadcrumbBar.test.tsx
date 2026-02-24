@@ -40,7 +40,7 @@ const trashedEntry: VaultEntry = {
 
 const defaultProps = {
   wordCount: 100,
-  isModified: false,
+  noteStatus: 'clean' as const,
   showDiffToggle: false,
   diffMode: false,
   diffLoading: false,
