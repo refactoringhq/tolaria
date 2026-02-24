@@ -3,6 +3,7 @@ pub mod frontmatter;
 pub mod git;
 pub mod github;
 pub mod menu;
+pub mod search;
 pub mod settings;
 pub mod vault;
 
@@ -12,6 +13,7 @@ use ai_chat::{AiChatRequest, AiChatResponse};
 use frontmatter::FrontmatterValue;
 use git::{GitCommit, ModifiedFile};
 use github::{DeviceFlowPollResult, DeviceFlowStart, GitHubUser, GithubRepo};
+use search::SearchResponse;
 use settings::Settings;
 use vault::{RenameResult, VaultEntry};
 
@@ -151,6 +153,16 @@ async fn github_get_user(token: String) -> Result<GitHubUser, String> {
     github::github_get_user(&token).await
 }
 
+#[tauri::command]
+fn search_vault(
+    vault_path: String,
+    query: String,
+    mode: String,
+    limit: Option<usize>,
+) -> Result<SearchResponse, String> {
+    search::search_vault(&vault_path, &query, &mode, limit.unwrap_or(20))
+}
+
 fn log_startup_result(label: &str, result: Result<usize, String>) {
     match result {
         Ok(n) if n > 0 => log::info!("{}: {} files", label, n),
@@ -232,7 +244,8 @@ pub fn run() {
             clone_repo,
             github_device_flow_start,
             github_device_flow_poll,
-            github_get_user
+            github_get_user,
+            search_vault
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

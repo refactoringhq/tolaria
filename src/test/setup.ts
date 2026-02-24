@@ -2,6 +2,11 @@ import '@testing-library/jest-dom/vitest'
 import { vi } from 'vitest'
 import { createElement, type ReactNode, type ComponentType } from 'react'
 
+// Mock @tauri-apps/plugin-opener for test environment
+vi.mock('@tauri-apps/plugin-opener', () => ({
+  openUrl: vi.fn(),
+}))
+
 // Mock react-virtuoso: JSDOM has no real viewport, so render all items directly
 vi.mock('react-virtuoso', () => ({
   Virtuoso: ({ data, itemContent, components }: {
