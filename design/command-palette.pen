@@ -1,0 +1,517 @@
+{
+  "version": 1,
+  "children": [
+    {
+      "type": "frame",
+      "id": "cpE01",
+      "x": 0,
+      "y": 0,
+      "name": "Command Palette — Empty State (Cmd+K)",
+      "clip": true,
+      "width": 560,
+      "height": 420,
+      "fill": "#1a1a2e",
+      "layout": "vertical",
+      "cornerRadius": 12,
+      "children": [
+        {
+          "type": "frame",
+          "id": "cpE02",
+          "name": "Search Bar",
+          "width": "fill_container",
+          "height": 52,
+          "padding": [0, 16],
+          "gap": 10,
+          "alignItems": "center",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "bottom": 1 },
+            "fill": "#ffffff15"
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "cpE03",
+              "name": "searchIcon",
+              "content": "⌘",
+              "fontSize": 14,
+              "fontWeight": "500",
+              "color": "#888"
+            },
+            {
+              "type": "text",
+              "id": "cpE04",
+              "name": "searchPlaceholder",
+              "content": "Type a command...",
+              "fontSize": 15,
+              "fontWeight": "400",
+              "color": "#666"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "cpE05",
+          "name": "Action Groups",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "padding": [8, 0],
+          "gap": 4,
+          "children": [
+            {
+              "type": "text",
+              "id": "cpE06",
+              "name": "groupLabel_Navigation",
+              "content": "Navigation",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "color": "#666",
+              "padding": [4, 16]
+            },
+            {
+              "type": "frame",
+              "id": "cpE07",
+              "name": "actionRow_SearchNotes",
+              "width": "fill_container",
+              "height": 36,
+              "fill": "#ffffff08",
+              "padding": [0, 16],
+              "gap": 8,
+              "alignItems": "center",
+              "cornerRadius": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "cpE08",
+                  "content": "Search Notes",
+                  "fontSize": 14,
+                  "color": "#ddd"
+                },
+                {
+                  "type": "text",
+                  "id": "cpE09",
+                  "name": "shortcut",
+                  "content": "⌘P",
+                  "fontSize": 12,
+                  "color": "#666"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "cpE10",
+              "name": "actionRow_GoToAllNotes",
+              "width": "fill_container",
+              "height": 36,
+              "padding": [0, 16],
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "cpE11",
+                  "content": "Go to All Notes",
+                  "fontSize": 14,
+                  "color": "#ddd"
+                },
+                {
+                  "type": "text",
+                  "id": "cpE12",
+                  "name": "shortcut",
+                  "content": "",
+                  "fontSize": 12,
+                  "color": "#666"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "cpE13",
+              "name": "groupLabel_Notes",
+              "content": "Notes",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "color": "#666",
+              "padding": [8, 16, 4, 16]
+            },
+            {
+              "type": "frame",
+              "id": "cpE14",
+              "name": "actionRow_CreateNote",
+              "width": "fill_container",
+              "height": 36,
+              "padding": [0, 16],
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "cpE15",
+                  "content": "Create New Note",
+                  "fontSize": 14,
+                  "color": "#ddd"
+                },
+                {
+                  "type": "text",
+                  "id": "cpE16",
+                  "name": "shortcut",
+                  "content": "⌘N",
+                  "fontSize": 12,
+                  "color": "#666"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "cpE17",
+              "name": "groupLabel_Git",
+              "content": "Git",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "color": "#666",
+              "padding": [8, 16, 4, 16]
+            },
+            {
+              "type": "frame",
+              "id": "cpE18",
+              "name": "actionRow_CommitPush",
+              "width": "fill_container",
+              "height": 36,
+              "padding": [0, 16],
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "cpE19",
+                  "content": "Commit & Push",
+                  "fontSize": 14,
+                  "color": "#ddd"
+                },
+                {
+                  "type": "text",
+                  "id": "cpE20",
+                  "name": "shortcut",
+                  "content": "",
+                  "fontSize": 12,
+                  "color": "#666"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "cpE21",
+              "name": "groupLabel_Settings",
+              "content": "Settings",
+              "fontSize": 11,
+              "fontWeight": "600",
+              "color": "#666",
+              "padding": [8, 16, 4, 16]
+            },
+            {
+              "type": "frame",
+              "id": "cpE22",
+              "name": "actionRow_OpenSettings",
+              "width": "fill_container",
+              "height": 36,
+              "padding": [0, 16],
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "cpE23",
+                  "content": "Open Settings",
+                  "fontSize": 14,
+                  "color": "#ddd"
+                },
+                {
+                  "type": "text",
+                  "id": "cpE24",
+                  "name": "shortcut",
+                  "content": "⌘,",
+                  "fontSize": 12,
+                  "color": "#666"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "cpE25",
+          "name": "Footer Hints",
+          "width": "fill_container",
+          "height": 32,
+          "padding": [0, 16],
+          "gap": 16,
+          "alignItems": "center",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "top": 1 },
+            "fill": "#ffffff15"
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "cpE26",
+              "content": "↑↓ navigate   ↵ select   esc close",
+              "fontSize": 11,
+              "color": "#555"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "cpS01",
+      "x": 620,
+      "y": 0,
+      "name": "Command Palette — Search Results (filtered)",
+      "clip": true,
+      "width": 560,
+      "height": 420,
+      "fill": "#1a1a2e",
+      "layout": "vertical",
+      "cornerRadius": 12,
+      "children": [
+        {
+          "type": "frame",
+          "id": "cpS02",
+          "name": "Search Bar",
+          "width": "fill_container",
+          "height": 52,
+          "padding": [0, 16],
+          "gap": 10,
+          "alignItems": "center",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "bottom": 1 },
+            "fill": "#ffffff15"
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "cpS03",
+              "name": "searchIcon",
+              "content": "⌘",
+              "fontSize": 14,
+              "fontWeight": "500",
+              "color": "#888"
+            },
+            {
+              "type": "text",
+              "id": "cpS04",
+              "name": "searchQuery",
+              "content": "comm",
+              "fontSize": 15,
+              "fontWeight": "400",
+              "color": "#eee"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "cpS05",
+          "name": "Filtered Results",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "padding": [8, 0],
+          "gap": 2,
+          "children": [
+            {
+              "type": "frame",
+              "id": "cpS06",
+              "name": "result_CommitPush_selected",
+              "width": "fill_container",
+              "height": 40,
+              "fill": "#4a9eff22",
+              "padding": [0, 16],
+              "alignItems": "center",
+              "cornerRadius": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "cpS07",
+                  "content": "Commit & Push",
+                  "fontSize": 14,
+                  "fontWeight": "500",
+                  "color": "#eee"
+                },
+                {
+                  "type": "frame",
+                  "id": "cpS08",
+                  "name": "spacer",
+                  "width": "fill_container",
+                  "height": 1
+                },
+                {
+                  "type": "text",
+                  "id": "cpS09",
+                  "name": "group_badge",
+                  "content": "Git",
+                  "fontSize": 11,
+                  "color": "#888"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "cpS10",
+              "name": "result_ChangeType",
+              "width": "fill_container",
+              "height": 40,
+              "padding": [0, 16],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "cpS11",
+                  "content": "Change Note Type",
+                  "fontSize": 14,
+                  "color": "#bbb"
+                },
+                {
+                  "type": "frame",
+                  "id": "cpS12",
+                  "name": "spacer",
+                  "width": "fill_container",
+                  "height": 1
+                },
+                {
+                  "type": "text",
+                  "id": "cpS13",
+                  "name": "group_badge",
+                  "content": "Note",
+                  "fontSize": 11,
+                  "color": "#888"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "cpS14",
+          "name": "Footer Hints",
+          "width": "fill_container",
+          "height": 32,
+          "padding": [0, 16],
+          "gap": 16,
+          "alignItems": "center",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "top": 1 },
+            "fill": "#ffffff15"
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "cpS15",
+              "content": "↑↓ navigate   ↵ select   esc close",
+              "fontSize": 11,
+              "color": "#555"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "cpN01",
+      "x": 0,
+      "y": 480,
+      "name": "Command Palette — No Results",
+      "clip": true,
+      "width": 560,
+      "height": 200,
+      "fill": "#1a1a2e",
+      "layout": "vertical",
+      "cornerRadius": 12,
+      "children": [
+        {
+          "type": "frame",
+          "id": "cpN02",
+          "name": "Search Bar",
+          "width": "fill_container",
+          "height": 52,
+          "padding": [0, 16],
+          "gap": 10,
+          "alignItems": "center",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "bottom": 1 },
+            "fill": "#ffffff15"
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "cpN03",
+              "name": "searchIcon",
+              "content": "⌘",
+              "fontSize": 14,
+              "fontWeight": "500",
+              "color": "#888"
+            },
+            {
+              "type": "text",
+              "id": "cpN04",
+              "name": "searchQuery",
+              "content": "xyznotfound",
+              "fontSize": 15,
+              "fontWeight": "400",
+              "color": "#eee"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "cpN05",
+          "name": "Empty State",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "alignItems": "center",
+          "justifyContent": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "cpN06",
+              "content": "No matching commands",
+              "fontSize": 13,
+              "color": "#666"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "cpN07",
+          "name": "Footer Hints",
+          "width": "fill_container",
+          "height": 32,
+          "padding": [0, 16],
+          "gap": 16,
+          "alignItems": "center",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "top": 1 },
+            "fill": "#ffffff15"
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "cpN08",
+              "content": "↑↓ navigate   ↵ select   esc close",
+              "fontSize": 11,
+              "color": "#555"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {}
+}
