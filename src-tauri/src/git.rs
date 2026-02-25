@@ -729,4 +729,176 @@ mod tests {
             "Error should mention 'nothing to commit'"
         );
     }
+
+    #[test]
+    fn test_has_remote_returns_false_for_local_repo() {
+        let dir = setup_git_repo();
+        let vault = dir.path();
+        let vp = vault.to_str().unwrap();
+
+        // A fresh local repo has no remote
+        assert!(!has_remote(vp).unwrap());
+    }
+
+    #[test]
+    fn test_has_remote_returns_true_when_remote_exists() {
+        let dir = setup_git_repo();
+        let vault = dir.path();
+        let vp = vault.to_str().unwrap();
+
+        Command::new("git")
+            .args(["remote", "add", "origin", "https://example.com/repo.git"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+
+        assert!(has_remote(vp).unwrap());
+    }
+
+    #[test]
+    fn test_git_pull_no_remote_returns_no_remote() {
+        let dir = setup_git_repo();
+        let vault = dir.path();
+        let vp = vault.to_str().unwrap();
+
+        fs::write(vault.join("note.md"), "# Note\n").unwrap();
+        git_commit(vp, "initial").unwrap();
+
+        let result = git_pull(vp).unwrap();
+        assert_eq!(result.status, "no_remote");
+        assert!(result.updated_files.is_empty());
+        assert!(result.conflict_files.is_empty());
+    }
+
+    /// Set up a bare "remote" and a clone that acts as the working vault.
+    fn setup_remote_pair() -> (TempDir, TempDir, TempDir) {
+        let bare_dir = TempDir::new().unwrap();
+        let bare = bare_dir.path();
+
+        Command::new("git")
+            .args(["init", "--bare"])
+            .current_dir(bare)
+            .output()
+            .unwrap();
+
+        let clone_a_dir = TempDir::new().unwrap();
+        Command::new("git")
+            .args(["clone", bare.to_str().unwrap(), "."])
+            .current_dir(clone_a_dir.path())
+            .output()
+            .unwrap();
+        for cmd in &[
+            &["config", "user.email", "a@test.com"][..],
+            &["config", "user.name", "User A"][..],
+        ] {
+            Command::new("git")
+                .args(*cmd)
+                .current_dir(clone_a_dir.path())
+                .output()
+                .unwrap();
+        }
+
+        let clone_b_dir = TempDir::new().unwrap();
+        Command::new("git")
+            .args(["clone", bare.to_str().unwrap(), "."])
+            .current_dir(clone_b_dir.path())
+            .output()
+            .unwrap();
+        for cmd in &[
+            &["config", "user.email", "b@test.com"][..],
+            &["config", "user.name", "User B"][..],
+        ] {
+            Command::new("git")
+                .args(*cmd)
+                .current_dir(clone_b_dir.path())
+                .output()
+                .unwrap();
+        }
+
+        (bare_dir, clone_a_dir, clone_b_dir)
+    }
+
+    #[test]
+    fn test_git_pull_up_to_date() {
+        let (_bare, clone_a, _clone_b) = setup_remote_pair();
+        let vp_a = clone_a.path().to_str().unwrap();
+
+        // Push a commit from A
+        fs::write(clone_a.path().join("note.md"), "# Note\n").unwrap();
+        git_commit(vp_a, "initial").unwrap();
+        git_push(vp_a).unwrap();
+
+        // Pulling again from A should be up to date
+        let result = git_pull(vp_a).unwrap();
+        assert_eq!(result.status, "up_to_date");
+    }
+
+    #[test]
+    fn test_git_pull_updated_files() {
+        let (_bare, clone_a, clone_b) = setup_remote_pair();
+        let vp_a = clone_a.path().to_str().unwrap();
+        let vp_b = clone_b.path().to_str().unwrap();
+
+        // A pushes a commit
+        fs::write(clone_a.path().join("note.md"), "# Note\n").unwrap();
+        git_commit(vp_a, "initial").unwrap();
+        git_push(vp_a).unwrap();
+
+        // B pulls to get initial
+        git_pull(vp_b).unwrap();
+
+        // A makes a change and pushes
+        fs::write(clone_a.path().join("note.md"), "# Updated Note\n").unwrap();
+        git_commit(vp_a, "update note").unwrap();
+        git_push(vp_a).unwrap();
+
+        // B pulls and should see the update
+        let result = git_pull(vp_b).unwrap();
+        assert_eq!(result.status, "updated");
+        assert!(result.conflict_files.is_empty());
+    }
+
+    #[test]
+    fn test_get_conflict_files_empty_when_clean() {
+        let dir = setup_git_repo();
+        let vault = dir.path();
+        let vp = vault.to_str().unwrap();
+
+        fs::write(vault.join("note.md"), "# Note\n").unwrap();
+        git_commit(vp, "initial").unwrap();
+
+        let conflicts = get_conflict_files(vp).unwrap();
+        assert!(conflicts.is_empty());
+    }
+
+    #[test]
+    fn test_parse_updated_files_diffstat() {
+        let stdout = " Fast-forward\n note.md | 2 +-\n project/plan.md | 4 ++--\n 2 files changed\n";
+        let files = parse_updated_files(stdout);
+        assert_eq!(files, vec!["note.md", "project/plan.md"]);
+    }
+
+    #[test]
+    fn test_parse_updated_files_empty() {
+        let stdout = "Already up to date.\n";
+        let files = parse_updated_files(stdout);
+        assert!(files.is_empty());
+    }
+
+    #[test]
+    fn test_git_pull_result_serialization() {
+        let result = GitPullResult {
+            status: "updated".to_string(),
+            message: "2 file(s) updated".to_string(),
+            updated_files: vec!["note.md".to_string()],
+            conflict_files: vec![],
+        };
+        let json = serde_json::to_string(&result).unwrap();
+        assert!(json.contains("\"updatedFiles\""));
+        assert!(json.contains("\"conflictFiles\""));
+
+        let parsed: GitPullResult = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.status, "updated");
+        assert_eq!(parsed.updated_files.len(), 1);
+    }
 }
