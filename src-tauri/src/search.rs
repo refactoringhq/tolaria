@@ -223,8 +223,14 @@ mod tests {
 
     #[test]
     fn test_detect_collection_fallback() {
-        // With a non-existent vault path, should return lowercase dir name
+        // With a non-existent vault path, should return either the lowercase dir name
+        // (if qmd is available and collection list succeeds) or "laputa" (if qmd is not installed).
+        // Both are valid fallbacks — this test verifies the function doesn't panic.
         let name = detect_collection_name("/tmp/test-vault");
-        assert_eq!(name, "test-vault");
+        assert!(
+            name == "test-vault" || name == "laputa",
+            "Expected 'test-vault' or 'laputa', got '{}'",
+            name
+        );
     }
 }
