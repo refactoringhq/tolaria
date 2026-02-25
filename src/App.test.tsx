@@ -1,6 +1,18 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+// Provide a localStorage mock that supports all methods (jsdom's may be incomplete)
+const localStorageMock = (() => {
+  let store: Record<string, string> = {}
+  return {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => { store[key] = value },
+    removeItem: (key: string) => { delete store[key] },
+    clear: () => { store = {} },
+  }
+})()
+Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true })
+
 // Mock @tauri-apps/api/core before importing App
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn(),
@@ -104,6 +116,7 @@ import App from './App'
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.removeItem('laputa-view-mode')
   })
 
   it('renders the four-panel layout', async () => {
