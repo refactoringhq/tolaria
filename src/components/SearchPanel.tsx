@@ -1,8 +1,10 @@
 import { useRef, useEffect, useCallback } from 'react'
+import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import type { SearchResult, VaultEntry } from '../types'
 import { useUnifiedSearch } from '../hooks/useUnifiedSearch'
+import { getTypeColor, buildTypeEntryMap } from '../utils/typeColors'
 
 interface SearchPanelProps {
   open: boolean
@@ -59,9 +61,14 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
     return () => window.removeEventListener('keydown', handleKey)
   }, [open, results, selectedIndex, handleSelect, setSelectedIndex, onClose])
 
-  if (!open) return null
+  const typeEntryMap = useMemo(() => buildTypeEntryMap(entries), [entries])
+  const entryLookup = useMemo(() => {
+    const map = new Map<string, { isA: string | null }>()
+    for (const e of entries) map.set(e.path, { isA: e.isA })
+    return map
+  }, [entries])
 
-  const entryTypeMap = new Map(entries.map(e => [e.path, e.isA]))
+  if (!open) return null
 
   return (
     <div
@@ -84,7 +91,8 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
           selectedIndex={selectedIndex}
           loading={loading}
           elapsedMs={elapsedMs}
-          entryTypeMap={entryTypeMap}
+          entryLookup={entryLookup}
+          typeEntryMap={typeEntryMap}
           listRef={listRef}
           onSelect={handleSelect}
           onHover={setSelectedIndex}
@@ -140,14 +148,15 @@ interface SearchContentProps {
   selectedIndex: number
   loading: boolean
   elapsedMs: number | null
-  entryTypeMap: Map<string, string | null>
+  entryLookup: Map<string, { isA: string | null }>
+  typeEntryMap: Record<string, VaultEntry>
   listRef: React.RefObject<HTMLDivElement | null>
   onSelect: (result: SearchResult) => void
   onHover: (index: number) => void
 }
 
 function SearchContent({
-  query, results, selectedIndex, loading, elapsedMs, entryTypeMap, listRef, onSelect, onHover,
+  query, results, selectedIndex, loading, elapsedMs, entryLookup, typeEntryMap, listRef, onSelect, onHover,
 }: SearchContentProps) {
   return (
     <div className="flex-1 overflow-y-auto">
@@ -181,7 +190,9 @@ function SearchContent({
           </div>
           <div ref={listRef}>
             {results.map((result, i) => {
-              const noteType = entryTypeMap.get(result.path) ?? result.noteType
+              const isA = entryLookup.get(result.path)?.isA ?? result.noteType
+              const noteType = isA && isA !== 'Note' ? isA : null
+              const typeColor = noteType ? getTypeColor(isA, typeEntryMap[isA ?? '']?.color) : undefined
               return (
                 <div
                   key={result.path}
@@ -195,7 +206,7 @@ function SearchContent({
                   <div className="flex items-center gap-2">
                     <span className="text-[13px] font-medium text-foreground">{result.title}</span>
                     {noteType && (
-                      <Badge variant="secondary" className="text-[10px]">
+                      <Badge variant="secondary" className="text-[10px]" style={typeColor ? { color: typeColor } : undefined}>
                         {noteType}
                       </Badge>
                     )}

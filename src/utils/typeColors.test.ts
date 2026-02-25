@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { getTypeColor, getTypeLightColor } from './typeColors'
+import { getTypeColor, getTypeLightColor, buildTypeEntryMap } from './typeColors'
+import type { VaultEntry } from '../types'
 
 describe('getTypeColor', () => {
   it('returns hardcoded color for known types', () => {
@@ -45,5 +46,33 @@ describe('getTypeLightColor', () => {
 
   it('uses custom color key for light variant', () => {
     expect(getTypeLightColor('Recipe', 'purple')).toBe('var(--accent-purple-light)')
+  })
+})
+
+const baseEntry: VaultEntry = {
+  path: '', filename: '', title: '', isA: null, aliases: [], belongsTo: [], relatedTo: [],
+  status: null, owner: null, cadence: null, archived: false, trashed: false, trashedAt: null,
+  modifiedAt: null, createdAt: null, fileSize: 0, snippet: '', relationships: {},
+  icon: null, color: null, order: null, outgoingLinks: [],
+}
+
+describe('buildTypeEntryMap', () => {
+  it('indexes Type entries by title', () => {
+    const entries: VaultEntry[] = [
+      { ...baseEntry, title: 'Recipe', isA: 'Type', color: 'orange', icon: 'cooking-pot' },
+      { ...baseEntry, title: 'My Note', isA: 'Note' },
+      { ...baseEntry, title: 'Evergreen', isA: 'Type', color: 'green', icon: 'leaf' },
+    ]
+    const map = buildTypeEntryMap(entries)
+    expect(Object.keys(map)).toEqual(['Recipe', 'Evergreen'])
+    expect(map['Recipe'].color).toBe('orange')
+    expect(map['Evergreen'].icon).toBe('leaf')
+  })
+
+  it('returns empty map when no Type entries exist', () => {
+    const entries: VaultEntry[] = [
+      { ...baseEntry, title: 'A Note', isA: 'Note' },
+    ]
+    expect(buildTypeEntryMap(entries)).toEqual({})
   })
 })

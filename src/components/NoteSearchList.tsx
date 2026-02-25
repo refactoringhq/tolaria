@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, type ComponentType, type SVGAttributes } from 'react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 
@@ -6,6 +6,7 @@ export interface NoteSearchResultItem {
   title: string
   noteType?: string
   typeColor?: string
+  TypeIcon?: ComponentType<SVGAttributes<SVGSVGElement>>
 }
 
 interface NoteSearchListProps<T extends NoteSearchResultItem> {
@@ -57,8 +58,16 @@ export function NoteSearchList<T extends NoteSearchResultItem>({
           onClick={() => onItemClick(item, i)}
           onMouseEnter={() => onItemHover?.(i)}
         >
-          <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-            {item.title}
+          <span className="flex min-w-0 flex-1 items-center gap-1.5 truncate text-sm text-foreground">
+            {item.TypeIcon && (
+              <item.TypeIcon
+                width={14}
+                height={14}
+                className="shrink-0"
+                style={item.typeColor ? { color: item.typeColor } : undefined}
+              />
+            )}
+            <span className="truncate">{item.title}</span>
           </span>
           {item.noteType && (
             <Badge

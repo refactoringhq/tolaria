@@ -17,7 +17,8 @@ import { splitFrontmatter, preProcessWikilinks, injectWikilinks, restoreWikilink
 import { preFilterWikilinks, deduplicateByPath, disambiguateTitles, MAX_RESULTS, MIN_QUERY_LENGTH } from '../utils/wikilinkSuggestions'
 import { filterPersonMentions, PERSON_MENTION_MIN_QUERY } from '../utils/personMentionSuggestions'
 import { resolveWikilinkColor as resolveColor } from '../utils/wikilinkColors'
-import { getTypeColor } from '../utils/typeColors'
+import { getTypeColor, buildTypeEntryMap } from '../utils/typeColors'
+import { getTypeIcon } from './NoteItem'
 import { WikilinkSuggestionMenu, type WikilinkSuggestionItem } from './WikilinkSuggestionMenu'
 import './Editor.css'
 import './EditorTheme.css'
@@ -138,6 +139,8 @@ function SingleEditorView({ editor, entries, onNavigateWikilink, onChange }: { e
     return () => container.removeEventListener('click', handler as EventListener, true)
   }, [editor])
 
+  const typeEntryMap = useMemo(() => buildTypeEntryMap(entries), [entries])
+
   const baseItems = useMemo(
     () => deduplicateByPath(entries.map(entry => ({
       title: entry.title,
@@ -167,12 +170,17 @@ function SingleEditorView({ editor, entries, onNavigateWikilink, onChange }: { e
     }))
     const filtered = filterSuggestionItems(items, query).slice(0, MAX_RESULTS)
     const final = disambiguateTitles(deduplicateByPath(filtered))
-    return final.map(({ group, ...rest }) => ({
-      ...rest,
-      noteType: group,
-      typeColor: getTypeColor(group),
-    }))
-  }, [baseItems, editor])
+    return final.map(({ group, ...rest }) => {
+      const noteType = group !== 'Note' ? group : undefined
+      const te = typeEntryMap[group]
+      return {
+        ...rest,
+        noteType,
+        typeColor: noteType ? getTypeColor(group, te?.color) : undefined,
+        TypeIcon: noteType ? getTypeIcon(group, te?.icon) : undefined,
+      }
+    })
+  }, [baseItems, editor, typeEntryMap])
 
   const getPersonMentionItems = useCallback(async (query: string): Promise<WikilinkSuggestionItem[]> => {
     if (query.length < PERSON_MENTION_MIN_QUERY) return []
@@ -192,12 +200,17 @@ function SingleEditorView({ editor, entries, onNavigateWikilink, onChange }: { e
     }))
     const filtered = filterSuggestionItems(items, query).slice(0, MAX_RESULTS)
     const final = disambiguateTitles(deduplicateByPath(filtered))
-    return final.map(({ group, ...rest }) => ({
-      ...rest,
-      noteType: group,
-      typeColor: getTypeColor(group),
-    }))
-  }, [baseItems, editor])
+    return final.map(({ group, ...rest }) => {
+      const noteType = group !== 'Note' ? group : undefined
+      const te = typeEntryMap[group]
+      return {
+        ...rest,
+        noteType,
+        typeColor: noteType ? getTypeColor(group, te?.color) : undefined,
+        TypeIcon: noteType ? getTypeIcon(group, te?.icon) : undefined,
+      }
+    })
+  }, [baseItems, editor, typeEntryMap])
 
   return (
     <div ref={containerRef} className={`editor__blocknote-container${isDragOver ? ' editor__blocknote-container--drag-over' : ''}`} style={cssVars as React.CSSProperties}>

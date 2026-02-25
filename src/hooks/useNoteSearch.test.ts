@@ -171,4 +171,21 @@ describe('useNoteSearch', () => {
     })
     expect(preventDefaultSpy).not.toHaveBeenCalled()
   })
+
+  it('resolves custom type color from Type entries', () => {
+    const withTypes: VaultEntry[] = [
+      makeEntry({ path: '/vault/t/recipe.md', title: 'Recipe', isA: 'Type', color: 'orange', icon: 'cooking-pot' }),
+      makeEntry({ path: '/vault/pasta.md', title: 'Pasta', isA: 'Recipe', modifiedAt: 1700000010 }),
+      makeEntry({ path: '/vault/proj.md', title: 'My Project', isA: 'Project', modifiedAt: 1700000009 }),
+    ]
+    const { result } = renderHook(() => useNoteSearch(withTypes, ''))
+    const pasta = result.current.results.find(r => r.title === 'Pasta')
+    expect(pasta?.noteType).toBe('Recipe')
+    expect(pasta?.typeColor).toBe('var(--accent-orange)')
+    expect(pasta?.TypeIcon).toBeDefined()
+    // Built-in type still works
+    const project = result.current.results.find(r => r.title === 'My Project')
+    expect(project?.typeColor).toBe('var(--accent-red)')
+    expect(project?.TypeIcon).toBeDefined()
+  })
 })

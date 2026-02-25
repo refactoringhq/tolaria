@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react'
 import type { VaultEntry, SidebarSelection } from '../types'
 import { resolveIcon } from '../utils/iconRegistry'
+import { buildTypeEntryMap } from '../utils/typeColors'
 import { TypeCustomizePopover } from './TypeCustomizePopover'
 import { useSectionVisibility } from '../hooks/useSectionVisibility'
 import {
@@ -60,12 +61,6 @@ function useOutsideClick(ref: React.RefObject<HTMLElement | null>, isOpen: boole
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [ref, isOpen, onClose])
-}
-
-function buildTypeEntryMap(entries: VaultEntry[]): Record<string, VaultEntry> {
-  const map: Record<string, VaultEntry> = {}
-  for (const e of entries) { if (e.isA === 'Type') map[e.title] = e }
-  return map
 }
 
 function applyOverrides(typeEntryMap: Record<string, VaultEntry>): SectionGroup[] {

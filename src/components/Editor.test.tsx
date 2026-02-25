@@ -390,11 +390,11 @@ describe('wikilink autocomplete', () => {
     mockFilterSuggestionItems.mockImplementation((items: unknown[]) => items)
   })
 
-  it('always includes noteType for every item, including default Note type (regression)', async () => {
+  it('shows correct noteType and color for typed entries, neutral for untyped', async () => {
     const mixedEntries: VaultEntry[] = [
-      { ...mockEntry, title: 'My Project', filename: 'proj.md', path: '/vault/proj.md', isA: 'Project', aliases: [] },
-      { ...mockEntry, title: 'Plain Note', filename: 'plain.md', path: '/vault/plain.md', isA: null, aliases: [] },
-      { ...mockEntry, title: 'Explicit Note', filename: 'explicit.md', path: '/vault/explicit.md', isA: 'Note', aliases: [] },
+      { ...mockEntry, title: 'Test Project', filename: 'proj.md', path: '/vault/proj.md', isA: 'Project', aliases: [] },
+      { ...mockEntry, title: 'Test Plain', filename: 'plain.md', path: '/vault/plain.md', isA: null, aliases: [] },
+      { ...mockEntry, title: 'Test Explicit', filename: 'explicit.md', path: '/vault/explicit.md', isA: 'Note', aliases: [] },
     ]
     capturedGetItems = null
     mockFilterSuggestionItems.mockImplementation((items: unknown[]) => items)
@@ -406,16 +406,21 @@ describe('wikilink autocomplete', () => {
         entries={mixedEntries}
       />
     )
-    const items = await capturedGetItems!('Note')
-    // Every item must have a defined noteType — none should be blank
-    for (const item of items) {
-      expect(item.noteType).toBeTruthy()
-      expect(item.typeColor).toBeTruthy()
-    }
-    // Default notes (isA: null) should show 'Note' as their type
-    const plainNote = items.find((i: { title: string }) => i.title === 'Plain Note')
+    const items = await capturedGetItems!('Test')
+    // Typed entries should have noteType and color
+    const project = items.find((i: { title: string }) => i.title === 'Test Project')
+    expect(project).toBeDefined()
+    expect(project!.noteType).toBe('Project')
+    expect(project!.typeColor).toBeTruthy()
+    // Untyped entries (isA: null or 'Note') should have no noteType (grey/neutral)
+    const plainNote = items.find((i: { title: string }) => i.title === 'Test Plain')
     expect(plainNote).toBeDefined()
-    expect(plainNote!.noteType).toBe('Note')
+    expect(plainNote!.noteType).toBeUndefined()
+    expect(plainNote!.typeColor).toBeUndefined()
+    const explicitNote = items.find((i: { title: string }) => i.title === 'Test Explicit')
+    expect(explicitNote).toBeDefined()
+    expect(explicitNote!.noteType).toBeUndefined()
+    expect(explicitNote!.typeColor).toBeUndefined()
     mockFilterSuggestionItems.mockImplementation((items: unknown[]) => items)
   })
 

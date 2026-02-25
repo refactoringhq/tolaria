@@ -3,6 +3,15 @@
  * Single source of truth for type→color mapping used across Sidebar, NoteList, and Inspector.
  */
 
+import type { VaultEntry } from '../types'
+
+/** Builds a map from type name → Type document entry (for custom color/icon lookup) */
+export function buildTypeEntryMap(entries: VaultEntry[]): Record<string, VaultEntry> {
+  const map: Record<string, VaultEntry> = {}
+  for (const e of entries) { if (e.isA === 'Type') map[e.title] = e }
+  return map
+}
+
 const TYPE_COLOR_MAP: Record<string, string> = {
   Project: 'var(--accent-red)',
   Experiment: 'var(--accent-red)',

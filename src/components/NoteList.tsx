@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import {
   MagnifyingGlass, Plus, CaretDown, CaretRight, Warning,
 } from '@phosphor-icons/react'
-import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
+import { getTypeColor, getTypeLightColor, buildTypeEntryMap } from '../utils/typeColors'
 import { NoteItem, getTypeIcon } from './NoteItem'
 import { SortDropdown } from './SortDropdown'
 import {
@@ -106,13 +106,7 @@ function resolveHeaderTitle(selection: SidebarSelection, typeDocument: VaultEntr
 }
 
 function useTypeEntryMap(entries: VaultEntry[]) {
-  return useMemo(() => {
-    const map: Record<string, VaultEntry> = {}
-    for (const e of entries) {
-      if (e.isA === 'Type') map[e.title] = e
-    }
-    return map
-  }, [entries])
+  return useMemo(() => buildTypeEntryMap(entries), [entries])
 }
 
 // --- View sub-components ---

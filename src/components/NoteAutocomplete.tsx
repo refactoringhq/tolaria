@@ -1,6 +1,7 @@
-import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
+import { useState, useRef, useCallback, useMemo, useEffect, type ComponentType, type SVGAttributes } from 'react'
 import type { VaultEntry } from '../types'
 import { getTypeColor } from '../utils/typeColors'
+import { getTypeIcon } from './NoteItem'
 import './WikilinkSuggestionMenu.css'
 
 const MIN_QUERY_LENGTH = 2
@@ -22,6 +23,7 @@ interface MatchedEntry {
   title: string
   noteType?: string
   typeColor?: string
+  TypeIcon?: ComponentType<SVGAttributes<SVGSVGElement>>
 }
 
 function matchEntries(entries: VaultEntry[], typeEntryMap: Record<string, VaultEntry>, query: string): MatchedEntry[] {
@@ -39,6 +41,7 @@ function matchEntries(entries: VaultEntry[], typeEntryMap: Record<string, VaultE
       title: e.title,
       noteType,
       typeColor: noteType ? getTypeColor(isA, te?.color) : undefined,
+      TypeIcon: noteType ? getTypeIcon(isA, te?.icon) : undefined,
     }
   })
 }
@@ -135,7 +138,10 @@ export function NoteAutocomplete({ entries, typeEntryMap, value, onChange, onSel
               onClick={() => handleSelect(item.title)}
               onMouseEnter={() => setSelectedIndex(index)}
             >
-              <span className="wikilink-menu__title">{item.title}</span>
+              <span className="wikilink-menu__title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {item.TypeIcon && <item.TypeIcon width={14} height={14} style={{ color: item.typeColor, flexShrink: 0 }} />}
+                {item.title}
+              </span>
               {item.noteType && (
                 <span className="wikilink-menu__type" style={{ color: item.typeColor }}>
                   {item.noteType}

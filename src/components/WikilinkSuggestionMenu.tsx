@@ -1,3 +1,4 @@
+import type { ComponentType, SVGAttributes } from 'react'
 import { NoteSearchList } from './NoteSearchList'
 import './WikilinkSuggestionMenu.css'
 
@@ -6,6 +7,7 @@ export interface WikilinkSuggestionItem {
   onItemClick: () => void
   noteType?: string
   typeColor?: string
+  TypeIcon?: ComponentType<SVGAttributes<SVGSVGElement>>
   aliases?: string[]
   entryTitle?: string
   path?: string
