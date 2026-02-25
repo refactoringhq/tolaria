@@ -182,4 +182,55 @@ describe('App', () => {
     const appShell = document.querySelector('.app-shell')
     expect(appShell).toBeInTheDocument()
   })
+
+  it('Cmd+1 hides sidebar and note list (editor-only mode)', async () => {
+    render(<App />)
+    await waitFor(() => {
+      expect(screen.getByText('All Notes')).toBeInTheDocument()
+    })
+
+    // All panels visible by default
+    expect(document.querySelector('.app__sidebar')).toBeInTheDocument()
+    expect(document.querySelector('.app__note-list')).toBeInTheDocument()
+
+    // Cmd+1 → editor-only
+    fireEvent.keyDown(window, { key: '1', metaKey: true })
+    await waitFor(() => {
+      expect(document.querySelector('.app__sidebar')).not.toBeInTheDocument()
+      expect(document.querySelector('.app__note-list')).not.toBeInTheDocument()
+    })
+  })
+
+  it('Cmd+2 shows editor + note list (sidebar hidden)', async () => {
+    render(<App />)
+    await waitFor(() => {
+      expect(screen.getByText('All Notes')).toBeInTheDocument()
+    })
+
+    fireEvent.keyDown(window, { key: '2', metaKey: true })
+    await waitFor(() => {
+      expect(document.querySelector('.app__sidebar')).not.toBeInTheDocument()
+      expect(document.querySelector('.app__note-list')).toBeInTheDocument()
+    })
+  })
+
+  it('Cmd+3 restores all panels after Cmd+1', async () => {
+    render(<App />)
+    await waitFor(() => {
+      expect(screen.getByText('All Notes')).toBeInTheDocument()
+    })
+
+    // Switch to editor-only first
+    fireEvent.keyDown(window, { key: '1', metaKey: true })
+    await waitFor(() => {
+      expect(document.querySelector('.app__sidebar')).not.toBeInTheDocument()
+    })
+
+    // Cmd+3 → all panels
+    fireEvent.keyDown(window, { key: '3', metaKey: true })
+    await waitFor(() => {
+      expect(document.querySelector('.app__sidebar')).toBeInTheDocument()
+      expect(document.querySelector('.app__note-list')).toBeInTheDocument()
+    })
+  })
 })
