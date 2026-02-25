@@ -183,6 +183,11 @@ function navigateWikilink(entries: VaultEntry[], target: string, selectNote: (e:
   else console.warn(`Navigation target not found: ${target}`)
 }
 
+/** Dispatch focus-editor event with perf timing marker. */
+function signalFocusEditor(): void {
+  window.dispatchEvent(new CustomEvent('laputa:focus-editor', { detail: { t0: performance.now() } }))
+}
+
 /** Persist to disk; on failure, call the revert handler. */
 function persistOptimistic(path: string, content: string, onFail: (p: string) => void): void {
   persistNewNote(path, content).catch(() => onFail(path))
@@ -275,7 +280,7 @@ export function useNoteActions(config: NoteActionsConfig) {
     const title = generateUntitledName(entries, noteType, pendingNamesRef.current)
     pendingNamesRef.current.add(title)
     handleCreateNote(title, noteType)
-    window.dispatchEvent(new CustomEvent('laputa:focus-editor'))
+    signalFocusEditor()
     setTimeout(() => pendingNamesRef.current.delete(title), 500)
   }, [entries, handleCreateNote])
 

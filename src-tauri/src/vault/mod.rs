@@ -371,9 +371,16 @@ fn validate_save_path(file_path: &Path, display_path: &str) -> Result<(), String
     Ok(())
 }
 
-/// Write content to a note file. Validates parent directory and read-only status.
+/// Write content to a note file. Creates parent directory if needed, validates path,
+/// then writes content to disk.
 pub fn save_note_content(path: &str, content: &str) -> Result<(), String> {
     let file_path = Path::new(path);
+    if let Some(parent) = file_path.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create directory {}: {}", parent.display(), e))?;
+        }
+    }
     validate_save_path(file_path, path)?;
     fs::write(file_path, content).map_err(|e| format!("Failed to save {}: {}", path, e))
 }
@@ -958,6 +965,32 @@ References:
         let content = "# Note\n\nSee [[project/alpha|Alpha Project]] for details.";
         let entry = parse_test_entry(&dir, "test.md", content);
         assert!(entry.outgoing_links.contains(&"project/alpha".to_string()));
+    }
+
+    // --- save_note_content tests ---
+
+    #[test]
+    fn test_save_note_content_creates_parent_directory() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("new-type/untitled-note.md");
+        let content = "---\ntitle: Untitled note\n---\n# Untitled note\n\n";
+
+        assert!(!path.parent().unwrap().exists());
+        save_note_content(path.to_str().unwrap(), content).unwrap();
+
+        assert!(path.exists());
+        assert_eq!(fs::read_to_string(&path).unwrap(), content);
+    }
+
+    #[test]
+    fn test_save_note_content_existing_directory() {
+        let dir = TempDir::new().unwrap();
+        fs::create_dir_all(dir.path().join("note")).unwrap();
+        let path = dir.path().join("note/test.md");
+        let content = "# Test\n";
+
+        save_note_content(path.to_str().unwrap(), content).unwrap();
+        assert_eq!(fs::read_to_string(&path).unwrap(), content);
     }
 
     // Frontmatter update/delete tests are in frontmatter.rs
