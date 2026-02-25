@@ -9,6 +9,9 @@ title: Build Laputa App
 type: Project
 status: Active
 owner: Luca Rossi
+deadline: 2026-03-31
+published: true
+archived: false
 tags: [Tauri, React, TypeScript, CodeMirror]
 tools: [Vite, Vitest, Playwright]
 url: https://github.com/lucaong/laputa-app

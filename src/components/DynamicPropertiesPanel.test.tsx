@@ -3,6 +3,20 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { DynamicPropertiesPanel, containsWikilinks } from './DynamicPropertiesPanel'
 import type { VaultEntry } from '../types'
 
+// Mock localStorage (jsdom's may be incomplete)
+const localStorageMock = (() => {
+  let store: Record<string, string> = {}
+  return {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: vi.fn((key: string, value: string) => { store[key] = value }),
+    removeItem: (key: string) => { delete store[key] },
+    clear: () => { store = {} },
+    get length() { return Object.keys(store).length },
+    key: (i: number) => Object.keys(store)[i] ?? null,
+  }
+})()
+Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true })
+
 // Radix Select needs ResizeObserver and pointer/scroll APIs in JSDOM
 beforeAll(() => {
   global.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} }
@@ -10,6 +24,8 @@ beforeAll(() => {
   Element.prototype.hasPointerCapture = () => false
   Element.prototype.setPointerCapture = vi.fn()
   Element.prototype.releasePointerCapture = vi.fn()
+  // showPicker is not available in JSDOM
+  HTMLInputElement.prototype.showPicker = vi.fn()
 })
 
 const makeEntry = (overrides: Partial<VaultEntry> = {}): VaultEntry => ({
@@ -656,6 +672,165 @@ describe('DynamicPropertiesPanel', () => {
       )
       fireEvent.click(screen.getByTestId('url-edit-btn'))
       expect(screen.getByDisplayValue('https://example.com')).toBeInTheDocument()
+    })
+  })
+
+  describe('smart property display — date', () => {
+    it('renders date property with friendly format', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ deadline: '2026-03-31' }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      expect(screen.getByTestId('date-display')).toBeInTheDocument()
+      expect(screen.getByText('Mar 31, 2026')).toBeInTheDocument()
+    })
+
+    it('renders hidden date picker input', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ deadline: '2026-03-31' }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      expect(screen.getByTestId('date-picker-input')).toBeInTheDocument()
+    })
+
+    it('calls onUpdateProperty when date picker value changes', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ deadline: '2026-03-31' }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      const dateInput = screen.getByTestId('date-picker-input')
+      fireEvent.change(dateInput, { target: { value: '2026-04-15' } })
+      expect(onUpdateProperty).toHaveBeenCalledWith('deadline', '2026-04-15')
+    })
+  })
+
+  describe('smart property display — status auto-detection', () => {
+    it('renders status badge for property named Status', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ Status: 'Active' }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      expect(screen.getByTestId('status-badge')).toBeInTheDocument()
+    })
+
+    it('renders status badge for known status values', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ phase: 'Draft' }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      expect(screen.getByTestId('status-badge')).toBeInTheDocument()
+    })
+  })
+
+  describe('smart property display — boolean', () => {
+    it('renders boolean toggle for true values', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ published: true }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      expect(screen.getByTestId('boolean-toggle')).toBeInTheDocument()
+      expect(screen.getByText('\u2713 Yes')).toBeInTheDocument()
+    })
+
+    it('renders boolean toggle for false values', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ archived: false }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      expect(screen.getByTestId('boolean-toggle')).toBeInTheDocument()
+      expect(screen.getByText('\u2717 No')).toBeInTheDocument()
+    })
+  })
+
+  describe('display mode override', () => {
+    beforeEach(() => {
+      localStorageMock.clear()
+    })
+
+    it('renders display mode trigger on property rows', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ cadence: 'Weekly' }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      expect(screen.getByTestId('display-mode-trigger')).toBeInTheDocument()
+    })
+
+    it('opens display mode menu on trigger click', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ cadence: 'Weekly' }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      fireEvent.click(screen.getByTestId('display-mode-trigger'))
+      expect(screen.getByTestId('display-mode-menu')).toBeInTheDocument()
+      expect(screen.getByTestId('display-mode-option-text')).toBeInTheDocument()
+      expect(screen.getByTestId('display-mode-option-date')).toBeInTheDocument()
+      expect(screen.getByTestId('display-mode-option-boolean')).toBeInTheDocument()
+      expect(screen.getByTestId('display-mode-option-status')).toBeInTheDocument()
+      expect(screen.getByTestId('display-mode-option-url')).toBeInTheDocument()
+    })
+
+    it('persists override to localStorage when mode selected', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ cadence: 'Weekly' }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      fireEvent.click(screen.getByTestId('display-mode-trigger'))
+      fireEvent.click(screen.getByTestId('display-mode-option-status'))
+      const stored = JSON.parse(localStorageMock.getItem('laputa:display-mode-overrides') ?? '{}')
+      expect(stored.cadence).toBe('status')
+    })
+
+    it('overrides rendering to status badge when status mode selected', () => {
+      localStorageMock.setItem('laputa:display-mode-overrides', JSON.stringify({ cadence: 'status' }))
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ cadence: 'Weekly' }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      expect(screen.getByTestId('status-badge')).toBeInTheDocument()
     })
   })
 })

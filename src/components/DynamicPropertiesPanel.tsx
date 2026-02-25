@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react'
+import { useMemo, useState, useCallback, useRef } from 'react'
 import type { VaultEntry } from '../types'
 import type { FrontmatterValue } from './Inspector'
 import type { ParsedFrontmatter } from '../utils/frontmatter'
@@ -8,6 +8,16 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 import { countWords } from '../utils/wikilinks'
+import {
+  type PropertyDisplayMode,
+  getEffectiveDisplayMode,
+  formatDateValue,
+  toISODate,
+  loadDisplayModeOverrides,
+  saveDisplayModeOverride,
+  removeDisplayModeOverride,
+  detectPropertyType,
+} from '../utils/propertyTypes'
 
 const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
   Active: { bg: 'var(--accent-green-light)', color: 'var(--accent-green)' },
@@ -20,6 +30,11 @@ const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
   'Not started': { bg: 'var(--accent-blue-light)', color: 'var(--muted-foreground)' },
   Draft: { bg: 'var(--accent-yellow-light)', color: 'var(--accent-yellow)' },
   Mixed: { bg: 'var(--accent-yellow-light)', color: 'var(--accent-yellow)' },
+  Published: { bg: 'var(--accent-green-light)', color: 'var(--accent-green)' },
+  'In progress': { bg: 'var(--accent-purple-light)', color: 'var(--accent-purple)' },
+  Blocked: { bg: 'var(--accent-red-light)', color: 'var(--accent-red)' },
+  Cancelled: { bg: 'var(--accent-red-light)', color: 'var(--accent-red)' },
+  Pending: { bg: 'var(--accent-yellow-light)', color: 'var(--accent-yellow)' },
 }
 
 const DEFAULT_STATUS_STYLE = { bg: 'var(--accent-blue-light)', color: 'var(--muted-foreground)' }
@@ -68,14 +83,6 @@ function formatFileSize(bytes: number): string {
   return `${mb.toFixed(1)} MB`
 }
 
-function isStatusKey(key: string): boolean {
-  return key === 'Status' || key.includes('Status')
-}
-
-function isDateKey(key: string): boolean {
-  return key.includes('Created') || key.includes('Modified') || key.includes('time') || key.includes('Date')
-}
-
 function StatusValue({ propKey, value, isEditing, onSave, onStartEdit }: {
   propKey: string; value: FrontmatterValue; isEditing: boolean
   onSave: (key: string, value: string) => void; onStartEdit: (key: string | null) => void
@@ -101,6 +108,7 @@ function StatusValue({ propKey, value, isEditing, onSave, onStartEdit }: {
       className="inline-block min-w-0 cursor-pointer truncate transition-opacity hover:opacity-80"
       style={{ backgroundColor: style.bg, color: style.color, borderRadius: 16, padding: '1px 6px', fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '1.2px', textTransform: 'uppercase' as const }}
       onClick={() => onStartEdit(propKey)} title={statusStr}
+      data-testid="status-badge"
     >
       {statusStr}
     </span>
@@ -112,9 +120,111 @@ function BooleanToggle({ value, onToggle }: { value: boolean; onToggle: () => vo
     <button
       className="rounded border border-border bg-transparent px-2 py-0.5 text-xs text-secondary-foreground transition-colors hover:bg-muted"
       onClick={onToggle}
+      data-testid="boolean-toggle"
     >
       {value ? '\u2713 Yes' : '\u2717 No'}
     </button>
+  )
+}
+
+function DateValue({ value, onSave }: {
+  value: string; onSave: (newValue: string) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const formatted = formatDateValue(value)
+  const isoValue = toISODate(value)
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.value) onSave(e.target.value)
+  }
+
+  const handleClick = () => {
+    inputRef.current?.showPicker()
+  }
+
+  return (
+    <span className="relative inline-flex min-w-0 items-center" data-testid="date-display">
+      <span
+        className="min-w-0 cursor-pointer truncate rounded px-1 py-0.5 text-right text-[12px] text-secondary-foreground transition-colors hover:bg-muted"
+        onClick={handleClick}
+        title={value}
+      >
+        {formatted}
+      </span>
+      <input
+        ref={inputRef}
+        type="date"
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
+        value={isoValue}
+        onChange={handleDateChange}
+        tabIndex={-1}
+        data-testid="date-picker-input"
+      />
+    </span>
+  )
+}
+
+const DISPLAY_MODE_OPTIONS: { value: PropertyDisplayMode; label: string }[] = [
+  { value: 'text', label: 'Text' },
+  { value: 'date', label: 'Date' },
+  { value: 'boolean', label: 'Boolean' },
+  { value: 'status', label: 'Status' },
+  { value: 'url', label: 'URL' },
+]
+
+function DisplayModeSelector({ propKey, currentMode, autoMode, onSelect }: {
+  propKey: string; currentMode: PropertyDisplayMode; autoMode: PropertyDisplayMode
+  onSelect: (key: string, mode: PropertyDisplayMode | null) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const handleSelect = (mode: PropertyDisplayMode) => {
+    if (mode === autoMode) {
+      onSelect(propKey, null)
+    } else {
+      onSelect(propKey, mode)
+    }
+    setOpen(false)
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        className="flex h-4 w-4 items-center justify-center rounded border-none bg-transparent p-0 text-[10px] leading-none text-muted-foreground opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover/prop:opacity-100"
+        onClick={() => setOpen(!open)}
+        title="Change display mode"
+        data-testid="display-mode-trigger"
+      >
+        {'\u25BE'}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div
+            className="absolute right-0 top-full z-50 mt-1 min-w-[130px] rounded-md border border-border bg-background py-1 shadow-md"
+            data-testid="display-mode-menu"
+          >
+            {DISPLAY_MODE_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                className="flex w-full items-center gap-2 border-none bg-transparent px-3 py-1.5 text-left text-[12px] text-foreground transition-colors hover:bg-muted"
+                onClick={() => handleSelect(opt.value)}
+                data-testid={`display-mode-option-${opt.value}`}
+              >
+                <span className="w-3 text-center text-[10px]">
+                  {currentMode === opt.value ? '\u2713' : ''}
+                </span>
+                {opt.label}
+                {opt.value === autoMode && (
+                  <span className="ml-auto text-[10px] text-muted-foreground">auto</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   )
 }
 
@@ -206,11 +316,52 @@ function TypeSelector({ isA, customColorKey, availableTypes, onUpdateProperty, o
   )
 }
 
-function PropertyRow({ propKey, value, editingKey, onStartEdit, onSave, onSaveList, onUpdate, onDelete }: {
+function SmartPropertyValueCell({ propKey, value, displayMode, isEditing, onStartEdit, onSave, onSaveList, onUpdate }: {
+  propKey: string; value: FrontmatterValue; displayMode: PropertyDisplayMode; isEditing: boolean
+  onStartEdit: (key: string | null) => void; onSave: (key: string, value: string) => void
+  onSaveList: (key: string, items: string[]) => void; onUpdate?: (key: string, value: FrontmatterValue) => void
+}) {
+  const editProps = { value: String(value ?? ''), isEditing, onStartEdit: () => onStartEdit(propKey), onSave: (v: string) => onSave(propKey, v), onCancel: () => onStartEdit(null) }
+
+  if (value === null || value === undefined) return <EditableValue {...editProps} />
+  if (Array.isArray(value)) return <TagPillList items={value.map(String)} onSave={(items) => onSaveList(propKey, items)} label={propKey} />
+
+  switch (displayMode) {
+    case 'status':
+      return <StatusValue propKey={propKey} value={value} isEditing={isEditing} onSave={onSave} onStartEdit={onStartEdit} />
+    case 'date':
+      if (typeof value === 'string') {
+        return <DateValue value={value} onSave={(v) => onSave(propKey, v)} />
+      }
+      return <EditableValue {...editProps} />
+    case 'boolean':
+      if (typeof value === 'boolean') {
+        return <BooleanToggle value={value} onToggle={() => onUpdate?.(propKey, !value)} />
+      }
+      return <EditableValue {...editProps} />
+    case 'url':
+      if (typeof value === 'string' && isUrlValue(value)) {
+        return <UrlValue {...editProps} />
+      }
+      return <EditableValue {...editProps} />
+    default:
+      if (typeof value === 'boolean') {
+        return <BooleanToggle value={value} onToggle={() => onUpdate?.(propKey, !value)} />
+      }
+      if (typeof value === 'string' && isUrlValue(value)) {
+        return <UrlValue {...editProps} />
+      }
+      return <EditableValue {...editProps} />
+  }
+}
+
+function PropertyRow({ propKey, value, editingKey, displayMode, autoMode, onStartEdit, onSave, onSaveList, onUpdate, onDelete, onDisplayModeChange }: {
   propKey: string; value: FrontmatterValue; editingKey: string | null
+  displayMode: PropertyDisplayMode; autoMode: PropertyDisplayMode
   onStartEdit: (key: string | null) => void; onSave: (key: string, value: string) => void
   onSaveList: (key: string, items: string[]) => void
   onUpdate?: (key: string, value: FrontmatterValue) => void; onDelete?: (key: string) => void
+  onDisplayModeChange: (key: string, mode: PropertyDisplayMode | null) => void
 }) {
   return (
     <div className="group/prop flex items-center justify-between rounded px-1.5 py-0.5 transition-colors hover:bg-muted" data-testid="editable-property">
@@ -219,25 +370,11 @@ function PropertyRow({ propKey, value, editingKey, onStartEdit, onSave, onSaveLi
         {onDelete && (
           <button className="border-none bg-transparent p-0 text-sm leading-none text-muted-foreground opacity-0 transition-all hover:text-destructive group-hover/prop:opacity-100" onClick={() => onDelete(propKey)} title="Delete property">&times;</button>
         )}
+        <DisplayModeSelector propKey={propKey} currentMode={displayMode} autoMode={autoMode} onSelect={onDisplayModeChange} />
       </span>
-      <PropertyValueCell propKey={propKey} value={value} isEditing={editingKey === propKey} onStartEdit={onStartEdit} onSave={onSave} onSaveList={onSaveList} onUpdate={onUpdate} />
+      <SmartPropertyValueCell propKey={propKey} value={value} displayMode={displayMode} isEditing={editingKey === propKey} onStartEdit={onStartEdit} onSave={onSave} onSaveList={onSaveList} onUpdate={onUpdate} />
     </div>
   )
-}
-
-function PropertyValueCell({ propKey, value, isEditing, onStartEdit, onSave, onSaveList, onUpdate }: {
-  propKey: string; value: FrontmatterValue; isEditing: boolean
-  onStartEdit: (key: string | null) => void; onSave: (key: string, value: string) => void
-  onSaveList: (key: string, items: string[]) => void; onUpdate?: (key: string, value: FrontmatterValue) => void
-}) {
-  const editProps = { value: String(value ?? ''), isEditing, onStartEdit: () => onStartEdit(propKey), onSave: (v: string) => onSave(propKey, v), onCancel: () => onStartEdit(null) }
-  if (value === null || value === undefined) return <EditableValue {...editProps} />
-  if (isStatusKey(propKey)) return <StatusValue propKey={propKey} value={value} isEditing={isEditing} onSave={onSave} onStartEdit={onStartEdit} />
-  if (Array.isArray(value)) return <TagPillList items={value.map(String)} onSave={(items) => onSaveList(propKey, items)} label={propKey} />
-  if (isDateKey(propKey)) return <EditableValue {...editProps} />
-  if (typeof value === 'boolean') return <BooleanToggle value={value} onToggle={() => onUpdate?.(propKey, !value)} />
-  if (typeof value === 'string' && isUrlValue(value)) return <UrlValue {...editProps} />
-  return <EditableValue {...editProps} />
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -305,6 +442,7 @@ export function DynamicPropertiesPanel({
 }) {
   const [editingKey, setEditingKey] = useState<string | null>(null)
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [displayOverrides, setDisplayOverrides] = useState(() => loadDisplayModeOverrides())
 
   const wordCount = countWords(content ?? '')
 
@@ -337,14 +475,34 @@ export function DynamicPropertiesPanel({
     setShowAddDialog(false)
   }, [onAddProperty])
 
+  const handleDisplayModeChange = useCallback((key: string, mode: PropertyDisplayMode | null) => {
+    if (mode === null) {
+      removeDisplayModeOverride(key)
+    } else {
+      saveDisplayModeOverride(key, mode)
+    }
+    setDisplayOverrides(loadDisplayModeOverrides())
+  }, [])
+
   return (
     <div className="flex flex-col gap-3">
       {/* Editable properties section */}
       <div className="flex flex-col gap-2">
         <TypeSelector isA={entry.isA} customColorKey={customColorKey} availableTypes={availableTypes} onUpdateProperty={onUpdateProperty} onNavigate={onNavigate} />
-        {propertyEntries.map(([key, value]) => (
-          <PropertyRow key={key} propKey={key} value={value} editingKey={editingKey} onStartEdit={setEditingKey} onSave={handleSaveValue} onSaveList={handleSaveList} onUpdate={onUpdateProperty} onDelete={onDeleteProperty} />
-        ))}
+        {propertyEntries.map(([key, value]) => {
+          const autoMode = detectPropertyType(key, value)
+          const effectiveMode = getEffectiveDisplayMode(key, value, displayOverrides)
+          return (
+            <PropertyRow
+              key={key} propKey={key} value={value}
+              editingKey={editingKey} displayMode={effectiveMode} autoMode={autoMode}
+              onStartEdit={setEditingKey} onSave={handleSaveValue}
+              onSaveList={handleSaveList} onUpdate={onUpdateProperty}
+              onDelete={onDeleteProperty}
+              onDisplayModeChange={handleDisplayModeChange}
+            />
+          )
+        })}
       </div>
       {showAddDialog
         ? <AddPropertyForm onAdd={handleAdd} onCancel={() => setShowAddDialog(false)} />

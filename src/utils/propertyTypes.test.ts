@@ -1,0 +1,155 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import {
+  detectPropertyType,
+  formatDateValue,
+  toISODate,
+  getEffectiveDisplayMode,
+  loadDisplayModeOverrides,
+  saveDisplayModeOverride,
+  removeDisplayModeOverride,
+} from './propertyTypes'
+
+// Mock localStorage (jsdom's may be incomplete)
+const localStorageMock = (() => {
+  let store: Record<string, string> = {}
+  return {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => { store[key] = value },
+    removeItem: (key: string) => { delete store[key] },
+    clear: () => { store = {} },
+    get length() { return Object.keys(store).length },
+    key: (i: number) => Object.keys(store)[i] ?? null,
+  }
+})()
+Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true })
+
+describe('detectPropertyType', () => {
+  it('detects boolean from value type', () => {
+    expect(detectPropertyType('archived', true)).toBe('boolean')
+    expect(detectPropertyType('published', false)).toBe('boolean')
+  })
+
+  it('detects status from key name', () => {
+    expect(detectPropertyType('status', 'Active')).toBe('status')
+    expect(detectPropertyType('Status', 'Draft')).toBe('status')
+  })
+
+  it('detects status from known status values', () => {
+    expect(detectPropertyType('phase', 'active')).toBe('status')
+    expect(detectPropertyType('state', 'done')).toBe('status')
+    expect(detectPropertyType('progress', 'in progress')).toBe('status')
+    expect(detectPropertyType('result', 'published')).toBe('status')
+  })
+
+  it('detects date from ISO string', () => {
+    expect(detectPropertyType('deadline', '2026-03-31')).toBe('date')
+    expect(detectPropertyType('due_date', '2026-01-15T10:00')).toBe('date')
+  })
+
+  it('detects date from date-like key names with date value', () => {
+    expect(detectPropertyType('start_date', '2026-06-01')).toBe('date')
+    expect(detectPropertyType('scheduled', '2026-02-25')).toBe('date')
+  })
+
+  it('detects date from ISO string even without date key', () => {
+    expect(detectPropertyType('custom_field', '2026-03-31')).toBe('date')
+  })
+
+  it('returns text for plain strings', () => {
+    expect(detectPropertyType('owner', 'Luca Rossi')).toBe('text')
+    expect(detectPropertyType('cadence', 'Weekly')).toBe('text')
+  })
+
+  it('returns text for null/undefined', () => {
+    expect(detectPropertyType('anything', null)).toBe('text')
+    expect(detectPropertyType('anything', undefined as never)).toBe('text')
+  })
+
+  it('returns text for arrays', () => {
+    expect(detectPropertyType('tags', ['a', 'b'])).toBe('text')
+  })
+
+  it('treats date-keyed fields with non-date values as text', () => {
+    expect(detectPropertyType('deadline', 'active')).toBe('text')
+  })
+
+  it('detects common date format MM/DD/YYYY', () => {
+    expect(detectPropertyType('due', '02/25/2026')).toBe('date')
+  })
+})
+
+describe('formatDateValue', () => {
+  it('formats ISO date to friendly format', () => {
+    const result = formatDateValue('2026-03-31')
+    expect(result).toBe('Mar 31, 2026')
+  })
+
+  it('formats ISO datetime', () => {
+    const result = formatDateValue('2026-02-25T10:00')
+    expect(result).toBe('Feb 25, 2026')
+  })
+
+  it('formats MM/DD/YYYY', () => {
+    const result = formatDateValue('02/25/2026')
+    expect(result).toBe('Feb 25, 2026')
+  })
+
+  it('returns original value for non-date strings', () => {
+    expect(formatDateValue('not a date')).toBe('not a date')
+  })
+})
+
+describe('toISODate', () => {
+  it('converts ISO date to YYYY-MM-DD', () => {
+    expect(toISODate('2026-03-31')).toBe('2026-03-31')
+  })
+
+  it('extracts date from ISO datetime', () => {
+    expect(toISODate('2026-02-25T10:00:00')).toBe('2026-02-25')
+  })
+
+  it('returns original value for non-date strings', () => {
+    expect(toISODate('not a date')).toBe('not a date')
+  })
+})
+
+describe('display mode overrides (localStorage)', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('returns empty object when no overrides saved', () => {
+    expect(loadDisplayModeOverrides()).toEqual({})
+  })
+
+  it('saves and loads an override', () => {
+    saveDisplayModeOverride('deadline', 'date')
+    const overrides = loadDisplayModeOverrides()
+    expect(overrides.deadline).toBe('date')
+  })
+
+  it('removes an override', () => {
+    saveDisplayModeOverride('deadline', 'date')
+    removeDisplayModeOverride('deadline')
+    expect(loadDisplayModeOverrides()).toEqual({})
+  })
+
+  it('handles corrupted localStorage gracefully', () => {
+    localStorage.setItem('laputa:display-mode-overrides', 'not valid json')
+    expect(loadDisplayModeOverrides()).toEqual({})
+  })
+})
+
+describe('getEffectiveDisplayMode', () => {
+  it('uses auto-detected mode when no override', () => {
+    expect(getEffectiveDisplayMode('status', 'Active', {})).toBe('status')
+  })
+
+  it('uses override when present', () => {
+    expect(getEffectiveDisplayMode('status', 'Active', { status: 'text' })).toBe('text')
+  })
+
+  it('prefers override over auto-detection', () => {
+    expect(getEffectiveDisplayMode('deadline', '2026-03-31', { deadline: 'text' })).toBe('text')
+  })
+})
