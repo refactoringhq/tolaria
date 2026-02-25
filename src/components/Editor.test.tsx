@@ -413,3 +413,83 @@ describe('wikilink autocomplete', () => {
     mockFilterSuggestionItems.mockImplementation((items: unknown[]) => items)
   })
 })
+
+describe('person @mention autocomplete', () => {
+  const personEntry: VaultEntry = {
+    ...mockEntry,
+    title: 'Matteo Cellini',
+    filename: 'matteo-cellini.md',
+    path: '/vault/person/matteo-cellini.md',
+    isA: 'Person',
+    aliases: ['Matteo'],
+  }
+  const nonPersonEntry: VaultEntry = {
+    ...mockEntry,
+    title: 'Build Laputa App',
+    filename: 'laputa-app.md',
+    path: '/vault/project/laputa-app.md',
+    isA: 'Project',
+    aliases: [],
+  }
+  const entries = [personEntry, nonPersonEntry]
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock
+  let getPersonItems: ((query: string) => Promise<any[]>) | null = null
+
+  function renderForMention() {
+    mockFilterSuggestionItems.mockClear()
+    mockFilterSuggestionItems.mockImplementation((items: unknown[]) => items)
+    render(
+      <Editor
+        {...defaultProps}
+        tabs={[mockTab]}
+        activeTabPath={mockEntry.path}
+        entries={entries}
+      />
+    )
+    getPersonItems = capturedGetItemsByTrigger['@'] ?? null
+  }
+
+  it('registers a SuggestionMenuController with @ trigger', () => {
+    renderForMention()
+    expect(getPersonItems).toBeTruthy()
+  })
+
+  it('returns only Person entries for matching query', async () => {
+    renderForMention()
+    const items = await getPersonItems!('Mat')
+    expect(items.length).toBe(1)
+    expect(items[0].title).toBe('Matteo Cellini')
+  })
+
+  it('excludes non-Person entries', async () => {
+    renderForMention()
+    const items = await getPersonItems!('Lap')
+    expect(items).toHaveLength(0)
+  })
+
+  it('works with single-character query', async () => {
+    renderForMention()
+    const items = await getPersonItems!('M')
+    expect(items.length).toBeGreaterThan(0)
+  })
+
+  it('inserts a wikilink when person item is clicked', async () => {
+    renderForMention()
+    mockEditor.insertInlineContent.mockClear()
+    const items = await getPersonItems!('Matteo')
+    expect(items.length).toBeGreaterThan(0)
+    items[0].onItemClick()
+    expect(mockEditor.insertInlineContent).toHaveBeenCalledWith([
+      { type: 'wikilink', props: { target: 'Matteo Cellini' } },
+      ' ',
+    ])
+  })
+
+  it('shows Person type badge on results', async () => {
+    renderForMention()
+    const items = await getPersonItems!('Matteo')
+    expect(items[0].noteType).toBe('Person')
+    expect(items[0].typeColor).toBeTruthy()
+  })
+})
