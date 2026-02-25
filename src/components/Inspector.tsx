@@ -75,7 +75,7 @@ function useReferencedBy(entry: VaultEntry | null, entries: VaultEntry[]): Refer
 function InspectorHeader({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const { onMouseDown } = useDragRegion()
   return (
-    <div className="flex items-center border-b border-border" style={{ height: 52, padding: '0 12px', gap: 8, cursor: 'default' }} onMouseDown={onMouseDown}>
+    <div className="flex items-center border-b border-border" style={{ height: 52, background: 'var(--bg-titlebar)', padding: '0 12px', gap: 8, cursor: 'default' }} onMouseDown={onMouseDown} data-tauri-drag-region>
       {collapsed ? (
         <button className="shrink-0 border-none bg-transparent p-1 text-muted-foreground cursor-pointer hover:text-foreground" onClick={onToggle}>
           <SlidersHorizontal size={16} />
