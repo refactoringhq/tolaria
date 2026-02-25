@@ -1,0 +1,524 @@
+{
+  "children": [
+    {
+      "type": "frame",
+      "id": "spd-date",
+      "x": 0,
+      "y": 0,
+      "name": "Smart Properties — Date picker open",
+      "width": 280,
+      "height": 300,
+      "fill": "#FFFFFF",
+      "layout": "vertical",
+      "padding": 12,
+      "gap": 8,
+      "children": [
+        {
+          "type": "text",
+          "id": "spd-date-title",
+          "content": "Date Property Display",
+          "fontSize": 13,
+          "fontWeight": "600",
+          "fill": "#1A1A1A"
+        },
+        {
+          "type": "frame",
+          "id": "spd-date-row",
+          "name": "DateRow",
+          "width": "fill_container",
+          "height": 28,
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "padding": [0, 6],
+          "children": [
+            {
+              "type": "text",
+              "id": "spd-date-label",
+              "content": "DEADLINE",
+              "fontSize": 10,
+              "fontWeight": "500",
+              "fill": "#888888",
+              "letterSpacing": 1.2,
+              "textTransform": "uppercase"
+            },
+            {
+              "type": "text",
+              "id": "spd-date-value",
+              "content": "Feb 25, 2026",
+              "fontSize": 12,
+              "fill": "#1A1A1A"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "spd-date-picker",
+          "name": "DatePickerOpen",
+          "width": "fill_container",
+          "height": 200,
+          "fill": "#F5F5F5",
+          "cornerRadius": 8,
+          "stroke": { "fill": "#E0E0E0", "thickness": 1 },
+          "layout": "vertical",
+          "padding": 12,
+          "gap": 8,
+          "children": [
+            {
+              "type": "text",
+              "id": "spd-picker-month",
+              "content": "February 2026",
+              "fontSize": 13,
+              "fontWeight": "600",
+              "fill": "#1A1A1A"
+            },
+            {
+              "type": "text",
+              "id": "spd-picker-hint",
+              "content": "Native <input type='date'> opens on click.\nDisplays as 'Feb 25, 2026' when closed.",
+              "fontSize": 11,
+              "fill": "#888888"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "spd-bool",
+      "x": 300,
+      "y": 0,
+      "name": "Smart Properties — Boolean toggle",
+      "width": 280,
+      "height": 200,
+      "fill": "#FFFFFF",
+      "layout": "vertical",
+      "padding": 12,
+      "gap": 8,
+      "children": [
+        {
+          "type": "text",
+          "id": "spd-bool-title",
+          "content": "Boolean Property Display",
+          "fontSize": 13,
+          "fontWeight": "600",
+          "fill": "#1A1A1A"
+        },
+        {
+          "type": "frame",
+          "id": "spd-bool-row-on",
+          "name": "BooleanRowTrue",
+          "width": "fill_container",
+          "height": 28,
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "padding": [0, 6],
+          "children": [
+            {
+              "type": "text",
+              "id": "spd-bool-label-on",
+              "content": "PUBLISHED",
+              "fontSize": 10,
+              "fontWeight": "500",
+              "fill": "#888888",
+              "letterSpacing": 1.2
+            },
+            {
+              "type": "frame",
+              "id": "spd-bool-toggle-on",
+              "name": "ToggleOn",
+              "height": 22,
+              "cornerRadius": 4,
+              "fill": "#E8F5E9",
+              "padding": [2, 8],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "spd-bool-val-on",
+                  "content": "\u2713 Yes",
+                  "fontSize": 12,
+                  "fill": "#2E7D32"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "spd-bool-row-off",
+          "name": "BooleanRowFalse",
+          "width": "fill_container",
+          "height": 28,
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "padding": [0, 6],
+          "children": [
+            {
+              "type": "text",
+              "id": "spd-bool-label-off",
+              "content": "ARCHIVED",
+              "fontSize": 10,
+              "fontWeight": "500",
+              "fill": "#888888",
+              "letterSpacing": 1.2
+            },
+            {
+              "type": "frame",
+              "id": "spd-bool-toggle-off",
+              "name": "ToggleOff",
+              "height": 22,
+              "cornerRadius": 4,
+              "stroke": { "fill": "#E0E0E0", "thickness": 1 },
+              "padding": [2, 8],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "spd-bool-val-off",
+                  "content": "\u2717 No",
+                  "fontSize": 12,
+                  "fill": "#888888"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "spd-status",
+      "x": 600,
+      "y": 0,
+      "name": "Smart Properties — Status badge",
+      "width": 280,
+      "height": 260,
+      "fill": "#FFFFFF",
+      "layout": "vertical",
+      "padding": 12,
+      "gap": 8,
+      "children": [
+        {
+          "type": "text",
+          "id": "spd-status-title",
+          "content": "Status Property Display",
+          "fontSize": 13,
+          "fontWeight": "600",
+          "fill": "#1A1A1A"
+        },
+        {
+          "type": "frame",
+          "id": "spd-status-row-active",
+          "name": "StatusActive",
+          "width": "fill_container",
+          "height": 28,
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "padding": [0, 6],
+          "children": [
+            {
+              "type": "text",
+              "id": "spd-status-label-a",
+              "content": "STATUS",
+              "fontSize": 10,
+              "fontWeight": "500",
+              "fill": "#888888",
+              "letterSpacing": 1.2
+            },
+            {
+              "type": "frame",
+              "id": "spd-badge-active",
+              "name": "BadgeActive",
+              "cornerRadius": 16,
+              "fill": "#E8F5E9",
+              "padding": [1, 6],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "spd-badge-active-text",
+                  "content": "ACTIVE",
+                  "fontSize": 10,
+                  "fontWeight": "600",
+                  "fill": "#2E7D32",
+                  "letterSpacing": 1.2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "spd-status-row-draft",
+          "name": "StatusDraft",
+          "width": "fill_container",
+          "height": 28,
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "padding": [0, 6],
+          "children": [
+            {
+              "type": "text",
+              "id": "spd-status-label-d",
+              "content": "STATUS",
+              "fontSize": 10,
+              "fontWeight": "500",
+              "fill": "#888888",
+              "letterSpacing": 1.2
+            },
+            {
+              "type": "frame",
+              "id": "spd-badge-draft",
+              "name": "BadgeDraft",
+              "cornerRadius": 16,
+              "fill": "#FFF8E1",
+              "padding": [1, 6],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "spd-badge-draft-text",
+                  "content": "DRAFT",
+                  "fontSize": 10,
+                  "fontWeight": "600",
+                  "fill": "#F9A825",
+                  "letterSpacing": 1.2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "spd-status-row-done",
+          "name": "StatusDone",
+          "width": "fill_container",
+          "height": 28,
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "padding": [0, 6],
+          "children": [
+            {
+              "type": "text",
+              "id": "spd-status-label-dn",
+              "content": "STATUS",
+              "fontSize": 10,
+              "fontWeight": "500",
+              "fill": "#888888",
+              "letterSpacing": 1.2
+            },
+            {
+              "type": "frame",
+              "id": "spd-badge-done",
+              "name": "BadgeDone",
+              "cornerRadius": 16,
+              "fill": "#E3F2FD",
+              "padding": [1, 6],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "spd-badge-done-text",
+                  "content": "DONE",
+                  "fontSize": 10,
+                  "fontWeight": "600",
+                  "fill": "#1565C0",
+                  "letterSpacing": 1.2
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "spd-override",
+      "x": 900,
+      "y": 0,
+      "name": "Smart Properties — Display mode override dropdown",
+      "width": 280,
+      "height": 300,
+      "fill": "#FFFFFF",
+      "layout": "vertical",
+      "padding": 12,
+      "gap": 8,
+      "children": [
+        {
+          "type": "text",
+          "id": "spd-override-title",
+          "content": "Display Mode Override",
+          "fontSize": 13,
+          "fontWeight": "600",
+          "fill": "#1A1A1A"
+        },
+        {
+          "type": "frame",
+          "id": "spd-override-row",
+          "name": "PropertyWithOverrideHandle",
+          "width": "fill_container",
+          "height": 28,
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "padding": [0, 6],
+          "fill": "#F5F5F5",
+          "cornerRadius": 4,
+          "children": [
+            {
+              "type": "text",
+              "id": "spd-override-label",
+              "content": "DEADLINE",
+              "fontSize": 10,
+              "fontWeight": "500",
+              "fill": "#888888",
+              "letterSpacing": 1.2
+            },
+            {
+              "type": "frame",
+              "id": "spd-override-actions",
+              "gap": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "spd-override-val",
+                  "content": "Feb 25, 2026",
+                  "fontSize": 12,
+                  "fill": "#1A1A1A"
+                },
+                {
+                  "type": "frame",
+                  "id": "spd-override-handle",
+                  "name": "OverrideHandle",
+                  "width": 16,
+                  "height": 16,
+                  "cornerRadius": 3,
+                  "fill": "#E0E0E0",
+                  "alignItems": "center",
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "spd-override-icon",
+                      "content": "\u25BE",
+                      "fontSize": 10,
+                      "fill": "#666666"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "spd-dropdown",
+          "name": "DisplayModeDropdown",
+          "width": 160,
+          "fill": "#FFFFFF",
+          "cornerRadius": 8,
+          "stroke": { "fill": "#E0E0E0", "thickness": 1 },
+          "layout": "vertical",
+          "padding": 4,
+          "gap": 2,
+          "children": [
+            {
+              "type": "frame",
+              "id": "spd-opt-text",
+              "name": "OptionText",
+              "width": "fill_container",
+              "height": 28,
+              "padding": [4, 8],
+              "cornerRadius": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "spd-opt-text-label",
+                  "content": "Text",
+                  "fontSize": 12,
+                  "fill": "#1A1A1A"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "spd-opt-date",
+              "name": "OptionDate",
+              "width": "fill_container",
+              "height": 28,
+              "padding": [4, 8],
+              "cornerRadius": 4,
+              "fill": "#E3F2FD",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "spd-opt-date-label",
+                  "content": "\u2713  Date",
+                  "fontSize": 12,
+                  "fill": "#1565C0"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "spd-opt-bool",
+              "name": "OptionBoolean",
+              "width": "fill_container",
+              "height": 28,
+              "padding": [4, 8],
+              "cornerRadius": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "spd-opt-bool-label",
+                  "content": "Boolean",
+                  "fontSize": 12,
+                  "fill": "#1A1A1A"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "spd-opt-status",
+              "name": "OptionStatus",
+              "width": "fill_container",
+              "height": 28,
+              "padding": [4, 8],
+              "cornerRadius": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "spd-opt-status-label",
+                  "content": "Status",
+                  "fontSize": 12,
+                  "fill": "#1A1A1A"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "spd-opt-url",
+              "name": "OptionURL",
+              "width": "fill_container",
+              "height": 28,
+              "padding": [4, 8],
+              "cornerRadius": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "spd-opt-url-label",
+                  "content": "URL",
+                  "fontSize": 12,
+                  "fill": "#1A1A1A"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {}
+}
