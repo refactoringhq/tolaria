@@ -110,5 +110,36 @@ describe('useAppKeyboard', () => {
     fireKey('f', { metaKey: true, shiftKey: true })
     expect(actions.onQuickOpen).not.toHaveBeenCalled()
     expect(actions.onCreateNote).not.toHaveBeenCalled()
+
+  function withFocusedInput(fn: () => void) {
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    input.focus()
+    try { fn() } finally { document.body.removeChild(input) }
+  }
+
+  it('Cmd+Backspace does not trash note when text input is focused', () => {
+    const actions = makeActions()
+    renderHook(() => useAppKeyboard(actions))
+    withFocusedInput(() => {
+      fireKey('Backspace', { metaKey: true })
+      expect(actions.onTrashNote).not.toHaveBeenCalled()
+    })
+  })
+
+  it('Cmd+Backspace trashes note when no text input is focused', () => {
+    const actions = makeActions()
+    renderHook(() => useAppKeyboard(actions))
+    fireKey('Backspace', { metaKey: true })
+    expect(actions.onTrashNote).toHaveBeenCalledWith('/vault/test.md')
+  })
+
+  it('Cmd+K still works when text input is focused', () => {
+    const actions = makeActions()
+    renderHook(() => useAppKeyboard(actions))
+    withFocusedInput(() => {
+      fireKey('k', { metaKey: true })
+      expect(actions.onCommandPalette).toHaveBeenCalled()
+    })
   })
 })

@@ -17,6 +17,13 @@ interface KeyboardActions {
 
 type ShortcutHandler = () => void
 
+const TEXT_EDITING_KEYS = new Set(['Backspace', 'Delete'])
+
+function isTextInputFocused(): boolean {
+  const tag = document.activeElement?.tagName
+  return tag === 'INPUT' || tag === 'TEXTAREA'
+}
+
 const VIEW_MODE_KEYS: Record<string, ViewMode> = {
   '1': 'editor-only',
   '2': 'editor-list',
@@ -41,6 +48,7 @@ function handleCmdKey(e: KeyboardEvent, keyMap: Record<string, ShortcutHandler>)
   if (!mod) return false
   const handler = keyMap[e.key]
   if (!handler) return false
+  if (TEXT_EDITING_KEYS.has(e.key) && isTextInputFocused()) return false
   e.preventDefault()
   handler()
   return true
