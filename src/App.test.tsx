@@ -34,6 +34,7 @@ const mockEntries = [
     modifiedAt: 1700000000,
     createdAt: null,
     fileSize: 1024,
+    outgoingLinks: [],
   },
   {
     path: '/vault/topic/dev.md',
@@ -49,6 +50,7 @@ const mockEntries = [
     modifiedAt: 1700000000,
     createdAt: null,
     fileSize: 256,
+    outgoingLinks: [],
   },
 ]
 

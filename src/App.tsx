@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { NoteList } from './components/NoteList'
 import { Editor } from './components/Editor'
@@ -26,6 +26,7 @@ import { useGitHistory } from './hooks/useGitHistory'
 import { useUpdater } from './hooks/useUpdater'
 import { UpdateBanner } from './components/UpdateBanner'
 import { setApiKey } from './utils/ai-chat'
+import { extractOutgoingLinks } from './utils/wikilinks'
 import type { SidebarSelection } from './types'
 import './App.css'
 
@@ -49,6 +50,34 @@ function useLayoutPanels() {
   return { sidebarWidth, noteListWidth, inspectorWidth, inspectorCollapsed, setInspectorCollapsed, handleSidebarResize, handleNoteListResize, handleInspectorResize }
 }
 
+/** Wraps useEditorSave to also keep outgoingLinks in sync on save and on content change. */
+function useEditorSaveWithLinks(config: {
+  updateContent: (path: string, content: string) => void
+  updateEntry: (path: string, patch: Partial<import('./types').VaultEntry>) => void
+  setTabs: Parameters<typeof useEditorSave>[0]['setTabs']
+  setToastMessage: (msg: string | null) => void
+  onAfterSave: () => void
+}) {
+  const { updateContent, updateEntry } = config
+  const saveContent = useCallback((path: string, content: string) => {
+    updateContent(path, content)
+    updateEntry(path, { outgoingLinks: extractOutgoingLinks(content) })
+  }, [updateContent, updateEntry])
+  const editor = useEditorSave({ updateVaultContent: saveContent, setTabs: config.setTabs, setToastMessage: config.setToastMessage, onAfterSave: config.onAfterSave })
+  const { handleContentChange: rawOnChange } = editor
+  const prevLinksKeyRef = useRef('')
+  const handleContentChange = useCallback((path: string, content: string) => {
+    rawOnChange(path, content)
+    const links = extractOutgoingLinks(content)
+    const key = links.join('\0')
+    if (key !== prevLinksKeyRef.current) {
+      prevLinksKeyRef.current = key
+      updateEntry(path, { outgoingLinks: links })
+    }
+  }, [rawOnChange, updateEntry])
+  return { ...editor, handleContentChange }
+}
+
 function App() {
   const [selection, setSelection] = useState<SidebarSelection>(DEFAULT_SELECTION)
   const layout = useLayoutPanels()
@@ -70,11 +99,9 @@ function App() {
 
   const notes = useNoteActions({ addEntry: vault.addEntry, removeEntry: vault.removeEntry, updateContent: vault.updateContent, entries: vault.entries, setToastMessage, updateEntry: vault.updateEntry })
 
-  const { handleSave, handleContentChange, savePendingForPath, savePending } = useEditorSave({
-    updateVaultContent: vault.updateContent,
-    setTabs: notes.setTabs,
-    setToastMessage,
-    onAfterSave: vault.loadModifiedFiles,
+  const { handleSave, handleContentChange, savePendingForPath, savePending } = useEditorSaveWithLinks({
+    updateContent: vault.updateContent, updateEntry: vault.updateEntry,
+    setTabs: notes.setTabs, setToastMessage, onAfterSave: vault.loadModifiedFiles,
   })
 
   const commitFlow = useCommitFlow({ savePending, loadModifiedFiles: vault.loadModifiedFiles, commitAndPush: vault.commitAndPush, setToastMessage })

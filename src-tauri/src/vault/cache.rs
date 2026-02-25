@@ -6,10 +6,19 @@ use super::{parse_md_file, scan_vault, VaultEntry};
 
 // --- Vault Cache ---
 
+/// Bump this when VaultEntry fields change to force a full rescan.
+const CACHE_VERSION: u32 = 2;
+
 #[derive(Debug, Serialize, Deserialize)]
 struct VaultCache {
+    #[serde(default = "default_cache_version")]
+    version: u32,
     commit_hash: String,
     entries: Vec<VaultEntry>,
+}
+
+fn default_cache_version() -> u32 {
+    1
 }
 
 fn cache_path(vault: &Path) -> std::path::PathBuf {
@@ -140,6 +149,7 @@ fn finalize_and_cache(vault: &Path, mut entries: Vec<VaultEntry>, hash: String) 
     write_cache(
         vault,
         &VaultCache {
+            version: CACHE_VERSION,
             commit_hash: hash,
             entries: entries.clone(),
         },
@@ -202,6 +212,10 @@ pub fn scan_vault_cached(vault_path: &Path) -> Result<Vec<VaultEntry>, String> {
     };
 
     if let Some(cache) = load_cache(vault_path) {
+        if cache.version != CACHE_VERSION {
+            let entries = scan_vault(vault_path)?;
+            return Ok(finalize_and_cache(vault_path, entries, current_hash));
+        }
         return if cache.commit_hash == current_hash {
             Ok(update_same_commit(vault_path, cache))
         } else {

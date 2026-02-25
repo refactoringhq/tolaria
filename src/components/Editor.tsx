@@ -534,7 +534,6 @@ export const Editor = memo(function Editor({
         entry={inspectorEntry}
         content={inspectorContent}
         entries={entries}
-        allContent={allContent}
         gitHistory={gitHistory}
         onNavigate={onNavigateWikilink}
         onViewCommitDiff={handleViewCommitDiff}

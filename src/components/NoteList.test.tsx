@@ -33,6 +33,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/note/facebook-ads-strategy.md',
@@ -59,6 +60,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/person/matteo-cellini.md',
@@ -82,6 +84,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/event/2026-02-14-kickoff.md',
@@ -105,6 +108,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/topic/software-development.md',
@@ -128,6 +132,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
 ]
 
@@ -343,6 +348,7 @@ describe('getSortComparator', () => {
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
     ...overrides,
   })
 
@@ -453,6 +459,7 @@ describe('NoteList sort controls', () => {
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
     ...overrides,
   })
 
@@ -645,6 +652,7 @@ const trashedEntry: VaultEntry = {
   icon: null,
   color: null,
   order: null,
+  outgoingLinks: [],
 }
 
 const expiredTrashedEntry: VaultEntry = {
@@ -669,6 +677,7 @@ const expiredTrashedEntry: VaultEntry = {
   icon: null,
   color: null,
   order: null,
+  outgoingLinks: [],
 }
 
 const entriesWithTrashed = [...mockEntries, trashedEntry, expiredTrashedEntry]
@@ -822,6 +831,7 @@ describe('NoteList — virtual list with large datasets', () => {
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
     ...overrides,
   })
 

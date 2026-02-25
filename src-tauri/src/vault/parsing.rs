@@ -124,6 +124,36 @@ pub(super) fn contains_wikilink(s: &str) -> bool {
     s.contains("[[") && s.contains("]]")
 }
 
+/// Extract all outgoing wikilink targets from content.
+/// Finds `[[target]]` and `[[target|display]]` patterns, returning just the target part.
+/// Returns a sorted, deduplicated Vec of targets.
+pub(super) fn extract_outgoing_links(content: &str) -> Vec<String> {
+    let mut links = Vec::new();
+    let mut search_from = 0;
+    let bytes = content.as_bytes();
+    while search_from + 3 < bytes.len() {
+        let Some(start) = content[search_from..].find("[[") else {
+            break;
+        };
+        let abs_start = search_from + start + 2;
+        let Some(end) = content[abs_start..].find("]]") else {
+            break;
+        };
+        let inner = &content[abs_start..abs_start + end];
+        let target = match inner.find('|') {
+            Some(idx) => &inner[..idx],
+            None => inner,
+        };
+        if !target.is_empty() {
+            links.push(target.to_string());
+        }
+        search_from = abs_start + end + 2;
+    }
+    links.sort();
+    links.dedup();
+    links
+}
+
 pub(super) fn capitalize_first(s: &str) -> String {
     let mut c = s.chars();
     match c.next() {
@@ -427,5 +457,56 @@ mod tests {
         assert!(parse_iso_date("not-a-date").is_none());
         assert!(parse_iso_date("").is_none());
         assert!(parse_iso_date("2025-13-45").is_none());
+    }
+
+    // --- extract_outgoing_links tests ---
+
+    #[test]
+    fn test_extract_outgoing_links_basic() {
+        let content = "# Note\n\nSee [[Alice]] and [[Bob]] for details.";
+        let links = extract_outgoing_links(content);
+        assert_eq!(links, vec!["Alice", "Bob"]);
+    }
+
+    #[test]
+    fn test_extract_outgoing_links_pipe_syntax() {
+        let content = "Link to [[project/alpha|Alpha Project]] here.";
+        let links = extract_outgoing_links(content);
+        assert_eq!(links, vec!["project/alpha"]);
+    }
+
+    #[test]
+    fn test_extract_outgoing_links_deduplicates() {
+        let content = "See [[Alice]] and then [[Alice]] again.";
+        let links = extract_outgoing_links(content);
+        assert_eq!(links, vec!["Alice"]);
+    }
+
+    #[test]
+    fn test_extract_outgoing_links_sorted() {
+        let content = "[[Zebra]] then [[Alpha]] then [[Middle]]";
+        let links = extract_outgoing_links(content);
+        assert_eq!(links, vec!["Alpha", "Middle", "Zebra"]);
+    }
+
+    #[test]
+    fn test_extract_outgoing_links_with_frontmatter() {
+        let content = "---\nHas:\n  - \"[[task/design]]\"\n---\n# Note\n\nSee [[person/alice]].";
+        let links = extract_outgoing_links(content);
+        assert_eq!(links, vec!["person/alice", "task/design"]);
+    }
+
+    #[test]
+    fn test_extract_outgoing_links_empty_content() {
+        assert!(extract_outgoing_links("").is_empty());
+        assert!(extract_outgoing_links("No links here").is_empty());
+    }
+
+    #[test]
+    fn test_extract_outgoing_links_unclosed_bracket() {
+        // First [[ matches with the only ]], yielding "unclosed and [[valid"
+        let content = "[[unclosed and [[valid]]";
+        let links = extract_outgoing_links(content);
+        assert_eq!(links, vec!["unclosed and [[valid"]);
     }
 }

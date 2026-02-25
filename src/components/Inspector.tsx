@@ -16,7 +16,6 @@ interface InspectorProps {
   entry: VaultEntry | null
   content: string | null
   entries: VaultEntry[]
-  allContent: Record<string, string>
   gitHistory: GitCommit[]
   onNavigate: (target: string) => void
   onViewCommitDiff?: (commitHash: string) => void
@@ -25,21 +24,22 @@ interface InspectorProps {
   onAddProperty?: (path: string, key: string, value: FrontmatterValue) => Promise<void>
 }
 
-function useBacklinks(entry: VaultEntry | null, entries: VaultEntry[], allContent: Record<string, string>): VaultEntry[] {
+function useBacklinks(entry: VaultEntry | null, entries: VaultEntry[]): VaultEntry[] {
   return useMemo(() => {
     if (!entry) return []
-    const targets = [entry.title, ...entry.aliases]
-    const stem = entry.filename.replace(/\.md$/, '')
-    const pathStem = entry.path.replace(/^.*\/Laputa\//, '').replace(/\.md$/, '')
+    const matchTargets = new Set([
+      entry.title, ...entry.aliases,
+      entry.filename.replace(/\.md$/, ''),
+      entry.path.replace(/^.*\/Laputa\//, '').replace(/\.md$/, ''),
+    ])
 
     return entries.filter((e) => {
       if (e.path === entry.path) return false
-      const c = allContent[e.path]
-      if (!c) return false
-      for (const t of targets) { if (c.includes(`[[${t}]]`)) return true }
-      return c.includes(`[[${stem}]]`) || c.includes(`[[${pathStem}]]`) || c.includes(`[[${pathStem}|`)
+      return e.outgoingLinks.some((target) =>
+        matchTargets.has(target) || matchTargets.has(target.split('/').pop() ?? '')
+      )
     })
-  }, [entry, entries, allContent])
+  }, [entry, entries])
 }
 
 function useReferencedBy(entry: VaultEntry | null, entries: VaultEntry[]): ReferencedByItem[] {
@@ -113,10 +113,10 @@ function EmptyInspector() {
 }
 
 export function Inspector({
-  collapsed, onToggle, entry, content, entries, allContent, gitHistory, onNavigate,
+  collapsed, onToggle, entry, content, entries, gitHistory, onNavigate,
   onViewCommitDiff, onUpdateFrontmatter, onDeleteProperty, onAddProperty,
 }: InspectorProps) {
-  const backlinks = useBacklinks(entry, entries, allContent)
+  const backlinks = useBacklinks(entry, entries)
   const referencedBy = useReferencedBy(entry, entries)
   const frontmatter = useMemo(() => parseFrontmatter(content), [content])
   const typeEntryMap = useMemo(() => {

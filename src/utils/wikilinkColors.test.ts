@@ -25,6 +25,7 @@ function makeEntry(overrides: Partial<VaultEntry>): VaultEntry {
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
     ...overrides,
   }
 }

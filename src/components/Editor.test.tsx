@@ -74,6 +74,7 @@ const mockEntry: VaultEntry = {
   icon: null,
   color: null,
     order: null,
+  outgoingLinks: [],
 }
 
 const mockContent = `---

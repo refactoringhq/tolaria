@@ -38,6 +38,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/vault/responsibility/grow-newsletter.md',
@@ -61,6 +62,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/vault/experiment/stock-screener.md',
@@ -84,6 +86,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/vault/procedure/weekly-essays.md',
@@ -107,6 +110,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/vault/topic/software-development.md',
@@ -130,6 +134,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/vault/topic/trading.md',
@@ -153,6 +158,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/vault/person/alice.md',
@@ -176,6 +182,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/vault/event/kickoff.md',
@@ -199,6 +206,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
 ]
 
@@ -381,6 +389,7 @@ describe('Sidebar', () => {
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
       },
       {
         path: '/vault/type/book.md',
@@ -404,6 +413,7 @@ describe('Sidebar', () => {
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
       },
       {
         path: '/vault/recipe/pasta.md',
@@ -427,6 +437,7 @@ describe('Sidebar', () => {
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
       },
     ]
 
@@ -479,6 +490,7 @@ describe('Sidebar', () => {
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
       }
       render(<Sidebar entries={[...mockEntries, projectTypeEntry]} selection={defaultSelection} onSelect={() => {}} />)
       // "Projects" should appear once (the built-in section), not twice
@@ -591,19 +603,19 @@ describe('Sidebar', () => {
         path: '/vault/type/project.md', filename: 'project.md', title: 'Project', isA: 'Type',
         aliases: [], belongsTo: [], relatedTo: [], status: null, owner: null, cadence: null,
         archived: false, trashed: false, trashedAt: null, modifiedAt: 1700000000, createdAt: null, fileSize: 200, snippet: '',
-        relationships: {}, icon: null, color: null, order: 5,
+        relationships: {}, icon: null, color: null, order: 5, outgoingLinks: [],
       },
       {
         path: '/vault/type/topic.md', filename: 'topic.md', title: 'Topic', isA: 'Type',
         aliases: [], belongsTo: [], relatedTo: [], status: null, owner: null, cadence: null,
         archived: false, trashed: false, trashedAt: null, modifiedAt: 1700000000, createdAt: null, fileSize: 200, snippet: '',
-        relationships: {}, icon: null, color: null, order: 0,
+        relationships: {}, icon: null, color: null, order: 0, outgoingLinks: [],
       },
       {
         path: '/vault/type/person.md', filename: 'person.md', title: 'Person', isA: 'Type',
         aliases: [], belongsTo: [], relatedTo: [], status: null, owner: null, cadence: null,
         archived: false, trashed: false, trashedAt: null, modifiedAt: 1700000000, createdAt: null, fileSize: 200, snippet: '',
-        relationships: {}, icon: null, color: null, order: 1,
+        relationships: {}, icon: null, color: null, order: 1, outgoingLinks: [],
       },
     ]
 

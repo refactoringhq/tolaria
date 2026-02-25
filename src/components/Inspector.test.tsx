@@ -25,6 +25,7 @@ const mockEntry: VaultEntry = {
   icon: null,
   color: null,
     order: null,
+  outgoingLinks: [],
 }
 
 const mockContent = `---
@@ -66,12 +67,8 @@ const referrerEntry: VaultEntry = {
   relationships: {},
   icon: null,
   color: null,
-    order: null,
-}
-
-const allContent: Record<string, string> = {
-  '/vault/note/referrer.md': '# Referrer\n\nSee [[Test Project]] for details.',
-  '/vault/project/test.md': '# Test Project\n\nSome content.',
+  order: null,
+  outgoingLinks: ['Test Project'],
 }
 
 const now = Math.floor(Date.now() / 1000)
@@ -87,7 +84,6 @@ const defaultProps = {
   entry: null as VaultEntry | null,
   content: null as string | null,
   entries: [] as VaultEntry[],
-  allContent: {} as Record<string, string>,
   gitHistory: [] as GitCommit[],
   onNavigate: () => {},
 }
@@ -179,18 +175,41 @@ This is a test note with some words to count.
     expect(screen.getByText('No relationships')).toBeInTheDocument()
   })
 
-  it('shows backlinks from notes that reference the current note', () => {
+  it('shows backlinks from notes that reference the current note via outgoingLinks', () => {
     render(
       <Inspector
         {...defaultProps}
         entry={mockEntry}
         content={mockContent}
         entries={[mockEntry, referrerEntry]}
-        allContent={allContent}
       />
     )
     expect(screen.getByText('Referrer Note')).toBeInTheDocument()
     expect(screen.getByText('1')).toBeInTheDocument() // count badge
+  })
+
+  it('updates backlinks reactively when outgoingLinks changes', () => {
+    const { rerender } = render(
+      <Inspector
+        {...defaultProps}
+        entry={mockEntry}
+        content={mockContent}
+        entries={[mockEntry, { ...referrerEntry, outgoingLinks: [] }]}
+      />
+    )
+    // Initially no backlinks because referrer has empty outgoingLinks
+    expect(screen.getByText('No backlinks')).toBeInTheDocument()
+
+    // Rerender with updated outgoingLinks (simulates adding [[Test Project]] to referrer)
+    rerender(
+      <Inspector
+        {...defaultProps}
+        entry={mockEntry}
+        content={mockContent}
+        entries={[mockEntry, { ...referrerEntry, outgoingLinks: ['Test Project'] }]}
+      />
+    )
+    expect(screen.getByText('Referrer Note')).toBeInTheDocument()
   })
 
   it('shows "No backlinks" when no notes reference the current note', () => {
@@ -200,7 +219,6 @@ This is a test note with some words to count.
         entry={mockEntry}
         content={mockContent}
         entries={[mockEntry]}
-        allContent={{}}
       />
     )
     expect(screen.getByText('No backlinks')).toBeInTheDocument()
@@ -214,7 +232,7 @@ This is a test note with some words to count.
         entry={mockEntry}
         content={mockContent}
         entries={[mockEntry, referrerEntry]}
-        allContent={allContent}
+
         onNavigate={onNavigate}
       />
     )
@@ -348,6 +366,7 @@ This is a test note with some words to count.
       icon: null,
       color: null,
       order: null,
+      outgoingLinks: [],
     }
 
     const essayEntry: VaultEntry = {
@@ -372,6 +391,7 @@ This is a test note with some words to count.
       icon: null,
       color: null,
       order: null,
+      outgoingLinks: [],
     }
 
     const procedureEntry: VaultEntry = {
@@ -396,6 +416,7 @@ This is a test note with some words to count.
       icon: null,
       color: null,
       order: null,
+      outgoingLinks: [],
     }
 
     const experimentEntry: VaultEntry = {
@@ -420,6 +441,7 @@ This is a test note with some words to count.
       icon: null,
       color: null,
       order: null,
+      outgoingLinks: [],
     }
 
     const targetContent = `---
@@ -438,7 +460,7 @@ Status: Active
           entry={targetEntry}
           content={targetContent}
           entries={[targetEntry, essayEntry, procedureEntry, experimentEntry]}
-          allContent={{}}
+
         />
       )
       expect(screen.getByText('On Writing Well')).toBeInTheDocument()
@@ -453,7 +475,7 @@ Status: Active
           entry={targetEntry}
           content={targetContent}
           entries={[targetEntry, essayEntry, experimentEntry]}
-          allContent={{}}
+
         />
       )
       expect(screen.getByText(/via Belongs to/)).toBeInTheDocument()
@@ -467,7 +489,7 @@ Status: Active
           entry={targetEntry}
           content={targetContent}
           entries={[targetEntry, essayEntry, procedureEntry]}
-          allContent={{}}
+
         />
       )
       // 2 entries reference via Belongs to — badge appears in the Referenced by header
@@ -484,7 +506,7 @@ Status: Active
           entry={targetEntry}
           content={targetContent}
           entries={[targetEntry]}
-          allContent={{}}
+
         />
       )
       expect(screen.getByText('No references')).toBeInTheDocument()
@@ -498,7 +520,7 @@ Status: Active
           entry={targetEntry}
           content={targetContent}
           entries={[targetEntry, essayEntry]}
-          allContent={{}}
+
           onNavigate={onNavigate}
         />
       )
@@ -522,7 +544,7 @@ Status: Active
           entry={typeEntry}
           content="---\nIs A: Type\n---\n# Responsibility\n"
           entries={[typeEntry, essayEntry]}
-          allContent={{}}
+
         />
       )
       // On Writing Well references responsibility via "Belongs to" (path match), not via "Type"
@@ -546,7 +568,7 @@ Status: Active
           entry={aliasedTarget}
           content={targetContent}
           entries={[aliasedTarget, referrer]}
-          allContent={{}}
+
         />
       )
       expect(screen.getByText('On Writing Well')).toBeInTheDocument()
@@ -567,7 +589,7 @@ Status: Active
           entry={selfRef}
           content={targetContent}
           entries={[selfRef]}
-          allContent={{}}
+
         />
       )
       expect(screen.getByText('No references')).toBeInTheDocument()

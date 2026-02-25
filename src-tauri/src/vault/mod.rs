@@ -12,7 +12,8 @@ pub use rename::{rename_note, RenameResult};
 pub use trash::purge_trash;
 
 use parsing::{
-    capitalize_first, contains_wikilink, extract_snippet, extract_title, parse_iso_date,
+    capitalize_first, contains_wikilink, extract_outgoing_links, extract_snippet, extract_title,
+    parse_iso_date,
 };
 
 use gray_matter::engine::YAML;
@@ -59,6 +60,10 @@ pub struct VaultEntry {
     pub color: Option<String>,
     /// Display order for Type entries in sidebar (lower = higher). None = use default order.
     pub order: Option<i64>,
+    /// All wikilink targets found in the note content (body + frontmatter).
+    /// Extracted from `[[target]]` and `[[target|display]]` patterns.
+    #[serde(rename = "outgoingLinks", default)]
+    pub outgoing_links: Vec<String>,
 }
 
 /// Intermediate struct to capture YAML frontmatter fields.
@@ -263,6 +268,7 @@ pub fn parse_md_file(path: &Path) -> Result<VaultEntry, String> {
 
     let title = extract_title(&parsed.content, &filename);
     let snippet = extract_snippet(&content);
+    let outgoing_links = extract_outgoing_links(&content);
     let (modified_at, file_size) = read_file_metadata(path)?;
     let created_at = parse_created_at(&frontmatter);
     let is_a = resolve_is_a(frontmatter.is_a, path);
@@ -312,6 +318,7 @@ pub fn parse_md_file(path: &Path) -> Result<VaultEntry, String> {
         icon: frontmatter.icon,
         color: frontmatter.color,
         order: frontmatter.order,
+        outgoing_links,
     })
 }
 
@@ -924,6 +931,37 @@ References:
         let content = "# Some Type\n";
         let entry = parse_test_entry(&dir, "type/some-type.md", content);
         assert_eq!(entry.is_a, Some("Type".to_string()));
+    }
+
+    // --- outgoing_links tests ---
+
+    #[test]
+    fn test_outgoing_links_extracted_from_content_body() {
+        let dir = TempDir::new().unwrap();
+        let content =
+            "---\nIs A: Note\n---\n# My Note\n\nSee [[person/alice]] and [[topic/rust]].";
+        let entry = parse_test_entry(&dir, "note/my-note.md", content);
+        assert_eq!(
+            entry.outgoing_links,
+            vec!["person/alice", "topic/rust"]
+        );
+    }
+
+    #[test]
+    fn test_outgoing_links_includes_frontmatter_wikilinks() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\nHas:\n  - \"[[task/design]]\"\n---\n# Note\n\nSee [[person/bob]].";
+        let entry = parse_test_entry(&dir, "note/test.md", content);
+        assert!(entry.outgoing_links.contains(&"task/design".to_string()));
+        assert!(entry.outgoing_links.contains(&"person/bob".to_string()));
+    }
+
+    #[test]
+    fn test_outgoing_links_handles_pipe_syntax() {
+        let dir = TempDir::new().unwrap();
+        let content = "# Note\n\nSee [[project/alpha|Alpha Project]] for details.";
+        let entry = parse_test_entry(&dir, "test.md", content);
+        assert!(entry.outgoing_links.contains(&"project/alpha".to_string()));
     }
 
     // Frontmatter update/delete tests are in frontmatter.rs

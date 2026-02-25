@@ -10,7 +10,7 @@ const mockEntries: VaultEntry[] = [
     status: 'Active', owner: null, cadence: null,
     archived: false, trashed: false, trashedAt: null,
     modifiedAt: 1700000000, createdAt: 1700000000, fileSize: 100,
-    snippet: '', relationships: {}, icon: null, color: null, order: null,
+    snippet: '', relationships: {}, icon: null, color: null, order: null, outgoingLinks: [],
   },
 ]
 

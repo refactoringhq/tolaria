@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { preProcessWikilinks, injectWikilinks, restoreWikilinksInBlocks, splitFrontmatter, countWords } from './wikilinks'
+import { preProcessWikilinks, injectWikilinks, restoreWikilinksInBlocks, splitFrontmatter, countWords, extractOutgoingLinks } from './wikilinks'
 
 interface TestBlock {
   type?: string
@@ -379,5 +379,45 @@ describe('restoreWikilinksInBlocks', () => {
     // Find the text that was the wikilink
     const texts = restored[0].content!.map(n => n.text).join('')
     expect(texts).toContain('[[Target]]')
+  })
+})
+
+describe('extractOutgoingLinks', () => {
+  it('extracts simple wikilink targets', () => {
+    const content = 'See [[My Note]] for details.'
+    expect(extractOutgoingLinks(content)).toEqual(['My Note'])
+  })
+
+  it('extracts alias wikilinks (target only)', () => {
+    const content = 'Link to [[project/my-project|My Project]] here.'
+    expect(extractOutgoingLinks(content)).toEqual(['project/my-project'])
+  })
+
+  it('extracts multiple wikilinks sorted and deduplicated', () => {
+    const content = 'See [[B]] and [[A]] and [[B]] again.'
+    expect(extractOutgoingLinks(content)).toEqual(['A', 'B'])
+  })
+
+  it('returns empty array for content with no wikilinks', () => {
+    expect(extractOutgoingLinks('No links here')).toEqual([])
+  })
+
+  it('returns empty array for empty string', () => {
+    expect(extractOutgoingLinks('')).toEqual([])
+  })
+
+  it('extracts wikilinks from frontmatter values', () => {
+    const content = '---\nbelongs_to:\n  - "[[quarter/q1-2026]]"\n---\n\n# Title\n'
+    expect(extractOutgoingLinks(content)).toEqual(['quarter/q1-2026'])
+  })
+
+  it('handles wikilinks in various positions', () => {
+    const content = '[[First]] middle [[Second]] end [[Third]]'
+    expect(extractOutgoingLinks(content)).toEqual(['First', 'Second', 'Third'])
+  })
+
+  it('ignores empty wikilinks', () => {
+    const content = 'Text [[]] and [[Valid]]'
+    expect(extractOutgoingLinks(content)).toEqual(['Valid'])
   })
 })

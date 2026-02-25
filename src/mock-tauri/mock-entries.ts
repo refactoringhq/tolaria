@@ -34,6 +34,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/responsibility/grow-newsletter.md',
@@ -66,6 +67,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/responsibility/manage-sponsorships.md',
@@ -92,6 +94,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/procedure/write-weekly-essays.md',
@@ -118,6 +121,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/procedure/run-sponsorships.md',
@@ -144,6 +148,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/experiment/stock-screener.md',
@@ -171,6 +176,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/note/facebook-ads-strategy.md',
@@ -198,6 +204,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/note/budget-allocation.md',
@@ -224,6 +231,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/person/matteo-cellini.md',
@@ -249,6 +257,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/person/maria-bianchi.md',
@@ -350,6 +359,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/topic/software-development.md',
@@ -376,6 +386,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/topic/trading.md',
@@ -402,6 +413,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/essay/on-writing-well.md',
@@ -428,6 +440,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/essay/engineering-leadership-101.md',
@@ -455,6 +468,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/essay/ai-agents-primer.md',
@@ -481,6 +495,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   // --- Type documents ---
   {
@@ -505,6 +520,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: 0,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/type/responsibility.md',
@@ -528,6 +544,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: 1,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/type/procedure.md',
@@ -551,6 +568,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: 2,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/type/experiment.md',
@@ -574,6 +592,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: 3,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/type/person.md',
@@ -597,6 +616,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: 4,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/type/event.md',
@@ -620,6 +640,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: 5,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/type/topic.md',
@@ -643,6 +664,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: 6,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/type/essay.md',
@@ -666,6 +688,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: 7,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/type/note.md',
@@ -689,6 +712,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: 8,
+    outgoingLinks: [],
   },
   // --- Custom type documents ---
   {
@@ -713,6 +737,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: 'cooking-pot',
     color: 'orange',
     order: 9,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/type/book.md',
@@ -736,6 +761,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: 'book-open',
     color: 'green',
     order: 10,
+    outgoingLinks: [],
   },
   // --- Instances of custom types ---
   {
@@ -762,6 +788,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/book/designing-data-intensive-applications.md',
@@ -787,6 +814,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   // --- Trashed entries ---
   {
@@ -814,6 +842,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/note/deprecated-api-notes.md',
@@ -839,6 +868,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/Users/luca/Laputa/experiment/failed-seo-experiment.md',
@@ -865,6 +895,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   // --- Archived entries ---
   {
@@ -884,6 +915,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
     modifiedAt: now - 86400 * 120,
     createdAt: now - 86400 * 200,
     fileSize: 680,
@@ -910,6 +942,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
     modifiedAt: now - 86400 * 90,
     createdAt: now - 86400 * 150,
     fileSize: 520,
@@ -968,6 +1001,7 @@ function generateBulkEntries(count: number): VaultEntry[] {
       icon: null,
       color: null,
       order: null,
+      outgoingLinks: [],
     })
   }
   return entries
