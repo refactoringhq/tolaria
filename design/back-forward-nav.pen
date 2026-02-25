@@ -1,0 +1,323 @@
+{
+  "children": [
+    {
+      "type": "frame",
+      "id": "nav-state-1",
+      "x": 0,
+      "y": 0,
+      "name": "State 1 — Default (both disabled)",
+      "width": 600,
+      "height": 80,
+      "fill": "#FFFFFF",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "text",
+          "id": "label1",
+          "content": "State 1: No history — both buttons disabled",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "400",
+          "fill": "#888888",
+          "padding": [4, 8]
+        },
+        {
+          "type": "frame",
+          "id": "tabbar1",
+          "name": "Tab Bar",
+          "width": "fill_container",
+          "height": 45,
+          "fill": "#F8F8F8",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "bottom": 1 },
+            "fill": "#E5E5E5"
+          },
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "navbtns1",
+              "name": "Nav Buttons",
+              "gap": 4,
+              "padding": [0, 8],
+              "alignItems": "center",
+              "stroke": {
+                "align": "inside",
+                "thickness": { "right": 1, "bottom": 1 },
+                "fill": "#E5E5E5"
+              },
+              "height": "fill_container",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "back1",
+                  "name": "Back (disabled)",
+                  "width": 15,
+                  "height": 15,
+                  "iconFontName": "arrow-left",
+                  "iconFontFamily": "phosphor",
+                  "fill": "#C0C0C0",
+                  "opacity": 0.4
+                },
+                {
+                  "type": "icon_font",
+                  "id": "fwd1",
+                  "name": "Forward (disabled)",
+                  "width": 15,
+                  "height": 15,
+                  "iconFontName": "arrow-right",
+                  "iconFontFamily": "phosphor",
+                  "fill": "#C0C0C0",
+                  "opacity": 0.4
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "tab1a",
+              "name": "Tab Active",
+              "height": "fill_container",
+              "fill": "#FFFFFF",
+              "stroke": { "align": "inside", "thickness": { "right": 1 }, "fill": "#E5E5E5" },
+              "gap": 6,
+              "padding": [0, 14],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tab1aTxt",
+                  "content": "Laputa App",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500",
+                  "fill": "#1A1A1A"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "nav-state-2",
+      "x": 0,
+      "y": 100,
+      "name": "State 2 — One note opened (back disabled)",
+      "width": 600,
+      "height": 80,
+      "fill": "#FFFFFF",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "text",
+          "id": "label2",
+          "content": "State 2: One note visited — back disabled, forward disabled",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "400",
+          "fill": "#888888",
+          "padding": [4, 8]
+        },
+        {
+          "type": "frame",
+          "id": "tabbar2",
+          "name": "Tab Bar",
+          "width": "fill_container",
+          "height": 45,
+          "fill": "#F8F8F8",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "bottom": 1 },
+            "fill": "#E5E5E5"
+          },
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "navbtns2",
+              "name": "Nav Buttons",
+              "gap": 4,
+              "padding": [0, 8],
+              "alignItems": "center",
+              "stroke": {
+                "align": "inside",
+                "thickness": { "right": 1, "bottom": 1 },
+                "fill": "#E5E5E5"
+              },
+              "height": "fill_container",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "back2",
+                  "name": "Back (disabled)",
+                  "width": 15,
+                  "height": 15,
+                  "iconFontName": "arrow-left",
+                  "iconFontFamily": "phosphor",
+                  "fill": "#C0C0C0",
+                  "opacity": 0.4
+                },
+                {
+                  "type": "icon_font",
+                  "id": "fwd2",
+                  "name": "Forward (disabled)",
+                  "width": 15,
+                  "height": 15,
+                  "iconFontName": "arrow-right",
+                  "iconFontFamily": "phosphor",
+                  "fill": "#C0C0C0",
+                  "opacity": 0.4
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "tab2a",
+              "name": "Tab Active",
+              "height": "fill_container",
+              "fill": "#FFFFFF",
+              "stroke": { "align": "inside", "thickness": { "right": 1 }, "fill": "#E5E5E5" },
+              "gap": 6,
+              "padding": [0, 14],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tab2aTxt",
+                  "content": "Project Alpha",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500",
+                  "fill": "#1A1A1A"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "nav-state-3",
+      "x": 0,
+      "y": 200,
+      "name": "State 3 — Two notes visited (back enabled)",
+      "width": 600,
+      "height": 80,
+      "fill": "#FFFFFF",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "text",
+          "id": "label3",
+          "content": "State 3: Two notes visited — back enabled, forward disabled",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "400",
+          "fill": "#888888",
+          "padding": [4, 8]
+        },
+        {
+          "type": "frame",
+          "id": "tabbar3",
+          "name": "Tab Bar",
+          "width": "fill_container",
+          "height": 45,
+          "fill": "#F8F8F8",
+          "stroke": {
+            "align": "inside",
+            "thickness": { "bottom": 1 },
+            "fill": "#E5E5E5"
+          },
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "navbtns3",
+              "name": "Nav Buttons",
+              "gap": 4,
+              "padding": [0, 8],
+              "alignItems": "center",
+              "stroke": {
+                "align": "inside",
+                "thickness": { "right": 1, "bottom": 1 },
+                "fill": "#E5E5E5"
+              },
+              "height": "fill_container",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "back3",
+                  "name": "Back (enabled)",
+                  "width": 15,
+                  "height": 15,
+                  "iconFontName": "arrow-left",
+                  "iconFontFamily": "phosphor",
+                  "fill": "#666666"
+                },
+                {
+                  "type": "icon_font",
+                  "id": "fwd3",
+                  "name": "Forward (disabled)",
+                  "width": 15,
+                  "height": 15,
+                  "iconFontName": "arrow-right",
+                  "iconFontFamily": "phosphor",
+                  "fill": "#C0C0C0",
+                  "opacity": 0.4
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "tab3a",
+              "name": "Tab Active",
+              "height": "fill_container",
+              "fill": "#FFFFFF",
+              "stroke": { "align": "inside", "thickness": { "right": 1 }, "fill": "#E5E5E5" },
+              "gap": 6,
+              "padding": [0, 14],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tab3aTxt",
+                  "content": "Meeting Notes",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500",
+                  "fill": "#1A1A1A"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "tab3b",
+              "name": "Tab Inactive",
+              "height": "fill_container",
+              "fill": "transparent",
+              "stroke": { "align": "inside", "thickness": { "right": 1, "bottom": 1 }, "fill": "#E5E5E5" },
+              "gap": 6,
+              "padding": [0, 14],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tab3bTxt",
+                  "content": "Project Alpha",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "400",
+                  "fill": "#888888"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {}
+}
