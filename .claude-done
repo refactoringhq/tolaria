@@ -1,0 +1,3 @@
+Task: relations-type-color
+Summary: Fixed relation chips showing default blue instead of type color. Root cause: resolveRef matched entries by path/filename only, while wiki-links used findEntryByTarget (title, filename, aliases). Fixed by adding title/alias matching to resolveRef, changing default color from blue to neutral grey for typeless notes, and passing custom color keys to TypeSelector. Also refactored DynamicPropertiesPanel to reduce cyclomatic complexity (11→10). All tests pass (739), code health gates pass, coverage 79%.
+Commits: 2
