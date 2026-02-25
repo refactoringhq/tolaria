@@ -201,10 +201,13 @@ describe('SearchPanel', () => {
       expect(screen.getByText('How to Design AI-first APIs')).toBeInTheDocument()
     })
 
+    // Wait for the results state to propagate to the keydown handler (useEffect re-run)
     fireEvent.keyDown(window, { key: 'Enter' })
 
-    expect(onSelectNote).toHaveBeenCalledWith(MOCK_ENTRIES[0])
-    expect(onClose).toHaveBeenCalled()
+    await waitFor(() => {
+      expect(onSelectNote).toHaveBeenCalledWith(MOCK_ENTRIES[0])
+      expect(onClose).toHaveBeenCalled()
+    })
   })
 
   it('toggles search mode with Tab key', async () => {
