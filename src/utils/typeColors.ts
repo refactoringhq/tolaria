@@ -25,8 +25,8 @@ const TYPE_LIGHT_COLOR_MAP: Record<string, string> = {
   Type: 'var(--accent-blue-light)',
 }
 
-const DEFAULT_COLOR = 'var(--accent-blue)'
-const DEFAULT_LIGHT_COLOR = 'var(--accent-blue-light)'
+const DEFAULT_COLOR = 'var(--muted-foreground)'
+const DEFAULT_LIGHT_COLOR = 'var(--muted)'
 
 /** Color key → CSS variable mapping for the design system accent palette */
 export const ACCENT_COLORS: { key: string; label: string; css: string; cssLight: string }[] = [

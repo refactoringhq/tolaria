@@ -147,7 +147,7 @@ function AddPropertyForm({ onAdd, onCancel }: { onAdd: (key: string, value: stri
 
 const TYPE_NONE = '__none__'
 
-function ReadOnlyType({ isA, onNavigate }: { isA?: string | null; onNavigate?: (target: string) => void }) {
+function ReadOnlyType({ isA, customColorKey, onNavigate }: { isA?: string | null; customColorKey?: string | null; onNavigate?: (target: string) => void }) {
   if (!isA) return null
   return (
     <div className="flex items-center justify-between px-1.5">
@@ -155,7 +155,7 @@ function ReadOnlyType({ isA, onNavigate }: { isA?: string | null; onNavigate?: (
       {onNavigate ? (
         <button
           className="min-w-0 truncate border-none text-right cursor-pointer hover:opacity-80"
-          style={{ background: getTypeLightColor(isA), color: getTypeColor(isA), borderRadius: 6, padding: '2px 8px', fontSize: 12, fontWeight: 500 }}
+          style={{ background: getTypeLightColor(isA, customColorKey), color: getTypeColor(isA, customColorKey), borderRadius: 6, padding: '2px 8px', fontSize: 12, fontWeight: 500 }}
           onClick={() => onNavigate(`type/${isA.toLowerCase()}`)} title={isA}
         >{isA}</button>
       ) : (
@@ -165,12 +165,12 @@ function ReadOnlyType({ isA, onNavigate }: { isA?: string | null; onNavigate?: (
   )
 }
 
-function TypeSelector({ isA, availableTypes, onUpdateProperty, onNavigate }: {
-  isA?: string | null; availableTypes: string[]
+function TypeSelector({ isA, customColorKey, availableTypes, onUpdateProperty, onNavigate }: {
+  isA?: string | null; customColorKey?: string | null; availableTypes: string[]
   onUpdateProperty?: (key: string, value: FrontmatterValue) => void
   onNavigate?: (target: string) => void
 }) {
-  if (!onUpdateProperty) return <ReadOnlyType isA={isA} onNavigate={onNavigate} />
+  if (!onUpdateProperty) return <ReadOnlyType isA={isA} customColorKey={customColorKey} onNavigate={onNavigate} />
 
   const currentValue = isA || TYPE_NONE
   const options = isA && !availableTypes.includes(isA)
@@ -185,8 +185,8 @@ function TypeSelector({ isA, availableTypes, onUpdateProperty, onNavigate }: {
           size="sm"
           className="h-auto min-h-0 gap-1 border-none px-2 py-0.5 shadow-none"
           style={isA ? {
-            background: getTypeLightColor(isA),
-            color: getTypeColor(isA),
+            background: getTypeLightColor(isA, customColorKey),
+            color: getTypeColor(isA, customColorKey),
             fontSize: 12,
             fontWeight: 500,
             borderRadius: 6,
@@ -259,6 +259,31 @@ function AddPropertyButton({ onClick, disabled }: { onClick: () => void; disable
   )
 }
 
+function NoteInfoSection({ entry, wordCount }: { entry: VaultEntry; wordCount: number }) {
+  return (
+    <div className="border-t border-border pt-3">
+      <h4 className="font-mono-overline mb-2 text-muted-foreground">Info</h4>
+      <div className="flex flex-col gap-1.5">
+        <InfoRow label="Modified" value={formatDate(entry.modifiedAt)} />
+        <InfoRow label="Created" value={formatDate(entry.createdAt)} />
+        <InfoRow label="Words" value={String(wordCount)} />
+        <InfoRow label="Size" value={formatFileSize(entry.fileSize)} />
+      </div>
+    </div>
+  )
+}
+
+function reconcileListUpdate(
+  newItems: string[],
+  onUpdate: (key: string, value: FrontmatterValue) => void,
+  onDelete: ((key: string) => void) | undefined,
+  key: string,
+) {
+  if (newItems.length === 0) onDelete?.(key)
+  else if (newItems.length === 1) onUpdate(key, newItems[0])
+  else onUpdate(key, newItems)
+}
+
 export function DynamicPropertiesPanel({
   entry,
   content,
@@ -283,12 +308,13 @@ export function DynamicPropertiesPanel({
 
   const wordCount = countWords(content ?? '')
 
-  const availableTypes = useMemo(() =>
-    (entries ?? [])
-      .filter(e => e.isA === 'Type')
-      .map(e => e.title)
-      .sort((a, b) => a.localeCompare(b))
-  , [entries])
+  const { availableTypes, customColorKey } = useMemo(() => {
+    const typeEntries = (entries ?? []).filter(e => e.isA === 'Type')
+    return {
+      availableTypes: typeEntries.map(e => e.title).sort((a, b) => a.localeCompare(b)),
+      customColorKey: entry.isA ? (typeEntries.find(e => e.title === entry.isA)?.color ?? null) : null,
+    }
+  }, [entries, entry.isA])
 
   const propertyEntries = useMemo(() => {
     return Object.entries(frontmatter)
@@ -302,9 +328,7 @@ export function DynamicPropertiesPanel({
 
   const handleSaveList = useCallback((key: string, newItems: string[]) => {
     if (!onUpdateProperty) return
-    if (newItems.length === 0) onDeleteProperty?.(key)
-    else if (newItems.length === 1) onUpdateProperty(key, newItems[0])
-    else onUpdateProperty(key, newItems)
+    reconcileListUpdate(newItems, onUpdateProperty, onDeleteProperty, key)
   }, [onUpdateProperty, onDeleteProperty])
 
   const handleAdd = useCallback((rawKey: string, rawValue: string) => {
@@ -317,7 +341,7 @@ export function DynamicPropertiesPanel({
     <div className="flex flex-col gap-3">
       {/* Editable properties section */}
       <div className="flex flex-col gap-2">
-        <TypeSelector isA={entry.isA} availableTypes={availableTypes} onUpdateProperty={onUpdateProperty} onNavigate={onNavigate} />
+        <TypeSelector isA={entry.isA} customColorKey={customColorKey} availableTypes={availableTypes} onUpdateProperty={onUpdateProperty} onNavigate={onNavigate} />
         {propertyEntries.map(([key, value]) => (
           <PropertyRow key={key} propKey={key} value={value} editingKey={editingKey} onStartEdit={setEditingKey} onSave={handleSaveValue} onSaveList={handleSaveList} onUpdate={onUpdateProperty} onDelete={onDeleteProperty} />
         ))}
@@ -326,16 +350,7 @@ export function DynamicPropertiesPanel({
         ? <AddPropertyForm onAdd={handleAdd} onCancel={() => setShowAddDialog(false)} />
         : <AddPropertyButton onClick={() => setShowAddDialog(true)} disabled={!onAddProperty} />
       }
-      {/* Read-only Info section */}
-      <div className="border-t border-border pt-3">
-        <h4 className="font-mono-overline mb-2 text-muted-foreground">Info</h4>
-        <div className="flex flex-col gap-1.5">
-          <InfoRow label="Modified" value={formatDate(entry.modifiedAt)} />
-          <InfoRow label="Created" value={formatDate(entry.createdAt)} />
-          <InfoRow label="Words" value={String(wordCount)} />
-          <InfoRow label="Size" value={formatFileSize(entry.fileSize)} />
-        </div>
-      </div>
+      <NoteInfoSection entry={entry} wordCount={wordCount} />
     </div>
   )
 }

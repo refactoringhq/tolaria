@@ -32,13 +32,49 @@ const makeEntry = (overrides: Partial<VaultEntry> = {}): VaultEntry => ({
 describe('DynamicRelationshipsPanel', () => {
   const onNavigate = vi.fn()
   const onAddProperty = vi.fn()
+  const personTypeEntry = makeEntry({
+    path: '/vault/type/person.md', filename: 'person.md', title: 'Person',
+    isA: 'Type', color: 'yellow', icon: 'user',
+  })
   const entries = [
     makeEntry({ path: '/vault/project/my-project.md', filename: 'my-project.md', title: 'My Project', isA: 'Project' }),
     makeEntry({ path: '/vault/topic/ai.md', filename: 'ai.md', title: 'AI', isA: 'Topic' }),
+    personTypeEntry,
   ]
+  const typeEntryMap: Record<string, VaultEntry> = { Person: personTypeEntry }
 
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  it.each([
+    {
+      name: 'applies type color via typeEntryMap',
+      entry: { path: '/vault/people/luca.md', filename: 'luca.md', title: 'Luca', isA: 'Person' as const },
+      ref: '[[Luca]]', key: 'Owner', tMap: typeEntryMap, expectedColor: 'var(--accent-yellow)',
+    },
+    {
+      name: 'resolves by title when filename differs',
+      entry: { path: '/vault/people/john-doe.md', filename: 'john-doe.md', title: 'John Doe', isA: 'Person' as const },
+      ref: '[[John Doe]]', key: 'Owner', tMap: typeEntryMap, expectedColor: 'var(--accent-yellow)',
+    },
+    {
+      name: 'shows neutral color for notes with no type',
+      entry: { path: '/vault/misc/random.md', filename: 'random.md', title: 'Random', isA: null },
+      ref: '[[Random]]', key: 'Related to', tMap: {} as Record<string, VaultEntry>, expectedColor: 'var(--muted-foreground)',
+    },
+  ])('$name', ({ entry: overrides, ref, key, tMap, expectedColor }) => {
+    const { container } = render(
+      <DynamicRelationshipsPanel
+        typeEntryMap={tMap}
+        frontmatter={{ [key]: [ref] }}
+        entries={[...entries, makeEntry(overrides)]}
+        onNavigate={onNavigate}
+      />
+    )
+    const chip = container.querySelector('.group\\/link button')
+    expect(chip).toBeTruthy()
+    expect(chip!.style.color).toBe(expectedColor)
   })
 
   it('shows "No relationships" when frontmatter has no relations', () => {

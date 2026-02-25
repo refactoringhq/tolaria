@@ -7,6 +7,7 @@ import type { ParsedFrontmatter } from '../utils/frontmatter'
 import { RELATIONSHIP_KEYS, containsWikilinks } from './DynamicPropertiesPanel'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 import { getTypeIcon } from './NoteItem'
+import { findEntryByTarget } from '../utils/wikilinkColors'
 import type { FrontmatterValue } from './Inspector'
 
 function isWikilink(value: string): boolean {
@@ -15,10 +16,13 @@ function isWikilink(value: string): boolean {
 
 function resolveRef(ref: string, entries: VaultEntry[]): VaultEntry | undefined {
   const target = wikilinkTarget(ref)
+  const byTitle = findEntryByTarget(entries, target)
+  if (byTitle) return byTitle
+  const lastSegment = target.split('/').pop()
   return entries.find((e) => {
     const stem = e.path.replace(/^.*\/Laputa\//, '').replace(/\.md$/, '')
     if (stem === target) return true
-    return e.filename.replace(/\.md$/, '') === target.split('/').pop()
+    return e.filename.replace(/\.md$/, '') === lastSegment
   })
 }
 

@@ -87,8 +87,8 @@ describe('lookupColorForEntry', () => {
     expect(lookupColorForEntry(allEntries, recipeEntry)).toBe('var(--accent-orange)')
   })
 
-  it('returns default blue for an entry with no type', () => {
-    expect(lookupColorForEntry(allEntries, untypedEntry)).toBe('var(--accent-blue)')
+  it('returns neutral color for an entry with no type', () => {
+    expect(lookupColorForEntry(allEntries, untypedEntry)).toBe('var(--muted-foreground)')
   })
 })
 
@@ -105,16 +105,16 @@ describe('resolveWikilinkColor', () => {
     expect(result.color).toBe('var(--text-muted)')
   })
 
-  it('returns default color for an untyped note', () => {
+  it('returns neutral color for an untyped note', () => {
     const result = resolveWikilinkColor(allEntries, 'Random Thought')
     expect(result.isBroken).toBe(false)
-    expect(result.color).toBe('var(--accent-blue)')
+    expect(result.color).toBe('var(--muted-foreground)')
   })
 
-  it('returns default color when entries list is empty', () => {
+  it('returns neutral color when entries list is empty', () => {
     const result = resolveWikilinkColor([], 'Anything')
     expect(result.isBroken).toBe(false)
-    expect(result.color).toBe('var(--accent-blue)')
+    expect(result.color).toBe('var(--muted-foreground)')
   })
 
   it('resolves alias-based wikilink target', () => {
