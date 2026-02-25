@@ -9,6 +9,7 @@ import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 import { getTypeIcon } from './NoteItem'
 import { findEntryByTarget } from '../utils/wikilinkColors'
 import type { FrontmatterValue } from './Inspector'
+import { NoteAutocomplete } from './NoteAutocomplete'
 
 function isWikilink(value: string): boolean {
   return /^\[\[.*\]\]$/.test(value)
@@ -100,29 +101,28 @@ function resolveRefProps(ref: string, entries: VaultEntry[], typeEntryMap: Recor
   }
 }
 
-function InlineAddNote({ entries, onAdd }: {
+function InlineAddNote({ entries, typeEntryMap, onAdd }: {
   entries: VaultEntry[]
+  typeEntryMap: Record<string, VaultEntry>
   onAdd: (noteTitle: string) => void
 }) {
   const [active, setActive] = useState(false)
   const [query, setQuery] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
-  const noteTitles = useMemo(() => entries.map(e => e.title), [entries])
 
-  const handleSubmit = useCallback(() => {
-    const trimmed = query.trim()
+  const handleSubmit = useCallback((title: string) => {
+    const trimmed = title.trim()
     if (!trimmed) return
     onAdd(trimmed)
     setQuery('')
     setActive(false)
-  }, [query, onAdd])
+  }, [onAdd])
 
   if (!active) {
     return (
       <button
         className="mt-1 flex items-center gap-1 border-none bg-transparent p-0 text-muted-foreground cursor-pointer hover:text-foreground"
         style={{ fontSize: 11 }}
-        onClick={() => { setActive(true); setTimeout(() => inputRef.current?.focus(), 0) }}
+        onClick={() => setActive(true)}
         data-testid="add-relation-ref"
       >
         <Plus size={10} />
@@ -133,25 +133,22 @@ function InlineAddNote({ entries, onAdd }: {
 
   return (
     <div className="mt-1 flex items-center gap-1">
-      <datalist id="inline-note-titles">{noteTitles.map(t => <option key={t} value={t} />)}</datalist>
-      <input
-        ref={inputRef}
-        autoFocus
-        className="flex-1 border border-border bg-transparent px-2 py-0.5 text-xs text-foreground"
-        style={{ borderRadius: 4, outline: 'none', minWidth: 0 }}
-        placeholder="Note title"
-        list="inline-note-titles"
-        value={query}
-        onChange={e => setQuery(e.target.value)}
-        onKeyDown={e => {
-          if (e.key === 'Enter') handleSubmit()
-          else if (e.key === 'Escape') { setQuery(''); setActive(false) }
-        }}
-        data-testid="add-relation-ref-input"
-      />
+      <div className="flex-1" style={{ minWidth: 0 }}>
+        <NoteAutocomplete
+          entries={entries}
+          typeEntryMap={typeEntryMap}
+          value={query}
+          onChange={setQuery}
+          onSelect={handleSubmit}
+          onEscape={() => { setQuery(''); setActive(false) }}
+          placeholder="Note title"
+          autoFocus
+          testId="add-relation-ref-input"
+        />
+      </div>
       <button
         className="shrink-0 border-none bg-transparent p-0.5 text-muted-foreground hover:text-foreground"
-        onClick={handleSubmit}
+        onClick={() => handleSubmit(query)}
         disabled={!query.trim()}
       >
         <Plus size={12} />
@@ -188,7 +185,7 @@ function RelationshipGroup({ label, refs, entries, typeEntryMap, onNavigate, onR
           )
         })}
       </div>
-      {onAddRef && <InlineAddNote entries={entries} onAdd={onAddRef} />}
+      {onAddRef && <InlineAddNote entries={entries} typeEntryMap={typeEntryMap} onAdd={onAddRef} />}
     </div>
   )
 }
@@ -205,29 +202,25 @@ function extractRelationshipRefs(frontmatter: ParsedFrontmatter): { key: string;
     .filter(({ refs }) => refs.length > 0)
 }
 
-function AddRelationshipForm({ entries, onAddProperty }: {
+function AddRelationshipForm({ entries, typeEntryMap, onAddProperty }: {
   entries: VaultEntry[]
+  typeEntryMap: Record<string, VaultEntry>
   onAddProperty: (key: string, value: FrontmatterValue) => void
 }) {
   const [relKey, setRelKey] = useState('')
   const [relTarget, setRelTarget] = useState('')
   const [showForm, setShowForm] = useState(false)
   const keyInputRef = useRef<HTMLInputElement>(null)
-  const noteTitles = useMemo(() => entries.map(e => e.title), [entries])
 
-  const handleAdd = useCallback(() => {
+  const submitForm = useCallback((targetOverride?: string) => {
     const key = relKey.trim()
-    const target = relTarget.trim()
+    const target = (targetOverride ?? relTarget).trim()
     if (!key || !target) return
     onAddProperty(key, `[[${target}]]`)
     setRelKey(''); setRelTarget(''); setShowForm(false)
   }, [relKey, relTarget, onAddProperty])
 
   const resetForm = () => { setShowForm(false); setRelKey(''); setRelTarget('') }
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleAdd()
-    else if (e.key === 'Escape') resetForm()
-  }
 
   if (!showForm) {
     return (
@@ -236,16 +229,51 @@ function AddRelationshipForm({ entries, onAddProperty }: {
   }
 
   return (
-    <div className="mt-2 flex flex-col gap-1.5" onKeyDown={handleKeyDown}>
-      <datalist id="rel-note-titles">{noteTitles.map(t => <option key={t} value={t} />)}</datalist>
-      <input ref={keyInputRef} autoFocus className="w-full border border-border bg-transparent px-2 py-1 text-xs text-foreground" style={{ borderRadius: 4, outline: 'none' }} placeholder="Relationship name" value={relKey} onChange={e => setRelKey(e.target.value)} />
-      <input className="w-full border border-border bg-transparent px-2 py-1 text-xs text-foreground" style={{ borderRadius: 4, outline: 'none' }} placeholder="Note title" list="rel-note-titles" value={relTarget} onChange={e => setRelTarget(e.target.value)} />
+    <div className="mt-2 flex flex-col gap-1.5">
+      <input
+        ref={keyInputRef}
+        autoFocus
+        className="w-full border border-border bg-transparent px-2 py-1 text-xs text-foreground"
+        style={{ borderRadius: 4, outline: 'none' }}
+        placeholder="Relationship name"
+        value={relKey}
+        onChange={e => setRelKey(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Escape') resetForm() }}
+      />
+      <NoteAutocomplete
+        entries={entries}
+        typeEntryMap={typeEntryMap}
+        value={relTarget}
+        onChange={setRelTarget}
+        onSelect={(title) => submitForm(title)}
+        onEscape={resetForm}
+        placeholder="Note title"
+        testId="add-relationship-note-input"
+      />
       <div className="flex gap-1.5">
-        <button className="flex-1 border border-border bg-transparent text-xs text-foreground" style={{ borderRadius: 4, padding: '4px 0' }} onClick={handleAdd} disabled={!relKey.trim() || !relTarget.trim()}>Add</button>
+        <button className="flex-1 border border-border bg-transparent text-xs text-foreground" style={{ borderRadius: 4, padding: '4px 0' }} onClick={() => submitForm()} disabled={!relKey.trim() || !relTarget.trim()}>Add</button>
         <button className="border border-border bg-transparent text-xs text-muted-foreground" style={{ borderRadius: 4, padding: '4px 8px' }} onClick={resetForm}>Cancel</button>
       </div>
     </div>
   )
+}
+
+function removeRefFromGroup(groups: { key: string; refs: string[] }[], key: string, refToRemove: string, onUpdate: (k: string, v: FrontmatterValue) => void, onDelete: (k: string) => void) {
+  const group = groups.find(g => g.key === key)
+  if (!group) return
+  const remaining = group.refs.filter(r => r !== refToRemove)
+  if (remaining.length === 0) onDelete(key)
+  else if (remaining.length === 1) onUpdate(key, remaining[0])
+  else onUpdate(key, remaining)
+}
+
+function addRefToGroup(groups: { key: string; refs: string[] }[], key: string, noteTitle: string, onUpdate: (k: string, v: FrontmatterValue) => void) {
+  const existing = groups.find(g => g.key === key)?.refs ?? []
+  const newRef = `[[${noteTitle}]]`
+  if (existing.includes(newRef)) return
+  const updated = [...existing, newRef]
+  if (updated.length === 1) onUpdate(key, updated[0])
+  else onUpdate(key, updated)
 }
 
 export function DynamicRelationshipsPanel({ frontmatter, entries, typeEntryMap, onNavigate, onAddProperty, onUpdateProperty, onDeleteProperty }: {
@@ -259,23 +287,12 @@ export function DynamicRelationshipsPanel({ frontmatter, entries, typeEntryMap, 
 
   const handleRemoveRef = useCallback((key: string, refToRemove: string) => {
     if (!onUpdateProperty || !onDeleteProperty) return
-    const group = relationshipEntries.find(g => g.key === key)
-    if (!group) return
-    const remaining = group.refs.filter(r => r !== refToRemove)
-    if (remaining.length === 0) onDeleteProperty(key)
-    else if (remaining.length === 1) onUpdateProperty(key, remaining[0])
-    else onUpdateProperty(key, remaining)
+    removeRefFromGroup(relationshipEntries, key, refToRemove, onUpdateProperty, onDeleteProperty)
   }, [relationshipEntries, onUpdateProperty, onDeleteProperty])
 
   const handleAddRef = useCallback((key: string, noteTitle: string) => {
     if (!onUpdateProperty) return
-    const group = relationshipEntries.find(g => g.key === key)
-    const existing = group?.refs ?? []
-    const newRef = `[[${noteTitle}]]`
-    if (existing.includes(newRef)) return
-    const updated = [...existing, newRef]
-    if (updated.length === 1) onUpdateProperty(key, updated[0])
-    else onUpdateProperty(key, updated)
+    addRefToGroup(relationshipEntries, key, noteTitle, onUpdateProperty)
   }, [relationshipEntries, onUpdateProperty])
 
   const canEdit = !!onUpdateProperty && !!onDeleteProperty
@@ -293,7 +310,7 @@ export function DynamicRelationshipsPanel({ frontmatter, entries, typeEntryMap, 
         ))
       }
       {onAddProperty
-        ? <AddRelationshipForm entries={entries} onAddProperty={onAddProperty} />
+        ? <AddRelationshipForm entries={entries} typeEntryMap={typeEntryMap} onAddProperty={onAddProperty} />
         : <button className="mt-2 w-full border border-border bg-transparent text-center text-muted-foreground" style={{ borderRadius: 6, padding: '6px 12px', fontSize: 12, opacity: 0.5, cursor: 'not-allowed' }} disabled>+ Link existing</button>
       }
     </div>
