@@ -15,6 +15,7 @@ import { BreadcrumbBar } from './BreadcrumbBar'
 import { useEditorTheme } from '../hooks/useTheme'
 import { splitFrontmatter, preProcessWikilinks, injectWikilinks, restoreWikilinksInBlocks, countWords } from '../utils/wikilinks'
 import { preFilterWikilinks, deduplicateByPath, disambiguateTitles, MAX_RESULTS, MIN_QUERY_LENGTH } from '../utils/wikilinkSuggestions'
+import { filterPersonMentions, PERSON_MENTION_MIN_QUERY } from '../utils/personMentionSuggestions'
 import { resolveWikilinkColor as resolveColor } from '../utils/wikilinkColors'
 import { getTypeColor } from '../utils/typeColors'
 import { WikilinkSuggestionMenu, type WikilinkSuggestionItem } from './WikilinkSuggestionMenu'
@@ -169,6 +170,31 @@ function SingleEditorView({ editor, entries, onNavigateWikilink, onChange }: { e
     }))
   }, [baseItems, editor])
 
+  const getPersonMentionItems = useCallback(async (query: string): Promise<WikilinkSuggestionItem[]> => {
+    if (query.length < PERSON_MENTION_MIN_QUERY) return []
+
+    const candidates = filterPersonMentions(baseItems, query)
+    const items = candidates.map(item => ({
+      ...item,
+      onItemClick: () => {
+        editor.insertInlineContent([
+          {
+            type: 'wikilink' as const,
+            props: { target: item.entryTitle },
+          },
+          " ",
+        ])
+      },
+    }))
+    const filtered = filterSuggestionItems(items, query).slice(0, MAX_RESULTS)
+    const final = disambiguateTitles(deduplicateByPath(filtered))
+    return final.map(({ group, ...rest }) => ({
+      ...rest,
+      noteType: group,
+      typeColor: getTypeColor(group),
+    }))
+  }, [baseItems, editor])
+
   return (
     <div ref={containerRef} className={`editor__blocknote-container${isDragOver ? ' editor__blocknote-container--drag-over' : ''}`} style={cssVars as React.CSSProperties}>
       {isDragOver && (
@@ -184,6 +210,12 @@ function SingleEditorView({ editor, entries, onNavigateWikilink, onChange }: { e
         <SuggestionMenuController
           triggerCharacter="[["
           getItems={getWikilinkItems}
+          suggestionMenuComponent={WikilinkSuggestionMenu}
+          onItemClick={(item: WikilinkSuggestionItem) => item.onItemClick()}
+        />
+        <SuggestionMenuController
+          triggerCharacter="@"
+          getItems={getPersonMentionItems}
           suggestionMenuComponent={WikilinkSuggestionMenu}
           onItemClick={(item: WikilinkSuggestionItem) => item.onItemClick()}
         />

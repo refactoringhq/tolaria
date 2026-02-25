@@ -433,6 +433,49 @@ Belongs to:
 
 AI agents are autonomous systems that can plan, execute, and adapt to achieve goals.
 `,
+  '/Users/luca/Laputa/person/maria-bianchi.md': `---
+title: Maria Bianchi
+type: Person
+aliases:
+  - Maria
+---
+
+# Maria Bianchi
+
+## Role
+Product designer — leads UX research and design sprints for the app.
+
+## Contact
+- Email: maria@example.com
+- Slack: @maria
+`,
+  '/Users/luca/Laputa/person/marco-verdi.md': `---
+title: Marco Verdi
+type: Person
+aliases:
+  - Marco
+---
+
+# Marco Verdi
+
+## Role
+Frontend engineer — focuses on React performance and accessibility.
+
+## Contact
+- Email: marco@example.com
+`,
+  '/Users/luca/Laputa/person/elena-russo.md': `---
+title: Elena Russo
+type: Person
+aliases:
+  - Elena
+---
+
+# Elena Russo
+
+## Role
+Content strategist — plans newsletter topics and manages the editorial calendar.
+`,
   '/Users/luca/Laputa/type/project.md': `---
 type: Type
 order: 0

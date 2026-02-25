@@ -29,12 +29,18 @@ vi.mock('@blocknote/core/extensions', () => ({
 }))
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock
+const capturedGetItemsByTrigger: Record<string, (query: string) => Promise<any[]>> = {}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock
 let capturedGetItems: ((query: string) => Promise<any[]>) | null = null
 vi.mock('@blocknote/react', () => ({
   createReactInlineContentSpec: () => ({ render: () => null }),
   useCreateBlockNote: () => mockEditor,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock
-  SuggestionMenuController: (props: any) => { capturedGetItems = props.getItems; return null },
+  SuggestionMenuController: (props: any) => {
+    capturedGetItemsByTrigger[props.triggerCharacter] = props.getItems
+    if (props.triggerCharacter === '[[') capturedGetItems = props.getItems
+    return null
+  },
 }))
 
 vi.mock('@blocknote/mantine', () => ({
