@@ -11,6 +11,8 @@ interface KeyboardActions {
   onTrashNote: (path: string) => void
   onArchiveNote: (path: string) => void
   onSetViewMode: (mode: ViewMode) => void
+  onGoBack?: () => void
+  onGoForward?: () => void
   activeTabPathRef: React.MutableRefObject<string | null>
   handleCloseTabRef: React.MutableRefObject<(path: string) => void>
 }
@@ -56,7 +58,7 @@ function handleCmdKey(e: KeyboardEvent, keyMap: Record<string, ShortcutHandler>)
 
 export function useAppKeyboard({
   onQuickOpen, onCommandPalette, onSearch, onCreateNote, onSave, onOpenSettings, onTrashNote, onArchiveNote,
-  onSetViewMode, activeTabPathRef, handleCloseTabRef,
+  onSetViewMode, onGoBack, onGoForward, activeTabPathRef, handleCloseTabRef,
 }: KeyboardActions) {
   useEffect(() => {
     const withActiveTab = (fn: (path: string) => void): ShortcutHandler => () => {
@@ -74,6 +76,8 @@ export function useAppKeyboard({
       w: withActiveTab((path) => handleCloseTabRef.current(path)),
       Backspace: withActiveTab(onTrashNote),
       Delete: withActiveTab(onTrashNote),
+      '[': () => onGoBack?.(),
+      ']': () => onGoForward?.(),
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -89,5 +93,5 @@ export function useAppKeyboard({
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onQuickOpen, onCommandPalette, onSearch, onCreateNote, onSave, onOpenSettings, onTrashNote, onArchiveNote, activeTabPathRef, handleCloseTabRef, onSetViewMode])
+  }, [onQuickOpen, onCommandPalette, onSearch, onCreateNote, onSave, onOpenSettings, onTrashNote, onArchiveNote, activeTabPathRef, handleCloseTabRef, onSetViewMode, onGoBack, onGoForward])
 }

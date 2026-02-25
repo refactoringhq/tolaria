@@ -33,6 +33,10 @@ interface AppCommandsConfig {
   onSwitchTab: (path: string) => void
   onReplaceActiveTab: (entry: VaultEntry) => void
   onSelectNote: (entry: VaultEntry) => void
+  onGoBack?: () => void
+  onGoForward?: () => void
+  canGoBack?: boolean
+  canGoForward?: boolean
 }
 
 /** Sets up keyboard shortcuts, command registry, and keyboard navigation. */
@@ -47,6 +51,8 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onTrashNote: config.onTrashNote,
     onArchiveNote: config.onArchiveNote,
     onSetViewMode: config.onSetViewMode,
+    onGoBack: config.onGoBack,
+    onGoForward: config.onGoForward,
     activeTabPathRef: config.activeTabPathRef,
     handleCloseTabRef: config.handleCloseTabRef,
   })
@@ -67,6 +73,10 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onToggleInspector: config.onToggleInspector,
     onSelect: config.onSelect,
     onCloseTab: config.onCloseTab,
+    onGoBack: config.onGoBack,
+    onGoForward: config.onGoForward,
+    canGoBack: config.canGoBack,
+    canGoForward: config.canGoForward,
   })
 
   useKeyboardNavigation({

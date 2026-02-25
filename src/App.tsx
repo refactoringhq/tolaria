@@ -24,6 +24,7 @@ import { useDialogs } from './hooks/useDialogs'
 import { useVaultSwitcher } from './hooks/useVaultSwitcher'
 import { useGitHistory } from './hooks/useGitHistory'
 import { useUpdater } from './hooks/useUpdater'
+import { useNavigationHistory } from './hooks/useNavigationHistory'
 import { UpdateBanner } from './components/UpdateBanner'
 import { setApiKey } from './utils/ai-chat'
 import { extractOutgoingLinks } from './utils/wikilinks'
@@ -99,6 +100,35 @@ function App() {
 
   const notes = useNoteActions({ addEntry: vault.addEntry, removeEntry: vault.removeEntry, updateContent: vault.updateContent, entries: vault.entries, setToastMessage, updateEntry: vault.updateEntry })
 
+  const navHistory = useNavigationHistory()
+
+  // Push to navigation history whenever the active tab changes (user-initiated)
+  const navFromHistoryRef = useRef(false)
+  useEffect(() => {
+    if (notes.activeTabPath && !navFromHistoryRef.current) {
+      navHistory.push(notes.activeTabPath)
+    }
+    navFromHistoryRef.current = false
+  }, [notes.activeTabPath]) // eslint-disable-line react-hooks/exhaustive-deps -- navHistory.push is stable
+
+  const isTabOpen = useCallback((path: string) => notes.tabs.some(t => t.entry.path === path), [notes.tabs])
+
+  const handleGoBack = useCallback(() => {
+    const target = navHistory.goBack(isTabOpen)
+    if (target) {
+      navFromHistoryRef.current = true
+      notes.handleSwitchTab(target)
+    }
+  }, [navHistory, isTabOpen, notes])
+
+  const handleGoForward = useCallback(() => {
+    const target = navHistory.goForward(isTabOpen)
+    if (target) {
+      navFromHistoryRef.current = true
+      notes.handleSwitchTab(target)
+    }
+  }, [navHistory, isTabOpen, notes])
+
   const { handleSave, handleContentChange, savePendingForPath, savePending } = useEditorSaveWithLinks({
     updateContent: vault.updateContent, updateEntry: vault.updateEntry,
     setTabs: notes.setTabs, setToastMessage, onAfterSave: vault.loadModifiedFiles,
@@ -142,6 +172,8 @@ function App() {
     onSelect: setSelection, onCloseTab: notes.handleCloseTab,
     onSwitchTab: notes.handleSwitchTab, onReplaceActiveTab: notes.handleReplaceActiveTab,
     onSelectNote: notes.handleSelectNote,
+    onGoBack: handleGoBack, onGoForward: handleGoForward,
+    canGoBack: navHistory.canGoBack, canGoForward: navHistory.canGoForward,
   })
 
   const { status: updateStatus, actions: updateActions } = useUpdater()
@@ -201,6 +233,10 @@ function App() {
             onUnarchiveNote={entryActions.handleUnarchiveNote}
             onRenameTab={handleRenameTab}
             onContentChange={handleContentChange}
+            canGoBack={navHistory.canGoBack}
+            canGoForward={navHistory.canGoForward}
+            onGoBack={handleGoBack}
+            onGoForward={handleGoForward}
           />
         </div>
       </div>

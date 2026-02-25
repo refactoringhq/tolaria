@@ -31,6 +31,10 @@ interface CommandRegistryConfig {
   onToggleInspector: () => void
   onSelect: (sel: SidebarSelection) => void
   onCloseTab: (path: string) => void
+  onGoBack?: () => void
+  onGoForward?: () => void
+  canGoBack?: boolean
+  canGoForward?: boolean
 }
 
 const GROUP_ORDER: CommandGroup[] = ['Navigation', 'Note', 'Git', 'View', 'Settings']
@@ -45,6 +49,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     onQuickOpen, onCreateNote, onSave, onOpenSettings,
     onTrashNote, onArchiveNote, onUnarchiveNote,
     onCommitPush, onSetViewMode, onToggleInspector, onSelect, onCloseTab,
+    onGoBack, onGoForward, canGoBack, canGoForward,
   } = config
 
   const hasActiveNote = activeTabPath !== null
@@ -64,6 +69,8 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
       { id: 'go-archived', label: 'Go to Archived', group: 'Navigation', keywords: [], enabled: true, execute: () => onSelect({ kind: 'filter', filter: 'archived' }) },
       { id: 'go-trash', label: 'Go to Trash', group: 'Navigation', keywords: ['deleted'], enabled: true, execute: () => onSelect({ kind: 'filter', filter: 'trash' }) },
       { id: 'go-changes', label: 'Go to Changes', group: 'Navigation', keywords: ['git', 'modified', 'pending'], enabled: true, execute: () => onSelect({ kind: 'filter', filter: 'changes' }) },
+      { id: 'go-back', label: 'Go Back', group: 'Navigation', shortcut: '⌘[', keywords: ['previous', 'history', 'back'], enabled: !!canGoBack, execute: () => onGoBack?.() },
+      { id: 'go-forward', label: 'Go Forward', group: 'Navigation', shortcut: '⌘]', keywords: ['next', 'history', 'forward'], enabled: !!canGoForward, execute: () => onGoForward?.() },
 
       // Note actions (contextual)
       { id: 'create-note', label: 'Create New Note', group: 'Note', shortcut: '⌘N', keywords: ['new', 'add'], enabled: true, execute: onCreateNote },
@@ -96,5 +103,6 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     onQuickOpen, onCreateNote, onSave, onOpenSettings,
     onTrashNote, onArchiveNote, onUnarchiveNote,
     onCommitPush, onSetViewMode, onToggleInspector, onSelect, onCloseTab,
+    onGoBack, onGoForward, canGoBack, canGoForward,
   ])
 }

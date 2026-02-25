@@ -2,7 +2,7 @@ import { memo, useState, useRef, useCallback, useEffect } from 'react'
 import type { VaultEntry, NoteStatus } from '../types'
 import { cn } from '@/lib/utils'
 import { X } from 'lucide-react'
-import { Plus, Columns, ArrowsOutSimple } from '@phosphor-icons/react'
+import { Plus, Columns, ArrowsOutSimple, ArrowLeft, ArrowRight } from '@phosphor-icons/react'
 
 interface Tab {
   entry: VaultEntry
@@ -18,6 +18,10 @@ interface TabBarProps {
   onCreateNote?: () => void
   onReorderTabs?: (fromIndex: number, toIndex: number) => void
   onRenameTab?: (path: string, newTitle: string) => void
+  canGoBack?: boolean
+  canGoForward?: boolean
+  onGoBack?: () => void
+  onGoForward?: () => void
 }
 
 const DISABLED_ICON_STYLE = { opacity: 0.4, cursor: 'not-allowed' } as const
@@ -250,6 +254,49 @@ function TabItem({ tab, isActive, isEditing, noteStatus, isDragging, showDropBef
   )
 }
 
+function NavButtons({ canGoBack, canGoForward, onGoBack, onGoForward }: {
+  canGoBack?: boolean; canGoForward?: boolean; onGoBack?: () => void; onGoForward?: () => void
+}) {
+  return (
+    <div
+      className="flex shrink-0 items-center"
+      style={{
+        gap: 4, padding: '0 8px',
+        borderRight: '1px solid var(--sidebar-border)',
+        borderBottom: '1px solid var(--sidebar-border)',
+        WebkitAppRegion: 'no-drag',
+      } as React.CSSProperties}
+    >
+      <button
+        className={cn(
+          "flex items-center justify-center border-none bg-transparent p-0.5 rounded-sm transition-colors",
+          canGoBack ? "text-muted-foreground cursor-pointer hover:text-foreground hover:bg-accent" : "text-muted-foreground"
+        )}
+        style={canGoBack ? undefined : DISABLED_ICON_STYLE}
+        disabled={!canGoBack}
+        onClick={onGoBack}
+        title="Back (⌘[)"
+        data-testid="nav-back"
+      >
+        <ArrowLeft size={15} />
+      </button>
+      <button
+        className={cn(
+          "flex items-center justify-center border-none bg-transparent p-0.5 rounded-sm transition-colors",
+          canGoForward ? "text-muted-foreground cursor-pointer hover:text-foreground hover:bg-accent" : "text-muted-foreground"
+        )}
+        style={canGoForward ? undefined : DISABLED_ICON_STYLE}
+        disabled={!canGoForward}
+        onClick={onGoForward}
+        title="Forward (⌘])"
+        data-testid="nav-forward"
+      >
+        <ArrowRight size={15} />
+      </button>
+    </div>
+  )
+}
+
 function TabBarActions({ onCreateNote }: { onCreateNote?: () => void }) {
   return (
     <div
@@ -276,6 +323,7 @@ function TabBarActions({ onCreateNote }: { onCreateNote?: () => void }) {
 
 export const TabBar = memo(function TabBar({
   tabs, activeTabPath, getNoteStatus, onSwitchTab, onCloseTab, onCreateNote, onReorderTabs, onRenameTab,
+  canGoBack, canGoForward, onGoBack, onGoForward,
 }: TabBarProps) {
   const { dragIndex, dropIndex, handleDragStart, handleDragEnd, handleDragOver, handleDrop, handleBarDragLeave } = useTabDrag(onReorderTabs)
   const [editingPath, setEditingPath] = useState<string | null>(null)
@@ -287,6 +335,7 @@ export const TabBar = memo(function TabBar({
       data-tauri-drag-region
       onDragLeave={handleBarDragLeave}
     >
+      <NavButtons canGoBack={canGoBack} canGoForward={canGoForward} onGoBack={onGoBack} onGoForward={onGoForward} />
       {tabs.map((tab, index) => (
         <TabItem
           key={tab.entry.path}
