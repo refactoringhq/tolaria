@@ -49,17 +49,20 @@ vi.mock('../mock-tauri', () => ({
   mockInvoke: (cmd: string, args?: Record<string, unknown>) => mockInvokeFn(cmd, args),
 }))
 
+/** Render the vault loader hook and wait for initial data to load. */
+async function renderVaultLoader() {
+  const hook = renderHook(() => useVaultLoader('/vault'))
+  await waitFor(() => { expect(hook.result.current.entries).toHaveLength(1) })
+  return hook
+}
+
 describe('useVaultLoader', () => {
   beforeEach(() => {
     mockInvokeFn.mockImplementation(defaultMockInvoke)
   })
 
   it('loads entries and content on mount', async () => {
-    const { result } = renderHook(() => useVaultLoader('/vault'))
-
-    await waitFor(() => {
-      expect(result.current.entries).toHaveLength(1)
-    })
+    const { result } = await renderVaultLoader()
 
     expect(result.current.entries[0].title).toBe('Hello')
     expect(result.current.allContent['/vault/note/hello.md']).toContain('# Hello')
@@ -77,22 +80,10 @@ describe('useVaultLoader', () => {
 
   describe('addEntry', () => {
     it('prepends new entry and adds content', async () => {
-      const { result } = renderHook(() => useVaultLoader('/vault'))
+      const { result } = await renderVaultLoader()
+      const newEntry: VaultEntry = { ...mockEntries[0], path: '/vault/note/new.md', filename: 'new.md', title: 'New Note' }
 
-      await waitFor(() => {
-        expect(result.current.entries).toHaveLength(1)
-      })
-
-      const newEntry: VaultEntry = {
-        ...mockEntries[0],
-        path: '/vault/note/new.md',
-        filename: 'new.md',
-        title: 'New Note',
-      }
-
-      act(() => {
-        result.current.addEntry(newEntry, '# New Note')
-      })
+      act(() => { result.current.addEntry(newEntry, '# New Note') })
 
       expect(result.current.entries).toHaveLength(2)
       expect(result.current.entries[0].title).toBe('New Note')
@@ -100,18 +91,8 @@ describe('useVaultLoader', () => {
     })
 
     it('ignores duplicate entry with same path', async () => {
-      const { result } = renderHook(() => useVaultLoader('/vault'))
-
-      await waitFor(() => {
-        expect(result.current.entries).toHaveLength(1)
-      })
-
-      const newEntry: VaultEntry = {
-        ...mockEntries[0],
-        path: '/vault/note/new.md',
-        filename: 'new.md',
-        title: 'New Note',
-      }
+      const { result } = await renderVaultLoader()
+      const newEntry: VaultEntry = { ...mockEntries[0], path: '/vault/note/new.md', filename: 'new.md', title: 'New Note' }
 
       act(() => {
         result.current.addEntry(newEntry, '# New Note')
@@ -124,31 +105,38 @@ describe('useVaultLoader', () => {
 
   describe('updateContent', () => {
     it('updates content for an existing path', async () => {
-      const { result } = renderHook(() => useVaultLoader('/vault'))
+      const { result } = await renderVaultLoader()
 
-      await waitFor(() => {
-        expect(result.current.allContent['/vault/note/hello.md']).toBeDefined()
-      })
-
-      act(() => {
-        result.current.updateContent('/vault/note/hello.md', '# Updated')
-      })
+      act(() => { result.current.updateContent('/vault/note/hello.md', '# Updated') })
 
       expect(result.current.allContent['/vault/note/hello.md']).toBe('# Updated')
     })
   })
 
+  describe('removeEntry', () => {
+    it('removes entry and content by path', async () => {
+      const { result } = await renderVaultLoader()
+
+      act(() => { result.current.removeEntry('/vault/note/hello.md') })
+
+      expect(result.current.entries).toHaveLength(0)
+      expect(result.current.allContent['/vault/note/hello.md']).toBeUndefined()
+    })
+
+    it('is a no-op for non-existent paths', async () => {
+      const { result } = await renderVaultLoader()
+
+      act(() => { result.current.removeEntry('/vault/note/nonexistent.md') })
+
+      expect(result.current.entries).toHaveLength(1)
+    })
+  })
+
   describe('updateEntry', () => {
     it('patches an existing entry by path', async () => {
-      const { result } = renderHook(() => useVaultLoader('/vault'))
+      const { result } = await renderVaultLoader()
 
-      await waitFor(() => {
-        expect(result.current.entries).toHaveLength(1)
-      })
-
-      act(() => {
-        result.current.updateEntry('/vault/note/hello.md', { archived: true, status: 'Done' })
-      })
+      act(() => { result.current.updateEntry('/vault/note/hello.md', { archived: true, status: 'Done' }) })
 
       expect(result.current.entries[0].archived).toBe(true)
       expect(result.current.entries[0].status).toBe('Done')
@@ -168,22 +156,10 @@ describe('useVaultLoader', () => {
     })
 
     it('returns new for freshly added entries', async () => {
-      const { result } = renderHook(() => useVaultLoader('/vault'))
+      const { result } = await renderVaultLoader()
+      const newEntry: VaultEntry = { ...mockEntries[0], path: '/vault/note/brand-new.md', filename: 'brand-new.md', title: 'Brand New' }
 
-      await waitFor(() => {
-        expect(result.current.entries).toHaveLength(1)
-      })
-
-      const newEntry: VaultEntry = {
-        ...mockEntries[0],
-        path: '/vault/note/brand-new.md',
-        filename: 'brand-new.md',
-        title: 'Brand New',
-      }
-
-      act(() => {
-        result.current.addEntry(newEntry, '# Brand New')
-      })
+      act(() => { result.current.addEntry(newEntry, '# Brand New') })
 
       expect(result.current.getNoteStatus('/vault/note/brand-new.md')).toBe('new')
     })

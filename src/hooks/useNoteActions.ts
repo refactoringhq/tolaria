@@ -21,6 +21,7 @@ interface RenameResult {
 
 export interface NoteActionsConfig {
   addEntry: (entry: VaultEntry, content: string) => void
+  removeEntry: (path: string) => void
   updateContent: (path: string, content: string) => void
   entries: VaultEntry[]
   setToastMessage: (msg: string | null) => void
@@ -49,13 +50,10 @@ async function loadNoteContent(path: string): Promise<string> {
     : mockInvoke<string>('get_note_content', { path })
 }
 
-/** Fire-and-forget: persist a newly created note to disk. */
-function persistNewNote(path: string, content: string): void {
-  if (isTauri()) {
-    invoke('save_note_content', { path, content }).catch((err) =>
-      console.error('Failed to persist new note:', err),
-    )
-  }
+/** Persist a newly created note to disk. Returns a Promise for error handling. */
+function persistNewNote(path: string, content: string): Promise<void> {
+  if (!isTauri()) return Promise.resolve()
+  return invoke<void>('save_note_content', { path, content }).then(() => {})
 }
 
 export function buildNewEntry({ path, slug, title, type, status }: NewEntryParams): VaultEntry {
@@ -178,6 +176,30 @@ function findWikilinkTarget(entries: VaultEntry[], target: string): VaultEntry |
   return entries.find((e) => entryMatchesTarget(e, targetLower, targetAsWords))
 }
 
+/** Navigate to a wikilink target, logging a warning if not found. */
+function navigateWikilink(entries: VaultEntry[], target: string, selectNote: (e: VaultEntry) => void): void {
+  const found = findWikilinkTarget(entries, target)
+  if (found) selectNote(found)
+  else console.warn(`Navigation target not found: ${target}`)
+}
+
+/** Persist to disk; on failure, call the revert handler. */
+function persistOptimistic(path: string, content: string, onFail: (p: string) => void): void {
+  persistNewNote(path, content).catch(() => onFail(path))
+}
+
+/** Optimistically add entry to UI, open tab, and persist to disk. */
+function createAndPersist(
+  resolved: { entry: VaultEntry; content: string },
+  addFn: (e: VaultEntry, c: string) => void,
+  openTab: (e: VaultEntry, c: string) => void,
+  onFail: (p: string) => void,
+): void {
+  addEntryWithMock(resolved.entry, resolved.content, addFn)
+  openTab(resolved.entry, resolved.content)
+  persistOptimistic(resolved.entry.path, resolved.content, onFail)
+}
+
 async function executeFrontmatterOp(op: 'update' | 'delete', path: string, key: string, value?: FrontmatterValue): Promise<string> {
   if (op === 'update') {
     return isTauri() ? invokeFrontmatter('update_frontmatter', { path, key, value }) : applyMockFrontmatterUpdate(path, key, value!)
@@ -202,10 +224,26 @@ async function reloadTabsAfterRename(
   }
 }
 
+/** Run a frontmatter update/delete and apply the result to state. */
+async function runFrontmatterAndApply(
+  op: 'update' | 'delete', path: string, key: string, value: FrontmatterValue | undefined,
+  callbacks: { updateTab: (p: string, c: string) => void; updateEntry: (p: string, patch: Partial<VaultEntry>) => void; toast: (m: string | null) => void },
+): Promise<void> {
+  try {
+    callbacks.updateTab(path, await executeFrontmatterOp(op, path, key, value))
+    const patch = frontmatterToEntryPatch(op, key, value)
+    if (Object.keys(patch).length > 0) callbacks.updateEntry(path, patch)
+    callbacks.toast(op === 'update' ? 'Property updated' : 'Property deleted')
+  } catch (err) {
+    console.error(`Failed to ${op} frontmatter:`, err)
+    callbacks.toast(`Failed to ${op} property`)
+  }
+}
+
 export function useNoteActions(config: NoteActionsConfig) {
-  const { addEntry, updateContent, entries, setToastMessage, updateEntry } = config
+  const { addEntry, removeEntry, updateContent, entries, setToastMessage, updateEntry } = config
   const tabMgmt = useTabManagement()
-  const { setTabs, handleSelectNote, openTabWithContent, activeTabPathRef, handleSwitchTab } = tabMgmt
+  const { setTabs, handleSelectNote, openTabWithContent, handleCloseTab, activeTabPathRef, handleSwitchTab } = tabMgmt
   const tabsRef = useRef(tabMgmt.tabs)
   // eslint-disable-next-line react-hooks/refs
   tabsRef.current = tabMgmt.tabs
@@ -215,22 +253,23 @@ export function useNoteActions(config: NoteActionsConfig) {
     updateContent(path, newContent)
   }, [setTabs, updateContent])
 
-  const handleNavigateWikilink = useCallback((target: string) => {
-    const found = findWikilinkTarget(entries, target)
-    if (found) handleSelectNote(found)
-    else console.warn(`Navigation target not found: ${target}`)
-  }, [entries, handleSelectNote])
+  const handleNavigateWikilink = useCallback(
+    (target: string) => navigateWikilink(entries, target, handleSelectNote),
+    [entries, handleSelectNote],
+  )
+
+  const revertOptimisticNote = useCallback((path: string) => {
+    handleCloseTab(path)
+    removeEntry(path)
+    setToastMessage('Failed to create note — disk write error')
+  }, [handleCloseTab, removeEntry, setToastMessage])
 
   const pendingNamesRef = useRef<Set<string>>(new Set())
 
   const handleCreateNote = useCallback((title: string, type: string) => {
-    const { entry, content } = resolveNewNote(title, type)
-    addEntryWithMock(entry, content, addEntry)
-    openTabWithContent(entry, content)
-    persistNewNote(entry.path, content)
-  }, [openTabWithContent, addEntry])
+    createAndPersist(resolveNewNote(title, type), addEntry, openTabWithContent, revertOptimisticNote)
+  }, [openTabWithContent, addEntry, revertOptimisticNote])
 
-  /** Create a note immediately with an auto-generated unique title. Dedup-safe for rapid calls. */
   const handleCreateNoteImmediate = useCallback((type?: string) => {
     const noteType = type || 'Note'
     const title = generateUntitledName(entries, noteType, pendingNamesRef.current)
@@ -241,28 +280,19 @@ export function useNoteActions(config: NoteActionsConfig) {
   }, [entries, handleCreateNote])
 
   const handleCreateType = useCallback((typeName: string) => {
-    const { entry, content } = resolveNewType(typeName)
-    addEntryWithMock(entry, content, addEntry)
-    openTabWithContent(entry, content)
-    persistNewNote(entry.path, content)
-  }, [openTabWithContent, addEntry])
+    createAndPersist(resolveNewType(typeName), addEntry, openTabWithContent, revertOptimisticNote)
+  }, [openTabWithContent, addEntry, revertOptimisticNote])
 
-  const runFrontmatterOp = useCallback(async (op: 'update' | 'delete', path: string, key: string, value?: FrontmatterValue) => {
-    try {
-      updateTabContent(path, await executeFrontmatterOp(op, path, key, value))
-      const patch = frontmatterToEntryPatch(op, key, value)
-      if (Object.keys(patch).length > 0) updateEntry(path, patch)
-      setToastMessage(op === 'update' ? 'Property updated' : 'Property deleted')
-    } catch (err) {
-      console.error(`Failed to ${op} frontmatter:`, err)
-      setToastMessage(`Failed to ${op} property`)
-    }
-  }, [updateTabContent, updateEntry, setToastMessage])
+  const fmCallbacks = { updateTab: updateTabContent, updateEntry, toast: setToastMessage }
+
+  const runFrontmatterOp = useCallback(
+    (op: 'update' | 'delete', path: string, key: string, value?: FrontmatterValue) =>
+      runFrontmatterAndApply(op, path, key, value, fmCallbacks),
+    [updateTabContent, updateEntry, setToastMessage], // eslint-disable-line react-hooks/exhaustive-deps -- fmCallbacks is stable when deps are
+  )
 
   const handleRenameNote = useCallback(async (
-    path: string,
-    newTitle: string,
-    vaultPath: string,
+    path: string, newTitle: string, vaultPath: string,
     onEntryRenamed: (oldPath: string, newEntry: Partial<VaultEntry> & { path: string }, newContent: string) => void,
   ) => {
     try {
@@ -270,15 +300,10 @@ export function useNoteActions(config: NoteActionsConfig) {
       const newContent = await loadNoteContent(result.new_path)
       const entry = entries.find((e) => e.path === path)
       const newEntry = buildRenamedEntry(entry ?? {} as VaultEntry, newTitle, result.new_path)
-
-      const otherTabPaths = tabsRef.current
-        .filter(t => t.entry.path !== path)
-        .map(t => t.entry.path)
-
+      const otherTabPaths = tabsRef.current.filter(t => t.entry.path !== path).map(t => t.entry.path)
       setTabs((prev) => prev.map((t) => t.entry.path === path ? { entry: newEntry, content: newContent } : t))
       if (activeTabPathRef.current === path) handleSwitchTab(result.new_path)
       onEntryRenamed(path, newEntry, newContent)
-
       await reloadTabsAfterRename(otherTabPaths, updateTabContent)
       setToastMessage(renameToastMessage(result.updated_files))
     } catch (err) {

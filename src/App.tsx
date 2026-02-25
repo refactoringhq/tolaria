@@ -67,7 +67,7 @@ function App() {
 
   useEffect(() => { setApiKey(settings.anthropic_key ?? '') }, [settings.anthropic_key])
 
-  const notes = useNoteActions({ addEntry: vault.addEntry, updateContent: vault.updateContent, entries: vault.entries, setToastMessage, updateEntry: vault.updateEntry })
+  const notes = useNoteActions({ addEntry: vault.addEntry, removeEntry: vault.removeEntry, updateContent: vault.updateContent, entries: vault.entries, setToastMessage, updateEntry: vault.updateEntry })
 
   const { handleSave, handleContentChange, savePendingForPath, savePending } = useEditorSave({
     updateVaultContent: vault.updateContent,

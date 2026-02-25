@@ -91,6 +91,11 @@ export function useVaultLoader(vaultPath: string) {
   const updateEntry = useCallback((path: string, patch: Partial<VaultEntry>) =>
     setEntries((prev) => prev.map((e) => e.path === path ? { ...e, ...patch } : e)), [])
 
+  const removeEntry = useCallback((path: string) => {
+    setEntries((prev) => prev.filter((e) => e.path !== path))
+    setAllContent((prev) => { const next = { ...prev }; delete next[path]; return next })
+  }, [])
+
   const replaceEntry = useCallback((oldPath: string, patch: Partial<VaultEntry> & { path: string }, newContent: string) => {
     setEntries((prev) => prev.map((e) => e.path === oldPath ? { ...e, ...patch } : e))
     setAllContent((prev) => { const next = { ...prev }; delete next[oldPath]; next[patch.path] = newContent; return next })
@@ -115,7 +120,7 @@ export function useVaultLoader(vaultPath: string) {
 
   return {
     entries, allContent, modifiedFiles,
-    addEntry, updateEntry, replaceEntry, updateContent,
+    addEntry, updateEntry, removeEntry, replaceEntry, updateContent,
     loadModifiedFiles, loadGitHistory, loadDiff, loadDiffAtCommit,
     getNoteStatus, commitAndPush,
   }

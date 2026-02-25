@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { invoke } from '@tauri-apps/api/core'
+import { isTauri } from '../mock-tauri'
 import type { VaultEntry } from '../types'
 import {
   slugify,
@@ -17,7 +19,7 @@ import type { NoteActionsConfig } from './useNoteActions'
 // Mock dependencies
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }))
 vi.mock('../mock-tauri', () => ({
-  isTauri: () => false,
+  isTauri: vi.fn(() => false),
   addMockEntry: vi.fn(),
   updateMockContent: vi.fn(),
   mockInvoke: vi.fn().mockResolvedValue(''),
@@ -280,16 +282,18 @@ describe('frontmatterToEntryPatch', () => {
 
 describe('useNoteActions hook', () => {
   const addEntry = vi.fn()
+  const removeEntry = vi.fn()
   const updateContent = vi.fn()
   const updateEntry = vi.fn()
   const setToastMessage = vi.fn()
 
   const makeConfig = (entries: VaultEntry[] = []): NoteActionsConfig => ({
-    addEntry, updateContent, entries, setToastMessage, updateEntry,
+    addEntry, removeEntry, updateContent, entries, setToastMessage, updateEntry,
   })
 
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(isTauri).mockReturnValue(false)
   })
 
   it('handleCreateNote calls addEntry and creates correct entry', () => {
@@ -435,5 +439,62 @@ describe('useNoteActions hook', () => {
 
     expect(updateEntry).not.toHaveBeenCalled()
     expect(setToastMessage).toHaveBeenCalledWith('Property updated')
+  })
+
+  describe('optimistic error recovery (Tauri mode)', () => {
+    beforeEach(() => {
+      vi.mocked(isTauri).mockReturnValue(true)
+    })
+
+    it.each([
+      ['handleCreateNote', 'Failing Note', 'Note', 'note/failing-note.md'],
+      ['handleCreateType', 'Recipe', 'Type', 'type/recipe.md'],
+    ])('reverts optimistic creation via %s when disk write fails', async (method, title, type, pathFragment) => {
+      vi.mocked(invoke).mockRejectedValueOnce(new Error('disk full'))
+      const { result } = renderHook(() => useNoteActions(makeConfig()))
+
+      await act(async () => {
+        if (method === 'handleCreateNote') result.current.handleCreateNote(title, type)
+        else result.current.handleCreateType(title)
+        await new Promise((r) => setTimeout(r, 0))
+      })
+
+      expect(addEntry).toHaveBeenCalledTimes(1)
+      expect(removeEntry).toHaveBeenCalledWith(expect.stringContaining(pathFragment))
+      expect(setToastMessage).toHaveBeenCalledWith('Failed to create note — disk write error')
+    })
+
+    it('does not revert when disk write succeeds', async () => {
+      vi.mocked(invoke).mockResolvedValueOnce(undefined)
+      const { result } = renderHook(() => useNoteActions(makeConfig()))
+
+      await act(async () => {
+        result.current.handleCreateNote('Good Note', 'Note')
+        await new Promise((r) => setTimeout(r, 0))
+      })
+
+      expect(removeEntry).not.toHaveBeenCalled()
+      expect(setToastMessage).not.toHaveBeenCalled()
+    })
+
+    it('handles rapid creation with one failure independently', async () => {
+      vi.mocked(invoke)
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('disk full'))
+        .mockResolvedValueOnce(undefined)
+
+      const { result } = renderHook(() => useNoteActions(makeConfig()))
+
+      await act(async () => {
+        result.current.handleCreateNoteImmediate()
+        result.current.handleCreateNoteImmediate()
+        result.current.handleCreateNoteImmediate()
+        await new Promise((r) => setTimeout(r, 0))
+      })
+
+      expect(addEntry).toHaveBeenCalledTimes(3)
+      expect(removeEntry).toHaveBeenCalledTimes(1)
+      expect(removeEntry).toHaveBeenCalledWith(expect.stringContaining('untitled-note-2.md'))
+    })
   })
 })
