@@ -201,7 +201,7 @@ describe('SearchPanel', () => {
       expect(screen.getByText('How to Design AI-first APIs')).toBeInTheDocument()
     })
 
-    // Wait for the results state to propagate to the keydown handler (useEffect re-run)
+    // Wait for the effect to re-register with new results before firing Enter
     fireEvent.keyDown(window, { key: 'Enter' })
 
     await waitFor(() => {
