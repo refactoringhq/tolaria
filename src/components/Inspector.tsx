@@ -25,7 +25,7 @@ interface InspectorProps {
   onAddProperty?: (path: string, key: string, value: FrontmatterValue) => Promise<void>
 }
 
-function useBacklinks(entry: VaultEntry | null, entries: VaultEntry[]): VaultEntry[] {
+function useBacklinks(entry: VaultEntry | null, entries: VaultEntry[], referencedBy: ReferencedByItem[]): VaultEntry[] {
   return useMemo(() => {
     if (!entry) return []
     const matchTargets = new Set([
@@ -34,13 +34,16 @@ function useBacklinks(entry: VaultEntry | null, entries: VaultEntry[]): VaultEnt
       entry.path.replace(/^.*\/Laputa\//, '').replace(/\.md$/, ''),
     ])
 
+    const referencedByPaths = new Set(referencedBy.map((item) => item.entry.path))
+
     return entries.filter((e) => {
       if (e.path === entry.path) return false
+      if (referencedByPaths.has(e.path)) return false
       return e.outgoingLinks.some((target) =>
         matchTargets.has(target) || matchTargets.has(target.split('/').pop() ?? '')
       )
     })
-  }, [entry, entries])
+  }, [entry, entries, referencedBy])
 }
 
 function useReferencedBy(entry: VaultEntry | null, entries: VaultEntry[]): ReferencedByItem[] {
@@ -118,8 +121,8 @@ export function Inspector({
   collapsed, onToggle, entry, content, entries, gitHistory, onNavigate,
   onViewCommitDiff, onUpdateFrontmatter, onDeleteProperty, onAddProperty,
 }: InspectorProps) {
-  const backlinks = useBacklinks(entry, entries)
   const referencedBy = useReferencedBy(entry, entries)
+  const backlinks = useBacklinks(entry, entries, referencedBy)
   const frontmatter = useMemo(() => parseFrontmatter(content), [content])
   const typeEntryMap = useMemo(() => {
     const map: Record<string, VaultEntry> = {}

@@ -60,7 +60,7 @@ pub struct VaultEntry {
     pub color: Option<String>,
     /// Display order for Type entries in sidebar (lower = higher). None = use default order.
     pub order: Option<i64>,
-    /// All wikilink targets found in the note content (body + frontmatter).
+    /// All wikilink targets found in the note body (excludes frontmatter).
     /// Extracted from `[[target]]` and `[[target|display]]` patterns.
     #[serde(rename = "outgoingLinks", default)]
     pub outgoing_links: Vec<String>,
@@ -268,7 +268,7 @@ pub fn parse_md_file(path: &Path) -> Result<VaultEntry, String> {
 
     let title = extract_title(&parsed.content, &filename);
     let snippet = extract_snippet(&content);
-    let outgoing_links = extract_outgoing_links(&content);
+    let outgoing_links = extract_outgoing_links(&parsed.content);
     let (modified_at, file_size) = read_file_metadata(path)?;
     let created_at = parse_created_at(&frontmatter);
     let is_a = resolve_is_a(frontmatter.is_a, path);
@@ -951,11 +951,11 @@ References:
     }
 
     #[test]
-    fn test_outgoing_links_includes_frontmatter_wikilinks() {
+    fn test_outgoing_links_excludes_frontmatter_wikilinks() {
         let dir = TempDir::new().unwrap();
         let content = "---\nHas:\n  - \"[[task/design]]\"\n---\n# Note\n\nSee [[person/bob]].";
         let entry = parse_test_entry(&dir, "note/test.md", content);
-        assert!(entry.outgoing_links.contains(&"task/design".to_string()));
+        assert!(!entry.outgoing_links.contains(&"task/design".to_string()));
         assert!(entry.outgoing_links.contains(&"person/bob".to_string()));
     }
 

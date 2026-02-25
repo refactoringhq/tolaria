@@ -575,6 +575,47 @@ Status: Active
       expect(screen.getByText(/via Topics/)).toBeInTheDocument()
     })
 
+    it('excludes entries from backlinks when already shown in referenced-by', () => {
+      const noteA: VaultEntry = {
+        path: '/Users/luca/Laputa/essay/on-writing.md',
+        filename: 'on-writing.md',
+        title: 'On Writing Well',
+        isA: 'Essay',
+        aliases: [],
+        belongsTo: ['[[responsibility/grow-newsletter]]'],
+        relatedTo: [],
+        status: null,
+        owner: null,
+        cadence: null,
+        archived: false,
+        trashed: false,
+        trashedAt: null,
+        modifiedAt: 1707900000,
+        createdAt: null,
+        fileSize: 300,
+        snippet: '',
+        relationships: { 'Belongs to': ['[[responsibility/grow-newsletter]]'], 'Type': ['[[type/essay]]'] },
+        icon: null,
+        color: null,
+        order: null,
+        // Body text also links to grow-newsletter
+        outgoingLinks: ['responsibility/grow-newsletter'],
+      }
+      render(
+        <Inspector
+          {...defaultProps}
+          entry={targetEntry}
+          content={targetContent}
+          entries={[targetEntry, noteA]}
+        />
+      )
+      // noteA shows in Referenced By (via Belongs to)
+      expect(screen.getByText(/via Belongs to/)).toBeInTheDocument()
+      expect(screen.getByText('On Writing Well')).toBeInTheDocument()
+      // But NOT in Backlinks (even though outgoingLinks matches)
+      expect(screen.getByText('No backlinks')).toBeInTheDocument()
+    })
+
     it('does not show self-references', () => {
       const selfRef: VaultEntry = {
         ...targetEntry,
