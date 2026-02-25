@@ -165,8 +165,8 @@ function SingleEditorView({ editor, entries, onNavigateWikilink, onChange }: { e
     const final = disambiguateTitles(deduplicateByPath(filtered))
     return final.map(({ group, ...rest }) => ({
       ...rest,
-      noteType: group !== 'Note' ? group : undefined,
-      typeColor: group !== 'Note' ? getTypeColor(group) : undefined,
+      noteType: group,
+      typeColor: getTypeColor(group),
     }))
   }, [baseItems, editor])
 

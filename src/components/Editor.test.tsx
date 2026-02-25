@@ -389,6 +389,35 @@ describe('wikilink autocomplete', () => {
     mockFilterSuggestionItems.mockImplementation((items: unknown[]) => items)
   })
 
+  it('always includes noteType for every item, including default Note type (regression)', async () => {
+    const mixedEntries: VaultEntry[] = [
+      { ...mockEntry, title: 'My Project', filename: 'proj.md', path: '/vault/proj.md', isA: 'Project', aliases: [] },
+      { ...mockEntry, title: 'Plain Note', filename: 'plain.md', path: '/vault/plain.md', isA: null, aliases: [] },
+      { ...mockEntry, title: 'Explicit Note', filename: 'explicit.md', path: '/vault/explicit.md', isA: 'Note', aliases: [] },
+    ]
+    capturedGetItems = null
+    mockFilterSuggestionItems.mockImplementation((items: unknown[]) => items)
+    render(
+      <Editor
+        {...defaultProps}
+        tabs={[mockTab]}
+        activeTabPath={mockEntry.path}
+        entries={mixedEntries}
+      />
+    )
+    const items = await capturedGetItems!('Note')
+    // Every item must have a defined noteType — none should be blank
+    for (const item of items) {
+      expect(item.noteType).toBeTruthy()
+      expect(item.typeColor).toBeTruthy()
+    }
+    // Default notes (isA: null) should show 'Note' as their type
+    const plainNote = items.find((i: { title: string }) => i.title === 'Plain Note')
+    expect(plainNote).toBeDefined()
+    expect(plainNote!.noteType).toBe('Note')
+    mockFilterSuggestionItems.mockImplementation((items: unknown[]) => items)
+  })
+
   it('disambiguates entries with the same title by appending folder name', async () => {
     const sameTitle: VaultEntry[] = [
       { ...mockEntry, title: 'Standup', filename: 'standup.md', path: '/vault/work/standup.md', aliases: [] },
