@@ -9,6 +9,7 @@ pub struct Settings {
     pub google_key: Option<String>,
     pub github_token: Option<String>,
     pub github_username: Option<String>,
+    pub auto_pull_interval_minutes: Option<u32>,
 }
 
 fn settings_path() -> Result<PathBuf, String> {
@@ -54,6 +55,7 @@ fn save_settings_at(path: &PathBuf, settings: Settings) -> Result<(), String> {
             .github_username
             .map(|k| k.trim().to_string())
             .filter(|k| !k.is_empty()),
+        auto_pull_interval_minutes: settings.auto_pull_interval_minutes,
     };
 
     let json = serde_json::to_string_pretty(&cleaned)

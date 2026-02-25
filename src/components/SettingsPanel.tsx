@@ -290,6 +290,7 @@ function SettingsPanelInner({ settings, onSave, onClose }: Omit<SettingsPanelPro
   const [googleKey, setGoogleKey] = useState(settings.google_key ?? '')
   const [githubToken, setGithubToken] = useState(settings.github_token)
   const [githubUsername, setGithubUsername] = useState(settings.github_username)
+  const [pullInterval, setPullInterval] = useState(settings.auto_pull_interval_minutes ?? 5)
 
   const buildSettings = useCallback((ghOverride?: { token: string | null; username: string | null }): Settings => ({
     anthropic_key: anthropicKey.trim() || null,
@@ -297,7 +298,8 @@ function SettingsPanelInner({ settings, onSave, onClose }: Omit<SettingsPanelPro
     google_key: googleKey.trim() || null,
     github_token: ghOverride ? ghOverride.token : (githubToken ?? null),
     github_username: ghOverride ? ghOverride.username : (githubUsername ?? null),
-  }), [anthropicKey, openaiKey, googleKey, githubToken, githubUsername])
+    auto_pull_interval_minutes: pullInterval,
+  }), [anthropicKey, openaiKey, googleKey, githubToken, githubUsername, pullInterval])
 
   const handleSave = () => {
     onSave(buildSettings())
@@ -346,6 +348,7 @@ function SettingsPanelInner({ settings, onSave, onClose }: Omit<SettingsPanelPro
           googleKey={googleKey} setGoogleKey={setGoogleKey}
           githubToken={githubToken ?? null} githubUsername={githubUsername ?? null}
           onGitHubConnected={handleGitHubConnected} onGitHubDisconnect={handleGitHubDisconnect}
+          pullInterval={pullInterval} setPullInterval={setPullInterval}
         />
         <SettingsFooter onClose={onClose} onSave={handleSave} />
       </div>
@@ -378,6 +381,7 @@ interface SettingsBodyProps {
   githubToken: string | null; githubUsername: string | null
   onGitHubConnected: (token: string, username: string) => void
   onGitHubDisconnect: () => void
+  pullInterval: number; setPullInterval: (v: number) => void
 }
 
 function SettingsBody(props: SettingsBodyProps) {
@@ -409,6 +413,33 @@ function SettingsBody(props: SettingsBodyProps) {
         onConnected={props.onGitHubConnected}
         onDisconnect={props.onGitHubDisconnect}
       />
+
+      <div style={{ height: 1, background: 'var(--border)' }} />
+
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 4 }}>Sync</div>
+        <div style={{ fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
+          Automatically pull vault changes from Git in the background.
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--foreground)' }}>Pull interval (minutes)</label>
+        <select
+          value={props.pullInterval}
+          onChange={(e) => props.setPullInterval(Number(e.target.value))}
+          className="border border-border bg-transparent text-foreground rounded"
+          style={{ fontSize: 13, padding: '8px 10px', outline: 'none', fontFamily: 'inherit' }}
+          data-testid="settings-pull-interval"
+        >
+          <option value={1}>1</option>
+          <option value={2}>2</option>
+          <option value={5}>5</option>
+          <option value={10}>10</option>
+          <option value={15}>15</option>
+          <option value={30}>30</option>
+        </select>
+      </div>
     </div>
   )
 }

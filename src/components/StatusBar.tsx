@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import { Package, GitBranch, RefreshCw, Sparkles, FileText, Bell, Settings, FolderOpen, Check, Github, CircleDot } from 'lucide-react'
+import { Package, GitBranch, RefreshCw, Sparkles, FileText, Bell, Settings, FolderOpen, Check, Github, CircleDot, AlertTriangle, Loader2 } from 'lucide-react'
+import type { SyncStatus } from '../types'
 
 export interface VaultOption {
   label: string
@@ -17,6 +18,10 @@ interface StatusBarProps {
   onConnectGitHub?: () => void
   onClickPending?: () => void
   hasGitHub?: boolean
+  syncStatus?: SyncStatus
+  lastSyncTime?: number | null
+  conflictCount?: number
+  onTriggerSync?: () => void
 }
 
 function VaultMenuItem({ vault, isActive, onSelect }: { vault: VaultOption; isActive: boolean; onSelect: () => void }) {
@@ -105,7 +110,34 @@ const ICON_STYLE = { display: 'flex', alignItems: 'center', gap: 4 } as const
 const DISABLED_STYLE = { display: 'flex', alignItems: 'center', opacity: 0.4, cursor: 'not-allowed' } as const
 const SEP_STYLE = { color: 'var(--border)' } as const
 
-export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onSwitchVault, onOpenSettings, onOpenLocalFolder, onConnectGitHub, onClickPending, hasGitHub }: StatusBarProps) {
+function formatSyncLabel(status: SyncStatus, lastSyncTime: number | null): string {
+  if (status === 'syncing') return 'Syncing…'
+  if (status === 'conflict') return 'Conflict'
+  if (status === 'error') return 'Sync failed'
+  if (!lastSyncTime) return 'Not synced'
+  const elapsed = Math.round((Date.now() - lastSyncTime) / 1000)
+  if (elapsed < 60) return 'Synced just now'
+  const mins = Math.floor(elapsed / 60)
+  return `Synced ${mins}m ago`
+}
+
+function syncIconColor(status: SyncStatus): string {
+  if (status === 'conflict') return 'var(--accent-orange)'
+  if (status === 'error') return 'var(--muted-foreground)'
+  return 'var(--accent-green)'
+}
+
+export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onSwitchVault, onOpenSettings, onOpenLocalFolder, onConnectGitHub, onClickPending, hasGitHub, syncStatus = 'idle', lastSyncTime = null, conflictCount = 0, onTriggerSync }: StatusBarProps) {
+  // Force re-render every 30s to keep relative time label fresh
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 30_000)
+    return () => clearInterval(id)
+  }, [])
+
+  const syncLabel = formatSyncLabel(syncStatus, lastSyncTime)
+  const SyncIcon = syncStatus === 'syncing' ? Loader2 : syncStatus === 'conflict' ? AlertTriangle : RefreshCw
+
   return (
     <footer style={{ height: 30, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--sidebar)', borderTop: '1px solid var(--border)', padding: '0 8px', fontSize: 11, color: 'var(--muted-foreground)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -115,7 +147,23 @@ export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onS
         <span style={SEP_STYLE}>|</span>
         <span style={ICON_STYLE}><GitBranch size={13} />main</span>
         <span style={SEP_STYLE}>|</span>
-        <span style={ICON_STYLE}><RefreshCw size={13} style={{ color: 'var(--accent-green)' }} />Synced 2m ago</span>
+        <span
+          role="button"
+          onClick={onTriggerSync}
+          style={{ ...ICON_STYLE, cursor: onTriggerSync ? 'pointer' : 'default', padding: '2px 4px', borderRadius: 3 }}
+          title={syncStatus === 'syncing' ? 'Syncing…' : 'Click to sync now'}
+          data-testid="status-sync"
+        >
+          <SyncIcon size={13} style={{ color: syncIconColor(syncStatus) }} className={syncStatus === 'syncing' ? 'animate-spin' : ''} />{syncLabel}
+        </span>
+        {conflictCount > 0 && (
+          <>
+            <span style={SEP_STYLE}>|</span>
+            <span style={{ ...ICON_STYLE, color: 'var(--destructive, #e03e3e)' }} data-testid="status-conflict-count">
+              <AlertTriangle size={13} />{conflictCount} conflict{conflictCount > 1 ? 's' : ''}
+            </span>
+          </>
+        )}
         {modifiedCount > 0 && (
           <>
             <span style={SEP_STYLE}>|</span>

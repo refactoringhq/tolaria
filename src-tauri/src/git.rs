@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::process::Command;
 
@@ -288,6 +288,129 @@ pub fn git_commit(vault_path: &str, message: &str) -> Result<String, String> {
     }
 
     Ok(String::from_utf8_lossy(&commit.stdout).to_string())
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct GitPullResult {
+    pub status: String, // "up_to_date" | "updated" | "conflict" | "no_remote" | "error"
+    pub message: String,
+    #[serde(rename = "updatedFiles")]
+    pub updated_files: Vec<String>,
+    #[serde(rename = "conflictFiles")]
+    pub conflict_files: Vec<String>,
+}
+
+/// Check whether the vault repo has at least one remote configured.
+pub fn has_remote(vault_path: &str) -> Result<bool, String> {
+    let vault = Path::new(vault_path);
+    let output = Command::new("git")
+        .args(["remote"])
+        .current_dir(vault)
+        .output()
+        .map_err(|e| format!("Failed to run git remote: {}", e))?;
+
+    Ok(!String::from_utf8_lossy(&output.stdout).trim().is_empty())
+}
+
+/// Pull latest changes from remote. Uses --no-rebase to merge.
+/// Returns a structured result with status and affected files.
+pub fn git_pull(vault_path: &str) -> Result<GitPullResult, String> {
+    let vault = Path::new(vault_path);
+
+    if !has_remote(vault_path)? {
+        return Ok(GitPullResult {
+            status: "no_remote".to_string(),
+            message: "No remote configured".to_string(),
+            updated_files: vec![],
+            conflict_files: vec![],
+        });
+    }
+
+    let output = Command::new("git")
+        .args(["pull", "--no-rebase"])
+        .current_dir(vault)
+        .output()
+        .map_err(|e| format!("Failed to run git pull: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+    if output.status.success() {
+        if stdout.contains("Already up to date") || stdout.contains("Already up-to-date") {
+            return Ok(GitPullResult {
+                status: "up_to_date".to_string(),
+                message: "Already up to date".to_string(),
+                updated_files: vec![],
+                conflict_files: vec![],
+            });
+        }
+        let updated = parse_updated_files(&stdout);
+        return Ok(GitPullResult {
+            status: "updated".to_string(),
+            message: format!("{} file(s) updated", updated.len()),
+            updated_files: updated,
+            conflict_files: vec![],
+        });
+    }
+
+    // Check for merge conflicts
+    let conflicts = get_conflict_files(vault_path).unwrap_or_default();
+    if !conflicts.is_empty() {
+        return Ok(GitPullResult {
+            status: "conflict".to_string(),
+            message: format!("Merge conflict in {} file(s)", conflicts.len()),
+            updated_files: vec![],
+            conflict_files: conflicts,
+        });
+    }
+
+    // Network error or other failure — report as error
+    let detail = if stderr.trim().is_empty() {
+        stdout.trim().to_string()
+    } else {
+        stderr.trim().to_string()
+    };
+    Ok(GitPullResult {
+        status: "error".to_string(),
+        message: detail,
+        updated_files: vec![],
+        conflict_files: vec![],
+    })
+}
+
+/// List files with merge conflicts (unmerged paths).
+pub fn get_conflict_files(vault_path: &str) -> Result<Vec<String>, String> {
+    let vault = Path::new(vault_path);
+    let output = Command::new("git")
+        .args(["diff", "--name-only", "--diff-filter=U"])
+        .current_dir(vault)
+        .output()
+        .map_err(|e| format!("Failed to check conflicts: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    Ok(stdout
+        .lines()
+        .filter(|l| !l.is_empty())
+        .map(|l| l.to_string())
+        .collect())
+}
+
+/// Parse `git pull` output to extract updated file paths.
+fn parse_updated_files(stdout: &str) -> Vec<String> {
+    stdout
+        .lines()
+        .filter_map(|line| {
+            let trimmed = line.trim();
+            // Lines like " path/to/file.md | 5 ++-" in diffstat
+            if trimmed.contains('|') {
+                let path = trimmed.split('|').next()?.trim();
+                if !path.is_empty() {
+                    return Some(path.to_string());
+                }
+            }
+            None
+        })
+        .collect()
 }
 
 /// Push to remote.

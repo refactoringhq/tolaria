@@ -118,10 +118,21 @@ export function useVaultLoader(vaultPath: string) {
   const commitAndPush = useCallback((message: string): Promise<string> =>
     commitWithPush(vaultPath, message), [vaultPath])
 
+  const reloadVault = useCallback(async () => {
+    try {
+      const data = await loadVaultData(vaultPath)
+      setEntries(data.entries)
+      setAllContent((prev) => ({ ...prev, ...data.allContent }))
+      loadModifiedFiles()
+    } catch (err) {
+      console.warn('Vault reload failed:', err)
+    }
+  }, [vaultPath, loadModifiedFiles])
+
   return {
     entries, allContent, modifiedFiles,
     addEntry, updateEntry, removeEntry, replaceEntry, updateContent,
     loadModifiedFiles, loadGitHistory, loadDiff, loadDiffAtCommit,
-    getNoteStatus, commitAndPush,
+    getNoteStatus, commitAndPush, reloadVault,
   }
 }

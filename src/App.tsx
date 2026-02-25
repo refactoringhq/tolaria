@@ -25,6 +25,7 @@ import { useVaultSwitcher } from './hooks/useVaultSwitcher'
 import { useGitHistory } from './hooks/useGitHistory'
 import { useUpdater } from './hooks/useUpdater'
 import { useNavigationHistory } from './hooks/useNavigationHistory'
+import { useAutoSync } from './hooks/useAutoSync'
 import { UpdateBanner } from './components/UpdateBanner'
 import { setApiKey } from './utils/ai-chat'
 import { extractOutgoingLinks } from './utils/wikilinks'
@@ -97,6 +98,17 @@ function App() {
   const { settings, saveSettings } = useSettings()
 
   useEffect(() => { setApiKey(settings.anthropic_key ?? '') }, [settings.anthropic_key])
+
+  const autoSync = useAutoSync({
+    vaultPath: vaultSwitcher.vaultPath,
+    intervalMinutes: settings.auto_pull_interval_minutes,
+    onVaultUpdated: vault.reloadVault,
+    onConflict: (files) => {
+      const names = files.map((f) => f.split('/').pop()).join(', ')
+      setToastMessage(`Conflict in ${names} — review needed`)
+    },
+    onToast: (msg) => setToastMessage(msg),
+  })
 
   const notes = useNoteActions({ addEntry: vault.addEntry, removeEntry: vault.removeEntry, updateContent: vault.updateContent, entries: vault.entries, setToastMessage, updateEntry: vault.updateEntry })
 
@@ -280,7 +292,7 @@ function App() {
           />
         </div>
       </div>
-      <StatusBar noteCount={vault.entries.length} modifiedCount={vault.modifiedFiles.length} vaultPath={vaultSwitcher.vaultPath} vaults={vaultSwitcher.allVaults} onSwitchVault={vaultSwitcher.switchVault} onOpenSettings={dialogs.openSettings} onOpenLocalFolder={vaultSwitcher.handleOpenLocalFolder} onConnectGitHub={dialogs.openGitHubVault} onClickPending={() => setSelection({ kind: 'filter', filter: 'changes' })} hasGitHub={!!settings.github_token} />
+      <StatusBar noteCount={vault.entries.length} modifiedCount={vault.modifiedFiles.length} vaultPath={vaultSwitcher.vaultPath} vaults={vaultSwitcher.allVaults} onSwitchVault={vaultSwitcher.switchVault} onOpenSettings={dialogs.openSettings} onOpenLocalFolder={vaultSwitcher.handleOpenLocalFolder} onConnectGitHub={dialogs.openGitHubVault} onClickPending={() => setSelection({ kind: 'filter', filter: 'changes' })} hasGitHub={!!settings.github_token} syncStatus={autoSync.syncStatus} lastSyncTime={autoSync.lastSyncTime} conflictCount={autoSync.conflictFiles.length} onTriggerSync={autoSync.triggerSync} />
       <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
       <QuickOpenPalette open={dialogs.showQuickOpen} entries={vault.entries} onSelect={notes.handleSelectNote} onClose={dialogs.closeQuickOpen} />
       <CommandPalette open={dialogs.showCommandPalette} commands={commands} onClose={dialogs.closeCommandPalette} />
