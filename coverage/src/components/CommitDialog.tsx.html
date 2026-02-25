@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">31.81% </span>
+                <span class="strong">95.45% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>7/22</span>
+                <span class='fraction'>21/22</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">13.33% </span>
+                <span class="strong">73.33% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>2/15</span>
+                <span class='fraction'>11/15</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">28.57% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>2/7</span>
+                <span class='fraction'>7/7</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">36.84% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>7/19</span>
+                <span class='fraction'>19/19</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -149,35 +149,33 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">22x</span>
-<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">53x</span>
+<span class="cline-any cline-yes">53x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">22x</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">22x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">22x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">53x</span>
+<span class="cline-any cline-yes">20x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">22x</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">53x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">53x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">53x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -190,7 +188,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -226,35 +226,35 @@ export function CommitDialog({ open, modifiedCount, onCommit, onClose }: CommitD
   const inputRef = useRef&lt;HTMLTextAreaElement&gt;(null)
 &nbsp;
   useEffect(() =&gt; {
-    <span class="missing-if-branch" title="if path not taken" >I</span>if (open) {
-<span class="cstat-no" title="statement not covered" >      setMessage('')</span>
-<span class="cstat-no" title="statement not covered" >      setTimeout(<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >i</span>nputRef.current?.focus(), 5</span>0)</span>
+    if (open) {
+      setMessage('') // eslint-disable-line react-hooks/set-state-in-effect -- reset on dialog open
+      setTimeout(() =&gt; inputRef.current?.focus(), 50)
     }
   }, [open])
 &nbsp;
-  const handleSubmit = <span class="fstat-no" title="function not covered" >() =&gt; {</span>
-    const trimmed = <span class="cstat-no" title="statement not covered" >message.trim()</span>
-<span class="cstat-no" title="statement not covered" >    if (!trimmed) <span class="cstat-no" title="statement not covered" >return</span></span>
-<span class="cstat-no" title="statement not covered" >    onCommit(trimmed)</span>
+  const handleSubmit = () =&gt; {
+    const trimmed = message.trim()
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (!trimmed) <span class="cstat-no" title="statement not covered" >return</span>
+    onCommit(trimmed)
   }
 &nbsp;
-  const handleKeyDown = <span class="fstat-no" title="function not covered" >(e</span>: React.KeyboardEvent) =&gt; {
-<span class="cstat-no" title="statement not covered" >    if (e.key === 'Enter' &amp;&amp; (e.metaKey || e.ctrlKey)) {</span>
-<span class="cstat-no" title="statement not covered" >      e.preventDefault()</span>
-<span class="cstat-no" title="statement not covered" >      handleSubmit()</span>
-<span class="cstat-no" title="statement not covered" >    } else if (e.key === 'Escape') {</span>
-<span class="cstat-no" title="statement not covered" >      onClose()</span>
+  const handleKeyDown = (e: React.KeyboardEvent) =&gt; {
+    if (e.key === 'Enter' &amp;&amp; (e.metaKey || <span class="branch-2 cbranch-no" title="branch not covered" >e.ctrlKey)) {</span>
+      e.preventDefault()
+      handleSubmit()
+    <span class="missing-if-branch" title="else path not taken" >E</span>} else if (e.key === 'Escape') {
+      onClose()
     }
   }
 &nbsp;
   return (
-    &lt;Dialog open={open} onOpenChange={<span class="fstat-no" title="function not covered" >(i</span>sOpen) =&gt; { <span class="cstat-no" title="statement not covered" >if (!isOpen) <span class="cstat-no" title="statement not covered" >onClose() }</span></span>}&gt;
+    &lt;Dialog open={open} onOpenChange={(isOpen) =&gt; { <span class="missing-if-branch" title="else path not taken" >E</span>if (!isOpen) onClose() }}&gt;
       &lt;DialogContent showCloseButton={false} className="sm:max-w-[420px]"&gt;
         &lt;DialogHeader&gt;
           &lt;div className="flex items-center justify-between"&gt;
             &lt;DialogTitle&gt;Commit &amp; Push&lt;/DialogTitle&gt;
             &lt;Badge variant="secondary" className="text-xs"&gt;
-              {modifiedCount} file{modifiedCount !== 1 ? 's' : <span class="branch-1 cbranch-no" title="branch not covered" >''} </span>changed
+              {modifiedCount} file{modifiedCount !== 1 ? 's' : ''} changed
             &lt;/Badge&gt;
           &lt;/div&gt;
         &lt;/DialogHeader&gt;
@@ -263,7 +263,7 @@ export function CommitDialog({ open, modifiedCount, onCommit, onClose }: CommitD
           className="w-full resize-y rounded-lg border border-input bg-[var(--bg-input)] px-3 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-ring"
           placeholder="Commit message..."
           value={message}
-          onChange={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; <span class="cstat-no" title="statement not covered" >setMessage(e.target.value)}</span>
+          onChange={(e) =&gt; setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
           rows={3}
         /&gt;
@@ -289,7 +289,7 @@ export function CommitDialog({ open, modifiedCount, onCommit, onClose }: CommitD
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-02-22T09:10:55.587Z
+                at 2026-02-25T20:19:25.575Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

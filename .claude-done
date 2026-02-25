@@ -1,3 +1,3 @@
-Task: relations-type-color
-Summary: Fixed relation chips showing default blue instead of type color. Root cause: resolveRef matched entries by path/filename only, while wiki-links used findEntryByTarget (title, filename, aliases). Fixed by adding title/alias matching to resolveRef, changing default color from blue to neutral grey for typeless notes, and passing custom color keys to TypeSelector. Also refactored DynamicPropertiesPanel to reduce cyclomatic complexity (11→10). All tests pass (739), code health gates pass, coverage 79%.
+Task: Search panel unify
+Summary: Removed keyword/semantic toggle from search panel. Search now uses a two-phase approach: keyword results appear first (<500ms), then hybrid/semantic results blend in (~1-2s). Added loading spinner in input field during search. Implemented 300ms debounce and generation counter to safely handle rapid typing (no crashes). Extracted search logic into useUnifiedSearch hook for code health (9.26+). 15 tests covering progressive search, spinner, stale result handling, and hybrid failure fallback. Created design wireframes in design/search-panel-unify.pen.
 Commits: 2

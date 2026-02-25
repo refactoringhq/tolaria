@@ -30,9 +30,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">69.23% </span>
+                <span class="strong">71.42% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>18/26</span>
+                <span class='fraction'>20/28</span>
             </div>
         
             
@@ -240,7 +240,13 @@
 <a name='L175'></a><a href='#L175'>175</a>
 <a name='L176'></a><a href='#L176'>176</a>
 <a name='L177'></a><a href='#L177'>177</a>
-<a name='L178'></a><a href='#L178'>178</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L178'></a><a href='#L178'>178</a>
+<a name='L179'></a><a href='#L179'>179</a>
+<a name='L180'></a><a href='#L180'>180</a>
+<a name='L181'></a><a href='#L181'>181</a>
+<a name='L182'></a><a href='#L182'>182</a>
+<a name='L183'></a><a href='#L183'>183</a>
+<a name='L184'></a><a href='#L184'>184</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -280,7 +286,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-yes">30x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -387,7 +393,13 @@
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-yes">30x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -418,7 +430,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { memo } from 'react'
-import type { VaultEntry } from '../types'
+import type { VaultEntry, NoteStatus } from '../types'
 import { cn } from '@/lib/utils'
 import {
   MagnifyingGlass,
@@ -436,7 +448,7 @@ import {
 interface BreadcrumbBarProps {
   entry: VaultEntry
   wordCount: number
-  isModified: boolean
+  noteStatus: NoteStatus
   showDiffToggle: boolean
   diffMode: boolean
   diffLoading: boolean
@@ -456,7 +468,7 @@ const DISABLED_ICON_STYLE = { opacity: 0.4, cursor: 'not-allowed' } as const
 function BreadcrumbActions({ entry, showDiffToggle, diffMode, diffLoading, onToggleDiff,
   showAIChat, onToggleAIChat, inspectorCollapsed, onToggleInspector,
   onTrash, onRestore, onArchive, onUnarchive,
-}: Omit&lt;BreadcrumbBarProps, 'wordCount' | 'isModified'&gt;) {
+}: Omit&lt;BreadcrumbBarProps, 'wordCount' | 'noteStatus'&gt;) {
   return (
     &lt;div className="flex items-center" style={{ gap: 12 }}&gt;
       &lt;button
@@ -562,7 +574,7 @@ function BreadcrumbActions({ entry, showDiffToggle, diffMode, diffLoading, onTog
 }
 &nbsp;
 export const BreadcrumbBar = memo(function BreadcrumbBar({
-  entry, wordCount, isModified, ...actionProps
+  entry, wordCount, noteStatus, ...actionProps
 }: BreadcrumbBarProps) {
   return (
     &lt;div
@@ -581,7 +593,13 @@ export const BreadcrumbBar = memo(function BreadcrumbBar({
         &lt;span className="font-medium text-foreground"&gt;{entry.title}&lt;/span&gt;
         &lt;span className="text-muted-foreground" style={{ margin: '0 4px' }}&gt;&amp;middot;&lt;/span&gt;
         &lt;span className="text-muted-foreground"&gt;{wordCount.toLocaleString()} words&lt;/span&gt;
-        {isModified &amp;&amp; (
+        {noteStatus === 'new' &amp;&amp; (
+          &lt;&gt;
+            &lt;span className="text-muted-foreground" style={{ margin: '0 4px' }}&gt;&amp;middot;&lt;/span&gt;
+            &lt;span className="font-semibold" style={{ color: 'var(--accent-green)' }}&gt;N&lt;/span&gt;
+          &lt;/&gt;
+        )}
+        {noteStatus === 'modified' &amp;&amp; (
           &lt;&gt;
             &lt;span className="text-muted-foreground" style={{ margin: '0 4px' }}&gt;&amp;middot;&lt;/span&gt;
             &lt;span className="font-semibold" style={{ color: 'var(--accent-yellow)' }}&gt;M&lt;/span&gt;
@@ -601,7 +619,7 @@ export const BreadcrumbBar = memo(function BreadcrumbBar({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-02-22T09:10:55.587Z
+                at 2026-02-25T20:19:25.575Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
