@@ -2,6 +2,7 @@ import { useAppKeyboard } from './useAppKeyboard'
 import { useCommandRegistry } from './useCommandRegistry'
 import type { CommandAction } from './useCommandRegistry'
 import { useKeyboardNavigation } from './useKeyboardNavigation'
+import { useMenuEvents } from './useMenuEvents'
 import type { SidebarSelection, VaultEntry } from '../types'
 import type { ViewMode } from './useViewMode'
 
@@ -39,7 +40,7 @@ interface AppCommandsConfig {
   canGoForward?: boolean
 }
 
-/** Sets up keyboard shortcuts, command registry, and keyboard navigation. */
+/** Sets up keyboard shortcuts, command registry, menu events, and keyboard navigation. */
 export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
   useAppKeyboard({
     onQuickOpen: config.onQuickOpen,
@@ -55,6 +56,19 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onGoForward: config.onGoForward,
     activeTabPathRef: config.activeTabPathRef,
     handleCloseTabRef: config.handleCloseTabRef,
+  })
+
+  useMenuEvents({
+    onSetViewMode: config.onSetViewMode,
+    onCreateNote: config.onCreateNote,
+    onQuickOpen: config.onQuickOpen,
+    onSave: config.onSave,
+    onOpenSettings: config.onOpenSettings,
+    onToggleInspector: config.onToggleInspector,
+    onCommandPalette: config.onCommandPalette,
+    activeTabPathRef: config.activeTabPathRef,
+    handleCloseTabRef: config.handleCloseTabRef,
+    activeTabPath: config.activeTabPath,
   })
 
   const commands = useCommandRegistry({

@@ -110,6 +110,12 @@ fn migrate_is_a_to_type(vault_path: String) -> Result<usize, String> {
 }
 
 #[tauri::command]
+fn update_menu_state(app_handle: tauri::AppHandle, has_active_note: bool) -> Result<(), String> {
+    menu::set_note_items_enabled(&app_handle, has_active_note);
+    Ok(())
+}
+
+#[tauri::command]
 fn get_settings() -> Result<Settings, String> {
     settings::get_settings()
 }
@@ -238,6 +244,7 @@ pub fn run() {
             purge_trash,
             migrate_is_a_to_type,
             get_settings,
+            update_menu_state,
             save_settings,
             github_list_repos,
             github_create_repo,

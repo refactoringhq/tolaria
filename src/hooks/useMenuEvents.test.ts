@@ -1,0 +1,94 @@
+import { describe, it, expect, vi } from 'vitest'
+import { dispatchMenuEvent, type MenuEventHandlers } from './useMenuEvents'
+
+function makeHandlers(): MenuEventHandlers {
+  return {
+    onSetViewMode: vi.fn(),
+    onCreateNote: vi.fn(),
+    onQuickOpen: vi.fn(),
+    onSave: vi.fn(),
+    onOpenSettings: vi.fn(),
+    onToggleInspector: vi.fn(),
+    onCommandPalette: vi.fn(),
+    activeTabPathRef: { current: '/vault/test.md' } as React.MutableRefObject<string | null>,
+    handleCloseTabRef: { current: vi.fn() } as React.MutableRefObject<(path: string) => void>,
+    activeTabPath: '/vault/test.md',
+  }
+}
+
+describe('dispatchMenuEvent', () => {
+  it('view-editor-only sets editor-only mode', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('view-editor-only', h)
+    expect(h.onSetViewMode).toHaveBeenCalledWith('editor-only')
+  })
+
+  it('view-editor-list sets editor-list mode', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('view-editor-list', h)
+    expect(h.onSetViewMode).toHaveBeenCalledWith('editor-list')
+  })
+
+  it('view-all sets all mode', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('view-all', h)
+    expect(h.onSetViewMode).toHaveBeenCalledWith('all')
+  })
+
+  it('file-new-note triggers create note', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('file-new-note', h)
+    expect(h.onCreateNote).toHaveBeenCalled()
+  })
+
+  it('file-quick-open triggers quick open', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('file-quick-open', h)
+    expect(h.onQuickOpen).toHaveBeenCalled()
+  })
+
+  it('file-save triggers save', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('file-save', h)
+    expect(h.onSave).toHaveBeenCalled()
+  })
+
+  it('file-close-tab closes the active tab', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('file-close-tab', h)
+    expect(h.handleCloseTabRef.current).toHaveBeenCalledWith('/vault/test.md')
+  })
+
+  it('file-close-tab does nothing when no active tab', () => {
+    const h = makeHandlers()
+    h.activeTabPathRef = { current: null }
+    dispatchMenuEvent('file-close-tab', h)
+    expect(h.handleCloseTabRef.current).not.toHaveBeenCalled()
+  })
+
+  it('app-settings triggers open settings', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('app-settings', h)
+    expect(h.onOpenSettings).toHaveBeenCalled()
+  })
+
+  it('view-toggle-inspector triggers toggle inspector', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('view-toggle-inspector', h)
+    expect(h.onToggleInspector).toHaveBeenCalled()
+  })
+
+  it('view-command-palette triggers command palette', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('view-command-palette', h)
+    expect(h.onCommandPalette).toHaveBeenCalled()
+  })
+
+  it('unknown event ID does nothing', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('unknown-event', h)
+    expect(h.onSetViewMode).not.toHaveBeenCalled()
+    expect(h.onCreateNote).not.toHaveBeenCalled()
+    expect(h.onSave).not.toHaveBeenCalled()
+  })
+})
