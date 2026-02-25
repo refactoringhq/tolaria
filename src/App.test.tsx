@@ -117,6 +117,7 @@ describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
+    // Reset view mode between tests so sidebar starts visible
     localStorage.removeItem('laputa-view-mode')
   })
 
