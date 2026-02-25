@@ -35,6 +35,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
   {
     path: '/vault/event/retreat.md',
@@ -58,6 +59,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    outgoingLinks: [],
   },
 ]
 
@@ -68,31 +70,39 @@ describe('SearchPanel', () => {
 
   it('renders nothing when closed', () => {
     const { container } = render(
-      <SearchPanel open={false} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />
+      <SearchPanel open={false} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />,
     )
     expect(container.innerHTML).toBe('')
   })
 
   it('renders search input when open', () => {
     render(
-      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />,
     )
     expect(screen.getByPlaceholderText('Search in all notes...')).toBeInTheDocument()
   })
 
   it('shows empty state hint when no query', () => {
     render(
-      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />,
     )
     expect(screen.getByText('Search across all note contents')).toBeInTheDocument()
+    expect(screen.getByText('Enter to open · Esc to close')).toBeInTheDocument()
+  })
+
+  it('has no keyword/semantic toggle', () => {
+    render(
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />,
+    )
+    expect(screen.queryByText('Keyword')).not.toBeInTheDocument()
+    expect(screen.queryByText('Semantic')).not.toBeInTheDocument()
   })
 
   it('calls onClose when clicking overlay', () => {
     const onClose = vi.fn()
     render(
-      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={onClose} />
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={onClose} />,
     )
-    // Click the overlay (outermost div)
     const overlay = screen.getByPlaceholderText('Search in all notes...').closest('.fixed')!
     fireEvent.click(overlay)
     expect(onClose).toHaveBeenCalled()
@@ -101,13 +111,13 @@ describe('SearchPanel', () => {
   it('calls onClose on Escape key', () => {
     const onClose = vi.fn()
     render(
-      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={onClose} />
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={onClose} />,
     )
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('performs search on query input with debounce', async () => {
+  it('performs unified search with keyword then hybrid', async () => {
     mockInvokeFn.mockResolvedValue({
       results: [
         { title: 'How to Design AI-first APIs', path: '/vault/essay/ai-apis.md', snippet: '...designing APIs for AI...', score: 0.87, note_type: 'Essay' },
@@ -116,12 +126,13 @@ describe('SearchPanel', () => {
     })
 
     render(
-      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />,
     )
 
     const input = screen.getByPlaceholderText('Search in all notes...')
     fireEvent.change(input, { target: { value: 'api design' } })
 
+    // Should call keyword search first
     await waitFor(() => {
       expect(mockInvokeFn).toHaveBeenCalledWith('search_vault', {
         vaultPath: '/vault',
@@ -131,8 +142,19 @@ describe('SearchPanel', () => {
       })
     })
 
+    // Results should appear
     await waitFor(() => {
       expect(screen.getByText('How to Design AI-first APIs')).toBeInTheDocument()
+    })
+
+    // Should also call hybrid search
+    await waitFor(() => {
+      expect(mockInvokeFn).toHaveBeenCalledWith('search_vault', {
+        vaultPath: '/vault',
+        query: 'api design',
+        mode: 'hybrid',
+        limit: 20,
+      })
     })
   })
 
@@ -140,7 +162,7 @@ describe('SearchPanel', () => {
     mockInvokeFn.mockResolvedValue({ results: [], elapsed_ms: 10 })
 
     render(
-      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />,
     )
 
     const input = screen.getByPlaceholderText('Search in all notes...')
@@ -161,7 +183,7 @@ describe('SearchPanel', () => {
     })
 
     render(
-      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />,
     )
 
     const input = screen.getByPlaceholderText('Search in all notes...')
@@ -171,10 +193,8 @@ describe('SearchPanel', () => {
       expect(screen.getByText('Result One')).toBeInTheDocument()
     })
 
-    // Arrow down should highlight second result
     fireEvent.keyDown(window, { key: 'ArrowDown' })
 
-    // The second item should now have bg-accent class
     await waitFor(() => {
       const resultTwo = screen.getByText('Result Two').closest('[class*="cursor-pointer"]')!
       expect(resultTwo.className).toContain('bg-accent')
@@ -192,7 +212,7 @@ describe('SearchPanel', () => {
     const onSelectNote = vi.fn()
     const onClose = vi.fn()
     render(
-      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={onSelectNote} onClose={onClose} />
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={onSelectNote} onClose={onClose} />,
     )
 
     fireEvent.change(screen.getByPlaceholderText('Search in all notes...'), { target: { value: 'api' } })
@@ -201,39 +221,12 @@ describe('SearchPanel', () => {
       expect(screen.getByText('How to Design AI-first APIs')).toBeInTheDocument()
     })
 
-    // Wait for the effect to re-register with new results before firing Enter
     fireEvent.keyDown(window, { key: 'Enter' })
 
     await waitFor(() => {
       expect(onSelectNote).toHaveBeenCalledWith(MOCK_ENTRIES[0])
       expect(onClose).toHaveBeenCalled()
     })
-  })
-
-  it('toggles search mode with Tab key', async () => {
-    render(
-      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />
-    )
-
-    // Initial mode is keyword — the keyword button should be styled active
-    const keywordBtn = screen.getByText('Keyword')
-    expect(keywordBtn.className).toContain('bg-secondary')
-
-    // Tab toggles to semantic
-    fireEvent.keyDown(window, { key: 'Tab' })
-
-    const semanticBtn = screen.getByText('Semantic')
-    expect(semanticBtn.className).toContain('bg-secondary')
-  })
-
-  it('toggles mode via button click', () => {
-    render(
-      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />
-    )
-
-    fireEvent.click(screen.getByText('Semantic'))
-    expect(screen.getByText('Semantic').className).toContain('bg-secondary')
-    expect(screen.getByText('Keyword').className).not.toContain('bg-secondary')
   })
 
   it('shows result count and elapsed time', async () => {
@@ -245,7 +238,7 @@ describe('SearchPanel', () => {
     })
 
     render(
-      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />,
     )
 
     fireEvent.change(screen.getByPlaceholderText('Search in all notes...'), { target: { value: 'test' } })
@@ -265,7 +258,7 @@ describe('SearchPanel', () => {
     })
 
     render(
-      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />,
     )
 
     fireEvent.change(screen.getByPlaceholderText('Search in all notes...'), { target: { value: 'api' } })
@@ -273,5 +266,106 @@ describe('SearchPanel', () => {
     await waitFor(() => {
       expect(screen.getByText('Essay')).toBeInTheDocument()
     })
+  })
+
+  it('shows loading spinner while searching', async () => {
+    const resolvers: ((v: unknown) => void)[] = []
+    mockInvokeFn.mockImplementation(
+      () => new Promise(resolve => { resolvers.push(resolve) }),
+    )
+
+    render(
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />,
+    )
+
+    fireEvent.change(screen.getByPlaceholderText('Search in all notes...'), { target: { value: 'test' } })
+
+    // Spinner appears when keyword search starts (after debounce)
+    await waitFor(() => {
+      expect(screen.getByTestId('search-spinner')).toBeInTheDocument()
+    })
+
+    // Resolve keyword search
+    resolvers[0]({
+      results: [{ title: 'Result', path: '/vault/essay/ai-apis.md', snippet: '', score: 0.9, note_type: null }],
+      elapsed_ms: 30,
+    })
+
+    // Keyword results appear, spinner still visible (hybrid in progress)
+    await waitFor(() => {
+      expect(screen.getByText('Result')).toBeInTheDocument()
+      expect(screen.getByTestId('search-spinner')).toBeInTheDocument()
+    })
+
+    // Wait for hybrid call then resolve it
+    await waitFor(() => { expect(resolvers).toHaveLength(2) })
+    resolvers[1]({
+      results: [{ title: 'Result', path: '/vault/essay/ai-apis.md', snippet: '', score: 0.9, note_type: null }],
+      elapsed_ms: 150,
+    })
+
+    // Spinner disappears after hybrid completes
+    await waitFor(() => {
+      expect(screen.queryByTestId('search-spinner')).not.toBeInTheDocument()
+    })
+  })
+
+  it('discards stale results when query changes rapidly', async () => {
+    mockInvokeFn.mockImplementation(async (_cmd: string, args?: Record<string, unknown>) => {
+      const q = (args as Record<string, string>)?.query
+      if (q === 'second') {
+        return {
+          results: [{ title: 'Second Result', path: '/vault/event/retreat.md', snippet: '', score: 0.9, note_type: null }],
+          elapsed_ms: 30,
+        }
+      }
+      return { results: [], elapsed_ms: 0 }
+    })
+
+    render(
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />,
+    )
+
+    const input = screen.getByPlaceholderText('Search in all notes...')
+    // Type first query, then immediately change to second (within debounce)
+    fireEvent.change(input, { target: { value: 'first' } })
+    fireEvent.change(input, { target: { value: 'second' } })
+
+    // Only second query results should appear
+    await waitFor(() => {
+      expect(screen.getByText('Second Result')).toBeInTheDocument()
+    })
+  })
+
+  it('keeps keyword results when hybrid search fails', async () => {
+    mockInvokeFn.mockImplementation(async (_cmd: string, args?: Record<string, unknown>) => {
+      const mode = (args as Record<string, string>)?.mode
+      if (mode === 'keyword') {
+        return {
+          results: [{ title: 'Keyword Only', path: '/vault/essay/ai-apis.md', snippet: '', score: 0.9, note_type: null }],
+          elapsed_ms: 30,
+        }
+      }
+      throw new Error('qmd unavailable')
+    })
+
+    render(
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />,
+    )
+
+    fireEvent.change(screen.getByPlaceholderText('Search in all notes...'), { target: { value: 'test' } })
+
+    // Keyword results appear
+    await waitFor(() => {
+      expect(screen.getByText('Keyword Only')).toBeInTheDocument()
+    })
+
+    // Spinner disappears after hybrid fails
+    await waitFor(() => {
+      expect(screen.queryByTestId('search-spinner')).not.toBeInTheDocument()
+    })
+
+    // Keyword results remain
+    expect(screen.getByText('Keyword Only')).toBeInTheDocument()
   })
 })
