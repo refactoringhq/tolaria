@@ -378,8 +378,7 @@ mod tests {
     }
 
     async fn mock_poll(body: &str) -> DeviceFlowPollResult {
-        let (server, mock) =
-            mock_json("POST", "/login/oauth/access_token", 200, body).await;
+        let (server, mock) = mock_json("POST", "/login/oauth/access_token", 200, body).await;
         let result = github_device_flow_poll_with_base("dev_code_xyz", &server.url())
             .await
             .unwrap();
@@ -414,20 +413,15 @@ mod tests {
         result
     }
 
-    async fn mock_create_repo(
-        status: usize,
-        body: &str,
-    ) -> Result<GithubRepo, String> {
+    async fn mock_create_repo(status: usize, body: &str) -> Result<GithubRepo, String> {
         let (server, mock) = mock_json("POST", "/user/repos", status, body).await;
-        let result =
-            github_create_repo_with_base("token", "repo", false, &server.url()).await;
+        let result = github_create_repo_with_base("token", "repo", false, &server.url()).await;
         mock.assert_async().await;
         result
     }
 
     async fn mock_device_start(status: usize, body: &str) -> Result<DeviceFlowStart, String> {
-        let (server, mock) =
-            mock_json("POST", "/login/device/code", status, body).await;
+        let (server, mock) = mock_json("POST", "/login/device/code", status, body).await;
         let result = github_device_flow_start_with_base(&server.url()).await;
         mock.assert_async().await;
         result
@@ -514,7 +508,12 @@ mod tests {
             .output()
             .unwrap();
         StdCommand::new("git")
-            .args(["remote", "add", "origin", "https://github.com/user/repo.git"])
+            .args([
+                "remote",
+                "add",
+                "origin",
+                "https://github.com/user/repo.git",
+            ])
             .current_dir(path)
             .output()
             .unwrap();
@@ -744,13 +743,16 @@ mod tests {
         .await
         .unwrap();
 
-        assert_eq!(start, DeviceFlowStart {
-            device_code: "dev_abc".to_string(),
-            user_code: "ABCD-1234".to_string(),
-            verification_uri: "https://github.com/login/device".to_string(),
-            expires_in: 900,
-            interval: 5,
-        });
+        assert_eq!(
+            start,
+            DeviceFlowStart {
+                device_code: "dev_abc".to_string(),
+                user_code: "ABCD-1234".to_string(),
+                verification_uri: "https://github.com/login/device".to_string(),
+                expires_in: 900,
+                interval: 5,
+            }
+        );
     }
 
     #[tokio::test]
@@ -772,15 +774,17 @@ mod tests {
 
     #[tokio::test]
     async fn test_github_device_flow_poll_complete() {
-        let poll = mock_poll(
-            r#"{"access_token":"gho_secret123","token_type":"bearer","scope":"repo"}"#,
-        )
-        .await;
-        assert_eq!(poll, DeviceFlowPollResult {
-            status: "complete".to_string(),
-            access_token: Some("gho_secret123".to_string()),
-            error: None,
-        });
+        let poll =
+            mock_poll(r#"{"access_token":"gho_secret123","token_type":"bearer","scope":"repo"}"#)
+                .await;
+        assert_eq!(
+            poll,
+            DeviceFlowPollResult {
+                status: "complete".to_string(),
+                access_token: Some("gho_secret123".to_string()),
+                error: None,
+            }
+        );
     }
 
     #[tokio::test]
@@ -849,11 +853,14 @@ mod tests {
         .await
         .unwrap();
 
-        assert_eq!(user, GitHubUser {
-            login: "lucaong".to_string(),
-            name: Some("Luca Ongaro".to_string()),
-            avatar_url: "https://avatars.githubusercontent.com/u/12345".to_string(),
-        });
+        assert_eq!(
+            user,
+            GitHubUser {
+                login: "lucaong".to_string(),
+                name: Some("Luca Ongaro".to_string()),
+                avatar_url: "https://avatars.githubusercontent.com/u/12345".to_string(),
+            }
+        );
     }
 
     #[tokio::test]
