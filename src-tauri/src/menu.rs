@@ -1,11 +1,6 @@
 use tauri::{
-<<<<<<< HEAD
-    menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder},
-    App, Emitter,
-=======
     menu::{MenuBuilder, MenuItemBuilder, MenuItemKind, Submenu, SubmenuBuilder},
     App, AppHandle, Emitter,
->>>>>>> 6ca5098 (feat: populate macOS menu bar with File, Edit, View, Window menus)
 };
 
 // Custom menu item IDs that emit events to the frontend.
@@ -33,32 +28,6 @@ const CUSTOM_IDS: &[&str] = &[
     VIEW_COMMAND_PALETTE,
 ];
 
-<<<<<<< HEAD
-pub fn setup_menu(app: &App) -> Result<(), Box<dyn std::error::Error>> {
-    let edit_submenu = SubmenuBuilder::new(app, "Edit")
-        .item(&PredefinedMenuItem::undo(app, Some("Undo"))?)
-        .item(&PredefinedMenuItem::redo(app, Some("Redo"))?)
-        .separator()
-        .item(&PredefinedMenuItem::cut(app, Some("Cut"))?)
-        .item(&PredefinedMenuItem::copy(app, Some("Copy"))?)
-        .item(&PredefinedMenuItem::paste(app, Some("Paste"))?)
-        .item(&PredefinedMenuItem::select_all(app, Some("Select All"))?)
-        .build()?;
-
-    let mut view_menu = SubmenuBuilder::new(app, "View");
-    for (id, label, accel) in &VIEW_ITEMS {
-        let item = MenuItemBuilder::new(*label)
-            .id(*id)
-            .accelerator(*accel)
-            .build(app)?;
-        view_menu = view_menu.item(&item);
-    }
-    let view_submenu = view_menu.build()?;
-
-    let menu = MenuBuilder::new(app)
-        .item(&edit_submenu)
-        .item(&view_submenu)
-=======
 /// IDs of menu items that should be disabled when no note tab is active.
 const NOTE_DEPENDENT_IDS: &[&str] = &[FILE_SAVE, FILE_CLOSE_TAB];
 
@@ -180,7 +149,6 @@ pub fn setup_menu(app: &App) -> Result<(), Box<dyn std::error::Error>> {
         .item(&edit_menu)
         .item(&view_menu)
         .item(&window_menu)
->>>>>>> 6ca5098 (feat: populate macOS menu bar with File, Edit, View, Window menus)
         .build()?;
 
     app.set_menu(menu)?;
