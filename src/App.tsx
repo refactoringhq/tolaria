@@ -97,7 +97,7 @@ function App() {
     await notes.handleRenameNote(path, newTitle, vaultSwitcher.vaultPath, vault.replaceEntry).then(vault.loadModifiedFiles)
   }, [notes, vaultSwitcher.vaultPath, vault, savePendingForPath])
 
-  const { setViewMode } = useViewMode()
+  const { setViewMode, sidebarVisible, noteListVisible } = useViewMode()
 
   const commands = useAppCommands({
     activeTabPath: notes.activeTabPath, activeTabPathRef: notes.activeTabPathRef,
@@ -125,14 +125,22 @@ function App() {
     <div className="app-shell">
       <UpdateBanner status={updateStatus} actions={updateActions} />
       <div className="app">
-        <div className="app__sidebar" style={{ width: layout.sidebarWidth }}>
-          <Sidebar entries={vault.entries} selection={selection} onSelect={setSelection} onSelectNote={notes.handleSelectNote} onCreateType={notes.handleCreateNoteImmediate} onCreateNewType={dialogs.openCreateType} onCustomizeType={entryActions.handleCustomizeType} onReorderSections={entryActions.handleReorderSections} modifiedCount={vault.modifiedFiles.length} onCommitPush={commitFlow.openCommitDialog} />
-        </div>
-        <ResizeHandle onResize={layout.handleSidebarResize} />
-        <div className="app__note-list" style={{ width: layout.noteListWidth }}>
-          <NoteList entries={vault.entries} selection={selection} selectedNote={activeTab?.entry ?? null} allContent={vault.allContent} modifiedFiles={vault.modifiedFiles} getNoteStatus={vault.getNoteStatus} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={notes.handleReplaceActiveTab} onCreateNote={notes.handleCreateNoteImmediate} />
-        </div>
-        <ResizeHandle onResize={layout.handleNoteListResize} />
+        {sidebarVisible && (
+          <>
+            <div className="app__sidebar" style={{ width: layout.sidebarWidth }}>
+              <Sidebar entries={vault.entries} selection={selection} onSelect={setSelection} onSelectNote={notes.handleSelectNote} onCreateType={notes.handleCreateNoteImmediate} onCreateNewType={dialogs.openCreateType} onCustomizeType={entryActions.handleCustomizeType} onReorderSections={entryActions.handleReorderSections} modifiedCount={vault.modifiedFiles.length} onCommitPush={commitFlow.openCommitDialog} />
+            </div>
+            <ResizeHandle onResize={layout.handleSidebarResize} />
+          </>
+        )}
+        {noteListVisible && (
+          <>
+            <div className="app__note-list" style={{ width: layout.noteListWidth }}>
+              <NoteList entries={vault.entries} selection={selection} selectedNote={activeTab?.entry ?? null} allContent={vault.allContent} modifiedFiles={vault.modifiedFiles} getNoteStatus={vault.getNoteStatus} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={notes.handleReplaceActiveTab} onCreateNote={notes.handleCreateNoteImmediate} />
+            </div>
+            <ResizeHandle onResize={layout.handleNoteListResize} />
+          </>
+        )}
         <div className="app__editor">
           <Editor
             tabs={notes.tabs}
