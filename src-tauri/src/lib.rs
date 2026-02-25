@@ -151,10 +151,35 @@ async fn github_get_user(token: String) -> Result<GitHubUser, String> {
     github::github_get_user(&token).await
 }
 
+fn log_startup_result(label: &str, result: Result<usize, String>) {
+    match result {
+        Ok(n) if n > 0 => log::info!("{}: {} files", label, n),
+        Err(e) => log::warn!("{}: {}", label, e),
+        _ => {}
+    }
+}
+
+/// Run startup housekeeping on the default vault (purge old trash, migrate legacy frontmatter).
+fn run_startup_tasks() {
+    let vault_path = dirs::home_dir()
+        .map(|h| h.join("Laputa"))
+        .unwrap_or_default();
+    if !vault_path.is_dir() {
+        return;
+    }
+    let vp_str = vault_path.to_str().unwrap_or_default();
+    log_startup_result(
+        "Purged trashed files on startup",
+        vault::purge_trash(vp_str).map(|d| d.len()),
+    );
+    log_startup_result(
+        "Migrated is_a to type on startup",
+        vault::migrate_is_a_to_type(vp_str),
+    );
+}
+
 #[cfg(test)]
-mod tests {
-    use super::*;
-} // close mod tests
+mod tests {}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -179,32 +204,7 @@ pub fn run() {
                 menu::setup_menu(app)?;
             }
 
-            // Purge trashed files older than 30 days on startup
-            let vault_path = dirs::home_dir()
-                .map(|h| h.join("Laputa"))
-                .unwrap_or_default();
-            if vault_path.is_dir() {
-                let vp_str = vault_path.to_str().unwrap_or_default();
-                match vault::purge_trash(vp_str) {
-                    Ok(deleted) if !deleted.is_empty() => {
-                        log::info!("Purged {} trashed files on startup", deleted.len());
-                    }
-                    Err(e) => {
-                        log::warn!("Failed to purge trash on startup: {}", e);
-                    }
-                    _ => {}
-                }
-                // Migrate legacy is_a/Is A frontmatter to type
-                match vault::migrate_is_a_to_type(vp_str) {
-                    Ok(n) if n > 0 => {
-                        log::info!("Migrated {} files from is_a to type on startup", n);
-                    }
-                    Err(e) => {
-                        log::warn!("Failed to migrate is_a on startup: {}", e);
-                    }
-                    _ => {}
-                }
-            }
+            run_startup_tasks();
 
             Ok(())
         })
