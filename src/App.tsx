@@ -129,6 +129,46 @@ function App() {
     }
   }, [navHistory, isTabOpen, notes])
 
+  // Mouse button 3/4 (back/forward) and macOS trackpad two-finger swipe
+  useEffect(() => {
+    const handleMouseBack = (e: MouseEvent) => {
+      if (e.button === 3) { e.preventDefault(); handleGoBack() }
+      if (e.button === 4) { e.preventDefault(); handleGoForward() }
+    }
+    window.addEventListener('mouseup', handleMouseBack)
+
+    // Trackpad swipe: accumulate horizontal wheel delta and trigger on threshold
+    let accumulatedDeltaX = 0
+    let resetTimer: ReturnType<typeof setTimeout> | null = null
+    const SWIPE_THRESHOLD = 120
+
+    const handleWheel = (e: WheelEvent) => {
+      // Only handle horizontal-dominant gestures (trackpad swipe)
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return
+      if (e.ctrlKey || e.metaKey) return // ignore pinch-zoom
+
+      accumulatedDeltaX += e.deltaX
+
+      if (resetTimer) clearTimeout(resetTimer)
+      resetTimer = setTimeout(() => { accumulatedDeltaX = 0 }, 300)
+
+      if (accumulatedDeltaX > SWIPE_THRESHOLD) {
+        accumulatedDeltaX = 0
+        handleGoForward()
+      } else if (accumulatedDeltaX < -SWIPE_THRESHOLD) {
+        accumulatedDeltaX = 0
+        handleGoBack()
+      }
+    }
+    window.addEventListener('wheel', handleWheel, { passive: true })
+
+    return () => {
+      window.removeEventListener('mouseup', handleMouseBack)
+      window.removeEventListener('wheel', handleWheel)
+      if (resetTimer) clearTimeout(resetTimer)
+    }
+  }, [handleGoBack, handleGoForward])
+
   const { handleSave, handleContentChange, savePendingForPath, savePending } = useEditorSaveWithLinks({
     updateContent: vault.updateContent, updateEntry: vault.updateEntry,
     setTabs: notes.setTabs, setToastMessage, onAfterSave: vault.loadModifiedFiles,
