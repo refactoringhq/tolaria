@@ -67,7 +67,8 @@ vi.mock('./mock-tauri', () => ({
     if (cmd === 'get_modified_files') return []
     if (cmd === 'get_note_content') return mockAllContent['/vault/project/test.md'] || ''
     if (cmd === 'get_file_history') return []
-    if (cmd === 'get_settings') return { anthropic_key: null, openai_key: null, google_key: null, github_token: null, github_username: null }
+    if (cmd === 'get_settings') return { anthropic_key: null, openai_key: null, google_key: null, github_token: null, github_username: null, auto_pull_interval_minutes: null }
+    if (cmd === 'git_pull') return { status: 'up_to_date', message: 'Already up to date', updatedFiles: [], conflictFiles: [] }
     if (cmd === 'save_settings') return null
     return null
   }),

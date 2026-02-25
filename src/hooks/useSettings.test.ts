@@ -9,6 +9,7 @@ const defaultSettings: Settings = {
   google_key: null,
   github_token: null,
   github_username: null,
+  auto_pull_interval_minutes: null,
 }
 
 const savedSettings: Settings = {
@@ -17,6 +18,7 @@ const savedSettings: Settings = {
   google_key: 'AIza-test',
   github_token: null,
   github_username: null,
+  auto_pull_interval_minutes: null,
 }
 
 let mockSettingsStore: Settings = { ...defaultSettings }
@@ -77,6 +79,7 @@ describe('useSettings', () => {
       google_key: null,
       github_token: null,
       github_username: null,
+      auto_pull_interval_minutes: null,
     }
 
     await act(async () => {

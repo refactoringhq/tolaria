@@ -13,6 +13,7 @@ const EMPTY_SETTINGS: Settings = {
   google_key: null,
   github_token: null,
   github_username: null,
+  auto_pull_interval_minutes: null,
 }
 
 export function useSettings() {
