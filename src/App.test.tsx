@@ -116,6 +116,7 @@ import App from './App'
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+
     localStorage.removeItem('laputa-view-mode')
   })
 
