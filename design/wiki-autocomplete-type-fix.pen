@@ -1,0 +1,238 @@
+{
+  "children": [
+    {
+      "type": "frame",
+      "id": "wikiTypeFix",
+      "x": 0,
+      "y": 0,
+      "name": "Wiki-link Autocomplete — All Notes Show Type Labels",
+      "clip": true,
+      "width": 400,
+      "height": 340,
+      "fill": "#FFFFFF",
+      "layout": "vertical",
+      "gap": 0,
+      "children": [
+        {
+          "type": "frame",
+          "id": "wtfHeader",
+          "name": "Context: Editor line with [[query",
+          "width": "fill_container",
+          "height": 40,
+          "fill": "#FAFAFA",
+          "padding": [10, 16],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "wtfQuery",
+              "content": "Linking to [[no",
+              "fontSize": 15,
+              "fill": "#1a1a1a"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "wtfMenu",
+          "name": "Suggestion Menu — every item shows type",
+          "width": 320,
+          "fill": "#FFFFFF",
+          "layout": "vertical",
+          "gap": 0,
+          "padding": 4,
+          "cornerRadius": 6,
+          "stroke": {
+            "align": "outside",
+            "thickness": 1,
+            "fill": "rgba(0,0,0,0.1)"
+          },
+          "children": [
+            {
+              "type": "frame",
+              "id": "wtfItem1",
+              "name": "Item: Daily Notes (Note — default type shown)",
+              "width": "fill_container",
+              "height": 32,
+              "padding": [6, 10],
+              "cornerRadius": 4,
+              "fill": "rgba(21,93,255,0.08)",
+              "alignItems": "center",
+              "justifyContent": "space-between",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "wtfTitle1",
+                  "content": "Daily Notes",
+                  "fontSize": 13,
+                  "fill": "#1a1a1a",
+                  "fontWeight": "400"
+                },
+                {
+                  "type": "text",
+                  "id": "wtfType1",
+                  "content": "Note",
+                  "fontSize": 11,
+                  "fontWeight": "500",
+                  "fill": "var(--muted-foreground, #888888)",
+                  "opacity": 0.8
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "wtfItem2",
+              "name": "Item: Node.js Setup (Note — no frontmatter type)",
+              "width": "fill_container",
+              "height": 32,
+              "padding": [6, 10],
+              "cornerRadius": 4,
+              "alignItems": "center",
+              "justifyContent": "space-between",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "wtfTitle2",
+                  "content": "Node.js Setup",
+                  "fontSize": 13,
+                  "fill": "#1a1a1a",
+                  "fontWeight": "400"
+                },
+                {
+                  "type": "text",
+                  "id": "wtfType2",
+                  "content": "Note",
+                  "fontSize": 11,
+                  "fontWeight": "500",
+                  "fill": "var(--muted-foreground, #888888)",
+                  "opacity": 0.8
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "wtfItem3",
+              "name": "Item: Notification System (Project — explicit type)",
+              "width": "fill_container",
+              "height": 32,
+              "padding": [6, 10],
+              "cornerRadius": 4,
+              "alignItems": "center",
+              "justifyContent": "space-between",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "wtfTitle3",
+                  "content": "Notification System",
+                  "fontSize": 13,
+                  "fill": "#1a1a1a",
+                  "fontWeight": "400"
+                },
+                {
+                  "type": "text",
+                  "id": "wtfType3",
+                  "content": "Project",
+                  "fontSize": 11,
+                  "fontWeight": "500",
+                  "fill": "var(--accent-red, #E53935)",
+                  "opacity": 0.8
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "wtfItem4",
+              "name": "Item: NoSQL Patterns (Topic — explicit type)",
+              "width": "fill_container",
+              "height": 32,
+              "padding": [6, 10],
+              "cornerRadius": 4,
+              "alignItems": "center",
+              "justifyContent": "space-between",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "wtfTitle4",
+                  "content": "NoSQL Patterns",
+                  "fontSize": 13,
+                  "fill": "#1a1a1a",
+                  "fontWeight": "400"
+                },
+                {
+                  "type": "text",
+                  "id": "wtfType4",
+                  "content": "Topic",
+                  "fontSize": 11,
+                  "fontWeight": "500",
+                  "fill": "var(--accent-green, #43A047)",
+                  "opacity": 0.8
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "wtfItem5",
+              "name": "Item: Norman (Person — explicit type)",
+              "width": "fill_container",
+              "height": 32,
+              "padding": [6, 10],
+              "cornerRadius": 4,
+              "alignItems": "center",
+              "justifyContent": "space-between",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "wtfTitle5",
+                  "content": "Norman",
+                  "fontSize": 13,
+                  "fill": "#1a1a1a",
+                  "fontWeight": "400"
+                },
+                {
+                  "type": "text",
+                  "id": "wtfType5",
+                  "content": "Person",
+                  "fontSize": 11,
+                  "fontWeight": "500",
+                  "fill": "var(--accent-yellow, #FDD835)",
+                  "opacity": 0.8
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "wtfItem6",
+              "name": "Item: Notes on Architecture (Note — default type shown)",
+              "width": "fill_container",
+              "height": 32,
+              "padding": [6, 10],
+              "cornerRadius": 4,
+              "alignItems": "center",
+              "justifyContent": "space-between",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "wtfTitle6",
+                  "content": "Notes on Architecture",
+                  "fontSize": 13,
+                  "fill": "#1a1a1a",
+                  "fontWeight": "400"
+                },
+                {
+                  "type": "text",
+                  "id": "wtfType6",
+                  "content": "Note",
+                  "fontSize": 11,
+                  "fontWeight": "500",
+                  "fill": "var(--muted-foreground, #888888)",
+                  "opacity": 0.8
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {}
+}
