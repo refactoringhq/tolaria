@@ -110,6 +110,7 @@ describe('useAppKeyboard', () => {
     fireKey('f', { metaKey: true, shiftKey: true })
     expect(actions.onQuickOpen).not.toHaveBeenCalled()
     expect(actions.onCreateNote).not.toHaveBeenCalled()
+  })
 
   function withFocusedInput(fn: () => void) {
     const input = document.createElement('input')
