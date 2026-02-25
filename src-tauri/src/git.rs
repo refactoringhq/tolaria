@@ -873,7 +873,8 @@ mod tests {
 
     #[test]
     fn test_parse_updated_files_diffstat() {
-        let stdout = " Fast-forward\n note.md | 2 +-\n project/plan.md | 4 ++--\n 2 files changed\n";
+        let stdout =
+            " Fast-forward\n note.md | 2 +-\n project/plan.md | 4 ++--\n 2 files changed\n";
         let files = parse_updated_files(stdout);
         assert_eq!(files, vec!["note.md", "project/plan.md"]);
     }
