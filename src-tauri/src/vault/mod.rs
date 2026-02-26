@@ -12,8 +12,8 @@ pub use rename::{rename_note, RenameResult};
 pub use trash::purge_trash;
 
 use parsing::{
-    capitalize_first, contains_wikilink, count_body_words, extract_outgoing_links,
-    extract_snippet, extract_title, parse_iso_date,
+    capitalize_first, contains_wikilink, count_body_words, extract_outgoing_links, extract_snippet,
+    extract_title, parse_iso_date,
 };
 
 use gray_matter::engine::YAML;
@@ -587,7 +587,8 @@ mod tests {
     #[test]
     fn test_parse_md_file_has_word_count() {
         let dir = TempDir::new().unwrap();
-        let content = "---\nIs A: Note\n---\n# Test Note\n\nHello world. This is a test with seven words.";
+        let content =
+            "---\nIs A: Note\n---\n# Test Note\n\nHello world. This is a test with seven words.";
         create_test_file(dir.path(), "test.md", content);
 
         let entry = parse_md_file(&dir.path().join("test.md")).unwrap();

@@ -51,7 +51,10 @@ pub(super) fn count_body_words(content: &str) -> u32 {
     let without_fm = strip_frontmatter(content);
     let body = without_h1_line(without_fm).unwrap_or(without_fm);
     body.split_whitespace()
-        .filter(|w| !w.chars().all(|c| matches!(c, '#' | '*' | '_' | '`' | '~' | '-' | '>' | '|')))
+        .filter(|w| {
+            !w.chars()
+                .all(|c| matches!(c, '#' | '*' | '_' | '`' | '~' | '-' | '>' | '|'))
+        })
         .count() as u32
 }
 
