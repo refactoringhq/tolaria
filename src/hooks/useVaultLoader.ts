@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, startTransition } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { isTauri, mockInvoke } from '../mock-tauri'
 import type { VaultEntry, GitCommit, ModifiedFile, NoteStatus } from '../types'
@@ -76,13 +76,17 @@ export function useVaultLoader(vaultPath: string) {
 
   useEffect(() => { loadModifiedFiles() }, [loadModifiedFiles]) // eslint-disable-line react-hooks/set-state-in-effect -- trigger initial load
 
+  // PERF: startTransition defers the expensive entries update (filter/sort on
+  // 9000+ entries) so the high-priority tab render completes in <50ms first.
   const addEntry = useCallback((entry: VaultEntry, content: string) => {
-    setEntries((prev) => {
-      if (prev.some(e => e.path === entry.path)) return prev
-      return [entry, ...prev]
+    startTransition(() => {
+      setEntries((prev) => {
+        if (prev.some(e => e.path === entry.path)) return prev
+        return [entry, ...prev]
+      })
+      setAllContent((prev) => ({ ...prev, [entry.path]: content }))
+      tracker.trackNew(entry.path)
     })
-    setAllContent((prev) => ({ ...prev, [entry.path]: content }))
-    tracker.trackNew(entry.path)
   }, [tracker])
 
   const updateContent = useCallback((path: string, content: string) =>
@@ -118,16 +122,12 @@ export function useVaultLoader(vaultPath: string) {
   const commitAndPush = useCallback((message: string): Promise<string> =>
     commitWithPush(vaultPath, message), [vaultPath])
 
-  const reloadVault = useCallback(async () => {
-    try {
-      const data = await loadVaultData(vaultPath)
-      setEntries(data.entries)
-      setAllContent((prev) => ({ ...prev, ...data.allContent }))
-      loadModifiedFiles()
-    } catch (err) {
-      console.warn('Vault reload failed:', err)
-    }
-  }, [vaultPath, loadModifiedFiles])
+  const reloadVault = useCallback(
+    () => loadVaultData(vaultPath)
+      .then((data) => { setEntries(data.entries); setAllContent((prev) => ({ ...prev, ...data.allContent })); loadModifiedFiles() })
+      .catch((err) => console.warn('Vault reload failed:', err)),
+    [vaultPath, loadModifiedFiles],
+  )
 
   return {
     entries, allContent, modifiedFiles,

@@ -312,6 +312,24 @@ describe('useNoteActions hook', () => {
     expect(createdContent).toContain('title: Test Note')
   })
 
+  it('handleCreateNote opens tab immediately (before addEntry resolves)', () => {
+    const callOrder: string[] = []
+    const trackedAddEntry = vi.fn(() => { callOrder.push('addEntry') })
+    const config = makeConfig()
+    config.addEntry = trackedAddEntry
+
+    const { result } = renderHook(() => useNoteActions(config))
+
+    act(() => {
+      result.current.handleCreateNote('Fast Note', 'Note')
+    })
+
+    // Tab should be open with the new note
+    expect(result.current.tabs).toHaveLength(1)
+    expect(result.current.tabs[0].entry.title).toBe('Fast Note')
+    expect(result.current.activeTabPath).toContain('note/fast-note.md')
+  })
+
   it('handleCreateType creates type entry', () => {
     const { result } = renderHook(() => useNoteActions(makeConfig()))
 

@@ -193,15 +193,19 @@ function persistOptimistic(path: string, content: string, onFail: (p: string) =>
   persistNewNote(path, content).catch(() => onFail(path))
 }
 
-/** Optimistically add entry to UI, open tab, and persist to disk. */
+/** Optimistically open tab, add entry to vault, and persist to disk.
+ *  Tab creation (setTabs/setActiveTabPath) runs at normal priority so the
+ *  tab appears instantly.  addEntry uses startTransition internally so the
+ *  expensive entries update (NoteList re-filter/sort on 9000+ entries) is
+ *  deferred and doesn't block the tab from rendering. */
 function createAndPersist(
   resolved: { entry: VaultEntry; content: string },
   addFn: (e: VaultEntry, c: string) => void,
   openTab: (e: VaultEntry, c: string) => void,
   onFail: (p: string) => void,
 ): void {
-  addEntryWithMock(resolved.entry, resolved.content, addFn)
   openTab(resolved.entry, resolved.content)
+  addEntryWithMock(resolved.entry, resolved.content, addFn)
   persistOptimistic(resolved.entry.path, resolved.content, onFail)
 }
 
