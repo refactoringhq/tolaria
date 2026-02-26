@@ -5,7 +5,10 @@ import type { ParsedFrontmatter } from '../utils/frontmatter'
 import { EditableValue, TagPillList, UrlValue } from './EditableValue'
 import { isUrlValue } from '../utils/url'
 import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CalendarIcon, XIcon } from 'lucide-react'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 import { countWords } from '../utils/wikilinks'
 import { Check, X, Type, Calendar, ToggleLeft, Circle, Link } from 'lucide-react'
@@ -103,40 +106,69 @@ function BooleanToggle({ value, onToggle }: { value: boolean; onToggle: () => vo
   )
 }
 
+function parseDateValue(value: string): Date | undefined {
+  const iso = toISODate(value)
+  const d = new Date(iso + 'T00:00:00')
+  return isNaN(d.getTime()) ? undefined : d
+}
+
 function DateValue({ value, onSave }: {
   value: string; onSave: (newValue: string) => void
 }) {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [open, setOpen] = useState(false)
   const formatted = formatDateValue(value)
-  const isoValue = toISODate(value)
+  const selectedDate = parseDateValue(value)
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.value) onSave(e.target.value)
+  const handleSelect = (day: Date | undefined) => {
+    if (day) {
+      const yyyy = day.getFullYear()
+      const mm = String(day.getMonth() + 1).padStart(2, '0')
+      const dd = String(day.getDate()).padStart(2, '0')
+      onSave(`${yyyy}-${mm}-${dd}`)
+    }
+    setOpen(false)
   }
 
-  const handleClick = () => {
-    inputRef.current?.showPicker()
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onSave('')
+    setOpen(false)
   }
 
   return (
-    <span className="relative inline-flex min-w-0 items-center" data-testid="date-display">
-      <span
-        className="min-w-0 cursor-pointer truncate rounded px-1 py-0.5 text-right text-[12px] text-secondary-foreground transition-colors hover:bg-muted"
-        onClick={handleClick}
-        title={value}
-      >
-        {formatted}
-      </span>
-      <input
-        ref={inputRef}
-        type="date"
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
-        value={isoValue}
-        onChange={handleDateChange}
-        tabIndex={-1}
-        data-testid="date-picker-input"
-      />
-    </span>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className="inline-flex min-w-0 cursor-pointer items-center gap-1 rounded border-none bg-transparent px-1 py-0.5 text-right text-[12px] text-secondary-foreground transition-colors hover:bg-muted"
+          title={value}
+          data-testid="date-display"
+        >
+          <CalendarIcon className="size-3 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 truncate">{formatted}</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="end" data-testid="date-picker-popover">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={handleSelect}
+          defaultMonth={selectedDate}
+          data-testid="date-picker-calendar"
+        />
+        {selectedDate && (
+          <div className="border-t px-3 py-2">
+            <button
+              className="inline-flex items-center gap-1 border-none bg-transparent text-xs text-muted-foreground transition-colors hover:text-foreground"
+              onClick={handleClear}
+              data-testid="date-picker-clear"
+            >
+              <XIcon className="size-3" />
+              Clear date
+            </button>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   )
 }
 

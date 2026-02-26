@@ -24,8 +24,8 @@ beforeAll(() => {
   Element.prototype.hasPointerCapture = () => false
   Element.prototype.setPointerCapture = vi.fn()
   Element.prototype.releasePointerCapture = vi.fn()
-  // showPicker is not available in JSDOM
-  HTMLInputElement.prototype.showPicker = vi.fn()
+  // Radix Popover needs getComputedStyle in JSDOM
+  if (!window.getComputedStyle) window.getComputedStyle = vi.fn().mockReturnValue({}) as never
 })
 
 const makeEntry = (overrides: Partial<VaultEntry> = {}): VaultEntry => ({
@@ -691,7 +691,7 @@ describe('DynamicPropertiesPanel', () => {
       expect(screen.getByText('Mar 31, 2026')).toBeInTheDocument()
     })
 
-    it('renders hidden date picker input', () => {
+    it('renders calendar icon in date trigger button', () => {
       render(
         <DynamicPropertiesPanel
           entry={makeEntry()}
@@ -700,10 +700,12 @@ describe('DynamicPropertiesPanel', () => {
           onUpdateProperty={onUpdateProperty}
         />
       )
-      expect(screen.getByTestId('date-picker-input')).toBeInTheDocument()
+      const trigger = screen.getByTestId('date-display')
+      expect(trigger.tagName).toBe('BUTTON')
+      expect(trigger.querySelector('svg')).toBeInTheDocument()
     })
 
-    it('calls onUpdateProperty when date picker value changes', () => {
+    it('opens calendar popover when date button clicked', () => {
       render(
         <DynamicPropertiesPanel
           entry={makeEntry()}
@@ -712,9 +714,10 @@ describe('DynamicPropertiesPanel', () => {
           onUpdateProperty={onUpdateProperty}
         />
       )
-      const dateInput = screen.getByTestId('date-picker-input')
-      fireEvent.change(dateInput, { target: { value: '2026-04-15' } })
-      expect(onUpdateProperty).toHaveBeenCalledWith('deadline', '2026-04-15')
+      fireEvent.click(screen.getByTestId('date-display'))
+      expect(screen.getByTestId('date-picker-popover')).toBeInTheDocument()
+      // Clear button is inside the popover portal
+      expect(screen.getByText('Clear date')).toBeInTheDocument()
     })
   })
 

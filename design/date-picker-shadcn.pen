@@ -1,0 +1,285 @@
+{
+  "children": [
+    {
+      "type": "frame",
+      "id": "datePickerClosed",
+      "x": 0,
+      "y": 0,
+      "name": "Date Picker — closed state (showing formatted date as button)",
+      "width": 320,
+      "height": 40,
+      "fill": "#ffffff",
+      "gap": 8,
+      "padding": 6,
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "dateClosedLabel",
+          "name": "label",
+          "fill": "#6b7280",
+          "content": "deadline",
+          "fontFamily": "IBM Plex Mono",
+          "fontSize": 10,
+          "fontWeight": "normal",
+          "letterSpacing": 1.2,
+          "textTransform": "uppercase"
+        },
+        {
+          "type": "frame",
+          "id": "dateClosedButton",
+          "name": "date-button",
+          "width": "fill_container",
+          "justifyContent": "flex-end",
+          "alignItems": "center",
+          "gap": 4,
+          "children": [
+            {
+              "type": "text",
+              "id": "dateClosedIcon",
+              "name": "calendar-icon",
+              "fill": "#9ca3af",
+              "content": "📅",
+              "fontSize": 12
+            },
+            {
+              "type": "text",
+              "id": "dateClosedValue",
+              "name": "date-value",
+              "fill": "#374151",
+              "content": "Mar 31, 2026",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "datePickerOpen",
+      "x": 0,
+      "y": 160,
+      "name": "Date Picker — open state (calendar popup below button)",
+      "width": 320,
+      "height": 380,
+      "fill": "#ffffff",
+      "layout": "vertical",
+      "gap": 4,
+      "padding": 0,
+      "children": [
+        {
+          "type": "frame",
+          "id": "dateOpenRow",
+          "name": "property-row",
+          "width": "fill_container",
+          "height": 40,
+          "gap": 8,
+          "padding": 6,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "dateOpenLabel",
+              "name": "label",
+              "fill": "#6b7280",
+              "content": "deadline",
+              "fontFamily": "IBM Plex Mono",
+              "fontSize": 10,
+              "fontWeight": "normal",
+              "letterSpacing": 1.2,
+              "textTransform": "uppercase"
+            },
+            {
+              "type": "frame",
+              "id": "dateOpenButton",
+              "name": "date-button-active",
+              "width": "fill_container",
+              "justifyContent": "flex-end",
+              "alignItems": "center",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "dateOpenIcon",
+                  "name": "calendar-icon",
+                  "fill": "#6366f1",
+                  "content": "📅",
+                  "fontSize": 12
+                },
+                {
+                  "type": "text",
+                  "id": "dateOpenValue",
+                  "name": "date-value",
+                  "fill": "#111827",
+                  "content": "Mar 31, 2026",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "calendarPopup",
+          "name": "calendar-popup",
+          "width": 280,
+          "height": 320,
+          "fill": "#ffffff",
+          "layout": "vertical",
+          "cornerRadius": 8,
+          "padding": 12,
+          "gap": 8,
+          "stroke": {
+            "align": "outside",
+            "thickness": 1,
+            "fill": "#e5e7eb"
+          },
+          "children": [
+            {
+              "type": "frame",
+              "id": "calendarHeader",
+              "name": "calendar-header",
+              "width": "fill_container",
+              "height": 32,
+              "alignItems": "center",
+              "justifyContent": "space-between",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "calPrevBtn",
+                  "name": "prev-month",
+                  "fill": "#6b7280",
+                  "content": "◀",
+                  "fontSize": 12
+                },
+                {
+                  "type": "text",
+                  "id": "calMonthYear",
+                  "name": "month-year",
+                  "fill": "#111827",
+                  "content": "March 2026",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "calNextBtn",
+                  "name": "next-month",
+                  "fill": "#6b7280",
+                  "content": "▶",
+                  "fontSize": 12
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "calWeekdayRow",
+              "name": "weekday-headers",
+              "width": "fill_container",
+              "height": 24,
+              "alignItems": "center",
+              "justifyContent": "space-between",
+              "children": [
+                { "type": "text", "id": "wd1", "fill": "#9ca3af", "content": "Su", "fontSize": 11, "fontFamily": "Inter", "fontWeight": "500" },
+                { "type": "text", "id": "wd2", "fill": "#9ca3af", "content": "Mo", "fontSize": 11, "fontFamily": "Inter", "fontWeight": "500" },
+                { "type": "text", "id": "wd3", "fill": "#9ca3af", "content": "Tu", "fontSize": 11, "fontFamily": "Inter", "fontWeight": "500" },
+                { "type": "text", "id": "wd4", "fill": "#9ca3af", "content": "We", "fontSize": 11, "fontFamily": "Inter", "fontWeight": "500" },
+                { "type": "text", "id": "wd5", "fill": "#9ca3af", "content": "Th", "fontSize": 11, "fontFamily": "Inter", "fontWeight": "500" },
+                { "type": "text", "id": "wd6", "fill": "#9ca3af", "content": "Fr", "fontSize": 11, "fontFamily": "Inter", "fontWeight": "500" },
+                { "type": "text", "id": "wd7", "fill": "#9ca3af", "content": "Sa", "fontSize": 11, "fontFamily": "Inter", "fontWeight": "500" }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "calGrid",
+              "name": "calendar-grid",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 2,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "calRow1",
+                  "name": "week-1",
+                  "width": "fill_container",
+                  "height": 32,
+                  "alignItems": "center",
+                  "justifyContent": "space-between",
+                  "children": [
+                    { "type": "text", "id": "d1", "fill": "#d1d5db", "content": " ", "fontSize": 12, "fontFamily": "Inter" },
+                    { "type": "text", "id": "d2", "fill": "#d1d5db", "content": " ", "fontSize": 12, "fontFamily": "Inter" },
+                    { "type": "text", "id": "d3", "fill": "#d1d5db", "content": " ", "fontSize": 12, "fontFamily": "Inter" },
+                    { "type": "text", "id": "d4", "fill": "#d1d5db", "content": " ", "fontSize": 12, "fontFamily": "Inter" },
+                    { "type": "text", "id": "d5", "fill": "#d1d5db", "content": " ", "fontSize": 12, "fontFamily": "Inter" },
+                    { "type": "text", "id": "d6", "fill": "#d1d5db", "content": " ", "fontSize": 12, "fontFamily": "Inter" },
+                    { "type": "text", "id": "d7", "fill": "#374151", "content": "1", "fontSize": 12, "fontFamily": "Inter" }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "calRow5",
+                  "name": "week-5-selected",
+                  "width": "fill_container",
+                  "height": 32,
+                  "alignItems": "center",
+                  "justifyContent": "space-between",
+                  "children": [
+                    { "type": "text", "id": "d29", "fill": "#374151", "content": "29", "fontSize": 12, "fontFamily": "Inter" },
+                    { "type": "text", "id": "d30", "fill": "#374151", "content": "30", "fontSize": 12, "fontFamily": "Inter" },
+                    {
+                      "type": "frame",
+                      "id": "selectedDay",
+                      "name": "selected-day-31",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "#111827",
+                      "cornerRadius": 14,
+                      "alignItems": "center",
+                      "justifyContent": "center",
+                      "children": [
+                        { "type": "text", "id": "d31", "fill": "#ffffff", "content": "31", "fontSize": 12, "fontFamily": "Inter", "fontWeight": "600" }
+                      ]
+                    },
+                    { "type": "text", "id": "d32", "fill": "#d1d5db", "content": " ", "fontSize": 12, "fontFamily": "Inter" },
+                    { "type": "text", "id": "d33", "fill": "#d1d5db", "content": " ", "fontSize": 12, "fontFamily": "Inter" },
+                    { "type": "text", "id": "d34", "fill": "#d1d5db", "content": " ", "fontSize": 12, "fontFamily": "Inter" },
+                    { "type": "text", "id": "d35", "fill": "#d1d5db", "content": " ", "fontSize": 12, "fontFamily": "Inter" }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "calFooter",
+              "name": "calendar-footer",
+              "width": "fill_container",
+              "height": 28,
+              "alignItems": "center",
+              "justifyContent": "flex-end",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "calClearBtn",
+                  "name": "clear-button",
+                  "fill": "#6b7280",
+                  "content": "Clear",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {}
+}
