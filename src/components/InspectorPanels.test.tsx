@@ -81,7 +81,7 @@ describe('DynamicRelationshipsPanel', () => {
     expect(chip!.style.color).toBe(expectedColor)
   })
 
-  it('shows "No relationships" when frontmatter has no relations', () => {
+  it('hides empty state label when frontmatter has no relations', () => {
     render(
       <DynamicRelationshipsPanel
         typeEntryMap={{}}
@@ -90,7 +90,7 @@ describe('DynamicRelationshipsPanel', () => {
         onNavigate={onNavigate}
       />
     )
-    expect(screen.getByText('No relationships')).toBeInTheDocument()
+    expect(screen.queryByText('No relationships')).not.toBeInTheDocument()
   })
 
   it('renders relationship groups with wikilinks', () => {
@@ -414,9 +414,9 @@ describe('BacklinksPanel', () => {
     vi.clearAllMocks()
   })
 
-  it('shows "No backlinks" when empty', () => {
-    render(<BacklinksPanel typeEntryMap={{}} backlinks={[]} onNavigate={onNavigate} />)
-    expect(screen.getByText('No backlinks')).toBeInTheDocument()
+  it('renders nothing when empty', () => {
+    const { container } = render(<BacklinksPanel typeEntryMap={{}} backlinks={[]} onNavigate={onNavigate} />)
+    expect(container.innerHTML).toBe('')
   })
 
   it('renders backlink entries', () => {
@@ -450,9 +450,9 @@ describe('ReferencedByPanel', () => {
     vi.clearAllMocks()
   })
 
-  it('shows "No references" when items is empty', () => {
-    render(<ReferencedByPanel typeEntryMap={{}} items={[]} onNavigate={onNavigate} />)
-    expect(screen.getByText('No references')).toBeInTheDocument()
+  it('renders nothing when empty', () => {
+    const { container } = render(<ReferencedByPanel typeEntryMap={{}} items={[]} onNavigate={onNavigate} />)
+    expect(container.innerHTML).toBe('')
   })
 
   it('renders referenced-by entries grouped by relationship key', () => {

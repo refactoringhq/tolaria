@@ -99,22 +99,7 @@ function InspectorHeader({ collapsed, onToggle }: { collapsed: boolean; onToggle
 
 function EmptyInspector() {
   return (
-    <>
-      <div><p className="m-0 text-[13px] text-muted-foreground">No note selected</p></div>
-      <div><p className="m-0 text-[13px] text-muted-foreground">No relationships</p></div>
-      <div>
-        <h4 className="font-mono-overline mb-2 text-muted-foreground">Referenced by</h4>
-        <p className="m-0 text-[13px] text-muted-foreground">No references</p>
-      </div>
-      <div>
-        <h4 className="font-mono-overline mb-2 text-muted-foreground">Backlinks</h4>
-        <p className="m-0 text-[13px] text-muted-foreground">No backlinks</p>
-      </div>
-      <div>
-        <h4 className="font-mono-overline mb-2 text-muted-foreground">History</h4>
-        <p className="m-0 text-[13px] text-muted-foreground">No revision history</p>
-      </div>
-    </>
+    <div><p className="m-0 text-[13px] text-muted-foreground">No note selected</p></div>
   )
 }
 

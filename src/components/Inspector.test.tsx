@@ -159,7 +159,7 @@ describe('Inspector', () => {
     expect(onNavigate).toHaveBeenCalledWith('responsibility/grow-newsletter')
   })
 
-  it('shows "No relationships" when entry has no belongsTo/relatedTo', () => {
+  it('hides relationships label when entry has no belongsTo/relatedTo', () => {
     const noRels = { ...mockEntry, belongsTo: [], relatedTo: [] }
     const contentNoRels = `---
 title: Test Project
@@ -172,7 +172,7 @@ Status: Active
 This is a test note with some words to count.
 `
     render(<Inspector {...defaultProps} entry={noRels} content={contentNoRels} />)
-    expect(screen.getByText('No relationships')).toBeInTheDocument()
+    expect(screen.queryByText('No relationships')).not.toBeInTheDocument()
   })
 
   it('shows backlinks from notes that reference the current note via outgoingLinks', () => {
@@ -197,8 +197,8 @@ This is a test note with some words to count.
         entries={[mockEntry, { ...referrerEntry, outgoingLinks: [] }]}
       />
     )
-    // Initially no backlinks because referrer has empty outgoingLinks
-    expect(screen.getByText('No backlinks')).toBeInTheDocument()
+    // Initially no backlinks — section is hidden entirely
+    expect(screen.queryByText('Backlinks')).not.toBeInTheDocument()
 
     // Rerender with updated outgoingLinks (simulates adding [[Test Project]] to referrer)
     rerender(
@@ -212,7 +212,7 @@ This is a test note with some words to count.
     expect(screen.getByText('Referrer Note')).toBeInTheDocument()
   })
 
-  it('shows "No backlinks" when no notes reference the current note', () => {
+  it('hides backlinks section when no notes reference the current note', () => {
     render(
       <Inspector
         {...defaultProps}
@@ -221,7 +221,8 @@ This is a test note with some words to count.
         entries={[mockEntry]}
       />
     )
-    expect(screen.getByText('No backlinks')).toBeInTheDocument()
+    expect(screen.queryByText('No backlinks')).not.toBeInTheDocument()
+    expect(screen.queryByText('Backlinks')).not.toBeInTheDocument()
   })
 
   it('navigates when a backlink is clicked', () => {
@@ -499,7 +500,7 @@ Status: Active
       expect(allTwos.some(el => el.classList.contains('ml-1'))).toBe(true)
     })
 
-    it('shows "No references" when no entries reference the current note', () => {
+    it('hides referenced-by section when no entries reference the current note', () => {
       render(
         <Inspector
           {...defaultProps}
@@ -509,7 +510,8 @@ Status: Active
 
         />
       )
-      expect(screen.getByText('No references')).toBeInTheDocument()
+      expect(screen.queryByText('No references')).not.toBeInTheDocument()
+      expect(screen.queryByText('Referenced by')).not.toBeInTheDocument()
     })
 
     it('navigates when clicking a referenced-by entry', () => {
@@ -549,8 +551,8 @@ Status: Active
       )
       // On Writing Well references responsibility via "Belongs to" (path match), not via "Type"
       // But the Type entry is at type/responsibility.md, so wikilinks to
-      // responsibility/grow-newsletter won't match. Should show "No references"
-      expect(screen.getByText('No references')).toBeInTheDocument()
+      // responsibility/grow-newsletter won't match. Section should be hidden
+      expect(screen.queryByText('Referenced by')).not.toBeInTheDocument()
     })
 
     it('resolves references via aliased wikilinks', () => {
@@ -612,8 +614,8 @@ Status: Active
       // noteA shows in Referenced By (via Belongs to)
       expect(screen.getByText(/via Belongs to/)).toBeInTheDocument()
       expect(screen.getByText('On Writing Well')).toBeInTheDocument()
-      // But NOT in Backlinks (even though outgoingLinks matches)
-      expect(screen.getByText('No backlinks')).toBeInTheDocument()
+      // But NOT in Backlinks (even though outgoingLinks matches) — section hidden
+      expect(screen.queryByText('Backlinks')).not.toBeInTheDocument()
     })
 
     it('does not show self-references', () => {
@@ -633,7 +635,7 @@ Status: Active
 
         />
       )
-      expect(screen.getByText('No references')).toBeInTheDocument()
+      expect(screen.queryByText('Referenced by')).not.toBeInTheDocument()
     })
   })
 })

@@ -364,16 +364,13 @@ export function DynamicRelationshipsPanel({ frontmatter, entries, typeEntryMap, 
 
   return (
     <div>
-      {relationshipEntries.length === 0
-        ? <p className="m-0 text-[13px] text-muted-foreground">No relationships</p>
-        : relationshipEntries.map(({ key, refs }) => (
-          <RelationshipGroup
-            key={key} label={key} refs={refs} entries={entries} typeEntryMap={typeEntryMap} onNavigate={onNavigate}
-            onRemoveRef={canEdit ? (ref) => handleRemoveRef(key, ref) : undefined}
-            onAddRef={canEdit ? (noteTitle) => handleAddRef(key, noteTitle) : undefined}
-          />
-        ))
-      }
+      {relationshipEntries.map(({ key, refs }) => (
+        <RelationshipGroup
+          key={key} label={key} refs={refs} entries={entries} typeEntryMap={typeEntryMap} onNavigate={onNavigate}
+          onRemoveRef={canEdit ? (ref) => handleRemoveRef(key, ref) : undefined}
+          onAddRef={canEdit ? (noteTitle) => handleAddRef(key, noteTitle) : undefined}
+        />
+      ))}
       {onAddProperty
         ? <AddRelationshipForm entries={entries} onAddProperty={onAddProperty} />
         : <button className="mt-2 w-full border border-border bg-transparent text-center text-muted-foreground" style={{ borderRadius: 6, padding: '6px 12px', fontSize: 12, opacity: 0.5, cursor: 'not-allowed' }} disabled>+ Link existing</button>
@@ -383,24 +380,20 @@ export function DynamicRelationshipsPanel({ frontmatter, entries, typeEntryMap, 
 }
 
 export function BacklinksPanel({ backlinks, typeEntryMap, onNavigate }: { backlinks: VaultEntry[]; typeEntryMap: Record<string, VaultEntry>; onNavigate: (target: string) => void }) {
+  if (backlinks.length === 0) return null
   return (
     <div>
       <h4 className="font-mono-overline mb-2 text-muted-foreground">
-        Backlinks {backlinks.length > 0 && <span className="ml-1" style={{ fontWeight: 400 }}>{backlinks.length}</span>}
+        Backlinks <span className="ml-1" style={{ fontWeight: 400 }}>{backlinks.length}</span>
       </h4>
-      {backlinks.length === 0
-        ? <p className="m-0 text-[13px] text-muted-foreground">No backlinks</p>
-        : (
-          <div className="flex flex-col gap-0.5">
-            {backlinks.map((e) => {
-              const te = typeEntryMap[e.isA ?? '']
-              return (
-                <LinkButton key={e.path} label={e.title} typeColor={getTypeColor(e.isA, te?.color)} isArchived={e.archived} isTrashed={e.trashed} onClick={() => onNavigate(e.title)} title={e.trashed ? 'Trashed' : e.archived ? 'Archived' : undefined} TypeIcon={getTypeIcon(e.isA, te?.icon)} />
-              )
-            })}
-          </div>
-        )
-      }
+      <div className="flex flex-col gap-0.5">
+        {backlinks.map((e) => {
+          const te = typeEntryMap[e.isA ?? '']
+          return (
+            <LinkButton key={e.path} label={e.title} typeColor={getTypeColor(e.isA, te?.color)} isArchived={e.archived} isTrashed={e.trashed} onClick={() => onNavigate(e.title)} title={e.trashed ? 'Trashed' : e.archived ? 'Archived' : undefined} TypeIcon={getTypeIcon(e.isA, te?.icon)} />
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -425,42 +418,39 @@ export function ReferencedByPanel({ items, typeEntryMap, onNavigate }: {
     return Array.from(map.entries())
   }, [items])
 
+  if (items.length === 0) return null
+
   return (
     <div>
       <h4 className="font-mono-overline mb-2 text-muted-foreground">
-        Referenced by {items.length > 0 && <span className="ml-1" style={{ fontWeight: 400 }}>{items.length}</span>}
+        Referenced by <span className="ml-1" style={{ fontWeight: 400 }}>{items.length}</span>
       </h4>
-      {items.length === 0
-        ? <p className="m-0 text-[13px] text-muted-foreground">No references</p>
-        : (
-          <div className="flex flex-col gap-2.5">
-            {grouped.map(([viaKey, groupEntries]) => (
-              <div key={viaKey}>
-                <span className="mb-1 block font-mono text-muted-foreground" style={{ fontSize: 9, fontWeight: 600, letterSpacing: '1.2px', textTransform: 'uppercase', opacity: 0.7 }}>
-                  via {viaKey}
-                </span>
-                <div className="flex flex-col gap-0.5">
-                  {groupEntries.map((e) => {
-                    const te = typeEntryMap[e.isA ?? '']
-                    return (
-                      <LinkButton
-                        key={e.path}
-                        label={e.title}
-                        typeColor={getTypeColor(e.isA, te?.color)}
-                        isArchived={e.archived}
-                        isTrashed={e.trashed}
-                        onClick={() => onNavigate(e.title)}
-                        title={e.trashed ? 'Trashed' : e.archived ? 'Archived' : undefined}
-                        TypeIcon={getTypeIcon(e.isA, te?.icon)}
-                      />
-                    )
-                  })}
-                </div>
-              </div>
-            ))}
+      <div className="flex flex-col gap-2.5">
+        {grouped.map(([viaKey, groupEntries]) => (
+          <div key={viaKey}>
+            <span className="mb-1 block font-mono text-muted-foreground" style={{ fontSize: 9, fontWeight: 600, letterSpacing: '1.2px', textTransform: 'uppercase', opacity: 0.7 }}>
+              via {viaKey}
+            </span>
+            <div className="flex flex-col gap-0.5">
+              {groupEntries.map((e) => {
+                const te = typeEntryMap[e.isA ?? '']
+                return (
+                  <LinkButton
+                    key={e.path}
+                    label={e.title}
+                    typeColor={getTypeColor(e.isA, te?.color)}
+                    isArchived={e.archived}
+                    isTrashed={e.trashed}
+                    onClick={() => onNavigate(e.title)}
+                    title={e.trashed ? 'Trashed' : e.archived ? 'Archived' : undefined}
+                    TypeIcon={getTypeIcon(e.isA, te?.icon)}
+                  />
+                )
+              })}
+            </div>
           </div>
-        )
-      }
+        ))}
+      </div>
     </div>
   )
 }
