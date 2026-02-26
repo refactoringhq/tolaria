@@ -172,11 +172,9 @@ async fn search_vault(
     limit: Option<usize>,
 ) -> Result<SearchResponse, String> {
     let limit = limit.unwrap_or(20);
-    tokio::task::spawn_blocking(move || {
-        search::search_vault(&vault_path, &query, &mode, limit)
-    })
-    .await
-    .map_err(|e| format!("Search task failed: {}", e))?
+    tokio::task::spawn_blocking(move || search::search_vault(&vault_path, &query, &mode, limit))
+        .await
+        .map_err(|e| format!("Search task failed: {}", e))?
 }
 
 fn log_startup_result(label: &str, result: Result<usize, String>) {
