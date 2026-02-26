@@ -46,6 +46,13 @@ function useBacklinks(entry: VaultEntry | null, entries: VaultEntry[], reference
   }, [entry, entries, referencedBy])
 }
 
+function refsMatchTargets(refs: string[], targets: Set<string>): boolean {
+  return refs.some((ref) => {
+    const target = wikilinkTarget(ref)
+    return targets.has(target) || targets.has(target.split('/').pop() ?? '')
+  })
+}
+
 function useReferencedBy(entry: VaultEntry | null, entries: VaultEntry[]): ReferencedByItem[] {
   return useMemo(() => {
     if (!entry) return []
@@ -58,15 +65,9 @@ function useReferencedBy(entry: VaultEntry | null, entries: VaultEntry[]): Refer
 
     for (const other of entries) {
       if (other.path === entry.path) continue
-
       for (const [key, refs] of Object.entries(other.relationships)) {
-        if (key === 'Type') continue
-        for (const ref of refs) {
-          const target = wikilinkTarget(ref)
-          if (matchTargets.has(target) || matchTargets.has(target.split('/').pop() ?? '')) {
-            results.push({ entry: other, viaKey: key })
-            break
-          }
+        if (key !== 'Type' && refsMatchTargets(refs, matchTargets)) {
+          results.push({ entry: other, viaKey: key })
         }
       }
     }
@@ -78,7 +79,7 @@ function useReferencedBy(entry: VaultEntry | null, entries: VaultEntry[]): Refer
 function InspectorHeader({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const { onMouseDown } = useDragRegion()
   return (
-    <div className="flex items-center border-b border-border" style={{ height: 52, background: 'var(--bg-titlebar)', padding: '0 12px', gap: 8, cursor: 'default' }} onMouseDown={onMouseDown} data-tauri-drag-region>
+    <div className="flex shrink-0 items-center border-b border-border" style={{ height: 52, background: 'var(--bg-titlebar)', padding: '0 12px', gap: 8, cursor: 'default' }} onMouseDown={onMouseDown} data-tauri-drag-region>
       {collapsed ? (
         <button className="shrink-0 border-none bg-transparent p-1 text-muted-foreground cursor-pointer hover:text-foreground" onClick={onToggle}>
           <SlidersHorizontal size={16} />
@@ -143,10 +144,10 @@ export function Inspector({
   }, [entry, onAddProperty])
 
   return (
-    <aside className={cn("flex flex-1 flex-col overflow-y-auto border-l border-border bg-background text-foreground transition-[width] duration-200", collapsed && "!w-10 !min-w-10")}>
+    <aside className={cn("flex flex-1 flex-col overflow-hidden border-l border-border bg-background text-foreground transition-[width] duration-200", collapsed && "!w-10 !min-w-10")}>
       <InspectorHeader collapsed={collapsed} onToggle={onToggle} />
       {!collapsed && (
-        <div className="flex flex-col gap-4 p-3">
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-3">
           {entry ? (
             <>
               <DynamicPropertiesPanel
