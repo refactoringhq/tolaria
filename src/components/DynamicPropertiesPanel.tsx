@@ -18,26 +18,7 @@ import {
   removeDisplayModeOverride,
   detectPropertyType,
 } from '../utils/propertyTypes'
-
-const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
-  Active: { bg: 'var(--accent-green-light)', color: 'var(--accent-green)' },
-  Done: { bg: 'var(--accent-blue-light)', color: 'var(--accent-blue)' },
-  Paused: { bg: 'var(--accent-yellow-light)', color: 'var(--accent-yellow)' },
-  Archived: { bg: 'var(--accent-blue-light)', color: 'var(--muted-foreground)' },
-  Dropped: { bg: 'var(--accent-red-light)', color: 'var(--accent-red)' },
-  Open: { bg: 'var(--accent-green-light)', color: 'var(--accent-green)' },
-  Closed: { bg: 'var(--accent-blue-light)', color: 'var(--muted-foreground)' },
-  'Not started': { bg: 'var(--accent-blue-light)', color: 'var(--muted-foreground)' },
-  Draft: { bg: 'var(--accent-yellow-light)', color: 'var(--accent-yellow)' },
-  Mixed: { bg: 'var(--accent-yellow-light)', color: 'var(--accent-yellow)' },
-  Published: { bg: 'var(--accent-green-light)', color: 'var(--accent-green)' },
-  'In progress': { bg: 'var(--accent-purple-light)', color: 'var(--accent-purple)' },
-  Blocked: { bg: 'var(--accent-red-light)', color: 'var(--accent-red)' },
-  Cancelled: { bg: 'var(--accent-red-light)', color: 'var(--accent-red)' },
-  Pending: { bg: 'var(--accent-yellow-light)', color: 'var(--accent-yellow)' },
-}
-
-const DEFAULT_STATUS_STYLE = { bg: 'var(--accent-blue-light)', color: 'var(--muted-foreground)' }
+import { StatusPill, StatusDropdown } from './StatusDropdown'
 
 // Keys that are relationships (contain wikilinks)
 export const RELATIONSHIP_KEYS = new Set([
@@ -83,34 +64,28 @@ function formatFileSize(bytes: number): string {
   return `${mb.toFixed(1)} MB`
 }
 
-function StatusValue({ propKey, value, isEditing, onSave, onStartEdit }: {
-  propKey: string; value: FrontmatterValue; isEditing: boolean
+function StatusValue({ propKey, value, isEditing, vaultStatuses, onSave, onStartEdit }: {
+  propKey: string; value: FrontmatterValue; isEditing: boolean; vaultStatuses: string[]
   onSave: (key: string, value: string) => void; onStartEdit: (key: string | null) => void
 }) {
   const statusStr = String(value)
-  const style = STATUS_STYLES[statusStr] ?? DEFAULT_STATUS_STYLE
-  if (isEditing) {
-    return (
-      <input
-        className="w-full rounded border border-ring bg-muted px-2 py-1 text-[12px] text-foreground outline-none focus:border-primary"
-        type="text" defaultValue={statusStr}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') onSave(propKey, (e.target as HTMLInputElement).value)
-          if (e.key === 'Escape') onStartEdit(null)
-        }}
-        onBlur={(e) => onSave(propKey, e.target.value)}
-        autoFocus
-      />
-    )
-  }
   return (
-    <span
-      className="inline-block min-w-0 cursor-pointer truncate transition-opacity hover:opacity-80"
-      style={{ backgroundColor: style.bg, color: style.color, borderRadius: 16, padding: '1px 6px', fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '1.2px', textTransform: 'uppercase' as const }}
-      onClick={() => onStartEdit(propKey)} title={statusStr}
-      data-testid="status-badge"
-    >
-      {statusStr}
+    <span className="relative inline-flex min-w-0 items-center">
+      <span
+        className="cursor-pointer transition-opacity hover:opacity-80"
+        onClick={() => onStartEdit(propKey)}
+        data-testid="status-badge"
+      >
+        <StatusPill status={statusStr} />
+      </span>
+      {isEditing && (
+        <StatusDropdown
+          value={statusStr}
+          vaultStatuses={vaultStatuses}
+          onSave={(newValue) => onSave(propKey, newValue)}
+          onCancel={() => onStartEdit(null)}
+        />
+      )}
     </span>
   )
 }
@@ -316,8 +291,9 @@ function TypeSelector({ isA, customColorKey, availableTypes, onUpdateProperty, o
   )
 }
 
-function SmartPropertyValueCell({ propKey, value, displayMode, isEditing, onStartEdit, onSave, onSaveList, onUpdate }: {
+function SmartPropertyValueCell({ propKey, value, displayMode, isEditing, vaultStatuses, onStartEdit, onSave, onSaveList, onUpdate }: {
   propKey: string; value: FrontmatterValue; displayMode: PropertyDisplayMode; isEditing: boolean
+  vaultStatuses: string[]
   onStartEdit: (key: string | null) => void; onSave: (key: string, value: string) => void
   onSaveList: (key: string, items: string[]) => void; onUpdate?: (key: string, value: FrontmatterValue) => void
 }) {
@@ -328,7 +304,7 @@ function SmartPropertyValueCell({ propKey, value, displayMode, isEditing, onStar
 
   switch (displayMode) {
     case 'status':
-      return <StatusValue propKey={propKey} value={value} isEditing={isEditing} onSave={onSave} onStartEdit={onStartEdit} />
+      return <StatusValue propKey={propKey} value={value} isEditing={isEditing} vaultStatuses={vaultStatuses} onSave={onSave} onStartEdit={onStartEdit} />
     case 'date':
       if (typeof value === 'string') {
         return <DateValue value={value} onSave={(v) => onSave(propKey, v)} />
@@ -355,9 +331,10 @@ function SmartPropertyValueCell({ propKey, value, displayMode, isEditing, onStar
   }
 }
 
-function PropertyRow({ propKey, value, editingKey, displayMode, autoMode, onStartEdit, onSave, onSaveList, onUpdate, onDelete, onDisplayModeChange }: {
+function PropertyRow({ propKey, value, editingKey, displayMode, autoMode, vaultStatuses, onStartEdit, onSave, onSaveList, onUpdate, onDelete, onDisplayModeChange }: {
   propKey: string; value: FrontmatterValue; editingKey: string | null
   displayMode: PropertyDisplayMode; autoMode: PropertyDisplayMode
+  vaultStatuses: string[]
   onStartEdit: (key: string | null) => void; onSave: (key: string, value: string) => void
   onSaveList: (key: string, items: string[]) => void
   onUpdate?: (key: string, value: FrontmatterValue) => void; onDelete?: (key: string) => void
@@ -372,7 +349,7 @@ function PropertyRow({ propKey, value, editingKey, displayMode, autoMode, onStar
         )}
         <DisplayModeSelector propKey={propKey} currentMode={displayMode} autoMode={autoMode} onSelect={onDisplayModeChange} />
       </span>
-      <SmartPropertyValueCell propKey={propKey} value={value} displayMode={displayMode} isEditing={editingKey === propKey} onStartEdit={onStartEdit} onSave={onSave} onSaveList={onSaveList} onUpdate={onUpdate} />
+      <SmartPropertyValueCell propKey={propKey} value={value} displayMode={displayMode} isEditing={editingKey === propKey} vaultStatuses={vaultStatuses} onStartEdit={onStartEdit} onSave={onSave} onSaveList={onSaveList} onUpdate={onUpdate} />
     </div>
   )
 }
@@ -454,6 +431,14 @@ export function DynamicPropertiesPanel({
     }
   }, [entries, entry.isA])
 
+  const vaultStatuses = useMemo(() => {
+    const seen = new Set<string>()
+    for (const e of entries ?? []) {
+      if (e.status) seen.add(e.status)
+    }
+    return Array.from(seen).sort((a, b) => a.localeCompare(b))
+  }, [entries])
+
   const propertyEntries = useMemo(() => {
     return Object.entries(frontmatter)
       .filter(([key, value]) => !SKIP_KEYS.has(key) && !RELATIONSHIP_KEYS.has(key) && !containsWikilinks(value))
@@ -496,6 +481,7 @@ export function DynamicPropertiesPanel({
             <PropertyRow
               key={key} propKey={key} value={value}
               editingKey={editingKey} displayMode={effectiveMode} autoMode={autoMode}
+              vaultStatuses={vaultStatuses}
               onStartEdit={setEditingKey} onSave={handleSaveValue}
               onSaveList={handleSaveList} onUpdate={onUpdateProperty}
               onDelete={onDeleteProperty}

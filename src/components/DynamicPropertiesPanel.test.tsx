@@ -350,7 +350,7 @@ describe('DynamicPropertiesPanel', () => {
     expect(screen.getByText('Modified')).toBeInTheDocument()
   })
 
-  it('handles editing status', () => {
+  it('opens status dropdown on click and selects a status', () => {
     render(
       <DynamicPropertiesPanel
         entry={makeEntry()}
@@ -359,12 +359,13 @@ describe('DynamicPropertiesPanel', () => {
         onUpdateProperty={onUpdateProperty}
       />
     )
-    // Click status pill to start editing (rendered with CSS uppercase, DOM text is "Active")
+    // Click status pill to open dropdown
     fireEvent.click(screen.getByTitle('Active'))
-    // Should show edit input
-    const input = screen.getByDisplayValue('Active')
-    fireEvent.change(input, { target: { value: 'Done' } })
-    fireEvent.keyDown(input, { key: 'Enter' })
+    // Should show dropdown with search input
+    expect(screen.getByTestId('status-dropdown')).toBeInTheDocument()
+    expect(screen.getByTestId('status-search-input')).toBeInTheDocument()
+    // Click on "Done" option in the suggested list
+    fireEvent.click(screen.getByTestId('status-option-Done'))
     expect(onUpdateProperty).toHaveBeenCalledWith('Status', 'Done')
   })
 
@@ -739,6 +740,74 @@ describe('DynamicPropertiesPanel', () => {
         />
       )
       expect(screen.getByTestId('status-badge')).toBeInTheDocument()
+    })
+  })
+
+  describe('status dropdown interaction', () => {
+    it('closes dropdown on Escape without saving', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ Status: 'Active' }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      fireEvent.click(screen.getByTitle('Active'))
+      expect(screen.getByTestId('status-dropdown')).toBeInTheDocument()
+      fireEvent.keyDown(screen.getByTestId('status-search-input'), { key: 'Escape' })
+      expect(screen.queryByTestId('status-dropdown')).not.toBeInTheDocument()
+      expect(onUpdateProperty).not.toHaveBeenCalled()
+    })
+
+    it('closes dropdown on backdrop click without saving', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ Status: 'Active' }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      fireEvent.click(screen.getByTitle('Active'))
+      fireEvent.click(screen.getByTestId('status-dropdown-backdrop'))
+      expect(screen.queryByTestId('status-dropdown')).not.toBeInTheDocument()
+      expect(onUpdateProperty).not.toHaveBeenCalled()
+    })
+
+    it('creates custom status by typing and pressing Enter', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ Status: 'Active' }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      fireEvent.click(screen.getByTitle('Active'))
+      const input = screen.getByTestId('status-search-input')
+      fireEvent.change(input, { target: { value: 'Needs Review' } })
+      fireEvent.keyDown(input, { key: 'Enter' })
+      expect(onUpdateProperty).toHaveBeenCalledWith('Status', 'Needs Review')
+    })
+
+    it('shows vault statuses from entries', () => {
+      const entriesWithStatuses = [
+        makeEntry({ path: '/vault/a.md', status: 'Reviewing' }),
+        makeEntry({ path: '/vault/b.md', status: 'Shipped' }),
+      ]
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ Status: 'Active' }}
+          entries={entriesWithStatuses}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      fireEvent.click(screen.getByTitle('Active'))
+      expect(screen.getByTestId('status-option-Reviewing')).toBeInTheDocument()
+      expect(screen.getByTestId('status-option-Shipped')).toBeInTheDocument()
     })
   })
 
