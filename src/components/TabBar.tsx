@@ -333,8 +333,7 @@ export const TabBar = memo(function TabBar({
   return (
     <div
       className="flex shrink-0 items-stretch"
-      style={{ height: 52, background: 'var(--bg-titlebar)' } as React.CSSProperties}
-      data-tauri-drag-region
+      style={{ height: 52, background: 'var(--sidebar)' } as React.CSSProperties}
       onDragLeave={handleBarDragLeave}
     >
       <NavButtons canGoBack={canGoBack} canGoForward={canGoForward} onGoBack={onGoBack} onGoForward={onGoForward} />

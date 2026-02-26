@@ -170,7 +170,7 @@ function CommitButton({ modifiedCount, onClick }: { modifiedCount: number; onCli
 function SidebarTitleBar({ onCollapse }: { onCollapse?: () => void }) {
   const { onMouseDown } = useDragRegion()
   return (
-    <div className="shrink-0 flex items-center justify-end border-b border-border" style={{ height: 52, background: 'var(--bg-titlebar)', padding: '0 8px', paddingLeft: 80, cursor: 'default' } as React.CSSProperties} onMouseDown={onMouseDown} data-tauri-drag-region>
+    <div className="shrink-0 flex items-center justify-end border-b border-border" style={{ height: 52, padding: '0 8px', paddingLeft: 80, cursor: 'default' } as React.CSSProperties} onMouseDown={onMouseDown}>
       {onCollapse && (
         <button
           className="flex shrink-0 cursor-pointer items-center justify-center rounded border-none bg-transparent p-0 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
