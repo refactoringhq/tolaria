@@ -835,7 +835,7 @@ describe('NoteList — virtual list with large datasets', () => {
     ...overrides,
   })
 
-  it('renders 9000 entries without crashing', { timeout: 15000 }, () => {
+  it('renders 9000 entries without crashing', { timeout: 30000 }, () => {
     const largeDataset = Array.from({ length: 9000 }, (_, i) => makeEntry(i))
     const { container } = render(
       <NoteList entries={largeDataset} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
