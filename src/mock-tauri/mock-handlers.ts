@@ -3,7 +3,7 @@
  * Each handler simulates a Tauri backend command.
  */
 
-import type { VaultEntry, ModifiedFile, Settings, DeviceFlowStart, DeviceFlowPollResult, GitHubUser } from '../types'
+import type { VaultEntry, ModifiedFile, Settings, DeviceFlowStart, DeviceFlowPollResult, GitHubUser, GitPullResult } from '../types'
 import { MOCK_CONTENT } from './mock-content'
 import { MOCK_ENTRIES } from './mock-entries'
 
@@ -79,6 +79,7 @@ let mockSettings: Settings = {
   google_key: null,
   github_token: 'gho_mock_token_for_testing',
   github_username: 'lucaong',
+  auto_pull_interval_minutes: 5,
 }
 
 let mockDeviceFlowPollCount = 0
@@ -152,6 +153,7 @@ export const mockHandlers: Record<string, (args: any) => any> = {
     mockSavedSinceCommit.clear()
     return `[main abc1234] ${args.message}\n ${count} files changed`
   },
+  git_pull: (): GitPullResult => ({ status: 'up_to_date', message: 'Already up to date', updatedFiles: [], conflictFiles: [] }),
   git_push: () => 'Everything up-to-date',
   ai_chat: handleAiChat,
   save_note_content: (args: { path: string; content: string }) => {
@@ -173,6 +175,7 @@ export const mockHandlers: Record<string, (args: any) => any> = {
       google_key: trimOrNull(s.google_key),
       github_token: trimOrNull(s.github_token),
       github_username: trimOrNull(s.github_username),
+      auto_pull_interval_minutes: s.auto_pull_interval_minutes ?? 5,
     }
     return null
   },

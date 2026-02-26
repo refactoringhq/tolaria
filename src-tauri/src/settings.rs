@@ -9,6 +9,7 @@ pub struct Settings {
     pub google_key: Option<String>,
     pub github_token: Option<String>,
     pub github_username: Option<String>,
+    pub auto_pull_interval_minutes: Option<u32>,
 }
 
 fn settings_path() -> Result<PathBuf, String> {
@@ -54,6 +55,7 @@ fn save_settings_at(path: &PathBuf, settings: Settings) -> Result<(), String> {
             .github_username
             .map(|k| k.trim().to_string())
             .filter(|k| !k.is_empty()),
+        auto_pull_interval_minutes: settings.auto_pull_interval_minutes,
     };
 
     let json = serde_json::to_string_pretty(&cleaned)
@@ -84,19 +86,12 @@ mod tests {
     #[test]
     fn test_default_settings_all_none() {
         let s = Settings::default();
-        assert_eq!(
-            format!("{:?}", s),
-            format!(
-                "{:?}",
-                Settings {
-                    anthropic_key: None,
-                    openai_key: None,
-                    google_key: None,
-                    github_token: None,
-                    github_username: None
-                }
-            )
-        );
+        assert!(s.anthropic_key.is_none());
+        assert!(s.openai_key.is_none());
+        assert!(s.google_key.is_none());
+        assert!(s.github_token.is_none());
+        assert!(s.github_username.is_none());
+        assert!(s.auto_pull_interval_minutes.is_none());
     }
 
     #[test]
@@ -107,6 +102,7 @@ mod tests {
             google_key: Some("AIza-test".to_string()),
             github_token: Some("gho_xyz789".to_string()),
             github_username: Some("lucaong".to_string()),
+            ..Default::default()
         };
         let json = serde_json::to_string(&settings).unwrap();
         let parsed: Settings = serde_json::from_str(&json).unwrap();
@@ -132,11 +128,13 @@ mod tests {
             google_key: None,
             github_token: Some("gho_token123".to_string()),
             github_username: Some("lucaong".to_string()),
+            auto_pull_interval_minutes: Some(10),
         });
         assert_eq!(loaded.anthropic_key.as_deref(), Some("sk-ant-key"));
         assert_eq!(loaded.openai_key.as_deref(), Some("sk-openai"));
         assert_eq!(loaded.github_token.as_deref(), Some("gho_token123"));
         assert_eq!(loaded.github_username.as_deref(), Some("lucaong"));
+        assert_eq!(loaded.auto_pull_interval_minutes, Some(10));
     }
 
     #[test]

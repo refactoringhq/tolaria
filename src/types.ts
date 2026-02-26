@@ -50,7 +50,17 @@ export interface Settings {
   google_key: string | null
   github_token: string | null
   github_username: string | null
+  auto_pull_interval_minutes: number | null
 }
+
+export interface GitPullResult {
+  status: 'up_to_date' | 'updated' | 'conflict' | 'no_remote' | 'error'
+  message: string
+  updatedFiles: string[]
+  conflictFiles: string[]
+}
+
+export type SyncStatus = 'idle' | 'syncing' | 'error' | 'conflict'
 
 export interface DeviceFlowStart {
   device_code: string

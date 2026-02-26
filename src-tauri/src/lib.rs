@@ -11,7 +11,7 @@ use std::path::Path;
 
 use ai_chat::{AiChatRequest, AiChatResponse};
 use frontmatter::FrontmatterValue;
-use git::{GitCommit, ModifiedFile};
+use git::{GitCommit, GitPullResult, ModifiedFile};
 use github::{DeviceFlowPollResult, DeviceFlowStart, GitHubUser, GithubRepo};
 use search::SearchResponse;
 use settings::Settings;
@@ -73,6 +73,11 @@ fn get_file_diff_at_commit(
 #[tauri::command]
 fn git_commit(vault_path: String, message: String) -> Result<String, String> {
     git::git_commit(&vault_path, &message)
+}
+
+#[tauri::command]
+fn git_pull(vault_path: String) -> Result<GitPullResult, String> {
+    git::git_pull(&vault_path)
 }
 
 #[tauri::command]
@@ -243,6 +248,7 @@ pub fn run() {
             get_file_diff,
             get_file_diff_at_commit,
             git_commit,
+            git_pull,
             git_push,
             ai_chat,
             save_image,

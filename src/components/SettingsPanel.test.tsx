@@ -19,6 +19,7 @@ const emptySettings: Settings = {
   google_key: null,
   github_token: null,
   github_username: null,
+  auto_pull_interval_minutes: null,
 }
 
 const populatedSettings: Settings = {
@@ -27,6 +28,7 @@ const populatedSettings: Settings = {
   google_key: null,
   github_token: null,
   github_username: null,
+  auto_pull_interval_minutes: 5,
 }
 
 describe('SettingsPanel', () => {
@@ -90,6 +92,7 @@ describe('SettingsPanel', () => {
       google_key: null,
       github_token: null,
       github_username: null,
+      auto_pull_interval_minutes: 5,
     })
     expect(onClose).toHaveBeenCalled()
   })
@@ -110,6 +113,7 @@ describe('SettingsPanel', () => {
       google_key: null,
       github_token: null,
       github_username: null,
+      auto_pull_interval_minutes: 5,
     })
   })
 
@@ -151,6 +155,7 @@ describe('SettingsPanel', () => {
       google_key: null,
       github_token: null,
       github_username: null,
+      auto_pull_interval_minutes: 5,
     })
   })
 
