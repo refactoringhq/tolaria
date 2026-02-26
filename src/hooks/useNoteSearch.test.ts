@@ -60,18 +60,20 @@ describe('useNoteSearch', () => {
     expect(result.current.results).toHaveLength(2)
   })
 
-  it('includes noteType for non-Note entries', () => {
+  it('includes noteType and light color for non-Note entries', () => {
     const { result } = renderHook(() => useNoteSearch(entries, ''))
     const project = result.current.results.find((r) => r.title === 'Alpha Project')
     expect(project?.noteType).toBe('Project')
     expect(project?.typeColor).toBeTruthy()
+    expect(project?.typeLightColor).toBeTruthy()
   })
 
-  it('excludes noteType for Note entries', () => {
+  it('excludes noteType and light color for Note entries', () => {
     const { result } = renderHook(() => useNoteSearch(entries, ''))
     const note = result.current.results.find((r) => r.title === 'Beta Notes')
     expect(note?.noteType).toBeUndefined()
     expect(note?.typeColor).toBeUndefined()
+    expect(note?.typeLightColor).toBeUndefined()
   })
 
   it('includes original VaultEntry in results', () => {
@@ -182,10 +184,12 @@ describe('useNoteSearch', () => {
     const pasta = result.current.results.find(r => r.title === 'Pasta')
     expect(pasta?.noteType).toBe('Recipe')
     expect(pasta?.typeColor).toBe('var(--accent-orange)')
+    expect(pasta?.typeLightColor).toBe('var(--accent-orange-light)')
     expect(pasta?.TypeIcon).toBeDefined()
     // Built-in type still works
     const project = result.current.results.find(r => r.title === 'My Project')
     expect(project?.typeColor).toBe('var(--accent-red)')
+    expect(project?.typeLightColor).toBe('var(--accent-red-light)')
     expect(project?.TypeIcon).toBeDefined()
   })
 })

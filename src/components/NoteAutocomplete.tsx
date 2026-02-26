@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useMemo, useEffect, type ComponentType, type SVGAttributes } from 'react'
 import type { VaultEntry } from '../types'
-import { getTypeColor } from '../utils/typeColors'
+import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 import { getTypeIcon } from './NoteItem'
 import './WikilinkSuggestionMenu.css'
 
@@ -23,6 +23,7 @@ interface MatchedEntry {
   title: string
   noteType?: string
   typeColor?: string
+  typeLightColor?: string
   TypeIcon?: ComponentType<SVGAttributes<SVGSVGElement>>
 }
 
@@ -41,6 +42,7 @@ function matchEntries(entries: VaultEntry[], typeEntryMap: Record<string, VaultE
       title: e.title,
       noteType,
       typeColor: noteType ? getTypeColor(isA, te?.color) : undefined,
+      typeLightColor: noteType ? getTypeLightColor(isA, te?.color) : undefined,
       TypeIcon: noteType ? getTypeIcon(isA, te?.icon) : undefined,
     }
   })
@@ -143,7 +145,7 @@ export function NoteAutocomplete({ entries, typeEntryMap, value, onChange, onSel
                 {item.title}
               </span>
               {item.noteType && (
-                <span className="wikilink-menu__type" style={{ color: item.typeColor }}>
+                <span className="wikilink-menu__type" style={{ color: item.typeColor, backgroundColor: item.typeLightColor, borderRadius: 9999, padding: '1px 8px' }}>
                   {item.noteType}
                 </span>
               )}

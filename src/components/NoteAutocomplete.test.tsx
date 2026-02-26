@@ -96,7 +96,7 @@ describe('NoteAutocomplete', () => {
     expect(typeLabels.length).toBe(0)
   })
 
-  it('applies type color from typeEntryMap', () => {
+  it('applies type color and light background from typeEntryMap', () => {
     const { container } = render(
       <NoteAutocomplete entries={entries} typeEntryMap={typeEntryMap} value="Luca" onChange={onChange} onSelect={onSelect} />,
     )
@@ -104,6 +104,7 @@ describe('NoteAutocomplete', () => {
     const typeLabel = container.querySelector('.wikilink-menu__type')
     expect(typeLabel).toBeTruthy()
     expect((typeLabel as HTMLElement).style.color).toBe('var(--accent-yellow)')
+    expect((typeLabel as HTMLElement).style.backgroundColor).toBe('var(--accent-yellow-light)')
   })
 
   it('calls onSelect when clicking a dropdown item', () => {
