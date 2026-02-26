@@ -1,0 +1,448 @@
+{
+  "children": [
+    {
+      "type": "frame",
+      "id": "apEmpty",
+      "x": 0,
+      "y": 0,
+      "name": "Add Property — Inline Form (Empty State)",
+      "theme": { "Mode": "Light" },
+      "width": 320,
+      "height": 180,
+      "fill": "$--background",
+      "layout": "vertical",
+      "gap": 8,
+      "padding": 12,
+      "children": [
+        {
+          "type": "text",
+          "id": "apEmptyDesc",
+          "name": "description",
+          "fill": "$--muted-foreground",
+          "content": "Inline add-property form: replaces the old grey popup. Fields are horizontal, matching existing property row layout. Shows after clicking + Add property.",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "apEmptyExisting1",
+          "name": "Existing Property Row — Status",
+          "width": "fill_container",
+          "cornerRadius": 4,
+          "padding": [4, 6],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "apEmptyLabel1",
+              "fill": "$--muted-foreground",
+              "content": "STATUS",
+              "fontFamily": "IBM Plex Mono",
+              "fontSize": 10,
+              "fontWeight": "500",
+              "letterSpacing": 1.2
+            },
+            {
+              "type": "frame",
+              "id": "apEmptyBadge1",
+              "fill": "$--accent-green-light",
+              "cornerRadius": 16,
+              "padding": [1, 6],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "apEmptyBadgeText1",
+                  "fill": "$--accent-green",
+                  "content": "ACTIVE",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 10,
+                  "fontWeight": "600",
+                  "letterSpacing": 1.2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "apEmptySep",
+          "name": "Separator",
+          "width": "fill_container",
+          "height": 1,
+          "fill": "$--border"
+        },
+        {
+          "type": "frame",
+          "id": "apEmptyForm",
+          "name": "Inline Add Property Form — Empty",
+          "width": "fill_container",
+          "gap": 6,
+          "padding": [4, 6],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "apEmptyNameInput",
+              "name": "Name Input",
+              "width": 90,
+              "height": 26,
+              "fill": "$--muted",
+              "cornerRadius": 4,
+              "stroke": { "align": "inside", "thickness": 1, "fill": "$--border" },
+              "padding": [4, 6],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "apEmptyNamePlaceholder",
+                  "fill": "$--muted-foreground",
+                  "content": "Name",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "apEmptyTypeSelect",
+              "name": "Type Selector",
+              "width": 72,
+              "height": 26,
+              "fill": "$--muted",
+              "cornerRadius": 4,
+              "stroke": { "align": "inside", "thickness": 1, "fill": "$--border" },
+              "padding": [4, 6],
+              "gap": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "apEmptyTypeIcon",
+                  "width": 12,
+                  "height": 12,
+                  "iconFontName": "type",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                },
+                {
+                  "type": "text",
+                  "id": "apEmptyTypePlaceholder",
+                  "fill": "$--muted-foreground",
+                  "content": "Text",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "icon_font",
+                  "id": "apEmptyTypeChevron",
+                  "width": 10,
+                  "height": 10,
+                  "iconFontName": "chevron-down",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "apEmptyValueInput",
+              "name": "Value Input",
+              "width": "fill_container",
+              "height": 26,
+              "fill": "$--muted",
+              "cornerRadius": 4,
+              "stroke": { "align": "inside", "thickness": 1, "fill": "$--border" },
+              "padding": [4, 6],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "apEmptyValuePlaceholder",
+                  "fill": "$--muted-foreground",
+                  "content": "Value",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "apEmptyConfirmBtn",
+              "name": "Confirm Button",
+              "width": 24,
+              "height": 24,
+              "fill": "$--primary",
+              "cornerRadius": 4,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "apEmptyConfirmIcon",
+                  "width": 14,
+                  "height": 14,
+                  "iconFontName": "check",
+                  "iconFontFamily": "lucide",
+                  "fill": "#ffffff"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "apEmptyCancelBtn",
+              "name": "Cancel Button",
+              "width": 24,
+              "height": 24,
+              "cornerRadius": 4,
+              "stroke": { "align": "inside", "thickness": 1, "fill": "$--border" },
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "apEmptyCancelIcon",
+                  "width": 14,
+                  "height": 14,
+                  "iconFontName": "x",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "apFilled",
+      "x": 400,
+      "y": 0,
+      "name": "Add Property — Inline Form (Filled State)",
+      "theme": { "Mode": "Light" },
+      "width": 320,
+      "height": 180,
+      "fill": "$--background",
+      "layout": "vertical",
+      "gap": 8,
+      "padding": 12,
+      "children": [
+        {
+          "type": "text",
+          "id": "apFilledDesc",
+          "name": "description",
+          "fill": "$--muted-foreground",
+          "content": "Filled state: user has typed a property name, selected a type (Date), and entered a value. Confirm button is enabled (blue). The form looks like the property row it will create.",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "apFilledExisting1",
+          "name": "Existing Property Row — Status",
+          "width": "fill_container",
+          "cornerRadius": 4,
+          "padding": [4, 6],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "apFilledLabel1",
+              "fill": "$--muted-foreground",
+              "content": "STATUS",
+              "fontFamily": "IBM Plex Mono",
+              "fontSize": 10,
+              "fontWeight": "500",
+              "letterSpacing": 1.2
+            },
+            {
+              "type": "frame",
+              "id": "apFilledBadge1",
+              "fill": "$--accent-green-light",
+              "cornerRadius": 16,
+              "padding": [1, 6],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "apFilledBadgeText1",
+                  "fill": "$--accent-green",
+                  "content": "ACTIVE",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 10,
+                  "fontWeight": "600",
+                  "letterSpacing": 1.2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "apFilledSep",
+          "name": "Separator",
+          "width": "fill_container",
+          "height": 1,
+          "fill": "$--border"
+        },
+        {
+          "type": "frame",
+          "id": "apFilledForm",
+          "name": "Inline Add Property Form — Filled",
+          "width": "fill_container",
+          "gap": 6,
+          "padding": [4, 6],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "apFilledNameInput",
+              "name": "Name Input (filled)",
+              "width": 90,
+              "height": 26,
+              "fill": "$--muted",
+              "cornerRadius": 4,
+              "stroke": { "align": "inside", "thickness": 1, "fill": "$--primary" },
+              "padding": [4, 6],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "apFilledNameText",
+                  "fill": "$--foreground",
+                  "content": "deadline",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "apFilledTypeSelect",
+              "name": "Type Selector (Date selected)",
+              "width": 72,
+              "height": 26,
+              "fill": "$--muted",
+              "cornerRadius": 4,
+              "stroke": { "align": "inside", "thickness": 1, "fill": "$--border" },
+              "padding": [4, 6],
+              "gap": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "apFilledTypeIcon",
+                  "width": 12,
+                  "height": 12,
+                  "iconFontName": "calendar",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                },
+                {
+                  "type": "text",
+                  "id": "apFilledTypeText",
+                  "fill": "$--foreground",
+                  "content": "Date",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "icon_font",
+                  "id": "apFilledTypeChevron",
+                  "width": 10,
+                  "height": 10,
+                  "iconFontName": "chevron-down",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "apFilledValueInput",
+              "name": "Value Input (filled)",
+              "width": "fill_container",
+              "height": 26,
+              "fill": "$--muted",
+              "cornerRadius": 4,
+              "stroke": { "align": "inside", "thickness": 1, "fill": "$--primary" },
+              "padding": [4, 6],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "apFilledValueText",
+                  "fill": "$--foreground",
+                  "content": "2026-03-15",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "apFilledConfirmBtn",
+              "name": "Confirm Button (enabled)",
+              "width": 24,
+              "height": 24,
+              "fill": "$--primary",
+              "cornerRadius": 4,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "apFilledConfirmIcon",
+                  "width": 14,
+                  "height": 14,
+                  "iconFontName": "check",
+                  "iconFontFamily": "lucide",
+                  "fill": "#ffffff"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "apFilledCancelBtn",
+              "name": "Cancel Button",
+              "width": 24,
+              "height": 24,
+              "cornerRadius": 4,
+              "stroke": { "align": "inside", "thickness": 1, "fill": "$--border" },
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "apFilledCancelIcon",
+                  "width": 14,
+                  "height": 14,
+                  "iconFontName": "x",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "--background": { "type": "color", "value": [{ "value": "#ffffff" }] },
+    "--foreground": { "type": "color", "value": [{ "value": "#37352F" }] },
+    "--muted": { "type": "color", "value": [{ "value": "#F0F0EF" }] },
+    "--muted-foreground": { "type": "color", "value": [{ "value": "#9B9A97" }] },
+    "--border": { "type": "color", "value": [{ "value": "#E9E9E7" }] },
+    "--primary": { "type": "color", "value": [{ "value": "#155DFF" }] },
+    "--accent-green": { "type": "color", "value": [{ "value": "#38A169" }] },
+    "--accent-green-light": { "type": "color", "value": [{ "value": "rgba(56, 161, 105, 0.1)" }] }
+  }
+}

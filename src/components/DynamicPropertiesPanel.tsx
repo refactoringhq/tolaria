@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 import { countWords } from '../utils/wikilinks'
+import { Check, X, Type, Calendar, ToggleLeft, Circle, Link } from 'lucide-react'
 import {
   type PropertyDisplayMode,
   getEffectiveDisplayMode,
@@ -203,29 +204,68 @@ function DisplayModeSelector({ propKey, currentMode, autoMode, onSelect }: {
   )
 }
 
-function AddPropertyForm({ onAdd, onCancel }: { onAdd: (key: string, value: string) => void; onCancel: () => void }) {
+const DISPLAY_MODE_ICONS: Record<PropertyDisplayMode, typeof Type> = {
+  text: Type, date: Calendar, boolean: ToggleLeft, status: Circle, url: Link,
+}
+
+function AddPropertyForm({ onAdd, onCancel }: {
+  onAdd: (key: string, value: string, displayMode: PropertyDisplayMode) => void; onCancel: () => void
+}) {
   const [newKey, setNewKey] = useState('')
   const [newValue, setNewValue] = useState('')
+  const [displayMode, setDisplayMode] = useState<PropertyDisplayMode>('text')
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && newKey.trim()) onAdd(newKey, newValue)
+    if (e.key === 'Enter' && newKey.trim()) onAdd(newKey, newValue, displayMode)
     else if (e.key === 'Escape') onCancel()
   }
+
+  const Icon = DISPLAY_MODE_ICONS[displayMode]
+
   return (
-    <div className="mt-3 flex flex-col gap-2 rounded-md border border-border bg-muted p-3">
+    <div className="mt-1 flex items-center gap-1.5 rounded px-1.5 py-1" data-testid="add-property-form">
       <input
-        className="w-full rounded border border-ring bg-muted px-2 py-1 text-[12px] text-foreground outline-none focus:border-primary"
+        className="h-[26px] w-[90px] shrink-0 rounded border border-border bg-muted px-1.5 text-[12px] text-foreground outline-none focus:border-primary"
         type="text" placeholder="Property name" value={newKey}
         onChange={(e) => setNewKey(e.target.value)} onKeyDown={handleKeyDown} autoFocus
       />
+      <Select value={displayMode} onValueChange={(v) => setDisplayMode(v as PropertyDisplayMode)}>
+        <SelectTrigger
+          size="sm"
+          className="h-[26px] w-[82px] shrink-0 gap-1 border-border bg-muted px-1.5 py-0 shadow-none"
+          style={{ fontSize: 12, borderRadius: 4 }}
+          data-testid="add-property-type-trigger"
+        >
+          <Icon className="size-3 shrink-0 text-muted-foreground" />
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {DISPLAY_MODE_OPTIONS.map(opt => {
+            const OptIcon = DISPLAY_MODE_ICONS[opt.value]
+            return (
+              <SelectItem key={opt.value} value={opt.value}>
+                <OptIcon className="size-3.5 text-muted-foreground" />
+                {opt.label}
+              </SelectItem>
+            )
+          })}
+        </SelectContent>
+      </Select>
       <input
-        className="w-full rounded border border-ring bg-muted px-2 py-1 text-[12px] text-foreground outline-none focus:border-primary"
+        className="h-[26px] min-w-0 flex-1 rounded border border-border bg-muted px-1.5 text-[12px] text-foreground outline-none focus:border-primary"
         type="text" placeholder="Value" value={newValue}
         onChange={(e) => setNewValue(e.target.value)} onKeyDown={handleKeyDown}
       />
-      <div className="flex justify-end gap-2">
-        <Button size="xs" onClick={() => onAdd(newKey, newValue)} disabled={!newKey.trim()}>Add</Button>
-        <Button size="xs" variant="outline" onClick={onCancel}>Cancel</Button>
-      </div>
+      <Button
+        size="icon-xs" onClick={() => onAdd(newKey, newValue, displayMode)}
+        disabled={!newKey.trim()} title="Add property"
+        data-testid="add-property-confirm"
+      >
+        <Check className="size-3.5" />
+      </Button>
+      <Button size="icon-xs" variant="outline" onClick={onCancel} title="Cancel" data-testid="add-property-cancel">
+        <X className="size-3.5" />
+      </Button>
     </div>
   )
 }
@@ -454,9 +494,13 @@ export function DynamicPropertiesPanel({
     reconcileListUpdate(newItems, onUpdateProperty, onDeleteProperty, key)
   }, [onUpdateProperty, onDeleteProperty])
 
-  const handleAdd = useCallback((rawKey: string, rawValue: string) => {
+  const handleAdd = useCallback((rawKey: string, rawValue: string, mode: PropertyDisplayMode) => {
     if (!rawKey.trim() || !onAddProperty) return
     onAddProperty(rawKey.trim(), parseNewValue(rawValue))
+    if (mode !== 'text') {
+      saveDisplayModeOverride(rawKey.trim(), mode)
+      setDisplayOverrides(loadDisplayModeOverrides())
+    }
     setShowAddDialog(false)
   }, [onAddProperty])
 

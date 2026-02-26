@@ -224,6 +224,7 @@ describe('DynamicPropertiesPanel', () => {
     fireEvent.click(screen.getByText('+ Add property'))
     expect(screen.getByPlaceholderText('Property name')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Value')).toBeInTheDocument()
+    expect(screen.getByTestId('add-property-type-trigger')).toBeInTheDocument()
   })
 
   it('adds property via the add form', () => {
@@ -240,7 +241,7 @@ describe('DynamicPropertiesPanel', () => {
     const valueInput = screen.getByPlaceholderText('Value')
     fireEvent.change(keyInput, { target: { value: 'priority' } })
     fireEvent.change(valueInput, { target: { value: 'high' } })
-    fireEvent.click(screen.getByText('Add'))
+    fireEvent.click(screen.getByTestId('add-property-confirm'))
     expect(onAddProperty).toHaveBeenCalledWith('priority', 'high')
   })
 
@@ -479,7 +480,7 @@ describe('DynamicPropertiesPanel', () => {
       />
     )
     fireEvent.click(screen.getByText('+ Add property'))
-    fireEvent.click(screen.getByText('Cancel'))
+    fireEvent.click(screen.getByTestId('add-property-cancel'))
     expect(screen.getByText('+ Add property')).toBeInTheDocument()
   })
 
