@@ -10,6 +10,12 @@ vi.mock('@tauri-apps/plugin-opener', () => ({
   openUrl: vi.fn(),
 }))
 
+// Mock react-day-picker: Calendar component uses DayPicker which needs real DOM APIs not available in jsdom
+vi.mock('react-day-picker', () => ({
+  DayPicker: () => null,
+  getDefaultClassNames: () => ({}),
+}))
+
 // Mock react-virtuoso: JSDOM has no real viewport, so render all items directly
 vi.mock('react-virtuoso', () => ({
   Virtuoso: ({ data, itemContent, components }: {
