@@ -63,21 +63,19 @@ export function useUnifiedSearch(vaultPath: string, active: boolean) {
     searchGenRef.current++
   }, [])
 
-  useEffect(() => { if (active) reset() }, [active, reset])
+  // On any active change: cancel inflight + debounce, then reset if opening
+  useEffect(() => {
+    searchGenRef.current++
+    clearTimeout(debounceRef.current ?? undefined)
+    debounceRef.current = null
+    if (active) reset()
+  }, [active, reset])
 
   const performSearch = useCallback(async (q: string) => {
-    if (!q.trim()) {
-      setResults([])
-      setElapsedMs(null)
-      setLoading(false)
-      return
-    }
-
+    if (!q.trim()) { setResults([]); setElapsedMs(null); setLoading(false); return }
     searchGenRef.current++
     const gen = searchGenRef.current
     setLoading(true)
-
-    // Phase 1: Keyword search (fast)
     try {
       const response = await searchCall({ vaultPath, query: q, mode: 'keyword', limit: 20 })
       if (gen !== searchGenRef.current) return
@@ -89,8 +87,6 @@ export function useUnifiedSearch(vaultPath: string, active: boolean) {
       setLoading(false)
       return
     }
-
-    // Phase 2: Hybrid search — augments keyword results with semantic
     try {
       const response = await searchWithTimeout(
         { vaultPath, query: q, mode: 'hybrid', limit: 20 },
@@ -100,15 +96,14 @@ export function useUnifiedSearch(vaultPath: string, active: boolean) {
       setResults(mapResults(response.results))
       setElapsedMs(response.elapsed_ms)
       setSelectedIndex(prev => Math.min(prev, Math.max(response.results.length - 1, 0)))
-    } catch {
-      // Hybrid failed or timed out — keyword results remain visible
-    } finally {
+    } catch { /* Hybrid timed out — keyword results remain */ } finally {
       if (gen === searchGenRef.current) setLoading(false)
     }
   }, [vaultPath])
 
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
+    clearTimeout(debounceRef.current ?? undefined)
+    debounceRef.current = null
     if (!query.trim()) {
       setResults([])
       setElapsedMs(null)
@@ -117,7 +112,10 @@ export function useUnifiedSearch(vaultPath: string, active: boolean) {
       return
     }
     debounceRef.current = setTimeout(() => performSearch(query), DEBOUNCE_MS)
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+    return () => {
+      clearTimeout(debounceRef.current ?? undefined)
+      debounceRef.current = null
+    }
   }, [query, performSearch])
 
   return { query, setQuery, results, selectedIndex, setSelectedIndex, loading, elapsedMs }

@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
+use std::sync::Mutex;
 use std::time::Instant;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -82,8 +84,30 @@ fn extract_clean_snippet(raw_snippet: &str) -> String {
     }
 }
 
+static COLLECTION_CACHE: Mutex<Option<HashMap<String, String>>> = Mutex::new(None);
+
 fn detect_collection_name(vault_path: &str) -> String {
-    // Try to find which qmd collection maps to this vault path
+    // Check cache first
+    if let Ok(guard) = COLLECTION_CACHE.lock() {
+        if let Some(ref cache) = *guard {
+            if let Some(name) = cache.get(vault_path) {
+                return name.clone();
+            }
+        }
+    }
+
+    let result = detect_collection_name_uncached(vault_path);
+
+    // Store in cache
+    if let Ok(mut guard) = COLLECTION_CACHE.lock() {
+        let cache = guard.get_or_insert_with(HashMap::new);
+        cache.insert(vault_path.to_string(), result.clone());
+    }
+
+    result
+}
+
+fn detect_collection_name_uncached(vault_path: &str) -> String {
     let qmd_bin = match find_qmd_binary() {
         Some(b) => b,
         None => return "laputa".to_string(),
@@ -99,11 +123,9 @@ fn detect_collection_name(vault_path: &str) -> String {
                 .and_then(|n| n.to_str())
                 .unwrap_or("laputa")
                 .to_lowercase();
-            // Look for collection that matches vault directory name
             for line in stdout.lines() {
                 let trimmed = line.trim();
                 if trimmed.contains(&vault_name) && trimmed.contains("qmd://") {
-                    // Extract collection name from "name (qmd://name/)"
                     if let Some(name) = trimmed.split_whitespace().next() {
                         return name.to_string();
                     }

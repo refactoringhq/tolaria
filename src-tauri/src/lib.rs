@@ -165,13 +165,18 @@ async fn github_get_user(token: String) -> Result<GitHubUser, String> {
 }
 
 #[tauri::command]
-fn search_vault(
+async fn search_vault(
     vault_path: String,
     query: String,
     mode: String,
     limit: Option<usize>,
 ) -> Result<SearchResponse, String> {
-    search::search_vault(&vault_path, &query, &mode, limit.unwrap_or(20))
+    let limit = limit.unwrap_or(20);
+    tokio::task::spawn_blocking(move || {
+        search::search_vault(&vault_path, &query, &mode, limit)
+    })
+    .await
+    .map_err(|e| format!("Search task failed: {}", e))?
 }
 
 fn log_startup_result(label: &str, result: Result<usize, String>) {

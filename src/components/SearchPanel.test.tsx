@@ -368,4 +368,42 @@ describe('SearchPanel', () => {
     // Keyword results remain
     expect(screen.getByText('Keyword Only')).toBeInTheDocument()
   })
+
+  it('cancels inflight searches when panel closes', async () => {
+    const resolvers: ((v: unknown) => void)[] = []
+    mockInvokeFn.mockImplementation(
+      () => new Promise(resolve => { resolvers.push(resolve) }),
+    )
+
+    const { rerender } = render(
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />,
+    )
+
+    fireEvent.change(screen.getByPlaceholderText('Search in all notes...'), { target: { value: 'slow query' } })
+
+    // Wait for keyword search to start
+    await waitFor(() => {
+      expect(resolvers).toHaveLength(1)
+    })
+
+    // Close the panel while search is inflight
+    rerender(
+      <SearchPanel open={false} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />,
+    )
+
+    // Resolve the inflight keyword search — should be discarded (stale generation)
+    resolvers[0]({
+      results: [{ title: 'Stale Result', path: '/vault/essay/ai-apis.md', snippet: '', score: 0.9, note_type: null }],
+      elapsed_ms: 30,
+    })
+
+    // Reopen panel
+    rerender(
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />,
+    )
+
+    // Should NOT show the stale result — panel was reset
+    expect(screen.queryByText('Stale Result')).not.toBeInTheDocument()
+    expect(screen.getByText('Search across all note contents')).toBeInTheDocument()
+  })
 })
