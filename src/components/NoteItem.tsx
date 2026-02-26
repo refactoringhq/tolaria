@@ -7,7 +7,7 @@ import {
 } from '@phosphor-icons/react'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 import { resolveIcon } from '../utils/iconRegistry'
-import { relativeDate, getDisplayDate } from '../utils/noteListHelpers'
+import { relativeDate, formatSubtitle } from '../utils/noteListHelpers'
 
 const TYPE_ICON_MAP: Record<string, ComponentType<SVGAttributes<SVGSVGElement>>> = {
   Project: Wrench,
@@ -101,12 +101,9 @@ export function NoteItem({ entry, isSelected, noteStatus = 'clean', typeEntryMap
           )}
         </div>
       </div>
-      <div className="mt-0.5 text-[12px] leading-[1.5] text-muted-foreground" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-        {entry.snippet}
-      </div>
       {entry.trashed && entry.trashedAt
         ? <TrashDateLine entry={entry} />
-        : <div className="mt-0.5 text-[10px] text-muted-foreground">{relativeDate(getDisplayDate(entry))}</div>
+        : <div className="mt-1 text-[11px] text-muted-foreground">{formatSubtitle(entry)}</div>
       }
     </div>
   )

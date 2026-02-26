@@ -27,6 +27,7 @@ const mockEntries: VaultEntry[] = [
     createdAt: null,
     fileSize: 1024,
     snippet: 'Build a personal knowledge management app.',
+    wordCount: 0,
     relationships: {
       'Related to': ['[[topic/software-development]]'],
     },
@@ -53,6 +54,7 @@ const mockEntries: VaultEntry[] = [
     createdAt: null,
     fileSize: 847,
     snippet: 'Lookalike audiences convert 3x better.',
+    wordCount: 0,
     relationships: {
       'Belongs to': ['[[project/26q1-laputa-app]]'],
       'Related to': ['[[topic/growth]]'],
@@ -80,6 +82,7 @@ const mockEntries: VaultEntry[] = [
     createdAt: null,
     fileSize: 320,
     snippet: 'Sponsorship manager.',
+    wordCount: 0,
     relationships: {},
     icon: null,
     color: null,
@@ -104,6 +107,7 @@ const mockEntries: VaultEntry[] = [
     createdAt: null,
     fileSize: 512,
     snippet: 'Project kickoff meeting notes.',
+    wordCount: 0,
     relationships: {},
     icon: null,
     color: null,
@@ -128,6 +132,7 @@ const mockEntries: VaultEntry[] = [
     createdAt: null,
     fileSize: 256,
     snippet: 'Frontend, backend, and systems programming.',
+    wordCount: 0,
     relationships: {},
     icon: null,
     color: null,
@@ -261,12 +266,12 @@ describe('NoteList', () => {
     expect(screen.getByText('Facebook Ads Strategy')).toBeInTheDocument()
   })
 
-  it('context view shows prominent card with entity snippet', () => {
+  it('context view shows prominent card with metadata subtitle', () => {
     render(
       <NoteList entries={mockEntries} selection={{ kind: 'entity', entry: mockEntries[0] }} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
-    // Snippet appears in the prominent card
-    expect(screen.getByText('Build a personal knowledge management app.')).toBeInTheDocument()
+    // Metadata subtitle (date · word count) appears in the prominent card
+    expect(screen.getAllByText(/Empty/).length).toBeGreaterThan(0)
   })
 })
 
@@ -301,7 +306,9 @@ describe('NoteList click behavior', () => {
     render(
       <NoteList entries={mockEntries} selection={{ kind: 'entity', entry: mockEntries[0] }} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
-    fireEvent.click(screen.getByText('Build a personal knowledge management app.'), { metaKey: true })
+    // Title appears in both header and pinned card — use getAllByText and click the pinned card instance
+    const titles = screen.getAllByText('Build Laputa App')
+    fireEvent.click(titles[titles.length - 1], { metaKey: true })
     expect(noopSelect).toHaveBeenCalledWith(mockEntries[0])
     expect(noopReplace).not.toHaveBeenCalled()
   })
@@ -310,7 +317,9 @@ describe('NoteList click behavior', () => {
     render(
       <NoteList entries={mockEntries} selection={{ kind: 'entity', entry: mockEntries[0] }} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
-    fireEvent.click(screen.getByText('Build a personal knowledge management app.'))
+    // Title appears in both header and pinned card — use getAllByText and click the pinned card instance
+    const titles = screen.getAllByText('Build Laputa App')
+    fireEvent.click(titles[titles.length - 1])
     expect(noopReplace).toHaveBeenCalledWith(mockEntries[0])
     expect(noopSelect).not.toHaveBeenCalled()
   })
@@ -344,6 +353,7 @@ describe('getSortComparator', () => {
     createdAt: null,
     fileSize: 100,
     snippet: '',
+    wordCount: 0,
     relationships: {},
     icon: null,
     color: null,
@@ -455,6 +465,7 @@ describe('NoteList sort controls', () => {
     createdAt: null,
     fileSize: 100,
     snippet: '',
+    wordCount: 0,
     relationships: {},
     icon: null,
     color: null,
@@ -648,6 +659,7 @@ const trashedEntry: VaultEntry = {
   createdAt: null,
   fileSize: 280,
   snippet: 'Some draft content that is no longer needed.',
+  wordCount: 0,
   relationships: {},
   icon: null,
   color: null,
@@ -673,6 +685,7 @@ const expiredTrashedEntry: VaultEntry = {
   createdAt: null,
   fileSize: 190,
   snippet: 'Old API docs replaced by v2.',
+  wordCount: 0,
   relationships: {},
   icon: null,
   color: null,
@@ -827,6 +840,7 @@ describe('NoteList — virtual list with large datasets', () => {
     createdAt: null,
     fileSize: 500,
     snippet: `Content of note ${i}`,
+    wordCount: 0,
     relationships: {},
     icon: null,
     color: null,

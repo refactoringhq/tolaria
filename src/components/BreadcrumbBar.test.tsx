@@ -21,6 +21,7 @@ const baseEntry: VaultEntry = {
   createdAt: null,
   fileSize: 100,
   snippet: '',
+  wordCount: 0,
   relationships: {},
   icon: null,
   color: null,

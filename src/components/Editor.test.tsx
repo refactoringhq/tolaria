@@ -70,6 +70,7 @@ const mockEntry: VaultEntry = {
   createdAt: null,
   fileSize: 1024,
   snippet: '',
+  wordCount: 0,
   relationships: {},
   icon: null,
   color: null,

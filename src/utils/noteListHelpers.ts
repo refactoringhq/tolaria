@@ -25,6 +25,18 @@ export function getDisplayDate(entry: VaultEntry): number | null {
   return entry.modifiedAt ?? entry.createdAt
 }
 
+export function formatSubtitle(entry: VaultEntry): string {
+  const parts: string[] = []
+  const date = getDisplayDate(entry)
+  if (date) parts.push(relativeDate(date))
+  if (entry.wordCount > 0) {
+    parts.push(`${entry.wordCount} words`)
+  } else {
+    parts.push('Empty')
+  }
+  return parts.join(' \u00b7 ')
+}
+
 function refsMatch(refs: string[], entry: VaultEntry): boolean {
   const stem = entry.path.replace(/^.*\/Laputa\//, '').replace(/\.md$/, '')
   const fileStem = entry.filename.replace(/\.md$/, '')

@@ -26,6 +26,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 60,
     fileSize: 2048,
     snippet: 'This paragraph has bold text, italic text, bold italic, strikethrough, and inline code. Here\'s a regular link and a wiki-link to Matteo Cellini.',
+    wordCount: 342,
     relationships: {
       'Belongs to': ['[[quarter/q1-2026]]'],
       'Related to': ['[[topic/software-development]]'],
@@ -54,6 +55,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 180,
     fileSize: 1024,
     snippet: 'Build a sustainable audience through high-quality weekly essays on engineering leadership, AI, and personal systems.',
+    wordCount: 215,
     relationships: {
       'Has': [
         '[[essay/on-writing-well|On Writing Well]]',
@@ -87,6 +89,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 150,
     fileSize: 890,
     snippet: 'Revenue stream from newsletter sponsorships. Matteo Cellini handles day-to-day operations.',
+    wordCount: 180,
     relationships: {
       'Owner': ['[[person/matteo-cellini|Matteo Cellini]]'],
       'Type': ['[[type/responsibility]]'],
@@ -114,6 +117,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 120,
     fileSize: 512,
     snippet: 'Monday: Pick topic, outline Tuesday: First draft Wednesday: Edit and polish Thursday: Schedule for Tuesday send',
+    wordCount: 95,
     relationships: {
       'Belongs to': ['[[responsibility/grow-newsletter]]'],
       'Type': ['[[type/procedure]]'],
@@ -141,6 +145,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 100,
     fileSize: 640,
     snippet: 'Review pipeline in CRM Follow up with pending proposals Schedule confirmed sponsors Send performance reports to completed sponsors',
+    wordCount: 128,
     relationships: {
       'Belongs to': ['[[responsibility/manage-sponsorships]]'],
       'Type': ['[[type/procedure]]'],
@@ -168,6 +173,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 45,
     fileSize: 3200,
     snippet: 'Stocks that wick below the 200-day EMA and close above it show a statistically significant bounce in the following 5-10 days.',
+    wordCount: 520,
     relationships: {
       'Related to': ['[[topic/trading]]', '[[topic/algorithmic-trading]]'],
       'Has Data': ['[[data/ema200-backtest-results]]'],
@@ -196,6 +202,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 30,
     fileSize: 847,
     snippet: 'Lookalike audiences from newsletter subscribers convert 3x better than interest-based targeting Video ads outperform static images by 40% on engagement',
+    wordCount: 267,
     relationships: {
       'Belongs to': ['[[project/26q1-laputa-app]]'],
       'Related to': ['[[topic/growth]]', '[[topic/ads]]'],
@@ -224,6 +231,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 20,
     fileSize: 560,
     snippet: 'Under budget on ads due to improved targeting efficiency Consider reallocating savings to content production',
+    wordCount: 150,
     relationships: {
       'Belongs to': ['[[project/26q1-laputa-app]]'],
       'Type': ['[[type/note]]'],
@@ -251,6 +259,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 200,
     fileSize: 320,
     snippet: 'Sponsorship manager — handles all sponsor relationships, proposals, and reporting.',
+    wordCount: 88,
     relationships: {
       'Type': ['[[type/person]]'],
     },
@@ -277,6 +286,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 150,
     fileSize: 280,
     snippet: 'Product designer — leads UX research and design sprints for the app.',
+    wordCount: 120,
     relationships: {
       'Type': ['[[type/person]]'],
     },
@@ -303,6 +313,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 120,
     fileSize: 240,
     snippet: 'Frontend engineer — focuses on React performance and accessibility.',
+    wordCount: 95,
     relationships: {
       'Type': ['[[type/person]]'],
     },
@@ -329,6 +340,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 90,
     fileSize: 200,
     snippet: 'Content strategist — plans newsletter topics and manages the editorial calendar.',
+    wordCount: 75,
     relationships: {
       'Type': ['[[type/person]]'],
     },
@@ -355,6 +367,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 7,
     fileSize: 1200,
     snippet: 'Agreed on four-panel layout inspired by Bear Notes CodeMirror 6 for the editor — live preview is critical MVP by end of Q1.',
+    wordCount: 310,
     relationships: {
       'Related to': ['[[project/26q1-laputa-app]]', '[[person/matteo-cellini]]'],
       'Type': ['[[type/event]]'],
@@ -382,6 +395,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 365,
     fileSize: 256,
     snippet: 'A broad topic covering everything from frontend to systems programming.',
+    wordCount: 45,
     relationships: {
       'Notes': ['[[note/facebook-ads-strategy]]', '[[note/budget-allocation]]'],
       'Type': ['[[type/topic]]'],
@@ -409,6 +423,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 300,
     fileSize: 180,
     snippet: 'Technical analysis (EMA, RSI, volume patterns) Algorithmic screening and alerts Risk management and position sizing',
+    wordCount: 60,
     relationships: {
       'Notes': ['[[experiment/stock-screener]]'],
       'Type': ['[[type/topic]]'],
@@ -436,6 +451,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 14,
     fileSize: 4200,
     snippet: 'Good writing is lean and confident. Every sentence should serve a purpose.',
+    wordCount: 180,
     relationships: {
       'Belongs to': ['[[responsibility/grow-newsletter]]'],
       'Type': ['[[type/essay]]'],
@@ -463,6 +479,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 30,
     fileSize: 3800,
     snippet: 'The transition from IC to manager is the hardest career shift in engineering.',
+    wordCount: 640,
     relationships: {
       'Belongs to': ['[[responsibility/grow-newsletter]]'],
       'Related to': ['[[topic/software-development]]'],
@@ -491,6 +508,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 21,
     fileSize: 5100,
     snippet: 'AI agents are autonomous systems that can plan, execute, and adapt to achieve goals.',
+    wordCount: 410,
     relationships: {
       'Belongs to': ['[[responsibility/grow-newsletter]]'],
       'Type': ['[[type/essay]]'],
@@ -519,6 +537,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 365,
     fileSize: 320,
     snippet: 'A time-bound initiative that advances a Responsibility. Projects have a clear start, end, and deliverables.',
+    wordCount: 280,
     relationships: {},
     icon: null,
     color: null,
@@ -543,6 +562,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 365,
     fileSize: 280,
     snippet: 'An ongoing area of ownership — something you\'re accountable for indefinitely.',
+    wordCount: 50,
     relationships: {},
     icon: null,
     color: null,
@@ -567,6 +587,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 365,
     fileSize: 310,
     snippet: 'A recurring process tied to a Responsibility. Procedures have a cadence and describe how to do something.',
+    wordCount: 45,
     relationships: {},
     icon: null,
     color: null,
@@ -591,6 +612,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 365,
     fileSize: 290,
     snippet: 'A hypothesis-driven investigation with a clear test and measurable outcome.',
+    wordCount: 55,
     relationships: {},
     icon: null,
     color: null,
@@ -615,6 +637,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 365,
     fileSize: 200,
     snippet: 'A person you interact with — team members, collaborators, contacts.',
+    wordCount: 40,
     relationships: {},
     icon: null,
     color: null,
@@ -639,6 +662,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 365,
     fileSize: 180,
     snippet: 'A point-in-time occurrence — meetings, launches, milestones.',
+    wordCount: 35,
     relationships: {},
     icon: null,
     color: null,
@@ -663,6 +687,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 365,
     fileSize: 170,
     snippet: 'A subject area for categorization. Topics group related notes, projects, and resources by theme.',
+    wordCount: 30,
     relationships: {},
     icon: null,
     color: null,
@@ -687,6 +712,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 365,
     fileSize: 200,
     snippet: 'A published piece of writing — newsletter essays, blog posts, articles.',
+    wordCount: 50,
     relationships: {},
     icon: null,
     color: null,
@@ -711,6 +737,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 365,
     fileSize: 190,
     snippet: 'A general-purpose document — research notes, meeting notes, strategy docs.',
+    wordCount: 60,
     relationships: {},
     icon: null,
     color: null,
@@ -736,6 +763,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 365,
     fileSize: 250,
     snippet: 'A recipe for cooking or baking. Recipes have ingredients, steps, and serving info.',
+    wordCount: 45,
     relationships: {},
     icon: 'cooking-pot',
     color: 'orange',
@@ -760,6 +788,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 365,
     fileSize: 220,
     snippet: 'A book you\'re reading or have read. Track reading progress, notes, and key takeaways.',
+    wordCount: 190,
     relationships: {},
     icon: 'book-open',
     color: 'green',
@@ -785,6 +814,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 10,
     fileSize: 420,
     snippet: 'Classic Roman pasta dish with eggs, pecorino, guanciale, and black pepper.',
+    wordCount: 310,
     relationships: {
       'Type': ['[[type/recipe]]'],
     },
@@ -811,6 +841,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 60,
     fileSize: 380,
     snippet: 'Essential reading for anyone building distributed systems. Covers replication, partitioning, transactions.',
+    wordCount: 100,
     relationships: {
       'Type': ['[[type/book]]'],
     },
@@ -838,6 +869,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: null,
     fileSize: 280,
     snippet: 'Some rough draft content that is no longer relevant. Moving to trash.',
+    wordCount: 100,
     relationships: {
       'Belongs to': ['[[project/26q1-laputa-app]]'],
       'Type': ['[[type/note]]'],
@@ -865,6 +897,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: null,
     fileSize: 190,
     snippet: 'Old API documentation for the v1 endpoint. Replaced by v2 docs.',
+    wordCount: 85,
     relationships: {
       'Type': ['[[type/note]]'],
     },
@@ -891,6 +924,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: null,
     fileSize: 340,
     snippet: 'Tried programmatic SEO pages. Results were negligible — trashing this.',
+    wordCount: 120,
     relationships: {
       'Related to': ['[[responsibility/grow-newsletter]]'],
       'Type': ['[[type/experiment]]'],
@@ -923,6 +957,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 200,
     fileSize: 680,
     snippet: 'Completed redesign of the company website. Migrated from WordPress to Next.js with improved performance and SEO.',
+    wordCount: 342,
     relationships: {
       'Belongs to': ['[[quarter/q3-2025]]'],
       'Type': ['[[type/project]]'],
@@ -950,6 +985,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     createdAt: now - 86400 * 150,
     fileSize: 520,
     snippet: 'Publishing 3 Twitter threads per week instead of 1 will increase newsletter signups by 50%. Result: only 12% increase.',
+    wordCount: 215,
     relationships: {
       'Related to': ['[[responsibility/grow-newsletter]]'],
       'Type': ['[[type/experiment]]'],
@@ -1000,6 +1036,7 @@ function generateBulkEntries(count: number): VaultEntry[] {
       createdAt: now - 86400 * 90 - i * 3600,
       fileSize: 500 + (i % 2000),
       snippet: BULK_SNIPPETS[i % BULK_SNIPPETS.length],
+      wordCount: 50 + (i % 200),
       relationships: {},
       icon: null,
       color: null,

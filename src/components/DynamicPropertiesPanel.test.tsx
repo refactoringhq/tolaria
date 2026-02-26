@@ -46,6 +46,7 @@ const makeEntry = (overrides: Partial<VaultEntry> = {}): VaultEntry => ({
   createdAt: 1700000000,
   fileSize: 100,
   snippet: '',
+  wordCount: 0,
   relationships: {},
   icon: null,
   color: null,

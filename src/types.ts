@@ -16,6 +16,7 @@ export interface VaultEntry {
   createdAt: number | null
   fileSize: number
   snippet: string
+  wordCount: number
   /** Generic relationship fields: any frontmatter key whose value contains wikilinks. */
   relationships: Record<string, string[]>
   /** Phosphor icon name (kebab-case) for Type entries, e.g. "cooking-pot" */

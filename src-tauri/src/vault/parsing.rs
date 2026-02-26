@@ -46,6 +46,15 @@ fn truncate_with_ellipsis(s: &str, max_len: usize) -> String {
     format!("{}...", &s[..idx])
 }
 
+/// Count the number of words in the note body (excluding frontmatter and H1 title).
+pub(super) fn count_body_words(content: &str) -> u32 {
+    let without_fm = strip_frontmatter(content);
+    let body = without_h1_line(without_fm).unwrap_or(without_fm);
+    body.split_whitespace()
+        .filter(|w| !w.chars().all(|c| matches!(c, '#' | '*' | '_' | '`' | '~' | '-' | '>' | '|')))
+        .count() as u32
+}
+
 /// Extract a snippet: first ~160 chars of content after frontmatter/title, stripped of markdown.
 pub(super) fn extract_snippet(content: &str) -> String {
     let without_fm = strip_frontmatter(content);
@@ -289,6 +298,46 @@ mod tests {
         let content = "# Title\n\n---\n\nContent after rule.";
         let snippet = extract_snippet(content);
         assert_eq!(snippet, "Content after rule.");
+    }
+
+    // --- count_body_words tests ---
+
+    #[test]
+    fn test_count_body_words_basic() {
+        let content = "---\nIs A: Note\n---\n# My Note\n\nHello world, this is a test.";
+        assert_eq!(count_body_words(content), 6);
+    }
+
+    #[test]
+    fn test_count_body_words_no_frontmatter() {
+        let content = "# Title\n\nOne two three four five.";
+        assert_eq!(count_body_words(content), 5);
+    }
+
+    #[test]
+    fn test_count_body_words_empty_body() {
+        let content = "---\nIs A: Note\n---\n# Just a Title\n";
+        assert_eq!(count_body_words(content), 0);
+    }
+
+    #[test]
+    fn test_count_body_words_no_content() {
+        assert_eq!(count_body_words(""), 0);
+    }
+
+    #[test]
+    fn test_count_body_words_excludes_markdown_markers() {
+        let content = "# Title\n\n## Section\n\nReal words here. ---\n\n> quote text";
+        // "Real", "words", "here.", "quote", "text" = 5 real words
+        // "##", "Section", "---", ">" are markdown markers (## is a heading, --- is a rule, > is blockquote)
+        // "Section" passes the filter (not all markdown chars), so count includes it
+        assert_eq!(count_body_words(content), 6);
+    }
+
+    #[test]
+    fn test_count_body_words_plain_text_only() {
+        let content = "Just plain text without any heading.";
+        assert_eq!(count_body_words(content), 6);
     }
 
     // --- strip_markdown_chars tests ---

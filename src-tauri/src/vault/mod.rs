@@ -12,8 +12,8 @@ pub use rename::{rename_note, RenameResult};
 pub use trash::purge_trash;
 
 use parsing::{
-    capitalize_first, contains_wikilink, extract_outgoing_links, extract_snippet, extract_title,
-    parse_iso_date,
+    capitalize_first, contains_wikilink, count_body_words, extract_outgoing_links,
+    extract_snippet, extract_title, parse_iso_date,
 };
 
 use gray_matter::engine::YAML;
@@ -60,6 +60,9 @@ pub struct VaultEntry {
     pub color: Option<String>,
     /// Display order for Type entries in sidebar (lower = higher). None = use default order.
     pub order: Option<i64>,
+    /// Word count of the note body (excludes frontmatter and H1 title).
+    #[serde(rename = "wordCount")]
+    pub word_count: u32,
     /// All wikilink targets found in the note body (excludes frontmatter).
     /// Extracted from `[[target]]` and `[[target|display]]` patterns.
     #[serde(rename = "outgoingLinks", default)]
@@ -268,6 +271,7 @@ pub fn parse_md_file(path: &Path) -> Result<VaultEntry, String> {
 
     let title = extract_title(&parsed.content, &filename);
     let snippet = extract_snippet(&content);
+    let word_count = count_body_words(&content);
     let outgoing_links = extract_outgoing_links(&parsed.content);
     let (modified_at, file_size) = read_file_metadata(path)?;
     let created_at = parse_created_at(&frontmatter);
@@ -318,6 +322,7 @@ pub fn parse_md_file(path: &Path) -> Result<VaultEntry, String> {
         icon: frontmatter.icon,
         color: frontmatter.color,
         order: frontmatter.order,
+        word_count,
         outgoing_links,
     })
 }
@@ -577,6 +582,26 @@ mod tests {
 
         let entry = parse_md_file(&dir.path().join("test.md")).unwrap();
         assert_eq!(entry.snippet, "Hello, world! This is a snippet.");
+    }
+
+    #[test]
+    fn test_parse_md_file_has_word_count() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\nIs A: Note\n---\n# Test Note\n\nHello world. This is a test with seven words.";
+        create_test_file(dir.path(), "test.md", content);
+
+        let entry = parse_md_file(&dir.path().join("test.md")).unwrap();
+        assert_eq!(entry.word_count, 9);
+    }
+
+    #[test]
+    fn test_parse_md_file_word_count_empty_body() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\nIs A: Note\n---\n# Empty Note\n";
+        create_test_file(dir.path(), "test.md", content);
+
+        let entry = parse_md_file(&dir.path().join("test.md")).unwrap();
+        assert_eq!(entry.word_count, 0);
     }
 
     #[test]
