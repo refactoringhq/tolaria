@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import type { VaultEntry } from '../types'
 import { fuzzyMatch } from '../utils/fuzzyMatch'
-import { getTypeColor, buildTypeEntryMap } from '../utils/typeColors'
+import { getTypeColor, getTypeLightColor, buildTypeEntryMap } from '../utils/typeColors'
 import { getTypeIcon } from '../components/NoteItem'
 import type { NoteSearchResultItem } from '../components/NoteSearchList'
 
@@ -19,6 +19,7 @@ function toResult(e: VaultEntry, typeEntryMap: Record<string, VaultEntry>): Note
     title: e.title,
     noteType,
     typeColor: noteType ? getTypeColor(e.isA, te?.color) : undefined,
+    typeLightColor: noteType ? getTypeLightColor(e.isA, te?.color) : undefined,
     TypeIcon: noteType ? getTypeIcon(e.isA, te?.icon) : undefined,
   }
 }

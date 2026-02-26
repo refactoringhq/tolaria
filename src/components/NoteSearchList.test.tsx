@@ -11,7 +11,7 @@ interface TestItem extends NoteSearchResultItem {
 }
 
 const items: TestItem[] = [
-  { id: '1', title: 'Alpha Project', noteType: 'Project', typeColor: 'var(--accent-blue)' },
+  { id: '1', title: 'Alpha Project', noteType: 'Project', typeColor: 'var(--accent-blue)', typeLightColor: 'var(--accent-blue-light)' },
   { id: '2', title: 'Beta Notes' },
   { id: '3', title: 'Gamma Experiment', noteType: 'Experiment' },
 ]
@@ -65,7 +65,7 @@ describe('NoteSearchList', () => {
     expect(screen.queryByText('Note')).not.toBeInTheDocument()
   })
 
-  it('applies typeColor to badge when provided', () => {
+  it('applies typeColor and typeLightColor to badge when provided', () => {
     render(
       <NoteSearchList
         items={[items[0]]}
@@ -76,6 +76,7 @@ describe('NoteSearchList', () => {
     )
     const badge = screen.getByText('Project')
     expect(badge.style.color).toBe('var(--accent-blue)')
+    expect(badge.style.backgroundColor).toBe('var(--accent-blue-light)')
   })
 
   it('shows empty message when no items', () => {

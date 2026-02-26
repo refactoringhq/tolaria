@@ -7,6 +7,7 @@ export interface WikilinkSuggestionItem {
   onItemClick: () => void
   noteType?: string
   typeColor?: string
+  typeLightColor?: string
   TypeIcon?: ComponentType<SVGAttributes<SVGSVGElement>>
   aliases?: string[]
   entryTitle?: string

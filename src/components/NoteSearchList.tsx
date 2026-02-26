@@ -6,6 +6,7 @@ export interface NoteSearchResultItem {
   title: string
   noteType?: string
   typeColor?: string
+  typeLightColor?: string
   TypeIcon?: ComponentType<SVGAttributes<SVGSVGElement>>
 }
 
@@ -73,7 +74,7 @@ export function NoteSearchList<T extends NoteSearchResultItem>({
             <Badge
               variant="secondary"
               className="shrink-0 text-[11px]"
-              style={item.typeColor ? { color: item.typeColor } : undefined}
+              style={item.typeColor ? { color: item.typeColor, backgroundColor: item.typeLightColor } : undefined}
             >
               {item.noteType}
             </Badge>

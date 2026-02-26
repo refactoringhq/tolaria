@@ -17,7 +17,7 @@ import { splitFrontmatter, preProcessWikilinks, injectWikilinks, restoreWikilink
 import { preFilterWikilinks, deduplicateByPath, disambiguateTitles, MAX_RESULTS, MIN_QUERY_LENGTH } from '../utils/wikilinkSuggestions'
 import { filterPersonMentions, PERSON_MENTION_MIN_QUERY } from '../utils/personMentionSuggestions'
 import { resolveWikilinkColor as resolveColor } from '../utils/wikilinkColors'
-import { getTypeColor, buildTypeEntryMap } from '../utils/typeColors'
+import { getTypeColor, getTypeLightColor, buildTypeEntryMap } from '../utils/typeColors'
 import { getTypeIcon } from './NoteItem'
 import { WikilinkSuggestionMenu, type WikilinkSuggestionItem } from './WikilinkSuggestionMenu'
 import './Editor.css'
@@ -177,6 +177,7 @@ function SingleEditorView({ editor, entries, onNavigateWikilink, onChange }: { e
         ...rest,
         noteType,
         typeColor: noteType ? getTypeColor(group, te?.color) : undefined,
+        typeLightColor: noteType ? getTypeLightColor(group, te?.color) : undefined,
         TypeIcon: noteType ? getTypeIcon(group, te?.icon) : undefined,
       }
     })
@@ -207,6 +208,7 @@ function SingleEditorView({ editor, entries, onNavigateWikilink, onChange }: { e
         ...rest,
         noteType,
         typeColor: noteType ? getTypeColor(group, te?.color) : undefined,
+        typeLightColor: noteType ? getTypeLightColor(group, te?.color) : undefined,
         TypeIcon: noteType ? getTypeIcon(group, te?.icon) : undefined,
       }
     })

@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import type { SearchResult, VaultEntry } from '../types'
 import { useUnifiedSearch } from '../hooks/useUnifiedSearch'
-import { getTypeColor, buildTypeEntryMap } from '../utils/typeColors'
+import { getTypeColor, getTypeLightColor, buildTypeEntryMap } from '../utils/typeColors'
 
 interface SearchPanelProps {
   open: boolean
@@ -193,6 +193,7 @@ function SearchContent({
               const isA = entryLookup.get(result.path)?.isA ?? result.noteType
               const noteType = isA && isA !== 'Note' ? isA : null
               const typeColor = noteType ? getTypeColor(isA, typeEntryMap[isA ?? '']?.color) : undefined
+              const typeLightColor = noteType ? getTypeLightColor(isA, typeEntryMap[isA ?? '']?.color) : undefined
               return (
                 <div
                   key={result.path}
@@ -206,7 +207,7 @@ function SearchContent({
                   <div className="flex items-center gap-2">
                     <span className="text-[13px] font-medium text-foreground">{result.title}</span>
                     {noteType && (
-                      <Badge variant="secondary" className="text-[10px]" style={typeColor ? { color: typeColor } : undefined}>
+                      <Badge variant="secondary" className="text-[10px]" style={typeColor ? { color: typeColor, backgroundColor: typeLightColor } : undefined}>
                         {noteType}
                       </Badge>
                     )}
