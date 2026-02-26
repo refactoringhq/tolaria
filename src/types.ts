@@ -38,6 +38,11 @@ export interface GitCommit {
   date: number // unix timestamp
 }
 
+export interface LastCommitInfo {
+  shortHash: string
+  commitUrl: string | null
+}
+
 export interface ModifiedFile {
   path: string
   relativePath: string

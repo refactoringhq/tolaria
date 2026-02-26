@@ -14,10 +14,56 @@ describe('StatusBar', () => {
     expect(screen.getByText('9,200 notes')).toBeInTheDocument()
   })
 
-  it('displays version and branch info', () => {
+  it('displays version info', () => {
     render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} />)
     expect(screen.getByText('v0.4.2')).toBeInTheDocument()
-    expect(screen.getByText('main')).toBeInTheDocument()
+  })
+
+  it('does not display branch name', () => {
+    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} />)
+    expect(screen.queryByText('main')).not.toBeInTheDocument()
+  })
+
+  it('shows clickable commit hash when commitUrl is available', () => {
+    render(
+      <StatusBar
+        noteCount={100}
+        vaultPath="/Users/luca/Laputa"
+        vaults={vaults}
+        onSwitchVault={vi.fn()}
+        lastCommitInfo={{ shortHash: 'a3f9b1c', commitUrl: 'https://github.com/owner/repo/commit/abc123' }}
+      />
+    )
+    const link = screen.getByTestId('status-commit-link')
+    expect(link).toBeInTheDocument()
+    expect(link.tagName).toBe('A')
+    expect(link).toHaveAttribute('href', 'https://github.com/owner/repo/commit/abc123')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(screen.getByText('a3f9b1c')).toBeInTheDocument()
+  })
+
+  it('shows non-clickable commit hash when no commitUrl', () => {
+    render(
+      <StatusBar
+        noteCount={100}
+        vaultPath="/Users/luca/Laputa"
+        vaults={vaults}
+        onSwitchVault={vi.fn()}
+        lastCommitInfo={{ shortHash: 'b4e2d8f', commitUrl: null }}
+      />
+    )
+    const span = screen.getByTestId('status-commit-hash')
+    expect(span).toBeInTheDocument()
+    expect(span.tagName).toBe('SPAN')
+    expect(screen.getByText('b4e2d8f')).toBeInTheDocument()
+  })
+
+  it('hides commit hash when lastCommitInfo is null', () => {
+    render(
+      <StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} lastCommitInfo={null} />
+    )
+    expect(screen.queryByTestId('status-commit-link')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('status-commit-hash')).not.toBeInTheDocument()
   })
 
   it('displays active vault name', () => {

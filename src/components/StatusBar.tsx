@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import { Package, GitBranch, RefreshCw, Sparkles, FileText, Bell, Settings, FolderOpen, Check, Github, CircleDot, AlertTriangle, Loader2 } from 'lucide-react'
-import type { SyncStatus } from '../types'
+import { Package, RefreshCw, Sparkles, FileText, Bell, Settings, FolderOpen, Check, Github, CircleDot, AlertTriangle, Loader2, GitCommitHorizontal } from 'lucide-react'
+import type { LastCommitInfo, SyncStatus } from '../types'
 
 export interface VaultOption {
   label: string
@@ -21,6 +21,7 @@ interface StatusBarProps {
   syncStatus?: SyncStatus
   lastSyncTime?: number | null
   conflictCount?: number
+  lastCommitInfo?: LastCommitInfo | null
   onTriggerSync?: () => void
 }
 
@@ -127,7 +128,7 @@ function syncIconColor(status: SyncStatus): string {
   return 'var(--accent-green)'
 }
 
-export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onSwitchVault, onOpenSettings, onOpenLocalFolder, onConnectGitHub, onClickPending, hasGitHub, syncStatus = 'idle', lastSyncTime = null, conflictCount = 0, onTriggerSync }: StatusBarProps) {
+export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onSwitchVault, onOpenSettings, onOpenLocalFolder, onConnectGitHub, onClickPending, hasGitHub, syncStatus = 'idle', lastSyncTime = null, conflictCount = 0, lastCommitInfo, onTriggerSync }: StatusBarProps) {
   // Force re-render every 30s to keep relative time label fresh
   const [, setTick] = useState(0)
   useEffect(() => {
@@ -145,8 +146,6 @@ export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onS
         <span style={SEP_STYLE}>|</span>
         <span style={ICON_STYLE}><Package size={13} />v0.4.2</span>
         <span style={SEP_STYLE}>|</span>
-        <span style={ICON_STYLE}><GitBranch size={13} />main</span>
-        <span style={SEP_STYLE}>|</span>
         <span
           role="button"
           onClick={onTriggerSync}
@@ -156,6 +155,26 @@ export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onS
         >
           <SyncIcon size={13} style={{ color: syncIconColor(syncStatus) }} className={syncStatus === 'syncing' ? 'animate-spin' : ''} />{syncLabel}
         </span>
+        {lastCommitInfo && (
+          lastCommitInfo.commitUrl ? (
+            <a
+              href={lastCommitInfo.commitUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ ...ICON_STYLE, color: 'var(--muted-foreground)', textDecoration: 'none', cursor: 'pointer', padding: '2px 4px', borderRadius: 3 }}
+              title={`Open commit ${lastCommitInfo.shortHash} on GitHub`}
+              data-testid="status-commit-link"
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--foreground)' }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--muted-foreground)' }}
+            >
+              <GitCommitHorizontal size={13} />{lastCommitInfo.shortHash}
+            </a>
+          ) : (
+            <span style={ICON_STYLE} data-testid="status-commit-hash">
+              <GitCommitHorizontal size={13} />{lastCommitInfo.shortHash}
+            </span>
+          )
+        )}
         {conflictCount > 0 && (
           <>
             <span style={SEP_STYLE}>|</span>

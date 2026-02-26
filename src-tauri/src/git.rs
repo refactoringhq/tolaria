@@ -434,6 +434,102 @@ pub fn git_push(vault_path: &str) -> Result<String, String> {
     Ok(format!("{}{}", stdout, stderr))
 }
 
+#[derive(Debug, Serialize, Clone)]
+pub struct LastCommitInfo {
+    #[serde(rename = "shortHash")]
+    pub short_hash: String,
+    #[serde(rename = "commitUrl")]
+    pub commit_url: Option<String>,
+}
+
+/// Get the last commit's short hash and a GitHub URL (if remote is GitHub).
+pub fn get_last_commit_info(vault_path: &str) -> Result<Option<LastCommitInfo>, String> {
+    let vault = Path::new(vault_path);
+
+    let output = Command::new("git")
+        .args(["log", "-1", "--format=%H|%h"])
+        .current_dir(vault)
+        .output()
+        .map_err(|e| format!("Failed to run git log: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        if stderr.contains("does not have any commits yet") {
+            return Ok(None);
+        }
+        return Err(format!("git log failed: {}", stderr));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let line = stdout.trim();
+    if line.is_empty() {
+        return Ok(None);
+    }
+
+    let parts: Vec<&str> = line.splitn(2, '|').collect();
+    if parts.len() != 2 {
+        return Ok(None);
+    }
+
+    let full_hash = parts[0];
+    let short_hash = parts[1].to_string();
+
+    let commit_url = get_github_commit_url(vault_path, full_hash);
+
+    Ok(Some(LastCommitInfo {
+        short_hash,
+        commit_url,
+    }))
+}
+
+/// Try to build a GitHub commit URL from the origin remote URL.
+fn get_github_commit_url(vault_path: &str, full_hash: &str) -> Option<String> {
+    let vault = Path::new(vault_path);
+    let output = Command::new("git")
+        .args(["remote", "get-url", "origin"])
+        .current_dir(vault)
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let url = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    let repo_path = parse_github_repo_path(&url)?;
+    Some(format!(
+        "https://github.com/{}/commit/{}",
+        repo_path, full_hash
+    ))
+}
+
+/// Extract "owner/repo" from a GitHub remote URL.
+/// Supports HTTPS (https://github.com/owner/repo.git) and
+/// SSH (git@github.com:owner/repo.git) formats.
+fn parse_github_repo_path(url: &str) -> Option<String> {
+    let trimmed = url.trim();
+
+    // SSH format: git@github.com:owner/repo.git
+    if let Some(rest) = trimmed.strip_prefix("git@github.com:") {
+        let path = rest.strip_suffix(".git").unwrap_or(rest);
+        if path.contains('/') {
+            return Some(path.to_string());
+        }
+    }
+
+    // HTTPS format: https://github.com/owner/repo.git
+    // Also handle token-embedded URLs: https://token@github.com/owner/repo.git
+    if trimmed.contains("github.com/") {
+        let after = trimmed.split("github.com/").nth(1)?;
+        let path = after.strip_suffix(".git").unwrap_or(after);
+        if path.contains('/') {
+            return Some(path.to_string());
+        }
+    }
+
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -901,5 +997,97 @@ mod tests {
         let parsed: GitPullResult = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed.status, "updated");
         assert_eq!(parsed.updated_files.len(), 1);
+    }
+
+    #[test]
+    fn test_get_last_commit_info_with_commit() {
+        let dir = setup_git_repo();
+        let vault = dir.path();
+        let vp = vault.to_str().unwrap();
+
+        fs::write(vault.join("note.md"), "# Note\n").unwrap();
+        git_commit(vp, "initial").unwrap();
+
+        let info = get_last_commit_info(vp).unwrap();
+        assert!(info.is_some());
+        let info = info.unwrap();
+        assert_eq!(info.short_hash.len(), 7);
+        // No remote configured, so commit_url should be None
+        assert!(info.commit_url.is_none());
+    }
+
+    #[test]
+    fn test_get_last_commit_info_no_commits() {
+        let dir = setup_git_repo();
+        let vp = dir.path().to_str().unwrap();
+
+        let info = get_last_commit_info(vp).unwrap();
+        assert!(info.is_none());
+    }
+
+    #[test]
+    fn test_get_last_commit_info_with_github_remote() {
+        let dir = setup_git_repo();
+        let vault = dir.path();
+        let vp = vault.to_str().unwrap();
+
+        fs::write(vault.join("note.md"), "# Note\n").unwrap();
+        git_commit(vp, "initial").unwrap();
+
+        Command::new("git")
+            .args([
+                "remote",
+                "add",
+                "origin",
+                "https://github.com/lucaong/laputa-vault.git",
+            ])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+
+        let info = get_last_commit_info(vp).unwrap().unwrap();
+        assert!(info.commit_url.is_some());
+        let url = info.commit_url.unwrap();
+        assert!(url.starts_with("https://github.com/lucaong/laputa-vault/commit/"));
+    }
+
+    #[test]
+    fn test_parse_github_repo_path_https() {
+        assert_eq!(
+            parse_github_repo_path("https://github.com/owner/repo.git"),
+            Some("owner/repo".to_string())
+        );
+        assert_eq!(
+            parse_github_repo_path("https://github.com/owner/repo"),
+            Some("owner/repo".to_string())
+        );
+    }
+
+    #[test]
+    fn test_parse_github_repo_path_ssh() {
+        assert_eq!(
+            parse_github_repo_path("git@github.com:owner/repo.git"),
+            Some("owner/repo".to_string())
+        );
+        assert_eq!(
+            parse_github_repo_path("git@github.com:owner/repo"),
+            Some("owner/repo".to_string())
+        );
+    }
+
+    #[test]
+    fn test_parse_github_repo_path_token_embedded() {
+        assert_eq!(
+            parse_github_repo_path("https://gho_abc123@github.com/owner/repo.git"),
+            Some("owner/repo".to_string())
+        );
+    }
+
+    #[test]
+    fn test_parse_github_repo_path_non_github() {
+        assert_eq!(
+            parse_github_repo_path("https://gitlab.com/owner/repo.git"),
+            None
+        );
     }
 }

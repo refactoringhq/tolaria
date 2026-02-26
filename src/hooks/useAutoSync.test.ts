@@ -12,6 +12,8 @@ vi.mock('../mock-tauri', () => ({
   mockInvoke: (...args: unknown[]) => mockInvokeFn(...args),
 }))
 
+const MOCK_COMMIT_INFO = { shortHash: 'a1b2c3d', commitUrl: 'https://github.com/owner/repo/commit/abc' }
+
 function upToDate(): GitPullResult {
   return { status: 'up_to_date', message: 'Already up to date', updatedFiles: [], conflictFiles: [] }
 }
@@ -31,7 +33,10 @@ describe('useAutoSync', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockInvokeFn.mockResolvedValue(upToDate())
+    mockInvokeFn.mockImplementation((cmd: string) => {
+      if (cmd === 'get_last_commit_info') return Promise.resolve(MOCK_COMMIT_INFO)
+      return Promise.resolve(upToDate())
+    })
   })
 
   function renderSync(intervalMinutes: number | null = 5) {
@@ -62,7 +67,10 @@ describe('useAutoSync', () => {
   })
 
   it('calls onVaultUpdated and onToast when pull has updates', async () => {
-    mockInvokeFn.mockResolvedValue(updated(['note.md', 'project/plan.md']))
+    mockInvokeFn.mockImplementation((cmd: string) => {
+      if (cmd === 'get_last_commit_info') return Promise.resolve(MOCK_COMMIT_INFO)
+      return Promise.resolve(updated(['note.md', 'project/plan.md']))
+    })
     const { result } = renderSync()
 
     await waitFor(() => {
@@ -73,7 +81,10 @@ describe('useAutoSync', () => {
   })
 
   it('calls onConflict and sets conflict status when pull has conflicts', async () => {
-    mockInvokeFn.mockResolvedValue(conflict(['note.md']))
+    mockInvokeFn.mockImplementation((cmd: string) => {
+      if (cmd === 'get_last_commit_info') return Promise.resolve(MOCK_COMMIT_INFO)
+      return Promise.resolve(conflict(['note.md']))
+    })
     const { result } = renderSync()
 
     await waitFor(() => {
@@ -84,7 +95,10 @@ describe('useAutoSync', () => {
   })
 
   it('sets error status when pull fails', async () => {
-    mockInvokeFn.mockRejectedValue(new Error('Network error'))
+    mockInvokeFn.mockImplementation((cmd: string) => {
+      if (cmd === 'get_last_commit_info') return Promise.resolve(null)
+      return Promise.reject(new Error('Network error'))
+    })
     const { result } = renderSync()
 
     await waitFor(() => {
@@ -95,7 +109,7 @@ describe('useAutoSync', () => {
   it('pulls on window focus', async () => {
     renderSync()
     await waitFor(() => {
-      expect(mockInvokeFn).toHaveBeenCalledTimes(1)
+      expect(mockInvokeFn).toHaveBeenCalledWith('git_pull', { vaultPath: '/Users/luca/Laputa' })
     })
 
     mockInvokeFn.mockClear()
@@ -115,7 +129,10 @@ describe('useAutoSync', () => {
     })
 
     mockInvokeFn.mockClear()
-    mockInvokeFn.mockResolvedValue(updated(['note.md']))
+    mockInvokeFn.mockImplementation((cmd: string) => {
+      if (cmd === 'get_last_commit_info') return Promise.resolve(MOCK_COMMIT_INFO)
+      return Promise.resolve(updated(['note.md']))
+    })
 
     await act(async () => {
       result.current.triggerSync()
@@ -128,8 +145,11 @@ describe('useAutoSync', () => {
   })
 
   it('handles no_remote status silently', async () => {
-    mockInvokeFn.mockResolvedValue({
-      status: 'no_remote', message: 'No remote configured', updatedFiles: [], conflictFiles: [],
+    mockInvokeFn.mockImplementation((cmd: string) => {
+      if (cmd === 'get_last_commit_info') return Promise.resolve(null)
+      return Promise.resolve({
+        status: 'no_remote', message: 'No remote configured', updatedFiles: [], conflictFiles: [],
+      })
     })
     const { result } = renderSync()
 
@@ -142,20 +162,24 @@ describe('useAutoSync', () => {
 
   it('does not fire concurrent pulls', async () => {
     let resolveFirst: ((v: GitPullResult) => void) | null = null
-    mockInvokeFn.mockImplementation(() => new Promise<GitPullResult>((r) => { resolveFirst = r }))
+    mockInvokeFn.mockImplementation((cmd: string) => {
+      if (cmd === 'get_last_commit_info') return Promise.resolve(MOCK_COMMIT_INFO)
+      return new Promise<GitPullResult>((r) => { resolveFirst = r })
+    })
 
     const { result } = renderSync()
 
-    // First pull is in flight
-    expect(mockInvokeFn).toHaveBeenCalledTimes(1)
+    // First pull is in flight (git_pull called once)
+    const pullCalls = () => mockInvokeFn.mock.calls.filter((c: unknown[]) => c[0] === 'git_pull').length
+    expect(pullCalls()).toBe(1)
 
     // Trigger a manual sync while first is still running
     act(() => {
       result.current.triggerSync()
     })
 
-    // Should NOT have fired a second call
-    expect(mockInvokeFn).toHaveBeenCalledTimes(1)
+    // Should NOT have fired a second git_pull call
+    expect(pullCalls()).toBe(1)
 
     // Resolve the first
     await act(async () => {
@@ -163,9 +187,19 @@ describe('useAutoSync', () => {
     })
   })
 
+  it('exposes lastCommitInfo after sync', async () => {
+    const { result } = renderSync()
+    await waitFor(() => {
+      expect(result.current.lastCommitInfo).toEqual(MOCK_COMMIT_INFO)
+    })
+  })
+
   it('handles error status from git_pull result', async () => {
-    mockInvokeFn.mockResolvedValue({
-      status: 'error', message: 'remote: Not Found', updatedFiles: [], conflictFiles: [],
+    mockInvokeFn.mockImplementation((cmd: string) => {
+      if (cmd === 'get_last_commit_info') return Promise.resolve(null)
+      return Promise.resolve({
+        status: 'error', message: 'remote: Not Found', updatedFiles: [], conflictFiles: [],
+      })
     })
     const { result } = renderSync()
 

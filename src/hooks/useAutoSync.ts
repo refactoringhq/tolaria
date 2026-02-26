@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { isTauri, mockInvoke } from '../mock-tauri'
-import type { GitPullResult, SyncStatus } from '../types'
+import type { GitPullResult, LastCommitInfo, SyncStatus } from '../types'
 
 const DEFAULT_INTERVAL_MS = 5 * 60_000
 
@@ -21,6 +21,7 @@ export interface AutoSyncState {
   syncStatus: SyncStatus
   lastSyncTime: number | null
   conflictFiles: string[]
+  lastCommitInfo: LastCommitInfo | null
   triggerSync: () => void
 }
 
@@ -34,6 +35,7 @@ export function useAutoSync({
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
   const [lastSyncTime, setLastSyncTime] = useState<number | null>(null)
   const [conflictFiles, setConflictFiles] = useState<string[]>([])
+  const [lastCommitInfo, setLastCommitInfo] = useState<LastCommitInfo | null>(null)
   const syncingRef = useRef(false)
   const callbacksRef = useRef({ onVaultUpdated, onConflict, onToast })
   callbacksRef.current = { onVaultUpdated, onConflict, onToast }
@@ -46,6 +48,9 @@ export function useAutoSync({
     try {
       const result = await tauriCall<GitPullResult>('git_pull', { vaultPath })
       setLastSyncTime(Date.now())
+      tauriCall<LastCommitInfo | null>('get_last_commit_info', { vaultPath })
+        .then(info => setLastCommitInfo(info))
+        .catch(() => {})
 
       if (result.status === 'updated') {
         setSyncStatus('idle')
@@ -90,5 +95,5 @@ export function useAutoSync({
     return () => clearInterval(id)
   }, [performPull, intervalMinutes])
 
-  return { syncStatus, lastSyncTime, conflictFiles, triggerSync: performPull }
+  return { syncStatus, lastSyncTime, conflictFiles, lastCommitInfo, triggerSync: performPull }
 }
