@@ -8,10 +8,9 @@ import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { CalendarIcon, XIcon } from 'lucide-react'
+import { CalendarIcon, XIcon, Check, X, Type, ToggleLeft, Circle, Link } from 'lucide-react'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 import { countWords } from '../utils/wikilinks'
-import { Check, X, Type, Calendar as CalendarIcon2, ToggleLeft, Circle, Link } from 'lucide-react'
 import {
   type PropertyDisplayMode,
   getEffectiveDisplayMode,
@@ -237,7 +236,7 @@ function DisplayModeSelector({ propKey, currentMode, autoMode, onSelect }: {
 }
 
 const DISPLAY_MODE_ICONS: Record<PropertyDisplayMode, typeof Type> = {
-  text: Type, date: CalendarIcon2, boolean: ToggleLeft, status: Circle, url: Link,
+  text: Type, date: CalendarIcon, boolean: ToggleLeft, status: Circle, url: Link,
 }
 
 function AddPropertyForm({ onAdd, onCancel }: {
@@ -251,8 +250,6 @@ function AddPropertyForm({ onAdd, onCancel }: {
     if (e.key === 'Enter' && newKey.trim()) onAdd(newKey, newValue, displayMode)
     else if (e.key === 'Escape') onCancel()
   }
-
-  const Icon = DISPLAY_MODE_ICONS[displayMode]
 
   return (
     <div className="mt-1 flex items-center gap-1.5 rounded px-1.5 py-1" data-testid="add-property-form">
@@ -268,7 +265,6 @@ function AddPropertyForm({ onAdd, onCancel }: {
           style={{ fontSize: 12, borderRadius: 4 }}
           data-testid="add-property-type-trigger"
         >
-          <Icon className="size-3 shrink-0 text-muted-foreground" />
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
