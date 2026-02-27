@@ -197,15 +197,16 @@ function countExpiredTrash(entries: VaultEntry[]): number {
 
 // --- Click routing ---
 
-type MultiSelectActions = { toggle: (path: string) => void; selectRange: (path: string) => void; clear: () => void; setAnchor: (path: string) => void }
+type MultiSelectActions = { selectRange: (path: string) => void; clear: () => void; setAnchor: (path: string) => void }
 
 function routeNoteClick(
   entry: VaultEntry, e: React.MouseEvent,
   onReplaceActiveTab: (entry: VaultEntry) => void,
+  onSelectNote: (entry: VaultEntry) => void,
   multiSelect: MultiSelectActions,
 ) {
   if (e.shiftKey) { multiSelect.selectRange(entry.path) }
-  else if (e.metaKey || e.ctrlKey) { multiSelect.toggle(entry.path) }
+  else if (e.metaKey || e.ctrlKey) { multiSelect.clear(); onSelectNote(entry) }
   else { multiSelect.clear(); multiSelect.setAnchor(entry.path); onReplaceActiveTab(entry) }
 }
 
@@ -276,7 +277,7 @@ function useNoteListData({ entries, selection, allContent, query, listSort, list
 
 const defaultGetNoteStatus = (): NoteStatus => 'clean'
 
-function NoteListInner({ entries, selection, selectedNote, allContent, modifiedFiles, getNoteStatus, sidebarCollapsed, onReplaceActiveTab, onCreateNote, onBulkArchive, onBulkTrash }: NoteListProps) {
+function NoteListInner({ entries, selection, selectedNote, allContent, modifiedFiles, getNoteStatus, sidebarCollapsed, onSelectNote, onReplaceActiveTab, onCreateNote, onBulkArchive, onBulkTrash }: NoteListProps) {
   const [search, setSearch] = useState('')
   const [searchVisible, setSearchVisible] = useState(false)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
@@ -314,10 +315,23 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
   useEffect(() => { multiSelect.clear() }, [selection]) // eslint-disable-line react-hooks/exhaustive-deps -- clear on selection change only
 
   const handleClickNote = useCallback((entry: VaultEntry, e: React.MouseEvent) => {
-    routeNoteClick(entry, e, onReplaceActiveTab, multiSelect)
-  }, [onReplaceActiveTab, multiSelect])
+    routeNoteClick(entry, e, onReplaceActiveTab, onSelectNote, multiSelect)
+  }, [onReplaceActiveTab, onSelectNote, multiSelect])
 
-  // Keyboard: Escape to clear, Cmd+A to select all
+  const handleBulkArchive = useCallback(() => {
+    const paths = [...multiSelect.selectedPaths]
+    multiSelect.clear()
+    onBulkArchive?.(paths)
+  }, [multiSelect, onBulkArchive])
+
+  const handleBulkTrash = useCallback(() => {
+    const paths = [...multiSelect.selectedPaths]
+    multiSelect.clear()
+    onBulkTrash?.(paths)
+  }, [multiSelect, onBulkTrash])
+
+  // Keyboard: Escape to clear, Cmd+A to select all, Cmd+E/Cmd+Delete for bulk actions
+  // Uses capture phase so bulk shortcuts preempt the global single-note handler
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape' && multiSelect.isMultiSelecting) {
@@ -332,22 +346,21 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
           multiSelect.selectAll()
         }
       }
+      if (multiSelect.isMultiSelecting && (e.metaKey || e.ctrlKey)) {
+        if (e.key === 'e') {
+          e.preventDefault()
+          e.stopPropagation()
+          handleBulkArchive()
+        } else if (e.key === 'Backspace' || e.key === 'Delete') {
+          e.preventDefault()
+          e.stopPropagation()
+          handleBulkTrash()
+        }
+      }
     }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [multiSelect, isEntityView])
-
-  const handleBulkArchive = useCallback(() => {
-    const paths = [...multiSelect.selectedPaths]
-    multiSelect.clear()
-    onBulkArchive?.(paths)
-  }, [multiSelect, onBulkArchive])
-
-  const handleBulkTrash = useCallback(() => {
-    const paths = [...multiSelect.selectedPaths]
-    multiSelect.clear()
-    onBulkTrash?.(paths)
-  }, [multiSelect, onBulkTrash])
+    window.addEventListener('keydown', handleKeyDown, true)
+    return () => window.removeEventListener('keydown', handleKeyDown, true)
+  }, [multiSelect, isEntityView, handleBulkArchive, handleBulkTrash])
 
   const renderItem = useCallback((entry: VaultEntry) => (
     <NoteItem key={entry.path} entry={entry} isSelected={selectedNote?.path === entry.path} isMultiSelected={multiSelect.selectedPaths.has(entry.path)} noteStatus={resolvedGetNoteStatus(entry.path)} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
