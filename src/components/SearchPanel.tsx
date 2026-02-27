@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import type { SearchResult, VaultEntry } from '../types'
 import { useUnifiedSearch } from '../hooks/useUnifiedSearch'
 import { getTypeColor, getTypeLightColor, buildTypeEntryMap } from '../utils/typeColors'
+import { formatSearchSubtitle } from '../utils/noteListHelpers'
 
 interface SearchPanelProps {
   open: boolean
@@ -63,8 +64,8 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
 
   const typeEntryMap = useMemo(() => buildTypeEntryMap(entries), [entries])
   const entryLookup = useMemo(() => {
-    const map = new Map<string, { isA: string | null }>()
-    for (const e of entries) map.set(e.path, { isA: e.isA })
+    const map = new Map<string, VaultEntry>()
+    for (const e of entries) map.set(e.path, e)
     return map
   }, [entries])
 
@@ -148,7 +149,7 @@ interface SearchContentProps {
   selectedIndex: number
   loading: boolean
   elapsedMs: number | null
-  entryLookup: Map<string, { isA: string | null }>
+  entryLookup: Map<string, VaultEntry>
   typeEntryMap: Record<string, VaultEntry>
   listRef: React.RefObject<HTMLDivElement | null>
   onSelect: (result: SearchResult) => void
@@ -190,10 +191,12 @@ function SearchContent({
           </div>
           <div ref={listRef}>
             {results.map((result, i) => {
-              const isA = entryLookup.get(result.path)?.isA ?? result.noteType
+              const entry = entryLookup.get(result.path)
+              const isA = entry?.isA ?? result.noteType
               const noteType = isA && isA !== 'Note' ? isA : null
               const typeColor = noteType ? getTypeColor(isA, typeEntryMap[isA ?? '']?.color) : undefined
               const typeLightColor = noteType ? getTypeLightColor(isA, typeEntryMap[isA ?? '']?.color) : undefined
+              const subtitle = entry ? formatSearchSubtitle(entry) : null
               return (
                 <div
                   key={result.path}
@@ -215,6 +218,11 @@ function SearchContent({
                   {result.snippet && (
                     <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-muted-foreground">
                       {result.snippet}
+                    </p>
+                  )}
+                  {subtitle && (
+                    <p className="mt-1 text-[11px] text-muted-foreground/70" data-testid="search-result-meta">
+                      {subtitle}
                     </p>
                   )}
                 </div>
