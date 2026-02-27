@@ -206,6 +206,27 @@ function routeNoteClick(
   else { multiSelect.clear(); onReplaceActiveTab(entry) }
 }
 
+// --- Pure helpers extracted from NoteListInner to reduce cyclomatic complexity ---
+
+function createNoteStatusResolver(
+  getNoteStatus: ((path: string) => NoteStatus) | undefined,
+  modifiedFiles: ModifiedFile[] | undefined,
+  modifiedPathSet: Set<string>,
+): (path: string) => NoteStatus {
+  if (getNoteStatus) return getNoteStatus
+  if (modifiedFiles && modifiedFiles.length > 0) {
+    return (path: string) => modifiedPathSet.has(path) ? 'modified' : 'clean'
+  }
+  return defaultGetNoteStatus
+}
+
+function toggleSetMember<T>(set: Set<T>, member: T): Set<T> {
+  const next = new Set(set)
+  if (next.has(member)) next.delete(member)
+  else next.add(member)
+  return next
+}
+
 // --- Data hooks ---
 
 interface NoteListDataParams {
@@ -264,21 +285,17 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
     [modifiedFiles],
   )
 
-  // Resolve note status: prefer explicit getNoteStatus prop; fall back to modifiedFiles-derived status
-  const resolvedGetNoteStatus = useMemo<(path: string) => NoteStatus>(() => {
-    if (getNoteStatus) return getNoteStatus
-    if (modifiedFiles && modifiedFiles.length > 0) {
-      return (path: string) => modifiedPathSet.has(path) ? 'modified' : 'clean'
-    }
-    return defaultGetNoteStatus
-  }, [getNoteStatus, modifiedFiles, modifiedPathSet])
+  const resolvedGetNoteStatus = useMemo<(path: string) => NoteStatus>(
+    () => createNoteStatusResolver(getNoteStatus, modifiedFiles, modifiedPathSet),
+    [getNoteStatus, modifiedFiles, modifiedPathSet],
+  )
 
   const handleSortChange = useCallback((groupLabel: string, option: SortOption, direction: SortDirection) => {
     setSortPrefs((prev) => { const next = { ...prev, [groupLabel]: { option, direction } }; saveSortPreferences(next); return next })
   }, [])
 
   const toggleGroup = useCallback((label: string) => {
-    setCollapsedGroups((prev) => { const next = new Set(prev); if (next.has(label)) { next.delete(label) } else { next.add(label) }; return next })
+    setCollapsedGroups((prev) => toggleSetMember(prev, label))
   }, [])
 
   const typeEntryMap = useTypeEntryMap(entries)
