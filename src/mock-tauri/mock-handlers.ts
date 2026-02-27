@@ -196,6 +196,8 @@ export const mockHandlers: Record<string, (args: any) => any> = {
   clone_repo: (args: { url: string; local_path: string }) => `Cloned to ${args.local_path}`,
   purge_trash: () => [],
   migrate_is_a_to_type: () => 0,
+  batch_archive_notes: (args: { paths: string[] }) => args.paths.length,
+  batch_trash_notes: (args: { paths: string[] }) => args.paths.length,
   github_device_flow_start: (): DeviceFlowStart => {
     mockDeviceFlowPollCount = 0
     return { device_code: 'mock_device_code_abc123', user_code: 'ABCD-1234', verification_uri: 'https://github.com/login/device', expires_in: 900, interval: 5 }
