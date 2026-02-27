@@ -1,8 +1,32 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { StatusPill, StatusDropdown } from './StatusDropdown'
+import { setStatusColor } from '../utils/statusStyles'
+
+// Mock localStorage (jsdom's may be incomplete)
+const localStorageMock = (() => {
+  let store: Record<string, string> = {}
+  return {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => { store[key] = value },
+    removeItem: (key: string) => { delete store[key] },
+    clear: () => { store = {} },
+    get length() { return Object.keys(store).length },
+    key: (i: number) => Object.keys(store)[i] ?? null,
+  }
+})()
+Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true })
+
+const STORAGE_KEY = 'laputa:status-color-overrides'
 
 describe('StatusPill', () => {
+  beforeEach(() => {
+    localStorageMock.clear()
+    // Clear any module-level overrides
+    setStatusColor('Active', null)
+    setStatusColor('Custom Thing', null)
+  })
+
   it('renders with known status style', () => {
     render(<StatusPill status="Active" />)
     const pill = screen.getByTitle('Active')
@@ -24,6 +48,15 @@ describe('StatusPill', () => {
     const pill = screen.getByTitle('Very Long Status Name That Should Truncate')
     expect(pill.className).toContain('truncate')
   })
+
+  it('renders with overridden color when set', () => {
+    setStatusColor('Active', 'pink')
+    render(<StatusPill status="Active" />)
+    const pill = screen.getByTitle('Active')
+    expect(pill.style.backgroundColor).toBe('var(--accent-pink-light)')
+    expect(pill.style.color).toBe('var(--accent-pink)')
+    setStatusColor('Active', null)
+  })
 })
 
 describe('StatusDropdown', () => {
@@ -39,6 +72,7 @@ describe('StatusDropdown', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorageMock.clear()
   })
 
   it('renders dropdown with search input', () => {
@@ -157,5 +191,95 @@ describe('StatusDropdown', () => {
     fireEvent.change(input, { target: { value: 'wIP' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     expect(onSave).toHaveBeenCalledWith('wIP')
+  })
+})
+
+describe('StatusDropdown — color picker', () => {
+  const onSave = vi.fn()
+  const onCancel = vi.fn()
+  const onColorChange = vi.fn()
+
+  const defaultProps = {
+    value: 'Active',
+    vaultStatuses: ['Draft', 'Published'],
+    onSave,
+    onCancel,
+    onColorChange,
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorageMock.clear()
+    setStatusColor('Draft', null)
+    setStatusColor('Active', null)
+  })
+
+  it('renders color dots for each status option', () => {
+    render(<StatusDropdown {...defaultProps} />)
+    expect(screen.getByTestId('color-dot-Draft')).toBeInTheDocument()
+    expect(screen.getByTestId('color-dot-Published')).toBeInTheDocument()
+    expect(screen.getByTestId('color-dot-Active')).toBeInTheDocument()
+  })
+
+  it('opens color palette when color dot is clicked', () => {
+    render(<StatusDropdown {...defaultProps} />)
+    fireEvent.click(screen.getByTestId('color-dot-Draft'))
+    expect(screen.getByTestId('color-palette-Draft')).toBeInTheDocument()
+  })
+
+  it('does not trigger onSave when color dot is clicked', () => {
+    render(<StatusDropdown {...defaultProps} />)
+    fireEvent.click(screen.getByTestId('color-dot-Draft'))
+    expect(onSave).not.toHaveBeenCalled()
+  })
+
+  it('closes palette when same dot is clicked again', () => {
+    render(<StatusDropdown {...defaultProps} />)
+    fireEvent.click(screen.getByTestId('color-dot-Draft'))
+    expect(screen.getByTestId('color-palette-Draft')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('color-dot-Draft'))
+    expect(screen.queryByTestId('color-palette-Draft')).not.toBeInTheDocument()
+  })
+
+  it('assigns a color when swatch is clicked', () => {
+    render(<StatusDropdown {...defaultProps} />)
+    fireEvent.click(screen.getByTestId('color-dot-Draft'))
+    fireEvent.click(screen.getByTestId('color-swatch-red-Draft'))
+    expect(onColorChange).toHaveBeenCalled()
+    // Verify the color was persisted
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['Draft']).toBe('red')
+  })
+
+  it('clicking Default swatch resets color to built-in', () => {
+    setStatusColor('Draft', 'red')
+    render(<StatusDropdown {...defaultProps} />)
+    fireEvent.click(screen.getByTestId('color-dot-Draft'))
+    fireEvent.click(screen.getByTestId('color-swatch-default-Draft'))
+    expect(onColorChange).toHaveBeenCalled()
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['Draft']).toBeUndefined()
+  })
+
+  it('closes palette after selecting a color', () => {
+    render(<StatusDropdown {...defaultProps} />)
+    fireEvent.click(screen.getByTestId('color-dot-Draft'))
+    expect(screen.getByTestId('color-palette-Draft')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('color-swatch-purple-Draft'))
+    expect(screen.queryByTestId('color-palette-Draft')).not.toBeInTheDocument()
+  })
+
+  it('shows all 8 accent color swatches plus default', () => {
+    render(<StatusDropdown {...defaultProps} />)
+    fireEvent.click(screen.getByTestId('color-dot-Draft'))
+    expect(screen.getByTestId('color-swatch-default-Draft')).toBeInTheDocument()
+    expect(screen.getByTestId('color-swatch-red-Draft')).toBeInTheDocument()
+    expect(screen.getByTestId('color-swatch-orange-Draft')).toBeInTheDocument()
+    expect(screen.getByTestId('color-swatch-yellow-Draft')).toBeInTheDocument()
+    expect(screen.getByTestId('color-swatch-green-Draft')).toBeInTheDocument()
+    expect(screen.getByTestId('color-swatch-blue-Draft')).toBeInTheDocument()
+    expect(screen.getByTestId('color-swatch-purple-Draft')).toBeInTheDocument()
+    expect(screen.getByTestId('color-swatch-teal-Draft')).toBeInTheDocument()
+    expect(screen.getByTestId('color-swatch-pink-Draft')).toBeInTheDocument()
   })
 })

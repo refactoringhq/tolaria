@@ -73,6 +73,8 @@ function StatusValue({ propKey, value, isEditing, vaultStatuses, onSave, onStart
   onSave: (key: string, value: string) => void; onStartEdit: (key: string | null) => void
 }) {
   const statusStr = String(value)
+  const [, setColorVersion] = useState(0)
+  const bumpColorVersion = useCallback(() => setColorVersion(v => v + 1), [])
   return (
     <span className="relative inline-flex min-w-0 items-center">
       <span
@@ -88,6 +90,7 @@ function StatusValue({ propKey, value, isEditing, vaultStatuses, onSave, onStart
           vaultStatuses={vaultStatuses}
           onSave={(newValue) => onSave(propKey, newValue)}
           onCancel={() => onStartEdit(null)}
+          onColorChange={bumpColorVersion}
         />
       )}
     </span>
