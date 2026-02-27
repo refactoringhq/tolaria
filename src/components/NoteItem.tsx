@@ -52,9 +52,10 @@ const NOTE_STATUS_DOT: Record<string, { color: string; testId: string; title: st
   modified: { color: 'var(--accent-orange)', testId: 'modified-indicator', title: 'Modified (uncommitted)' },
 }
 
-export function NoteItem({ entry, isSelected, noteStatus = 'clean', typeEntryMap, onClickNote }: {
+export function NoteItem({ entry, isSelected, isMultiSelected = false, noteStatus = 'clean', typeEntryMap, onClickNote }: {
   entry: VaultEntry
   isSelected: boolean
+  isMultiSelected?: boolean
   noteStatus?: NoteStatus
   typeEntryMap: Record<string, VaultEntry>
   onClickNote: (entry: VaultEntry, e: React.MouseEvent) => void
@@ -68,14 +69,16 @@ export function NoteItem({ entry, isSelected, noteStatus = 'clean', typeEntryMap
     <div
       className={cn(
         "relative cursor-pointer border-b border-[var(--border)] transition-colors",
-        isSelected && "border-l-[3px]",
-        !isSelected && "hover:bg-muted"
+        isSelected && !isMultiSelected && "border-l-[3px]",
+        !isSelected && !isMultiSelected && "hover:bg-muted"
       )}
       style={{
-        padding: isSelected ? '14px 16px 14px 13px' : '14px 16px',
-        ...(isSelected && { borderLeftColor: typeColor, backgroundColor: typeLightColor }),
+        padding: isSelected && !isMultiSelected ? '14px 16px 14px 13px' : '14px 16px',
+        ...(isMultiSelected && { backgroundColor: 'color-mix(in srgb, var(--accent-blue) 10%, transparent)' }),
+        ...(isSelected && !isMultiSelected && { borderLeftColor: typeColor, backgroundColor: typeLightColor }),
       }}
       onClick={(e: React.MouseEvent) => onClickNote(entry, e)}
+      data-testid={isMultiSelected ? 'multi-selected-item' : undefined}
     >
       {/* eslint-disable-next-line react-hooks/static-components -- icon lookup from static map, no internal state */}
       <TypeIcon width={14} height={14} className="absolute right-3 top-2.5" style={{ color: typeColor }} data-testid="type-icon" />
