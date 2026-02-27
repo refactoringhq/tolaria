@@ -12,6 +12,8 @@ vi.mock('../mock-tauri', () => ({
 import { mockInvoke } from '../mock-tauri'
 const mockInvokeFn = vi.mocked(mockInvoke)
 
+const NOW_TS = Date.now() / 1000
+
 const MOCK_ENTRIES: VaultEntry[] = [
   {
     path: '/vault/essay/ai-apis.md',
@@ -27,16 +29,16 @@ const MOCK_ENTRIES: VaultEntry[] = [
     archived: false,
     trashed: false,
     trashedAt: null,
-    modifiedAt: Date.now() / 1000,
-    createdAt: Date.now() / 1000,
+    modifiedAt: NOW_TS - 3600,
+    createdAt: NOW_TS - 86400 * 30,
     fileSize: 500,
     snippet: 'A guide to designing APIs for AI',
-    wordCount: 0,
+    wordCount: 1240,
     relationships: {},
     icon: null,
     color: null,
     order: null,
-    outgoingLinks: [],
+    outgoingLinks: ['topic/ai', 'topic/apis', 'person/luca'],
   },
   {
     path: '/vault/event/retreat.md',
@@ -52,8 +54,8 @@ const MOCK_ENTRIES: VaultEntry[] = [
     archived: false,
     trashed: false,
     trashedAt: null,
-    modifiedAt: Date.now() / 1000,
-    createdAt: Date.now() / 1000,
+    modifiedAt: NOW_TS,
+    createdAt: NOW_TS,
     fileSize: 300,
     snippet: 'Team retreat event',
     wordCount: 0,
@@ -369,6 +371,29 @@ describe('SearchPanel', () => {
 
     // Keyword results remain
     expect(screen.getByText('Keyword Only')).toBeInTheDocument()
+  })
+
+  it('shows metadata subtitle on search results', async () => {
+    mockInvokeFn.mockResolvedValue({
+      results: [
+        { title: 'How to Design AI-first APIs', path: '/vault/essay/ai-apis.md', snippet: 'API content', score: 0.9, note_type: 'Essay' },
+      ],
+      elapsed_ms: 50,
+    })
+
+    render(
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />,
+    )
+
+    fireEvent.change(screen.getByPlaceholderText('Search in all notes...'), { target: { value: 'api' } })
+
+    await waitFor(() => {
+      const meta = screen.getByTestId('search-result-meta')
+      expect(meta).toBeInTheDocument()
+      expect(meta.textContent).toContain('words')
+      expect(meta.textContent).toContain('3 links')
+      expect(meta.textContent).toContain('Created')
+    })
   })
 
   it('cancels inflight searches when panel closes', async () => {

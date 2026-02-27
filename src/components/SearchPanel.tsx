@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import type { SearchResult, VaultEntry } from '../types'
 import { useUnifiedSearch } from '../hooks/useUnifiedSearch'
 import { getTypeColor, getTypeLightColor, buildTypeEntryMap } from '../utils/typeColors'
+import { formatSearchSubtitle } from '../utils/noteListHelpers'
 
 interface SearchPanelProps {
   open: boolean
@@ -63,8 +64,8 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
 
   const typeEntryMap = useMemo(() => buildTypeEntryMap(entries), [entries])
   const entryLookup = useMemo(() => {
-    const map = new Map<string, { isA: string | null }>()
-    for (const e of entries) map.set(e.path, { isA: e.isA })
+    const map = new Map<string, VaultEntry>()
+    for (const e of entries) map.set(e.path, e)
     return map
   }, [entries])
 
@@ -142,13 +143,92 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
   },
 )
 
+function SearchResultItem({ result, isSelected, entry, typeEntryMap, onSelect, onHover }: {
+  result: SearchResult
+  isSelected: boolean
+  entry: VaultEntry | undefined
+  typeEntryMap: Record<string, VaultEntry>
+  onSelect: () => void
+  onHover: () => void
+}) {
+  const isA = entry?.isA ?? result.noteType
+  const noteType = isA && isA !== 'Note' ? isA : null
+  const typeColor = noteType ? getTypeColor(isA, typeEntryMap[isA ?? '']?.color) : undefined
+  const typeLightColor = noteType ? getTypeLightColor(isA, typeEntryMap[isA ?? '']?.color) : undefined
+  const subtitle = entry ? formatSearchSubtitle(entry) : null
+
+  return (
+    <div
+      className={cn(
+        "cursor-pointer px-4 py-2.5 transition-colors",
+        isSelected ? "bg-accent" : "hover:bg-secondary",
+      )}
+      onClick={onSelect}
+      onMouseEnter={onHover}
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-[13px] font-medium text-foreground">{result.title}</span>
+        {noteType && (
+          <Badge variant="secondary" className="text-[10px]" style={typeColor ? { color: typeColor, backgroundColor: typeLightColor } : undefined}>
+            {noteType}
+          </Badge>
+        )}
+      </div>
+      {result.snippet && (
+        <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-muted-foreground">
+          {result.snippet}
+        </p>
+      )}
+      {subtitle && (
+        <p className="mt-1 text-[11px] text-muted-foreground/70" data-testid="search-result-meta">
+          {subtitle}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function SearchResultsList({ results, selectedIndex, entryLookup, typeEntryMap, elapsedMs, listRef, onSelect, onHover }: {
+  results: SearchResult[]
+  selectedIndex: number
+  entryLookup: Map<string, VaultEntry>
+  typeEntryMap: Record<string, VaultEntry>
+  elapsedMs: number | null
+  listRef: React.RefObject<HTMLDivElement | null>
+  onSelect: (result: SearchResult) => void
+  onHover: (index: number) => void
+}) {
+  return (
+    <>
+      <div className="border-b border-border/50 px-4 py-1.5">
+        <span className="text-[11px] text-muted-foreground">
+          {results.length} result{results.length !== 1 ? 's' : ''}{elapsedMs !== null ? ` · ${elapsedMs}ms` : ''}
+        </span>
+      </div>
+      <div ref={listRef}>
+        {results.map((result, i) => (
+          <SearchResultItem
+            key={result.path}
+            result={result}
+            isSelected={i === selectedIndex}
+            entry={entryLookup.get(result.path)}
+            typeEntryMap={typeEntryMap}
+            onSelect={() => onSelect(result)}
+            onHover={() => onHover(i)}
+          />
+        ))}
+      </div>
+    </>
+  )
+}
+
 interface SearchContentProps {
   query: string
   results: SearchResult[]
   selectedIndex: number
   loading: boolean
   elapsedMs: number | null
-  entryLookup: Map<string, { isA: string | null }>
+  entryLookup: Map<string, VaultEntry>
   typeEntryMap: Record<string, VaultEntry>
   listRef: React.RefObject<HTMLDivElement | null>
   onSelect: (result: SearchResult) => void
@@ -158,71 +238,50 @@ interface SearchContentProps {
 function SearchContent({
   query, results, selectedIndex, loading, elapsedMs, entryLookup, typeEntryMap, listRef, onSelect, onHover,
 }: SearchContentProps) {
-  return (
-    <div className="flex-1 overflow-y-auto">
-      {!query.trim() && (
+  const hasQuery = query.trim().length > 0
+  const hasResults = results.length > 0
+
+  if (!hasQuery) {
+    return (
+      <div className="flex-1 overflow-y-auto">
         <div className="px-4 py-8 text-center">
           <p className="text-[13px] text-muted-foreground">Search across all note contents</p>
-          <p className="mt-1 text-[11px] text-muted-foreground/60">
-            Enter to open · Esc to close
-          </p>
+          <p className="mt-1 text-[11px] text-muted-foreground/60">Enter to open · Esc to close</p>
         </div>
-      )}
+      </div>
+    )
+  }
 
-      {query.trim() && results.length === 0 && loading && (
-        <div className="px-4 py-8 text-center text-[13px] text-muted-foreground">
-          Searching...
-        </div>
-      )}
+  if (!hasResults && loading) {
+    return (
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-4 py-8 text-center text-[13px] text-muted-foreground">Searching...</div>
+      </div>
+    )
+  }
 
-      {query.trim() && results.length === 0 && !loading && (
+  if (!hasResults) {
+    return (
+      <div className="flex-1 overflow-y-auto">
         <div className="px-4 py-8 text-center">
           <p className="text-[13px] text-muted-foreground">No results found</p>
         </div>
-      )}
+      </div>
+    )
+  }
 
-      {results.length > 0 && (
-        <>
-          <div className="border-b border-border/50 px-4 py-1.5">
-            <span className="text-[11px] text-muted-foreground">
-              {results.length} result{results.length !== 1 ? 's' : ''}{elapsedMs !== null ? ` · ${elapsedMs}ms` : ''}
-            </span>
-          </div>
-          <div ref={listRef}>
-            {results.map((result, i) => {
-              const isA = entryLookup.get(result.path)?.isA ?? result.noteType
-              const noteType = isA && isA !== 'Note' ? isA : null
-              const typeColor = noteType ? getTypeColor(isA, typeEntryMap[isA ?? '']?.color) : undefined
-              const typeLightColor = noteType ? getTypeLightColor(isA, typeEntryMap[isA ?? '']?.color) : undefined
-              return (
-                <div
-                  key={result.path}
-                  className={cn(
-                    "cursor-pointer px-4 py-2.5 transition-colors",
-                    i === selectedIndex ? "bg-accent" : "hover:bg-secondary",
-                  )}
-                  onClick={() => onSelect(result)}
-                  onMouseEnter={() => onHover(i)}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-[13px] font-medium text-foreground">{result.title}</span>
-                    {noteType && (
-                      <Badge variant="secondary" className="text-[10px]" style={typeColor ? { color: typeColor, backgroundColor: typeLightColor } : undefined}>
-                        {noteType}
-                      </Badge>
-                    )}
-                  </div>
-                  {result.snippet && (
-                    <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-muted-foreground">
-                      {result.snippet}
-                    </p>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </>
-      )}
+  return (
+    <div className="flex-1 overflow-y-auto">
+      <SearchResultsList
+        results={results}
+        selectedIndex={selectedIndex}
+        entryLookup={entryLookup}
+        typeEntryMap={typeEntryMap}
+        elapsedMs={elapsedMs}
+        listRef={listRef}
+        onSelect={onSelect}
+        onHover={onHover}
+      />
     </div>
   )
 }

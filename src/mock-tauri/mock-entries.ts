@@ -35,7 +35,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
-    outgoingLinks: [],
+    outgoingLinks: ['quarter/q1-2026', 'topic/software-development', 'person/matteo-cellini', 'person/maria-bianchi', 'person/marco-verdi'],
   },
   {
     path: '/Users/luca/Laputa/responsibility/grow-newsletter.md',
@@ -69,7 +69,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
-    outgoingLinks: [],
+    outgoingLinks: ['essay/on-writing-well', 'essay/engineering-leadership-101', 'essay/ai-agents-primer', 'topic/growth', 'topic/writing'],
   },
   {
     path: '/Users/luca/Laputa/responsibility/manage-sponsorships.md',
@@ -97,7 +97,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
-    outgoingLinks: [],
+    outgoingLinks: ['person/matteo-cellini'],
   },
   {
     path: '/Users/luca/Laputa/procedure/write-weekly-essays.md',
@@ -125,7 +125,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
-    outgoingLinks: [],
+    outgoingLinks: ['responsibility/grow-newsletter'],
   },
   {
     path: '/Users/luca/Laputa/procedure/run-sponsorships.md',
@@ -153,7 +153,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
-    outgoingLinks: [],
+    outgoingLinks: ['responsibility/manage-sponsorships'],
   },
   {
     path: '/Users/luca/Laputa/experiment/stock-screener.md',
@@ -182,7 +182,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
-    outgoingLinks: [],
+    outgoingLinks: ['topic/trading', 'topic/algorithmic-trading', 'data/ema200-backtest-results'],
   },
   {
     path: '/Users/luca/Laputa/note/facebook-ads-strategy.md',
@@ -211,7 +211,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
-    outgoingLinks: [],
+    outgoingLinks: ['project/26q1-laputa-app', 'topic/growth', 'topic/ads'],
   },
   {
     path: '/Users/luca/Laputa/note/budget-allocation.md',
@@ -239,7 +239,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
-    outgoingLinks: [],
+    outgoingLinks: ['project/26q1-laputa-app'],
   },
   {
     path: '/Users/luca/Laputa/person/matteo-cellini.md',
@@ -375,7 +375,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
-    outgoingLinks: [],
+    outgoingLinks: ['project/26q1-laputa-app', 'person/matteo-cellini'],
   },
   {
     path: '/Users/luca/Laputa/topic/software-development.md',
@@ -459,7 +459,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
-    outgoingLinks: [],
+    outgoingLinks: ['responsibility/grow-newsletter'],
   },
   {
     path: '/Users/luca/Laputa/essay/engineering-leadership-101.md',
@@ -488,7 +488,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
-    outgoingLinks: [],
+    outgoingLinks: ['responsibility/grow-newsletter', 'topic/software-development'],
   },
   {
     path: '/Users/luca/Laputa/essay/ai-agents-primer.md',
@@ -516,7 +516,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
-    outgoingLinks: [],
+    outgoingLinks: ['responsibility/grow-newsletter'],
   },
   // --- Type documents ---
   {
@@ -1041,7 +1041,7 @@ function generateBulkEntries(count: number): VaultEntry[] {
       icon: null,
       color: null,
       order: null,
-      outgoingLinks: [],
+      outgoingLinks: Array.from({ length: i % 8 }, (_, j) => `note/link-target-${(i + j) % 50}`),
     })
   }
   return entries
