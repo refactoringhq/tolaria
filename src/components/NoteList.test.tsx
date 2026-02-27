@@ -1077,3 +1077,29 @@ describe('NoteList — multi-select', () => {
     expect(screen.queryByTestId('bulk-action-bar')).not.toBeInTheDocument()
   })
 })
+
+describe('NoteList — traffic light padding when sidebar collapsed', () => {
+  it('adds left padding to header when sidebarCollapsed is true', () => {
+    const { container } = render(
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} sidebarCollapsed={true} onCreateNote={vi.fn()} />
+    )
+    const header = container.querySelector('.h-\\[52px\\]') as HTMLElement
+    expect(header.style.paddingLeft).toBe('80px')
+  })
+
+  it('does not add extra left padding when sidebarCollapsed is false', () => {
+    const { container } = render(
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} sidebarCollapsed={false} onCreateNote={vi.fn()} />
+    )
+    const header = container.querySelector('.h-\\[52px\\]') as HTMLElement
+    expect(header.style.paddingLeft).toBe('')
+  })
+
+  it('does not add extra left padding when sidebarCollapsed is not provided', () => {
+    const { container } = render(
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
+    )
+    const header = container.querySelector('.h-\\[52px\\]') as HTMLElement
+    expect(header.style.paddingLeft).toBe('')
+  })
+})
