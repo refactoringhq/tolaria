@@ -15,6 +15,13 @@ interface UseEditorTabSwapOptions {
   onContentChange?: (path: string, content: string) => void
 }
 
+/** Strip the YAML frontmatter and the title heading (# ...) from raw file
+ *  content, returning only the body that should appear in the editor. */
+export function extractEditorBody(rawFileContent: string): string {
+  const [, rawBody] = splitFrontmatter(rawFileContent)
+  return rawBody.trimStart().replace(/^# [^\n]*\n?/, '').trimStart()
+}
+
 /**
  * Manages the tab content-swap machinery for the BlockNote editor.
  *
@@ -151,9 +158,18 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange 
         return
       }
 
-      const [, rawBody] = splitFrontmatter(tab.content)
-      const body = rawBody.replace(/^# [^\n]*\n?/, '').trimStart()
+      const body = extractEditorBody(tab.content)
       const preprocessed = preProcessWikilinks(body)
+
+      // Fast path: empty body (e.g. newly created notes). Skip the
+      // potentially-async markdown parser and set a single empty paragraph
+      // so the editor is immediately interactive.
+      if (!preprocessed.trim()) {
+        const emptyDoc = [{ type: 'paragraph', content: [] }]
+        cache.set(targetPath, emptyDoc)
+        applyBlocks(emptyDoc)
+        return
+      }
 
       try {
         const result = editor.tryParseMarkdownToBlocks(preprocessed)
