@@ -15,7 +15,7 @@ import {
   type SortOption, type SortDirection, type SortConfig, type RelationshipGroup,
   getSortComparator,
   buildRelationshipGroups, filterEntries,
-  formatSubtitle,
+  relativeDate, getDisplayDate,
   loadSortPreferences, saveSortPreferences,
 } from '../utils/noteListHelpers'
 
@@ -33,10 +33,11 @@ interface NoteListProps {
   onBulkTrash?: (paths: string[]) => void
 }
 
-function PinnedCard({ entry, typeEntryMap, onClickNote }: {
+function PinnedCard({ entry, typeEntryMap, onClickNote, showDate }: {
   entry: VaultEntry
   typeEntryMap: Record<string, VaultEntry>
   onClickNote: (entry: VaultEntry, e: React.MouseEvent) => void
+  showDate?: boolean
 }) {
   const te = typeEntryMap[entry.isA ?? '']
   const color = getTypeColor(entry.isA ?? '', te?.color)
@@ -47,7 +48,8 @@ function PinnedCard({ entry, typeEntryMap, onClickNote }: {
       {/* eslint-disable-next-line react-hooks/static-components */}
       <Icon width={16} height={16} className="absolute right-3 top-3.5" style={{ color }} data-testid="type-icon" />
       <div className="pr-6 text-[14px] font-bold" style={{ color }}>{entry.title}</div>
-      <div className="mt-1 text-[11px] opacity-60" style={{ color }}>{formatSubtitle(entry)}</div>
+      <div className="mt-1 text-[12px] leading-[1.5] opacity-80" style={{ color, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{entry.snippet}</div>
+      {showDate && <div className="mt-1 text-[11px] opacity-60" style={{ color }}>{relativeDate(getDisplayDate(entry))}</div>}
     </div>
   )
 }
@@ -122,7 +124,7 @@ function EntityView({ entity, groups, query, collapsedGroups, sortPrefs, onToggl
 }) {
   return (
     <div className="h-full overflow-y-auto">
-      <PinnedCard entry={entity} typeEntryMap={typeEntryMap} onClickNote={onClickNote} />
+      <PinnedCard entry={entity} typeEntryMap={typeEntryMap} onClickNote={onClickNote} showDate />
       {groups.length === 0
         ? <EmptyMessage text={query ? 'No matching items' : 'No related items'} />
         : groups.map((group) => (
