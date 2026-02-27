@@ -196,7 +196,7 @@ function countExpiredTrash(entries: VaultEntry[]): number {
 
 // --- Click routing ---
 
-type MultiSelectActions = { toggle: (path: string) => void; selectRange: (path: string) => void; clear: () => void }
+type MultiSelectActions = { toggle: (path: string) => void; selectRange: (path: string) => void; clear: () => void; setAnchor: (path: string) => void }
 
 function routeNoteClick(
   entry: VaultEntry, e: React.MouseEvent,
@@ -205,7 +205,7 @@ function routeNoteClick(
 ) {
   if (e.shiftKey) { multiSelect.selectRange(entry.path) }
   else if (e.metaKey || e.ctrlKey) { multiSelect.toggle(entry.path) }
-  else { multiSelect.clear(); onReplaceActiveTab(entry) }
+  else { multiSelect.clear(); multiSelect.setAnchor(entry.path); onReplaceActiveTab(entry) }
 }
 
 // --- Pure helpers extracted from NoteListInner to reduce cyclomatic complexity ---
@@ -307,7 +307,7 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
   const listDirection = listConfig.direction
   const { isEntityView, isTrashView, isChangesView, typeDocument, searched, searchedGroups, expiredTrashCount } = useNoteListData({ entries, selection, allContent, query, listSort, listDirection, modifiedPathSet })
 
-  const multiSelect = useMultiSelect(searched)
+  const multiSelect = useMultiSelect(searched, selectedNote?.path ?? null)
 
   // Clear multi-select when sidebar selection changes
   useEffect(() => { multiSelect.clear() }, [selection]) // eslint-disable-line react-hooks/exhaustive-deps -- clear on selection change only
@@ -353,7 +353,7 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
   ), [selectedNote?.path, handleClickNote, typeEntryMap, resolvedGetNoteStatus, multiSelect.selectedPaths])
 
   return (
-    <div className="flex flex-col overflow-hidden border-r border-border bg-card text-foreground" style={{ height: '100%' }}>
+    <div className="flex flex-col select-none overflow-hidden border-r border-border bg-card text-foreground" style={{ height: '100%' }}>
       <div className="flex h-[52px] shrink-0 items-center justify-between border-b border-border px-4" onMouseDown={onDragMouseDown} style={{ cursor: 'default' }}>
         <h3 className="m-0 min-w-0 flex-1 truncate text-[14px] font-semibold">{resolveHeaderTitle(selection, typeDocument)}</h3>
         <div className="flex items-center gap-3" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>

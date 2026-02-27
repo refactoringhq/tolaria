@@ -7,10 +7,11 @@ export interface MultiSelectState {
   toggle: (path: string) => void
   selectRange: (toPath: string) => void
   clear: () => void
+  setAnchor: (path: string) => void
   selectAll: () => void
 }
 
-export function useMultiSelect(visibleEntries: VaultEntry[]): MultiSelectState {
+export function useMultiSelect(visibleEntries: VaultEntry[], activePath: string | null = null): MultiSelectState {
   const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set())
   const lastClickedRef = useRef<string | null>(null)
 
@@ -25,7 +26,7 @@ export function useMultiSelect(visibleEntries: VaultEntry[]): MultiSelectState {
   }, [])
 
   const selectRange = useCallback((toPath: string) => {
-    const fromPath = lastClickedRef.current
+    const fromPath = lastClickedRef.current ?? activePath
     if (!fromPath) {
       toggle(toPath)
       return
@@ -45,11 +46,15 @@ export function useMultiSelect(visibleEntries: VaultEntry[]): MultiSelectState {
       return next
     })
     lastClickedRef.current = toPath
-  }, [visibleEntries, toggle])
+  }, [visibleEntries, activePath, toggle])
 
   const clear = useCallback(() => {
     setSelectedPaths(new Set())
     lastClickedRef.current = null
+  }, [])
+
+  const setAnchor = useCallback((path: string) => {
+    lastClickedRef.current = path
   }, [])
 
   const selectAll = useCallback(() => {
@@ -62,6 +67,7 @@ export function useMultiSelect(visibleEntries: VaultEntry[]): MultiSelectState {
     toggle,
     selectRange,
     clear,
+    setAnchor,
     selectAll,
   }
 }
