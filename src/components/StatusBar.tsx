@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Package, RefreshCw, Sparkles, FileText, Bell, Settings, FolderOpen, Check, Github, CircleDot, AlertTriangle, Loader2, GitCommitHorizontal } from 'lucide-react'
 import type { LastCommitInfo, SyncStatus } from '../types'
+import { openExternalUrl } from '../utils/url'
 
 export interface VaultOption {
   label: string
@@ -157,10 +158,9 @@ export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onS
         </span>
         {lastCommitInfo && (
           lastCommitInfo.commitUrl ? (
-            <a
-              href={lastCommitInfo.commitUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+            <span
+              role="button"
+              onClick={() => openExternalUrl(lastCommitInfo.commitUrl!)}
               style={{ ...ICON_STYLE, color: 'var(--muted-foreground)', textDecoration: 'none', cursor: 'pointer', padding: '2px 4px', borderRadius: 3 }}
               title={`Open commit ${lastCommitInfo.shortHash} on GitHub`}
               data-testid="status-commit-link"
@@ -168,7 +168,7 @@ export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onS
               onMouseLeave={e => { e.currentTarget.style.color = 'var(--muted-foreground)' }}
             >
               <GitCommitHorizontal size={13} />{lastCommitInfo.shortHash}
-            </a>
+            </span>
           ) : (
             <span style={ICON_STYLE} data-testid="status-commit-hash">
               <GitCommitHorizontal size={13} />{lastCommitInfo.shortHash}
