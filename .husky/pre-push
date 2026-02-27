@@ -1,0 +1,71 @@
+#!/bin/sh
+# Pre-push: full CI checks run locally before any push.
+# This replaces remote CI for normal task pushes.
+# DO NOT skip with --no-verify (Claude Code is configured to never do this).
+set -e
+
+echo ""
+echo "🚀 Pre-push checks (replaces CI — do not skip)"
+echo "================================================"
+
+# ── 0. Build check ────────────────────────────────────────────────────────
+echo ""
+echo "📦 [0/5] TypeScript + Vite build..."
+pnpm exec tsc --noEmit
+pnpm build --silent
+echo "  ✅ Build OK"
+
+# ── 1. Frontend tests ─────────────────────────────────────────────────────
+echo ""
+echo "🧪 [1/5] Frontend tests..."
+pnpm test --run --silent
+echo "  ✅ Frontend tests OK"
+
+# ── 2. Frontend coverage (≥70%) ───────────────────────────────────────────
+echo ""
+echo "📊 [2/5] Frontend coverage (≥70%)..."
+pnpm test:coverage --silent
+echo "  ✅ Frontend coverage OK"
+
+# ── 3. Rust tests + coverage (≥85% lines) ────────────────────────────────
+echo ""
+echo "🦀 [3/5] Rust tests + coverage (≥85% lines)..."
+cargo llvm-cov \
+  --manifest-path src-tauri/Cargo.toml \
+  --fail-under-lines 85
+echo "  ✅ Rust coverage OK"
+
+# ── 4. Clippy + rustfmt ───────────────────────────────────────────────────
+echo ""
+echo "🔧 [4/5] Clippy + rustfmt..."
+cargo clippy --manifest-path=src-tauri/Cargo.toml -- -D warnings
+cargo fmt --manifest-path=src-tauri/Cargo.toml -- --check
+echo "  ✅ Rust lint OK"
+
+# ── 5. CodeScene code health gate (≥9.2) ─────────────────────────────────
+echo ""
+echo "🏥 [5/5] CodeScene code health gate (≥9.2)..."
+if [ -z "$CODESCENE_PAT" ] || [ -z "$CODESCENE_PROJECT_ID" ]; then
+  echo "  ⚠️  CODESCENE_PAT or CODESCENE_PROJECT_ID not set — skipping"
+else
+  THRESHOLD=9.2
+  SCORE=$(curl -sf \
+    -H "Authorization: Bearer $CODESCENE_PAT" \
+    -H "Accept: application/json" \
+    "https://api.codescene.io/v2/projects/$CODESCENE_PROJECT_ID" \
+    | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['analysis']['hotspot_code_health']['now'])")
+  echo "  Hotspot Code Health: $SCORE (threshold: $THRESHOLD)"
+  python3 -c "
+score = float('$SCORE')
+threshold = float('$THRESHOLD')
+if score < threshold:
+    print(f'  ❌ Code Health {score:.2f} below threshold {threshold}')
+    exit(1)
+print(f'  ✅ Code Health {score:.2f} ≥ {threshold}')
+"
+fi
+
+echo ""
+echo "================================================"
+echo "✅ All checks passed — pushing"
+echo ""
