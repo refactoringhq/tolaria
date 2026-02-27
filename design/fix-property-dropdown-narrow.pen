@@ -1,0 +1,56 @@
+{
+  "children": [
+    {
+      "type": "frame",
+      "id": "fpdn_before",
+      "name": "Property Dropdown Narrow — Before (clipped)",
+      "x": 0,
+      "y": 0,
+      "width": 280,
+      "height": 200,
+      "fill": "#1a1a1a",
+      "layout": "vertical",
+      "gap": 8,
+      "padding": 12,
+      "theme": "dark",
+      "children": [
+        {
+          "type": "text",
+          "id": "fpdn_before_label",
+          "content": "Bug: StatusDropdown clipped by overflow:hidden container at 200-280px panel width",
+          "fill": "#ff4444",
+          "fontFamily": "SF Pro Text",
+          "fontSize": 12,
+          "fontWeight": "regular",
+          "letterSpacing": 0
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "fpdn_after",
+      "name": "Property Dropdown Narrow — After (portal, no clip)",
+      "x": 320,
+      "y": 0,
+      "width": 280,
+      "height": 200,
+      "fill": "#1a1a1a",
+      "layout": "vertical",
+      "gap": 8,
+      "padding": 12,
+      "theme": "dark",
+      "children": [
+        {
+          "type": "text",
+          "id": "fpdn_after_label",
+          "content": "Fix: StatusDropdown + DisplayModeSelector use createPortal with fixed positioning — renders above overflow:hidden, visible at any panel width",
+          "fill": "#44bb44",
+          "fontFamily": "SF Pro Text",
+          "fontSize": 12,
+          "fontWeight": "regular",
+          "letterSpacing": 0
+        }
+      ]
+    }
+  ]
+}
