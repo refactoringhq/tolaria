@@ -422,14 +422,8 @@ function TypeSelector({ isA, customColorKey, availableTypes, onUpdateProperty, o
       <Select value={currentValue} onValueChange={v => onUpdateProperty('type', v === TYPE_NONE ? null : v)}>
         <SelectTrigger
           size="sm"
-          className="h-auto min-h-0 gap-1 border-none px-2 py-0.5 shadow-none"
-          style={isA ? {
-            background: getTypeLightColor(isA, customColorKey),
-            color: getTypeColor(isA, customColorKey),
-            fontSize: 12,
-            fontWeight: 500,
-            borderRadius: 6,
-          } : { fontSize: 12, borderRadius: 6 }}
+          className="h-[26px] shrink-0 gap-1 border-border bg-muted px-1.5 py-0 shadow-none"
+          style={{ fontSize: 12, borderRadius: 4 }}
         >
           <SelectValue placeholder="None" />
         </SelectTrigger>
