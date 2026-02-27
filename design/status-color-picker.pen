@@ -1,0 +1,619 @@
+{
+  "children": [
+    {
+      "children": [
+        {
+          "content": "Status Dropdown — Color Dots",
+          "fill": "$--foreground",
+          "fontFamily": "Inter",
+          "fontSize": 16,
+          "fontWeight": "600",
+          "id": "1wdqT",
+          "name": "title1",
+          "type": "text"
+        },
+        {
+          "content": "Each status option shows a color dot on the left. Clicking the dot opens the color palette picker.",
+          "fill": "$--muted-foreground",
+          "fontFamily": "Inter",
+          "fontSize": 12,
+          "fontWeight": "normal",
+          "id": "PsCXR",
+          "lineHeight": 1.5,
+          "name": "desc1",
+          "textGrowth": "fixed-width",
+          "type": "text",
+          "width": 272
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "content": "Type a status...",
+                  "fill": "$--muted-foreground",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal",
+                  "id": "VyDsY",
+                  "name": "searchText",
+                  "type": "text"
+                }
+              ],
+              "id": "tim0g",
+              "name": "searchBar",
+              "padding": [
+                8,
+                10
+              ],
+              "stroke": {
+                "fill": "$--border",
+                "thickness": {
+                  "bottom": 1
+                }
+              },
+              "type": "frame",
+              "width": "fill_container"
+            },
+            {
+              "children": [
+                {
+                  "content": "FROM VAULT",
+                  "fill": "$--muted-foreground",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 9,
+                  "fontWeight": "500",
+                  "id": "Bn3lU",
+                  "letterSpacing": 1.2,
+                  "name": "labelText",
+                  "type": "text"
+                }
+              ],
+              "id": "CB90c",
+              "name": "sectionLabel",
+              "padding": [
+                4,
+                10
+              ],
+              "type": "frame",
+              "width": "fill_container"
+            },
+            {
+              "alignItems": "center",
+              "children": [
+                {
+                  "fill": "$--accent-green",
+                  "height": 10,
+                  "id": "8uSm6",
+                  "name": "dot1",
+                  "type": "ellipse",
+                  "width": 10
+                },
+                {
+                  "children": [
+                    {
+                      "content": "ACTIVE",
+                      "fill": "$--accent-green",
+                      "fontFamily": "IBM Plex Mono",
+                      "fontSize": 10,
+                      "fontWeight": "600",
+                      "id": "h4OER",
+                      "letterSpacing": 1.2,
+                      "name": "pill1text",
+                      "type": "text"
+                    }
+                  ],
+                  "cornerRadius": 16,
+                  "fill": "$--accent-green-light",
+                  "id": "k7sSo",
+                  "name": "pill1",
+                  "padding": [
+                    1,
+                    6
+                  ],
+                  "type": "frame"
+                }
+              ],
+              "cornerRadius": 4,
+              "gap": 8,
+              "id": "IZrMP",
+              "name": "Status Option - Active",
+              "padding": [
+                5,
+                10
+              ],
+              "type": "frame",
+              "width": "fill_container"
+            },
+            {
+              "alignItems": "center",
+              "children": [
+                {
+                  "fill": "$--accent-red",
+                  "height": 10,
+                  "id": "sSEfx",
+                  "name": "dot2",
+                  "type": "ellipse",
+                  "width": 10
+                },
+                {
+                  "children": [
+                    {
+                      "content": "BLOCKED",
+                      "fill": "$--accent-red",
+                      "fontFamily": "IBM Plex Mono",
+                      "fontSize": 10,
+                      "fontWeight": "600",
+                      "id": "61jBJ",
+                      "letterSpacing": 1.2,
+                      "name": "pill2text",
+                      "type": "text"
+                    }
+                  ],
+                  "cornerRadius": 16,
+                  "fill": "$--accent-red-light",
+                  "id": "ozLQM",
+                  "name": "pill2",
+                  "padding": [
+                    1,
+                    6
+                  ],
+                  "type": "frame"
+                }
+              ],
+              "cornerRadius": 4,
+              "gap": 8,
+              "id": "B3Im8",
+              "name": "Status Option - Blocked",
+              "padding": [
+                5,
+                10
+              ],
+              "type": "frame",
+              "width": "fill_container"
+            },
+            {
+              "alignItems": "center",
+              "children": [
+                {
+                  "fill": "$--accent-yellow",
+                  "height": 10,
+                  "id": "2mTmp",
+                  "name": "dot3",
+                  "type": "ellipse",
+                  "width": 10
+                },
+                {
+                  "children": [
+                    {
+                      "content": "DRAFT",
+                      "fill": "$--accent-yellow",
+                      "fontFamily": "IBM Plex Mono",
+                      "fontSize": 10,
+                      "fontWeight": "600",
+                      "id": "evl7l",
+                      "letterSpacing": 1.2,
+                      "name": "pill3text",
+                      "type": "text"
+                    }
+                  ],
+                  "cornerRadius": 16,
+                  "fill": "$--accent-yellow-light",
+                  "id": "6Fuxw",
+                  "name": "pill3",
+                  "padding": [
+                    1,
+                    6
+                  ],
+                  "type": "frame"
+                }
+              ],
+              "cornerRadius": 4,
+              "fill": "$--muted",
+              "gap": 8,
+              "id": "TwUBA",
+              "name": "Status Option - Draft (hover)",
+              "padding": [
+                5,
+                10
+              ],
+              "type": "frame",
+              "width": "fill_container"
+            }
+          ],
+          "cornerRadius": 8,
+          "fill": "$--background",
+          "id": "DT2gn",
+          "layout": "vertical",
+          "name": "Dropdown Container",
+          "stroke": {
+            "fill": "$--border",
+            "thickness": 1
+          },
+          "type": "frame",
+          "width": "fill_container"
+        }
+      ],
+      "fill": "$--background",
+      "gap": 16,
+      "id": "2N2BP",
+      "layout": "vertical",
+      "name": "1 — Status Dropdown with Color Dots",
+      "padding": 24,
+      "type": "frame",
+      "width": 320,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "children": [
+        {
+          "content": "Color Picker — Expanded",
+          "fill": "$--foreground",
+          "fontFamily": "Inter",
+          "fontSize": 16,
+          "fontWeight": "600",
+          "id": "zPCnI",
+          "name": "title2",
+          "type": "text"
+        },
+        {
+          "content": "Clicking a color dot expands the palette inline. The 8 accent colors from the design system are shown as clickable swatches. A 'Default' option resets to the built-in color.",
+          "fill": "$--muted-foreground",
+          "fontFamily": "Inter",
+          "fontSize": 12,
+          "fontWeight": "normal",
+          "id": "TtaTt",
+          "lineHeight": 1.5,
+          "name": "desc2",
+          "textGrowth": "fixed-width",
+          "type": "text",
+          "width": 272
+        },
+        {
+          "children": [
+            {
+              "alignItems": "center",
+              "children": [
+                {
+                  "fill": "$--accent-yellow",
+                  "height": 10,
+                  "id": "FRKg5",
+                  "name": "dotActive",
+                  "stroke": {
+                    "fill": "$--foreground",
+                    "thickness": 2
+                  },
+                  "type": "ellipse",
+                  "width": 10
+                },
+                {
+                  "children": [
+                    {
+                      "content": "DRAFT",
+                      "fill": "$--accent-yellow",
+                      "fontFamily": "IBM Plex Mono",
+                      "fontSize": 10,
+                      "fontWeight": "600",
+                      "id": "rA60a",
+                      "letterSpacing": 1.2,
+                      "name": "pillActiveText",
+                      "type": "text"
+                    }
+                  ],
+                  "cornerRadius": 16,
+                  "fill": "$--accent-yellow-light",
+                  "id": "15D2Q",
+                  "name": "pillActive",
+                  "padding": [
+                    1,
+                    6
+                  ],
+                  "type": "frame"
+                }
+              ],
+              "cornerRadius": 4,
+              "fill": "$--muted",
+              "gap": 8,
+              "id": "3QplJ",
+              "name": "Draft Option Row",
+              "padding": [
+                5,
+                10
+              ],
+              "type": "frame",
+              "width": "fill_container"
+            },
+            {
+              "children": [
+                {
+                  "content": "ASSIGN COLOR",
+                  "fill": "$--muted-foreground",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 9,
+                  "fontWeight": "500",
+                  "id": "5yhS8",
+                  "letterSpacing": 1.2,
+                  "name": "paletteLabel",
+                  "type": "text"
+                },
+                {
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "content": "Default",
+                          "fill": "$--muted-foreground",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "normal",
+                          "id": "Q2ZwX",
+                          "name": "defText",
+                          "type": "text"
+                        }
+                      ],
+                      "cornerRadius": 10,
+                      "id": "Sgzjz",
+                      "name": "defBtn",
+                      "padding": [
+                        2,
+                        6
+                      ],
+                      "stroke": {
+                        "fill": "$--border",
+                        "thickness": 1
+                      },
+                      "type": "frame"
+                    },
+                    {
+                      "fill": "$--accent-red",
+                      "height": 16,
+                      "id": "sOgl3",
+                      "name": "sw1",
+                      "type": "ellipse",
+                      "width": 16
+                    },
+                    {
+                      "fill": "$--accent-orange",
+                      "height": 16,
+                      "id": "kqj6G",
+                      "name": "sw2",
+                      "type": "ellipse",
+                      "width": 16
+                    },
+                    {
+                      "fill": "$--accent-yellow",
+                      "height": 16,
+                      "id": "luCEG",
+                      "name": "sw3",
+                      "type": "ellipse",
+                      "width": 16
+                    },
+                    {
+                      "fill": "$--accent-green",
+                      "height": 16,
+                      "id": "KmBPE",
+                      "name": "sw4",
+                      "type": "ellipse",
+                      "width": 16
+                    },
+                    {
+                      "fill": "$--accent-blue",
+                      "height": 16,
+                      "id": "IsLDd",
+                      "name": "sw5",
+                      "type": "ellipse",
+                      "width": 16
+                    },
+                    {
+                      "fill": "$--accent-purple",
+                      "height": 16,
+                      "id": "M6bwU",
+                      "name": "sw6",
+                      "type": "ellipse",
+                      "width": 16
+                    },
+                    {
+                      "fill": "$--accent-teal",
+                      "height": 16,
+                      "id": "LKPIO",
+                      "name": "sw7",
+                      "type": "ellipse",
+                      "width": 16
+                    },
+                    {
+                      "fill": "$--accent-pink",
+                      "height": 16,
+                      "id": "bFQCa",
+                      "name": "sw8",
+                      "type": "ellipse",
+                      "width": 16
+                    }
+                  ],
+                  "gap": 6,
+                  "id": "zwiKV",
+                  "name": "Swatches Row",
+                  "type": "frame"
+                }
+              ],
+              "fill": "$--muted",
+              "gap": 8,
+              "id": "ZUL7a",
+              "layout": "vertical",
+              "name": "Color Palette",
+              "padding": [
+                8,
+                10
+              ],
+              "type": "frame",
+              "width": "fill_container"
+            },
+            {
+              "fill": "$--border",
+              "height": 1,
+              "id": "hsnvv",
+              "name": "divider",
+              "type": "rectangle",
+              "width": "fill_container"
+            },
+            {
+              "alignItems": "center",
+              "children": [
+                {
+                  "fill": "$--accent-green",
+                  "height": 10,
+                  "id": "Mddih",
+                  "name": "otherDot",
+                  "type": "ellipse",
+                  "width": 10
+                },
+                {
+                  "children": [
+                    {
+                      "content": "ACTIVE",
+                      "fill": "$--accent-green",
+                      "fontFamily": "IBM Plex Mono",
+                      "fontSize": 10,
+                      "fontWeight": "600",
+                      "id": "pVJ5Z",
+                      "letterSpacing": 1.2,
+                      "name": "otherText",
+                      "type": "text"
+                    }
+                  ],
+                  "cornerRadius": 16,
+                  "fill": "$--accent-green-light",
+                  "id": "bHWx0",
+                  "name": "otherPill",
+                  "padding": [
+                    1,
+                    6
+                  ],
+                  "type": "frame"
+                }
+              ],
+              "cornerRadius": 4,
+              "gap": 8,
+              "id": "EpnwC",
+              "name": "Other Option",
+              "padding": [
+                5,
+                10
+              ],
+              "type": "frame",
+              "width": "fill_container"
+            }
+          ],
+          "cornerRadius": 8,
+          "fill": "$--background",
+          "id": "f2Adq",
+          "layout": "vertical",
+          "name": "Dropdown with Picker",
+          "stroke": {
+            "fill": "$--border",
+            "thickness": 1
+          },
+          "type": "frame",
+          "width": "fill_container"
+        }
+      ],
+      "fill": "$--background",
+      "gap": 16,
+      "id": "jbCuz",
+      "layout": "vertical",
+      "name": "2 — Color Picker Expanded",
+      "padding": 24,
+      "type": "frame",
+      "width": 320,
+      "x": 360,
+      "y": 0
+    }
+  ],
+  "variables": {
+    "--accent-blue": {
+      "type": "color",
+      "value": "#155DFF"
+    },
+    "--accent-blue-light": {
+      "type": "color",
+      "value": "#155DFF14"
+    },
+    "--accent-green": {
+      "type": "color",
+      "value": "#38A169"
+    },
+    "--accent-green-light": {
+      "type": "color",
+      "value": "#38A16919"
+    },
+    "--accent-orange": {
+      "type": "color",
+      "value": "#D9730D"
+    },
+    "--accent-orange-light": {
+      "type": "color",
+      "value": "#D9730D19"
+    },
+    "--accent-pink": {
+      "type": "color",
+      "value": "#D53F8C"
+    },
+    "--accent-pink-light": {
+      "type": "color",
+      "value": "#D53F8C19"
+    },
+    "--accent-purple": {
+      "type": "color",
+      "value": "#805AD5"
+    },
+    "--accent-purple-light": {
+      "type": "color",
+      "value": "#805AD519"
+    },
+    "--accent-red": {
+      "type": "color",
+      "value": "#E53E3E"
+    },
+    "--accent-red-light": {
+      "type": "color",
+      "value": "#E53E3E19"
+    },
+    "--accent-teal": {
+      "type": "color",
+      "value": "#319795"
+    },
+    "--accent-teal-light": {
+      "type": "color",
+      "value": "#31979519"
+    },
+    "--accent-yellow": {
+      "type": "color",
+      "value": "#D69E2E"
+    },
+    "--accent-yellow-light": {
+      "type": "color",
+      "value": "#D69E2E19"
+    },
+    "--background": {
+      "type": "color",
+      "value": "#FFFFFF"
+    },
+    "--border": {
+      "type": "color",
+      "value": "#E9E9E7"
+    },
+    "--foreground": {
+      "type": "color",
+      "value": "#37352F"
+    },
+    "--muted": {
+      "type": "color",
+      "value": "#F5F5F4"
+    },
+    "--muted-foreground": {
+      "type": "color",
+      "value": "#787774"
+    }
+  }
+}
