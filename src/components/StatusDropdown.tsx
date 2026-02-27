@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { getStatusStyle, SUGGESTED_STATUSES, setStatusColor, getStatusColorKey } from '../utils/statusStyles'
 import { ACCENT_COLORS } from '../utils/typeColors'
 
@@ -227,6 +228,20 @@ export function StatusDropdown({
   const [colorEditingStatus, setColorEditingStatus] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
+  const anchorRef = useRef<HTMLDivElement>(null)
+
+  const positionDropdown = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return
+    const anchor = anchorRef.current?.parentElement
+    if (!anchor) return
+    const rect = anchor.getBoundingClientRect()
+    const dropW = 208
+    let left = rect.right - dropW
+    if (left < 8) left = 8
+    if (left + dropW > window.innerWidth - 8) left = window.innerWidth - dropW - 8
+    node.style.top = `${rect.bottom + 4}px`
+    node.style.left = `${left}px`
+  }, [])
 
   useEffect(() => { inputRef.current?.focus() }, [])
 
@@ -268,46 +283,52 @@ export function StatusDropdown({
   }
 
   return (
-    <div className="relative" data-testid="status-dropdown">
-      <div className="fixed inset-0 z-[12000]" onClick={onCancel} data-testid="status-dropdown-backdrop" />
-      <div
-        className="absolute right-0 top-full z-[12001] mt-1 w-52 overflow-hidden rounded-lg border border-border bg-background shadow-lg"
-        data-testid="status-dropdown-popover"
-      >
-        <div className="border-b border-border px-2 py-1.5">
-          <input
-            ref={inputRef}
-            className="w-full border-none bg-transparent text-[12px] text-foreground outline-none placeholder:text-muted-foreground"
-            placeholder="Type a status..."
-            value={query}
-            onChange={e => handleQueryChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            data-testid="status-search-input"
-          />
-        </div>
-        <div ref={listRef} className="max-h-52 overflow-y-auto py-1">
-          <VaultSection statuses={vaultFiltered} {...optionProps} />
-          <SuggestedSection
-            statuses={suggestedFiltered}
-            showDivider={vaultFiltered.length > 0}
-            {...optionProps}
-            highlightOffset={vaultFiltered.length}
-          />
-          <CreateSection
-            show={showCreateOption}
-            query={query}
-            showDivider={allFiltered.length > 0}
-            highlighted={highlightIndex === allFiltered.length}
-            onSave={onSave}
-            onMouseEnter={() => setHighlightIndex(allFiltered.length)}
-          />
-          {allFiltered.length === 0 && !showCreateOption && (
-            <div className="px-2 py-2 text-center text-[11px] text-muted-foreground">
-              No matching statuses
+    <div ref={anchorRef} data-testid="status-dropdown">
+      {createPortal(
+        <>
+          <div className="fixed inset-0 z-[12000]" onClick={onCancel} data-testid="status-dropdown-backdrop" />
+          <div
+            ref={positionDropdown}
+            className="fixed z-[12001] w-52 overflow-hidden rounded-lg border border-border bg-background shadow-lg"
+            data-testid="status-dropdown-popover"
+          >
+            <div className="border-b border-border px-2 py-1.5">
+              <input
+                ref={inputRef}
+                className="w-full border-none bg-transparent text-[12px] text-foreground outline-none placeholder:text-muted-foreground"
+                placeholder="Type a status..."
+                value={query}
+                onChange={e => handleQueryChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                data-testid="status-search-input"
+              />
             </div>
-          )}
-        </div>
-      </div>
+            <div ref={listRef} className="max-h-52 overflow-y-auto py-1">
+              <VaultSection statuses={vaultFiltered} {...optionProps} />
+              <SuggestedSection
+                statuses={suggestedFiltered}
+                showDivider={vaultFiltered.length > 0}
+                {...optionProps}
+                highlightOffset={vaultFiltered.length}
+              />
+              <CreateSection
+                show={showCreateOption}
+                query={query}
+                showDivider={allFiltered.length > 0}
+                highlighted={highlightIndex === allFiltered.length}
+                onSave={onSave}
+                onMouseEnter={() => setHighlightIndex(allFiltered.length)}
+              />
+              {allFiltered.length === 0 && !showCreateOption && (
+                <div className="px-2 py-2 text-center text-[11px] text-muted-foreground">
+                  No matching statuses
+                </div>
+              )}
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
     </div>
   )
 }

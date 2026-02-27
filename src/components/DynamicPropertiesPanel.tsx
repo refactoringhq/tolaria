@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import type { VaultEntry } from '../types'
 import type { FrontmatterValue } from './Inspector'
 import type { ParsedFrontmatter } from '../utils/frontmatter'
@@ -186,7 +187,19 @@ function DisplayModeSelector({ propKey, currentMode, autoMode, onSelect }: {
   onSelect: (key: string, mode: PropertyDisplayMode | null) => void
 }) {
   const [open, setOpen] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+
+  const positionMenu = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return
+    const el = triggerRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const menuW = 140
+    let left = rect.right - menuW
+    if (left < 8) left = 8
+    node.style.top = `${rect.bottom + 4}px`
+    node.style.left = `${left}px`
+  }, [])
 
   const handleSelect = (mode: PropertyDisplayMode) => {
     if (mode === autoMode) {
@@ -198,8 +211,9 @@ function DisplayModeSelector({ propKey, currentMode, autoMode, onSelect }: {
   }
 
   return (
-    <div ref={containerRef} className="relative">
+    <div className="relative">
       <button
+        ref={triggerRef}
         className="flex h-4 w-4 items-center justify-center rounded border-none bg-transparent p-0 text-[10px] leading-none text-muted-foreground opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover/prop:opacity-100"
         onClick={() => setOpen(!open)}
         title="Change display mode"
@@ -207,11 +221,12 @@ function DisplayModeSelector({ propKey, currentMode, autoMode, onSelect }: {
       >
         {'\u25BE'}
       </button>
-      {open && (
+      {open && createPortal(
         <>
           <div className="fixed inset-0 z-[12000]" onClick={() => setOpen(false)} />
           <div
-            className="absolute right-0 top-full z-[12001] mt-1 min-w-[130px] rounded-md border border-border bg-background py-1 shadow-md"
+            ref={positionMenu}
+            className="fixed z-[12001] min-w-[130px] rounded-md border border-border bg-background py-1 shadow-md"
             data-testid="display-mode-menu"
           >
             {DISPLAY_MODE_OPTIONS.map(opt => (
@@ -231,7 +246,8 @@ function DisplayModeSelector({ propKey, currentMode, autoMode, onSelect }: {
               </button>
             ))}
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   )
