@@ -1,0 +1,329 @@
+{
+  "children": [
+    {
+      "id": "cleanup-summary",
+      "type": "frame",
+      "name": "ui-design-cleanup — Summary of Changes",
+      "x": 0,
+      "y": 0,
+      "width": 800,
+      "height": "fit_content(600)",
+      "fill": "$--background",
+      "layout": "vertical",
+      "padding": 32,
+      "gap": 24,
+      "children": [
+        {
+          "id": "title",
+          "type": "text",
+          "content": "ui-design.pen Cleanup — 2026-02-27",
+          "fontSize": 28,
+          "fontWeight": "700",
+          "color": "$--foreground"
+        },
+        {
+          "id": "counts",
+          "type": "frame",
+          "layout": "horizontal",
+          "gap": 40,
+          "children": [
+            {
+              "id": "count-before",
+              "type": "frame",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "id": "cb-label",
+                  "type": "text",
+                  "content": "Frames Before",
+                  "fontSize": 12,
+                  "color": "$--muted-foreground",
+                  "fontFamily": "$--font-mono"
+                },
+                {
+                  "id": "cb-value",
+                  "type": "text",
+                  "content": "113",
+                  "fontSize": 32,
+                  "fontWeight": "700",
+                  "color": "$--foreground"
+                }
+              ]
+            },
+            {
+              "id": "count-after",
+              "type": "frame",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "id": "ca-label",
+                  "type": "text",
+                  "content": "Frames After",
+                  "fontSize": 12,
+                  "color": "$--muted-foreground",
+                  "fontFamily": "$--font-mono"
+                },
+                {
+                  "id": "ca-value",
+                  "type": "text",
+                  "content": "129",
+                  "fontSize": 32,
+                  "fontWeight": "700",
+                  "color": "$--accent-green"
+                }
+              ]
+            },
+            {
+              "id": "count-removed",
+              "type": "frame",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "id": "cr-label",
+                  "type": "text",
+                  "content": "Before Variants Removed",
+                  "fontSize": 12,
+                  "color": "$--muted-foreground",
+                  "fontFamily": "$--font-mono"
+                },
+                {
+                  "id": "cr-value",
+                  "type": "text",
+                  "content": "3",
+                  "fontSize": 32,
+                  "fontWeight": "700",
+                  "color": "$--destructive"
+                }
+              ]
+            },
+            {
+              "id": "count-integrated",
+              "type": "frame",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "id": "ci-label",
+                  "type": "text",
+                  "content": "Frames Integrated",
+                  "fontSize": 12,
+                  "color": "$--muted-foreground",
+                  "fontFamily": "$--font-mono"
+                },
+                {
+                  "id": "ci-value",
+                  "type": "text",
+                  "content": "18",
+                  "fontSize": 32,
+                  "fontWeight": "700",
+                  "color": "$--accent-blue"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "sep1",
+          "type": "line",
+          "width": "fill_container",
+          "stroke": "$--border",
+          "strokeWidth": 1
+        },
+        {
+          "id": "section-removed",
+          "type": "frame",
+          "layout": "vertical",
+          "gap": 8,
+          "children": [
+            {
+              "id": "sr-title",
+              "type": "text",
+              "content": "Removed (before variants)",
+              "fontSize": 16,
+              "fontWeight": "600",
+              "color": "$--foreground"
+            },
+            {
+              "id": "sr1",
+              "type": "text",
+              "content": "- csB01: Sections Header — Before (old design)",
+              "fontSize": 13,
+              "color": "$--muted-foreground"
+            },
+            {
+              "id": "sr2",
+              "type": "text",
+              "content": "- mb001: macOS Border — Before (no border)",
+              "fontSize": 13,
+              "color": "$--muted-foreground"
+            },
+            {
+              "id": "sr3",
+              "type": "text",
+              "content": "- hideBacklinksEmpty_before: Hide Empty Backlinks Label — Before",
+              "fontSize": 13,
+              "color": "$--muted-foreground"
+            }
+          ]
+        },
+        {
+          "id": "section-renamed",
+          "type": "frame",
+          "layout": "vertical",
+          "gap": 8,
+          "children": [
+            {
+              "id": "sn-title",
+              "type": "text",
+              "content": "Renamed (dropped After/Before labels)",
+              "fontSize": 16,
+              "fontWeight": "600",
+              "color": "$--foreground"
+            },
+            {
+              "id": "sn1",
+              "type": "text",
+              "content": "- csA01: Sections Header — After (new design) → Sections Header — Redesigned",
+              "fontSize": 13,
+              "color": "$--muted-foreground"
+            },
+            {
+              "id": "sn2",
+              "type": "text",
+              "content": "- mb011: macOS Border — After (with border) → macOS Border — With Border",
+              "fontSize": 13,
+              "color": "$--muted-foreground"
+            },
+            {
+              "id": "sn3",
+              "type": "text",
+              "content": "- hideBacklinksEmpty_after: ... → Hide Empty Backlinks Label",
+              "fontSize": 13,
+              "color": "$--muted-foreground"
+            }
+          ]
+        },
+        {
+          "id": "sep2",
+          "type": "line",
+          "width": "fill_container",
+          "stroke": "$--border",
+          "strokeWidth": 1
+        },
+        {
+          "id": "section-integrated",
+          "type": "frame",
+          "layout": "vertical",
+          "gap": 8,
+          "children": [
+            {
+              "id": "si-title",
+              "type": "text",
+              "content": "Integrated from design/*.pen",
+              "fontSize": 16,
+              "fontWeight": "600",
+              "color": "$--foreground"
+            },
+            {
+              "id": "si1",
+              "type": "text",
+              "content": "- add-property-inline.pen (2 frames) → Inspector section",
+              "fontSize": 13,
+              "color": "$--muted-foreground"
+            },
+            {
+              "id": "si2",
+              "type": "text",
+              "content": "- autocomplete-type-color.pen (2 frames) → Inspector section",
+              "fontSize": 13,
+              "color": "$--muted-foreground"
+            },
+            {
+              "id": "si3",
+              "type": "text",
+              "content": "- date-picker-shadcn.pen (2 frames) → Inspector section",
+              "fontSize": 13,
+              "color": "$--muted-foreground"
+            },
+            {
+              "id": "si4",
+              "type": "text",
+              "content": "- design-full-layouts.pen (4 frames) → Full Layouts section",
+              "fontSize": 13,
+              "color": "$--muted-foreground"
+            },
+            {
+              "id": "si5",
+              "type": "text",
+              "content": "- hide-backlinks-empty.pen (1 after variant) → Inspector section",
+              "fontSize": 13,
+              "color": "$--muted-foreground"
+            },
+            {
+              "id": "si6",
+              "type": "text",
+              "content": "- smart-property-display.pen (4 frames) → Inspector section",
+              "fontSize": 13,
+              "color": "$--muted-foreground"
+            },
+            {
+              "id": "si7",
+              "type": "text",
+              "content": "- status-property-dropdown.pen (3 frames) → Inspector section",
+              "fontSize": 13,
+              "color": "$--muted-foreground"
+            }
+          ]
+        },
+        {
+          "id": "sep3",
+          "type": "line",
+          "width": "fill_container",
+          "stroke": "$--border",
+          "strokeWidth": 1
+        },
+        {
+          "id": "section-notes",
+          "type": "frame",
+          "layout": "vertical",
+          "gap": 8,
+          "children": [
+            {
+              "id": "notes-title",
+              "type": "text",
+              "content": "Notes",
+              "fontSize": 16,
+              "fontWeight": "600",
+              "color": "$--foreground"
+            },
+            {
+              "id": "note1",
+              "type": "text",
+              "content": "Dark mode conversion: Not needed — all frames already use CSS variables (light theme)",
+              "fontSize": 13,
+              "color": "$--muted-foreground"
+            },
+            {
+              "id": "note2",
+              "type": "text",
+              "content": "Deduplication: No true duplicates found — unnamed frames are section dividers",
+              "fontSize": 13,
+              "color": "$--muted-foreground"
+            },
+            {
+              "id": "note3",
+              "type": "text",
+              "content": "Empty design files (0 frames): auto-pull-vault, git-status-bar, note-subtitle-metadata, note-type-labels, properties-panel-header",
+              "fontSize": 13,
+              "color": "$--muted-foreground"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {}
+}

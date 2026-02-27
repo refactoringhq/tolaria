@@ -75,7 +75,7 @@ Laputa is a personal knowledge and life management desktop app. It reads a vault
 
 - **Sidebar** (150-400px, resizable): Top-level filters (All Notes, Favorites) and collapsible section groups (Projects, Experiments, Responsibilities, etc.)
 - **Note List** (200-500px, resizable): Filtered list of notes matching the sidebar selection. Shows snippets, modified dates, relationship groups, and orange dot indicators for uncommitted modified notes.
-- **Editor** (flex, fills remaining space): Tab bar (with orange modified dots on dirty tabs), breadcrumb bar with word count and modified indicator, BlockNote editor with wikilink support. Can toggle to diff view for modified files.
+- **Editor** (flex, fills remaining space): Tab bar (with orange modified dots on dirty tabs), breadcrumb bar with word count and modified indicator, BlockNote editor with wikilink support. Can toggle to diff view for modified files. Decomposed into focused subcomponents: `Editor` (orchestrator), `EditorContent` (breadcrumb + editor/diff views), `EditorRightPanel` (inspector/AI toggle), `SingleEditorView` (BlockNote + suggestions), with hooks `useDiffMode` and `useEditorFocus`.
 - **Inspector / AI Chat** (200-500px or 40px collapsed): Toggles between Inspector (frontmatter, relationships, backlinks, git history) and AI Chat panel. The Sparkle icon in the breadcrumb bar toggles between them.
 
 Panels are separated by `ResizeHandle` components that support drag-to-resize.

@@ -127,6 +127,20 @@ function buildCustomizeArgs(typeEntry: VaultEntry, prop: 'icon' | 'color', value
   ]
 }
 
+function applyCustomization(
+  target: string | null,
+  typeEntryMap: Record<string, VaultEntry>,
+  onCustomizeType: ((typeName: string, icon: string, color: string) => void) | undefined,
+  prop: 'icon' | 'color',
+  value: string,
+): void {
+  if (!target || !onCustomizeType) return
+  const te = typeEntryMap[target]
+  if (!te) return
+  const [icon, color] = buildCustomizeArgs(te, prop, value)
+  onCustomizeType(target, icon, color)
+}
+
 // --- Sub-components ---
 
 function SortableSection({ group, sectionProps }: {
@@ -271,11 +285,7 @@ export const Sidebar = memo(function Sidebar({
   }, [])
 
   const handleCustomize = useCallback((prop: 'icon' | 'color', value: string) => {
-    if (!customizeTarget || !onCustomizeType) return
-    const te = typeEntryMap[customizeTarget]
-    if (!te) return
-    const [icon, color] = buildCustomizeArgs(te, prop, value)
-    onCustomizeType(customizeTarget, icon, color)
+    applyCustomization(customizeTarget, typeEntryMap, onCustomizeType, prop, value)
   }, [customizeTarget, typeEntryMap, onCustomizeType])
 
   const sectionProps = {
