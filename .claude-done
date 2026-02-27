@@ -1,36 +1,3 @@
-task: refactor-editor-notelist-sidebar
-ui-change: no
-
-## Summary
-
-Refactored three CodeScene hotspot files to improve code health scores:
-
-| File | Before | After | Approach |
-|------|--------|-------|----------|
-| Editor.tsx | 7.82 (cc=35) | 10.0 | Decomposed into EditorContent, EditorRightPanel, SingleEditorView, editorSchema, useDiffMode, useEditorFocus, suggestionEnrichment |
-| NoteList.tsx | 9.04 (cc=13) | 9.38 | Extracted createNoteStatusResolver, toggleSetMember standalone functions |
-| Sidebar.tsx | 9.09 (cc=10) | 10.0 | Extracted applyCustomization standalone function |
-
-## New files
-
-- `src/components/EditorContent.tsx` — breadcrumb bar + editor/diff view switching
-- `src/components/EditorRightPanel.tsx` — AI chat / inspector panel toggle
-- `src/components/SingleEditorView.tsx` — BlockNote editor with suggestion menus
-- `src/components/editorSchema.tsx` — WikiLink inline content spec + BlockNote schema
-- `src/hooks/useDiffMode.ts` — diff mode state management
-- `src/hooks/useEditorFocus.ts` — editor focus on custom event
-- `src/utils/suggestionEnrichment.ts` — shared suggestion item enrichment pipeline
-
-## New tests (20 tests)
-
-- `src/hooks/useDiffMode.test.ts` — 10 tests
-- `src/hooks/useEditorFocus.test.ts` — 3 tests
-- `src/utils/suggestionEnrichment.test.ts` — 7 tests
-
-## Validation
-
-- 976 tests pass (956 existing + 20 new)
-- 80% frontend coverage (≥70% required)
-- 270 Rust tests pass
-- CodeScene quality gates: passed
-- Zero behavior change — pure refactor
+Task: 🐛 Property dropdown fix
+Summary: Fixed dropdown collision/overflow when Properties panel is narrow. StatusDropdown and DisplayModeSelector were using absolute positioning within the Inspector's overflow-hidden container, causing clipping at narrow widths (200-280px). Both now render via createPortal with fixed positioning, matching the pattern used by existing Radix UI components. All 1017 frontend tests + 270 Rust tests pass.
+Commits: 1
