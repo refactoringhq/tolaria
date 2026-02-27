@@ -390,4 +390,33 @@ describe('resolveNoteStatus', () => {
   it('newPaths takes priority over git modified', () => {
     expect(resolveNoteStatus('/vault/x.md', new Set(['/vault/x.md']), [mf('/vault/x.md', 'modified')])).toBe('new')
   })
+
+  it('pendingSave takes priority over new status', () => {
+    const pendingSave = new Set(['/vault/x.md'])
+    expect(resolveNoteStatus('/vault/x.md', new Set(['/vault/x.md']), [], pendingSave)).toBe('pendingSave')
+  })
+
+  it('pendingSave takes priority over modified status', () => {
+    const pendingSave = new Set(['/vault/x.md'])
+    expect(resolveNoteStatus('/vault/x.md', new Set(), [mf('/vault/x.md', 'modified')], pendingSave)).toBe('pendingSave')
+  })
+
+  it('pendingSave takes priority over clean status', () => {
+    const pendingSave = new Set(['/vault/x.md'])
+    expect(resolveNoteStatus('/vault/x.md', new Set(), [], pendingSave)).toBe('pendingSave')
+  })
+
+  it('without pendingSavePaths parameter, behavior is unchanged', () => {
+    // Omitting the optional parameter should produce the same results as before
+    expect(resolveNoteStatus('/vault/x.md', new Set(['/vault/x.md']), [])).toBe('new')
+    expect(resolveNoteStatus('/vault/x.md', new Set(), [mf('/vault/x.md', 'modified')])).toBe('modified')
+    expect(resolveNoteStatus('/vault/x.md', new Set(), [])).toBe('clean')
+  })
+
+  it('empty pendingSavePaths set does not affect other statuses', () => {
+    const emptyPending = new Set<string>()
+    expect(resolveNoteStatus('/vault/x.md', new Set(['/vault/x.md']), [], emptyPending)).toBe('new')
+    expect(resolveNoteStatus('/vault/x.md', new Set(), [mf('/vault/x.md', 'modified')], emptyPending)).toBe('modified')
+    expect(resolveNoteStatus('/vault/x.md', new Set(), [], emptyPending)).toBe('clean')
+  })
 })
