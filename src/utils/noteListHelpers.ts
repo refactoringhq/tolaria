@@ -30,9 +30,30 @@ export function formatSubtitle(entry: VaultEntry): string {
   const date = getDisplayDate(entry)
   if (date) parts.push(relativeDate(date))
   if (entry.wordCount > 0) {
-    parts.push(`${entry.wordCount} words`)
+    parts.push(`${entry.wordCount.toLocaleString()} words`)
   } else {
     parts.push('Empty')
+  }
+  if (entry.outgoingLinks.length > 0) {
+    parts.push(`${entry.outgoingLinks.length} ${entry.outgoingLinks.length === 1 ? 'link' : 'links'}`)
+  }
+  return parts.join(' \u00b7 ')
+}
+
+export function formatSearchSubtitle(entry: VaultEntry): string {
+  const parts: string[] = []
+  const modified = entry.modifiedAt ?? entry.createdAt
+  if (modified) parts.push(relativeDate(modified))
+  if (entry.createdAt && entry.modifiedAt && entry.createdAt !== entry.modifiedAt) {
+    parts.push(`Created ${relativeDate(entry.createdAt)}`)
+  }
+  if (entry.wordCount > 0) {
+    parts.push(`${entry.wordCount.toLocaleString()} words`)
+  } else {
+    parts.push('Empty')
+  }
+  if (entry.outgoingLinks.length > 0) {
+    parts.push(`${entry.outgoingLinks.length} ${entry.outgoingLinks.length === 1 ? 'link' : 'links'}`)
   }
   return parts.join(' \u00b7 ')
 }

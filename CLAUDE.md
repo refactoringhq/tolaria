@@ -113,3 +113,25 @@ bash ~/.openclaw/skills/laputa-qa/scripts/screenshot.sh /tmp/out.png
 bash ~/.openclaw/skills/laputa-qa/scripts/shortcut.sh "command" "s"
 bash ~/.openclaw/skills/laputa-qa/scripts/click.sh 400 300   # logical coords
 ```
+
+## Push Workflow (IMPORTANT — changed Feb 27, 2026)
+
+**Push directly to main** — no PRs, no branches, no CI queue.
+
+The pre-push hook runs all checks locally before the push goes through. This replaces remote CI.
+
+```bash
+# After QA passes and you're ready to ship:
+git push origin main    # pre-push hook runs automatically
+```
+
+### ⛔ NEVER use --no-verify
+```bash
+# FORBIDDEN — will be caught and rejected:
+git push --no-verify
+git commit --no-verify   # also forbidden for pre-push bypass
+```
+
+The hook runs: tsc, Vite build, frontend tests, frontend coverage, Rust coverage, Clippy, rustfmt, CodeScene. Fix any failures before pushing — do not skip.
+
+If a check fails, fix the issue and push again. The hook is the gate — not remote CI.

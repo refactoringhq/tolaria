@@ -1,3 +1,5 @@
+import { ACCENT_COLORS } from './typeColors'
+
 export interface StatusStyle {
   bg: string
   color: string
@@ -38,6 +40,47 @@ export const SUGGESTED_STATUSES = [
   'Archived',
 ]
 
+const STORAGE_KEY = 'laputa:status-color-overrides'
+
+const COLOR_KEY_TO_STYLE: Record<string, StatusStyle> = Object.fromEntries(
+  ACCENT_COLORS.map(c => [c.key, { bg: c.cssLight, color: c.css }]),
+)
+
+const colorOverrides: Record<string, string> = loadColorOverrides()
+
+function loadColorOverrides(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? (JSON.parse(raw) as Record<string, string>) : {}
+  } catch {
+    return {}
+  }
+}
+
+export function getStatusColorOverrides(): Record<string, string> {
+  return { ...colorOverrides }
+}
+
+export function setStatusColor(status: string, colorKey: string | null): void {
+  if (colorKey === null) {
+    delete colorOverrides[status]
+  } else {
+    colorOverrides[status] = colorKey
+  }
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(colorOverrides))
+  } catch { /* storage full — silently ignore */ }
+}
+
+export function getStatusColorKey(status: string): string | null {
+  return colorOverrides[status] ?? null
+}
+
 export function getStatusStyle(status: string): StatusStyle {
+  const overrideKey = colorOverrides[status]
+  if (overrideKey) {
+    const style = COLOR_KEY_TO_STYLE[overrideKey]
+    if (style) return style
+  }
   return STATUS_STYLES[status] ?? DEFAULT_STATUS_STYLE
 }

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, memo } from 'react'
+import { useState, useMemo, useCallback, useEffect, memo } from 'react'
 import { useDragRegion } from '../hooks/useDragRegion'
 import { Virtuoso } from 'react-virtuoso'
 import type { VaultEntry, SidebarSelection, ModifiedFile, NoteStatus } from '../types'
@@ -9,11 +9,13 @@ import {
 import { getTypeColor, getTypeLightColor, buildTypeEntryMap } from '../utils/typeColors'
 import { NoteItem, getTypeIcon } from './NoteItem'
 import { SortDropdown } from './SortDropdown'
+import { BulkActionBar } from './BulkActionBar'
+import { useMultiSelect } from '../hooks/useMultiSelect'
 import {
   type SortOption, type SortDirection, type SortConfig, type RelationshipGroup,
   getSortComparator,
   buildRelationshipGroups, filterEntries,
-  formatSubtitle,
+  relativeDate, getDisplayDate,
   loadSortPreferences, saveSortPreferences,
 } from '../utils/noteListHelpers'
 
@@ -27,12 +29,15 @@ interface NoteListProps {
   onSelectNote: (entry: VaultEntry) => void
   onReplaceActiveTab: (entry: VaultEntry) => void
   onCreateNote: () => void
+  onBulkArchive?: (paths: string[]) => void
+  onBulkTrash?: (paths: string[]) => void
 }
 
-function PinnedCard({ entry, typeEntryMap, onClickNote }: {
+function PinnedCard({ entry, typeEntryMap, onClickNote, showDate }: {
   entry: VaultEntry
   typeEntryMap: Record<string, VaultEntry>
   onClickNote: (entry: VaultEntry, e: React.MouseEvent) => void
+  showDate?: boolean
 }) {
   const te = typeEntryMap[entry.isA ?? '']
   const color = getTypeColor(entry.isA ?? '', te?.color)
@@ -43,7 +48,8 @@ function PinnedCard({ entry, typeEntryMap, onClickNote }: {
       {/* eslint-disable-next-line react-hooks/static-components */}
       <Icon width={16} height={16} className="absolute right-3 top-3.5" style={{ color }} data-testid="type-icon" />
       <div className="pr-6 text-[14px] font-bold" style={{ color }}>{entry.title}</div>
-      <div className="mt-1 text-[11px] opacity-60" style={{ color }}>{formatSubtitle(entry)}</div>
+      <div className="mt-1 text-[12px] leading-[1.5] opacity-80" style={{ color, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{entry.snippet}</div>
+      {showDate && <div className="mt-1 text-[11px] opacity-60" style={{ color }}>{relativeDate(getDisplayDate(entry))}</div>}
     </div>
   )
 }
@@ -118,7 +124,7 @@ function EntityView({ entity, groups, query, collapsedGroups, sortPrefs, onToggl
 }) {
   return (
     <div className="h-full overflow-y-auto">
-      <PinnedCard entry={entity} typeEntryMap={typeEntryMap} onClickNote={onClickNote} />
+      <PinnedCard entry={entity} typeEntryMap={typeEntryMap} onClickNote={onClickNote} showDate />
       {groups.length === 0
         ? <EmptyMessage text={query ? 'No matching items' : 'No related items'} />
         : groups.map((group) => (
@@ -190,12 +196,37 @@ function countExpiredTrash(entries: VaultEntry[]): number {
 
 // --- Click routing ---
 
+type MultiSelectActions = { toggle: (path: string) => void; selectRange: (path: string) => void; clear: () => void }
+
 function routeNoteClick(
   entry: VaultEntry, e: React.MouseEvent,
-  onSelectNote: (entry: VaultEntry) => void,
   onReplaceActiveTab: (entry: VaultEntry) => void,
+  multiSelect: MultiSelectActions,
 ) {
-  if (e.metaKey || e.ctrlKey) { onSelectNote(entry) } else { onReplaceActiveTab(entry) }
+  if (e.shiftKey) { multiSelect.selectRange(entry.path) }
+  else if (e.metaKey || e.ctrlKey) { multiSelect.toggle(entry.path) }
+  else { multiSelect.clear(); onReplaceActiveTab(entry) }
+}
+
+// --- Pure helpers extracted from NoteListInner to reduce cyclomatic complexity ---
+
+function createNoteStatusResolver(
+  getNoteStatus: ((path: string) => NoteStatus) | undefined,
+  modifiedFiles: ModifiedFile[] | undefined,
+  modifiedPathSet: Set<string>,
+): (path: string) => NoteStatus {
+  if (getNoteStatus) return getNoteStatus
+  if (modifiedFiles && modifiedFiles.length > 0) {
+    return (path: string) => modifiedPathSet.has(path) ? 'modified' : 'clean'
+  }
+  return defaultGetNoteStatus
+}
+
+function toggleSetMember<T>(set: Set<T>, member: T): Set<T> {
+  const next = new Set(set)
+  if (next.has(member)) next.delete(member)
+  else next.add(member)
+  return next
 }
 
 // --- Data hooks ---
@@ -244,7 +275,7 @@ function useNoteListData({ entries, selection, allContent, query, listSort, list
 
 const defaultGetNoteStatus = (): NoteStatus => 'clean'
 
-function NoteListInner({ entries, selection, selectedNote, allContent, modifiedFiles, getNoteStatus, onSelectNote, onReplaceActiveTab, onCreateNote }: NoteListProps) {
+function NoteListInner({ entries, selection, selectedNote, allContent, modifiedFiles, getNoteStatus, onReplaceActiveTab, onCreateNote, onBulkArchive, onBulkTrash }: NoteListProps) {
   const [search, setSearch] = useState('')
   const [searchVisible, setSearchVisible] = useState(false)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
@@ -256,21 +287,17 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
     [modifiedFiles],
   )
 
-  // Resolve note status: prefer explicit getNoteStatus prop; fall back to modifiedFiles-derived status
-  const resolvedGetNoteStatus = useMemo<(path: string) => NoteStatus>(() => {
-    if (getNoteStatus) return getNoteStatus
-    if (modifiedFiles && modifiedFiles.length > 0) {
-      return (path: string) => modifiedPathSet.has(path) ? 'modified' : 'clean'
-    }
-    return defaultGetNoteStatus
-  }, [getNoteStatus, modifiedFiles, modifiedPathSet])
+  const resolvedGetNoteStatus = useMemo<(path: string) => NoteStatus>(
+    () => createNoteStatusResolver(getNoteStatus, modifiedFiles, modifiedPathSet),
+    [getNoteStatus, modifiedFiles, modifiedPathSet],
+  )
 
   const handleSortChange = useCallback((groupLabel: string, option: SortOption, direction: SortDirection) => {
     setSortPrefs((prev) => { const next = { ...prev, [groupLabel]: { option, direction } }; saveSortPreferences(next); return next })
   }, [])
 
   const toggleGroup = useCallback((label: string) => {
-    setCollapsedGroups((prev) => { const next = new Set(prev); if (next.has(label)) { next.delete(label) } else { next.add(label) }; return next })
+    setCollapsedGroups((prev) => toggleSetMember(prev, label))
   }, [])
 
   const typeEntryMap = useTypeEntryMap(entries)
@@ -280,13 +307,50 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
   const listDirection = listConfig.direction
   const { isEntityView, isTrashView, isChangesView, typeDocument, searched, searchedGroups, expiredTrashCount } = useNoteListData({ entries, selection, allContent, query, listSort, listDirection, modifiedPathSet })
 
+  const multiSelect = useMultiSelect(searched)
+
+  // Clear multi-select when sidebar selection changes
+  useEffect(() => { multiSelect.clear() }, [selection]) // eslint-disable-line react-hooks/exhaustive-deps -- clear on selection change only
+
   const handleClickNote = useCallback((entry: VaultEntry, e: React.MouseEvent) => {
-    routeNoteClick(entry, e, onSelectNote, onReplaceActiveTab)
-  }, [onSelectNote, onReplaceActiveTab])
+    routeNoteClick(entry, e, onReplaceActiveTab, multiSelect)
+  }, [onReplaceActiveTab, multiSelect])
+
+  // Keyboard: Escape to clear, Cmd+A to select all
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' && multiSelect.isMultiSelecting) {
+        e.preventDefault()
+        multiSelect.clear()
+      }
+      if (e.key === 'a' && (e.metaKey || e.ctrlKey) && !isEntityView) {
+        const active = document.activeElement
+        const isInput = active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || (active as HTMLElement)?.isContentEditable
+        if (!isInput) {
+          e.preventDefault()
+          multiSelect.selectAll()
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [multiSelect, isEntityView])
+
+  const handleBulkArchive = useCallback(() => {
+    const paths = [...multiSelect.selectedPaths]
+    multiSelect.clear()
+    onBulkArchive?.(paths)
+  }, [multiSelect, onBulkArchive])
+
+  const handleBulkTrash = useCallback(() => {
+    const paths = [...multiSelect.selectedPaths]
+    multiSelect.clear()
+    onBulkTrash?.(paths)
+  }, [multiSelect, onBulkTrash])
 
   const renderItem = useCallback((entry: VaultEntry) => (
-    <NoteItem key={entry.path} entry={entry} isSelected={selectedNote?.path === entry.path} noteStatus={resolvedGetNoteStatus(entry.path)} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
-  ), [selectedNote?.path, handleClickNote, typeEntryMap, resolvedGetNoteStatus])
+    <NoteItem key={entry.path} entry={entry} isSelected={selectedNote?.path === entry.path} isMultiSelected={multiSelect.selectedPaths.has(entry.path)} noteStatus={resolvedGetNoteStatus(entry.path)} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
+  ), [selectedNote?.path, handleClickNote, typeEntryMap, resolvedGetNoteStatus, multiSelect.selectedPaths])
 
   return (
     <div className="flex flex-col overflow-hidden border-r border-border bg-card text-foreground" style={{ height: '100%' }}>
@@ -316,6 +380,10 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
           <ListView typeDocument={typeDocument} isTrashView={isTrashView} isChangesView={isChangesView} expiredTrashCount={expiredTrashCount} searched={searched} query={query} renderItem={renderItem} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
         )}
       </div>
+
+      {multiSelect.isMultiSelecting && (
+        <BulkActionBar count={multiSelect.selectedPaths.size} onArchive={handleBulkArchive} onTrash={handleBulkTrash} onClear={multiSelect.clear} />
+      )}
     </div>
   )
 }
