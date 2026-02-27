@@ -43,7 +43,7 @@ export function TypeCustomizePopover({
 
   return (
     <div
-      className="bg-popover text-popover-foreground z-50 rounded-lg border shadow-md"
+      className="bg-popover text-popover-foreground z-[12001] rounded-lg border shadow-md"
       style={{ width: 280, padding: 12 }}
       onClick={(e) => e.stopPropagation()}
       onContextMenu={(e) => e.stopPropagation()}

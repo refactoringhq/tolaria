@@ -135,10 +135,10 @@ export function StatusDropdown({
   return (
     <div className="relative" data-testid="status-dropdown">
       {/* Backdrop to close on outside click */}
-      <div className="fixed inset-0 z-40" onClick={onCancel} data-testid="status-dropdown-backdrop" />
+      <div className="fixed inset-0 z-[12000]" onClick={onCancel} data-testid="status-dropdown-backdrop" />
 
       <div
-        className="absolute right-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-lg border border-border bg-background shadow-lg"
+        className="absolute right-0 top-full z-[12001] mt-1 w-52 overflow-hidden rounded-lg border border-border bg-background shadow-lg"
         data-testid="status-dropdown-popover"
       >
         {/* Search input */}

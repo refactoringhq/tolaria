@@ -101,7 +101,7 @@ function ContextSearchDropdown({
 function ApiKeyDialog({ onClose }: { onClose: () => void }) {
   const [key, setKey] = useState(getApiKey())
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(0,0,0,0.4)' }}>
+    <div className="fixed inset-0 flex items-center justify-center z-[12001]" style={{ background: 'rgba(0,0,0,0.4)' }}>
       <div className="bg-background border border-border rounded-lg shadow-xl" style={{ width: 400, padding: 20 }}>
         <h3 className="text-foreground" style={{ fontSize: 14, fontWeight: 600, margin: '0 0 12px' }}>Anthropic API Key</h3>
         <p className="text-muted-foreground" style={{ fontSize: 12, margin: '0 0 12px', lineHeight: 1.5 }}>

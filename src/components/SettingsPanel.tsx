@@ -331,7 +331,7 @@ function SettingsPanelInner({ settings, onSave, onClose }: Omit<SettingsPanelPro
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center z-50"
+      className="fixed inset-0 flex items-center justify-center z-[12001]"
       style={{ background: 'rgba(0,0,0,0.4)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
       onKeyDown={handleKeyDown}
