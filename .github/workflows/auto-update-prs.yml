@@ -1,0 +1,38 @@
+name: Auto-update PR branches
+
+# When main advances, automatically update all open PR branches
+# so they stay up to date and can be auto-merged without manual rebase.
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  update-prs:
+    name: Update open PR branches
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update all open PR branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get all open PRs targeting main
+          PRS=$(gh pr list --base main --state open --json number,headRefName --jq '.[]')
+
+          echo "$PRS" | while IFS= read -r pr; do
+            PR_NUM=$(echo "$pr" | jq -r '.number')
+            BRANCH=$(echo "$pr" | jq -r '.headRefName')
+
+            echo "Updating PR #$PR_NUM ($BRANCH)..."
+            # GitHub native update — does a merge of main into the branch
+            gh pr update-branch "$PR_NUM" 2>&1 && echo "✅ #$PR_NUM updated" || echo "⚠️ #$PR_NUM skipped (already up to date or conflict)"
+          done
