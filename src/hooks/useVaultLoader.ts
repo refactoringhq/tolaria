@@ -42,7 +42,28 @@ function useNewNoteTracker() {
   return { newPaths, trackNew, clear }
 }
 
-export function resolveNoteStatus(path: string, newPaths: Set<string>, modifiedFiles: ModifiedFile[]): NoteStatus {
+function usePendingSaveTracker() {
+  const [pendingSavePaths, setPendingSavePaths] = useState<Set<string>>(new Set())
+
+  const addPendingSave = useCallback((path: string) => {
+    setPendingSavePaths((prev) => new Set(prev).add(path))
+  }, [])
+
+  const removePendingSave = useCallback((path: string) => {
+    setPendingSavePaths((prev) => {
+      const next = new Set(prev)
+      next.delete(path)
+      return next
+    })
+  }, [])
+
+  return { pendingSavePaths, addPendingSave, removePendingSave }
+}
+
+export function resolveNoteStatus(
+  path: string, newPaths: Set<string>, modifiedFiles: ModifiedFile[], pendingSavePaths?: Set<string>,
+): NoteStatus {
+  if (pendingSavePaths?.has(path)) return 'pendingSave'
   if (newPaths.has(path)) return 'new'
   const gitEntry = modifiedFiles.find((f) => f.path === path)
   if (!gitEntry) return 'clean'
@@ -56,6 +77,7 @@ export function useVaultLoader(vaultPath: string) {
   const [allContent, setAllContent] = useState<Record<string, string>>({})
   const [modifiedFiles, setModifiedFiles] = useState<ModifiedFile[]>([])
   const tracker = useNewNoteTracker()
+  const pendingSave = usePendingSaveTracker()
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- clear stale data then load new vault
@@ -117,7 +139,7 @@ export function useVaultLoader(vaultPath: string) {
     tauriCall<string>('get_file_diff', { vaultPath, path }, { path }), [vaultPath])
 
   const getNoteStatus = useCallback((path: string): NoteStatus =>
-    resolveNoteStatus(path, tracker.newPaths, modifiedFiles), [tracker.newPaths, modifiedFiles])
+    resolveNoteStatus(path, tracker.newPaths, modifiedFiles, pendingSave.pendingSavePaths), [tracker.newPaths, modifiedFiles, pendingSave.pendingSavePaths])
 
   const commitAndPush = useCallback((message: string): Promise<string> =>
     commitWithPush(vaultPath, message), [vaultPath])
@@ -134,5 +156,7 @@ export function useVaultLoader(vaultPath: string) {
     addEntry, updateEntry, removeEntry, replaceEntry, updateContent,
     loadModifiedFiles, loadGitHistory, loadDiff, loadDiffAtCommit,
     getNoteStatus, commitAndPush, reloadVault,
+    addPendingSave: pendingSave.addPendingSave,
+    removePendingSave: pendingSave.removePendingSave,
   }
 }
