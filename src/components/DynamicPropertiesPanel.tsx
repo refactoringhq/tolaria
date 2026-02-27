@@ -73,8 +73,6 @@ function StatusValue({ propKey, value, isEditing, vaultStatuses, onSave, onStart
   onSave: (key: string, value: string) => void; onStartEdit: (key: string | null) => void
 }) {
   const statusStr = String(value)
-  const [, setColorVersion] = useState(0)
-  const bumpColorVersion = useCallback(() => setColorVersion(v => v + 1), [])
   return (
     <span className="relative inline-flex min-w-0 items-center">
       <span
@@ -90,7 +88,6 @@ function StatusValue({ propKey, value, isEditing, vaultStatuses, onSave, onStart
           vaultStatuses={vaultStatuses}
           onSave={(newValue) => onSave(propKey, newValue)}
           onCancel={() => onStartEdit(null)}
-          onColorChange={bumpColorVersion}
         />
       )}
     </span>
@@ -213,9 +210,9 @@ function DisplayModeSelector({ propKey, currentMode, autoMode, onSelect }: {
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-[12000]" onClick={() => setOpen(false)} />
           <div
-            className="absolute right-0 top-full z-50 mt-1 min-w-[130px] rounded-md border border-border bg-background py-1 shadow-md"
+            className="absolute right-0 top-full z-[12001] mt-1 min-w-[130px] rounded-md border border-border bg-background py-1 shadow-md"
             data-testid="display-mode-menu"
           >
             {DISPLAY_MODE_OPTIONS.map(opt => (

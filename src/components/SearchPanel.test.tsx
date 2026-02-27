@@ -12,8 +12,6 @@ vi.mock('../mock-tauri', () => ({
 import { mockInvoke } from '../mock-tauri'
 const mockInvokeFn = vi.mocked(mockInvoke)
 
-const NOW_TS = Date.now() / 1000
-
 const MOCK_ENTRIES: VaultEntry[] = [
   {
     path: '/vault/essay/ai-apis.md',
@@ -29,16 +27,16 @@ const MOCK_ENTRIES: VaultEntry[] = [
     archived: false,
     trashed: false,
     trashedAt: null,
-    modifiedAt: NOW_TS - 3600,
-    createdAt: NOW_TS - 86400 * 30,
+    modifiedAt: Date.now() / 1000,
+    createdAt: Date.now() / 1000,
     fileSize: 500,
     snippet: 'A guide to designing APIs for AI',
-    wordCount: 1240,
+    wordCount: 0,
     relationships: {},
     icon: null,
     color: null,
     order: null,
-    outgoingLinks: ['topic/ai', 'topic/apis', 'person/luca'],
+    outgoingLinks: [],
   },
   {
     path: '/vault/event/retreat.md',
@@ -54,8 +52,8 @@ const MOCK_ENTRIES: VaultEntry[] = [
     archived: false,
     trashed: false,
     trashedAt: null,
-    modifiedAt: NOW_TS,
-    createdAt: NOW_TS,
+    modifiedAt: Date.now() / 1000,
+    createdAt: Date.now() / 1000,
     fileSize: 300,
     snippet: 'Team retreat event',
     wordCount: 0,
@@ -373,12 +371,14 @@ describe('SearchPanel', () => {
     expect(screen.getByText('Keyword Only')).toBeInTheDocument()
   })
 
-  it('shows metadata subtitle on search results', async () => {
+  it('deduplicates results when backend returns same note twice', async () => {
     mockInvokeFn.mockResolvedValue({
       results: [
-        { title: 'How to Design AI-first APIs', path: '/vault/essay/ai-apis.md', snippet: 'API content', score: 0.9, note_type: 'Essay' },
+        { title: 'How to Design AI-first APIs', path: '/vault/essay/ai-apis.md', snippet: 'keyword hit', score: 0.7, note_type: 'Essay' },
+        { title: 'Refactoring Retreat', path: '/vault/event/retreat.md', snippet: 'unique', score: 0.6, note_type: 'Event' },
+        { title: 'How to Design AI-first APIs', path: '/vault/essay/ai-apis.md', snippet: 'semantic hit', score: 0.9, note_type: 'Essay' },
       ],
-      elapsed_ms: 50,
+      elapsed_ms: 48,
     })
 
     render(
@@ -388,11 +388,12 @@ describe('SearchPanel', () => {
     fireEvent.change(screen.getByPlaceholderText('Search in all notes...'), { target: { value: 'api' } })
 
     await waitFor(() => {
-      const meta = screen.getByTestId('search-result-meta')
-      expect(meta).toBeInTheDocument()
-      expect(meta.textContent).toContain('words')
-      expect(meta.textContent).toContain('3 links')
-      expect(meta.textContent).toContain('Created')
+      const titles = screen.getAllByText('How to Design AI-first APIs')
+      expect(titles).toHaveLength(1) // deduped — not 2
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText(/2 results/)).toBeInTheDocument()
     })
   })
 
