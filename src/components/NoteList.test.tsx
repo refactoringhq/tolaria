@@ -266,12 +266,12 @@ describe('NoteList', () => {
     expect(screen.getByText('Facebook Ads Strategy')).toBeInTheDocument()
   })
 
-  it('context view shows prominent card with metadata subtitle', () => {
+  it('context view shows prominent card with snippet subtitle', () => {
     render(
       <NoteList entries={mockEntries} selection={{ kind: 'entity', entry: mockEntries[0] }} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
-    // Metadata subtitle (date · word count) appears in the prominent card
-    expect(screen.getAllByText(/Empty/).length).toBeGreaterThan(0)
+    // Snippet text appears in the prominent card
+    expect(screen.getByText('Build a personal knowledge management app.')).toBeInTheDocument()
   })
 })
 
