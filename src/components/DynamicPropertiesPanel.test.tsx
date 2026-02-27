@@ -906,5 +906,177 @@ describe('DynamicPropertiesPanel', () => {
       )
       expect(screen.getByTestId('status-badge')).toBeInTheDocument()
     })
+
+    it('renders boolean toggle for string "true" when boolean mode overridden', () => {
+      localStorageMock.setItem('laputa:display-mode-overrides', JSON.stringify({ draft: 'boolean' }))
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ draft: 'true' }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      expect(screen.getByTestId('boolean-toggle')).toBeInTheDocument()
+      expect(screen.getByText('\u2713 Yes')).toBeInTheDocument()
+    })
+
+    it('renders boolean toggle for string "false" when boolean mode overridden', () => {
+      localStorageMock.setItem('laputa:display-mode-overrides', JSON.stringify({ draft: 'boolean' }))
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ draft: 'false' }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      expect(screen.getByTestId('boolean-toggle')).toBeInTheDocument()
+      expect(screen.getByText('\u2717 No')).toBeInTheDocument()
+    })
+
+    it('toggles string boolean from false to true', () => {
+      localStorageMock.setItem('laputa:display-mode-overrides', JSON.stringify({ draft: 'boolean' }))
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ draft: 'false' }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      fireEvent.click(screen.getByTestId('boolean-toggle'))
+      expect(onUpdateProperty).toHaveBeenCalledWith('draft', true)
+    })
+
+    it('renders date picker for empty value when date mode overridden', () => {
+      localStorageMock.setItem('laputa:display-mode-overrides', JSON.stringify({ due: 'date' }))
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ due: '' }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      expect(screen.getByTestId('date-display')).toBeInTheDocument()
+      expect(screen.getByText('Pick a date\u2026')).toBeInTheDocument()
+    })
+
+    it('renders date picker for non-date string when date mode overridden', () => {
+      localStorageMock.setItem('laputa:display-mode-overrides', JSON.stringify({ deadline: 'date' }))
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ deadline: 'soon' }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      expect(screen.getByTestId('date-display')).toBeInTheDocument()
+    })
+  })
+
+  describe('type-aware add property form', () => {
+    it('shows boolean toggle when boolean type selected', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{}}
+          onAddProperty={onAddProperty}
+        />
+      )
+      fireEvent.click(screen.getByText('+ Add property'))
+      // Switch type to boolean
+      fireEvent.pointerDown(screen.getByTestId('add-property-type-trigger'), { button: 0, pointerType: 'mouse' })
+      fireEvent.click(screen.getByRole('option', { name: /Boolean/ }))
+      expect(screen.getByTestId('add-property-boolean-toggle')).toBeInTheDocument()
+      expect(screen.getByText('\u2717 No')).toBeInTheDocument()
+    })
+
+    it('toggles boolean value in add form', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{}}
+          onAddProperty={onAddProperty}
+        />
+      )
+      fireEvent.click(screen.getByText('+ Add property'))
+      fireEvent.pointerDown(screen.getByTestId('add-property-type-trigger'), { button: 0, pointerType: 'mouse' })
+      fireEvent.click(screen.getByRole('option', { name: /Boolean/ }))
+      // Toggle from No to Yes
+      fireEvent.click(screen.getByTestId('add-property-boolean-toggle'))
+      expect(screen.getByText('\u2713 Yes')).toBeInTheDocument()
+    })
+
+    it('stores actual boolean value when adding boolean property', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{}}
+          onAddProperty={onAddProperty}
+        />
+      )
+      fireEvent.click(screen.getByText('+ Add property'))
+      const keyInput = screen.getByPlaceholderText('Property name')
+      fireEvent.change(keyInput, { target: { value: 'published' } })
+      // Switch to boolean type
+      fireEvent.pointerDown(screen.getByTestId('add-property-type-trigger'), { button: 0, pointerType: 'mouse' })
+      fireEvent.click(screen.getByRole('option', { name: /Boolean/ }))
+      // Default is false, toggle to true
+      fireEvent.click(screen.getByTestId('add-property-boolean-toggle'))
+      // Submit
+      fireEvent.click(screen.getByTestId('add-property-confirm'))
+      expect(onAddProperty).toHaveBeenCalledWith('published', true)
+    })
+
+    it('shows date picker trigger when date type selected', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{}}
+          onAddProperty={onAddProperty}
+        />
+      )
+      fireEvent.click(screen.getByText('+ Add property'))
+      fireEvent.pointerDown(screen.getByTestId('add-property-type-trigger'), { button: 0, pointerType: 'mouse' })
+      fireEvent.click(screen.getByRole('option', { name: /Date/ }))
+      expect(screen.getByTestId('add-property-date-trigger')).toBeInTheDocument()
+      expect(screen.getByText('Pick a date\u2026')).toBeInTheDocument()
+    })
+
+    it('shows status dropdown when status type selected', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{}}
+          onAddProperty={onAddProperty}
+        />
+      )
+      fireEvent.click(screen.getByText('+ Add property'))
+      fireEvent.pointerDown(screen.getByTestId('add-property-type-trigger'), { button: 0, pointerType: 'mouse' })
+      fireEvent.click(screen.getByRole('option', { name: /Status/ }))
+      expect(screen.getByTestId('add-property-status-trigger')).toBeInTheDocument()
+    })
+
+    it('shows text input for text and url types', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{}}
+          onAddProperty={onAddProperty}
+        />
+      )
+      fireEvent.click(screen.getByText('+ Add property'))
+      // Default mode is text
+      expect(screen.getByPlaceholderText('Value')).toBeInTheDocument()
+    })
   })
 })

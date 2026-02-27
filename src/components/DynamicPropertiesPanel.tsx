@@ -22,6 +22,7 @@ import {
   detectPropertyType,
 } from '../utils/propertyTypes'
 import { StatusPill, StatusDropdown } from './StatusDropdown'
+import { SUGGESTED_STATUSES } from '../utils/statusStyles'
 
 // Keys that are relationships (contain wikilinks)
 export const RELATIONSHIP_KEYS = new Set([
@@ -111,6 +112,13 @@ function parseDateValue(value: string): Date | undefined {
   return isNaN(d.getTime()) ? undefined : d
 }
 
+function dateToISO(day: Date): string {
+  const yyyy = day.getFullYear()
+  const mm = String(day.getMonth() + 1).padStart(2, '0')
+  const dd = String(day.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
 function DateValue({ value, onSave }: {
   value: string; onSave: (newValue: string) => void
 }) {
@@ -119,12 +127,7 @@ function DateValue({ value, onSave }: {
   const selectedDate = parseDateValue(value)
 
   const handleSelect = (day: Date | undefined) => {
-    if (day) {
-      const yyyy = day.getFullYear()
-      const mm = String(day.getMonth() + 1).padStart(2, '0')
-      const dd = String(day.getDate()).padStart(2, '0')
-      onSave(`${yyyy}-${mm}-${dd}`)
-    }
+    if (day) onSave(dateToISO(day))
     setOpen(false)
   }
 
@@ -143,7 +146,7 @@ function DateValue({ value, onSave }: {
           data-testid="date-display"
         >
           <CalendarIcon className="size-3 shrink-0 text-muted-foreground" />
-          <span className="min-w-0 truncate">{formatted}</span>
+          <span className={`min-w-0 truncate${!formatted ? ' text-muted-foreground' : ''}`}>{formatted || 'Pick a date\u2026'}</span>
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="end" data-testid="date-picker-popover">
@@ -239,12 +242,99 @@ const DISPLAY_MODE_ICONS: Record<PropertyDisplayMode, typeof Type> = {
   text: Type, date: CalendarIcon, boolean: ToggleLeft, status: Circle, url: Link,
 }
 
-function AddPropertyForm({ onAdd, onCancel }: {
+const ADD_INPUT_CLASS = "h-[26px] min-w-0 flex-1 rounded border border-border bg-muted px-1.5 text-[12px] text-foreground outline-none focus:border-primary"
+
+function AddBooleanInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const boolVal = value.toLowerCase() === 'true'
+  return (
+    <button
+      className="h-[26px] min-w-0 flex-1 rounded border border-border bg-muted px-1.5 text-[12px] text-secondary-foreground transition-colors hover:bg-accent"
+      onClick={() => onChange(boolVal ? 'false' : 'true')}
+      data-testid="add-property-boolean-toggle"
+    >
+      {boolVal ? '\u2713 Yes' : '\u2717 No'}
+    </button>
+  )
+}
+
+function AddDateInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const selectedDate = value ? parseDateValue(value) : undefined
+  const formatted = value ? formatDateValue(value) : ''
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          className="inline-flex h-[26px] min-w-0 flex-1 cursor-pointer items-center gap-1 rounded border border-border bg-muted px-1.5 text-[12px] transition-colors hover:bg-accent"
+          data-testid="add-property-date-trigger"
+        >
+          <CalendarIcon className="size-3 shrink-0 text-muted-foreground" />
+          <span className={`min-w-0 truncate${!formatted ? ' text-muted-foreground' : ' text-foreground'}`}>
+            {formatted || 'Pick a date\u2026'}
+          </span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={(day) => { if (day) onChange(dateToISO(day)) }}
+          defaultMonth={selectedDate}
+        />
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+function AddStatusInput({ value, onChange, vaultStatuses }: { value: string; onChange: (v: string) => void; vaultStatuses: string[] }) {
+  const allStatuses = [...new Set([...vaultStatuses, ...SUGGESTED_STATUSES])]
+  return (
+    <Select value={value || undefined} onValueChange={onChange}>
+      <SelectTrigger
+        size="sm"
+        className="h-[26px] min-w-0 flex-1 gap-1 border-border bg-muted px-1.5 py-0 shadow-none"
+        style={{ fontSize: 12, borderRadius: 4 }}
+        data-testid="add-property-status-trigger"
+      >
+        <SelectValue placeholder="Status\u2026" />
+      </SelectTrigger>
+      <SelectContent>
+        {allStatuses.map(s => (
+          <SelectItem key={s} value={s}>{s}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
+function AddPropertyValueInput({ displayMode, value, onChange, onKeyDown, vaultStatuses }: {
+  displayMode: PropertyDisplayMode; value: string; onChange: (v: string) => void
+  onKeyDown: (e: React.KeyboardEvent) => void; vaultStatuses: string[]
+}) {
+  switch (displayMode) {
+    case 'boolean': return <AddBooleanInput value={value} onChange={onChange} />
+    case 'date': return <AddDateInput value={value} onChange={onChange} />
+    case 'status': return <AddStatusInput value={value} onChange={onChange} vaultStatuses={vaultStatuses} />
+    default: return (
+      <input className={ADD_INPUT_CLASS} type="text" placeholder="Value" value={value}
+        onChange={(e) => onChange(e.target.value)} onKeyDown={onKeyDown}
+      />
+    )
+  }
+}
+
+function AddPropertyForm({ onAdd, onCancel, vaultStatuses }: {
   onAdd: (key: string, value: string, displayMode: PropertyDisplayMode) => void; onCancel: () => void
+  vaultStatuses: string[]
 }) {
   const [newKey, setNewKey] = useState('')
   const [newValue, setNewValue] = useState('')
   const [displayMode, setDisplayMode] = useState<PropertyDisplayMode>('text')
+
+  const handleModeChange = (mode: PropertyDisplayMode) => {
+    setDisplayMode(mode)
+    if (mode === 'boolean') setNewValue('false')
+    else if (mode !== displayMode) setNewValue('')
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && newKey.trim()) onAdd(newKey, newValue, displayMode)
@@ -258,7 +348,7 @@ function AddPropertyForm({ onAdd, onCancel }: {
         type="text" placeholder="Property name" value={newKey}
         onChange={(e) => setNewKey(e.target.value)} onKeyDown={handleKeyDown} autoFocus
       />
-      <Select value={displayMode} onValueChange={(v) => setDisplayMode(v as PropertyDisplayMode)}>
+      <Select value={displayMode} onValueChange={(v) => handleModeChange(v as PropertyDisplayMode)}>
         <SelectTrigger
           size="sm"
           className="h-[26px] w-[82px] shrink-0 gap-1 border-border bg-muted px-1.5 py-0 shadow-none"
@@ -279,11 +369,7 @@ function AddPropertyForm({ onAdd, onCancel }: {
           })}
         </SelectContent>
       </Select>
-      <input
-        className="h-[26px] min-w-0 flex-1 rounded border border-border bg-muted px-1.5 text-[12px] text-foreground outline-none focus:border-primary"
-        type="text" placeholder="Value" value={newValue}
-        onChange={(e) => setNewValue(e.target.value)} onKeyDown={handleKeyDown}
-      />
+      <AddPropertyValueInput displayMode={displayMode} value={newValue} onChange={setNewValue} onKeyDown={handleKeyDown} vaultStatuses={vaultStatuses} />
       <Button
         size="icon-xs" onClick={() => onAdd(newKey, newValue, displayMode)}
         disabled={!newKey.trim()} title="Add property"
@@ -359,6 +445,18 @@ function TypeSelector({ isA, customColorKey, availableTypes, onUpdateProperty, o
   )
 }
 
+function toBooleanValue(value: FrontmatterValue): boolean {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'string') return value.toLowerCase() === 'true'
+  return false
+}
+
+function autoDetectFromValue(value: FrontmatterValue): PropertyDisplayMode {
+  if (typeof value === 'boolean') return 'boolean'
+  if (typeof value === 'string' && isUrlValue(value)) return 'url'
+  return 'text'
+}
+
 function SmartPropertyValueCell({ propKey, value, displayMode, isEditing, vaultStatuses, onStartEdit, onSave, onSaveList, onUpdate }: {
   propKey: string; value: FrontmatterValue; displayMode: PropertyDisplayMode; isEditing: boolean
   vaultStatuses: string[]
@@ -367,34 +465,21 @@ function SmartPropertyValueCell({ propKey, value, displayMode, isEditing, vaultS
 }) {
   const editProps = { value: String(value ?? ''), isEditing, onStartEdit: () => onStartEdit(propKey), onSave: (v: string) => onSave(propKey, v), onCancel: () => onStartEdit(null) }
 
-  if (value === null || value === undefined) return <EditableValue {...editProps} />
   if (Array.isArray(value)) return <TagPillList items={value.map(String)} onSave={(items) => onSaveList(propKey, items)} label={propKey} />
 
-  switch (displayMode) {
+  const resolvedMode = displayMode === 'text' ? autoDetectFromValue(value) : displayMode
+  switch (resolvedMode) {
     case 'status':
-      return <StatusValue propKey={propKey} value={value} isEditing={isEditing} vaultStatuses={vaultStatuses} onSave={onSave} onStartEdit={onStartEdit} />
+      return <StatusValue propKey={propKey} value={value ?? ''} isEditing={isEditing} vaultStatuses={vaultStatuses} onSave={onSave} onStartEdit={onStartEdit} />
     case 'date':
-      if (typeof value === 'string') {
-        return <DateValue value={value} onSave={(v) => onSave(propKey, v)} />
-      }
-      return <EditableValue {...editProps} />
-    case 'boolean':
-      if (typeof value === 'boolean') {
-        return <BooleanToggle value={value} onToggle={() => onUpdate?.(propKey, !value)} />
-      }
-      return <EditableValue {...editProps} />
+      return <DateValue value={String(value ?? '')} onSave={(v) => onSave(propKey, v)} />
+    case 'boolean': {
+      const boolVal = toBooleanValue(value)
+      return <BooleanToggle value={boolVal} onToggle={() => onUpdate?.(propKey, !boolVal)} />
+    }
     case 'url':
-      if (typeof value === 'string' && isUrlValue(value)) {
-        return <UrlValue {...editProps} />
-      }
-      return <EditableValue {...editProps} />
+      return <UrlValue {...editProps} />
     default:
-      if (typeof value === 'boolean') {
-        return <BooleanToggle value={value} onToggle={() => onUpdate?.(propKey, !value)} />
-      }
-      if (typeof value === 'string' && isUrlValue(value)) {
-        return <UrlValue {...editProps} />
-      }
       return <EditableValue {...editProps} />
   }
 }
@@ -466,51 +551,53 @@ function reconcileListUpdate(
   else onUpdate(key, newItems)
 }
 
-export function DynamicPropertiesPanel({
-  entry,
-  content,
-  frontmatter,
-  entries,
-  onUpdateProperty,
-  onDeleteProperty,
-  onAddProperty,
-  onNavigate,
-}: {
-  entry: VaultEntry
-  content: string | null
+function deriveTypeInfo(entries: VaultEntry[] | undefined, entryIsA: string | null) {
+  const typeEntries = (entries ?? []).filter(e => e.isA === 'Type')
+  return {
+    availableTypes: typeEntries.map(e => e.title).sort((a, b) => a.localeCompare(b)),
+    customColorKey: entryIsA ? (typeEntries.find(e => e.title === entryIsA)?.color ?? null) : null,
+  }
+}
+
+function collectVaultStatuses(entries: VaultEntry[] | undefined): string[] {
+  const seen = new Set<string>()
+  for (const e of entries ?? []) {
+    if (e.status) seen.add(e.status)
+  }
+  return Array.from(seen).sort((a, b) => a.localeCompare(b))
+}
+
+function isVisibleProperty([key, value]: [string, FrontmatterValue]): boolean {
+  return !SKIP_KEYS.has(key) && !RELATIONSHIP_KEYS.has(key) && !containsWikilinks(value)
+}
+
+function parseAddedValue(rawValue: string, mode: PropertyDisplayMode): FrontmatterValue {
+  return mode === 'boolean' ? rawValue.toLowerCase() === 'true' : parseNewValue(rawValue)
+}
+
+function persistModeOverride(key: string, mode: PropertyDisplayMode | null) {
+  if (mode === null) removeDisplayModeOverride(key)
+  else saveDisplayModeOverride(key, mode)
+}
+
+interface PropertyPanelDeps {
+  entries: VaultEntry[] | undefined
+  entryIsA: string | null
   frontmatter: ParsedFrontmatter
-  entries?: VaultEntry[]
   onUpdateProperty?: (key: string, value: FrontmatterValue) => void
   onDeleteProperty?: (key: string) => void
   onAddProperty?: (key: string, value: FrontmatterValue) => void
-  onNavigate?: (target: string) => void
-}) {
+}
+
+function usePropertyPanelState(deps: PropertyPanelDeps) {
+  const { entries, entryIsA, frontmatter, onUpdateProperty, onDeleteProperty, onAddProperty } = deps
   const [editingKey, setEditingKey] = useState<string | null>(null)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [displayOverrides, setDisplayOverrides] = useState(() => loadDisplayModeOverrides())
 
-  const wordCount = countWords(content ?? '')
-
-  const { availableTypes, customColorKey } = useMemo(() => {
-    const typeEntries = (entries ?? []).filter(e => e.isA === 'Type')
-    return {
-      availableTypes: typeEntries.map(e => e.title).sort((a, b) => a.localeCompare(b)),
-      customColorKey: entry.isA ? (typeEntries.find(e => e.title === entry.isA)?.color ?? null) : null,
-    }
-  }, [entries, entry.isA])
-
-  const vaultStatuses = useMemo(() => {
-    const seen = new Set<string>()
-    for (const e of entries ?? []) {
-      if (e.status) seen.add(e.status)
-    }
-    return Array.from(seen).sort((a, b) => a.localeCompare(b))
-  }, [entries])
-
-  const propertyEntries = useMemo(() => {
-    return Object.entries(frontmatter)
-      .filter(([key, value]) => !SKIP_KEYS.has(key) && !RELATIONSHIP_KEYS.has(key) && !containsWikilinks(value))
-  }, [frontmatter])
+  const { availableTypes, customColorKey } = useMemo(() => deriveTypeInfo(entries, entryIsA), [entries, entryIsA])
+  const vaultStatuses = useMemo(() => collectVaultStatuses(entries), [entries])
+  const propertyEntries = useMemo(() => Object.entries(frontmatter).filter(isVisibleProperty), [frontmatter])
 
   const handleSaveValue = useCallback((key: string, newValue: string) => {
     setEditingKey(null)
@@ -524,46 +611,65 @@ export function DynamicPropertiesPanel({
 
   const handleAdd = useCallback((rawKey: string, rawValue: string, mode: PropertyDisplayMode) => {
     if (!rawKey.trim() || !onAddProperty) return
-    onAddProperty(rawKey.trim(), parseNewValue(rawValue))
+    onAddProperty(rawKey.trim(), parseAddedValue(rawValue, mode))
     if (mode !== 'text') {
-      saveDisplayModeOverride(rawKey.trim(), mode)
+      persistModeOverride(rawKey.trim(), mode)
       setDisplayOverrides(loadDisplayModeOverrides())
     }
     setShowAddDialog(false)
   }, [onAddProperty])
 
   const handleDisplayModeChange = useCallback((key: string, mode: PropertyDisplayMode | null) => {
-    if (mode === null) {
-      removeDisplayModeOverride(key)
-    } else {
-      saveDisplayModeOverride(key, mode)
-    }
+    persistModeOverride(key, mode)
     setDisplayOverrides(loadDisplayModeOverrides())
   }, [])
 
+  return {
+    editingKey, setEditingKey, showAddDialog, setShowAddDialog, displayOverrides,
+    availableTypes, customColorKey, vaultStatuses, propertyEntries,
+    handleSaveValue, handleSaveList, handleAdd, handleDisplayModeChange,
+  }
+}
+
+export function DynamicPropertiesPanel({
+  entry, content, frontmatter, entries,
+  onUpdateProperty, onDeleteProperty, onAddProperty, onNavigate,
+}: {
+  entry: VaultEntry
+  content: string | null
+  frontmatter: ParsedFrontmatter
+  entries?: VaultEntry[]
+  onUpdateProperty?: (key: string, value: FrontmatterValue) => void
+  onDeleteProperty?: (key: string) => void
+  onAddProperty?: (key: string, value: FrontmatterValue) => void
+  onNavigate?: (target: string) => void
+}) {
+  const {
+    editingKey, setEditingKey, showAddDialog, setShowAddDialog, displayOverrides,
+    availableTypes, customColorKey, vaultStatuses, propertyEntries,
+    handleSaveValue, handleSaveList, handleAdd, handleDisplayModeChange,
+  } = usePropertyPanelState({ entries, entryIsA: entry.isA, frontmatter, onUpdateProperty, onDeleteProperty, onAddProperty })
+
+  const wordCount = countWords(content ?? '')
+
   return (
     <div className="flex flex-col gap-3">
-      {/* Editable properties section */}
       <div className="flex flex-col gap-2">
         <TypeSelector isA={entry.isA} customColorKey={customColorKey} availableTypes={availableTypes} onUpdateProperty={onUpdateProperty} onNavigate={onNavigate} />
-        {propertyEntries.map(([key, value]) => {
-          const autoMode = detectPropertyType(key, value)
-          const effectiveMode = getEffectiveDisplayMode(key, value, displayOverrides)
-          return (
-            <PropertyRow
-              key={key} propKey={key} value={value}
-              editingKey={editingKey} displayMode={effectiveMode} autoMode={autoMode}
-              vaultStatuses={vaultStatuses}
-              onStartEdit={setEditingKey} onSave={handleSaveValue}
-              onSaveList={handleSaveList} onUpdate={onUpdateProperty}
-              onDelete={onDeleteProperty}
-              onDisplayModeChange={handleDisplayModeChange}
-            />
-          )
-        })}
+        {propertyEntries.map(([key, value]) => (
+          <PropertyRow
+            key={key} propKey={key} value={value}
+            editingKey={editingKey} displayMode={getEffectiveDisplayMode(key, value, displayOverrides)} autoMode={detectPropertyType(key, value)}
+            vaultStatuses={vaultStatuses}
+            onStartEdit={setEditingKey} onSave={handleSaveValue}
+            onSaveList={handleSaveList} onUpdate={onUpdateProperty}
+            onDelete={onDeleteProperty}
+            onDisplayModeChange={handleDisplayModeChange}
+          />
+        ))}
       </div>
       {showAddDialog
-        ? <AddPropertyForm onAdd={handleAdd} onCancel={() => setShowAddDialog(false)} />
+        ? <AddPropertyForm onAdd={handleAdd} onCancel={() => setShowAddDialog(false)} vaultStatuses={vaultStatuses} />
         : <AddPropertyButton onClick={() => setShowAddDialog(true)} disabled={!onAddProperty} />
       }
       <NoteInfoSection entry={entry} wordCount={wordCount} />
