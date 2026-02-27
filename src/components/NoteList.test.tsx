@@ -288,28 +288,27 @@ describe('NoteList click behavior', () => {
     expect(noopSelect).not.toHaveBeenCalled()
   })
 
-  it('Cmd+Click calls onSelectNote (opens in new tab)', () => {
+  it('Cmd+Click toggles multi-select on a note', () => {
     render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
     fireEvent.click(screen.getByText('Build Laputa App'), { metaKey: true })
-    expect(noopSelect).toHaveBeenCalledWith(mockEntries[0])
     expect(noopReplace).not.toHaveBeenCalled()
+    expect(screen.getByTestId('multi-selected-item')).toBeInTheDocument()
+    expect(screen.getByTestId('bulk-action-bar')).toBeInTheDocument()
   })
 
-  it('Ctrl+Click calls onSelectNote (opens in new tab, Windows/Linux)', () => {
+  it('Ctrl+Click toggles multi-select (Windows/Linux)', () => {
     render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
     fireEvent.click(screen.getByText('Build Laputa App'), { ctrlKey: true })
-    expect(noopSelect).toHaveBeenCalledWith(mockEntries[0])
     expect(noopReplace).not.toHaveBeenCalled()
+    expect(screen.getByTestId('multi-selected-item')).toBeInTheDocument()
   })
 
-  it('Cmd+Click on entity pinned card calls onSelectNote', () => {
+  it('Cmd+Click on entity pinned card toggles multi-select', () => {
     render(
       <NoteList entries={mockEntries} selection={{ kind: 'entity', entry: mockEntries[0] }} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
-    // Title appears in both header and pinned card — use getAllByText and click the pinned card instance
     const titles = screen.getAllByText('Build Laputa App')
     fireEvent.click(titles[titles.length - 1], { metaKey: true })
-    expect(noopSelect).toHaveBeenCalledWith(mockEntries[0])
     expect(noopReplace).not.toHaveBeenCalled()
   })
 
@@ -986,5 +985,95 @@ describe('NoteList — virtual list with large datasets', () => {
       expect(screen.getByText('Facebook Ads Strategy')).toBeInTheDocument()
       expect(screen.queryByText('Matteo Cellini')).not.toBeInTheDocument()
     })
+  })
+})
+
+// --- Multi-select tests ---
+
+describe('NoteList — multi-select', () => {
+  beforeEach(() => {
+    noopSelect.mockClear()
+    noopReplace.mockClear()
+  })
+
+  it('Cmd+Click selects multiple notes', () => {
+    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
+    fireEvent.click(screen.getByText('Build Laputa App'), { metaKey: true })
+    fireEvent.click(screen.getByText('Facebook Ads Strategy'), { metaKey: true })
+    const selected = screen.getAllByTestId('multi-selected-item')
+    expect(selected).toHaveLength(2)
+  })
+
+  it('Cmd+Click toggles off an already-selected note', () => {
+    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
+    fireEvent.click(screen.getByText('Build Laputa App'), { metaKey: true })
+    expect(screen.getAllByTestId('multi-selected-item')).toHaveLength(1)
+    // Toggle off
+    fireEvent.click(screen.getByText('Build Laputa App'), { metaKey: true })
+    expect(screen.queryByTestId('multi-selected-item')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('bulk-action-bar')).not.toBeInTheDocument()
+  })
+
+  it('regular click clears multi-select and opens note', () => {
+    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
+    // Multi-select two notes
+    fireEvent.click(screen.getByText('Build Laputa App'), { metaKey: true })
+    fireEvent.click(screen.getByText('Facebook Ads Strategy'), { metaKey: true })
+    expect(screen.getAllByTestId('multi-selected-item')).toHaveLength(2)
+    // Regular click clears selection and opens note
+    fireEvent.click(screen.getByText('Matteo Cellini'))
+    expect(screen.queryByTestId('multi-selected-item')).not.toBeInTheDocument()
+    expect(noopReplace).toHaveBeenCalledWith(mockEntries[2])
+  })
+
+  it('Shift+Click selects a range of notes', () => {
+    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
+    // First Cmd+Click to set anchor
+    fireEvent.click(screen.getByText('Build Laputa App'), { metaKey: true })
+    // Shift+Click to select range
+    fireEvent.click(screen.getByText('Matteo Cellini'), { shiftKey: true })
+    // Should select all notes between Build Laputa App and Matteo Cellini (inclusive)
+    const selected = screen.getAllByTestId('multi-selected-item')
+    expect(selected.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('shows bulk action bar with correct count', () => {
+    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
+    fireEvent.click(screen.getByText('Build Laputa App'), { metaKey: true })
+    fireEvent.click(screen.getByText('Facebook Ads Strategy'), { metaKey: true })
+    expect(screen.getByTestId('bulk-action-bar')).toBeInTheDocument()
+    expect(screen.getByText('2 selected')).toBeInTheDocument()
+  })
+
+  it('bulk archive calls onBulkArchive and clears selection', () => {
+    const onBulkArchive = vi.fn()
+    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} onBulkArchive={onBulkArchive} />)
+    fireEvent.click(screen.getByText('Build Laputa App'), { metaKey: true })
+    fireEvent.click(screen.getByTestId('bulk-archive-btn'))
+    expect(onBulkArchive).toHaveBeenCalledWith([mockEntries[0].path])
+    expect(screen.queryByTestId('bulk-action-bar')).not.toBeInTheDocument()
+  })
+
+  it('bulk trash calls onBulkTrash and clears selection', () => {
+    const onBulkTrash = vi.fn()
+    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} onBulkTrash={onBulkTrash} />)
+    fireEvent.click(screen.getByText('Build Laputa App'), { metaKey: true })
+    fireEvent.click(screen.getByTestId('bulk-trash-btn'))
+    expect(onBulkTrash).toHaveBeenCalledWith([mockEntries[0].path])
+    expect(screen.queryByTestId('bulk-action-bar')).not.toBeInTheDocument()
+  })
+
+  it('clear button on bulk action bar clears selection', () => {
+    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
+    fireEvent.click(screen.getByText('Build Laputa App'), { metaKey: true })
+    expect(screen.getByTestId('bulk-action-bar')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('bulk-clear-btn'))
+    expect(screen.queryByTestId('bulk-action-bar')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('multi-selected-item')).not.toBeInTheDocument()
+  })
+
+  it('no bulk action bar when nothing is selected', () => {
+    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
+    expect(screen.queryByTestId('bulk-action-bar')).not.toBeInTheDocument()
   })
 })

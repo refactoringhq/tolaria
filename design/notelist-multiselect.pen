@@ -1,0 +1,422 @@
+{
+  "children": [
+    {
+      "type": "frame",
+      "id": "ms_selected",
+      "name": "Multi-select — 2 notes selected (bulk action bar visible)",
+      "width": 340,
+      "height": "fit_content(600)",
+      "x": 0,
+      "y": 0,
+      "fill": "#FFFFFF",
+      "layout": "vertical",
+      "theme": { "Mode": "Light" },
+      "children": [
+        {
+          "type": "frame",
+          "id": "ms_hdr1",
+          "name": "header",
+          "width": "fill_container",
+          "height": 52,
+          "padding": [0, 16],
+          "alignItems": "center",
+          "justifyContent": "space_between",
+          "stroke": { "align": "inside", "fill": "#E5E5E5", "thickness": { "bottom": 1 } },
+          "children": [
+            { "type": "text", "id": "ms_h1t", "content": "Notes", "fill": "#37352F", "fontFamily": "Inter", "fontSize": 14, "fontWeight": "600" },
+            { "type": "frame", "id": "ms_h1icons", "gap": 12, "alignItems": "center", "children": [
+              { "type": "text", "id": "ms_h1s", "content": "\uD83D\uDD0D", "fontSize": 14 },
+              { "type": "text", "id": "ms_h1p", "content": "+", "fontSize": 16, "fill": "#9B9A97" }
+            ]}
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ms_item1",
+          "name": "item-selected-1",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "padding": [14, 16],
+          "fill": "#EBF5FF",
+          "stroke": { "align": "inside", "fill": "#E5E5E5", "thickness": { "bottom": 1 } },
+          "children": [
+            {
+              "type": "frame",
+              "id": "ms_i1row",
+              "width": "fill_container",
+              "alignItems": "center",
+              "gap": 8,
+              "children": [
+                { "type": "frame", "id": "ms_i1chk", "width": 16, "height": 16, "cornerRadius": 3, "fill": "#2383E2", "stroke": { "fill": "#2383E2", "thickness": 1 } },
+                { "type": "text", "id": "ms_i1t", "content": "Build Laputa App", "fill": "#37352F", "fontFamily": "Inter", "fontSize": 13, "fontWeight": "600" }
+              ]
+            },
+            { "type": "text", "id": "ms_i1s", "content": "Build a personal knowledge management app.", "fill": "#9B9A97", "fontFamily": "Inter", "fontSize": 12 }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ms_item2",
+          "name": "item-normal",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "padding": [14, 16],
+          "stroke": { "align": "inside", "fill": "#E5E5E5", "thickness": { "bottom": 1 } },
+          "children": [
+            {
+              "type": "frame",
+              "id": "ms_i2row",
+              "width": "fill_container",
+              "alignItems": "center",
+              "gap": 8,
+              "children": [
+                { "type": "frame", "id": "ms_i2chk", "width": 16, "height": 16, "cornerRadius": 3, "stroke": { "fill": "#D4D4D4", "thickness": 1 } },
+                { "type": "text", "id": "ms_i2t", "content": "Facebook Ads Strategy", "fill": "#37352F", "fontFamily": "Inter", "fontSize": 13, "fontWeight": "500" }
+              ]
+            },
+            { "type": "text", "id": "ms_i2s", "content": "Lookalike audiences convert 3x better.", "fill": "#9B9A97", "fontFamily": "Inter", "fontSize": 12 }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ms_item3",
+          "name": "item-selected-2",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "padding": [14, 16],
+          "fill": "#EBF5FF",
+          "stroke": { "align": "inside", "fill": "#E5E5E5", "thickness": { "bottom": 1 } },
+          "children": [
+            {
+              "type": "frame",
+              "id": "ms_i3row",
+              "width": "fill_container",
+              "alignItems": "center",
+              "gap": 8,
+              "children": [
+                { "type": "frame", "id": "ms_i3chk", "width": 16, "height": 16, "cornerRadius": 3, "fill": "#2383E2", "stroke": { "fill": "#2383E2", "thickness": 1 } },
+                { "type": "text", "id": "ms_i3t", "content": "Matteo Cellini", "fill": "#37352F", "fontFamily": "Inter", "fontSize": 13, "fontWeight": "600" }
+              ]
+            },
+            { "type": "text", "id": "ms_i3s", "content": "Sponsorship manager.", "fill": "#9B9A97", "fontFamily": "Inter", "fontSize": 12 }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ms_item4",
+          "name": "item-normal-2",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "padding": [14, 16],
+          "stroke": { "align": "inside", "fill": "#E5E5E5", "thickness": { "bottom": 1 } },
+          "children": [
+            { "type": "text", "id": "ms_i4t", "content": "Kickoff Meeting", "fill": "#37352F", "fontFamily": "Inter", "fontSize": 13, "fontWeight": "500" },
+            { "type": "text", "id": "ms_i4s", "content": "Project kickoff meeting notes.", "fill": "#9B9A97", "fontFamily": "Inter", "fontSize": 12 }
+          ]
+        },
+        { "type": "frame", "id": "ms_spacer1", "width": "fill_container", "height": 120 },
+        {
+          "type": "frame",
+          "id": "ms_bulkbar",
+          "name": "bulk-action-bar",
+          "width": "fill_container",
+          "height": 48,
+          "padding": [0, 16],
+          "fill": "#37352F",
+          "alignItems": "center",
+          "justifyContent": "space_between",
+          "children": [
+            { "type": "text", "id": "ms_bcount", "content": "2 selected", "fill": "#FFFFFF", "fontFamily": "Inter", "fontSize": 13, "fontWeight": "500" },
+            {
+              "type": "frame",
+              "id": "ms_bactions",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ms_barchive",
+                  "padding": [6, 12],
+                  "cornerRadius": 6,
+                  "fill": "#FFFFFF20",
+                  "children": [
+                    { "type": "text", "id": "ms_bat1", "content": "Archive", "fill": "#FFFFFF", "fontFamily": "Inter", "fontSize": 12, "fontWeight": "500" }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ms_btrash",
+                  "padding": [6, 12],
+                  "cornerRadius": 6,
+                  "fill": "#E03E3E30",
+                  "children": [
+                    { "type": "text", "id": "ms_bat2", "content": "Move to Trash", "fill": "#E03E3E", "fontFamily": "Inter", "fontSize": 12, "fontWeight": "500" }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ms_bclose",
+                  "padding": [6, 8],
+                  "children": [
+                    { "type": "text", "id": "ms_bx", "content": "\u2715", "fill": "#FFFFFF80", "fontSize": 14 }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ms_range",
+      "name": "Multi-select — range select Shift+click",
+      "width": 340,
+      "height": "fit_content(600)",
+      "x": 400,
+      "y": 0,
+      "fill": "#FFFFFF",
+      "layout": "vertical",
+      "theme": { "Mode": "Light" },
+      "children": [
+        {
+          "type": "frame",
+          "id": "ms_hdr2",
+          "name": "header",
+          "width": "fill_container",
+          "height": 52,
+          "padding": [0, 16],
+          "alignItems": "center",
+          "justifyContent": "space_between",
+          "stroke": { "align": "inside", "fill": "#E5E5E5", "thickness": { "bottom": 1 } },
+          "children": [
+            { "type": "text", "id": "ms_h2t", "content": "Notes", "fill": "#37352F", "fontFamily": "Inter", "fontSize": 14, "fontWeight": "600" },
+            { "type": "frame", "id": "ms_h2icons", "gap": 12, "alignItems": "center", "children": [
+              { "type": "text", "id": "ms_h2s", "content": "\uD83D\uDD0D", "fontSize": 14 },
+              { "type": "text", "id": "ms_h2p", "content": "+", "fontSize": 16, "fill": "#9B9A97" }
+            ]}
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ms_r_annotation",
+          "name": "annotation",
+          "width": "fill_container",
+          "padding": [8, 16],
+          "fill": "#FFF8E1",
+          "children": [
+            { "type": "text", "id": "ms_ra_t", "content": "Shift+Click: range from first-clicked to here", "fill": "#D9730D", "fontFamily": "Inter", "fontSize": 11, "fontWeight": "500" }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ms_r1",
+          "name": "range-anchor",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "padding": [14, 16],
+          "fill": "#EBF5FF",
+          "stroke": { "align": "inside", "fill": "#2383E2", "thickness": { "left": 3, "bottom": 1 } },
+          "children": [
+            { "type": "text", "id": "ms_r1t", "content": "Build Laputa App  \u2190 anchor (first Cmd+click)", "fill": "#37352F", "fontFamily": "Inter", "fontSize": 13, "fontWeight": "600" },
+            { "type": "text", "id": "ms_r1s", "content": "Build a personal knowledge management app.", "fill": "#9B9A97", "fontFamily": "Inter", "fontSize": 12 }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ms_r2",
+          "name": "range-included",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "padding": [14, 16],
+          "fill": "#EBF5FF",
+          "stroke": { "align": "inside", "fill": "#E5E5E5", "thickness": { "bottom": 1 } },
+          "children": [
+            { "type": "text", "id": "ms_r2t", "content": "Facebook Ads Strategy  (auto-included in range)", "fill": "#37352F", "fontFamily": "Inter", "fontSize": 13, "fontWeight": "500" },
+            { "type": "text", "id": "ms_r2s", "content": "Lookalike audiences convert 3x better.", "fill": "#9B9A97", "fontFamily": "Inter", "fontSize": 12 }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ms_r3",
+          "name": "range-end",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "padding": [14, 16],
+          "fill": "#EBF5FF",
+          "stroke": { "align": "inside", "fill": "#2383E2", "thickness": { "left": 3, "bottom": 1 } },
+          "children": [
+            { "type": "text", "id": "ms_r3t", "content": "Matteo Cellini  \u2190 Shift+click target", "fill": "#37352F", "fontFamily": "Inter", "fontSize": 13, "fontWeight": "600" },
+            { "type": "text", "id": "ms_r3s", "content": "Sponsorship manager.", "fill": "#9B9A97", "fontFamily": "Inter", "fontSize": 12 }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ms_r4",
+          "name": "range-outside",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "padding": [14, 16],
+          "stroke": { "align": "inside", "fill": "#E5E5E5", "thickness": { "bottom": 1 } },
+          "children": [
+            { "type": "text", "id": "ms_r4t", "content": "Kickoff Meeting  (outside range)", "fill": "#37352F", "fontFamily": "Inter", "fontSize": 13, "fontWeight": "500" },
+            { "type": "text", "id": "ms_r4s", "content": "Project kickoff meeting notes.", "fill": "#9B9A97", "fontFamily": "Inter", "fontSize": 12 }
+          ]
+        },
+        { "type": "frame", "id": "ms_rspacer", "width": "fill_container", "height": 80 },
+        {
+          "type": "frame",
+          "id": "ms_rbulkbar",
+          "name": "bulk-action-bar",
+          "width": "fill_container",
+          "height": 48,
+          "padding": [0, 16],
+          "fill": "#37352F",
+          "alignItems": "center",
+          "justifyContent": "space_between",
+          "children": [
+            { "type": "text", "id": "ms_rbcount", "content": "3 selected", "fill": "#FFFFFF", "fontFamily": "Inter", "fontSize": 13, "fontWeight": "500" },
+            {
+              "type": "frame",
+              "id": "ms_rbactions",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                { "type": "frame", "id": "ms_rbarchive", "padding": [6, 12], "cornerRadius": 6, "fill": "#FFFFFF20", "children": [
+                  { "type": "text", "id": "ms_rba1", "content": "Archive", "fill": "#FFFFFF", "fontFamily": "Inter", "fontSize": 12, "fontWeight": "500" }
+                ]},
+                { "type": "frame", "id": "ms_rbtrash", "padding": [6, 12], "cornerRadius": 6, "fill": "#E03E3E30", "children": [
+                  { "type": "text", "id": "ms_rba2", "content": "Move to Trash", "fill": "#E03E3E", "fontFamily": "Inter", "fontSize": 12, "fontWeight": "500" }
+                ]},
+                { "type": "frame", "id": "ms_rbclose", "padding": [6, 8], "children": [
+                  { "type": "text", "id": "ms_rbx", "content": "\u2715", "fill": "#FFFFFF80", "fontSize": 14 }
+                ]}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ms_empty",
+      "name": "Multi-select — empty selection / hover state",
+      "width": 340,
+      "height": "fit_content(600)",
+      "x": 800,
+      "y": 0,
+      "fill": "#FFFFFF",
+      "layout": "vertical",
+      "theme": { "Mode": "Light" },
+      "children": [
+        {
+          "type": "frame",
+          "id": "ms_hdr3",
+          "name": "header",
+          "width": "fill_container",
+          "height": 52,
+          "padding": [0, 16],
+          "alignItems": "center",
+          "justifyContent": "space_between",
+          "stroke": { "align": "inside", "fill": "#E5E5E5", "thickness": { "bottom": 1 } },
+          "children": [
+            { "type": "text", "id": "ms_h3t", "content": "Notes", "fill": "#37352F", "fontFamily": "Inter", "fontSize": 14, "fontWeight": "600" },
+            { "type": "frame", "id": "ms_h3icons", "gap": 12, "alignItems": "center", "children": [
+              { "type": "text", "id": "ms_h3s", "content": "\uD83D\uDD0D", "fontSize": 14 },
+              { "type": "text", "id": "ms_h3p", "content": "+", "fontSize": 16, "fill": "#9B9A97" }
+            ]}
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ms_e_annot",
+          "name": "annotation",
+          "width": "fill_container",
+          "padding": [8, 16],
+          "fill": "#F5F5F5",
+          "children": [
+            { "type": "text", "id": "ms_ea_t", "content": "No selection \u2014 Cmd+Click to select, Shift+Click for range", "fill": "#9B9A97", "fontFamily": "Inter", "fontSize": 11 }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ms_e1",
+          "name": "item-active",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "padding": [14, 13, 14, 16],
+          "stroke": { "align": "inside", "fill": "#2383E2", "thickness": { "left": 3, "bottom": 1 } },
+          "fill": "#EBF5FF",
+          "children": [
+            { "type": "text", "id": "ms_e1t", "content": "Build Laputa App  (current note \u2014 active)", "fill": "#37352F", "fontFamily": "Inter", "fontSize": 13, "fontWeight": "600" },
+            { "type": "text", "id": "ms_e1s", "content": "Build a personal knowledge management app.", "fill": "#9B9A97", "fontFamily": "Inter", "fontSize": 12 }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ms_e2",
+          "name": "item-hover",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "padding": [14, 16],
+          "fill": "#F5F5F4",
+          "stroke": { "align": "inside", "fill": "#E5E5E5", "thickness": { "bottom": 1 } },
+          "children": [
+            { "type": "text", "id": "ms_e2t", "content": "Facebook Ads Strategy  (hover state)", "fill": "#37352F", "fontFamily": "Inter", "fontSize": 13, "fontWeight": "500" },
+            { "type": "text", "id": "ms_e2s", "content": "Lookalike audiences convert 3x better.", "fill": "#9B9A97", "fontFamily": "Inter", "fontSize": 12 }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ms_e3",
+          "name": "item-default",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "padding": [14, 16],
+          "stroke": { "align": "inside", "fill": "#E5E5E5", "thickness": { "bottom": 1 } },
+          "children": [
+            { "type": "text", "id": "ms_e3t", "content": "Matteo Cellini", "fill": "#37352F", "fontFamily": "Inter", "fontSize": 13, "fontWeight": "500" },
+            { "type": "text", "id": "ms_e3s", "content": "Sponsorship manager.", "fill": "#9B9A97", "fontFamily": "Inter", "fontSize": 12 }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ms_e4",
+          "name": "item-default-2",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "padding": [14, 16],
+          "stroke": { "align": "inside", "fill": "#E5E5E5", "thickness": { "bottom": 1 } },
+          "children": [
+            { "type": "text", "id": "ms_e4t", "content": "Kickoff Meeting", "fill": "#37352F", "fontFamily": "Inter", "fontSize": 13, "fontWeight": "500" },
+            { "type": "text", "id": "ms_e4s", "content": "Project kickoff meeting notes.", "fill": "#9B9A97", "fontFamily": "Inter", "fontSize": 12 }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ms_e_nobar",
+          "name": "no-bar-annotation",
+          "width": "fill_container",
+          "padding": [12, 16],
+          "fill": "#F5F5F5",
+          "children": [
+            { "type": "text", "id": "ms_ena_t", "content": "\u2191 No bulk action bar when nothing is selected", "fill": "#9B9A97", "fontFamily": "Inter", "fontSize": 11 }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {}
+}

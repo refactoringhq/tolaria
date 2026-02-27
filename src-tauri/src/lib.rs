@@ -120,6 +120,28 @@ fn migrate_is_a_to_type(vault_path: String) -> Result<usize, String> {
 }
 
 #[tauri::command]
+fn batch_archive_notes(paths: Vec<String>) -> Result<usize, String> {
+    let mut count = 0;
+    for path in &paths {
+        frontmatter::update_frontmatter(path, "Archived", FrontmatterValue::Bool(true))?;
+        count += 1;
+    }
+    Ok(count)
+}
+
+#[tauri::command]
+fn batch_trash_notes(paths: Vec<String>) -> Result<usize, String> {
+    let now = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
+    let mut count = 0;
+    for path in &paths {
+        frontmatter::update_frontmatter(path, "Trashed", FrontmatterValue::Bool(true))?;
+        frontmatter::update_frontmatter(path, "Trashed at", FrontmatterValue::String(now.clone()))?;
+        count += 1;
+    }
+    Ok(count)
+}
+
+#[tauri::command]
 fn update_menu_state(app_handle: tauri::AppHandle, has_active_note: bool) -> Result<(), String> {
     menu::set_note_items_enabled(&app_handle, has_active_note);
     Ok(())
@@ -263,6 +285,8 @@ pub fn run() {
             save_image,
             purge_trash,
             migrate_is_a_to_type,
+            batch_archive_notes,
+            batch_trash_notes,
             get_settings,
             update_menu_state,
             save_settings,
