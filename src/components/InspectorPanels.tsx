@@ -107,7 +107,7 @@ function SearchDropdown({ search, onSelect }: {
   onSelect: (title: string) => void
 }) {
   return (
-    <div className="absolute left-0 right-0 top-full z-50 mt-0.5 rounded border border-border bg-popover shadow-md">
+    <div className="absolute left-0 right-0 top-full z-[12001] mt-0.5 rounded border border-border bg-popover shadow-md">
       <NoteSearchList
         items={search.results}
         selectedIndex={search.selectedIndex}

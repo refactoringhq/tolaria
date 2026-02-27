@@ -193,7 +193,7 @@ function ContextMenuOverlay({ pos, type, innerRef, onOpenCustomize }: {
 }) {
   if (!pos || !type) return null
   return (
-    <div ref={innerRef} className="fixed z-50 rounded-md border bg-popover p-1 shadow-md" style={{ left: pos.x, top: pos.y, minWidth: 180 }}>
+    <div ref={innerRef} className="fixed z-[12001] rounded-md border bg-popover p-1 shadow-md" style={{ left: pos.x, top: pos.y, minWidth: 180 }}>
       <button className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-default hover:bg-accent hover:text-accent-foreground transition-colors border-none bg-transparent text-left" onClick={() => onOpenCustomize(type)}>
         Customize icon & color…
       </button>
@@ -209,7 +209,7 @@ function CustomizeOverlay({ target, typeEntryMap, innerRef, onCustomize, onClose
 }) {
   if (!target) return null
   return (
-    <div ref={innerRef} className="fixed z-50" style={{ left: 20, top: 100 }}>
+    <div ref={innerRef} className="fixed z-[12001]" style={{ left: 20, top: 100 }}>
       <TypeCustomizePopover
         currentIcon={typeEntryMap[target]?.icon ?? null}
         currentColor={typeEntryMap[target]?.color ?? null}
