@@ -1,0 +1,436 @@
+{"children":[
+  {
+    "type": "frame",
+    "id": "f_search_meta",
+    "name": "Search Result — with metadata subtitle",
+    "x": 0,
+    "y": 0,
+    "width": 540,
+    "height": "fit_content",
+    "fill": "$--search-bg",
+    "layout": "vertical",
+    "padding": [24, 0],
+    "gap": 0,
+    "theme": { "Mode": "Light" },
+    "children": [
+      {
+        "type": "text",
+        "id": "f1_heading",
+        "content": "Search Result Item — with metadata subtitle",
+        "fill": "$--foreground",
+        "fontFamily": "Inter",
+        "fontSize": 14,
+        "fontWeight": "700",
+        "width": "fill_container",
+        "padding": [0, 16, 12, 16]
+      },
+      {
+        "type": "text",
+        "id": "f1_desc",
+        "content": "Each search result now shows a metadata line below the snippet: modified date, word count, and link count. The type badge remains next to the title.",
+        "fill": "$--muted-foreground",
+        "fontFamily": "Inter",
+        "fontSize": 11,
+        "lineHeight": 1.5,
+        "width": "fill_container",
+        "padding": [0, 16, 16, 16]
+      },
+      {
+        "type": "frame",
+        "id": "f1_countbar",
+        "width": "fill_container",
+        "padding": [6, 16],
+        "stroke": { "align": "inside", "fill": "$--search-border", "thickness": { "bottom": 1 } },
+        "children": [
+          {
+            "type": "text",
+            "id": "f1_count",
+            "content": "12 results · 148ms",
+            "fill": "$--search-highlight",
+            "fontFamily": "Inter",
+            "fontSize": 11
+          }
+        ]
+      },
+      {
+        "type": "frame",
+        "id": "f1_result1",
+        "name": "Result 1 — Selected",
+        "width": "fill_container",
+        "layout": "vertical",
+        "gap": 4,
+        "padding": [10, 16],
+        "fill": "$--accent",
+        "children": [
+          {
+            "type": "frame",
+            "id": "f1_r1_titlerow",
+            "width": "fill_container",
+            "alignItems": "center",
+            "gap": 8,
+            "children": [
+              {
+                "type": "text",
+                "id": "f1_r1_title",
+                "content": "How to Manage your Time",
+                "fill": "$--search-heading",
+                "fontFamily": "Inter",
+                "fontSize": 13,
+                "fontWeight": "600"
+              },
+              {
+                "type": "frame",
+                "id": "f1_r1_badge",
+                "cornerRadius": 3,
+                "fill": "$--secondary",
+                "padding": [2, 6],
+                "children": [
+                  {
+                    "type": "text",
+                    "id": "f1_r1_badgeText",
+                    "content": "Essay",
+                    "fill": "$--search-text-muted",
+                    "fontFamily": "Inter",
+                    "fontSize": 10,
+                    "fontWeight": "500"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "id": "f1_r1_snippet",
+            "content": "...how people can improve their time management skills. They gathered results in this article...",
+            "fill": "$--search-snippet",
+            "fontFamily": "Inter",
+            "fontSize": 12,
+            "lineHeight": 1.4,
+            "textGrowth": "fixed-width",
+            "width": "fill_container"
+          },
+          {
+            "type": "frame",
+            "id": "f1_r1_meta",
+            "name": "metadata line",
+            "width": "fill_container",
+            "gap": 0,
+            "alignItems": "center",
+            "children": [
+              {
+                "type": "text",
+                "id": "f1_r1_m1",
+                "content": "Modified 2h ago · 1,240 words · 7 links",
+                "fill": "$--search-text-dim",
+                "fontFamily": "Inter",
+                "fontSize": 11
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "frame",
+        "id": "f1_result2",
+        "name": "Result 2 — Normal",
+        "width": "fill_container",
+        "layout": "vertical",
+        "gap": 4,
+        "padding": [10, 16],
+        "stroke": { "align": "inside", "fill": "$--search-border", "thickness": { "top": 1 } },
+        "children": [
+          {
+            "type": "frame",
+            "id": "f1_r2_titlerow",
+            "width": "fill_container",
+            "alignItems": "center",
+            "gap": 8,
+            "children": [
+              {
+                "type": "text",
+                "id": "f1_r2_title",
+                "content": "Weekly Review Process",
+                "fill": "$--search-heading",
+                "fontFamily": "Inter",
+                "fontSize": 13,
+                "fontWeight": "600"
+              },
+              {
+                "type": "frame",
+                "id": "f1_r2_badge",
+                "cornerRadius": 3,
+                "fill": "$--secondary",
+                "padding": [2, 6],
+                "children": [
+                  {
+                    "type": "text",
+                    "id": "f1_r2_badgeText",
+                    "content": "Procedure",
+                    "fill": "$--search-text-muted",
+                    "fontFamily": "Inter",
+                    "fontSize": 10,
+                    "fontWeight": "500"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "id": "f1_r2_snippet",
+            "content": "Every Sunday morning, review the week's progress and plan the next week...",
+            "fill": "$--search-snippet",
+            "fontFamily": "Inter",
+            "fontSize": 12,
+            "lineHeight": 1.4,
+            "textGrowth": "fixed-width",
+            "width": "fill_container"
+          },
+          {
+            "type": "frame",
+            "id": "f1_r2_meta",
+            "name": "metadata line",
+            "width": "fill_container",
+            "gap": 0,
+            "alignItems": "center",
+            "children": [
+              {
+                "type": "text",
+                "id": "f1_r2_m1",
+                "content": "Modified 3d ago · 520 words · 12 links",
+                "fill": "$--search-text-dim",
+                "fontFamily": "Inter",
+                "fontSize": 11
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "frame",
+        "id": "f1_result3",
+        "name": "Result 3 — No links",
+        "width": "fill_container",
+        "layout": "vertical",
+        "gap": 4,
+        "padding": [10, 16],
+        "stroke": { "align": "inside", "fill": "$--search-border", "thickness": { "top": 1 } },
+        "children": [
+          {
+            "type": "frame",
+            "id": "f1_r3_titlerow",
+            "width": "fill_container",
+            "alignItems": "center",
+            "gap": 8,
+            "children": [
+              {
+                "type": "text",
+                "id": "f1_r3_title",
+                "content": "Morning Routine",
+                "fill": "$--search-heading",
+                "fontFamily": "Inter",
+                "fontSize": 13,
+                "fontWeight": "600"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "id": "f1_r3_snippet",
+            "content": "A simple checklist for starting the day with intention...",
+            "fill": "$--search-snippet",
+            "fontFamily": "Inter",
+            "fontSize": 12,
+            "lineHeight": 1.4,
+            "textGrowth": "fixed-width",
+            "width": "fill_container"
+          },
+          {
+            "type": "frame",
+            "id": "f1_r3_meta",
+            "name": "metadata line",
+            "width": "fill_container",
+            "gap": 0,
+            "alignItems": "center",
+            "children": [
+              {
+                "type": "text",
+                "id": "f1_r3_m1",
+                "content": "Modified Jan 15 · 89 words",
+                "fill": "$--search-text-dim",
+                "fontFamily": "Inter",
+                "fontSize": 11
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "frame",
+    "id": "f_notelist_meta",
+    "name": "NoteList Item — subtitle with link count",
+    "x": 600,
+    "y": 0,
+    "width": 340,
+    "height": "fit_content",
+    "fill": "$--card",
+    "layout": "vertical",
+    "padding": [24, 0],
+    "gap": 0,
+    "theme": { "Mode": "Light" },
+    "children": [
+      {
+        "type": "text",
+        "id": "f2_heading",
+        "content": "NoteList Item — enhanced subtitle",
+        "fill": "$--foreground",
+        "fontFamily": "Inter",
+        "fontSize": 14,
+        "fontWeight": "700",
+        "width": "fill_container",
+        "padding": [0, 16, 12, 16]
+      },
+      {
+        "type": "text",
+        "id": "f2_desc",
+        "content": "Normal NoteList items add a link count after date and word count. The separator is a middle dot (·). When link count is 0, it's omitted.",
+        "fill": "$--muted-foreground",
+        "fontFamily": "Inter",
+        "fontSize": 11,
+        "lineHeight": 1.5,
+        "width": "fill_container",
+        "padding": [0, 16, 16, 16]
+      },
+      {
+        "type": "frame",
+        "id": "f2_item1",
+        "name": "NoteListItem — with links",
+        "width": "fill_container",
+        "layout": "vertical",
+        "gap": 4,
+        "padding": [14, 16],
+        "stroke": { "align": "inside", "fill": "$--border", "thickness": { "bottom": 1 } },
+        "children": [
+          {
+            "type": "frame",
+            "id": "f2_i1_titlerow",
+            "width": "fill_container",
+            "justifyContent": "space_between",
+            "alignItems": "center",
+            "children": [
+              {
+                "type": "text",
+                "id": "f2_i1_title",
+                "content": "Build Laputa App",
+                "fill": "$--foreground",
+                "fontFamily": "Inter",
+                "fontSize": 13,
+                "fontWeight": "600"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "id": "f2_i1_sub",
+            "content": "2h ago · 342 words · 5 links",
+            "fill": "$--muted-foreground",
+            "fontFamily": "Inter",
+            "fontSize": 11
+          }
+        ]
+      },
+      {
+        "type": "frame",
+        "id": "f2_item2",
+        "name": "NoteListItem — no links",
+        "width": "fill_container",
+        "layout": "vertical",
+        "gap": 4,
+        "padding": [14, 16],
+        "stroke": { "align": "inside", "fill": "$--border", "thickness": { "bottom": 1 } },
+        "children": [
+          {
+            "type": "frame",
+            "id": "f2_i2_titlerow",
+            "width": "fill_container",
+            "justifyContent": "space_between",
+            "alignItems": "center",
+            "children": [
+              {
+                "type": "text",
+                "id": "f2_i2_title",
+                "content": "Quick Meeting Notes",
+                "fill": "$--foreground",
+                "fontFamily": "Inter",
+                "fontSize": 13,
+                "fontWeight": "500"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "id": "f2_i2_sub",
+            "content": "5d ago · 120 words",
+            "fill": "$--muted-foreground",
+            "fontFamily": "Inter",
+            "fontSize": 11
+          }
+        ]
+      },
+      {
+        "type": "frame",
+        "id": "f2_item3",
+        "name": "NoteListItem — empty note",
+        "width": "fill_container",
+        "layout": "vertical",
+        "gap": 4,
+        "padding": [14, 16],
+        "stroke": { "align": "inside", "fill": "$--border", "thickness": { "bottom": 1 } },
+        "children": [
+          {
+            "type": "frame",
+            "id": "f2_i3_titlerow",
+            "width": "fill_container",
+            "justifyContent": "space_between",
+            "alignItems": "center",
+            "children": [
+              {
+                "type": "text",
+                "id": "f2_i3_title",
+                "content": "New Untitled Note",
+                "fill": "$--foreground",
+                "fontFamily": "Inter",
+                "fontSize": 13,
+                "fontWeight": "500"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "id": "f2_i3_sub",
+            "content": "just now · Empty",
+            "fill": "$--muted-foreground",
+            "fontFamily": "Inter",
+            "fontSize": 11
+          }
+        ]
+      }
+    ]
+  }
+],"variables":{
+  "--search-bg": {"type":"color","value":[{"value":"#FFFFFF"},{"theme":{"Mode":"Dark"},"value":"#1E1E2E"}]},
+  "--search-heading": {"type":"color","value":[{"value":"#37352F"},{"theme":{"Mode":"Dark"},"value":"#e0e0f0"}]},
+  "--search-snippet": {"type":"color","value":[{"value":"#787774"},{"theme":{"Mode":"Dark"},"value":"#888899"}]},
+  "--search-text-dim": {"type":"color","value":[{"value":"#787774"},{"theme":{"Mode":"Dark"},"value":"#666680"}]},
+  "--search-text-muted": {"type":"color","value":[{"value":"#787774"},{"theme":{"Mode":"Dark"},"value":"#8888aa"}]},
+  "--search-highlight": {"type":"color","value":[{"value":"#37352F"},{"theme":{"Mode":"Dark"},"value":"#555570"}]},
+  "--search-border": {"type":"color","value":[{"value":"#E9E9E7"},{"theme":{"Mode":"Dark"},"value":"#4c4c6d"}]},
+  "--foreground": {"type":"color","value":[{"value":"#1C1C1C"},{"theme":{"Mode":"Dark"},"value":"#F5F5F5"}]},
+  "--muted-foreground": {"type":"color","value":[{"value":"#737373"},{"theme":{"Mode":"Dark"},"value":"#A3A3A3"}]},
+  "--border": {"type":"color","value":[{"value":"#E5E5E5"},{"theme":{"Mode":"Dark"},"value":"#333333"}]},
+  "--card": {"type":"color","value":[{"value":"#FFFFFF"},{"theme":{"Mode":"Dark"},"value":"#1C1C1C"}]},
+  "--accent": {"type":"color","value":[{"value":"#F5F5F5"},{"theme":{"Mode":"Dark"},"value":"#262626"}]},
+  "--secondary": {"type":"color","value":[{"value":"#F5F5F5"},{"theme":{"Mode":"Dark"},"value":"#262626"}]}
+}}
