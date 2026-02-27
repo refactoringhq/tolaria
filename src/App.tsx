@@ -41,6 +41,23 @@ declare global {
 
 const DEFAULT_SELECTION: SidebarSelection = { kind: 'filter', filter: 'all' }
 
+function useBulkActions(
+  entryActions: { handleArchiveNote: (path: string) => Promise<void>; handleTrashNote: (path: string) => Promise<void> },
+  setToastMessage: (msg: string | null) => void,
+) {
+  const handleBulkArchive = useCallback(async (paths: string[]) => {
+    for (const path of paths) await entryActions.handleArchiveNote(path)
+    setToastMessage(`${paths.length} note${paths.length > 1 ? 's' : ''} archived`)
+  }, [entryActions, setToastMessage])
+
+  const handleBulkTrash = useCallback(async (paths: string[]) => {
+    for (const path of paths) await entryActions.handleTrashNote(path)
+    setToastMessage(`${paths.length} note${paths.length > 1 ? 's' : ''} moved to trash`)
+  }, [entryActions, setToastMessage])
+
+  return { handleBulkArchive, handleBulkTrash }
+}
+
 function useLayoutPanels() {
   const [sidebarWidth, setSidebarWidth] = useState(250)
   const [noteListWidth, setNoteListWidth] = useState(300)
@@ -206,6 +223,8 @@ function App() {
     await notes.handleRenameNote(path, newTitle, vaultSwitcher.vaultPath, vault.replaceEntry).then(vault.loadModifiedFiles)
   }, [notes, vaultSwitcher.vaultPath, vault, savePendingForPath])
 
+  const bulkActions = useBulkActions(entryActions, setToastMessage)
+
   const { setViewMode, sidebarVisible, noteListVisible } = useViewMode()
 
   const commands = useAppCommands({
@@ -247,7 +266,7 @@ function App() {
         {noteListVisible && (
           <>
             <div className="app__note-list" style={{ width: layout.noteListWidth }}>
-              <NoteList entries={vault.entries} selection={selection} selectedNote={activeTab?.entry ?? null} allContent={vault.allContent} modifiedFiles={vault.modifiedFiles} getNoteStatus={vault.getNoteStatus} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={notes.handleReplaceActiveTab} onCreateNote={notes.handleCreateNoteImmediate} />
+              <NoteList entries={vault.entries} selection={selection} selectedNote={activeTab?.entry ?? null} allContent={vault.allContent} modifiedFiles={vault.modifiedFiles} getNoteStatus={vault.getNoteStatus} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={notes.handleReplaceActiveTab} onCreateNote={notes.handleCreateNoteImmediate} onBulkArchive={bulkActions.handleBulkArchive} onBulkTrash={bulkActions.handleBulkTrash} />
             </div>
             <ResizeHandle onResize={layout.handleNoteListResize} />
           </>
