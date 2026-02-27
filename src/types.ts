@@ -29,7 +29,7 @@ export interface VaultEntry {
   outgoingLinks: string[]
 }
 
-export type NoteStatus = 'new' | 'modified' | 'clean'
+export type NoteStatus = 'new' | 'modified' | 'clean' | 'pendingSave'
 
 export interface GitCommit {
   hash: string
