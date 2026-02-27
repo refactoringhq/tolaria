@@ -84,6 +84,24 @@ fn extract_clean_snippet(raw_snippet: &str) -> String {
     }
 }
 
+/// Deduplicate search results by path, keeping the entry with the highest score.
+/// Preserves the order of first occurrence.
+fn dedup_by_path(results: impl Iterator<Item = SearchResult>) -> Vec<SearchResult> {
+    let mut seen: HashMap<String, usize> = HashMap::new();
+    let mut out: Vec<SearchResult> = Vec::new();
+    for r in results {
+        if let Some(&idx) = seen.get(&r.path) {
+            if r.score > out[idx].score {
+                out[idx] = r;
+            }
+        } else {
+            seen.insert(r.path.clone(), out.len());
+            out.push(r);
+        }
+    }
+    out
+}
+
 static COLLECTION_CACHE: Mutex<Option<HashMap<String, String>>> = Mutex::new(None);
 
 fn detect_collection_name(vault_path: &str) -> String {
@@ -183,20 +201,17 @@ pub fn search_vault(
     let qmd_results: Vec<QmdResult> =
         serde_json::from_str(&stdout).map_err(|e| format!("Failed to parse qmd output: {}", e))?;
 
-    let results: Vec<SearchResult> = qmd_results
-        .into_iter()
-        .map(|r| {
-            let path = qmd_uri_to_vault_path(&r.file, vault_path);
-            let snippet = extract_clean_snippet(&r.snippet);
-            SearchResult {
-                title: r.title,
-                path,
-                snippet,
-                score: r.score,
-                note_type: None,
-            }
-        })
-        .collect();
+    let results = dedup_by_path(qmd_results.into_iter().map(|r| {
+        let path = qmd_uri_to_vault_path(&r.file, vault_path);
+        let snippet = extract_clean_snippet(&r.snippet);
+        SearchResult {
+            title: r.title,
+            path,
+            snippet,
+            score: r.score,
+            note_type: None,
+        }
+    }));
 
     let elapsed_ms = start.elapsed().as_millis() as u64;
 
@@ -241,6 +256,60 @@ mod tests {
         let clean = extract_clean_snippet(&raw);
         assert!(clean.len() <= 203); // 200 + "..."
         assert!(clean.ends_with("..."));
+    }
+
+    #[test]
+    fn test_dedup_by_path_keeps_highest_score() {
+        let results = vec![
+            SearchResult {
+                title: "Note A".into(),
+                path: "/vault/a.md".into(),
+                snippet: "keyword match".into(),
+                score: 0.7,
+                note_type: None,
+            },
+            SearchResult {
+                title: "Note B".into(),
+                path: "/vault/b.md".into(),
+                snippet: "only once".into(),
+                score: 0.6,
+                note_type: None,
+            },
+            SearchResult {
+                title: "Note A".into(),
+                path: "/vault/a.md".into(),
+                snippet: "semantic match".into(),
+                score: 0.9,
+                note_type: None,
+            },
+        ];
+        let deduped = dedup_by_path(results.into_iter());
+        assert_eq!(deduped.len(), 2);
+        assert_eq!(deduped[0].path, "/vault/a.md");
+        assert_eq!(deduped[0].score, 0.9);
+        assert_eq!(deduped[1].path, "/vault/b.md");
+    }
+
+    #[test]
+    fn test_dedup_by_path_no_duplicates() {
+        let results = vec![
+            SearchResult {
+                title: "A".into(),
+                path: "/vault/a.md".into(),
+                snippet: "".into(),
+                score: 0.8,
+                note_type: None,
+            },
+            SearchResult {
+                title: "B".into(),
+                path: "/vault/b.md".into(),
+                snippet: "".into(),
+                score: 0.7,
+                note_type: None,
+            },
+        ];
+        let deduped = dedup_by_path(results.into_iter());
+        assert_eq!(deduped.len(), 2);
     }
 
     #[test]
