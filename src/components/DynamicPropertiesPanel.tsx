@@ -22,7 +22,6 @@ import {
   detectPropertyType,
 } from '../utils/propertyTypes'
 import { StatusPill, StatusDropdown } from './StatusDropdown'
-import { SUGGESTED_STATUSES } from '../utils/statusStyles'
 
 // Keys that are relationships (contain wikilinks)
 export const RELATIONSHIP_KEYS = new Set([
@@ -286,23 +285,25 @@ function AddDateInput({ value, onChange }: { value: string; onChange: (v: string
 }
 
 function AddStatusInput({ value, onChange, vaultStatuses }: { value: string; onChange: (v: string) => void; vaultStatuses: string[] }) {
-  const allStatuses = [...new Set([...vaultStatuses, ...SUGGESTED_STATUSES])]
+  const [showDropdown, setShowDropdown] = useState(false)
   return (
-    <Select value={value || undefined} onValueChange={onChange}>
-      <SelectTrigger
-        size="sm"
-        className="h-[26px] min-w-0 flex-1 gap-1 border-border bg-muted px-1.5 py-0 shadow-none"
-        style={{ fontSize: 12, borderRadius: 4 }}
+    <span className="relative inline-flex min-w-0 flex-1 items-center">
+      <button
+        className="inline-flex h-[26px] min-w-0 flex-1 cursor-pointer items-center gap-1 rounded border border-border bg-muted px-1.5 text-[12px] transition-colors hover:bg-accent"
+        onClick={() => setShowDropdown(true)}
         data-testid="add-property-status-trigger"
       >
-        <SelectValue placeholder="Status\u2026" />
-      </SelectTrigger>
-      <SelectContent>
-        {allStatuses.map(s => (
-          <SelectItem key={s} value={s}>{s}</SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+        {value ? <StatusPill status={value} /> : <span className="text-muted-foreground">Status{'\u2026'}</span>}
+      </button>
+      {showDropdown && (
+        <StatusDropdown
+          value={value}
+          vaultStatuses={vaultStatuses}
+          onSave={(v) => { onChange(v); setShowDropdown(false) }}
+          onCancel={() => setShowDropdown(false)}
+        />
+      )}
+    </span>
   )
 }
 
