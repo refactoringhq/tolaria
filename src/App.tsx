@@ -110,7 +110,7 @@ function App() {
     onToast: (msg) => setToastMessage(msg),
   })
 
-  const notes = useNoteActions({ addEntry: vault.addEntry, removeEntry: vault.removeEntry, updateContent: vault.updateContent, entries: vault.entries, setToastMessage, updateEntry: vault.updateEntry })
+  const notes = useNoteActions({ addEntry: vault.addEntry, removeEntry: vault.removeEntry, updateContent: vault.updateContent, entries: vault.entries, setToastMessage, updateEntry: vault.updateEntry, addPendingSave: vault.addPendingSave, removePendingSave: vault.removePendingSave })
 
   const navHistory = useNavigationHistory()
 

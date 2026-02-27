@@ -26,6 +26,8 @@ export interface NoteActionsConfig {
   entries: VaultEntry[]
   setToastMessage: (msg: string | null) => void
   updateEntry: (path: string, patch: Partial<VaultEntry>) => void
+  addPendingSave?: (path: string) => void
+  removePendingSave?: (path: string) => void
 }
 
 async function performRename(
@@ -188,9 +190,18 @@ function signalFocusEditor(): void {
   window.dispatchEvent(new CustomEvent('laputa:focus-editor', { detail: { t0: performance.now() } }))
 }
 
-/** Persist to disk; on failure, call the revert handler. */
-function persistOptimistic(path: string, content: string, onFail: (p: string) => void): void {
-  persistNewNote(path, content).catch(() => onFail(path))
+interface PersistCallbacks {
+  onFail: (p: string) => void
+  onStart?: (p: string) => void
+  onEnd?: (p: string) => void
+}
+
+/** Persist to disk; track pending state via onStart/onEnd; revert on failure. */
+function persistOptimistic(path: string, content: string, cbs: PersistCallbacks): void {
+  cbs.onStart?.(path)
+  persistNewNote(path, content)
+    .then(() => cbs.onEnd?.(path))
+    .catch(() => { cbs.onEnd?.(path); cbs.onFail(path) })
 }
 
 /** Optimistically open tab, add entry to vault, and persist to disk.
@@ -202,11 +213,11 @@ function createAndPersist(
   resolved: { entry: VaultEntry; content: string },
   addFn: (e: VaultEntry, c: string) => void,
   openTab: (e: VaultEntry, c: string) => void,
-  onFail: (p: string) => void,
+  cbs: PersistCallbacks,
 ): void {
   openTab(resolved.entry, resolved.content)
   addEntryWithMock(resolved.entry, resolved.content, addFn)
-  persistOptimistic(resolved.entry.path, resolved.content, onFail)
+  persistOptimistic(resolved.entry.path, resolved.content, cbs)
 }
 
 async function executeFrontmatterOp(op: 'update' | 'delete', path: string, key: string, value?: FrontmatterValue): Promise<string> {
@@ -250,7 +261,7 @@ async function runFrontmatterAndApply(
 }
 
 export function useNoteActions(config: NoteActionsConfig) {
-  const { addEntry, removeEntry, updateContent, entries, setToastMessage, updateEntry } = config
+  const { addEntry, removeEntry, updateContent, entries, setToastMessage, updateEntry, addPendingSave, removePendingSave } = config
   const tabMgmt = useTabManagement()
   const { setTabs, handleSelectNote, openTabWithContent, handleCloseTab, activeTabPathRef, handleSwitchTab } = tabMgmt
   const tabsRef = useRef(tabMgmt.tabs)
@@ -273,11 +284,17 @@ export function useNoteActions(config: NoteActionsConfig) {
     setToastMessage('Failed to create note — disk write error')
   }, [handleCloseTab, removeEntry, setToastMessage])
 
+  const persistCbs: PersistCallbacks = {
+    onFail: revertOptimisticNote,
+    onStart: addPendingSave,
+    onEnd: removePendingSave,
+  }
+
   const pendingNamesRef = useRef<Set<string>>(new Set())
 
   const handleCreateNote = useCallback((title: string, type: string) => {
-    createAndPersist(resolveNewNote(title, type), addEntry, openTabWithContent, revertOptimisticNote)
-  }, [openTabWithContent, addEntry, revertOptimisticNote])
+    createAndPersist(resolveNewNote(title, type), addEntry, openTabWithContent, persistCbs)
+  }, [openTabWithContent, addEntry, revertOptimisticNote, addPendingSave, removePendingSave]) // eslint-disable-line react-hooks/exhaustive-deps -- persistCbs is stable when deps are
 
   const handleCreateNoteImmediate = useCallback((type?: string) => {
     const noteType = type || 'Note'
@@ -289,8 +306,8 @@ export function useNoteActions(config: NoteActionsConfig) {
   }, [entries, handleCreateNote])
 
   const handleCreateType = useCallback((typeName: string) => {
-    createAndPersist(resolveNewType(typeName), addEntry, openTabWithContent, revertOptimisticNote)
-  }, [openTabWithContent, addEntry, revertOptimisticNote])
+    createAndPersist(resolveNewType(typeName), addEntry, openTabWithContent, persistCbs)
+  }, [openTabWithContent, addEntry, revertOptimisticNote, addPendingSave, removePendingSave]) // eslint-disable-line react-hooks/exhaustive-deps -- persistCbs is stable when deps are
 
   const fmCallbacks = { updateTab: updateTabContent, updateEntry, toast: setToastMessage }
 

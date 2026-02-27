@@ -162,6 +162,12 @@ export const BreadcrumbBar = memo(function BreadcrumbBar({
         <span className="font-medium text-foreground">{entry.title}</span>
         <span className="text-muted-foreground" style={{ margin: '0 4px' }}>&middot;</span>
         <span className="text-muted-foreground">{wordCount.toLocaleString()} words</span>
+        {noteStatus === 'pendingSave' && (
+          <>
+            <span className="text-muted-foreground" style={{ margin: '0 4px' }}>&middot;</span>
+            <span className="font-semibold tab-status-pulse" style={{ color: 'var(--accent-green)' }}>Saving…</span>
+          </>
+        )}
         {noteStatus === 'new' && (
           <>
             <span className="text-muted-foreground" style={{ margin: '0 4px' }}>&middot;</span>
