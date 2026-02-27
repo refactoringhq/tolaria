@@ -76,6 +76,18 @@ describe('BreadcrumbBar — trash/restore', () => {
   })
 })
 
+describe('BreadcrumbBar — pending save indicator', () => {
+  it('shows "Saving…" text when noteStatus is pendingSave', () => {
+    render(<BreadcrumbBar entry={baseEntry} {...defaultProps} noteStatus={'pendingSave'} />)
+    expect(screen.getByText('Saving…')).toBeInTheDocument()
+  })
+
+  it('does not show "Saving…" text for clean status', () => {
+    render(<BreadcrumbBar entry={baseEntry} {...defaultProps} noteStatus={'clean'} />)
+    expect(screen.queryByText('Saving…')).not.toBeInTheDocument()
+  })
+})
+
 describe('BreadcrumbBar — archive/unarchive', () => {
   it('shows archive button for non-archived note', () => {
     render(<BreadcrumbBar entry={baseEntry} {...defaultProps} onArchive={vi.fn()} onUnarchive={vi.fn()} />)
