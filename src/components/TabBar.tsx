@@ -178,7 +178,8 @@ function DropIndicator({ side }: { side: 'left' | 'right' }) {
   )
 }
 
-const STATUS_DOT: Record<string, { color: string; testId: string; title: string }> = {
+const STATUS_DOT: Record<string, { color: string; testId: string; title: string; pulse?: boolean }> = {
+  pendingSave: { color: 'var(--accent-green)', testId: 'tab-pending-save-indicator', title: 'Saving to disk…', pulse: true },
   new: { color: 'var(--accent-green)', testId: 'tab-new-indicator', title: 'New (uncommitted)' },
   modified: { color: 'var(--accent-orange)', testId: 'tab-modified-indicator', title: 'Modified (uncommitted)' },
 }
@@ -188,7 +189,7 @@ function StatusDot({ status }: { status: NoteStatus }) {
   if (!cfg) return null
   return (
     <span
-      className="shrink-0"
+      className={`shrink-0${cfg.pulse ? ' tab-status-pulse' : ''}`}
       style={{ width: 6, height: 6, borderRadius: '50%', background: cfg.color }}
       data-testid={cfg.testId}
       title={cfg.title}
