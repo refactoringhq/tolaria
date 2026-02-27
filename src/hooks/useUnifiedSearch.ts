@@ -45,6 +45,22 @@ function mapResults(raw: SearchResultData[]): SearchResult[] {
   }))
 }
 
+/** Deduplicate results by path, keeping the entry with the higher score. */
+export function dedupByPath(results: SearchResult[]): SearchResult[] {
+  const seen = new Map<string, number>()
+  const out: SearchResult[] = []
+  for (const r of results) {
+    const idx = seen.get(r.path)
+    if (idx !== undefined) {
+      if (r.score > out[idx].score) out[idx] = r
+    } else {
+      seen.set(r.path, out.length)
+      out.push(r)
+    }
+  }
+  return out
+}
+
 export function useUnifiedSearch(vaultPath: string, active: boolean) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
@@ -79,7 +95,7 @@ export function useUnifiedSearch(vaultPath: string, active: boolean) {
     try {
       const response = await searchCall({ vaultPath, query: q, mode: 'keyword', limit: 20 })
       if (gen !== searchGenRef.current) return
-      setResults(mapResults(response.results))
+      setResults(dedupByPath(mapResults(response.results)))
       setElapsedMs(response.elapsed_ms)
       setSelectedIndex(0)
     } catch {
@@ -93,7 +109,7 @@ export function useUnifiedSearch(vaultPath: string, active: boolean) {
         HYBRID_TIMEOUT_MS,
       )
       if (gen !== searchGenRef.current) return
-      setResults(mapResults(response.results))
+      setResults(dedupByPath(mapResults(response.results)))
       setElapsedMs(response.elapsed_ms)
       setSelectedIndex(prev => Math.min(prev, Math.max(response.results.length - 1, 0)))
     } catch { /* Hybrid timed out — keyword results remain */ } finally {

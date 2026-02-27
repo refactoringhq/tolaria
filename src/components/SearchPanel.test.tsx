@@ -371,6 +371,32 @@ describe('SearchPanel', () => {
     expect(screen.getByText('Keyword Only')).toBeInTheDocument()
   })
 
+  it('deduplicates results when backend returns same note twice', async () => {
+    mockInvokeFn.mockResolvedValue({
+      results: [
+        { title: 'How to Design AI-first APIs', path: '/vault/essay/ai-apis.md', snippet: 'keyword hit', score: 0.7, note_type: 'Essay' },
+        { title: 'Refactoring Retreat', path: '/vault/event/retreat.md', snippet: 'unique', score: 0.6, note_type: 'Event' },
+        { title: 'How to Design AI-first APIs', path: '/vault/essay/ai-apis.md', snippet: 'semantic hit', score: 0.9, note_type: 'Essay' },
+      ],
+      elapsed_ms: 48,
+    })
+
+    render(
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />,
+    )
+
+    fireEvent.change(screen.getByPlaceholderText('Search in all notes...'), { target: { value: 'api' } })
+
+    await waitFor(() => {
+      const titles = screen.getAllByText('How to Design AI-first APIs')
+      expect(titles).toHaveLength(1) // deduped — not 2
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText(/2 results/)).toBeInTheDocument()
+    })
+  })
+
   it('cancels inflight searches when panel closes', async () => {
     const resolvers: ((v: unknown) => void)[] = []
     mockInvokeFn.mockImplementation(
