@@ -47,6 +47,7 @@ function TrashDateLine({ entry }: { entry: VaultEntry }) {
 }
 
 const NOTE_STATUS_DOT: Record<string, { color: string; testId: string; title: string }> = {
+  pendingSave: { color: 'var(--accent-green)', testId: 'pending-save-indicator', title: 'Saving to disk…' },
   new: { color: 'var(--accent-green)', testId: 'new-indicator', title: 'New (uncommitted)' },
   modified: { color: 'var(--accent-orange)', testId: 'modified-indicator', title: 'Modified (uncommitted)' },
 }
@@ -83,9 +84,9 @@ export function NoteItem({ entry, isSelected, isMultiSelected = false, noteStatu
       <TypeIcon width={14} height={14} className="absolute right-3 top-2.5" style={{ color: typeColor }} data-testid="type-icon" />
       <div className="pr-5">
         <div className={cn("truncate text-[13px] text-foreground", isSelected ? "font-semibold" : "font-medium")}>
-          {noteStatus !== 'clean' && (
+          {noteStatus !== 'clean' && NOTE_STATUS_DOT[noteStatus] && (
             <span
-              className="mr-1.5 inline-block align-middle"
+              className={`mr-1.5 inline-block align-middle${noteStatus === 'pendingSave' ? ' tab-status-pulse' : ''}`}
               style={{ width: 6, height: 6, borderRadius: '50%', background: NOTE_STATUS_DOT[noteStatus].color, verticalAlign: 'middle' }}
               data-testid={NOTE_STATUS_DOT[noteStatus].testId}
               title={NOTE_STATUS_DOT[noteStatus].title}

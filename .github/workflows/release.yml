@@ -34,7 +34,7 @@ jobs:
   build:
     name: Build (${{ matrix.arch }})
     needs: version
-    runs-on: self-hosted
+    runs-on: macos-15
     strategy:
       fail-fast: true
       matrix:
@@ -60,8 +60,16 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
-      # Self-hosted runner: cargo registry + target dir persist on disk between runs.
-      # No need for Swatinem/rust-cache — incremental builds kick in automatically.
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-release-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-release-cargo-
 
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
@@ -76,8 +84,6 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
-          # Incremental compilation — reuses previous build artifacts on self-hosted runner
-          CARGO_INCREMENTAL: "1"
         run: |
           pnpm tauri build --target ${{ matrix.target }}
 

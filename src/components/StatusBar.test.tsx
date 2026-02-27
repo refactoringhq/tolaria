@@ -1,7 +1,14 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { StatusBar } from './StatusBar'
 import type { VaultOption } from './StatusBar'
+
+vi.mock('../utils/url', async () => {
+  const actual = await vi.importActual('../utils/url')
+  return { ...actual, openExternalUrl: vi.fn().mockResolvedValue(undefined) }
+})
+
+const { openExternalUrl } = await import('../utils/url') as typeof import('../utils/url') & { openExternalUrl: ReturnType<typeof vi.fn> }
 
 const vaults: VaultOption[] = [
   { label: 'Main Vault', path: '/Users/luca/Laputa' },
@@ -9,6 +16,10 @@ const vaults: VaultOption[] = [
 ]
 
 describe('StatusBar', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('displays note count', () => {
     render(<StatusBar noteCount={9200} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} />)
     expect(screen.getByText('9,200 notes')).toBeInTheDocument()
@@ -24,7 +35,7 @@ describe('StatusBar', () => {
     expect(screen.queryByText('main')).not.toBeInTheDocument()
   })
 
-  it('shows clickable commit hash when commitUrl is available', () => {
+  it('shows clickable commit hash that opens URL via openExternalUrl', () => {
     render(
       <StatusBar
         noteCount={100}
@@ -36,10 +47,11 @@ describe('StatusBar', () => {
     )
     const link = screen.getByTestId('status-commit-link')
     expect(link).toBeInTheDocument()
-    expect(link.tagName).toBe('A')
-    expect(link).toHaveAttribute('href', 'https://github.com/owner/repo/commit/abc123')
-    expect(link).toHaveAttribute('target', '_blank')
+    expect(link.tagName).toBe('SPAN')
     expect(screen.getByText('a3f9b1c')).toBeInTheDocument()
+
+    fireEvent.click(link)
+    expect(openExternalUrl).toHaveBeenCalledWith('https://github.com/owner/repo/commit/abc123')
   })
 
   it('shows non-clickable commit hash when no commitUrl', () => {

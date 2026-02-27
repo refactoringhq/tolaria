@@ -206,6 +206,15 @@ describe('TabBar', () => {
     expect(onReorderTabs).toHaveBeenCalledWith(2, 1)
   })
 
+  it('shows pending save indicator (pulsing dot) when getNoteStatus returns pendingSave', () => {
+    const tabs = makeTabs(['Alpha', 'Beta'])
+    const getNoteStatus = (path: string) => path === tabs[0].entry.path ? 'pendingSave' as const : 'clean' as const
+    render(<TabBar tabs={tabs} activeTabPath={tabs[0].entry.path} getNoteStatus={getNoteStatus} {...defaultProps} />)
+    expect(screen.getAllByTestId('tab-pending-save-indicator')).toHaveLength(1)
+    expect(screen.queryByTestId('tab-modified-indicator')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('tab-new-indicator')).not.toBeInTheDocument()
+  })
+
   it('switches tab on click', () => {
     const onSwitchTab = vi.fn()
     const tabs = makeTabs(['Alpha', 'Beta'])
