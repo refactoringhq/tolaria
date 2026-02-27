@@ -9,7 +9,7 @@ on:
 jobs:
   test:
     name: Tests & Quality Checks
-    runs-on: self-hosted
+    runs-on: macos-15
 
     steps:
       - uses: actions/checkout@v4
@@ -32,11 +32,19 @@ jobs:
         with:
           components: rustfmt, clippy, llvm-tools-preview
 
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
-
-      - name: Configure pnpm store (per-runner isolation)
-        run: pnpm config set store-dir "$HOME/.pnpm-store-${{ runner.name }}"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
