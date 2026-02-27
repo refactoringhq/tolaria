@@ -461,6 +461,82 @@ describe('useNoteActions hook', () => {
     expect(setToastMessage).toHaveBeenCalledWith('Property updated')
   })
 
+  describe('pending save lifecycle', () => {
+    it('createAndPersist calls addPendingSave on start (non-Tauri)', async () => {
+      const addPendingSave = vi.fn()
+      const removePendingSave = vi.fn()
+      const config = makeConfig()
+      config.addPendingSave = addPendingSave
+      config.removePendingSave = removePendingSave
+
+      const { result } = renderHook(() => useNoteActions(config))
+
+      await act(async () => {
+        result.current.handleCreateNote('Pending Test', 'Note')
+        await new Promise((r) => setTimeout(r, 0))
+      })
+
+      expect(addPendingSave).toHaveBeenCalledWith(expect.stringContaining('note/pending-test.md'))
+    })
+
+    it('createAndPersist calls removePendingSave when persist completes (non-Tauri)', async () => {
+      const addPendingSave = vi.fn()
+      const removePendingSave = vi.fn()
+      const config = makeConfig()
+      config.addPendingSave = addPendingSave
+      config.removePendingSave = removePendingSave
+
+      const { result } = renderHook(() => useNoteActions(config))
+
+      await act(async () => {
+        result.current.handleCreateNote('Persist OK', 'Note')
+        await new Promise((r) => setTimeout(r, 0))
+      })
+
+      expect(removePendingSave).toHaveBeenCalledWith(expect.stringContaining('note/persist-ok.md'))
+    })
+
+    it('createAndPersist calls removePendingSave AND reverts when persist fails (Tauri)', async () => {
+      vi.mocked(isTauri).mockReturnValue(true)
+      vi.mocked(invoke).mockRejectedValueOnce(new Error('disk full'))
+      const addPendingSave = vi.fn()
+      const removePendingSave = vi.fn()
+      const config = makeConfig()
+      config.addPendingSave = addPendingSave
+      config.removePendingSave = removePendingSave
+
+      const { result } = renderHook(() => useNoteActions(config))
+
+      await act(async () => {
+        result.current.handleCreateNote('Fail Save', 'Note')
+        await new Promise((r) => setTimeout(r, 0))
+      })
+
+      expect(addPendingSave).toHaveBeenCalledWith(expect.stringContaining('note/fail-save.md'))
+      expect(removePendingSave).toHaveBeenCalledWith(expect.stringContaining('note/fail-save.md'))
+      expect(removeEntry).toHaveBeenCalledWith(expect.stringContaining('note/fail-save.md'))
+      expect(setToastMessage).toHaveBeenCalledWith('Failed to create note — disk write error')
+    })
+
+    it('handleCreateNoteImmediate works with pending save callbacks', async () => {
+      const addPendingSave = vi.fn()
+      const removePendingSave = vi.fn()
+      const config = makeConfig()
+      config.addPendingSave = addPendingSave
+      config.removePendingSave = removePendingSave
+
+      const { result } = renderHook(() => useNoteActions(config))
+
+      await act(async () => {
+        result.current.handleCreateNoteImmediate()
+        await new Promise((r) => setTimeout(r, 0))
+      })
+
+      expect(addPendingSave).toHaveBeenCalledWith(expect.stringContaining('note/untitled-note.md'))
+      expect(removePendingSave).toHaveBeenCalledWith(expect.stringContaining('note/untitled-note.md'))
+    })
+  })
+
   describe('optimistic error recovery (Tauri mode)', () => {
     beforeEach(() => {
       vi.mocked(isTauri).mockReturnValue(true)
