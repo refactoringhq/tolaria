@@ -1,3 +1,0 @@
-# First
-
-Original content.

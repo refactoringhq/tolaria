@@ -1,3 +1,0 @@
-Task: 🐛 Property dropdown fix
-Summary: Fixed dropdown collision/overflow when Properties panel is narrow. StatusDropdown and DisplayModeSelector were using absolute positioning within the Inspector's overflow-hidden container, causing clipping at narrow widths (200-280px). Both now render via createPortal with fixed positioning, matching the pattern used by existing Radix UI components. All 1017 frontend tests + 270 Rust tests pass.
-Commits: 1
