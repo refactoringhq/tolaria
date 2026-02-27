@@ -12,7 +12,7 @@ echo "================================================"
 echo ""
 echo "📦 [0/5] TypeScript + Vite build..."
 pnpm exec tsc --noEmit
-pnpm build --silent
+pnpm build
 echo "  ✅ Build OK"
 
 # ── 1. Frontend tests ─────────────────────────────────────────────────────
