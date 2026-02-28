@@ -267,7 +267,12 @@ This topic groups notes related to learning and getting started with Laputa.
 pub fn create_getting_started_vault(target_path: &str) -> Result<String, String> {
     let vault_dir = Path::new(target_path);
 
-    if vault_dir.exists() && vault_dir.read_dir().map(|mut d| d.next().is_some()).unwrap_or(false) {
+    if vault_dir.exists()
+        && vault_dir
+            .read_dir()
+            .map(|mut d| d.next().is_some())
+            .unwrap_or(false)
+    {
         return Err(format!(
             "Directory already exists and is not empty: {}",
             target_path
@@ -322,7 +327,9 @@ mod tests {
         assert!(vault_path.join("note/welcome-to-laputa.md").exists());
         assert!(vault_path.join("note/editor-basics.md").exists());
         assert!(vault_path.join("note/using-properties.md").exists());
-        assert!(vault_path.join("note/wiki-links-and-relationships.md").exists());
+        assert!(vault_path
+            .join("note/wiki-links-and-relationships.md")
+            .exists());
         assert!(vault_path.join("project/sample-project.md").exists());
         assert!(vault_path.join("person/sample-collaborator.md").exists());
         assert!(vault_path.join("topic/getting-started.md").exists());
