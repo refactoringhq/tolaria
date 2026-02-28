@@ -116,14 +116,34 @@ function TagsValue({ propKey, value, isEditing, vaultTags, onSave, onStartEdit }
       {value.map(tag => {
         const style = getTagStyle(tag)
         return (
-          <span key={tag} className="group/tag inline-flex items-center gap-0.5 rounded-full" style={{ backgroundColor: style.bg, padding: '1px 6px' }}>
-            <span style={{ color: style.color, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600, letterSpacing: '1.2px', textTransform: 'uppercase' }}>{tag}</span>
+          <span
+            key={tag}
+            className="group/tag relative inline-flex items-center overflow-hidden rounded-full"
+            style={{ backgroundColor: style.bg, padding: '1px 6px', maxWidth: 120 }}
+          >
+            <span
+              className="transition-[max-width] duration-150 group-hover/tag:[mask-image:linear-gradient(to_right,black_60%,transparent_100%)]"
+              style={{
+                color: style.color,
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: '1.2px',
+                textTransform: 'uppercase' as const,
+                overflow: 'hidden',
+                whiteSpace: 'nowrap' as const,
+              }}
+            >
+              {tag}
+            </span>
             <button
-              className="border-none bg-transparent p-0 leading-none opacity-0 transition-opacity group-hover/tag:opacity-100"
-              style={{ color: style.color, fontSize: 10 }}
+              className="ml-0.5 max-w-0 overflow-hidden border-none bg-transparent p-0 leading-none opacity-0 transition-all duration-150 group-hover/tag:max-w-[14px] group-hover/tag:opacity-100"
+              style={{ color: style.color, fontSize: 10, flexShrink: 0 }}
               onClick={() => handleRemove(tag)}
               title={`Remove ${tag}`}
-            >&times;</button>
+            >
+              &times;
+            </button>
           </span>
         )
       })}
