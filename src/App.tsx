@@ -286,7 +286,11 @@ function App() {
     onGoBack: handleGoBack, onGoForward: handleGoForward,
     canGoBack: navHistory.canGoBack, canGoForward: navHistory.canGoForward,
     themes: themeManager.themes, activeThemeId: themeManager.activeThemeId,
-    onSwitchTheme: themeManager.switchTheme, onCreateTheme: () => themeManager.createTheme(),
+    onSwitchTheme: themeManager.switchTheme,
+    onCreateTheme: async () => {
+      const newId = await themeManager.createTheme()
+      if (newId) await themeManager.switchTheme(newId)
+    },
   })
 
   const { status: updateStatus, actions: updateActions } = useUpdater()

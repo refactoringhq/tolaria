@@ -12,7 +12,6 @@ function applyThemeToDom(theme: ThemeFile): void {
   const root = document.documentElement
   for (const [key, value] of Object.entries(theme.colors)) {
     root.style.setProperty(`--theme-${key}`, value)
-    // Also set the shadcn-compatible variables
     root.style.setProperty(`--${key}`, value)
   }
   for (const [key, value] of Object.entries(theme.typography)) {
@@ -21,7 +20,6 @@ function applyThemeToDom(theme: ThemeFile): void {
   for (const [key, value] of Object.entries(theme.spacing)) {
     root.style.setProperty(`--theme-${key}`, value)
   }
-  // Map sidebar-background to --sidebar (shadcn convention)
   if (theme.colors['sidebar-background']) {
     root.style.setProperty('--sidebar', theme.colors['sidebar-background'])
   }
@@ -88,6 +86,13 @@ export function useThemeManager(vaultPath: string | null): ThemeManager {
 
   useEffect(() => { loadThemes() }, [loadThemes]) // eslint-disable-line react-hooks/set-state-in-effect -- trigger initial load
   useEffect(() => { syncThemeDom(prevThemeRef, activeTheme) }, [activeTheme])
+
+  // Reload themes when window regains focus (live reload for external edits)
+  useEffect(() => {
+    const onFocus = () => { loadThemes() }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [loadThemes])
 
   const switchTheme = useCallback(async (themeId: string) => {
     if (!vaultPath) return

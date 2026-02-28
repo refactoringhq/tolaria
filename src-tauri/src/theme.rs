@@ -28,8 +28,12 @@ pub struct VaultSettings {
 }
 
 /// List all theme files in _themes/ directory of the vault.
+/// Seeds built-in themes if the directory is missing.
 pub fn list_themes(vault_path: &str) -> Result<Vec<ThemeFile>, String> {
     let themes_dir = Path::new(vault_path).join("_themes");
+    if !themes_dir.is_dir() {
+        seed_default_themes(vault_path);
+    }
     if !themes_dir.is_dir() {
         return Ok(Vec::new());
     }
@@ -110,6 +114,22 @@ pub fn get_theme(vault_path: &str, theme_id: &str) -> Result<ThemeFile, String> 
         return Err(format!("Theme not found: {theme_id}"));
     }
     parse_theme_file(&path)
+}
+
+/// Seed the `_themes/` directory with built-in themes if it doesn't exist yet.
+/// Safe to call multiple times — only writes files that are missing.
+pub fn seed_default_themes(vault_path: &str) {
+    let themes_dir = Path::new(vault_path).join("_themes");
+    if themes_dir.is_dir() {
+        return;
+    }
+    if fs::create_dir_all(&themes_dir).is_err() {
+        return;
+    }
+    let _ = fs::write(themes_dir.join("default.json"), DEFAULT_THEME);
+    let _ = fs::write(themes_dir.join("dark.json"), DARK_THEME);
+    let _ = fs::write(themes_dir.join("minimal.json"), MINIMAL_THEME);
+    log::info!("Seeded _themes/ with built-in themes");
 }
 
 /// Create a new theme file by copying the active theme (or default).
@@ -318,12 +338,16 @@ mod tests {
     }
 
     #[test]
-    fn test_list_themes_empty_when_no_dir() {
+    fn test_list_themes_seeds_defaults_when_no_dir() {
         let dir = TempDir::new().unwrap();
         let vault = dir.path().join("empty-vault");
         fs::create_dir_all(&vault).unwrap();
         let themes = list_themes(vault.to_str().unwrap()).unwrap();
-        assert!(themes.is_empty());
+        assert_eq!(themes.len(), 3);
+        let names: Vec<&str> = themes.iter().map(|t| t.name.as_str()).collect();
+        assert!(names.contains(&"Default"));
+        assert!(names.contains(&"Dark"));
+        assert!(names.contains(&"Minimal"));
     }
 
     #[test]

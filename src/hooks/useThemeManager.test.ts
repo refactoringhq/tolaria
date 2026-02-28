@@ -161,14 +161,15 @@ describe('useThemeManager', () => {
 
   it('handles load failure gracefully', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    mockInvokeFn.mockRejectedValueOnce(new Error('disk error'))
+    mockInvokeFn.mockRejectedValue(new Error('disk error'))
 
     const { result } = renderHook(() => useThemeManager('/vault'))
-    await new Promise(r => setTimeout(r, 50))
+    await waitFor(() => {
+      expect(warnSpy).toHaveBeenCalledWith('Failed to load themes:', expect.any(Error))
+    })
 
     expect(result.current.themes).toHaveLength(0)
     expect(result.current.activeThemeId).toBeNull()
-    expect(warnSpy).toHaveBeenCalledWith('Failed to load themes:', expect.any(Error))
     warnSpy.mockRestore()
   })
 

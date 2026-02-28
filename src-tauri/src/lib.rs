@@ -327,6 +327,7 @@ fn create_theme(vault_path: String, source_id: Option<String>) -> Result<String,
     theme::create_theme(&vault_path, source_id.as_deref())
 }
 
+
 fn log_startup_result(label: &str, result: Result<usize, String>) {
     match result {
         Ok(n) if n > 0 => log::info!("{}: {} files", label, n),
@@ -352,6 +353,9 @@ fn run_startup_tasks() {
         "Migrated is_a to type on startup",
         vault::migrate_is_a_to_type(vp_str),
     );
+
+    // Seed _themes/ with built-in themes if missing
+    theme::seed_default_themes(vp_str);
 
     // Register Laputa MCP server in Claude Code and Cursor configs
     match mcp::register_mcp(vp_str) {
