@@ -1,11 +1,11 @@
 import { useRef, useEffect, useCallback } from 'react'
 import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
 import type { SearchResult, VaultEntry } from '../types'
 import { useUnifiedSearch } from '../hooks/useUnifiedSearch'
-import { getTypeColor, getTypeLightColor, buildTypeEntryMap } from '../utils/typeColors'
+import { getTypeColor, buildTypeEntryMap } from '../utils/typeColors'
 import { formatSearchSubtitle } from '../utils/noteListHelpers'
+import { getTypeIcon } from './NoteItem'
 
 interface SearchPanelProps {
   open: boolean
@@ -194,8 +194,9 @@ function SearchContent({
               const entry = entryLookup.get(result.path)
               const isA = entry?.isA ?? result.noteType
               const noteType = isA && isA !== 'Note' ? isA : null
-              const typeColor = noteType ? getTypeColor(isA, typeEntryMap[isA ?? '']?.color) : undefined
-              const typeLightColor = noteType ? getTypeLightColor(isA, typeEntryMap[isA ?? '']?.color) : undefined
+              const te = typeEntryMap[isA ?? '']
+              const typeColor = noteType ? getTypeColor(isA, te?.color) : undefined
+              const TypeIcon = getTypeIcon(isA ?? null, te?.icon)
               const subtitle = entry ? formatSearchSubtitle(entry) : null
               return (
                 <div
@@ -208,15 +209,15 @@ function SearchContent({
                   onMouseEnter={() => onHover(i)}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-[13px] font-medium text-foreground">{result.title}</span>
+                    {/* eslint-disable-next-line react-hooks/static-components -- icon from static map lookup */}
+                    <TypeIcon width={14} height={14} className="shrink-0" style={{ color: typeColor ?? 'var(--muted-foreground)' }} />
+                    <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">{result.title}</span>
                     {noteType && (
-                      <Badge variant="secondary" className="text-[10px]" style={typeColor ? { color: typeColor, backgroundColor: typeLightColor } : undefined}>
-                        {noteType}
-                      </Badge>
+                      <span className="shrink-0 text-[11px] text-muted-foreground/70">{noteType}</span>
                     )}
                   </div>
                   {subtitle && (
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    <p className="mt-0.5 pl-[22px] text-[11px] text-muted-foreground">
                       {subtitle}
                     </p>
                   )}
