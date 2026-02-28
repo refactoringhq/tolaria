@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CalendarIcon, XIcon, Check, X, Type, ToggleLeft, Circle, Link, Tag } from 'lucide-react'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
+import { getTypeIcon } from './NoteItem'
 import { countWords } from '../utils/wikilinks'
 import {
   type PropertyDisplayMode,
@@ -482,9 +483,24 @@ function ReadOnlyType({ isA, customColorKey, onNavigate }: { isA?: string | null
   )
 }
 
-function TypeSelector({ isA, customColorKey, availableTypes, typeColorKeys, onUpdateProperty, onNavigate }: {
+function TypeSelectorItem({ type, typeColorKeys, typeIconKeys }: {
+  type: string; typeColorKeys: Record<string, string | null>; typeIconKeys: Record<string, string | null>
+}) {
+  const Icon = getTypeIcon(type, typeIconKeys[type])
+  const color = getTypeColor(type, typeColorKeys[type])
+  return (
+    <>
+      {/* eslint-disable-next-line react-hooks/static-components -- icon from static map lookup */}
+      <Icon width={14} height={14} style={{ color }} />
+      {type}
+    </>
+  )
+}
+
+function TypeSelector({ isA, customColorKey, availableTypes, typeColorKeys, typeIconKeys, onUpdateProperty, onNavigate }: {
   isA?: string | null; customColorKey?: string | null; availableTypes: string[]
   typeColorKeys: Record<string, string | null>
+  typeIconKeys: Record<string, string | null>
   onUpdateProperty?: (key: string, value: FrontmatterValue) => void
   onNavigate?: (target: string) => void
 }) {
@@ -511,8 +527,7 @@ function TypeSelector({ isA, customColorKey, availableTypes, typeColorKeys, onUp
           <SelectSeparator />
           {options.map(type => (
             <SelectItem key={type} value={type}>
-              <Circle className="size-3" style={{ color: getTypeColor(type, typeColorKeys[type]), fill: getTypeColor(type, typeColorKeys[type]) }} />
-              {type}
+              <TypeSelectorItem type={type} typeColorKeys={typeColorKeys} typeIconKeys={typeIconKeys} />
             </SelectItem>
           ))}
         </SelectContent>
@@ -642,11 +657,16 @@ function reconcileListUpdate(
 function deriveTypeInfo(entries: VaultEntry[] | undefined, entryIsA: string | null) {
   const typeEntries = (entries ?? []).filter(e => e.isA === 'Type')
   const typeColorKeys: Record<string, string | null> = {}
-  for (const e of typeEntries) { typeColorKeys[e.title] = e.color ?? null }
+  const typeIconKeys: Record<string, string | null> = {}
+  for (const e of typeEntries) {
+    typeColorKeys[e.title] = e.color ?? null
+    typeIconKeys[e.title] = e.icon ?? null
+  }
   return {
     availableTypes: typeEntries.map(e => e.title).sort((a, b) => a.localeCompare(b)),
     customColorKey: entryIsA ? (typeColorKeys[entryIsA] ?? null) : null,
     typeColorKeys,
+    typeIconKeys,
   }
 }
 
@@ -714,7 +734,7 @@ function usePropertyPanelState(deps: PropertyPanelDeps) {
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [displayOverrides, setDisplayOverrides] = useState(() => loadDisplayModeOverrides())
 
-  const { availableTypes, customColorKey, typeColorKeys } = useMemo(() => deriveTypeInfo(entries, entryIsA), [entries, entryIsA])
+  const { availableTypes, customColorKey, typeColorKeys, typeIconKeys } = useMemo(() => deriveTypeInfo(entries, entryIsA), [entries, entryIsA])
   const vaultStatuses = useMemo(() => collectVaultStatuses(entries), [entries])
   const vaultTagsByKey = useMemo(() => collectAllVaultTags(entries, allContent), [entries, allContent])
   const propertyEntries = useMemo(() => Object.entries(frontmatter).filter(isVisibleProperty), [frontmatter])
@@ -746,7 +766,7 @@ function usePropertyPanelState(deps: PropertyPanelDeps) {
 
   return {
     editingKey, setEditingKey, showAddDialog, setShowAddDialog, displayOverrides,
-    availableTypes, customColorKey, typeColorKeys, vaultStatuses, vaultTagsByKey, propertyEntries,
+    availableTypes, customColorKey, typeColorKeys, typeIconKeys, vaultStatuses, vaultTagsByKey, propertyEntries,
     handleSaveValue, handleSaveList, handleAdd, handleDisplayModeChange,
   }
 }
@@ -767,7 +787,7 @@ export function DynamicPropertiesPanel({
 }) {
   const {
     editingKey, setEditingKey, showAddDialog, setShowAddDialog, displayOverrides,
-    availableTypes, customColorKey, typeColorKeys, vaultStatuses, vaultTagsByKey, propertyEntries,
+    availableTypes, customColorKey, typeColorKeys, typeIconKeys, vaultStatuses, vaultTagsByKey, propertyEntries,
     handleSaveValue, handleSaveList, handleAdd, handleDisplayModeChange,
   } = usePropertyPanelState({ entries, entryIsA: entry.isA, frontmatter, allContent, onUpdateProperty, onDeleteProperty, onAddProperty })
 
@@ -776,7 +796,7 @@ export function DynamicPropertiesPanel({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-2">
-        <TypeSelector isA={entry.isA} customColorKey={customColorKey} availableTypes={availableTypes} typeColorKeys={typeColorKeys} onUpdateProperty={onUpdateProperty} onNavigate={onNavigate} />
+        <TypeSelector isA={entry.isA} customColorKey={customColorKey} availableTypes={availableTypes} typeColorKeys={typeColorKeys} typeIconKeys={typeIconKeys} onUpdateProperty={onUpdateProperty} onNavigate={onNavigate} />
         {propertyEntries.map(([key, value]) => (
           <PropertyRow
             key={key} propKey={key} value={value}
