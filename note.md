@@ -1,3 +1,0 @@
-# Note
-
-First version.
