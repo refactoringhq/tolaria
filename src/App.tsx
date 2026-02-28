@@ -30,6 +30,7 @@ import { useNavigationHistory } from './hooks/useNavigationHistory'
 import { useAutoSync } from './hooks/useAutoSync'
 import { useZoom } from './hooks/useZoom'
 import { useOnboarding } from './hooks/useOnboarding'
+import { useThemeManager } from './hooks/useThemeManager'
 import { UpdateBanner } from './components/UpdateBanner'
 import { setApiKey } from './utils/ai-chat'
 import { extractOutgoingLinks } from './utils/wikilinks'
@@ -122,6 +123,7 @@ function App() {
   const resolvedPath = onboarding.state.status === 'ready' ? onboarding.state.vaultPath : vaultSwitcher.vaultPath
   const vault = useVaultLoader(resolvedPath)
   const { settings, saveSettings } = useSettings()
+  const themeManager = useThemeManager(resolvedPath)
 
   useEffect(() => { setApiKey(settings.anthropic_key ?? '') }, [settings.anthropic_key])
   useMcpRegistration(resolvedPath, setToastMessage)
@@ -283,6 +285,8 @@ function App() {
     onSelectNote: notes.handleSelectNote,
     onGoBack: handleGoBack, onGoForward: handleGoForward,
     canGoBack: navHistory.canGoBack, canGoForward: navHistory.canGoForward,
+    themes: themeManager.themes, activeThemeId: themeManager.activeThemeId,
+    onSwitchTheme: themeManager.switchTheme, onCreateTheme: () => themeManager.createTheme(),
   })
 
   const { status: updateStatus, actions: updateActions } = useUpdater()
@@ -387,7 +391,7 @@ function App() {
       <SearchPanel open={dialogs.showSearch} vaultPath={resolvedPath} entries={vault.entries} onSelectNote={notes.handleSelectNote} onClose={dialogs.closeSearch} />
       <CreateTypeDialog open={dialogs.showCreateTypeDialog} onClose={dialogs.closeCreateType} onCreate={handleCreateType} />
       <CommitDialog open={commitFlow.showCommitDialog} modifiedCount={vault.modifiedFiles.length} onCommit={commitFlow.handleCommitPush} onClose={commitFlow.closeCommitDialog} />
-      <SettingsPanel open={dialogs.showSettings} settings={settings} onSave={saveSettings} onClose={dialogs.closeSettings} />
+      <SettingsPanel open={dialogs.showSettings} settings={settings} onSave={saveSettings} onClose={dialogs.closeSettings} themeManager={themeManager} />
       <GitHubVaultModal
         open={dialogs.showGitHubVault}
         githubToken={settings.github_token}

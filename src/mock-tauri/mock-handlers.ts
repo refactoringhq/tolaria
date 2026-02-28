@@ -3,7 +3,7 @@
  * Each handler simulates a Tauri backend command.
  */
 
-import type { VaultEntry, ModifiedFile, Settings, DeviceFlowStart, DeviceFlowPollResult, GitHubUser, GitPullResult, LastCommitInfo } from '../types'
+import type { VaultEntry, ModifiedFile, Settings, DeviceFlowStart, DeviceFlowPollResult, GitHubUser, GitPullResult, LastCommitInfo, ThemeFile, VaultSettings } from '../types'
 import { MOCK_CONTENT } from './mock-content'
 import { MOCK_ENTRIES } from './mock-entries'
 
@@ -81,6 +81,29 @@ let mockSettings: Settings = {
   github_username: null,
   auto_pull_interval_minutes: 5,
 }
+
+let mockVaultSettings: VaultSettings = { theme: null }
+
+const mockThemes: ThemeFile[] = [
+  {
+    id: 'default', name: 'Default', description: 'Light theme with warm, paper-like tones',
+    colors: { background: '#FFFFFF', foreground: '#37352F', primary: '#155DFF', 'sidebar-background': '#F7F6F3', border: '#E9E9E7', muted: '#F0F0EF' },
+    typography: { 'font-family': "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", 'font-size-base': '14px' },
+    spacing: { 'sidebar-width': '250px' },
+  },
+  {
+    id: 'dark', name: 'Dark', description: 'Dark variant with deep navy tones',
+    colors: { background: '#0f0f1a', foreground: '#e0e0e0', primary: '#155DFF', 'sidebar-background': '#1a1a2e', border: '#2a2a4a', muted: '#1e1e3a' },
+    typography: { 'font-family': "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", 'font-size-base': '14px' },
+    spacing: { 'sidebar-width': '250px' },
+  },
+  {
+    id: 'minimal', name: 'Minimal', description: 'High contrast, minimal chrome',
+    colors: { background: '#FAFAFA', foreground: '#111111', primary: '#000000', 'sidebar-background': '#F5F5F5', border: '#E0E0E0', muted: '#F5F5F5' },
+    typography: { 'font-family': "'SF Mono', 'Menlo', monospace", 'font-size-base': '13px' },
+    spacing: { 'sidebar-width': '220px' },
+  },
+]
 
 let mockDeviceFlowPollCount = 0
 
@@ -240,6 +263,22 @@ export const mockHandlers: Record<string, (args: any) => any> = {
   },
   create_getting_started_vault: () => '/Users/mock/Documents/Laputa',
   register_mcp_tools: () => 'registered',
+  list_themes: (): ThemeFile[] => [...mockThemes],
+  get_theme: (args: { theme_id: string }): ThemeFile => {
+    const t = mockThemes.find(t => t.id === args.theme_id)
+    if (!t) throw new Error(`Theme not found: ${args.theme_id}`)
+    return { ...t }
+  },
+  get_vault_settings: (): VaultSettings => ({ ...mockVaultSettings }),
+  save_vault_settings: (args: { settings: VaultSettings }) => { mockVaultSettings = { ...args.settings }; return null },
+  set_active_theme: (args: { theme_id: string }) => { mockVaultSettings.theme = args.theme_id; return null },
+  create_theme: (args: { source_id?: string }): string => {
+    const sourceId = args.source_id ?? 'default'
+    const source = mockThemes.find(t => t.id === sourceId) ?? mockThemes[0]
+    const newId = `untitled-${mockThemes.length}`
+    mockThemes.push({ ...source, id: newId, name: 'Untitled Theme' })
+    return newId
+  },
 }
 
 export function addMockEntry(_entry: VaultEntry, content: string): void {

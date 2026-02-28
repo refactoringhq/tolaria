@@ -3,7 +3,7 @@ import { useCommandRegistry } from './useCommandRegistry'
 import type { CommandAction } from './useCommandRegistry'
 import { useKeyboardNavigation } from './useKeyboardNavigation'
 import { useMenuEvents } from './useMenuEvents'
-import type { SidebarSelection, VaultEntry } from '../types'
+import type { SidebarSelection, ThemeFile, VaultEntry } from '../types'
 import type { ViewMode } from './useViewMode'
 
 interface Tab { entry: VaultEntry; content: string }
@@ -43,6 +43,10 @@ interface AppCommandsConfig {
   onGoForward?: () => void
   canGoBack?: boolean
   canGoForward?: boolean
+  themes?: ThemeFile[]
+  activeThemeId?: string | null
+  onSwitchTheme?: (themeId: string) => void
+  onCreateTheme?: () => void
 }
 
 /** Sets up keyboard shortcuts, command registry, menu events, and keyboard navigation. */
@@ -107,6 +111,10 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onGoForward: config.onGoForward,
     canGoBack: config.canGoBack,
     canGoForward: config.canGoForward,
+    themes: config.themes,
+    activeThemeId: config.activeThemeId,
+    onSwitchTheme: config.onSwitchTheme,
+    onCreateTheme: config.onCreateTheme,
   })
 
   useKeyboardNavigation({
