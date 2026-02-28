@@ -227,7 +227,7 @@ describe('Sidebar', () => {
     expect(screen.getByText('Favorites')).toBeInTheDocument()
   })
 
-  it('renders section group headers with new labels', () => {
+  it('renders section group headers only for types present in entries', () => {
     render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
     expect(screen.getByText('Projects')).toBeInTheDocument()
     expect(screen.getByText('Experiments')).toBeInTheDocument()
@@ -236,7 +236,8 @@ describe('Sidebar', () => {
     expect(screen.getByText('People')).toBeInTheDocument()
     expect(screen.getByText('Events')).toBeInTheDocument()
     expect(screen.getByText('Topics')).toBeInTheDocument()
-    expect(screen.getByText('Types')).toBeInTheDocument()
+    // No entries with isA: 'Type' in mockEntries → Types section absent
+    expect(screen.queryByText('Types')).not.toBeInTheDocument()
   })
 
   it('shows entity names under their section groups after expanding', () => {
@@ -328,7 +329,7 @@ describe('Sidebar', () => {
     const onCreateType = vi.fn()
     render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} onCreateType={onCreateType} />)
     const createButtons = screen.getAllByTitle(/^New /)
-    expect(createButtons.length).toBe(8) // Projects, Experiments, Responsibilities, Procedures, People, Events, Topics, Types
+    expect(createButtons.length).toBe(7) // Projects, Experiments, Responsibilities, Procedures, People, Events, Topics (no Type entries → no Types section)
   })
 
   it('calls onCreateType with correct type when + button is clicked', () => {
@@ -445,14 +446,39 @@ describe('Sidebar', () => {
         snippet: '',
         wordCount: 0,
         relationships: {},
-    icon: null,
-    color: null,
-    order: null,
-    outgoingLinks: [],
+        icon: null,
+        color: null,
+        order: null,
+        outgoingLinks: [],
+      },
+      {
+        path: '/vault/book/ddia.md',
+        filename: 'ddia.md',
+        title: 'Designing Data-Intensive Applications',
+        isA: 'Book',
+        aliases: [],
+        belongsTo: [],
+        relatedTo: [],
+        status: null,
+        owner: null,
+        cadence: null,
+        archived: false,
+        trashed: false,
+        trashedAt: null,
+        modifiedAt: 1700000000,
+        createdAt: null,
+        fileSize: 400,
+        snippet: '',
+        wordCount: 0,
+        relationships: {},
+        icon: null,
+        color: null,
+        order: null,
+        outgoingLinks: [],
       },
     ]
 
-    it('renders custom type sections derived from Type entries', () => {
+    it('renders custom type sections derived from actual entries', () => {
       render(<Sidebar entries={entriesWithCustomTypes} selection={defaultSelection} onSelect={() => {}} onCreateType={() => {}} />)
       expect(screen.getByText('Books')).toBeInTheDocument()
       expect(screen.getByText('Recipes')).toBeInTheDocument()
@@ -476,6 +502,36 @@ describe('Sidebar', () => {
       render(<Sidebar entries={entriesWithCustomTypes} selection={defaultSelection} onSelect={() => {}} onCreateNewType={onCreateNewType} />)
       fireEvent.click(screen.getByTitle('New Type'))
       expect(onCreateNewType).toHaveBeenCalled()
+    })
+
+    it('does not show section for type with zero active entries', () => {
+      // Only Type definitions exist for Book, no actual Book instances
+      const entriesNoBookInstance = entriesWithCustomTypes.filter((e) => !(e.isA === 'Book' && e.title !== 'Book'))
+      render(<Sidebar entries={entriesNoBookInstance} selection={defaultSelection} onSelect={() => {}} />)
+      expect(screen.queryByText('Books')).not.toBeInTheDocument()
+      // Recipes still has an instance (Pasta Carbonara)
+      expect(screen.getByText('Recipes')).toBeInTheDocument()
+    })
+
+    it('hides type section when all entries of that type are trashed', () => {
+      const entriesWithTrashedOnly: VaultEntry[] = [
+        {
+          path: '/vault/event/cancelled.md', filename: 'cancelled.md', title: 'Cancelled Event',
+          isA: 'Event', aliases: [], belongsTo: [], relatedTo: [], status: null, owner: null,
+          cadence: null, archived: false, trashed: true, trashedAt: 1700000000,
+          modifiedAt: 1700000000, createdAt: null, fileSize: 100, snippet: '', wordCount: 0,
+          relationships: {}, icon: null, color: null, order: null, outgoingLinks: [],
+        },
+      ]
+      render(<Sidebar entries={entriesWithTrashedOnly} selection={defaultSelection} onSelect={() => {}} />)
+      expect(screen.queryByText('Events')).not.toBeInTheDocument()
+    })
+
+    it('shows no sections when entries list is empty', () => {
+      render(<Sidebar entries={[]} selection={defaultSelection} onSelect={() => {}} />)
+      expect(screen.queryByText('Projects')).not.toBeInTheDocument()
+      expect(screen.queryByText('People')).not.toBeInTheDocument()
+      expect(screen.queryByText('Events')).not.toBeInTheDocument()
     })
 
     it('does not show built-in types as custom sections', () => {

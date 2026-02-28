@@ -1,0 +1,340 @@
+{
+  "children": [
+    {
+      "type": "frame",
+      "id": "ai_panel_closed",
+      "name": "AI Agent Panel — Closed (trigger button in toolbar)",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "fill": "$--background",
+      "layout": "horizontal",
+      "theme": { "Mode": "Light" },
+      "children": [
+        {
+          "type": "rectangle",
+          "id": "ai_closed_editor",
+          "width": "fill_container",
+          "height": "fill_container",
+          "fill": "$--muted",
+          "cornerRadius": 4
+        },
+        {
+          "type": "frame",
+          "id": "ai_closed_toolbar",
+          "name": "Right Toolbar",
+          "layout": "vertical",
+          "width": 36,
+          "height": "fill_container",
+          "fill": "$--background",
+          "padding": [8, 4],
+          "gap": 4,
+          "children": [
+            {
+              "type": "frame",
+              "id": "ai_trigger_btn",
+              "name": "AI Trigger Button",
+              "width": 28,
+              "height": 28,
+              "cornerRadius": 6,
+              "fill": "$--muted",
+              "layout": "horizontal",
+              "padding": [6, 6],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ai_trigger_icon",
+                  "content": "✦",
+                  "fill": "$--muted-foreground",
+                  "fontSize": 14
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ai_panel_open_idle",
+      "name": "AI Agent Panel — Open, Idle (empty state)",
+      "x": 1320,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "fill": "$--background",
+      "layout": "horizontal",
+      "theme": { "Mode": "Light" },
+      "children": [
+        {
+          "type": "rectangle",
+          "id": "ai_open_editor",
+          "width": "fill_container",
+          "height": "fill_container",
+          "fill": "$--muted",
+          "cornerRadius": 4
+        },
+        {
+          "type": "frame",
+          "id": "ai_panel_sidebar",
+          "name": "AI Panel Sidebar",
+          "layout": "vertical",
+          "width": 320,
+          "height": "fill_container",
+          "fill": "$--background",
+          "children": [
+            {
+              "type": "frame",
+              "id": "ai_panel_header",
+              "name": "Panel Header",
+              "layout": "horizontal",
+              "width": "fill_container",
+              "height": 45,
+              "padding": [0, 12],
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ai_header_label",
+                  "content": "AI",
+                  "fontSize": 13,
+                  "fontWeight": "600",
+                  "fill": "$--muted-foreground",
+                  "width": "fill_container"
+                },
+                {
+                  "type": "text",
+                  "id": "ai_close_icon",
+                  "content": "✕",
+                  "fontSize": 12,
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ai_empty_state",
+              "name": "Empty State",
+              "layout": "vertical",
+              "width": "fill_container",
+              "height": "fill_container",
+              "padding": [24, 24],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ai_empty_hint",
+                  "content": "Ask the AI agent to work on your vault…",
+                  "fontSize": 13,
+                  "fill": "$--muted-foreground",
+                  "textAlign": "center",
+                  "width": "fill_container"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ai_input_row",
+              "name": "Input Row",
+              "layout": "horizontal",
+              "width": "fill_container",
+              "padding": [8, 12],
+              "gap": 8,
+              "children": [
+                {
+                  "type": "rectangle",
+                  "id": "ai_input_field",
+                  "width": "fill_container",
+                  "height": 32,
+                  "cornerRadius": 6,
+                  "fill": "$--muted"
+                },
+                {
+                  "type": "frame",
+                  "id": "ai_send_btn",
+                  "name": "Send Button",
+                  "width": 28,
+                  "height": 28,
+                  "cornerRadius": 6,
+                  "fill": "$--primary",
+                  "layout": "horizontal",
+                  "padding": [6, 6],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ai_send_icon",
+                      "content": "→",
+                      "fontSize": 12,
+                      "fill": "$--primary-foreground"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ai_panel_active",
+      "name": "AI Agent Panel — Active (streaming, action cards visible)",
+      "x": 2640,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "fill": "$--background",
+      "layout": "horizontal",
+      "theme": { "Mode": "Light" },
+      "children": [
+        {
+          "type": "rectangle",
+          "id": "ai_active_editor",
+          "width": "fill_container",
+          "height": "fill_container",
+          "fill": "$--muted",
+          "cornerRadius": 4
+        },
+        {
+          "type": "frame",
+          "id": "ai_active_panel",
+          "name": "AI Panel — With Messages",
+          "layout": "vertical",
+          "width": 320,
+          "height": "fill_container",
+          "fill": "$--background",
+          "children": [
+            {
+              "type": "frame",
+              "id": "ai_active_header",
+              "name": "Panel Header",
+              "layout": "horizontal",
+              "width": "fill_container",
+              "height": 45,
+              "padding": [0, 12],
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ai_active_label",
+                  "content": "AI",
+                  "fontSize": 13,
+                  "fontWeight": "600",
+                  "fill": "$--muted-foreground",
+                  "width": "fill_container"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ai_message_thread",
+              "name": "Message Thread",
+              "layout": "vertical",
+              "width": "fill_container",
+              "height": "fill_container",
+              "padding": [12, 12],
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ai_user_msg",
+                  "name": "User Message",
+                  "layout": "vertical",
+                  "width": "fill_container",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "text",
+                      "content": "You",
+                      "fontSize": 11,
+                      "fontWeight": "600",
+                      "fill": "$--muted-foreground"
+                    },
+                    {
+                      "type": "text",
+                      "content": "Crea una nota evento per la riunione con Marco domani",
+                      "fontSize": 13,
+                      "fill": "$--foreground",
+                      "width": "fill_container"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ai_agent_msg",
+                  "name": "Agent Message + Actions",
+                  "layout": "vertical",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ai_action_done",
+                      "name": "Action Card — Done",
+                      "layout": "horizontal",
+                      "width": "fill_container",
+                      "height": 28,
+                      "padding": [0, 8],
+                      "gap": 6,
+                      "cornerRadius": 4,
+                      "fill": "$--muted",
+                      "children": [
+                        {
+                          "type": "text",
+                          "content": "✓",
+                          "fontSize": 12,
+                          "fill": "$--primary"
+                        },
+                        {
+                          "type": "text",
+                          "content": "Loaded vault context",
+                          "fontSize": 12,
+                          "fill": "$--foreground",
+                          "width": "fill_container"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ai_action_progress",
+                      "name": "Action Card — In Progress",
+                      "layout": "horizontal",
+                      "width": "fill_container",
+                      "height": 28,
+                      "padding": [0, 8],
+                      "gap": 6,
+                      "cornerRadius": 4,
+                      "fill": "$--muted",
+                      "children": [
+                        {
+                          "type": "text",
+                          "content": "◌",
+                          "fontSize": 12,
+                          "fill": "$--primary"
+                        },
+                        {
+                          "type": "text",
+                          "content": "Creating: 2026-03-01-meeting-marco.md",
+                          "fontSize": 12,
+                          "fill": "$--foreground",
+                          "width": "fill_container"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "content": "Ho creato la nota evento e linkato Marco come partecipante. La trovi già aperta in un nuovo tab.",
+                      "fontSize": 13,
+                      "fill": "$--foreground",
+                      "width": "fill_container"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

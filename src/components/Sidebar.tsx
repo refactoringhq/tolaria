@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react'
 import type { VaultEntry, SidebarSelection } from '../types'
 import { resolveIcon } from '../utils/iconRegistry'
 import { buildTypeEntryMap } from '../utils/typeColors'
+import { pluralizeType } from '../hooks/useCommandRegistry'
 import { TypeCustomizePopover } from './TypeCustomizePopover'
 import { useSectionVisibility } from '../hooks/useSectionVisibility'
 import {
@@ -48,7 +49,8 @@ const BUILT_IN_SECTION_GROUPS: SectionGroup[] = [
   { label: 'Types', type: 'Type', Icon: StackSimple },
 ]
 
-const BUILT_IN_TYPES = new Set(BUILT_IN_SECTION_GROUPS.map((s) => s.type))
+/** Metadata lookup for well-known types (icon/label only — NOT used to determine which sections to show) */
+const BUILT_IN_TYPE_MAP = new Map(BUILT_IN_SECTION_GROUPS.map((sg) => [sg.type, sg]))
 
 // --- Hooks ---
 
@@ -63,19 +65,31 @@ function useOutsideClick(ref: React.RefObject<HTMLElement | null>, isOpen: boole
   }, [ref, isOpen, onClose])
 }
 
-function applyOverrides(typeEntryMap: Record<string, VaultEntry>): SectionGroup[] {
-  return BUILT_IN_SECTION_GROUPS.map((sg) => {
-    const te = typeEntryMap[sg.type]
-    if (!te?.icon && !te?.color) return sg
-    return { ...sg, Icon: te?.icon ? resolveIcon(te.icon) : sg.Icon, customColor: te?.color ?? null }
-  })
+/** Collect unique isA values from active (non-trashed, non-archived) entries, excluding generic Note */
+function collectActiveTypes(entries: VaultEntry[]): Set<string> {
+  const types = new Set<string>()
+  for (const e of entries) {
+    if (e.isA && e.isA !== 'Note' && !e.trashed && !e.archived) types.add(e.isA)
+  }
+  return types
 }
 
-function buildCustomSections(entries: VaultEntry[]): SectionGroup[] {
-  return entries
-    .filter((e) => e.isA === 'Type' && !BUILT_IN_TYPES.has(e.title))
-    .sort((a, b) => a.title.localeCompare(b.title))
-    .map((e) => ({ label: e.title + 's', type: e.title, Icon: resolveIcon(e.icon), customColor: e.color }))
+/** Build a single SectionGroup for a type, using built-in metadata or Type entry for icon/label */
+function buildSectionGroup(type: string, typeEntryMap: Record<string, VaultEntry>): SectionGroup {
+  const builtIn = BUILT_IN_TYPE_MAP.get(type)
+  const typeEntry = typeEntryMap[type]
+  const customColor = typeEntry?.color ?? null
+  if (builtIn) {
+    const Icon = typeEntry?.icon ? resolveIcon(typeEntry.icon) : builtIn.Icon
+    return { ...builtIn, Icon, customColor }
+  }
+  return { label: pluralizeType(type), type, Icon: resolveIcon(typeEntry?.icon ?? null), customColor }
+}
+
+/** Build sections dynamically from actual vault entries — only types with ≥1 active note appear */
+function buildDynamicSections(entries: VaultEntry[], typeEntryMap: Record<string, VaultEntry>): SectionGroup[] {
+  const activeTypes = collectActiveTypes(entries)
+  return Array.from(activeTypes, (type) => buildSectionGroup(type, typeEntryMap))
 }
 
 function sortSections(groups: SectionGroup[], typeEntryMap: Record<string, VaultEntry>): SectionGroup[] {
@@ -89,9 +103,8 @@ function sortSections(groups: SectionGroup[], typeEntryMap: Record<string, Vault
 function useSidebarSections(entries: VaultEntry[], isSectionVisible: (type: string) => boolean) {
   const typeEntryMap = useMemo(() => buildTypeEntryMap(entries), [entries])
   const allSectionGroups = useMemo(() => {
-    const built = applyOverrides(typeEntryMap)
-    const custom = buildCustomSections(entries)
-    return sortSections([...built, ...custom], typeEntryMap)
+    const sections = buildDynamicSections(entries, typeEntryMap)
+    return sortSections(sections, typeEntryMap)
   }, [entries, typeEntryMap])
   const visibleSections = useMemo(() => allSectionGroups.filter((g) => isSectionVisible(g.type)), [allSectionGroups, isSectionVisible])
   const sectionIds = useMemo(() => visibleSections.map((g) => g.type), [visibleSections])
