@@ -12,6 +12,54 @@ pub struct GitCommit {
     pub date: i64,
 }
 
+/// Initialize a new git repository, stage all files, and create an initial commit.
+pub fn init_repo(path: &str) -> Result<(), String> {
+    let dir = Path::new(path);
+
+    run_git(dir, &["init"])?;
+    ensure_author_config(dir)?;
+    run_git(dir, &["add", "."])?;
+    run_git(dir, &["commit", "-m", "Initial vault setup"])?;
+
+    Ok(())
+}
+
+/// Run a git command in the given directory, returning an error on failure.
+fn run_git(dir: &Path, args: &[&str]) -> Result<(), String> {
+    let output = Command::new("git")
+        .args(args)
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to run git {}: {}", args[0], e))?;
+
+    if output.status.success() {
+        return Ok(());
+    }
+
+    Err(format!(
+        "git {} failed: {}",
+        args[0],
+        String::from_utf8_lossy(&output.stderr)
+    ))
+}
+
+/// Set local user.name and user.email if not already configured.
+fn ensure_author_config(dir: &Path) -> Result<(), String> {
+    for (key, fallback) in [("user.name", "Laputa"), ("user.email", "vault@laputa.app")] {
+        let check = Command::new("git")
+            .args(["config", key])
+            .current_dir(dir)
+            .output()
+            .map_err(|e| format!("Failed to check git config: {}", e))?;
+
+        let value = String::from_utf8_lossy(&check.stdout);
+        if !check.status.success() || value.trim().is_empty() {
+            run_git(dir, &["config", key, fallback])?;
+        }
+    }
+    Ok(())
+}
+
 /// Get git log history for a specific file in the vault.
 pub fn get_file_history(vault_path: &str, file_path: &str) -> Result<Vec<GitCommit>, String> {
     let vault = Path::new(vault_path);
@@ -560,6 +608,57 @@ mod tests {
             .unwrap();
 
         dir
+    }
+
+    #[test]
+    fn test_init_repo_creates_git_directory() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("new-vault");
+        fs::create_dir_all(&vault).unwrap();
+        fs::write(vault.join("note.md"), "# Test\n").unwrap();
+
+        init_repo(vault.to_str().unwrap()).unwrap();
+
+        assert!(vault.join(".git").exists());
+    }
+
+    #[test]
+    fn test_init_repo_creates_initial_commit() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("new-vault");
+        fs::create_dir_all(&vault).unwrap();
+        fs::write(vault.join("note.md"), "# Test\n").unwrap();
+
+        init_repo(vault.to_str().unwrap()).unwrap();
+
+        let log = Command::new("git")
+            .args(["log", "--oneline"])
+            .current_dir(&vault)
+            .output()
+            .unwrap();
+        let log_str = String::from_utf8_lossy(&log.stdout);
+        assert!(log_str.contains("Initial vault setup"));
+    }
+
+    #[test]
+    fn test_init_repo_stages_all_files() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("new-vault");
+        fs::create_dir_all(vault.join("sub")).unwrap();
+        fs::write(vault.join("note.md"), "# Test\n").unwrap();
+        fs::write(vault.join("sub/nested.md"), "# Nested\n").unwrap();
+
+        init_repo(vault.to_str().unwrap()).unwrap();
+
+        let status = Command::new("git")
+            .args(["status", "--porcelain"])
+            .current_dir(&vault)
+            .output()
+            .unwrap();
+        assert!(
+            String::from_utf8_lossy(&status.stdout).trim().is_empty(),
+            "All files should be committed"
+        );
     }
 
     #[test]

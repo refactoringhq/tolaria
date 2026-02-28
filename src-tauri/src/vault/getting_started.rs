@@ -292,6 +292,8 @@ pub fn create_getting_started_vault(target_path: &str) -> Result<String, String>
             .map_err(|e| format!("Failed to write {}: {}", sample.rel_path, e))?;
     }
 
+    crate::git::init_repo(target_path)?;
+
     Ok(vault_dir
         .canonicalize()
         .unwrap_or_else(|_| vault_dir.to_path_buf())
@@ -392,5 +394,39 @@ mod tests {
 
         let entries = crate::vault::scan_vault(&vault_path).unwrap();
         assert_eq!(entries.len(), SAMPLE_FILES.len());
+    }
+
+    #[test]
+    fn test_create_getting_started_vault_initializes_git() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let vault_path = dir.path().join("git-vault");
+        create_getting_started_vault(vault_path.to_str().unwrap()).unwrap();
+
+        assert!(vault_path.join(".git").exists());
+
+        let log = std::process::Command::new("git")
+            .args(["log", "--oneline"])
+            .current_dir(&vault_path)
+            .output()
+            .unwrap();
+        let log_str = String::from_utf8_lossy(&log.stdout);
+        assert!(log_str.contains("Initial vault setup"));
+    }
+
+    #[test]
+    fn test_create_getting_started_vault_no_untracked_files() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let vault_path = dir.path().join("clean-vault");
+        create_getting_started_vault(vault_path.to_str().unwrap()).unwrap();
+
+        let status = std::process::Command::new("git")
+            .args(["status", "--porcelain"])
+            .current_dir(&vault_path)
+            .output()
+            .unwrap();
+        assert!(
+            String::from_utf8_lossy(&status.stdout).trim().is_empty(),
+            "All files should be committed, no untracked files"
+        );
     }
 }
