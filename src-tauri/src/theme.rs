@@ -35,8 +35,8 @@ pub fn list_themes(vault_path: &str) -> Result<Vec<ThemeFile>, String> {
     }
 
     let mut themes = Vec::new();
-    let entries = fs::read_dir(&themes_dir)
-        .map_err(|e| format!("Failed to read _themes directory: {e}"))?;
+    let entries =
+        fs::read_dir(&themes_dir).map_err(|e| format!("Failed to read _themes directory: {e}"))?;
 
     for entry in entries.flatten() {
         let path = entry.path();
@@ -61,8 +61,8 @@ fn parse_theme_file(path: &Path) -> Result<ThemeFile, String> {
         .map(|s| s.to_string())
         .ok_or_else(|| "Invalid theme filename".to_string())?;
 
-    let content = fs::read_to_string(path)
-        .map_err(|e| format!("Failed to read {}: {e}", path.display()))?;
+    let content =
+        fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {e}", path.display()))?;
 
     let mut theme: ThemeFile = serde_json::from_str(&content)
         .map_err(|e| format!("Failed to parse {}: {e}", path.display()))?;
@@ -79,15 +79,11 @@ pub fn get_vault_settings(vault_path: &str) -> Result<VaultSettings, String> {
     }
     let content = fs::read_to_string(&settings_path)
         .map_err(|e| format!("Failed to read vault settings: {e}"))?;
-    serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse vault settings: {e}"))
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse vault settings: {e}"))
 }
 
 /// Save vault-level settings to .laputa/settings.json.
-pub fn save_vault_settings(
-    vault_path: &str,
-    settings: VaultSettings,
-) -> Result<(), String> {
+pub fn save_vault_settings(vault_path: &str, settings: VaultSettings) -> Result<(), String> {
     let laputa_dir = Path::new(vault_path).join(".laputa");
     fs::create_dir_all(&laputa_dir)
         .map_err(|e| format!("Failed to create .laputa directory: {e}"))?;
@@ -118,10 +114,7 @@ pub fn get_theme(vault_path: &str, theme_id: &str) -> Result<ThemeFile, String> 
 
 /// Create a new theme file by copying the active theme (or default).
 /// Returns the ID of the new theme.
-pub fn create_theme(
-    vault_path: &str,
-    source_id: Option<&str>,
-) -> Result<String, String> {
+pub fn create_theme(vault_path: &str, source_id: Option<&str>) -> Result<String, String> {
     let themes_dir = Path::new(vault_path).join("_themes");
     fs::create_dir_all(&themes_dir)
         .map_err(|e| format!("Failed to create _themes directory: {e}"))?;
@@ -375,7 +368,13 @@ mod tests {
         let vp = vault.to_str().unwrap();
 
         assert!(!vault.join(".laputa").exists());
-        save_vault_settings(vp, VaultSettings { theme: Some("light".into()) }).unwrap();
+        save_vault_settings(
+            vp,
+            VaultSettings {
+                theme: Some("light".into()),
+            },
+        )
+        .unwrap();
         assert!(vault.join(".laputa").join("settings.json").exists());
     }
 
@@ -413,10 +412,7 @@ mod tests {
             let theme: ThemeFile = serde_json::from_str(content)
                 .unwrap_or_else(|e| panic!("Failed to parse {name} theme: {e}"));
             assert!(!theme.name.is_empty(), "{name} theme should have a name");
-            assert!(
-                !theme.colors.is_empty(),
-                "{name} theme should have colors"
-            );
+            assert!(!theme.colors.is_empty(), "{name} theme should have colors");
         }
     }
 
