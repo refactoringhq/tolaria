@@ -120,6 +120,25 @@ fn migrate_is_a_to_type(vault_path: String) -> Result<usize, String> {
 }
 
 #[tauri::command]
+fn create_getting_started_vault(target_path: Option<String>) -> Result<String, String> {
+    let path = match target_path {
+        Some(p) if !p.is_empty() => p,
+        _ => vault::default_vault_path()?.to_string_lossy().to_string(),
+    };
+    vault::create_getting_started_vault(&path)
+}
+
+#[tauri::command]
+fn check_vault_exists(path: String) -> bool {
+    vault::vault_exists(&path)
+}
+
+#[tauri::command]
+fn get_default_vault_path() -> Result<String, String> {
+    vault::default_vault_path().map(|p| p.to_string_lossy().to_string())
+}
+
+#[tauri::command]
 fn batch_archive_notes(paths: Vec<String>) -> Result<usize, String> {
     let mut count = 0;
     for path in &paths {
@@ -296,7 +315,10 @@ pub fn run() {
             github_device_flow_start,
             github_device_flow_poll,
             github_get_user,
-            search_vault
+            search_vault,
+            create_getting_started_vault,
+            check_vault_exists,
+            get_default_vault_path
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

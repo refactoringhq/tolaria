@@ -1,0 +1,381 @@
+{
+  "children": [
+    {
+      "type": "frame",
+      "id": "welcome_screen",
+      "name": "Getting Started — Welcome Screen",
+      "x": 0,
+      "y": 0,
+      "width": 1440,
+      "height": 900,
+      "fill": "#F7F6F3",
+      "layout": "vertical",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "gap": 0,
+      "theme": { "Mode": "Light" },
+      "children": [
+        {
+          "type": "frame",
+          "id": "welcome_card",
+          "name": "Welcome Card",
+          "width": 520,
+          "height": "fit_content",
+          "fill": "#FFFFFF",
+          "cornerRadius": [12, 12, 12, 12],
+          "layout": "vertical",
+          "alignItems": "center",
+          "gap": 24,
+          "padding": [48, 48, 48, 48],
+          "stroke": "#E9E9E7",
+          "strokeThickness": 1,
+          "children": [
+            {
+              "type": "frame",
+              "id": "welcome_icon_wrap",
+              "name": "Icon",
+              "width": 64,
+              "height": 64,
+              "fill": "#EBF4FF",
+              "cornerRadius": [16, 16, 16, 16],
+              "layout": "vertical",
+              "alignItems": "center",
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "welcome_icon_text",
+                  "content": "✦",
+                  "fontSize": 28,
+                  "fill": "#2383E2",
+                  "fontFamily": "Inter"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "welcome_text_group",
+              "name": "Text Group",
+              "layout": "vertical",
+              "alignItems": "center",
+              "gap": 8,
+              "width": "fill_container",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "welcome_title",
+                  "content": "Welcome to Laputa",
+                  "fill": "#37352F",
+                  "fontFamily": "Inter",
+                  "fontSize": 28,
+                  "fontWeight": "700",
+                  "letterSpacing": -0.5,
+                  "textAlign": "center"
+                },
+                {
+                  "type": "text",
+                  "id": "welcome_subtitle",
+                  "content": "Wiki-linked knowledge management for deep thinkers.\nChoose how to get started.",
+                  "fill": "#787774",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "lineHeight": 1.6,
+                  "textAlign": "center"
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "welcome_divider",
+              "width": "fill_container",
+              "height": 1,
+              "fill": "#E9E9E7"
+            },
+            {
+              "type": "frame",
+              "id": "welcome_actions",
+              "name": "Actions",
+              "layout": "vertical",
+              "gap": 12,
+              "width": "fill_container",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "btn_create_vault",
+                  "name": "Create Getting Started Vault Button",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#2383E2",
+                  "cornerRadius": [8, 8, 8, 8],
+                  "layout": "horizontal",
+                  "alignItems": "center",
+                  "justifyContent": "center",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "btn_create_icon",
+                      "content": "＋",
+                      "fill": "#FFFFFF",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "btn_create_label",
+                      "content": "Create Getting Started vault",
+                      "fill": "#FFFFFF",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "btn_open_folder",
+                  "name": "Open Existing Folder Button",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#FFFFFF",
+                  "stroke": "#E9E9E7",
+                  "strokeThickness": 1,
+                  "cornerRadius": [8, 8, 8, 8],
+                  "layout": "horizontal",
+                  "alignItems": "center",
+                  "justifyContent": "center",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "btn_open_icon",
+                      "content": "📂",
+                      "fill": "#37352F",
+                      "fontFamily": "Inter",
+                      "fontSize": 14
+                    },
+                    {
+                      "type": "text",
+                      "id": "btn_open_label",
+                      "content": "Open an existing folder",
+                      "fill": "#37352F",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "welcome_hint",
+              "content": "The Getting Started vault will be created in ~/Documents/Laputa",
+              "fill": "#787774",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "textAlign": "center"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "vault_missing_screen",
+      "name": "Getting Started — Vault Missing Error",
+      "x": 1540,
+      "y": 0,
+      "width": 1440,
+      "height": 900,
+      "fill": "#F7F6F3",
+      "layout": "vertical",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "gap": 0,
+      "theme": { "Mode": "Light" },
+      "children": [
+        {
+          "type": "frame",
+          "id": "missing_card",
+          "name": "Missing Vault Card",
+          "width": 520,
+          "height": "fit_content",
+          "fill": "#FFFFFF",
+          "cornerRadius": [12, 12, 12, 12],
+          "layout": "vertical",
+          "alignItems": "center",
+          "gap": 24,
+          "padding": [48, 48, 48, 48],
+          "stroke": "#E9E9E7",
+          "strokeThickness": 1,
+          "children": [
+            {
+              "type": "frame",
+              "id": "missing_icon_wrap",
+              "name": "Warning Icon",
+              "width": 64,
+              "height": 64,
+              "fill": "#FFF3E0",
+              "cornerRadius": [16, 16, 16, 16],
+              "layout": "vertical",
+              "alignItems": "center",
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "missing_icon_text",
+                  "content": "⚠",
+                  "fontSize": 28,
+                  "fill": "#E8890C",
+                  "fontFamily": "Inter"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "missing_text_group",
+              "name": "Text Group",
+              "layout": "vertical",
+              "alignItems": "center",
+              "gap": 8,
+              "width": "fill_container",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "missing_title",
+                  "content": "Vault not found",
+                  "fill": "#37352F",
+                  "fontFamily": "Inter",
+                  "fontSize": 28,
+                  "fontWeight": "700",
+                  "letterSpacing": -0.5,
+                  "textAlign": "center"
+                },
+                {
+                  "type": "text",
+                  "id": "missing_subtitle",
+                  "content": "The vault folder could not be found on disk.\nIt may have been moved or deleted.",
+                  "fill": "#787774",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "lineHeight": 1.6,
+                  "textAlign": "center"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "missing_path_badge",
+              "name": "Path Badge",
+              "width": "fill_container",
+              "height": "fit_content",
+              "fill": "#F7F6F3",
+              "cornerRadius": [6, 6, 6, 6],
+              "layout": "horizontal",
+              "alignItems": "center",
+              "justifyContent": "center",
+              "padding": [8, 12, 8, 12],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "missing_path_text",
+                  "content": "~/Laputa",
+                  "fill": "#787774",
+                  "fontFamily": "SF Mono, monospace",
+                  "fontSize": 12
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "missing_divider",
+              "width": "fill_container",
+              "height": 1,
+              "fill": "#E9E9E7"
+            },
+            {
+              "type": "frame",
+              "id": "missing_actions",
+              "name": "Actions",
+              "layout": "vertical",
+              "gap": 12,
+              "width": "fill_container",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "btn_recreate_vault",
+                  "name": "Create Getting Started Vault Button",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#2383E2",
+                  "cornerRadius": [8, 8, 8, 8],
+                  "layout": "horizontal",
+                  "alignItems": "center",
+                  "justifyContent": "center",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "btn_recreate_icon",
+                      "content": "＋",
+                      "fill": "#FFFFFF",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "btn_recreate_label",
+                      "content": "Create Getting Started vault",
+                      "fill": "#FFFFFF",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "btn_choose_folder",
+                  "name": "Choose Different Folder Button",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#FFFFFF",
+                  "stroke": "#E9E9E7",
+                  "strokeThickness": 1,
+                  "cornerRadius": [8, 8, 8, 8],
+                  "layout": "horizontal",
+                  "alignItems": "center",
+                  "justifyContent": "center",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "btn_choose_icon",
+                      "content": "📂",
+                      "fill": "#37352F",
+                      "fontFamily": "Inter",
+                      "fontSize": 14
+                    },
+                    {
+                      "type": "text",
+                      "id": "btn_choose_label",
+                      "content": "Choose a different folder",
+                      "fill": "#37352F",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {}
+}

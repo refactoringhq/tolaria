@@ -17,6 +17,7 @@ interface InspectorProps {
   entry: VaultEntry | null
   content: string | null
   entries: VaultEntry[]
+  allContent?: Record<string, string>
   gitHistory: GitCommit[]
   onNavigate: (target: string) => void
   onViewCommitDiff?: (commitHash: string) => void
@@ -104,7 +105,7 @@ function EmptyInspector() {
 }
 
 export function Inspector({
-  collapsed, onToggle, entry, content, entries, gitHistory, onNavigate,
+  collapsed, onToggle, entry, content, entries, allContent, gitHistory, onNavigate,
   onViewCommitDiff, onUpdateFrontmatter, onDeleteProperty, onAddProperty,
 }: InspectorProps) {
   const referencedBy = useReferencedBy(entry, entries)
@@ -137,7 +138,7 @@ export function Inspector({
             <>
               <DynamicPropertiesPanel
                 entry={entry} content={content} frontmatter={frontmatter}
-                entries={entries}
+                entries={entries} allContent={allContent}
                 onUpdateProperty={onUpdateFrontmatter ? handleUpdateProperty : undefined}
                 onDeleteProperty={onDeleteProperty ? handleDeleteProperty : undefined}
                 onAddProperty={onAddProperty ? handleAddProperty : undefined}
