@@ -43,15 +43,7 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ],
-    "macOS": {
-      "signingIdentity": "Developer ID Application",
-      "notarization": {
-        "appleId": "luca@refactoring.club",
-        "appleIdPassword": "${APPLE_PASSWORD}",
-        "teamId": "D84V3C272P"
-      }
-    }
+    ]
   },
   "plugins": {
     "updater": {
