@@ -71,8 +71,7 @@ pub fn copy_image_to_vault(vault_path: &str, source_path: &str) -> Result<String
         .unwrap_or("image");
     let target_path = prepare_attachment_path(vault_path, filename)?;
 
-    fs::copy(source, &target_path)
-        .map_err(|e| format!("Failed to copy image: {}", e))?;
+    fs::copy(source, &target_path).map_err(|e| format!("Failed to copy image: {}", e))?;
 
     Ok(target_path.to_string_lossy().to_string())
 }
