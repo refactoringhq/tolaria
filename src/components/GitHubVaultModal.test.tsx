@@ -7,6 +7,9 @@ vi.mock('../mock-tauri', () => ({
   isTauri: () => false,
   mockInvoke: vi.fn(),
 }))
+vi.mock('../utils/url', () => ({
+  openExternalUrl: vi.fn().mockResolvedValue(undefined),
+}))
 
 import { mockInvoke } from '../mock-tauri'
 const mockInvokeFn = vi.mocked(mockInvoke)
@@ -20,6 +23,7 @@ describe('GitHubVaultModal', () => {
   const onClose = vi.fn()
   const onVaultCloned = vi.fn()
   const onOpenSettings = vi.fn()
+  const onGitHubConnected = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -38,7 +42,7 @@ describe('GitHubVaultModal', () => {
     expect(container.querySelector('[data-testid="github-vault-modal"]')).not.toBeInTheDocument()
   })
 
-  it('shows connect prompt when no GitHub token', () => {
+  it('shows settings fallback when no token and no onGitHubConnected', () => {
     render(
       <GitHubVaultModal open={true} githubToken={null} onClose={onClose} onVaultCloned={onVaultCloned} onOpenSettings={onOpenSettings} />
     )
@@ -52,6 +56,37 @@ describe('GitHubVaultModal', () => {
     )
     fireEvent.click(screen.getByTestId('github-open-settings'))
     expect(onOpenSettings).toHaveBeenCalled()
+  })
+
+  it('shows inline device flow when no token and onGitHubConnected is provided', () => {
+    render(
+      <GitHubVaultModal open={true} githubToken={null} onClose={onClose} onVaultCloned={onVaultCloned} onOpenSettings={onOpenSettings} onGitHubConnected={onGitHubConnected} />
+    )
+    expect(screen.getByTestId('github-login')).toBeInTheDocument()
+    expect(screen.getByText('Login with GitHub')).toBeInTheDocument()
+    expect(screen.queryByTestId('github-open-settings')).not.toBeInTheDocument()
+  })
+
+  it('shows device code after starting inline OAuth flow', async () => {
+    mockInvokeFn.mockImplementation(async (cmd: string) => {
+      if (cmd === 'github_device_flow_start') {
+        return { device_code: 'dc_modal', user_code: 'MODAL-5678', verification_uri: 'https://github.com/login/device', expires_in: 900, interval: 5 }
+      }
+      if (cmd === 'github_device_flow_poll') {
+        return { status: 'pending', access_token: null, error: 'authorization_pending' }
+      }
+      return null
+    })
+
+    render(
+      <GitHubVaultModal open={true} githubToken={null} onClose={onClose} onVaultCloned={onVaultCloned} onOpenSettings={onOpenSettings} onGitHubConnected={onGitHubConnected} />
+    )
+
+    fireEvent.click(screen.getByTestId('github-login'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('github-user-code')).toHaveTextContent('MODAL-5678')
+    })
   })
 
   it('shows clone and create tabs when token is present', async () => {

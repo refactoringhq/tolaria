@@ -389,6 +389,7 @@ function App() {
         onClose={dialogs.closeGitHubVault}
         onVaultCloned={vaultSwitcher.handleVaultCloned}
         onOpenSettings={() => { dialogs.closeGitHubVault(); dialogs.openSettings() }}
+        onGitHubConnected={(token, username) => saveSettings({ ...settings, github_token: token, github_username: username })}
       />
     </div>
   )

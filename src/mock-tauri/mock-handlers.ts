@@ -77,8 +77,8 @@ let mockSettings: Settings = {
   anthropic_key: null,
   openai_key: null,
   google_key: null,
-  github_token: 'gho_mock_token_for_testing',
-  github_username: 'lucaong',
+  github_token: null,
+  github_username: null,
   auto_pull_interval_minutes: 5,
 }
 
