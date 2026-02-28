@@ -26,6 +26,7 @@ import { useGitHistory } from './hooks/useGitHistory'
 import { useUpdater } from './hooks/useUpdater'
 import { useNavigationHistory } from './hooks/useNavigationHistory'
 import { useAutoSync } from './hooks/useAutoSync'
+import { useZoom } from './hooks/useZoom'
 import { UpdateBanner } from './components/UpdateBanner'
 import { setApiKey } from './utils/ai-chat'
 import { extractOutgoingLinks } from './utils/wikilinks'
@@ -242,6 +243,7 @@ function App() {
   const bulkActions = useBulkActions(entryActions, setToastMessage)
 
   const { setViewMode, sidebarVisible, noteListVisible } = useViewMode()
+  const zoom = useZoom()
 
   const commands = useAppCommands({
     activeTabPath: notes.activeTabPath, activeTabPathRef: notes.activeTabPathRef,
@@ -256,6 +258,8 @@ function App() {
     onUnarchiveNote: entryActions.handleUnarchiveNote,
     onCommitPush: commitFlow.openCommitDialog, onSetViewMode: setViewMode,
     onToggleInspector: () => layout.setInspectorCollapsed(c => !c),
+    onZoomIn: zoom.zoomIn, onZoomOut: zoom.zoomOut, onZoomReset: zoom.zoomReset,
+    zoomLevel: zoom.zoomLevel,
     onSelect: setSelection, onCloseTab: notes.handleCloseTab,
     onSwitchTab: notes.handleSwitchTab, onReplaceActiveTab: notes.handleReplaceActiveTab,
     onSelectNote: notes.handleSelectNote,
@@ -327,7 +331,7 @@ function App() {
           />
         </div>
       </div>
-      <StatusBar noteCount={vault.entries.length} modifiedCount={vault.modifiedFiles.length} vaultPath={vaultSwitcher.vaultPath} vaults={vaultSwitcher.allVaults} onSwitchVault={vaultSwitcher.switchVault} onOpenSettings={dialogs.openSettings} onOpenLocalFolder={vaultSwitcher.handleOpenLocalFolder} onConnectGitHub={dialogs.openGitHubVault} onClickPending={() => setSelection({ kind: 'filter', filter: 'changes' })} hasGitHub={!!settings.github_token} syncStatus={autoSync.syncStatus} lastSyncTime={autoSync.lastSyncTime} conflictCount={autoSync.conflictFiles.length} lastCommitInfo={autoSync.lastCommitInfo} onTriggerSync={autoSync.triggerSync} />
+      <StatusBar noteCount={vault.entries.length} modifiedCount={vault.modifiedFiles.length} vaultPath={vaultSwitcher.vaultPath} vaults={vaultSwitcher.allVaults} onSwitchVault={vaultSwitcher.switchVault} onOpenSettings={dialogs.openSettings} onOpenLocalFolder={vaultSwitcher.handleOpenLocalFolder} onConnectGitHub={dialogs.openGitHubVault} onClickPending={() => setSelection({ kind: 'filter', filter: 'changes' })} hasGitHub={!!settings.github_token} syncStatus={autoSync.syncStatus} lastSyncTime={autoSync.lastSyncTime} conflictCount={autoSync.conflictFiles.length} lastCommitInfo={autoSync.lastCommitInfo} onTriggerSync={autoSync.triggerSync} zoomLevel={zoom.zoomLevel} onZoomReset={zoom.zoomReset} />
       <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
       <QuickOpenPalette open={dialogs.showQuickOpen} entries={vault.entries} onSelect={notes.handleSelectNote} onClose={dialogs.closeQuickOpen} />
       <CommandPalette open={dialogs.showCommandPalette} commands={commands} onClose={dialogs.closeCommandPalette} />

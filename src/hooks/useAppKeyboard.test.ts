@@ -26,6 +26,9 @@ function makeActions() {
     onTrashNote: vi.fn(),
     onArchiveNote: vi.fn(),
     onSetViewMode: vi.fn(),
+    onZoomIn: vi.fn(),
+    onZoomOut: vi.fn(),
+    onZoomReset: vi.fn(),
     activeTabPathRef: { current: '/vault/test.md' } as React.MutableRefObject<string | null>,
     handleCloseTabRef: { current: vi.fn() } as React.MutableRefObject<(path: string) => void>,
   }
@@ -142,5 +145,33 @@ describe('useAppKeyboard', () => {
       fireKey('k', { metaKey: true })
       expect(actions.onCommandPalette).toHaveBeenCalled()
     })
+  })
+
+  it('Cmd+= triggers zoom in', () => {
+    const actions = makeActions()
+    renderHook(() => useAppKeyboard(actions))
+    fireKey('=', { metaKey: true })
+    expect(actions.onZoomIn).toHaveBeenCalled()
+  })
+
+  it('Cmd++ triggers zoom in', () => {
+    const actions = makeActions()
+    renderHook(() => useAppKeyboard(actions))
+    fireKey('+', { metaKey: true })
+    expect(actions.onZoomIn).toHaveBeenCalled()
+  })
+
+  it('Cmd+- triggers zoom out', () => {
+    const actions = makeActions()
+    renderHook(() => useAppKeyboard(actions))
+    fireKey('-', { metaKey: true })
+    expect(actions.onZoomOut).toHaveBeenCalled()
+  })
+
+  it('Cmd+0 triggers zoom reset', () => {
+    const actions = makeActions()
+    renderHook(() => useAppKeyboard(actions))
+    fireKey('0', { metaKey: true })
+    expect(actions.onZoomReset).toHaveBeenCalled()
   })
 })

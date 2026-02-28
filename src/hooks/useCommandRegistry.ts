@@ -29,6 +29,10 @@ interface CommandRegistryConfig {
   onCommitPush: () => void
   onSetViewMode: (mode: ViewMode) => void
   onToggleInspector: () => void
+  onZoomIn: () => void
+  onZoomOut: () => void
+  onZoomReset: () => void
+  zoomLevel: number
   onSelect: (sel: SidebarSelection) => void
   onCloseTab: (path: string) => void
   onGoBack?: () => void
@@ -48,7 +52,9 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     activeTabPath, entries, modifiedCount,
     onQuickOpen, onCreateNote, onSave, onOpenSettings,
     onTrashNote, onArchiveNote, onUnarchiveNote,
-    onCommitPush, onSetViewMode, onToggleInspector, onSelect, onCloseTab,
+    onCommitPush, onSetViewMode, onToggleInspector,
+    onZoomIn, onZoomOut, onZoomReset, zoomLevel,
+    onSelect, onCloseTab,
     onGoBack, onGoForward, canGoBack, canGoForward,
   } = config
 
@@ -92,6 +98,9 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
       { id: 'view-editor-list', label: 'Editor + Note List', group: 'View', shortcut: '⌘2', keywords: ['layout'], enabled: true, execute: () => onSetViewMode('editor-list') },
       { id: 'view-all', label: 'Full Layout', group: 'View', shortcut: '⌘3', keywords: ['layout', 'sidebar'], enabled: true, execute: () => onSetViewMode('all') },
       { id: 'toggle-inspector', label: 'Toggle Inspector', group: 'View', keywords: ['properties', 'panel', 'right'], enabled: true, execute: onToggleInspector },
+      { id: 'zoom-in', label: `Zoom In (${zoomLevel}%)`, group: 'View', shortcut: '⌘=', keywords: ['zoom', 'bigger', 'larger', 'scale'], enabled: zoomLevel < 150, execute: onZoomIn },
+      { id: 'zoom-out', label: `Zoom Out (${zoomLevel}%)`, group: 'View', shortcut: '⌘-', keywords: ['zoom', 'smaller', 'scale'], enabled: zoomLevel > 80, execute: onZoomOut },
+      { id: 'zoom-reset', label: 'Reset Zoom', group: 'View', shortcut: '⌘0', keywords: ['zoom', 'actual', 'default', '100'], enabled: zoomLevel !== 100, execute: onZoomReset },
 
       // Settings
       { id: 'open-settings', label: 'Open Settings', group: 'Settings', shortcut: '⌘,', keywords: ['preferences', 'config'], enabled: true, execute: onOpenSettings },
@@ -102,7 +111,9 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     hasActiveNote, activeTabPath, isArchived, modifiedCount,
     onQuickOpen, onCreateNote, onSave, onOpenSettings,
     onTrashNote, onArchiveNote, onUnarchiveNote,
-    onCommitPush, onSetViewMode, onToggleInspector, onSelect, onCloseTab,
+    onCommitPush, onSetViewMode, onToggleInspector,
+    onZoomIn, onZoomOut, onZoomReset, zoomLevel,
+    onSelect, onCloseTab,
     onGoBack, onGoForward, canGoBack, canGoForward,
   ])
 }
