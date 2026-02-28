@@ -180,6 +180,7 @@ export const Editor = memo(function Editor({
           onUpdateFrontmatter={onUpdateFrontmatter}
           onDeleteProperty={onDeleteProperty}
           onAddProperty={onAddProperty}
+          onOpenNote={onNavigateWikilink}
         />
       </div>
     </div>

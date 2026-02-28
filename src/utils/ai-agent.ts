@@ -178,7 +178,7 @@ export interface ToolResult {
 
 export interface AgentStepCallback {
   onThinking: () => void
-  onToolStart: (toolName: string, toolId: string) => void
+  onToolStart: (toolName: string, toolId: string, args: Record<string, unknown>) => void
   onToolDone: (toolId: string, result: unknown, isError: boolean) => void
   onText: (text: string) => void
   onError: (error: string) => void
@@ -344,7 +344,7 @@ export async function runAgentLoop(
     for (const toolBlock of toolUseBlocks) {
       if (abortSignal?.aborted) return
 
-      callbacks.onToolStart(toolBlock.name, toolBlock.id)
+      callbacks.onToolStart(toolBlock.name, toolBlock.id, toolBlock.input)
 
       const { result, isError } = await executeToolViaWs(toolBlock.name, toolBlock.input)
 

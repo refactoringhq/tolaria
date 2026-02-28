@@ -1,6 +1,6 @@
 import type { VaultEntry, GitCommit } from '../types'
 import { Inspector, type FrontmatterValue } from './Inspector'
-import { AIChatPanel } from './AIChatPanel'
+import { AiPanel } from './AiPanel'
 
 interface EditorRightPanelProps {
   showAIChat?: boolean
@@ -18,13 +18,14 @@ interface EditorRightPanelProps {
   onUpdateFrontmatter?: (path: string, key: string, value: FrontmatterValue) => Promise<void>
   onDeleteProperty?: (path: string, key: string) => Promise<void>
   onAddProperty?: (path: string, key: string, value: FrontmatterValue) => Promise<void>
+  onOpenNote?: (path: string) => void
 }
 
 export function EditorRightPanel({
   showAIChat, inspectorCollapsed, inspectorWidth,
   inspectorEntry, inspectorContent, entries, allContent, gitHistory,
   onToggleInspector, onToggleAIChat, onNavigateWikilink, onViewCommitDiff,
-  onUpdateFrontmatter, onDeleteProperty, onAddProperty,
+  onUpdateFrontmatter, onDeleteProperty, onAddProperty, onOpenNote,
 }: EditorRightPanelProps) {
   if (showAIChat) {
     return (
@@ -32,11 +33,9 @@ export function EditorRightPanel({
         className="shrink-0 flex flex-col min-h-0"
         style={{ width: inspectorWidth, height: '100%' }}
       >
-        <AIChatPanel
-          entry={inspectorEntry}
-          allContent={allContent}
-          entries={entries}
+        <AiPanel
           onClose={() => onToggleAIChat?.()}
+          onOpenNote={onOpenNote}
         />
       </div>
     )
