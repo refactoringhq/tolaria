@@ -85,7 +85,7 @@ export function useAiAgent() {
           ...m,
           actions: m.actions.map(a =>
             a.label.includes(toolId.slice(-6))
-              ? { ...a, status: (isError ? 'error' : 'done') as const, label: formatToolResult(a.tool, result) }
+              ? { ...a, status: isError ? 'error' as const : 'done' as const, label: formatToolResult(a.tool, result) }
               : a,
           ),
         }))
@@ -144,7 +144,7 @@ function isWriteTool(name: string): boolean {
   return WRITE_TOOLS.has(name)
 }
 
-function extractPathFromArgs(toolName: string, args: Record<string, unknown>): string | null {
+function extractPathFromArgs(_toolName: string, args: Record<string, unknown>): string | null {
   if (args.path && typeof args.path === 'string') return args.path
   if (args.source_path && typeof args.source_path === 'string') return args.source_path
   return null

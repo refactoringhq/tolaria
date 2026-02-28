@@ -309,7 +309,7 @@ export async function runAgentLoop(
 
     let response: AnthropicMessage
     try {
-      response = await callAnthropicAgent(messages, systemPrompt, model, AGENT_TOOLS)
+      response = await callAnthropicAgent(messages, systemPrompt, model, AGENT_TOOLS as unknown as unknown[])
     } catch (err) {
       callbacks.onError(err instanceof Error ? err.message : 'Unknown error')
       return
