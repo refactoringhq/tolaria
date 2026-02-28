@@ -23,6 +23,7 @@ interface TabBarProps {
   canGoForward?: boolean
   onGoBack?: () => void
   onGoForward?: () => void
+  trafficLightPadding?: boolean
 }
 
 const DISABLED_ICON_STYLE = { opacity: 0.4, cursor: 'not-allowed' } as const
@@ -326,7 +327,7 @@ function TabBarActions({ onCreateNote }: { onCreateNote?: () => void }) {
 
 export const TabBar = memo(function TabBar({
   tabs, activeTabPath, getNoteStatus, onSwitchTab, onCloseTab, onCreateNote, onReorderTabs, onRenameTab,
-  canGoBack, canGoForward, onGoBack, onGoForward,
+  canGoBack, canGoForward, onGoBack, onGoForward, trafficLightPadding,
 }: TabBarProps) {
   const { dragIndex, dropIndex, handleDragStart, handleDragEnd, handleDragOver, handleDrop, handleBarDragLeave } = useTabDrag(onReorderTabs)
   const [editingPath, setEditingPath] = useState<string | null>(null)
@@ -335,7 +336,7 @@ export const TabBar = memo(function TabBar({
   return (
     <div
       className="flex shrink-0 items-stretch"
-      style={{ height: 52, background: 'var(--sidebar)' } as React.CSSProperties}
+      style={{ height: 52, background: 'var(--sidebar)', paddingLeft: trafficLightPadding ? 80 : undefined } as React.CSSProperties}
       onDragLeave={handleBarDragLeave}
     >
       <NavButtons canGoBack={canGoBack} canGoForward={canGoForward} onGoBack={onGoBack} onGoForward={onGoForward} />

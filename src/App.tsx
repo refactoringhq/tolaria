@@ -324,6 +324,7 @@ function App() {
             canGoForward={navHistory.canGoForward}
             onGoBack={handleGoBack}
             onGoForward={handleGoForward}
+            trafficLightPadding={!sidebarVisible && !noteListVisible}
           />
         </div>
       </div>

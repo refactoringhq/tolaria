@@ -56,6 +56,7 @@ interface EditorProps {
   canGoForward?: boolean
   onGoBack?: () => void
   onGoForward?: () => void
+  trafficLightPadding?: boolean
 }
 
 function EditorEmptyState() {
@@ -78,6 +79,7 @@ export const Editor = memo(function Editor({
   onTrashNote, onRestoreNote, onArchiveNote, onUnarchiveNote,
   onRenameTab, onContentChange,
   canGoBack, canGoForward, onGoBack, onGoForward,
+  trafficLightPadding,
 }: EditorProps) {
   const vaultPathRef = useRef(vaultPath)
   useEffect(() => { vaultPathRef.current = vaultPath }, [vaultPath])
@@ -115,6 +117,7 @@ export const Editor = memo(function Editor({
         canGoForward={canGoForward}
         onGoBack={onGoBack}
         onGoForward={onGoForward}
+        trafficLightPadding={trafficLightPadding}
       />
       <div className="flex flex-1 min-h-0">
         {tabs.length === 0
