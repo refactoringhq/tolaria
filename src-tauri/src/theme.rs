@@ -141,7 +141,7 @@ pub fn create_theme(
         if let Some(obj) = theme.as_object_mut() {
             obj.insert(
                 "name".to_string(),
-                serde_json::Value::String(format!("Untitled Theme")),
+                serde_json::Value::String("Untitled Theme".to_string()),
             );
         }
         serde_json::to_string_pretty(&theme)
