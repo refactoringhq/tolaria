@@ -6,6 +6,7 @@ pub mod mcp;
 pub mod menu;
 pub mod search;
 pub mod settings;
+pub mod theme;
 pub mod vault;
 
 use std::borrow::Cow;
@@ -19,6 +20,7 @@ use git::{GitCommit, GitPullResult, LastCommitInfo, ModifiedFile};
 use github::{DeviceFlowPollResult, DeviceFlowStart, GitHubUser, GithubRepo};
 use search::SearchResponse;
 use settings::Settings;
+use theme::{ThemeFile, VaultSettings};
 use vault::{RenameResult, VaultEntry};
 
 /// Expand a leading `~` or `~/` in a path string to the user's home directory.
@@ -289,6 +291,42 @@ async fn register_mcp_tools(vault_path: String) -> Result<String, String> {
         .map_err(|e| format!("Registration task failed: {e}"))?
 }
 
+#[tauri::command]
+fn list_themes(vault_path: String) -> Result<Vec<ThemeFile>, String> {
+    let vault_path = expand_tilde(&vault_path);
+    theme::list_themes(&vault_path)
+}
+
+#[tauri::command]
+fn get_theme(vault_path: String, theme_id: String) -> Result<ThemeFile, String> {
+    let vault_path = expand_tilde(&vault_path);
+    theme::get_theme(&vault_path, &theme_id)
+}
+
+#[tauri::command]
+fn get_vault_settings(vault_path: String) -> Result<VaultSettings, String> {
+    let vault_path = expand_tilde(&vault_path);
+    theme::get_vault_settings(&vault_path)
+}
+
+#[tauri::command]
+fn save_vault_settings(vault_path: String, settings: VaultSettings) -> Result<(), String> {
+    let vault_path = expand_tilde(&vault_path);
+    theme::save_vault_settings(&vault_path, settings)
+}
+
+#[tauri::command]
+fn set_active_theme(vault_path: String, theme_id: String) -> Result<(), String> {
+    let vault_path = expand_tilde(&vault_path);
+    theme::set_active_theme(&vault_path, &theme_id)
+}
+
+#[tauri::command]
+fn create_theme(vault_path: String, source_id: Option<String>) -> Result<String, String> {
+    let vault_path = expand_tilde(&vault_path);
+    theme::create_theme(&vault_path, source_id.as_deref())
+}
+
 fn log_startup_result(label: &str, result: Result<usize, String>) {
     match result {
         Ok(n) if n > 0 => log::info!("{}: {} files", label, n),
@@ -443,7 +481,13 @@ pub fn run() {
             create_getting_started_vault,
             check_vault_exists,
             get_default_vault_path,
-            register_mcp_tools
+            register_mcp_tools,
+            list_themes,
+            get_theme,
+            get_vault_settings,
+            save_vault_settings,
+            set_active_theme,
+            create_theme
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

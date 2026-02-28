@@ -394,6 +394,17 @@ pub fn create_getting_started_vault(target_path: &str) -> Result<String, String>
             .map_err(|e| format!("Failed to write {}: {}", sample.rel_path, e))?;
     }
 
+    // Seed built-in themes
+    let themes_dir = vault_dir.join("_themes");
+    fs::create_dir_all(&themes_dir)
+        .map_err(|e| format!("Failed to create _themes directory: {e}"))?;
+    fs::write(themes_dir.join("default.json"), crate::theme::DEFAULT_THEME)
+        .map_err(|e| format!("Failed to write default theme: {e}"))?;
+    fs::write(themes_dir.join("dark.json"), crate::theme::DARK_THEME)
+        .map_err(|e| format!("Failed to write dark theme: {e}"))?;
+    fs::write(themes_dir.join("minimal.json"), crate::theme::MINIMAL_THEME)
+        .map_err(|e| format!("Failed to write minimal theme: {e}"))?;
+
     crate::git::init_repo(target_path)?;
 
     Ok(vault_dir
@@ -564,6 +575,20 @@ mod tests {
             .unwrap();
         let log_str = String::from_utf8_lossy(&log.stdout);
         assert!(log_str.contains("Initial vault setup"));
+    }
+
+    #[test]
+    fn test_create_getting_started_vault_seeds_themes() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let vault_path = dir.path().join("theme-vault");
+        create_getting_started_vault(vault_path.to_str().unwrap()).unwrap();
+
+        assert!(vault_path.join("_themes/default.json").exists());
+        assert!(vault_path.join("_themes/dark.json").exists());
+        assert!(vault_path.join("_themes/minimal.json").exists());
+
+        let themes = crate::theme::list_themes(vault_path.to_str().unwrap()).unwrap();
+        assert_eq!(themes.len(), 3);
     }
 
     #[test]
