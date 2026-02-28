@@ -74,7 +74,7 @@ pub struct VaultEntry {
 /// Intermediate struct to capture YAML frontmatter fields.
 #[derive(Debug, Deserialize, Default)]
 struct Frontmatter {
-    #[serde(rename = "Is A")]
+    #[serde(rename = "Is A", alias = "type")]
     is_a: Option<StringOrList>,
     #[serde(default)]
     aliases: Option<StringOrList>,
@@ -135,6 +135,7 @@ fn parse_frontmatter(data: &HashMap<String, serde_json::Value>) -> Frontmatter {
 /// Only skip keys that can never contain wikilinks.
 const SKIP_KEYS: &[&str] = &[
     "is a",
+    "type",
     "aliases",
     "status",
     "cadence",
@@ -966,6 +967,39 @@ References:
         let content = "# Some Type\n";
         let entry = parse_test_entry(&dir, "type/some-type.md", content);
         assert_eq!(entry.is_a, Some("Type".to_string()));
+    }
+
+    // --- type key (post-migration) tests ---
+
+    #[test]
+    fn test_parse_type_key_lowercase() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\ntype: Project\n---\n# My Project\n";
+        let entry = parse_test_entry(&dir, "project/my-project.md", content);
+        assert_eq!(entry.is_a, Some("Project".to_string()));
+    }
+
+    #[test]
+    fn test_type_key_generates_type_relationship() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\ntype: Person\n---\n# Alice\n";
+        let entry = parse_test_entry(&dir, "person/alice.md", content);
+        assert_eq!(
+            entry.relationships.get("Type").unwrap(),
+            &vec!["[[type/person]]".to_string()]
+        );
+    }
+
+    #[test]
+    fn test_type_key_not_in_relationships_as_generic() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\ntype: Note\nHas:\n  - \"[[task/foo]]\"\n---\n# Test\n";
+        let entry = parse_test_entry(&dir, "note/test.md", content);
+        // "type" key itself should not appear as a relationship (it's in SKIP_KEYS)
+        // Only "Has" and the auto-generated "Type" should be relationships
+        assert_eq!(entry.relationships.len(), 2);
+        assert!(entry.relationships.get("Has").is_some());
+        assert!(entry.relationships.get("Type").is_some());
     }
 
     // --- outgoing_links tests ---
