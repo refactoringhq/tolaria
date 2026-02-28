@@ -8,7 +8,7 @@ mod trash;
 
 pub use cache::scan_vault_cached;
 pub use getting_started::{create_getting_started_vault, default_vault_path, vault_exists};
-pub use image::save_image;
+pub use image::{copy_image_to_vault, save_image};
 pub use migration::migrate_is_a_to_type;
 pub use rename::{rename_note, RenameResult};
 pub use trash::purge_trash;

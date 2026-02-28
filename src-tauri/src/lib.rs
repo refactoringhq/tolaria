@@ -138,6 +138,12 @@ fn save_image(vault_path: String, filename: String, data: String) -> Result<Stri
 }
 
 #[tauri::command]
+fn copy_image_to_vault(vault_path: String, source_path: String) -> Result<String, String> {
+    let vault_path = expand_tilde(&vault_path);
+    vault::copy_image_to_vault(&vault_path, &source_path)
+}
+
+#[tauri::command]
 fn rename_note(
     vault_path: String,
     old_path: String,
@@ -419,6 +425,7 @@ pub fn run() {
             git_push,
             ai_chat,
             save_image,
+            copy_image_to_vault,
             purge_trash,
             migrate_is_a_to_type,
             batch_archive_notes,

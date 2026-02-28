@@ -8,6 +8,7 @@
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",
+    "core:webview:allow-on-drag-drop-event",
     "dialog:default",
     "updater:default",
     "process:default",
