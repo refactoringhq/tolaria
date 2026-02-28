@@ -36,6 +36,7 @@ const typePerson = makeEntry({ path: '/vault/type/person.md', filename: 'person.
 const typeEvent = makeEntry({ path: '/vault/type/event.md', filename: 'event.md', title: 'Event', isA: 'Type', color: 'yellow' })
 const typeTopic = makeEntry({ path: '/vault/type/topic.md', filename: 'topic.md', title: 'Topic', isA: 'Type', color: 'green' })
 const typeRecipe = makeEntry({ path: '/vault/type/recipe.md', filename: 'recipe.md', title: 'Recipe', isA: 'Type', color: 'orange', icon: 'cooking-pot' })
+const typeNote = makeEntry({ path: '/vault/type/note.md', filename: 'note.md', title: 'Note', isA: 'Type', color: 'blue' })
 
 const projectEntry = makeEntry({ path: '/vault/project/app.md', filename: 'app.md', title: 'Build App', isA: 'Project' })
 const personEntry = makeEntry({ path: '/vault/person/alice.md', filename: 'alice.md', title: 'Alice', isA: 'Person', aliases: ['Alice Smith'] })
@@ -43,8 +44,9 @@ const eventEntry = makeEntry({ path: '/vault/event/kickoff.md', filename: 'kicko
 const topicEntry = makeEntry({ path: '/vault/topic/dev.md', filename: 'dev.md', title: 'Software Development', isA: 'Topic' })
 const recipeEntry = makeEntry({ path: '/vault/recipe/pasta.md', filename: 'pasta.md', title: 'Pasta Carbonara', isA: 'Recipe' })
 const untypedEntry = makeEntry({ path: '/vault/note/random.md', filename: 'random.md', title: 'Random Thought' })
+const noteEntry = makeEntry({ path: '/vault/note/welcome-to-laputa.md', filename: 'welcome-to-laputa.md', title: 'Welcome to Laputa', isA: 'Note' })
 
-const allEntries = [typeProject, typePerson, typeEvent, typeTopic, typeRecipe, projectEntry, personEntry, eventEntry, topicEntry, recipeEntry, untypedEntry]
+const allEntries = [typeProject, typePerson, typeEvent, typeTopic, typeRecipe, typeNote, projectEntry, personEntry, eventEntry, topicEntry, recipeEntry, untypedEntry, noteEntry]
 
 describe('findEntryByTarget', () => {
   it('matches by title', () => {
@@ -65,6 +67,22 @@ describe('findEntryByTarget', () => {
 
   it('returns undefined for non-existent target', () => {
     expect(findEntryByTarget(allEntries, 'Non Existent')).toBeUndefined()
+  })
+
+  it('matches by relative path (folder/slug)', () => {
+    expect(findEntryByTarget(allEntries, 'note/welcome-to-laputa')).toBe(noteEntry)
+  })
+
+  it('matches by relative path with pipe syntax', () => {
+    expect(findEntryByTarget(allEntries, 'note/welcome-to-laputa|Welcome!')).toBe(noteEntry)
+  })
+
+  it('matches project by relative path', () => {
+    expect(findEntryByTarget(allEntries, 'project/app')).toBe(projectEntry)
+  })
+
+  it('matches person by relative path', () => {
+    expect(findEntryByTarget(allEntries, 'person/alice')).toBe(personEntry)
   })
 })
 
@@ -127,6 +145,18 @@ describe('resolveWikilinkColor', () => {
 
   it('resolves pipe-syntax wikilink target', () => {
     const result = resolveWikilinkColor(allEntries, 'Alice|Alice S.')
+    expect(result.isBroken).toBe(false)
+    expect(result.color).toBe('var(--accent-yellow)')
+  })
+
+  it('resolves relative-path wikilink target to correct type color', () => {
+    const result = resolveWikilinkColor(allEntries, 'note/welcome-to-laputa')
+    expect(result.isBroken).toBe(false)
+    expect(result.color).toBe('var(--accent-blue)')
+  })
+
+  it('resolves relative-path with pipe syntax to correct type color', () => {
+    const result = resolveWikilinkColor(allEntries, 'person/alice|Alice S.')
     expect(result.isBroken).toBe(false)
     expect(result.color).toBe('var(--accent-yellow)')
   })

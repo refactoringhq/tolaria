@@ -12,10 +12,12 @@ const BROKEN_LINK_COLOR = 'var(--text-muted)'
 export function findEntryByTarget(entries: VaultEntry[], target: string): VaultEntry | undefined {
   // Handle pipe syntax: [[path|display name]] → use path part for matching
   const key = target.includes('|') ? target.split('|')[0] : target
+  const suffix = '/' + key + '.md'
   return entries.find(e =>
     e.title === key ||
     e.filename.replace(/\.md$/, '') === key ||
-    e.aliases.includes(key),
+    e.aliases.includes(key) ||
+    e.path.endsWith(suffix),
   )
 }
 
