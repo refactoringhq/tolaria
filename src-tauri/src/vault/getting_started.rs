@@ -18,6 +18,104 @@ struct SampleFile {
     content: &'static str,
 }
 
+/// Content for the AGENTS.md file written to the vault root.
+/// This file has no YAML frontmatter — it is a convention file for AI agents,
+/// not a vault note. The vault scanner will still pick it up as a regular entry.
+const AGENTS_MD: &str = r#"# AGENTS.md — Vault Instructions for AI Agents
+
+This is a [Laputa](https://github.com/refactoring-ai/laputa) vault — a folder of markdown files with YAML frontmatter that form a personal knowledge graph.
+
+## Structure
+
+Files are organized in folders by type:
+
+| Folder | Type | Purpose |
+|--------|------|---------|
+| `note/` | Note | General-purpose documents, research, meeting notes |
+| `project/` | Project | Time-bounded efforts with clear goals |
+| `person/` | Person | People — colleagues, collaborators, contacts |
+| `topic/` | Topic | Subject areas that group related notes |
+| `responsibility/` | Responsibility | Long-running duties with KPIs |
+| `procedure/` | Procedure | Recurring workflows (weekly, monthly) |
+| `event/` | Event | Something that happened on a specific date |
+| `quarter/` | Quarter | Time containers (e.g. 24Q1) |
+| `measure/` | Measure | Trackable metrics tied to responsibilities |
+| `target/` | Target | Time-bound goals for a measure |
+| `type/` | Type | Type definitions — icon, color, ordering |
+
+Custom folders are valid — the folder name becomes the type (capitalized).
+
+## Frontmatter
+
+YAML frontmatter between `---` delimiters defines metadata:
+
+```yaml
+---
+Is A: Project
+Status: Active
+Owner: "[[person/jane-doe]]"
+Belongs to: "[[quarter/24q1]]"
+Related to:
+  - "[[topic/growth]]"
+  - "[[note/research-findings]]"
+---
+```
+
+### Standard fields
+
+| Field | Purpose |
+|-------|---------|
+| `Is A` | Entity type (usually inferred from folder) |
+| `Status` | Active, Done, Paused, Archived, Dropped |
+| `Owner` | Person responsible (wikilink) |
+| `Belongs to` | Parent relationship(s) |
+| `Related to` | Lateral associations |
+| `Cadence` | For Procedures: Weekly, Monthly, etc. |
+| `aliases` | Alternative names for wikilink resolution |
+
+### Custom fields
+
+Any YAML field containing `[[wikilinks]]` becomes a navigable relationship:
+
+```yaml
+Has Measures: ["[[measure/revenue]]", "[[measure/churn]]"]
+Resources: "[[note/api-docs]]"
+```
+
+## Wikilinks
+
+Connect notes with double-bracket syntax:
+
+- `[[note/my-note]]` — link by path
+- `[[My Note Title]]` — link by title or alias
+- `[[note/my-note|display text]]` — link with custom display text
+
+Wikilinks work in both frontmatter values and markdown body. Backlinks are computed automatically — linking A to B makes B show a backlink to A.
+
+## Type definitions
+
+Files in `type/` define entity types and control how they appear in the sidebar:
+
+```yaml
+---
+Is A: Type
+icon: rocket-launch
+color: purple
+order: 1
+---
+```
+
+Available colors: red, purple, blue, green, yellow, orange. Icons are Phosphor names in kebab-case.
+
+## Conventions
+
+- First `# Heading` in a file becomes its title
+- One entity per file
+- Filenames use kebab-case: `my-note-title.md`
+- Type is inferred from parent folder if not set in frontmatter
+- Relationships are bidirectional via automatic backlinks
+"#;
+
 const SAMPLE_FILES: &[SampleFile] = &[
     SampleFile {
         rel_path: "type/project.md",
@@ -282,6 +380,10 @@ pub fn create_getting_started_vault(target_path: &str) -> Result<String, String>
     fs::create_dir_all(vault_dir)
         .map_err(|e| format!("Failed to create vault directory: {}", e))?;
 
+    // Write AGENTS.md at the vault root
+    fs::write(vault_dir.join("AGENTS.md"), AGENTS_MD)
+        .map_err(|e| format!("Failed to write AGENTS.md: {}", e))?;
+
     for sample in SAMPLE_FILES {
         let file_path = vault_dir.join(sample.rel_path);
         if let Some(parent) = file_path.parent() {
@@ -326,6 +428,7 @@ mod tests {
         assert!(result.is_ok());
 
         // Verify key files exist
+        assert!(vault_path.join("AGENTS.md").exists());
         assert!(vault_path.join("note/welcome-to-laputa.md").exists());
         assert!(vault_path.join("note/editor-basics.md").exists());
         assert!(vault_path.join("note/using-properties.md").exists());
@@ -393,7 +496,57 @@ mod tests {
         create_getting_started_vault(vault_path.to_str().unwrap()).unwrap();
 
         let entries = crate::vault::scan_vault(&vault_path).unwrap();
-        assert_eq!(entries.len(), SAMPLE_FILES.len());
+        // SAMPLE_FILES + AGENTS.md
+        assert_eq!(entries.len(), SAMPLE_FILES.len() + 1);
+    }
+
+    #[test]
+    fn test_agents_md_present_after_vault_creation() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let vault_path = dir.path().join("agents-vault");
+        create_getting_started_vault(vault_path.to_str().unwrap()).unwrap();
+
+        let agents_path = vault_path.join("AGENTS.md");
+        assert!(agents_path.exists(), "AGENTS.md should exist at vault root");
+
+        let content = fs::read_to_string(&agents_path).unwrap();
+        assert!(
+            content.contains("Vault Instructions for AI Agents"),
+            "AGENTS.md should contain instructions header"
+        );
+        assert!(
+            content.contains("## Structure"),
+            "AGENTS.md should describe vault structure"
+        );
+        assert!(
+            content.contains("## Frontmatter"),
+            "AGENTS.md should describe frontmatter"
+        );
+        assert!(
+            content.contains("## Wikilinks"),
+            "AGENTS.md should describe wikilinks"
+        );
+        assert!(
+            content.contains("## Type definitions"),
+            "AGENTS.md should describe type definitions"
+        );
+        assert!(
+            content.contains("## Conventions"),
+            "AGENTS.md should describe conventions"
+        );
+    }
+
+    #[test]
+    fn test_agents_md_parseable_as_vault_entry() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let vault_path = dir.path().join("agents-parse-vault");
+        create_getting_started_vault(vault_path.to_str().unwrap()).unwrap();
+
+        let entry = crate::vault::parse_md_file(&vault_path.join("AGENTS.md")).unwrap();
+        assert_eq!(
+            entry.title,
+            "AGENTS.md \u{2014} Vault Instructions for AI Agents"
+        );
     }
 
     #[test]
