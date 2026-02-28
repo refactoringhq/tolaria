@@ -69,12 +69,12 @@ describe('useNoteSearch', () => {
     expect(project?.typeLightColor).toBeTruthy()
   })
 
-  it('excludes noteType and light color for Note entries', () => {
+  it('includes noteType and colors for Note entries', () => {
     const { result } = renderHook(() => useNoteSearch(entries, ''))
     const note = result.current.results.find((r) => r.title === 'Beta Notes')
-    expect(note?.noteType).toBeUndefined()
-    expect(note?.typeColor).toBeUndefined()
-    expect(note?.typeLightColor).toBeUndefined()
+    expect(note?.noteType).toBe('Note')
+    expect(note?.typeColor).toBeTruthy()
+    expect(note?.typeLightColor).toBeTruthy()
   })
 
   it('includes original VaultEntry in results', () => {

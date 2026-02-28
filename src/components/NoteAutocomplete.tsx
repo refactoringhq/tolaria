@@ -37,7 +37,7 @@ function matchEntries(entries: VaultEntry[], typeEntryMap: Record<string, VaultE
   return matches.slice(0, MAX_RESULTS).map(e => {
     const isA = e.isA
     const te = typeEntryMap[isA ?? '']
-    const noteType = isA && isA !== 'Note' ? isA : undefined
+    const noteType = isA || undefined
     return {
       title: e.title,
       noteType,

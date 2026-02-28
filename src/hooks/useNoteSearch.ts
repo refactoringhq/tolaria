@@ -12,7 +12,7 @@ export interface NoteSearchResult extends NoteSearchResultItem {
 }
 
 function toResult(e: VaultEntry, typeEntryMap: Record<string, VaultEntry>): NoteSearchResult {
-  const noteType = e.isA && e.isA !== 'Note' ? e.isA : undefined
+  const noteType = e.isA || undefined
   const te = typeEntryMap[e.isA ?? '']
   return {
     entry: e,

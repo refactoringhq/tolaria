@@ -193,7 +193,7 @@ function SearchContent({
             {results.map((result, i) => {
               const entry = entryLookup.get(result.path)
               const isA = entry?.isA ?? result.noteType
-              const noteType = isA && isA !== 'Note' ? isA : null
+              const noteType = isA || null
               const te = typeEntryMap[isA ?? '']
               const typeColor = noteType ? getTypeColor(isA, te?.color) : undefined
               const TypeIcon = getTypeIcon(isA ?? null, te?.icon)
