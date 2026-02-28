@@ -109,11 +109,11 @@ export function useImageDrop({ containerRef, onImageUrl, vaultPath }: UseImageDr
         unlisten = await getCurrentWebview().onDragDropEvent((event) => {
           const payload = event.payload
           if (payload.type === 'over') {
-            const hasImages = payload.paths?.some(isImagePath)
-            if (hasImages) setIsDragOver(true)
+            // Tauri 'over' events don't include paths — show overlay for any drag
+            setIsDragOver(true)
           } else if (payload.type === 'drop') {
             setIsDragOver(false)
-            const imagePaths = (payload.paths ?? []).filter(isImagePath)
+            const imagePaths = payload.paths.filter(isImagePath)
             const vault = vaultPathRef.current
             const callback = onImageUrlRef.current
             if (imagePaths.length > 0 && vault && callback) {
