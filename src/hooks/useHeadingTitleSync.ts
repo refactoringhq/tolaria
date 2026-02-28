@@ -23,7 +23,7 @@ export function useHeadingTitleSync({
   onTitleSync,
 }: HeadingTitleSyncConfig) {
   const syncActiveRef = useRef(true)
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const activeTabPathRef = useRef(activeTabPath)
   // eslint-disable-next-line react-hooks/refs
   activeTabPathRef.current = activeTabPath
