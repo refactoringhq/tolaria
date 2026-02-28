@@ -153,13 +153,19 @@ export async function streamChat(
   }
 
   try {
-    const response = await fetch('/api/ai/chat', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
       body: JSON.stringify({
-        apiKey, model, messages,
+        model,
+        max_tokens: 4096,
         system: systemPrompt || undefined,
-        maxTokens: 4096,
+        messages,
+        stream: true,
       }),
     })
 
