@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
-import type { SidebarSelection, VaultEntry } from '../types'
+import type { SidebarSelection, ThemeFile, VaultEntry } from '../types'
 import type { ViewMode } from './useViewMode'
 
-export type CommandGroup = 'Navigation' | 'Note' | 'Git' | 'View' | 'Settings'
+export type CommandGroup = 'Navigation' | 'Note' | 'Git' | 'View' | 'Appearance' | 'Settings'
 
 export interface CommandAction {
   id: string
@@ -40,6 +40,10 @@ interface CommandRegistryConfig {
   onGoForward?: () => void
   canGoBack?: boolean
   canGoForward?: boolean
+  themes?: ThemeFile[]
+  activeThemeId?: string | null
+  onSwitchTheme?: (themeId: string) => void
+  onCreateTheme?: () => void
 }
 
 const PLURAL_OVERRIDES: Record<string, string> = {
@@ -65,7 +69,7 @@ export function extractVaultTypes(entries: VaultEntry[]): string[] {
   return Array.from(typeSet).sort()
 }
 
-const GROUP_ORDER: CommandGroup[] = ['Navigation', 'Note', 'Git', 'View', 'Settings']
+const GROUP_ORDER: CommandGroup[] = ['Navigation', 'Note', 'Git', 'View', 'Appearance', 'Settings']
 
 export function groupSortKey(group: CommandGroup): number {
   return GROUP_ORDER.indexOf(group)
@@ -94,6 +98,29 @@ export function buildTypeCommands(
   })
 }
 
+export function buildThemeCommands(
+  themes: ThemeFile[] | undefined,
+  activeThemeId: string | null | undefined,
+  onSwitchTheme: ((themeId: string) => void) | undefined,
+  onCreateTheme: (() => void) | undefined,
+): CommandAction[] {
+  const switchCmds = (themes ?? []).map(t => ({
+    id: `switch-theme-${t.id}`,
+    label: `Switch to ${t.name} Theme`,
+    group: 'Appearance' as CommandGroup,
+    keywords: ['theme', 'appearance', 'color', t.name.toLowerCase()],
+    enabled: t.id !== activeThemeId,
+    execute: () => onSwitchTheme?.(t.id),
+  }))
+  if (onCreateTheme) {
+    switchCmds.push({
+      id: 'new-theme', label: 'New Theme', group: 'Appearance' as CommandGroup,
+      keywords: ['theme', 'create', 'appearance'], enabled: true, execute: onCreateTheme,
+    })
+  }
+  return switchCmds
+}
+
 export function useCommandRegistry(config: CommandRegistryConfig): CommandAction[] {
   const {
     activeTabPath, entries, modifiedCount,
@@ -103,6 +130,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     onZoomIn, onZoomOut, onZoomReset, zoomLevel,
     onSelect, onCloseTab,
     onGoBack, onGoForward, canGoBack, canGoForward,
+    themes, activeThemeId, onSwitchTheme, onCreateTheme,
   } = config
 
   const hasActiveNote = activeTabPath !== null
@@ -151,6 +179,9 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
       { id: 'zoom-out', label: `Zoom Out (${zoomLevel}%)`, group: 'View', shortcut: '⌘-', keywords: ['zoom', 'smaller', 'scale'], enabled: zoomLevel > 80, execute: onZoomOut },
       { id: 'zoom-reset', label: 'Reset Zoom', group: 'View', shortcut: '⌘0', keywords: ['zoom', 'actual', 'default', '100'], enabled: zoomLevel !== 100, execute: onZoomReset },
 
+      // Appearance
+      ...buildThemeCommands(themes, activeThemeId, onSwitchTheme, onCreateTheme),
+
       // Settings
       { id: 'open-settings', label: 'Open Settings', group: 'Settings', shortcut: '⌘,', keywords: ['preferences', 'config'], enabled: true, execute: onOpenSettings },
 
@@ -167,6 +198,6 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     onZoomIn, onZoomOut, onZoomReset, zoomLevel,
     onSelect, onCloseTab,
     onGoBack, onGoForward, canGoBack, canGoForward,
-    vaultTypes,
+    vaultTypes, themes, activeThemeId, onSwitchTheme, onCreateTheme,
   ])
 }

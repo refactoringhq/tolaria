@@ -261,6 +261,78 @@ describe('useCommandRegistry', () => {
       expect(eventCmds).toHaveLength(1)
     })
   })
+
+  describe('theme commands', () => {
+    const themeFixtures = [
+      { id: 'default', name: 'Default', description: '', colors: {}, typography: {}, spacing: {} },
+      { id: 'dark', name: 'Dark', description: '', colors: {}, typography: {}, spacing: {} },
+    ]
+
+    it('generates switch-theme commands for each theme', () => {
+      const { result } = renderHook(() => useCommandRegistry(makeConfig({
+        themes: themeFixtures, activeThemeId: 'default', onSwitchTheme: vi.fn(),
+      })))
+      const switchDefault = result.current.find(c => c.id === 'switch-theme-default')
+      const switchDark = result.current.find(c => c.id === 'switch-theme-dark')
+      expect(switchDefault).toBeDefined()
+      expect(switchDefault!.label).toBe('Switch to Default Theme')
+      expect(switchDefault!.group).toBe('Appearance')
+      expect(switchDark).toBeDefined()
+      expect(switchDark!.label).toBe('Switch to Dark Theme')
+    })
+
+    it('disables switch command for the currently active theme', () => {
+      const { result } = renderHook(() => useCommandRegistry(makeConfig({
+        themes: themeFixtures, activeThemeId: 'default', onSwitchTheme: vi.fn(),
+      })))
+      expect(result.current.find(c => c.id === 'switch-theme-default')!.enabled).toBe(false)
+      expect(result.current.find(c => c.id === 'switch-theme-dark')!.enabled).toBe(true)
+    })
+
+    it('calls onSwitchTheme when switch command executes', () => {
+      const onSwitchTheme = vi.fn()
+      const { result } = renderHook(() => useCommandRegistry(makeConfig({
+        themes: themeFixtures, activeThemeId: 'default', onSwitchTheme,
+      })))
+      result.current.find(c => c.id === 'switch-theme-dark')!.execute()
+      expect(onSwitchTheme).toHaveBeenCalledWith('dark')
+    })
+
+    it('includes new-theme command when onCreateTheme is provided', () => {
+      const onCreateTheme = vi.fn()
+      const { result } = renderHook(() => useCommandRegistry(makeConfig({
+        themes: themeFixtures, activeThemeId: 'default', onCreateTheme,
+      })))
+      const newTheme = result.current.find(c => c.id === 'new-theme')
+      expect(newTheme).toBeDefined()
+      expect(newTheme!.group).toBe('Appearance')
+      expect(newTheme!.enabled).toBe(true)
+    })
+
+    it('omits new-theme command when onCreateTheme is not provided', () => {
+      const { result } = renderHook(() => useCommandRegistry(makeConfig({
+        themes: themeFixtures, activeThemeId: 'default',
+      })))
+      expect(result.current.find(c => c.id === 'new-theme')).toBeUndefined()
+    })
+
+    it('calls onCreateTheme when new-theme executes', () => {
+      const onCreateTheme = vi.fn()
+      const { result } = renderHook(() => useCommandRegistry(makeConfig({
+        themes: themeFixtures, activeThemeId: 'default', onCreateTheme,
+      })))
+      result.current.find(c => c.id === 'new-theme')!.execute()
+      expect(onCreateTheme).toHaveBeenCalled()
+    })
+
+    it('includes Appearance in command groups', () => {
+      const { result } = renderHook(() => useCommandRegistry(makeConfig({
+        themes: themeFixtures, activeThemeId: 'default', onSwitchTheme: vi.fn(),
+      })))
+      const groups = new Set(result.current.map(c => c.group))
+      expect(groups).toContain('Appearance')
+    })
+  })
 })
 
 describe('pluralizeType', () => {
@@ -345,6 +417,7 @@ describe('groupSortKey', () => {
     expect(groupSortKey('Navigation')).toBeLessThan(groupSortKey('Note'))
     expect(groupSortKey('Note')).toBeLessThan(groupSortKey('Git'))
     expect(groupSortKey('Git')).toBeLessThan(groupSortKey('View'))
-    expect(groupSortKey('View')).toBeLessThan(groupSortKey('Settings'))
+    expect(groupSortKey('View')).toBeLessThan(groupSortKey('Appearance'))
+    expect(groupSortKey('Appearance')).toBeLessThan(groupSortKey('Settings'))
   })
 })

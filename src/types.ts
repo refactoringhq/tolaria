@@ -115,6 +115,19 @@ export interface SearchResponse {
 
 export type SearchMode = 'keyword' | 'semantic' | 'hybrid'
 
+export interface ThemeFile {
+  id: string
+  name: string
+  description: string
+  colors: Record<string, string>
+  typography: Record<string, string>
+  spacing: Record<string, string>
+}
+
+export interface VaultSettings {
+  theme: string | null
+}
+
 export type SidebarSelection =
   | { kind: 'filter'; filter: 'all' | 'favorites' | 'archived' | 'trash' | 'changes' }
   | { kind: 'sectionGroup'; type: string }

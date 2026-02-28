@@ -59,21 +59,24 @@ const mockAllContent: Record<string, string> = {
   '/vault/topic/dev.md': '---\ntitle: Software Development\nis_a: Topic\n---\n\n# Software Development\n',
 }
 
+const mockCommandResults: Record<string, unknown> = {
+  list_vault: mockEntries,
+  get_all_content: mockAllContent,
+  get_modified_files: [],
+  get_note_content: mockAllContent['/vault/project/test.md'] || '',
+  get_file_history: [],
+  get_settings: { anthropic_key: null, openai_key: null, google_key: null, github_token: null, github_username: null, auto_pull_interval_minutes: null },
+  git_pull: { status: 'up_to_date', message: 'Already up to date', updatedFiles: [], conflictFiles: [] },
+  save_settings: null,
+  check_vault_exists: true,
+  get_default_vault_path: '/Users/mock/Documents/Laputa',
+  list_themes: [],
+  get_vault_settings: { theme: null },
+}
+
 vi.mock('./mock-tauri', () => ({
   isTauri: () => false,
-  mockInvoke: vi.fn(async (cmd: string) => {
-    if (cmd === 'list_vault') return mockEntries
-    if (cmd === 'get_all_content') return mockAllContent
-    if (cmd === 'get_modified_files') return []
-    if (cmd === 'get_note_content') return mockAllContent['/vault/project/test.md'] || ''
-    if (cmd === 'get_file_history') return []
-    if (cmd === 'get_settings') return { anthropic_key: null, openai_key: null, google_key: null, github_token: null, github_username: null, auto_pull_interval_minutes: null }
-    if (cmd === 'git_pull') return { status: 'up_to_date', message: 'Already up to date', updatedFiles: [], conflictFiles: [] }
-    if (cmd === 'save_settings') return null
-    if (cmd === 'check_vault_exists') return true
-    if (cmd === 'get_default_vault_path') return '/Users/mock/Documents/Laputa'
-    return null
-  }),
+  mockInvoke: vi.fn(async (cmd: string) => mockCommandResults[cmd] ?? null),
   addMockEntry: vi.fn(),
   updateMockContent: vi.fn(),
 }))
