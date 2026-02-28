@@ -45,6 +45,10 @@ function makeConfig(overrides: Record<string, unknown> = {}) {
     onCommitPush: vi.fn(),
     onSetViewMode: vi.fn(),
     onToggleInspector: vi.fn(),
+    onZoomIn: vi.fn(),
+    onZoomOut: vi.fn(),
+    onZoomReset: vi.fn(),
+    zoomLevel: 100,
     onSelect: vi.fn(),
     onCloseTab: vi.fn(),
     ...overrides,
@@ -139,6 +143,36 @@ describe('useCommandRegistry', () => {
     const { result } = renderHook(() => useCommandRegistry(makeConfig({ onSetViewMode })))
     result.current.find(c => c.id === 'view-editor')!.execute()
     expect(onSetViewMode).toHaveBeenCalledWith('editor-only')
+  })
+
+  it('zoom-in is enabled when below max zoom', () => {
+    const { result } = renderHook(() => useCommandRegistry(makeConfig({ zoomLevel: 100 })))
+    expect(result.current.find(c => c.id === 'zoom-in')!.enabled).toBe(true)
+  })
+
+  it('zoom-in is disabled at max zoom', () => {
+    const { result } = renderHook(() => useCommandRegistry(makeConfig({ zoomLevel: 150 })))
+    expect(result.current.find(c => c.id === 'zoom-in')!.enabled).toBe(false)
+  })
+
+  it('zoom-out is disabled at min zoom', () => {
+    const { result } = renderHook(() => useCommandRegistry(makeConfig({ zoomLevel: 80 })))
+    expect(result.current.find(c => c.id === 'zoom-out')!.enabled).toBe(false)
+  })
+
+  it('zoom-reset is disabled at 100%', () => {
+    const { result } = renderHook(() => useCommandRegistry(makeConfig({ zoomLevel: 100 })))
+    expect(result.current.find(c => c.id === 'zoom-reset')!.enabled).toBe(false)
+  })
+
+  it('zoom-reset is enabled when not at 100%', () => {
+    const { result } = renderHook(() => useCommandRegistry(makeConfig({ zoomLevel: 120 })))
+    expect(result.current.find(c => c.id === 'zoom-reset')!.enabled).toBe(true)
+  })
+
+  it('zoom-in label shows current zoom level', () => {
+    const { result } = renderHook(() => useCommandRegistry(makeConfig({ zoomLevel: 120 })))
+    expect(result.current.find(c => c.id === 'zoom-in')!.label).toContain('120%')
   })
 })
 

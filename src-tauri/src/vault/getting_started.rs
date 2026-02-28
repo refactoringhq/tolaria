@@ -1,0 +1,396 @@
+use std::fs;
+use std::path::{Path, PathBuf};
+
+/// Default location for the Getting Started vault.
+pub fn default_vault_path() -> Result<PathBuf, String> {
+    dirs::document_dir()
+        .map(|d| d.join("Laputa"))
+        .ok_or_else(|| "Could not determine Documents directory".to_string())
+}
+
+/// Check whether a vault path exists on disk.
+pub fn vault_exists(path: &str) -> bool {
+    Path::new(path).is_dir()
+}
+
+struct SampleFile {
+    rel_path: &'static str,
+    content: &'static str,
+}
+
+const SAMPLE_FILES: &[SampleFile] = &[
+    SampleFile {
+        rel_path: "type/project.md",
+        content: "---\nIs A: Type\nicon: rocket-launch\ncolor: purple\norder: 1\n---\n\n# Project\n\nA Project is a time-bounded effort with a clear goal and an eventual completion date. Projects belong to a quarter or area and advance specific goals.\n",
+    },
+    SampleFile {
+        rel_path: "type/note.md",
+        content: "---\nIs A: Type\nicon: note\ncolor: blue\norder: 2\n---\n\n# Note\n\nA Note is a general-purpose document — research notes, meeting notes, strategy docs, or anything that doesn't fit a more specific type.\n",
+    },
+    SampleFile {
+        rel_path: "type/person.md",
+        content: "---\nIs A: Type\nicon: user\ncolor: green\norder: 3\n---\n\n# Person\n\nA Person represents someone you interact with — a colleague, friend, mentor, or collaborator.\n",
+    },
+    SampleFile {
+        rel_path: "type/topic.md",
+        content: "---\nIs A: Type\nicon: tag\ncolor: yellow\norder: 4\n---\n\n# Topic\n\nA Topic is a subject area or interest category that groups related notes, projects, and people.\n",
+    },
+    SampleFile {
+        rel_path: "note/welcome-to-laputa.md",
+        content: r#"---
+Is A: Note
+Related to:
+  - "[[note/editor-basics]]"
+  - "[[note/using-properties]]"
+  - "[[note/wiki-links-and-relationships]]"
+---
+
+# Welcome to Laputa
+
+Welcome to your new knowledge vault! Laputa helps you organize your thoughts, projects, and relationships using **wiki-linked markdown files**.
+
+## How it works
+
+Every note is a markdown file with optional YAML frontmatter at the top. Notes live in folders that define their **type** — a file in the `project/` folder is automatically a Project, a file in `person/` is a Person, and so on.
+
+## What to explore
+
+- [[note/editor-basics]] — Learn about headings, lists, checkboxes, and formatting
+- [[note/using-properties]] — See how frontmatter properties work (status, dates, relationships)
+- [[note/wiki-links-and-relationships]] — Connect your notes with `[[wiki-links]]`
+- [[project/sample-project]] — A sample project with relationships and status
+- [[person/sample-collaborator]] — A sample person entry
+
+## Tips
+
+- Press **⌘P** to quick-open any note by title
+- Press **⌘K** to open the command palette
+- Press **⌘N** to create a new note
+- Use the **sidebar** on the left to browse by type
+- Use the **inspector** on the right to edit properties and see backlinks
+"#,
+    },
+    SampleFile {
+        rel_path: "note/editor-basics.md",
+        content: r#"---
+Is A: Note
+Related to: "[[note/welcome-to-laputa]]"
+---
+
+# Editor Basics
+
+Laputa uses a rich markdown editor. Here are the key formatting features:
+
+## Headings
+
+Use `#` for headings. The first H1 heading becomes the note's title.
+
+## Lists
+
+- Bullet lists use `-` or `*`
+- They can be nested
+  - Like this
+  - And this
+
+1. Numbered lists work too
+2. Just start with a number
+
+## Checkboxes
+
+- [x] Completed task
+- [ ] Pending task
+- [ ] Another thing to do
+
+## Text formatting
+
+You can use **bold**, *italic*, `inline code`, and ~~strikethrough~~ text.
+
+## Code blocks
+
+```javascript
+function hello() {
+  console.log("Hello from Laputa!");
+}
+```
+
+## Blockquotes
+
+> "The best way to have a good idea is to have lots of ideas." — Linus Pauling
+"#,
+    },
+    SampleFile {
+        rel_path: "note/using-properties.md",
+        content: r#"---
+Is A: Note
+Status: Active
+Related to:
+  - "[[note/welcome-to-laputa]]"
+  - "[[note/wiki-links-and-relationships]]"
+---
+
+# Using Properties
+
+Every note can have **properties** defined in the YAML frontmatter at the top of the file. Properties appear in the inspector panel on the right side of the screen.
+
+## Common properties
+
+- **Is A** — The note's type (Project, Note, Person, etc.)
+- **Status** — Current state: Active, Done, Paused, Archived, Dropped
+- **Belongs to** — Parent relationship (e.g., a project belongs to a quarter)
+- **Related to** — Lateral connections to other notes
+- **Owner** — The person responsible
+
+## How to edit properties
+
+1. Open the **inspector panel** (right side)
+2. Click on any property value to edit it
+3. For relationship fields, type `[[` to search for notes
+4. Use the **+ Add property** button to add custom fields
+
+## Custom properties
+
+You can add any custom property. If the value contains `[[wiki-links]]`, Laputa will treat it as a relationship and show it as a clickable link in the inspector.
+"#,
+    },
+    SampleFile {
+        rel_path: "note/wiki-links-and-relationships.md",
+        content: r#"---
+Is A: Note
+Related to:
+  - "[[note/welcome-to-laputa]]"
+  - "[[note/using-properties]]"
+---
+
+# Wiki-Links and Relationships
+
+Wiki-links are the core of Laputa's knowledge graph. They let you connect any note to any other note using the `[[double bracket]]` syntax.
+
+## Creating links
+
+Type `[[` in the editor to open the link suggestion menu. Start typing to search for a note, then select it. The link will look like this: [[note/welcome-to-laputa]].
+
+## Backlinks
+
+When note A links to note B, note B automatically shows a **backlink** to note A in the inspector panel. This means you never have to manually maintain bidirectional links.
+
+## Relationships in frontmatter
+
+You can also define relationships in the frontmatter:
+
+```yaml
+Belongs to: "[[project/sample-project]]"
+Related to:
+  - "[[note/editor-basics]]"
+  - "[[note/using-properties]]"
+```
+
+These appear as clickable pills in the inspector and are navigable with a single click.
+
+## Building your knowledge graph
+
+Over time, your wiki-links form a rich web of connections. Use the **Referenced By** section in the inspector to discover how notes relate to each other.
+"#,
+    },
+    SampleFile {
+        rel_path: "project/sample-project.md",
+        content: r#"---
+Is A: Project
+Status: Active
+Owner: "[[person/sample-collaborator]]"
+Related to: "[[topic/getting-started]]"
+---
+
+# Sample Project
+
+This is an example project to show how projects work in Laputa.
+
+## Overview
+
+Projects are time-bounded efforts with clear goals. They have a **status** (Active, Paused, Done, Dropped) and can be linked to people, topics, and other notes.
+
+## Goals
+
+- [ ] Explore the Laputa editor and its features
+- [ ] Create your first custom note
+- [ ] Link notes together using wiki-links
+- [ ] Try editing properties in the inspector
+
+## Notes
+
+This project is owned by [[person/sample-collaborator]] and relates to [[topic/getting-started]]. You can see these relationships in the inspector panel on the right.
+"#,
+    },
+    SampleFile {
+        rel_path: "person/sample-collaborator.md",
+        content: r#"---
+Is A: Person
+---
+
+# Sample Collaborator
+
+This is an example person entry. In your vault, you might create entries for colleagues, friends, mentors, or anyone you interact with regularly.
+
+## What person entries are for
+
+- Track who owns which projects
+- Record meeting notes linked to specific people
+- Build a network of relationships between people, projects, and topics
+
+## Connections
+
+This person is the owner of [[project/sample-project]]. Check the **Referenced By** section in the inspector to see all notes that link back here.
+"#,
+    },
+    SampleFile {
+        rel_path: "topic/getting-started.md",
+        content: r#"---
+Is A: Topic
+---
+
+# Getting Started
+
+This topic groups notes related to learning and getting started with Laputa.
+
+## Related notes
+
+- [[note/welcome-to-laputa]] — Start here for an overview
+- [[note/editor-basics]] — Formatting and editor features
+- [[note/using-properties]] — Frontmatter and the inspector
+- [[note/wiki-links-and-relationships]] — Building your knowledge graph
+- [[project/sample-project]] — A sample project with relationships
+"#,
+    },
+];
+
+/// Create the Getting Started vault at the specified path.
+/// Returns the absolute path to the created vault.
+pub fn create_getting_started_vault(target_path: &str) -> Result<String, String> {
+    let vault_dir = Path::new(target_path);
+
+    if vault_dir.exists()
+        && vault_dir
+            .read_dir()
+            .map(|mut d| d.next().is_some())
+            .unwrap_or(false)
+    {
+        return Err(format!(
+            "Directory already exists and is not empty: {}",
+            target_path
+        ));
+    }
+
+    fs::create_dir_all(vault_dir)
+        .map_err(|e| format!("Failed to create vault directory: {}", e))?;
+
+    for sample in SAMPLE_FILES {
+        let file_path = vault_dir.join(sample.rel_path);
+        if let Some(parent) = file_path.parent() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create directory {}: {}", parent.display(), e))?;
+        }
+        fs::write(&file_path, sample.content)
+            .map_err(|e| format!("Failed to write {}: {}", sample.rel_path, e))?;
+    }
+
+    Ok(vault_dir
+        .canonicalize()
+        .unwrap_or_else(|_| vault_dir.to_path_buf())
+        .to_string_lossy()
+        .to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_vault_path_is_in_documents() {
+        let path = default_vault_path().unwrap();
+        let path_str = path.to_string_lossy();
+        assert!(path_str.contains("Documents"));
+        assert!(path_str.ends_with("Laputa"));
+    }
+
+    #[test]
+    fn test_vault_exists_false_for_missing() {
+        assert!(!vault_exists("/nonexistent/vault/path/abc123"));
+    }
+
+    #[test]
+    fn test_create_getting_started_vault_creates_files() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let vault_path = dir.path().join("test-vault");
+        let result = create_getting_started_vault(vault_path.to_str().unwrap());
+        assert!(result.is_ok());
+
+        // Verify key files exist
+        assert!(vault_path.join("note/welcome-to-laputa.md").exists());
+        assert!(vault_path.join("note/editor-basics.md").exists());
+        assert!(vault_path.join("note/using-properties.md").exists());
+        assert!(vault_path
+            .join("note/wiki-links-and-relationships.md")
+            .exists());
+        assert!(vault_path.join("project/sample-project.md").exists());
+        assert!(vault_path.join("person/sample-collaborator.md").exists());
+        assert!(vault_path.join("topic/getting-started.md").exists());
+        assert!(vault_path.join("type/project.md").exists());
+        assert!(vault_path.join("type/note.md").exists());
+        assert!(vault_path.join("type/person.md").exists());
+        assert!(vault_path.join("type/topic.md").exists());
+    }
+
+    #[test]
+    fn test_create_vault_rejects_non_empty_directory() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let vault_path = dir.path().join("non-empty");
+        fs::create_dir_all(&vault_path).unwrap();
+        fs::write(vault_path.join("existing.md"), "# Existing").unwrap();
+
+        let result = create_getting_started_vault(vault_path.to_str().unwrap());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("not empty"));
+    }
+
+    #[test]
+    fn test_create_vault_allows_empty_directory() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let vault_path = dir.path().join("empty-dir");
+        fs::create_dir_all(&vault_path).unwrap();
+
+        let result = create_getting_started_vault(vault_path.to_str().unwrap());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_sample_files_have_valid_frontmatter() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let vault_path = dir.path().join("validation-vault");
+        create_getting_started_vault(vault_path.to_str().unwrap()).unwrap();
+
+        for sample in SAMPLE_FILES {
+            let file_path = vault_path.join(sample.rel_path);
+            let content = fs::read_to_string(&file_path).unwrap();
+            // Verify each file has frontmatter delimiters
+            assert!(
+                content.starts_with("---\n"),
+                "{} should start with frontmatter",
+                sample.rel_path
+            );
+            assert!(
+                content.matches("---").count() >= 2,
+                "{} should have closing frontmatter delimiter",
+                sample.rel_path
+            );
+        }
+    }
+
+    #[test]
+    fn test_sample_files_parseable_as_vault_entries() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let vault_path = dir.path().join("parse-vault");
+        create_getting_started_vault(vault_path.to_str().unwrap()).unwrap();
+
+        let entries = crate::vault::scan_vault(&vault_path).unwrap();
+        assert_eq!(entries.len(), SAMPLE_FILES.len());
+    }
+}

@@ -164,3 +164,8 @@
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
+
+.referenced-by-panel button:hover {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}

@@ -2,7 +2,7 @@ import { useMemo, useCallback, useState, useRef } from 'react'
 import type { ComponentType, SVGAttributes } from 'react'
 import { wikilinkTarget, wikilinkDisplay } from '../utils/wikilink'
 import type { VaultEntry, GitCommit } from '../types'
-import { Trash, X, Plus } from '@phosphor-icons/react'
+import { Trash, X } from '@phosphor-icons/react'
 import type { ParsedFrontmatter } from '../utils/frontmatter'
 import { RELATIONSHIP_KEYS, containsWikilinks } from './DynamicPropertiesPanel'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
@@ -48,35 +48,36 @@ function LinkButton({ label, typeColor, bgColor, isArchived, isTrashed, onClick,
   const isDimmed = isArchived || isTrashed
   const color = isDimmed ? 'var(--muted-foreground)' : typeColor
   return (
-    <div className="group/link flex items-center gap-1">
-      <button
-        className="flex flex-1 items-center justify-between gap-2 border-none text-left cursor-pointer hover:opacity-80 min-w-0"
-        style={{
-          background: isDimmed ? 'var(--muted)' : (bgColor ?? 'transparent'),
-          color, borderRadius: 6, padding: bgColor ? '6px 10px' : '4px 0',
-          fontSize: 12, fontWeight: 500, opacity: isDimmed ? 0.7 : 1,
-        }}
-        onClick={onClick}
-        title={title}
-      >
-        <span className="flex items-center gap-1 flex-1 truncate">
-          {isTrashed && <Trash size={12} className="shrink-0" />}
-          {label}
-          <StatusSuffix isArchived={isArchived} isTrashed={isTrashed} />
-        </span>
-        <TypeIcon width={14} height={14} className="shrink-0" style={{ color }} />
-      </button>
-      {onRemove && (
-        <button
-          className="shrink-0 border-none bg-transparent p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover/link:opacity-100"
-          onClick={onRemove}
-          title="Remove from relation"
-          data-testid="remove-relation-ref"
-        >
-          <X size={12} />
-        </button>
-      )}
-    </div>
+    <button
+      className={`group/link flex w-full items-center justify-between gap-2 border-none text-left cursor-pointer min-w-0${bgColor ? ' ring-inset hover:ring-1 hover:ring-current' : ' hover:opacity-80'}`}
+      style={{
+        background: isDimmed ? 'var(--muted)' : (bgColor ?? 'transparent'),
+        color, borderRadius: 6, padding: bgColor ? '6px 10px' : '4px 0',
+        fontSize: 12, fontWeight: 500, opacity: isDimmed ? 0.7 : 1,
+      }}
+      onClick={onClick}
+      title={title}
+    >
+      <span className="flex items-center gap-1 flex-1 truncate">
+        {isTrashed && <Trash size={12} className="shrink-0" />}
+        {label}
+        <StatusSuffix isArchived={isArchived} isTrashed={isTrashed} />
+      </span>
+      <span className="flex items-center gap-1.5 shrink-0">
+        {onRemove && (
+          <span
+            className="flex items-center opacity-0 transition-opacity group-hover/link:opacity-100"
+            onClick={(e) => { e.stopPropagation(); onRemove() }}
+            role="button"
+            title="Remove from relation"
+            data-testid="remove-relation-ref"
+          >
+            <X size={14} />
+          </span>
+        )}
+        <TypeIcon width={14} height={14} className="shrink-0" style={{ color, opacity: 0.5 }} />
+      </span>
+    </button>
   )
 }
 
@@ -149,25 +150,24 @@ function InlineAddNote({ entries, onAdd }: {
   if (!active) {
     return (
       <button
-        className="mt-1 flex items-center gap-1 border-none bg-transparent p-0 text-muted-foreground cursor-pointer hover:text-foreground"
-        style={{ fontSize: 11 }}
+        className="mt-1 w-full border border-dashed border-border bg-transparent text-left text-muted-foreground cursor-pointer hover:border-foreground hover:text-foreground"
+        style={{ borderRadius: 6, padding: '6px 10px', fontSize: 12 }}
         onClick={() => setActive(true)}
         data-testid="add-relation-ref"
       >
-        <Plus size={10} />
-        <span>Add</span>
+        Add
       </button>
     )
   }
 
   return (
     <div className="relative mt-1">
-      <div className="flex items-center gap-1">
+      <div className="group/add relative flex items-center">
         <input
           ref={inputRef}
           autoFocus
-          className="flex-1 border border-border bg-transparent px-2 py-0.5 text-xs text-foreground"
-          style={{ borderRadius: 4, outline: 'none', minWidth: 0 }}
+          className="w-full border border-border bg-transparent text-foreground"
+          style={{ borderRadius: 6, outline: 'none', minWidth: 0, padding: '6px 10px', fontSize: 12 }}
           placeholder="Note title"
           value={query}
           onChange={e => setQuery(e.target.value)}
@@ -175,14 +175,7 @@ function InlineAddNote({ entries, onAdd }: {
           data-testid="add-relation-ref-input"
         />
         <button
-          className="shrink-0 border-none bg-transparent p-0.5 text-muted-foreground hover:text-foreground"
-          onClick={handleConfirm}
-          disabled={!query.trim()}
-        >
-          <Plus size={12} />
-        </button>
-        <button
-          className="shrink-0 border-none bg-transparent p-0.5 text-muted-foreground hover:text-foreground"
+          className="absolute right-1 top-1/2 -translate-y-1/2 border-none bg-transparent p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover/add:opacity-100"
           onClick={() => { setQuery(''); setActive(false) }}
         >
           <X size={12} />
@@ -421,15 +414,12 @@ export function ReferencedByPanel({ items, typeEntryMap, onNavigate }: {
   if (items.length === 0) return null
 
   return (
-    <div>
-      <h4 className="font-mono-overline mb-2 text-muted-foreground">
-        Referenced by <span className="ml-1" style={{ fontWeight: 400 }}>{items.length}</span>
-      </h4>
+    <div className="referenced-by-panel">
       <div className="flex flex-col gap-2.5">
         {grouped.map(([viaKey, groupEntries]) => (
           <div key={viaKey}>
-            <span className="mb-1 block font-mono text-muted-foreground" style={{ fontSize: 9, fontWeight: 600, letterSpacing: '1.2px', textTransform: 'uppercase', opacity: 0.7 }}>
-              via {viaKey}
+            <span className="mb-1 block font-mono text-muted-foreground" style={{ fontSize: 9, fontWeight: 400, letterSpacing: '1.2px', textTransform: 'uppercase', opacity: 0.7 }}>
+              ← {viaKey}
             </span>
             <div className="flex flex-col gap-0.5">
               {groupEntries.map((e) => {

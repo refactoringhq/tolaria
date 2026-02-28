@@ -29,6 +29,10 @@ interface AppCommandsConfig {
   onCommitPush: () => void
   onSetViewMode: (mode: ViewMode) => void
   onToggleInspector: () => void
+  onZoomIn: () => void
+  onZoomOut: () => void
+  onZoomReset: () => void
+  zoomLevel: number
   onSelect: (sel: SidebarSelection) => void
   onCloseTab: (path: string) => void
   onSwitchTab: (path: string) => void
@@ -52,6 +56,9 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onTrashNote: config.onTrashNote,
     onArchiveNote: config.onArchiveNote,
     onSetViewMode: config.onSetViewMode,
+    onZoomIn: config.onZoomIn,
+    onZoomOut: config.onZoomOut,
+    onZoomReset: config.onZoomReset,
     onGoBack: config.onGoBack,
     onGoForward: config.onGoForward,
     activeTabPathRef: config.activeTabPathRef,
@@ -66,6 +73,9 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onOpenSettings: config.onOpenSettings,
     onToggleInspector: config.onToggleInspector,
     onCommandPalette: config.onCommandPalette,
+    onZoomIn: config.onZoomIn,
+    onZoomOut: config.onZoomOut,
+    onZoomReset: config.onZoomReset,
     activeTabPathRef: config.activeTabPathRef,
     handleCloseTabRef: config.handleCloseTabRef,
     activeTabPath: config.activeTabPath,
@@ -85,6 +95,10 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onCommitPush: config.onCommitPush,
     onSetViewMode: config.onSetViewMode,
     onToggleInspector: config.onToggleInspector,
+    onZoomIn: config.onZoomIn,
+    onZoomOut: config.onZoomOut,
+    onZoomReset: config.onZoomReset,
+    zoomLevel: config.zoomLevel,
     onSelect: config.onSelect,
     onCloseTab: config.onCloseTab,
     onGoBack: config.onGoBack,

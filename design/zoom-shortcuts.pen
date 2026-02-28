@@ -1,0 +1,202 @@
+{
+  "children": [
+    {
+      "type": "frame",
+      "id": "zs_normal",
+      "name": "Zoom Shortcuts — StatusBar (100% / default)",
+      "x": 0,
+      "y": 0,
+      "theme": { "Mode": "Light" },
+      "width": 800,
+      "height": 32,
+      "fill": "$--background",
+      "layout": "horizontal",
+      "gap": 0,
+      "padding": [0, 12],
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "frame",
+          "id": "zs_normal_desc",
+          "name": "description",
+          "width": "fill_container",
+          "children": [
+            {
+              "type": "text",
+              "id": "zs_normal_desc_text",
+              "fill": "$--muted-foreground",
+              "content": "StatusBar at 100% zoom — zoom indicator is HIDDEN. Cmd+= zooms in, Cmd+- zooms out, Cmd+0 resets to 100%.",
+              "fontFamily": "Inter",
+              "fontSize": 11
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "zs_zoomed",
+      "name": "Zoom Shortcuts — StatusBar (150% / zoomed in)",
+      "x": 0,
+      "y": 60,
+      "theme": { "Mode": "Light" },
+      "width": 800,
+      "height": 32,
+      "fill": "$--background",
+      "layout": "horizontal",
+      "gap": 0,
+      "padding": [0, 12],
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "frame",
+          "id": "zs_statusbar_zoomed",
+          "name": "StatusBar — 150% (zoom indicator visible)",
+          "layout": "horizontal",
+          "gap": 8,
+          "alignItems": "center",
+          "padding": [0, 8],
+          "children": [
+            {
+              "type": "text",
+              "id": "zs_wordcount_z",
+              "fill": "$--muted-foreground",
+              "content": "1,247 words",
+              "fontFamily": "IBM Plex Mono",
+              "fontSize": 11
+            },
+            {
+              "type": "frame",
+              "id": "zs_zoom_badge",
+              "name": "Zoom % Badge",
+              "fill": "$--muted",
+              "cornerRadius": 4,
+              "padding": [2, 6],
+              "alignItems": "center",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "zs_zoom_label",
+                  "fill": "$--foreground",
+                  "content": "150%",
+                  "fontFamily": "IBM Plex Mono",
+                  "fontSize": 11,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "zs_cmd_palette",
+      "name": "Zoom Shortcuts — Command Palette entries",
+      "x": 0,
+      "y": 120,
+      "theme": { "Mode": "Light" },
+      "width": 540,
+      "height": 120,
+      "fill": "$--popover",
+      "cornerRadius": 12,
+      "layout": "vertical",
+      "gap": 0,
+      "children": [
+        {
+          "type": "frame",
+          "id": "zs_cmd_row1",
+          "name": "Command — Zoom In (⌘=)",
+          "layout": "horizontal",
+          "width": "fill_container",
+          "padding": [8, 12],
+          "gap": 8,
+          "alignItems": "center",
+          "fill": "$--accent",
+          "children": [
+            {
+              "type": "text",
+              "id": "zs_cmd_row1_label",
+              "fill": "$--accent-foreground",
+              "content": "Zoom In",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "500",
+              "width": "fill_container"
+            },
+            {
+              "type": "text",
+              "id": "zs_cmd_row1_shortcut",
+              "fill": "$--muted-foreground",
+              "content": "Command+=",
+              "fontFamily": "IBM Plex Mono",
+              "fontSize": 11
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "zs_cmd_row2",
+          "name": "Command — Zoom Out (⌘-)",
+          "layout": "horizontal",
+          "width": "fill_container",
+          "padding": [8, 12],
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "zs_cmd_row2_label",
+              "fill": "$--foreground",
+              "content": "Zoom Out",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "500",
+              "width": "fill_container"
+            },
+            {
+              "type": "text",
+              "id": "zs_cmd_row2_shortcut",
+              "fill": "$--muted-foreground",
+              "content": "Command+-",
+              "fontFamily": "IBM Plex Mono",
+              "fontSize": 11
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "zs_cmd_row3",
+          "name": "Command — Reset Zoom (⌘0)",
+          "layout": "horizontal",
+          "width": "fill_container",
+          "padding": [8, 12],
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "zs_cmd_row3_label",
+              "fill": "$--foreground",
+              "content": "Reset Zoom",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "500",
+              "width": "fill_container"
+            },
+            {
+              "type": "text",
+              "id": "zs_cmd_row3_shortcut",
+              "fill": "$--muted-foreground",
+              "content": "Command+0",
+              "fontFamily": "IBM Plex Mono",
+              "fontSize": 11
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {}
+}

@@ -79,11 +79,14 @@ if [ "$RUST_CHANGED" = true ]; then
   else
     echo "🦀 [3/4] Rust coverage (≥85%, incremental)..."
   fi
+  # Unset GIT_DIR so git tests create isolated repos without inheriting hook context
+  unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
   # shellcheck disable=SC2086
   cargo llvm-cov \
     --manifest-path src-tauri/Cargo.toml \
     $LLVM_COV_FLAGS \
-    --fail-under-lines 85
+    --fail-under-lines 85 \
+    -- --test-threads=1
   echo "  ✅ Rust coverage OK"
 else
   echo "⏭️  [3/4] Rust coverage — skipped (no src-tauri/ changes)"

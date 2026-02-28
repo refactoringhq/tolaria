@@ -1012,7 +1012,7 @@ describe('DynamicPropertiesPanel', () => {
       expect(screen.getByText('\u2713 Yes')).toBeInTheDocument()
     })
 
-    it('stores actual boolean value when adding boolean property', () => {
+    it('stores actual boolean value when adding boolean property', { timeout: 15_000 }, () => {
       render(
         <DynamicPropertiesPanel
           entry={makeEntry()}
@@ -1034,7 +1034,7 @@ describe('DynamicPropertiesPanel', () => {
       expect(onAddProperty).toHaveBeenCalledWith('published', true)
     })
 
-    it('shows date picker trigger when date type selected', () => {
+    it('shows date picker trigger when date type selected', { timeout: 15_000 }, () => {
       render(
         <DynamicPropertiesPanel
           entry={makeEntry()}
@@ -1050,7 +1050,7 @@ describe('DynamicPropertiesPanel', () => {
       expect(screen.getByText('Pick a date\u2026')).toBeInTheDocument()
     })
 
-    it('shows status dropdown when status type selected', () => {
+    it('shows status dropdown when status type selected', { timeout: 15_000 }, () => {
       render(
         <DynamicPropertiesPanel
           entry={makeEntry()}

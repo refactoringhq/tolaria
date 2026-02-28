@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { invoke } from '@tauri-apps/api/core'
 import { isTauri, mockInvoke } from '../mock-tauri'
+import { GitHubDeviceFlow } from './GitHubDeviceFlow'
 import type { GithubRepo } from '../types'
 
 function tauriCall<T>(cmd: string, args: Record<string, unknown>): Promise<T> {
@@ -18,6 +19,7 @@ interface GitHubVaultModalProps {
   onClose: () => void
   onVaultCloned: (path: string, label: string) => void
   onOpenSettings: () => void
+  onGitHubConnected?: (token: string, username: string) => void
 }
 
 type CloneStatus = 'idle' | 'cloning' | 'success' | 'error'
@@ -244,7 +246,7 @@ function CloningProgress({ repoName }: { repoName: string }) {
   )
 }
 
-export function GitHubVaultModal({ open, githubToken, onClose, onVaultCloned, onOpenSettings }: GitHubVaultModalProps) {
+export function GitHubVaultModal({ open, githubToken, onClose, onVaultCloned, onOpenSettings, onGitHubConnected }: GitHubVaultModalProps) {
   const [tab, setTab] = useState('clone')
   const [repos, setRepos] = useState<GithubRepo[]>([])
   const [loading, setLoading] = useState(false)
@@ -365,15 +367,21 @@ export function GitHubVaultModal({ open, githubToken, onClose, onVaultCloned, on
             <DialogDescription>Connect your GitHub account to clone or create vaults backed by GitHub repos.</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-6">
-            <p className="text-sm text-muted-foreground text-center">
-              You need to connect your GitHub account first. Add your GitHub token in Settings.
-            </p>
-            <Button
-              onClick={() => { handleClose(); onOpenSettings() }}
-              data-testid="github-open-settings"
-            >
-              Open Settings
-            </Button>
+            {onGitHubConnected ? (
+              <GitHubDeviceFlow onConnected={onGitHubConnected} />
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground text-center">
+                  You need to connect your GitHub account first. Add your GitHub token in Settings.
+                </p>
+                <Button
+                  onClick={() => { handleClose(); onOpenSettings() }}
+                  data-testid="github-open-settings"
+                >
+                  Open Settings
+                </Button>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>

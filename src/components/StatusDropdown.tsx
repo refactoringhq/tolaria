@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { getStatusStyle, SUGGESTED_STATUSES, setStatusColor, getStatusColorKey } from '../utils/statusStyles'
 import { ACCENT_COLORS } from '../utils/typeColors'
@@ -229,8 +229,10 @@ export function StatusDropdown({
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const anchorRef = useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const positionDropdown = useCallback((node: HTMLDivElement | null) => {
+  useLayoutEffect(() => {
+    const node = dropdownRef.current
     if (!node) return
     const anchor = anchorRef.current?.parentElement
     if (!anchor) return
@@ -283,12 +285,12 @@ export function StatusDropdown({
   }
 
   return (
-    <div ref={anchorRef} data-testid="status-dropdown">
+    <span ref={anchorRef} data-testid="status-dropdown">
       {createPortal(
         <>
           <div className="fixed inset-0 z-[12000]" onClick={onCancel} data-testid="status-dropdown-backdrop" />
           <div
-            ref={positionDropdown}
+            ref={dropdownRef}
             className="fixed z-[12001] w-52 overflow-hidden rounded-lg border border-border bg-background shadow-lg"
             data-testid="status-dropdown-popover"
           >
@@ -329,7 +331,7 @@ export function StatusDropdown({
         </>,
         document.body
       )}
-    </div>
+    </span>
   )
 }
 

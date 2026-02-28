@@ -1,0 +1,165 @@
+{
+  "children": [
+    {
+      "type": "frame",
+      "id": "rel_x_default",
+      "name": "Relationship Pill — Default (X hidden)",
+      "x": 0,
+      "y": 0,
+      "width": 280,
+      "height": "fit_content(40)",
+      "fill": "$--background",
+      "layout": "vertical",
+      "gap": 8,
+      "padding": [
+        16,
+        16
+      ],
+      "theme": {
+        "Mode": "Light"
+      },
+      "children": [
+        {
+          "type": "text",
+          "id": "rel_x_default_label",
+          "content": "Relationship Pill — Default State",
+          "fill": "$--muted-foreground",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "500"
+        },
+        {
+          "type": "frame",
+          "id": "rel_x_pill_default",
+          "layout": "horizontal",
+          "gap": 4,
+          "padding": [
+            4,
+            8
+          ],
+          "fill": "$--accent",
+          "borderRadius": 6,
+          "width": "fit_content",
+          "height": "fit_content",
+          "children": [
+            {
+              "type": "text",
+              "id": "rel_x_pill_label",
+              "content": "Note Title",
+              "fill": "$--foreground",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "500"
+            },
+            {
+              "type": "rectangle",
+              "id": "rel_x_type_icon",
+              "width": 14,
+              "height": 14,
+              "fill": "$--muted-foreground",
+              "opacity": 0.5,
+              "borderRadius": 2
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "rel_x_note_default",
+          "content": "X button not visible in default state",
+          "fill": "$--muted-foreground",
+          "fontFamily": "Inter",
+          "fontSize": 10
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "rel_x_hover",
+      "name": "Relationship Pill — Hover (X visible)",
+      "x": 320,
+      "y": 0,
+      "width": 280,
+      "height": "fit_content(40)",
+      "fill": "$--background",
+      "layout": "vertical",
+      "gap": 8,
+      "padding": [
+        16,
+        16
+      ],
+      "theme": {
+        "Mode": "Light"
+      },
+      "children": [
+        {
+          "type": "text",
+          "id": "rel_x_hover_label",
+          "content": "Relationship Pill — Hover State",
+          "fill": "$--muted-foreground",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "500"
+        },
+        {
+          "type": "frame",
+          "id": "rel_x_pill_hover",
+          "layout": "horizontal",
+          "gap": 6,
+          "padding": [
+            4,
+            8
+          ],
+          "fill": "$--accent",
+          "borderRadius": 6,
+          "width": "fit_content",
+          "height": "fit_content",
+          "children": [
+            {
+              "type": "text",
+              "id": "rel_x_pill_label_hover",
+              "content": "Note Title",
+              "fill": "$--foreground",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "500"
+            },
+            {
+              "type": "frame",
+              "id": "rel_x_trailing",
+              "layout": "horizontal",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "rel_x_icon",
+                  "content": "×",
+                  "fill": "$--foreground",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "400"
+                },
+                {
+                  "type": "rectangle",
+                  "id": "rel_x_type_icon_hover",
+                  "width": 14,
+                  "height": 14,
+                  "fill": "$--muted-foreground",
+                  "opacity": 0.5,
+                  "borderRadius": 2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "rel_x_note_hover",
+          "content": "X appears inline as flex child, before type icon. Ring border on hover.",
+          "fill": "$--muted-foreground",
+          "fontFamily": "Inter",
+          "fontSize": 10
+        }
+      ]
+    }
+  ]
+}

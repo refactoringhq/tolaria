@@ -65,8 +65,16 @@ describe('detectPropertyType', () => {
     expect(detectPropertyType('anything', undefined as never)).toBe('text')
   })
 
-  it('returns text for arrays', () => {
-    expect(detectPropertyType('tags', ['a', 'b'])).toBe('text')
+  it('detects tags from tag-like key names with array values', () => {
+    expect(detectPropertyType('tags', ['a', 'b'])).toBe('tags')
+    expect(detectPropertyType('keywords', ['react', 'tauri'])).toBe('tags')
+    expect(detectPropertyType('categories', ['frontend'])).toBe('tags')
+    expect(detectPropertyType('labels', ['bug', 'fix'])).toBe('tags')
+  })
+
+  it('returns text for arrays with non-tag key names', () => {
+    expect(detectPropertyType('aliases', ['a', 'b'])).toBe('text')
+    expect(detectPropertyType('custom_list', ['x', 'y'])).toBe('text')
   })
 
   it('treats date-keyed fields with non-date values as text', () => {
@@ -151,5 +159,9 @@ describe('getEffectiveDisplayMode', () => {
 
   it('prefers override over auto-detection', () => {
     expect(getEffectiveDisplayMode('deadline', '2026-03-31', { deadline: 'text' })).toBe('text')
+  })
+
+  it('uses tags override for array values', () => {
+    expect(getEffectiveDisplayMode('custom', ['a', 'b'], { custom: 'tags' })).toBe('tags')
   })
 })

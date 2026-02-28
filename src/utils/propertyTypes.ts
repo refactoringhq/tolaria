@@ -1,6 +1,6 @@
 import type { FrontmatterValue } from '../components/Inspector'
 
-export type PropertyDisplayMode = 'text' | 'date' | 'boolean' | 'status' | 'url'
+export type PropertyDisplayMode = 'text' | 'date' | 'boolean' | 'status' | 'url' | 'tags'
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?)?/
 const COMMON_DATE_RE = /^\d{1,2}\/\d{1,2}\/\d{2,4}$/
@@ -13,6 +13,7 @@ const STATUS_VALUES = new Set([
 
 const STATUS_KEY_PATTERNS = ['status']
 const DATE_KEY_PATTERNS = ['date', 'deadline', 'due', 'start', 'end', 'scheduled']
+const TAGS_KEY_PATTERNS = ['tags', 'keywords', 'categories', 'labels']
 
 function keyMatchesPatterns(key: string, patterns: string[]): boolean {
   const lower = key.toLowerCase()
@@ -23,19 +24,18 @@ function isDateString(value: string): boolean {
   return ISO_DATE_RE.test(value) || COMMON_DATE_RE.test(value)
 }
 
+function detectStringType(key: string, strValue: string): PropertyDisplayMode {
+  if (keyMatchesPatterns(key, STATUS_KEY_PATTERNS)) return 'status'
+  if (STATUS_VALUES.has(strValue.toLowerCase()) && !keyMatchesPatterns(key, DATE_KEY_PATTERNS)) return 'status'
+  if (isDateString(strValue)) return 'date'
+  return 'text'
+}
+
 export function detectPropertyType(key: string, value: FrontmatterValue): PropertyDisplayMode {
   if (value === null || value === undefined) return 'text'
   if (typeof value === 'boolean') return 'boolean'
-  if (Array.isArray(value)) return 'text'
-
-  const strValue = String(value)
-
-  if (keyMatchesPatterns(key, STATUS_KEY_PATTERNS)) return 'status'
-  if (STATUS_VALUES.has(strValue.toLowerCase()) && !keyMatchesPatterns(key, DATE_KEY_PATTERNS)) return 'status'
-  if (keyMatchesPatterns(key, DATE_KEY_PATTERNS) && isDateString(strValue)) return 'date'
-  if (isDateString(strValue)) return 'date'
-
-  return 'text'
+  if (Array.isArray(value)) return keyMatchesPatterns(key, TAGS_KEY_PATTERNS) ? 'tags' : 'text'
+  return detectStringType(key, String(value))
 }
 
 const STORAGE_KEY = 'laputa:display-mode-overrides'
