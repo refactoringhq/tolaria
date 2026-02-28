@@ -105,10 +105,10 @@ describe('useImageDrop', () => {
     container.remove()
   })
 
-  function renderImageDrop() {
+  function renderImageDrop(opts?: { onImageUrl?: (url: string) => void; vaultPath?: string }) {
     const ref = createRef<HTMLDivElement>()
     Object.defineProperty(ref, 'current', { value: container, writable: true })
-    return renderHook(() => useImageDrop({ containerRef: ref }))
+    return renderHook(() => useImageDrop({ containerRef: ref, ...opts }))
   }
 
   it('sets isDragOver to true on dragover with image files', () => {
@@ -159,5 +159,12 @@ describe('useImageDrop', () => {
 
       act(() => { container.dispatchEvent(createDragEvent('dragleave', [], { relatedTarget: document.body })) })
     }
+  })
+
+  it('passes onImageUrl and vaultPath without error', () => {
+    const onImageUrl = vi.fn()
+    const { result } = renderImageDrop({ onImageUrl, vaultPath: '/vault' })
+    // Should render without error; Tauri event listener is skipped in browser mode
+    expect(result.current.isDragOver).toBe(false)
   })
 })

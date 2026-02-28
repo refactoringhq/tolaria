@@ -160,6 +160,7 @@ export const Editor = memo(function Editor({
               onRestoreNote={onRestoreNote}
               onArchiveNote={onArchiveNote}
               onUnarchiveNote={onUnarchiveNote}
+              vaultPath={vaultPath}
             />
         }
         {showRightPanel && <ResizeHandle onResize={onInspectorResize} />}

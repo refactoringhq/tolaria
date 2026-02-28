@@ -11,18 +11,31 @@ import { WikilinkSuggestionMenu, type WikilinkSuggestionItem } from './WikilinkS
 import type { VaultEntry } from '../types'
 import { _wikilinkEntriesRef } from './editorSchema'
 
+/** Insert an image block after the current cursor position. */
+function useInsertImageCallback(editor: ReturnType<typeof useCreateBlockNote>) {
+  const editorRef = useRef(editor)
+  useEffect(() => { editorRef.current = editor }, [editor])
+  return useCallback((url: string) => {
+    const e = editorRef.current
+    const cursorBlock = e.getTextCursorPosition().block
+    e.insertBlocks([{ type: 'image' as const, props: { url } }], cursorBlock, 'after')
+  }, [])
+}
+
 /** Single BlockNote editor view — content is swapped via replaceBlocks */
-export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange }: {
+export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange, vaultPath }: {
   editor: ReturnType<typeof useCreateBlockNote>
   entries: VaultEntry[]
   onNavigateWikilink: (target: string) => void
   onChange?: () => void
+  vaultPath?: string
 }) {
   const navigateRef = useRef(onNavigateWikilink)
   useEffect(() => { navigateRef.current = onNavigateWikilink }, [onNavigateWikilink])
   const { cssVars } = useEditorTheme()
   const containerRef = useRef<HTMLDivElement>(null)
-  const { isDragOver } = useImageDrop({ containerRef })
+  const onImageUrl = useInsertImageCallback(editor)
+  const { isDragOver } = useImageDrop({ containerRef, onImageUrl, vaultPath })
 
   useEffect(() => {
     _wikilinkEntriesRef.current = entries

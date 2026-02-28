@@ -167,6 +167,11 @@ export const mockHandlers: Record<string, (args: any) => any> = {
     const vault = args.vault_path ?? '/Users/luca/Laputa'
     return `${vault}/attachments/${Date.now()}-${args.filename}`
   },
+  copy_image_to_vault: (args: { vault_path?: string; source_path: string }) => {
+    const vault = args.vault_path ?? '/Users/luca/Laputa'
+    const filename = args.source_path.split('/').pop() ?? 'image.png'
+    return `${vault}/attachments/${Date.now()}-${filename}`
+  },
   get_settings: () => ({ ...mockSettings }),
   save_settings: (args: { settings: Settings }) => {
     const s = args.settings
