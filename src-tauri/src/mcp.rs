@@ -75,10 +75,7 @@ fn build_mcp_entry(index_js: &str, vault_path: &str) -> serde_json::Value {
 
 /// Write MCP registration to a list of config file paths.
 /// Returns "registered" on first registration, "updated" if already present.
-fn register_mcp_to_configs(
-    entry: &serde_json::Value,
-    config_paths: &[PathBuf],
-) -> String {
+fn register_mcp_to_configs(entry: &serde_json::Value, config_paths: &[PathBuf]) -> String {
     let mut status = "registered";
     for config_path in config_paths {
         match upsert_mcp_config(config_path, entry) {
@@ -93,10 +90,7 @@ fn register_mcp_to_configs(
 /// Register Laputa as an MCP server in Claude Code and Cursor config files.
 pub fn register_mcp(vault_path: &str) -> Result<String, String> {
     let server_dir = mcp_server_dir()?;
-    let index_js = server_dir
-        .join("index.js")
-        .to_string_lossy()
-        .into_owned();
+    let index_js = server_dir.join("index.js").to_string_lossy().into_owned();
 
     let entry = build_mcp_entry(&index_js, vault_path);
 
@@ -112,10 +106,7 @@ pub fn register_mcp(vault_path: &str) -> Result<String, String> {
 }
 
 /// Insert or update the "laputa" entry in an MCP config file.
-fn upsert_mcp_config(
-    config_path: &Path,
-    entry: &serde_json::Value,
-) -> Result<bool, String> {
+fn upsert_mcp_config(config_path: &Path, entry: &serde_json::Value) -> Result<bool, String> {
     if let Some(parent) = config_path.parent() {
         std::fs::create_dir_all(parent)
             .map_err(|e| format!("Cannot create dir {}: {e}", parent.display()))?;
@@ -211,11 +202,7 @@ mod tests {
                 "other-server": { "command": "other", "args": [] }
             }
         });
-        std::fs::write(
-            &config_path,
-            serde_json::to_string(&existing).unwrap(),
-        )
-        .unwrap();
+        std::fs::write(&config_path, serde_json::to_string(&existing).unwrap()).unwrap();
 
         let entry = build_mcp_entry("/test/index.js", "/vault");
         upsert_mcp_config(&config_path, &entry).unwrap();
