@@ -285,7 +285,7 @@ export function StatusDropdown({
   }
 
   return (
-    <div ref={anchorRef} data-testid="status-dropdown">
+    <span ref={anchorRef} data-testid="status-dropdown">
       {createPortal(
         <>
           <div className="fixed inset-0 z-[12000]" onClick={onCancel} data-testid="status-dropdown-backdrop" />
@@ -331,7 +331,7 @@ export function StatusDropdown({
         </>,
         document.body
       )}
-    </div>
+    </span>
   )
 }
 

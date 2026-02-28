@@ -55,6 +55,7 @@ export function EditorRightPanel({
         entry={inspectorEntry}
         content={inspectorContent}
         entries={entries}
+        allContent={allContent}
         gitHistory={gitHistory}
         onNavigate={onNavigateWikilink}
         onViewCommitDiff={onViewCommitDiff}

@@ -24,6 +24,8 @@ interface StatusBarProps {
   conflictCount?: number
   lastCommitInfo?: LastCommitInfo | null
   onTriggerSync?: () => void
+  zoomLevel?: number
+  onZoomReset?: () => void
 }
 
 function VaultMenuItem({ vault, isActive, onSelect }: { vault: VaultOption; isActive: boolean; onSelect: () => void }) {
@@ -111,6 +113,7 @@ function VaultMenu({ vaults, vaultPath, onSwitchVault, onOpenLocalFolder, onConn
 const ICON_STYLE = { display: 'flex', alignItems: 'center', gap: 4 } as const
 const DISABLED_STYLE = { display: 'flex', alignItems: 'center', opacity: 0.4, cursor: 'not-allowed' } as const
 const SEP_STYLE = { color: 'var(--border)' } as const
+const SYNC_ICON_MAP: Record<string, typeof RefreshCw> = { syncing: Loader2, conflict: AlertTriangle }
 
 function formatSyncLabel(status: SyncStatus, lastSyncTime: number | null): string {
   if (status === 'syncing') return 'Syncing…'
@@ -129,7 +132,30 @@ function syncIconColor(status: SyncStatus): string {
   return 'var(--accent-green)'
 }
 
-export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onSwitchVault, onOpenSettings, onOpenLocalFolder, onConnectGitHub, onClickPending, hasGitHub, syncStatus = 'idle', lastSyncTime = null, conflictCount = 0, lastCommitInfo, onTriggerSync }: StatusBarProps) {
+function CommitBadge({ info }: { info: LastCommitInfo }) {
+  if (info.commitUrl) {
+    return (
+      <span
+        role="button"
+        onClick={() => openExternalUrl(info.commitUrl!)}
+        style={{ ...ICON_STYLE, color: 'var(--muted-foreground)', textDecoration: 'none', cursor: 'pointer', padding: '2px 4px', borderRadius: 3 }}
+        title={`Open commit ${info.shortHash} on GitHub`}
+        data-testid="status-commit-link"
+        onMouseEnter={e => { e.currentTarget.style.color = 'var(--foreground)' }}
+        onMouseLeave={e => { e.currentTarget.style.color = 'var(--muted-foreground)' }}
+      >
+        <GitCommitHorizontal size={13} />{info.shortHash}
+      </span>
+    )
+  }
+  return (
+    <span style={ICON_STYLE} data-testid="status-commit-hash">
+      <GitCommitHorizontal size={13} />{info.shortHash}
+    </span>
+  )
+}
+
+export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onSwitchVault, onOpenSettings, onOpenLocalFolder, onConnectGitHub, onClickPending, hasGitHub, syncStatus = 'idle', lastSyncTime = null, conflictCount = 0, lastCommitInfo, onTriggerSync, zoomLevel = 100, onZoomReset }: StatusBarProps) {
   // Force re-render every 30s to keep relative time label fresh
   const [, setTick] = useState(0)
   useEffect(() => {
@@ -138,7 +164,7 @@ export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onS
   }, [])
 
   const syncLabel = formatSyncLabel(syncStatus, lastSyncTime)
-  const SyncIcon = syncStatus === 'syncing' ? Loader2 : syncStatus === 'conflict' ? AlertTriangle : RefreshCw
+  const SyncIcon = SYNC_ICON_MAP[syncStatus] ?? RefreshCw
 
   return (
     <footer style={{ height: 30, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--sidebar)', borderTop: '1px solid var(--border)', padding: '0 8px', fontSize: 11, color: 'var(--muted-foreground)' }}>
@@ -156,25 +182,7 @@ export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onS
         >
           <SyncIcon size={13} style={{ color: syncIconColor(syncStatus) }} className={syncStatus === 'syncing' ? 'animate-spin' : ''} />{syncLabel}
         </span>
-        {lastCommitInfo && (
-          lastCommitInfo.commitUrl ? (
-            <span
-              role="button"
-              onClick={() => openExternalUrl(lastCommitInfo.commitUrl!)}
-              style={{ ...ICON_STYLE, color: 'var(--muted-foreground)', textDecoration: 'none', cursor: 'pointer', padding: '2px 4px', borderRadius: 3 }}
-              title={`Open commit ${lastCommitInfo.shortHash} on GitHub`}
-              data-testid="status-commit-link"
-              onMouseEnter={e => { e.currentTarget.style.color = 'var(--foreground)' }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'var(--muted-foreground)' }}
-            >
-              <GitCommitHorizontal size={13} />{lastCommitInfo.shortHash}
-            </span>
-          ) : (
-            <span style={ICON_STYLE} data-testid="status-commit-hash">
-              <GitCommitHorizontal size={13} />{lastCommitInfo.shortHash}
-            </span>
-          )
-        )}
+        {lastCommitInfo && <CommitBadge info={lastCommitInfo} />}
         {conflictCount > 0 && (
           <>
             <span style={SEP_STYLE}>|</span>
@@ -201,6 +209,17 @@ export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onS
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <span style={ICON_STYLE}><Sparkles size={13} style={{ color: 'var(--accent-purple)' }} />Claude Sonnet 4</span>
         <span style={ICON_STYLE}><FileText size={13} />{noteCount.toLocaleString()} notes</span>
+        {zoomLevel !== 100 && (
+          <span
+            role="button"
+            onClick={onZoomReset}
+            style={{ ...ICON_STYLE, cursor: 'pointer', padding: '2px 4px', borderRadius: 3, background: 'transparent' }}
+            title="Reset zoom (⌘0)"
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+            data-testid="status-zoom"
+          >{zoomLevel}%</span>
+        )}
         <span style={DISABLED_STYLE} title="Coming soon"><Bell size={14} /></span>
         <span
           role="button"

@@ -1,3 +1,4 @@
+import type React from 'react'
 import { useCallback, useEffect, useRef } from 'react'
 import type { useCreateBlockNote } from '@blocknote/react'
 import type { VaultEntry } from '../types'
@@ -13,6 +14,39 @@ interface UseEditorTabSwapOptions {
   activeTabPath: string | null
   editor: ReturnType<typeof useCreateBlockNote>
   onContentChange?: (path: string, content: string) => void
+  /** Called on every editor change with the H1 text (null if no H1 first block). */
+  onH1Change?: (h1Text: string | null) => void
+  /** When .current is false, handleEditorChange won't update frontmatter title from H1. */
+  syncActiveRef?: React.MutableRefObject<boolean>
+}
+
+/** Strip the YAML frontmatter from raw file content, returning the body
+ *  (including any H1 heading) that should appear in the editor. */
+export function extractEditorBody(rawFileContent: string): string {
+  const [, rawBody] = splitFrontmatter(rawFileContent)
+  return rawBody.trimStart()
+}
+
+/** Extract H1 text from the editor's first block, or null if not an H1. */
+export function getH1TextFromBlocks(blocks: unknown[]): string | null {
+  if (!blocks?.length) return null
+  const first = blocks[0] as {
+    type?: string
+    props?: { level?: number }
+    content?: Array<{ type?: string; text?: string }>
+  }
+  if (first.type !== 'heading' || first.props?.level !== 1) return null
+  if (!Array.isArray(first.content)) return null
+  const text = first.content
+    .filter(item => item.type === 'text')
+    .map(item => item.text || '')
+    .join('')
+  return text.trim() || null
+}
+
+/** Replace the title: line in YAML frontmatter with a new title value. */
+export function replaceTitleInFrontmatter(frontmatter: string, newTitle: string): string {
+  return frontmatter.replace(/^(title:\s*).+$/m, `$1${newTitle}`)
 }
 
 /**
@@ -26,7 +60,7 @@ interface UseEditorTabSwapOptions {
  *
  * Returns `handleEditorChange`, the onChange callback for SingleEditorView.
  */
-export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange }: UseEditorTabSwapOptions) {
+export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange, onH1Change, syncActiveRef }: UseEditorTabSwapOptions) {
   // Cache parsed blocks per tab path for instant switching
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- BlockNote block arrays
   const tabCacheRef = useRef<Map<string, any[]>>(new Map())
@@ -40,6 +74,8 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange 
   // Keep refs to callbacks for the onChange handler
   const onContentChangeRef = useRef(onContentChange)
   onContentChangeRef.current = onContentChange
+  const onH1ChangeRef = useRef(onH1Change)
+  onH1ChangeRef.current = onH1Change
   const tabsRef = useRef(tabs)
   tabsRef.current = tabs
 
@@ -77,13 +113,20 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange 
     const restored = restoreWikilinksInBlocks(blocks)
     const bodyMarkdown = editor.blocksToMarkdownLossy(restored as typeof blocks)
 
-    // Reconstruct the full file: preserve original frontmatter + title heading
+    // Reconstruct full file: frontmatter + body (which now includes H1 if present)
     const [frontmatter] = splitFrontmatter(tab.content)
-    const title = tab.entry.title
-    const fullContent = `${frontmatter}# ${title}\n\n${bodyMarkdown}`
+    const h1Text = getH1TextFromBlocks(blocks)
+
+    // Keep frontmatter title: in sync with H1 when sync is active
+    const isSyncActive = syncActiveRef?.current !== false
+    const fm = (isSyncActive && h1Text)
+      ? replaceTitleInFrontmatter(frontmatter, h1Text)
+      : frontmatter
+    const fullContent = `${fm}${bodyMarkdown}`
 
     onContentChangeRef.current?.(path, fullContent)
-  }, [editor])
+    onH1ChangeRef.current?.(h1Text)
+  }, [editor, syncActiveRef])
 
   // Swap document content when active tab changes.
   // Uses queueMicrotask to defer BlockNote mutations outside React's commit phase,
@@ -151,9 +194,31 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange 
         return
       }
 
-      const [, rawBody] = splitFrontmatter(tab.content)
-      const body = rawBody.replace(/^# [^\n]*\n?/, '').trimStart()
+      const body = extractEditorBody(tab.content)
       const preprocessed = preProcessWikilinks(body)
+
+      // Fast path: empty body (e.g. newly created notes). Skip the
+      // potentially-async markdown parser and set a single empty paragraph
+      // so the editor is immediately interactive.
+      if (!preprocessed.trim()) {
+        const emptyDoc = [{ type: 'paragraph', content: [] }]
+        cache.set(targetPath, emptyDoc)
+        applyBlocks(emptyDoc)
+        return
+      }
+
+      // Fast path: H1-only content (e.g. newly created notes that just have
+      // the title heading). Build blocks directly to stay instant.
+      const h1OnlyMatch = preprocessed.trim().match(/^# (.+)$/)
+      if (h1OnlyMatch) {
+        const h1Doc = [
+          { type: 'heading', props: { level: 1, textColor: 'default', backgroundColor: 'default', textAlignment: 'left' }, content: [{ type: 'text', text: h1OnlyMatch[1], styles: {} }], children: [] },
+          { type: 'paragraph', content: [], children: [] },
+        ]
+        cache.set(targetPath, h1Doc)
+        applyBlocks(h1Doc)
+        return
+      }
 
       try {
         const result = editor.tryParseMarkdownToBlocks(preprocessed)

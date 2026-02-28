@@ -5,12 +5,16 @@ import type { Settings } from '../types'
 
 // Mock the tauri/mock-tauri calls used by GitHubSection
 const mockInvokeFn = vi.fn()
+const mockOpenExternalUrl = vi.fn().mockResolvedValue(undefined)
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: (...args: unknown[]) => mockInvokeFn(...args),
 }))
 vi.mock('../mock-tauri', () => ({
   isTauri: () => false,
   mockInvoke: (...args: unknown[]) => mockInvokeFn(...args),
+}))
+vi.mock('../utils/url', () => ({
+  openExternalUrl: (...args: unknown[]) => mockOpenExternalUrl(...args),
 }))
 
 const emptySettings: Settings = {
@@ -272,9 +276,6 @@ describe('SettingsPanel', () => {
         return null
       })
 
-      // Mock window.open
-      const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => null)
-
       render(
         <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
       )
@@ -286,8 +287,57 @@ describe('SettingsPanel', () => {
         expect(screen.getByTestId('github-user-code')).toHaveTextContent('TEST-1234')
       })
 
-      expect(windowOpen).toHaveBeenCalledWith('https://github.com/login/device', '_blank')
-      windowOpen.mockRestore()
+      expect(mockOpenExternalUrl).toHaveBeenCalledWith('https://github.com/login/device')
+    })
+
+    it('shows verification URL as clickable link in waiting state', async () => {
+      mockInvokeFn.mockImplementation(async (cmd: string) => {
+        if (cmd === 'github_device_flow_start') {
+          return {
+            device_code: 'test_device_code',
+            user_code: 'TEST-1234',
+            verification_uri: 'https://github.com/login/device',
+            expires_in: 900,
+            interval: 5,
+          }
+        }
+        if (cmd === 'github_device_flow_poll') {
+          return { status: 'pending', access_token: null, error: 'authorization_pending' }
+        }
+        return null
+      })
+
+      render(
+        <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
+      )
+
+      fireEvent.click(screen.getByTestId('github-login'))
+
+      await waitFor(() => {
+        const urlButton = screen.getByTestId('github-open-url')
+        expect(urlButton).toBeInTheDocument()
+        expect(urlButton).toHaveTextContent('https://github.com/login/device')
+      })
+    })
+
+    it('shows retry button when OAuth flow errors', async () => {
+      mockInvokeFn.mockImplementation(async (cmd: string) => {
+        if (cmd === 'github_device_flow_start') {
+          throw 'Network error'
+        }
+        return null
+      })
+
+      render(
+        <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
+      )
+
+      fireEvent.click(screen.getByTestId('github-login'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('github-error')).toHaveTextContent('Network error')
+        expect(screen.getByTestId('github-retry')).toBeInTheDocument()
+      })
     })
 
     it('shows GitHub section description about connecting', () => {

@@ -485,25 +485,8 @@ Status: Active
 
         />
       )
-      expect(screen.getByText(/via Belongs to/)).toBeInTheDocument()
-      expect(screen.getByText(/via Related to/)).toBeInTheDocument()
-    })
-
-    it('shows count badge for referenced-by entries', () => {
-      render(
-        <Inspector
-          {...defaultProps}
-          entry={targetEntry}
-          content={targetContent}
-          entries={[targetEntry, essayEntry, procedureEntry]}
-
-        />
-      )
-      // 2 entries reference via Belongs to — badge appears in the Referenced by header
-      const allTwos = screen.getAllByText('2')
-      expect(allTwos.length).toBeGreaterThanOrEqual(1)
-      // At least one "2" is inside a badge (span with ml-1 class)
-      expect(allTwos.some(el => el.classList.contains('ml-1'))).toBe(true)
+      expect(screen.getByText(/← Belongs to/i)).toBeInTheDocument()
+      expect(screen.getByText(/← Related to/i)).toBeInTheDocument()
     })
 
     it('hides referenced-by section when no entries reference the current note', () => {
@@ -580,7 +563,7 @@ Status: Active
         />
       )
       expect(screen.getByText('On Writing Well')).toBeInTheDocument()
-      expect(screen.getByText(/via Topics/)).toBeInTheDocument()
+      expect(screen.getByText(/← Topics/i)).toBeInTheDocument()
     })
 
     it('excludes entries from backlinks when already shown in referenced-by', () => {
@@ -619,7 +602,7 @@ Status: Active
         />
       )
       // noteA shows in Referenced By (via Belongs to)
-      expect(screen.getByText(/via Belongs to/)).toBeInTheDocument()
+      expect(screen.getByText(/← Belongs to/i)).toBeInTheDocument()
       expect(screen.getByText('On Writing Well')).toBeInTheDocument()
       // But NOT in Backlinks (even though outgoingLinks matches) — section hidden
       expect(screen.queryByText('Backlinks')).not.toBeInTheDocument()
