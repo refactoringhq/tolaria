@@ -1,0 +1,78 @@
+{
+  "children": [
+    {
+      "type": "frame",
+      "id": "drag_drop_idle",
+      "name": "Drag & Drop Images — Idle (no drag)",
+      "x": 0,
+      "y": 0,
+      "width": 900,
+      "height": 600,
+      "fill": "$--background",
+      "layout": "vertical",
+      "theme": { "Mode": "Light" },
+      "children": [
+        {
+          "type": "rectangle",
+          "id": "drag_idle_editor",
+          "width": "fill_container",
+          "height": "fill_container",
+          "fill": "$--background",
+          "cornerRadius": 0
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "drag_drop_active",
+      "name": "Drag & Drop Images — Drag Over (overlay shown)",
+      "x": 940,
+      "y": 0,
+      "width": 900,
+      "height": 600,
+      "fill": "$--background",
+      "layout": "vertical",
+      "theme": { "Mode": "Light" },
+      "children": [
+        {
+          "type": "frame",
+          "id": "drag_active_container",
+          "name": "Editor with Drag Overlay",
+          "layout": "vertical",
+          "width": "fill_container",
+          "height": "fill_container",
+          "children": [
+            {
+              "type": "rectangle",
+              "id": "drag_active_editor_bg",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "$--background"
+            },
+            {
+              "type": "frame",
+              "id": "drag_overlay",
+              "name": "Drop Overlay",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "fill": "rgba(0,0,0,0.4)",
+              "cornerRadius": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "drag_overlay_label",
+                  "content": "Drop image to insert",
+                  "fontSize": 18,
+                  "fontWeight": "600",
+                  "fill": "#ffffff",
+                  "textAlign": "center"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
