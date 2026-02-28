@@ -1,3 +1,0 @@
-# Test
-
-Original content.
