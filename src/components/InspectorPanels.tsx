@@ -48,35 +48,36 @@ function LinkButton({ label, typeColor, bgColor, isArchived, isTrashed, onClick,
   const isDimmed = isArchived || isTrashed
   const color = isDimmed ? 'var(--muted-foreground)' : typeColor
   return (
-    <div className="group/link relative flex items-center">
-      <button
-        className="flex w-full items-center justify-between gap-2 border-none text-left cursor-pointer hover:opacity-80 min-w-0"
-        style={{
-          background: isDimmed ? 'var(--muted)' : (bgColor ?? 'transparent'),
-          color, borderRadius: 6, padding: bgColor ? '6px 10px' : '4px 0',
-          fontSize: 12, fontWeight: 500, opacity: isDimmed ? 0.7 : 1,
-        }}
-        onClick={onClick}
-        title={title}
-      >
-        <span className="flex items-center gap-1 flex-1 truncate">
-          {isTrashed && <Trash size={12} className="shrink-0" />}
-          {label}
-          <StatusSuffix isArchived={isArchived} isTrashed={isTrashed} />
-        </span>
-        <TypeIcon width={14} height={14} className="shrink-0" style={{ color }} />
-      </button>
-      {onRemove && (
-        <button
-          className="absolute right-1 top-1/2 -translate-y-1/2 border-none bg-transparent p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover/link:opacity-100"
-          onClick={onRemove}
-          title="Remove from relation"
-          data-testid="remove-relation-ref"
-        >
-          <X size={12} />
-        </button>
-      )}
-    </div>
+    <button
+      className={`group/link flex w-full items-center justify-between gap-2 border-none text-left cursor-pointer min-w-0${bgColor ? ' ring-inset hover:ring-1 hover:ring-current' : ' hover:opacity-80'}`}
+      style={{
+        background: isDimmed ? 'var(--muted)' : (bgColor ?? 'transparent'),
+        color, borderRadius: 6, padding: bgColor ? '6px 10px' : '4px 0',
+        fontSize: 12, fontWeight: 500, opacity: isDimmed ? 0.7 : 1,
+      }}
+      onClick={onClick}
+      title={title}
+    >
+      <span className="flex items-center gap-1 flex-1 truncate">
+        {isTrashed && <Trash size={12} className="shrink-0" />}
+        {label}
+        <StatusSuffix isArchived={isArchived} isTrashed={isTrashed} />
+      </span>
+      <span className="flex items-center gap-1.5 shrink-0">
+        {onRemove && (
+          <span
+            className="flex items-center opacity-0 transition-opacity group-hover/link:opacity-100"
+            onClick={(e) => { e.stopPropagation(); onRemove() }}
+            role="button"
+            title="Remove from relation"
+            data-testid="remove-relation-ref"
+          >
+            <X size={14} />
+          </span>
+        )}
+        <TypeIcon width={14} height={14} className="shrink-0" style={{ color, opacity: 0.5 }} />
+      </span>
+    </button>
   )
 }
 
