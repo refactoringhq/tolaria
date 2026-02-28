@@ -1,3 +1,0 @@
-# Initial
-
-Hello world.
