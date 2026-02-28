@@ -80,28 +80,13 @@ jobs:
           jq --arg v "$VERSION" '.version = $v' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
           sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" src-tauri/Cargo.toml
 
-      - name: Import Developer ID certificate
-        env:
-          CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12 }}
-          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        run: |
-          if [ -n "$CERTIFICATE_P12_BASE64" ]; then
-            echo "$CERTIFICATE_P12_BASE64" | base64 --decode > /tmp/certificate.p12
-            security create-keychain -p "" build.keychain
-            security default-keychain -s build.keychain
-            security unlock-keychain -p "" build.keychain
-            security import /tmp/certificate.p12 -k build.keychain -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-            security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
-            rm /tmp/certificate.p12
-            echo "Certificate imported"
-          else
-            echo "No certificate - skipping code signing"
-          fi
-
       - name: Build Tauri app (with signing + notarization)
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
