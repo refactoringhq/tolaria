@@ -123,9 +123,7 @@ fn migrate_is_a_to_type(vault_path: String) -> Result<usize, String> {
 fn create_getting_started_vault(target_path: Option<String>) -> Result<String, String> {
     let path = match target_path {
         Some(p) if !p.is_empty() => p,
-        _ => vault::default_vault_path()?
-            .to_string_lossy()
-            .to_string(),
+        _ => vault::default_vault_path()?.to_string_lossy().to_string(),
     };
     vault::create_getting_started_vault(&path)
 }
