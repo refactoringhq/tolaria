@@ -413,15 +413,12 @@ export function ReferencedByPanel({ items, typeEntryMap, onNavigate }: {
   if (items.length === 0) return null
 
   return (
-    <div>
-      <h4 className="font-mono-overline mb-2 text-muted-foreground">
-        Referenced by <span className="ml-1" style={{ fontWeight: 400 }}>{items.length}</span>
-      </h4>
+    <div className="referenced-by-panel">
       <div className="flex flex-col gap-2.5">
         {grouped.map(([viaKey, groupEntries]) => (
           <div key={viaKey}>
-            <span className="mb-1 block font-mono text-muted-foreground" style={{ fontSize: 9, fontWeight: 600, letterSpacing: '1.2px', textTransform: 'uppercase', opacity: 0.7 }}>
-              via {viaKey}
+            <span className="mb-1 block font-mono text-muted-foreground" style={{ fontSize: 9, fontWeight: 400, letterSpacing: '1.2px', textTransform: 'uppercase', opacity: 0.7 }}>
+              ← {viaKey}
             </span>
             <div className="flex flex-col gap-0.5">
               {groupEntries.map((e) => {

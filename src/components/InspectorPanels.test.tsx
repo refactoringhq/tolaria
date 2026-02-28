@@ -467,18 +467,8 @@ describe('ReferencedByPanel', () => {
     expect(screen.getByText('Write Essays')).toBeInTheDocument()
     expect(screen.getByText('On Writing Well')).toBeInTheDocument()
     expect(screen.getByText('SEO Experiment')).toBeInTheDocument()
-    expect(screen.getByText(/via Belongs to/)).toBeInTheDocument()
-    expect(screen.getByText(/via Related to/)).toBeInTheDocument()
-  })
-
-  it('shows count badge when items exist', () => {
-    const items: ReferencedByItem[] = [
-      { entry: makeEntry({ path: '/vault/a.md', title: 'A' }), viaKey: 'Has' },
-      { entry: makeEntry({ path: '/vault/b.md', title: 'B' }), viaKey: 'Has' },
-      { entry: makeEntry({ path: '/vault/c.md', title: 'C' }), viaKey: 'Topics' },
-    ]
-    render(<ReferencedByPanel typeEntryMap={{}} items={items} onNavigate={onNavigate} />)
-    expect(screen.getByText('3')).toBeInTheDocument()
+    expect(screen.getByText(/← Belongs to/i)).toBeInTheDocument()
+    expect(screen.getByText(/← Related to/i)).toBeInTheDocument()
   })
 
   it('navigates when clicking a referenced-by entry', () => {
