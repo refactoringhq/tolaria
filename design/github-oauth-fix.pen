@@ -2,302 +2,68 @@
   "children": [
     {
       "type": "frame",
-      "id": "gh_oauth_frame",
-      "name": "GitHub OAuth — Device Code Waiting",
+      "id": "gofix01",
       "x": 0,
       "y": 0,
-      "width": 520,
-      "height": "fit_content(600)",
-      "fill": "#ffffff",
+      "name": "GitHub OAuth Fix — Modal with inline device flow",
+      "clip": true,
+      "width": 560,
+      "height": 420,
+      "fill": "$--background",
+      "cornerRadius": 12,
       "layout": "vertical",
-      "gap": 0,
-      "cornerRadius": [8, 8, 8, 8],
-      "stroke": "#e5e5e5",
-      "strokeWidth": 1,
-      "theme": {
-        "Mode": "Light"
-      },
+      "stroke": { "align": "inside", "thickness": 1, "fill": "$--border" },
       "children": [
         {
           "type": "frame",
-          "id": "gh_header",
+          "id": "gofix01-hdr",
           "name": "Header",
           "width": "fill_container",
           "height": 56,
-          "layout": "horizontal",
+          "fill": "$--background",
           "padding": [0, 24],
-          "gap": 0,
           "alignItems": "center",
           "justifyContent": "space-between",
+          "stroke": { "align": "inside", "thickness": { "bottom": 1 }, "fill": "$--border" },
           "children": [
-            {
-              "type": "text",
-              "id": "gh_title",
-              "content": "Settings",
-              "fontFamily": "Inter",
-              "fontSize": 16,
-              "fontWeight": "600",
-              "fill": "#1a1a1a"
-            },
-            {
-              "type": "text",
-              "id": "gh_close",
-              "content": "✕",
-              "fontFamily": "Inter",
-              "fontSize": 14,
-              "fill": "#888888"
-            }
+            { "type": "text", "id": "gofix01-title", "content": "Connect GitHub Repo", "fontSize": 16, "fontWeight": 600, "fill": "$--foreground" },
+            { "type": "frame", "id": "gofix01-close", "width": 24, "height": 24, "cornerRadius": 4, "alignItems": "center", "justifyContent": "center", "children": [{ "type": "text", "id": "gofix01-x", "content": "X", "fontSize": 14, "fill": "$--muted-foreground" }] }
           ]
         },
         {
-          "type": "rectangle",
-          "id": "gh_div1",
+          "type": "frame",
+          "id": "gofix01-desc",
+          "name": "Description",
           "width": "fill_container",
-          "height": 1,
-          "fill": "#e5e5e5"
+          "padding": [16, 24],
+          "children": [
+            { "type": "text", "id": "gofix01-desc-t", "content": "Connect your GitHub account to clone or create vaults backed by GitHub repos.", "fontSize": 13, "fill": "$--muted-foreground", "lineHeight": 1.5 }
+          ]
         },
         {
           "type": "frame",
-          "id": "gh_body",
-          "name": "Body",
+          "id": "gofix01-body",
+          "name": "DeviceFlowLogin",
           "width": "fill_container",
           "layout": "vertical",
-          "padding": 24,
-          "gap": 20,
+          "gap": 16,
+          "padding": [24, 24],
+          "alignItems": "center",
           "children": [
             {
               "type": "frame",
-              "id": "gh_section_header",
-              "name": "GitHub Section Header",
-              "layout": "vertical",
-              "width": "fill_container",
-              "gap": 4,
-              "children": [
-                {
-                  "type": "text",
-                  "id": "gh_section_title",
-                  "content": "GitHub",
-                  "fontFamily": "Inter",
-                  "fontSize": 13,
-                  "fontWeight": "600",
-                  "fill": "#1a1a1a"
-                },
-                {
-                  "type": "text",
-                  "id": "gh_section_desc",
-                  "content": "Connect your GitHub account to clone and sync vaults.",
-                  "fontFamily": "Inter",
-                  "fontSize": 12,
-                  "fill": "#888888",
-                  "lineHeight": 1.5
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "gh_waiting_card",
-              "name": "Device Code Card",
-              "width": "fill_container",
-              "layout": "vertical",
-              "padding": [16, 20],
-              "gap": 10,
-              "alignItems": "center",
-              "cornerRadius": [6, 6, 6, 6],
-              "stroke": "#e5e5e5",
-              "strokeWidth": 1,
-              "children": [
-                {
-                  "type": "text",
-                  "id": "gh_prompt_text",
-                  "content": "Enter this code on GitHub:",
-                  "fontFamily": "Inter",
-                  "fontSize": 12,
-                  "fill": "#888888"
-                },
-                {
-                  "type": "frame",
-                  "id": "gh_code_row",
-                  "name": "Code + Copy",
-                  "layout": "horizontal",
-                  "gap": 8,
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "gh_user_code",
-                      "content": "ABCD-1234",
-                      "fontFamily": "JetBrains Mono, monospace",
-                      "fontSize": 24,
-                      "fontWeight": "700",
-                      "letterSpacing": 4,
-                      "fill": "#1a1a1a"
-                    },
-                    {
-                      "type": "frame",
-                      "id": "gh_copy_btn",
-                      "name": "Copy Button",
-                      "width": 24,
-                      "height": 24,
-                      "alignItems": "center",
-                      "justifyContent": "center",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "gh_copy_icon",
-                          "content": "⧉",
-                          "fontFamily": "Inter",
-                          "fontSize": 16,
-                          "fill": "#888888"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "text",
-                  "id": "gh_url_link",
-                  "content": "https://github.com/login/device",
-                  "fontFamily": "Inter",
-                  "fontSize": 12,
-                  "fill": "#888888",
-                  "textDecoration": "underline"
-                },
-                {
-                  "type": "frame",
-                  "id": "gh_spinner_row",
-                  "name": "Waiting Spinner",
-                  "layout": "horizontal",
-                  "gap": 6,
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "gh_spinner_icon",
-                      "content": "◌",
-                      "fontFamily": "Inter",
-                      "fontSize": 14,
-                      "fill": "#888888"
-                    },
-                    {
-                      "type": "text",
-                      "id": "gh_spinner_text",
-                      "content": "Waiting for authorization...",
-                      "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fill": "#888888"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "gh_cancel_row",
-              "name": "Cancel Row",
-              "width": "fill_container",
+              "id": "gofix01-login-btn",
+              "name": "LoginButton",
+              "width": 200,
+              "height": 36,
+              "fill": "$--foreground",
+              "cornerRadius": 6,
               "alignItems": "center",
               "justifyContent": "center",
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "gh_cancel_btn",
-                  "name": "Cancel Button",
-                  "layout": "horizontal",
-                  "padding": [6, 12],
-                  "cornerRadius": [4, 4, 4, 4],
-                  "stroke": "#e5e5e5",
-                  "strokeWidth": 1,
-                  "alignItems": "center",
-                  "justifyContent": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "gh_cancel_text",
-                      "content": "Cancel",
-                      "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fill": "#888888"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "rectangle",
-          "id": "gh_div2",
-          "width": "fill_container",
-          "height": 1,
-          "fill": "#e5e5e5"
-        },
-        {
-          "type": "frame",
-          "id": "gh_footer",
-          "name": "Footer",
-          "width": "fill_container",
-          "height": 56,
-          "layout": "horizontal",
-          "padding": [0, 24],
-          "alignItems": "center",
-          "justifyContent": "space-between",
-          "children": [
-            {
-              "type": "text",
-              "id": "gh_shortcut",
-              "content": "⌘, to open settings",
-              "fontFamily": "Inter",
-              "fontSize": 11,
-              "fill": "#888888"
-            },
-            {
-              "type": "frame",
-              "id": "gh_footer_buttons",
-              "name": "Footer Buttons",
-              "layout": "horizontal",
               "gap": 8,
               "children": [
-                {
-                  "type": "frame",
-                  "id": "gh_cancel_footer",
-                  "name": "Cancel",
-                  "padding": [6, 16],
-                  "cornerRadius": [4, 4, 4, 4],
-                  "stroke": "#e5e5e5",
-                  "strokeWidth": 1,
-                  "alignItems": "center",
-                  "justifyContent": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "gh_cancel_f_text",
-                      "content": "Cancel",
-                      "fontFamily": "Inter",
-                      "fontSize": 13,
-                      "fill": "#1a1a1a"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "gh_save_btn",
-                  "name": "Save",
-                  "padding": [6, 16],
-                  "cornerRadius": [4, 4, 4, 4],
-                  "fill": "#3b82f6",
-                  "alignItems": "center",
-                  "justifyContent": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "gh_save_text",
-                      "content": "Save",
-                      "fontFamily": "Inter",
-                      "fontSize": 13,
-                      "fill": "#ffffff"
-                    }
-                  ]
-                }
+                { "type": "text", "id": "gofix01-gh-icon", "content": "G", "fontSize": 14, "fontWeight": 700, "fill": "$--background" },
+                { "type": "text", "id": "gofix01-login-label", "content": "Login with GitHub", "fontSize": 13, "fontWeight": 500, "fill": "$--background" }
               ]
             }
           ]
@@ -306,122 +72,181 @@
     },
     {
       "type": "frame",
-      "id": "gh_error_frame",
-      "name": "GitHub OAuth — Error with Retry",
-      "x": 620,
+      "id": "gofix02",
+      "x": 660,
       "y": 0,
-      "width": 520,
-      "height": "fit_content(300)",
-      "fill": "#ffffff",
+      "name": "GitHub OAuth Fix — Device code waiting state",
+      "clip": true,
+      "width": 560,
+      "height": 420,
+      "fill": "$--background",
+      "cornerRadius": 12,
       "layout": "vertical",
-      "padding": 24,
-      "gap": 16,
-      "cornerRadius": [8, 8, 8, 8],
-      "stroke": "#e5e5e5",
-      "strokeWidth": 1,
-      "theme": {
-        "Mode": "Light"
-      },
+      "stroke": { "align": "inside", "thickness": 1, "fill": "$--border" },
       "children": [
         {
           "type": "frame",
-          "id": "gh_err_header",
+          "id": "gofix02-hdr",
+          "name": "Header",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "$--background",
+          "padding": [0, 24],
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "stroke": { "align": "inside", "thickness": { "bottom": 1 }, "fill": "$--border" },
+          "children": [
+            { "type": "text", "id": "gofix02-title", "content": "Connect GitHub Repo", "fontSize": 16, "fontWeight": 600, "fill": "$--foreground" },
+            { "type": "frame", "id": "gofix02-close", "width": 24, "height": 24, "cornerRadius": 4, "alignItems": "center", "justifyContent": "center", "children": [{ "type": "text", "id": "gofix02-x", "content": "X", "fontSize": 14, "fill": "$--muted-foreground" }] }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "gofix02-desc",
+          "name": "Description",
+          "width": "fill_container",
+          "padding": [16, 24],
+          "children": [
+            { "type": "text", "id": "gofix02-desc-t", "content": "Connect your GitHub account to clone or create vaults backed by GitHub repos.", "fontSize": 13, "fill": "$--muted-foreground", "lineHeight": 1.5 }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "gofix02-body",
+          "name": "DeviceCodeCard",
+          "width": "fill_container",
           "layout": "vertical",
-          "width": "fill_container",
-          "gap": 4,
-          "children": [
-            {
-              "type": "text",
-              "id": "gh_err_title",
-              "content": "GitHub",
-              "fontFamily": "Inter",
-              "fontSize": 13,
-              "fontWeight": "600",
-              "fill": "#1a1a1a"
-            },
-            {
-              "type": "text",
-              "id": "gh_err_desc",
-              "content": "Connect your GitHub account to clone and sync vaults.",
-              "fontFamily": "Inter",
-              "fontSize": 12,
-              "fill": "#888888",
-              "lineHeight": 1.5
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "gh_login_btn",
-          "name": "Login Button",
-          "width": "fill_container",
-          "height": 36,
-          "fill": "#1a1a1a",
-          "cornerRadius": [6, 6, 6, 6],
-          "layout": "horizontal",
-          "gap": 8,
-          "alignItems": "center",
-          "justifyContent": "center",
-          "children": [
-            {
-              "type": "text",
-              "id": "gh_login_icon",
-              "content": "⬤",
-              "fontFamily": "Inter",
-              "fontSize": 14,
-              "fill": "#ffffff"
-            },
-            {
-              "type": "text",
-              "id": "gh_login_text",
-              "content": "Login with GitHub",
-              "fontFamily": "Inter",
-              "fontSize": 13,
-              "fontWeight": "500",
-              "fill": "#ffffff"
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "gh_error_row",
-          "name": "Error + Retry",
-          "layout": "horizontal",
-          "gap": 8,
+          "gap": 12,
+          "padding": [24, 24],
           "alignItems": "center",
           "children": [
             {
-              "type": "text",
-              "id": "gh_error_msg",
-              "content": "Authorization expired. Please try again.",
-              "fontFamily": "Inter",
-              "fontSize": 12,
-              "fill": "#e03e3e"
+              "type": "frame",
+              "id": "gofix02-card",
+              "name": "CodeCard",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "padding": [16, 24],
+              "cornerRadius": 8,
+              "alignItems": "center",
+              "stroke": { "align": "inside", "thickness": 1, "fill": "$--border" },
+              "children": [
+                { "type": "text", "id": "gofix02-hint", "content": "Enter this code on GitHub:", "fontSize": 12, "fill": "$--muted-foreground" },
+                {
+                  "type": "frame",
+                  "id": "gofix02-code-row",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    { "type": "text", "id": "gofix02-code", "content": "ABCD-1234", "fontSize": 24, "fontWeight": 700, "letterSpacing": 4, "fontFamily": "monospace", "fill": "$--foreground" },
+                    { "type": "text", "id": "gofix02-copy", "content": "[copy]", "fontSize": 12, "fill": "$--muted-foreground" }
+                  ]
+                },
+                { "type": "text", "id": "gofix02-url", "content": "https://github.com/login/device", "fontSize": 12, "fill": "$--muted-foreground", "textDecoration": "underline" },
+                {
+                  "type": "frame",
+                  "id": "gofix02-spinner-row",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    { "type": "text", "id": "gofix02-waiting", "content": "Waiting for authorization...", "fontSize": 12, "fill": "$--muted-foreground" }
+                  ]
+                }
+              ]
             },
             {
               "type": "frame",
-              "id": "gh_retry_btn",
-              "name": "Retry Button",
-              "layout": "horizontal",
-              "gap": 4,
+              "id": "gofix02-cancel-btn",
+              "name": "CancelButton",
+              "width": 80,
+              "height": 32,
+              "cornerRadius": 6,
+              "alignItems": "center",
+              "justifyContent": "center",
+              "stroke": { "align": "inside", "thickness": 1, "fill": "$--border" },
+              "children": [
+                { "type": "text", "id": "gofix02-cancel-label", "content": "Cancel", "fontSize": 12, "fill": "$--muted-foreground" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "gofix03",
+      "x": 1320,
+      "y": 0,
+      "name": "GitHub OAuth Fix — Expired/Error state with retry",
+      "clip": true,
+      "width": 560,
+      "height": 420,
+      "fill": "$--background",
+      "cornerRadius": 12,
+      "layout": "vertical",
+      "stroke": { "align": "inside", "thickness": 1, "fill": "$--border" },
+      "children": [
+        {
+          "type": "frame",
+          "id": "gofix03-hdr",
+          "name": "Header",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "$--background",
+          "padding": [0, 24],
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "stroke": { "align": "inside", "thickness": { "bottom": 1 }, "fill": "$--border" },
+          "children": [
+            { "type": "text", "id": "gofix03-title", "content": "Connect GitHub Repo", "fontSize": 16, "fontWeight": 600, "fill": "$--foreground" },
+            { "type": "frame", "id": "gofix03-close", "width": 24, "height": 24, "cornerRadius": 4, "alignItems": "center", "justifyContent": "center", "children": [{ "type": "text", "id": "gofix03-x", "content": "X", "fontSize": 14, "fill": "$--muted-foreground" }] }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "gofix03-desc",
+          "name": "Description",
+          "width": "fill_container",
+          "padding": [16, 24],
+          "children": [
+            { "type": "text", "id": "gofix03-desc-t", "content": "Connect your GitHub account to clone or create vaults backed by GitHub repos.", "fontSize": 13, "fill": "$--muted-foreground", "lineHeight": 1.5 }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "gofix03-body",
+          "name": "ErrorState",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": [24, 24],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "gofix03-login-btn",
+              "name": "LoginButton",
+              "width": 200,
+              "height": 36,
+              "fill": "$--foreground",
+              "cornerRadius": 6,
+              "alignItems": "center",
+              "justifyContent": "center",
+              "gap": 8,
+              "children": [
+                { "type": "text", "id": "gofix03-gh-icon", "content": "G", "fontSize": 14, "fontWeight": 700, "fill": "$--background" },
+                { "type": "text", "id": "gofix03-login-label", "content": "Login with GitHub", "fontSize": 13, "fontWeight": 500, "fill": "$--background" }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "gofix03-error-row",
+              "gap": 8,
               "alignItems": "center",
               "children": [
-                {
-                  "type": "text",
-                  "id": "gh_retry_icon",
-                  "content": "↻",
-                  "fontFamily": "Inter",
-                  "fontSize": 12,
-                  "fill": "#e03e3e"
-                },
-                {
-                  "type": "text",
-                  "id": "gh_retry_text",
-                  "content": "Retry",
-                  "fontFamily": "Inter",
-                  "fontSize": 12,
-                  "fill": "#e03e3e"
-                }
+                { "type": "text", "id": "gofix03-error-msg", "content": "Authorization expired. Please try again.", "fontSize": 12, "fill": "$--destructive" },
+                { "type": "text", "id": "gofix03-retry-label", "content": "Retry", "fontSize": 12, "fill": "$--destructive" }
               ]
             }
           ]
