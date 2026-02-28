@@ -272,10 +272,20 @@ async function callAnthropicAgent(
   const apiKey = getApiKey()
   if (!apiKey) throw new Error('No API key configured. Open Settings (⌘,) to add your Anthropic key.')
 
-  const response = await fetch('/api/ai/agent', {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apiKey, model, messages, system, maxTokens: 4096, tools }),
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 4096,
+      system: system || undefined,
+      messages,
+      tools,
+    }),
   })
 
   if (!response.ok) {
