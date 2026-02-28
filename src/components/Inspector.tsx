@@ -17,6 +17,7 @@ interface InspectorProps {
   entry: VaultEntry | null
   content: string | null
   entries: VaultEntry[]
+  allContent?: Record<string, string>
   gitHistory: GitCommit[]
   onNavigate: (target: string) => void
   onViewCommitDiff?: (commitHash: string) => void
@@ -79,7 +80,7 @@ function useReferencedBy(entry: VaultEntry | null, entries: VaultEntry[]): Refer
 function InspectorHeader({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const { onMouseDown } = useDragRegion()
   return (
-    <div className="flex shrink-0 items-center border-b border-border" style={{ height: 52, padding: '0 12px', gap: 8, cursor: 'default' }} onMouseDown={onMouseDown}>
+    <div className="flex shrink-0 items-center border-b border-border" style={{ height: 45, padding: '6px 12px', gap: 8, cursor: 'default' }} onMouseDown={onMouseDown}>
       {collapsed ? (
         <button className="shrink-0 border-none bg-transparent p-1 text-muted-foreground cursor-pointer hover:text-foreground" onClick={onToggle}>
           <SlidersHorizontal size={16} />
@@ -104,7 +105,7 @@ function EmptyInspector() {
 }
 
 export function Inspector({
-  collapsed, onToggle, entry, content, entries, gitHistory, onNavigate,
+  collapsed, onToggle, entry, content, entries, allContent, gitHistory, onNavigate,
   onViewCommitDiff, onUpdateFrontmatter, onDeleteProperty, onAddProperty,
 }: InspectorProps) {
   const referencedBy = useReferencedBy(entry, entries)
@@ -137,7 +138,7 @@ export function Inspector({
             <>
               <DynamicPropertiesPanel
                 entry={entry} content={content} frontmatter={frontmatter}
-                entries={entries}
+                entries={entries} allContent={allContent}
                 onUpdateProperty={onUpdateFrontmatter ? handleUpdateProperty : undefined}
                 onDeleteProperty={onDeleteProperty ? handleDeleteProperty : undefined}
                 onAddProperty={onAddProperty ? handleAddProperty : undefined}

@@ -70,6 +70,8 @@ vi.mock('./mock-tauri', () => ({
     if (cmd === 'get_settings') return { anthropic_key: null, openai_key: null, google_key: null, github_token: null, github_username: null, auto_pull_interval_minutes: null }
     if (cmd === 'git_pull') return { status: 'up_to_date', message: 'Already up to date', updatedFiles: [], conflictFiles: [] }
     if (cmd === 'save_settings') return null
+    if (cmd === 'check_vault_exists') return true
+    if (cmd === 'get_default_vault_path') return '/Users/mock/Documents/Laputa'
     return null
   }),
   addMockEntry: vi.fn(),
@@ -120,8 +122,9 @@ describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    // Reset view mode between tests so sidebar starts visible
+    // Reset view mode and onboarding state between tests
     localStorage.removeItem('laputa-view-mode')
+    localStorage.removeItem('laputa_welcome_dismissed')
   })
 
   it('renders the four-panel layout', async () => {

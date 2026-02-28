@@ -14,6 +14,9 @@ const VIEW_EDITOR_LIST: &str = "view-editor-list";
 const VIEW_ALL: &str = "view-all";
 const VIEW_TOGGLE_INSPECTOR: &str = "view-toggle-inspector";
 const VIEW_COMMAND_PALETTE: &str = "view-command-palette";
+const VIEW_ZOOM_IN: &str = "view-zoom-in";
+const VIEW_ZOOM_OUT: &str = "view-zoom-out";
+const VIEW_ZOOM_RESET: &str = "view-zoom-reset";
 
 const CUSTOM_IDS: &[&str] = &[
     APP_SETTINGS,
@@ -26,6 +29,9 @@ const CUSTOM_IDS: &[&str] = &[
     VIEW_ALL,
     VIEW_TOGGLE_INSPECTOR,
     VIEW_COMMAND_PALETTE,
+    VIEW_ZOOM_IN,
+    VIEW_ZOOM_OUT,
+    VIEW_ZOOM_RESET,
 ];
 
 /// IDs of menu items that should be disabled when no note tab is active.
@@ -115,6 +121,18 @@ fn build_view_menu(app: &App) -> MenuResult {
         .id(VIEW_COMMAND_PALETTE)
         .accelerator("CmdOrCtrl+K")
         .build(app)?;
+    let zoom_in = MenuItemBuilder::new("Zoom In")
+        .id(VIEW_ZOOM_IN)
+        .accelerator("CmdOrCtrl+=")
+        .build(app)?;
+    let zoom_out = MenuItemBuilder::new("Zoom Out")
+        .id(VIEW_ZOOM_OUT)
+        .accelerator("CmdOrCtrl+-")
+        .build(app)?;
+    let zoom_reset = MenuItemBuilder::new("Actual Size")
+        .id(VIEW_ZOOM_RESET)
+        .accelerator("CmdOrCtrl+0")
+        .build(app)?;
 
     Ok(SubmenuBuilder::new(app, "View")
         .item(&editor_only)
@@ -122,6 +140,10 @@ fn build_view_menu(app: &App) -> MenuResult {
         .item(&all_panels)
         .separator()
         .item(&toggle_inspector)
+        .separator()
+        .item(&zoom_in)
+        .item(&zoom_out)
+        .item(&zoom_reset)
         .separator()
         .item(&command_palette)
         .build()?)
@@ -192,6 +214,9 @@ mod tests {
             "view-all",
             "view-toggle-inspector",
             "view-command-palette",
+            "view-zoom-in",
+            "view-zoom-out",
+            "view-zoom-reset",
         ];
         for id in &expected {
             assert!(CUSTOM_IDS.contains(id), "missing custom ID: {id}");

@@ -10,6 +10,9 @@ function makeHandlers(): MenuEventHandlers {
     onOpenSettings: vi.fn(),
     onToggleInspector: vi.fn(),
     onCommandPalette: vi.fn(),
+    onZoomIn: vi.fn(),
+    onZoomOut: vi.fn(),
+    onZoomReset: vi.fn(),
     activeTabPathRef: { current: '/vault/test.md' } as React.MutableRefObject<string | null>,
     handleCloseTabRef: { current: vi.fn() } as React.MutableRefObject<(path: string) => void>,
     activeTabPath: '/vault/test.md',
@@ -82,6 +85,24 @@ describe('dispatchMenuEvent', () => {
     const h = makeHandlers()
     dispatchMenuEvent('view-command-palette', h)
     expect(h.onCommandPalette).toHaveBeenCalled()
+  })
+
+  it('view-zoom-in triggers zoom in', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('view-zoom-in', h)
+    expect(h.onZoomIn).toHaveBeenCalled()
+  })
+
+  it('view-zoom-out triggers zoom out', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('view-zoom-out', h)
+    expect(h.onZoomOut).toHaveBeenCalled()
+  })
+
+  it('view-zoom-reset triggers zoom reset', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('view-zoom-reset', h)
+    expect(h.onZoomReset).toHaveBeenCalled()
   })
 
   it('unknown event ID does nothing', () => {

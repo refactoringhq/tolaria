@@ -10,6 +10,9 @@ export interface MenuEventHandlers {
   onOpenSettings: () => void
   onToggleInspector: () => void
   onCommandPalette: () => void
+  onZoomIn: () => void
+  onZoomOut: () => void
+  onZoomReset: () => void
   activeTabPathRef: React.MutableRefObject<string | null>
   handleCloseTabRef: React.MutableRefObject<(path: string) => void>
   activeTabPath: string | null
@@ -21,23 +24,31 @@ const VIEW_MODE_MAP: Record<string, ViewMode> = {
   'view-all': 'all',
 }
 
+type SimpleHandler = 'onCreateNote' | 'onQuickOpen' | 'onSave' | 'onOpenSettings' | 'onToggleInspector' | 'onCommandPalette' | 'onZoomIn' | 'onZoomOut' | 'onZoomReset'
+
+const SIMPLE_EVENT_MAP: Record<string, SimpleHandler> = {
+  'file-new-note': 'onCreateNote',
+  'file-quick-open': 'onQuickOpen',
+  'file-save': 'onSave',
+  'app-settings': 'onOpenSettings',
+  'view-toggle-inspector': 'onToggleInspector',
+  'view-command-palette': 'onCommandPalette',
+  'view-zoom-in': 'onZoomIn',
+  'view-zoom-out': 'onZoomOut',
+  'view-zoom-reset': 'onZoomReset',
+}
+
 /** Dispatch a Tauri menu event ID to the matching handler. Exported for testing. */
 export function dispatchMenuEvent(id: string, h: MenuEventHandlers): void {
   const viewMode = VIEW_MODE_MAP[id]
   if (viewMode) { h.onSetViewMode(viewMode); return }
 
-  switch (id) {
-    case 'file-new-note': h.onCreateNote(); break
-    case 'file-quick-open': h.onQuickOpen(); break
-    case 'file-save': h.onSave(); break
-    case 'file-close-tab': {
-      const path = h.activeTabPathRef.current
-      if (path) h.handleCloseTabRef.current(path)
-      break
-    }
-    case 'app-settings': h.onOpenSettings(); break
-    case 'view-toggle-inspector': h.onToggleInspector(); break
-    case 'view-command-palette': h.onCommandPalette(); break
+  const simple = SIMPLE_EVENT_MAP[id]
+  if (simple) { h[simple](); return }
+
+  if (id === 'file-close-tab') {
+    const path = h.activeTabPathRef.current
+    if (path) h.handleCloseTabRef.current(path)
   }
 }
 

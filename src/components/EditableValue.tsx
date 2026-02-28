@@ -211,7 +211,7 @@ export function TagPillList({
         ) : (
           <span
             key={idx}
-            className="group/pill inline-flex cursor-pointer items-center gap-0.5 rounded-full py-0.5 pl-2 pr-1 transition-colors"
+            className="group/pill relative inline-flex cursor-pointer items-center rounded-full px-2 py-0.5 transition-colors"
             style={{
               backgroundColor: 'var(--accent-blue-light)',
               color: 'var(--accent-blue)',
@@ -223,8 +223,8 @@ export function TagPillList({
           >
             {item}
             <button
-              className="ml-0.5 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border-none bg-transparent p-0 text-[10px] leading-none opacity-0 transition-all hover:bg-[var(--accent-red-light)] hover:text-[var(--accent-red)] group-hover/pill:opacity-100"
-              style={{ color: 'var(--accent-blue)' }}
+              className="absolute right-0.5 top-1/2 flex h-3.5 w-3.5 -translate-y-1/2 items-center justify-center rounded-full border-none p-0 text-[10px] leading-none opacity-0 shadow-[-6px_0_4px_-2px_var(--accent-blue-light)] transition-all hover:bg-[var(--accent-red-light)] hover:text-[var(--accent-red)] group-hover/pill:opacity-100"
+              style={{ color: 'var(--accent-blue)', backgroundColor: 'var(--accent-blue-light)' }}
               onClick={(e) => {
                 e.stopPropagation()
                 handleDeleteItem(idx)

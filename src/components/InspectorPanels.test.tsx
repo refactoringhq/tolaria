@@ -77,7 +77,7 @@ describe('DynamicRelationshipsPanel', () => {
         onNavigate={onNavigate}
       />
     )
-    const chip = container.querySelector('.group\\/link button')
+    const chip = container.querySelector('.group\\/link')
     expect(chip).toBeTruthy()
     expect(chip!.style.color).toBe(expectedColor)
   })
