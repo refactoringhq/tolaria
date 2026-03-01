@@ -1,0 +1,156 @@
+{
+  "children": [
+    {
+      "type": "frame",
+      "id": "kfn_notelist_nav",
+      "name": "Keyboard-first — Note list keyboard navigation",
+      "x": 0,
+      "y": 0,
+      "width": 280,
+      "height": "fit_content(400)",
+      "fill": "$--background",
+      "layout": "vertical",
+      "gap": 0,
+      "padding": [8, 0],
+      "children": [
+        {
+          "type": "text",
+          "id": "kfn_notelist_label",
+          "content": "Note list — ↑↓ highlight, Enter opens",
+          "fill": "$--muted-foreground",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "500",
+          "padding": [0, 12, 8, 12]
+        },
+        {
+          "type": "frame",
+          "id": "kfn_note_item_selected",
+          "layout": "horizontal",
+          "width": "fill_container",
+          "height": 48,
+          "fill": "$--accent",
+          "padding": [0, 12],
+          "gap": 8,
+          "children": [
+            {
+              "type": "text",
+              "id": "kfn_note_title_active",
+              "content": "My selected note (keyboard highlight)",
+              "fill": "$--foreground",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "500"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "kfn_note_item_normal",
+          "layout": "horizontal",
+          "width": "fill_container",
+          "height": 48,
+          "fill": "transparent",
+          "padding": [0, 12],
+          "gap": 8,
+          "children": [
+            {
+              "type": "text",
+              "id": "kfn_note_title_normal",
+              "content": "Another note",
+              "fill": "$--muted-foreground",
+              "fontFamily": "Inter",
+              "fontSize": 13
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "kfn_menu_bar",
+      "name": "Keyboard-first — Menu bar shortcuts added",
+      "x": 320,
+      "y": 0,
+      "width": 400,
+      "height": "fit_content(200)",
+      "fill": "$--background",
+      "layout": "vertical",
+      "gap": 4,
+      "padding": [16, 16],
+      "children": [
+        {
+          "type": "text",
+          "id": "kfn_menu_title",
+          "content": "New menu bar shortcuts",
+          "fill": "$--foreground",
+          "fontFamily": "Inter",
+          "fontSize": 14,
+          "fontWeight": "600"
+        },
+        {
+          "type": "text",
+          "id": "kfn_s1",
+          "content": "Archive Note — ⌘E\nTrash Note — ⌘⌫\nFind in Vault — ⌘⇧F\nGo Back — ⌘[\nGo Forward — ⌘]",
+          "fill": "$--foreground",
+          "fontFamily": "Inter",
+          "fontSize": 13,
+          "lineHeight": 1.8
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "kfn_inspector_tab",
+      "name": "Keyboard-first — Inspector Tab+Enter navigation",
+      "x": 760,
+      "y": 0,
+      "width": 300,
+      "height": "fit_content(200)",
+      "fill": "$--background",
+      "layout": "vertical",
+      "gap": 8,
+      "padding": [16, 16],
+      "children": [
+        {
+          "type": "text",
+          "id": "kfn_inspector_title",
+          "content": "Inspector — Tab focuses rows, Enter starts editing",
+          "fill": "$--foreground",
+          "fontFamily": "Inter",
+          "fontSize": 14,
+          "fontWeight": "600"
+        },
+        {
+          "type": "frame",
+          "id": "kfn_prop_focused",
+          "layout": "horizontal",
+          "width": "fill_container",
+          "height": 36,
+          "fill": "$--muted",
+          "cornerRadius": 4,
+          "padding": [0, 12],
+          "gap": 8,
+          "children": [
+            {
+              "type": "text",
+              "id": "kfn_prop_key",
+              "content": "Status",
+              "fill": "$--muted-foreground",
+              "fontFamily": "Inter",
+              "fontSize": 12
+            },
+            {
+              "type": "text",
+              "id": "kfn_prop_val",
+              "content": "In Progress (focused — ring visible)",
+              "fill": "$--foreground",
+              "fontFamily": "Inter",
+              "fontSize": 12
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
