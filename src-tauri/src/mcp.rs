@@ -294,4 +294,22 @@ mod tests {
         let config: serde_json::Value = serde_json::from_str(&raw).unwrap();
         assert_eq!(config["mcpServers"]["laputa"]["args"][0], "/test/index.js");
     }
+    #[test]
+    fn upsert_returns_error_for_invalid_json() {
+        let tmp = tempfile::tempdir().unwrap();
+        let config_path = tmp.path().join("mcp.json");
+        std::fs::write(&config_path, "not valid json{{{{").unwrap();
+        let entry = build_mcp_entry("/test/index.js", "/vault");
+        let result = upsert_mcp_config(&config_path, &entry);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn register_mcp_to_configs_handles_empty_list() {
+        let entry = build_mcp_entry("/test/index.js", "/vault");
+        // Empty config list — function should return "registered" (no existing)
+        let status = register_mcp_to_configs(&entry, &[]);
+        // With empty config list, there were no updates, so status should be "registered"
+        assert_eq!(status, "registered");
+    }
 }
