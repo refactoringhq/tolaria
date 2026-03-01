@@ -255,4 +255,17 @@ mod tests {
             name
         );
     }
+    #[test]
+    fn test_qmd_uri_fallback() {
+        // Covers fallback branch when URI doesn't start with "qmd://"
+        let result = qmd_uri_to_vault_path("invalid-uri", "/vault");
+        assert!(result.contains("invalid-uri"));
+    }
+
+    #[test]
+    fn test_extract_clean_snippet_no_header() {
+        // No @@ header — content_start = 0
+        let snippet = extract_clean_snippet("plain content line");
+        assert_eq!(snippet, "plain content line");
+    }
 }

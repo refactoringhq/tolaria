@@ -327,7 +327,6 @@ fn create_theme(vault_path: String, source_id: Option<String>) -> Result<String,
     theme::create_theme(&vault_path, source_id.as_deref())
 }
 
-
 fn log_startup_result(label: &str, result: Result<usize, String>) {
     match result {
         Ok(n) if n > 0 => log::info!("{}: {} files", label, n),
