@@ -173,6 +173,7 @@ export const Editor = memo(function Editor({
           entries={entries}
           allContent={allContent}
           gitHistory={gitHistory}
+          vaultPath={vaultPath ?? ''}
           onToggleInspector={onToggleInspector}
           onToggleAIChat={onToggleAIChat}
           onNavigateWikilink={onNavigateWikilink}

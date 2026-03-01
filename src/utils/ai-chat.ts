@@ -1,19 +1,9 @@
 /**
- * AI Chat utilities — Anthropic API client, token estimation, context building.
+ * AI Chat utilities — Claude CLI integration, token estimation, context building.
  */
 
 import type { VaultEntry } from '../types'
-
-// --- localStorage key for API key ---
-const API_KEY_STORAGE_KEY = 'laputa:anthropic-api-key'
-
-export function getApiKey(): string {
-  return localStorage.getItem(API_KEY_STORAGE_KEY) ?? ''
-}
-
-export function setApiKey(key: string): void {
-  localStorage.setItem(API_KEY_STORAGE_KEY, key)
-}
+import { isTauri } from '../mock-tauri'
 
 // --- Token estimation ---
 
@@ -73,7 +63,7 @@ export function buildSystemPrompt(
   return { prompt, totalTokens: estimateTokens(prompt), truncated }
 }
 
-// --- API types ---
+// --- Message types ---
 
 export interface ChatMessage {
   role: 'user' | 'assistant'
@@ -86,110 +76,107 @@ export function nextMessageId(): string {
   return `msg-${++msgIdCounter}-${Date.now()}`
 }
 
-// --- SSE parsing ---
+// --- Claude CLI status ---
 
-function parseSseEvent(line: string, onChunk: (text: string) => void): boolean {
-  if (!line.startsWith('data: ')) return false
-  const data = line.slice(6)
-  if (data === '[DONE]') return true
-
-  try {
-    const event = JSON.parse(data)
-    if (event.type === 'content_block_delta' && event.delta?.text) {
-      onChunk(event.delta.text)
-    }
-    if (event.type === 'message_stop') return true
-  } catch {
-    // skip malformed events
-  }
-  return false
+export interface ClaudeCliStatus {
+  installed: boolean
+  version: string | null
 }
 
-async function readSseStream(
-  reader: ReadableStreamDefaultReader<Uint8Array>,
-  onChunk: (text: string) => void,
-): Promise<void> {
-  const decoder = new TextDecoder()
-  let buffer = ''
+export async function checkClaudeCli(): Promise<ClaudeCliStatus> {
+  if (!isTauri()) {
+    return { installed: false, version: null }
+  }
+  const { invoke } = await import('@tauri-apps/api/core')
+  return invoke<ClaudeCliStatus>('check_claude_cli')
+}
 
-  while (true) {
-    const { value, done } = await reader.read()
-    if (done) break
+// --- Claude CLI streaming ---
 
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split('\n')
-    buffer = lines.pop() ?? ''
+type ClaudeStreamEvent =
+  | { kind: 'Init'; session_id: string }
+  | { kind: 'TextDelta'; text: string }
+  | { kind: 'ToolStart'; tool_name: string; tool_id: string }
+  | { kind: 'ToolDone'; tool_id: string }
+  | { kind: 'Result'; text: string; session_id: string }
+  | { kind: 'Error'; message: string }
+  | { kind: 'Done' }
 
-    for (const line of lines) {
-      if (parseSseEvent(line, onChunk)) return
-    }
+export interface ChatStreamCallbacks {
+  onInit?: (sessionId: string) => void
+  onText: (text: string) => void
+  onError: (message: string) => void
+  onDone: () => void
+}
+
+/** Handle a single stream event from the Claude CLI, updating session state. */
+function handleChatStreamEvent(
+  data: ClaudeStreamEvent,
+  state: { sessionId: string },
+  callbacks: ChatStreamCallbacks,
+): void {
+  switch (data.kind) {
+    case 'Init':
+      state.sessionId = data.session_id
+      callbacks.onInit?.(data.session_id)
+      break
+    case 'TextDelta':
+      callbacks.onText(data.text)
+      break
+    case 'Result':
+      if (data.session_id) state.sessionId = data.session_id
+      break
+    case 'Error':
+      callbacks.onError(data.message)
+      break
+    case 'Done':
+      callbacks.onDone()
+      break
   }
 }
 
-async function parseApiError(response: Response): Promise<string> {
-  const errText = await response.text()
-  try {
-    const errJson = JSON.parse(errText)
-    return errJson.error?.message || errJson.error || `API error (${response.status})`
-  } catch {
-    return `API error (${response.status})`
-  }
-}
-
-// --- Streaming API call ---
-
-export async function streamChat(
-  messages: { role: 'user' | 'assistant'; content: string }[],
-  systemPrompt: string,
-  model: string,
-  onChunk: (text: string) => void,
-  onDone: () => void,
-  onError: (error: string) => void,
-): Promise<void> {
-  const apiKey = getApiKey()
-  if (!apiKey) {
-    onError('No API key configured. Click the key icon to set your Anthropic API key.')
-    return
+/**
+ * Stream a chat message through the Claude CLI subprocess.
+ * Returns the session ID for conversation continuity via --resume.
+ */
+export async function streamClaudeChat(
+  message: string,
+  systemPrompt: string | undefined,
+  sessionId: string | undefined,
+  callbacks: ChatStreamCallbacks,
+): Promise<string> {
+  if (!isTauri()) {
+    setTimeout(() => {
+      callbacks.onText('AI Chat requires the Claude CLI. Install it and run the native app.')
+      callbacks.onDone()
+    }, 300)
+    return 'mock-session'
   }
 
+  const { invoke } = await import('@tauri-apps/api/core')
+  const { listen } = await import('@tauri-apps/api/event')
+
+  const state = { sessionId: sessionId ?? '' }
+
+  const unlisten = await listen<ClaudeStreamEvent>('claude-stream', (event) => {
+    handleChatStreamEvent(event.payload, state, callbacks)
+  })
+
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+    const result = await invoke<string>('stream_claude_chat', {
+      request: {
+        message,
+        system_prompt: systemPrompt || null,
+        session_id: sessionId || null,
       },
-      body: JSON.stringify({
-        model,
-        max_tokens: 4096,
-        system: systemPrompt || undefined,
-        messages,
-        stream: true,
-      }),
     })
-
-    if (!response.ok) {
-      onError(await parseApiError(response))
-      return
-    }
-
-    const reader = response.body?.getReader()
-    if (!reader) {
-      onError('No response body')
-      return
-    }
-
-    await readSseStream(reader, onChunk)
-    onDone()
-  } catch (err: unknown) {
-    onError(err instanceof Error ? err.message : 'Network error')
+    if (result) state.sessionId = result
+  } catch (err) {
+    callbacks.onError(err instanceof Error ? err.message : String(err))
+    callbacks.onDone()
+  } finally {
+    unlisten()
   }
-}
 
-// --- Model options ---
-export const MODEL_OPTIONS = [
-  { value: 'claude-3-5-haiku-20241022', label: 'Haiku 3.5' },
-  { value: 'claude-sonnet-4-20250514', label: 'Sonnet 4' },
-  { value: 'claude-opus-4-20250514', label: 'Opus 4' },
-] as const
+  return state.sessionId
+}

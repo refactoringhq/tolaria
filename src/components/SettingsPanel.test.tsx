@@ -69,11 +69,10 @@ describe('SettingsPanel', () => {
     expect(screen.getByText(/stored locally/)).toBeInTheDocument()
   })
 
-  it('shows three key fields with labels', () => {
+  it('shows two key fields with labels', () => {
     render(
       <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} themeManager={mockThemeManager} />
     )
-    expect(screen.getByText('Anthropic')).toBeInTheDocument()
     expect(screen.getByText('OpenAI')).toBeInTheDocument()
     expect(screen.getByText('Google AI')).toBeInTheDocument()
   })
@@ -82,11 +81,9 @@ describe('SettingsPanel', () => {
     render(
       <SettingsPanel open={true} settings={populatedSettings} onSave={onSave} onClose={onClose} themeManager={mockThemeManager} />
     )
-    const anthropicInput = screen.getByTestId('settings-key-anthropic') as HTMLInputElement
     const openaiInput = screen.getByTestId('settings-key-openai') as HTMLInputElement
     const googleInput = screen.getByTestId('settings-key-google-ai') as HTMLInputElement
 
-    expect(anthropicInput.value).toBe('sk-ant-api03-test123')
     expect(openaiInput.value).toBe('sk-openai-test456')
     expect(googleInput.value).toBe('')
   })
@@ -95,14 +92,14 @@ describe('SettingsPanel', () => {
     render(
       <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} themeManager={mockThemeManager} />
     )
-    const anthropicInput = screen.getByTestId('settings-key-anthropic')
-    fireEvent.change(anthropicInput, { target: { value: '  sk-ant-test  ' } })
+    const openaiInput = screen.getByTestId('settings-key-openai')
+    fireEvent.change(openaiInput, { target: { value: '  sk-openai-test  ' } })
 
     fireEvent.click(screen.getByTestId('settings-save'))
 
     expect(onSave).toHaveBeenCalledWith({
-      anthropic_key: 'sk-ant-test',
-      openai_key: null,
+      anthropic_key: null,
+      openai_key: 'sk-openai-test',
       google_key: null,
       github_token: null,
       github_username: null,
@@ -115,15 +112,15 @@ describe('SettingsPanel', () => {
     render(
       <SettingsPanel open={true} settings={populatedSettings} onSave={onSave} onClose={onClose} themeManager={mockThemeManager} />
     )
-    // Clear the anthropic key field
-    const anthropicInput = screen.getByTestId('settings-key-anthropic')
-    fireEvent.change(anthropicInput, { target: { value: '   ' } })
+    // Clear the openai key field
+    const openaiInput = screen.getByTestId('settings-key-openai')
+    fireEvent.change(openaiInput, { target: { value: '   ' } })
 
     fireEvent.click(screen.getByTestId('settings-save'))
 
     expect(onSave).toHaveBeenCalledWith({
       anthropic_key: null,
-      openai_key: 'sk-openai-test456',
+      openai_key: null,
       google_key: null,
       github_token: null,
       github_username: null,
@@ -159,13 +156,13 @@ describe('SettingsPanel', () => {
     render(
       <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} themeManager={mockThemeManager} />
     )
-    const anthropicInput = screen.getByTestId('settings-key-anthropic')
-    fireEvent.change(anthropicInput, { target: { value: 'sk-ant-test' } })
+    const openaiInput = screen.getByTestId('settings-key-openai')
+    fireEvent.change(openaiInput, { target: { value: 'sk-openai-test' } })
     fireEvent.keyDown(screen.getByTestId('settings-panel'), { key: 'Enter', metaKey: true })
 
     expect(onSave).toHaveBeenCalledWith({
-      anthropic_key: 'sk-ant-test',
-      openai_key: null,
+      anthropic_key: null,
+      openai_key: 'sk-openai-test',
       google_key: null,
       github_token: null,
       github_username: null,
@@ -185,11 +182,11 @@ describe('SettingsPanel', () => {
     render(
       <SettingsPanel open={true} settings={populatedSettings} onSave={onSave} onClose={onClose} themeManager={mockThemeManager} />
     )
-    const clearBtn = screen.getByTestId('clear-anthropic')
+    const clearBtn = screen.getByTestId('clear-openai')
     fireEvent.click(clearBtn)
 
-    const anthropicInput = screen.getByTestId('settings-key-anthropic') as HTMLInputElement
-    expect(anthropicInput.value).toBe('')
+    const openaiInput = screen.getByTestId('settings-key-openai') as HTMLInputElement
+    expect(openaiInput.value).toBe('')
   })
 
   it('shows keyboard shortcut hint in footer', () => {
@@ -204,18 +201,18 @@ describe('SettingsPanel', () => {
       <SettingsPanel open={true} settings={populatedSettings} onSave={onSave} onClose={onClose} themeManager={mockThemeManager} />
     )
     // Verify initial state
-    const anthropicInput = screen.getByTestId('settings-key-anthropic') as HTMLInputElement
-    expect(anthropicInput.value).toBe('sk-ant-api03-test123')
+    const openaiInput = screen.getByTestId('settings-key-openai') as HTMLInputElement
+    expect(openaiInput.value).toBe('sk-openai-test456')
 
     // Close and reopen with different settings
     rerender(
       <SettingsPanel open={false} settings={populatedSettings} onSave={onSave} onClose={onClose} themeManager={mockThemeManager} />
     )
-    const newSettings: Settings = { ...emptySettings, anthropic_key: 'new-key' }
+    const newSettings: Settings = { ...emptySettings, openai_key: 'new-key' }
     rerender(
       <SettingsPanel open={true} settings={newSettings} onSave={onSave} onClose={onClose} themeManager={mockThemeManager} />
     )
-    const updatedInput = screen.getByTestId('settings-key-anthropic') as HTMLInputElement
+    const updatedInput = screen.getByTestId('settings-key-openai') as HTMLInputElement
     expect(updatedInput.value).toBe('new-key')
   })
 

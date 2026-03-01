@@ -32,7 +32,6 @@ import { useZoom } from './hooks/useZoom'
 import { useOnboarding } from './hooks/useOnboarding'
 import { useThemeManager } from './hooks/useThemeManager'
 import { UpdateBanner } from './components/UpdateBanner'
-import { setApiKey } from './utils/ai-chat'
 import { extractOutgoingLinks } from './utils/wikilinks'
 import type { SidebarSelection } from './types'
 import './App.css'
@@ -125,7 +124,6 @@ function App() {
   const { settings, saveSettings } = useSettings()
   const themeManager = useThemeManager(resolvedPath)
 
-  useEffect(() => { setApiKey(settings.anthropic_key ?? '') }, [settings.anthropic_key])
   useMcpRegistration(resolvedPath, setToastMessage)
 
   const autoSync = useAutoSync({

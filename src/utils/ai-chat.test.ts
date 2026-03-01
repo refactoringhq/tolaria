@@ -1,37 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 
-// localStorage mock (jsdom doesn't provide a full implementation)
-const localStorageMock = (() => {
-  let store: Record<string, string> = {}
-  return {
-    getItem: (key: string) => store[key] ?? null,
-    setItem: (key: string, value: string) => { store[key] = value },
-    removeItem: (key: string) => { delete store[key] },
-    clear: () => { store = {} },
-  }
-})()
-Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true })
+// Mock the mock-tauri module before importing ai-chat
+vi.mock('../mock-tauri', () => ({
+  isTauri: () => false,
+}))
 
 import {
-  getApiKey, setApiKey, estimateTokens, buildSystemPrompt,
-  nextMessageId, streamChat,
+  estimateTokens, buildSystemPrompt,
+  nextMessageId, checkClaudeCli, streamClaudeChat,
 } from './ai-chat'
 import type { VaultEntry } from '../types'
-
-// --- getApiKey / setApiKey ---
-
-describe('getApiKey / setApiKey', () => {
-  beforeEach(() => localStorageMock.clear())
-
-  it('returns empty string when no key set', () => {
-    expect(getApiKey()).toBe('')
-  })
-
-  it('round-trips an API key', () => {
-    setApiKey('sk-test-abc')
-    expect(getApiKey()).toBe('sk-test-abc')
-  })
-})
 
 // --- estimateTokens ---
 
@@ -85,94 +63,36 @@ describe('nextMessageId', () => {
   })
 })
 
-// --- streamChat calls Anthropic API directly ---
+// --- checkClaudeCli ---
 
-describe('streamChat', () => {
-  const onChunk = vi.fn()
-  const onDone = vi.fn()
-  const onError = vi.fn()
-
-  beforeEach(() => {
-    vi.restoreAllMocks()
-    onChunk.mockClear()
-    onDone.mockClear()
-    onError.mockClear()
-    localStorageMock.clear()
-    localStorageMock.setItem('laputa:anthropic-api-key', 'test-key-456')
+describe('checkClaudeCli', () => {
+  it('returns not installed in non-Tauri environment', async () => {
+    const status = await checkClaudeCli()
+    expect(status.installed).toBe(false)
+    expect(status.version).toBeNull()
   })
+})
 
-  it('calls https://api.anthropic.com/v1/messages with correct headers', async () => {
-    const sseData = [
-      'data: {"type":"content_block_delta","delta":{"text":"Hi"}}\n\n',
-      'data: {"type":"message_stop"}\n\n',
-    ].join('')
+// --- streamClaudeChat ---
 
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(sseData, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }),
-    )
+describe('streamClaudeChat', () => {
+  it('returns mock session in non-Tauri environment', async () => {
+    const onText = vi.fn()
+    const onDone = vi.fn()
+    const onError = vi.fn()
 
-    await streamChat(
-      [{ role: 'user', content: 'hello' }], 'system', 'claude-3-5-haiku-20241022',
-      onChunk, onDone, onError,
-    )
+    const sessionId = await streamClaudeChat('hello', undefined, undefined, {
+      onText,
+      onError,
+      onDone,
+    })
 
-    expect(fetchSpy).toHaveBeenCalledOnce()
-    const [url, options] = fetchSpy.mock.calls[0]
-    expect(url).toBe('https://api.anthropic.com/v1/messages')
+    // Wait for the setTimeout mock response
+    await new Promise(r => setTimeout(r, 400))
 
-    const headers = options?.headers as Record<string, string>
-    expect(headers['x-api-key']).toBe('test-key-456')
-    expect(headers['anthropic-version']).toBe('2023-06-01')
-
-    const body = JSON.parse(options?.body as string)
-    expect(body.stream).toBe(true)
-    expect(body.model).toBe('claude-3-5-haiku-20241022')
-    expect(body.messages).toEqual([{ role: 'user', content: 'hello' }])
-    // API key must NOT be in the body
-    expect(body.apiKey).toBeUndefined()
-  })
-
-  it('calls onError when API key is missing', async () => {
-    localStorageMock.clear()
-
-    await streamChat([], '', 'model', onChunk, onDone, onError)
-
-    expect(onError).toHaveBeenCalledWith(
-      expect.stringContaining('No API key configured'),
-    )
-    expect(onChunk).not.toHaveBeenCalled()
-  })
-
-  it('calls onError with parsed error on non-ok response', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ error: { message: 'Invalid x-api-key' } }), { status: 401 }),
-    )
-
-    await streamChat(
-      [{ role: 'user', content: 'hi' }], '', 'model',
-      onChunk, onDone, onError,
-    )
-
-    expect(onError).toHaveBeenCalledWith('Invalid x-api-key')
-  })
-
-  it('does not send apiKey in the request body', async () => {
-    const sseData = 'data: {"type":"message_stop"}\n\n'
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(sseData, { status: 200 }),
-    )
-
-    await streamChat(
-      [{ role: 'user', content: 'hi' }], '', 'model',
-      onChunk, onDone, onError,
-    )
-
-    const body = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string)
-    expect(body).not.toHaveProperty('apiKey')
-    expect(body).not.toHaveProperty('maxTokens')
-    expect(body.max_tokens).toBe(4096)
+    expect(sessionId).toBe('mock-session')
+    expect(onText).toHaveBeenCalledWith(expect.stringContaining('Claude CLI'))
+    expect(onDone).toHaveBeenCalled()
+    expect(onError).not.toHaveBeenCalled()
   })
 })

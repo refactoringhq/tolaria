@@ -107,20 +107,6 @@ const mockThemes: ThemeFile[] = [
 
 let mockDeviceFlowPollCount = 0
 
-function handleAiChat(args: { request: { messages: { role: string; content: string }[]; model?: string; system?: string } }) {
-  const lastMsg = args.request.messages[args.request.messages.length - 1]?.content ?? ''
-  const lower = lastMsg.toLowerCase()
-  let content = `I can help you with that. Could you provide more details about what you'd like to know?`
-  if (lower.includes('summarize')) {
-    content = `Here's a summary of the note:\n\n**Key Points:**\n- The note covers the main topic and its related concepts\n- It includes actionable items and references to other notes\n- Several wiki-links connect it to the broader knowledge base\n\nWould you like me to expand on any of these points?`
-  } else if (lower.includes('expand')) {
-    content = `Here are suggestions to expand this note:\n\n1. **Add context** — Include background information\n2. **Link related notes** — Connect to [[related topics]]\n3. **Add examples** — Include concrete examples\n4. **Update status** — Reflect current progress`
-  } else if (lower.includes('grammar')) {
-    content = `Grammar review complete. The writing is clear and well-structured. Minor suggestions:\n\n- Consider varying sentence lengths for better rhythm\n- A few passive constructions could be made active`
-  }
-  return { content, model: args.request.model ?? 'claude-3-5-haiku-20241022', stop_reason: 'end_turn' }
-}
-
 function handleRenameNote(args: { vault_path: string; old_path: string; new_title: string }) {
   const oldContent = MOCK_CONTENT[args.old_path] ?? ''
   const slug = args.new_title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
@@ -179,7 +165,9 @@ export const mockHandlers: Record<string, (args: any) => any> = {
   get_last_commit_info: (): LastCommitInfo => ({ shortHash: 'a1b2c3d', commitUrl: 'https://github.com/lucaong/laputa-vault/commit/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0' }),
   git_pull: (): GitPullResult => ({ status: 'up_to_date', message: 'Already up to date', updatedFiles: [], conflictFiles: [] }),
   git_push: () => 'Everything up-to-date',
-  ai_chat: handleAiChat,
+  check_claude_cli: () => ({ installed: false, version: null }),
+  stream_claude_chat: () => 'mock-session',
+  stream_claude_agent: () => null,
   save_note_content: (args: { path: string; content: string }) => {
     MOCK_CONTENT[args.path] = args.content
     mockSavedSinceCommit.add(args.path)

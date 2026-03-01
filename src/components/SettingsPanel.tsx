@@ -121,7 +121,6 @@ export function SettingsPanel({ open, settings, onSave, onClose, themeManager }:
 }
 
 function SettingsPanelInner({ settings, onSave, onClose, themeManager }: Omit<SettingsPanelProps, 'open'>) {
-  const [anthropicKey, setAnthropicKey] = useState(settings.anthropic_key ?? '')
   const [openaiKey, setOpenaiKey] = useState(settings.openai_key ?? '')
   const [googleKey, setGoogleKey] = useState(settings.google_key ?? '')
   const [githubToken, setGithubToken] = useState(settings.github_token)
@@ -129,13 +128,13 @@ function SettingsPanelInner({ settings, onSave, onClose, themeManager }: Omit<Se
   const [pullInterval, setPullInterval] = useState(settings.auto_pull_interval_minutes ?? 5)
 
   const buildSettings = useCallback((ghOverride?: { token: string | null; username: string | null }): Settings => ({
-    anthropic_key: anthropicKey.trim() || null,
+    anthropic_key: null,
     openai_key: openaiKey.trim() || null,
     google_key: googleKey.trim() || null,
     github_token: ghOverride ? ghOverride.token : (githubToken ?? null),
     github_username: ghOverride ? ghOverride.username : (githubUsername ?? null),
     auto_pull_interval_minutes: pullInterval,
-  }), [anthropicKey, openaiKey, googleKey, githubToken, githubUsername, pullInterval])
+  }), [openaiKey, googleKey, githubToken, githubUsername, pullInterval])
 
   const handleSave = () => {
     onSave(buildSettings())
@@ -179,7 +178,6 @@ function SettingsPanelInner({ settings, onSave, onClose, themeManager }: Omit<Se
       >
         <SettingsHeader onClose={onClose} />
         <SettingsBody
-          anthropicKey={anthropicKey} setAnthropicKey={setAnthropicKey}
           openaiKey={openaiKey} setOpenaiKey={setOpenaiKey}
           googleKey={googleKey} setGoogleKey={setGoogleKey}
           githubToken={githubToken ?? null} githubUsername={githubUsername ?? null}
@@ -212,7 +210,6 @@ function SettingsHeader({ onClose }: { onClose: () => void }) {
 }
 
 interface SettingsBodyProps {
-  anthropicKey: string; setAnthropicKey: (v: string) => void
   openaiKey: string; setOpenaiKey: (v: string) => void
   googleKey: string; setGoogleKey: (v: string) => void
   githubToken: string | null; githubUsername: string | null
@@ -232,7 +229,6 @@ function SettingsBody(props: SettingsBodyProps) {
         </div>
       </div>
 
-      <KeyField label="Anthropic" placeholder="sk-ant-..." value={props.anthropicKey} onChange={props.setAnthropicKey} onClear={() => props.setAnthropicKey('')} />
       <KeyField label="OpenAI" placeholder="sk-..." value={props.openaiKey} onChange={props.setOpenaiKey} onClear={() => props.setOpenaiKey('')} />
       <KeyField label="Google AI" placeholder="AIza..." value={props.googleKey} onChange={props.setGoogleKey} onClear={() => props.setGoogleKey('')} />
 

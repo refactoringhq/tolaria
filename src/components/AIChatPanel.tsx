@@ -2,11 +2,11 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import type { VaultEntry } from '../types'
 import {
   X, Plus, PaperPlaneRight, Copy, ArrowClockwise,
-  TextIndent, Sparkle, Key, MagnifyingGlass, Minus,
+  TextIndent, Sparkle, MagnifyingGlass, Minus,
 } from '@phosphor-icons/react'
 import {
-  type ChatMessage, getApiKey, setApiKey,
-  buildSystemPrompt, MODEL_OPTIONS,
+  type ChatMessage,
+  buildSystemPrompt,
 } from '../utils/ai-chat'
 import { useAIChat } from '../hooks/useAIChat'
 
@@ -98,30 +98,6 @@ function ContextSearchDropdown({
   )
 }
 
-function ApiKeyDialog({ onClose }: { onClose: () => void }) {
-  const [key, setKey] = useState(getApiKey())
-  return (
-    <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(0,0,0,0.4)' }}>
-      <div className="bg-background border border-border rounded-lg shadow-xl" style={{ width: 400, padding: 20 }}>
-        <h3 className="text-foreground" style={{ fontSize: 14, fontWeight: 600, margin: '0 0 12px' }}>Anthropic API Key</h3>
-        <p className="text-muted-foreground" style={{ fontSize: 12, margin: '0 0 12px', lineHeight: 1.5 }}>
-          Enter your Anthropic API key. Stored locally in your browser.
-        </p>
-        <input type="password" value={key} onChange={e => setKey(e.target.value)} placeholder="sk-ant-..."
-          className="w-full border border-border bg-transparent text-foreground rounded"
-          style={{ fontSize: 13, padding: '8px 10px', outline: 'none', marginBottom: 12 }} />
-        <div className="flex justify-end gap-2">
-          <button className="border border-border bg-transparent text-foreground rounded cursor-pointer hover:bg-accent"
-            style={{ fontSize: 12, padding: '6px 14px' }} onClick={onClose}>Cancel</button>
-          <button className="border-none rounded cursor-pointer"
-            style={{ fontSize: 12, padding: '6px 14px', background: 'var(--primary)', color: 'white' }}
-            onClick={() => { setApiKey(key); onClose() }}>Save</button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function AssistantMessage({ msg, onRetry }: { msg: ChatMessage; onRetry: () => void }) {
   return (
     <div>
@@ -207,13 +183,11 @@ function useContextNotes(entry: VaultEntry | null) {
 
 export function AIChatPanel({ entry, allContent, entries = [], onClose }: AIChatPanelProps) {
   const [input, setInput] = useState('')
-  const [model, setModel] = useState<string>(MODEL_OPTIONS[0].value)
   const [showSearch, setShowSearch] = useState(false)
-  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const ctx = useContextNotes(entry)
-  const chat = useAIChat(entry, allContent, ctx.contextNotes, model)
+  const chat = useAIChat(allContent, ctx.contextNotes)
 
   const contextInfo = useMemo(
     () => buildSystemPrompt(ctx.contextNotes, allContent),
@@ -232,7 +206,7 @@ export function AIChatPanel({ entry, allContent, entries = [], onClose }: AIChat
 
   return (
     <aside className="flex flex-1 flex-col overflow-hidden border-l border-border bg-background text-foreground">
-      <PanelHeader onApiKey={() => setShowApiKeyDialog(true)} onClear={chat.clearConversation} onClose={onClose} />
+      <PanelHeader onClear={chat.clearConversation} onClose={onClose} />
 
       <ContextBar
         notes={ctx.contextNotes} entries={entries} contextPaths={ctx.paths}
@@ -250,10 +224,8 @@ export function AIChatPanel({ entry, allContent, entries = [], onClose }: AIChat
       <QuickActionsBar actions={QUICK_ACTIONS} disabled={chat.isStreaming}
         onAction={msg => { chat.sendMessage(msg); setInput('') }} />
 
-      <InputArea model={model} onModelChange={setModel} input={input} onInputChange={setInput}
+      <InputArea input={input} onInputChange={setInput}
         onKeyDown={handleKeyDown} onSend={handleSend} disabled={chat.isStreaming || !input.trim()} />
-
-      {showApiKeyDialog && <ApiKeyDialog onClose={() => setShowApiKeyDialog(false)} />}
 
       <style>{`
         .typing-dot {
@@ -272,15 +244,11 @@ export function AIChatPanel({ entry, allContent, entries = [], onClose }: AIChat
 
 // --- Extracted layout sections ---
 
-function PanelHeader({ onApiKey, onClear, onClose }: { onApiKey: () => void; onClear: () => void; onClose: () => void }) {
+function PanelHeader({ onClear, onClose }: { onClear: () => void; onClose: () => void }) {
   return (
     <div className="flex shrink-0 items-center border-b border-border" style={{ height: 45, padding: '0 12px', gap: 8 }}>
       <Sparkle size={16} className="shrink-0 text-muted-foreground" />
       <span className="flex-1 text-muted-foreground" style={{ fontSize: 13, fontWeight: 600 }}>AI Chat</span>
-      <button className="shrink-0 border-none bg-transparent p-1 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-        onClick={onApiKey} title="API Key settings">
-        <Key size={14} weight={getApiKey() ? 'fill' : 'regular'} />
-      </button>
       <button className="shrink-0 border-none bg-transparent p-1 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
         onClick={onClear} title="New conversation"><Plus size={16} /></button>
       <button className="shrink-0 border-none bg-transparent p-1 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
@@ -332,9 +300,7 @@ function MessageList({
         <div className="flex flex-col items-center justify-center text-center text-muted-foreground" style={{ paddingTop: 40 }}>
           <Sparkle size={24} style={{ marginBottom: 8, opacity: 0.5 }} />
           <p style={{ fontSize: 13, margin: '0 0 4px' }}>Ask anything about your notes</p>
-          <p style={{ fontSize: 11, margin: 0, opacity: 0.6 }}>
-            {getApiKey() ? 'Connected to Anthropic API' : 'Set API key for real AI responses'}
-          </p>
+          <p style={{ fontSize: 11, margin: 0, opacity: 0.6 }}>Powered by Claude CLI</p>
         </div>
       )}
       {messages.map((msg, idx) => (
@@ -371,21 +337,13 @@ function QuickActionsBar({
 }
 
 function InputArea({
-  model, onModelChange, input, onInputChange, onKeyDown, onSend, disabled,
+  input, onInputChange, onKeyDown, onSend, disabled,
 }: {
-  model: string; onModelChange: (m: string) => void
   input: string; onInputChange: (v: string) => void
   onKeyDown: (e: React.KeyboardEvent) => void; onSend: () => void; disabled: boolean
 }) {
   return (
     <div className="flex shrink-0 flex-col border-t border-border" style={{ padding: '8px 12px' }}>
-      <div style={{ marginBottom: 6 }}>
-        <select value={model} onChange={e => onModelChange(e.target.value)}
-          className="border border-border bg-transparent text-muted-foreground"
-          style={{ fontSize: 11, borderRadius: 4, padding: '2px 6px', outline: 'none' }}>
-          {MODEL_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-        </select>
-      </div>
       <div className="flex items-end gap-2">
         <textarea value={input} onChange={e => onInputChange(e.target.value)} onKeyDown={onKeyDown}
           placeholder="Ask about your notes..." rows={1}

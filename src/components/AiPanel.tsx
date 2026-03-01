@@ -2,14 +2,13 @@ import { useState, useRef, useEffect } from 'react'
 import { Robot, X, PaperPlaneRight, Plus } from '@phosphor-icons/react'
 import { AiMessage } from './AiMessage'
 import { useAiAgent, type AiAgentMessage } from '../hooks/useAiAgent'
-import { AGENT_MODEL_OPTIONS, getAgentModel, setAgentModel } from '../utils/ai-agent'
-import { getApiKey } from '../utils/ai-chat'
 
 export type { AiAgentMessage } from '../hooks/useAiAgent'
 
 interface AiPanelProps {
   onClose: () => void
   onOpenNote?: (path: string) => void
+  vaultPath: string
 }
 
 function PanelHeader({ onClose, onClear }: { onClose: () => void; onClear: () => void }) {
@@ -32,7 +31,7 @@ function PanelHeader({ onClose, onClear }: { onClose: () => void; onClear: () =>
       <button
         className="shrink-0 border-none bg-transparent p-1 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
         onClick={onClose}
-        title="Close AI panel (⌘I)"
+        title="Close AI panel"
       >
         <X size={16} />
       </button>
@@ -41,7 +40,6 @@ function PanelHeader({ onClose, onClear }: { onClose: () => void; onClear: () =>
 }
 
 function EmptyState() {
-  const hasKey = !!getApiKey()
   return (
     <div
       className="flex flex-col items-center justify-center text-center text-muted-foreground"
@@ -52,9 +50,7 @@ function EmptyState() {
         Ask the AI agent to work with your vault
       </p>
       <p style={{ fontSize: 11, margin: 0, opacity: 0.6 }}>
-        {hasKey
-          ? 'Creates notes, searches, edits frontmatter, and more'
-          : 'Set your Anthropic API key in Settings (⌘,)'}
+        Creates notes, searches, edits frontmatter, and more
       </p>
     </div>
   )
@@ -80,10 +76,10 @@ function MessageHistory({ messages, isActive, onOpenNote }: {
   )
 }
 
-function InputBar({ input, onInputChange, onSend, onKeyDown, isActive, model, onModelChange }: {
+function InputBar({ input, onInputChange, onSend, onKeyDown, isActive }: {
   input: string; onInputChange: (v: string) => void
   onSend: () => void; onKeyDown: (e: React.KeyboardEvent) => void
-  isActive: boolean; model: string; onModelChange: (m: string) => void
+  isActive: boolean
 }) {
   const sendDisabled = isActive || !input.trim()
   return (
@@ -91,19 +87,6 @@ function InputBar({ input, onInputChange, onSend, onKeyDown, isActive, model, on
       className="flex shrink-0 flex-col border-t border-border"
       style={{ padding: '8px 12px' }}
     >
-      <div style={{ marginBottom: 6 }}>
-        <select
-          value={model}
-          onChange={e => onModelChange(e.target.value)}
-          className="border border-border bg-transparent text-muted-foreground"
-          style={{ fontSize: 11, borderRadius: 4, padding: '2px 6px', outline: 'none' }}
-          data-testid="agent-model-select"
-        >
-          {AGENT_MODEL_OPTIONS.map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
-      </div>
       <div className="flex items-end gap-2">
         <input
           value={input}
@@ -138,17 +121,11 @@ function InputBar({ input, onInputChange, onSend, onKeyDown, isActive, model, on
   )
 }
 
-export function AiPanel({ onClose, onOpenNote }: AiPanelProps) {
+export function AiPanel({ onClose, onOpenNote, vaultPath }: AiPanelProps) {
   const [input, setInput] = useState('')
-  const [model, setModel] = useState(getAgentModel)
-  const agent = useAiAgent()
+  const agent = useAiAgent(vaultPath)
 
   const isActive = agent.status === 'thinking' || agent.status === 'tool-executing'
-
-  const handleModelChange = (m: string) => {
-    setModel(m)
-    setAgentModel(m)
-  }
 
   const handleSend = () => {
     if (!input.trim() || isActive) return
@@ -180,8 +157,6 @@ export function AiPanel({ onClose, onOpenNote }: AiPanelProps) {
         onSend={handleSend}
         onKeyDown={handleKeyDown}
         isActive={isActive}
-        model={model}
-        onModelChange={handleModelChange}
       />
     </aside>
   )
