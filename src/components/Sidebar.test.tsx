@@ -296,6 +296,39 @@ describe('Sidebar', () => {
     })
   })
 
+  it('expands a collapsed section when clicking its header', () => {
+    render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
+    // Sections start collapsed — items hidden
+    expect(screen.queryByText('Build Laputa App')).not.toBeInTheDocument()
+    // Click the section header text (not the chevron)
+    fireEvent.click(screen.getByText('Projects'))
+    // Section should now be expanded
+    expect(screen.getByText('Build Laputa App')).toBeInTheDocument()
+  })
+
+  it('collapses an expanded+selected section when clicking its header again', () => {
+    const projectSelection: SidebarSelection = { kind: 'sectionGroup', type: 'Project' }
+    render(<Sidebar entries={mockEntries} selection={projectSelection} onSelect={() => {}} />)
+    // First click expands (starts collapsed) and selects
+    fireEvent.click(screen.getByText('Projects'))
+    expect(screen.getByText('Build Laputa App')).toBeInTheDocument()
+    // Second click: section is expanded + selected → should collapse
+    fireEvent.click(screen.getByText('Projects'))
+    expect(screen.queryByText('Build Laputa App')).not.toBeInTheDocument()
+  })
+
+  it('selects but keeps expanded an unselected expanded section when clicking its header', () => {
+    const onSelect = vi.fn()
+    render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={onSelect} />)
+    // Expand via chevron first
+    fireEvent.click(screen.getByLabelText('Expand Projects'))
+    expect(screen.getByText('Build Laputa App')).toBeInTheDocument()
+    // Click the header — section is expanded but not selected → should select and stay expanded
+    fireEvent.click(screen.getByText('Projects'))
+    expect(onSelect).toHaveBeenCalledWith({ kind: 'sectionGroup', type: 'Project' })
+    expect(screen.getByText('Build Laputa App')).toBeInTheDocument()
+  })
+
   it('calls onSelect with sectionGroup for People', () => {
     const onSelect = vi.fn()
     render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={onSelect} />)

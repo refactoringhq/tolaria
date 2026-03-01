@@ -156,7 +156,11 @@ function SectionHeader({ label, type, Icon, sectionColor, isCollapsed, isActive,
     <div
       className={cn("group/section flex cursor-pointer select-none items-center justify-between rounded transition-colors", isActive ? "bg-secondary" : "hover:bg-accent")}
       style={{ padding: '6px 8px 6px 6px', borderRadius: 4, gap: 4 }}
-      onClick={onSelect} onContextMenu={onContextMenu}
+      onClick={() => {
+        if (isCollapsed) { onToggle(); onSelect() }
+        else if (isActive) { onToggle() }
+        else { onSelect() }
+      }} onContextMenu={onContextMenu}
     >
       <div className="flex items-center" style={{ gap: 4 }}>
         <div className="flex shrink-0 items-center justify-center text-muted-foreground opacity-0 group-hover/section:opacity-50 hover:!opacity-100 cursor-grab" style={{ width: 16, height: 16 }} {...dragHandleProps} aria-label={`Drag to reorder ${label}`}>
