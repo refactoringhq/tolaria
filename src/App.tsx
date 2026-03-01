@@ -288,6 +288,7 @@ function App() {
     themes: themeManager.themes, activeThemeId: themeManager.activeThemeId,
     onSwitchTheme: themeManager.switchTheme,
     onCreateTheme: async () => { await themeManager.createTheme() },
+    onOpenVault: vaultSwitcher.handleOpenLocalFolder,
   })
 
   const { status: updateStatus, actions: updateActions } = useUpdater()

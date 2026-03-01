@@ -47,6 +47,7 @@ interface AppCommandsConfig {
   activeThemeId?: string | null
   onSwitchTheme?: (themeId: string) => void
   onCreateTheme?: () => void
+  onOpenVault?: () => void
 }
 
 /** Sets up keyboard shortcuts, command registry, menu events, and keyboard navigation. */
@@ -115,6 +116,7 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     activeThemeId: config.activeThemeId,
     onSwitchTheme: config.onSwitchTheme,
     onCreateTheme: config.onCreateTheme,
+    onOpenVault: config.onOpenVault,
   })
 
   useKeyboardNavigation({

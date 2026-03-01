@@ -24,6 +24,7 @@ interface CommandRegistryConfig {
   onCreateNoteOfType: (type: string) => void
   onSave: () => void
   onOpenSettings: () => void
+  onOpenVault?: () => void
   onTrashNote: (path: string) => void
   onArchiveNote: (path: string) => void
   onUnarchiveNote: (path: string) => void
@@ -126,7 +127,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     activeTabPath, entries, modifiedCount,
     onQuickOpen, onCreateNote, onCreateNoteOfType, onSave, onOpenSettings,
     onTrashNote, onArchiveNote, onUnarchiveNote,
-    onCommitPush, onSetViewMode, onToggleInspector,
+    onCommitPush, onSetViewMode, onToggleInspector, onOpenVault,
     onZoomIn, onZoomOut, onZoomReset, zoomLevel,
     onSelect, onCloseTab,
     onGoBack, onGoForward, canGoBack, canGoForward,
@@ -184,6 +185,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
 
       // Settings
       { id: 'open-settings', label: 'Open Settings', group: 'Settings', shortcut: '⌘,', keywords: ['preferences', 'config'], enabled: true, execute: onOpenSettings },
+      { id: 'open-vault', label: 'Open Vault…', group: 'Settings', keywords: ['vault', 'folder', 'switch', 'open', 'workspace'], enabled: true, execute: () => onOpenVault?.() },
 
       // Type-aware: "New [Type]" and "List [Type]"
       ...buildTypeCommands(vaultTypes, onCreateNoteOfType, onSelect),
@@ -194,10 +196,10 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     hasActiveNote, activeTabPath, isArchived, modifiedCount,
     onQuickOpen, onCreateNote, onCreateNoteOfType, onSave, onOpenSettings,
     onTrashNote, onArchiveNote, onUnarchiveNote,
-    onCommitPush, onSetViewMode, onToggleInspector,
+    onCommitPush, onSetViewMode, onToggleInspector, onOpenVault,
     onZoomIn, onZoomOut, onZoomReset, zoomLevel,
     onSelect, onCloseTab,
     onGoBack, onGoForward, canGoBack, canGoForward,
-    vaultTypes, themes, activeThemeId, onSwitchTheme, onCreateTheme,
+    vaultTypes, themes, activeThemeId, onSwitchTheme, onCreateTheme, onOpenVault,
   ])
 }
