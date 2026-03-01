@@ -264,16 +264,16 @@ export const mockHandlers: Record<string, (args: any) => any> = {
   create_getting_started_vault: () => '/Users/mock/Documents/Laputa',
   register_mcp_tools: () => 'registered',
   list_themes: (): ThemeFile[] => [...mockThemes],
-  get_theme: (args: { theme_id: string }): ThemeFile => {
-    const t = mockThemes.find(t => t.id === args.theme_id)
-    if (!t) throw new Error(`Theme not found: ${args.theme_id}`)
+  get_theme: (args: { themeId: string }): ThemeFile => {
+    const t = mockThemes.find(t => t.id === args.themeId)
+    if (!t) throw new Error(`Theme not found: ${args.themeId}`)
     return { ...t }
   },
   get_vault_settings: (): VaultSettings => ({ ...mockVaultSettings }),
   save_vault_settings: (args: { settings: VaultSettings }) => { mockVaultSettings = { ...args.settings }; return null },
-  set_active_theme: (args: { theme_id: string }) => { mockVaultSettings.theme = args.theme_id; return null },
-  create_theme: (args: { source_id?: string }): string => {
-    const sourceId = args.source_id ?? 'default'
+  set_active_theme: (args: { themeId: string }) => { mockVaultSettings.theme = args.themeId; return null },
+  create_theme: (args: { sourceId?: string }): string => {
+    const sourceId = args.sourceId ?? 'default'
     const source = mockThemes.find(t => t.id === sourceId) ?? mockThemes[0]
     const newId = `untitled-${mockThemes.length}`
     mockThemes.push({ ...source, id: newId, name: 'Untitled Theme' })

@@ -74,8 +74,8 @@ export function useThemeManager(vaultPath: string | null): ThemeManager {
     if (!vaultPath) return
     try {
       const [themeList, settings] = await Promise.all([
-        tauriCall<ThemeFile[]>('list_themes', { vault_path: vaultPath }),
-        tauriCall<VaultSettings>('get_vault_settings', { vault_path: vaultPath }),
+        tauriCall<ThemeFile[]>('list_themes', { vaultPath }),
+        tauriCall<VaultSettings>('get_vault_settings', { vaultPath }),
       ])
       setThemes(themeList)
       setActiveThemeId(settings.theme)
@@ -97,7 +97,7 @@ export function useThemeManager(vaultPath: string | null): ThemeManager {
   const switchTheme = useCallback(async (themeId: string) => {
     if (!vaultPath) return
     try {
-      await tauriCall<null>('set_active_theme', { vault_path: vaultPath, theme_id: themeId })
+      await tauriCall<null>('set_active_theme', { vaultPath, themeId })
       setActiveThemeId(themeId)
     } catch (err) {
       console.error('Failed to switch theme:', err)
@@ -108,8 +108,8 @@ export function useThemeManager(vaultPath: string | null): ThemeManager {
     if (!vaultPath) return ''
     try {
       const newId = await tauriCall<string>('create_theme', {
-        vault_path: vaultPath,
-        source_id: sourceId ?? null,
+        vaultPath,
+        sourceId: sourceId ?? null,
       })
       await loadThemes()
       await switchTheme(newId)

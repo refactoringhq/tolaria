@@ -105,7 +105,7 @@ describe('useThemeManager', () => {
       await result.current.switchTheme('dark')
     })
 
-    expect(mockInvokeFn).toHaveBeenCalledWith('set_active_theme', { vault_path: '/vault', theme_id: 'dark' })
+    expect(mockInvokeFn).toHaveBeenCalledWith('set_active_theme', { vaultPath: '/vault', themeId: 'dark' })
     expect(result.current.activeThemeId).toBe('dark')
   })
 
@@ -140,7 +140,7 @@ describe('useThemeManager', () => {
     })
 
     expect(newId).toBe('new-theme-id')
-    expect(mockInvokeFn).toHaveBeenCalledWith('create_theme', { vault_path: '/vault', source_id: 'default' })
+    expect(mockInvokeFn).toHaveBeenCalledWith('create_theme', { vaultPath: '/vault', sourceId: 'default' })
     // Should reload after creation
     const listCalls = mockInvokeFn.mock.calls.filter(c => c[0] === 'list_themes')
     expect(listCalls.length).toBeGreaterThanOrEqual(2)
@@ -156,7 +156,7 @@ describe('useThemeManager', () => {
       await result.current.createTheme()
     })
 
-    expect(mockInvokeFn).toHaveBeenCalledWith('create_theme', { vault_path: '/vault', source_id: null })
+    expect(mockInvokeFn).toHaveBeenCalledWith('create_theme', { vaultPath: '/vault', sourceId: null })
   })
 
   it('handles load failure gracefully', async () => {
