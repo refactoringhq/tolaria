@@ -7,7 +7,8 @@ import { parseFrontmatter } from '../utils/frontmatter'
 import { DynamicPropertiesPanel } from './DynamicPropertiesPanel'
 import { DynamicRelationshipsPanel, BacklinksPanel, ReferencedByPanel, GitHistoryPanel } from './InspectorPanels'
 import { wikilinkTarget } from '../utils/wikilink'
-import type { ReferencedByItem } from './InspectorPanels'
+import { extractBacklinkContext } from '../utils/wikilinks'
+import type { ReferencedByItem, BacklinkItem } from './InspectorPanels'
 
 export type FrontmatterValue = string | number | boolean | string[] | null
 
@@ -26,7 +27,12 @@ interface InspectorProps {
   onAddProperty?: (path: string, key: string, value: FrontmatterValue) => Promise<void>
 }
 
-function useBacklinks(entry: VaultEntry | null, entries: VaultEntry[], referencedBy: ReferencedByItem[]): VaultEntry[] {
+function useBacklinks(
+  entry: VaultEntry | null,
+  entries: VaultEntry[],
+  referencedBy: ReferencedByItem[],
+  allContent?: Record<string, string>,
+): BacklinkItem[] {
   return useMemo(() => {
     if (!entry) return []
     const matchTargets = new Set([
@@ -37,14 +43,21 @@ function useBacklinks(entry: VaultEntry | null, entries: VaultEntry[], reference
 
     const referencedByPaths = new Set(referencedBy.map((item) => item.entry.path))
 
-    return entries.filter((e) => {
-      if (e.path === entry.path) return false
-      if (referencedByPaths.has(e.path)) return false
-      return e.outgoingLinks.some((target) =>
-        matchTargets.has(target) || matchTargets.has(target.split('/').pop() ?? '')
-      )
-    })
-  }, [entry, entries, referencedBy])
+    return entries
+      .filter((e) => {
+        if (e.path === entry.path) return false
+        if (referencedByPaths.has(e.path)) return false
+        return e.outgoingLinks.some((target) =>
+          matchTargets.has(target) || matchTargets.has(target.split('/').pop() ?? '')
+        )
+      })
+      .map((e) => ({
+        entry: e,
+        context: allContent?.[e.path]
+          ? extractBacklinkContext(allContent[e.path], matchTargets)
+          : null,
+      }))
+  }, [entry, entries, referencedBy, allContent])
 }
 
 function refsMatchTargets(refs: string[], targets: Set<string>): boolean {
@@ -109,7 +122,7 @@ export function Inspector({
   onViewCommitDiff, onUpdateFrontmatter, onDeleteProperty, onAddProperty,
 }: InspectorProps) {
   const referencedBy = useReferencedBy(entry, entries)
-  const backlinks = useBacklinks(entry, entries, referencedBy)
+  const backlinks = useBacklinks(entry, entries, referencedBy, allContent)
   const frontmatter = useMemo(() => parseFrontmatter(content), [content])
   const typeEntryMap = useMemo(() => {
     const map: Record<string, VaultEntry> = {}
