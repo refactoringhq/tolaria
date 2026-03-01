@@ -19,17 +19,11 @@ pub enum ClaudeStreamEvent {
     /// Incremental text chunk.
     TextDelta { text: String },
     /// A tool call started (agent mode only).
-    ToolStart {
-        tool_name: String,
-        tool_id: String,
-    },
+    ToolStart { tool_name: String, tool_id: String },
     /// A tool call finished (agent mode only).
     ToolDone { tool_id: String },
     /// Final result text + session ID.
-    Result {
-        text: String,
-        session_id: String,
-    },
+    Result { text: String, session_id: String },
     /// Something went wrong.
     Error { message: String },
     /// Stream finished.
@@ -94,7 +88,12 @@ pub(crate) fn find_claude_binary() -> Result<PathBuf, String> {
 pub fn check_cli() -> ClaudeCliStatus {
     let bin = match find_claude_binary() {
         Ok(b) => b,
-        Err(_) => return ClaudeCliStatus { installed: false, version: None },
+        Err(_) => {
+            return ClaudeCliStatus {
+                installed: false,
+                version: None,
+            }
+        }
     };
 
     let version = Command::new(&bin)
@@ -104,7 +103,10 @@ pub fn check_cli() -> ClaudeCliStatus {
         .filter(|o| o.status.success())
         .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string());
 
-    ClaudeCliStatus { installed: true, version }
+    ClaudeCliStatus {
+        installed: true,
+        version,
+    }
 }
 
 /// Spawn `claude -p` for a simple chat (no tools) and stream events via the
@@ -206,11 +208,7 @@ fn build_mcp_config(vault_path: &str) -> Result<String, String> {
 }
 
 /// Core subprocess runner shared by chat and agent modes.
-fn run_claude_subprocess<F>(
-    bin: &PathBuf,
-    args: &[String],
-    emit: &mut F,
-) -> Result<String, String>
+fn run_claude_subprocess<F>(bin: &PathBuf, args: &[String], emit: &mut F) -> Result<String, String>
 where
     F: FnMut(ClaudeStreamEvent),
 {
@@ -303,10 +301,9 @@ where
 
         // --- Tool progress (agent mode) ---
         "tool_progress" => {
-            if let (Some(name), Some(id)) = (
-                json["tool_name"].as_str(),
-                json["tool_use_id"].as_str(),
-            ) {
+            if let (Some(name), Some(id)) =
+                (json["tool_name"].as_str(), json["tool_use_id"].as_str())
+            {
                 emit(ClaudeStreamEvent::ToolStart {
                     tool_name: name.to_string(),
                     tool_id: id.to_string(),
@@ -316,10 +313,7 @@ where
 
         // --- Final result ---
         "result" => {
-            let sid = json["session_id"]
-                .as_str()
-                .unwrap_or("")
-                .to_string();
+            let sid = json["session_id"].as_str().unwrap_or("").to_string();
             if !sid.is_empty() {
                 *session_id = sid.clone();
             }
@@ -374,9 +368,7 @@ where
         "content_block_start" => {
             let block = &event["content_block"];
             if block["type"].as_str() == Some("tool_use") {
-                if let (Some(id), Some(name)) =
-                    (block["id"].as_str(), block["name"].as_str())
-                {
+                if let (Some(id), Some(name)) = (block["id"].as_str(), block["name"].as_str()) {
                     emit(ClaudeStreamEvent::ToolStart {
                         tool_name: name.to_string(),
                         tool_id: id.to_string(),
@@ -425,7 +417,10 @@ mod tests {
     }
 
     /// Run dispatch_event with a pre-set session_id.
-    fn run_dispatch_with_sid(json: serde_json::Value, initial_sid: &str) -> (String, Vec<ClaudeStreamEvent>) {
+    fn run_dispatch_with_sid(
+        json: serde_json::Value,
+        initial_sid: &str,
+    ) -> (String, Vec<ClaudeStreamEvent>) {
         let mut sid = initial_sid.to_string();
         let mut events = vec![];
         dispatch_event(&json, &mut sid, &mut |e| events.push(e));
@@ -438,7 +433,9 @@ mod tests {
             "type": "system", "subtype": "init", "session_id": "test-session-123"
         }));
         assert_eq!(sid, "test-session-123");
-        assert!(matches!(&events[0], ClaudeStreamEvent::Init { session_id } if session_id == "test-session-123"));
+        assert!(
+            matches!(&events[0], ClaudeStreamEvent::Init { session_id } if session_id == "test-session-123")
+        );
     }
 
     #[test]
@@ -449,7 +446,8 @@ mod tests {
 
     #[test]
     fn dispatch_event_system_init_without_session_id_is_ignored() {
-        let (sid, events) = run_dispatch(serde_json::json!({ "type": "system", "subtype": "init" }));
+        let (sid, events) =
+            run_dispatch(serde_json::json!({ "type": "system", "subtype": "init" }));
         assert!(events.is_empty());
         assert!(sid.is_empty());
     }
@@ -469,7 +467,9 @@ mod tests {
             "type": "stream_event",
             "event": { "type": "content_block_start", "index": 1, "content_block": { "type": "tool_use", "id": "tool_abc", "name": "read_note", "input": {} } }
         }));
-        assert!(matches!(&events[0], ClaudeStreamEvent::ToolStart { tool_name, tool_id } if tool_name == "read_note" && tool_id == "tool_abc"));
+        assert!(
+            matches!(&events[0], ClaudeStreamEvent::ToolStart { tool_name, tool_id } if tool_name == "read_note" && tool_id == "tool_abc")
+        );
     }
 
     #[test]
@@ -478,7 +478,9 @@ mod tests {
             "type": "result", "subtype": "success", "result": "All done!", "session_id": "sess-456"
         }));
         assert_eq!(sid, "sess-456");
-        assert!(matches!(&events[0], ClaudeStreamEvent::Result { text, session_id } if text == "All done!" && session_id == "sess-456"));
+        assert!(
+            matches!(&events[0], ClaudeStreamEvent::Result { text, session_id } if text == "All done!" && session_id == "sess-456")
+        );
     }
 
     #[test]
@@ -488,7 +490,9 @@ mod tests {
             "prev-session",
         );
         assert_eq!(sid, "prev-session");
-        assert!(matches!(&events[0], ClaudeStreamEvent::Result { text, .. } if text == "text here"));
+        assert!(
+            matches!(&events[0], ClaudeStreamEvent::Result { text, .. } if text == "text here")
+        );
     }
 
     #[test]
@@ -496,12 +500,15 @@ mod tests {
         let (_, events) = run_dispatch(serde_json::json!({
             "type": "tool_progress", "tool_name": "search_notes", "tool_use_id": "tool_xyz"
         }));
-        assert!(matches!(&events[0], ClaudeStreamEvent::ToolStart { tool_name, tool_id } if tool_name == "search_notes" && tool_id == "tool_xyz"));
+        assert!(
+            matches!(&events[0], ClaudeStreamEvent::ToolStart { tool_name, tool_id } if tool_name == "search_notes" && tool_id == "tool_xyz")
+        );
     }
 
     #[test]
     fn dispatch_event_tool_progress_missing_fields_is_ignored() {
-        let (_, events) = run_dispatch(serde_json::json!({ "type": "tool_progress", "tool_name": "x" }));
+        let (_, events) =
+            run_dispatch(serde_json::json!({ "type": "tool_progress", "tool_name": "x" }));
         assert!(events.is_empty());
     }
 
@@ -515,7 +522,9 @@ mod tests {
             ] }
         }));
         assert_eq!(events.len(), 1);
-        assert!(matches!(&events[0], ClaudeStreamEvent::ToolStart { tool_name, tool_id } if tool_name == "search_notes" && tool_id == "tu_1"));
+        assert!(
+            matches!(&events[0], ClaudeStreamEvent::ToolStart { tool_name, tool_id } if tool_name == "search_notes" && tool_id == "tu_1")
+        );
     }
 
     #[test]
@@ -526,7 +535,8 @@ mod tests {
 
     #[test]
     fn dispatch_event_ignores_unknown() {
-        let (_, events) = run_dispatch(serde_json::json!({ "type": "some_future_type", "data": 42 }));
+        let (_, events) =
+            run_dispatch(serde_json::json!({ "type": "some_future_type", "data": 42 }));
         assert!(events.is_empty());
     }
 
@@ -564,7 +574,10 @@ mod tests {
     }
 
     #[cfg(unix)]
-    fn run_mock_script_with_args(script: &str, args: &[String]) -> (Result<String, String>, Vec<ClaudeStreamEvent>) {
+    fn run_mock_script_with_args(
+        script: &str,
+        args: &[String],
+    ) -> (Result<String, String>, Vec<ClaudeStreamEvent>) {
         use std::os::unix::fs::PermissionsExt;
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("mock-claude");
@@ -609,7 +622,9 @@ mod tests {
     #[test]
     fn run_subprocess_emits_error_on_nonzero_exit() {
         let (_, events) = run_mock_script("#!/bin/sh\necho 'auth problem' >&2\nexit 1\n");
-        assert!(events.iter().any(|e| matches!(e, ClaudeStreamEvent::Error { .. })));
+        assert!(events
+            .iter()
+            .any(|e| matches!(e, ClaudeStreamEvent::Error { .. })));
         assert!(matches!(events.last().unwrap(), ClaudeStreamEvent::Done));
     }
 
@@ -624,7 +639,9 @@ mod tests {
     #[test]
     fn run_subprocess_reports_exit_code_on_empty_stderr() {
         let (_, events) = run_mock_script("#!/bin/sh\nexit 2\n");
-        assert!(events.iter().any(|e| matches!(e, ClaudeStreamEvent::Error { message } if message.contains("exited with"))));
+        assert!(events.iter().any(
+            |e| matches!(e, ClaudeStreamEvent::Error { message } if message.contains("exited with"))
+        ));
     }
 
     #[cfg(unix)]
@@ -818,6 +835,8 @@ mod tests {
             "exit 1\n",
         ));
         // Should NOT have an error event because session_id is non-empty
-        assert!(!events.iter().any(|e| matches!(e, ClaudeStreamEvent::Error { .. })));
+        assert!(!events
+            .iter()
+            .any(|e| matches!(e, ClaudeStreamEvent::Error { .. })));
     }
 }
