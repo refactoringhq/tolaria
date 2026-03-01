@@ -128,7 +128,7 @@ pub fn get_modified_files(vault_path: &str) -> Result<Vec<ModifiedFile>, String>
     let vault = Path::new(vault_path);
 
     let output = Command::new("git")
-        .args(["status", "--porcelain"])
+        .args(["status", "--porcelain", "--untracked-files=all"])
         .current_dir(vault)
         .output()
         .map_err(|e| format!("Failed to run git status: {}", e))?;
@@ -740,7 +740,42 @@ mod tests {
 
         assert!(modified.len() >= 2);
         let statuses: Vec<&str> = modified.iter().map(|f| f.status.as_str()).collect();
-        assert!(statuses.contains(&"modified") || statuses.contains(&"untracked"));
+        assert!(statuses.contains(&"modified"));
+        assert!(statuses.contains(&"untracked"));
+    }
+
+    #[test]
+    fn test_get_modified_files_untracked_in_subdirectory() {
+        let dir = setup_git_repo();
+        let vault = dir.path();
+
+        // Create initial commit so git is initialized
+        fs::write(vault.join("init.md"), "# Init\n").unwrap();
+        Command::new("git")
+            .args(["add", "init.md"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+        Command::new("git")
+            .args(["commit", "-m", "Initial"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+
+        // Create a new untracked file in a subdirectory (simulates new note creation)
+        fs::create_dir_all(vault.join("note")).unwrap();
+        fs::write(vault.join("note/brand-new.md"), "# Brand New\n").unwrap();
+
+        let modified = get_modified_files(vault.to_str().unwrap()).unwrap();
+
+        assert_eq!(modified.len(), 1);
+        assert_eq!(modified[0].status, "untracked");
+        assert_eq!(modified[0].relative_path, "note/brand-new.md");
+        assert!(
+            modified[0].path.ends_with("/note/brand-new.md"),
+            "Full path should end with relative path: {}",
+            modified[0].path
+        );
     }
 
     #[test]

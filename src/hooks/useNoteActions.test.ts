@@ -535,6 +535,38 @@ describe('useNoteActions hook', () => {
       expect(trackUnsaved).toHaveBeenCalledWith(expect.stringContaining('note/untitled-note.md'))
       expect(markContentPending).toHaveBeenCalledWith(expect.stringContaining('note/untitled-note.md'), expect.stringContaining('Untitled note'))
     })
+
+    it('calls onNewNotePersisted after successful disk write (non-Tauri)', async () => {
+      const onNewNotePersisted = vi.fn()
+      const config = makeConfig()
+      config.onNewNotePersisted = onNewNotePersisted
+
+      const { result } = renderHook(() => useNoteActions(config))
+
+      await act(async () => {
+        result.current.handleCreateNote('Persist Callback', 'Note')
+        await new Promise((r) => setTimeout(r, 0))
+      })
+
+      expect(onNewNotePersisted).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not call onNewNotePersisted when disk write fails (Tauri)', async () => {
+      vi.mocked(isTauri).mockReturnValue(true)
+      vi.mocked(invoke).mockRejectedValueOnce(new Error('disk full'))
+      const onNewNotePersisted = vi.fn()
+      const config = makeConfig()
+      config.onNewNotePersisted = onNewNotePersisted
+
+      const { result } = renderHook(() => useNoteActions(config))
+
+      await act(async () => {
+        result.current.handleCreateNote('Fail Persist', 'Note')
+        await new Promise((r) => setTimeout(r, 0))
+      })
+
+      expect(onNewNotePersisted).not.toHaveBeenCalled()
+    })
   })
 
   describe('optimistic error recovery (Tauri mode)', () => {

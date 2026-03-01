@@ -33,6 +33,8 @@ export interface NoteActionsConfig {
   unsavedPaths?: Set<string>
   /** Called when an unsaved note is created so the save system can buffer its initial content. */
   markContentPending?: (path: string, content: string) => void
+  /** Called after a new note is persisted to disk (e.g. to refresh git status for Changes view). */
+  onNewNotePersisted?: () => void
 }
 
 async function performRename(
@@ -199,13 +201,14 @@ interface PersistCallbacks {
   onFail: (p: string) => void
   onStart?: (p: string) => void
   onEnd?: (p: string) => void
+  onPersisted?: () => void
 }
 
 /** Persist to disk; track pending state via onStart/onEnd; revert on failure. */
 function persistOptimistic(path: string, content: string, cbs: PersistCallbacks): void {
   cbs.onStart?.(path)
   persistNewNote(path, content)
-    .then(() => cbs.onEnd?.(path))
+    .then(() => { cbs.onEnd?.(path); cbs.onPersisted?.() })
     .catch(() => { cbs.onEnd?.(path); cbs.onFail(path) })
 }
 
@@ -296,13 +299,14 @@ export function useNoteActions(config: NoteActionsConfig) {
     onFail: revertOptimisticNote,
     onStart: addPendingSave,
     onEnd: removePendingSave,
+    onPersisted: config.onNewNotePersisted,
   }
 
   const pendingNamesRef = useRef<Set<string>>(new Set())
 
   const handleCreateNote = useCallback((title: string, type: string) => {
     createAndPersist(resolveNewNote(title, type), addEntry, openTabWithContent, persistCbs)
-  }, [openTabWithContent, addEntry, revertOptimisticNote, addPendingSave, removePendingSave]) // eslint-disable-line react-hooks/exhaustive-deps -- persistCbs is stable when deps are
+  }, [openTabWithContent, addEntry, revertOptimisticNote, addPendingSave, removePendingSave, config.onNewNotePersisted]) // eslint-disable-line react-hooks/exhaustive-deps -- persistCbs is stable when deps are
 
   const handleCreateNoteImmediate = useCallback((type?: string) => {
     const noteType = type || 'Note'
@@ -331,7 +335,7 @@ export function useNoteActions(config: NoteActionsConfig) {
 
   const handleCreateType = useCallback((typeName: string) => {
     createAndPersist(resolveNewType(typeName), addEntry, openTabWithContent, persistCbs)
-  }, [openTabWithContent, addEntry, revertOptimisticNote, addPendingSave, removePendingSave]) // eslint-disable-line react-hooks/exhaustive-deps -- persistCbs is stable when deps are
+  }, [openTabWithContent, addEntry, revertOptimisticNote, addPendingSave, removePendingSave, config.onNewNotePersisted]) // eslint-disable-line react-hooks/exhaustive-deps -- persistCbs is stable when deps are
 
   const fmCallbacks = { updateTab: updateTabContent, updateEntry, toast: setToastMessage }
 
