@@ -125,6 +125,7 @@ fn build_chat_args(req: &ChatStreamRequest) -> Vec<String> {
         req.message.clone(),
         "--output-format".into(),
         "stream-json".into(),
+        "--verbose".into(),
         "--include-partial-messages".into(),
         "--tools".into(),
         String::new(), // empty string → disable all built-in tools
@@ -164,6 +165,7 @@ fn build_agent_args(req: &AgentStreamRequest) -> Result<Vec<String>, String> {
         req.message.clone(),
         "--output-format".into(),
         "stream-json".into(),
+        "--verbose".into(),
         "--include-partial-messages".into(),
         "--tools".into(),
         String::new(), // disable built-in tools; MCP tools remain
