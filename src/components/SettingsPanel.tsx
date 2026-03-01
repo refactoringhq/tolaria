@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { X, Eye, EyeSlash, GithubLogo, SignOut, Check, Plus } from '@phosphor-icons/react'
 import { GitHubDeviceFlow } from './GitHubDeviceFlow'
 import type { Settings, ThemeFile } from '../types'
@@ -127,6 +127,16 @@ function SettingsPanelInner({ settings, onSave, onClose, themeManager }: Omit<Se
   const [githubToken, setGithubToken] = useState(settings.github_token)
   const [githubUsername, setGithubUsername] = useState(settings.github_username)
   const [pullInterval, setPullInterval] = useState(settings.auto_pull_interval_minutes ?? 5)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  // Auto-focus first input when settings panel opens
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const input = panelRef.current?.querySelector('input')
+      input?.focus()
+    }, 50)
+    return () => clearTimeout(timer)
+  }, [])
 
   const buildSettings = useCallback((ghOverride?: { token: string | null; username: string | null }): Settings => ({
     anthropic_key: anthropicKey.trim() || null,
@@ -174,6 +184,7 @@ function SettingsPanelInner({ settings, onSave, onClose, themeManager }: Omit<Se
       data-testid="settings-panel"
     >
       <div
+        ref={panelRef}
         className="bg-background border border-border rounded-lg shadow-xl"
         style={{ width: 520, maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
       >

@@ -13,6 +13,11 @@ function makeHandlers(): MenuEventHandlers {
     onZoomIn: vi.fn(),
     onZoomOut: vi.fn(),
     onZoomReset: vi.fn(),
+    onArchiveNote: vi.fn(),
+    onTrashNote: vi.fn(),
+    onSearch: vi.fn(),
+    onGoBack: vi.fn(),
+    onGoForward: vi.fn(),
     activeTabPathRef: { current: '/vault/test.md' } as React.MutableRefObject<string | null>,
     handleCloseTabRef: { current: vi.fn() } as React.MutableRefObject<(path: string) => void>,
     activeTabPath: '/vault/test.md',
@@ -103,6 +108,50 @@ describe('dispatchMenuEvent', () => {
     const h = makeHandlers()
     dispatchMenuEvent('view-zoom-reset', h)
     expect(h.onZoomReset).toHaveBeenCalled()
+  })
+
+  it('note-archive triggers archive on active tab', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('note-archive', h)
+    expect(h.onArchiveNote).toHaveBeenCalledWith('/vault/test.md')
+  })
+
+  it('note-archive does nothing when no active tab', () => {
+    const h = makeHandlers()
+    h.activeTabPathRef = { current: null }
+    dispatchMenuEvent('note-archive', h)
+    expect(h.onArchiveNote).not.toHaveBeenCalled()
+  })
+
+  it('note-trash triggers trash on active tab', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('note-trash', h)
+    expect(h.onTrashNote).toHaveBeenCalledWith('/vault/test.md')
+  })
+
+  it('note-trash does nothing when no active tab', () => {
+    const h = makeHandlers()
+    h.activeTabPathRef = { current: null }
+    dispatchMenuEvent('note-trash', h)
+    expect(h.onTrashNote).not.toHaveBeenCalled()
+  })
+
+  it('edit-find-in-vault triggers search', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('edit-find-in-vault', h)
+    expect(h.onSearch).toHaveBeenCalled()
+  })
+
+  it('view-go-back triggers go back', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('view-go-back', h)
+    expect(h.onGoBack).toHaveBeenCalled()
+  })
+
+  it('view-go-forward triggers go forward', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('view-go-forward', h)
+    expect(h.onGoForward).toHaveBeenCalled()
   })
 
   it('unknown event ID does nothing', () => {

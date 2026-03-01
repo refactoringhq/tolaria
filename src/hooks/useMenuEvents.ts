@@ -13,6 +13,11 @@ export interface MenuEventHandlers {
   onZoomIn: () => void
   onZoomOut: () => void
   onZoomReset: () => void
+  onArchiveNote: (path: string) => void
+  onTrashNote: (path: string) => void
+  onSearch: () => void
+  onGoBack?: () => void
+  onGoForward?: () => void
   activeTabPathRef: React.MutableRefObject<string | null>
   handleCloseTabRef: React.MutableRefObject<(path: string) => void>
   activeTabPath: string | null
@@ -24,7 +29,7 @@ const VIEW_MODE_MAP: Record<string, ViewMode> = {
   'view-all': 'all',
 }
 
-type SimpleHandler = 'onCreateNote' | 'onQuickOpen' | 'onSave' | 'onOpenSettings' | 'onToggleInspector' | 'onCommandPalette' | 'onZoomIn' | 'onZoomOut' | 'onZoomReset'
+type SimpleHandler = 'onCreateNote' | 'onQuickOpen' | 'onSave' | 'onOpenSettings' | 'onToggleInspector' | 'onCommandPalette' | 'onZoomIn' | 'onZoomOut' | 'onZoomReset' | 'onSearch'
 
 const SIMPLE_EVENT_MAP: Record<string, SimpleHandler> = {
   'file-new-note': 'onCreateNote',
@@ -36,6 +41,22 @@ const SIMPLE_EVENT_MAP: Record<string, SimpleHandler> = {
   'view-zoom-in': 'onZoomIn',
   'view-zoom-out': 'onZoomOut',
   'view-zoom-reset': 'onZoomReset',
+  'edit-find-in-vault': 'onSearch',
+}
+
+function dispatchActiveTabEvent(id: string, h: MenuEventHandlers): boolean {
+  const path = h.activeTabPathRef.current
+  if (!path) return id === 'note-archive' || id === 'note-trash' || id === 'file-close-tab'
+  if (id === 'note-archive') { h.onArchiveNote(path); return true }
+  if (id === 'note-trash') { h.onTrashNote(path); return true }
+  if (id === 'file-close-tab') { h.handleCloseTabRef.current(path); return true }
+  return false
+}
+
+function dispatchOptionalEvent(id: string, h: MenuEventHandlers): boolean {
+  if (id === 'view-go-back') { h.onGoBack?.(); return true }
+  if (id === 'view-go-forward') { h.onGoForward?.(); return true }
+  return false
 }
 
 /** Dispatch a Tauri menu event ID to the matching handler. Exported for testing. */
@@ -46,10 +67,8 @@ export function dispatchMenuEvent(id: string, h: MenuEventHandlers): void {
   const simple = SIMPLE_EVENT_MAP[id]
   if (simple) { h[simple](); return }
 
-  if (id === 'file-close-tab') {
-    const path = h.activeTabPathRef.current
-    if (path) h.handleCloseTabRef.current(path)
-  }
+  if (dispatchActiveTabEvent(id, h)) return
+  dispatchOptionalEvent(id, h)
 }
 
 /** Listen for native macOS menu events and dispatch them to the appropriate handlers. */

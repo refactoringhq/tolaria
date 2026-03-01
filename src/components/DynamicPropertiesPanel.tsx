@@ -616,8 +616,15 @@ function PropertyRow({ propKey, value, editingKey, displayMode, autoMode, vaultS
   onUpdate?: (key: string, value: FrontmatterValue) => void; onDelete?: (key: string) => void
   onDisplayModeChange: (key: string, mode: PropertyDisplayMode | null) => void
 }) {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && editingKey !== propKey) {
+      e.preventDefault()
+      onStartEdit(propKey)
+    }
+  }
+
   return (
-    <div className="group/prop flex min-w-0 items-center justify-between gap-2 rounded px-1.5 py-0.5 transition-colors hover:bg-muted" data-testid="editable-property">
+    <div className="group/prop flex min-w-0 items-center justify-between gap-2 rounded px-1.5 py-0.5 outline-none transition-colors hover:bg-muted focus:bg-muted focus:ring-1 focus:ring-primary" tabIndex={0} onKeyDown={handleKeyDown} data-testid="editable-property">
       <span className="font-mono-overline flex min-w-0 items-center gap-1 text-muted-foreground">
         <span className="truncate">{propKey}</span>
         {onDelete && (

@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, memo } from 'react'
 import { useDragRegion } from '../hooks/useDragRegion'
-import { Virtuoso } from 'react-virtuoso'
+import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso'
 import type { VaultEntry, SidebarSelection, ModifiedFile, NoteStatus } from '../types'
 import { Input } from '@/components/ui/input'
 import {
@@ -11,6 +11,7 @@ import { NoteItem, getTypeIcon } from './NoteItem'
 import { SortDropdown } from './SortDropdown'
 import { BulkActionBar } from './BulkActionBar'
 import { useMultiSelect } from '../hooks/useMultiSelect'
+import { useNoteListKeyboard } from '../hooks/useNoteListKeyboard'
 import {
   type SortOption, type SortDirection, type SortConfig, type RelationshipGroup,
   getSortComparator,
@@ -142,10 +143,11 @@ function ListViewHeader({ isTrashView, expiredTrashCount }: {
   return <TrashWarningBanner expiredCount={isTrashView ? expiredTrashCount : 0} />
 }
 
-function ListView({ isTrashView, isChangesView, expiredTrashCount, searched, query, renderItem }: {
+function ListView({ isTrashView, isChangesView, expiredTrashCount, searched, query, renderItem, virtuosoRef }: {
   isTrashView: boolean; isChangesView?: boolean; expiredTrashCount: number
   searched: VaultEntry[]; query: string
   renderItem: (entry: VaultEntry) => React.ReactNode
+  virtuosoRef?: React.RefObject<VirtuosoHandle | null>
 }) {
   const emptyText = isChangesView ? 'No pending changes' : isTrashView ? 'Trash is empty' : (query ? 'No matching notes' : 'No notes found')
   const hasHeader = isTrashView && expiredTrashCount > 0
@@ -161,6 +163,7 @@ function ListView({ isTrashView, isChangesView, expiredTrashCount, searched, que
 
   return (
     <Virtuoso
+      ref={virtuosoRef}
       style={{ height: '100%' }}
       data={searched}
       overscan={200}
@@ -302,6 +305,13 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
   const listDirection = listConfig.direction
   const { isEntityView, isTrashView, isChangesView, typeDocument, searched, searchedGroups, expiredTrashCount } = useNoteListData({ entries, selection, allContent, query, listSort, listDirection, modifiedPathSet })
 
+  const noteListKeyboard = useNoteListKeyboard({
+    items: searched,
+    selectedNotePath: selectedNote?.path ?? null,
+    onOpen: onReplaceActiveTab,
+    enabled: !isEntityView,
+  })
+
   const multiSelect = useMultiSelect(searched, selectedNote?.path ?? null)
 
   // Clear multi-select when sidebar selection changes
@@ -356,8 +366,8 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
   }, [multiSelect, isEntityView, handleBulkArchive, handleBulkTrash])
 
   const renderItem = useCallback((entry: VaultEntry) => (
-    <NoteItem key={entry.path} entry={entry} isSelected={selectedNote?.path === entry.path} isMultiSelected={multiSelect.selectedPaths.has(entry.path)} noteStatus={resolvedGetNoteStatus(entry.path)} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
-  ), [selectedNote?.path, handleClickNote, typeEntryMap, resolvedGetNoteStatus, multiSelect.selectedPaths])
+    <NoteItem key={entry.path} entry={entry} isSelected={selectedNote?.path === entry.path} isMultiSelected={multiSelect.selectedPaths.has(entry.path)} isHighlighted={entry.path === noteListKeyboard.highlightedPath} noteStatus={resolvedGetNoteStatus(entry.path)} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
+  ), [selectedNote?.path, handleClickNote, typeEntryMap, resolvedGetNoteStatus, multiSelect.selectedPaths, noteListKeyboard.highlightedPath])
 
   return (
     <div className="flex flex-col select-none overflow-hidden border-r border-border bg-card text-foreground" style={{ height: '100%' }}>
@@ -387,11 +397,11 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
         </div>
       )}
 
-      <div className="flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+      <div className="flex-1 overflow-hidden outline-none" style={{ minHeight: 0 }} tabIndex={0} onKeyDown={noteListKeyboard.handleKeyDown} onFocus={noteListKeyboard.handleFocus} data-testid="note-list-container">
         {isEntityView && selection.kind === 'entity' ? (
           <EntityView entity={selection.entry} groups={searchedGroups} query={query} collapsedGroups={collapsedGroups} sortPrefs={sortPrefs} onToggleGroup={toggleGroup} onSortChange={handleSortChange} renderItem={renderItem} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
         ) : (
-          <ListView isTrashView={isTrashView} isChangesView={isChangesView} expiredTrashCount={expiredTrashCount} searched={searched} query={query} renderItem={renderItem} />
+          <ListView isTrashView={isTrashView} isChangesView={isChangesView} expiredTrashCount={expiredTrashCount} searched={searched} query={query} renderItem={renderItem} virtuosoRef={noteListKeyboard.virtuosoRef} />
         )}
       </div>
 

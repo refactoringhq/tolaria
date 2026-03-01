@@ -17,6 +17,11 @@ const VIEW_COMMAND_PALETTE: &str = "view-command-palette";
 const VIEW_ZOOM_IN: &str = "view-zoom-in";
 const VIEW_ZOOM_OUT: &str = "view-zoom-out";
 const VIEW_ZOOM_RESET: &str = "view-zoom-reset";
+const NOTE_ARCHIVE: &str = "note-archive";
+const NOTE_TRASH: &str = "note-trash";
+const EDIT_FIND_IN_VAULT: &str = "edit-find-in-vault";
+const VIEW_GO_BACK: &str = "view-go-back";
+const VIEW_GO_FORWARD: &str = "view-go-forward";
 
 const CUSTOM_IDS: &[&str] = &[
     APP_SETTINGS,
@@ -24,6 +29,9 @@ const CUSTOM_IDS: &[&str] = &[
     FILE_QUICK_OPEN,
     FILE_SAVE,
     FILE_CLOSE_TAB,
+    NOTE_ARCHIVE,
+    NOTE_TRASH,
+    EDIT_FIND_IN_VAULT,
     VIEW_EDITOR_ONLY,
     VIEW_EDITOR_LIST,
     VIEW_ALL,
@@ -32,10 +40,12 @@ const CUSTOM_IDS: &[&str] = &[
     VIEW_ZOOM_IN,
     VIEW_ZOOM_OUT,
     VIEW_ZOOM_RESET,
+    VIEW_GO_BACK,
+    VIEW_GO_FORWARD,
 ];
 
 /// IDs of menu items that should be disabled when no note tab is active.
-const NOTE_DEPENDENT_IDS: &[&str] = &[FILE_SAVE, FILE_CLOSE_TAB];
+const NOTE_DEPENDENT_IDS: &[&str] = &[FILE_SAVE, FILE_CLOSE_TAB, NOTE_ARCHIVE, NOTE_TRASH];
 
 type MenuResult = Result<Submenu<tauri::Wry>, Box<dyn std::error::Error>>;
 
@@ -77,6 +87,14 @@ fn build_file_menu(app: &App) -> MenuResult {
         .id(FILE_CLOSE_TAB)
         .accelerator("CmdOrCtrl+W")
         .build(app)?;
+    let archive_note = MenuItemBuilder::new("Archive Note")
+        .id(NOTE_ARCHIVE)
+        .accelerator("CmdOrCtrl+E")
+        .build(app)?;
+    let trash_note = MenuItemBuilder::new("Trash Note")
+        .id(NOTE_TRASH)
+        .accelerator("CmdOrCtrl+Backspace")
+        .build(app)?;
 
     Ok(SubmenuBuilder::new(app, "File")
         .item(&new_note)
@@ -84,11 +102,19 @@ fn build_file_menu(app: &App) -> MenuResult {
         .separator()
         .item(&save)
         .separator()
+        .item(&archive_note)
+        .item(&trash_note)
+        .separator()
         .item(&close_tab)
         .build()?)
 }
 
 fn build_edit_menu(app: &App) -> MenuResult {
+    let find_in_vault = MenuItemBuilder::new("Find in Vault")
+        .id(EDIT_FIND_IN_VAULT)
+        .accelerator("CmdOrCtrl+Shift+F")
+        .build(app)?;
+
     Ok(SubmenuBuilder::new(app, "Edit")
         .undo()
         .redo()
@@ -98,6 +124,8 @@ fn build_edit_menu(app: &App) -> MenuResult {
         .paste()
         .separator()
         .select_all()
+        .separator()
+        .item(&find_in_vault)
         .build()?)
 }
 
@@ -133,6 +161,14 @@ fn build_view_menu(app: &App) -> MenuResult {
         .id(VIEW_ZOOM_RESET)
         .accelerator("CmdOrCtrl+0")
         .build(app)?;
+    let go_back = MenuItemBuilder::new("Go Back")
+        .id(VIEW_GO_BACK)
+        .accelerator("CmdOrCtrl+[")
+        .build(app)?;
+    let go_forward = MenuItemBuilder::new("Go Forward")
+        .id(VIEW_GO_FORWARD)
+        .accelerator("CmdOrCtrl+]")
+        .build(app)?;
 
     Ok(SubmenuBuilder::new(app, "View")
         .item(&editor_only)
@@ -140,6 +176,9 @@ fn build_view_menu(app: &App) -> MenuResult {
         .item(&all_panels)
         .separator()
         .item(&toggle_inspector)
+        .separator()
+        .item(&go_back)
+        .item(&go_forward)
         .separator()
         .item(&zoom_in)
         .item(&zoom_out)
@@ -209,6 +248,9 @@ mod tests {
             "file-quick-open",
             "file-save",
             "file-close-tab",
+            "note-archive",
+            "note-trash",
+            "edit-find-in-vault",
             "view-editor-only",
             "view-editor-list",
             "view-all",
@@ -217,6 +259,8 @@ mod tests {
             "view-zoom-in",
             "view-zoom-out",
             "view-zoom-reset",
+            "view-go-back",
+            "view-go-forward",
         ];
         for id in &expected {
             assert!(CUSTOM_IDS.contains(id), "missing custom ID: {id}");
