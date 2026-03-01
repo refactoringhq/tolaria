@@ -114,7 +114,7 @@ fn git_commit(vault_path: String, message: String) -> Result<String, String> {
 
 #[tauri::command]
 fn get_build_number() -> String {
-    format!("b{}", env!("BUILD_NUMBER"))
+    { let n = std::env::var("BUILD_NUMBER").unwrap_or_else(|_| "0".to_string()); format!("b{}", n) }
 }
 
 #[tauri::command]
