@@ -11,7 +11,6 @@
     "dialog:default",
     "updater:default",
     "process:default",
-    "opener:default",
-    "http:default"
+    "opener:default"
   ]
 }

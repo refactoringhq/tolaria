@@ -1,4 +1,5 @@
 pub mod ai_chat;
+pub mod claude_cli;
 pub mod frontmatter;
 pub mod git;
 pub mod github;
@@ -15,6 +16,7 @@ use std::process::Child;
 use std::sync::Mutex;
 
 use ai_chat::{AiChatRequest, AiChatResponse};
+use claude_cli::{AgentStreamRequest, ChatStreamRequest, ClaudeCliStatus, ClaudeStreamEvent};
 use frontmatter::FrontmatterValue;
 use git::{GitCommit, GitPullResult, LastCommitInfo, ModifiedFile};
 use github::{DeviceFlowPollResult, DeviceFlowStart, GitHubUser, GithubRepo};
@@ -131,6 +133,41 @@ fn git_push(vault_path: String) -> Result<String, String> {
 #[tauri::command]
 async fn ai_chat(request: AiChatRequest) -> Result<AiChatResponse, String> {
     ai_chat::send_chat(request).await
+}
+
+#[tauri::command]
+fn check_claude_cli() -> ClaudeCliStatus {
+    claude_cli::check_cli()
+}
+
+#[tauri::command]
+async fn stream_claude_chat(
+    app_handle: tauri::AppHandle,
+    request: ChatStreamRequest,
+) -> Result<String, String> {
+    use tauri::Emitter;
+    tokio::task::spawn_blocking(move || {
+        claude_cli::run_chat_stream(request, |event: ClaudeStreamEvent| {
+            let _ = app_handle.emit("claude-stream", &event);
+        })
+    })
+    .await
+    .map_err(|e| format!("Task failed: {e}"))?
+}
+
+#[tauri::command]
+async fn stream_claude_agent(
+    app_handle: tauri::AppHandle,
+    request: AgentStreamRequest,
+) -> Result<String, String> {
+    use tauri::Emitter;
+    tokio::task::spawn_blocking(move || {
+        claude_cli::run_agent_stream(request, |event: ClaudeStreamEvent| {
+            let _ = app_handle.emit("claude-agent-stream", &event);
+        })
+    })
+    .await
+    .map_err(|e| format!("Task failed: {e}"))?
 }
 
 #[tauri::command]
@@ -466,6 +503,9 @@ pub fn run() {
             git_pull,
             git_push,
             ai_chat,
+            check_claude_cli,
+            stream_claude_chat,
+            stream_claude_agent,
             save_image,
             copy_image_to_vault,
             purge_trash,
