@@ -72,8 +72,10 @@ jobs:
         run: |
           cargo llvm-cov \
             --manifest-path src-tauri/Cargo.toml \
+            --ignore-filename-regex 'lib\.rs|main\.rs|menu\.rs' \
             --fail-under-lines 85
         # cargo-llvm-cov exits non-zero if line coverage drops below 85%
+        # lib.rs/main.rs/menu.rs are Tauri boilerplate -- not meaningfully unit-testable.
 
       # ── 3. Code Health (CodeScene — Hotspot Code Health gate) ────────────
       # The webhook integration handles per-PR delta analysis (posts review
