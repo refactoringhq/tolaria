@@ -420,27 +420,48 @@ describe('BacklinksPanel', () => {
     expect(container.innerHTML).toBe('')
   })
 
-  it('renders backlink entries', () => {
-    const backlinks = [
-      makeEntry({ title: 'Referencing Note', isA: 'Note' }),
-      makeEntry({ title: 'Another Note', isA: 'Project', path: '/vault/project/another.md' }),
-    ]
-    render(<BacklinksPanel typeEntryMap={{}} backlinks={backlinks} onNavigate={onNavigate} />)
+  const twoBacklinks = [
+    { entry: makeEntry({ title: 'Referencing Note', isA: 'Note' }), context: null },
+    { entry: makeEntry({ title: 'Another Note', isA: 'Project', path: '/vault/project/another.md' }), context: null },
+  ]
+
+  it('renders collapsed by default with count badge', () => {
+    render(<BacklinksPanel typeEntryMap={{}} backlinks={twoBacklinks} onNavigate={onNavigate} />)
+    expect(screen.getByText('Backlinks (2)')).toBeInTheDocument()
+    expect(screen.queryByText('Referencing Note')).not.toBeInTheDocument()
+  })
+
+  it('expands to show backlink entries when toggle clicked', () => {
+    render(<BacklinksPanel typeEntryMap={{}} backlinks={twoBacklinks} onNavigate={onNavigate} />)
+    fireEvent.click(screen.getByTestId('backlinks-toggle'))
     expect(screen.getByText('Referencing Note')).toBeInTheDocument()
     expect(screen.getByText('Another Note')).toBeInTheDocument()
   })
 
   it('navigates when clicking backlink', () => {
-    const backlinks = [makeEntry({ title: 'Reference' })]
+    const backlinks = [{ entry: makeEntry({ title: 'Reference' }), context: null }]
     render(<BacklinksPanel typeEntryMap={{}} backlinks={backlinks} onNavigate={onNavigate} />)
+    fireEvent.click(screen.getByTestId('backlinks-toggle'))
     fireEvent.click(screen.getByText('Reference'))
     expect(onNavigate).toHaveBeenCalledWith('Reference')
   })
 
-  it('shows count when backlinks exist', () => {
-    const backlinks = [makeEntry(), makeEntry({ path: '/vault/b.md', title: 'B' })]
+  it('shows paragraph context preview when available', () => {
+    const backlinks = [
+      { entry: makeEntry({ title: 'Referencing Note' }), context: 'This references [[My Note]] in context.' },
+    ]
     render(<BacklinksPanel typeEntryMap={{}} backlinks={backlinks} onNavigate={onNavigate} />)
-    expect(screen.getByText('2')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('backlinks-toggle'))
+    expect(screen.getByText('This references [[My Note]] in context.')).toBeInTheDocument()
+  })
+
+  it('collapses when toggle clicked twice', () => {
+    const backlinks = [{ entry: makeEntry({ title: 'Note A' }), context: null }]
+    render(<BacklinksPanel typeEntryMap={{}} backlinks={backlinks} onNavigate={onNavigate} />)
+    fireEvent.click(screen.getByTestId('backlinks-toggle'))
+    expect(screen.getByText('Note A')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('backlinks-toggle'))
+    expect(screen.queryByText('Note A')).not.toBeInTheDocument()
   })
 })
 

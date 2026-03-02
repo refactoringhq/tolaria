@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { preProcessWikilinks, injectWikilinks, restoreWikilinksInBlocks, splitFrontmatter, countWords, extractOutgoingLinks } from './wikilinks'
+import { preProcessWikilinks, injectWikilinks, restoreWikilinksInBlocks, splitFrontmatter, countWords, extractOutgoingLinks, extractBacklinkContext } from './wikilinks'
 
 interface TestBlock {
   type?: string
@@ -419,5 +419,69 @@ describe('extractOutgoingLinks', () => {
   it('ignores empty wikilinks', () => {
     const content = 'Text [[]] and [[Valid]]'
     expect(extractOutgoingLinks(content)).toEqual(['Valid'])
+  })
+})
+
+describe('extractBacklinkContext', () => {
+  const targets = new Set(['My Note'])
+
+  it('extracts the paragraph containing a matching wikilink', () => {
+    const content = '---\ntitle: Test\n---\n\n# Test\n\nFirst paragraph.\n\nThis references [[My Note]] in context.\n\nThird paragraph.'
+    const result = extractBacklinkContext(content, targets)
+    expect(result).toBe('This references [[My Note]] in context.')
+  })
+
+  it('returns null when no matching wikilink found', () => {
+    const content = '---\ntitle: Test\n---\n\n# Test\n\nNo links here.'
+    expect(extractBacklinkContext(content, targets)).toBeNull()
+  })
+
+  it('returns null for empty content', () => {
+    expect(extractBacklinkContext('', targets)).toBeNull()
+  })
+
+  it('truncates long paragraphs with ellipsis', () => {
+    const longPara = 'A'.repeat(100) + ' [[My Note]] ' + 'B'.repeat(100)
+    const content = `---\ntitle: X\n---\n\n# X\n\n${longPara}`
+    const result = extractBacklinkContext(content, targets, 50)
+    expect(result).not.toBeNull()
+    expect(result!.length).toBe(50)
+    expect(result!.endsWith('\u2026')).toBe(true)
+  })
+
+  it('matches path-based wikilinks via last segment', () => {
+    const content = '---\ntitle: Test\n---\n\n# Test\n\nSee [[project/My Note]] for details.'
+    const result = extractBacklinkContext(content, targets)
+    expect(result).toBe('See [[project/My Note]] for details.')
+  })
+
+  it('matches aliased wikilinks [[target|display]]', () => {
+    const content = '---\ntitle: Test\n---\n\n# Test\n\nCheck [[My Note|the note]] here.'
+    const result = extractBacklinkContext(content, targets)
+    expect(result).toBe('Check [[My Note|the note]] here.')
+  })
+
+  it('skips frontmatter and title heading', () => {
+    const content = '---\ntitle: My Note\n---\n\n# My Note\n\nBody text with [[My Note]] link.'
+    const result = extractBacklinkContext(content, targets)
+    expect(result).toBe('Body text with [[My Note]] link.')
+  })
+
+  it('collapses internal whitespace', () => {
+    const content = '---\ntitle: X\n---\n\n# X\n\nMultiple   spaces\nand newline with [[My Note]] link.'
+    const result = extractBacklinkContext(content, targets)
+    expect(result).toBe('Multiple spaces and newline with [[My Note]] link.')
+  })
+
+  it('returns first matching paragraph when multiple match', () => {
+    const content = '---\ntitle: X\n---\n\n# X\n\nFirst [[My Note]] mention.\n\nSecond [[My Note]] mention.'
+    const result = extractBacklinkContext(content, targets)
+    expect(result).toBe('First [[My Note]] mention.')
+  })
+
+  it('does not return paragraph when maxLength is respected', () => {
+    const content = '---\ntitle: X\n---\n\n# X\n\nShort [[My Note]].'
+    const result = extractBacklinkContext(content, targets, 200)
+    expect(result).toBe('Short [[My Note]].')
   })
 })

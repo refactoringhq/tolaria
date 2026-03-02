@@ -62,6 +62,9 @@ pub struct VaultEntry {
     pub color: Option<String>,
     /// Display order for Type entries in sidebar (lower = higher). None = use default order.
     pub order: Option<i64>,
+    /// Custom sidebar section label for Type entries, overriding auto-pluralization.
+    #[serde(rename = "sidebarLabel")]
+    pub sidebar_label: Option<String>,
     /// Word count of the note body (excludes frontmatter and H1 title).
     #[serde(rename = "wordCount")]
     pub word_count: u32,
@@ -104,6 +107,8 @@ struct Frontmatter {
     color: Option<String>,
     #[serde(default)]
     order: Option<i64>,
+    #[serde(rename = "sidebar label", default)]
+    sidebar_label: Option<String>,
 }
 
 /// Handles YAML fields that can be either a single string or a list of strings.
@@ -147,6 +152,7 @@ const SKIP_KEYS: &[&str] = &[
     "icon",
     "color",
     "order",
+    "sidebar label",
 ];
 
 /// Extract all wikilink-containing fields from raw YAML frontmatter.
@@ -325,6 +331,7 @@ pub fn parse_md_file(path: &Path) -> Result<VaultEntry, String> {
         icon: frontmatter.icon,
         color: frontmatter.color,
         order: frontmatter.order,
+        sidebar_label: frontmatter.sidebar_label,
         word_count,
         outgoing_links,
     })
@@ -1053,6 +1060,32 @@ References:
 
         save_note_content(path.to_str().unwrap(), content).unwrap();
         assert_eq!(fs::read_to_string(&path).unwrap(), content);
+    }
+
+    // --- sidebar_label tests ---
+
+    #[test]
+    fn test_parse_sidebar_label_from_type_entry() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\ntype: Type\nsidebar label: News\n---\n# News\n";
+        let entry = parse_test_entry(&dir, "type/news.md", content);
+        assert_eq!(entry.sidebar_label, Some("News".to_string()));
+    }
+
+    #[test]
+    fn test_parse_sidebar_label_missing_defaults_to_none() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\ntype: Type\n---\n# Project\n";
+        let entry = parse_test_entry(&dir, "type/project.md", content);
+        assert_eq!(entry.sidebar_label, None);
+    }
+
+    #[test]
+    fn test_sidebar_label_not_in_relationships() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\ntype: Type\nsidebar label: My Series\n---\n# Series\n";
+        let entry = parse_test_entry(&dir, "type/series.md", content);
+        assert!(entry.relationships.get("sidebar label").is_none());
     }
 
     // Frontmatter update/delete tests are in frontmatter.rs

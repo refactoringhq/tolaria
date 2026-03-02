@@ -39,6 +39,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    sidebarLabel: null,
     outgoingLinks: [],
   },
   {
@@ -64,6 +65,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    sidebarLabel: null,
     outgoingLinks: [],
   },
   {
@@ -89,6 +91,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    sidebarLabel: null,
     outgoingLinks: [],
   },
   {
@@ -114,6 +117,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    sidebarLabel: null,
     outgoingLinks: [],
   },
   {
@@ -139,6 +143,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    sidebarLabel: null,
     outgoingLinks: [],
   },
   {
@@ -164,6 +169,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    sidebarLabel: null,
     outgoingLinks: [],
   },
   {
@@ -189,6 +195,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    sidebarLabel: null,
     outgoingLinks: [],
   },
   {
@@ -214,6 +221,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    sidebarLabel: null,
     outgoingLinks: [],
   },
 ]
@@ -432,6 +440,7 @@ describe('Sidebar', () => {
     icon: null,
     color: null,
     order: null,
+    sidebarLabel: null,
     outgoingLinks: [],
       },
       {
@@ -457,6 +466,7 @@ describe('Sidebar', () => {
     icon: null,
     color: null,
     order: null,
+    sidebarLabel: null,
     outgoingLinks: [],
       },
       {
@@ -553,7 +563,7 @@ describe('Sidebar', () => {
           isA: 'Event', aliases: [], belongsTo: [], relatedTo: [], status: null, owner: null,
           cadence: null, archived: false, trashed: true, trashedAt: 1700000000,
           modifiedAt: 1700000000, createdAt: null, fileSize: 100, snippet: '', wordCount: 0,
-          relationships: {}, icon: null, color: null, order: null, outgoingLinks: [],
+          relationships: {}, icon: null, color: null, order: null, sidebarLabel: null, outgoingLinks: [],
         },
       ]
       render(<Sidebar entries={entriesWithTrashedOnly} selection={defaultSelection} onSelect={() => {}} />)
@@ -591,12 +601,59 @@ describe('Sidebar', () => {
     icon: null,
     color: null,
     order: null,
+    sidebarLabel: null,
     outgoingLinks: [],
       }
       render(<Sidebar entries={[...mockEntries, projectTypeEntry]} selection={defaultSelection} onSelect={() => {}} />)
       // "Projects" should appear once (the built-in section), not twice
       const projectLabels = screen.getAllByText('Projects')
       expect(projectLabels.length).toBe(1)
+    })
+
+    it('uses sidebarLabel from Type entry instead of auto-pluralization', () => {
+      const entriesWithLabel: VaultEntry[] = [
+        ...mockEntries,
+        {
+          path: '/vault/type/news.md', filename: 'news.md', title: 'News', isA: 'Type',
+          aliases: [], belongsTo: [], relatedTo: [], status: null, owner: null, cadence: null,
+          archived: false, trashed: false, trashedAt: null, modifiedAt: 1700000000, createdAt: null,
+          fileSize: 200, snippet: '', wordCount: 0, relationships: {},
+          icon: null, color: null, order: null, sidebarLabel: 'News', outgoingLinks: [],
+        },
+        {
+          path: '/vault/news/breaking.md', filename: 'breaking.md', title: 'Breaking Story', isA: 'News',
+          aliases: [], belongsTo: [], relatedTo: [], status: null, owner: null, cadence: null,
+          archived: false, trashed: false, trashedAt: null, modifiedAt: 1700000000, createdAt: null,
+          fileSize: 300, snippet: '', wordCount: 0, relationships: {},
+          icon: null, color: null, order: null, sidebarLabel: null, outgoingLinks: [],
+        },
+      ]
+      render(<Sidebar entries={entriesWithLabel} selection={defaultSelection} onSelect={() => {}} />)
+      // Should show "News" (custom label), not "Newses" (auto-pluralized)
+      expect(screen.getByText('News')).toBeInTheDocument()
+      expect(screen.queryByText('Newses')).not.toBeInTheDocument()
+    })
+
+    it('uses sidebarLabel to override built-in type label', () => {
+      const entriesWithBuiltInOverride: VaultEntry[] = [
+        ...mockEntries,
+        {
+          path: '/vault/type/person.md', filename: 'person.md', title: 'Person', isA: 'Type',
+          aliases: [], belongsTo: [], relatedTo: [], status: null, owner: null, cadence: null,
+          archived: false, trashed: false, trashedAt: null, modifiedAt: 1700000000, createdAt: null,
+          fileSize: 200, snippet: '', wordCount: 0, relationships: {},
+          icon: null, color: null, order: null, sidebarLabel: 'Contacts', outgoingLinks: [],
+        },
+      ]
+      render(<Sidebar entries={entriesWithBuiltInOverride} selection={defaultSelection} onSelect={() => {}} />)
+      expect(screen.getByText('Contacts')).toBeInTheDocument()
+      expect(screen.queryByText('People')).not.toBeInTheDocument()
+    })
+
+    it('falls back to auto-pluralization when sidebarLabel is null', () => {
+      render(<Sidebar entries={entriesWithCustomTypes} selection={defaultSelection} onSelect={() => {}} />)
+      // Recipe has no sidebarLabel → should auto-pluralize to "Recipes"
+      expect(screen.getByText('Recipes')).toBeInTheDocument()
     })
   })
 
@@ -705,21 +762,21 @@ describe('Sidebar', () => {
         aliases: [], belongsTo: [], relatedTo: [], status: null, owner: null, cadence: null,
         archived: false, trashed: false, trashedAt: null, modifiedAt: 1700000000, createdAt: null, fileSize: 200, snippet: '',
         wordCount: 0,
-        relationships: {}, icon: null, color: null, order: 5, outgoingLinks: [],
+        relationships: {}, icon: null, color: null, order: 5, sidebarLabel: null, outgoingLinks: [],
       },
       {
         path: '/vault/type/topic.md', filename: 'topic.md', title: 'Topic', isA: 'Type',
         aliases: [], belongsTo: [], relatedTo: [], status: null, owner: null, cadence: null,
         archived: false, trashed: false, trashedAt: null, modifiedAt: 1700000000, createdAt: null, fileSize: 200, snippet: '',
         wordCount: 0,
-        relationships: {}, icon: null, color: null, order: 0, outgoingLinks: [],
+        relationships: {}, icon: null, color: null, order: 0, sidebarLabel: null, outgoingLinks: [],
       },
       {
         path: '/vault/type/person.md', filename: 'person.md', title: 'Person', isA: 'Type',
         aliases: [], belongsTo: [], relatedTo: [], status: null, owner: null, cadence: null,
         archived: false, trashed: false, trashedAt: null, modifiedAt: 1700000000, createdAt: null, fileSize: 200, snippet: '',
         wordCount: 0,
-        relationships: {}, icon: null, color: null, order: 1, outgoingLinks: [],
+        relationships: {}, icon: null, color: null, order: 1, sidebarLabel: null, outgoingLinks: [],
       },
     ]
 
