@@ -17,6 +17,7 @@ interface KeyboardActions {
   onZoomReset: () => void
   onGoBack?: () => void
   onGoForward?: () => void
+  onToggleAIChat?: () => void
   activeTabPathRef: React.MutableRefObject<string | null>
   handleCloseTabRef: React.MutableRefObject<(path: string) => void>
 }
@@ -62,7 +63,7 @@ function handleCmdKey(e: KeyboardEvent, keyMap: Record<string, ShortcutHandler>)
 
 export function useAppKeyboard({
   onQuickOpen, onCommandPalette, onSearch, onCreateNote, onOpenDailyNote, onSave, onOpenSettings, onTrashNote, onArchiveNote,
-  onSetViewMode, onZoomIn, onZoomOut, onZoomReset, onGoBack, onGoForward, activeTabPathRef, handleCloseTabRef,
+  onSetViewMode, onZoomIn, onZoomOut, onZoomReset, onGoBack, onGoForward, onToggleAIChat, activeTabPathRef, handleCloseTabRef,
 }: KeyboardActions) {
   useEffect(() => {
     const withActiveTab = (fn: (path: string) => void): ShortcutHandler => () => {
@@ -87,6 +88,7 @@ export function useAppKeyboard({
       '+': onZoomIn,
       '-': onZoomOut,
       '0': onZoomReset,
+      i: () => onToggleAIChat?.(),
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -102,5 +104,5 @@ export function useAppKeyboard({
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onQuickOpen, onCommandPalette, onSearch, onCreateNote, onOpenDailyNote, onSave, onOpenSettings, onTrashNote, onArchiveNote, activeTabPathRef, handleCloseTabRef, onSetViewMode, onZoomIn, onZoomOut, onZoomReset, onGoBack, onGoForward])
+  }, [onQuickOpen, onCommandPalette, onSearch, onCreateNote, onOpenDailyNote, onSave, onOpenSettings, onTrashNote, onArchiveNote, activeTabPathRef, handleCloseTabRef, onSetViewMode, onZoomIn, onZoomOut, onZoomReset, onGoBack, onGoForward, onToggleAIChat])
 }

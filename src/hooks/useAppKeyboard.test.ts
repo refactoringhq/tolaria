@@ -182,4 +182,22 @@ describe('useAppKeyboard', () => {
     fireKey('0', { metaKey: true })
     expect(actions.onZoomReset).toHaveBeenCalled()
   })
+
+  it('Cmd+I triggers toggle AI chat', () => {
+    const actions = makeActions()
+    const onToggleAIChat = vi.fn()
+    renderHook(() => useAppKeyboard({ ...actions, onToggleAIChat }))
+    fireKey('i', { metaKey: true })
+    expect(onToggleAIChat).toHaveBeenCalled()
+  })
+
+  it('Cmd+I works when text input is focused', () => {
+    const actions = makeActions()
+    const onToggleAIChat = vi.fn()
+    renderHook(() => useAppKeyboard({ ...actions, onToggleAIChat }))
+    withFocusedInput(() => {
+      fireKey('i', { metaKey: true })
+      expect(onToggleAIChat).toHaveBeenCalled()
+    })
+  })
 })

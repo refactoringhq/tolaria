@@ -31,6 +31,7 @@ interface CommandRegistryConfig {
   onCommitPush: () => void
   onSetViewMode: (mode: ViewMode) => void
   onToggleInspector: () => void
+  onToggleAIChat?: () => void
   onZoomIn: () => void
   onZoomOut: () => void
   onZoomReset: () => void
@@ -128,7 +129,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     activeTabPath, entries, modifiedCount,
     onQuickOpen, onCreateNote, onCreateNoteOfType, onSave, onOpenSettings,
     onTrashNote, onArchiveNote, onUnarchiveNote,
-    onCommitPush, onSetViewMode, onToggleInspector, onOpenVault,
+    onCommitPush, onSetViewMode, onToggleInspector, onToggleAIChat, onOpenVault,
     onZoomIn, onZoomOut, onZoomReset, zoomLevel,
     onSelect, onOpenDailyNote, onCloseTab,
     onGoBack, onGoForward, canGoBack, canGoForward,
@@ -178,6 +179,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
       { id: 'view-editor-list', label: 'Editor + Note List', group: 'View', shortcut: '⌘2', keywords: ['layout'], enabled: true, execute: () => onSetViewMode('editor-list') },
       { id: 'view-all', label: 'Full Layout', group: 'View', shortcut: '⌘3', keywords: ['layout', 'sidebar'], enabled: true, execute: () => onSetViewMode('all') },
       { id: 'toggle-inspector', label: 'Toggle Inspector', group: 'View', keywords: ['properties', 'panel', 'right'], enabled: true, execute: onToggleInspector },
+      { id: 'toggle-ai-chat', label: 'Toggle AI Chat', group: 'View', shortcut: '⌘I', keywords: ['ai', 'agent', 'chat', 'assistant', 'contextual'], enabled: true, execute: () => onToggleAIChat?.() },
       { id: 'zoom-in', label: `Zoom In (${zoomLevel}%)`, group: 'View', shortcut: '⌘=', keywords: ['zoom', 'bigger', 'larger', 'scale'], enabled: zoomLevel < 150, execute: onZoomIn },
       { id: 'zoom-out', label: `Zoom Out (${zoomLevel}%)`, group: 'View', shortcut: '⌘-', keywords: ['zoom', 'smaller', 'scale'], enabled: zoomLevel > 80, execute: onZoomOut },
       { id: 'zoom-reset', label: 'Reset Zoom', group: 'View', shortcut: '⌘0', keywords: ['zoom', 'actual', 'default', '100'], enabled: zoomLevel !== 100, execute: onZoomReset },
@@ -198,7 +200,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     hasActiveNote, activeTabPath, isArchived, modifiedCount,
     onQuickOpen, onCreateNote, onCreateNoteOfType, onSave, onOpenSettings,
     onTrashNote, onArchiveNote, onUnarchiveNote,
-    onCommitPush, onSetViewMode, onToggleInspector, onOpenVault,
+    onCommitPush, onSetViewMode, onToggleInspector, onToggleAIChat, onOpenVault,
     onZoomIn, onZoomOut, onZoomReset, zoomLevel,
     onSelect, onOpenDailyNote, onCloseTab,
     onGoBack, onGoForward, canGoBack, canGoForward,

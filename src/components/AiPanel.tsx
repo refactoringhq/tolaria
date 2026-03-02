@@ -1,7 +1,9 @@
-import { useState, useRef, useEffect } from 'react'
-import { Robot, X, PaperPlaneRight, Plus } from '@phosphor-icons/react'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { Robot, X, PaperPlaneRight, Plus, Link } from '@phosphor-icons/react'
 import { AiMessage } from './AiMessage'
 import { useAiAgent, type AiAgentMessage } from '../hooks/useAiAgent'
+import { collectLinkedEntries, buildContextualPrompt } from '../utils/ai-context'
+import type { VaultEntry } from '../types'
 
 export type { AiAgentMessage } from '../hooks/useAiAgent'
 
@@ -9,6 +11,9 @@ interface AiPanelProps {
   onClose: () => void
   onOpenNote?: (path: string) => void
   vaultPath: string
+  activeEntry?: VaultEntry | null
+  entries?: VaultEntry[]
+  allContent?: Record<string, string>
 }
 
 function PanelHeader({ onClose, onClear }: { onClose: () => void; onClear: () => void }) {
@@ -19,7 +24,7 @@ function PanelHeader({ onClose, onClear }: { onClose: () => void; onClear: () =>
     >
       <Robot size={16} className="shrink-0 text-muted-foreground" />
       <span className="flex-1 text-muted-foreground" style={{ fontSize: 13, fontWeight: 600 }}>
-        AI Agent
+        AI Chat
       </span>
       <button
         className="shrink-0 border-none bg-transparent p-1 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
@@ -39,7 +44,23 @@ function PanelHeader({ onClose, onClear }: { onClose: () => void; onClear: () =>
   )
 }
 
-function EmptyState() {
+function ContextBar({ activeEntry, linkedCount }: { activeEntry: VaultEntry; linkedCount: number }) {
+  return (
+    <div
+      className="flex shrink-0 items-center border-b border-border text-muted-foreground"
+      style={{ padding: '6px 12px', gap: 6, fontSize: 11 }}
+      data-testid="context-bar"
+    >
+      <Link size={12} className="shrink-0" />
+      <span className="truncate" style={{ fontWeight: 500 }}>{activeEntry.title}</span>
+      {linkedCount > 0 && (
+        <span style={{ opacity: 0.6 }}>+ {linkedCount} linked</span>
+      )}
+    </div>
+  )
+}
+
+function EmptyState({ hasContext }: { hasContext: boolean }) {
   return (
     <div
       className="flex flex-col items-center justify-center text-center text-muted-foreground"
@@ -47,17 +68,23 @@ function EmptyState() {
     >
       <Robot size={24} style={{ marginBottom: 8, opacity: 0.5 }} />
       <p style={{ fontSize: 13, margin: '0 0 4px' }}>
-        Ask the AI agent to work with your vault
+        {hasContext
+          ? 'Ask about this note and its linked context'
+          : 'Open a note, then ask the AI about it'
+        }
       </p>
       <p style={{ fontSize: 11, margin: 0, opacity: 0.6 }}>
-        Creates notes, searches, edits frontmatter, and more
+        {hasContext
+          ? 'Summarize, find connections, expand ideas'
+          : 'The AI will use the active note as context'
+        }
       </p>
     </div>
   )
 }
 
-function MessageHistory({ messages, isActive, onOpenNote }: {
-  messages: AiAgentMessage[]; isActive: boolean; onOpenNote?: (path: string) => void
+function MessageHistory({ messages, isActive, onOpenNote, hasContext }: {
+  messages: AiAgentMessage[]; isActive: boolean; onOpenNote?: (path: string) => void; hasContext: boolean
 }) {
   const endRef = useRef<HTMLDivElement>(null)
 
@@ -67,7 +94,7 @@ function MessageHistory({ messages, isActive, onOpenNote }: {
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ padding: 12 }}>
-      {messages.length === 0 && !isActive && <EmptyState />}
+      {messages.length === 0 && !isActive && <EmptyState hasContext={hasContext} />}
       {messages.map((msg, i) => (
         <AiMessage key={msg.id ?? i} {...msg} onOpenNote={onOpenNote} />
       ))}
@@ -76,10 +103,10 @@ function MessageHistory({ messages, isActive, onOpenNote }: {
   )
 }
 
-function InputBar({ input, onInputChange, onSend, onKeyDown, isActive }: {
+function InputBar({ input, onInputChange, onSend, onKeyDown, isActive, hasContext }: {
   input: string; onInputChange: (v: string) => void
   onSend: () => void; onKeyDown: (e: React.KeyboardEvent) => void
-  isActive: boolean
+  isActive: boolean; hasContext: boolean
 }) {
   const sendDisabled = isActive || !input.trim()
   return (
@@ -97,7 +124,7 @@ function InputBar({ input, onInputChange, onSend, onKeyDown, isActive }: {
             fontSize: 13, borderRadius: 8, padding: '8px 10px',
             outline: 'none', fontFamily: 'inherit',
           }}
-          placeholder="Ask the AI agent..."
+          placeholder={hasContext ? 'Ask about this note...' : 'Ask the AI agent...'}
           disabled={isActive}
           data-testid="agent-input"
         />
@@ -121,9 +148,21 @@ function InputBar({ input, onInputChange, onSend, onKeyDown, isActive }: {
   )
 }
 
-export function AiPanel({ onClose, onOpenNote, vaultPath }: AiPanelProps) {
+export function AiPanel({ onClose, onOpenNote, vaultPath, activeEntry, entries, allContent }: AiPanelProps) {
   const [input, setInput] = useState('')
-  const agent = useAiAgent(vaultPath)
+
+  const linkedEntries = useMemo(() => {
+    if (!activeEntry || !entries) return []
+    return collectLinkedEntries(activeEntry, entries)
+  }, [activeEntry, entries])
+
+  const contextPrompt = useMemo(() => {
+    if (!activeEntry || !allContent) return undefined
+    return buildContextualPrompt(activeEntry, linkedEntries, allContent)
+  }, [activeEntry, linkedEntries, allContent])
+
+  const agent = useAiAgent(vaultPath, contextPrompt)
+  const hasContext = !!activeEntry
 
   const isActive = agent.status === 'thinking' || agent.status === 'tool-executing'
 
@@ -146,10 +185,14 @@ export function AiPanel({ onClose, onOpenNote, vaultPath }: AiPanelProps) {
       data-testid="ai-panel"
     >
       <PanelHeader onClose={onClose} onClear={agent.clearConversation} />
+      {activeEntry && (
+        <ContextBar activeEntry={activeEntry} linkedCount={linkedEntries.length} />
+      )}
       <MessageHistory
         messages={agent.messages}
         isActive={isActive}
         onOpenNote={onOpenNote}
+        hasContext={hasContext}
       />
       <InputBar
         input={input}
@@ -157,6 +200,7 @@ export function AiPanel({ onClose, onOpenNote, vaultPath }: AiPanelProps) {
         onSend={handleSend}
         onKeyDown={handleKeyDown}
         isActive={isActive}
+        hasContext={hasContext}
       />
     </aside>
   )
