@@ -155,23 +155,33 @@ function App() {
     navFromHistoryRef.current = false
   }, [notes.activeTabPath]) // eslint-disable-line react-hooks/exhaustive-deps -- navHistory.push is stable
 
-  const isTabOpen = useCallback((path: string) => notes.tabs.some(t => t.entry.path === path), [notes.tabs])
+  const isEntryExists = useCallback((path: string) => vault.entries.some(e => e.path === path), [vault.entries])
 
   const handleGoBack = useCallback(() => {
-    const target = navHistory.goBack(isTabOpen)
+    const target = navHistory.goBack(isEntryExists)
     if (target) {
       navFromHistoryRef.current = true
-      notes.handleSwitchTab(target)
+      if (notes.tabs.some(t => t.entry.path === target)) {
+        notes.handleSwitchTab(target)
+      } else {
+        const entry = vault.entries.find(e => e.path === target)
+        if (entry) notes.handleSelectNote(entry)
+      }
     }
-  }, [navHistory, isTabOpen, notes])
+  }, [navHistory, isEntryExists, vault.entries, notes])
 
   const handleGoForward = useCallback(() => {
-    const target = navHistory.goForward(isTabOpen)
+    const target = navHistory.goForward(isEntryExists)
     if (target) {
       navFromHistoryRef.current = true
-      notes.handleSwitchTab(target)
+      if (notes.tabs.some(t => t.entry.path === target)) {
+        notes.handleSwitchTab(target)
+      } else {
+        const entry = vault.entries.find(e => e.path === target)
+        if (entry) notes.handleSelectNote(entry)
+      }
     }
-  }, [navHistory, isTabOpen, notes])
+  }, [navHistory, isEntryExists, vault.entries, notes])
 
   // Mouse button 3/4 (back/forward) and macOS trackpad two-finger swipe
   useEffect(() => {
