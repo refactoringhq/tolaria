@@ -241,8 +241,10 @@ function navigateWikilink(entries: VaultEntry[], target: string, selectNote: (e:
 }
 
 /** Dispatch focus-editor event with perf timing marker. */
-function signalFocusEditor(): void {
-  window.dispatchEvent(new CustomEvent('laputa:focus-editor', { detail: { t0: performance.now() } }))
+function signalFocusEditor(opts?: { selectTitle?: boolean }): void {
+  window.dispatchEvent(new CustomEvent('laputa:focus-editor', {
+    detail: { t0: performance.now(), selectTitle: opts?.selectTitle ?? false },
+  }))
 }
 
 interface PersistCallbacks {
@@ -372,7 +374,7 @@ export function useNoteActions(config: NoteActionsConfig) {
     addEntryWithMock(resolved.entry, resolved.content, addEntry)
     config.trackUnsaved?.(resolved.entry.path)
     config.markContentPending?.(resolved.entry.path, resolved.content)
-    signalFocusEditor()
+    signalFocusEditor({ selectTitle: true })
     setTimeout(() => pendingNamesRef.current.delete(title), 500)
   }, [entries, openTabWithContent, addEntry, config.trackUnsaved, config.markContentPending]) // eslint-disable-line react-hooks/exhaustive-deps -- config callbacks are stable
 
