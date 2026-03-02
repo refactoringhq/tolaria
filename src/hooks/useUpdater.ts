@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { isTauri } from '../mock-tauri'
+import { openExternalUrl } from '../utils/url'
 
 const RELEASE_NOTES_URL = 'https://refactoringhq.github.io/laputa-app/'
 
@@ -80,7 +81,7 @@ export function useUpdater(): { status: UpdateStatus; actions: UpdateActions } {
   }, [])
 
   const openReleaseNotes = useCallback(() => {
-    window.open(RELEASE_NOTES_URL, '_blank')
+    openExternalUrl(RELEASE_NOTES_URL)
   }, [])
 
   const dismiss = useCallback(() => {

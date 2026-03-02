@@ -7,6 +7,12 @@ vi.mock('../mock-tauri', () => ({
   isTauri: vi.fn(() => false),
 }))
 
+// Mock openExternalUrl
+const mockOpenExternalUrl = vi.fn()
+vi.mock('../utils/url', () => ({
+  openExternalUrl: (...args: unknown[]) => mockOpenExternalUrl(...args),
+}))
+
 // Mock the dynamic imports
 const mockCheck = vi.fn()
 const mockRelaunch = vi.fn()
@@ -149,9 +155,8 @@ describe('useUpdater', () => {
     expect(result.current.status).toEqual({ state: 'idle' })
   })
 
-  it('openReleaseNotes opens the release notes URL', async () => {
+  it('openReleaseNotes opens the release notes URL via openExternalUrl', async () => {
     vi.mocked(isTauri).mockReturnValue(false)
-    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
 
     const { result } = renderHook(() => useUpdater())
 
@@ -159,9 +164,8 @@ describe('useUpdater', () => {
       result.current.actions.openReleaseNotes()
     })
 
-    expect(openSpy).toHaveBeenCalledWith(
-      'https://refactoringhq.github.io/laputa-app/',
-      '_blank'
+    expect(mockOpenExternalUrl).toHaveBeenCalledWith(
+      'https://refactoringhq.github.io/laputa-app/'
     )
   })
 
