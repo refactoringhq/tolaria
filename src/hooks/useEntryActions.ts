@@ -7,6 +7,7 @@ interface EntryActionsConfig {
   handleUpdateFrontmatter: (path: string, key: string, value: string | number | boolean | string[]) => Promise<void>
   handleDeleteProperty: (path: string, key: string) => Promise<void>
   setToastMessage: (msg: string | null) => void
+  createTypeEntry: (typeName: string) => Promise<VaultEntry>
 }
 
 function findTypeEntry(entries: VaultEntry[], typeName: string): VaultEntry | undefined {
@@ -14,7 +15,7 @@ function findTypeEntry(entries: VaultEntry[], typeName: string): VaultEntry | un
 }
 
 export function useEntryActions({
-  entries, updateEntry, handleUpdateFrontmatter, handleDeleteProperty, setToastMessage,
+  entries, updateEntry, handleUpdateFrontmatter, handleDeleteProperty, setToastMessage, createTypeEntry,
 }: EntryActionsConfig) {
   const handleTrashNote = useCallback(async (path: string) => {
     const now = new Date().toISOString().slice(0, 10)
@@ -43,13 +44,13 @@ export function useEntryActions({
     setToastMessage('Note unarchived')
   }, [handleUpdateFrontmatter, updateEntry, setToastMessage])
 
-  const handleCustomizeType = useCallback((typeName: string, icon: string, color: string) => {
-    const typeEntry = findTypeEntry(entries, typeName)
-    if (!typeEntry) return
-    handleUpdateFrontmatter(typeEntry.path, 'icon', icon)
-    handleUpdateFrontmatter(typeEntry.path, 'color', color)
+  const handleCustomizeType = useCallback(async (typeName: string, icon: string, color: string) => {
+    let typeEntry = findTypeEntry(entries, typeName)
+    if (!typeEntry) typeEntry = await createTypeEntry(typeName)
     updateEntry(typeEntry.path, { icon, color })
-  }, [entries, handleUpdateFrontmatter, updateEntry])
+    await handleUpdateFrontmatter(typeEntry.path, 'icon', icon)
+    await handleUpdateFrontmatter(typeEntry.path, 'color', color)
+  }, [entries, handleUpdateFrontmatter, updateEntry, createTypeEntry])
 
   const handleReorderSections = useCallback((orderedTypes: { typeName: string; order: number }[]) => {
     for (const { typeName, order } of orderedTypes) {
