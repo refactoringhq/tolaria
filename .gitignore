@@ -42,3 +42,6 @@ final_selection.py
 .claude-done
 .claude-blocked
 src-tauri/target
+
+# Generated mcp-server bundle (built by scripts/bundle-mcp-server.mjs)
+src-tauri/resources/

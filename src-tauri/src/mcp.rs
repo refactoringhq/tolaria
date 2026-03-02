@@ -27,10 +27,12 @@ pub(crate) fn mcp_server_dir() -> Result<PathBuf, String> {
     }
 
     let exe = std::env::current_exe().map_err(|e| format!("Cannot find executable: {e}"))?;
+    // On macOS the exe lives at Contents/MacOS/<binary>.
+    // Resources are placed at Contents/Resources/ by Tauri.
     let release_path = exe
         .parent()
         .and_then(|p| p.parent())
-        .map(|p| p.join("mcp-server"))
+        .map(|p| p.join("Resources").join("mcp-server"))
         .ok_or_else(|| "Cannot resolve mcp-server directory".to_string())?;
     if release_path.join("ws-bridge.js").exists() {
         return Ok(release_path);

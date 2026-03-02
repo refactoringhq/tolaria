@@ -147,6 +147,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^4.0.18
         version: 4.0.18(vitest@4.0.18(@types/node@24.10.13)(jiti@2.6.1)(jsdom@28.0.0)(lightningcss@1.30.2))
+      esbuild:
+        specifier: ^0.27.3
+        version: 0.27.3
       eslint:
         specifier: ^9.39.1
         version: 9.39.2(jiti@2.6.1)
