@@ -352,7 +352,9 @@ mod tests {
         let entries = scan_vault_cached(vault).unwrap();
         assert_eq!(entries.len(), 1);
         assert!(
-            entries[0].path.starts_with(&vault.to_string_lossy().as_ref()),
+            entries[0]
+                .path
+                .starts_with(&vault.to_string_lossy().as_ref()),
             "Entry path should start with vault path"
         );
 
@@ -369,7 +371,9 @@ mod tests {
         let entries2 = scan_vault_cached(vault).unwrap();
         assert_eq!(entries2.len(), 1);
         assert!(
-            entries2[0].path.starts_with(&vault.to_string_lossy().as_ref()),
+            entries2[0]
+                .path
+                .starts_with(&vault.to_string_lossy().as_ref()),
             "After stale-cache invalidation, paths should use the current vault path, got: {}",
             entries2[0].path
         );
