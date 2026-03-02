@@ -1109,7 +1109,8 @@ References:
     #[test]
     fn test_parse_template_block_scalar() {
         let dir = TempDir::new().unwrap();
-        let content = "---\ntype: Type\ntemplate: |\n  ## Objective\n  \n  ## Timeline\n---\n# Project\n";
+        let content =
+            "---\ntype: Type\ntemplate: |\n  ## Objective\n  \n  ## Timeline\n---\n# Project\n";
         let entry = parse_test_entry(&dir, "type/project.md", content);
         assert!(entry.template.is_some());
         let tmpl = entry.template.unwrap();
