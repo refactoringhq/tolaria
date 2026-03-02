@@ -60,6 +60,9 @@ jobs:
       - name: Run frontend tests
         run: pnpm test
 
+      - name: Bundle MCP server resources (required by Tauri build)
+        run: node scripts/bundle-mcp-server.mjs
+
       - name: Run Rust tests
         run: cargo test --manifest-path=src-tauri/Cargo.toml
 
