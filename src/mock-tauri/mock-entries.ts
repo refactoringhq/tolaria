@@ -1077,7 +1077,8 @@ function generateBulkEntries(count: number): VaultEntry[] {
       icon: null,
       color: null,
       order: null,
-      outgoingLinks: Array.from({ length: i % 8 }, (_, j) => `note/link-target-${(i + j) % 50}`),
+      outgoingLinks: Array.from({ length: i % 8 }, (_j, j) => `note/link-target-${(i + j) % 50}`),
+      sidebarLabel: null,
     })
   }
   return entries
