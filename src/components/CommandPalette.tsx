@@ -51,7 +51,7 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
   useEffect(() => {
     if (open) {
       setQuery('') // eslint-disable-line react-hooks/set-state-in-effect -- reset on open
-      setSelectedIndex(0) // eslint-disable-line react-hooks/set-state-in-effect -- reset on open
+      setSelectedIndex(0)
       setTimeout(() => inputRef.current?.focus(), 50)
     }
   }, [open])

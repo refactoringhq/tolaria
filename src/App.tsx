@@ -123,7 +123,7 @@ function App() {
   const resolvedPath = onboarding.state.status === 'ready' ? onboarding.state.vaultPath : vaultSwitcher.vaultPath
   const vault = useVaultLoader(resolvedPath)
   const { settings, saveSettings } = useSettings()
-  const themeManager = useThemeManager(resolvedPath)
+  const themeManager = useThemeManager(resolvedPath, vault.entries, vault.allContent)
 
   useMcpRegistration(resolvedPath, setToastMessage)
 
@@ -303,7 +303,15 @@ function App() {
     canGoBack: navHistory.canGoBack, canGoForward: navHistory.canGoForward,
     themes: themeManager.themes, activeThemeId: themeManager.activeThemeId,
     onSwitchTheme: themeManager.switchTheme,
-    onCreateTheme: async () => { await themeManager.createTheme() },
+    onCreateTheme: async () => {
+      await themeManager.createTheme()
+      await vault.reloadVault()
+      setSelection({ kind: 'sectionGroup', type: 'Theme' })
+    },
+    onOpenTheme: (themeId: string) => {
+      const entry = vault.entries.find(e => e.path === themeId)
+      if (entry) notes.handleSelectNote(entry)
+    },
     onOpenVault: vaultSwitcher.handleOpenLocalFolder,
     onToggleAIChat: dialogs.toggleAIChat,
   })

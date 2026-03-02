@@ -372,6 +372,12 @@ fn create_theme(vault_path: String, source_id: Option<String>) -> Result<String,
     theme::create_theme(&vault_path, source_id.as_deref())
 }
 
+#[tauri::command]
+fn create_vault_theme(vault_path: String, name: Option<String>) -> Result<String, String> {
+    let vault_path = expand_tilde(&vault_path);
+    theme::create_vault_theme(&vault_path, name.as_deref())
+}
+
 fn log_startup_result(label: &str, result: Result<usize, String>) {
     match result {
         Ok(n) if n > 0 => log::info!("{}: {} files", label, n),
@@ -398,8 +404,10 @@ fn run_startup_tasks() {
         vault::migrate_is_a_to_type(vp_str),
     );
 
-    // Seed _themes/ with built-in themes if missing
+    // Seed _themes/ with built-in JSON themes (legacy) if missing
     theme::seed_default_themes(vp_str);
+    // Seed theme/ with built-in vault theme notes if missing
+    theme::seed_vault_themes(vp_str);
 
     // Register Laputa MCP server in Claude Code and Cursor configs
     match mcp::register_mcp(vp_str) {
@@ -549,7 +557,8 @@ pub fn run() {
             get_vault_settings,
             save_vault_settings,
             set_active_theme,
-            create_theme
+            create_theme,
+            create_vault_theme
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

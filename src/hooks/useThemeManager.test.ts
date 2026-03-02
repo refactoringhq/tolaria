@@ -1,356 +1,348 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import type { ThemeFile, VaultSettings } from '../types'
+import type { VaultEntry } from '../types'
 
-const mockThemes: ThemeFile[] = [
-  {
-    id: 'default', name: 'Default', description: 'Clean default theme',
-    colors: { background: '#FFFFFF', foreground: '#1A1A2E', primary: '#6366F1', border: '#E2E8F0', 'sidebar-background': '#F8FAFC' },
-    typography: { 'font-family': 'Inter, sans-serif' },
-    spacing: { 'sidebar-width': '240px' },
-  },
-  {
-    id: 'dark', name: 'Dark', description: 'Dark theme',
-    colors: { background: '#0F0F23', foreground: '#E2E8F0', primary: '#818CF8', border: '#1E293B' },
-    typography: { 'font-family': 'Inter, sans-serif' },
-    spacing: {},
-  },
-]
+const THEME_PATH_DEFAULT = '/vault/theme/default.md'
+const THEME_PATH_DARK = '/vault/theme/dark.md'
 
-const mockSettings: VaultSettings = { theme: 'default' }
+const DEFAULT_THEME_CONTENT = `---
+Is A: Theme
+Description: Light theme
+background: "#FFFFFF"
+foreground: "#37352F"
+primary: "#155DFF"
+sidebar: "#F7F6F3"
+text-primary: "#37352F"
+---
 
-const mockInvokeFn = vi.fn(async (cmd: string) => {
-  if (cmd === 'list_themes') return mockThemes
-  if (cmd === 'get_vault_settings') return mockSettings
+# Default Theme
+`
+
+const DARK_THEME_CONTENT = `---
+Is A: Theme
+Description: Dark theme
+background: "#0f0f1a"
+foreground: "#e0e0e0"
+primary: "#155DFF"
+sidebar: "#1a1a2e"
+text-primary: "#e0e0e0"
+---
+
+# Dark Theme
+`
+
+function makeThemeEntry(path: string, title: string): VaultEntry {
+  return {
+    path,
+    filename: path.split('/').pop()!,
+    title,
+    isA: 'Theme',
+    aliases: [],
+    belongsTo: [],
+    relatedTo: [],
+    status: null,
+    owner: null,
+    cadence: null,
+    archived: false,
+    trashed: false,
+    trashedAt: null,
+    modifiedAt: null,
+    createdAt: null,
+    fileSize: 0,
+    snippet: '',
+    wordCount: 0,
+    relationships: {},
+    icon: null,
+    color: null,
+    order: null,
+    sidebarLabel: null,
+    template: null,
+    outgoingLinks: [],
+  }
+}
+
+const defaultEntry = makeThemeEntry(THEME_PATH_DEFAULT, 'Default Theme')
+const darkEntry = makeThemeEntry(THEME_PATH_DARK, 'Dark Theme')
+
+const mockInvokeFn = vi.fn(async (cmd: string, args?: Record<string, unknown>) => {
+  if (cmd === 'get_vault_settings') return { theme: THEME_PATH_DEFAULT }
+  if (cmd === 'get_note_content') {
+    const path = args?.path as string | undefined
+    if (path === THEME_PATH_DEFAULT) return DEFAULT_THEME_CONTENT
+    if (path === THEME_PATH_DARK) return DARK_THEME_CONTENT
+    return ''
+  }
   if (cmd === 'set_active_theme') return null
-  if (cmd === 'create_theme') return 'new-theme-id'
+  if (cmd === 'create_vault_theme') return '/vault/theme/untitled.md'
   return null
 })
 
-vi.mock('@tauri-apps/api/core', () => ({
-  invoke: vi.fn(),
-}))
-
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }))
 vi.mock('../mock-tauri', () => ({
   isTauri: () => false,
   mockInvoke: (cmd: string, args?: Record<string, unknown>) => mockInvokeFn(cmd, args),
 }))
 
-// Must import after mocks
-const { useThemeManager, isColorDark } = await import('./useThemeManager')
+const { useThemeManager, extractCssVars } = await import('./useThemeManager')
 
-describe('isColorDark', () => {
-  it('identifies dark colors', () => {
-    expect(isColorDark('#000000')).toBe(true)
-    expect(isColorDark('#0F0F23')).toBe(true)
-    expect(isColorDark('#1a1a2e')).toBe(true)
-    expect(isColorDark('#0f0f1a')).toBe(true)
+describe('extractCssVars', () => {
+  it('extracts color variables from frontmatter', () => {
+    const vars = extractCssVars(DEFAULT_THEME_CONTENT)
+    expect(vars['--background']).toBe('#FFFFFF')
+    expect(vars['--foreground']).toBe('#37352F')
+    expect(vars['--primary']).toBe('#155DFF')
   })
 
-  it('identifies light colors', () => {
-    expect(isColorDark('#FFFFFF')).toBe(false)
-    expect(isColorDark('#F7F6F3')).toBe(false)
-    expect(isColorDark('#E0E0E0')).toBe(false)
+  it('excludes metadata keys', () => {
+    const vars = extractCssVars(DEFAULT_THEME_CONTENT)
+    expect('--Is A' in vars).toBe(false)
+    expect('--Description' in vars).toBe(false)
   })
 })
 
 describe('useThemeManager', () => {
+  const entries = [defaultEntry, darkEntry]
+  const allContent: Record<string, string> = {}
+
   beforeEach(() => {
     vi.clearAllMocks()
-    mockInvokeFn.mockImplementation(async (cmd: string) => {
-      if (cmd === 'list_themes') return mockThemes
-      if (cmd === 'get_vault_settings') return mockSettings
+    mockInvokeFn.mockImplementation(async (cmd: string, args?: Record<string, unknown>) => {
+      if (cmd === 'get_vault_settings') return { theme: THEME_PATH_DEFAULT }
+      if (cmd === 'get_note_content') {
+        const path = args?.path as string | undefined
+        if (path === THEME_PATH_DEFAULT) return DEFAULT_THEME_CONTENT
+        if (path === THEME_PATH_DARK) return DARK_THEME_CONTENT
+        return ''
+      }
       if (cmd === 'set_active_theme') return null
-      if (cmd === 'create_theme') return 'new-theme-id'
+      if (cmd === 'create_vault_theme') return '/vault/theme/untitled.md'
       return null
     })
-    // Clear any theme CSS properties from previous tests
-    const root = document.documentElement
-    root.style.cssText = ''
+    document.documentElement.style.cssText = ''
   })
 
-  it('loads themes and active theme on mount', async () => {
-    const { result } = renderHook(() => useThemeManager('/vault'))
+  it('builds themes list from vault entries with isA === Theme', async () => {
+    const { result } = renderHook(() =>
+      useThemeManager('/vault', entries, allContent)
+    )
     await waitFor(() => {
       expect(result.current.themes).toHaveLength(2)
     })
-    expect(result.current.activeThemeId).toBe('default')
-    expect(result.current.activeTheme?.name).toBe('Default')
+    expect(result.current.themes[0].name).toBe('Default Theme')
+    expect(result.current.themes[0].id).toBe(THEME_PATH_DEFAULT)
+  })
+
+  it('loads active theme from vault settings on mount', async () => {
+    const { result } = renderHook(() =>
+      useThemeManager('/vault', entries, allContent)
+    )
+    await waitFor(() => {
+      expect(result.current.activeThemeId).toBe(THEME_PATH_DEFAULT)
+    })
+    expect(result.current.activeTheme?.name).toBe('Default Theme')
+  })
+
+  it('applies CSS vars from theme note content', async () => {
+    const { result } = renderHook(() =>
+      useThemeManager('/vault', entries, allContent)
+    )
+    await waitFor(() => {
+      expect(result.current.activeTheme).not.toBeNull()
+    })
+    const root = document.documentElement
+    expect(root.style.getPropertyValue('--background')).toBe('#FFFFFF')
+    expect(root.style.getPropertyValue('--foreground')).toBe('#37352F')
+    expect(root.style.getPropertyValue('--primary')).toBe('#155DFF')
   })
 
   it('returns empty state when vaultPath is null', async () => {
-    const { result } = renderHook(() => useThemeManager(null))
-    // Give it time to settle — should remain empty
+    const { result } = renderHook(() =>
+      useThemeManager(null, entries, allContent)
+    )
     await new Promise(r => setTimeout(r, 50))
-    expect(result.current.themes).toHaveLength(0)
     expect(result.current.activeThemeId).toBeNull()
     expect(result.current.activeTheme).toBeNull()
     expect(mockInvokeFn).not.toHaveBeenCalled()
   })
 
-  it('applies CSS custom properties for active theme', async () => {
-    const { result } = renderHook(() => useThemeManager('/vault'))
+  it('excludes trashed entries from themes list', async () => {
+    const trashedEntry = { ...darkEntry, trashed: true }
+    const { result } = renderHook(() =>
+      useThemeManager('/vault', [defaultEntry, trashedEntry], allContent)
+    )
     await waitFor(() => {
-      expect(result.current.activeTheme).not.toBeNull()
+      expect(result.current.themes).toHaveLength(1)
     })
-    const root = document.documentElement
-    expect(root.style.getPropertyValue('--background')).toBe('#FFFFFF')
-    expect(root.style.getPropertyValue('--foreground')).toBe('#1A1A2E')
-    expect(root.style.getPropertyValue('--primary')).toBe('#6366F1')
-    expect(root.style.getPropertyValue('--theme-background')).toBe('#FFFFFF')
-    expect(root.style.getPropertyValue('--theme-font-family')).toBe('Inter, sans-serif')
-    expect(root.style.getPropertyValue('--theme-sidebar-width')).toBe('240px')
-  })
-
-  it('maps sidebar-background to --sidebar', async () => {
-    const { result } = renderHook(() => useThemeManager('/vault'))
-    await waitFor(() => {
-      expect(result.current.activeTheme).not.toBeNull()
-    })
-    expect(document.documentElement.style.getPropertyValue('--sidebar')).toBe('#F8FAFC')
+    expect(result.current.themes[0].name).toBe('Default Theme')
   })
 
   it('switchTheme calls set_active_theme and updates activeThemeId', async () => {
-    const { result } = renderHook(() => useThemeManager('/vault'))
+    const { result } = renderHook(() =>
+      useThemeManager('/vault', entries, allContent)
+    )
+    await waitFor(() => { expect(result.current.themes).toHaveLength(2) })
+
+    await act(async () => {
+      await result.current.switchTheme(THEME_PATH_DARK)
+    })
+
+    expect(mockInvokeFn).toHaveBeenCalledWith('set_active_theme', {
+      vaultPath: '/vault', themeId: THEME_PATH_DARK,
+    })
+    expect(result.current.activeThemeId).toBe(THEME_PATH_DARK)
+  })
+
+  it('clears old CSS vars and applies new theme on switch', async () => {
+    const { result } = renderHook(() =>
+      useThemeManager('/vault', entries, allContent)
+    )
     await waitFor(() => {
-      expect(result.current.themes).toHaveLength(2)
+      expect(document.documentElement.style.getPropertyValue('--background')).toBe('#FFFFFF')
     })
 
     await act(async () => {
-      await result.current.switchTheme('dark')
+      await result.current.switchTheme(THEME_PATH_DARK)
     })
 
-    expect(mockInvokeFn).toHaveBeenCalledWith('set_active_theme', { vaultPath: '/vault', themeId: 'dark' })
-    expect(result.current.activeThemeId).toBe('dark')
+    await waitFor(() => {
+      expect(document.documentElement.style.getPropertyValue('--background')).toBe('#0f0f1a')
+    })
   })
 
-  it('clears old theme CSS and applies new theme on switch', async () => {
-    const { result } = renderHook(() => useThemeManager('/vault'))
-    await waitFor(() => {
-      expect(result.current.activeTheme?.id).toBe('default')
-    })
+  it('createTheme calls create_vault_theme and switches to new theme', async () => {
+    const { result } = renderHook(() =>
+      useThemeManager('/vault', entries, allContent)
+    )
+    await waitFor(() => { expect(result.current.themes).toHaveLength(2) })
 
-    const root = document.documentElement
-    expect(root.style.getPropertyValue('--background')).toBe('#FFFFFF')
-
+    let newPath = ''
     await act(async () => {
-      await result.current.switchTheme('dark')
+      newPath = await result.current.createTheme('My Theme')
     })
 
-    await waitFor(() => {
-      expect(root.style.getPropertyValue('--background')).toBe('#0F0F23')
+    expect(newPath).toBe('/vault/theme/untitled.md')
+    expect(mockInvokeFn).toHaveBeenCalledWith('create_vault_theme', {
+      vaultPath: '/vault', name: 'My Theme',
     })
-    expect(root.style.getPropertyValue('--foreground')).toBe('#E2E8F0')
+    expect(result.current.activeThemeId).toBe('/vault/theme/untitled.md')
   })
 
-  it('createTheme calls create_theme and reloads themes', async () => {
-    const { result } = renderHook(() => useThemeManager('/vault'))
-    await waitFor(() => {
-      expect(result.current.themes).toHaveLength(2)
-    })
-
-    let newId = ''
-    await act(async () => {
-      newId = await result.current.createTheme('default')
-    })
-
-    expect(newId).toBe('new-theme-id')
-    expect(mockInvokeFn).toHaveBeenCalledWith('create_theme', { vaultPath: '/vault', sourceId: 'default' })
-    // Should reload after creation
-    const listCalls = mockInvokeFn.mock.calls.filter(c => c[0] === 'list_themes')
-    expect(listCalls.length).toBeGreaterThanOrEqual(2)
-  })
-
-  it('createTheme passes null source_id when no sourceId provided', async () => {
-    const { result } = renderHook(() => useThemeManager('/vault'))
-    await waitFor(() => {
-      expect(result.current.themes).toHaveLength(2)
-    })
+  it('createTheme passes null name when none provided', async () => {
+    const { result } = renderHook(() =>
+      useThemeManager('/vault', entries, allContent)
+    )
+    await waitFor(() => { expect(result.current.themes).toHaveLength(2) })
 
     await act(async () => {
       await result.current.createTheme()
     })
 
-    expect(mockInvokeFn).toHaveBeenCalledWith('create_theme', { vaultPath: '/vault', sourceId: null })
+    expect(mockInvokeFn).toHaveBeenCalledWith('create_vault_theme', {
+      vaultPath: '/vault', name: null,
+    })
+  })
+
+  it('falls back when active theme is trashed', async () => {
+    const { result, rerender } = renderHook(
+      ({ ents }) => useThemeManager('/vault', ents, allContent),
+      { initialProps: { ents: entries } },
+    )
+    await waitFor(() => {
+      expect(result.current.activeThemeId).toBe(THEME_PATH_DEFAULT)
+    })
+
+    const trashedDefault = { ...defaultEntry, trashed: true }
+    rerender({ ents: [trashedDefault, darkEntry] })
+
+    await waitFor(() => {
+      expect(result.current.activeThemeId).toBeNull()
+    })
+    // CSS vars are cleared from tracked applied vars — DOM state depends on prior apply
   })
 
   it('handles load failure gracefully', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     mockInvokeFn.mockRejectedValue(new Error('disk error'))
 
-    const { result } = renderHook(() => useThemeManager('/vault'))
-    await waitFor(() => {
-      expect(warnSpy).toHaveBeenCalledWith('Failed to load themes:', expect.any(Error))
-    })
+    const { result } = renderHook(() =>
+      useThemeManager('/vault', entries, allContent)
+    )
+    await new Promise(r => setTimeout(r, 50))
 
-    expect(result.current.themes).toHaveLength(0)
     expect(result.current.activeThemeId).toBeNull()
     warnSpy.mockRestore()
   })
 
   it('handles switchTheme failure gracefully', async () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const { result } = renderHook(() => useThemeManager('/vault'))
-    await waitFor(() => {
-      expect(result.current.themes).toHaveLength(2)
-    })
+    const { result } = renderHook(() =>
+      useThemeManager('/vault', entries, allContent)
+    )
+    await waitFor(() => { expect(result.current.themes).toHaveLength(2) })
 
     mockInvokeFn.mockRejectedValueOnce(new Error('permission denied'))
 
     await act(async () => {
-      await result.current.switchTheme('dark')
+      await result.current.switchTheme(THEME_PATH_DARK)
     })
 
-    // Should not have changed the active theme
-    expect(result.current.activeThemeId).toBe('default')
-    expect(errorSpy).toHaveBeenCalledWith('Failed to switch theme:', expect.any(Error))
-    errorSpy.mockRestore()
-  })
-
-  it('handles createTheme failure gracefully', async () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const { result } = renderHook(() => useThemeManager('/vault'))
-    await waitFor(() => {
-      expect(result.current.themes).toHaveLength(2)
-    })
-
-    mockInvokeFn.mockRejectedValueOnce(new Error('write error'))
-
-    let newId = ''
-    await act(async () => {
-      newId = await result.current.createTheme('default')
-    })
-
-    expect(newId).toBe('')
-    expect(errorSpy).toHaveBeenCalledWith('Failed to create theme:', expect.any(Error))
+    expect(result.current.activeThemeId).toBe(THEME_PATH_DEFAULT)
     errorSpy.mockRestore()
   })
 
   it('switchTheme is a no-op when vaultPath is null', async () => {
-    const { result } = renderHook(() => useThemeManager(null))
+    const { result } = renderHook(() =>
+      useThemeManager(null, entries, allContent)
+    )
     await act(async () => {
-      await result.current.switchTheme('dark')
+      await result.current.switchTheme(THEME_PATH_DARK)
     })
     expect(mockInvokeFn).not.toHaveBeenCalledWith('set_active_theme', expect.anything())
   })
 
   it('createTheme returns empty string when vaultPath is null', async () => {
-    const { result } = renderHook(() => useThemeManager(null))
-    let newId = ''
+    const { result } = renderHook(() =>
+      useThemeManager(null, entries, allContent)
+    )
+    let newPath = ''
     await act(async () => {
-      newId = await result.current.createTheme()
+      newPath = await result.current.createTheme()
     })
-    expect(newId).toBe('')
+    expect(newPath).toBe('')
   })
 
-  it('isDark is false for light theme', async () => {
-    const { result } = renderHook(() => useThemeManager('/vault'))
-    await waitFor(() => {
-      expect(result.current.activeTheme?.id).toBe('default')
-    })
-    expect(result.current.isDark).toBe(false)
-  })
-
-  it('isDark is true for dark theme', async () => {
-    const { result } = renderHook(() => useThemeManager('/vault'))
-    await waitFor(() => {
-      expect(result.current.themes).toHaveLength(2)
-    })
-
-    await act(async () => {
-      await result.current.switchTheme('dark')
-    })
-
-    expect(result.current.isDark).toBe(true)
-  })
-
-  it('isDark is false when no active theme', async () => {
-    const { result } = renderHook(() => useThemeManager(null))
-    expect(result.current.isDark).toBe(false)
-  })
-
-  it('derives app-specific CSS variables from theme colors', async () => {
-    const { result } = renderHook(() => useThemeManager('/vault'))
+  it('re-applies theme when active content changes in allContent', async () => {
+    const { result, rerender } = renderHook(
+      ({ content }) => useThemeManager('/vault', entries, content),
+      { initialProps: { content: allContent } },
+    )
     await waitFor(() => {
       expect(result.current.activeTheme).not.toBeNull()
     })
 
-    const root = document.documentElement
-    expect(root.style.getPropertyValue('--bg-primary')).toBe('#FFFFFF')
-    expect(root.style.getPropertyValue('--text-primary')).toBe('#1A1A2E')
-    expect(root.style.getPropertyValue('--text-heading')).toBe('#1A1A2E')
-    expect(root.style.getPropertyValue('--border-primary')).toBe('#E2E8F0')
+    const newContent = {
+      [THEME_PATH_DEFAULT]: `---\nIs A: Theme\nbackground: "#FF0000"\n---\n# Default Theme\n`,
+    }
+    rerender({ content: newContent })
+
+    await waitFor(() => {
+      expect(document.documentElement.style.getPropertyValue('--background')).toBe('#FF0000')
+    })
   })
 
-  it('sets color-scheme and data-theme-mode for dark theme', async () => {
-    const { result } = renderHook(() => useThemeManager('/vault'))
-    await waitFor(() => {
-      expect(result.current.themes).toHaveLength(2)
-    })
+  it('reloadThemes re-reads vault settings', async () => {
+    const { result } = renderHook(() =>
+      useThemeManager('/vault', entries, allContent)
+    )
+    await waitFor(() => { expect(result.current.themes).toHaveLength(2) })
 
-    await act(async () => {
-      await result.current.switchTheme('dark')
-    })
-
-    const root = document.documentElement
-    await waitFor(() => {
-      expect(root.style.getPropertyValue('color-scheme')).toBe('dark')
-    })
-    expect(root.dataset.themeMode).toBe('dark')
-    expect(root.style.getPropertyValue('--bg-primary')).toBe('#0F0F23')
-    expect(root.style.getPropertyValue('--text-primary')).toBe('#E2E8F0')
-  })
-
-  it('sets color-scheme to light for light theme', async () => {
-    const { result } = renderHook(() => useThemeManager('/vault'))
-    await waitFor(() => {
-      expect(result.current.activeTheme).not.toBeNull()
-    })
-
-    const root = document.documentElement
-    expect(root.style.getPropertyValue('color-scheme')).toBe('light')
-    expect(root.dataset.themeMode).toBe('light')
-  })
-
-  it('updates derived variables when switching between themes', async () => {
-    const { result } = renderHook(() => useThemeManager('/vault'))
-    await waitFor(() => {
-      expect(result.current.themes).toHaveLength(2)
-    })
-
-    await act(async () => {
-      await result.current.switchTheme('dark')
-    })
-
-    const root = document.documentElement
-    await waitFor(() => {
-      expect(root.style.getPropertyValue('--bg-primary')).toBe('#0F0F23')
-    })
-
-    await act(async () => {
-      await result.current.switchTheme('default')
-    })
-
-    await waitFor(() => {
-      expect(root.style.getPropertyValue('--bg-primary')).toBe('#FFFFFF')
-    })
-    expect(root.style.getPropertyValue('color-scheme')).toBe('light')
-    expect(root.dataset.themeMode).toBe('light')
-  })
-
-  it('reloadThemes re-fetches theme list', async () => {
-    const { result } = renderHook(() => useThemeManager('/vault'))
-    await waitFor(() => {
-      expect(result.current.themes).toHaveLength(2)
-    })
-
-    const initialListCalls = mockInvokeFn.mock.calls.filter(c => c[0] === 'list_themes').length
+    const initialCalls = mockInvokeFn.mock.calls.filter(c => c[0] === 'get_vault_settings').length
 
     await act(async () => {
       await result.current.reloadThemes()
     })
 
-    const afterListCalls = mockInvokeFn.mock.calls.filter(c => c[0] === 'list_themes').length
-    expect(afterListCalls).toBe(initialListCalls + 1)
+    const afterCalls = mockInvokeFn.mock.calls.filter(c => c[0] === 'get_vault_settings').length
+    expect(afterCalls).toBe(initialCalls + 1)
   })
 })

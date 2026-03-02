@@ -129,7 +129,7 @@ function TagsValue({ propKey, value, isEditing, vaultTags, onSave, onStartEdit }
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 10,
                 fontWeight: 600,
-                letterSpacing: '1.2px',
+                letterSpacing: '0',
                 textTransform: 'uppercase' as const,
                 overflow: 'hidden',
                 whiteSpace: 'nowrap' as const,

@@ -49,6 +49,7 @@ interface CommandRegistryConfig {
   activeThemeId?: string | null
   onSwitchTheme?: (themeId: string) => void
   onCreateTheme?: () => void
+  onOpenTheme?: (themeId: string) => void
 }
 
 const PLURAL_OVERRIDES: Record<string, string> = {
@@ -132,22 +133,36 @@ export function buildThemeCommands(
   activeThemeId: string | null | undefined,
   onSwitchTheme: ((themeId: string) => void) | undefined,
   onCreateTheme: (() => void) | undefined,
+  onOpenTheme: ((themeId: string) => void) | undefined,
 ): CommandAction[] {
-  const switchCmds = (themes ?? []).map(t => ({
-    id: `switch-theme-${t.id}`,
-    label: `Switch to ${t.name} Theme`,
-    group: 'Appearance' as CommandGroup,
-    keywords: ['theme', 'appearance', 'color', t.name.toLowerCase()],
-    enabled: t.id !== activeThemeId,
-    execute: () => onSwitchTheme?.(t.id),
-  }))
+  const cmds: CommandAction[] = []
+  for (const t of (themes ?? [])) {
+    cmds.push({
+      id: `switch-theme-${t.id}`,
+      label: `Switch to ${t.name} Theme`,
+      group: 'Appearance' as CommandGroup,
+      keywords: ['theme', 'appearance', 'color', t.name.toLowerCase()],
+      enabled: t.id !== activeThemeId,
+      execute: () => onSwitchTheme?.(t.id),
+    })
+    if (onOpenTheme) {
+      cmds.push({
+        id: `open-theme-${t.id}`,
+        label: `Edit ${t.name} Theme`,
+        group: 'Appearance' as CommandGroup,
+        keywords: ['theme', 'edit', 'open', 'appearance', t.name.toLowerCase()],
+        enabled: true,
+        execute: () => onOpenTheme(t.id),
+      })
+    }
+  }
   if (onCreateTheme) {
-    switchCmds.push({
+    cmds.push({
       id: 'new-theme', label: 'New Theme', group: 'Appearance' as CommandGroup,
       keywords: ['theme', 'create', 'appearance'], enabled: true, execute: onCreateTheme,
     })
   }
-  return switchCmds
+  return cmds
 }
 
 export function useCommandRegistry(config: CommandRegistryConfig): CommandAction[] {
@@ -159,7 +174,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     onZoomIn, onZoomOut, onZoomReset, zoomLevel,
     onSelect, onOpenDailyNote, onCloseTab,
     onGoBack, onGoForward, canGoBack, canGoForward,
-    themes, activeThemeId, onSwitchTheme, onCreateTheme,
+    themes, activeThemeId, onSwitchTheme, onCreateTheme, onOpenTheme,
   } = config
 
   const hasActiveNote = activeTabPath !== null
@@ -209,7 +224,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
       ...buildViewCommands(hasActiveNote, onSetViewMode, onToggleInspector, onToggleRawEditor, onToggleAIChat, zoomLevel, onZoomIn, onZoomOut, onZoomReset),
 
       // Appearance
-      ...buildThemeCommands(themes, activeThemeId, onSwitchTheme, onCreateTheme),
+      ...buildThemeCommands(themes, activeThemeId, onSwitchTheme, onCreateTheme, onOpenTheme),
 
       // Settings
       { id: 'open-settings', label: 'Open Settings', group: 'Settings', shortcut: '⌘,', keywords: ['preferences', 'config'], enabled: true, execute: onOpenSettings },
@@ -228,6 +243,6 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     onZoomIn, onZoomOut, onZoomReset, zoomLevel,
     onSelect, onOpenDailyNote, onCloseTab,
     onGoBack, onGoForward, canGoBack, canGoForward,
-    vaultTypes, themes, activeThemeId, onSwitchTheme, onCreateTheme, onOpenVault,
+    vaultTypes, themes, activeThemeId, onSwitchTheme, onCreateTheme, onOpenTheme,
   ])
 }

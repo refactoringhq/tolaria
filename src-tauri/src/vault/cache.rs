@@ -50,11 +50,6 @@ fn parse_porcelain_line(line: &str) -> Option<(&str, String)> {
     Some((&line[..2], line[3..].trim().to_string()))
 }
 
-/// Check if a porcelain status indicates a new/untracked file.
-fn is_new_file_status(status: &str) -> bool {
-    status == "??" || status.starts_with('A')
-}
-
 /// Extract .md file paths from git diff --name-only output.
 fn collect_md_paths_from_diff(stdout: &str) -> Vec<String> {
     stdout
@@ -80,11 +75,15 @@ fn git_changed_files(vault: &Path, from_hash: &str, to_hash: &str) -> Vec<String
         .map(|s| collect_md_paths_from_diff(&s))
         .unwrap_or_default();
 
-    let uncommitted = run_git(vault, &["status", "--porcelain"])
+    // Use ls-files for untracked files so that newly-seeded directories are picked up
+    // as individual files rather than as a single "?? dirname/" entry.
+    let uncommitted = git_uncommitted_new_files(vault);
+    // Also include modified-but-unstaged files via status --porcelain.
+    let modified = run_git(vault, &["status", "--porcelain"])
         .map(|s| collect_md_paths_from_porcelain(&s))
         .unwrap_or_default();
 
-    for path in uncommitted {
+    for path in uncommitted.into_iter().chain(modified) {
         if !files.contains(&path) {
             files.push(path);
         }
@@ -94,16 +93,17 @@ fn git_changed_files(vault: &Path, from_hash: &str, to_hash: &str) -> Vec<String
 }
 
 fn git_uncommitted_new_files(vault: &Path) -> Vec<String> {
-    let stdout = match run_git(vault, &["status", "--porcelain"]) {
-        Some(s) => s,
-        None => return Vec::new(),
-    };
-    stdout
-        .lines()
-        .filter_map(parse_porcelain_line)
-        .filter(|(status, path)| path.ends_with(".md") && is_new_file_status(status))
-        .map(|(_, path)| path)
-        .collect()
+    // Use ls-files to enumerate untracked files individually — git status --porcelain shows
+    // whole untracked directories (e.g. "?? theme/") rather than individual files inside them,
+    // so newly-seeded directories would never appear in results.
+    run_git(vault, &["ls-files", "--others", "--exclude-standard"])
+        .map(|s| {
+            s.lines()
+                .filter(|line| line.ends_with(".md"))
+                .map(|line| line.to_string())
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 fn load_cache(vault: &Path) -> Option<VaultCache> {
@@ -357,5 +357,74 @@ mod tests {
         let titles: Vec<&str> = entries2.iter().map(|e| e.title.as_str()).collect();
         assert!(titles.contains(&"First"));
         assert!(titles.contains(&"Second"));
+    }
+
+    #[test]
+    fn test_scan_vault_cached_new_untracked_directory() {
+        // Regression test: git status --porcelain shows "?? theme/" for an untracked
+        // directory, not individual files. scan_vault_cached must still pick them up.
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path();
+
+        std::process::Command::new("git")
+            .args(["init"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+        std::process::Command::new("git")
+            .args(["config", "user.email", "t@t.com"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+        std::process::Command::new("git")
+            .args(["config", "user.name", "T"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+
+        create_test_file(vault, "note.md", "# Note\n\nContent.");
+        std::process::Command::new("git")
+            .args(["add", "."])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+        std::process::Command::new("git")
+            .args(["commit", "-m", "init"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+
+        // Build initial cache
+        let entries = scan_vault_cached(vault).unwrap();
+        assert_eq!(entries.len(), 1);
+
+        // Add a new DIRECTORY with files (simulating seed_vault_themes) — NOT committed
+        create_test_file(
+            vault,
+            "theme/default.md",
+            "---\nIs A: Theme\n---\n# Default Theme\n",
+        );
+        create_test_file(
+            vault,
+            "theme/dark.md",
+            "---\nIs A: Theme\n---\n# Dark Theme\n",
+        );
+
+        // Re-scan — should find the new untracked files inside the untracked directory
+        let entries2 = scan_vault_cached(vault).unwrap();
+        assert_eq!(
+            entries2.len(),
+            3,
+            "Should include theme files from untracked directory"
+        );
+        let titles: Vec<&str> = entries2.iter().map(|e| e.title.as_str()).collect();
+        assert!(
+            titles.contains(&"Default Theme"),
+            "Should find default.md in untracked theme/ dir"
+        );
+        assert!(
+            titles.contains(&"Dark Theme"),
+            "Should find dark.md in untracked theme/ dir"
+        );
     }
 }

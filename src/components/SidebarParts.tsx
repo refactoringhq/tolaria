@@ -1,7 +1,7 @@
 import { type ComponentType } from 'react'
 import type { VaultEntry, SidebarSelection } from '../types'
 import { cn } from '@/lib/utils'
-import { ChevronRight, ChevronDown, Plus, GripVertical } from 'lucide-react'
+import { ChevronRight, ChevronDown, Plus } from 'lucide-react'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 import { type IconProps } from '@phosphor-icons/react'
 
@@ -75,7 +75,6 @@ export interface SectionContentProps {
   onCreateNewType?: () => void
   onContextMenu: (e: React.MouseEvent, type: string) => void
   onToggle: () => void
-  dragHandleProps?: Record<string, unknown>
 }
 
 function childSelection(type: string, entry: VaultEntry): SidebarSelection {
@@ -90,7 +89,7 @@ function resolveCreateHandler(type: string, onCreateType?: (type: string) => voi
 
 export function SectionContent({
   group, items, isCollapsed, selection, onSelect, onSelectNote,
-  onCreateType, onCreateNewType, onContextMenu, onToggle, dragHandleProps,
+  onCreateType, onCreateNewType, onContextMenu, onToggle,
 }: SectionContentProps) {
   const { label, type, Icon, customColor } = group
   const sectionColor = getTypeColor(type, customColor)
@@ -109,7 +108,6 @@ export function SectionContent({
         onContextMenu={(e) => onContextMenu(e, type)}
         onToggle={onToggle}
         onCreate={(e) => { e.stopPropagation(); onCreate?.() }}
-        dragHandleProps={dragHandleProps}
       />
       {!isCollapsed && items.length > 0 && (
         <SectionChildList
@@ -145,17 +143,16 @@ function SectionChildList({ items, type, selection, sectionColor, sectionLightCo
   )
 }
 
-function SectionHeader({ label, type, Icon, sectionColor, isCollapsed, isActive, showCreate, onSelect, onContextMenu, onToggle, onCreate, dragHandleProps }: {
+function SectionHeader({ label, type, Icon, sectionColor, isCollapsed, isActive, showCreate, onSelect, onContextMenu, onToggle, onCreate }: {
   label: string; type: string; Icon: ComponentType<IconProps>
   sectionColor: string; isCollapsed: boolean; isActive: boolean; showCreate: boolean
   onSelect: () => void; onContextMenu: (e: React.MouseEvent) => void
   onToggle: () => void; onCreate: (e: React.MouseEvent) => void
-  dragHandleProps?: Record<string, unknown>
 }) {
   return (
     <div
       className={cn("group/section flex cursor-pointer select-none items-center justify-between rounded transition-colors", isActive ? "bg-secondary" : "hover:bg-accent")}
-      style={{ padding: '6px 8px 6px 6px', borderRadius: 4, gap: 4 }}
+      style={{ padding: '6px 8px 6px 16px', borderRadius: 4, gap: 4 }}
       onClick={() => {
         if (isCollapsed) { onToggle(); onSelect() }
         else if (isActive) { onToggle() }
@@ -163,9 +160,6 @@ function SectionHeader({ label, type, Icon, sectionColor, isCollapsed, isActive,
       }} onContextMenu={onContextMenu}
     >
       <div className="flex items-center" style={{ gap: 4 }}>
-        <div className="flex shrink-0 items-center justify-center text-muted-foreground opacity-0 group-hover/section:opacity-50 hover:!opacity-100 cursor-grab" style={{ width: 16, height: 16 }} {...dragHandleProps} aria-label={`Drag to reorder ${label}`}>
-          <GripVertical size={12} />
-        </div>
         <Icon size={16} style={{ color: sectionColor }} />
         <span className="text-[13px] font-medium text-foreground" style={{ marginLeft: 4 }}>{label}</span>
       </div>

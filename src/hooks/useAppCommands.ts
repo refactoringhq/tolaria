@@ -51,6 +51,7 @@ interface AppCommandsConfig {
   activeThemeId?: string | null
   onSwitchTheme?: (themeId: string) => void
   onCreateTheme?: () => void
+  onOpenTheme?: (themeId: string) => void
   onOpenVault?: () => void
   onToggleAIChat?: () => void
 }
@@ -147,6 +148,7 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     activeThemeId: config.activeThemeId,
     onSwitchTheme: config.onSwitchTheme,
     onCreateTheme: config.onCreateTheme,
+    onOpenTheme: config.onOpenTheme,
     onOpenVault: config.onOpenVault,
     onToggleAIChat: config.onToggleAIChat,
   })

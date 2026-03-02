@@ -48,8 +48,20 @@ export function useEditorFocus(
       const selectTitle = detail?.selectTitle ?? false
       const doFocus = () => {
         editor.focus()
-        if (selectTitle) selectFirstHeading(editor)
-        if (t0) console.debug(`[perf] createNote → focus: ${(performance.now() - t0).toFixed(1)}ms`)
+        if (!selectTitle) {
+          if (t0) console.debug(`[perf] createNote → focus: ${(performance.now() - t0).toFixed(1)}ms`)
+          return
+        }
+        // Defer selection to the next animation frame so the new note's content
+        // (applied via queueMicrotask inside a React effect triggered by the tab
+        // change) is in the document before we try to select the heading.
+        // Between two rAF callbacks, all pending macrotasks — including React's
+        // MessageChannel re-render and the subsequent queueMicrotask content swap
+        // — complete, so the heading block is guaranteed to exist by rAF 2.
+        requestAnimationFrame(() => {
+          selectFirstHeading(editor)
+          if (t0) console.debug(`[perf] createNote → focus+select: ${(performance.now() - t0).toFixed(1)}ms`)
+        })
       }
       if (editorMountedRef.current) {
         requestAnimationFrame(doFocus)

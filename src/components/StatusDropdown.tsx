@@ -16,7 +16,7 @@ export function StatusPill({ status, className }: { status: string; className?: 
         fontFamily: "'IBM Plex Mono', monospace",
         fontSize: 10,
         fontWeight: 600,
-        letterSpacing: '1.2px',
+        letterSpacing: '0',
         textTransform: 'uppercase' as const,
         maxWidth: 160,
       }}
@@ -101,7 +101,7 @@ const SECTION_LABEL_STYLE = {
   fontFamily: "'IBM Plex Mono', monospace",
   fontSize: 9,
   fontWeight: 500,
-  letterSpacing: '1.2px',
+  letterSpacing: '0',
   textTransform: 'uppercase' as const,
 }
 

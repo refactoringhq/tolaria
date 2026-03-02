@@ -110,6 +110,9 @@ describe('useEditorFocus', () => {
 
     it('selects H1 text after timeout when editor not yet mounted', () => {
       vi.useFakeTimers()
+      // Mock rAF synchronously so the deferred selectFirstHeading call inside doFocus
+      // runs immediately when requestAnimationFrame is invoked, keeping the test simple.
+      vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => { cb(0); return 0 })
       const tiptap = makeTiptapMock(true)
       const { editor } = setup(false, tiptap)
 
@@ -121,6 +124,38 @@ describe('useEditorFocus', () => {
       expect(tiptap.chain).toHaveBeenCalled()
       expect(tiptap._chainResult.setTextSelection).toHaveBeenCalledWith({ from: 3, to: 16 })
       vi.useRealTimers()
+    })
+
+    it('selection happens in second rAF (not first), allowing content swap to complete', () => {
+      // Verify the double-rAF contract: focus in rAF1, selection deferred to rAF2.
+      // This ensures the new note's blocks are applied (via queueMicrotask between frames)
+      // before selectFirstHeading runs.
+      const callbacks: FrameRequestCallback[] = []
+      vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+        callbacks.push(cb)
+        return callbacks.length
+      })
+      const tiptap = makeTiptapMock(true)
+      const { editor } = setup(true, tiptap)
+
+      window.dispatchEvent(new CustomEvent('laputa:focus-editor', { detail: { selectTitle: true } }))
+
+      // rAF 1 is scheduled (doFocus)
+      expect(callbacks.length).toBe(1)
+      callbacks[0](0)
+
+      // After rAF 1: editor focused, but selection NOT yet triggered
+      expect(editor.focus).toHaveBeenCalled()
+      expect(tiptap.chain).not.toHaveBeenCalled()
+
+      // rAF 2 is now scheduled (selectFirstHeading)
+      expect(callbacks.length).toBe(2)
+      callbacks[1](0)
+
+      // After rAF 2: heading is selected
+      expect(tiptap.chain).toHaveBeenCalled()
+      expect(tiptap._chainResult.setTextSelection).toHaveBeenCalledWith({ from: 3, to: 16 })
+      expect(tiptap._chainResult.run).toHaveBeenCalled()
     })
   })
 })

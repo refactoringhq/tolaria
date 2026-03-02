@@ -120,9 +120,12 @@ export interface SearchResponse {
 export type SearchMode = 'keyword' | 'semantic' | 'hybrid'
 
 export interface ThemeFile {
+  /** For vault-based themes: absolute note path. For legacy JSON themes: filename stem. */
   id: string
   name: string
   description: string
+  /** Absolute path to the vault note (vault-based themes only). */
+  path?: string
   colors: Record<string, string>
   typography: Record<string, string>
   spacing: Record<string, string>

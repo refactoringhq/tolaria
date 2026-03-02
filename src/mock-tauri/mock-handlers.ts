@@ -268,6 +268,32 @@ export const mockHandlers: Record<string, (args: any) => any> = {
     mockThemes.push({ ...source, id: newId, name: 'Untitled Theme' })
     return newId
   },
+  create_vault_theme: (args: { vaultPath: string; name?: string | null }): string => {
+    const displayName = args.name ?? 'Untitled Theme'
+    const slug = displayName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'untitled-theme'
+    const path = `${args.vaultPath}/theme/${slug}.md`
+    MOCK_CONTENT[path] = `---
+Is A: Theme
+title: ${displayName}
+primary: "#155DFF"
+background: "#FFFFFF"
+foreground: "#37352F"
+sidebar: "#F7F6F3"
+border: "#E9E9E7"
+muted: "#F0F0EF"
+muted-foreground: "#9B9A97"
+accent: "#F0F7FF"
+accent-foreground: "#0A3B8F"
+font-family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+font-size-base: 14
+line-height-base: 1.6
+---
+
+# ${displayName}
+`
+    syncWindowContent()
+    return path
+  },
 }
 
 export function addMockEntry(_entry: VaultEntry, content: string): void {

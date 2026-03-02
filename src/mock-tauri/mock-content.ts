@@ -733,4 +733,67 @@ rating: 5
 
 Essential reading for anyone building distributed systems. Covers replication, partitioning, transactions, and stream processing.
 `,
+  '/Users/luca/Laputa/theme/default.md': `---
+Is A: Theme
+title: Default
+primary: "#155DFF"
+background: "#FFFFFF"
+foreground: "#37352F"
+sidebar: "#F7F6F3"
+border: "#E9E9E7"
+muted: "#F0F0EF"
+muted-foreground: "#9B9A97"
+accent: "#F0F7FF"
+accent-foreground: "#0A3B8F"
+font-family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+font-size-base: 14
+line-height-base: 1.6
+---
+
+# Default
+
+Light theme with warm, paper-like tones.
+`,
+  '/Users/luca/Laputa/theme/dark.md': `---
+Is A: Theme
+title: Dark
+primary: "#155DFF"
+background: "#0f0f1a"
+foreground: "#e0e0e0"
+sidebar: "#1a1a2e"
+border: "#2a2a4a"
+muted: "#1e1e3a"
+muted-foreground: "#6b6b8a"
+accent: "#1a2a4a"
+accent-foreground: "#8ab4ff"
+font-family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+font-size-base: 14
+line-height-base: 1.6
+---
+
+# Dark
+
+Dark variant with deep navy tones.
+`,
+  '/Users/luca/Laputa/theme/minimal.md': `---
+Is A: Theme
+title: Minimal
+primary: "#000000"
+background: "#FAFAFA"
+foreground: "#111111"
+sidebar: "#F5F5F5"
+border: "#E0E0E0"
+muted: "#F5F5F5"
+muted-foreground: "#888888"
+accent: "#F0F0F0"
+accent-foreground: "#000000"
+font-family: "'SF Mono', 'Menlo', monospace"
+font-size-base: 13
+line-height-base: 1.5
+---
+
+# Minimal
+
+High contrast, minimal chrome.
+`,
 }

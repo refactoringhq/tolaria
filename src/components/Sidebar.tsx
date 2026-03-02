@@ -15,7 +15,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import {
   FileText, Star, Wrench, Flask, Target, ArrowsClockwise,
-  Users, CalendarBlank, Tag, TagSimple, Trash, StackSimple, Archive, CaretLeft, GitDiff,
+  Users, CalendarBlank, Tag, TagSimple, Trash, StackSimple, Archive, CaretLeft, GitDiff, PaintBrush,
 } from '@phosphor-icons/react'
 import { GitCommitHorizontal, SlidersHorizontal } from 'lucide-react'
 import {
@@ -48,6 +48,7 @@ const BUILT_IN_SECTION_GROUPS: SectionGroup[] = [
   { label: 'Events', type: 'Event', Icon: CalendarBlank },
   { label: 'Topics', type: 'Topic', Icon: Tag },
   { label: 'Types', type: 'Type', Icon: StackSimple },
+  { label: 'Themes', type: 'Theme', Icon: PaintBrush },
 ]
 
 /** Metadata lookup for well-known types (icon/label only — NOT used to determine which sections to show) */
@@ -161,10 +162,10 @@ function applyCustomization(
 
 function SortableSection({ group, sectionProps }: {
   group: SectionGroup
-  sectionProps: Omit<SectionContentProps, 'group' | 'items' | 'isCollapsed' | 'dragHandleProps' | 'onToggle'>
+  sectionProps: Omit<SectionContentProps, 'group' | 'items' | 'isCollapsed' | 'onToggle'>
     & { entries: VaultEntry[]; collapsed: Record<string, boolean>; onToggle: (type: string) => void }
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: group.type })
+  const { attributes, setNodeRef, transform, transition, isDragging } = useSortable({ id: group.type })
   const items = sectionProps.entries.filter((e) => e.isA === group.type && !e.archived && !e.trashed)
   const isCollapsed = sectionProps.collapsed[group.type] ?? true
 
@@ -176,7 +177,6 @@ function SortableSection({ group, sectionProps }: {
         onSelectNote={sectionProps.onSelectNote} onCreateType={sectionProps.onCreateType}
         onCreateNewType={sectionProps.onCreateNewType} onContextMenu={sectionProps.onContextMenu}
         onToggle={() => sectionProps.onToggle(group.type)}
-        dragHandleProps={listeners}
       />
     </div>
   )

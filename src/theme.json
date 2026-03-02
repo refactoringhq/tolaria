@@ -1,7 +1,7 @@
 {
   "editor": {
     "fontFamily": "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-    "fontSize": 16,
+    "fontSize": 15,
     "lineHeight": 1.5,
     "maxWidth": 720,
     "paddingHorizontal": 40,
@@ -25,7 +25,7 @@
       "marginTop": 28,
       "marginBottom": 10,
       "color": "var(--text-heading)",
-      "letterSpacing": 0
+      "letterSpacing": -0.5
     },
     "h3": {
       "fontSize": 20,
@@ -34,7 +34,7 @@
       "marginTop": 24,
       "marginBottom": 8,
       "color": "var(--text-heading)",
-      "letterSpacing": 0
+      "letterSpacing": -0.5
     },
     "h4": {
       "fontSize": 20,

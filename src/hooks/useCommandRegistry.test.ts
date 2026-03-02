@@ -437,6 +437,46 @@ describe('useCommandRegistry', () => {
       const groups = new Set(result.current.map(c => c.group))
       expect(groups).toContain('Appearance')
     })
+
+    it('generates open-theme commands for each theme when onOpenTheme is provided', () => {
+      const onOpenTheme = vi.fn()
+      const { result } = renderHook(() => useCommandRegistry(makeConfig({
+        themes: themeFixtures, activeThemeId: 'default', onOpenTheme,
+      })))
+      const openDefault = result.current.find(c => c.id === 'open-theme-default')
+      const openDark = result.current.find(c => c.id === 'open-theme-dark')
+      expect(openDefault).toBeDefined()
+      expect(openDefault!.label).toBe('Edit Default Theme')
+      expect(openDefault!.group).toBe('Appearance')
+      expect(openDefault!.enabled).toBe(true)
+      expect(openDark).toBeDefined()
+      expect(openDark!.label).toBe('Edit Dark Theme')
+    })
+
+    it('omits open-theme commands when onOpenTheme is not provided', () => {
+      const { result } = renderHook(() => useCommandRegistry(makeConfig({
+        themes: themeFixtures, activeThemeId: 'default',
+      })))
+      expect(result.current.find(c => c.id === 'open-theme-default')).toBeUndefined()
+      expect(result.current.find(c => c.id === 'open-theme-dark')).toBeUndefined()
+    })
+
+    it('calls onOpenTheme with correct themeId when open-theme command executes', () => {
+      const onOpenTheme = vi.fn()
+      const { result } = renderHook(() => useCommandRegistry(makeConfig({
+        themes: themeFixtures, activeThemeId: 'default', onOpenTheme,
+      })))
+      result.current.find(c => c.id === 'open-theme-dark')!.execute()
+      expect(onOpenTheme).toHaveBeenCalledWith('dark')
+    })
+
+    it('open-theme command is always enabled regardless of active theme', () => {
+      const onOpenTheme = vi.fn()
+      const { result } = renderHook(() => useCommandRegistry(makeConfig({
+        themes: themeFixtures, activeThemeId: 'default', onOpenTheme,
+      })))
+      expect(result.current.find(c => c.id === 'open-theme-default')!.enabled).toBe(true)
+    })
   })
 })
 

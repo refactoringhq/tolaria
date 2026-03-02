@@ -209,7 +209,6 @@ function SearchContent({
                   onMouseEnter={() => onHover(i)}
                 >
                   <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line react-hooks/static-components -- icon from static map lookup */}
                     <TypeIcon width={14} height={14} className="shrink-0" style={{ color: typeColor ?? 'var(--muted-foreground)' }} />
                     <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">{result.title}</span>
                     {noteType && (
