@@ -48,6 +48,7 @@ interface AppCommandsConfig {
   onSwitchTheme?: (themeId: string) => void
   onCreateTheme?: () => void
   onOpenVault?: () => void
+  onToggleAIChat?: () => void
 }
 
 /** Sets up keyboard shortcuts, command registry, menu events, and keyboard navigation. */
@@ -67,6 +68,7 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onZoomReset: config.onZoomReset,
     onGoBack: config.onGoBack,
     onGoForward: config.onGoForward,
+    onToggleAIChat: config.onToggleAIChat,
     activeTabPathRef: config.activeTabPathRef,
     handleCloseTabRef: config.handleCloseTabRef,
   })
@@ -122,6 +124,7 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onSwitchTheme: config.onSwitchTheme,
     onCreateTheme: config.onCreateTheme,
     onOpenVault: config.onOpenVault,
+    onToggleAIChat: config.onToggleAIChat,
   })
 
   useKeyboardNavigation({

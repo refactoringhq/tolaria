@@ -4,7 +4,7 @@
  *
  * States: idle -> thinking -> tool-executing -> done/error
  */
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type { AiAction } from '../components/AiMessage'
 import { streamClaudeAgent, buildAgentSystemPrompt } from '../utils/ai-agent'
 import { nextMessageId } from '../utils/ai-chat'
@@ -20,10 +20,14 @@ export interface AiAgentMessage {
   id?: string
 }
 
-export function useAiAgent(vaultPath: string) {
+export function useAiAgent(vaultPath: string, contextPrompt?: string) {
   const [messages, setMessages] = useState<AiAgentMessage[]>([])
   const [status, setStatus] = useState<AgentStatus>('idle')
   const abortRef = useRef({ aborted: false })
+  const contextRef = useRef(contextPrompt)
+  useEffect(() => {
+    contextRef.current = contextPrompt
+  }, [contextPrompt])
 
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || status === 'thinking' || status === 'tool-executing') return
@@ -49,7 +53,11 @@ export function useAiAgent(vaultPath: string) {
       setMessages(prev => prev.map(m => m.id === messageId ? fn(m) : m))
     }
 
-    await streamClaudeAgent(text.trim(), buildAgentSystemPrompt(), vaultPath, {
+    // When a contextual prompt is provided (from buildContextualPrompt),
+    // use it directly — it already includes the system preamble.
+    const systemPrompt = contextRef.current ?? buildAgentSystemPrompt()
+
+    await streamClaudeAgent(text.trim(), systemPrompt, vaultPath, {
       onText: (text) => {
         if (abortRef.current.aborted) return
         update(m => ({ ...m, response: (m.response ?? '') + text }))

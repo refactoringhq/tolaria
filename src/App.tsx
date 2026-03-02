@@ -287,6 +287,7 @@ function App() {
     onSwitchTheme: themeManager.switchTheme,
     onCreateTheme: async () => { await themeManager.createTheme() },
     onOpenVault: vaultSwitcher.handleOpenLocalFolder,
+    onToggleAIChat: dialogs.toggleAIChat,
   })
 
   const { status: updateStatus, actions: updateActions } = useUpdater()

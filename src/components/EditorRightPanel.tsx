@@ -38,6 +38,9 @@ export function EditorRightPanel({
           onClose={() => onToggleAIChat?.()}
           onOpenNote={onOpenNote}
           vaultPath={vaultPath}
+          activeEntry={inspectorEntry}
+          entries={entries}
+          allContent={allContent}
         />
       </div>
     )
