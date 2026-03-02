@@ -115,6 +115,48 @@ describe('useNavigationHistory', () => {
     expect(result.current.canGoForward).toBe(false)
   })
 
+  it('goBack without predicate returns closed-tab paths (replace scenario)', () => {
+    const { result } = renderHook(() => useNavigationHistory())
+    // Simulate: open A, then B replaces A, then C replaces B
+    act(() => { result.current.push('/a'); result.current.push('/b'); result.current.push('/c') })
+
+    // Without a predicate, goBack returns /b even though its tab was replaced
+    let target: string | null = null
+    act(() => { target = result.current.goBack() })
+    expect(target).toBe('/b')
+
+    act(() => { target = result.current.goBack() })
+    expect(target).toBe('/a')
+  })
+
+  it('goBack with entry-exists predicate skips deleted notes but returns replaced tabs', () => {
+    const { result } = renderHook(() => useNavigationHistory())
+    act(() => { result.current.push('/a'); result.current.push('/deleted'); result.current.push('/c') })
+
+    // Simulate: /deleted was removed from vault, but /a still exists
+    const vaultPaths = new Set(['/a', '/c'])
+    const isEntryExists = (p: string) => vaultPaths.has(p)
+
+    let target: string | null = null
+    act(() => { target = result.current.goBack(isEntryExists) })
+    // Should skip /deleted and return /a
+    expect(target).toBe('/a')
+  })
+
+  it('goForward with entry-exists predicate skips deleted notes', () => {
+    const { result } = renderHook(() => useNavigationHistory())
+    act(() => { result.current.push('/a'); result.current.push('/deleted'); result.current.push('/c') })
+    act(() => { result.current.goBack(); result.current.goBack() })
+
+    const vaultPaths = new Set(['/a', '/c'])
+    const isEntryExists = (p: string) => vaultPaths.has(p)
+
+    let target: string | null = null
+    act(() => { target = result.current.goForward(isEntryExists) })
+    // Should skip /deleted and return /c
+    expect(target).toBe('/c')
+  })
+
   it('handles long navigation chain', () => {
     const { result } = renderHook(() => useNavigationHistory())
     act(() => {

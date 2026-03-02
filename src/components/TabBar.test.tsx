@@ -215,6 +215,33 @@ describe('TabBar', () => {
     expect(screen.queryByTestId('tab-new-indicator')).not.toBeInTheDocument()
   })
 
+  it('renders nav back/forward buttons', () => {
+    const tabs = makeTabs(['Alpha'])
+    render(<TabBar tabs={tabs} activeTabPath={tabs[0].entry.path} {...defaultProps} />)
+    expect(screen.getByTestId('nav-back')).toBeInTheDocument()
+    expect(screen.getByTestId('nav-forward')).toBeInTheDocument()
+  })
+
+  it('disables nav buttons when canGoBack/canGoForward are false', () => {
+    const tabs = makeTabs(['Alpha'])
+    render(<TabBar tabs={tabs} activeTabPath={tabs[0].entry.path} {...defaultProps} canGoBack={false} canGoForward={false} />)
+    expect(screen.getByTestId('nav-back')).toBeDisabled()
+    expect(screen.getByTestId('nav-forward')).toBeDisabled()
+  })
+
+  it('enables nav buttons and fires handlers on click', () => {
+    const onGoBack = vi.fn()
+    const onGoForward = vi.fn()
+    const tabs = makeTabs(['Alpha'])
+    render(<TabBar tabs={tabs} activeTabPath={tabs[0].entry.path} {...defaultProps} canGoBack canGoForward onGoBack={onGoBack} onGoForward={onGoForward} />)
+
+    fireEvent.click(screen.getByTestId('nav-back'))
+    expect(onGoBack).toHaveBeenCalledTimes(1)
+
+    fireEvent.click(screen.getByTestId('nav-forward'))
+    expect(onGoForward).toHaveBeenCalledTimes(1)
+  })
+
   it('switches tab on click', () => {
     const onSwitchTab = vi.fn()
     const tabs = makeTabs(['Alpha', 'Beta'])
