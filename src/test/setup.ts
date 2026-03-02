@@ -6,7 +6,7 @@ import { createElement, type ReactNode, type ComponentType } from 'react'
 Element.prototype.scrollIntoView = vi.fn()
 
 // Mock ResizeObserver for jsdom (not implemented)
-global.ResizeObserver = class {
+globalThis.ResizeObserver = class {
   observe() {}
   unobserve() {}
   disconnect() {}
