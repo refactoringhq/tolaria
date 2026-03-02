@@ -355,7 +355,7 @@ function App() {
         {sidebarVisible && (
           <>
             <div className="app__sidebar" style={{ width: layout.sidebarWidth }}>
-              <Sidebar entries={vault.entries} selection={selection} onSelect={setSelection} onSelectNote={notes.handleSelectNote} onCreateType={notes.handleCreateNoteImmediate} onCreateNewType={dialogs.openCreateType} onCustomizeType={entryActions.handleCustomizeType} onUpdateTypeTemplate={entryActions.handleUpdateTypeTemplate} onReorderSections={entryActions.handleReorderSections} modifiedCount={vault.modifiedFiles.length} onCommitPush={commitFlow.openCommitDialog} />
+              <Sidebar entries={vault.entries} selection={selection} onSelect={setSelection} onSelectNote={notes.handleSelectNote} onCreateType={notes.handleCreateNoteImmediate} onCreateNewType={dialogs.openCreateType} onCustomizeType={entryActions.handleCustomizeType} onUpdateTypeTemplate={entryActions.handleUpdateTypeTemplate} onReorderSections={entryActions.handleReorderSections} onRenameSection={entryActions.handleRenameSection} modifiedCount={vault.modifiedFiles.length} onCommitPush={commitFlow.openCommitDialog} />
             </div>
             <ResizeHandle onResize={layout.handleSidebarResize} />
           </>

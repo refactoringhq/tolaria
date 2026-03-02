@@ -77,7 +77,7 @@ fn git_changed_files(vault: &Path, from_hash: &str, to_hash: &str) -> Vec<String
 
     // Use ls-files for untracked files so that newly-seeded directories are picked up
     // as individual files rather than as a single "?? dirname/" entry.
-    let uncommitted = git_uncommitted_new_files(vault);
+    let uncommitted = git_uncommitted_files(vault);
     // Also include modified-but-unstaged files via status --porcelain.
     let modified = run_git(vault, &["status", "--porcelain"])
         .map(|s| collect_md_paths_from_porcelain(&s))
@@ -92,17 +92,9 @@ fn git_changed_files(vault: &Path, from_hash: &str, to_hash: &str) -> Vec<String
     files
 }
 
-fn git_uncommitted_new_files(vault: &Path) -> Vec<String> {
-    // Use ls-files to enumerate untracked files individually — git status --porcelain shows
-    // whole untracked directories (e.g. "?? theme/") rather than individual files inside them,
-    // so newly-seeded directories would never appear in results.
-    run_git(vault, &["ls-files", "--others", "--exclude-standard"])
-        .map(|s| {
-            s.lines()
-                .filter(|line| line.ends_with(".md"))
-                .map(|line| line.to_string())
-                .collect()
-        })
+fn git_uncommitted_files(vault: &Path) -> Vec<String> {
+    run_git(vault, &["status", "--porcelain"])
+        .map(|s| collect_md_paths_from_porcelain(&s))
         .unwrap_or_default()
 }
 
@@ -157,23 +149,19 @@ fn finalize_and_cache(vault: &Path, mut entries: Vec<VaultEntry>, hash: String) 
     entries
 }
 
-/// Handle same-commit cache hit: add any uncommitted new files.
+/// Handle same-commit cache hit: re-parse any uncommitted changes (new or modified files).
 fn update_same_commit(vault: &Path, cache: VaultCache) -> Vec<VaultEntry> {
-    let new_files = git_uncommitted_new_files(vault);
-    let mut entries = cache.entries;
-    let existing: std::collections::HashSet<String> = entries
-        .iter()
-        .map(|e| to_relative_path(&e.path, vault))
-        .collect();
-
-    let new_entries = parse_files_at(vault, &new_files);
-    for entry in new_entries {
-        let rel = to_relative_path(&entry.path, vault);
-        if !existing.contains(&rel) {
-            entries.push(entry);
-        }
+    let changed = git_uncommitted_files(vault);
+    if changed.is_empty() {
+        return cache.entries;
     }
-
+    let changed_set: std::collections::HashSet<String> = changed.iter().cloned().collect();
+    let mut entries: Vec<VaultEntry> = cache
+        .entries
+        .into_iter()
+        .filter(|e| !changed_set.contains(&to_relative_path(&e.path, vault)))
+        .collect();
+    entries.extend(parse_files_at(vault, &changed));
     finalize_and_cache(vault, entries, cache.commit_hash)
 }
 
@@ -360,9 +348,7 @@ mod tests {
     }
 
     #[test]
-    fn test_scan_vault_cached_new_untracked_directory() {
-        // Regression test: git status --porcelain shows "?? theme/" for an untracked
-        // directory, not individual files. scan_vault_cached must still pick them up.
+    fn test_update_same_commit_picks_up_modified_file() {
         let dir = TempDir::new().unwrap();
         let vault = dir.path();
 
@@ -372,17 +358,18 @@ mod tests {
             .output()
             .unwrap();
         std::process::Command::new("git")
-            .args(["config", "user.email", "t@t.com"])
+            .args(["config", "user.email", "test@test.com"])
             .current_dir(vault)
             .output()
             .unwrap();
         std::process::Command::new("git")
-            .args(["config", "user.name", "T"])
+            .args(["config", "user.name", "Test"])
             .current_dir(vault)
             .output()
             .unwrap();
 
-        create_test_file(vault, "note.md", "# Note\n\nContent.");
+        // Commit a type note without sidebar label
+        create_test_file(vault, "type/news.md", "---\ntype: Type\n---\n# News\n");
         std::process::Command::new("git")
             .args(["add", "."])
             .current_dir(vault)
@@ -394,37 +381,73 @@ mod tests {
             .output()
             .unwrap();
 
-        // Build initial cache
+        // Prime the cache (same commit hash)
+        let entries = scan_vault_cached(vault).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].sidebar_label, None);
+
+        // User edits the type note to add sidebar label (uncommitted)
+        create_test_file(
+            vault,
+            "type/news.md",
+            "---\ntype: Type\nsidebar label: News\n---\n# News\n",
+        );
+
+        // Reload with same git HEAD — must pick up the modification
+        let entries2 = scan_vault_cached(vault).unwrap();
+        assert_eq!(entries2.len(), 1);
+        assert_eq!(
+            entries2[0].sidebar_label,
+            Some("News".to_string()),
+            "sidebarLabel must reflect the uncommitted edit"
+        );
+    }
+
+    #[test]
+    fn test_update_same_commit_new_file_still_added() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path();
+
+        std::process::Command::new("git")
+            .args(["init"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+        std::process::Command::new("git")
+            .args(["config", "user.email", "test@test.com"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+        std::process::Command::new("git")
+            .args(["config", "user.name", "Test"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+
+        create_test_file(vault, "existing.md", "# Existing\n");
+        std::process::Command::new("git")
+            .args(["add", "."])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+        std::process::Command::new("git")
+            .args(["commit", "-m", "init"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+
+        // Prime cache
         let entries = scan_vault_cached(vault).unwrap();
         assert_eq!(entries.len(), 1);
 
-        // Add a new DIRECTORY with files (simulating seed_vault_themes) — NOT committed
-        create_test_file(
-            vault,
-            "theme/default.md",
-            "---\nIs A: Theme\n---\n# Default Theme\n",
-        );
-        create_test_file(
-            vault,
-            "theme/dark.md",
-            "---\nIs A: Theme\n---\n# Dark Theme\n",
-        );
+        // Create new untracked file
+        create_test_file(vault, "new-note.md", "# New Note\n");
 
-        // Re-scan — should find the new untracked files inside the untracked directory
+        // Cache still same commit — new untracked file must appear
         let entries2 = scan_vault_cached(vault).unwrap();
-        assert_eq!(
-            entries2.len(),
-            3,
-            "Should include theme files from untracked directory"
-        );
+        assert_eq!(entries2.len(), 2);
         let titles: Vec<&str> = entries2.iter().map(|e| e.title.as_str()).collect();
-        assert!(
-            titles.contains(&"Default Theme"),
-            "Should find default.md in untracked theme/ dir"
-        );
-        assert!(
-            titles.contains(&"Dark Theme"),
-            "Should find dark.md in untracked theme/ dir"
-        );
+        assert!(titles.contains(&"Existing"));
+        assert!(titles.contains(&"New Note"));
     }
 }

@@ -238,4 +238,54 @@ describe('useEntryActions', () => {
       expect(updateEntry).toHaveBeenCalledTimes(1)
     })
   })
+
+  describe('handleRenameSection', () => {
+    it('writes sidebar label frontmatter and updates entry in memory', async () => {
+      const typeEntry = makeEntry({ isA: 'Type', title: 'Recipe', path: '/vault/type/recipe.md', sidebarLabel: null })
+      const { result } = setup([typeEntry])
+
+      await act(async () => {
+        await result.current.handleRenameSection('Recipe', 'Recipes')
+      })
+
+      expect(handleUpdateFrontmatter).toHaveBeenCalledWith('/vault/type/recipe.md', 'sidebar label', 'Recipes')
+      expect(updateEntry).toHaveBeenCalledWith('/vault/type/recipe.md', { sidebarLabel: 'Recipes' })
+    })
+
+    it('trims whitespace before saving', async () => {
+      const typeEntry = makeEntry({ isA: 'Type', title: 'Recipe', path: '/vault/type/recipe.md', sidebarLabel: null })
+      const { result } = setup([typeEntry])
+
+      await act(async () => {
+        await result.current.handleRenameSection('Recipe', '  Dishes  ')
+      })
+
+      expect(handleUpdateFrontmatter).toHaveBeenCalledWith('/vault/type/recipe.md', 'sidebar label', 'Dishes')
+      expect(updateEntry).toHaveBeenCalledWith('/vault/type/recipe.md', { sidebarLabel: 'Dishes' })
+    })
+
+    it('deletes sidebar label when label is empty', async () => {
+      const typeEntry = makeEntry({ isA: 'Type', title: 'Recipe', path: '/vault/type/recipe.md', sidebarLabel: 'Dishes' })
+      const { result } = setup([typeEntry])
+
+      await act(async () => {
+        await result.current.handleRenameSection('Recipe', '')
+      })
+
+      expect(handleDeleteProperty).toHaveBeenCalledWith('/vault/type/recipe.md', 'sidebar label')
+      expect(updateEntry).toHaveBeenCalledWith('/vault/type/recipe.md', { sidebarLabel: null })
+      expect(handleUpdateFrontmatter).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when type entry not found', async () => {
+      const { result } = setup([])
+
+      await act(async () => {
+        await result.current.handleRenameSection('NonExistent', 'Label')
+      })
+
+      expect(handleUpdateFrontmatter).not.toHaveBeenCalled()
+      expect(updateEntry).not.toHaveBeenCalled()
+    })
+  })
 })

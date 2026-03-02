@@ -68,5 +68,17 @@ export function useEntryActions({
     updateEntry(typeEntry.path, { template: template || null })
   }, [entries, handleUpdateFrontmatter, updateEntry])
 
-  return { handleTrashNote, handleRestoreNote, handleArchiveNote, handleUnarchiveNote, handleCustomizeType, handleReorderSections, handleUpdateTypeTemplate }
+  const handleRenameSection = useCallback(async (typeName: string, label: string) => {
+    const typeEntry = findTypeEntry(entries, typeName)
+    if (!typeEntry) return
+    const trimmed = label.trim()
+    updateEntry(typeEntry.path, { sidebarLabel: trimmed || null })
+    if (trimmed) {
+      await handleUpdateFrontmatter(typeEntry.path, 'sidebar label', trimmed)
+    } else {
+      await handleDeleteProperty(typeEntry.path, 'sidebar label')
+    }
+  }, [entries, handleUpdateFrontmatter, handleDeleteProperty, updateEntry])
+
+  return { handleTrashNote, handleRestoreNote, handleArchiveNote, handleUnarchiveNote, handleCustomizeType, handleReorderSections, handleUpdateTypeTemplate, handleRenameSection }
 }

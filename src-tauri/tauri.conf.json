@@ -5,7 +5,7 @@
   "identifier": "club.refactoring.laputa",
   "build": {
     "frontendDist": "../dist",
-    "devUrl": "http://localhost:5201",
+    "devUrl": "http://localhost:5202",
     "beforeDevCommand": "pnpm dev",
     "beforeBuildCommand": "pnpm build && pnpm bundle-mcp"
   },

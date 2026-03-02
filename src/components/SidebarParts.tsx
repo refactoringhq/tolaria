@@ -1,4 +1,4 @@
-import { type ComponentType } from 'react'
+import { type ComponentType, useState, useEffect, useRef } from 'react'
 import type { VaultEntry, SidebarSelection } from '../types'
 import { cn } from '@/lib/utils'
 import { ChevronRight, ChevronDown, Plus } from 'lucide-react'
@@ -75,6 +75,10 @@ export interface SectionContentProps {
   onCreateNewType?: () => void
   onContextMenu: (e: React.MouseEvent, type: string) => void
   onToggle: () => void
+  isRenaming?: boolean
+  renameInitialValue?: string
+  onRenameSubmit?: (value: string) => void
+  onRenameCancel?: () => void
 }
 
 function childSelection(type: string, entry: VaultEntry): SidebarSelection {
@@ -90,6 +94,7 @@ function resolveCreateHandler(type: string, onCreateType?: (type: string) => voi
 export function SectionContent({
   group, items, isCollapsed, selection, onSelect, onSelectNote,
   onCreateType, onCreateNewType, onContextMenu, onToggle,
+  isRenaming, renameInitialValue, onRenameSubmit, onRenameCancel,
 }: SectionContentProps) {
   const { label, type, Icon, customColor } = group
   const sectionColor = getTypeColor(type, customColor)
@@ -108,6 +113,10 @@ export function SectionContent({
         onContextMenu={(e) => onContextMenu(e, type)}
         onToggle={onToggle}
         onCreate={(e) => { e.stopPropagation(); onCreate?.() }}
+        isRenaming={isRenaming}
+        renameInitialValue={renameInitialValue}
+        onRenameSubmit={onRenameSubmit}
+        onRenameCancel={onRenameCancel}
       />
       {!isCollapsed && items.length > 0 && (
         <SectionChildList
@@ -143,25 +152,67 @@ function SectionChildList({ items, type, selection, sectionColor, sectionLightCo
   )
 }
 
-function SectionHeader({ label, type, Icon, sectionColor, isCollapsed, isActive, showCreate, onSelect, onContextMenu, onToggle, onCreate }: {
+function InlineRenameInput({ initialValue, onSubmit, onCancel }: {
+  initialValue: string
+  onSubmit: (value: string) => void
+  onCancel: () => void
+}) {
+  const [value, setValue] = useState(initialValue)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { inputRef.current?.focus(); inputRef.current?.select() }, [])
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); onSubmit(value.trim()) }
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); onCancel() }
+  }
+
+  return (
+    <input
+      ref={inputRef}
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onKeyDown={handleKeyDown}
+      onBlur={() => onSubmit(value.trim())}
+      onClick={(e) => e.stopPropagation()}
+      aria-label="Section name"
+      className="flex-1 rounded border border-primary bg-background text-[13px] font-medium text-foreground outline-none"
+      style={{ padding: '1px 4px' }}
+    />
+  )
+}
+
+function SectionHeader({ label, type, Icon, sectionColor, isCollapsed, isActive, showCreate, onSelect, onContextMenu, onToggle, onCreate, isRenaming, renameInitialValue, onRenameSubmit, onRenameCancel }: {
   label: string; type: string; Icon: ComponentType<IconProps>
   sectionColor: string; isCollapsed: boolean; isActive: boolean; showCreate: boolean
   onSelect: () => void; onContextMenu: (e: React.MouseEvent) => void
   onToggle: () => void; onCreate: (e: React.MouseEvent) => void
+  isRenaming?: boolean; renameInitialValue?: string
+  onRenameSubmit?: (value: string) => void; onRenameCancel?: () => void
 }) {
   return (
     <div
       className={cn("group/section flex cursor-pointer select-none items-center justify-between rounded transition-colors", isActive ? "bg-secondary" : "hover:bg-accent")}
       style={{ padding: '6px 8px 6px 16px', borderRadius: 4, gap: 4 }}
       onClick={() => {
+        if (isRenaming) return
         if (isCollapsed) { onToggle(); onSelect() }
         else if (isActive) { onToggle() }
         else { onSelect() }
-      }} onContextMenu={onContextMenu}
+      }} onContextMenu={isRenaming ? undefined : onContextMenu}
     >
-      <div className="flex items-center" style={{ gap: 4 }}>
-        <Icon size={16} style={{ color: sectionColor }} />
-        <span className="text-[13px] font-medium text-foreground" style={{ marginLeft: 4 }}>{label}</span>
+      <div className="flex min-w-0 flex-1 items-center" style={{ gap: 4 }}>
+        <Icon size={16} style={{ color: sectionColor, flexShrink: 0 }} />
+        {isRenaming && onRenameSubmit && onRenameCancel ? (
+          <InlineRenameInput
+            key={`rename-${type}`}
+            initialValue={renameInitialValue ?? label}
+            onSubmit={onRenameSubmit}
+            onCancel={onRenameCancel}
+          />
+        ) : (
+          <span className="text-[13px] font-medium text-foreground" style={{ marginLeft: 4 }}>{label}</span>
+        )}
       </div>
       <div className="flex items-center" style={{ gap: 2 }}>
         {showCreate && (
