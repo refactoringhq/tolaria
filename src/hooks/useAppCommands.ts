@@ -21,6 +21,7 @@ interface AppCommandsConfig {
   onCommandPalette: () => void
   onSearch: () => void
   onCreateNote: () => void
+  onOpenDailyNote: () => void
   onCreateNoteOfType: (type: string) => void
   onSave: () => void
   onOpenSettings: () => void
@@ -57,6 +58,7 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onCommandPalette: config.onCommandPalette,
     onSearch: config.onSearch,
     onCreateNote: config.onCreateNote,
+    onOpenDailyNote: config.onOpenDailyNote,
     onSave: config.onSave,
     onOpenSettings: config.onOpenSettings,
     onTrashNote: config.onTrashNote,
@@ -74,6 +76,7 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
   useMenuEvents({
     onSetViewMode: config.onSetViewMode,
     onCreateNote: config.onCreateNote,
+    onOpenDailyNote: config.onOpenDailyNote,
     onQuickOpen: config.onQuickOpen,
     onSave: config.onSave,
     onOpenSettings: config.onOpenSettings,
@@ -112,6 +115,7 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onZoomReset: config.onZoomReset,
     zoomLevel: config.zoomLevel,
     onSelect: config.onSelect,
+    onOpenDailyNote: config.onOpenDailyNote,
     onCloseTab: config.onCloseTab,
     onGoBack: config.onGoBack,
     onGoForward: config.onGoForward,

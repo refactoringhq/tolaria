@@ -12,6 +12,10 @@ import {
   resolveNewNote,
   resolveNewType,
   frontmatterToEntryPatch,
+  todayDateString,
+  buildDailyNoteContent,
+  resolveDailyNote,
+  findDailyNote,
   useNoteActions,
 } from './useNoteActions'
 import type { NoteActionsConfig } from './useNoteActions'
@@ -282,6 +286,75 @@ describe('frontmatterToEntryPatch', () => {
   })
 })
 
+describe('todayDateString', () => {
+  it('returns date in YYYY-MM-DD format', () => {
+    const result = todayDateString()
+    expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+})
+
+describe('buildDailyNoteContent', () => {
+  it('generates frontmatter with Journal type and date', () => {
+    const content = buildDailyNoteContent('2026-03-02')
+    expect(content).toContain('type: Journal')
+    expect(content).toContain('date: 2026-03-02')
+    expect(content).toContain('title: 2026-03-02')
+  })
+
+  it('includes Intentions and Reflections sections', () => {
+    const content = buildDailyNoteContent('2026-03-02')
+    expect(content).toContain('## Intentions')
+    expect(content).toContain('## Reflections')
+  })
+
+  it('includes H1 heading with the date', () => {
+    const content = buildDailyNoteContent('2026-03-02')
+    expect(content).toContain('# 2026-03-02')
+  })
+})
+
+describe('resolveDailyNote', () => {
+  it('creates entry in journal folder with date as filename', () => {
+    const { entry } = resolveDailyNote('2026-03-02')
+    expect(entry.path).toBe('/Users/luca/Laputa/journal/2026-03-02.md')
+    expect(entry.filename).toBe('2026-03-02.md')
+    expect(entry.title).toBe('2026-03-02')
+    expect(entry.isA).toBe('Journal')
+    expect(entry.status).toBeNull()
+  })
+
+  it('returns content with daily note template', () => {
+    const { content } = resolveDailyNote('2026-03-02')
+    expect(content).toContain('type: Journal')
+    expect(content).toContain('## Intentions')
+  })
+})
+
+describe('findDailyNote', () => {
+  it('finds entry by journal path suffix', () => {
+    const entries = [
+      makeEntry({ path: '/Users/luca/Laputa/journal/2026-03-02.md' }),
+      makeEntry({ path: '/Users/luca/Laputa/note/other.md' }),
+    ]
+    const found = findDailyNote(entries, '2026-03-02')
+    expect(found).toBeDefined()
+    expect(found!.path).toBe('/Users/luca/Laputa/journal/2026-03-02.md')
+  })
+
+  it('returns undefined when no matching entry exists', () => {
+    const entries = [makeEntry({ path: '/Users/luca/Laputa/note/other.md' })]
+    expect(findDailyNote(entries, '2026-03-02')).toBeUndefined()
+  })
+
+  it('works with different vault paths', () => {
+    const entries = [
+      makeEntry({ path: '/other/vault/journal/2026-03-02.md' }),
+    ]
+    const found = findDailyNote(entries, '2026-03-02')
+    expect(found).toBeDefined()
+  })
+})
+
 describe('useNoteActions hook', () => {
   const addEntry = vi.fn()
   const removeEntry = vi.fn()
@@ -459,6 +532,35 @@ describe('useNoteActions hook', () => {
 
     expect(updateEntry).not.toHaveBeenCalled()
     expect(setToastMessage).toHaveBeenCalledWith('Property updated')
+  })
+
+  it('handleOpenDailyNote creates a new daily note when none exists', () => {
+    const { result } = renderHook(() => useNoteActions(makeConfig()))
+
+    act(() => {
+      result.current.handleOpenDailyNote()
+    })
+
+    expect(addEntry).toHaveBeenCalledTimes(1)
+    const [createdEntry] = addEntry.mock.calls[0]
+    expect(createdEntry.isA).toBe('Journal')
+    expect(createdEntry.path).toContain('journal/')
+    expect(createdEntry.path).toMatch(/journal\/\d{4}-\d{2}-\d{2}\.md$/)
+  })
+
+  it('handleOpenDailyNote opens existing daily note instead of creating', async () => {
+    const today = todayDateString()
+    const existing = makeEntry({ path: `/Users/luca/Laputa/journal/${today}.md`, title: today })
+    const { result } = renderHook(() => useNoteActions(makeConfig([existing])))
+
+    await act(async () => {
+      result.current.handleOpenDailyNote()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    // Should open existing note, not create a new one
+    expect(addEntry).not.toHaveBeenCalled()
+    expect(result.current.activeTabPath).toBe(`/Users/luca/Laputa/journal/${today}.md`)
   })
 
   describe('pending save lifecycle', () => {

@@ -21,6 +21,7 @@ function makeActions() {
     onCommandPalette: vi.fn(),
     onSearch: vi.fn(),
     onCreateNote: vi.fn(),
+    onOpenDailyNote: vi.fn(),
     onSave: vi.fn(),
     onOpenSettings: vi.fn(),
     onTrashNote: vi.fn(),
@@ -77,6 +78,13 @@ describe('useAppKeyboard', () => {
     renderHook(() => useAppKeyboard(actions))
     fireKey('n', { metaKey: true })
     expect(actions.onCreateNote).toHaveBeenCalled()
+  })
+
+  it('Cmd+J triggers open daily note', () => {
+    const actions = makeActions()
+    renderHook(() => useAppKeyboard(actions))
+    fireKey('j', { metaKey: true })
+    expect(actions.onOpenDailyNote).toHaveBeenCalled()
   })
 
   it('Cmd+W closes the active tab', () => {

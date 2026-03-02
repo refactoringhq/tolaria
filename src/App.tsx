@@ -271,6 +271,7 @@ function App() {
     onQuickOpen: dialogs.openQuickOpen, onCommandPalette: dialogs.openCommandPalette,
     onSearch: dialogs.openSearch,
     onCreateNote: notes.handleCreateNoteImmediate,
+    onOpenDailyNote: notes.handleOpenDailyNote,
     onCreateNoteOfType: notes.handleCreateNoteImmediate,
     onSave: handleSave,
     onOpenSettings: dialogs.openSettings,

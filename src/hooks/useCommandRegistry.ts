@@ -36,6 +36,7 @@ interface CommandRegistryConfig {
   onZoomReset: () => void
   zoomLevel: number
   onSelect: (sel: SidebarSelection) => void
+  onOpenDailyNote: () => void
   onCloseTab: (path: string) => void
   onGoBack?: () => void
   onGoForward?: () => void
@@ -129,7 +130,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     onTrashNote, onArchiveNote, onUnarchiveNote,
     onCommitPush, onSetViewMode, onToggleInspector, onOpenVault,
     onZoomIn, onZoomOut, onZoomReset, zoomLevel,
-    onSelect, onCloseTab,
+    onSelect, onOpenDailyNote, onCloseTab,
     onGoBack, onGoForward, canGoBack, canGoForward,
     themes, activeThemeId, onSwitchTheme, onCreateTheme,
   } = config
@@ -158,6 +159,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
 
       // Note actions (contextual)
       { id: 'create-note', label: 'Create New Note', group: 'Note', shortcut: '⌘N', keywords: ['new', 'add'], enabled: true, execute: onCreateNote },
+      { id: 'open-daily-note', label: "Open Today's Note", group: 'Note', shortcut: '⌘J', keywords: ['daily', 'journal', 'today'], enabled: true, execute: onOpenDailyNote },
       { id: 'save-note', label: 'Save Note', group: 'Note', shortcut: '⌘S', keywords: ['write'], enabled: hasActiveNote, execute: onSave },
       { id: 'close-tab', label: 'Close Tab', group: 'Note', shortcut: '⌘W', keywords: [], enabled: hasActiveNote, execute: () => { if (activeTabPath) onCloseTab(activeTabPath) } },
       { id: 'trash-note', label: 'Trash Note', group: 'Note', shortcut: '⌘⌫', keywords: ['delete', 'remove'], enabled: hasActiveNote, execute: () => { if (activeTabPath) onTrashNote(activeTabPath) } },
@@ -198,7 +200,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     onTrashNote, onArchiveNote, onUnarchiveNote,
     onCommitPush, onSetViewMode, onToggleInspector, onOpenVault,
     onZoomIn, onZoomOut, onZoomReset, zoomLevel,
-    onSelect, onCloseTab,
+    onSelect, onOpenDailyNote, onCloseTab,
     onGoBack, onGoForward, canGoBack, canGoForward,
     vaultTypes, themes, activeThemeId, onSwitchTheme, onCreateTheme, onOpenVault,
   ])

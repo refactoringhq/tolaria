@@ -5,6 +5,7 @@ function makeHandlers(): MenuEventHandlers {
   return {
     onSetViewMode: vi.fn(),
     onCreateNote: vi.fn(),
+    onOpenDailyNote: vi.fn(),
     onQuickOpen: vi.fn(),
     onSave: vi.fn(),
     onOpenSettings: vi.fn(),
@@ -47,6 +48,12 @@ describe('dispatchMenuEvent', () => {
     const h = makeHandlers()
     dispatchMenuEvent('file-new-note', h)
     expect(h.onCreateNote).toHaveBeenCalled()
+  })
+
+  it('file-daily-note triggers open daily note', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('file-daily-note', h)
+    expect(h.onOpenDailyNote).toHaveBeenCalled()
   })
 
   it('file-quick-open triggers quick open', () => {

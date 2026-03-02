@@ -124,9 +124,10 @@ const TYPE_FOLDER_MAP: Record<string, string> = {
   Note: 'note', Project: 'project', Experiment: 'experiment',
   Responsibility: 'responsibility', Procedure: 'procedure',
   Person: 'person', Event: 'event', Topic: 'topic',
+  Journal: 'journal',
 }
 
-const NO_STATUS_TYPES = new Set(['Topic', 'Person'])
+const NO_STATUS_TYPES = new Set(['Topic', 'Person', 'Journal'])
 
 const ENTRY_DELETE_MAP: Record<string, Partial<VaultEntry>> = {
   type: { isA: null }, is_a: { isA: null }, status: { status: null }, color: { color: null },
@@ -177,6 +178,36 @@ export function resolveNewType(typeName: string): { entry: VaultEntry; content: 
   const slug = slugify(typeName)
   const entry = buildNewEntry({ path: `/Users/luca/Laputa/type/${slug}.md`, slug, title: typeName, type: 'Type', status: null })
   return { entry, content: `---\ntype: Type\n---\n\n# ${typeName}\n\n` }
+}
+
+export function todayDateString(): string {
+  return new Date().toISOString().split('T')[0]
+}
+
+export function buildDailyNoteContent(date: string): string {
+  const lines = ['---', `title: ${date}`, 'type: Journal', `date: ${date}`, '---']
+  return `${lines.join('\n')}\n\n# ${date}\n\n## Intentions\n\n\n\n## Reflections\n\n`
+}
+
+export function resolveDailyNote(date: string): { entry: VaultEntry; content: string } {
+  const entry = buildNewEntry({ path: `/Users/luca/Laputa/journal/${date}.md`, slug: date, title: date, type: 'Journal', status: null })
+  return { entry, content: buildDailyNoteContent(date) }
+}
+
+export function findDailyNote(entries: VaultEntry[], date: string): VaultEntry | undefined {
+  const suffix = `journal/${date}.md`
+  return entries.find(e => e.path.endsWith(suffix))
+}
+
+type PersistFn = (resolved: { entry: VaultEntry; content: string }) => void
+
+/** Open today's daily note: navigate to it if it exists, or create + persist a new one. */
+function openDailyNote(entries: VaultEntry[], selectNote: (e: VaultEntry) => void, persist: PersistFn): void {
+  const date = todayDateString()
+  const existing = findDailyNote(entries, date)
+  if (existing) selectNote(existing)
+  else persist(resolveDailyNote(date))
+  signalFocusEditor()
 }
 
 function findWikilinkTarget(entries: VaultEntry[], target: string): VaultEntry | undefined {
@@ -304,9 +335,12 @@ export function useNoteActions(config: NoteActionsConfig) {
 
   const pendingNamesRef = useRef<Set<string>>(new Set())
 
-  const handleCreateNote = useCallback((title: string, type: string) => {
-    createAndPersist(resolveNewNote(title, type), addEntry, openTabWithContent, persistCbs)
-  }, [openTabWithContent, addEntry, revertOptimisticNote, addPendingSave, removePendingSave, config.onNewNotePersisted]) // eslint-disable-line react-hooks/exhaustive-deps -- persistCbs is stable when deps are
+  const persistNew: PersistFn = useCallback(
+    (resolved) => createAndPersist(resolved, addEntry, openTabWithContent, persistCbs),
+    [openTabWithContent, addEntry, revertOptimisticNote, addPendingSave, removePendingSave], // eslint-disable-line react-hooks/exhaustive-deps -- persistCbs is stable when deps are
+  )
+
+  const handleCreateNote = useCallback((title: string, type: string) => persistNew(resolveNewNote(title, type)), [persistNew])
 
   const handleCreateNoteImmediate = useCallback((type?: string) => {
     const noteType = type || 'Note'
@@ -323,19 +357,16 @@ export function useNoteActions(config: NoteActionsConfig) {
 
   /** Close tab and discard entry+unsaved state if the note was never persisted. */
   const handleCloseTabWithCleanup = useCallback((path: string) => {
-    if (unsavedPathsRef.current?.has(path)) {
-      removeEntry(path)
-      config.clearUnsaved?.(path)
-    }
+    if (unsavedPathsRef.current?.has(path)) { removeEntry(path); config.clearUnsaved?.(path) }
     handleCloseTab(path)
   }, [handleCloseTab, removeEntry, config.clearUnsaved]) // eslint-disable-line react-hooks/exhaustive-deps -- ref access is stable
 
   // Keep handleCloseTabRef in sync so Cmd+W and menu events also clean up unsaved notes.
   useEffect(() => { handleCloseTabRef.current = handleCloseTabWithCleanup })
 
-  const handleCreateType = useCallback((typeName: string) => {
-    createAndPersist(resolveNewType(typeName), addEntry, openTabWithContent, persistCbs)
-  }, [openTabWithContent, addEntry, revertOptimisticNote, addPendingSave, removePendingSave, config.onNewNotePersisted]) // eslint-disable-line react-hooks/exhaustive-deps -- persistCbs is stable when deps are
+  const handleOpenDailyNote = useCallback(() => openDailyNote(entries, handleSelectNote, persistNew), [entries, handleSelectNote, persistNew])
+
+  const handleCreateType = useCallback((typeName: string) => persistNew(resolveNewType(typeName)), [persistNew])
 
   const fmCallbacks = { updateTab: updateTabContent, updateEntry, toast: setToastMessage }
 
@@ -372,6 +403,7 @@ export function useNoteActions(config: NoteActionsConfig) {
     handleNavigateWikilink,
     handleCreateNote,
     handleCreateNoteImmediate,
+    handleOpenDailyNote,
     handleCreateType,
     handleUpdateFrontmatter: useCallback((path: string, key: string, value: FrontmatterValue) => runFrontmatterOp('update', path, key, value), [runFrontmatterOp]),
     handleDeleteProperty: useCallback((path: string, key: string) => runFrontmatterOp('delete', path, key), [runFrontmatterOp]),

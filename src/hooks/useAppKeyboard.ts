@@ -6,6 +6,7 @@ interface KeyboardActions {
   onCommandPalette: () => void
   onSearch: () => void
   onCreateNote: () => void
+  onOpenDailyNote: () => void
   onSave: () => void
   onOpenSettings: () => void
   onTrashNote: (path: string) => void
@@ -60,7 +61,7 @@ function handleCmdKey(e: KeyboardEvent, keyMap: Record<string, ShortcutHandler>)
 }
 
 export function useAppKeyboard({
-  onQuickOpen, onCommandPalette, onSearch, onCreateNote, onSave, onOpenSettings, onTrashNote, onArchiveNote,
+  onQuickOpen, onCommandPalette, onSearch, onCreateNote, onOpenDailyNote, onSave, onOpenSettings, onTrashNote, onArchiveNote,
   onSetViewMode, onZoomIn, onZoomOut, onZoomReset, onGoBack, onGoForward, activeTabPathRef, handleCloseTabRef,
 }: KeyboardActions) {
   useEffect(() => {
@@ -73,6 +74,7 @@ export function useAppKeyboard({
       k: onCommandPalette,
       p: onQuickOpen,
       n: onCreateNote,
+      j: onOpenDailyNote,
       s: onSave,
       ',': onOpenSettings,
       e: withActiveTab(onArchiveNote),
@@ -100,5 +102,5 @@ export function useAppKeyboard({
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onQuickOpen, onCommandPalette, onSearch, onCreateNote, onSave, onOpenSettings, onTrashNote, onArchiveNote, activeTabPathRef, handleCloseTabRef, onSetViewMode, onZoomIn, onZoomOut, onZoomReset, onGoBack, onGoForward])
+  }, [onQuickOpen, onCommandPalette, onSearch, onCreateNote, onOpenDailyNote, onSave, onOpenSettings, onTrashNote, onArchiveNote, activeTabPathRef, handleCloseTabRef, onSetViewMode, onZoomIn, onZoomOut, onZoomReset, onGoBack, onGoForward])
 }
