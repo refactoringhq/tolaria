@@ -22,7 +22,7 @@ interface TypeCustomizePopoverProps {
 
 /** Debounce a callback by `delay` ms. Returns a stable ref-based wrapper. */
 function useDebouncedCallback(fn: (v: string) => void, delay: number): (v: string) => void {
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const fnRef = useRef(fn)
   useEffect(() => { fnRef.current = fn })
 
