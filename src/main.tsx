@@ -4,9 +4,6 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import './index.css'
 import App from './App.tsx'
 
-// Force light mode — dark mode removed for now
-document.documentElement.classList.remove('dark')
-
 // Disable native WebKit context menu in Tauri (WKWebView intercepts right-click
 // at native level before React's synthetic events can call preventDefault).
 // Capture phase fires first → prevents native menu; React bubble phase still fires

@@ -32,6 +32,7 @@ interface EditorContentProps {
   onArchiveNote?: (path: string) => void
   onUnarchiveNote?: (path: string) => void
   vaultPath?: string
+  isDarkTheme?: boolean
 }
 
 function EditorLoadingSkeleton() {
@@ -97,7 +98,7 @@ function ActiveTabBreadcrumb({ activeTab, props }: {
 export function EditorContent({
   activeTab, isLoadingNewTab, entries, editor,
   diffMode, diffContent, onToggleDiff,
-  onNavigateWikilink, onEditorChange, vaultPath,
+  onNavigateWikilink, onEditorChange, vaultPath, isDarkTheme,
   ...breadcrumbProps
 }: EditorContentProps) {
   return (
@@ -106,7 +107,7 @@ export function EditorContent({
       {diffMode && <DiffModeView diffContent={diffContent} onToggleDiff={onToggleDiff} />}
       {!diffMode && activeTab && (
         <div style={{ display: 'flex', flex: 1, flexDirection: 'column', minHeight: 0 }}>
-          <SingleEditorView editor={editor} entries={entries} onNavigateWikilink={onNavigateWikilink} onChange={onEditorChange} vaultPath={vaultPath} />
+          <SingleEditorView editor={editor} entries={entries} onNavigateWikilink={onNavigateWikilink} onChange={onEditorChange} vaultPath={vaultPath} isDarkTheme={isDarkTheme} />
         </div>
       )}
       {isLoadingNewTab && !diffMode && <EditorLoadingSkeleton />}

@@ -40,6 +40,7 @@ const mockThemeManager: ThemeManager = {
   themes: [],
   activeThemeId: null,
   activeTheme: null,
+  isDark: false,
   switchTheme: vi.fn(),
   createTheme: vi.fn().mockResolvedValue('untitled'),
   reloadThemes: vi.fn(),

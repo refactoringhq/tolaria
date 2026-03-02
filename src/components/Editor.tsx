@@ -60,6 +60,7 @@ interface EditorProps {
   onGoBack?: () => void
   onGoForward?: () => void
   leftPanelsCollapsed?: boolean
+  isDarkTheme?: boolean
 }
 
 function EditorEmptyState() {
@@ -82,6 +83,7 @@ export const Editor = memo(function Editor({
   onTrashNote, onRestoreNote, onArchiveNote, onUnarchiveNote,
   onRenameTab, onContentChange, onTitleSync,
   canGoBack, canGoForward, onGoBack, onGoForward, leftPanelsCollapsed,
+  isDarkTheme,
 }: EditorProps) {
   const vaultPathRef = useRef(vaultPath)
   useEffect(() => { vaultPathRef.current = vaultPath }, [vaultPath])
@@ -161,6 +163,7 @@ export const Editor = memo(function Editor({
               onArchiveNote={onArchiveNote}
               onUnarchiveNote={onUnarchiveNote}
               vaultPath={vaultPath}
+              isDarkTheme={isDarkTheme}
             />
         }
         {showRightPanel && <ResizeHandle onResize={onInspectorResize} />}

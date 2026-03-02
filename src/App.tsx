@@ -395,6 +395,7 @@ function App() {
             onGoBack={handleGoBack}
             onGoForward={handleGoForward}
             leftPanelsCollapsed={!sidebarVisible && !noteListVisible}
+            isDarkTheme={themeManager.isDark}
           />
         </div>
       </div>
