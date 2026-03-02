@@ -231,3 +231,30 @@ test('full create note flow', async ({ page }) => {
 
   await page.screenshot({ path: 'test-results/core-create-note.png', fullPage: true })
 })
+
+// --- Flow 8: Wiki-link navigation ---
+
+test('clicking a wikilink opens the target note in a new tab', async ({ page }) => {
+  // Open "Manage Sponsorships" which contains [[Matteo Cellini]] wikilink
+  await page.locator('.note-list__item', { hasText: 'Manage Sponsorships' }).click()
+  await page.waitForTimeout(300)
+
+  // Verify we opened the right note
+  await expect(page.locator('.editor__tab--active')).toHaveText(/Manage Sponsorships/)
+
+  // Click the wikilink — use mouse.click to fire real mousedown
+  const wikilink = page.locator('.cm-wikilink', { hasText: 'Matteo Cellini' })
+  await expect(wikilink).toBeVisible()
+  const box = await wikilink.boundingBox()
+  expect(box).not.toBeNull()
+  await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2)
+  await page.waitForTimeout(300)
+
+  // New tab should open with the target note active
+  await expect(page.locator('.editor__tab--active')).toHaveText(/Matteo Cellini/)
+
+  // Editor should show the target note's content
+  await expect(page.locator('.cm-content')).toContainText('Matteo Cellini')
+
+  await page.screenshot({ path: 'test-results/core-wikilink-nav.png', fullPage: true })
+})
