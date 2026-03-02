@@ -366,27 +366,65 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let vault = dir.path();
 
-        std::process::Command::new("git").args(["init"]).current_dir(vault).output().unwrap();
-        std::process::Command::new("git").args(["config", "user.email", "t@t.com"]).current_dir(vault).output().unwrap();
-        std::process::Command::new("git").args(["config", "user.name", "T"]).current_dir(vault).output().unwrap();
+        std::process::Command::new("git")
+            .args(["init"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+        std::process::Command::new("git")
+            .args(["config", "user.email", "t@t.com"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+        std::process::Command::new("git")
+            .args(["config", "user.name", "T"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
 
         create_test_file(vault, "note.md", "# Note\n\nContent.");
-        std::process::Command::new("git").args(["add", "."]).current_dir(vault).output().unwrap();
-        std::process::Command::new("git").args(["commit", "-m", "init"]).current_dir(vault).output().unwrap();
+        std::process::Command::new("git")
+            .args(["add", "."])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+        std::process::Command::new("git")
+            .args(["commit", "-m", "init"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
 
         // Build initial cache
         let entries = scan_vault_cached(vault).unwrap();
         assert_eq!(entries.len(), 1);
 
         // Add a new DIRECTORY with files (simulating seed_vault_themes) — NOT committed
-        create_test_file(vault, "theme/default.md", "---\nIs A: Theme\n---\n# Default Theme\n");
-        create_test_file(vault, "theme/dark.md", "---\nIs A: Theme\n---\n# Dark Theme\n");
+        create_test_file(
+            vault,
+            "theme/default.md",
+            "---\nIs A: Theme\n---\n# Default Theme\n",
+        );
+        create_test_file(
+            vault,
+            "theme/dark.md",
+            "---\nIs A: Theme\n---\n# Dark Theme\n",
+        );
 
         // Re-scan — should find the new untracked files inside the untracked directory
         let entries2 = scan_vault_cached(vault).unwrap();
-        assert_eq!(entries2.len(), 3, "Should include theme files from untracked directory");
+        assert_eq!(
+            entries2.len(),
+            3,
+            "Should include theme files from untracked directory"
+        );
         let titles: Vec<&str> = entries2.iter().map(|e| e.title.as_str()).collect();
-        assert!(titles.contains(&"Default Theme"), "Should find default.md in untracked theme/ dir");
-        assert!(titles.contains(&"Dark Theme"), "Should find dark.md in untracked theme/ dir");
+        assert!(
+            titles.contains(&"Default Theme"),
+            "Should find default.md in untracked theme/ dir"
+        );
+        assert!(
+            titles.contains(&"Dark Theme"),
+            "Should find dark.md in untracked theme/ dir"
+        );
     }
 }

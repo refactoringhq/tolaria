@@ -135,7 +135,11 @@ fn seed_dir_with_files(dir: &Path, files: &[(&str, &str)], log_msg: &str) {
 pub fn seed_default_themes(vault_path: &str) {
     seed_dir_with_files(
         &Path::new(vault_path).join("_themes"),
-        &[("default.json", DEFAULT_THEME), ("dark.json", DARK_THEME), ("minimal.json", MINIMAL_THEME)],
+        &[
+            ("default.json", DEFAULT_THEME),
+            ("dark.json", DARK_THEME),
+            ("minimal.json", MINIMAL_THEME),
+        ],
         "Seeded _themes/ with built-in themes",
     );
 }
@@ -145,7 +149,11 @@ pub fn seed_default_themes(vault_path: &str) {
 pub fn seed_vault_themes(vault_path: &str) {
     seed_dir_with_files(
         &Path::new(vault_path).join("theme"),
-        &[("default.md", DEFAULT_VAULT_THEME), ("dark.md", DARK_VAULT_THEME), ("minimal.md", MINIMAL_VAULT_THEME)],
+        &[
+            ("default.md", DEFAULT_VAULT_THEME),
+            ("dark.md", DARK_VAULT_THEME),
+            ("minimal.md", MINIMAL_VAULT_THEME),
+        ],
         "Seeded theme/ with built-in vault themes",
     );
 }
@@ -154,8 +162,7 @@ pub fn seed_vault_themes(vault_path: &str) {
 /// Returns the absolute path to the newly created theme note.
 pub fn create_vault_theme(vault_path: &str, name: Option<&str>) -> Result<String, String> {
     let theme_dir = Path::new(vault_path).join("theme");
-    fs::create_dir_all(&theme_dir)
-        .map_err(|e| format!("Failed to create theme directory: {e}"))?;
+    fs::create_dir_all(&theme_dir).map_err(|e| format!("Failed to create theme directory: {e}"))?;
 
     let display_name = name.unwrap_or("Untitled Theme");
     let slug = slugify(display_name);
@@ -163,8 +170,7 @@ pub fn create_vault_theme(vault_path: &str, name: Option<&str>) -> Result<String
     let path = theme_dir.join(&filename);
 
     let content = vault_theme_note_content(display_name, &DEFAULT_VAULT_THEME_VARS);
-    fs::write(&path, content)
-        .map_err(|e| format!("Failed to write theme note: {e}"))?;
+    fs::write(&path, content).map_err(|e| format!("Failed to write theme note: {e}"))?;
 
     Ok(path.to_string_lossy().to_string())
 }
@@ -172,7 +178,13 @@ pub fn create_vault_theme(vault_path: &str, name: Option<&str>) -> Result<String
 /// Convert a display name to a URL-safe slug.
 fn slugify(name: &str) -> String {
     name.chars()
-        .map(|c| if c.is_ascii_alphanumeric() { c.to_ascii_lowercase() } else { '-' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() {
+                c.to_ascii_lowercase()
+            } else {
+                '-'
+            }
+        })
         .collect::<String>()
         .split('-')
         .filter(|s| !s.is_empty())
@@ -206,7 +218,9 @@ fn vault_theme_note_content(name: &str, vars: &[(&str, &str)]) -> String {
         }
     }
     fm.push_str("---\n\n");
-    fm.push_str(&format!("# {name} Theme\n\nA custom {name} theme for Laputa.\n"));
+    fm.push_str(&format!(
+        "# {name} Theme\n\nA custom {name} theme for Laputa.\n"
+    ));
     fm
 }
 
@@ -424,7 +438,10 @@ pub const DEFAULT_VAULT_THEME_VARS: [(&str, &str); 46] = [
     ("accent-red-light", "#E03E3E14"),
     ("accent-yellow-light", "#F0B10014"),
     // Typography
-    ("font-family", "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"),
+    (
+        "font-family",
+        "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+    ),
     ("font-size-base", "14px"),
     // Editor
     ("editor-font-size", "16"),
