@@ -151,8 +151,9 @@ function applyCustomization(
 ): void {
   if (!target || !onCustomizeType) return
   const te = typeEntryMap[target]
-  if (!te) return
-  const [icon, color] = buildCustomizeArgs(te, prop, value)
+  const [icon, color] = te
+    ? buildCustomizeArgs(te, prop, value)
+    : [prop === 'icon' ? value : 'file-text', prop === 'color' ? value : 'blue']
   onCustomizeType(target, icon, color)
 }
 

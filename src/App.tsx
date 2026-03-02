@@ -245,6 +245,7 @@ function App() {
     entries: vault.entries, updateEntry: vault.updateEntry,
     handleUpdateFrontmatter: notes.handleUpdateFrontmatter,
     handleDeleteProperty: notes.handleDeleteProperty, setToastMessage,
+    createTypeEntry: notes.createTypeEntrySilent,
   })
 
   const gitHistory = useGitHistory(notes.activeTabPath, vault.loadGitHistory)

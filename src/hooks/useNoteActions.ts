@@ -389,6 +389,14 @@ export function useNoteActions(config: NoteActionsConfig) {
 
   const handleCreateType = useCallback((typeName: string) => persistNew(resolveNewType(typeName)), [persistNew])
 
+  /** Create a Type entry file silently (no tab opened). Adds to state and persists to disk. */
+  const createTypeEntrySilent = useCallback(async (typeName: string): Promise<VaultEntry> => {
+    const resolved = resolveNewType(typeName)
+    addEntryWithMock(resolved.entry, resolved.content, addEntry)
+    await persistNewNote(resolved.entry.path, resolved.content)
+    return resolved.entry
+  }, [addEntry])
+
   const fmCallbacks = { updateTab: updateTabContent, updateEntry, toast: setToastMessage }
 
   const runFrontmatterOp = useCallback(
@@ -426,6 +434,7 @@ export function useNoteActions(config: NoteActionsConfig) {
     handleCreateNoteImmediate,
     handleOpenDailyNote,
     handleCreateType,
+    createTypeEntrySilent,
     handleUpdateFrontmatter: useCallback((path: string, key: string, value: FrontmatterValue) => runFrontmatterOp('update', path, key, value), [runFrontmatterOp]),
     handleDeleteProperty: useCallback((path: string, key: string) => runFrontmatterOp('delete', path, key), [runFrontmatterOp]),
     handleAddProperty: useCallback((path: string, key: string, value: FrontmatterValue) => runFrontmatterOp('update', path, key, value), [runFrontmatterOp]),

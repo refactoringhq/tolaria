@@ -36,6 +36,9 @@ describe('useEntryActions', () => {
   const handleUpdateFrontmatter = vi.fn().mockResolvedValue(undefined)
   const handleDeleteProperty = vi.fn().mockResolvedValue(undefined)
   const setToastMessage = vi.fn()
+  const createTypeEntry = vi.fn().mockImplementation((typeName: string) =>
+    Promise.resolve(makeEntry({ isA: 'Type', title: typeName, path: `/vault/type/${typeName.toLowerCase()}.md` })),
+  )
 
   function setup(entries: VaultEntry[] = []) {
     return renderHook(() =>
@@ -45,6 +48,7 @@ describe('useEntryActions', () => {
         handleUpdateFrontmatter,
         handleDeleteProperty,
         setToastMessage,
+        createTypeEntry,
       })
     )
   }
@@ -118,12 +122,12 @@ describe('useEntryActions', () => {
   })
 
   describe('handleCustomizeType', () => {
-    it('updates icon and color on the type entry', () => {
+    it('updates icon and color on the type entry', async () => {
       const typeEntry = makeEntry({ isA: 'Type', title: 'Recipe', path: '/vault/type/recipe.md' })
       const { result } = setup([typeEntry])
 
-      act(() => {
-        result.current.handleCustomizeType('Recipe', 'cooking-pot', 'green')
+      await act(async () => {
+        await result.current.handleCustomizeType('Recipe', 'cooking-pot', 'green')
       })
 
       expect(handleUpdateFrontmatter).toHaveBeenCalledWith('/vault/type/recipe.md', 'icon', 'cooking-pot')
@@ -131,15 +135,33 @@ describe('useEntryActions', () => {
       expect(updateEntry).toHaveBeenCalledWith('/vault/type/recipe.md', { icon: 'cooking-pot', color: 'green' })
     })
 
-    it('does nothing when type entry not found', () => {
+    it('auto-creates type entry when not found and applies customization', async () => {
       const { result } = setup([])
 
-      act(() => {
-        result.current.handleCustomizeType('NonExistent', 'star', 'red')
+      await act(async () => {
+        await result.current.handleCustomizeType('Recipe', 'star', 'red')
       })
 
-      expect(handleUpdateFrontmatter).not.toHaveBeenCalled()
-      expect(updateEntry).not.toHaveBeenCalled()
+      expect(createTypeEntry).toHaveBeenCalledWith('Recipe')
+      expect(updateEntry).toHaveBeenCalledWith('/vault/type/recipe.md', { icon: 'star', color: 'red' })
+      expect(handleUpdateFrontmatter).toHaveBeenCalledWith('/vault/type/recipe.md', 'icon', 'star')
+      expect(handleUpdateFrontmatter).toHaveBeenCalledWith('/vault/type/recipe.md', 'color', 'red')
+    })
+
+    it('serializes frontmatter writes (icon before color)', async () => {
+      const callOrder: string[] = []
+      handleUpdateFrontmatter.mockImplementation((_path: string, key: string) => {
+        callOrder.push(key)
+        return Promise.resolve()
+      })
+      const typeEntry = makeEntry({ isA: 'Type', title: 'Project', path: '/vault/type/project.md' })
+      const { result } = setup([typeEntry])
+
+      await act(async () => {
+        await result.current.handleCustomizeType('Project', 'wrench', 'blue')
+      })
+
+      expect(callOrder).toEqual(['icon', 'color'])
     })
   })
 
