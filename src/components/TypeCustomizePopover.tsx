@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { MagnifyingGlass } from '@phosphor-icons/react'
 import { ICON_OPTIONS, type IconEntry } from '../utils/iconRegistry'
 import { ACCENT_COLORS } from '../utils/typeColors'
@@ -13,21 +13,40 @@ function filterIcons(icons: IconEntry[], query: string): IconEntry[] {
 interface TypeCustomizePopoverProps {
   currentIcon: string | null
   currentColor: string | null
+  currentTemplate: string | null
   onChangeIcon: (icon: string) => void
   onChangeColor: (color: string) => void
+  onChangeTemplate: (template: string) => void
   onClose: () => void
+}
+
+/** Debounce a callback by `delay` ms. Returns a stable ref-based wrapper. */
+function useDebouncedCallback(fn: (v: string) => void, delay: number): (v: string) => void {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const fnRef = useRef(fn)
+  useEffect(() => { fnRef.current = fn })
+
+  useEffect(() => () => { clearTimeout(timerRef.current) }, [])
+
+  return useCallback((v: string) => {
+    clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => fnRef.current(v), delay)
+  }, [delay])
 }
 
 export function TypeCustomizePopover({
   currentIcon,
   currentColor,
+  currentTemplate,
   onChangeIcon,
   onChangeColor,
+  onChangeTemplate,
   onClose,
 }: TypeCustomizePopoverProps) {
   const [selectedColor, setSelectedColor] = useState(currentColor)
   const [selectedIcon, setSelectedIcon] = useState(currentIcon)
   const [search, setSearch] = useState('')
+  const [templateText, setTemplateText] = useState(currentTemplate ?? '')
 
   const filteredIcons = useMemo(() => filterIcons(ICON_OPTIONS, search), [search])
 
@@ -41,10 +60,17 @@ export function TypeCustomizePopover({
     onChangeIcon(name)
   }
 
+  const debouncedSaveTemplate = useDebouncedCallback(onChangeTemplate, 500)
+
+  const handleTemplateChange = (value: string) => {
+    setTemplateText(value)
+    debouncedSaveTemplate(value)
+  }
+
   return (
     <div
       className="bg-popover text-popover-foreground z-50 rounded-lg border shadow-md"
-      style={{ width: 280, padding: 12 }}
+      style={{ width: 320, padding: 12 }}
       onClick={(e) => e.stopPropagation()}
       onContextMenu={(e) => e.stopPropagation()}
     >
@@ -84,7 +110,7 @@ export function TypeCustomizePopover({
       </div>
 
       {/* Icon grid */}
-      <div className="flex flex-wrap gap-1 overflow-y-auto" style={{ maxHeight: 240 }}>
+      <div className="flex flex-wrap gap-1 overflow-y-auto" style={{ maxHeight: 160 }}>
         {filteredIcons.length === 0 ? (
           <div className="w-full py-6 text-center text-[12px] text-muted-foreground">
             No icons found
@@ -108,6 +134,17 @@ export function TypeCustomizePopover({
           ))
         )}
       </div>
+
+      {/* Template section */}
+      <div className="font-mono-overline mb-2 mt-3 text-muted-foreground">TEMPLATE</div>
+      <textarea
+        value={templateText}
+        onChange={(e) => handleTemplateChange(e.target.value)}
+        placeholder="Markdown template for new notes of this type…"
+        className="w-full rounded border border-border bg-background px-2 py-1.5 text-[12px] font-mono text-foreground placeholder:text-muted-foreground outline-none focus:border-primary resize-y"
+        style={{ minHeight: 80, maxHeight: 200 }}
+        data-testid="template-textarea"
+      />
 
       {/* Done button */}
       <div className="mt-3 flex justify-end">

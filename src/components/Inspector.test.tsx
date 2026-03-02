@@ -26,6 +26,7 @@ const mockEntry: VaultEntry = {
   icon: null,
   color: null,
     order: null,
+  template: null,
   outgoingLinks: [],
 }
 
@@ -70,6 +71,7 @@ const referrerEntry: VaultEntry = {
   icon: null,
   color: null,
   order: null,
+  template: null,
   outgoingLinks: ['Test Project'],
 }
 
@@ -374,6 +376,7 @@ This is a test note with some words to count.
       icon: null,
       color: null,
       order: null,
+      template: null,
       outgoingLinks: [],
     }
 
@@ -400,6 +403,7 @@ This is a test note with some words to count.
       icon: null,
       color: null,
       order: null,
+      template: null,
       outgoingLinks: [],
     }
 
@@ -426,6 +430,7 @@ This is a test note with some words to count.
       icon: null,
       color: null,
       order: null,
+      template: null,
       outgoingLinks: [],
     }
 
@@ -452,6 +457,7 @@ This is a test note with some words to count.
       icon: null,
       color: null,
       order: null,
+      template: null,
       outgoingLinks: [],
     }
 
@@ -594,6 +600,7 @@ Status: Active
         icon: null,
         color: null,
         order: null,
+        template: null,
         // Body text also links to grow-newsletter
         outgoingLinks: ['responsibility/grow-newsletter'],
       }

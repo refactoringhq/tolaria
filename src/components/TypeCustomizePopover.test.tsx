@@ -43,50 +43,42 @@ describe('ICON_OPTIONS', () => {
 describe('TypeCustomizePopover', () => {
   const onChangeIcon = vi.fn()
   const onChangeColor = vi.fn()
+  const onChangeTemplate = vi.fn()
   const onClose = vi.fn()
+
+  const renderPopover = (overrides: Partial<Parameters<typeof TypeCustomizePopover>[0]> = {}) =>
+    render(
+      <TypeCustomizePopover
+        currentIcon={null}
+        currentColor={null}
+        currentTemplate={null}
+        onChangeIcon={onChangeIcon}
+        onChangeColor={onChangeColor}
+        onChangeTemplate={onChangeTemplate}
+        onClose={onClose}
+        {...overrides}
+      />
+    )
 
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('renders color section and icon section', () => {
-    render(
-      <TypeCustomizePopover
-        currentIcon="wrench"
-        currentColor="blue"
-        onChangeIcon={onChangeIcon}
-        onChangeColor={onChangeColor}
-        onClose={onClose}
-      />
-    )
+  it('renders color, icon, and template sections', () => {
+    renderPopover()
     expect(screen.getByText('COLOR')).toBeInTheDocument()
     expect(screen.getByText('ICON')).toBeInTheDocument()
+    expect(screen.getByText('TEMPLATE')).toBeInTheDocument()
     expect(screen.getByText('Done')).toBeInTheDocument()
   })
 
   it('renders search input', () => {
-    render(
-      <TypeCustomizePopover
-        currentIcon={null}
-        currentColor={null}
-        onChangeIcon={onChangeIcon}
-        onChangeColor={onChangeColor}
-        onClose={onClose}
-      />
-    )
+    renderPopover()
     expect(screen.getByPlaceholderText('Search icons…')).toBeInTheDocument()
   })
 
   it('filters icons by search query', () => {
-    render(
-      <TypeCustomizePopover
-        currentIcon={null}
-        currentColor={null}
-        onChangeIcon={onChangeIcon}
-        onChangeColor={onChangeColor}
-        onClose={onClose}
-      />
-    )
+    renderPopover()
 
     const searchInput = screen.getByPlaceholderText('Search icons…')
     fireEvent.change(searchInput, { target: { value: 'book' } })
@@ -99,15 +91,7 @@ describe('TypeCustomizePopover', () => {
   })
 
   it('shows empty state when no icons match search', () => {
-    render(
-      <TypeCustomizePopover
-        currentIcon={null}
-        currentColor={null}
-        onChangeIcon={onChangeIcon}
-        onChangeColor={onChangeColor}
-        onClose={onClose}
-      />
-    )
+    renderPopover()
 
     const searchInput = screen.getByPlaceholderText('Search icons…')
     fireEvent.change(searchInput, { target: { value: 'zzzznonexistent' } })
@@ -116,15 +100,7 @@ describe('TypeCustomizePopover', () => {
   })
 
   it('calls onChangeColor when a color is clicked', () => {
-    render(
-      <TypeCustomizePopover
-        currentIcon={null}
-        currentColor={null}
-        onChangeIcon={onChangeIcon}
-        onChangeColor={onChangeColor}
-        onClose={onClose}
-      />
-    )
+    renderPopover()
 
     const colorButtons = screen.getAllByTitle(/red|blue|green|purple|yellow|orange|teal|pink/i)
     fireEvent.click(colorButtons[0])
@@ -133,47 +109,70 @@ describe('TypeCustomizePopover', () => {
   })
 
   it('calls onChangeIcon when an icon is clicked', () => {
-    render(
-      <TypeCustomizePopover
-        currentIcon={null}
-        currentColor={null}
-        onChangeIcon={onChangeIcon}
-        onChangeColor={onChangeColor}
-        onClose={onClose}
-      />
-    )
+    renderPopover()
 
     fireEvent.click(screen.getByTitle('wrench'))
     expect(onChangeIcon).toHaveBeenCalledWith('wrench')
   })
 
   it('calls onClose when Done is clicked', () => {
-    render(
-      <TypeCustomizePopover
-        currentIcon={null}
-        currentColor={null}
-        onChangeIcon={onChangeIcon}
-        onChangeColor={onChangeColor}
-        onClose={onClose}
-      />
-    )
+    renderPopover()
 
     fireEvent.click(screen.getByText('Done'))
     expect(onClose).toHaveBeenCalled()
   })
 
   it('renders all color options including teal and pink', () => {
-    render(
-      <TypeCustomizePopover
-        currentIcon={null}
-        currentColor={null}
-        onChangeIcon={onChangeIcon}
-        onChangeColor={onChangeColor}
-        onClose={onClose}
-      />
-    )
+    renderPopover()
 
     expect(screen.getByTitle('Teal')).toBeInTheDocument()
     expect(screen.getByTitle('Pink')).toBeInTheDocument()
+  })
+
+  // --- Template tests ---
+
+  it('renders template textarea', () => {
+    renderPopover()
+    expect(screen.getByTestId('template-textarea')).toBeInTheDocument()
+  })
+
+  it('shows placeholder when template is empty', () => {
+    renderPopover()
+    expect(screen.getByPlaceholderText('Markdown template for new notes of this type…')).toBeInTheDocument()
+  })
+
+  it('displays current template value', () => {
+    renderPopover({ currentTemplate: '## Objective\n\n## Notes' })
+    const textarea = screen.getByTestId('template-textarea') as HTMLTextAreaElement
+    expect(textarea.value).toBe('## Objective\n\n## Notes')
+  })
+
+  it('updates template text on user input', () => {
+    renderPopover()
+    const textarea = screen.getByTestId('template-textarea')
+    fireEvent.change(textarea, { target: { value: '## New Template' } })
+    expect((textarea as HTMLTextAreaElement).value).toBe('## New Template')
+  })
+
+  it('calls onChangeTemplate after debounce', async () => {
+    vi.useFakeTimers()
+    renderPopover()
+    const textarea = screen.getByTestId('template-textarea')
+    fireEvent.change(textarea, { target: { value: '## Debounced' } })
+
+    // Should not be called immediately
+    expect(onChangeTemplate).not.toHaveBeenCalled()
+
+    // Fast-forward past debounce
+    vi.advanceTimersByTime(600)
+    expect(onChangeTemplate).toHaveBeenCalledWith('## Debounced')
+
+    vi.useRealTimers()
+  })
+
+  it('treats null template as empty string', () => {
+    renderPopover({ currentTemplate: null })
+    const textarea = screen.getByTestId('template-textarea') as HTMLTextAreaElement
+    expect(textarea.value).toBe('')
   })
 })

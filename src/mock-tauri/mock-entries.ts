@@ -36,6 +36,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: ['quarter/q1-2026', 'topic/software-development', 'person/matteo-cellini', 'person/maria-bianchi', 'person/marco-verdi'],
   },
   {
@@ -71,6 +72,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: ['essay/on-writing-well', 'essay/engineering-leadership-101', 'essay/ai-agents-primer', 'topic/growth', 'topic/writing'],
   },
   {
@@ -100,6 +102,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: ['person/matteo-cellini'],
   },
   {
@@ -129,6 +132,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: ['responsibility/grow-newsletter'],
   },
   {
@@ -158,6 +162,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: ['responsibility/manage-sponsorships'],
   },
   {
@@ -188,6 +193,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: ['topic/trading', 'topic/algorithmic-trading', 'data/ema200-backtest-results'],
   },
   {
@@ -218,6 +224,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: ['project/26q1-laputa-app', 'topic/growth', 'topic/ads'],
   },
   {
@@ -247,6 +254,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: ['project/26q1-laputa-app'],
   },
   {
@@ -275,6 +283,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -303,6 +312,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -331,6 +341,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -359,6 +370,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -388,6 +400,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: ['project/26q1-laputa-app', 'person/matteo-cellini'],
   },
   {
@@ -417,6 +430,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -446,6 +460,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -475,6 +490,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: ['responsibility/grow-newsletter'],
   },
   {
@@ -505,6 +521,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: ['responsibility/grow-newsletter', 'topic/software-development'],
   },
   {
@@ -534,6 +551,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: ['responsibility/grow-newsletter'],
   },
   // --- Type documents ---
@@ -561,6 +579,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: 0,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -587,6 +606,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: 1,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -613,6 +633,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: 2,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -639,6 +660,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: 3,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -665,6 +687,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: 4,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -691,6 +714,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: 5,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -717,6 +741,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: 6,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -743,6 +768,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: 7,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -769,6 +795,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: 8,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   // --- Custom type documents ---
@@ -796,6 +823,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: 'orange',
     order: 9,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -822,6 +850,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: 'green',
     order: 10,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   // --- Instances of custom types ---
@@ -851,6 +880,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -879,6 +909,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   // --- Trashed entries ---
@@ -909,6 +940,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -937,6 +969,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -966,6 +999,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   // --- Archived entries ---
@@ -987,6 +1021,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
     modifiedAt: now - 86400 * 120,
     createdAt: now - 86400 * 200,
@@ -1016,6 +1051,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
     modifiedAt: now - 86400 * 90,
     createdAt: now - 86400 * 150,
@@ -1079,6 +1115,7 @@ function generateBulkEntries(count: number): VaultEntry[] {
       order: null,
       outgoingLinks: Array.from({ length: i % 8 }, (_j, j) => `note/link-target-${(i + j) % 50}`),
       sidebarLabel: null,
+      template: null,
     })
   }
   return entries

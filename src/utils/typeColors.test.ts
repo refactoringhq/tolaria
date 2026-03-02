@@ -54,7 +54,7 @@ const baseEntry: VaultEntry = {
   status: null, owner: null, cadence: null, archived: false, trashed: false, trashedAt: null,
   modifiedAt: null, createdAt: null, fileSize: 0, snippet: '', relationships: {},
   wordCount: 0,
-  icon: null, color: null, order: null, outgoingLinks: [],
+  icon: null, color: null, order: null, template: null, outgoingLinks: [],
 }
 
 describe('buildTypeEntryMap', () => {

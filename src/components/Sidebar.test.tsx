@@ -40,6 +40,7 @@ const mockEntries: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -66,6 +67,7 @@ const mockEntries: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -92,6 +94,7 @@ const mockEntries: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -118,6 +121,7 @@ const mockEntries: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -144,6 +148,7 @@ const mockEntries: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -170,6 +175,7 @@ const mockEntries: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -196,6 +202,7 @@ const mockEntries: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -222,6 +229,7 @@ const mockEntries: VaultEntry[] = [
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
   },
 ]
@@ -441,6 +449,7 @@ describe('Sidebar', () => {
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
       },
       {
@@ -467,6 +476,7 @@ describe('Sidebar', () => {
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
       },
       {
@@ -492,6 +502,7 @@ describe('Sidebar', () => {
         icon: null,
         color: null,
         order: null,
+        template: null,
         outgoingLinks: [],
       },
       {
@@ -517,6 +528,7 @@ describe('Sidebar', () => {
         icon: null,
         color: null,
         order: null,
+        template: null,
         outgoingLinks: [],
       },
     ]
@@ -602,6 +614,7 @@ describe('Sidebar', () => {
     color: null,
     order: null,
     sidebarLabel: null,
+    template: null,
     outgoingLinks: [],
       }
       render(<Sidebar entries={[...mockEntries, projectTypeEntry]} selection={defaultSelection} onSelect={() => {}} />)

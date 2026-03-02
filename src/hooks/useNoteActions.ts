@@ -72,7 +72,7 @@ export function buildNewEntry({ path, slug, title, type, status }: NewEntryParam
     aliases: [], belongsTo: [], relatedTo: [],
     status, owner: null, cadence: null, archived: false, trashed: false, trashedAt: null,
     modifiedAt: now, createdAt: now, fileSize: 0,
-    snippet: '', wordCount: 0, relationships: {}, icon: null, color: null, order: null, outgoingLinks: [], sidebarLabel: null,
+    snippet: '', wordCount: 0, relationships: {}, icon: null, color: null, order: null, outgoingLinks: [], sidebarLabel: null, template: null,
   }
 }
 
@@ -129,11 +129,26 @@ const TYPE_FOLDER_MAP: Record<string, string> = {
 
 const NO_STATUS_TYPES = new Set(['Topic', 'Person', 'Journal'])
 
+/** Default templates for built-in types. Used when the type entry has no custom template. */
+export const DEFAULT_TEMPLATES: Record<string, string> = {
+  Project: '## Objective\n\n\n\n## Key Results\n\n\n\n## Notes\n\n',
+  Person: '## Role\n\n\n\n## Contact\n\n\n\n## Notes\n\n',
+  Responsibility: '## Description\n\n\n\n## Key Activities\n\n\n\n## Notes\n\n',
+  Experiment: '## Hypothesis\n\n\n\n## Method\n\n\n\n## Results\n\n\n\n## Conclusion\n\n',
+}
+
+/** Look up the template for a given type from the type entry or defaults. */
+export function resolveTemplate(entries: VaultEntry[], typeName: string): string | null {
+  const typeEntry = entries.find(e => e.isA === 'Type' && e.title === typeName)
+  return typeEntry?.template ?? DEFAULT_TEMPLATES[typeName] ?? null
+}
+
 const ENTRY_DELETE_MAP: Record<string, Partial<VaultEntry>> = {
   type: { isA: null }, is_a: { isA: null }, status: { status: null }, color: { color: null },
   icon: { icon: null }, owner: { owner: null }, cadence: { cadence: null },
   aliases: { aliases: [] }, belongs_to: { belongsTo: [] }, related_to: { relatedTo: [] },
   archived: { archived: false }, trashed: { trashed: false }, order: { order: null },
+  template: { template: null },
 }
 
 /** Map a frontmatter key+value to the corresponding VaultEntry field(s). */
@@ -150,6 +165,7 @@ export function frontmatterToEntryPatch(
     aliases: { aliases: arr }, belongs_to: { belongsTo: arr }, related_to: { relatedTo: arr },
     archived: { archived: Boolean(value) }, trashed: { trashed: Boolean(value) },
     order: { order: typeof value === 'number' ? value : null },
+    template: { template: str },
   }
   return updates[k] ?? {}
 }
@@ -159,19 +175,20 @@ function addEntryWithMock(entry: VaultEntry, content: string, addEntry: (e: Vaul
   addEntry(entry, content)
 }
 
-export function buildNoteContent(title: string, type: string, status: string | null): string {
+export function buildNoteContent(title: string, type: string, status: string | null, template?: string | null): string {
   const lines = ['---', `title: ${title}`, `type: ${type}`]
   if (status) lines.push(`status: ${status}`)
   lines.push('---')
-  return `${lines.join('\n')}\n\n# ${title}\n\n`
+  const body = template ? `\n${template}` : '\n'
+  return `${lines.join('\n')}\n\n# ${title}\n${body}`
 }
 
-export function resolveNewNote(title: string, type: string): { entry: VaultEntry; content: string } {
+export function resolveNewNote(title: string, type: string, template?: string | null): { entry: VaultEntry; content: string } {
   const folder = TYPE_FOLDER_MAP[type] || slugify(type)
   const slug = slugify(title)
   const status = NO_STATUS_TYPES.has(type) ? null : 'Active'
   const entry = buildNewEntry({ path: `/Users/luca/Laputa/${folder}/${slug}.md`, slug, title, type, status })
-  return { entry, content: buildNoteContent(title, type, status) }
+  return { entry, content: buildNoteContent(title, type, status, template) }
 }
 
 export function resolveNewType(typeName: string): { entry: VaultEntry; content: string } {
@@ -340,13 +357,17 @@ export function useNoteActions(config: NoteActionsConfig) {
     [openTabWithContent, addEntry, revertOptimisticNote, addPendingSave, removePendingSave], // eslint-disable-line react-hooks/exhaustive-deps -- persistCbs is stable when deps are
   )
 
-  const handleCreateNote = useCallback((title: string, type: string) => persistNew(resolveNewNote(title, type)), [persistNew])
+  const handleCreateNote = useCallback((title: string, type: string) => {
+    const template = resolveTemplate(entries, type)
+    persistNew(resolveNewNote(title, type, template))
+  }, [entries, persistNew])
 
   const handleCreateNoteImmediate = useCallback((type?: string) => {
     const noteType = type || 'Note'
     const title = generateUntitledName(entries, noteType, pendingNamesRef.current)
     pendingNamesRef.current.add(title)
-    const resolved = resolveNewNote(title, noteType)
+    const template = resolveTemplate(entries, noteType)
+    const resolved = resolveNewNote(title, noteType, template)
     openTabWithContent(resolved.entry, resolved.content)
     addEntryWithMock(resolved.entry, resolved.content, addEntry)
     config.trackUnsaved?.(resolved.entry.path)

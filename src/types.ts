@@ -27,6 +27,8 @@ export interface VaultEntry {
   order: number | null
   /** Custom sidebar section label for Type entries, overriding auto-pluralization. */
   sidebarLabel: string | null
+  /** Markdown template for Type entries. Pre-fills new notes created with this type. */
+  template: string | null
   /** All wikilink targets found in the note content. Extracted from [[target]] patterns. */
   outgoingLinks: string[]
 }

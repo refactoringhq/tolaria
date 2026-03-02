@@ -17,6 +17,8 @@ import {
   resolveDailyNote,
   findDailyNote,
   useNoteActions,
+  DEFAULT_TEMPLATES,
+  resolveTemplate,
 } from './useNoteActions'
 import type { NoteActionsConfig } from './useNoteActions'
 
@@ -57,6 +59,7 @@ const makeEntry = (overrides: Partial<VaultEntry> = {}): VaultEntry => ({
   color: null,
   order: null,
   outgoingLinks: [],
+  template: null,
   ...overrides,
 })
 
@@ -192,6 +195,47 @@ describe('buildNoteContent', () => {
     const content = buildNoteContent('AI', 'Topic', null)
     expect(content).toBe('---\ntitle: AI\ntype: Topic\n---\n\n# AI\n\n')
   })
+
+  it('includes template body when provided', () => {
+    const content = buildNoteContent('My Project', 'Project', 'Active', '## Objective\n\n## Notes\n\n')
+    expect(content).toContain('# My Project')
+    expect(content).toContain('## Objective')
+    expect(content).toContain('## Notes')
+  })
+
+  it('ignores null template', () => {
+    const content = buildNoteContent('My Note', 'Note', 'Active', null)
+    expect(content).toBe('---\ntitle: My Note\ntype: Note\nstatus: Active\n---\n\n# My Note\n\n')
+  })
+})
+
+describe('resolveTemplate', () => {
+  it('returns template from type entry when set', () => {
+    const typeEntry = makeEntry({ isA: 'Type', title: 'Recipe', template: '## Ingredients\n\n## Steps\n\n' })
+    expect(resolveTemplate([typeEntry], 'Recipe')).toBe('## Ingredients\n\n## Steps\n\n')
+  })
+
+  it('falls back to DEFAULT_TEMPLATES for built-in types', () => {
+    expect(resolveTemplate([], 'Project')).toBe(DEFAULT_TEMPLATES.Project)
+  })
+
+  it('returns null when no template and no default', () => {
+    expect(resolveTemplate([], 'CustomType')).toBeNull()
+  })
+
+  it('type entry template overrides default', () => {
+    const typeEntry = makeEntry({ isA: 'Type', title: 'Project', template: '## Custom\n\n' })
+    expect(resolveTemplate([typeEntry], 'Project')).toBe('## Custom\n\n')
+  })
+})
+
+describe('DEFAULT_TEMPLATES', () => {
+  it('has templates for Project, Person, Responsibility, Experiment', () => {
+    expect(DEFAULT_TEMPLATES.Project).toBeDefined()
+    expect(DEFAULT_TEMPLATES.Person).toBeDefined()
+    expect(DEFAULT_TEMPLATES.Responsibility).toBeDefined()
+    expect(DEFAULT_TEMPLATES.Experiment).toBeDefined()
+  })
 })
 
 describe('resolveNewNote', () => {
@@ -244,6 +288,7 @@ describe('frontmatterToEntryPatch', () => {
     ['archived', true, { archived: true }],
     ['trashed', true, { trashed: true }],
     ['order', 5, { order: 5 }],
+    ['template', '## Heading\n\n', { template: '## Heading\n\n' }],
   ] as [string, unknown, Partial<VaultEntry>][])(
     'maps %s update to correct entry field',
     (key, value, expected) => {
@@ -274,6 +319,7 @@ describe('frontmatterToEntryPatch', () => {
     ['aliases', { aliases: [] }],
     ['archived', { archived: false }],
     ['order', { order: null }],
+    ['template', { template: null }],
   ] as [string, Partial<VaultEntry>][])(
     'maps delete of %s to null/default',
     (key, expected) => {
@@ -521,6 +567,43 @@ describe('useNoteActions hook', () => {
     const [createdEntry] = addEntry.mock.calls[0]
     expect(createdEntry.title).toBe('Untitled project')
     expect(createdEntry.isA).toBe('Project')
+  })
+
+  it('handleCreateNote uses default template for Project type', () => {
+    const { result } = renderHook(() => useNoteActions(makeConfig()))
+
+    act(() => {
+      result.current.handleCreateNote('My Project', 'Project')
+    })
+
+    const [, createdContent] = addEntry.mock.calls[0]
+    expect(createdContent).toContain('## Objective')
+    expect(createdContent).toContain('## Key Results')
+  })
+
+  it('handleCreateNote uses custom template from type entry', () => {
+    const typeEntry = makeEntry({ isA: 'Type', title: 'Recipe', template: '## Ingredients\n\n## Steps\n\n' })
+    const { result } = renderHook(() => useNoteActions(makeConfig([typeEntry])))
+
+    act(() => {
+      result.current.handleCreateNote('Pasta', 'Recipe')
+    })
+
+    const [, createdContent] = addEntry.mock.calls[0]
+    expect(createdContent).toContain('## Ingredients')
+    expect(createdContent).toContain('## Steps')
+  })
+
+  it('handleCreateNoteImmediate uses template for typed notes', () => {
+    const typeEntry = makeEntry({ isA: 'Type', title: 'Project', template: '## Custom Template\n\n' })
+    const { result } = renderHook(() => useNoteActions(makeConfig([typeEntry])))
+
+    act(() => {
+      result.current.handleCreateNoteImmediate('Project')
+    })
+
+    const [, createdContent] = addEntry.mock.calls[0]
+    expect(createdContent).toContain('## Custom Template')
   })
 
   it('handleUpdateFrontmatter does not call updateEntry for unknown keys', async () => {

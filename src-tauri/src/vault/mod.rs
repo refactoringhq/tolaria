@@ -65,6 +65,9 @@ pub struct VaultEntry {
     /// Custom sidebar section label for Type entries, overriding auto-pluralization.
     #[serde(rename = "sidebarLabel")]
     pub sidebar_label: Option<String>,
+    /// Markdown template for notes of this Type. When a new note is created
+    /// with this type, the template body is pre-filled after the frontmatter.
+    pub template: Option<String>,
     /// Word count of the note body (excludes frontmatter and H1 title).
     #[serde(rename = "wordCount")]
     pub word_count: u32,
@@ -109,6 +112,8 @@ struct Frontmatter {
     order: Option<i64>,
     #[serde(rename = "sidebar label", default)]
     sidebar_label: Option<String>,
+    #[serde(default)]
+    template: Option<String>,
 }
 
 /// Handles YAML fields that can be either a single string or a list of strings.
@@ -153,6 +158,7 @@ const SKIP_KEYS: &[&str] = &[
     "color",
     "order",
     "sidebar label",
+    "template",
 ];
 
 /// Extract all wikilink-containing fields from raw YAML frontmatter.
@@ -332,6 +338,7 @@ pub fn parse_md_file(path: &Path) -> Result<VaultEntry, String> {
         color: frontmatter.color,
         order: frontmatter.order,
         sidebar_label: frontmatter.sidebar_label,
+        template: frontmatter.template,
         word_count,
         outgoing_links,
     })
@@ -1086,6 +1093,45 @@ References:
         let content = "---\ntype: Type\nsidebar label: My Series\n---\n# Series\n";
         let entry = parse_test_entry(&dir, "type/series.md", content);
         assert!(entry.relationships.get("sidebar label").is_none());
+    }
+
+    // --- template field tests ---
+
+    #[test]
+    fn test_parse_template_from_type_entry() {
+        let dir = TempDir::new().unwrap();
+        let content =
+            "---\ntype: Type\ntemplate: \"## Objective\\n\\n## Timeline\"\n---\n# Project\n";
+        let entry = parse_test_entry(&dir, "type/project.md", content);
+        assert!(entry.template.is_some());
+    }
+
+    #[test]
+    fn test_parse_template_block_scalar() {
+        let dir = TempDir::new().unwrap();
+        let content =
+            "---\ntype: Type\ntemplate: |\n  ## Objective\n  \n  ## Timeline\n---\n# Project\n";
+        let entry = parse_test_entry(&dir, "type/project.md", content);
+        assert!(entry.template.is_some());
+        let tmpl = entry.template.unwrap();
+        assert!(tmpl.contains("## Objective"));
+        assert!(tmpl.contains("## Timeline"));
+    }
+
+    #[test]
+    fn test_parse_template_missing_defaults_to_none() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\ntype: Type\n---\n# Note\n";
+        let entry = parse_test_entry(&dir, "type/note.md", content);
+        assert_eq!(entry.template, None);
+    }
+
+    #[test]
+    fn test_template_not_in_relationships() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\ntype: Type\ntemplate: \"## Heading\"\n---\n# Project\n";
+        let entry = parse_test_entry(&dir, "type/project.md", content);
+        assert!(entry.relationships.get("template").is_none());
     }
 
     // Frontmatter update/delete tests are in frontmatter.rs

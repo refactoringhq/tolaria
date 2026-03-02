@@ -26,6 +26,7 @@ const makeEntry = (overrides: Partial<VaultEntry> = {}): VaultEntry => ({
   icon: null,
   color: null,
   order: null,
+  template: null,
   outgoingLinks: [],
   ...overrides,
 })
@@ -135,6 +136,43 @@ describe('useEntryActions', () => {
 
       act(() => {
         result.current.handleCustomizeType('NonExistent', 'star', 'red')
+      })
+
+      expect(handleUpdateFrontmatter).not.toHaveBeenCalled()
+      expect(updateEntry).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('handleUpdateTypeTemplate', () => {
+    it('updates template on the type entry', () => {
+      const typeEntry = makeEntry({ isA: 'Type', title: 'Project', path: '/vault/type/project.md' })
+      const { result } = setup([typeEntry])
+
+      act(() => {
+        result.current.handleUpdateTypeTemplate('Project', '## Objective\n\n## Notes')
+      })
+
+      expect(handleUpdateFrontmatter).toHaveBeenCalledWith('/vault/type/project.md', 'template', '## Objective\n\n## Notes')
+      expect(updateEntry).toHaveBeenCalledWith('/vault/type/project.md', { template: '## Objective\n\n## Notes' })
+    })
+
+    it('sets template to null when empty string', () => {
+      const typeEntry = makeEntry({ isA: 'Type', title: 'Project', path: '/vault/type/project.md' })
+      const { result } = setup([typeEntry])
+
+      act(() => {
+        result.current.handleUpdateTypeTemplate('Project', '')
+      })
+
+      expect(handleUpdateFrontmatter).toHaveBeenCalledWith('/vault/type/project.md', 'template', '')
+      expect(updateEntry).toHaveBeenCalledWith('/vault/type/project.md', { template: null })
+    })
+
+    it('does nothing when type entry not found', () => {
+      const { result } = setup([])
+
+      act(() => {
+        result.current.handleUpdateTypeTemplate('NonExistent', '## Template')
       })
 
       expect(handleUpdateFrontmatter).not.toHaveBeenCalled()

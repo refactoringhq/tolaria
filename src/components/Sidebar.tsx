@@ -32,6 +32,7 @@ interface SidebarProps {
   onCreateType?: (type: string) => void
   onCreateNewType?: () => void
   onCustomizeType?: (typeName: string, icon: string, color: string) => void
+  onUpdateTypeTemplate?: (typeName: string, template: string) => void
   onReorderSections?: (orderedTypes: { typeName: string; order: number }[]) => void
   modifiedCount?: number
   onCommitPush?: () => void
@@ -229,10 +230,11 @@ function ContextMenuOverlay({ pos, type, innerRef, onOpenCustomize }: {
   )
 }
 
-function CustomizeOverlay({ target, typeEntryMap, innerRef, onCustomize, onClose }: {
+function CustomizeOverlay({ target, typeEntryMap, innerRef, onCustomize, onChangeTemplate, onClose }: {
   target: string | null; typeEntryMap: Record<string, VaultEntry>
   innerRef: React.Ref<HTMLDivElement>
   onCustomize: (prop: 'icon' | 'color', value: string) => void
+  onChangeTemplate: (template: string) => void
   onClose: () => void
 }) {
   if (!target) return null
@@ -241,8 +243,10 @@ function CustomizeOverlay({ target, typeEntryMap, innerRef, onCustomize, onClose
       <TypeCustomizePopover
         currentIcon={typeEntryMap[target]?.icon ?? null}
         currentColor={typeEntryMap[target]?.color ?? null}
+        currentTemplate={typeEntryMap[target]?.template ?? null}
         onChangeIcon={(icon) => onCustomize('icon', icon)}
         onChangeColor={(color) => onCustomize('color', color)}
+        onChangeTemplate={onChangeTemplate}
         onClose={onClose}
       />
     </div>
@@ -253,7 +257,7 @@ function CustomizeOverlay({ target, typeEntryMap, innerRef, onCustomize, onClose
 
 export const Sidebar = memo(function Sidebar({
   entries, selection, onSelect, onSelectNote, onCreateType, onCreateNewType,
-  onCustomizeType, onReorderSections, modifiedCount = 0, onCommitPush, onCollapse,
+  onCustomizeType, onUpdateTypeTemplate, onReorderSections, modifiedCount = 0, onCommitPush, onCollapse,
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [customizeTarget, setCustomizeTarget] = useState<string | null>(null)
@@ -302,6 +306,10 @@ export const Sidebar = memo(function Sidebar({
     applyCustomization(customizeTarget, typeEntryMap, onCustomizeType, prop, value)
   }, [customizeTarget, typeEntryMap, onCustomizeType])
 
+  const handleChangeTemplate = useCallback((template: string) => {
+    if (customizeTarget) onUpdateTypeTemplate?.(customizeTarget, template)
+  }, [customizeTarget, onUpdateTypeTemplate])
+
   const sectionProps = {
     entries, collapsed, selection, onSelect, onSelectNote, onCreateType, onCreateNewType,
     onContextMenu: handleContextMenu, onToggle: toggleSection,
@@ -346,7 +354,7 @@ export const Sidebar = memo(function Sidebar({
 
       <CommitButton modifiedCount={modifiedCount} onClick={onCommitPush} />
       <ContextMenuOverlay pos={contextMenuPos} type={contextMenuType} innerRef={contextMenuRef} onOpenCustomize={(type) => { closeContextMenu(); setCustomizeTarget(type) }} />
-      <CustomizeOverlay target={customizeTarget} typeEntryMap={typeEntryMap} innerRef={popoverRef} onCustomize={handleCustomize} onClose={closeCustomizeTarget} />
+      <CustomizeOverlay target={customizeTarget} typeEntryMap={typeEntryMap} innerRef={popoverRef} onCustomize={handleCustomize} onChangeTemplate={handleChangeTemplate} onClose={closeCustomizeTarget} />
     </aside>
   )
 })
