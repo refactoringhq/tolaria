@@ -60,5 +60,12 @@ export function useEntryActions({
     }
   }, [entries, handleUpdateFrontmatter, updateEntry])
 
-  return { handleTrashNote, handleRestoreNote, handleArchiveNote, handleUnarchiveNote, handleCustomizeType, handleReorderSections }
+  const handleUpdateTypeTemplate = useCallback((typeName: string, template: string) => {
+    const typeEntry = findTypeEntry(entries, typeName)
+    if (!typeEntry) return
+    handleUpdateFrontmatter(typeEntry.path, 'template', template)
+    updateEntry(typeEntry.path, { template: template || null })
+  }, [entries, handleUpdateFrontmatter, updateEntry])
+
+  return { handleTrashNote, handleRestoreNote, handleArchiveNote, handleUnarchiveNote, handleCustomizeType, handleReorderSections, handleUpdateTypeTemplate }
 }
