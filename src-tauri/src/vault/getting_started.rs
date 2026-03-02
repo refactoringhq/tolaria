@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 /// Default location for the Getting Started vault.
 pub fn default_vault_path() -> Result<PathBuf, String> {
     dirs::document_dir()
-        .map(|d| d.join("Laputa"))
+        .map(|d| d.join("Getting Started"))
         .ok_or_else(|| "Could not determine Documents directory".to_string())
 }
 
@@ -423,7 +423,7 @@ mod tests {
         let path = default_vault_path().unwrap();
         let path_str = path.to_string_lossy();
         assert!(path_str.contains("Documents"));
-        assert!(path_str.ends_with("Laputa"));
+        assert!(path_str.ends_with("Getting Started"));
     }
 
     #[test]

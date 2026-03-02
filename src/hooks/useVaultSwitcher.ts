@@ -1,16 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { isTauri } from '../mock-tauri'
 import { pickFolder } from '../utils/vault-dialog'
 import type { VaultOption } from '../components/StatusBar'
 
-export const DEFAULT_VAULTS: VaultOption[] = isTauri()
-  ? [
-      { label: 'Demo v2', path: '/Users/luca/Workspace/laputa-app/demo-vault-v2' },
-      { label: 'Laputa', path: '/Users/luca/Laputa' },
-    ]
-  : [
-      { label: 'Demo v2', path: '/Users/luca/Workspace/laputa-app/demo-vault-v2' },
-    ]
+export const DEFAULT_VAULTS: VaultOption[] = [
+  { label: 'Getting Started', path: '/Users/luca/Workspace/laputa-app/demo-vault-v2' },
+]
 
 interface UseVaultSwitcherOptions {
   onSwitch: () => void

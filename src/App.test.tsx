@@ -71,7 +71,7 @@ const mockCommandResults: Record<string, unknown> = {
   git_pull: { status: 'up_to_date', message: 'Already up to date', updatedFiles: [], conflictFiles: [] },
   save_settings: null,
   check_vault_exists: true,
-  get_default_vault_path: '/Users/mock/Documents/Laputa',
+  get_default_vault_path: '/Users/mock/Documents/Getting Started',
   list_themes: [],
   get_vault_settings: { theme: null },
 }

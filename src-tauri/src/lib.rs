@@ -114,10 +114,7 @@ fn git_commit(vault_path: String, message: String) -> Result<String, String> {
 
 #[tauri::command]
 fn get_build_number() -> String {
-    {
-        let n = std::env::var("BUILD_NUMBER").unwrap_or_else(|_| "0".to_string());
-        format!("b{}", n)
-    }
+    format!("b{}", env!("BUILD_NUMBER"))
 }
 
 #[tauri::command]
@@ -460,6 +457,7 @@ mod tests {
             "expected 'b' prefix, got: {}",
             result
         );
+        assert_ne!(result, "b0", "build number should not fall back to 0");
     }
 }
 

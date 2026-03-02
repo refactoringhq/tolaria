@@ -245,12 +245,12 @@ export const mockHandlers: Record<string, (args: any) => any> = {
       }))
     return { results: matches, elapsed_ms: 42, query: q, mode: args.mode }
   },
-  get_default_vault_path: () => '/Users/mock/Documents/Laputa',
+  get_default_vault_path: () => '/Users/mock/Documents/Getting Started',
   check_vault_exists: (args: { path: string }) => {
     // In mock mode, the demo-vault-v2 path always "exists"
     return args.path.includes('demo-vault-v2')
   },
-  create_getting_started_vault: () => '/Users/mock/Documents/Laputa',
+  create_getting_started_vault: () => '/Users/mock/Documents/Getting Started',
   register_mcp_tools: () => 'registered',
   list_themes: (): ThemeFile[] => [...mockThemes],
   get_theme: (args: { themeId: string }): ThemeFile => {

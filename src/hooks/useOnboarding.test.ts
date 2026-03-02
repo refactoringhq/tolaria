@@ -35,7 +35,7 @@ describe('useOnboarding', () => {
 
   it('transitions to ready when vault exists', async () => {
     mockInvokeFn.mockImplementation(async (cmd: string) => {
-      if (cmd === 'get_default_vault_path') return '/mock/Documents/Laputa'
+      if (cmd === 'get_default_vault_path') return '/mock/Documents/Getting Started'
       if (cmd === 'check_vault_exists') return true
       return null
     })
@@ -50,7 +50,7 @@ describe('useOnboarding', () => {
 
   it('shows welcome screen when vault does not exist', async () => {
     mockInvokeFn.mockImplementation(async (cmd: string) => {
-      if (cmd === 'get_default_vault_path') return '/mock/Documents/Laputa'
+      if (cmd === 'get_default_vault_path') return '/mock/Documents/Getting Started'
       if (cmd === 'check_vault_exists') return false
       return null
     })
@@ -60,14 +60,14 @@ describe('useOnboarding', () => {
     await waitFor(() => {
       expect(result.current.state.status).toBe('welcome')
     })
-    expect(result.current.state).toEqual({ status: 'welcome', defaultPath: '/mock/Documents/Laputa' })
+    expect(result.current.state).toEqual({ status: 'welcome', defaultPath: '/mock/Documents/Getting Started' })
   })
 
   it('shows vault-missing when previously dismissed and vault gone', async () => {
     localStorage.setItem('laputa_welcome_dismissed', '1')
 
     mockInvokeFn.mockImplementation(async (cmd: string) => {
-      if (cmd === 'get_default_vault_path') return '/mock/Documents/Laputa'
+      if (cmd === 'get_default_vault_path') return '/mock/Documents/Getting Started'
       if (cmd === 'check_vault_exists') return false
       return null
     })
@@ -80,15 +80,15 @@ describe('useOnboarding', () => {
     expect(result.current.state).toEqual({
       status: 'vault-missing',
       vaultPath: '/vault/deleted',
-      defaultPath: '/mock/Documents/Laputa',
+      defaultPath: '/mock/Documents/Getting Started',
     })
   })
 
   it('handleCreateVault creates vault and transitions to ready', async () => {
     mockInvokeFn.mockImplementation(async (cmd: string) => {
-      if (cmd === 'get_default_vault_path') return '/mock/Documents/Laputa'
+      if (cmd === 'get_default_vault_path') return '/mock/Documents/Getting Started'
       if (cmd === 'check_vault_exists') return false
-      if (cmd === 'create_getting_started_vault') return '/mock/Documents/Laputa'
+      if (cmd === 'create_getting_started_vault') return '/mock/Documents/Getting Started'
       return null
     })
 
@@ -102,13 +102,13 @@ describe('useOnboarding', () => {
       await result.current.handleCreateVault()
     })
 
-    expect(result.current.state).toEqual({ status: 'ready', vaultPath: '/mock/Documents/Laputa' })
+    expect(result.current.state).toEqual({ status: 'ready', vaultPath: '/mock/Documents/Getting Started' })
     expect(localStorage.getItem('laputa_welcome_dismissed')).toBe('1')
   })
 
   it('handleCreateVault sets error on failure', async () => {
     mockInvokeFn.mockImplementation(async (cmd: string) => {
-      if (cmd === 'get_default_vault_path') return '/mock/Documents/Laputa'
+      if (cmd === 'get_default_vault_path') return '/mock/Documents/Getting Started'
       if (cmd === 'check_vault_exists') return false
       if (cmd === 'create_getting_started_vault') throw 'Permission denied'
       return null
@@ -130,7 +130,7 @@ describe('useOnboarding', () => {
 
   it('handleOpenFolder opens folder picker and transitions to ready', async () => {
     mockInvokeFn.mockImplementation(async (cmd: string) => {
-      if (cmd === 'get_default_vault_path') return '/mock/Documents/Laputa'
+      if (cmd === 'get_default_vault_path') return '/mock/Documents/Getting Started'
       if (cmd === 'check_vault_exists') return false
       return null
     })
@@ -152,7 +152,7 @@ describe('useOnboarding', () => {
 
   it('handleOpenFolder does nothing when picker is cancelled', async () => {
     mockInvokeFn.mockImplementation(async (cmd: string) => {
-      if (cmd === 'get_default_vault_path') return '/mock/Documents/Laputa'
+      if (cmd === 'get_default_vault_path') return '/mock/Documents/Getting Started'
       if (cmd === 'check_vault_exists') return false
       return null
     })
@@ -173,7 +173,7 @@ describe('useOnboarding', () => {
 
   it('handleDismiss marks dismissed and transitions to ready', async () => {
     mockInvokeFn.mockImplementation(async (cmd: string) => {
-      if (cmd === 'get_default_vault_path') return '/mock/Documents/Laputa'
+      if (cmd === 'get_default_vault_path') return '/mock/Documents/Getting Started'
       if (cmd === 'check_vault_exists') return false
       return null
     })
