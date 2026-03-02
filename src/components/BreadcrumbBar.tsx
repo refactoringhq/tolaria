@@ -156,12 +156,12 @@ export const BreadcrumbBar = memo(function BreadcrumbBar({
       }}
     >
       {/* Left: breadcrumb */}
-      <div className="flex items-center gap-1" style={{ fontSize: 12 }}>
-        <span className="text-muted-foreground">{entry.isA || 'Note'}</span>
-        <span className="text-muted-foreground" style={{ margin: '0 2px' }}>&rsaquo;</span>
-        <span className="font-medium text-foreground">{entry.title}</span>
-        <span className="text-muted-foreground" style={{ margin: '0 4px' }}>&middot;</span>
-        <span className="text-muted-foreground">{wordCount.toLocaleString()} words</span>
+      <div className="flex items-center gap-1 min-w-0 whitespace-nowrap" style={{ fontSize: 12 }}>
+        <span className="shrink-0 text-muted-foreground">{entry.isA || 'Note'}</span>
+        <span className="shrink-0 text-muted-foreground" style={{ margin: '0 2px' }}>&rsaquo;</span>
+        <span className="truncate font-medium text-foreground" style={{ maxWidth: '40vw' }}>{entry.title}</span>
+        <span className="shrink-0 text-muted-foreground" style={{ margin: '0 4px' }}>&middot;</span>
+        <span className="shrink-0 text-muted-foreground">{wordCount.toLocaleString()} words</span>
         {noteStatus === 'pendingSave' && (
           <>
             <span className="text-muted-foreground" style={{ margin: '0 4px' }}>&middot;</span>

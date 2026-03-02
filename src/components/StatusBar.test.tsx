@@ -25,9 +25,14 @@ describe('StatusBar', () => {
     expect(screen.getByText('9,200 notes')).toBeInTheDocument()
   })
 
-  it('displays version info', () => {
+  it('displays build number when provided', () => {
+    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} buildNumber="b223" />)
+    expect(screen.getByText('b223')).toBeInTheDocument()
+  })
+
+  it('displays fallback build number when not provided', () => {
     render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} />)
-    expect(screen.getByText('v0.4.2')).toBeInTheDocument()
+    expect(screen.getByText('b?')).toBeInTheDocument()
   })
 
   it('does not display branch name', () => {
