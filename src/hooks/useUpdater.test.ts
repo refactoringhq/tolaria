@@ -199,4 +199,73 @@ describe('useUpdater', () => {
     expect(result.current.status).toEqual({ state: 'ready', version: '1.2.0' })
     expect(mockDownload).toHaveBeenCalled()
   })
+
+  describe('checkForUpdates (manual)', () => {
+    it('returns up-to-date when no update is available', async () => {
+      vi.mocked(isTauri).mockReturnValue(true)
+      mockCheck.mockResolvedValue(null)
+
+      const { result } = renderHook(() => useUpdater())
+
+      let checkResult: string | undefined
+      await act(async () => {
+        checkResult = await result.current.actions.checkForUpdates()
+      })
+
+      expect(checkResult).toBe('up-to-date')
+      expect(result.current.status).toEqual({ state: 'idle' })
+    })
+
+    it('returns available and sets status when update exists', async () => {
+      vi.mocked(isTauri).mockReturnValue(true)
+      mockCheck.mockResolvedValue({
+        version: '3.0.0',
+        body: 'Major release',
+        downloadAndInstall: vi.fn(),
+      })
+
+      const { result } = renderHook(() => useUpdater())
+
+      let checkResult: string | undefined
+      await act(async () => {
+        checkResult = await result.current.actions.checkForUpdates()
+      })
+
+      expect(checkResult).toBe('available')
+      expect(result.current.status).toEqual({
+        state: 'available',
+        version: '3.0.0',
+        notes: 'Major release',
+      })
+    })
+
+    it('returns error on network failure', async () => {
+      vi.mocked(isTauri).mockReturnValue(true)
+      mockCheck.mockRejectedValue(new Error('No internet'))
+
+      const { result } = renderHook(() => useUpdater())
+
+      let checkResult: string | undefined
+      await act(async () => {
+        checkResult = await result.current.actions.checkForUpdates()
+      })
+
+      expect(checkResult).toBe('error')
+      expect(console.warn).toHaveBeenCalledWith('[updater] Failed to check for updates')
+    })
+
+    it('returns up-to-date when not in Tauri', async () => {
+      vi.mocked(isTauri).mockReturnValue(false)
+
+      const { result } = renderHook(() => useUpdater())
+
+      let checkResult: string | undefined
+      await act(async () => {
+        checkResult = await result.current.actions.checkForUpdates()
+      })
+
+      expect(checkResult).toBe('up-to-date')
+      expect(mockCheck).not.toHaveBeenCalled()
+    })
+  })
 })

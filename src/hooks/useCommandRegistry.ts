@@ -34,6 +34,8 @@ interface CommandRegistryConfig {
   onToggleInspector: () => void
   onToggleRawEditor?: () => void
   onToggleAIChat?: () => void
+  onCheckForUpdates?: () => void
+  isUpdating?: boolean
   onZoomIn: () => void
   onZoomOut: () => void
   onZoomReset: () => void
@@ -175,6 +177,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     onSelect, onOpenDailyNote, onCloseTab,
     onGoBack, onGoForward, canGoBack, canGoForward,
     themes, activeThemeId, onSwitchTheme, onCreateTheme, onOpenTheme,
+    onCheckForUpdates, isUpdating,
   } = config
 
   const hasActiveNote = activeTabPath !== null
@@ -229,6 +232,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
       // Settings
       { id: 'open-settings', label: 'Open Settings', group: 'Settings', shortcut: '⌘,', keywords: ['preferences', 'config'], enabled: true, execute: onOpenSettings },
       { id: 'open-vault', label: 'Open Vault…', group: 'Settings', keywords: ['vault', 'folder', 'switch', 'open', 'workspace'], enabled: true, execute: () => onOpenVault?.() },
+      { id: 'check-updates', label: 'Check for Updates', group: 'Settings', keywords: ['update', 'version', 'upgrade', 'release'], enabled: !isUpdating, execute: () => onCheckForUpdates?.() },
 
       // Type-aware: "New [Type]" and "List [Type]"
       ...buildTypeCommands(vaultTypes, onCreateNoteOfType, onSelect),
@@ -240,6 +244,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     onQuickOpen, onCreateNote, onCreateNoteOfType, onSave, onOpenSettings,
     onTrashNote, onRestoreNote, onArchiveNote, onUnarchiveNote,
     onCommitPush, onSetViewMode, onToggleInspector, onToggleRawEditor, onToggleAIChat, onOpenVault,
+    onCheckForUpdates, isUpdating,
     onZoomIn, onZoomOut, onZoomReset, zoomLevel,
     onSelect, onOpenDailyNote, onCloseTab,
     onGoBack, onGoForward, canGoBack, canGoForward,

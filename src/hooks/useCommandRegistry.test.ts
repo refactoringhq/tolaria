@@ -281,6 +281,41 @@ describe('useCommandRegistry', () => {
     expect(onOpenDailyNote).toHaveBeenCalled()
   })
 
+  describe('check-updates command', () => {
+    it('has check-updates command in Settings group', () => {
+      const { result } = renderHook(() => useCommandRegistry(makeConfig()))
+      const cmd = result.current.find(c => c.id === 'check-updates')
+      expect(cmd).toBeDefined()
+      expect(cmd!.label).toBe('Check for Updates')
+      expect(cmd!.group).toBe('Settings')
+      expect(cmd!.keywords).toContain('update')
+      expect(cmd!.keywords).toContain('version')
+    })
+
+    it('is enabled when not updating', () => {
+      const { result } = renderHook(() =>
+        useCommandRegistry(makeConfig({ isUpdating: false })),
+      )
+      expect(result.current.find(c => c.id === 'check-updates')!.enabled).toBe(true)
+    })
+
+    it('is disabled when updating', () => {
+      const { result } = renderHook(() =>
+        useCommandRegistry(makeConfig({ isUpdating: true })),
+      )
+      expect(result.current.find(c => c.id === 'check-updates')!.enabled).toBe(false)
+    })
+
+    it('calls onCheckForUpdates when executed', () => {
+      const onCheckForUpdates = vi.fn()
+      const { result } = renderHook(() =>
+        useCommandRegistry(makeConfig({ onCheckForUpdates })),
+      )
+      result.current.find(c => c.id === 'check-updates')!.execute()
+      expect(onCheckForUpdates).toHaveBeenCalled()
+    })
+  })
+
   describe('type-aware commands', () => {
     it('generates "New [Type]" commands from vault entries', () => {
       const entries = [

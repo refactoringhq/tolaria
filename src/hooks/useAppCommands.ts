@@ -54,6 +54,8 @@ interface AppCommandsConfig {
   onOpenTheme?: (themeId: string) => void
   onOpenVault?: () => void
   onToggleAIChat?: () => void
+  onCheckForUpdates?: () => void
+  isUpdating?: boolean
 }
 
 /** Sets up keyboard shortcuts, command registry, menu events, and keyboard navigation. */
@@ -151,6 +153,8 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onOpenTheme: config.onOpenTheme,
     onOpenVault: config.onOpenVault,
     onToggleAIChat: config.onToggleAIChat,
+    onCheckForUpdates: config.onCheckForUpdates,
+    isUpdating: config.isUpdating,
   })
 
   useKeyboardNavigation({

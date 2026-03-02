@@ -11,7 +11,10 @@ export type UpdateStatus =
   | { state: 'ready'; version: string }
   | { state: 'error' }
 
+export type UpdateCheckResult = 'up-to-date' | 'available' | 'error'
+
 export interface UpdateActions {
+  checkForUpdates: () => Promise<UpdateCheckResult>
   startDownload: () => void
   openReleaseNotes: () => void
   dismiss: () => void
@@ -21,31 +24,32 @@ export function useUpdater(): { status: UpdateStatus; actions: UpdateActions } {
   const [status, setStatus] = useState<UpdateStatus>({ state: 'idle' })
   const updateRef = useRef<unknown>(null)
 
+  const checkForUpdates = useCallback(async (): Promise<UpdateCheckResult> => {
+    if (!isTauri()) return 'up-to-date'
+
+    try {
+      const { check } = await import('@tauri-apps/plugin-updater')
+      const update = await check()
+      if (!update) return 'up-to-date'
+
+      updateRef.current = update
+      setStatus({
+        state: 'available',
+        version: update.version,
+        notes: update.body ?? undefined,
+      })
+      return 'available'
+    } catch {
+      console.warn('[updater] Failed to check for updates')
+      return 'error'
+    }
+  }, [])
+
   useEffect(() => {
     if (!isTauri()) return
-
-    const checkForUpdates = async () => {
-      try {
-        const { check } = await import('@tauri-apps/plugin-updater')
-        const update = await check()
-        if (!update) return // up to date
-
-        updateRef.current = update
-        setStatus({
-          state: 'available',
-          version: update.version,
-          notes: update.body ?? undefined,
-        })
-      } catch {
-        // Network error or 404 — fail silently
-        console.warn('[updater] Failed to check for updates')
-      }
-    }
-
-    // Delay so the app can render first
-    const timer = setTimeout(checkForUpdates, 3000)
+    const timer = setTimeout(() => { checkForUpdates() }, 3000)
     return () => clearTimeout(timer)
-  }, [])
+  }, [checkForUpdates])
 
   const startDownload = useCallback(async () => {
     const update = updateRef.current as {
@@ -88,7 +92,7 @@ export function useUpdater(): { status: UpdateStatus; actions: UpdateActions } {
     setStatus({ state: 'idle' })
   }, [])
 
-  return { status, actions: { startDownload, openReleaseNotes, dismiss } }
+  return { status, actions: { checkForUpdates, startDownload, openReleaseNotes, dismiss } }
 }
 
 /**

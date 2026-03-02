@@ -277,6 +277,18 @@ function App() {
   const zoom = useZoom()
   const buildNumber = useBuildNumber()
 
+  const { status: updateStatus, actions: updateActions } = useUpdater()
+
+  const handleCheckForUpdates = useCallback(async () => {
+    const result = await updateActions.checkForUpdates()
+    if (result === 'up-to-date') {
+      setToastMessage("You're on the latest version")
+    } else if (result === 'error') {
+      setToastMessage('Could not check for updates')
+    }
+    // 'available' → UpdateBanner handles it automatically
+  }, [updateActions, setToastMessage])
+
   const commands = useAppCommands({
     activeTabPath: notes.activeTabPath, activeTabPathRef: notes.activeTabPathRef,
     handleCloseTabRef: notes.handleCloseTabRef, tabs: notes.tabs,
@@ -314,9 +326,9 @@ function App() {
     },
     onOpenVault: vaultSwitcher.handleOpenLocalFolder,
     onToggleAIChat: dialogs.toggleAIChat,
+    onCheckForUpdates: handleCheckForUpdates,
+    isUpdating: updateStatus.state === 'downloading' || updateStatus.state === 'ready',
   })
-
-  const { status: updateStatus, actions: updateActions } = useUpdater()
 
   const activeTab = notes.tabs.find((t) => t.entry.path === notes.activeTabPath) ?? null
 
