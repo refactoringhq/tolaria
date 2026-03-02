@@ -42,6 +42,7 @@ function makeConfig(overrides: Record<string, unknown> = {}) {
     onSave: vi.fn(),
     onOpenSettings: vi.fn(),
     onTrashNote: vi.fn(),
+    onRestoreNote: vi.fn(),
     onArchiveNote: vi.fn(),
     onUnarchiveNote: vi.fn(),
     onCommitPush: vi.fn(),
@@ -115,6 +116,44 @@ describe('useCommandRegistry', () => {
     )
     const archiveCmd = result.current.find(c => c.id === 'archive-note')
     expect(archiveCmd!.label).toBe('Archive Note')
+  })
+
+  it('shows "Restore Note" when active note is trashed', () => {
+    const entries = [makeEntry({ path: '/vault/note/test.md', trashed: true })]
+    const { result } = renderHook(() =>
+      useCommandRegistry(makeConfig({ activeTabPath: '/vault/note/test.md', entries })),
+    )
+    const trashCmd = result.current.find(c => c.id === 'trash-note')
+    expect(trashCmd!.label).toBe('Restore Note')
+  })
+
+  it('shows "Trash Note" when active note is not trashed', () => {
+    const entries = [makeEntry({ path: '/vault/note/test.md', trashed: false })]
+    const { result } = renderHook(() =>
+      useCommandRegistry(makeConfig({ activeTabPath: '/vault/note/test.md', entries })),
+    )
+    const trashCmd = result.current.find(c => c.id === 'trash-note')
+    expect(trashCmd!.label).toBe('Trash Note')
+  })
+
+  it('calls onRestoreNote when trash command executes on trashed note', () => {
+    const onRestoreNote = vi.fn()
+    const entries = [makeEntry({ path: '/vault/note/test.md', trashed: true })]
+    const { result } = renderHook(() =>
+      useCommandRegistry(makeConfig({ activeTabPath: '/vault/note/test.md', entries, onRestoreNote })),
+    )
+    result.current.find(c => c.id === 'trash-note')!.execute()
+    expect(onRestoreNote).toHaveBeenCalledWith('/vault/note/test.md')
+  })
+
+  it('calls onTrashNote when trash command executes on non-trashed note', () => {
+    const onTrashNote = vi.fn()
+    const entries = [makeEntry({ path: '/vault/note/test.md', trashed: false })]
+    const { result } = renderHook(() =>
+      useCommandRegistry(makeConfig({ activeTabPath: '/vault/note/test.md', entries, onTrashNote })),
+    )
+    result.current.find(c => c.id === 'trash-note')!.execute()
+    expect(onTrashNote).toHaveBeenCalledWith('/vault/note/test.md')
   })
 
   it('disables commit when no modified files', () => {
