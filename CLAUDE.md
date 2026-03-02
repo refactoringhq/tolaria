@@ -140,6 +140,9 @@ The pre-push hook runs all checks locally before the push goes through. This rep
 git push origin main    # pre-push hook runs automatically
 ```
 
+### ⛔ NEVER open a Pull Request
+PRs on separate branches diverge from main with every merge, requiring continuous rebases and creating unnecessary conflicts. Always push directly to main. If the push fails (disk full, test failure, etc.) — fix the problem, then push again. There is no scenario where opening a PR is the right fallback.
+
 ### ⛔ NEVER use --no-verify
 ```bash
 # FORBIDDEN — will be caught and rejected:
