@@ -13,7 +13,7 @@ function makeEntry(overrides: Partial<VaultEntry> = {}): VaultEntry {
     aliases: [], belongsTo: [], relatedTo: [], status: null, owner: null, cadence: null,
     archived: false, trashed: false, trashedAt: null, modifiedAt: null, createdAt: null,
     fileSize: 0, snippet: '', wordCount: 0, relationships: {}, icon: null, color: null,
-    order: null, outgoingLinks: [],
+    order: null, template: null, outgoingLinks: [],
     ...overrides,
   }
 }

@@ -15,7 +15,7 @@ pub enum FrontmatterValue {
 
 /// Characters that require a YAML string value to be quoted.
 fn has_yaml_special_chars(s: &str) -> bool {
-    s.contains(':') || s.contains('#') || s.contains('\n')
+    s.contains(':') || s.contains('#')
 }
 
 /// Check if a string starts with a YAML collection indicator (array or map).
@@ -41,6 +41,23 @@ fn format_list_item(item: &str) -> String {
     format!("  - {}", quote_yaml_string(item))
 }
 
+/// Format a multi-line string as a YAML block scalar (`|`).
+/// Each line is indented by 2 spaces; empty lines are preserved as blank.
+fn format_block_scalar(s: &str) -> String {
+    let indented = s
+        .lines()
+        .map(|l| {
+            if l.is_empty() {
+                String::new()
+            } else {
+                format!("  {}", l)
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    format!("|\n{}", indented)
+}
+
 /// Format a number for YAML (integers without decimal, floats with).
 fn format_yaml_number(n: f64) -> String {
     if n.fract() == 0.0 {
@@ -54,7 +71,9 @@ impl FrontmatterValue {
     pub fn to_yaml_value(&self) -> String {
         match self {
             FrontmatterValue::String(s) => {
-                if needs_yaml_quoting(s) {
+                if s.contains('\n') {
+                    format_block_scalar(s)
+                } else if needs_yaml_quoting(s) {
                     quote_yaml_string(s)
                 } else {
                     s.clone()
@@ -113,16 +132,20 @@ fn line_is_key(line: &str, key: &str) -> bool {
 fn format_yaml_field(key: &str, value: &FrontmatterValue) -> Vec<String> {
     let yaml_key = format_yaml_key(key);
     let yaml_value = value.to_yaml_value();
-    if yaml_value.contains('\n') {
+    if yaml_value.starts_with("|\n") {
+        // Block scalar: key and indicator on the same line, content follows
+        vec![format!("{}: {}", yaml_key, yaml_value)]
+    } else if yaml_value.contains('\n') {
         vec![format!("{}:", yaml_key), yaml_value]
     } else {
         vec![format!("{}: {}", yaml_key, yaml_value)]
     }
 }
 
-/// Check if a line is a YAML list continuation (`  - ...`) rather than a new key.
-fn is_list_continuation(line: &str) -> bool {
-    line.starts_with("  - ") || line.starts_with("  -\t")
+/// Check if a line continues the previous key's value (indented list item,
+/// block scalar content, or blank line inside a block scalar).
+fn is_value_continuation(line: &str) -> bool {
+    line.is_empty() || line.starts_with("  ") || line.starts_with('\t')
 }
 
 /// Split content into frontmatter body and the rest after the closing `---`.
@@ -163,8 +186,8 @@ fn apply_field_update(lines: &[&str], key: &str, value: Option<&FrontmatterValue
 
         found_key = true;
         i += 1;
-        // Skip list continuation lines belonging to this key
-        while i < lines.len() && is_list_continuation(lines[i]) {
+        // Skip continuation lines belonging to this key (lists, block scalars)
+        while i < lines.len() && is_value_continuation(lines[i]) {
             i += 1;
         }
         // Insert replacement value (if any)
@@ -697,6 +720,94 @@ mod tests {
         );
         let updated = result.unwrap();
         assert!(updated.contains("title: New Title"));
+    }
+
+    // --- block scalar (multi-line string) tests ---
+
+    #[test]
+    fn test_to_yaml_value_multiline_uses_block_scalar() {
+        let v = FrontmatterValue::String("line 1\nline 2\nline 3".to_string());
+        let yaml = v.to_yaml_value();
+        assert!(yaml.starts_with("|\n"));
+        assert!(yaml.contains("  line 1"));
+        assert!(yaml.contains("  line 2"));
+    }
+
+    #[test]
+    fn test_format_yaml_field_block_scalar() {
+        let v = FrontmatterValue::String("## Objective\n\n## Timeline".to_string());
+        let lines = format_yaml_field("template", &v);
+        assert_eq!(lines.len(), 1);
+        assert!(lines[0].starts_with("template: |\n"));
+        assert!(lines[0].contains("  ## Objective"));
+        assert!(lines[0].contains("  ## Timeline"));
+    }
+
+    #[test]
+    fn test_update_frontmatter_block_scalar_add() {
+        let content = "---\ntype: Type\n---\n# Project\n";
+        let template = "## Objective\n\n## Timeline";
+        let updated = update_frontmatter_content(
+            content,
+            "template",
+            Some(FrontmatterValue::String(template.to_string())),
+        )
+        .unwrap();
+        assert!(updated.contains("template: |"));
+        assert!(updated.contains("  ## Objective"));
+        assert!(updated.contains("  ## Timeline"));
+        assert!(updated.contains("type: Type"));
+    }
+
+    #[test]
+    fn test_update_frontmatter_block_scalar_replace() {
+        let content = "---\ntype: Type\ntemplate: |\n  ## Old\n  \n  ## Stuff\ncolor: green\n---\n# Project\n";
+        let new_template = "## New\n\n## Content";
+        let updated = update_frontmatter_content(
+            content,
+            "template",
+            Some(FrontmatterValue::String(new_template.to_string())),
+        )
+        .unwrap();
+        assert!(updated.contains("  ## New"));
+        assert!(updated.contains("  ## Content"));
+        assert!(!updated.contains("## Old"));
+        assert!(!updated.contains("## Stuff"));
+        assert!(updated.contains("color: green"));
+    }
+
+    #[test]
+    fn test_delete_frontmatter_block_scalar() {
+        let content =
+            "---\ntype: Type\ntemplate: |\n  ## Heading\n  \n  ## Body\ncolor: green\n---\n# Project\n";
+        let updated = update_frontmatter_content(content, "template", None).unwrap();
+        assert!(!updated.contains("template"));
+        assert!(!updated.contains("## Heading"));
+        assert!(updated.contains("color: green"));
+    }
+
+    #[test]
+    fn test_roundtrip_block_scalar() {
+        let content = "---\ntype: Type\n---\n# Project\n";
+        let template = "## Objective\n\nDescribe the goal.\n\n## Timeline\n\nKey dates.";
+        let updated = update_frontmatter_content(
+            content,
+            "template",
+            Some(FrontmatterValue::String(template.to_string())),
+        )
+        .unwrap();
+        // Parse back with gray_matter
+        let matter = gray_matter::Matter::<gray_matter::engine::YAML>::new();
+        let parsed = matter.parse(&updated);
+        let data = parsed.data.unwrap();
+        if let gray_matter::Pod::Hash(map) = data {
+            let roundtripped = map.get("template").unwrap().as_string().unwrap();
+            assert!(roundtripped.contains("## Objective"));
+            assert!(roundtripped.contains("## Timeline"));
+            assert!(roundtripped.contains("Describe the goal."));
+        } else {
+            panic!("Expected hash");
+        }
     }
 
     #[test]

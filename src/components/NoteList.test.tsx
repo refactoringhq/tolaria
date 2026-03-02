@@ -34,6 +34,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -62,6 +63,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -87,6 +89,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -112,6 +115,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    template: null,
     outgoingLinks: [],
   },
   {
@@ -137,6 +141,7 @@ const mockEntries: VaultEntry[] = [
     icon: null,
     color: null,
     order: null,
+    template: null,
     outgoingLinks: [],
   },
 ]
@@ -357,6 +362,7 @@ describe('getSortComparator', () => {
     icon: null,
     color: null,
     order: null,
+    template: null,
     outgoingLinks: [],
     ...overrides,
   })
@@ -469,6 +475,7 @@ describe('NoteList sort controls', () => {
     icon: null,
     color: null,
     order: null,
+    template: null,
     outgoingLinks: [],
     ...overrides,
   })
@@ -663,6 +670,7 @@ const trashedEntry: VaultEntry = {
   icon: null,
   color: null,
   order: null,
+  template: null,
   outgoingLinks: [],
 }
 
@@ -689,6 +697,7 @@ const expiredTrashedEntry: VaultEntry = {
   icon: null,
   color: null,
   order: null,
+  template: null,
   outgoingLinks: [],
 }
 
@@ -844,6 +853,7 @@ describe('NoteList — virtual list with large datasets', () => {
     icon: null,
     color: null,
     order: null,
+    template: null,
     outgoingLinks: [],
     ...overrides,
   })
@@ -1145,6 +1155,7 @@ const typeEntry: VaultEntry = {
   icon: null,
   color: null,
   order: null,
+  template: null,
   outgoingLinks: [],
 }
 
