@@ -4,6 +4,7 @@ import type { VaultEntry, NoteStatus } from '../types'
 import { cn } from '@/lib/utils'
 import { X } from 'lucide-react'
 import { Plus, Columns, ArrowsOutSimple, ArrowLeft, ArrowRight } from '@phosphor-icons/react'
+import { computeTabMaxWidth } from '@/utils/tabLayout'
 
 interface Tab {
   entry: VaultEntry
@@ -199,7 +200,7 @@ function StatusDot({ status }: { status: NoteStatus }) {
   )
 }
 
-function TabItem({ tab, isActive, isEditing, noteStatus, isDragging, showDropBefore, showDropAfter, onSwitch, onClose, onDoubleClick, onRenameSave, onRenameCancel, dragProps }: {
+function TabItem({ tab, isActive, isEditing, noteStatus, isDragging, showDropBefore, showDropAfter, tabMaxWidth, onSwitch, onClose, onDoubleClick, onRenameSave, onRenameCancel, dragProps }: {
   tab: Tab
   isActive: boolean
   isEditing: boolean
@@ -207,6 +208,7 @@ function TabItem({ tab, isActive, isEditing, noteStatus, isDragging, showDropBef
   isDragging: boolean
   showDropBefore: boolean
   showDropAfter: boolean
+  tabMaxWidth: number
   onSwitch: () => void
   onClose: () => void
   onDoubleClick: () => void
@@ -219,10 +221,11 @@ function TabItem({ tab, isActive, isEditing, noteStatus, isDragging, showDropBef
       draggable={!isEditing}
       {...dragProps}
       className={cn(
-        "group flex shrink-0 items-center gap-1.5 whitespace-nowrap max-w-[360px] transition-all relative",
+        "group flex min-w-0 items-center gap-1.5 whitespace-nowrap transition-all relative",
         isActive ? "text-foreground" : "text-muted-foreground hover:text-secondary-foreground"
       )}
       style={{
+        maxWidth: tabMaxWidth,
         background: isActive ? 'var(--background)' : 'transparent',
         borderRight: `1px solid ${isActive ? 'var(--border)' : 'var(--sidebar-border)'}`,
         borderBottom: isActive ? 'none' : '1px solid var(--sidebar-border)',
@@ -331,7 +334,19 @@ export const TabBar = memo(function TabBar({
 }: TabBarProps) {
   const { dragIndex, dropIndex, handleDragStart, handleDragEnd, handleDragOver, handleDrop, handleBarDragLeave } = useTabDrag(onReorderTabs)
   const [editingPath, setEditingPath] = useState<string | null>(null)
+  const tabAreaRef = useRef<HTMLDivElement>(null)
+  const [tabMaxWidth, setTabMaxWidth] = useState(360)
   const { onMouseDown: onDragMouseDown } = useDragRegion()
+
+  useEffect(() => {
+    const el = tabAreaRef.current
+    if (!el) return
+    const recalc = () => setTabMaxWidth(computeTabMaxWidth(el.clientWidth, tabs.length))
+    recalc()
+    const observer = new ResizeObserver(recalc)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [tabs.length])
 
   return (
     <div
@@ -340,30 +355,33 @@ export const TabBar = memo(function TabBar({
       onDragLeave={handleBarDragLeave}
     >
       <NavButtons canGoBack={canGoBack} canGoForward={canGoForward} onGoBack={onGoBack} onGoForward={onGoForward} />
-      {tabs.map((tab, index) => (
-        <TabItem
-          key={tab.entry.path}
-          tab={tab}
-          isActive={tab.entry.path === activeTabPath}
-          isEditing={editingPath === tab.entry.path}
-          noteStatus={getNoteStatus?.(tab.entry.path) ?? 'clean'}
-          isDragging={dragIndex !== null}
-          showDropBefore={dropIndex === index}
-          showDropAfter={dropIndex === index + 1 && index === tabs.length - 1}
-          onSwitch={() => onSwitchTab(tab.entry.path)}
-          onClose={() => onCloseTab(tab.entry.path)}
-          onDoubleClick={() => onRenameTab && setEditingPath(tab.entry.path)}
-          onRenameSave={(newTitle) => { setEditingPath(null); onRenameTab?.(tab.entry.path, newTitle) }}
-          onRenameCancel={() => setEditingPath(null)}
-          dragProps={{
-            onDragStart: (e) => handleDragStart(e, index),
-            onDragEnd: handleDragEnd,
-            onDragOver: (e) => handleDragOver(e, index),
-            onDrop: handleDrop,
-          }}
-        />
-      ))}
-      <div className="flex-1" style={{ borderBottom: '1px solid var(--border)', cursor: 'default' }} onMouseDown={onDragMouseDown} />
+      <div ref={tabAreaRef} className="flex flex-1 min-w-0 items-stretch overflow-hidden">
+        {tabs.map((tab, index) => (
+          <TabItem
+            key={tab.entry.path}
+            tab={tab}
+            isActive={tab.entry.path === activeTabPath}
+            isEditing={editingPath === tab.entry.path}
+            noteStatus={getNoteStatus?.(tab.entry.path) ?? 'clean'}
+            isDragging={dragIndex !== null}
+            showDropBefore={dropIndex === index}
+            showDropAfter={dropIndex === index + 1 && index === tabs.length - 1}
+            tabMaxWidth={tabMaxWidth}
+            onSwitch={() => onSwitchTab(tab.entry.path)}
+            onClose={() => onCloseTab(tab.entry.path)}
+            onDoubleClick={() => onRenameTab && setEditingPath(tab.entry.path)}
+            onRenameSave={(newTitle) => { setEditingPath(null); onRenameTab?.(tab.entry.path, newTitle) }}
+            onRenameCancel={() => setEditingPath(null)}
+            dragProps={{
+              onDragStart: (e) => handleDragStart(e, index),
+              onDragEnd: handleDragEnd,
+              onDragOver: (e) => handleDragOver(e, index),
+              onDrop: handleDrop,
+            }}
+          />
+        ))}
+        <div className="flex-1 shrink-0" style={{ borderBottom: '1px solid var(--border)', cursor: 'default' }} onMouseDown={onDragMouseDown} />
+      </div>
       <TabBarActions onCreateNote={onCreateNote} />
     </div>
   )

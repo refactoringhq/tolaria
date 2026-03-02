@@ -5,6 +5,13 @@ import { createElement, type ReactNode, type ComponentType } from 'react'
 // Mock scrollIntoView for jsdom (not implemented)
 Element.prototype.scrollIntoView = vi.fn()
 
+// Mock ResizeObserver for jsdom (not implemented)
+global.ResizeObserver = class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as unknown as typeof ResizeObserver
+
 // Mock @tauri-apps/plugin-opener for test environment
 vi.mock('@tauri-apps/plugin-opener', () => ({
   openUrl: vi.fn(),

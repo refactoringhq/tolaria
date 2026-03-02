@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { TabBar } from './TabBar'
+import { computeTabMaxWidth } from '../utils/tabLayout'
 import type { VaultEntry } from '../types'
 
 function makeEntry(path: string, title: string): VaultEntry {
@@ -256,5 +257,60 @@ describe('TabBar', () => {
 
     fireEvent.click(screen.getByText('Beta'))
     expect(onSwitchTab).toHaveBeenCalledWith(tabs[1].entry.path)
+  })
+
+  describe('responsive tab width', () => {
+    it('wraps tabs in an overflow-hidden flex container', () => {
+      const tabs = makeTabs(['Alpha'])
+      const { container } = render(
+        <TabBar tabs={tabs} activeTabPath={tabs[0].entry.path} {...defaultProps} />
+      )
+      const tabArea = container.querySelector('.overflow-hidden')
+      expect(tabArea).toBeInTheDocument()
+      expect(tabArea?.classList.contains('flex')).toBe(true)
+      expect(tabArea?.classList.contains('min-w-0')).toBe(true)
+      expect(tabArea?.classList.contains('flex-1')).toBe(true)
+    })
+
+    it('tab elements are shrinkable with min-w-0', () => {
+      const tabs = makeTabs(['Alpha', 'Beta'])
+      const { container } = render(
+        <TabBar tabs={tabs} activeTabPath={tabs[0].entry.path} {...defaultProps} />
+      )
+      const tabEls = container.querySelectorAll('[draggable="true"]')
+      expect(tabEls).toHaveLength(2)
+      for (const el of tabEls) {
+        expect(el.classList.contains('shrink-0')).toBe(false)
+        expect(el.classList.contains('min-w-0')).toBe(true)
+      }
+    })
+  })
+
+  describe('computeTabMaxWidth', () => {
+    it('caps at 360px when container is wide', () => {
+      expect(computeTabMaxWidth(1200, 2)).toBe(360)
+    })
+
+    it('divides space equally among tabs', () => {
+      expect(computeTabMaxWidth(500, 5)).toBe(100)
+    })
+
+    it('enforces minimum of 60px', () => {
+      expect(computeTabMaxWidth(300, 10)).toBe(60)
+    })
+
+    it('returns 360 for zero tabs', () => {
+      expect(computeTabMaxWidth(800, 0)).toBe(360)
+    })
+
+    it('floors the result to integer pixels', () => {
+      // 1000 / 3 = 333.33 → 333
+      expect(computeTabMaxWidth(1000, 3)).toBe(333)
+    })
+
+    it('handles single tab', () => {
+      expect(computeTabMaxWidth(200, 1)).toBe(200)
+      expect(computeTabMaxWidth(500, 1)).toBe(360)
+    })
   })
 })
