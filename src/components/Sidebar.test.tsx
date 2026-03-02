@@ -809,11 +809,10 @@ describe('Sidebar', () => {
       expect(topicsIdx).toBeLessThan(peopleIdx)
     })
 
-    it('renders drag handle on section headers', () => {
+    it('does not render drag handle icons on section headers', () => {
       render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
-      const dragHandles = screen.getAllByLabelText(/^Drag to reorder/)
-      // Should have one drag handle per visible section group
-      expect(dragHandles.length).toBeGreaterThan(0)
+      const dragHandles = screen.queryAllByLabelText(/^Drag to reorder/)
+      expect(dragHandles.length).toBe(0)
     })
   })
 })

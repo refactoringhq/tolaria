@@ -1,7 +1,7 @@
 import { type ComponentType } from 'react'
 import type { VaultEntry, SidebarSelection } from '../types'
 import { cn } from '@/lib/utils'
-import { ChevronRight, ChevronDown, Plus, GripVertical } from 'lucide-react'
+import { ChevronRight, ChevronDown, Plus } from 'lucide-react'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 import { type IconProps } from '@phosphor-icons/react'
 
@@ -145,12 +145,11 @@ function SectionChildList({ items, type, selection, sectionColor, sectionLightCo
   )
 }
 
-function SectionHeader({ label, type, Icon, sectionColor, isCollapsed, isActive, showCreate, onSelect, onContextMenu, onToggle, onCreate, dragHandleProps }: {
+function SectionHeader({ label, type, Icon, sectionColor, isCollapsed, isActive, showCreate, onSelect, onContextMenu, onToggle, onCreate }: {
   label: string; type: string; Icon: ComponentType<IconProps>
   sectionColor: string; isCollapsed: boolean; isActive: boolean; showCreate: boolean
   onSelect: () => void; onContextMenu: (e: React.MouseEvent) => void
   onToggle: () => void; onCreate: (e: React.MouseEvent) => void
-  dragHandleProps?: Record<string, unknown>
 }) {
   return (
     <div
@@ -163,9 +162,6 @@ function SectionHeader({ label, type, Icon, sectionColor, isCollapsed, isActive,
       }} onContextMenu={onContextMenu}
     >
       <div className="flex items-center" style={{ gap: 4 }}>
-        <div className="flex shrink-0 items-center justify-center text-muted-foreground opacity-0 group-hover/section:opacity-50 hover:!opacity-100 cursor-grab" style={{ width: 16, height: 16, marginLeft: -16 }} {...dragHandleProps} aria-label={`Drag to reorder ${label}`}>
-          <GripVertical size={12} />
-        </div>
         <Icon size={16} style={{ color: sectionColor }} />
         <span className="text-[13px] font-medium text-foreground" style={{ marginLeft: 4 }}>{label}</span>
       </div>
