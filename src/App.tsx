@@ -33,6 +33,8 @@ import { useBuildNumber } from './hooks/useBuildNumber'
 import { useOnboarding } from './hooks/useOnboarding'
 import { useThemeManager } from './hooks/useThemeManager'
 import { UpdateBanner } from './components/UpdateBanner'
+import { invoke } from '@tauri-apps/api/core'
+import { isTauri, mockInvoke } from './mock-tauri'
 import { extractOutgoingLinks } from './utils/wikilinks'
 import type { SidebarSelection } from './types'
 import './App.css'
@@ -248,6 +250,18 @@ function App() {
     createTypeEntry: notes.createTypeEntrySilent,
   })
 
+  const handleDeleteNote = useCallback(async (path: string) => {
+    try {
+      if (isTauri()) await invoke('delete_note', { path })
+      else await mockInvoke('delete_note', { path })
+      notes.handleCloseTab(path)
+      vault.removeEntry(path)
+      setToastMessage('Note permanently deleted')
+    } catch (e) {
+      setToastMessage(`Failed to delete note: ${e}`)
+    }
+  }, [notes, vault, setToastMessage])
+
   const gitHistory = useGitHistory(notes.activeTabPath, vault.loadGitHistory)
 
   const handleCreateType = useCallback((name: string) => {
@@ -409,6 +423,7 @@ function App() {
             vaultPath={resolvedPath}
             onTrashNote={entryActions.handleTrashNote}
             onRestoreNote={entryActions.handleRestoreNote}
+            onDeleteNote={handleDeleteNote}
             onArchiveNote={entryActions.handleArchiveNote}
             onUnarchiveNote={entryActions.handleUnarchiveNote}
             onRenameTab={handleRenameTab}

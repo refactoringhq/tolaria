@@ -50,6 +50,7 @@ interface EditorProps {
   vaultPath?: string
   onTrashNote?: (path: string) => void
   onRestoreNote?: (path: string) => void
+  onDeleteNote?: (path: string) => void
   onArchiveNote?: (path: string) => void
   onUnarchiveNote?: (path: string) => void
   onRenameTab?: (path: string, newTitle: string) => void
@@ -110,7 +111,7 @@ export const Editor = memo(function Editor({
   onUpdateFrontmatter, onDeleteProperty, onAddProperty,
   showAIChat, onToggleAIChat,
   vaultPath,
-  onTrashNote, onRestoreNote, onArchiveNote, onUnarchiveNote,
+  onTrashNote, onRestoreNote, onDeleteNote, onArchiveNote, onUnarchiveNote,
   onRenameTab, onContentChange, onSave, onTitleSync,
   canGoBack, canGoForward, onGoBack, onGoForward, leftPanelsCollapsed,
   isDarkTheme,
@@ -157,7 +158,6 @@ export const Editor = memo(function Editor({
   const isLoadingNewTab = activeTabPath !== null && !activeTab
   const activeStatus = activeTab ? getNoteStatus?.(activeTab.entry.path) ?? 'clean' : 'clean'
   const showDiffToggle = !!(activeTab && (diffMode || activeStatus === 'modified'))
-  const showRightPanel = !!(showAIChat || !inspectorCollapsed)
 
   return (
     <div className="editor flex flex-col min-h-0 overflow-hidden bg-background text-foreground">
@@ -202,13 +202,14 @@ export const Editor = memo(function Editor({
               onEditorChange={handleEditorChange}
               onTrashNote={onTrashNote}
               onRestoreNote={onRestoreNote}
+              onDeleteNote={onDeleteNote}
               onArchiveNote={onArchiveNote}
               onUnarchiveNote={onUnarchiveNote}
               vaultPath={vaultPath}
               isDarkTheme={isDarkTheme}
             />
         }
-        {showRightPanel && <ResizeHandle onResize={onInspectorResize} />}
+        {(showAIChat || !inspectorCollapsed) && <ResizeHandle onResize={onInspectorResize} />}
         <EditorRightPanel
           showAIChat={showAIChat}
           inspectorCollapsed={inspectorCollapsed}
