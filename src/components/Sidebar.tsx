@@ -79,11 +79,12 @@ function buildSectionGroup(type: string, typeEntryMap: Record<string, VaultEntry
   const builtIn = BUILT_IN_TYPE_MAP.get(type)
   const typeEntry = typeEntryMap[type]
   const customColor = typeEntry?.color ?? null
+  const label = typeEntry?.sidebarLabel || (builtIn?.label ?? pluralizeType(type))
   if (builtIn) {
     const Icon = typeEntry?.icon ? resolveIcon(typeEntry.icon) : builtIn.Icon
-    return { ...builtIn, Icon, customColor }
+    return { ...builtIn, label, Icon, customColor }
   }
-  return { label: pluralizeType(type), type, Icon: resolveIcon(typeEntry?.icon ?? null), customColor }
+  return { label, type, Icon: resolveIcon(typeEntry?.icon ?? null), customColor }
 }
 
 /** Build sections dynamically from actual vault entries — only types with ≥1 active note appear */

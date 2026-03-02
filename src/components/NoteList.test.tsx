@@ -985,6 +985,19 @@ describe('NoteList — virtual list with large datasets', () => {
       expect(screen.getByText('Facebook Ads Strategy')).toBeInTheDocument()
       expect(screen.queryByText('Matteo Cellini')).not.toBeInTheDocument()
     })
+
+    it('shows untracked (new) notes alongside modified notes in changes view', () => {
+      const mixedFiles = [
+        { path: mockEntries[0].path, relativePath: 'project/26q1-laputa-app.md', status: 'modified' as const },
+        { path: mockEntries[2].path, relativePath: 'person/matteo-cellini.md', status: 'untracked' as const },
+      ]
+      render(
+        <NoteList entries={mockEntries} selection={changesSelection} selectedNote={null} modifiedFiles={mixedFiles} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
+      )
+      expect(screen.getByText('Build Laputa App')).toBeInTheDocument()
+      expect(screen.getByText('Matteo Cellini')).toBeInTheDocument()
+      expect(screen.queryByText('Facebook Ads Strategy')).not.toBeInTheDocument()
+    })
   })
 })
 

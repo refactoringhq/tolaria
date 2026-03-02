@@ -6,6 +6,7 @@ use tauri::{
 // Custom menu item IDs that emit events to the frontend.
 const APP_SETTINGS: &str = "app-settings";
 const FILE_NEW_NOTE: &str = "file-new-note";
+const FILE_DAILY_NOTE: &str = "file-daily-note";
 const FILE_QUICK_OPEN: &str = "file-quick-open";
 const FILE_SAVE: &str = "file-save";
 const FILE_CLOSE_TAB: &str = "file-close-tab";
@@ -26,6 +27,7 @@ const VIEW_GO_FORWARD: &str = "view-go-forward";
 const CUSTOM_IDS: &[&str] = &[
     APP_SETTINGS,
     FILE_NEW_NOTE,
+    FILE_DAILY_NOTE,
     FILE_QUICK_OPEN,
     FILE_SAVE,
     FILE_CLOSE_TAB,
@@ -75,6 +77,10 @@ fn build_file_menu(app: &App) -> MenuResult {
         .id(FILE_NEW_NOTE)
         .accelerator("CmdOrCtrl+N")
         .build(app)?;
+    let daily_note = MenuItemBuilder::new("Open Today's Note")
+        .id(FILE_DAILY_NOTE)
+        .accelerator("CmdOrCtrl+J")
+        .build(app)?;
     let quick_open = MenuItemBuilder::new("Quick Open")
         .id(FILE_QUICK_OPEN)
         .accelerator("CmdOrCtrl+P")
@@ -98,6 +104,7 @@ fn build_file_menu(app: &App) -> MenuResult {
 
     Ok(SubmenuBuilder::new(app, "File")
         .item(&new_note)
+        .item(&daily_note)
         .item(&quick_open)
         .separator()
         .item(&save)
@@ -245,6 +252,7 @@ mod tests {
         let expected = [
             "app-settings",
             "file-new-note",
+            "file-daily-note",
             "file-quick-open",
             "file-save",
             "file-close-tab",

@@ -120,6 +120,40 @@ export function extractOutgoingLinks(content: string): string[] {
   return [...new Set(links)].sort()
 }
 
+/** Extract the paragraph surrounding a [[target]] wikilink match from note content.
+ * Searches for any target in the set, returns the first matching paragraph trimmed
+ * to a max length. Returns null if no match found. */
+export function extractBacklinkContext(
+  content: string,
+  matchTargets: Set<string>,
+  maxLength = 120,
+): string | null {
+  const [, body] = splitFrontmatter(content)
+  // Remove the H1 title line
+  const withoutTitle = body.replace(/^\s*# [^\n]+\n?/, '')
+  const paragraphs = withoutTitle.split(/\n{2,}/)
+
+  for (const para of paragraphs) {
+    const trimmed = para.trim()
+    if (!trimmed) continue
+    // Check if this paragraph contains a wikilink matching any target
+    const re = /\[\[([^\]]+)\]\]/g
+    let match
+    while ((match = re.exec(trimmed)) !== null) {
+      const inner = match[1]
+      const pipeIdx = inner.indexOf('|')
+      const target = pipeIdx !== -1 ? inner.slice(0, pipeIdx) : inner
+      if (matchTargets.has(target) || matchTargets.has(target.split('/').pop() ?? '')) {
+        // Collapse whitespace and truncate
+        const flat = trimmed.replace(/\s+/g, ' ')
+        if (flat.length <= maxLength) return flat
+        return flat.slice(0, maxLength - 1) + '\u2026'
+      }
+    }
+  }
+  return null
+}
+
 export function countWords(content: string): number {
   const [, body] = splitFrontmatter(content)
   const withoutTitle = body.replace(/^\s*# [^\n]+\n?/, '')

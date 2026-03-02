@@ -219,7 +219,7 @@ function TabItem({ tab, isActive, isEditing, noteStatus, isDragging, showDropBef
       draggable={!isEditing}
       {...dragProps}
       className={cn(
-        "group flex shrink-0 items-center gap-1.5 whitespace-nowrap max-w-[180px] transition-all relative",
+        "group flex shrink-0 items-center gap-1.5 whitespace-nowrap max-w-[360px] transition-all relative",
         isActive ? "text-foreground" : "text-muted-foreground hover:text-secondary-foreground"
       )}
       style={{

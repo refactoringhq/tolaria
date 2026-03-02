@@ -26,6 +26,7 @@ interface StatusBarProps {
   onTriggerSync?: () => void
   zoomLevel?: number
   onZoomReset?: () => void
+  buildNumber?: string
 }
 
 function VaultMenuItem({ vault, isActive, onSelect }: { vault: VaultOption; isActive: boolean; onSelect: () => void }) {
@@ -155,7 +156,7 @@ function CommitBadge({ info }: { info: LastCommitInfo }) {
   )
 }
 
-export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onSwitchVault, onOpenSettings, onOpenLocalFolder, onConnectGitHub, onClickPending, hasGitHub, syncStatus = 'idle', lastSyncTime = null, conflictCount = 0, lastCommitInfo, onTriggerSync, zoomLevel = 100, onZoomReset }: StatusBarProps) {
+export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onSwitchVault, onOpenSettings, onOpenLocalFolder, onConnectGitHub, onClickPending, hasGitHub, syncStatus = 'idle', lastSyncTime = null, conflictCount = 0, lastCommitInfo, onTriggerSync, zoomLevel = 100, onZoomReset, buildNumber }: StatusBarProps) {
   // Force re-render every 30s to keep relative time label fresh
   const [, setTick] = useState(0)
   useEffect(() => {
@@ -171,7 +172,7 @@ export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onS
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <VaultMenu vaults={vaults} vaultPath={vaultPath} onSwitchVault={onSwitchVault} onOpenLocalFolder={onOpenLocalFolder} onConnectGitHub={onConnectGitHub} hasGitHub={hasGitHub} />
         <span style={SEP_STYLE}>|</span>
-        <span style={ICON_STYLE}><Package size={13} />v0.4.2</span>
+        <span style={ICON_STYLE} data-testid="status-build-number"><Package size={13} />{buildNumber ?? 'b?'}</span>
         <span style={SEP_STYLE}>|</span>
         <span
           role="button"

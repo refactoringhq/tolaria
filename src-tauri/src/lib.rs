@@ -113,6 +113,14 @@ fn git_commit(vault_path: String, message: String) -> Result<String, String> {
 }
 
 #[tauri::command]
+fn get_build_number() -> String {
+    {
+        let n = std::env::var("BUILD_NUMBER").unwrap_or_else(|_| "0".to_string());
+        format!("b{}", n)
+    }
+}
+
+#[tauri::command]
 fn get_last_commit_info(vault_path: String) -> Result<Option<LastCommitInfo>, String> {
     let vault_path = expand_tilde(&vault_path);
     git::get_last_commit_info(&vault_path)
@@ -435,6 +443,16 @@ mod tests {
         let result = expand_tilde("/home/~user/path");
         assert_eq!(result, "/home/~user/path");
     }
+
+    #[test]
+    fn get_build_number_returns_prefixed_value() {
+        let result = get_build_number();
+        assert!(
+            result.starts_with('b'),
+            "expected 'b' prefix, got: {}",
+            result
+        );
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -498,6 +516,7 @@ pub fn run() {
             get_file_diff,
             get_file_diff_at_commit,
             git_commit,
+            get_build_number,
             get_last_commit_info,
             git_pull,
             git_push,

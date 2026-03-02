@@ -25,6 +25,8 @@ export interface VaultEntry {
   color: string | null
   /** Display order for Type entries in sidebar (lower = higher). null = use default order. */
   order: number | null
+  /** Custom sidebar section label for Type entries, overriding auto-pluralization. */
+  sidebarLabel: string | null
   /** All wikilink targets found in the note content. Extracted from [[target]] patterns. */
   outgoingLinks: string[]
 }

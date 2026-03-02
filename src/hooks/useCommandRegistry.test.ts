@@ -52,6 +52,7 @@ function makeConfig(overrides: Record<string, unknown> = {}) {
     zoomLevel: 100,
     onSelect: vi.fn(),
     onCloseTab: vi.fn(),
+    onOpenDailyNote: vi.fn(),
     ...overrides,
   }
 }
@@ -191,6 +192,23 @@ describe('useCommandRegistry', () => {
     const { result } = renderHook(() => useCommandRegistry(makeConfig({ onToggleAIChat })))
     result.current.find(c => c.id === 'toggle-ai-chat')!.execute()
     expect(onToggleAIChat).toHaveBeenCalled()
+  })
+
+  it('has open-daily-note command with shortcut', () => {
+    const { result } = renderHook(() => useCommandRegistry(makeConfig()))
+    const cmd = result.current.find(c => c.id === 'open-daily-note')
+    expect(cmd).toBeDefined()
+    expect(cmd!.label).toBe("Open Today's Note")
+    expect(cmd!.shortcut).toBe('⌘J')
+    expect(cmd!.group).toBe('Note')
+    expect(cmd!.enabled).toBe(true)
+  })
+
+  it('calls onOpenDailyNote when open-daily-note executes', () => {
+    const onOpenDailyNote = vi.fn()
+    const { result } = renderHook(() => useCommandRegistry(makeConfig({ onOpenDailyNote })))
+    result.current.find(c => c.id === 'open-daily-note')!.execute()
+    expect(onOpenDailyNote).toHaveBeenCalled()
   })
 
   describe('type-aware commands', () => {

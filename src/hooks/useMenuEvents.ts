@@ -5,6 +5,7 @@ import type { ViewMode } from './useViewMode'
 export interface MenuEventHandlers {
   onSetViewMode: (mode: ViewMode) => void
   onCreateNote: () => void
+  onOpenDailyNote: () => void
   onQuickOpen: () => void
   onSave: () => void
   onOpenSettings: () => void
@@ -29,10 +30,11 @@ const VIEW_MODE_MAP: Record<string, ViewMode> = {
   'view-all': 'all',
 }
 
-type SimpleHandler = 'onCreateNote' | 'onQuickOpen' | 'onSave' | 'onOpenSettings' | 'onToggleInspector' | 'onCommandPalette' | 'onZoomIn' | 'onZoomOut' | 'onZoomReset' | 'onSearch'
+type SimpleHandler = 'onCreateNote' | 'onOpenDailyNote' | 'onQuickOpen' | 'onSave' | 'onOpenSettings' | 'onToggleInspector' | 'onCommandPalette' | 'onZoomIn' | 'onZoomOut' | 'onZoomReset' | 'onSearch'
 
 const SIMPLE_EVENT_MAP: Record<string, SimpleHandler> = {
   'file-new-note': 'onCreateNote',
+  'file-daily-note': 'onOpenDailyNote',
   'file-quick-open': 'onQuickOpen',
   'file-save': 'onSave',
   'app-settings': 'onOpenSettings',

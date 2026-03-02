@@ -61,9 +61,9 @@ export function replaceTitleInFrontmatter(frontmatter: string, newTitle: string)
  * Returns `handleEditorChange`, the onChange callback for SingleEditorView.
  */
 export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange, onH1Change, syncActiveRef }: UseEditorTabSwapOptions) {
-  // Cache parsed blocks per tab path for instant switching
+  // Cache parsed blocks + scroll position per tab path for instant switching
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- BlockNote block arrays
-  const tabCacheRef = useRef<Map<string, any[]>>(new Map())
+  const tabCacheRef = useRef<Map<string, { blocks: any[]; scrollTop: number }>>(new Map())
   const prevActivePathRef = useRef<string | null>(null)
   const editorMountedRef = useRef(false)
   const pendingSwapRef = useRef<(() => void) | null>(null)
@@ -136,9 +136,13 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange,
     const prevPath = prevActivePathRef.current
     const pathChanged = prevPath !== activeTabPath
 
-    // Save current editor state for the tab we're leaving
+    // Save current editor state + scroll position for the tab we're leaving
     if (prevPath && pathChanged && editorMountedRef.current) {
-      cache.set(prevPath, editor.document)
+      const scrollEl = document.querySelector('.editor__blocknote-container')
+      cache.set(prevPath, {
+        blocks: editor.document,
+        scrollTop: scrollEl?.scrollTop ?? 0,
+      })
     }
     prevActivePathRef.current = activeTabPath
 
@@ -148,7 +152,11 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange,
     // the editor already shows the user's edits.
     if (!pathChanged) {
       if (activeTabPath && editorMountedRef.current) {
-        cache.set(activeTabPath, editor.document)
+        const scrollEl = document.querySelector('.editor__blocknote-container')
+        cache.set(activeTabPath, {
+          blocks: editor.document,
+          scrollTop: scrollEl?.scrollTop ?? 0,
+        })
       }
       return
     }
@@ -159,7 +167,7 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange,
     if (!tab) return
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- BlockNote's PartialBlock generic is extremely complex
-    const applyBlocks = (blocks: any[]) => {
+    const applyBlocks = (blocks: any[], scrollTop = 0) => {
       suppressChangeRef.current = true
       try {
         const current = editor.document
@@ -181,6 +189,11 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange,
         // finishes its internal state updates from the content swap
         queueMicrotask(() => { suppressChangeRef.current = false })
       }
+      // Restore scroll position after layout updates from the content swap
+      requestAnimationFrame(() => {
+        const scrollEl = document.querySelector('.editor__blocknote-container')
+        if (scrollEl) scrollEl.scrollTop = scrollTop
+      })
     }
 
     const targetPath = activeTabPath
@@ -190,7 +203,8 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange,
       if (prevActivePathRef.current !== targetPath) return
 
       if (cache.has(targetPath)) {
-        applyBlocks(cache.get(targetPath)!)
+        const cached = cache.get(targetPath)!
+        applyBlocks(cached.blocks, cached.scrollTop)
         return
       }
 
@@ -202,7 +216,7 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange,
       // so the editor is immediately interactive.
       if (!preprocessed.trim()) {
         const emptyDoc = [{ type: 'paragraph', content: [] }]
-        cache.set(targetPath, emptyDoc)
+        cache.set(targetPath, { blocks: emptyDoc, scrollTop: 0 })
         applyBlocks(emptyDoc)
         return
       }
@@ -215,7 +229,7 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange,
           { type: 'heading', props: { level: 1, textColor: 'default', backgroundColor: 'default', textAlignment: 'left' }, content: [{ type: 'text', text: h1OnlyMatch[1], styles: {} }], children: [] },
           { type: 'paragraph', content: [], children: [] },
         ]
-        cache.set(targetPath, h1Doc)
+        cache.set(targetPath, { blocks: h1Doc, scrollTop: 0 })
         applyBlocks(h1Doc)
         return
       }
@@ -228,7 +242,7 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange,
           const withWikilinks = injectWikilinks(blocks)
           // Only cache non-empty results to avoid poisoning the cache
           if (withWikilinks.length > 0) {
-            cache.set(targetPath, withWikilinks)
+            cache.set(targetPath, { blocks: withWikilinks, scrollTop: 0 })
           }
           applyBlocks(withWikilinks)
         }

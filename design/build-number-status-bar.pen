@@ -1,0 +1,96 @@
+{
+  "children": [
+    {
+      "type": "frame",
+      "id": "build_number_status_bar",
+      "name": "Build Number — Status Bar",
+      "x": 0,
+      "y": 0,
+      "width": 1200,
+      "height": 36,
+      "fill": "$--background",
+      "layout": "horizontal",
+      "gap": 12,
+      "padding": [
+        0,
+        16
+      ],
+      "theme": {
+        "Mode": "Light"
+      },
+      "children": [
+        {
+          "type": "text",
+          "id": "status_vault",
+          "content": "vault-name",
+          "fill": "$--muted-foreground",
+          "fontFamily": "Inter",
+          "fontSize": 12
+        },
+        {
+          "type": "text",
+          "id": "status_sep1",
+          "content": "|",
+          "fill": "$--border",
+          "fontFamily": "Inter",
+          "fontSize": 12
+        },
+        {
+          "type": "text",
+          "id": "status_build",
+          "content": "b223",
+          "fill": "$--muted-foreground",
+          "fontFamily": "Inter",
+          "fontSize": 12
+        },
+        {
+          "type": "text",
+          "id": "status_note",
+          "content": "← dynamic build number from package.json, replacing hardcoded v0.4.2",
+          "fill": "$--muted-foreground",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontStyle": "italic"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "build_number_fallback",
+      "name": "Build Number — Fallback (no build info)",
+      "x": 0,
+      "y": 60,
+      "width": 400,
+      "height": 36,
+      "fill": "$--background",
+      "layout": "horizontal",
+      "gap": 12,
+      "padding": [
+        0,
+        16
+      ],
+      "theme": {
+        "Mode": "Light"
+      },
+      "children": [
+        {
+          "type": "text",
+          "id": "fallback_build",
+          "content": "b?",
+          "fill": "$--muted-foreground",
+          "fontFamily": "Inter",
+          "fontSize": 12
+        },
+        {
+          "type": "text",
+          "id": "fallback_note",
+          "content": "← shows b? when build number unavailable",
+          "fill": "$--muted-foreground",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontStyle": "italic"
+        }
+      ]
+    }
+  ]
+}

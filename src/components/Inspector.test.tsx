@@ -186,8 +186,11 @@ This is a test note with some words to count.
         entries={[mockEntry, referrerEntry]}
       />
     )
+    // Backlinks section is collapsed by default, but header with count is visible
+    expect(screen.getByText('Backlinks (1)')).toBeInTheDocument()
+    // Expand to see the backlink entry
+    fireEvent.click(screen.getByTestId('backlinks-toggle'))
     expect(screen.getByText('Referrer Note')).toBeInTheDocument()
-    expect(screen.getByText('1')).toBeInTheDocument() // count badge
   })
 
   it('updates backlinks reactively when outgoingLinks changes', () => {
@@ -200,7 +203,7 @@ This is a test note with some words to count.
       />
     )
     // Initially no backlinks — section is hidden entirely
-    expect(screen.queryByText('Backlinks')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('backlinks-toggle')).not.toBeInTheDocument()
 
     // Rerender with updated outgoingLinks (simulates adding [[Test Project]] to referrer)
     rerender(
@@ -211,6 +214,8 @@ This is a test note with some words to count.
         entries={[mockEntry, { ...referrerEntry, outgoingLinks: ['Test Project'] }]}
       />
     )
+    expect(screen.getByText('Backlinks (1)')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('backlinks-toggle'))
     expect(screen.getByText('Referrer Note')).toBeInTheDocument()
   })
 
@@ -223,8 +228,7 @@ This is a test note with some words to count.
         entries={[mockEntry]}
       />
     )
-    expect(screen.queryByText('No backlinks')).not.toBeInTheDocument()
-    expect(screen.queryByText('Backlinks')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('backlinks-toggle')).not.toBeInTheDocument()
   })
 
   it('navigates when a backlink is clicked', () => {
@@ -235,10 +239,10 @@ This is a test note with some words to count.
         entry={mockEntry}
         content={mockContent}
         entries={[mockEntry, referrerEntry]}
-
         onNavigate={onNavigate}
       />
     )
+    fireEvent.click(screen.getByTestId('backlinks-toggle'))
     fireEvent.click(screen.getByText('Referrer Note'))
     expect(onNavigate).toHaveBeenCalledWith('Referrer Note')
   })
@@ -605,7 +609,7 @@ Status: Active
       expect(screen.getByText(/← Belongs to/i)).toBeInTheDocument()
       expect(screen.getByText('On Writing Well')).toBeInTheDocument()
       // But NOT in Backlinks (even though outgoingLinks matches) — section hidden
-      expect(screen.queryByText('Backlinks')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('backlinks-toggle')).not.toBeInTheDocument()
     })
 
     it('does not show self-references', () => {
