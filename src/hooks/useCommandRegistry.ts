@@ -26,6 +26,7 @@ interface CommandRegistryConfig {
   onOpenSettings: () => void
   onOpenVault?: () => void
   onTrashNote: (path: string) => void
+  onRestoreNote: (path: string) => void
   onArchiveNote: (path: string) => void
   onUnarchiveNote: (path: string) => void
   onCommitPush: () => void
@@ -128,7 +129,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
   const {
     activeTabPath, entries, modifiedCount,
     onQuickOpen, onCreateNote, onCreateNoteOfType, onSave, onOpenSettings,
-    onTrashNote, onArchiveNote, onUnarchiveNote,
+    onTrashNote, onRestoreNote, onArchiveNote, onUnarchiveNote,
     onCommitPush, onSetViewMode, onToggleInspector, onToggleAIChat, onOpenVault,
     onZoomIn, onZoomOut, onZoomReset, zoomLevel,
     onSelect, onOpenDailyNote, onCloseTab,
@@ -143,6 +144,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     [entries, activeTabPath, hasActiveNote],
   )
   const isArchived = activeEntry?.archived ?? false
+  const isTrashed = activeEntry?.trashed ?? false
 
   const vaultTypes = useMemo(() => extractVaultTypes(entries), [entries])
 
@@ -163,7 +165,11 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
       { id: 'open-daily-note', label: "Open Today's Note", group: 'Note', shortcut: '⌘J', keywords: ['daily', 'journal', 'today'], enabled: true, execute: onOpenDailyNote },
       { id: 'save-note', label: 'Save Note', group: 'Note', shortcut: '⌘S', keywords: ['write'], enabled: hasActiveNote, execute: onSave },
       { id: 'close-tab', label: 'Close Tab', group: 'Note', shortcut: '⌘W', keywords: [], enabled: hasActiveNote, execute: () => { if (activeTabPath) onCloseTab(activeTabPath) } },
-      { id: 'trash-note', label: 'Trash Note', group: 'Note', shortcut: '⌘⌫', keywords: ['delete', 'remove'], enabled: hasActiveNote, execute: () => { if (activeTabPath) onTrashNote(activeTabPath) } },
+      {
+        id: 'trash-note', label: isTrashed ? 'Restore Note' : 'Trash Note', group: 'Note', shortcut: '⌘⌫',
+        keywords: ['delete', 'remove', 'restore', 'trash'], enabled: hasActiveNote,
+        execute: () => { if (activeTabPath) (isTrashed ? onRestoreNote : onTrashNote)(activeTabPath) },
+      },
       {
         id: 'archive-note', label: isArchived ? 'Unarchive Note' : 'Archive Note', group: 'Note', shortcut: '⌘E',
         keywords: ['archive'], enabled: hasActiveNote,
@@ -197,9 +203,9 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
 
     return cmds
   }, [
-    hasActiveNote, activeTabPath, isArchived, modifiedCount,
+    hasActiveNote, activeTabPath, isArchived, isTrashed, modifiedCount,
     onQuickOpen, onCreateNote, onCreateNoteOfType, onSave, onOpenSettings,
-    onTrashNote, onArchiveNote, onUnarchiveNote,
+    onTrashNote, onRestoreNote, onArchiveNote, onUnarchiveNote,
     onCommitPush, onSetViewMode, onToggleInspector, onToggleAIChat, onOpenVault,
     onZoomIn, onZoomOut, onZoomReset, zoomLevel,
     onSelect, onOpenDailyNote, onCloseTab,

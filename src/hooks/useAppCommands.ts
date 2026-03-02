@@ -1,3 +1,4 @@
+import { useCallback, useRef } from 'react'
 import { useAppKeyboard } from './useAppKeyboard'
 import { useCommandRegistry } from './useCommandRegistry'
 import type { CommandAction } from './useCommandRegistry'
@@ -26,6 +27,7 @@ interface AppCommandsConfig {
   onSave: () => void
   onOpenSettings: () => void
   onTrashNote: (path: string) => void
+  onRestoreNote: (path: string) => void
   onArchiveNote: (path: string) => void
   onUnarchiveNote: (path: string) => void
   onCommitPush: () => void
@@ -54,6 +56,20 @@ interface AppCommandsConfig {
 
 /** Sets up keyboard shortcuts, command registry, menu events, and keyboard navigation. */
 export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
+  const entriesRef = useRef(config.entries)
+  // eslint-disable-next-line react-hooks/refs
+  entriesRef.current = config.entries
+
+  const toggleArchive = useCallback((path: string) => {
+    const entry = entriesRef.current.find(e => e.path === path)
+    ;(entry?.archived ? config.onUnarchiveNote : config.onArchiveNote)(path)
+  }, [config.onArchiveNote, config.onUnarchiveNote])
+
+  const toggleTrash = useCallback((path: string) => {
+    const entry = entriesRef.current.find(e => e.path === path)
+    ;(entry?.trashed ? config.onRestoreNote : config.onTrashNote)(path)
+  }, [config.onTrashNote, config.onRestoreNote])
+
   useAppKeyboard({
     onQuickOpen: config.onQuickOpen,
     onCommandPalette: config.onCommandPalette,
@@ -62,8 +78,8 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onOpenDailyNote: config.onOpenDailyNote,
     onSave: config.onSave,
     onOpenSettings: config.onOpenSettings,
-    onTrashNote: config.onTrashNote,
-    onArchiveNote: config.onArchiveNote,
+    onTrashNote: toggleTrash,
+    onArchiveNote: toggleArchive,
     onSetViewMode: config.onSetViewMode,
     onZoomIn: config.onZoomIn,
     onZoomOut: config.onZoomOut,
@@ -87,8 +103,8 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onZoomIn: config.onZoomIn,
     onZoomOut: config.onZoomOut,
     onZoomReset: config.onZoomReset,
-    onArchiveNote: config.onArchiveNote,
-    onTrashNote: config.onTrashNote,
+    onArchiveNote: toggleArchive,
+    onTrashNote: toggleTrash,
     onSearch: config.onSearch,
     onGoBack: config.onGoBack,
     onGoForward: config.onGoForward,
@@ -107,6 +123,7 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onSave: config.onSave,
     onOpenSettings: config.onOpenSettings,
     onTrashNote: config.onTrashNote,
+    onRestoreNote: config.onRestoreNote,
     onArchiveNote: config.onArchiveNote,
     onUnarchiveNote: config.onUnarchiveNote,
     onCommitPush: config.onCommitPush,
