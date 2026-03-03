@@ -113,7 +113,11 @@ mod tests {
     #[test]
     fn test_delete_note_removes_file() {
         let dir = TempDir::new().unwrap();
-        create_test_file(dir.path(), "doomed.md", "---\ntitle: Doomed\n---\n# Doomed\n");
+        create_test_file(
+            dir.path(),
+            "doomed.md",
+            "---\ntitle: Doomed\n---\n# Doomed\n",
+        );
         let path = dir.path().join("doomed.md");
         assert!(path.exists());
         let result = delete_note(path.to_str().unwrap());
