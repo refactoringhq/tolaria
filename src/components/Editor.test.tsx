@@ -44,7 +44,7 @@ vi.mock('@blocknote/react', () => ({
 }))
 
 vi.mock('@blocknote/mantine', () => ({
-  BlockNoteView: ({ children }: { children?: React.ReactNode }) => <div data-testid="blocknote-view">{children}</div>,
+  BlockNoteView: ({ children, editable }: { children?: React.ReactNode; editable?: boolean }) => <div data-testid="blocknote-view" data-editable={editable !== false ? 'true' : 'false'}>{children}</div>,
 }))
 
 vi.mock('@blocknote/mantine/style.css', () => ({}))
@@ -293,6 +293,41 @@ describe('Editor', () => {
     mockEditor.tryParseMarkdownToBlocks.mockResolvedValue([])
     mockEditor.replaceBlocks.mockClear()
     mockEditor.insertBlocks.mockClear()
+  })
+  describe('trashed note behavior', () => {
+    const trashedEntry: VaultEntry = { ...mockEntry, trashed: true, trashedAt: Date.now() / 1000 }
+    const trashedTab = { entry: trashedEntry, content: mockContent }
+
+    function renderTrashed(overrides: Partial<Parameters<typeof Editor>[0]> = {}) {
+      return render(<Editor {...defaultProps} tabs={[trashedTab]} activeTabPath={trashedEntry.path} {...overrides} />)
+    }
+
+    it('shows banner and read-only editor when note is trashed', () => {
+      renderTrashed()
+      expect(screen.getByTestId('trashed-note-banner')).toBeInTheDocument()
+      expect(screen.getByText('This note is in the Trash')).toBeInTheDocument()
+      expect(screen.getByTestId('blocknote-view')).toHaveAttribute('data-editable', 'false')
+    })
+
+    it('does not show banner and sets editable for normal notes', () => {
+      render(<Editor {...defaultProps} tabs={[mockTab]} activeTabPath={mockEntry.path} />)
+      expect(screen.queryByTestId('trashed-note-banner')).not.toBeInTheDocument()
+      expect(screen.getByTestId('blocknote-view')).toHaveAttribute('data-editable', 'true')
+    })
+
+    it('calls onRestoreNote when banner restore is clicked', () => {
+      const onRestoreNote = vi.fn()
+      renderTrashed({ onRestoreNote })
+      fireEvent.click(screen.getByTestId('trashed-banner-restore'))
+      expect(onRestoreNote).toHaveBeenCalledWith(trashedEntry.path)
+    })
+
+    it('calls onDeleteNote when banner delete is clicked', () => {
+      const onDeleteNote = vi.fn()
+      renderTrashed({ onDeleteNote })
+      fireEvent.click(screen.getByTestId('trashed-banner-delete'))
+      expect(onDeleteNote).toHaveBeenCalledWith(trashedEntry.path)
+    })
   })
 })
 

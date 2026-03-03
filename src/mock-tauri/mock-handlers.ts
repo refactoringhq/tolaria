@@ -221,6 +221,7 @@ export const mockHandlers: Record<string, (args: any) => any> = {
   }),
   clone_repo: (args: { url: string; local_path: string }) => `Cloned to ${args.local_path}`,
   purge_trash: () => [],
+  delete_note: (args: { path: string }) => args.path,
   migrate_is_a_to_type: () => 0,
   batch_archive_notes: (args: { paths: string[] }) => args.paths.length,
   batch_trash_notes: (args: { paths: string[] }) => args.paths.length,

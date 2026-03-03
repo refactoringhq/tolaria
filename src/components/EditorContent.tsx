@@ -2,6 +2,7 @@ import type { VaultEntry, NoteStatus } from '../types'
 import type { useCreateBlockNote } from '@blocknote/react'
 import { DiffView } from './DiffView'
 import { BreadcrumbBar } from './BreadcrumbBar'
+import { TrashedNoteBanner } from './TrashedNoteBanner'
 import { RawEditorView } from './RawEditorView'
 import { countWords } from '../utils/wikilinks'
 import { SingleEditorView } from './SingleEditorView'
@@ -34,6 +35,7 @@ interface EditorContentProps {
   onEditorChange?: () => void
   onTrashNote?: (path: string) => void
   onRestoreNote?: (path: string) => void
+  onDeleteNote?: (path: string) => void
   onArchiveNote?: (path: string) => void
   onUnarchiveNote?: (path: string) => void
   vaultPath?: string
@@ -97,7 +99,7 @@ function bindPath(cb: ((path: string) => void) | undefined, path: string) {
 
 function ActiveTabBreadcrumb({ activeTab, props }: {
   activeTab: Tab
-  props: Omit<EditorContentProps, 'activeTab' | 'isLoadingNewTab' | 'entries' | 'editor' | 'onNavigateWikilink' | 'onEditorChange' | 'onRawContentChange' | 'onSave'>
+  props: Omit<EditorContentProps, 'activeTab' | 'isLoadingNewTab' | 'entries' | 'editor' | 'onNavigateWikilink' | 'onEditorChange' | 'onRawContentChange' | 'onSave' | 'onDeleteNote'>
 }) {
   const wordCount = countWords(activeTab.content)
   const path = activeTab.entry.path
@@ -124,14 +126,38 @@ function ActiveTabBreadcrumb({ activeTab, props }: {
   )
 }
 
+function EditorBody({ activeTab, isLoadingNewTab, entries, editor, diffMode, diffContent, onToggleDiff, rawMode, onRawContentChange, onSave, onNavigateWikilink, onEditorChange, vaultPath, isDarkTheme, isTrashed }: {
+  activeTab: Tab | null; isLoadingNewTab: boolean; entries: VaultEntry[]
+  editor: ReturnType<typeof useCreateBlockNote>
+  diffMode: boolean; diffContent: string | null; onToggleDiff: () => void
+  rawMode: boolean; onRawContentChange?: (path: string, content: string) => void; onSave?: () => void
+  onNavigateWikilink: (target: string) => void; onEditorChange?: () => void
+  vaultPath?: string; isDarkTheme?: boolean; isTrashed: boolean
+}) {
+  const showEditor = !diffMode && !rawMode
+  return (
+    <>
+      {diffMode && <DiffModeView diffContent={diffContent} onToggleDiff={onToggleDiff} />}
+      <RawModeEditorSection rawMode={rawMode} activeTab={activeTab} entries={entries} onContentChange={onRawContentChange} onSave={onSave} />
+      {showEditor && activeTab && (
+        <div style={{ display: 'flex', flex: 1, flexDirection: 'column', minHeight: 0 }}>
+          <SingleEditorView editor={editor} entries={entries} onNavigateWikilink={onNavigateWikilink} onChange={onEditorChange} vaultPath={vaultPath} isDarkTheme={isDarkTheme} editable={!isTrashed} />
+        </div>
+      )}
+      {isLoadingNewTab && showEditor && <EditorLoadingSkeleton />}
+    </>
+  )
+}
+
 export function EditorContent({
   activeTab, isLoadingNewTab, entries, editor,
   diffMode, diffContent, onToggleDiff,
   rawMode, onToggleRaw, onRawContentChange, onSave,
   onNavigateWikilink, onEditorChange, vaultPath, isDarkTheme,
+  onDeleteNote,
   ...breadcrumbProps
 }: EditorContentProps) {
-  const showEditor = !diffMode && !rawMode
+  const isTrashed = activeTab?.entry.trashed ?? false
 
   return (
     <div className="flex flex-1 flex-col min-w-0 min-h-0">
@@ -141,14 +167,13 @@ export function EditorContent({
           props={{ diffMode, diffContent, onToggleDiff, rawMode, onToggleRaw, ...breadcrumbProps }}
         />
       )}
-      {diffMode && <DiffModeView diffContent={diffContent} onToggleDiff={onToggleDiff} />}
-      <RawModeEditorSection rawMode={rawMode} activeTab={activeTab} entries={entries} onContentChange={onRawContentChange} onSave={onSave} />
-      {showEditor && activeTab && (
-        <div style={{ display: 'flex', flex: 1, flexDirection: 'column', minHeight: 0 }}>
-          <SingleEditorView editor={editor} entries={entries} onNavigateWikilink={onNavigateWikilink} onChange={onEditorChange} vaultPath={vaultPath} isDarkTheme={isDarkTheme} />
-        </div>
+      {activeTab && isTrashed && (
+        <TrashedNoteBanner
+          onRestore={() => breadcrumbProps.onRestoreNote?.(activeTab.entry.path)}
+          onDeletePermanently={() => onDeleteNote?.(activeTab.entry.path)}
+        />
       )}
-      {isLoadingNewTab && showEditor && <EditorLoadingSkeleton />}
+      <EditorBody activeTab={activeTab} isLoadingNewTab={isLoadingNewTab} entries={entries} editor={editor} diffMode={diffMode} diffContent={diffContent} onToggleDiff={onToggleDiff} rawMode={rawMode} onRawContentChange={onRawContentChange} onSave={onSave} onNavigateWikilink={onNavigateWikilink} onEditorChange={onEditorChange} vaultPath={vaultPath} isDarkTheme={isDarkTheme} isTrashed={isTrashed} />
     </div>
   )
 }

@@ -207,6 +207,12 @@ fn purge_trash(vault_path: String) -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
+fn delete_note(path: String) -> Result<String, String> {
+    let path = expand_tilde(&path);
+    vault::delete_note(&path)
+}
+
+#[tauri::command]
 fn migrate_is_a_to_type(vault_path: String) -> Result<usize, String> {
     let vault_path = expand_tilde(&vault_path);
     vault::migrate_is_a_to_type(&vault_path)
@@ -544,6 +550,7 @@ pub fn run() {
             save_image,
             copy_image_to_vault,
             purge_trash,
+            delete_note,
             migrate_is_a_to_type,
             batch_archive_notes,
             batch_trash_notes,

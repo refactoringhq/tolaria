@@ -220,17 +220,16 @@ export function buildRelationshipGroups(
     b.filterAndAdd('Instances', (e) => e.isA === entity.title)
   }
 
-  b.addFromRefs('Has', rels['Has'] ?? [])
-  b.filterAndAdd('Children', (e) => e.isA !== 'Event' && refsMatch(e.belongsTo, entity))
-  b.filterAndAdd('Events', (e) => e.isA === 'Event' && (refsMatch(e.belongsTo, entity) || refsMatch(e.relatedTo, entity)))
-  b.addFromRefs('Topics', rels['Topics'] ?? [])
-
-  const handledKeys = new Set(['Has', 'Topics'])
+  // Direct relationships first — all keys from entity.relationships take
+  // priority so that reverse/computed groups (Children, Events, Referenced By)
+  // only show *additional* entries not already covered by a direct property.
   Object.keys(rels)
-    .filter((k) => !handledKeys.has(k) && k.toLowerCase() !== 'type')
+    .filter((k) => k.toLowerCase() !== 'type')
     .sort((a, b) => a.localeCompare(b))
     .forEach((key) => b.addFromRefs(key, rels[key] ?? []))
 
+  b.filterAndAdd('Children', (e) => e.isA !== 'Event' && refsMatch(e.belongsTo, entity))
+  b.filterAndAdd('Events', (e) => e.isA === 'Event' && (refsMatch(e.belongsTo, entity) || refsMatch(e.relatedTo, entity)))
   b.filterAndAdd('Referenced By', (e) => e.isA !== 'Event' && refsMatch(e.relatedTo, entity))
   b.add('Backlinks', findBacklinks(entity, allEntries, allContent).sort(sortByModified))
 

@@ -42,6 +42,21 @@ fn try_purge_file(path: &Path) -> Option<String> {
     }
 }
 
+/// Permanently delete a single note file.
+/// Returns the deleted path on success, or an error if the file doesn't exist.
+pub fn delete_note(path: &str) -> Result<String, String> {
+    let file = Path::new(path);
+    if !file.exists() {
+        return Err(format!("File does not exist: {}", path));
+    }
+    if !file.is_file() {
+        return Err(format!("Path is not a file: {}", path));
+    }
+    fs::remove_file(file).map_err(|e| format!("Failed to delete {}: {}", path, e))?;
+    log::info!("Permanently deleted note: {}", path);
+    Ok(path.to_string())
+}
+
 /// Scan all markdown files in the vault and delete those where
 /// `Trashed at` frontmatter is more than 30 days ago.
 /// Returns the list of deleted file paths.
@@ -93,6 +108,28 @@ mod tests {
         }
         let mut file = fs::File::create(file_path).unwrap();
         file.write_all(content.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_delete_note_removes_file() {
+        let dir = TempDir::new().unwrap();
+        create_test_file(
+            dir.path(),
+            "doomed.md",
+            "---\ntitle: Doomed\n---\n# Doomed\n",
+        );
+        let path = dir.path().join("doomed.md");
+        assert!(path.exists());
+        let result = delete_note(path.to_str().unwrap());
+        assert!(result.is_ok());
+        assert!(!path.exists());
+    }
+
+    #[test]
+    fn test_delete_note_nonexistent_file() {
+        let result = delete_note("/nonexistent/path/that/does/not/exist.md");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("does not exist"));
     }
 
     #[test]
