@@ -33,8 +33,10 @@ interface CommandRegistryConfig {
   onCommitPush: () => void
   onSetViewMode: (mode: ViewMode) => void
   onToggleInspector: () => void
+  onToggleDiff?: () => void
   onToggleRawEditor?: () => void
   onToggleAIChat?: () => void
+  activeNoteModified: boolean
   onCheckForUpdates?: () => void
   isUpdating?: boolean
   onZoomIn: () => void
@@ -109,8 +111,10 @@ export function buildTypeCommands(
 
 export function buildViewCommands(
   hasActiveNote: boolean,
+  activeNoteModified: boolean,
   onSetViewMode: (mode: ViewMode) => void,
   onToggleInspector: () => void,
+  onToggleDiff: (() => void) | undefined,
   onToggleRawEditor: (() => void) | undefined,
   onToggleAIChat: (() => void) | undefined,
   zoomLevel: number,
@@ -122,9 +126,11 @@ export function buildViewCommands(
     { id: 'view-editor', label: 'Editor Only', group: 'View', shortcut: '⌘1', keywords: ['layout', 'focus'], enabled: true, execute: () => onSetViewMode('editor-only') },
     { id: 'view-editor-list', label: 'Editor + Note List', group: 'View', shortcut: '⌘2', keywords: ['layout'], enabled: true, execute: () => onSetViewMode('editor-list') },
     { id: 'view-all', label: 'Full Layout', group: 'View', shortcut: '⌘3', keywords: ['layout', 'sidebar'], enabled: true, execute: () => onSetViewMode('all') },
-    { id: 'toggle-inspector', label: 'Toggle Inspector', group: 'View', keywords: ['properties', 'panel', 'right'], enabled: true, execute: onToggleInspector },
+    { id: 'toggle-inspector', label: 'Toggle Properties Panel', group: 'View', keywords: ['properties', 'inspector', 'panel', 'right', 'sidebar'], enabled: true, execute: onToggleInspector },
+    { id: 'toggle-diff', label: 'Toggle Diff Mode', group: 'View', keywords: ['diff', 'changes', 'git', 'compare', 'version'], enabled: hasActiveNote && activeNoteModified, execute: () => onToggleDiff?.() },
     { id: 'toggle-raw-editor', label: 'Toggle Raw Editor', group: 'View', keywords: ['raw', 'source', 'markdown', 'frontmatter', 'code', 'textarea'], enabled: hasActiveNote, execute: () => onToggleRawEditor?.() },
     { id: 'toggle-ai-chat', label: 'Toggle AI Chat', group: 'View', shortcut: '⌘I', keywords: ['ai', 'agent', 'chat', 'assistant', 'contextual'], enabled: true, execute: () => onToggleAIChat?.() },
+    { id: 'toggle-backlinks', label: 'Toggle Backlinks', group: 'View', keywords: ['backlinks', 'references', 'links', 'mentions', 'incoming'], enabled: hasActiveNote, execute: onToggleInspector },
     { id: 'zoom-in', label: `Zoom In (${zoomLevel}%)`, group: 'View', shortcut: '⌘=', keywords: ['zoom', 'bigger', 'larger', 'scale'], enabled: zoomLevel < 150, execute: onZoomIn },
     { id: 'zoom-out', label: `Zoom Out (${zoomLevel}%)`, group: 'View', shortcut: '⌘-', keywords: ['zoom', 'smaller', 'scale'], enabled: zoomLevel > 80, execute: onZoomOut },
     { id: 'zoom-reset', label: 'Reset Zoom', group: 'View', shortcut: '⌘0', keywords: ['zoom', 'actual', 'default', '100'], enabled: zoomLevel !== 100, execute: onZoomReset },
@@ -173,7 +179,8 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     activeTabPath, entries, modifiedCount,
     onQuickOpen, onCreateNote, onCreateNoteOfType, onSave, onOpenSettings,
     onTrashNote, onRestoreNote, onArchiveNote, onUnarchiveNote,
-    onCommitPush, onSetViewMode, onToggleInspector, onToggleRawEditor, onToggleAIChat, onOpenVault,
+    onCommitPush, onSetViewMode, onToggleInspector, onToggleDiff, onToggleRawEditor, onToggleAIChat, onOpenVault,
+    activeNoteModified,
     onZoomIn, onZoomOut, onZoomReset, zoomLevel,
     onSelect, onOpenDailyNote, onCloseTab,
     onGoBack, onGoForward, canGoBack, canGoForward,
@@ -227,7 +234,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
       { id: 'view-changes', label: 'View Pending Changes', group: 'Git', keywords: ['modified', 'diff'], enabled: true, execute: () => onSelect({ kind: 'filter', filter: 'changes' }) },
 
       // View
-      ...buildViewCommands(hasActiveNote, onSetViewMode, onToggleInspector, onToggleRawEditor, onToggleAIChat, zoomLevel, onZoomIn, onZoomOut, onZoomReset),
+      ...buildViewCommands(hasActiveNote, activeNoteModified, onSetViewMode, onToggleInspector, onToggleDiff, onToggleRawEditor, onToggleAIChat, zoomLevel, onZoomIn, onZoomOut, onZoomReset),
 
       // Appearance
       ...buildThemeCommands(themes, activeThemeId, onSwitchTheme, onCreateTheme, onOpenTheme),
@@ -243,10 +250,10 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
 
     return cmds
   }, [
-    hasActiveNote, activeTabPath, isArchived, isTrashed, modifiedCount,
+    hasActiveNote, activeTabPath, isArchived, isTrashed, modifiedCount, activeNoteModified,
     onQuickOpen, onCreateNote, onCreateNoteOfType, onCreateType, onSave, onOpenSettings,
     onTrashNote, onRestoreNote, onArchiveNote, onUnarchiveNote,
-    onCommitPush, onSetViewMode, onToggleInspector, onToggleRawEditor, onToggleAIChat, onOpenVault,
+    onCommitPush, onSetViewMode, onToggleInspector, onToggleDiff, onToggleRawEditor, onToggleAIChat, onOpenVault,
     onCheckForUpdates, isUpdating,
     onZoomIn, onZoomOut, onZoomReset, zoomLevel,
     onSelect, onOpenDailyNote, onCloseTab,

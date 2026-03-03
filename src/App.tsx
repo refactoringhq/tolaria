@@ -272,6 +272,8 @@ function App() {
 
   // Raw-toggle ref: Editor registers its handleToggleRaw here so the command palette can call it
   const rawToggleRef = useRef<() => void>(() => {})
+  // Diff-toggle ref: Editor registers its handleToggleDiff here so the command palette can call it
+  const diffToggleRef = useRef<() => void>(() => {})
 
   const { setViewMode, sidebarVisible, noteListVisible } = useViewMode()
   const zoom = useZoom()
@@ -293,7 +295,9 @@ function App() {
     activeTabPath: notes.activeTabPath, activeTabPathRef: notes.activeTabPathRef,
     handleCloseTabRef: notes.handleCloseTabRef, tabs: notes.tabs,
     entries: vault.entries, allContent: vault.allContent,
-    modifiedCount: vault.modifiedFiles.length, selection,
+    modifiedCount: vault.modifiedFiles.length,
+    activeNoteModified: vault.modifiedFiles.some(f => f.path === notes.activeTabPath),
+    selection,
     onQuickOpen: dialogs.openQuickOpen, onCommandPalette: dialogs.openCommandPalette,
     onSearch: dialogs.openSearch,
     onCreateNote: notes.handleCreateNoteImmediate,
@@ -305,6 +309,7 @@ function App() {
     onArchiveNote: entryActions.handleArchiveNote, onUnarchiveNote: entryActions.handleUnarchiveNote,
     onCommitPush: commitFlow.openCommitDialog, onSetViewMode: setViewMode,
     onToggleInspector: () => layout.setInspectorCollapsed(c => !c),
+    onToggleDiff: () => diffToggleRef.current(),
     onToggleRawEditor: () => rawToggleRef.current(),
     onZoomIn: zoom.zoomIn, onZoomOut: zoom.zoomOut, onZoomReset: zoom.zoomReset,
     zoomLevel: zoom.zoomLevel,
@@ -417,6 +422,7 @@ function App() {
             onSave={handleSave}
             onTitleSync={handleTitleSync}
             rawToggleRef={rawToggleRef}
+            diffToggleRef={diffToggleRef}
             canGoBack={navHistory.canGoBack}
             canGoForward={navHistory.canGoForward}
             onGoBack={handleGoBack}
