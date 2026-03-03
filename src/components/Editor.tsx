@@ -66,16 +66,19 @@ interface EditorProps {
   isDarkTheme?: boolean
   /** Mutable ref that Editor registers its raw-mode toggle into, for command palette access. */
   rawToggleRef?: React.MutableRefObject<() => void>
+  /** Mutable ref that Editor registers its diff-mode toggle into, for command palette access. */
+  diffToggleRef?: React.MutableRefObject<() => void>
 }
 
 function useEditorModeExclusion({
-  diffMode, rawMode, handleToggleDiff, handleToggleRaw, rawToggleRef,
+  diffMode, rawMode, handleToggleDiff, handleToggleRaw, rawToggleRef, diffToggleRef,
 }: {
   diffMode: boolean
   rawMode: boolean
   handleToggleDiff: () => void | Promise<void>
   handleToggleRaw: () => void
   rawToggleRef?: React.MutableRefObject<() => void>
+  diffToggleRef?: React.MutableRefObject<() => void>
 }) {
   const handleToggleDiffExclusive = useCallback(async () => {
     if (!diffMode && rawMode) handleToggleRaw()
@@ -90,6 +93,10 @@ function useEditorModeExclusion({
   useEffect(() => {
     if (rawToggleRef) rawToggleRef.current = handleToggleRawExclusive
   }, [rawToggleRef, handleToggleRawExclusive])
+
+  useEffect(() => {
+    if (diffToggleRef) diffToggleRef.current = handleToggleDiffExclusive
+  }, [diffToggleRef, handleToggleDiffExclusive])
 
   return { handleToggleDiffExclusive, handleToggleRawExclusive }
 }
@@ -116,6 +123,7 @@ export const Editor = memo(function Editor({
   canGoBack, canGoForward, onGoBack, onGoForward, leftPanelsCollapsed,
   isDarkTheme,
   rawToggleRef,
+  diffToggleRef,
 }: EditorProps) {
   const vaultPathRef = useRef(vaultPath)
   useEffect(() => { vaultPathRef.current = vaultPath }, [vaultPath])
@@ -152,7 +160,7 @@ export const Editor = memo(function Editor({
   const { rawMode, handleToggleRaw } = useRawMode({ activeTabPath })
 
   const { handleToggleDiffExclusive, handleToggleRawExclusive } = useEditorModeExclusion({
-    diffMode, rawMode, handleToggleDiff, handleToggleRaw, rawToggleRef,
+    diffMode, rawMode, handleToggleDiff, handleToggleRaw, rawToggleRef, diffToggleRef,
   })
 
   const isLoadingNewTab = activeTabPath !== null && !activeTab

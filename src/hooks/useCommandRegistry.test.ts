@@ -36,6 +36,7 @@ function makeConfig(overrides: Record<string, unknown> = {}) {
     activeTabPath: null as string | null,
     entries: [] as VaultEntry[],
     modifiedCount: 0,
+    activeNoteModified: false,
     onQuickOpen: vi.fn(),
     onCreateNote: vi.fn(),
     onCreateNoteOfType: vi.fn(),
@@ -262,6 +263,82 @@ describe('useCommandRegistry', () => {
     const { result } = renderHook(() => useCommandRegistry(makeConfig({ onToggleAIChat })))
     result.current.find(c => c.id === 'toggle-ai-chat')!.execute()
     expect(onToggleAIChat).toHaveBeenCalled()
+  })
+
+  it('has toggle-diff command in View group', () => {
+    const { result } = renderHook(() => useCommandRegistry(makeConfig()))
+    const cmd = result.current.find(c => c.id === 'toggle-diff')
+    expect(cmd).toBeDefined()
+    expect(cmd!.group).toBe('View')
+    expect(cmd!.label).toBe('Toggle Diff Mode')
+  })
+
+  it('disables toggle-diff when no note is open', () => {
+    const { result } = renderHook(() => useCommandRegistry(makeConfig({ activeTabPath: null })))
+    const cmd = result.current.find(c => c.id === 'toggle-diff')
+    expect(cmd!.enabled).toBe(false)
+  })
+
+  it('disables toggle-diff when note has no changes', () => {
+    const { result } = renderHook(() =>
+      useCommandRegistry(makeConfig({ activeTabPath: '/vault/note/test.md', activeNoteModified: false })),
+    )
+    const cmd = result.current.find(c => c.id === 'toggle-diff')
+    expect(cmd!.enabled).toBe(false)
+  })
+
+  it('enables toggle-diff when note has uncommitted changes', () => {
+    const { result } = renderHook(() =>
+      useCommandRegistry(makeConfig({ activeTabPath: '/vault/note/test.md', activeNoteModified: true })),
+    )
+    const cmd = result.current.find(c => c.id === 'toggle-diff')
+    expect(cmd!.enabled).toBe(true)
+  })
+
+  it('calls onToggleDiff when toggle-diff executes', () => {
+    const onToggleDiff = vi.fn()
+    const { result } = renderHook(() =>
+      useCommandRegistry(makeConfig({ activeTabPath: '/vault/note/test.md', activeNoteModified: true, onToggleDiff })),
+    )
+    result.current.find(c => c.id === 'toggle-diff')!.execute()
+    expect(onToggleDiff).toHaveBeenCalledOnce()
+  })
+
+  it('has toggle-backlinks command in View group', () => {
+    const { result } = renderHook(() => useCommandRegistry(makeConfig()))
+    const cmd = result.current.find(c => c.id === 'toggle-backlinks')
+    expect(cmd).toBeDefined()
+    expect(cmd!.group).toBe('View')
+    expect(cmd!.label).toBe('Toggle Backlinks')
+  })
+
+  it('disables toggle-backlinks when no note is open', () => {
+    const { result } = renderHook(() => useCommandRegistry(makeConfig({ activeTabPath: null })))
+    const cmd = result.current.find(c => c.id === 'toggle-backlinks')
+    expect(cmd!.enabled).toBe(false)
+  })
+
+  it('enables toggle-backlinks when a note is open', () => {
+    const { result } = renderHook(() =>
+      useCommandRegistry(makeConfig({ activeTabPath: '/vault/note/test.md' })),
+    )
+    const cmd = result.current.find(c => c.id === 'toggle-backlinks')
+    expect(cmd!.enabled).toBe(true)
+  })
+
+  it('calls onToggleInspector when toggle-backlinks executes', () => {
+    const onToggleInspector = vi.fn()
+    const { result } = renderHook(() =>
+      useCommandRegistry(makeConfig({ activeTabPath: '/vault/note/test.md', onToggleInspector })),
+    )
+    result.current.find(c => c.id === 'toggle-backlinks')!.execute()
+    expect(onToggleInspector).toHaveBeenCalledOnce()
+  })
+
+  it('toggle-inspector label includes Properties', () => {
+    const { result } = renderHook(() => useCommandRegistry(makeConfig()))
+    const cmd = result.current.find(c => c.id === 'toggle-inspector')
+    expect(cmd!.label).toBe('Toggle Properties Panel')
   })
 
   it('has open-daily-note command with shortcut', () => {
