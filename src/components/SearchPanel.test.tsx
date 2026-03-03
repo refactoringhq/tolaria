@@ -40,6 +40,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     order: null,
     template: null,
     outgoingLinks: ['topic/ai', 'topic/api-design', 'person/luca'],
+    properties: {},
   },
   {
     path: '/vault/event/retreat.md',
@@ -66,6 +67,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     order: null,
     template: null,
     outgoingLinks: ['person/bob'],
+    properties: {},
   },
 ]
 

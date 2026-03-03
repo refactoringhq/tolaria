@@ -28,6 +28,7 @@ const makeEntry = (overrides: Partial<VaultEntry> = {}): VaultEntry => ({
   order: null,
   template: null,
   outgoingLinks: [],
+  properties: {},
   ...overrides,
 })
 

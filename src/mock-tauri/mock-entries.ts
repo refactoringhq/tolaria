@@ -38,6 +38,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: ['quarter/q1-2026', 'topic/software-development', 'person/matteo-cellini', 'person/maria-bianchi', 'person/marco-verdi'],
+    properties: { Priority: 'High', 'Due date': '2026-06-15' },
   },
   {
     path: '/Users/luca/Laputa/responsibility/grow-newsletter.md',
@@ -74,6 +75,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: ['essay/on-writing-well', 'essay/engineering-leadership-101', 'essay/ai-agents-primer', 'topic/growth', 'topic/writing'],
+    properties: { Priority: 'High', Rating: 5, Cadence: 'Weekly' },
   },
   {
     path: '/Users/luca/Laputa/responsibility/manage-sponsorships.md',
@@ -104,6 +106,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: ['person/matteo-cellini'],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/procedure/write-weekly-essays.md',
@@ -134,6 +137,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: ['responsibility/grow-newsletter'],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/procedure/run-sponsorships.md',
@@ -164,6 +168,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: ['responsibility/manage-sponsorships'],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/experiment/stock-screener.md',
@@ -195,6 +200,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: ['topic/trading', 'topic/algorithmic-trading', 'data/ema200-backtest-results'],
+    properties: { Priority: 'Low', 'Due date': '2026-03-01' },
   },
   {
     path: '/Users/luca/Laputa/note/facebook-ads-strategy.md',
@@ -226,6 +232,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: ['project/26q1-laputa-app', 'topic/growth', 'topic/ads'],
+    properties: { Priority: 'Medium', Rating: 4 },
   },
   {
     path: '/Users/luca/Laputa/note/budget-allocation.md',
@@ -256,6 +263,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: ['project/26q1-laputa-app'],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/person/matteo-cellini.md',
@@ -285,6 +293,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: { Company: 'Acme Corp', Role: 'Engineering Lead' },
   },
   {
     path: '/Users/luca/Laputa/person/maria-bianchi.md',
@@ -314,6 +323,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: { Company: 'TechStart', Role: 'Product Manager' },
   },
   {
     path: '/Users/luca/Laputa/person/marco-verdi.md',
@@ -343,6 +353,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/person/elena-russo.md',
@@ -372,6 +383,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/event/2026-02-14-laputa-app-kickoff.md',
@@ -402,6 +414,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: ['project/26q1-laputa-app', 'person/matteo-cellini'],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/topic/software-development.md',
@@ -432,6 +445,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/topic/trading.md',
@@ -462,6 +476,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/essay/on-writing-well.md',
@@ -492,6 +507,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: ['responsibility/grow-newsletter'],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/essay/engineering-leadership-101.md',
@@ -523,6 +539,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: ['responsibility/grow-newsletter', 'topic/software-development'],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/essay/ai-agents-primer.md',
@@ -553,6 +570,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: ['responsibility/grow-newsletter'],
+    properties: {},
   },
   // --- Type documents ---
   {
@@ -581,6 +599,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/type/responsibility.md',
@@ -608,6 +627,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/type/procedure.md',
@@ -635,6 +655,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/type/experiment.md',
@@ -662,6 +683,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/type/person.md',
@@ -689,6 +711,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/type/event.md',
@@ -716,6 +739,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/type/topic.md',
@@ -743,6 +767,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/type/essay.md',
@@ -770,6 +795,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/type/note.md',
@@ -797,6 +823,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   // --- Custom type documents ---
   {
@@ -825,6 +852,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/type/book.md',
@@ -852,6 +880,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   // --- Instances of custom types ---
   {
@@ -882,6 +911,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: { Difficulty: 'Easy', 'Prep time': '30 min', Servings: 4 },
   },
   {
     path: '/Users/luca/Laputa/book/designing-data-intensive-applications.md',
@@ -911,6 +941,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: { Author: 'Martin Kleppmann', Rating: 5, 'Year published': 2017 },
   },
   // --- Trashed entries ---
   {
@@ -942,6 +973,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/note/deprecated-api-notes.md',
@@ -971,6 +1003,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/experiment/failed-seo-experiment.md',
@@ -1001,6 +1034,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   // --- Archived entries ---
   {
@@ -1023,6 +1057,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
     modifiedAt: now - 86400 * 120,
     createdAt: now - 86400 * 200,
     fileSize: 680,
@@ -1053,6 +1088,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
     modifiedAt: now - 86400 * 90,
     createdAt: now - 86400 * 150,
     fileSize: 520,
@@ -1116,6 +1152,7 @@ function generateBulkEntries(count: number): VaultEntry[] {
       outgoingLinks: Array.from({ length: i % 8 }, (_j, j) => `note/link-target-${(i + j) % 50}`),
       sidebarLabel: null,
       template: null,
+      properties: {},
     })
   }
   return entries
@@ -1149,6 +1186,7 @@ MOCK_ENTRIES.push(
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/theme/dark.md',
@@ -1176,6 +1214,7 @@ MOCK_ENTRIES.push(
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/theme/minimal.md',
@@ -1203,6 +1242,7 @@ MOCK_ENTRIES.push(
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
 )
 

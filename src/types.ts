@@ -31,6 +31,8 @@ export interface VaultEntry {
   template: string | null
   /** All wikilink targets found in the note content. Extracted from [[target]] patterns. */
   outgoingLinks: string[]
+  /** Custom scalar frontmatter properties (non-relationship, non-structural). */
+  properties: Record<string, string | number | boolean | null>
 }
 
 export type NoteStatus = 'new' | 'modified' | 'clean' | 'pendingSave' | 'unsaved'

@@ -14,7 +14,7 @@ import { useMultiSelect } from '../hooks/useMultiSelect'
 import { useNoteListKeyboard } from '../hooks/useNoteListKeyboard'
 import {
   type SortOption, type SortDirection, type SortConfig, type RelationshipGroup,
-  getSortComparator,
+  getSortComparator, extractSortableProperties,
   buildRelationshipGroups, filterEntries,
   relativeDate, getDisplayDate,
   loadSortPreferences, saveSortPreferences,
@@ -67,6 +67,7 @@ function RelationshipGroupSection({ group, isCollapsed, sortPrefs, onToggle, han
 }) {
   const groupConfig = sortPrefs[group.label] ?? { option: 'modified' as SortOption, direction: 'desc' as SortDirection }
   const sortedEntries = [...group.entries].sort(getSortComparator(groupConfig.option, groupConfig.direction))
+  const customProperties = useMemo(() => extractSortableProperties(group.entries), [group.entries])
   return (
     <div>
       <div className="flex w-full items-center justify-between bg-muted" style={{ height: 32, padding: '0 16px' }}>
@@ -75,7 +76,7 @@ function RelationshipGroupSection({ group, isCollapsed, sortPrefs, onToggle, han
           <span className="font-mono-label text-muted-foreground" style={{ fontWeight: 400 }}>{group.entries.length}</span>
         </button>
         <span className="flex items-center gap-1.5">
-          <SortDropdown groupLabel={group.label} current={groupConfig.option} direction={groupConfig.direction} onChange={handleSortChange} />
+          <SortDropdown groupLabel={group.label} current={groupConfig.option} direction={groupConfig.direction} customProperties={customProperties} onChange={handleSortChange} />
           <button className="flex items-center border-none bg-transparent cursor-pointer p-0 text-muted-foreground" onClick={onToggle}>
             {isCollapsed ? <CaretRight size={12} /> : <CaretDown size={12} />}
           </button>
@@ -241,25 +242,31 @@ function isModifiedEntry(path: string, pathSet: Set<string>, suffixes: string[])
   return suffixes.some((suffix) => path.endsWith(suffix))
 }
 
+function useFilteredEntries(entries: VaultEntry[], selection: SidebarSelection, modifiedPathSet: Set<string>, modifiedSuffixes: string[]) {
+  const isEntityView = selection.kind === 'entity'
+  const isChangesView = selection.kind === 'filter' && selection.filter === 'changes'
+  return useMemo(() => {
+    if (isEntityView) return []
+    if (isChangesView) return entries.filter((e) => isModifiedEntry(e.path, modifiedPathSet, modifiedSuffixes))
+    return filterEntries(entries, selection)
+  }, [entries, selection, isEntityView, isChangesView, modifiedPathSet, modifiedSuffixes])
+}
+
 function useNoteListData({ entries, selection, allContent, query, listSort, listDirection, modifiedPathSet, modifiedSuffixes }: NoteListDataParams) {
   const isEntityView = selection.kind === 'entity'
   const isTrashView = selection.kind === 'filter' && selection.filter === 'trash'
-  const isChangesView = selection.kind === 'filter' && selection.filter === 'changes'
 
   const typeDocument = useMemo(() => {
     if (selection.kind !== 'sectionGroup') return null
     return entries.find((e) => e.isA === 'Type' && e.title === selection.type) ?? null
   }, [selection, entries])
 
+  const filteredEntries = useFilteredEntries(entries, selection, modifiedPathSet, modifiedSuffixes)
+
   const searched = useMemo(() => {
-    if (isEntityView) return []
-    if (isChangesView) {
-      const sorted = [...entries.filter((e) => isModifiedEntry(e.path, modifiedPathSet, modifiedSuffixes))].sort(getSortComparator(listSort, listDirection))
-      return filterByQuery(sorted, query)
-    }
-    const sorted = [...filterEntries(entries, selection)].sort(getSortComparator(listSort, listDirection))
+    const sorted = [...filteredEntries].sort(getSortComparator(listSort, listDirection))
     return filterByQuery(sorted, query)
-  }, [entries, selection, isEntityView, isChangesView, listSort, listDirection, query, modifiedPathSet, modifiedSuffixes])
+  }, [filteredEntries, listSort, listDirection, query])
 
   const searchedGroups = useMemo(() => {
     if (!isEntityView) return []
@@ -272,7 +279,7 @@ function useNoteListData({ entries, selection, allContent, query, listSort, list
     [isTrashView, searched],
   )
 
-  return { isEntityView, isTrashView, isChangesView, typeDocument, searched, searchedGroups, expiredTrashCount }
+  return { isEntityView, isTrashView, typeDocument, searched, searchedGroups, expiredTrashCount }
 }
 
 // --- Main component ---
@@ -315,9 +322,18 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
   const typeEntryMap = useTypeEntryMap(entries)
   const query = search.trim().toLowerCase()
   const listConfig = sortPrefs['__list__'] ?? { option: 'modified' as SortOption, direction: 'desc' as SortDirection }
-  const listSort = listConfig.option
-  const listDirection = listConfig.direction
-  const { isEntityView, isTrashView, isChangesView, typeDocument, searched, searchedGroups, expiredTrashCount } = useNoteListData({ entries, selection, allContent, query, listSort, listDirection, modifiedPathSet, modifiedSuffixes })
+
+  // Compute custom properties and derive effective sort before sorting entries
+  const filteredEntries = useFilteredEntries(entries, selection, modifiedPathSet, modifiedSuffixes)
+  const customProperties = useMemo(() => extractSortableProperties(filteredEntries), [filteredEntries])
+  const listSort = useMemo<SortOption>(() => {
+    const opt = listConfig.option
+    if (!opt.startsWith('property:')) return opt
+    return customProperties.includes(opt.slice('property:'.length)) ? opt : 'modified'
+  }, [listConfig.option, customProperties])
+  const listDirection = listSort === listConfig.option ? listConfig.direction : 'desc'
+  const { isEntityView, isTrashView, typeDocument, searched, searchedGroups, expiredTrashCount } = useNoteListData({ entries, selection, allContent, query, listSort, listDirection, modifiedPathSet, modifiedSuffixes })
+  const isChangesView = selection.kind === 'filter' && selection.filter === 'changes'
 
   const noteListKeyboard = useNoteListKeyboard({
     items: searched,
@@ -395,7 +411,7 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
           {resolveHeaderTitle(selection, typeDocument)}
         </h3>
         <div className="flex items-center gap-3" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-          {!isEntityView && <SortDropdown groupLabel="__list__" current={listSort} direction={listDirection} onChange={handleSortChange} />}
+          {!isEntityView && <SortDropdown groupLabel="__list__" current={listSort} direction={listDirection} customProperties={customProperties} onChange={handleSortChange} />}
           <button className="flex items-center text-muted-foreground transition-colors hover:text-foreground" onClick={() => { setSearchVisible(!searchVisible); if (searchVisible) setSearch('') }} title="Search notes">
             <MagnifyingGlass size={16} />
           </button>

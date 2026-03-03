@@ -75,6 +75,10 @@ pub struct VaultEntry {
     /// Extracted from `[[target]]` and `[[target|display]]` patterns.
     #[serde(rename = "outgoingLinks", default)]
     pub outgoing_links: Vec<String>,
+    /// Custom scalar frontmatter properties (non-relationship, non-structural).
+    /// Only includes strings, numbers, and booleans — arrays/objects are excluded.
+    #[serde(default)]
+    pub properties: HashMap<String, serde_json::Value>,
 }
 
 /// Intermediate struct to capture YAML frontmatter fields.
@@ -200,6 +204,45 @@ fn extract_relationships(
     relationships
 }
 
+/// Additional keys to skip when extracting custom properties.
+/// These are already first-class fields on VaultEntry, so including them
+/// in `properties` would duplicate information.
+const PROPERTY_EXTRA_SKIP: &[&str] = &["belongs to", "related to", "owner"];
+
+/// Extract custom scalar properties from raw YAML frontmatter.
+/// Captures string, number, and boolean values that are not structural fields
+/// and do not contain wikilinks. Arrays and objects are excluded.
+fn extract_properties(
+    data: &HashMap<String, serde_json::Value>,
+) -> HashMap<String, serde_json::Value> {
+    let mut properties = HashMap::new();
+
+    for (key, value) in data {
+        let lower = key.to_ascii_lowercase();
+        if SKIP_KEYS.iter().any(|k| k.eq_ignore_ascii_case(&lower))
+            || PROPERTY_EXTRA_SKIP
+                .iter()
+                .any(|k| k.eq_ignore_ascii_case(&lower))
+        {
+            continue;
+        }
+
+        match value {
+            serde_json::Value::String(s) => {
+                if !contains_wikilink(s) {
+                    properties.insert(key.clone(), value.clone());
+                }
+            }
+            serde_json::Value::Number(_) | serde_json::Value::Bool(_) => {
+                properties.insert(key.clone(), value.clone());
+            }
+            _ => {}
+        }
+    }
+
+    properties
+}
+
 /// Infer entity type from a parent folder name.
 fn infer_type_from_folder(folder: &str) -> String {
     match folder {
@@ -243,19 +286,24 @@ fn parse_created_at(fm: &Frontmatter) -> Option<u64> {
         .or_else(|| fm.created_time.as_ref().and_then(|s| parse_iso_date(s)))
 }
 
-/// Extract frontmatter and relationships from parsed gray_matter data.
+/// Extract frontmatter, relationships, and custom properties from parsed gray_matter data.
 fn extract_fm_and_rels(
     data: Option<gray_matter::Pod>,
-) -> (Frontmatter, HashMap<String, Vec<String>>) {
+) -> (
+    Frontmatter,
+    HashMap<String, Vec<String>>,
+    HashMap<String, serde_json::Value>,
+) {
     let hash = match data {
         Some(gray_matter::Pod::Hash(map)) => map,
-        _ => return (Frontmatter::default(), HashMap::new()),
+        _ => return (Frontmatter::default(), HashMap::new(), HashMap::new()),
     };
     let json_map: HashMap<String, serde_json::Value> =
         hash.into_iter().map(|(k, v)| (k, pod_to_json(v))).collect();
     (
         parse_frontmatter(&json_map),
         extract_relationships(&json_map),
+        extract_properties(&json_map),
     )
 }
 
@@ -282,7 +330,7 @@ pub fn parse_md_file(path: &Path) -> Result<VaultEntry, String> {
 
     let matter = Matter::<YAML>::new();
     let parsed = matter.parse(&content);
-    let (frontmatter, mut relationships) = extract_fm_and_rels(parsed.data);
+    let (frontmatter, mut relationships, properties) = extract_fm_and_rels(parsed.data);
 
     let title = extract_title(&parsed.content, &filename);
     let snippet = extract_snippet(&content);
@@ -341,6 +389,7 @@ pub fn parse_md_file(path: &Path) -> Result<VaultEntry, String> {
         template: frontmatter.template,
         word_count,
         outgoing_links,
+        properties,
     })
 }
 
@@ -1132,6 +1181,94 @@ References:
         let content = "---\ntype: Type\ntemplate: \"## Heading\"\n---\n# Project\n";
         let entry = parse_test_entry(&dir, "type/project.md", content);
         assert!(entry.relationships.get("template").is_none());
+    }
+
+    // --- custom properties tests ---
+
+    #[test]
+    fn test_extract_properties_scalar_values() {
+        let dir = TempDir::new().unwrap();
+        let content = r#"---
+Is A: Project
+Status: Active
+Priority: High
+Rating: 5
+Due date: 2026-06-15
+Reviewed: true
+---
+# Test
+"#;
+        let entry = parse_test_entry(&dir, "project/test.md", content);
+        let expected: HashMap<String, serde_json::Value> = [
+            ("Priority".into(), serde_json::Value::String("High".into())),
+            ("Rating".into(), serde_json::json!(5)),
+            (
+                "Due date".into(),
+                serde_json::Value::String("2026-06-15".into()),
+            ),
+            ("Reviewed".into(), serde_json::Value::Bool(true)),
+        ]
+        .into_iter()
+        .collect();
+        assert_eq!(entry.properties, expected);
+    }
+
+    #[test]
+    fn test_extract_properties_skips_structural_fields() {
+        let dir = TempDir::new().unwrap();
+        let content = r#"---
+Is A: Project
+Status: Active
+Owner: Luca
+Cadence: Weekly
+Archived: false
+Priority: High
+---
+# Test
+"#;
+        let entry = parse_test_entry(&dir, "project/test.md", content);
+        // Only Priority should survive — all others are structural
+        assert_eq!(entry.properties.len(), 1);
+        assert_eq!(
+            entry.properties.get("Priority").and_then(|v| v.as_str()),
+            Some("High")
+        );
+    }
+
+    #[test]
+    fn test_extract_properties_skips_wikilinks() {
+        let dir = TempDir::new().unwrap();
+        let content = r#"---
+Mentor: "[[person/alice]]"
+Company: Acme Corp
+---
+# Test
+"#;
+        let entry = parse_test_entry(&dir, "test.md", content);
+        assert!(entry.properties.get("Mentor").is_none());
+        assert_eq!(
+            entry.properties.get("Company").and_then(|v| v.as_str()),
+            Some("Acme Corp")
+        );
+    }
+
+    #[test]
+    fn test_extract_properties_skips_arrays() {
+        let dir = TempDir::new().unwrap();
+        let content = r#"---
+Tags:
+  - productivity
+  - writing
+Company: Acme Corp
+---
+# Test
+"#;
+        let entry = parse_test_entry(&dir, "test.md", content);
+        assert!(entry.properties.get("Tags").is_none());
+        assert_eq!(
+            entry.properties.get("Company").and_then(|v| v.as_str()),
+            Some("Acme Corp")
+        );
     }
 
     // Frontmatter update/delete tests are in frontmatter.rs

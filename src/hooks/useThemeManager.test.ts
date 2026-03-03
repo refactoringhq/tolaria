@@ -58,6 +58,7 @@ function makeThemeEntry(path: string, title: string): VaultEntry {
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   }
 }
 

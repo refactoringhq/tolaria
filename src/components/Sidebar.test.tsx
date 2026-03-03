@@ -42,6 +42,7 @@ const mockEntries: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/vault/responsibility/grow-newsletter.md',
@@ -69,6 +70,7 @@ const mockEntries: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/vault/experiment/stock-screener.md',
@@ -96,6 +98,7 @@ const mockEntries: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/vault/procedure/weekly-essays.md',
@@ -123,6 +126,7 @@ const mockEntries: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/vault/topic/software-development.md',
@@ -150,6 +154,7 @@ const mockEntries: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/vault/topic/trading.md',
@@ -177,6 +182,7 @@ const mockEntries: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/vault/person/alice.md',
@@ -204,6 +210,7 @@ const mockEntries: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/vault/event/kickoff.md',
@@ -231,6 +238,7 @@ const mockEntries: VaultEntry[] = [
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
 ]
 
@@ -451,6 +459,7 @@ describe('Sidebar', () => {
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
       },
       {
         path: '/vault/type/book.md',
@@ -478,6 +487,7 @@ describe('Sidebar', () => {
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
       },
       {
         path: '/vault/recipe/pasta.md',
@@ -504,6 +514,7 @@ describe('Sidebar', () => {
         order: null,
         template: null,
         outgoingLinks: [],
+        properties: {},
       },
       {
         path: '/vault/book/ddia.md',
@@ -530,6 +541,7 @@ describe('Sidebar', () => {
         order: null,
         template: null,
         outgoingLinks: [],
+        properties: {},
       },
     ]
 
@@ -576,6 +588,7 @@ describe('Sidebar', () => {
           cadence: null, archived: false, trashed: true, trashedAt: 1700000000,
           modifiedAt: 1700000000, createdAt: null, fileSize: 100, snippet: '', wordCount: 0,
           relationships: {}, icon: null, color: null, order: null, sidebarLabel: null, outgoingLinks: [],
+          properties: {},
         },
       ]
       render(<Sidebar entries={entriesWithTrashedOnly} selection={defaultSelection} onSelect={() => {}} />)
@@ -616,6 +629,7 @@ describe('Sidebar', () => {
     sidebarLabel: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
       }
       render(<Sidebar entries={[...mockEntries, projectTypeEntry]} selection={defaultSelection} onSelect={() => {}} />)
       // "Projects" should appear once (the built-in section), not twice
@@ -632,6 +646,7 @@ describe('Sidebar', () => {
           archived: false, trashed: false, trashedAt: null, modifiedAt: 1700000000, createdAt: null,
           fileSize: 200, snippet: '', wordCount: 0, relationships: {},
           icon: null, color: null, order: null, sidebarLabel: 'News', outgoingLinks: [],
+          properties: {},
         },
         {
           path: '/vault/news/breaking.md', filename: 'breaking.md', title: 'Breaking Story', isA: 'News',
@@ -639,6 +654,7 @@ describe('Sidebar', () => {
           archived: false, trashed: false, trashedAt: null, modifiedAt: 1700000000, createdAt: null,
           fileSize: 300, snippet: '', wordCount: 0, relationships: {},
           icon: null, color: null, order: null, sidebarLabel: null, outgoingLinks: [],
+          properties: {},
         },
       ]
       render(<Sidebar entries={entriesWithLabel} selection={defaultSelection} onSelect={() => {}} />)
@@ -656,6 +672,7 @@ describe('Sidebar', () => {
           archived: false, trashed: false, trashedAt: null, modifiedAt: 1700000000, createdAt: null,
           fileSize: 200, snippet: '', wordCount: 0, relationships: {},
           icon: null, color: null, order: null, sidebarLabel: 'Contacts', outgoingLinks: [],
+          properties: {},
         },
       ]
       render(<Sidebar entries={entriesWithBuiltInOverride} selection={defaultSelection} onSelect={() => {}} />)
@@ -776,6 +793,7 @@ describe('Sidebar', () => {
         archived: false, trashed: false, trashedAt: null, modifiedAt: 1700000000, createdAt: null, fileSize: 200, snippet: '',
         wordCount: 0,
         relationships: {}, icon: null, color: null, order: 5, sidebarLabel: null, outgoingLinks: [],
+        properties: {},
       },
       {
         path: '/vault/type/topic.md', filename: 'topic.md', title: 'Topic', isA: 'Type',
@@ -783,6 +801,7 @@ describe('Sidebar', () => {
         archived: false, trashed: false, trashedAt: null, modifiedAt: 1700000000, createdAt: null, fileSize: 200, snippet: '',
         wordCount: 0,
         relationships: {}, icon: null, color: null, order: 0, sidebarLabel: null, outgoingLinks: [],
+        properties: {},
       },
       {
         path: '/vault/type/person.md', filename: 'person.md', title: 'Person', isA: 'Type',
@@ -790,6 +809,7 @@ describe('Sidebar', () => {
         archived: false, trashed: false, trashedAt: null, modifiedAt: 1700000000, createdAt: null, fileSize: 200, snippet: '',
         wordCount: 0,
         relationships: {}, icon: null, color: null, order: 1, sidebarLabel: null, outgoingLinks: [],
+        properties: {},
       },
     ]
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { formatSubtitle, formatSearchSubtitle, relativeDate, buildRelationshipGroups } from './noteListHelpers'
+import { formatSubtitle, formatSearchSubtitle, relativeDate, buildRelationshipGroups, getSortComparator, extractSortableProperties, getSortOptionLabel, getDefaultDirection } from './noteListHelpers'
 import type { VaultEntry } from '../types'
 
 function makeEntry(overrides: Partial<VaultEntry> = {}): VaultEntry {
@@ -323,5 +323,115 @@ describe('buildRelationshipGroups', () => {
     const allContent = { '/Laputa/note/linker.md': 'See [[Alpha]] for details.' }
     const groups = buildRelationshipGroups(entity, [entity, linker], allContent)
     expect(groups.find((g) => g.label === 'Backlinks')!.entries[0].title).toBe('Linker')
+  })
+})
+
+describe('getSortComparator — custom properties', () => {
+  it('sorts by string property alphabetically', () => {
+    const a = makeEntry({ title: 'A', properties: { Priority: 'High' } })
+    const b = makeEntry({ title: 'B', properties: { Priority: 'Low' } })
+    const c = makeEntry({ title: 'C', properties: { Priority: 'Medium' } })
+    const sorted = [a, b, c].sort(getSortComparator('property:Priority'))
+    expect(sorted.map((e) => e.title)).toEqual(['A', 'B', 'C'])
+  })
+
+  it('sorts by numeric property', () => {
+    const a = makeEntry({ title: 'A', properties: { Rating: 3 } })
+    const b = makeEntry({ title: 'B', properties: { Rating: 5 } })
+    const c = makeEntry({ title: 'C', properties: { Rating: 1 } })
+    const sorted = [a, b, c].sort(getSortComparator('property:Rating'))
+    expect(sorted.map((e) => e.title)).toEqual(['C', 'A', 'B'])
+  })
+
+  it('sorts by date property chronologically', () => {
+    const a = makeEntry({ title: 'A', properties: { 'Due date': '2026-06-15' } })
+    const b = makeEntry({ title: 'B', properties: { 'Due date': '2026-01-01' } })
+    const c = makeEntry({ title: 'C', properties: { 'Due date': '2026-03-10' } })
+    const sorted = [a, b, c].sort(getSortComparator('property:Due date'))
+    expect(sorted.map((e) => e.title)).toEqual(['B', 'C', 'A'])
+  })
+
+  it('pushes null values to end regardless of direction', () => {
+    const a = makeEntry({ title: 'A', properties: { Priority: 'High' } })
+    const b = makeEntry({ title: 'B', properties: {} })
+    const c = makeEntry({ title: 'C', properties: { Priority: 'Low' } })
+    const ascSorted = [a, b, c].sort(getSortComparator('property:Priority', 'asc'))
+    expect(ascSorted.map((e) => e.title)).toEqual(['A', 'C', 'B'])
+    const descSorted = [a, b, c].sort(getSortComparator('property:Priority', 'desc'))
+    expect(descSorted.map((e) => e.title)).toEqual(['C', 'A', 'B'])
+  })
+
+  it('sorts descending when direction is desc', () => {
+    const a = makeEntry({ title: 'A', properties: { Rating: 3 } })
+    const b = makeEntry({ title: 'B', properties: { Rating: 5 } })
+    const c = makeEntry({ title: 'C', properties: { Rating: 1 } })
+    const sorted = [a, b, c].sort(getSortComparator('property:Rating', 'desc'))
+    expect(sorted.map((e) => e.title)).toEqual(['B', 'A', 'C'])
+  })
+
+  it('handles entries with no properties field gracefully', () => {
+    const a = makeEntry({ title: 'A', properties: { Priority: 'High' } })
+    const b = makeEntry({ title: 'B', properties: {} })
+    const sorted = [a, b].sort(getSortComparator('property:Priority'))
+    expect(sorted.map((e) => e.title)).toEqual(['A', 'B'])
+  })
+
+  it('handles boolean property sorting', () => {
+    const a = makeEntry({ title: 'A', properties: { Reviewed: true } })
+    const b = makeEntry({ title: 'B', properties: { Reviewed: false } })
+    const sorted = [a, b].sort(getSortComparator('property:Reviewed'))
+    expect(sorted.map((e) => e.title)).toEqual(['B', 'A'])
+  })
+})
+
+describe('extractSortableProperties', () => {
+  it('returns union of all property keys across entries', () => {
+    const entries = [
+      makeEntry({ properties: { Priority: 'High', Rating: 5 } }),
+      makeEntry({ properties: { Priority: 'Low', Company: 'Acme' } }),
+    ]
+    expect(extractSortableProperties(entries)).toEqual(['Company', 'Priority', 'Rating'])
+  })
+
+  it('returns empty array for entries without properties', () => {
+    const entries = [makeEntry(), makeEntry()]
+    expect(extractSortableProperties(entries)).toEqual([])
+  })
+
+  it('returns empty array for empty entry list', () => {
+    expect(extractSortableProperties([])).toEqual([])
+  })
+
+  it('deduplicates property keys', () => {
+    const entries = [
+      makeEntry({ properties: { Priority: 'High' } }),
+      makeEntry({ properties: { Priority: 'Low' } }),
+    ]
+    expect(extractSortableProperties(entries)).toEqual(['Priority'])
+  })
+})
+
+describe('getSortOptionLabel', () => {
+  it('returns label for built-in options', () => {
+    expect(getSortOptionLabel('modified')).toBe('Modified')
+    expect(getSortOptionLabel('title')).toBe('Title')
+  })
+
+  it('returns property key for custom properties', () => {
+    expect(getSortOptionLabel('property:Priority')).toBe('Priority')
+    expect(getSortOptionLabel('property:Due date')).toBe('Due date')
+  })
+})
+
+describe('getDefaultDirection', () => {
+  it('returns desc for time-based sorts', () => {
+    expect(getDefaultDirection('modified')).toBe('desc')
+    expect(getDefaultDirection('created')).toBe('desc')
+  })
+
+  it('returns asc for other sorts', () => {
+    expect(getDefaultDirection('title')).toBe('asc')
+    expect(getDefaultDirection('status')).toBe('asc')
+    expect(getDefaultDirection('property:Priority')).toBe('asc')
   })
 })

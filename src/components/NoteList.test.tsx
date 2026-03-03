@@ -36,6 +36,7 @@ const mockEntries: VaultEntry[] = [
     order: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/note/facebook-ads-strategy.md',
@@ -65,6 +66,7 @@ const mockEntries: VaultEntry[] = [
     order: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/person/matteo-cellini.md',
@@ -91,6 +93,7 @@ const mockEntries: VaultEntry[] = [
     order: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/event/2026-02-14-kickoff.md',
@@ -117,6 +120,7 @@ const mockEntries: VaultEntry[] = [
     order: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
   {
     path: '/Users/luca/Laputa/topic/software-development.md',
@@ -143,6 +147,7 @@ const mockEntries: VaultEntry[] = [
     order: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
   },
 ]
 
@@ -364,6 +369,7 @@ describe('getSortComparator', () => {
     order: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
     ...overrides,
   })
 
@@ -477,6 +483,7 @@ describe('NoteList sort controls', () => {
     order: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
     ...overrides,
   })
 
@@ -643,6 +650,68 @@ describe('NoteList sort controls', () => {
     titles = screen.getAllByText(/Zebra Note|Alpha Note/).map((el) => el.textContent)
     expect(titles).toEqual(['Alpha Note', 'Zebra Note'])
   })
+
+  it('shows custom properties with separator in sort dropdown', () => {
+    const entries = [
+      makeEntry({ path: '/a.md', title: 'A', properties: { Priority: 'High', Rating: 5 } }),
+      makeEntry({ path: '/b.md', title: 'B', properties: { Priority: 'Low', Company: 'Acme' } }),
+    ]
+    render(
+      <NoteList entries={entries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
+    )
+    fireEvent.click(screen.getByTestId('sort-button-__list__'))
+    expect(screen.getByTestId('sort-separator')).toBeInTheDocument()
+    expect(screen.getByTestId('sort-option-property:Company')).toBeInTheDocument()
+    expect(screen.getByTestId('sort-option-property:Priority')).toBeInTheDocument()
+    expect(screen.getByTestId('sort-option-property:Rating')).toBeInTheDocument()
+  })
+
+  it('omits separator when no custom properties exist', () => {
+    render(
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
+    )
+    fireEvent.click(screen.getByTestId('sort-button-__list__'))
+    expect(screen.queryByTestId('sort-separator')).not.toBeInTheDocument()
+  })
+
+  it('sorts entries by custom property when selected', () => {
+    const entries = [
+      makeEntry({ path: '/a.md', title: 'A', modifiedAt: 3000, properties: { Rating: 3 } }),
+      makeEntry({ path: '/b.md', title: 'B', modifiedAt: 2000, properties: { Rating: 1 } }),
+      makeEntry({ path: '/c.md', title: 'C', modifiedAt: 1000, properties: { Rating: 5 } }),
+    ]
+    render(
+      <NoteList entries={entries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
+    )
+    // Default: modified desc → A, B, C
+    let titles = screen.getAllByText(/^[ABC]$/).map((el) => el.textContent)
+    expect(titles).toEqual(['A', 'B', 'C'])
+
+    // Switch to Rating sort (asc by default for properties)
+    fireEvent.click(screen.getByTestId('sort-button-__list__'))
+    fireEvent.click(screen.getByTestId('sort-option-property:Rating'))
+
+    // Rating asc: B(1), A(3), C(5)
+    titles = screen.getAllByText(/^[ABC]$/).map((el) => el.textContent)
+    expect(titles).toEqual(['B', 'A', 'C'])
+  })
+
+  it('pushes entries without the property to end when sorting by custom property', () => {
+    const entries = [
+      makeEntry({ path: '/a.md', title: 'A', modifiedAt: 3000, properties: { Priority: 'High' } }),
+      makeEntry({ path: '/b.md', title: 'B', modifiedAt: 2000, properties: {} }),
+      makeEntry({ path: '/c.md', title: 'C', modifiedAt: 1000, properties: { Priority: 'Low' } }),
+    ]
+    render(
+      <NoteList entries={entries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
+    )
+    fireEvent.click(screen.getByTestId('sort-button-__list__'))
+    fireEvent.click(screen.getByTestId('sort-option-property:Priority'))
+
+    // Asc: A(High), C(Low), B(null → end)
+    const titles = screen.getAllByText(/^[ABC]$/).map((el) => el.textContent)
+    expect(titles).toEqual(['A', 'C', 'B'])
+  })
 })
 
 // --- Trash feature tests ---
@@ -672,6 +741,7 @@ const trashedEntry: VaultEntry = {
   order: null,
   template: null,
   outgoingLinks: [],
+  properties: {},
 }
 
 const expiredTrashedEntry: VaultEntry = {
@@ -699,6 +769,7 @@ const expiredTrashedEntry: VaultEntry = {
   order: null,
   template: null,
   outgoingLinks: [],
+  properties: {},
 }
 
 const entriesWithTrashed = [...mockEntries, trashedEntry, expiredTrashedEntry]
@@ -855,6 +926,7 @@ describe('NoteList — virtual list with large datasets', () => {
     order: null,
     template: null,
     outgoingLinks: [],
+    properties: {},
     ...overrides,
   })
 
@@ -1184,6 +1256,7 @@ const typeEntry: VaultEntry = {
   order: null,
   template: null,
   outgoingLinks: [],
+  properties: {},
 }
 
 const entriesWithType = [...mockEntries, typeEntry]
