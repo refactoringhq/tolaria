@@ -418,7 +418,10 @@ mod tests {
 
     #[test]
     fn extract_first_number_works() {
-        assert_eq!(extract_first_number("Total: 9078 files indexed"), Some(9078));
+        assert_eq!(
+            extract_first_number("Total: 9078 files indexed"),
+            Some(9078)
+        );
         assert_eq!(extract_first_number("Vectors: 14676 embedded"), Some(14676));
         assert_eq!(extract_first_number("no numbers here"), None);
     }
@@ -472,10 +475,7 @@ Collections
             extract_count_from_line("Files:    9078 (updated 20d ago)", "Files:"),
             Some(9078)
         );
-        assert_eq!(
-            extract_count_from_line("Pattern:  **/*.md", "Files:"),
-            None
-        );
+        assert_eq!(extract_count_from_line("Pattern:  **/*.md", "Files:"), None);
     }
 
     #[test]
