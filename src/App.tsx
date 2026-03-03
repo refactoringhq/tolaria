@@ -17,7 +17,6 @@ import { useMcpRegistration } from './hooks/useMcpRegistration'
 import { useVaultLoader } from './hooks/useVaultLoader'
 import { useSettings } from './hooks/useSettings'
 import { useNoteActions } from './hooks/useNoteActions'
-import { useEditorSave } from './hooks/useEditorSave'
 import { useCommitFlow } from './hooks/useCommitFlow'
 import { useViewMode } from './hooks/useViewMode'
 import { useEntryActions } from './hooks/useEntryActions'
@@ -34,11 +33,12 @@ import { useZoom } from './hooks/useZoom'
 import { useBuildNumber } from './hooks/useBuildNumber'
 import { useOnboarding } from './hooks/useOnboarding'
 import { useThemeManager } from './hooks/useThemeManager'
+import { useEditorSaveWithLinks } from './hooks/useEditorSaveWithLinks'
+import { useNavigationGestures } from './hooks/useNavigationGestures'
 import { ConflictResolverModal } from './components/ConflictResolverModal'
 import { UpdateBanner } from './components/UpdateBanner'
 import { invoke } from '@tauri-apps/api/core'
 import { isTauri, mockInvoke } from './mock-tauri'
-import { extractOutgoingLinks } from './utils/wikilinks'
 import type { SidebarSelection } from './types'
 import './App.css'
 
@@ -80,34 +80,6 @@ function useLayoutPanels() {
 }
 
 /** Wraps useEditorSave to also keep outgoingLinks in sync on save and on content change. */
-function useEditorSaveWithLinks(config: {
-  updateContent: (path: string, content: string) => void
-  updateEntry: (path: string, patch: Partial<import('./types').VaultEntry>) => void
-  setTabs: Parameters<typeof useEditorSave>[0]['setTabs']
-  setToastMessage: (msg: string | null) => void
-  onAfterSave: () => void
-  onNotePersisted?: (path: string) => void
-}) {
-  const { updateContent, updateEntry } = config
-  const saveContent = useCallback((path: string, content: string) => {
-    updateContent(path, content)
-    updateEntry(path, { outgoingLinks: extractOutgoingLinks(content) })
-  }, [updateContent, updateEntry])
-  const editor = useEditorSave({ updateVaultContent: saveContent, setTabs: config.setTabs, setToastMessage: config.setToastMessage, onAfterSave: config.onAfterSave, onNotePersisted: config.onNotePersisted })
-  const { handleContentChange: rawOnChange } = editor
-  const prevLinksKeyRef = useRef('')
-  const handleContentChange = useCallback((path: string, content: string) => {
-    rawOnChange(path, content)
-    const links = extractOutgoingLinks(content)
-    const key = links.join('\0')
-    if (key !== prevLinksKeyRef.current) {
-      prevLinksKeyRef.current = key
-      updateEntry(path, { outgoingLinks: links })
-    }
-  }, [rawOnChange, updateEntry])
-  return { ...editor, handleContentChange }
-}
-
 function App() {
   const [selection, setSelection] = useState<SidebarSelection>(DEFAULT_SELECTION)
   const layout = useLayoutPanels()
@@ -217,45 +189,7 @@ function App() {
     }
   }, [navHistory, isEntryExists, vault.entries, notes])
 
-  // Mouse button 3/4 (back/forward) and macOS trackpad two-finger swipe
-  useEffect(() => {
-    const handleMouseBack = (e: MouseEvent) => {
-      if (e.button === 3) { e.preventDefault(); handleGoBack() }
-      if (e.button === 4) { e.preventDefault(); handleGoForward() }
-    }
-    window.addEventListener('mouseup', handleMouseBack)
-
-    // Trackpad swipe: accumulate horizontal wheel delta and trigger on threshold
-    let accumulatedDeltaX = 0
-    let resetTimer: ReturnType<typeof setTimeout> | null = null
-    const SWIPE_THRESHOLD = 120
-
-    const handleWheel = (e: WheelEvent) => {
-      // Only handle horizontal-dominant gestures (trackpad swipe)
-      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return
-      if (e.ctrlKey || e.metaKey) return // ignore pinch-zoom
-
-      accumulatedDeltaX += e.deltaX
-
-      if (resetTimer) clearTimeout(resetTimer)
-      resetTimer = setTimeout(() => { accumulatedDeltaX = 0 }, 300)
-
-      if (accumulatedDeltaX > SWIPE_THRESHOLD) {
-        accumulatedDeltaX = 0
-        handleGoForward()
-      } else if (accumulatedDeltaX < -SWIPE_THRESHOLD) {
-        accumulatedDeltaX = 0
-        handleGoBack()
-      }
-    }
-    window.addEventListener('wheel', handleWheel, { passive: true })
-
-    return () => {
-      window.removeEventListener('mouseup', handleMouseBack)
-      window.removeEventListener('wheel', handleWheel)
-      if (resetTimer) clearTimeout(resetTimer)
-    }
-  }, [handleGoBack, handleGoForward])
+  useNavigationGestures({ onGoBack: handleGoBack, onGoForward: handleGoForward })
 
   const { triggerIncrementalIndex } = indexing
   const onAfterSave = useCallback(() => {
