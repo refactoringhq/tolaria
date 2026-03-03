@@ -163,11 +163,7 @@ mod tests {
         let dir = tempfile::TempDir::new().unwrap();
         let path = dir.path().join("legacy.json");
         // Simulate old format without hidden_defaults field
-        fs::write(
-            &path,
-            r#"{"vaults":[],"active_vault":null}"#,
-        )
-        .unwrap();
+        fs::write(&path, r#"{"vaults":[],"active_vault":null}"#).unwrap();
         let loaded = load_at(&path).unwrap();
         assert!(loaded.hidden_defaults.is_empty());
     }
