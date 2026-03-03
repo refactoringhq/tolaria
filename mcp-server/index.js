@@ -32,10 +32,16 @@ import { startUiBridge } from './ws-bridge.js'
 const VAULT_PATH = process.env.VAULT_PATH || process.env.HOME + '/Laputa'
 const WS_UI_PORT = parseInt(process.env.WS_UI_PORT || '9711', 10)
 
-// Start the UI bridge so stdio-based MCP tools can broadcast UI actions
-const uiBridge = startUiBridge(WS_UI_PORT)
+// Start the UI bridge so stdio-based MCP tools can broadcast UI actions.
+// If the port is already in use (e.g. by the running Laputa app), continue
+// without the bridge — vault tools still work via stdio MCP.
+let uiBridge = null
+startUiBridge(WS_UI_PORT).then((bridge) => {
+  uiBridge = bridge
+})
 
 function broadcastUiAction(action, payload) {
+  if (!uiBridge) return
   const msg = JSON.stringify({ type: 'ui_action', action, ...payload })
   for (const client of uiBridge.clients) {
     if (client.readyState === 1) client.send(msg)

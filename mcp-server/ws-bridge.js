@@ -19,6 +19,7 @@
  * Protocol (UI bridge):
  *   Server broadcasts: { "type": "ui_action", "action": "open_note", "path": "..." }
  */
+import { createServer } from 'node:http'
 import { WebSocketServer } from 'ws'
 import {
   readNote, createNote, searchNotes, appendToNote,
@@ -80,15 +81,34 @@ async function handleMessage(data) {
   }
 }
 
+/**
+ * Attempt to start the UI bridge WebSocket server.
+ * Returns a Promise that resolves to the WebSocketServer or null if the port
+ * is unavailable (e.g. another Laputa instance owns it).
+ */
 export function startUiBridge(port = WS_UI_PORT) {
-  uiBridge = new WebSocketServer({ port })
+  return new Promise((resolve) => {
+    const httpServer = createServer()
 
-  uiBridge.on('connection', () => {
-    console.error(`[ws-bridge] UI client connected on port ${port}`)
+    httpServer.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`[ws-bridge] UI bridge port ${port} already in use, disabling bridge`)
+      } else {
+        console.error(`[ws-bridge] UI bridge error: ${err.message}`)
+      }
+      resolve(null)
+    })
+
+    httpServer.listen(port, () => {
+      const wss = new WebSocketServer({ server: httpServer })
+      wss.on('connection', () => {
+        console.error(`[ws-bridge] UI client connected on port ${port}`)
+      })
+      uiBridge = wss
+      console.error(`[ws-bridge] UI bridge listening on ws://localhost:${port}`)
+      resolve(wss)
+    })
   })
-
-  console.error(`[ws-bridge] UI bridge listening on ws://localhost:${port}`)
-  return uiBridge
 }
 
 export function startBridge(port = WS_PORT) {
@@ -116,6 +136,5 @@ export function startBridge(port = WS_PORT) {
 // Run directly if invoked as main module
 const isMain = process.argv[1]?.endsWith('ws-bridge.js')
 if (isMain) {
-  startUiBridge()
-  startBridge()
+  startUiBridge().then(() => startBridge())
 }
