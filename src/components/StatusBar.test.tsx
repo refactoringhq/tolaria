@@ -265,17 +265,46 @@ describe('StatusBar', () => {
     expect(screen.getByText('Index ready')).toBeInTheDocument()
   })
 
-  it('shows error state in indexing badge', () => {
+  it('shows error state in indexing badge with retry label', () => {
     render(
       <StatusBar
         noteCount={100}
         vaultPath="/Users/luca/Laputa"
         vaults={vaults}
         onSwitchVault={vi.fn()}
-        indexingProgress={{ phase: 'error', current: 0, total: 0, done: true, error: 'qmd not available' }}
+        indexingProgress={{ phase: 'error', current: 0, total: 0, done: true, error: 'qmd update failed' }}
       />
     )
-    expect(screen.getByText('Index error')).toBeInTheDocument()
+    expect(screen.getByText('Index failed — retry')).toBeInTheDocument()
+  })
+
+  it('hides indexing badge when phase is unavailable', () => {
+    render(
+      <StatusBar
+        noteCount={100}
+        vaultPath="/Users/luca/Laputa"
+        vaults={vaults}
+        onSwitchVault={vi.fn()}
+        indexingProgress={{ phase: 'unavailable', current: 0, total: 0, done: true, error: 'qmd not available' }}
+      />
+    )
+    expect(screen.queryByTestId('status-indexing')).not.toBeInTheDocument()
+  })
+
+  it('calls onRetryIndexing when clicking error badge', () => {
+    const onRetryIndexing = vi.fn()
+    render(
+      <StatusBar
+        noteCount={100}
+        vaultPath="/Users/luca/Laputa"
+        vaults={vaults}
+        onSwitchVault={vi.fn()}
+        indexingProgress={{ phase: 'error', current: 0, total: 0, done: true, error: 'qmd update failed' }}
+        onRetryIndexing={onRetryIndexing}
+      />
+    )
+    fireEvent.click(screen.getByTestId('status-indexing'))
+    expect(onRetryIndexing).toHaveBeenCalledOnce()
   })
 
   it('hides indexing badge when phase is idle', () => {

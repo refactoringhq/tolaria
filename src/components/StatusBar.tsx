@@ -32,6 +32,7 @@ interface StatusBarProps {
   buildNumber?: string
   onCheckForUpdates?: () => void
   indexingProgress?: IndexingProgress
+  onRetryIndexing?: () => void
   onRemoveVault?: (path: string) => void
 }
 
@@ -237,23 +238,31 @@ const INDEXING_LABELS: Record<string, string> = {
   scanning: 'Indexing…',
   embedding: 'Embedding…',
   complete: 'Index ready',
-  error: 'Index error',
+  error: 'Index failed — retry',
+  unavailable: 'Search unavailable',
 }
 
-function IndexingBadge({ progress }: { progress: IndexingProgress }) {
-  if (progress.phase === 'idle') return null
+function IndexingBadge({ progress, onRetry }: { progress: IndexingProgress; onRetry?: () => void }) {
+  if (progress.phase === 'idle' || progress.phase === 'unavailable') return null
   const label = INDEXING_LABELS[progress.phase] ?? progress.phase
   const isActive = !progress.done
+  const isError = progress.phase === 'error'
   const showCount = progress.total > 0 && isActive
   const displayText = showCount
     ? `${label} ${progress.current.toLocaleString()}/${progress.total.toLocaleString()}`
     : label
-  const color = progress.phase === 'error' ? 'var(--accent-orange)' : 'var(--accent-blue, #3b82f6)'
+  const color = isError ? 'var(--accent-orange)' : 'var(--accent-blue, #3b82f6)'
 
   return (
     <>
       <span style={SEP_STYLE}>|</span>
-      <span style={{ ...ICON_STYLE, color }} data-testid="status-indexing">
+      <span
+        role={isError && onRetry ? 'button' : undefined}
+        onClick={isError && onRetry ? onRetry : undefined}
+        style={{ ...ICON_STYLE, color, cursor: isError && onRetry ? 'pointer' : 'default' }}
+        title={isError ? 'Click to retry indexing' : undefined}
+        data-testid="status-indexing"
+      >
         {isActive
           ? <Loader2 size={13} className="animate-spin" />
           : <Search size={13} />
@@ -282,7 +291,7 @@ function PendingBadge({ count, onClick }: { count: number; onClick?: () => void 
   )
 }
 
-export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onSwitchVault, onOpenSettings, onOpenLocalFolder, onConnectGitHub, onClickPending, hasGitHub, syncStatus = 'idle', lastSyncTime = null, conflictCount = 0, lastCommitInfo, onTriggerSync, onOpenConflictResolver, zoomLevel = 100, onZoomReset, buildNumber, onCheckForUpdates, indexingProgress, onRemoveVault }: StatusBarProps) {
+export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onSwitchVault, onOpenSettings, onOpenLocalFolder, onConnectGitHub, onClickPending, hasGitHub, syncStatus = 'idle', lastSyncTime = null, conflictCount = 0, lastCommitInfo, onTriggerSync, onOpenConflictResolver, zoomLevel = 100, onZoomReset, buildNumber, onCheckForUpdates, indexingProgress, onRetryIndexing, onRemoveVault }: StatusBarProps) {
   const [, setTick] = useState(0)
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 30_000)
@@ -308,7 +317,7 @@ export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onS
         {lastCommitInfo && <CommitBadge info={lastCommitInfo} />}
         <ConflictBadge count={conflictCount} onClick={onOpenConflictResolver} />
         <PendingBadge count={modifiedCount} onClick={onClickPending} />
-        {indexingProgress && <IndexingBadge progress={indexingProgress} />}
+        {indexingProgress && <IndexingBadge progress={indexingProgress} onRetry={onRetryIndexing} />}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <span style={ICON_STYLE}><FileText size={13} />{noteCount.toLocaleString()} notes</span>

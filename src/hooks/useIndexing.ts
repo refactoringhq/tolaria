@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { isTauri, mockInvoke } from '../mock-tauri'
 
 export interface IndexingProgress {
-  phase: 'idle' | 'installing' | 'scanning' | 'embedding' | 'complete' | 'error'
+  phase: 'idle' | 'installing' | 'scanning' | 'embedding' | 'complete' | 'error' | 'unavailable'
   current: number
   total: number
   done: boolean
@@ -74,16 +74,17 @@ export function useIndexing(vaultPath: string) {
           })
           // Fire and forget — progress updates come via events
           invokeCmd('start_indexing', { vaultPath }).catch((err) => {
-            if (!cancelled) {
-              setProgress({
-                phase: 'error',
-                current: 0,
-                total: 0,
-                done: true,
-                error: String(err),
-              })
-              indexingRef.current = false
-            }
+            if (cancelled) return
+            const msg = String(err)
+            const isUnavailable = msg.includes('not installed') || msg.includes('not available')
+            setProgress({
+              phase: isUnavailable ? 'unavailable' : 'error',
+              current: 0,
+              total: 0,
+              done: true,
+              error: msg,
+            })
+            indexingRef.current = false
           })
         }
       } catch {
@@ -95,10 +96,18 @@ export function useIndexing(vaultPath: string) {
     return () => { cancelled = true }
   }, [vaultPath])
 
-  // Auto-dismiss the "complete" status after 5 seconds
+  // Auto-dismiss transient statuses after a delay
   useEffect(() => {
     if (progress.phase === 'complete') {
       const timer = setTimeout(() => setProgress(IDLE), 5000)
+      return () => clearTimeout(timer)
+    }
+    if (progress.phase === 'unavailable') {
+      const timer = setTimeout(() => setProgress(IDLE), 8000)
+      return () => clearTimeout(timer)
+    }
+    if (progress.phase === 'error') {
+      const timer = setTimeout(() => setProgress(IDLE), 15000)
       return () => clearTimeout(timer)
     }
   }, [progress.phase])
@@ -112,5 +121,20 @@ export function useIndexing(vaultPath: string) {
     }
   }, [])
 
-  return { progress, triggerIncrementalIndex }
+  const retryIndexing = useCallback(async () => {
+    if (indexingRef.current || !vaultPathRef.current) return
+    indexingRef.current = true
+    setProgress({ phase: 'scanning', current: 0, total: 0, done: false, error: null })
+    try {
+      await invokeCmd('start_indexing', { vaultPath: vaultPathRef.current })
+    } catch (err) {
+      const msg = String(err)
+      const isUnavailable = msg.includes('not installed') || msg.includes('not available')
+      setProgress({ phase: isUnavailable ? 'unavailable' : 'error', current: 0, total: 0, done: true, error: msg })
+    } finally {
+      indexingRef.current = false
+    }
+  }, [])
+
+  return { progress, triggerIncrementalIndex, retryIndexing }
 }

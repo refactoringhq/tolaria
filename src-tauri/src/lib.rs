@@ -391,11 +391,11 @@ async fn start_indexing(app_handle: tauri::AppHandle, vault_path: String) -> Res
             match indexing::auto_install_qmd() {
                 Ok(_) => log::info!("qmd auto-installed successfully"),
                 Err(e) => {
-                    log::warn!("qmd auto-install failed: {e}");
+                    log::info!("qmd not available (search disabled): {e}");
                     let _ = app_handle.emit(
                         "indexing-progress",
                         IndexingProgress {
-                            phase: "error".to_string(),
+                            phase: "unavailable".to_string(),
                             current: 0,
                             total: 0,
                             done: true,

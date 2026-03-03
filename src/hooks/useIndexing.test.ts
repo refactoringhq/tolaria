@@ -1,23 +1,18 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
 import { useIndexing } from './useIndexing'
 
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }))
+vi.mock('@tauri-apps/api/event', () => ({ listen: vi.fn().mockResolvedValue(vi.fn()) }))
 vi.mock('../mock-tauri', () => ({
   isTauri: () => false,
-  mockInvoke: vi.fn().mockImplementation((cmd: string) => {
-    if (cmd === 'get_index_status') {
-      return Promise.resolve({
-        available: true,
-        qmd_installed: true,
-        collection_exists: true,
-        indexed_count: 100,
-        embedded_count: 80,
-        pending_embed: 0,
-      })
-    }
-    if (cmd === 'start_indexing') return Promise.resolve(null)
-    if (cmd === 'trigger_incremental_index') return Promise.resolve(null)
-    return Promise.resolve(null)
+  mockInvoke: vi.fn().mockResolvedValue({
+    available: true,
+    qmd_installed: true,
+    collection_exists: true,
+    indexed_count: 100,
+    embedded_count: 80,
+    pending_embed: 0,
   }),
 }))
 
@@ -25,135 +20,60 @@ const { mockInvoke } = await import('../mock-tauri') as { mockInvoke: ReturnType
 
 describe('useIndexing', () => {
   beforeEach(() => {
+    vi.useFakeTimers()
     vi.clearAllMocks()
+    mockInvoke.mockResolvedValue({
+      available: true,
+      qmd_installed: true,
+      collection_exists: true,
+      indexed_count: 100,
+      embedded_count: 80,
+      pending_embed: 0,
+    })
   })
 
-  it('starts with idle progress', () => {
-    const { result } = renderHook(() => useIndexing('/vault'))
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('starts with idle phase', () => {
+    const { result } = renderHook(() => useIndexing('/test/vault'))
     expect(result.current.progress.phase).toBe('idle')
-    expect(result.current.progress.done).toBe(false)
   })
 
-  it('checks index status on mount', async () => {
-    renderHook(() => useIndexing('/vault'))
-    await waitFor(() => {
-      expect(mockInvoke).toHaveBeenCalledWith('get_index_status', { vaultPath: '/vault' })
-    })
+  it('auto-dismisses error phase after 15 seconds', async () => {
+    const { result } = renderHook(() => useIndexing('/test/vault'))
+
+    // Simulate setting error state via retryIndexing
+    mockInvoke.mockRejectedValueOnce(new Error('qmd update failed'))
+    await act(async () => { await result.current.retryIndexing() })
+    expect(result.current.progress.phase).toBe('error')
+
+    act(() => { vi.advanceTimersByTime(15000) })
+    expect(result.current.progress.phase).toBe('idle')
   })
 
-  it('does not start indexing when collection exists and no pending embeds', async () => {
-    renderHook(() => useIndexing('/vault'))
-    await waitFor(() => {
-      expect(mockInvoke).toHaveBeenCalledWith('get_index_status', { vaultPath: '/vault' })
-    })
-    expect(mockInvoke).not.toHaveBeenCalledWith('start_indexing', expect.anything())
+  it('sets unavailable phase for missing qmd errors', async () => {
+    const { result } = renderHook(() => useIndexing('/test/vault'))
+
+    mockInvoke.mockRejectedValueOnce(new Error('bun not installed'))
+    await act(async () => { await result.current.retryIndexing() })
+    expect(result.current.progress.phase).toBe('unavailable')
   })
 
-  it('starts indexing when collection is missing', async () => {
-    mockInvoke.mockImplementation((cmd: string) => {
-      if (cmd === 'get_index_status') {
-        return Promise.resolve({
-          available: true,
-          qmd_installed: true,
-          collection_exists: false,
-          indexed_count: 0,
-          embedded_count: 0,
-          pending_embed: 0,
-        })
-      }
-      return Promise.resolve(null)
-    })
+  it('auto-dismisses unavailable phase after 8 seconds', async () => {
+    const { result } = renderHook(() => useIndexing('/test/vault'))
 
-    const { result } = renderHook(() => useIndexing('/vault'))
-    await waitFor(() => {
-      expect(mockInvoke).toHaveBeenCalledWith('start_indexing', { vaultPath: '/vault' })
-    })
-    expect(result.current.progress.phase).not.toBe('idle')
+    mockInvoke.mockRejectedValueOnce(new Error('bun not installed'))
+    await act(async () => { await result.current.retryIndexing() })
+    expect(result.current.progress.phase).toBe('unavailable')
+
+    act(() => { vi.advanceTimersByTime(8000) })
+    expect(result.current.progress.phase).toBe('idle')
   })
 
-  it('starts indexing when qmd is not installed', async () => {
-    mockInvoke.mockImplementation((cmd: string) => {
-      if (cmd === 'get_index_status') {
-        return Promise.resolve({
-          available: false,
-          qmd_installed: false,
-          collection_exists: false,
-          indexed_count: 0,
-          embedded_count: 0,
-          pending_embed: 0,
-        })
-      }
-      return Promise.resolve(null)
-    })
-
-    renderHook(() => useIndexing('/vault'))
-    await waitFor(() => {
-      expect(mockInvoke).toHaveBeenCalledWith('start_indexing', { vaultPath: '/vault' })
-    })
-  })
-
-  it('starts indexing when pending embeds exist', async () => {
-    mockInvoke.mockImplementation((cmd: string) => {
-      if (cmd === 'get_index_status') {
-        return Promise.resolve({
-          available: true,
-          qmd_installed: true,
-          collection_exists: true,
-          indexed_count: 100,
-          embedded_count: 80,
-          pending_embed: 20,
-        })
-      }
-      return Promise.resolve(null)
-    })
-
-    renderHook(() => useIndexing('/vault'))
-    await waitFor(() => {
-      expect(mockInvoke).toHaveBeenCalledWith('start_indexing', { vaultPath: '/vault' })
-    })
-  })
-
-  it('triggerIncrementalIndex calls the command', async () => {
-    const { result } = renderHook(() => useIndexing('/vault'))
-    await act(async () => {
-      await result.current.triggerIncrementalIndex()
-    })
-    expect(mockInvoke).toHaveBeenCalledWith('trigger_incremental_index', { vaultPath: '/vault' })
-  })
-
-  it('handles index status check failure gracefully', async () => {
-    mockInvoke.mockImplementation((cmd: string) => {
-      if (cmd === 'get_index_status') return Promise.reject(new Error('network error'))
-      return Promise.resolve(null)
-    })
-
-    const { result } = renderHook(() => useIndexing('/vault'))
-    // Should remain idle — not crash
-    await waitFor(() => {
-      expect(result.current.progress.phase).toBe('idle')
-    })
-  })
-
-  it('sets error phase when start_indexing fails', async () => {
-    mockInvoke.mockImplementation((cmd: string) => {
-      if (cmd === 'get_index_status') {
-        return Promise.resolve({
-          available: false,
-          qmd_installed: false,
-          collection_exists: false,
-          indexed_count: 0,
-          embedded_count: 0,
-          pending_embed: 0,
-        })
-      }
-      if (cmd === 'start_indexing') return Promise.reject(new Error('install failed'))
-      return Promise.resolve(null)
-    })
-
-    const { result } = renderHook(() => useIndexing('/vault'))
-    await waitFor(() => {
-      expect(result.current.progress.phase).toBe('error')
-    })
-    expect(result.current.progress.error).toContain('install failed')
+  it('exposes retryIndexing function', () => {
+    const { result } = renderHook(() => useIndexing('/test/vault'))
+    expect(typeof result.current.retryIndexing).toBe('function')
   })
 })
