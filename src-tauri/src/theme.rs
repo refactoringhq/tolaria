@@ -145,17 +145,52 @@ pub fn seed_default_themes(vault_path: &str) {
 }
 
 /// Seed the vault `theme/` directory with built-in vault-based theme notes.
-/// Safe to call multiple times — only writes files that are missing.
+/// Per-file idempotent: creates the directory if missing, writes each default
+/// file only when it doesn't exist or is empty (corrupt). Never overwrites
+/// existing files that have content.
 pub fn seed_vault_themes(vault_path: &str) {
-    seed_dir_with_files(
-        &Path::new(vault_path).join("theme"),
-        &[
-            ("default.md", DEFAULT_VAULT_THEME),
-            ("dark.md", DARK_VAULT_THEME),
-            ("minimal.md", MINIMAL_VAULT_THEME),
-        ],
-        "Seeded theme/ with built-in vault themes",
-    );
+    let theme_dir = Path::new(vault_path).join("theme");
+    if fs::create_dir_all(&theme_dir).is_err() {
+        return;
+    }
+    let defaults: &[(&str, &str)] = &[
+        ("default.md", DEFAULT_VAULT_THEME),
+        ("dark.md", DARK_VAULT_THEME),
+        ("minimal.md", MINIMAL_VAULT_THEME),
+    ];
+    let mut seeded = false;
+    for (name, content) in defaults {
+        let path = theme_dir.join(name);
+        let needs_write = !path.exists() || fs::metadata(&path).map_or(true, |m| m.len() == 0);
+        if needs_write {
+            let _ = fs::write(&path, content);
+            seeded = true;
+        }
+    }
+    if seeded {
+        log::info!("Seeded theme/ with built-in vault themes");
+    }
+}
+
+/// Ensure vault theme files exist. Returns an error if the theme directory
+/// cannot be created (e.g. read-only filesystem).
+pub fn ensure_vault_themes(vault_path: &str) -> Result<(), String> {
+    let theme_dir = Path::new(vault_path).join("theme");
+    fs::create_dir_all(&theme_dir)
+        .map_err(|e| format!("Failed to create theme directory: {e}"))?;
+    let defaults: &[(&str, &str)] = &[
+        ("default.md", DEFAULT_VAULT_THEME),
+        ("dark.md", DARK_VAULT_THEME),
+    ];
+    for (name, content) in defaults {
+        let path = theme_dir.join(name);
+        let needs_write = !path.exists() || fs::metadata(&path).map_or(true, |m| m.len() == 0);
+        if needs_write {
+            fs::write(&path, content)
+                .map_err(|e| format!("Failed to write theme/{name}: {e}"))?;
+        }
+    }
+    Ok(())
 }
 
 /// Create a new vault theme note in `theme/` directory.
@@ -855,5 +890,92 @@ mod tests {
         assert!(content.contains("text-primary:"));
         assert!(content.contains("accent-blue:"));
         assert!(content.contains("editor-font-size:"));
+    }
+
+    #[test]
+    fn test_seed_vault_themes_writes_missing_files_in_existing_dir() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("vault");
+        let theme_dir = vault.join("theme");
+        fs::create_dir_all(&theme_dir).unwrap();
+        // Only default exists — dark and minimal should be seeded
+        fs::write(theme_dir.join("default.md"), DEFAULT_VAULT_THEME).unwrap();
+        let vp = vault.to_str().unwrap();
+
+        seed_vault_themes(vp);
+        assert!(theme_dir.join("dark.md").exists());
+        assert!(theme_dir.join("minimal.md").exists());
+    }
+
+    #[test]
+    fn test_seed_vault_themes_reseeds_empty_files() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("vault");
+        let theme_dir = vault.join("theme");
+        fs::create_dir_all(&theme_dir).unwrap();
+        // Create empty file — should be re-seeded
+        fs::write(theme_dir.join("default.md"), "").unwrap();
+        let vp = vault.to_str().unwrap();
+
+        seed_vault_themes(vp);
+        let content = fs::read_to_string(theme_dir.join("default.md")).unwrap();
+        assert!(content.contains("Is A: Theme"));
+    }
+
+    #[test]
+    fn test_seed_vault_themes_preserves_existing_content() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("vault");
+        let theme_dir = vault.join("theme");
+        fs::create_dir_all(&theme_dir).unwrap();
+        let custom = "---\nIs A: Theme\nbackground: \"#FF0000\"\n---\n# Custom\n";
+        fs::write(theme_dir.join("default.md"), custom).unwrap();
+        let vp = vault.to_str().unwrap();
+
+        seed_vault_themes(vp);
+        let content = fs::read_to_string(theme_dir.join("default.md")).unwrap();
+        assert!(content.contains("#FF0000"), "existing content must be preserved");
+    }
+
+    #[test]
+    fn test_ensure_vault_themes_creates_dir_and_defaults() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("vault");
+        fs::create_dir_all(&vault).unwrap();
+        let vp = vault.to_str().unwrap();
+
+        ensure_vault_themes(vp).unwrap();
+        assert!(vault.join("theme").is_dir());
+        assert!(vault.join("theme").join("default.md").exists());
+        assert!(vault.join("theme").join("dark.md").exists());
+    }
+
+    #[test]
+    fn test_ensure_vault_themes_reseeds_empty_files() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("vault");
+        let theme_dir = vault.join("theme");
+        fs::create_dir_all(&theme_dir).unwrap();
+        fs::write(theme_dir.join("default.md"), "").unwrap();
+        let vp = vault.to_str().unwrap();
+
+        ensure_vault_themes(vp).unwrap();
+        let content = fs::read_to_string(theme_dir.join("default.md")).unwrap();
+        assert!(content.contains("Is A: Theme"));
+    }
+
+    #[test]
+    fn test_ensure_vault_themes_preserves_custom_themes() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("vault");
+        let theme_dir = vault.join("theme");
+        fs::create_dir_all(&theme_dir).unwrap();
+        let custom = "---\nIs A: Theme\nbackground: \"#123456\"\n---\n";
+        fs::write(theme_dir.join("default.md"), custom).unwrap();
+        let vp = vault.to_str().unwrap();
+
+        ensure_vault_themes(vp).unwrap();
+        let content = fs::read_to_string(theme_dir.join("default.md")).unwrap();
+        assert!(content.contains("#123456"));
     }
 }

@@ -309,6 +309,7 @@ line-height-base: 1.6
     syncWindowContent()
     return path
   },
+  ensure_vault_themes: (): null => null,
 }
 
 export function addMockEntry(_entry: VaultEntry, content: string): void {

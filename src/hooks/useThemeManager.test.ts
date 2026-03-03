@@ -478,4 +478,17 @@ describe('useThemeManager', () => {
     // Light theme isDark should be false (default state is false, so this is stable)
     expect(result.current.isDark).toBe(false)
   })
+
+  it('calls ensure_vault_themes on mount with vaultPath', async () => {
+    renderHook(() => useThemeManager('/vault', entries, allContent))
+    await waitFor(() => {
+      expect(mockInvokeFn).toHaveBeenCalledWith('ensure_vault_themes', { vaultPath: '/vault' })
+    })
+  })
+
+  it('does not call ensure_vault_themes when vaultPath is null', async () => {
+    renderHook(() => useThemeManager(null, entries, allContent))
+    await new Promise(r => setTimeout(r, 50))
+    expect(mockInvokeFn).not.toHaveBeenCalledWith('ensure_vault_themes', expect.anything())
+  })
 })

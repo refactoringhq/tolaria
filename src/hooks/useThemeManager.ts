@@ -196,6 +196,11 @@ export function useThemeManager(
   entries: VaultEntry[],
   allContent: Record<string, string>,
 ): ThemeManager {
+  // Ensure default theme files exist on vault open (creates theme/ dir + defaults if missing)
+  useEffect(() => {
+    if (vaultPath) tauriCall('ensure_vault_themes', { vaultPath }).catch(() => {})
+  }, [vaultPath])
+
   const { activeThemeId, setActiveThemeId, reload } = useThemeSetting(vaultPath)
   const cachedThemeContent = activeThemeId ? allContent[activeThemeId] : undefined
   const { clearDom: clearTheme, isDark } = useThemeApplier(activeThemeId, cachedThemeContent)

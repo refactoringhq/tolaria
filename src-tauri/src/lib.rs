@@ -475,6 +475,12 @@ fn create_vault_theme(vault_path: String, name: Option<String>) -> Result<String
     theme::create_vault_theme(&vault_path, name.as_deref())
 }
 
+#[tauri::command]
+fn ensure_vault_themes(vault_path: String) -> Result<(), String> {
+    let vault_path = expand_tilde(&vault_path);
+    theme::ensure_vault_themes(&vault_path)
+}
+
 fn log_startup_result(label: &str, result: Result<usize, String>) {
     match result {
         Ok(n) if n > 0 => log::info!("{}: {} files", label, n),
@@ -670,7 +676,8 @@ pub fn run() {
             save_vault_settings,
             set_active_theme,
             create_theme,
-            create_vault_theme
+            create_vault_theme,
+            ensure_vault_themes
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
