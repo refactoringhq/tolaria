@@ -3,6 +3,7 @@ import type { useCreateBlockNote } from '@blocknote/react'
 import { DiffView } from './DiffView'
 import { BreadcrumbBar } from './BreadcrumbBar'
 import { TrashedNoteBanner } from './TrashedNoteBanner'
+import { ArchivedNoteBanner } from './ArchivedNoteBanner'
 import { RawEditorView } from './RawEditorView'
 import { countWords } from '../utils/wikilinks'
 import { SingleEditorView } from './SingleEditorView'
@@ -172,6 +173,9 @@ export function EditorContent({
           onRestore={() => breadcrumbProps.onRestoreNote?.(activeTab.entry.path)}
           onDeletePermanently={() => onDeleteNote?.(activeTab.entry.path)}
         />
+      )}
+      {activeTab?.entry.archived && breadcrumbProps.onUnarchiveNote && (
+        <ArchivedNoteBanner onUnarchive={() => breadcrumbProps.onUnarchiveNote!(activeTab.entry.path)} />
       )}
       <EditorBody activeTab={activeTab} isLoadingNewTab={isLoadingNewTab} entries={entries} editor={editor} diffMode={diffMode} diffContent={diffContent} onToggleDiff={onToggleDiff} rawMode={rawMode} onRawContentChange={onRawContentChange} onSave={onSave} onNavigateWikilink={onNavigateWikilink} onEditorChange={onEditorChange} vaultPath={vaultPath} isDarkTheme={isDarkTheme} isTrashed={isTrashed} />
     </div>
