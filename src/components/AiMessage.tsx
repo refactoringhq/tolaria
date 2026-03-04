@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { CaretRight, CaretDown, Brain, ArrowCounterClockwise } from '@phosphor-icons/react'
 import { AiActionCard, type AiActionStatus } from './AiActionCard'
+import { MarkdownContent } from './MarkdownContent'
 
 export interface AiAction {
   tool: string
@@ -15,6 +16,7 @@ export interface AiAction {
 export interface AiMessageProps {
   userMessage: string
   reasoning?: string
+  reasoningDone?: boolean
   actions: AiAction[]
   response?: string
   isStreaming?: boolean
@@ -44,6 +46,14 @@ function UserBubble({ content }: { content: string }) {
 function ReasoningBlock({ text, expanded, onToggle }: {
   text: string; expanded: boolean; onToggle: () => void
 }) {
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (expanded && contentRef.current) {
+      contentRef.current.scrollTop = contentRef.current.scrollHeight
+    }
+  }, [expanded, text])
+
   return (
     <div style={{ marginBottom: 8 }}>
       <button
@@ -58,8 +68,9 @@ function ReasoningBlock({ text, expanded, onToggle }: {
       </button>
       {expanded && (
         <div
+          ref={contentRef}
           className="text-muted-foreground"
-          style={{ fontSize: 12, lineHeight: 1.5, padding: '4px 0 4px 20px' }}
+          style={{ fontSize: 12, lineHeight: 1.5, padding: '4px 0 4px 20px', maxHeight: 200, overflowY: 'auto' }}
           data-testid="reasoning-content"
         >
           {text}
@@ -98,7 +109,7 @@ function ActionCardsList({ actions, onOpenNote, expandedIds, onToggleExpand }: {
 function ResponseBlock({ text }: { text: string }) {
   return (
     <div style={{ marginBottom: 4 }}>
-      <div style={{ fontSize: 13, lineHeight: 1.6 }}>{text}</div>
+      <MarkdownContent content={text} />
       <button
         className="flex items-center gap-1 border-none bg-transparent p-0 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
         style={{ fontSize: 11, marginTop: 4 }}
@@ -123,9 +134,15 @@ function StreamingIndicator() {
   )
 }
 
-export function AiMessage({ userMessage, reasoning, actions, response, isStreaming, onOpenNote }: AiMessageProps) {
-  const [reasoningExpanded, setReasoningExpanded] = useState(false)
+export function AiMessage({ userMessage, reasoning, reasoningDone, actions, response, isStreaming, onOpenNote }: AiMessageProps) {
+  // Manual override: null = follow auto behavior, true/false = user forced
+  const [userOverride, setUserOverride] = useState(false)
   const [expandedActions, setExpandedActions] = useState<Set<string>>(new Set())
+
+  // Auto: expanded while reasoning streams, collapsed once done
+  // User can manually toggle to override the auto state
+  const autoExpanded = !reasoningDone
+  const reasoningExpanded = userOverride ? !autoExpanded : autoExpanded
 
   const toggleAction = useCallback((toolId: string) => {
     setExpandedActions(prev => {
@@ -143,7 +160,7 @@ export function AiMessage({ userMessage, reasoning, actions, response, isStreami
         <ReasoningBlock
           text={reasoning}
           expanded={reasoningExpanded}
-          onToggle={() => setReasoningExpanded(!reasoningExpanded)}
+          onToggle={() => setUserOverride(prev => !prev)}
         />
       )}
       {actions.length > 0 && (

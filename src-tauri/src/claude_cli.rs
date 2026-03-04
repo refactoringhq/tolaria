@@ -19,6 +19,8 @@ pub enum ClaudeStreamEvent {
     Init { session_id: String },
     /// Incremental text chunk.
     TextDelta { text: String },
+    /// Incremental thinking/reasoning chunk.
+    ThinkingDelta { text: String },
     /// A tool call started (agent mode only).
     ToolStart {
         tool_name: String,
@@ -398,6 +400,13 @@ where
                 Some("text_delta") => {
                     if let Some(text) = delta["text"].as_str() {
                         emit(ClaudeStreamEvent::TextDelta {
+                            text: text.to_string(),
+                        });
+                    }
+                }
+                Some("thinking_delta") => {
+                    if let Some(text) = delta["thinking"].as_str() {
+                        emit(ClaudeStreamEvent::ThinkingDelta {
                             text: text.to_string(),
                         });
                     }

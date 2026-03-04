@@ -3,6 +3,9 @@
  * Uses Claude CLI subprocess with MCP tools via Tauri.
  *
  * States: idle -> thinking -> tool-executing -> done/error
+ *
+ * Reasoning streams live while Claude thinks, then auto-collapses.
+ * Response text accumulates internally and is revealed as a complete block on done.
  */
 import { useState, useCallback, useRef, useEffect } from 'react'
 import type { AiAction } from '../components/AiMessage'
@@ -14,6 +17,7 @@ export type AgentStatus = 'idle' | 'thinking' | 'tool-executing' | 'done' | 'err
 export interface AiAgentMessage {
   userMessage: string
   reasoning?: string
+  reasoningDone?: boolean
   actions: AiAction[]
   response?: string
   isStreaming?: boolean
@@ -25,6 +29,7 @@ export function useAiAgent(vaultPath: string, contextPrompt?: string) {
   const [status, setStatus] = useState<AgentStatus>('idle')
   const abortRef = useRef({ aborted: false })
   const contextRef = useRef(contextPrompt)
+  const responseAccRef = useRef('')
   useEffect(() => {
     contextRef.current = contextPrompt
   }, [contextPrompt])
@@ -42,6 +47,7 @@ export function useAiAgent(vaultPath: string, contextPrompt?: string) {
     }
 
     abortRef.current = { aborted: false }
+    responseAccRef.current = ''
 
     const messageId = nextMessageId()
     setMessages(prev => [...prev, {
@@ -53,23 +59,31 @@ export function useAiAgent(vaultPath: string, contextPrompt?: string) {
       setMessages(prev => prev.map(m => m.id === messageId ? fn(m) : m))
     }
 
-    // When a contextual prompt is provided (from buildContextualPrompt),
-    // use it directly — it already includes the system preamble.
+    const markReasoningDone = () => {
+      update(m => m.reasoningDone ? m : { ...m, reasoningDone: true })
+    }
+
     const systemPrompt = contextRef.current ?? buildAgentSystemPrompt()
 
     await streamClaudeAgent(text.trim(), systemPrompt, vaultPath, {
-      onText: (text) => {
+      onThinking: (chunk) => {
         if (abortRef.current.aborted) return
-        update(m => ({ ...m, response: (m.response ?? '') + text }))
+        update(m => ({ ...m, reasoning: (m.reasoning ?? '') + chunk }))
+      },
+
+      onText: (chunk) => {
+        if (abortRef.current.aborted) return
+        markReasoningDone()
+        responseAccRef.current += chunk
       },
 
       onToolStart: (toolName, toolId, input) => {
         if (abortRef.current.aborted) return
+        markReasoningDone()
         setStatus('tool-executing')
         update(m => {
           const existing = m.actions.find(a => a.toolId === toolId)
           if (existing) {
-            // Re-emitted with input data — update the existing action
             return {
               ...m,
               actions: m.actions.map(a =>
@@ -103,10 +117,12 @@ export function useAiAgent(vaultPath: string, contextPrompt?: string) {
       onError: (error) => {
         if (abortRef.current.aborted) return
         setStatus('error')
+        const partial = responseAccRef.current
         update(m => ({
           ...m,
           isStreaming: false,
-          response: (m.response ?? '') + `\nError: ${error}`,
+          reasoningDone: true,
+          response: partial ? `${partial}\n\nError: ${error}` : `Error: ${error}`,
           actions: m.actions.map(a =>
             a.status === 'pending' ? { ...a, status: 'error' as const } : a,
           ),
@@ -116,9 +132,12 @@ export function useAiAgent(vaultPath: string, contextPrompt?: string) {
       onDone: () => {
         if (abortRef.current.aborted) return
         setStatus('done')
+        const finalResponse = responseAccRef.current || undefined
         update(m => ({
           ...m,
           isStreaming: false,
+          reasoningDone: true,
+          response: finalResponse,
           actions: m.actions.map(a => a.status === 'pending' ? { ...a, status: 'done' as const } : a),
         }))
       },
@@ -127,6 +146,7 @@ export function useAiAgent(vaultPath: string, contextPrompt?: string) {
 
   const clearConversation = useCallback(() => {
     abortRef.current.aborted = true
+    responseAccRef.current = ''
     setMessages([])
     setStatus('idle')
   }, [])

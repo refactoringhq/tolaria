@@ -2,15 +2,20 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { AiMessage } from './AiMessage'
 
+vi.mock('./MarkdownContent', () => ({
+  MarkdownContent: ({ content }: { content: string }) => <div data-testid="markdown-content">{content}</div>,
+}))
+
 describe('AiMessage', () => {
   it('renders user message', () => {
     render(<AiMessage userMessage="Hello AI" actions={[]} />)
     expect(screen.getByText('Hello AI')).toBeTruthy()
   })
 
-  it('renders response text', () => {
-    render(<AiMessage userMessage="Ask" actions={[]} response="Here is the answer" />)
-    expect(screen.getByText('Here is the answer')).toBeTruthy()
+  it('renders response as markdown', () => {
+    render(<AiMessage userMessage="Ask" actions={[]} response="Here is the **answer**" />)
+    expect(screen.getByTestId('markdown-content')).toBeTruthy()
+    expect(screen.getByText('Here is the **answer**')).toBeTruthy()
   })
 
   it('shows undo button with response', () => {
@@ -18,22 +23,30 @@ describe('AiMessage', () => {
     expect(screen.getByTestId('undo-button')).toBeTruthy()
   })
 
-  it('renders reasoning toggle collapsed by default', () => {
-    render(<AiMessage userMessage="Ask" reasoning="Thinking about it..." actions={[]} />)
+  it('shows reasoning expanded while streaming (reasoningDone=false)', () => {
+    render(<AiMessage userMessage="Ask" reasoning="Thinking about it..." reasoningDone={false} actions={[]} />)
     expect(screen.getByTestId('reasoning-toggle')).toBeTruthy()
-    expect(screen.queryByTestId('reasoning-content')).toBeNull()
-  })
-
-  it('expands reasoning on toggle click', () => {
-    render(<AiMessage userMessage="Ask" reasoning="Thinking about it..." actions={[]} />)
-    fireEvent.click(screen.getByTestId('reasoning-toggle'))
     expect(screen.getByTestId('reasoning-content')).toBeTruthy()
     expect(screen.getByText('Thinking about it...')).toBeTruthy()
   })
 
-  it('collapses reasoning on second click', () => {
-    render(<AiMessage userMessage="Ask" reasoning="Thinking..." actions={[]} />)
+  it('auto-collapses reasoning when reasoningDone=true', () => {
+    render(<AiMessage userMessage="Ask" reasoning="Thinking..." reasoningDone actions={[]} />)
+    expect(screen.getByTestId('reasoning-toggle')).toBeTruthy()
+    expect(screen.queryByTestId('reasoning-content')).toBeNull()
+  })
+
+  it('expands collapsed reasoning on toggle click', () => {
+    render(<AiMessage userMessage="Ask" reasoning="Thinking..." reasoningDone actions={[]} />)
+    // Starts collapsed (reasoningDone=true)
+    expect(screen.queryByTestId('reasoning-content')).toBeNull()
     fireEvent.click(screen.getByTestId('reasoning-toggle'))
+    expect(screen.getByTestId('reasoning-content')).toBeTruthy()
+  })
+
+  it('collapses expanded reasoning on toggle click', () => {
+    render(<AiMessage userMessage="Ask" reasoning="Thinking..." reasoningDone={false} actions={[]} />)
+    // Starts expanded (reasoningDone=false)
     expect(screen.getByTestId('reasoning-content')).toBeTruthy()
     fireEvent.click(screen.getByTestId('reasoning-toggle'))
     expect(screen.queryByTestId('reasoning-content')).toBeNull()

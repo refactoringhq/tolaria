@@ -24,6 +24,7 @@ export function buildAgentSystemPrompt(vaultContext?: string): string {
 type ClaudeAgentStreamEvent =
   | { kind: 'Init'; session_id: string }
   | { kind: 'TextDelta'; text: string }
+  | { kind: 'ThinkingDelta'; text: string }
   | { kind: 'ToolStart'; tool_name: string; tool_id: string; input?: string }
   | { kind: 'ToolDone'; tool_id: string; output?: string }
   | { kind: 'Result'; text: string; session_id: string }
@@ -32,6 +33,7 @@ type ClaudeAgentStreamEvent =
 
 export interface AgentStreamCallbacks {
   onText: (text: string) => void
+  onThinking: (text: string) => void
   onToolStart: (toolName: string, toolId: string, input?: string) => void
   onToolDone: (toolId: string, output?: string) => void
   onError: (message: string) => void
@@ -64,6 +66,9 @@ export async function streamClaudeAgent(
     switch (data.kind) {
       case 'TextDelta':
         callbacks.onText(data.text)
+        break
+      case 'ThinkingDelta':
+        callbacks.onThinking(data.text)
         break
       case 'ToolStart':
         callbacks.onToolStart(data.tool_name, data.tool_id, data.input)
