@@ -74,7 +74,7 @@ export function WikilinkChatInput({
   const internalRef = useRef<HTMLInputElement>(null)
   const inputRefToUse = externalRef ?? internalRef
   const menuRef = useRef<HTMLDivElement>(null)
-  const debounceTimer = useRef<ReturnType<typeof setTimeout>>()
+  const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const typeEntryMap = useMemo(() => buildTypeEntryMap(entries), [entries])
 
