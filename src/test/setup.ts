@@ -3,7 +3,8 @@ import { vi } from 'vitest'
 import { createElement, type ReactNode, type ComponentType } from 'react'
 
 // Suppress undici WebSocket ERR_INVALID_ARG_TYPE in jsdom (jsdom Event ≠ Node Event)
-process.on('uncaughtException', (err: NodeJS.ErrnoException) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+;(globalThis as any).process?.on?.('uncaughtException', (err: Error & { code?: string }) => {
   if (err.code === 'ERR_INVALID_ARG_TYPE' && err.message?.includes('Event')) return
   throw err
 })
