@@ -178,10 +178,6 @@ fn build_edit_menu(app: &App) -> MenuResult {
         .id(EDIT_FIND_IN_VAULT)
         .accelerator("CmdOrCtrl+Shift+F")
         .build(app)?;
-    let toggle_raw_editor = MenuItemBuilder::new("Toggle Raw Editor")
-        .id(EDIT_TOGGLE_RAW_EDITOR)
-        .accelerator("CmdOrCtrl+\\")
-        .build(app)?;
     let toggle_diff = MenuItemBuilder::new("Toggle Diff Mode")
         .id(EDIT_TOGGLE_DIFF)
         .build(app)?;
@@ -197,7 +193,6 @@ fn build_edit_menu(app: &App) -> MenuResult {
         .select_all()
         .separator()
         .item(&find_in_vault)
-        .item(&toggle_raw_editor)
         .item(&toggle_diff)
         .build()?)
 }
@@ -218,13 +213,6 @@ fn build_view_menu(app: &App) -> MenuResult {
     let toggle_properties = MenuItemBuilder::new("Toggle Properties Panel")
         .id(VIEW_TOGGLE_PROPERTIES)
         .build(app)?;
-    let toggle_ai_chat = MenuItemBuilder::new("Toggle AI Chat")
-        .id(VIEW_TOGGLE_AI_CHAT)
-        .accelerator("CmdOrCtrl+I")
-        .build(app)?;
-    let toggle_backlinks = MenuItemBuilder::new("Toggle Backlinks")
-        .id(VIEW_TOGGLE_BACKLINKS)
-        .build(app)?;
     let command_palette = MenuItemBuilder::new("Command Palette")
         .id(VIEW_COMMAND_PALETTE)
         .accelerator("CmdOrCtrl+K")
@@ -241,14 +229,6 @@ fn build_view_menu(app: &App) -> MenuResult {
         .id(VIEW_ZOOM_RESET)
         .accelerator("CmdOrCtrl+0")
         .build(app)?;
-    let go_back = MenuItemBuilder::new("Go Back")
-        .id(VIEW_GO_BACK)
-        .accelerator("CmdOrCtrl+[")
-        .build(app)?;
-    let go_forward = MenuItemBuilder::new("Go Forward")
-        .id(VIEW_GO_FORWARD)
-        .accelerator("CmdOrCtrl+]")
-        .build(app)?;
 
     Ok(SubmenuBuilder::new(app, "View")
         .item(&editor_only)
@@ -256,15 +236,10 @@ fn build_view_menu(app: &App) -> MenuResult {
         .item(&all_panels)
         .separator()
         .item(&toggle_properties)
-        .item(&toggle_ai_chat)
-        .item(&toggle_backlinks)
         .separator()
         .item(&zoom_in)
         .item(&zoom_out)
         .item(&zoom_reset)
-        .separator()
-        .item(&go_back)
-        .item(&go_forward)
         .separator()
         .item(&command_palette)
         .build()?)
@@ -282,6 +257,14 @@ fn build_go_menu(app: &App) -> MenuResult {
         .build(app)?;
     let trash = MenuItemBuilder::new("Trash").id(GO_TRASH).build(app)?;
     let changes = MenuItemBuilder::new("Changes").id(GO_CHANGES).build(app)?;
+    let go_back = MenuItemBuilder::new("Go Back")
+        .id(VIEW_GO_BACK)
+        .accelerator("CmdOrCtrl+[")
+        .build(app)?;
+    let go_forward = MenuItemBuilder::new("Go Forward")
+        .id(VIEW_GO_FORWARD)
+        .accelerator("CmdOrCtrl+]")
+        .build(app)?;
 
     Ok(SubmenuBuilder::new(app, "Go")
         .item(&all_notes)
@@ -289,6 +272,9 @@ fn build_go_menu(app: &App) -> MenuResult {
         .item(&archived)
         .item(&trash)
         .item(&changes)
+        .separator()
+        .item(&go_back)
+        .item(&go_forward)
         .build()?)
 }
 
@@ -301,10 +287,25 @@ fn build_note_menu(app: &App) -> MenuResult {
         .id(NOTE_TRASH)
         .accelerator("CmdOrCtrl+Backspace")
         .build(app)?;
+    let toggle_raw_editor = MenuItemBuilder::new("Toggle Raw Editor")
+        .id(EDIT_TOGGLE_RAW_EDITOR)
+        .accelerator("CmdOrCtrl+\\")
+        .build(app)?;
+    let toggle_ai_chat = MenuItemBuilder::new("Toggle AI Chat")
+        .id(VIEW_TOGGLE_AI_CHAT)
+        .accelerator("CmdOrCtrl+I")
+        .build(app)?;
+    let toggle_backlinks = MenuItemBuilder::new("Toggle Backlinks")
+        .id(VIEW_TOGGLE_BACKLINKS)
+        .build(app)?;
 
     Ok(SubmenuBuilder::new(app, "Note")
         .item(&archive_note)
         .item(&trash_note)
+        .separator()
+        .item(&toggle_raw_editor)
+        .item(&toggle_ai_chat)
+        .item(&toggle_backlinks)
         .build()?)
 }
 
