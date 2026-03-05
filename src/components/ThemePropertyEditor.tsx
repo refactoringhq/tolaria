@@ -30,7 +30,7 @@ function NumberInput({ property, value, onChange }: {
   onChange: (val: string) => void
 }) {
   const numericValue = typeof value === 'number' ? value : parseFloat(String(value)) || 0
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value
@@ -68,7 +68,7 @@ function ColorInput({ property, value, onChange }: {
   onChange: (val: string) => void
 }) {
   const [localValue, setLocalValue] = useState(value)
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   const showSwatch = isValidCssColor(localValue)
 
   const handleTextChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,7 +121,7 @@ function TextInput({ property, value, onChange }: {
   value: string
   onChange: (val: string) => void
 }) {
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newVal = e.target.value
