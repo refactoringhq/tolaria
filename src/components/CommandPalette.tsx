@@ -30,16 +30,21 @@ function matchCommand(query: string, cmd: CommandAction): ScoredCommand | null {
   return null
 }
 
-function groupResults(commands: CommandAction[]): { group: CommandGroup; items: CommandAction[] }[] {
+function groupResults(
+  commands: CommandAction[],
+  byRelevance: boolean,
+): { group: CommandGroup; items: CommandAction[] }[] {
   const map = new Map<CommandGroup, CommandAction[]>()
   for (const cmd of commands) {
     const list = map.get(cmd.group)
     if (list) list.push(cmd)
     else map.set(cmd.group, [cmd])
   }
-  return Array.from(map.entries())
-    .sort((a, b) => groupSortKey(a[0]) - groupSortKey(b[0]))
-    .map(([group, items]) => ({ group, items }))
+  const entries = Array.from(map.entries())
+  if (!byRelevance) {
+    entries.sort((a, b) => groupSortKey(a[0]) - groupSortKey(b[0]))
+  }
+  return entries.map(([group, items]) => ({ group, items }))
 }
 
 export function CommandPalette({ open, commands, onClose }: CommandPaletteProps) {
@@ -70,7 +75,8 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
       .map(r => r.command)
   }, [enabledCommands, query])
 
-  const groups = useMemo(() => groupResults(filtered), [filtered])
+  const hasQuery = !!query.trim()
+  const groups = useMemo(() => groupResults(filtered, hasQuery), [filtered, hasQuery])
   const flatList = useMemo(() => groups.flatMap(g => g.items), [groups])
 
   useEffect(() => {

@@ -165,4 +165,64 @@ describe('CommandPalette', () => {
     expect(screen.getByText('↵ select')).toBeInTheDocument()
     expect(screen.getByText('esc close')).toBeInTheDocument()
   })
+
+  describe('relevance ranking', () => {
+    const relevanceCommands: CommandAction[] = [
+      makeCommand({ id: 'create-note', label: 'Create New Note', group: 'Note' }),
+      makeCommand({ id: 'toggle-raw', label: 'Toggle Raw Editor', group: 'View' }),
+      makeCommand({ id: 'switch-theme', label: 'Switch Theme', group: 'Appearance', keywords: ['dark', 'light'] }),
+      makeCommand({ id: 'search-notes', label: 'Search Notes', group: 'Navigation' }),
+    ]
+
+    function getVisibleLabels() {
+      return screen.getAllByText(
+        (_content, el) =>
+          el?.tagName === 'SPAN' &&
+          el.classList.contains('text-foreground') &&
+          !!el.textContent,
+      ).map(el => el.textContent)
+    }
+
+    it('ranks "Toggle Raw Editor" before "Create New Note" for query "raw"', () => {
+      render(<CommandPalette open={true} commands={relevanceCommands} onClose={onClose} />)
+      fireEvent.change(screen.getByPlaceholderText('Type a command...'), { target: { value: 'raw' } })
+
+      const labels = getVisibleLabels()
+      const rawIdx = labels.indexOf('Toggle Raw Editor')
+      const createIdx = labels.indexOf('Create New Note')
+      expect(rawIdx).toBeGreaterThanOrEqual(0)
+      expect(createIdx).toBeGreaterThanOrEqual(0)
+      expect(rawIdx).toBeLessThan(createIdx)
+    })
+
+    it('ranks "Create New Note" first for query "new note"', () => {
+      render(<CommandPalette open={true} commands={relevanceCommands} onClose={onClose} />)
+      fireEvent.change(screen.getByPlaceholderText('Type a command...'), { target: { value: 'new note' } })
+
+      const labels = getVisibleLabels()
+      expect(labels[0]).toBe('Create New Note')
+    })
+
+    it('ranks theme commands first for query "theme"', () => {
+      render(<CommandPalette open={true} commands={relevanceCommands} onClose={onClose} />)
+      fireEvent.change(screen.getByPlaceholderText('Type a command...'), { target: { value: 'theme' } })
+
+      const labels = getVisibleLabels()
+      expect(labels[0]).toBe('Switch Theme')
+    })
+
+    it('preserves default section order with empty query', () => {
+      render(<CommandPalette open={true} commands={relevanceCommands} onClose={onClose} />)
+
+      const groupHeaders = screen.getAllByText(
+        (_content, el) =>
+          el?.tagName === 'DIV' &&
+          el.classList.contains('uppercase') &&
+          !!el.textContent,
+      ).map(el => el.textContent)
+
+      // Default order: Navigation < Note < View < Appearance
+      expect(groupHeaders).toEqual(['Navigation', 'Note', 'View', 'Appearance'])
+    })
+  })
 })
