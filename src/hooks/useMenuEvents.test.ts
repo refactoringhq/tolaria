@@ -5,6 +5,7 @@ function makeHandlers(): MenuEventHandlers {
   return {
     onSetViewMode: vi.fn(),
     onCreateNote: vi.fn(),
+    onCreateType: vi.fn(),
     onOpenDailyNote: vi.fn(),
     onQuickOpen: vi.fn(),
     onSave: vi.fn(),
@@ -17,9 +18,22 @@ function makeHandlers(): MenuEventHandlers {
     onArchiveNote: vi.fn(),
     onTrashNote: vi.fn(),
     onSearch: vi.fn(),
+    onToggleRawEditor: vi.fn(),
+    onToggleDiff: vi.fn(),
+    onToggleAIChat: vi.fn(),
     onGoBack: vi.fn(),
     onGoForward: vi.fn(),
     onCheckForUpdates: vi.fn(),
+    onSelectFilter: vi.fn(),
+    onOpenVault: vi.fn(),
+    onRemoveActiveVault: vi.fn(),
+    onRestoreGettingStarted: vi.fn(),
+    onCreateTheme: vi.fn(),
+    onRestoreDefaultThemes: vi.fn(),
+    onCommitPush: vi.fn(),
+    onResolveConflicts: vi.fn(),
+    onViewChanges: vi.fn(),
+    onInstallMcp: vi.fn(),
     activeTabPathRef: { current: '/vault/test.md' } as React.MutableRefObject<string | null>,
     handleCloseTabRef: { current: vi.fn() } as React.MutableRefObject<(path: string) => void>,
     activeTabPath: '/vault/test.md',
@@ -27,6 +41,7 @@ function makeHandlers(): MenuEventHandlers {
 }
 
 describe('dispatchMenuEvent', () => {
+  // View mode events
   it('view-editor-only sets editor-only mode', () => {
     const h = makeHandlers()
     dispatchMenuEvent('view-editor-only', h)
@@ -45,6 +60,7 @@ describe('dispatchMenuEvent', () => {
     expect(h.onSetViewMode).toHaveBeenCalledWith('all')
   })
 
+  // Simple handler events
   it('file-new-note triggers create note', () => {
     const h = makeHandlers()
     dispatchMenuEvent('file-new-note', h)
@@ -88,9 +104,9 @@ describe('dispatchMenuEvent', () => {
     expect(h.onOpenSettings).toHaveBeenCalled()
   })
 
-  it('view-toggle-inspector triggers toggle inspector', () => {
+  it('view-toggle-properties triggers toggle inspector', () => {
     const h = makeHandlers()
-    dispatchMenuEvent('view-toggle-inspector', h)
+    dispatchMenuEvent('view-toggle-properties', h)
     expect(h.onToggleInspector).toHaveBeenCalled()
   })
 
@@ -118,6 +134,13 @@ describe('dispatchMenuEvent', () => {
     expect(h.onZoomReset).toHaveBeenCalled()
   })
 
+  it('edit-find-in-vault triggers search', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('edit-find-in-vault', h)
+    expect(h.onSearch).toHaveBeenCalled()
+  })
+
+  // Active tab-dependent events
   it('note-archive triggers archive on active tab', () => {
     const h = makeHandlers()
     dispatchMenuEvent('note-archive', h)
@@ -144,12 +167,7 @@ describe('dispatchMenuEvent', () => {
     expect(h.onTrashNote).not.toHaveBeenCalled()
   })
 
-  it('edit-find-in-vault triggers search', () => {
-    const h = makeHandlers()
-    dispatchMenuEvent('edit-find-in-vault', h)
-    expect(h.onSearch).toHaveBeenCalled()
-  })
-
+  // Optional handler events
   it('view-go-back triggers go back', () => {
     const h = makeHandlers()
     dispatchMenuEvent('view-go-back', h)
@@ -168,6 +186,126 @@ describe('dispatchMenuEvent', () => {
     expect(h.onCheckForUpdates).toHaveBeenCalled()
   })
 
+  // New File menu items
+  it('file-new-type triggers create type', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('file-new-type', h)
+    expect(h.onCreateType).toHaveBeenCalled()
+  })
+
+  // New Edit menu items
+  it('edit-toggle-raw-editor triggers toggle raw editor', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('edit-toggle-raw-editor', h)
+    expect(h.onToggleRawEditor).toHaveBeenCalled()
+  })
+
+  it('edit-toggle-diff triggers toggle diff', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('edit-toggle-diff', h)
+    expect(h.onToggleDiff).toHaveBeenCalled()
+  })
+
+  // New View menu items
+  it('view-toggle-ai-chat triggers toggle AI chat', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('view-toggle-ai-chat', h)
+    expect(h.onToggleAIChat).toHaveBeenCalled()
+  })
+
+  it('view-toggle-backlinks triggers toggle inspector', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('view-toggle-backlinks', h)
+    expect(h.onToggleInspector).toHaveBeenCalled()
+  })
+
+  // Go menu events
+  it('go-all-notes selects all filter', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('go-all-notes', h)
+    expect(h.onSelectFilter).toHaveBeenCalledWith('all')
+  })
+
+  it('go-favorites selects favorites filter', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('go-favorites', h)
+    expect(h.onSelectFilter).toHaveBeenCalledWith('favorites')
+  })
+
+  it('go-archived selects archived filter', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('go-archived', h)
+    expect(h.onSelectFilter).toHaveBeenCalledWith('archived')
+  })
+
+  it('go-trash selects trash filter', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('go-trash', h)
+    expect(h.onSelectFilter).toHaveBeenCalledWith('trash')
+  })
+
+  it('go-changes selects changes filter', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('go-changes', h)
+    expect(h.onSelectFilter).toHaveBeenCalledWith('changes')
+  })
+
+  // Vault menu events
+  it('vault-open triggers open vault', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('vault-open', h)
+    expect(h.onOpenVault).toHaveBeenCalled()
+  })
+
+  it('vault-remove triggers remove active vault', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('vault-remove', h)
+    expect(h.onRemoveActiveVault).toHaveBeenCalled()
+  })
+
+  it('vault-restore-getting-started triggers restore', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('vault-restore-getting-started', h)
+    expect(h.onRestoreGettingStarted).toHaveBeenCalled()
+  })
+
+  it('vault-new-theme triggers create theme', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('vault-new-theme', h)
+    expect(h.onCreateTheme).toHaveBeenCalled()
+  })
+
+  it('vault-restore-default-themes triggers restore default themes', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('vault-restore-default-themes', h)
+    expect(h.onRestoreDefaultThemes).toHaveBeenCalled()
+  })
+
+  it('vault-commit-push triggers commit push', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('vault-commit-push', h)
+    expect(h.onCommitPush).toHaveBeenCalled()
+  })
+
+  it('vault-resolve-conflicts triggers resolve conflicts', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('vault-resolve-conflicts', h)
+    expect(h.onResolveConflicts).toHaveBeenCalled()
+  })
+
+  it('vault-view-changes triggers view changes', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('vault-view-changes', h)
+    expect(h.onViewChanges).toHaveBeenCalled()
+  })
+
+  it('vault-install-mcp triggers install MCP', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('vault-install-mcp', h)
+    expect(h.onInstallMcp).toHaveBeenCalled()
+  })
+
+  // Edge cases
   it('unknown event ID does nothing', () => {
     const h = makeHandlers()
     dispatchMenuEvent('unknown-event', h)

@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { isTauri } from '../mock-tauri'
+import type { SidebarFilter } from '../types'
 import type { ViewMode } from './useViewMode'
 
 export interface MenuEventHandlers {
   onSetViewMode: (mode: ViewMode) => void
   onCreateNote: () => void
+  onCreateType?: () => void
   onOpenDailyNote: () => void
   onQuickOpen: () => void
   onSave: () => void
@@ -17,12 +19,27 @@ export interface MenuEventHandlers {
   onArchiveNote: (path: string) => void
   onTrashNote: (path: string) => void
   onSearch: () => void
+  onToggleRawEditor?: () => void
+  onToggleDiff?: () => void
+  onToggleAIChat?: () => void
   onGoBack?: () => void
   onGoForward?: () => void
   onCheckForUpdates?: () => void
+  onSelectFilter?: (filter: SidebarFilter) => void
+  onOpenVault?: () => void
+  onRemoveActiveVault?: () => void
+  onRestoreGettingStarted?: () => void
+  onCreateTheme?: () => void
+  onRestoreDefaultThemes?: () => void
+  onCommitPush?: () => void
+  onResolveConflicts?: () => void
+  onViewChanges?: () => void
+  onInstallMcp?: () => void
   activeTabPathRef: React.MutableRefObject<string | null>
   handleCloseTabRef: React.MutableRefObject<(path: string) => void>
   activeTabPath: string | null
+  modifiedCount?: number
+  conflictCount?: number
 }
 
 const VIEW_MODE_MAP: Record<string, ViewMode> = {
@@ -39,12 +56,47 @@ const SIMPLE_EVENT_MAP: Record<string, SimpleHandler> = {
   'file-quick-open': 'onQuickOpen',
   'file-save': 'onSave',
   'app-settings': 'onOpenSettings',
-  'view-toggle-inspector': 'onToggleInspector',
+  'view-toggle-properties': 'onToggleInspector',
   'view-command-palette': 'onCommandPalette',
   'view-zoom-in': 'onZoomIn',
   'view-zoom-out': 'onZoomOut',
   'view-zoom-reset': 'onZoomReset',
   'edit-find-in-vault': 'onSearch',
+}
+
+const FILTER_MAP: Record<string, SidebarFilter> = {
+  'go-all-notes': 'all',
+  'go-favorites': 'favorites',
+  'go-archived': 'archived',
+  'go-trash': 'trash',
+  'go-changes': 'changes',
+}
+
+type OptionalHandler =
+  | 'onGoBack' | 'onGoForward' | 'onCheckForUpdates'
+  | 'onCreateType' | 'onToggleRawEditor' | 'onToggleDiff' | 'onToggleAIChat'
+  | 'onOpenVault' | 'onRemoveActiveVault' | 'onRestoreGettingStarted'
+  | 'onCreateTheme' | 'onRestoreDefaultThemes'
+  | 'onCommitPush' | 'onResolveConflicts' | 'onViewChanges' | 'onInstallMcp'
+
+const OPTIONAL_EVENT_MAP: Record<string, OptionalHandler> = {
+  'view-go-back': 'onGoBack',
+  'view-go-forward': 'onGoForward',
+  'app-check-for-updates': 'onCheckForUpdates',
+  'file-new-type': 'onCreateType',
+  'edit-toggle-raw-editor': 'onToggleRawEditor',
+  'edit-toggle-diff': 'onToggleDiff',
+  'view-toggle-ai-chat': 'onToggleAIChat',
+  'view-toggle-backlinks': 'onToggleInspector',
+  'vault-open': 'onOpenVault',
+  'vault-remove': 'onRemoveActiveVault',
+  'vault-restore-getting-started': 'onRestoreGettingStarted',
+  'vault-new-theme': 'onCreateTheme',
+  'vault-restore-default-themes': 'onRestoreDefaultThemes',
+  'vault-commit-push': 'onCommitPush',
+  'vault-resolve-conflicts': 'onResolveConflicts',
+  'vault-view-changes': 'onViewChanges',
+  'vault-install-mcp': 'onInstallMcp',
 }
 
 function dispatchActiveTabEvent(id: string, h: MenuEventHandlers): boolean {
@@ -57,9 +109,14 @@ function dispatchActiveTabEvent(id: string, h: MenuEventHandlers): boolean {
 }
 
 function dispatchOptionalEvent(id: string, h: MenuEventHandlers): boolean {
-  if (id === 'view-go-back') { h.onGoBack?.(); return true }
-  if (id === 'view-go-forward') { h.onGoForward?.(); return true }
-  if (id === 'app-check-for-updates') { h.onCheckForUpdates?.(); return true }
+  const handler = OPTIONAL_EVENT_MAP[id]
+  if (handler) { h[handler]?.(); return true }
+  return false
+}
+
+function dispatchFilterEvent(id: string, h: MenuEventHandlers): boolean {
+  const filter = FILTER_MAP[id]
+  if (filter) { h.onSelectFilter?.(filter); return true }
   return false
 }
 
@@ -72,6 +129,7 @@ export function dispatchMenuEvent(id: string, h: MenuEventHandlers): void {
   if (simple) { h[simple](); return }
 
   if (dispatchActiveTabEvent(id, h)) return
+  if (dispatchFilterEvent(id, h)) return
   dispatchOptionalEvent(id, h)
 }
 
@@ -95,11 +153,15 @@ export function useMenuEvents(handlers: MenuEventHandlers) {
     return () => cleanup?.()
   }, [])
 
-  // Sync menu item enabled state when active tab changes
+  // Sync menu item enabled state when active tab or git state changes
   useEffect(() => {
     if (!isTauri()) return
     import('@tauri-apps/api/core').then(({ invoke }) => {
-      invoke('update_menu_state', { hasActiveNote: handlers.activeTabPath !== null })
+      invoke('update_menu_state', {
+        hasActiveNote: handlers.activeTabPath !== null,
+        hasModifiedFiles: handlers.modifiedCount != null ? handlers.modifiedCount > 0 : undefined,
+        hasConflicts: handlers.conflictCount != null ? handlers.conflictCount > 0 : undefined,
+      })
     }).catch(() => {})
-  }, [handlers.activeTabPath])
+  }, [handlers.activeTabPath, handlers.modifiedCount, handlers.conflictCount])
 }

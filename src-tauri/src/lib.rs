@@ -303,8 +303,19 @@ fn batch_trash_notes(paths: Vec<String>) -> Result<usize, String> {
 }
 
 #[tauri::command]
-fn update_menu_state(app_handle: tauri::AppHandle, has_active_note: bool) -> Result<(), String> {
+fn update_menu_state(
+    app_handle: tauri::AppHandle,
+    has_active_note: bool,
+    has_modified_files: Option<bool>,
+    has_conflicts: Option<bool>,
+) -> Result<(), String> {
     menu::set_note_items_enabled(&app_handle, has_active_note);
+    if let Some(v) = has_modified_files {
+        menu::set_git_commit_items_enabled(&app_handle, v);
+    }
+    if let Some(v) = has_conflicts {
+        menu::set_git_conflict_items_enabled(&app_handle, v);
+    }
     Ok(())
 }
 

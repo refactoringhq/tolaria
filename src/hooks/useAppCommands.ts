@@ -85,6 +85,16 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     ;(entry?.trashed ? config.onRestoreNote : config.onTrashNote)(path)
   }, [config.onTrashNote, config.onRestoreNote])
 
+  const { onSelect } = config
+
+  const selectFilter = useCallback((filter: 'all' | 'favorites' | 'archived' | 'trash' | 'changes') => {
+    onSelect({ kind: 'filter', filter })
+  }, [onSelect])
+
+  const viewChanges = useCallback(() => {
+    onSelect({ kind: 'filter', filter: 'changes' })
+  }, [onSelect])
+
   useAppKeyboard({
     onQuickOpen: config.onQuickOpen,
     onCommandPalette: config.onCommandPalette,
@@ -110,6 +120,7 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
   useMenuEvents({
     onSetViewMode: config.onSetViewMode,
     onCreateNote: config.onCreateNote,
+    onCreateType: config.onCreateType,
     onOpenDailyNote: config.onOpenDailyNote,
     onQuickOpen: config.onQuickOpen,
     onSave: config.onSave,
@@ -122,12 +133,27 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onArchiveNote: toggleArchive,
     onTrashNote: toggleTrash,
     onSearch: config.onSearch,
+    onToggleRawEditor: config.onToggleRawEditor,
+    onToggleDiff: config.onToggleDiff,
+    onToggleAIChat: config.onToggleAIChat,
     onGoBack: config.onGoBack,
     onGoForward: config.onGoForward,
     onCheckForUpdates: config.onCheckForUpdates,
+    onSelectFilter: selectFilter,
+    onOpenVault: config.onOpenVault,
+    onRemoveActiveVault: config.onRemoveActiveVault,
+    onRestoreGettingStarted: config.onRestoreGettingStarted,
+    onCreateTheme: config.onCreateTheme,
+    onRestoreDefaultThemes: config.onRestoreDefaultThemes,
+    onCommitPush: config.onCommitPush,
+    onResolveConflicts: config.onResolveConflicts,
+    onViewChanges: viewChanges,
+    onInstallMcp: config.onInstallMcp,
     activeTabPathRef: config.activeTabPathRef,
     handleCloseTabRef: config.handleCloseTabRef,
     activeTabPath: config.activeTabPath,
+    modifiedCount: config.modifiedCount,
+    conflictCount: config.conflictCount,
   })
 
   const commands = useCommandRegistry({
@@ -150,6 +176,8 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onToggleInspector: config.onToggleInspector,
     onToggleDiff: config.onToggleDiff,
     onToggleRawEditor: config.onToggleRawEditor,
+    onToggleAIChat: config.onToggleAIChat,
+    onOpenVault: config.onOpenVault,
     activeNoteModified: config.activeNoteModified,
     onZoomIn: config.onZoomIn,
     onZoomOut: config.onZoomOut,
@@ -167,10 +195,8 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onSwitchTheme: config.onSwitchTheme,
     onCreateTheme: config.onCreateTheme,
     onOpenTheme: config.onOpenTheme,
-    onOpenVault: config.onOpenVault,
-    onCreateType: config.onCreateType,
-    onToggleAIChat: config.onToggleAIChat,
     onCheckForUpdates: config.onCheckForUpdates,
+    onCreateType: config.onCreateType,
     onRemoveActiveVault: config.onRemoveActiveVault,
     onRestoreGettingStarted: config.onRestoreGettingStarted,
     onRestoreDefaultThemes: config.onRestoreDefaultThemes,

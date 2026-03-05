@@ -139,8 +139,10 @@ export interface VaultSettings {
   theme: string | null
 }
 
+export type SidebarFilter = 'all' | 'favorites' | 'archived' | 'trash' | 'changes'
+
 export type SidebarSelection =
-  | { kind: 'filter'; filter: 'all' | 'favorites' | 'archived' | 'trash' | 'changes' }
+  | { kind: 'filter'; filter: SidebarFilter }
   | { kind: 'sectionGroup'; type: string }
   | { kind: 'entity'; entry: VaultEntry }
   | { kind: 'topic'; entry: VaultEntry }
