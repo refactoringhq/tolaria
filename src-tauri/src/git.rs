@@ -491,7 +491,32 @@ pub fn git_resolve_conflict(vault_path: &str, file: &str, strategy: &str) -> Res
     Ok(())
 }
 
-/// Commit after all merge conflicts have been resolved.
+/// Check whether a rebase is currently in progress.
+pub fn is_rebase_in_progress(vault_path: &str) -> bool {
+    let vault = Path::new(vault_path);
+    let git_dir = vault.join(".git");
+    git_dir.join("rebase-merge").exists() || git_dir.join("rebase-apply").exists()
+}
+
+/// Check whether a merge is currently in progress.
+pub fn is_merge_in_progress(vault_path: &str) -> bool {
+    Path::new(vault_path).join(".git").join("MERGE_HEAD").exists()
+}
+
+/// Returns the current conflict mode: "rebase", "merge", or "none".
+pub fn get_conflict_mode(vault_path: &str) -> String {
+    if is_rebase_in_progress(vault_path) {
+        "rebase".to_string()
+    } else if is_merge_in_progress(vault_path) {
+        "merge".to_string()
+    } else {
+        "none".to_string()
+    }
+}
+
+/// Commit after all conflicts have been resolved.
+/// Detects whether the repo is in a merge or rebase state and uses the
+/// appropriate command (`git commit` vs `git rebase --continue`).
 pub fn git_commit_conflict_resolution(vault_path: &str) -> Result<String, String> {
     let vault = Path::new(vault_path);
 
@@ -504,24 +529,38 @@ pub fn git_commit_conflict_resolution(vault_path: &str) -> Result<String, String
         ));
     }
 
-    let commit = Command::new("git")
-        .args(["commit", "-m", "Resolve merge conflicts"])
-        .current_dir(vault)
-        .output()
-        .map_err(|e| format!("Failed to run git commit: {}", e))?;
+    let mode = get_conflict_mode(vault_path);
+    let output = match mode.as_str() {
+        "rebase" => Command::new("git")
+            .args(["rebase", "--continue"])
+            .env("GIT_EDITOR", "true")
+            .current_dir(vault)
+            .output()
+            .map_err(|e| format!("Failed to run git rebase --continue: {}", e))?,
+        _ => Command::new("git")
+            .args(["commit", "-m", "Resolve merge conflicts"])
+            .current_dir(vault)
+            .output()
+            .map_err(|e| format!("Failed to run git commit: {}", e))?,
+    };
 
-    if !commit.status.success() {
-        let stderr = String::from_utf8_lossy(&commit.stderr);
-        let stdout = String::from_utf8_lossy(&commit.stdout);
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
         let detail = if stderr.trim().is_empty() {
             stdout
         } else {
             stderr
         };
-        return Err(format!("git commit failed: {}", detail.trim()));
+        let cmd_name = if mode == "rebase" {
+            "git rebase --continue"
+        } else {
+            "git commit"
+        };
+        return Err(format!("{} failed: {}", cmd_name, detail.trim()));
     }
 
-    Ok(String::from_utf8_lossy(&commit.stdout).to_string())
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
 }
 
 /// Push to remote.
@@ -1393,5 +1432,129 @@ mod tests {
             parse_github_repo_path("https://gitlab.com/owner/repo.git"),
             None
         );
+    }
+
+    #[test]
+    fn test_conflict_mode_none_for_clean_repo() {
+        let dir = setup_git_repo();
+        let vault = dir.path();
+        let vp = vault.to_str().unwrap();
+
+        fs::write(vault.join("note.md"), "# Note\n").unwrap();
+        git_commit(vp, "initial").unwrap();
+
+        assert_eq!(get_conflict_mode(vp), "none");
+        assert!(!is_rebase_in_progress(vp));
+        assert!(!is_merge_in_progress(vp));
+    }
+
+    #[test]
+    fn test_conflict_mode_merge_during_merge_conflict() {
+        let (_bare, _clone_a, clone_b) = setup_conflict_pair();
+        let vp_b = clone_b.path().to_str().unwrap();
+
+        // setup_conflict_pair creates a merge conflict via git_pull (--no-rebase)
+        assert_eq!(get_conflict_mode(vp_b), "merge");
+        assert!(is_merge_in_progress(vp_b));
+        assert!(!is_rebase_in_progress(vp_b));
+    }
+
+    #[test]
+    fn test_commit_conflict_resolution_merge_mode() {
+        let (_bare, _clone_a, clone_b) = setup_conflict_pair();
+        let vp_b = clone_b.path().to_str().unwrap();
+
+        assert_eq!(get_conflict_mode(vp_b), "merge");
+
+        git_resolve_conflict(vp_b, "conflict.md", "ours").unwrap();
+        let result = git_commit_conflict_resolution(vp_b);
+        assert!(result.is_ok());
+
+        // After resolution, mode should be none
+        assert_eq!(get_conflict_mode(vp_b), "none");
+    }
+
+    /// Set up a rebase conflict: clone_b has diverged from origin and
+    /// `git pull --rebase` causes a conflict.
+    fn setup_rebase_conflict_pair() -> (TempDir, TempDir, TempDir) {
+        let (bare_dir, clone_a_dir, clone_b_dir) = setup_remote_pair();
+
+        let vp_a = clone_a_dir.path().to_str().unwrap();
+        let vp_b = clone_b_dir.path().to_str().unwrap();
+
+        // A creates the file and pushes
+        fs::write(clone_a_dir.path().join("conflict.md"), "# Original\n").unwrap();
+        git_commit(vp_a, "create conflict.md").unwrap();
+        git_push(vp_a).unwrap();
+
+        // B pulls to get the file
+        git_pull(vp_b).unwrap();
+
+        // A modifies and pushes
+        fs::write(clone_a_dir.path().join("conflict.md"), "# Version A\n").unwrap();
+        git_commit(vp_a, "A's change").unwrap();
+        git_push(vp_a).unwrap();
+
+        // B modifies the same file locally and commits
+        fs::write(clone_b_dir.path().join("conflict.md"), "# Version B\n").unwrap();
+        git_commit(vp_b, "B's change").unwrap();
+
+        // B pulls with --rebase to cause a rebase conflict
+        let output = Command::new("git")
+            .args(["pull", "--rebase"])
+            .current_dir(clone_b_dir.path())
+            .output()
+            .unwrap();
+
+        // Pull should fail due to conflict
+        assert!(
+            !output.status.success(),
+            "Expected rebase conflict, but pull succeeded"
+        );
+
+        (bare_dir, clone_a_dir, clone_b_dir)
+    }
+
+    #[test]
+    fn test_conflict_mode_rebase_during_rebase_conflict() {
+        let (_bare, _clone_a, clone_b) = setup_rebase_conflict_pair();
+        let vp_b = clone_b.path().to_str().unwrap();
+
+        assert_eq!(get_conflict_mode(vp_b), "rebase");
+        assert!(is_rebase_in_progress(vp_b));
+        assert!(!is_merge_in_progress(vp_b));
+    }
+
+    #[test]
+    fn test_get_conflict_files_during_rebase() {
+        let (_bare, _clone_a, clone_b) = setup_rebase_conflict_pair();
+        let vp_b = clone_b.path().to_str().unwrap();
+
+        let conflicts = get_conflict_files(vp_b).unwrap();
+        assert!(
+            conflicts.contains(&"conflict.md".to_string()),
+            "Should detect conflict.md during rebase, got: {:?}",
+            conflicts
+        );
+    }
+
+    #[test]
+    fn test_resolve_and_continue_rebase() {
+        let (_bare, _clone_a, clone_b) = setup_rebase_conflict_pair();
+        let vp_b = clone_b.path().to_str().unwrap();
+
+        assert_eq!(get_conflict_mode(vp_b), "rebase");
+
+        // Resolve the conflict
+        git_resolve_conflict(vp_b, "conflict.md", "theirs").unwrap();
+        let remaining = get_conflict_files(vp_b).unwrap();
+        assert!(remaining.is_empty());
+
+        // Commit resolution should use rebase --continue
+        let result = git_commit_conflict_resolution(vp_b);
+        assert!(result.is_ok(), "rebase --continue failed: {:?}", result);
+
+        // After resolution, mode should be none
+        assert_eq!(get_conflict_mode(vp_b), "none");
     }
 }

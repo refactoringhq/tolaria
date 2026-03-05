@@ -173,6 +173,8 @@ export const mockHandlers: Record<string, (args: any) => any> = {
   get_last_commit_info: (): LastCommitInfo => ({ shortHash: 'a1b2c3d', commitUrl: 'https://github.com/lucaong/laputa-vault/commit/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0' }),
   git_pull: (): GitPullResult => ({ status: 'up_to_date', message: 'Already up to date', updatedFiles: [], conflictFiles: [] }),
   git_push: () => 'Everything up-to-date',
+  get_conflict_files: (): string[] => [],
+  get_conflict_mode: () => 'none',
   check_claude_cli: () => ({ installed: false, version: null }),
   stream_claude_chat: () => 'mock-session',
   stream_claude_agent: () => null,

@@ -135,12 +135,24 @@ function App() {
     onOpenFile: (relativePath) => openConflictFileRef.current(relativePath),
   })
 
-  const handleOpenConflictResolver = useCallback(() => {
-    if (autoSync.conflictFiles.length === 0) return
+  const handleOpenConflictResolver = useCallback(async () => {
+    let files = autoSync.conflictFiles
+    // If no cached conflicts, check directly — there may be pre-existing
+    // conflicts from a prior session that the pull flow didn't detect.
+    if (files.length === 0) {
+      try {
+        files = isTauri()
+          ? await invoke<string[]>('get_conflict_files', { vaultPath: resolvedPath })
+          : await mockInvoke<string[]>('get_conflict_files', { vaultPath: resolvedPath })
+      } catch {
+        return
+      }
+      if (files.length === 0) return
+    }
     autoSync.pausePull()
-    conflictResolver.initFiles(autoSync.conflictFiles)
+    conflictResolver.initFiles(files)
     dialogs.openConflictResolver()
-  }, [autoSync, conflictResolver, dialogs])
+  }, [autoSync, conflictResolver, dialogs, resolvedPath])
 
   const handleCloseConflictResolver = useCallback(() => {
     autoSync.resumePull()

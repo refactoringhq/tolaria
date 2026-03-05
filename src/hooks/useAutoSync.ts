@@ -45,6 +45,22 @@ export function useAutoSync({
   const callbacksRef = useRef({ onVaultUpdated, onConflict, onToast })
   callbacksRef.current = { onVaultUpdated, onConflict, onToast }
 
+  /** Check for pre-existing conflicts (e.g. from a prior session or interrupted rebase). */
+  const checkExistingConflicts = useCallback(async (): Promise<boolean> => {
+    try {
+      const files = await tauriCall<string[]>('get_conflict_files', { vaultPath })
+      if (files.length > 0) {
+        setSyncStatus('conflict')
+        setConflictFiles(files)
+        callbacksRef.current.onConflict(files)
+        return true
+      }
+    } catch {
+      // If the command doesn't exist (e.g. browser mock), ignore
+    }
+    return false
+  }, [vaultPath])
+
   const performPull = useCallback(async () => {
     if (syncingRef.current || pauseRef.current) return
     syncingRef.current = true
@@ -67,7 +83,11 @@ export function useAutoSync({
         setConflictFiles(result.conflictFiles)
         callbacksRef.current.onConflict(result.conflictFiles)
       } else if (result.status === 'error') {
-        setSyncStatus('error')
+        // Pull failed — check if there are pre-existing conflicts that caused it
+        const hasConflicts = await checkExistingConflicts()
+        if (!hasConflicts) {
+          setSyncStatus('error')
+        }
       } else {
         // up_to_date or no_remote
         setSyncStatus('idle')
@@ -79,12 +99,14 @@ export function useAutoSync({
     } finally {
       syncingRef.current = false
     }
-  }, [vaultPath])
+  }, [vaultPath, checkExistingConflicts])
 
-  // Pull on mount (app launch)
+  // Check for pre-existing conflicts on mount, then pull
   useEffect(() => {
-    performPull()
-  }, [performPull])
+    checkExistingConflicts().then(hasConflicts => {
+      if (!hasConflicts) performPull()
+    })
+  }, [checkExistingConflicts, performPull])
 
   // Pull on window focus (app foreground)
   useEffect(() => {

@@ -35,6 +35,7 @@ describe('useAutoSync', () => {
     vi.clearAllMocks()
     mockInvokeFn.mockImplementation((cmd: string) => {
       if (cmd === 'get_last_commit_info') return Promise.resolve(MOCK_COMMIT_INFO)
+      if (cmd === 'get_conflict_files') return Promise.resolve([])
       return Promise.resolve(upToDate())
     })
   })
@@ -164,14 +165,17 @@ describe('useAutoSync', () => {
     let resolveFirst: ((v: GitPullResult) => void) | null = null
     mockInvokeFn.mockImplementation((cmd: string) => {
       if (cmd === 'get_last_commit_info') return Promise.resolve(MOCK_COMMIT_INFO)
+      if (cmd === 'get_conflict_files') return Promise.resolve([])
       return new Promise<GitPullResult>((r) => { resolveFirst = r })
     })
 
     const { result } = renderSync()
 
-    // First pull is in flight (git_pull called once)
-    const pullCalls = () => mockInvokeFn.mock.calls.filter((c: unknown[]) => c[0] === 'git_pull').length
-    expect(pullCalls()).toBe(1)
+    // Wait for startup conflict check to complete and pull to start
+    await waitFor(() => {
+      const pullCalls = mockInvokeFn.mock.calls.filter((c: unknown[]) => c[0] === 'git_pull').length
+      expect(pullCalls).toBe(1)
+    })
 
     // Trigger a manual sync while first is still running
     act(() => {
@@ -179,6 +183,7 @@ describe('useAutoSync', () => {
     })
 
     // Should NOT have fired a second git_pull call
+    const pullCalls = () => mockInvokeFn.mock.calls.filter((c: unknown[]) => c[0] === 'git_pull').length
     expect(pullCalls()).toBe(1)
 
     // Resolve the first
@@ -219,6 +224,7 @@ describe('useAutoSync', () => {
   it('handles error status from git_pull result', async () => {
     mockInvokeFn.mockImplementation((cmd: string) => {
       if (cmd === 'get_last_commit_info') return Promise.resolve(null)
+      if (cmd === 'get_conflict_files') return Promise.resolve([])
       return Promise.resolve({
         status: 'error', message: 'remote: Not Found', updatedFiles: [], conflictFiles: [],
       })
@@ -227,6 +233,42 @@ describe('useAutoSync', () => {
 
     await waitFor(() => {
       expect(result.current.syncStatus).toBe('error')
+    })
+  })
+
+  it('detects pre-existing conflicts on startup before pulling', async () => {
+    mockInvokeFn.mockImplementation((cmd: string) => {
+      if (cmd === 'get_conflict_files') return Promise.resolve(['note.md', 'plan.md'])
+      if (cmd === 'get_last_commit_info') return Promise.resolve(MOCK_COMMIT_INFO)
+      return Promise.resolve(upToDate())
+    })
+    const { result } = renderSync()
+
+    await waitFor(() => {
+      expect(result.current.syncStatus).toBe('conflict')
+      expect(result.current.conflictFiles).toEqual(['note.md', 'plan.md'])
+      expect(onConflict).toHaveBeenCalledWith(['note.md', 'plan.md'])
+    })
+
+    // Should NOT have called git_pull since conflicts were found on startup
+    const pullCalls = mockInvokeFn.mock.calls.filter((c: unknown[]) => c[0] === 'git_pull')
+    expect(pullCalls).toHaveLength(0)
+  })
+
+  it('detects conflicts when git_pull returns error with unresolved conflicts', async () => {
+    mockInvokeFn.mockImplementation((cmd: string) => {
+      if (cmd === 'get_conflict_files') return Promise.resolve(['conflict.md'])
+      if (cmd === 'get_last_commit_info') return Promise.resolve(null)
+      return Promise.resolve({
+        status: 'error', message: 'Pull failed', updatedFiles: [], conflictFiles: [],
+      })
+    })
+    const { result } = renderSync()
+
+    // Startup check finds conflicts, so pull is skipped
+    await waitFor(() => {
+      expect(result.current.syncStatus).toBe('conflict')
+      expect(result.current.conflictFiles).toEqual(['conflict.md'])
     })
   })
 })
