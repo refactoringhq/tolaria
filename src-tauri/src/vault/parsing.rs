@@ -198,9 +198,9 @@ pub(super) fn capitalize_first(s: &str) -> String {
 /// Title-case a folder name: split on hyphens and underscores, capitalize each word, join with spaces.
 /// Example: "monday-ideas" → "Monday Ideas", "key_result" → "Key Result"
 pub(super) fn title_case_folder(s: &str) -> String {
-    s.split(|c| c == '-' || c == '_')
+    s.split(['-', '_'])
         .filter(|w| !w.is_empty())
-        .map(|w| capitalize_first(w))
+        .map(capitalize_first)
         .collect::<Vec<_>>()
         .join(" ")
 }
