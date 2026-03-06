@@ -67,7 +67,6 @@ const SIMPLE_EVENT_MAP: Record<string, SimpleHandler> = {
 
 const FILTER_MAP: Record<string, SidebarFilter> = {
   'go-all-notes': 'all',
-  'go-favorites': 'favorites',
   'go-archived': 'archived',
   'go-trash': 'trash',
   'go-changes': 'changes',

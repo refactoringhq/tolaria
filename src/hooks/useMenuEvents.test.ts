@@ -226,12 +226,6 @@ describe('dispatchMenuEvent', () => {
     expect(h.onSelectFilter).toHaveBeenCalledWith('all')
   })
 
-  it('go-favorites selects favorites filter', () => {
-    const h = makeHandlers()
-    dispatchMenuEvent('go-favorites', h)
-    expect(h.onSelectFilter).toHaveBeenCalledWith('favorites')
-  })
-
   it('go-archived selects archived filter', () => {
     const h = makeHandlers()
     dispatchMenuEvent('go-archived', h)

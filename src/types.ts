@@ -170,7 +170,7 @@ export interface PulseCommit {
   deleted: number
 }
 
-export type SidebarFilter = 'all' | 'favorites' | 'archived' | 'trash' | 'changes' | 'pulse'
+export type SidebarFilter = 'all' | 'archived' | 'trash' | 'changes' | 'pulse'
 
 export type SidebarSelection =
   | { kind: 'filter'; filter: SidebarFilter }

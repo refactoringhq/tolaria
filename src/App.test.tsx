@@ -179,7 +179,7 @@ describe('App', () => {
     await waitFor(() => {
       // "All Notes" should be rendered as the selected nav item
       expect(screen.getByText('All Notes')).toBeInTheDocument()
-      expect(screen.getByText('Favorites')).toBeInTheDocument()
+      expect(screen.getByText('Archive')).toBeInTheDocument()
     })
   })
 

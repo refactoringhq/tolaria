@@ -32,7 +32,6 @@ const VIEW_GO_BACK: &str = "view-go-back";
 const VIEW_GO_FORWARD: &str = "view-go-forward";
 
 const GO_ALL_NOTES: &str = "go-all-notes";
-const GO_FAVORITES: &str = "go-favorites";
 const GO_ARCHIVED: &str = "go-archived";
 const GO_TRASH: &str = "go-trash";
 const GO_CHANGES: &str = "go-changes";
@@ -75,7 +74,6 @@ const CUSTOM_IDS: &[&str] = &[
     VIEW_GO_BACK,
     VIEW_GO_FORWARD,
     GO_ALL_NOTES,
-    GO_FAVORITES,
     GO_ARCHIVED,
     GO_TRASH,
     GO_CHANGES,
@@ -249,9 +247,6 @@ fn build_go_menu(app: &App) -> MenuResult {
     let all_notes = MenuItemBuilder::new("All Notes")
         .id(GO_ALL_NOTES)
         .build(app)?;
-    let favorites = MenuItemBuilder::new("Favorites")
-        .id(GO_FAVORITES)
-        .build(app)?;
     let archived = MenuItemBuilder::new("Archived")
         .id(GO_ARCHIVED)
         .build(app)?;
@@ -268,7 +263,6 @@ fn build_go_menu(app: &App) -> MenuResult {
 
     Ok(SubmenuBuilder::new(app, "Go")
         .item(&all_notes)
-        .item(&favorites)
         .item(&archived)
         .item(&trash)
         .item(&changes)
@@ -454,7 +448,6 @@ mod tests {
             VIEW_GO_BACK,
             VIEW_GO_FORWARD,
             GO_ALL_NOTES,
-            GO_FAVORITES,
             GO_ARCHIVED,
             GO_TRASH,
             GO_CHANGES,
