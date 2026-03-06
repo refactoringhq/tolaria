@@ -7,6 +7,7 @@ import type { VaultEntry } from '../types'
 import {
   type ChatMessage, nextMessageId,
   buildSystemPrompt, streamClaudeChat,
+  trimHistory, formatMessageWithHistory, MAX_HISTORY_TOKENS,
 } from '../utils/ai-chat'
 
 export function useAIChat(
@@ -29,9 +30,11 @@ export function useAIChat(
     abortRef.current = false
 
     const { prompt: systemPrompt } = buildSystemPrompt(contextNotes, allContent)
+    const history = trimHistory(messages, MAX_HISTORY_TOKENS)
+    const messageWithHistory = formatMessageWithHistory(history, text.trim())
     let accumulated = ''
 
-    streamClaudeChat(text.trim(), systemPrompt || undefined, sessionIdRef.current, {
+    streamClaudeChat(messageWithHistory, systemPrompt || undefined, sessionIdRef.current, {
       onInit: (sid) => { sessionIdRef.current = sid },
 
       onText: (chunk) => {
@@ -58,7 +61,7 @@ export function useAIChat(
     }).then(sid => {
       if (sid) sessionIdRef.current = sid
     })
-  }, [isStreaming, allContent, contextNotes])
+  }, [isStreaming, allContent, contextNotes, messages])
 
   const clearConversation = useCallback(() => {
     abortRef.current = true

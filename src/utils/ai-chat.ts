@@ -76,6 +76,34 @@ export function nextMessageId(): string {
   return `msg-${++msgIdCounter}-${Date.now()}`
 }
 
+// --- Conversation history ---
+
+/** Max tokens of history to include in each request. */
+export const MAX_HISTORY_TOKENS = 100_000
+
+/** Keep the most recent messages that fit within `maxTokens`. Drops oldest first. */
+export function trimHistory(history: ChatMessage[], maxTokens: number): ChatMessage[] {
+  let tokenCount = 0
+  const result: ChatMessage[] = []
+  for (let i = history.length - 1; i >= 0; i--) {
+    const tokens = estimateTokens(history[i].content)
+    if (tokenCount + tokens > maxTokens) break
+    result.unshift(history[i])
+    tokenCount += tokens
+  }
+  return result
+}
+
+/** Format conversation history + new message into a single prompt for the CLI. */
+export function formatMessageWithHistory(history: ChatMessage[], newMessage: string): string {
+  if (history.length === 0) return newMessage
+
+  const lines = history.map(m => `[${m.role}]: ${m.content}`)
+  lines.push(`[user]: ${newMessage}`)
+
+  return `<conversation_history>\n${lines.join('\n\n')}\n</conversation_history>\n\nContinue the conversation. Respond only to the latest [user] message.`
+}
+
 // --- Claude CLI status ---
 
 export interface ClaudeCliStatus {
