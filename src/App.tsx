@@ -45,6 +45,7 @@ import { isTauri, mockInvoke } from './mock-tauri'
 import type { SidebarSelection, VaultEntry } from './types'
 import type { NoteListItem } from './utils/ai-context'
 import { filterEntries } from './utils/noteListHelpers'
+import { openLocalFile } from './utils/url'
 import './App.css'
 
 // Type declaration for mock content storage
@@ -287,8 +288,13 @@ function App() {
       const fullPath = `${resolvedPath}/${relativePath}`
       const entry = vault.entries.find(e => e.path === fullPath)
       if (entry) {
+        // Markdown note — open inside Laputa editor
         notes.handleSelectNote(entry)
         dialogs.closeConflictResolver()
+      } else {
+        // Non-note file (e.g. .laputa-cache.json, settings.json) —
+        // open with system default app so the user can inspect/edit it
+        openLocalFile(fullPath)
       }
     }
   }, [resolvedPath, vault.entries, notes, dialogs])

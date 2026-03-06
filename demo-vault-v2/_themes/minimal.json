@@ -1,0 +1,33 @@
+{
+  "name": "Minimal",
+  "description": "High contrast, minimal chrome",
+  "colors": {
+    "background": "#FAFAFA",
+    "foreground": "#111111",
+    "card": "#FFFFFF",
+    "popover": "#FFFFFF",
+    "primary": "#000000",
+    "primary-foreground": "#FFFFFF",
+    "secondary": "#F0F0F0",
+    "secondary-foreground": "#111111",
+    "muted": "#F5F5F5",
+    "muted-foreground": "#666666",
+    "accent": "#F0F0F0",
+    "accent-foreground": "#111111",
+    "destructive": "#CC0000",
+    "border": "#E0E0E0",
+    "input": "#E0E0E0",
+    "ring": "#000000",
+    "sidebar-background": "#F5F5F5",
+    "sidebar-foreground": "#111111",
+    "sidebar-border": "#E0E0E0",
+    "sidebar-accent": "#E8E8E8"
+  },
+  "typography": {
+    "font-family": "'SF Mono', 'Menlo', monospace",
+    "font-size-base": "13px"
+  },
+  "spacing": {
+    "sidebar-width": "220px"
+  }
+}

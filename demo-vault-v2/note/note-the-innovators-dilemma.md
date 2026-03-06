@@ -4,6 +4,8 @@ Is A: Note
 Author: "Clayton Christensen"
 Topics: ["[[topic-saas-business]]"]
 URL: "https://example.com/innovators-dilemma"
+trashed: true
+trashed_at: 2026-03-04
 ---
 # The Innovator's Dilemma
 *Clayton Christensen*

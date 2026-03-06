@@ -22,3 +22,11 @@ export async function openExternalUrl(url: string): Promise<void> {
     window.open(url, '_blank')
   }
 }
+
+/** Open a local file path with the system default app (e.g. TextEdit for .json). */
+export async function openLocalFile(absolutePath: string): Promise<void> {
+  if (isTauri()) {
+    const { openPath } = await import('@tauri-apps/plugin-opener')
+    await openPath(absolutePath)
+  }
+}

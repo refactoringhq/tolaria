@@ -1,5 +1,6 @@
 pub mod ai_chat;
 pub mod claude_cli;
+mod commands;
 pub mod frontmatter;
 pub mod git;
 pub mod github;
@@ -13,543 +14,10 @@ pub mod vault;
 pub mod vault_config;
 pub mod vault_list;
 
-use std::borrow::Cow;
-use std::path::Path;
 use std::process::Child;
 use std::sync::Mutex;
 
-use ai_chat::{AiChatRequest, AiChatResponse};
-use claude_cli::{AgentStreamRequest, ChatStreamRequest, ClaudeCliStatus, ClaudeStreamEvent};
-use frontmatter::FrontmatterValue;
-use git::{GitCommit, GitPullResult, LastCommitInfo, ModifiedFile, PulseCommit};
-use github::{DeviceFlowPollResult, DeviceFlowStart, GitHubUser, GithubRepo};
-use indexing::{IndexStatus, IndexingProgress};
-use search::SearchResponse;
-use settings::Settings;
-use theme::{ThemeFile, VaultSettings};
-use vault::{RenameResult, VaultEntry};
-use vault_config::VaultConfig;
-use vault_list::VaultList;
-
-/// Expand a leading `~` or `~/` in a path string to the user's home directory.
-/// Returns the original string unchanged if it doesn't start with `~` or if the
-/// home directory cannot be determined.
-fn expand_tilde(path: &str) -> Cow<'_, str> {
-    if path == "~" {
-        if let Some(home) = dirs::home_dir() {
-            return Cow::Owned(home.to_string_lossy().into_owned());
-        }
-    } else if let Some(rest) = path.strip_prefix("~/") {
-        if let Some(home) = dirs::home_dir() {
-            return Cow::Owned(format!("{}/{}", home.to_string_lossy(), rest));
-        }
-    }
-    Cow::Borrowed(path)
-}
-
-#[tauri::command]
-fn list_vault(path: String) -> Result<Vec<VaultEntry>, String> {
-    let path = expand_tilde(&path);
-    vault::scan_vault_cached(Path::new(path.as_ref()))
-}
-
-#[tauri::command]
-fn get_note_content(path: String) -> Result<String, String> {
-    let path = expand_tilde(&path);
-    vault::get_note_content(Path::new(path.as_ref()))
-}
-
-#[tauri::command]
-fn save_note_content(path: String, content: String) -> Result<(), String> {
-    let path = expand_tilde(&path);
-    vault::save_note_content(&path, &content)
-}
-
-#[tauri::command]
-fn update_frontmatter(
-    path: String,
-    key: String,
-    value: FrontmatterValue,
-) -> Result<String, String> {
-    let path = expand_tilde(&path);
-    frontmatter::update_frontmatter(&path, &key, value)
-}
-
-#[tauri::command]
-fn delete_frontmatter_property(path: String, key: String) -> Result<String, String> {
-    let path = expand_tilde(&path);
-    frontmatter::delete_frontmatter_property(&path, &key)
-}
-
-#[tauri::command]
-fn get_file_history(vault_path: String, path: String) -> Result<Vec<GitCommit>, String> {
-    let vault_path = expand_tilde(&vault_path);
-    let path = expand_tilde(&path);
-    git::get_file_history(&vault_path, &path)
-}
-
-#[tauri::command]
-fn get_modified_files(vault_path: String) -> Result<Vec<ModifiedFile>, String> {
-    let vault_path = expand_tilde(&vault_path);
-    git::get_modified_files(&vault_path)
-}
-
-#[tauri::command]
-fn get_file_diff(vault_path: String, path: String) -> Result<String, String> {
-    let vault_path = expand_tilde(&vault_path);
-    let path = expand_tilde(&path);
-    git::get_file_diff(&vault_path, &path)
-}
-
-#[tauri::command]
-fn get_file_diff_at_commit(
-    vault_path: String,
-    path: String,
-    commit_hash: String,
-) -> Result<String, String> {
-    let vault_path = expand_tilde(&vault_path);
-    let path = expand_tilde(&path);
-    git::get_file_diff_at_commit(&vault_path, &path, &commit_hash)
-}
-
-#[tauri::command]
-fn get_vault_pulse(vault_path: String, limit: Option<usize>) -> Result<Vec<PulseCommit>, String> {
-    let vault_path = expand_tilde(&vault_path);
-    let limit = limit.unwrap_or(30);
-    git::get_vault_pulse(&vault_path, limit)
-}
-
-#[tauri::command]
-fn git_commit(vault_path: String, message: String) -> Result<String, String> {
-    let vault_path = expand_tilde(&vault_path);
-    git::git_commit(&vault_path, &message)
-}
-
-fn parse_build_label(version: &str) -> String {
-    let parts: Vec<&str> = version.split('.').collect();
-    match parts.as_slice() {
-        [_, minor, patch] if minor.len() >= 6 => format!("b{}", patch),
-        [_, _, _] => "dev".to_string(),
-        _ => "b?".to_string(),
-    }
-}
-
-#[tauri::command]
-fn get_build_number(app_handle: tauri::AppHandle) -> String {
-    let version = app_handle.package_info().version.to_string();
-    parse_build_label(&version)
-}
-
-#[tauri::command]
-fn get_last_commit_info(vault_path: String) -> Result<Option<LastCommitInfo>, String> {
-    let vault_path = expand_tilde(&vault_path);
-    git::get_last_commit_info(&vault_path)
-}
-
-#[tauri::command]
-fn git_pull(vault_path: String) -> Result<GitPullResult, String> {
-    let vault_path = expand_tilde(&vault_path);
-    git::git_pull(&vault_path)
-}
-
-#[tauri::command]
-fn get_conflict_files(vault_path: String) -> Result<Vec<String>, String> {
-    let vault_path = expand_tilde(&vault_path);
-    git::get_conflict_files(&vault_path)
-}
-
-#[tauri::command]
-fn get_conflict_mode(vault_path: String) -> String {
-    let vault_path = expand_tilde(&vault_path);
-    git::get_conflict_mode(&vault_path)
-}
-
-#[tauri::command]
-fn git_resolve_conflict(vault_path: String, file: String, strategy: String) -> Result<(), String> {
-    let vault_path = expand_tilde(&vault_path);
-    git::git_resolve_conflict(&vault_path, &file, &strategy)
-}
-
-#[tauri::command]
-fn git_commit_conflict_resolution(vault_path: String) -> Result<String, String> {
-    let vault_path = expand_tilde(&vault_path);
-    git::git_commit_conflict_resolution(&vault_path)
-}
-
-#[tauri::command]
-fn git_push(vault_path: String) -> Result<String, String> {
-    let vault_path = expand_tilde(&vault_path);
-    git::git_push(&vault_path)
-}
-
-#[tauri::command]
-async fn ai_chat(request: AiChatRequest) -> Result<AiChatResponse, String> {
-    ai_chat::send_chat(request).await
-}
-
-#[tauri::command]
-fn check_claude_cli() -> ClaudeCliStatus {
-    claude_cli::check_cli()
-}
-
-#[tauri::command]
-async fn stream_claude_chat(
-    app_handle: tauri::AppHandle,
-    request: ChatStreamRequest,
-) -> Result<String, String> {
-    use tauri::Emitter;
-    tokio::task::spawn_blocking(move || {
-        claude_cli::run_chat_stream(request, |event: ClaudeStreamEvent| {
-            let _ = app_handle.emit("claude-stream", &event);
-        })
-    })
-    .await
-    .map_err(|e| format!("Task failed: {e}"))?
-}
-
-#[tauri::command]
-async fn stream_claude_agent(
-    app_handle: tauri::AppHandle,
-    request: AgentStreamRequest,
-) -> Result<String, String> {
-    use tauri::Emitter;
-    tokio::task::spawn_blocking(move || {
-        claude_cli::run_agent_stream(request, |event: ClaudeStreamEvent| {
-            let _ = app_handle.emit("claude-agent-stream", &event);
-        })
-    })
-    .await
-    .map_err(|e| format!("Task failed: {e}"))?
-}
-
-#[tauri::command]
-fn save_image(vault_path: String, filename: String, data: String) -> Result<String, String> {
-    let vault_path = expand_tilde(&vault_path);
-    vault::save_image(&vault_path, &filename, &data)
-}
-
-#[tauri::command]
-fn copy_image_to_vault(vault_path: String, source_path: String) -> Result<String, String> {
-    let vault_path = expand_tilde(&vault_path);
-    vault::copy_image_to_vault(&vault_path, &source_path)
-}
-
-#[tauri::command]
-fn rename_note(
-    vault_path: String,
-    old_path: String,
-    new_title: String,
-) -> Result<RenameResult, String> {
-    let vault_path = expand_tilde(&vault_path);
-    let old_path = expand_tilde(&old_path);
-    vault::rename_note(&vault_path, &old_path, &new_title)
-}
-
-#[tauri::command]
-fn purge_trash(vault_path: String) -> Result<Vec<String>, String> {
-    let vault_path = expand_tilde(&vault_path);
-    vault::purge_trash(&vault_path)
-}
-
-#[tauri::command]
-fn delete_note(path: String) -> Result<String, String> {
-    let path = expand_tilde(&path);
-    vault::delete_note(&path)
-}
-
-#[tauri::command]
-fn migrate_is_a_to_type(vault_path: String) -> Result<usize, String> {
-    let vault_path = expand_tilde(&vault_path);
-    vault::migrate_is_a_to_type(&vault_path)
-}
-
-#[tauri::command]
-fn create_getting_started_vault(target_path: Option<String>) -> Result<String, String> {
-    let path = match target_path {
-        Some(p) if !p.is_empty() => expand_tilde(&p).into_owned(),
-        _ => vault::default_vault_path()?.to_string_lossy().to_string(),
-    };
-    vault::create_getting_started_vault(&path)
-}
-
-#[tauri::command]
-fn check_vault_exists(path: String) -> bool {
-    let path = expand_tilde(&path);
-    vault::vault_exists(&path)
-}
-
-#[tauri::command]
-fn get_default_vault_path() -> Result<String, String> {
-    vault::default_vault_path().map(|p| p.to_string_lossy().to_string())
-}
-
-#[tauri::command]
-fn batch_archive_notes(paths: Vec<String>) -> Result<usize, String> {
-    let mut count = 0;
-    for path in &paths {
-        let path = expand_tilde(path);
-        frontmatter::update_frontmatter(&path, "Archived", FrontmatterValue::Bool(true))?;
-        count += 1;
-    }
-    Ok(count)
-}
-
-#[tauri::command]
-fn batch_trash_notes(paths: Vec<String>) -> Result<usize, String> {
-    let now = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
-    let mut count = 0;
-    for path in &paths {
-        let path = expand_tilde(path);
-        frontmatter::update_frontmatter(&path, "Trashed", FrontmatterValue::Bool(true))?;
-        frontmatter::update_frontmatter(
-            &path,
-            "Trashed at",
-            FrontmatterValue::String(now.clone()),
-        )?;
-        count += 1;
-    }
-    Ok(count)
-}
-
-#[tauri::command]
-fn update_menu_state(
-    app_handle: tauri::AppHandle,
-    has_active_note: bool,
-    has_modified_files: Option<bool>,
-    has_conflicts: Option<bool>,
-) -> Result<(), String> {
-    menu::set_note_items_enabled(&app_handle, has_active_note);
-    if let Some(v) = has_modified_files {
-        menu::set_git_commit_items_enabled(&app_handle, v);
-    }
-    if let Some(v) = has_conflicts {
-        menu::set_git_conflict_items_enabled(&app_handle, v);
-    }
-    Ok(())
-}
-
-#[tauri::command]
-fn get_settings() -> Result<Settings, String> {
-    settings::get_settings()
-}
-
-#[tauri::command]
-fn save_settings(settings: Settings) -> Result<(), String> {
-    settings::save_settings(settings)
-}
-
-#[tauri::command]
-fn load_vault_list() -> Result<VaultList, String> {
-    vault_list::load_vault_list()
-}
-
-#[tauri::command]
-fn save_vault_list(list: VaultList) -> Result<(), String> {
-    vault_list::save_vault_list(&list)
-}
-
-#[tauri::command]
-async fn github_list_repos(token: String) -> Result<Vec<GithubRepo>, String> {
-    github::github_list_repos(&token).await
-}
-
-#[tauri::command]
-async fn github_create_repo(
-    token: String,
-    name: String,
-    private: bool,
-) -> Result<GithubRepo, String> {
-    github::github_create_repo(&token, &name, private).await
-}
-
-#[tauri::command]
-fn clone_repo(url: String, token: String, local_path: String) -> Result<String, String> {
-    let local_path = expand_tilde(&local_path);
-    github::clone_repo(&url, &token, &local_path)
-}
-
-#[tauri::command]
-async fn github_device_flow_start() -> Result<DeviceFlowStart, String> {
-    github::github_device_flow_start().await
-}
-
-#[tauri::command]
-async fn github_device_flow_poll(device_code: String) -> Result<DeviceFlowPollResult, String> {
-    github::github_device_flow_poll(&device_code).await
-}
-
-#[tauri::command]
-async fn github_get_user(token: String) -> Result<GitHubUser, String> {
-    github::github_get_user(&token).await
-}
-
-#[tauri::command]
-async fn search_vault(
-    vault_path: String,
-    query: String,
-    mode: String,
-    limit: Option<usize>,
-) -> Result<SearchResponse, String> {
-    let vault_path = expand_tilde(&vault_path).into_owned();
-    let limit = limit.unwrap_or(20);
-    tokio::task::spawn_blocking(move || search::search_vault(&vault_path, &query, &mode, limit))
-        .await
-        .map_err(|e| format!("Search task failed: {}", e))?
-}
-
-#[tauri::command]
-fn get_index_status(vault_path: String) -> IndexStatus {
-    let vault_path = expand_tilde(&vault_path);
-    indexing::check_index_status(&vault_path)
-}
-
-fn emit_unavailable(app_handle: &tauri::AppHandle) {
-    use tauri::Emitter;
-    let _ = app_handle.emit(
-        "indexing-progress",
-        IndexingProgress {
-            phase: "unavailable".to_string(),
-            current: 0,
-            total: 0,
-            done: true,
-            error: Some("qmd not available".to_string()),
-        },
-    );
-}
-
-#[tauri::command]
-async fn start_indexing(app_handle: tauri::AppHandle, vault_path: String) -> Result<(), String> {
-    use tauri::Emitter;
-    let vault_path = expand_tilde(&vault_path).into_owned();
-    tokio::task::spawn_blocking(move || {
-        if indexing::find_qmd_binary().is_none() {
-            log::info!("qmd binary not found — attempting auto-install via bun");
-            let _ = app_handle.emit(
-                "indexing-progress",
-                IndexingProgress {
-                    phase: "installing".to_string(),
-                    current: 0,
-                    total: 0,
-                    done: false,
-                    error: None,
-                },
-            );
-
-            match indexing::try_auto_install_qmd() {
-                Ok(()) if indexing::find_qmd_binary().is_some() => {
-                    log::info!("qmd auto-installed successfully, proceeding with indexing");
-                }
-                Ok(()) => {
-                    log::warn!("qmd auto-install reported success but binary still not found");
-                    emit_unavailable(&app_handle);
-                    return Err("qmd not available after install".to_string());
-                }
-                Err(e) => {
-                    log::info!("qmd auto-install failed: {e}");
-                    emit_unavailable(&app_handle);
-                    return Err(format!("qmd not available: {e}"));
-                }
-            }
-        }
-
-        indexing::run_full_index(&vault_path, |progress| {
-            let _ = app_handle.emit("indexing-progress", &progress);
-        })
-    })
-    .await
-    .map_err(|e| format!("Indexing task failed: {e}"))?
-}
-
-#[tauri::command]
-async fn trigger_incremental_index(vault_path: String) -> Result<(), String> {
-    let vault_path = expand_tilde(&vault_path).into_owned();
-    tokio::task::spawn_blocking(move || indexing::run_incremental_update(&vault_path))
-        .await
-        .map_err(|e| format!("Incremental index failed: {e}"))?
-}
-
 struct WsBridgeChild(Mutex<Option<Child>>);
-
-#[tauri::command]
-async fn register_mcp_tools(vault_path: String) -> Result<String, String> {
-    let vault_path = expand_tilde(&vault_path).into_owned();
-    tokio::task::spawn_blocking(move || mcp::register_mcp(&vault_path))
-        .await
-        .map_err(|e| format!("Registration task failed: {e}"))?
-}
-
-#[tauri::command]
-async fn check_mcp_status() -> Result<mcp::McpStatus, String> {
-    tokio::task::spawn_blocking(mcp::check_mcp_status)
-        .await
-        .map_err(|e| format!("MCP status check failed: {e}"))
-}
-
-#[tauri::command]
-fn list_themes(vault_path: String) -> Result<Vec<ThemeFile>, String> {
-    let vault_path = expand_tilde(&vault_path);
-    theme::list_themes(&vault_path)
-}
-
-#[tauri::command]
-fn get_theme(vault_path: String, theme_id: String) -> Result<ThemeFile, String> {
-    let vault_path = expand_tilde(&vault_path);
-    theme::get_theme(&vault_path, &theme_id)
-}
-
-#[tauri::command]
-fn get_vault_settings(vault_path: String) -> Result<VaultSettings, String> {
-    let vault_path = expand_tilde(&vault_path);
-    theme::get_vault_settings(&vault_path)
-}
-
-#[tauri::command]
-fn save_vault_settings(vault_path: String, settings: VaultSettings) -> Result<(), String> {
-    let vault_path = expand_tilde(&vault_path);
-    theme::save_vault_settings(&vault_path, settings)
-}
-
-#[tauri::command]
-fn set_active_theme(vault_path: String, theme_id: Option<String>) -> Result<(), String> {
-    let vault_path = expand_tilde(&vault_path);
-    theme::set_active_theme(&vault_path, theme_id.as_deref())
-}
-
-#[tauri::command]
-fn create_theme(vault_path: String, source_id: Option<String>) -> Result<String, String> {
-    let vault_path = expand_tilde(&vault_path);
-    theme::create_theme(&vault_path, source_id.as_deref())
-}
-
-#[tauri::command]
-fn create_vault_theme(vault_path: String, name: Option<String>) -> Result<String, String> {
-    let vault_path = expand_tilde(&vault_path);
-    theme::create_vault_theme(&vault_path, name.as_deref())
-}
-
-#[tauri::command]
-fn ensure_vault_themes(vault_path: String) -> Result<(), String> {
-    let vault_path = expand_tilde(&vault_path);
-    theme::ensure_vault_themes(&vault_path)
-}
-
-#[tauri::command]
-fn restore_default_themes(vault_path: String) -> Result<String, String> {
-    let vault_path = expand_tilde(&vault_path);
-    theme::restore_default_themes(&vault_path)
-}
-
-#[tauri::command]
-fn get_vault_config(vault_path: String) -> Result<VaultConfig, String> {
-    let vault_path = expand_tilde(&vault_path);
-    vault_config::get_vault_config(&vault_path)
-}
-
-#[tauri::command]
-fn save_vault_config(vault_path: String, config: VaultConfig) -> Result<(), String> {
-    let vault_path = expand_tilde(&vault_path);
-    vault_config::save_vault_config(&vault_path, config)
-}
 
 fn log_startup_result(label: &str, result: Result<usize, String>) {
     match result {
@@ -589,61 +57,6 @@ fn run_startup_tasks() {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn expand_tilde_with_subpath() {
-        let home = dirs::home_dir().unwrap();
-        let result = expand_tilde("~/Documents/vault");
-        assert_eq!(result, format!("{}/Documents/vault", home.display()));
-    }
-
-    #[test]
-    fn expand_tilde_alone() {
-        let home = dirs::home_dir().unwrap();
-        let result = expand_tilde("~");
-        assert_eq!(result, home.to_string_lossy());
-    }
-
-    #[test]
-    fn expand_tilde_noop_for_absolute_path() {
-        let result = expand_tilde("/usr/local/bin");
-        assert_eq!(result, "/usr/local/bin");
-    }
-
-    #[test]
-    fn expand_tilde_noop_for_relative_path() {
-        let result = expand_tilde("some/relative/path");
-        assert_eq!(result, "some/relative/path");
-    }
-
-    #[test]
-    fn expand_tilde_noop_for_tilde_in_middle() {
-        let result = expand_tilde("/home/~user/path");
-        assert_eq!(result, "/home/~user/path");
-    }
-
-    #[test]
-    fn parse_build_label_release_version() {
-        assert_eq!(parse_build_label("0.20260303.281"), "b281");
-        assert_eq!(parse_build_label("0.20251215.42"), "b42");
-    }
-
-    #[test]
-    fn parse_build_label_dev_version() {
-        assert_eq!(parse_build_label("0.1.0"), "dev");
-        assert_eq!(parse_build_label("0.0.0"), "dev");
-    }
-
-    #[test]
-    fn parse_build_label_malformed() {
-        assert_eq!(parse_build_label("invalid"), "b?");
-        assert_eq!(parse_build_label(""), "b?");
-    }
-}
-
 fn spawn_ws_bridge(app: &mut tauri::App) {
     use tauri::Manager;
     let vault_path = dirs::home_dir()
@@ -670,11 +83,6 @@ pub fn run() {
                         .level(log::LevelFilter::Info)
                         .build(),
                 )?;
-                // Open devtools automatically in debug builds
-                // use tauri::Manager;
-                // if let Some(window) = app.get_webview_window("main") {
-                //     window.open_devtools();
-                // }
             }
 
             app.handle().plugin(tauri_plugin_dialog::init())?;
@@ -693,68 +101,68 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            list_vault,
-            get_note_content,
-            save_note_content,
-            update_frontmatter,
-            delete_frontmatter_property,
-            rename_note,
-            get_file_history,
-            get_modified_files,
-            get_file_diff,
-            get_file_diff_at_commit,
-            get_vault_pulse,
-            git_commit,
-            get_build_number,
-            get_last_commit_info,
-            git_pull,
-            git_push,
-            get_conflict_files,
-            get_conflict_mode,
-            git_resolve_conflict,
-            git_commit_conflict_resolution,
-            ai_chat,
-            check_claude_cli,
-            stream_claude_chat,
-            stream_claude_agent,
-            save_image,
-            copy_image_to_vault,
-            purge_trash,
-            delete_note,
-            migrate_is_a_to_type,
-            batch_archive_notes,
-            batch_trash_notes,
-            get_settings,
-            update_menu_state,
-            save_settings,
-            load_vault_list,
-            save_vault_list,
-            github_list_repos,
-            github_create_repo,
-            clone_repo,
-            github_device_flow_start,
-            github_device_flow_poll,
-            github_get_user,
-            search_vault,
-            get_index_status,
-            start_indexing,
-            trigger_incremental_index,
-            create_getting_started_vault,
-            check_vault_exists,
-            get_default_vault_path,
-            register_mcp_tools,
-            check_mcp_status,
-            list_themes,
-            get_theme,
-            get_vault_settings,
-            save_vault_settings,
-            set_active_theme,
-            create_theme,
-            create_vault_theme,
-            ensure_vault_themes,
-            restore_default_themes,
-            get_vault_config,
-            save_vault_config
+            commands::list_vault,
+            commands::get_note_content,
+            commands::save_note_content,
+            commands::update_frontmatter,
+            commands::delete_frontmatter_property,
+            commands::rename_note,
+            commands::get_file_history,
+            commands::get_modified_files,
+            commands::get_file_diff,
+            commands::get_file_diff_at_commit,
+            commands::get_vault_pulse,
+            commands::git_commit,
+            commands::get_build_number,
+            commands::get_last_commit_info,
+            commands::git_pull,
+            commands::git_push,
+            commands::get_conflict_files,
+            commands::get_conflict_mode,
+            commands::git_resolve_conflict,
+            commands::git_commit_conflict_resolution,
+            commands::ai_chat,
+            commands::check_claude_cli,
+            commands::stream_claude_chat,
+            commands::stream_claude_agent,
+            commands::save_image,
+            commands::copy_image_to_vault,
+            commands::purge_trash,
+            commands::delete_note,
+            commands::migrate_is_a_to_type,
+            commands::batch_archive_notes,
+            commands::batch_trash_notes,
+            commands::get_settings,
+            commands::update_menu_state,
+            commands::save_settings,
+            commands::load_vault_list,
+            commands::save_vault_list,
+            commands::github_list_repos,
+            commands::github_create_repo,
+            commands::clone_repo,
+            commands::github_device_flow_start,
+            commands::github_device_flow_poll,
+            commands::github_get_user,
+            commands::search_vault,
+            commands::get_index_status,
+            commands::start_indexing,
+            commands::trigger_incremental_index,
+            commands::create_getting_started_vault,
+            commands::check_vault_exists,
+            commands::get_default_vault_path,
+            commands::register_mcp_tools,
+            commands::check_mcp_status,
+            commands::list_themes,
+            commands::get_theme,
+            commands::get_vault_settings,
+            commands::save_vault_settings,
+            commands::set_active_theme,
+            commands::create_theme,
+            commands::create_vault_theme,
+            commands::ensure_vault_themes,
+            commands::restore_default_themes,
+            commands::get_vault_config,
+            commands::save_vault_config
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

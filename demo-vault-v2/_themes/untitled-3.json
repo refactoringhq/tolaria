@@ -1,0 +1,33 @@
+{
+  "colors": {
+    "accent": "#EBEBEA",
+    "accent-foreground": "#37352F",
+    "background": "#FFFFFF",
+    "border": "#E9E9E7",
+    "card": "#FFFFFF",
+    "destructive": "#E03E3E",
+    "foreground": "#37352F",
+    "input": "#E9E9E7",
+    "muted": "#F0F0EF",
+    "muted-foreground": "#787774",
+    "popover": "#FFFFFF",
+    "primary": "#155DFF",
+    "primary-foreground": "#FFFFFF",
+    "ring": "#155DFF",
+    "secondary": "#EBEBEA",
+    "secondary-foreground": "#37352F",
+    "sidebar-accent": "#EBEBEA",
+    "sidebar-background": "#F7F6F3",
+    "sidebar-border": "#E9E9E7",
+    "sidebar-foreground": "#37352F"
+  },
+  "description": "Light theme with warm, paper-like tones",
+  "name": "Untitled Theme",
+  "spacing": {
+    "sidebar-width": "250px"
+  },
+  "typography": {
+    "font-family": "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+    "font-size-base": "14px"
+  }
+}

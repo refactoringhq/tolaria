@@ -1,0 +1,33 @@
+{
+  "name": "Dark",
+  "description": "Dark variant with deep navy tones",
+  "colors": {
+    "background": "#0f0f1a",
+    "foreground": "#e0e0e0",
+    "card": "#16162a",
+    "popover": "#1e1e3a",
+    "primary": "#155DFF",
+    "primary-foreground": "#FFFFFF",
+    "secondary": "#2a2a4a",
+    "secondary-foreground": "#e0e0e0",
+    "muted": "#1e1e3a",
+    "muted-foreground": "#888888",
+    "accent": "#2a2a4a",
+    "accent-foreground": "#e0e0e0",
+    "destructive": "#f44336",
+    "border": "#2a2a4a",
+    "input": "#2a2a4a",
+    "ring": "#155DFF",
+    "sidebar-background": "#1a1a2e",
+    "sidebar-foreground": "#e0e0e0",
+    "sidebar-border": "#2a2a4a",
+    "sidebar-accent": "#2a2a4a"
+  },
+  "typography": {
+    "font-family": "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+    "font-size-base": "14px"
+  },
+  "spacing": {
+    "sidebar-width": "250px"
+  }
+}
