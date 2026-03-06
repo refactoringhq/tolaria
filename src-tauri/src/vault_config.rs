@@ -174,13 +174,12 @@ pub fn migrate_hidden_sections_to_visible(vault_path: &str) -> Result<usize, Str
             let type_content = std::fs::read_to_string(&type_path)
                 .map_err(|e| format!("Failed to read {}: {e}", type_path.display()))?;
             if !type_content.contains("visible:") {
-                let updated =
-                    crate::frontmatter::update_frontmatter_content(
-                        &type_content,
-                        "visible",
-                        Some(crate::frontmatter::FrontmatterValue::Bool(false)),
-                    )
-                    .map_err(|e| format!("Failed to update {}: {e}", type_path.display()))?;
+                let updated = crate::frontmatter::update_frontmatter_content(
+                    &type_content,
+                    "visible",
+                    Some(crate::frontmatter::FrontmatterValue::Bool(false)),
+                )
+                .map_err(|e| format!("Failed to update {}: {e}", type_path.display()))?;
                 std::fs::write(&type_path, updated)
                     .map_err(|e| format!("Failed to write {}: {e}", type_path.display()))?;
             }
@@ -374,8 +373,7 @@ property_display_modes:
         assert!(recipe.contains("visible: false"));
 
         // Config should no longer have hidden_sections
-        let config_content =
-            std::fs::read_to_string(config_dir.join("ui.config.md")).unwrap();
+        let config_content = std::fs::read_to_string(config_dir.join("ui.config.md")).unwrap();
         assert!(!config_content.contains("hidden_sections"));
     }
 
@@ -407,7 +405,10 @@ property_display_modes:
 
         let content = std::fs::read_to_string(type_dir.join("project.md")).unwrap();
         assert!(content.contains("visible: false"));
-        assert!(content.contains("icon: briefcase"), "should preserve existing fields");
+        assert!(
+            content.contains("icon: briefcase"),
+            "should preserve existing fields"
+        );
     }
 
     #[test]
