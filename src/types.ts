@@ -33,6 +33,8 @@ export interface VaultEntry {
   sort: string | null
   /** Default view mode for the note list of this Type: "all", "editor-list", or "editor-only". */
   view: string | null
+  /** Whether this Type is visible in the sidebar. Defaults to true when absent. */
+  visible: boolean | null
   /** All wikilink targets found in the note content. Extracted from [[target]] patterns. */
   outgoingLinks: string[]
   /** Custom scalar frontmatter properties (non-relationship, non-structural). */

@@ -4,7 +4,6 @@ import { resolveIcon } from '../utils/iconRegistry'
 import { buildTypeEntryMap } from '../utils/typeColors'
 import { pluralizeType } from '../hooks/useCommandRegistry'
 import { TypeCustomizePopover } from './TypeCustomizePopover'
-import { useSectionVisibility } from '../hooks/useSectionVisibility'
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
   useSensor, useSensors, type DragEndEvent,
@@ -35,6 +34,7 @@ interface SidebarProps {
   onUpdateTypeTemplate?: (typeName: string, template: string) => void
   onReorderSections?: (orderedTypes: { typeName: string; order: number }[]) => void
   onRenameSection?: (typeName: string, label: string) => void
+  onToggleTypeVisibility?: (typeName: string) => void
   modifiedCount?: number
   onCommitPush?: () => void
   onCollapse?: () => void
@@ -104,13 +104,13 @@ function sortSections(groups: SectionGroup[], typeEntryMap: Record<string, Vault
   })
 }
 
-function useSidebarSections(entries: VaultEntry[], isSectionVisible: (type: string) => boolean) {
+function useSidebarSections(entries: VaultEntry[]) {
   const typeEntryMap = useMemo(() => buildTypeEntryMap(entries), [entries])
   const allSectionGroups = useMemo(() => {
     const sections = buildDynamicSections(entries, typeEntryMap)
     return sortSections(sections, typeEntryMap)
   }, [entries, typeEntryMap])
-  const visibleSections = useMemo(() => allSectionGroups.filter((g) => isSectionVisible(g.type)), [allSectionGroups, isSectionVisible])
+  const visibleSections = useMemo(() => allSectionGroups.filter((g) => typeEntryMap[g.type]?.visible !== false), [allSectionGroups, typeEntryMap])
   const sectionIds = useMemo(() => visibleSections.map((g) => g.type), [visibleSections])
   return { typeEntryMap, allSectionGroups, visibleSections, sectionIds }
 }
@@ -271,6 +271,7 @@ function CustomizeOverlay({ target, typeEntryMap, innerRef, onCustomize, onChang
 export const Sidebar = memo(function Sidebar({
   entries, selection, onSelect, onSelectNote, onCreateType, onCreateNewType,
   onCustomizeType, onUpdateTypeTemplate, onReorderSections, onRenameSection,
+  onToggleTypeVisibility,
   modifiedCount = 0, onCommitPush, onCollapse, isGitVault = false,
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
@@ -285,8 +286,10 @@ export const Sidebar = memo(function Sidebar({
   const popoverRef = useRef<HTMLDivElement>(null)
   const customizeRef = useRef<HTMLDivElement>(null)
 
-  const { toggleSection: toggleVisibility, isSectionVisible } = useSectionVisibility()
-  const { typeEntryMap, allSectionGroups, visibleSections, sectionIds } = useSidebarSections(entries, isSectionVisible)
+  const { typeEntryMap, allSectionGroups, visibleSections, sectionIds } = useSidebarSections(entries)
+
+  const isSectionVisible = useCallback((type: string) => typeEntryMap[type]?.visible !== false, [typeEntryMap])
+  const toggleVisibility = useCallback((type: string) => onToggleTypeVisibility?.(type), [onToggleTypeVisibility])
   const { activeCount, archivedCount, trashedCount } = useEntryCounts(entries)
 
   const closeContextMenu = useCallback(() => { setContextMenuPos(null); setContextMenuType(null) }, [])

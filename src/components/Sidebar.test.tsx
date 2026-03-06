@@ -1,8 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { Sidebar } from './Sidebar'
 import type { VaultEntry, SidebarSelection } from '../types'
-import { bindVaultConfigStore, getVaultConfig, resetVaultConfigStore } from '../utils/vaultConfigStore'
 
 const mockEntries: VaultEntry[] = [
   {
@@ -676,13 +675,96 @@ describe('Sidebar', () => {
     })
   })
 
-  describe('customize section visibility', () => {
-    beforeEach(() => {
-      resetVaultConfigStore()
-      bindVaultConfigStore(
-        { zoom: null, view_mode: null, tag_colors: null, status_colors: null, property_display_modes: null, hidden_sections: null },
-        vi.fn(),
-      )
+  describe('type visibility via visible property', () => {
+    const makeTypeEntry = (title: string, visible: boolean | null): VaultEntry => ({
+      path: `/vault/type/${title.toLowerCase()}.md`,
+      filename: `${title.toLowerCase()}.md`,
+      title,
+      isA: 'Type',
+      aliases: [],
+      belongsTo: [],
+      relatedTo: [],
+      status: null,
+      owner: null,
+      cadence: null,
+      archived: false,
+      trashed: false,
+      trashedAt: null,
+      modifiedAt: 1700000000,
+      createdAt: null,
+      fileSize: 200,
+      snippet: '',
+      wordCount: 0,
+      relationships: {},
+      icon: null,
+      color: null,
+      order: null,
+      sidebarLabel: null,
+      template: null,
+      sort: null,
+      view: null,
+      visible,
+      outgoingLinks: [],
+      properties: {},
+    })
+
+    it('hides a section when its Type entry has visible: false', () => {
+      const entries: VaultEntry[] = [
+        ...mockEntries,
+        makeTypeEntry('Person', false),
+      ]
+      render(<Sidebar entries={entries} selection={defaultSelection} onSelect={() => {}} />)
+      expect(screen.queryByText('People')).not.toBeInTheDocument()
+      // Other sections should still be visible
+      expect(screen.getByText('Projects')).toBeInTheDocument()
+    })
+
+    it('shows a section when its Type entry has visible: true', () => {
+      const entries: VaultEntry[] = [
+        ...mockEntries,
+        makeTypeEntry('Person', true),
+      ]
+      render(<Sidebar entries={entries} selection={defaultSelection} onSelect={() => {}} />)
+      expect(screen.getByText('People')).toBeInTheDocument()
+    })
+
+    it('shows a section when its Type entry has visible: null (default)', () => {
+      const entries: VaultEntry[] = [
+        ...mockEntries,
+        makeTypeEntry('Person', null),
+      ]
+      render(<Sidebar entries={entries} selection={defaultSelection} onSelect={() => {}} />)
+      expect(screen.getByText('People')).toBeInTheDocument()
+    })
+
+    it('shows a section when there is no Type entry at all (default visible)', () => {
+      // mockEntries has Person instances but no Type entry for Person
+      render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
+      expect(screen.getByText('People')).toBeInTheDocument()
+    })
+
+    it('hides multiple sections when their Type entries have visible: false', () => {
+      const entries: VaultEntry[] = [
+        ...mockEntries,
+        makeTypeEntry('Person', false),
+        makeTypeEntry('Event', false),
+      ]
+      render(<Sidebar entries={entries} selection={defaultSelection} onSelect={() => {}} />)
+      expect(screen.queryByText('People')).not.toBeInTheDocument()
+      expect(screen.queryByText('Events')).not.toBeInTheDocument()
+      expect(screen.getByText('Projects')).toBeInTheDocument()
+      expect(screen.getByText('Topics')).toBeInTheDocument()
+    })
+
+    it('does not affect All Notes or other sidebar filters when sections are hidden', () => {
+      const entries: VaultEntry[] = [
+        ...mockEntries,
+        makeTypeEntry('Project', false),
+        makeTypeEntry('Person', false),
+      ]
+      render(<Sidebar entries={entries} selection={defaultSelection} onSelect={() => {}} />)
+      expect(screen.getByText('All Notes')).toBeInTheDocument()
+      expect(screen.getByText('Favorites')).toBeInTheDocument()
     })
 
     it('renders a "Customize sections" button', () => {
@@ -699,74 +781,12 @@ describe('Sidebar', () => {
       expect(screen.getByLabelText('Toggle Topics')).toBeInTheDocument()
     })
 
-    it('hides a section when its toggle is clicked off', () => {
-      render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
-      // People section header should be visible initially
-      expect(screen.getByText('People')).toBeInTheDocument()
-
-      // Open customize popover and toggle People off
+    it('calls onToggleTypeVisibility when toggling a section in the popover', () => {
+      const onToggleTypeVisibility = vi.fn()
+      render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} onToggleTypeVisibility={onToggleTypeVisibility} />)
       fireEvent.click(screen.getByTitle('Customize sections'))
       fireEvent.click(screen.getByLabelText('Toggle People'))
-
-      // People section header should be gone (use getAllByText to handle popover)
-      const peopleElements = screen.queryAllByText('People')
-      // Only the toggle label in the popover should remain, not the section header
-      expect(peopleElements.length).toBeLessThanOrEqual(1)
-    })
-
-    it('re-shows a section when its toggle is clicked on again', () => {
-      render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
-
-      // Hide People
-      fireEvent.click(screen.getByTitle('Customize sections'))
-      fireEvent.click(screen.getByLabelText('Toggle People'))
-
-      // Show People again
-      fireEvent.click(screen.getByLabelText('Toggle People'))
-      // People section should be visible again — popover toggle + section header = 2 "People" texts
-      const peopleElements = screen.getAllByText('People')
-      expect(peopleElements.length).toBe(2)
-    })
-
-    it('persists hidden sections in vault config', () => {
-      const { unmount } = render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
-      fireEvent.click(screen.getByTitle('Customize sections'))
-      fireEvent.click(screen.getByLabelText('Toggle Events'))
-      unmount()
-
-      // Verify vault config was updated
-      const stored = getVaultConfig().hidden_sections
-      expect(stored).toContain('Event')
-    })
-
-    it('restores hidden sections from vault config on mount', () => {
-      resetVaultConfigStore()
-      bindVaultConfigStore(
-        { zoom: null, view_mode: null, tag_colors: null, status_colors: null, property_display_modes: null, hidden_sections: ['Person', 'Event'] },
-        vi.fn(),
-      )
-      render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
-
-      // People and Events section headers should be hidden
-      expect(screen.queryByText('People')).not.toBeInTheDocument()
-      expect(screen.queryByText('Events')).not.toBeInTheDocument()
-
-      // Other section headers should still be visible
-      expect(screen.getByText('Projects')).toBeInTheDocument()
-      expect(screen.getByText('Topics')).toBeInTheDocument()
-    })
-
-    it('does not affect All Notes or other sidebar filters when sections are hidden', () => {
-      resetVaultConfigStore()
-      bindVaultConfigStore(
-        { zoom: null, view_mode: null, tag_colors: null, status_colors: null, property_display_modes: null, hidden_sections: ['Project', 'Person'] },
-        vi.fn(),
-      )
-      render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
-
-      // Top nav items still present
-      expect(screen.getByText('All Notes')).toBeInTheDocument()
-      expect(screen.getByText('Favorites')).toBeInTheDocument()
+      expect(onToggleTypeVisibility).toHaveBeenCalledWith('Person')
     })
 
     it('closes popover when clicking outside', () => {
