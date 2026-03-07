@@ -56,7 +56,8 @@ Entity type is inferred from the folder structure. The vault is organized by typ
 ├── journal/        → "Journal"
 ├── essay/          → "Essay"
 ├── evergreen/      → "Evergreen"
-└── theme/          → "Theme"      ← vault-based themes
+├── theme/          → "Theme"      ← vault-based themes
+└── config/         → "Config"     ← meta-configuration files (agents.md, etc.)
 ```
 
 Mapping logic lives in `vault/mod.rs:parse_md_file()`. If a folder doesn't match any known type, the folder name is capitalized and used as-is.

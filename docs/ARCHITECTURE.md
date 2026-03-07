@@ -183,7 +183,7 @@ The MCP server (`mcp-server/`) exposes vault operations as tools for AI assistan
 | `delete_note` | `path` | Delete a note file from the vault |
 | `link_notes` | `source_path, property, target_title` | Add a target to an array property in frontmatter |
 | `list_notes` | `[type_filter], [sort]` | List all notes, optionally filtered by type |
-| `vault_context` | — | Get vault summary: entity types + 20 recent notes |
+| `vault_context` | — | Get vault summary: entity types + 20 recent notes + configFiles |
 | `ui_open_note` | `path` | Open a note in the Laputa UI editor |
 | `ui_open_tab` | `path` | Open a note in a new UI tab |
 | `ui_highlight` | `element, [path]` | Highlight a UI element (editor, tab, properties, notelist) |
@@ -391,7 +391,7 @@ Backend: `get_vault_pulse` Tauri command parses `git log` with `--name-status`.
 
 ```
 1. Tauri setup:
-   a. run_startup_tasks() → purge trash, migrate frontmatter, seed themes, register MCP
+   a. run_startup_tasks() → purge trash, migrate frontmatter, seed themes, migrate AGENTS.md, seed config files, register MCP
    b. spawn_ws_bridge() → start MCP WebSocket bridge (ports 9710, 9711)
 2. App mounts
 3. useOnboarding checks vault exists → WelcomeScreen if not
@@ -454,6 +454,7 @@ The vault backend (`src-tauri/src/vault/`) is split into focused submodules:
 | `rename.rs` | `rename_note` — renames files and updates wikilinks across the vault |
 | `image.rs` | `save_image` — saves base64-encoded attachments with sanitized filenames |
 | `migration.rs` | Frontmatter migration utilities |
+| `config_seed.rs` | Seeds `config/` folder, migrates `AGENTS.md`, repairs missing config files |
 | `getting_started.rs` | Creates the Getting Started demo vault |
 
 ## Rust Backend Modules
@@ -551,6 +552,7 @@ The vault backend (`src-tauri/src/vault/`) is split into focused submodules:
 | `create_vault_theme` | Create markdown theme note |
 | `ensure_vault_themes` | Seed default themes if missing |
 | `restore_default_themes` | Restore all default themes |
+| `repair_vault` | Restore default themes + missing config files |
 
 ### AI & MCP
 
