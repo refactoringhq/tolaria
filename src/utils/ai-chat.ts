@@ -34,6 +34,7 @@ export function buildSystemPrompt(
   const preamble = [
     'You are a helpful AI assistant integrated into Laputa, a personal knowledge management app.',
     'The user has selected the following notes as context. Use them to answer questions accurately.',
+    'When you mention or reference a note by name, always use [[Note Title]] wikilink syntax so the user can click to open it.',
     '',
   ].join('\n')
 

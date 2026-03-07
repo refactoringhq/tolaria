@@ -23,6 +23,12 @@ describe('buildAgentSystemPrompt', () => {
     expect(prompt).toContain('Vault context:')
     expect(prompt).toContain('Recent notes: foo, bar')
   })
+
+  it('instructs AI to use wikilink syntax', () => {
+    const prompt = buildAgentSystemPrompt()
+    expect(prompt).toContain('[[')
+    expect(prompt).toMatch(/wikilink/i)
+  })
 })
 
 // --- streamClaudeAgent ---

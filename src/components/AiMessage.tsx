@@ -24,6 +24,7 @@ export interface AiMessageProps {
   response?: string
   isStreaming?: boolean
   onOpenNote?: (path: string) => void
+  onNavigateWikilink?: (target: string) => void
 }
 
 function ReferencePill({ reference, onClick }: {
@@ -147,10 +148,10 @@ function ActionCardsList({ actions, onOpenNote, expandedIds, onToggleExpand }: {
   )
 }
 
-function ResponseBlock({ text }: { text: string }) {
+function ResponseBlock({ text, onNavigateWikilink }: { text: string; onNavigateWikilink?: (target: string) => void }) {
   return (
     <div style={{ marginBottom: 4 }}>
-      <MarkdownContent content={text} />
+      <MarkdownContent content={text} onWikilinkClick={onNavigateWikilink} />
       <button
         className="flex items-center gap-1 border-none bg-transparent p-0 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
         style={{ fontSize: 11, marginTop: 4 }}
@@ -175,7 +176,7 @@ function StreamingIndicator() {
   )
 }
 
-export function AiMessage({ userMessage, references, reasoning, reasoningDone, actions, response, isStreaming, onOpenNote }: AiMessageProps) {
+export function AiMessage({ userMessage, references, reasoning, reasoningDone, actions, response, isStreaming, onOpenNote, onNavigateWikilink }: AiMessageProps) {
   // Manual override: null = follow auto behavior, true/false = user forced
   const [userOverride, setUserOverride] = useState(false)
   const [expandedActions, setExpandedActions] = useState<Set<string>>(new Set())
@@ -212,7 +213,7 @@ export function AiMessage({ userMessage, references, reasoning, reasoningDone, a
           onToggleExpand={toggleAction}
         />
       )}
-      {response && <ResponseBlock text={response} />}
+      {response && <ResponseBlock text={response} onNavigateWikilink={onNavigateWikilink} />}
       {isStreaming && !response && <StreamingIndicator />}
     </div>
   )

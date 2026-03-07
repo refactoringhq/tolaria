@@ -17,6 +17,7 @@ You have full shell access. Use bash for file operations, search, bulk edits.
 Use the provided MCP tools for: full-text search (search_notes), vault orientation (get_vault_context), parsed note reading (get_note), and opening notes in the UI (open_note).
 
 When you create or edit a note, call open_note(path) so the user sees it in Laputa.
+When you mention or reference a note by name, always use [[Note Title]] wikilink syntax so the user can click to open it.
 Be concise and helpful. When you've completed a task, briefly summarize what you did.`
 
 export function buildAgentSystemPrompt(vaultContext?: string): string {

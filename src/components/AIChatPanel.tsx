@@ -18,6 +18,7 @@ interface AIChatPanelProps {
   allContent: Record<string, string>
   entries?: VaultEntry[]
   onClose: () => void
+  onNavigateWikilink?: (target: string) => void
 }
 
 function TypingIndicator() {
@@ -99,10 +100,10 @@ function ContextSearchDropdown({
   )
 }
 
-function AssistantMessage({ msg, onRetry }: { msg: ChatMessage; onRetry: () => void }) {
+function AssistantMessage({ msg, onRetry, onNavigateWikilink }: { msg: ChatMessage; onRetry: () => void; onNavigateWikilink?: (target: string) => void }) {
   return (
     <div>
-      <MarkdownContent content={msg.content} />
+      <MarkdownContent content={msg.content} onWikilinkClick={onNavigateWikilink} />
       <div className="flex items-center gap-3" style={{ marginTop: 4 }}>
         <button className="border-none bg-transparent p-0 text-muted-foreground cursor-pointer hover:underline"
           style={{ fontSize: 11 }} onClick={() => navigator.clipboard.writeText(msg.content)}>
@@ -121,10 +122,10 @@ function AssistantMessage({ msg, onRetry }: { msg: ChatMessage; onRetry: () => v
   )
 }
 
-function StreamingContent({ content }: { content: string }) {
+function StreamingContent({ content, onNavigateWikilink }: { content: string; onNavigateWikilink?: (target: string) => void }) {
   return (
     <div style={{ marginBottom: 12 }}>
-      <MarkdownContent content={content} />
+      <MarkdownContent content={content} onWikilinkClick={onNavigateWikilink} />
     </div>
   )
 }
@@ -176,7 +177,7 @@ function useContextNotes(entry: VaultEntry | null) {
 
 // --- Main component ---
 
-export function AIChatPanel({ entry, allContent, entries = [], onClose }: AIChatPanelProps) {
+export function AIChatPanel({ entry, allContent, entries = [], onClose, onNavigateWikilink }: AIChatPanelProps) {
   const [input, setInput] = useState('')
   const [showSearch, setShowSearch] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -213,7 +214,7 @@ export function AIChatPanel({ entry, allContent, entries = [], onClose }: AIChat
       <MessageList
         messages={chat.messages} isStreaming={chat.isStreaming}
         streamingContent={chat.streamingContent} onRetry={chat.retryMessage}
-        messagesEndRef={messagesEndRef}
+        messagesEndRef={messagesEndRef} onNavigateWikilink={onNavigateWikilink}
       />
 
       <QuickActionsBar actions={QUICK_ACTIONS} disabled={chat.isStreaming}
@@ -284,10 +285,11 @@ function ContextBar({
 }
 
 function MessageList({
-  messages, isStreaming, streamingContent, onRetry, messagesEndRef,
+  messages, isStreaming, streamingContent, onRetry, messagesEndRef, onNavigateWikilink,
 }: {
   messages: ChatMessage[]; isStreaming: boolean; streamingContent: string
   onRetry: (idx: number) => void; messagesEndRef: React.RefObject<HTMLDivElement | null>
+  onNavigateWikilink?: (target: string) => void
 }) {
   return (
     <div className="flex-1 overflow-y-auto" style={{ padding: 12 }}>
@@ -302,10 +304,10 @@ function MessageList({
         <div key={msg.id} style={{ marginBottom: 12 }}>
           {msg.role === 'user'
             ? <UserBubble content={msg.content} />
-            : <AssistantMessage msg={msg} onRetry={() => onRetry(idx)} />}
+            : <AssistantMessage msg={msg} onRetry={() => onRetry(idx)} onNavigateWikilink={onNavigateWikilink} />}
         </div>
       ))}
-      {isStreaming && streamingContent && <StreamingContent content={streamingContent} />}
+      {isStreaming && streamingContent && <StreamingContent content={streamingContent} onNavigateWikilink={onNavigateWikilink} />}
       {isStreaming && !streamingContent && <TypingIndicator />}
       <div ref={messagesEndRef} />
     </div>

@@ -246,6 +246,22 @@
 }
 .ai-markdown a:hover { text-decoration: underline; }
 
+.ai-markdown .chat-wikilink {
+  display: inline;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  border-radius: 4px;
+  padding: 0 4px;
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+.ai-markdown .chat-wikilink:hover {
+  background: color-mix(in srgb, var(--primary) 20%, transparent);
+  text-decoration: underline;
+}
+
 .ai-markdown hr {
   border: none;
   border-top: 1px solid var(--border);

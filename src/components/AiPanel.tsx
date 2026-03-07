@@ -4,6 +4,7 @@ import { AiMessage } from './AiMessage'
 import { WikilinkChatInput } from './WikilinkChatInput'
 import { useAiAgent, type AiAgentMessage, type AgentFileCallbacks } from '../hooks/useAiAgent'
 import { collectLinkedEntries, buildContextSnapshot, type NoteReference, type NoteListItem } from '../utils/ai-context'
+import { findEntryByTarget } from '../utils/wikilinkColors'
 import type { VaultEntry } from '../types'
 
 export type { AiAgentMessage } from '../hooks/useAiAgent'
@@ -89,8 +90,8 @@ function EmptyState({ hasContext }: { hasContext: boolean }) {
   )
 }
 
-function MessageHistory({ messages, isActive, onOpenNote, hasContext }: {
-  messages: AiAgentMessage[]; isActive: boolean; onOpenNote?: (path: string) => void; hasContext: boolean
+function MessageHistory({ messages, isActive, onOpenNote, onNavigateWikilink, hasContext }: {
+  messages: AiAgentMessage[]; isActive: boolean; onOpenNote?: (path: string) => void; onNavigateWikilink?: (target: string) => void; hasContext: boolean
 }) {
   const endRef = useRef<HTMLDivElement>(null)
 
@@ -102,7 +103,7 @@ function MessageHistory({ messages, isActive, onOpenNote, hasContext }: {
     <div className="flex-1 overflow-y-auto" style={{ padding: 12 }}>
       {messages.length === 0 && !isActive && <EmptyState hasContext={hasContext} />}
       {messages.map((msg, i) => (
-        <AiMessage key={msg.id ?? i} {...msg} onOpenNote={onOpenNote} />
+        <AiMessage key={msg.id ?? i} {...msg} onOpenNote={onOpenNote} onNavigateWikilink={onNavigateWikilink} />
       ))}
       <div ref={endRef} />
     </div>
@@ -167,6 +168,12 @@ export function AiPanel({ onClose, onOpenNote, onFileCreated, onFileModified, va
     return () => window.removeEventListener('keydown', handleEscape)
   }, [handleEscape])
 
+  const handleNavigateWikilink = useCallback((target: string) => {
+    if (!entries) return
+    const entry = findEntryByTarget(entries, target)
+    if (entry) onOpenNote?.(entry.path)
+  }, [entries, onOpenNote])
+
   const handleSend = useCallback((text: string, references: NoteReference[]) => {
     if (!text.trim() || isActive) return
     setPendingRefs(references)
@@ -198,6 +205,7 @@ export function AiPanel({ onClose, onOpenNote, onFileCreated, onFileModified, va
         messages={agent.messages}
         isActive={isActive}
         onOpenNote={onOpenNote}
+        onNavigateWikilink={handleNavigateWikilink}
         hasContext={hasContext}
       />
       <div

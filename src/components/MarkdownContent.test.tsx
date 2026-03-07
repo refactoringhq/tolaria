@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { MarkdownContent } from './MarkdownContent'
+import { preprocessWikilinks } from '../utils/chatWikilinks'
 
 describe('MarkdownContent', () => {
   it('renders bold text', () => {
@@ -71,5 +72,111 @@ describe('MarkdownContent', () => {
     const bq = container.querySelector('blockquote')
     expect(bq).toBeTruthy()
     expect(bq!.textContent).toContain('A quote')
+  })
+
+  describe('wikilinks', () => {
+    it('preprocessWikilinks converts [[Target]] to markdown links', () => {
+      expect(preprocessWikilinks('See [[My Note]]')).toBe('See [My Note](wikilink://My%20Note)')
+      expect(preprocessWikilinks('[[A]] and [[B]]')).toBe('[A](wikilink://A) and [B](wikilink://B)')
+      expect(preprocessWikilinks('`[[code]]`')).toBe('`[[code]]`')
+    })
+
+    it('renders [[Note Title]] as a clickable wikilink chip', () => {
+      const onClick = vi.fn()
+      const { container } = render(
+        <MarkdownContent content="Check out [[My Note]]" onWikilinkClick={onClick} />,
+      )
+      const wikilink = container.querySelector('.chat-wikilink')
+      expect(wikilink).toBeTruthy()
+      expect(wikilink!.textContent).toBe('My Note')
+      expect(wikilink!.getAttribute('data-wikilink-target')).toBe('My Note')
+    })
+
+    it('fires onWikilinkClick when a wikilink is clicked', () => {
+      const onClick = vi.fn()
+      const { container } = render(
+        <MarkdownContent content="See [[Daily Log]]" onWikilinkClick={onClick} />,
+      )
+      const wikilink = container.querySelector('.chat-wikilink')!
+      fireEvent.click(wikilink)
+      expect(onClick).toHaveBeenCalledWith('Daily Log')
+    })
+
+    it('renders multiple wikilinks in the same paragraph', () => {
+      const onClick = vi.fn()
+      const { container } = render(
+        <MarkdownContent content="See [[Note A]] and [[Note B]]" onWikilinkClick={onClick} />,
+      )
+      const wikilinks = container.querySelectorAll('.chat-wikilink')
+      expect(wikilinks).toHaveLength(2)
+      expect(wikilinks[0].textContent).toBe('Note A')
+      expect(wikilinks[1].textContent).toBe('Note B')
+    })
+
+    it('handles pipe syntax [[target|display]]', () => {
+      const onClick = vi.fn()
+      const { container } = render(
+        <MarkdownContent content="See [[path/to/note|My Display]]" onWikilinkClick={onClick} />,
+      )
+      const wikilink = container.querySelector('.chat-wikilink')!
+      expect(wikilink.textContent).toBe('My Display')
+      expect(wikilink.getAttribute('data-wikilink-target')).toBe('path/to/note')
+      fireEvent.click(wikilink)
+      expect(onClick).toHaveBeenCalledWith('path/to/note')
+    })
+
+    it('does not render wikilinks inside inline code', () => {
+      const onClick = vi.fn()
+      const { container } = render(
+        <MarkdownContent content="Use `[[Not a link]]` syntax" onWikilinkClick={onClick} />,
+      )
+      expect(container.querySelector('.chat-wikilink')).toBeNull()
+    })
+
+    it('does not render wikilinks inside code blocks', () => {
+      const onClick = vi.fn()
+      const { container } = render(
+        <MarkdownContent content={'```\n[[Not a link]]\n```'} onWikilinkClick={onClick} />,
+      )
+      expect(container.querySelector('.chat-wikilink')).toBeNull()
+    })
+
+    it('handles notes with special characters in title', () => {
+      const onClick = vi.fn()
+      const { container } = render(
+        <MarkdownContent content="Check [[Meeting — 2024/01/15]]" onWikilinkClick={onClick} />,
+      )
+      const wikilink = container.querySelector('.chat-wikilink')!
+      expect(wikilink.textContent).toBe('Meeting — 2024/01/15')
+      fireEvent.click(wikilink)
+      expect(onClick).toHaveBeenCalledWith('Meeting — 2024/01/15')
+    })
+
+    it('does not transform wikilinks when onWikilinkClick is not provided', () => {
+      const { container } = render(
+        <MarkdownContent content="See [[Some Note]]" />,
+      )
+      expect(container.querySelector('.chat-wikilink')).toBeNull()
+      expect(container.textContent).toContain('[[Some Note]]')
+    })
+
+    it('renders wikilinks inside list items', () => {
+      const onClick = vi.fn()
+      const { container } = render(
+        <MarkdownContent content={'- First [[Note A]]\n- Second [[Note B]]'} onWikilinkClick={onClick} />,
+      )
+      const wikilinks = container.querySelectorAll('.chat-wikilink')
+      expect(wikilinks).toHaveLength(2)
+    })
+
+    it('has role="link" and tabIndex for accessibility', () => {
+      const onClick = vi.fn()
+      const { container } = render(
+        <MarkdownContent content="See [[Accessible Note]]" onWikilinkClick={onClick} />,
+      )
+      const wikilink = container.querySelector('.chat-wikilink')!
+      expect(wikilink.getAttribute('role')).toBe('link')
+      expect(wikilink.getAttribute('tabindex')).toBe('0')
+    })
   })
 })

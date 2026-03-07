@@ -52,6 +52,14 @@ describe('buildSystemPrompt', () => {
     expect(result.prompt).toContain('Hello world')
     expect(result.totalTokens).toBeGreaterThan(0)
   })
+
+  it('instructs AI to use wikilink syntax', () => {
+    const notes = [makeEntry('/test.md', 'Test Note')]
+    const content = { '/test.md': 'content' }
+    const result = buildSystemPrompt(notes, content)
+    expect(result.prompt).toContain('[[')
+    expect(result.prompt).toMatch(/wikilink/i)
+  })
 })
 
 // --- nextMessageId ---
