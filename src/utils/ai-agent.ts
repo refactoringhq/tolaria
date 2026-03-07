@@ -58,7 +58,7 @@ export async function streamClaudeAgent(
 ): Promise<void> {
   if (!isTauri()) {
     setTimeout(() => {
-      callbacks.onText('AI Agent requires the Claude CLI. Install it and run the native app.')
+      callbacks.onText('This note is related to [[Build Laputa App]] and [[Matteo Cellini]]. The AI Agent requires the Claude CLI for full functionality.')
       callbacks.onDone()
     }, 300)
     return

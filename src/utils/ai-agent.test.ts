@@ -50,7 +50,7 @@ describe('streamClaudeAgent', () => {
     // Wait for the setTimeout mock response
     await new Promise(r => setTimeout(r, 400))
 
-    expect(onText).toHaveBeenCalledWith(expect.stringContaining('Claude CLI'))
+    expect(onText).toHaveBeenCalledWith(expect.stringContaining('Build Laputa App'))
     expect(onDone).toHaveBeenCalled()
     expect(onError).not.toHaveBeenCalled()
     expect(onToolStart).not.toHaveBeenCalled()
