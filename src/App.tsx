@@ -517,6 +517,7 @@ function App() {
     mcpStatus,
     onInstallMcp: installMcp,
     onReindexVault: indexing.triggerFullReindex,
+    onReloadVault: vault.reloadVault,
     onRepairVault: handleRepairVault,
   })
 

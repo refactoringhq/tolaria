@@ -35,6 +35,7 @@ function makeHandlers(): MenuEventHandlers {
     onViewChanges: vi.fn(),
     onInstallMcp: vi.fn(),
     onReindexVault: vi.fn(),
+    onReloadVault: vi.fn(),
     activeTabPathRef: { current: '/vault/test.md' } as React.MutableRefObject<string | null>,
     handleCloseTabRef: { current: vi.fn() } as React.MutableRefObject<(path: string) => void>,
     activeTabPath: '/vault/test.md',
@@ -304,6 +305,12 @@ describe('dispatchMenuEvent', () => {
     const h = makeHandlers()
     dispatchMenuEvent('vault-reindex', h)
     expect(h.onReindexVault).toHaveBeenCalled()
+  })
+
+  it('vault-reload triggers reload vault', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('vault-reload', h)
+    expect(h.onReloadVault).toHaveBeenCalled()
   })
 
   // Edge cases

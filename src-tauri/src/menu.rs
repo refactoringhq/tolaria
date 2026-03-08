@@ -49,6 +49,7 @@ const VAULT_RESOLVE_CONFLICTS: &str = "vault-resolve-conflicts";
 const VAULT_VIEW_CHANGES: &str = "vault-view-changes";
 const VAULT_INSTALL_MCP: &str = "vault-install-mcp";
 const VAULT_REINDEX: &str = "vault-reindex";
+const VAULT_RELOAD: &str = "vault-reload";
 const VAULT_REPAIR: &str = "vault-repair";
 
 const CUSTOM_IDS: &[&str] = &[
@@ -91,6 +92,7 @@ const CUSTOM_IDS: &[&str] = &[
     VAULT_VIEW_CHANGES,
     VAULT_INSTALL_MCP,
     VAULT_REINDEX,
+    VAULT_RELOAD,
     VAULT_REPAIR,
 ];
 
@@ -339,6 +341,9 @@ fn build_vault_menu(app: &App) -> MenuResult {
     let reindex = MenuItemBuilder::new("Reindex Vault")
         .id(VAULT_REINDEX)
         .build(app)?;
+    let reload = MenuItemBuilder::new("Reload Vault")
+        .id(VAULT_RELOAD)
+        .build(app)?;
     let repair = MenuItemBuilder::new("Repair Vault")
         .id(VAULT_REPAIR)
         .build(app)?;
@@ -356,6 +361,7 @@ fn build_vault_menu(app: &App) -> MenuResult {
         .item(&view_changes)
         .separator()
         .item(&reindex)
+        .item(&reload)
         .item(&repair)
         .item(&install_mcp)
         .build()?)
@@ -475,6 +481,7 @@ mod tests {
             VAULT_VIEW_CHANGES,
             VAULT_INSTALL_MCP,
             VAULT_REINDEX,
+            VAULT_RELOAD,
         ];
         for id in &expected {
             assert!(CUSTOM_IDS.contains(id), "missing custom ID: {id}");

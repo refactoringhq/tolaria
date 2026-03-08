@@ -255,6 +255,49 @@ describe('install-mcp command', () => {
   })
 })
 
+describe('reload-vault command', () => {
+  it('is present in Settings group', () => {
+    const config = makeConfig({ onReloadVault: vi.fn() })
+    const { result } = renderHook(() => useCommandRegistry(config))
+    const cmd = findCommand(result.current, 'reload-vault')
+    expect(cmd).toBeDefined()
+    expect(cmd!.group).toBe('Settings')
+    expect(cmd!.label).toBe('Reload Vault')
+  })
+
+  it('is enabled when onReloadVault is provided', () => {
+    const config = makeConfig({ onReloadVault: vi.fn() })
+    const { result } = renderHook(() => useCommandRegistry(config))
+    const cmd = findCommand(result.current, 'reload-vault')
+    expect(cmd!.enabled).toBe(true)
+  })
+
+  it('is disabled when onReloadVault is not provided', () => {
+    const config = makeConfig()
+    const { result } = renderHook(() => useCommandRegistry(config))
+    const cmd = findCommand(result.current, 'reload-vault')
+    expect(cmd!.enabled).toBe(false)
+  })
+
+  it('executes onReloadVault callback', () => {
+    const onReloadVault = vi.fn()
+    const config = makeConfig({ onReloadVault })
+    const { result } = renderHook(() => useCommandRegistry(config))
+    const cmd = findCommand(result.current, 'reload-vault')
+    cmd!.execute()
+    expect(onReloadVault).toHaveBeenCalled()
+  })
+
+  it('has searchable keywords', () => {
+    const config = makeConfig({ onReloadVault: vi.fn() })
+    const { result } = renderHook(() => useCommandRegistry(config))
+    const cmd = findCommand(result.current, 'reload-vault')
+    expect(cmd!.keywords).toContain('reload')
+    expect(cmd!.keywords).toContain('refresh')
+    expect(cmd!.keywords).toContain('rescan')
+  })
+})
+
 describe('buildTypeCommands', () => {
   it('creates new and list commands for each type', () => {
     const onCreateNoteOfType = vi.fn()

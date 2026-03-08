@@ -66,6 +66,7 @@ interface AppCommandsConfig {
   mcpStatus?: string
   onInstallMcp?: () => void
   onReindexVault?: () => void
+  onReloadVault?: () => void
   onRepairVault?: () => void
 }
 
@@ -150,6 +151,7 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onViewChanges: viewChanges,
     onInstallMcp: config.onInstallMcp,
     onReindexVault: config.onReindexVault,
+    onReloadVault: config.onReloadVault,
     onRepairVault: config.onRepairVault,
     activeTabPathRef: config.activeTabPathRef,
     handleCloseTabRef: config.handleCloseTabRef,
@@ -205,6 +207,7 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     mcpStatus: config.mcpStatus,
     onInstallMcp: config.onInstallMcp,
     onReindexVault: config.onReindexVault,
+    onReloadVault: config.onReloadVault,
     onRepairVault: config.onRepairVault,
   })
 
