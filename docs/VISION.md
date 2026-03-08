@@ -5,6 +5,24 @@
 
 ---
 
+## Why this, why now, why us
+
+Before the what and how: the why.
+
+The best projects are built by people who have an unusually strong answer to "why are you the right person to build this?" This is that answer.
+
+**Luca Rossi** is a startup founder and former generalist CTO — someone who can build a product end-to-end across code, design, scope, and product. And for the last five years, full-time, he has run Refactoring: a technical newsletter with nearly 200,000 subscribers, for which he has written over 300 original articles. In word count, that's roughly two *Lord of the Rings* novels.
+
+Personal knowledge management has been an obsession since university. But over the last five years it stopped being a hobby and became *table stakes* — the system that makes writing 300 articles possible. Laputa is an attempt to bottle that system.
+
+The credibility is real: if you wonder whether this person knows how to organize knowledge for sustained output, the output speaks for itself. The method inside Laputa is not theorized — it's been battle-tested for years at scale.
+
+**The distribution is built in.** Refactoring reaches ~200,000 engineers, managers, and technical leaders — exactly the people most receptive to a tool like this. The audience already trusts the author on this topic, because they've been reading his writing about knowledge management and learning for years.
+
+This is not a product looking for a market. It's a tool built by its first power user, for an audience that already knows and trusts him.
+
+---
+
 ## The problem
 
 Most people who want to work effectively with AI face a version of the same problem: **they don't have their knowledge organized in a way that AI can actually use.**
