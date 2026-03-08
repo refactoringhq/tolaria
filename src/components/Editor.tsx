@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, memo } from 'react'
+import { useRef, useEffect, useCallback, memo, useMemo } from 'react'
 import { useEditorTabSwap, getH1TextFromBlocks } from '../hooks/useEditorTabSwap'
 import { useHeadingTitleSync } from '../hooks/useHeadingTitleSync'
 import { useCreateBlockNote } from '@blocknote/react'
@@ -15,6 +15,7 @@ import { useEditorFocus } from '../hooks/useEditorFocus'
 import { EditorRightPanel } from './EditorRightPanel'
 import { EditorContent } from './EditorContent'
 import { schema } from './editorSchema'
+import { mergeTabContent } from '../utils/mergeTabContent'
 import './Editor.css'
 import './EditorTheme.css'
 
@@ -172,6 +173,11 @@ export const Editor = memo(function Editor({
     diffMode, rawMode, handleToggleDiff, handleToggleRaw, rawToggleRef, diffToggleRef,
   })
 
+  const enrichedAllContent = useMemo(
+    () => mergeTabContent(allContent, tabs),
+    [allContent, tabs],
+  )
+
   const isLoadingNewTab = activeTabPath !== null && !activeTab
   const activeStatus = activeTab ? getNoteStatus?.(activeTab.entry.path) ?? 'clean' : 'clean'
   const showDiffToggle = !!(activeTab && (diffMode || activeStatus === 'modified'))
@@ -234,7 +240,7 @@ export const Editor = memo(function Editor({
           inspectorEntry={inspectorEntry}
           inspectorContent={inspectorContent}
           entries={entries}
-          allContent={allContent}
+          allContent={enrichedAllContent}
           gitHistory={gitHistory}
           vaultPath={vaultPath ?? ''}
           openTabs={tabs.map(t => t.entry)}
