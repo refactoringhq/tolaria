@@ -555,13 +555,21 @@ mod tests {
     #[test]
     fn test_reload_entry_returns_fresh_data() {
         let dir = TempDir::new().unwrap();
-        create_test_file(dir.path(), "note.md", "---\nStatus: Active\n---\n# My Note\n\nOriginal.");
+        create_test_file(
+            dir.path(),
+            "note.md",
+            "---\nStatus: Active\n---\n# My Note\n\nOriginal.",
+        );
         let entry = reload_entry(&dir.path().join("note.md")).unwrap();
         assert_eq!(entry.title, "My Note");
         assert_eq!(entry.status, Some("Active".to_string()));
 
         // Modify on disk and reload — must see the new content
-        create_test_file(dir.path(), "note.md", "---\nStatus: Done\n---\n# My Note\n\nUpdated.");
+        create_test_file(
+            dir.path(),
+            "note.md",
+            "---\nStatus: Done\n---\n# My Note\n\nUpdated.",
+        );
         let fresh = reload_entry(&dir.path().join("note.md")).unwrap();
         assert_eq!(fresh.status, Some("Done".to_string()));
     }
