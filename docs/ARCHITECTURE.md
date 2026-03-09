@@ -44,8 +44,8 @@ These must never diverge permanently. If they do, the filesystem wins and the ca
 1. **Disk-first writes**: All functions that change vault data must write to disk (via Tauri IPC) *before* updating React state. This ensures that if the disk write fails, React state remains consistent with what's actually on disk.
 2. **Optimistic UI with rollback**: Where responsiveness matters (e.g. `persistOptimistic` in `useNoteActions`), state may update before disk confirmation — but a failure callback must revert the optimistic state.
 3. **No orphan state updates**: Never call `updateEntry()` before the corresponding `handleUpdateFrontmatter()` or `handleDeleteProperty()` has resolved. The three functions in `useEntryActions` (`handleCustomizeType`, `handleRenameSection`, `handleToggleTypeVisibility`) follow this rule — disk write first, then state update.
-4. **Recovery via reload**: If state ever diverges from disk (crash, external edit, race condition), `Reload Vault` (Cmd+K → "Reload Vault") re-scans the filesystem and replaces all React state. The `reload_vault_entry` Tauri command can also re-read a single file.
-5. **Cache is disposable**: Deleting the cache file forces a full rescan on next startup. The cache never contains data that doesn't exist on the filesystem.
+4. **Recovery via reload**: If state ever diverges from disk (crash, external edit, race condition), `Reload Vault` (Cmd+K → "Reload Vault") invalidates the cache and does a full filesystem rescan via the `reload_vault` Tauri command, replacing all React state. The `reload_vault_entry` command can re-read a single file.
+5. **Cache is disposable**: The `reload_vault` command deletes the cache file before rescanning, guaranteeing fresh data. The cache never contains data that doesn't exist on the filesystem.
 
 ## Tech Stack
 
@@ -534,6 +534,7 @@ The vault backend (`src-tauri/src/vault/`) is split into focused submodules:
 | `batch_archive_notes` | Archive multiple notes |
 | `batch_trash_notes` | Trash multiple notes |
 | `purge_trash` | Delete notes trashed >30 days ago |
+| `reload_vault` | Invalidate cache and full rescan from filesystem → `Vec<VaultEntry>` |
 | `reload_vault_entry` | Re-read a single file from disk → `VaultEntry` |
 | `check_vault_exists` | Check if vault path exists |
 | `create_getting_started_vault` | Bootstrap demo vault |

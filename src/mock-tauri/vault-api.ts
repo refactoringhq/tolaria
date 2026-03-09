@@ -20,6 +20,7 @@ async function checkVaultApi(): Promise<boolean> {
 
 const VAULT_API_COMMANDS: Record<string, (args: Record<string, unknown>) => string | null> = {
   list_vault: (args) => args.path ? `/api/vault/list?path=${encodeURIComponent(args.path as string)}` : null,
+  reload_vault: (args) => args.path ? `/api/vault/list?path=${encodeURIComponent(args.path as string)}&reload=1` : null,
   get_note_content: (args) => args.path ? `/api/vault/content?path=${encodeURIComponent(args.path as string)}` : null,
   get_all_content: (args) => args.path ? `/api/vault/all-content?path=${encodeURIComponent(args.path as string)}` : null,
 }

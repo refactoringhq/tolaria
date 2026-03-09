@@ -159,8 +159,8 @@ export function useVaultLoader(vaultPath: string) {
     commitWithPush(vaultPath, message), [vaultPath])
 
   const reloadVault = useCallback(
-    () => loadVaultData(vaultPath)
-      .then((data) => { setEntries(data.entries); loadModifiedFiles(); return data.entries })
+    () => tauriCall<VaultEntry[]>('reload_vault', { path: vaultPath })
+      .then((entries) => { setEntries(entries); loadModifiedFiles(); return entries })
       .catch((err) => { console.warn('Vault reload failed:', err); return [] as VaultEntry[] }),
     [vaultPath, loadModifiedFiles],
   )

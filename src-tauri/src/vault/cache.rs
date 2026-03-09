@@ -296,6 +296,14 @@ fn update_different_commit(
     finalize_and_cache(vault, entries, current_hash)
 }
 
+/// Delete the cache file for a vault, forcing a full rescan on the next
+/// call to `scan_vault_cached`. Used by the `reload_vault` command so that
+/// explicit user-triggered reloads always read from the filesystem.
+pub fn invalidate_cache(vault_path: &Path) {
+    let path = cache_path(vault_path);
+    let _ = fs::remove_file(&path);
+}
+
 /// Scan vault with incremental caching via git.
 /// Falls back to full scan if cache is missing/corrupt or git is unavailable.
 pub fn scan_vault_cached(vault_path: &Path) -> Result<Vec<VaultEntry>, String> {
@@ -811,6 +819,55 @@ mod tests {
             entries2.len(),
             1,
             "case-only rename must not create duplicates"
+        );
+    }
+
+    #[test]
+    fn test_invalidate_cache_deletes_cache_file() {
+        let (_lock, _cache_tmp, dir) = setup_git_vault();
+        let vault = dir.path();
+
+        create_test_file(vault, "note.md", "# Note\n\nContent.");
+        git_add_commit(vault, "init");
+
+        // Build cache
+        let _ = scan_vault_cached(vault).unwrap();
+        assert!(cache_path(vault).exists(), "cache file must exist");
+
+        // Invalidate
+        invalidate_cache(vault);
+        assert!(
+            !cache_path(vault).exists(),
+            "cache file must be deleted after invalidation"
+        );
+    }
+
+    #[test]
+    fn test_invalidate_then_scan_forces_full_rescan() {
+        let (_lock, _cache_tmp, dir) = setup_git_vault();
+        let vault = dir.path();
+
+        create_test_file(vault, "note.md", "---\nTrashed: false\n---\n# Note\n");
+        git_add_commit(vault, "init");
+
+        // Build cache — note is not trashed
+        let entries = scan_vault_cached(vault).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert!(!entries[0].trashed, "note must not be trashed initially");
+
+        // Simulate trashing the note on disk (update frontmatter directly)
+        create_test_file(vault, "note.md", "---\nTrashed: true\n---\n# Note\n");
+        // Stage the change so git sees it
+        git_add_commit(vault, "trash");
+
+        // Without invalidation, scan_vault_cached uses incremental update.
+        // With invalidation, it must do a full rescan from disk.
+        invalidate_cache(vault);
+        let entries2 = scan_vault_cached(vault).unwrap();
+        assert_eq!(entries2.len(), 1);
+        assert!(
+            entries2[0].trashed,
+            "note must be trashed after invalidate + rescan"
         );
     }
 }

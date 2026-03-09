@@ -137,6 +137,7 @@ pub fn run() {
             commands::check_claude_cli,
             commands::stream_claude_chat,
             commands::stream_claude_agent,
+            commands::reload_vault,
             commands::reload_vault_entry,
             commands::save_image,
             commands::copy_image_to_vault,

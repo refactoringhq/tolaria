@@ -140,6 +140,13 @@ pub fn get_default_vault_path() -> Result<String, String> {
 }
 
 #[tauri::command]
+pub fn reload_vault(path: String) -> Result<Vec<VaultEntry>, String> {
+    let path = expand_tilde(&path);
+    vault::invalidate_cache(std::path::Path::new(path.as_ref()));
+    vault::scan_vault_cached(std::path::Path::new(path.as_ref()))
+}
+
+#[tauri::command]
 pub fn reload_vault_entry(path: String) -> Result<VaultEntry, String> {
     let path = expand_tilde(&path);
     vault::reload_entry(std::path::Path::new(path.as_ref()))
@@ -697,6 +704,61 @@ mod tests {
     fn test_reload_vault_entry_nonexistent() {
         let result = reload_vault_entry("/nonexistent/path.md".to_string());
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_reload_vault_invalidates_cache_and_rescans() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let vault = dir.path();
+        // Init git repo for caching to work
+        std::process::Command::new("git")
+            .args(["init"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+        std::process::Command::new("git")
+            .args(["config", "user.email", "t@t.com"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+        std::process::Command::new("git")
+            .args(["config", "user.name", "T"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+
+        // Set test cache dir to avoid polluting real cache
+        let cache_dir = tempfile::TempDir::new().unwrap();
+        std::env::set_var(
+            "LAPUTA_CACHE_DIR",
+            cache_dir.path().to_string_lossy().as_ref(),
+        );
+
+        std::fs::write(vault.join("note.md"), "---\nTrashed: false\n---\n# Note\n").unwrap();
+        std::process::Command::new("git")
+            .args(["add", "."])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+        std::process::Command::new("git")
+            .args(["commit", "-m", "init"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+
+        // Prime cache via list_vault
+        let entries = list_vault(vault.to_str().unwrap().to_string()).unwrap();
+        assert!(!entries[0].trashed);
+
+        // Trash the note on disk
+        std::fs::write(vault.join("note.md"), "---\nTrashed: true\n---\n# Note\n").unwrap();
+
+        // reload_vault must return the updated trashed state
+        let fresh = reload_vault(vault.to_str().unwrap().to_string()).unwrap();
+        assert!(
+            fresh[0].trashed,
+            "reload_vault must reflect disk state after trashing"
+        );
     }
 
     #[test]
