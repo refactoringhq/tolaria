@@ -66,4 +66,14 @@ describe('useCodeMirror', () => {
     expect(spy).not.toHaveBeenCalled()
     spy.mockRestore()
   })
+
+  it('installs zoomCursorFix that overrides posAtCoords on the view instance', () => {
+    const ref = { current: container }
+    const { result } = renderHook(() =>
+      useCodeMirror(ref, 'hello world', false, noopCallbacks),
+    )
+    const view = result.current.current!
+    // The extension overrides posAtCoords on the instance (not the prototype)
+    expect(Object.prototype.hasOwnProperty.call(view, 'posAtCoords')).toBe(true)
+  })
 })

@@ -3,6 +3,7 @@ import { EditorView, lineNumbers, highlightActiveLine, keymap } from '@codemirro
 import { EditorState } from '@codemirror/state'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { frontmatterHighlightPlugin, frontmatterHighlightTheme } from '../extensions/frontmatterHighlight'
+import { zoomCursorFix } from '../extensions/zoomCursorFix'
 
 const FONT_FAMILY = '"Berkeley Mono", "JetBrains Mono", "Fira Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
 
@@ -98,6 +99,7 @@ export function useCodeMirror(
         buildBaseTheme(isDark),
         frontmatterHighlightTheme(isDark),
         frontmatterHighlightPlugin,
+        zoomCursorFix(),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             callbacksRef.current.onDocChange(update.state.doc.toString())
