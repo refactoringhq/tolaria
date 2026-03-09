@@ -108,9 +108,19 @@ struct Frontmatter {
     owner: Option<String>,
     #[serde(rename = "Cadence")]
     cadence: Option<String>,
-    #[serde(rename = "Archived", alias = "archived")]
+    #[serde(
+        rename = "Archived",
+        alias = "archived",
+        default,
+        deserialize_with = "deserialize_bool_or_string"
+    )]
     archived: Option<bool>,
-    #[serde(rename = "Trashed", alias = "trashed")]
+    #[serde(
+        rename = "Trashed",
+        alias = "trashed",
+        default,
+        deserialize_with = "deserialize_bool_or_string"
+    )]
     trashed: Option<bool>,
     #[serde(rename = "Trashed at", alias = "trashed_at")]
     trashed_at: Option<String>,
@@ -134,6 +144,56 @@ struct Frontmatter {
     view: Option<String>,
     #[serde(default)]
     visible: Option<bool>,
+}
+
+/// Custom deserializer for boolean fields that may arrive as strings.
+/// YAML `Yes`/`No` get converted to JSON strings by gray_matter, so we
+/// need to accept both actual booleans and their string representations.
+fn deserialize_bool_or_string<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de;
+
+    struct BoolOrStringVisitor;
+
+    impl<'de> de::Visitor<'de> for BoolOrStringVisitor {
+        type Value = Option<bool>;
+
+        fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+            f.write_str("a boolean or a string representing a boolean")
+        }
+
+        fn visit_bool<E: de::Error>(self, v: bool) -> Result<Self::Value, E> {
+            Ok(Some(v))
+        }
+
+        fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
+            match v.to_lowercase().as_str() {
+                "true" | "yes" | "1" => Ok(Some(true)),
+                "false" | "no" | "0" | "" => Ok(Some(false)),
+                _ => Ok(Some(false)),
+            }
+        }
+
+        fn visit_i64<E: de::Error>(self, v: i64) -> Result<Self::Value, E> {
+            Ok(Some(v != 0))
+        }
+
+        fn visit_u64<E: de::Error>(self, v: u64) -> Result<Self::Value, E> {
+            Ok(Some(v != 0))
+        }
+
+        fn visit_none<E: de::Error>(self) -> Result<Self::Value, E> {
+            Ok(None)
+        }
+
+        fn visit_unit<E: de::Error>(self) -> Result<Self::Value, E> {
+            Ok(None)
+        }
+    }
+
+    deserializer.deserialize_any(BoolOrStringVisitor)
 }
 
 /// Handles YAML fields that can be either a single string or a list of strings.
@@ -1438,6 +1498,91 @@ Company: Acme Corp
         let entry = parse_test_entry(&dir, "active.md", content);
         assert!(!entry.trashed);
         assert!(entry.trashed_at.is_none());
+    }
+
+    // --- archived/trashed string-value tests ---
+
+    #[test]
+    fn test_parse_archived_yes_titlecase() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\nArchived: Yes\n---\n# Old\n";
+        let entry = parse_test_entry(&dir, "old.md", content);
+        assert!(entry.archived, "'Archived: Yes' must be parsed as true");
+    }
+
+    #[test]
+    fn test_parse_archived_yes_lowercase() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\narchived: yes\n---\n# Old\n";
+        let entry = parse_test_entry(&dir, "old2.md", content);
+        assert!(entry.archived, "'archived: yes' must be parsed as true");
+    }
+
+    #[test]
+    fn test_parse_archived_yes_uppercase() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\nArchived: YES\n---\n# Old\n";
+        let entry = parse_test_entry(&dir, "old3.md", content);
+        assert!(entry.archived, "'Archived: YES' must be parsed as true");
+    }
+
+    #[test]
+    fn test_parse_archived_no() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\nArchived: No\n---\n# Active\n";
+        let entry = parse_test_entry(&dir, "active2.md", content);
+        assert!(!entry.archived, "'Archived: No' must be parsed as false");
+    }
+
+    #[test]
+    fn test_parse_archived_false_string() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\nArchived: \"false\"\n---\n# Active\n";
+        let entry = parse_test_entry(&dir, "active3.md", content);
+        assert!(
+            !entry.archived,
+            "'Archived: \"false\"' must be parsed as false"
+        );
+    }
+
+    #[test]
+    fn test_parse_archived_zero() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\nArchived: 0\n---\n# Active\n";
+        let entry = parse_test_entry(&dir, "active4.md", content);
+        assert!(!entry.archived, "'Archived: 0' must be parsed as false");
+    }
+
+    #[test]
+    fn test_parse_archived_absent() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\nIs A: Note\n---\n# Active\n";
+        let entry = parse_test_entry(&dir, "active5.md", content);
+        assert!(!entry.archived, "absent archived must default to false");
+    }
+
+    #[test]
+    fn test_parse_trashed_yes_titlecase() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\nTrashed: Yes\n---\n# Gone\n";
+        let entry = parse_test_entry(&dir, "gone2.md", content);
+        assert!(entry.trashed, "'Trashed: Yes' must be parsed as true");
+    }
+
+    #[test]
+    fn test_parse_trashed_yes_lowercase() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\ntrashed: yes\n---\n# Gone\n";
+        let entry = parse_test_entry(&dir, "gone3.md", content);
+        assert!(entry.trashed, "'trashed: yes' must be parsed as true");
+    }
+
+    #[test]
+    fn test_parse_trashed_no() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\nTrashed: No\n---\n# Active\n";
+        let entry = parse_test_entry(&dir, "active6.md", content);
+        assert!(!entry.trashed, "'Trashed: No' must be parsed as false");
     }
 
     // --- visible field tests ---
