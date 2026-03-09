@@ -229,8 +229,25 @@ fn migrate_legacy_cache(vault: &Path) {
     let _ = fs::remove_file(&legacy);
 }
 
+/// Remove entries for files that no longer exist on disk and deduplicate
+/// by case-folded relative path (handles case-insensitive filesystems like macOS APFS).
+/// Returns `true` if any entries were removed.
+fn prune_stale_entries(vault: &Path, entries: &mut Vec<VaultEntry>) -> bool {
+    let before = entries.len();
+    // Remove entries whose files no longer exist on disk
+    entries.retain(|e| std::path::Path::new(&e.path).is_file());
+    // Deduplicate by case-folded relative path
+    let mut seen = std::collections::HashSet::new();
+    entries.retain(|e| {
+        let rel = to_relative_path(&e.path, vault).to_lowercase();
+        seen.insert(rel)
+    });
+    entries.len() != before
+}
+
 /// Sort entries by modified_at descending and write the cache.
 fn finalize_and_cache(vault: &Path, mut entries: Vec<VaultEntry>, hash: String) -> Vec<VaultEntry> {
+    prune_stale_entries(vault, &mut entries);
     entries.sort_by(|a, b| b.modified_at.cmp(&a.modified_at));
     write_cache(
         vault,
@@ -245,18 +262,18 @@ fn finalize_and_cache(vault: &Path, mut entries: Vec<VaultEntry>, hash: String) 
 }
 
 /// Handle same-commit cache hit: re-parse any uncommitted changes (new or modified files).
+/// Always prunes stale entries even when git reports no changes, so that files
+/// deleted outside git (e.g., via Finder) are removed from the cache on vault open.
 fn update_same_commit(vault: &Path, cache: VaultCache) -> Vec<VaultEntry> {
     let changed = git_uncommitted_files(vault);
-    if changed.is_empty() {
-        return cache.entries;
+    let mut entries = cache.entries;
+    if !changed.is_empty() {
+        let changed_set: std::collections::HashSet<String> = changed.iter().cloned().collect();
+        entries.retain(|e| !changed_set.contains(&to_relative_path(&e.path, vault)));
+        entries.extend(parse_files_at(vault, &changed));
     }
-    let changed_set: std::collections::HashSet<String> = changed.iter().cloned().collect();
-    let mut entries: Vec<VaultEntry> = cache
-        .entries
-        .into_iter()
-        .filter(|e| !changed_set.contains(&to_relative_path(&e.path, vault)))
-        .collect();
-    entries.extend(parse_files_at(vault, &changed));
+    // Always finalize: prune_stale_entries inside finalize_and_cache removes
+    // entries for files deleted outside git (e.g., via Finder or another app).
     finalize_and_cache(vault, entries, cache.commit_hash)
 }
 
@@ -714,6 +731,86 @@ mod tests {
         assert_eq!(
             entries2[0].visible, None,
             "visible must be None after removing the field"
+        );
+    }
+
+    #[test]
+    fn test_deleted_file_removed_from_cache_on_rescan() {
+        let (_lock, _cache_tmp, dir) = setup_git_vault();
+        let vault = dir.path();
+
+        create_test_file(vault, "keep.md", "# Keep\n\nStays.");
+        create_test_file(vault, "remove.md", "# Remove\n\nGoes away.");
+        git_add_commit(vault, "init");
+
+        // Prime cache with both files
+        let entries = scan_vault_cached(vault).unwrap();
+        assert_eq!(entries.len(), 2);
+
+        // Delete file via filesystem (simulates Finder delete)
+        fs::remove_file(vault.join("remove.md")).unwrap();
+        // Also stage the deletion so git status is clean for this file
+        std::process::Command::new("git")
+            .args(["add", "remove.md"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+
+        // Rescan — deleted file must be pruned
+        let entries2 = scan_vault_cached(vault).unwrap();
+        assert_eq!(entries2.len(), 1, "deleted file must be pruned on rescan");
+        assert_eq!(entries2[0].title, "Keep");
+    }
+
+    #[test]
+    fn test_deleted_untracked_file_removed_from_cache() {
+        let (_lock, _cache_tmp, dir) = setup_git_vault();
+        let vault = dir.path();
+
+        create_test_file(vault, "tracked.md", "# Tracked\n\nCommitted.");
+        git_add_commit(vault, "init");
+
+        // Create untracked file and prime cache
+        create_test_file(vault, "temp.md", "# Temp\n\nUntracked.");
+        let entries = scan_vault_cached(vault).unwrap();
+        assert_eq!(entries.len(), 2);
+
+        // Delete the untracked file via filesystem
+        fs::remove_file(vault.join("temp.md")).unwrap();
+
+        // Rescan — untracked deleted file must be pruned
+        let entries2 = scan_vault_cached(vault).unwrap();
+        assert_eq!(
+            entries2.len(),
+            1,
+            "deleted untracked file must be pruned on rescan"
+        );
+        assert_eq!(entries2[0].title, "Tracked");
+    }
+
+    #[test]
+    fn test_case_rename_no_duplicates() {
+        let (_lock, _cache_tmp, dir) = setup_git_vault();
+        let vault = dir.path();
+
+        create_test_file(vault, "Note.md", "# Note\n\nOriginal case.");
+        git_add_commit(vault, "init");
+
+        // Prime cache
+        let entries = scan_vault_cached(vault).unwrap();
+        assert_eq!(entries.len(), 1);
+
+        // Simulate case-only rename on case-insensitive FS: delete old, create new
+        fs::remove_file(vault.join("Note.md")).unwrap();
+        create_test_file(vault, "note.md", "# Note\n\nRenamed case.");
+        git_add_commit(vault, "rename");
+
+        // Rescan — must not have duplicates
+        let entries2 = scan_vault_cached(vault).unwrap();
+        assert_eq!(
+            entries2.len(),
+            1,
+            "case-only rename must not create duplicates"
         );
     }
 }
