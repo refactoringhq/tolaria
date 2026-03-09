@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { detectFileOperation, parseBashFileCreation, useAiAgent } from './useAiAgent'
-import type { AgentFileCallbacks } from './useAiAgent'
+import { detectFileOperation, parseBashFileCreation, agentMessagesToChatHistory, useAiAgent } from './useAiAgent'
+import type { AgentFileCallbacks, AiAgentMessage } from './useAiAgent'
 import { streamClaudeAgent } from '../utils/ai-agent'
 
 vi.mock('../utils/ai-agent', () => ({
@@ -236,5 +236,131 @@ describe('useAiAgent', () => {
 
     expect(mockStreamClaudeAgent).toHaveBeenCalledTimes(1)
     expect(mockStreamClaudeAgent.mock.calls[0][1]).toBe('default-system-prompt')
+  })
+
+  it('sends first message without conversation history', async () => {
+    const { result } = renderHook(() => useAiAgent(VAULT, undefined))
+
+    await act(async () => {
+      await result.current.sendMessage('Hello')
+    })
+
+    expect(mockStreamClaudeAgent).toHaveBeenCalledTimes(1)
+    const sentMessage = mockStreamClaudeAgent.mock.calls[0][0]
+    expect(sentMessage).toBe('Hello')
+    expect(sentMessage).not.toContain('<conversation_history>')
+  })
+
+  it('embeds conversation history in second message', async () => {
+    // Mock that simulates a response for the first message
+    mockStreamClaudeAgent.mockImplementation(async (_msg, _sys, _vault, callbacks) => {
+      callbacks.onText('The answer is 4')
+      callbacks.onDone()
+    })
+
+    const { result } = renderHook(() => useAiAgent(VAULT, undefined))
+
+    // First message
+    await act(async () => {
+      await result.current.sendMessage('What is 2+2?')
+    })
+
+    // Second message — should include history from first exchange
+    await act(async () => {
+      await result.current.sendMessage('What was my previous question?')
+    })
+
+    expect(mockStreamClaudeAgent).toHaveBeenCalledTimes(2)
+
+    // First call: no history
+    expect(mockStreamClaudeAgent.mock.calls[0][0]).toBe('What is 2+2?')
+
+    // Second call: includes history
+    const secondMsg = mockStreamClaudeAgent.mock.calls[1][0]
+    expect(secondMsg).toContain('<conversation_history>')
+    expect(secondMsg).toContain('What is 2+2?')
+    expect(secondMsg).toContain('The answer is 4')
+    expect(secondMsg).toContain('What was my previous question?')
+  })
+
+  it('accumulates history across multiple exchanges', async () => {
+    let callCount = 0
+    mockStreamClaudeAgent.mockImplementation(async (_msg, _sys, _vault, callbacks) => {
+      callCount++
+      callbacks.onText(`Response ${callCount}`)
+      callbacks.onDone()
+    })
+
+    const { result } = renderHook(() => useAiAgent(VAULT, undefined))
+
+    await act(async () => { await result.current.sendMessage('Q1') })
+    await act(async () => { await result.current.sendMessage('Q2') })
+    await act(async () => { await result.current.sendMessage('Q3') })
+
+    expect(mockStreamClaudeAgent).toHaveBeenCalledTimes(3)
+
+    // First: no history
+    expect(mockStreamClaudeAgent.mock.calls[0][0]).toBe('Q1')
+
+    // Second: history from first exchange
+    const msg2 = mockStreamClaudeAgent.mock.calls[1][0]
+    expect(msg2).toContain('Q1')
+    expect(msg2).toContain('Response 1')
+    expect(msg2).toContain('Q2')
+
+    // Third: history from both exchanges
+    const msg3 = mockStreamClaudeAgent.mock.calls[2][0]
+    expect(msg3).toContain('Q1')
+    expect(msg3).toContain('Response 1')
+    expect(msg3).toContain('Q2')
+    expect(msg3).toContain('Response 2')
+    expect(msg3).toContain('Q3')
+  })
+
+  it('resets history after clearConversation', async () => {
+    mockStreamClaudeAgent.mockImplementation(async (_msg, _sys, _vault, callbacks) => {
+      callbacks.onText('reply')
+      callbacks.onDone()
+    })
+
+    const { result } = renderHook(() => useAiAgent(VAULT, undefined))
+
+    await act(async () => { await result.current.sendMessage('hello') })
+
+    act(() => { result.current.clearConversation() })
+
+    await act(async () => { await result.current.sendMessage('fresh start') })
+
+    const lastCall = mockStreamClaudeAgent.mock.calls[mockStreamClaudeAgent.mock.calls.length - 1]
+    expect(lastCall[0]).toBe('fresh start')
+    expect(lastCall[0]).not.toContain('<conversation_history>')
+  })
+})
+
+describe('agentMessagesToChatHistory', () => {
+  it('returns empty array for no messages', () => {
+    expect(agentMessagesToChatHistory([])).toEqual([])
+  })
+
+  it('converts agent messages to user/assistant pairs', () => {
+    const msgs: AiAgentMessage[] = [
+      { userMessage: 'Q1', response: 'A1', actions: [], id: 'm1' },
+      { userMessage: 'Q2', response: 'A2', actions: [], id: 'm2' },
+    ]
+    const result = agentMessagesToChatHistory(msgs)
+    expect(result).toHaveLength(4)
+    expect(result[0]).toMatchObject({ role: 'user', content: 'Q1' })
+    expect(result[1]).toMatchObject({ role: 'assistant', content: 'A1' })
+    expect(result[2]).toMatchObject({ role: 'user', content: 'Q2' })
+    expect(result[3]).toMatchObject({ role: 'assistant', content: 'A2' })
+  })
+
+  it('skips assistant entry when response is undefined (still streaming)', () => {
+    const msgs: AiAgentMessage[] = [
+      { userMessage: 'Q1', actions: [], id: 'm1', isStreaming: true },
+    ]
+    const result = agentMessagesToChatHistory(msgs)
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({ role: 'user', content: 'Q1' })
   })
 })

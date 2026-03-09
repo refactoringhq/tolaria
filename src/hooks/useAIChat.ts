@@ -5,8 +5,11 @@
  * Conversation continuity embeds prior exchanges in each prompt
  * (each CLI invocation is a fresh subprocess with no memory).
  * History is trimmed to MAX_HISTORY_TOKENS, dropping oldest first.
+ *
+ * Uses a ref (messagesRef) to read the latest messages in callbacks,
+ * avoiding stale closure issues with React's useCallback memoization.
  */
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type { VaultEntry } from '../types'
 import {
   type ChatMessage, type ChatStreamCallbacks, nextMessageId,
@@ -57,10 +60,18 @@ export function useAIChat(
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingContent, setStreamingContent] = useState('')
   const abortRef = useRef(false)
+  const isStreamingRef = useRef(false)
+  const messagesRef = useRef<ChatMessage[]>([])
 
-  /** Internal: send text with explicit history context. */
-  const doSend = useCallback((text: string, history: ChatMessage[]) => {
-    if (!text.trim() || isStreaming) return
+  // Keep refs in sync with state — runs after render, before next user interaction.
+  useEffect(() => { messagesRef.current = messages }, [messages])
+  useEffect(() => { isStreamingRef.current = isStreaming }, [isStreaming])
+
+  /** Internal: send text, reading history from the messages ref. */
+  const doSend = useCallback((text: string, historyOverride?: ChatMessage[]) => {
+    if (!text.trim() || isStreamingRef.current) return
+
+    const history = historyOverride ?? messagesRef.current
 
     setMessages(prev => [...prev, { role: 'user', content: text.trim(), id: nextMessageId() }])
     setIsStreaming(true)
@@ -80,11 +91,11 @@ export function useAIChat(
 
     streamClaudeChat(formattedMessage, systemPrompt, undefined, callbacks)
       .catch(() => { /* errors forwarded via onError */ })
-  }, [isStreaming, contextNotes])
+  }, [contextNotes])
 
   const sendMessage = useCallback((text: string) => {
-    doSend(text, messages)
-  }, [doSend, messages])
+    doSend(text)
+  }, [doSend])
 
   const clearConversation = useCallback(() => {
     abortRef.current = true
@@ -94,15 +105,16 @@ export function useAIChat(
   }, [])
 
   const retryMessage = useCallback((msgIndex: number) => {
+    const currentMessages = messagesRef.current
     const userMsgIndex = msgIndex - 1
     if (userMsgIndex < 0) return
-    const userMsg = messages[userMsgIndex]
+    const userMsg = currentMessages[userMsgIndex]
     if (userMsg.role !== 'user') return
 
-    const historyForRetry = messages.slice(0, userMsgIndex)
+    const historyForRetry = currentMessages.slice(0, userMsgIndex)
     setMessages(prev => prev.slice(0, userMsgIndex))
     doSend(userMsg.content, historyForRetry)
-  }, [messages, doSend])
+  }, [doSend])
 
   return { messages, isStreaming, streamingContent, sendMessage, clearConversation, retryMessage }
 }

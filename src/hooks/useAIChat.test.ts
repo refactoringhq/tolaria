@@ -165,4 +165,28 @@ describe('useAIChat', () => {
     expect(lastCall[0]).toBe('hello')
     expect(lastCall[2]).toBeUndefined()
   })
+
+  it('reads latest messages from ref (not stale closure)', async () => {
+    const { result } = renderHook(() => useAIChat([]))
+
+    // Send first message
+    act(() => { result.current.sendMessage('msg1') })
+    await act(async () => { vi.advanceTimersByTime(50) })
+
+    // Verify messages state is correct
+    expect(result.current.messages).toHaveLength(2)
+    expect(result.current.messages[0].content).toBe('msg1')
+    expect(result.current.messages[1].content).toBe('mock response')
+
+    // Send second message — the ref should have the latest messages
+    // even without depending on messages in useCallback deps
+    act(() => { result.current.sendMessage('msg2') })
+
+    const secondCall = streamClaudeChatMock.mock.calls[1]
+    const sentMessage = secondCall[0]
+    // Must contain history from first exchange
+    expect(sentMessage).toContain('[user]: msg1')
+    expect(sentMessage).toContain('[assistant]: mock response')
+    expect(sentMessage).toContain('[user]: msg2')
+  })
 })

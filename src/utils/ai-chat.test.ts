@@ -200,8 +200,29 @@ describe('streamClaudeChat', () => {
     await new Promise(r => setTimeout(r, 400))
 
     expect(sessionId).toBe('mock-session')
-    expect(onText).toHaveBeenCalledWith(expect.stringContaining('Claude CLI'))
+    expect(onText).toHaveBeenCalledWith(expect.stringContaining('[mock-no-history]'))
     expect(onDone).toHaveBeenCalled()
     expect(onError).not.toHaveBeenCalled()
+  })
+
+  it('mock detects conversation history in message', async () => {
+    const onText = vi.fn()
+    const onDone = vi.fn()
+    const onError = vi.fn()
+
+    const msgWithHistory = formatMessageWithHistory(
+      [{ role: 'user', content: 'What is 2+2?', id: 'm1' }, { role: 'assistant', content: '4', id: 'm2' }],
+      'What was my previous question?',
+    )
+
+    await streamClaudeChat(msgWithHistory, undefined, undefined, {
+      onText, onError, onDone,
+    })
+
+    await new Promise(r => setTimeout(r, 400))
+
+    expect(onText).toHaveBeenCalledWith(expect.stringContaining('[mock-with-history'))
+    expect(onText).toHaveBeenCalledWith(expect.stringContaining('turns=2'))
+    expect(onText).toHaveBeenCalledWith(expect.stringContaining('What was my previous question?'))
   })
 })

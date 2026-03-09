@@ -14,7 +14,10 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import type { AiAction } from '../components/AiMessage'
 import type { NoteReference } from '../utils/ai-context'
 import { streamClaudeAgent, buildAgentSystemPrompt } from '../utils/ai-agent'
-import { nextMessageId } from '../utils/ai-chat'
+import {
+  nextMessageId, trimHistory, formatMessageWithHistory,
+  type ChatMessage, MAX_HISTORY_TOKENS,
+} from '../utils/ai-chat'
 
 export type AgentStatus = 'idle' | 'thinking' | 'tool-executing' | 'done' | 'error'
 
@@ -36,6 +39,18 @@ export interface AgentFileCallbacks {
   onVaultChanged?: () => void
 }
 
+/** Convert completed agent messages to ChatMessage pairs for history embedding. */
+export function agentMessagesToChatHistory(msgs: AiAgentMessage[]): ChatMessage[] {
+  const history: ChatMessage[] = []
+  for (const msg of msgs) {
+    history.push({ role: 'user', content: msg.userMessage, id: msg.id ?? '' })
+    if (msg.response) {
+      history.push({ role: 'assistant', content: msg.response, id: `${msg.id}-resp` })
+    }
+  }
+  return history
+}
+
 export function useAiAgent(
   vaultPath: string,
   contextPrompt?: string,
@@ -48,13 +63,20 @@ export function useAiAgent(
   const fileCallbacksRef = useRef(fileCallbacks)
   // Track tool inputs for file-operation detection on ToolDone
   const toolInputMapRef = useRef<Map<string, { tool: string; input?: string }>>(new Map())
+  // Refs for latest state — avoids stale closures in callbacks.
+  // Synced via useEffect (runs after render, before next user interaction).
+  const messagesRef = useRef<AiAgentMessage[]>([])
+  const statusRef = useRef<AgentStatus>('idle')
+  useEffect(() => { messagesRef.current = messages }, [messages])
+  useEffect(() => { statusRef.current = status }, [status])
 
   useEffect(() => {
     fileCallbacksRef.current = fileCallbacks
   }, [fileCallbacks])
 
   const sendMessage = useCallback(async (text: string, references?: NoteReference[]) => {
-    if (!text.trim() || status === 'thinking' || status === 'tool-executing') return
+    const currentStatus = statusRef.current
+    if (!text.trim() || currentStatus === 'thinking' || currentStatus === 'tool-executing') return
 
     const refs = references && references.length > 0 ? references : undefined
 
@@ -87,7 +109,13 @@ export function useAiAgent(
 
     const systemPrompt = contextPrompt ?? buildAgentSystemPrompt()
 
-    await streamClaudeAgent(text.trim(), systemPrompt, vaultPath, {
+    // Embed conversation history from previous exchanges.
+    // Uses messagesRef (not closure-captured messages) to avoid stale closures.
+    const chatHistory = agentMessagesToChatHistory(messagesRef.current.filter(m => !m.isStreaming))
+    const trimmedHistory = trimHistory(chatHistory, MAX_HISTORY_TOKENS)
+    const formattedMessage = formatMessageWithHistory(trimmedHistory, text.trim())
+
+    await streamClaudeAgent(formattedMessage, systemPrompt, vaultPath, {
       onThinking: (chunk) => {
         if (abortRef.current.aborted) return
         update(m => ({ ...m, reasoning: (m.reasoning ?? '') + chunk }))
@@ -174,7 +202,7 @@ export function useAiAgent(
         fileCallbacksRef.current?.onVaultChanged?.()
       },
     })
-  }, [status, vaultPath, contextPrompt])
+  }, [vaultPath, contextPrompt])
 
   const clearConversation = useCallback(() => {
     abortRef.current.aborted = true
