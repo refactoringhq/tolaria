@@ -10,6 +10,33 @@ interface Tab {
 
 const TAB_ORDER_KEY = 'laputa-tab-order'
 
+// --- Content prefetch cache ---
+// Stores in-flight or resolved note content promises, keyed by path.
+// Cleared on vault reload to prevent stale content after external edits.
+// Latency profile: eliminates 50-200ms IPC round-trip for hover/keyboard-prefetched notes.
+const prefetchCache = new Map<string, Promise<string>>()
+
+/** Prefetch a note's content into the in-memory cache.
+ *  Safe to call multiple times — deduplicates concurrent requests for the same path.
+ *  Cache is short-lived: cleared on vault reload via clearPrefetchCache(). */
+export function prefetchNoteContent(path: string): void {
+  if (prefetchCache.has(path)) return
+  const promise = (isTauri()
+    ? invoke<string>('get_note_content', { path })
+    : mockInvoke<string>('get_note_content', { path })
+  ).catch((err) => {
+    // Remove failed prefetch so a retry can occur
+    prefetchCache.delete(path)
+    throw err
+  })
+  prefetchCache.set(path, promise)
+}
+
+/** Clear the prefetch cache. Call on vault reload to prevent stale content. */
+export function clearPrefetchCache(): void {
+  prefetchCache.clear()
+}
+
 function saveTabOrder(tabs: Tab[]) {
   try {
     localStorage.setItem(TAB_ORDER_KEY, JSON.stringify(tabs.map(t => t.entry.path)))
@@ -30,6 +57,12 @@ function clearTabOrder() {
 }
 
 async function loadNoteContent(path: string): Promise<string> {
+  // Check prefetch cache first — eliminates IPC round-trip for prefetched notes
+  const cached = prefetchCache.get(path)
+  if (cached) {
+    prefetchCache.delete(path)
+    return cached
+  }
   return isTauri()
     ? invoke<string>('get_note_content', { path })
     : mockInvoke<string>('get_note_content', { path })
@@ -105,10 +138,15 @@ export function useTabManagement() {
   useEffect(() => { tabsRef.current = tabs })
   const handleCloseTabRef = useRef<(path: string) => void>(() => {})
 
+  // Sequence counter for rapid-switch safety: only the latest navigation wins.
+  // Prevents stale content from an earlier click appearing after a later click.
+  const navSeqRef = useRef(0)
+
   const handleSelectNote = useCallback(async (entry: VaultEntry) => {
     if (isTabOpen(tabsRef.current, entry.path)) { setActiveTabPath(entry.path); return }
+    const seq = ++navSeqRef.current
     await loadAndSetTab(entry, (prev, content) => addTabIfAbsent(prev, entry, content), setTabs)
-    setActiveTabPath(entry.path)
+    if (navSeqRef.current === seq) setActiveTabPath(entry.path)
   }, [])
 
   const handleCloseTab = useCallback((path: string) => {
@@ -137,8 +175,9 @@ export function useTabManagement() {
     if (isTabOpen(tabsRef.current, entry.path)) { setActiveTabPath(entry.path); return }
     const currentPath = activeTabPathRef.current
     if (!currentPath) { handleSelectNote(entry); return }
+    const seq = ++navSeqRef.current
     await loadAndSetTab(entry, (prev, content) => replaceTabEntry(prev, currentPath, entry, content), setTabs)
-    setActiveTabPath(entry.path)
+    if (navSeqRef.current === seq) setActiveTabPath(entry.path)
   }, [handleSelectNote])
 
   const closeAllTabs = useCallback(() => {

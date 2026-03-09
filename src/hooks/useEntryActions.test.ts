@@ -405,6 +405,97 @@ describe('useEntryActions', () => {
     })
   })
 
+  describe('optimistic rollback on disk write failure', () => {
+    it('rolls back trashed state when frontmatter write fails', async () => {
+      handleUpdateFrontmatter.mockRejectedValueOnce(new Error('disk full'))
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const { result } = setup()
+
+      await act(async () => {
+        await result.current.handleTrashNote('/vault/note/test.md')
+      })
+
+      // First call: optimistic update (trashed: true)
+      // Second call: rollback (trashed: false)
+      expect(updateEntry).toHaveBeenCalledTimes(2)
+      expect(updateEntry).toHaveBeenNthCalledWith(1, '/vault/note/test.md', {
+        trashed: true, trashedAt: expect.any(Number),
+      })
+      expect(updateEntry).toHaveBeenNthCalledWith(2, '/vault/note/test.md', {
+        trashed: false, trashedAt: null,
+      })
+      expect(setToastMessage).toHaveBeenCalledWith('Failed to trash note — rolled back')
+      errorSpy.mockRestore()
+    })
+
+    it('rolls back archived state when frontmatter write fails', async () => {
+      handleUpdateFrontmatter.mockRejectedValueOnce(new Error('disk full'))
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const { result } = setup()
+
+      await act(async () => {
+        await result.current.handleArchiveNote('/vault/note/test.md')
+      })
+
+      expect(updateEntry).toHaveBeenCalledTimes(2)
+      expect(updateEntry).toHaveBeenNthCalledWith(1, '/vault/note/test.md', { archived: true })
+      expect(updateEntry).toHaveBeenNthCalledWith(2, '/vault/note/test.md', { archived: false })
+      expect(setToastMessage).toHaveBeenCalledWith('Failed to archive note — rolled back')
+      errorSpy.mockRestore()
+    })
+
+    it('rolls back restore state when frontmatter write fails', async () => {
+      handleUpdateFrontmatter.mockRejectedValueOnce(new Error('disk full'))
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const { result } = setup()
+
+      await act(async () => {
+        await result.current.handleRestoreNote('/vault/note/test.md')
+      })
+
+      expect(updateEntry).toHaveBeenCalledTimes(2)
+      expect(updateEntry).toHaveBeenNthCalledWith(1, '/vault/note/test.md', { trashed: false, trashedAt: null })
+      expect(updateEntry).toHaveBeenNthCalledWith(2, '/vault/note/test.md', {
+        trashed: true, trashedAt: expect.any(Number),
+      })
+      expect(setToastMessage).toHaveBeenCalledWith('Failed to restore note — rolled back')
+      errorSpy.mockRestore()
+    })
+
+    it('rolls back unarchive state when frontmatter write fails', async () => {
+      handleUpdateFrontmatter.mockRejectedValueOnce(new Error('disk full'))
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const { result } = setup()
+
+      await act(async () => {
+        await result.current.handleUnarchiveNote('/vault/note/test.md')
+      })
+
+      expect(updateEntry).toHaveBeenCalledTimes(2)
+      expect(updateEntry).toHaveBeenNthCalledWith(1, '/vault/note/test.md', { archived: false })
+      expect(updateEntry).toHaveBeenNthCalledWith(2, '/vault/note/test.md', { archived: true })
+      expect(setToastMessage).toHaveBeenCalledWith('Failed to unarchive note — rolled back')
+      errorSpy.mockRestore()
+    })
+
+    it('trash: updateEntry is called BEFORE frontmatter writes (optimistic)', async () => {
+      const callOrder: string[] = []
+      updateEntry.mockImplementation(() => { callOrder.push('updateEntry') })
+      handleUpdateFrontmatter.mockImplementation(() => {
+        callOrder.push('handleUpdateFrontmatter')
+        return Promise.resolve()
+      })
+      const { result } = setup()
+
+      await act(async () => {
+        await result.current.handleTrashNote('/vault/note/test.md')
+      })
+
+      expect(callOrder[0]).toBe('updateEntry')
+      expect(callOrder[1]).toBe('handleUpdateFrontmatter')
+    })
+  })
+
   describe('onBeforeAction callback', () => {
     function setupWithBeforeAction(onBeforeAction: ReturnType<typeof vi.fn>) {
       return renderHook(() =>

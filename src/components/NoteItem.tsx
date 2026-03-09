@@ -90,7 +90,7 @@ function noteItemStyle(isSelected: boolean, isMultiSelected: boolean, typeColor:
   return base
 }
 
-export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlighted = false, noteStatus = 'clean', typeEntryMap, onClickNote }: {
+export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlighted = false, noteStatus = 'clean', typeEntryMap, onClickNote, onPrefetch }: {
   entry: VaultEntry
   isSelected: boolean
   isMultiSelected?: boolean
@@ -98,6 +98,7 @@ export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlig
   noteStatus?: NoteStatus
   typeEntryMap: Record<string, VaultEntry>
   onClickNote: (entry: VaultEntry, e: React.MouseEvent) => void
+  onPrefetch?: (path: string) => void
 }) {
   const te = typeEntryMap[entry.isA ?? '']
   const typeColor = getTypeColor(entry.isA ?? 'Note', te?.color)
@@ -114,6 +115,7 @@ export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlig
       )}
       style={noteItemStyle(isSelected, isMultiSelected, typeColor, typeLightColor)}
       onClick={(e: React.MouseEvent) => onClickNote(entry, e)}
+      onMouseEnter={onPrefetch ? () => onPrefetch(entry.path) : undefined}
       data-testid={isMultiSelected ? 'multi-selected-item' : undefined}
       data-highlighted={isHighlighted || undefined}
     >

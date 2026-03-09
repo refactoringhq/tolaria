@@ -8,6 +8,7 @@ import {
 } from '@phosphor-icons/react'
 import { getTypeColor, getTypeLightColor, buildTypeEntryMap } from '../utils/typeColors'
 import { NoteItem, getTypeIcon } from './NoteItem'
+import { prefetchNoteContent } from '../hooks/useTabManagement'
 import { SortDropdown } from './SortDropdown'
 import { BulkActionBar } from './BulkActionBar'
 import { useMultiSelect, type MultiSelectState } from '../hooks/useMultiSelect'
@@ -507,7 +508,7 @@ function NoteListInner({ entries, selection, selectedNote, modifiedFiles, modifi
   useMultiSelectKeyboard(multiSelect, isEntityView, handleBulkArchive, handleBulkTrash)
 
   const renderItem = useCallback((entry: VaultEntry) => (
-    <NoteItem key={entry.path} entry={entry} isSelected={selectedNote?.path === entry.path} isMultiSelected={multiSelect.selectedPaths.has(entry.path)} isHighlighted={entry.path === noteListKeyboard.highlightedPath} noteStatus={resolvedGetNoteStatus(entry.path)} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
+    <NoteItem key={entry.path} entry={entry} isSelected={selectedNote?.path === entry.path} isMultiSelected={multiSelect.selectedPaths.has(entry.path)} isHighlighted={entry.path === noteListKeyboard.highlightedPath} noteStatus={resolvedGetNoteStatus(entry.path)} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} onPrefetch={prefetchNoteContent} />
   ), [selectedNote?.path, handleClickNote, typeEntryMap, resolvedGetNoteStatus, multiSelect.selectedPaths, noteListKeyboard.highlightedPath])
 
   const toggleGroup = useCallback((label: string) => { setCollapsedGroups((prev) => toggleSetMember(prev, label)) }, [])

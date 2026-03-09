@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { VaultEntry } from '../types'
-import { useTabManagement } from './useTabManagement'
+import { useTabManagement, prefetchNoteContent, clearPrefetchCache } from './useTabManagement'
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }))
 vi.mock('../mock-tauri', () => ({
@@ -382,6 +382,97 @@ describe('useTabManagement', () => {
 
       expect(result.current.tabs).toHaveLength(0)
       expect(result.current.activeTabPath).toBeNull()
+    })
+  })
+
+  describe('content prefetch cache', () => {
+    it('prefetch serves content to loadNoteContent (no extra IPC)', async () => {
+      const { mockInvoke } = await import('../mock-tauri')
+      vi.mocked(mockInvoke).mockResolvedValue('# Prefetched content')
+
+      prefetchNoteContent('/vault/note/pre.md')
+      // Allow the prefetch promise to resolve
+      await vi.waitFor(() => expect(vi.mocked(mockInvoke)).toHaveBeenCalledTimes(1))
+
+      // Now open the note — should use prefetched content
+      const { result } = renderHook(() => useTabManagement())
+      await act(async () => {
+        await result.current.handleSelectNote(makeEntry({ path: '/vault/note/pre.md', title: 'Pre' }))
+      })
+
+      expect(result.current.tabs[0].content).toBe('# Prefetched content')
+      // mockInvoke was called once for prefetch, not again for handleSelectNote
+      expect(vi.mocked(mockInvoke)).toHaveBeenCalledTimes(1)
+    })
+
+    it('clearPrefetchCache prevents stale content from being served', async () => {
+      const { mockInvoke } = await import('../mock-tauri')
+      vi.mocked(mockInvoke).mockResolvedValue('# Stale')
+
+      prefetchNoteContent('/vault/note/stale.md')
+      await vi.waitFor(() => expect(vi.mocked(mockInvoke)).toHaveBeenCalledTimes(1))
+
+      clearPrefetchCache()
+
+      // Reset mock to return fresh content
+      vi.mocked(mockInvoke).mockResolvedValue('# Fresh')
+
+      const { result } = renderHook(() => useTabManagement())
+      await act(async () => {
+        await result.current.handleSelectNote(makeEntry({ path: '/vault/note/stale.md', title: 'Stale' }))
+      })
+
+      // Should have made a new IPC call since cache was cleared
+      expect(result.current.tabs[0].content).toBe('# Fresh')
+      expect(vi.mocked(mockInvoke)).toHaveBeenCalledTimes(2)
+    })
+
+    it('deduplicates concurrent prefetch requests for same path', async () => {
+      const { mockInvoke } = await import('../mock-tauri')
+      vi.mocked(mockInvoke).mockResolvedValue('# Content')
+
+      prefetchNoteContent('/vault/note/dup.md')
+      prefetchNoteContent('/vault/note/dup.md')
+      prefetchNoteContent('/vault/note/dup.md')
+
+      await vi.waitFor(() => expect(vi.mocked(mockInvoke)).toHaveBeenCalledTimes(1))
+    })
+  })
+
+  describe('rapid switching safety', () => {
+    it('only activates the last note when switching rapidly', async () => {
+      const { mockInvoke } = await import('../mock-tauri')
+
+      // Simulate slow IPC: first call resolves after second call
+      let resolveA: (v: string) => void
+      let resolveB: (v: string) => void
+      vi.mocked(mockInvoke)
+        .mockImplementationOnce(() => new Promise<string>((r) => { resolveA = r as (v: string) => void }))
+        .mockImplementationOnce(() => new Promise<string>((r) => { resolveB = r as (v: string) => void }))
+
+      const { result } = renderHook(() => useTabManagement())
+
+      // Start loading A (don't await — simulates rapid click)
+      let selectADone = false
+      act(() => {
+        result.current.handleSelectNote(makeEntry({ path: '/vault/a.md', title: 'A' })).then(() => { selectADone = true })
+      })
+
+      // Start loading B while A is still loading
+      let selectBDone = false
+      act(() => {
+        result.current.handleSelectNote(makeEntry({ path: '/vault/b.md', title: 'B' })).then(() => { selectBDone = true })
+      })
+
+      // B resolves first
+      await act(async () => { resolveB!('# B content') })
+      // A resolves after
+      await act(async () => { resolveA!('# A content') })
+
+      await vi.waitFor(() => expect(selectADone && selectBDone).toBe(true))
+
+      // Active tab should be B (the last click), not A
+      expect(result.current.activeTabPath).toBe('/vault/b.md')
     })
   })
 })

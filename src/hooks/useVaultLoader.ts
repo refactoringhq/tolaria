@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, startTransition } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { isTauri, mockInvoke } from '../mock-tauri'
 import type { VaultEntry, GitCommit, ModifiedFile, NoteStatus, GitPushResult } from '../types'
+import { clearPrefetchCache } from './useTabManagement'
 
 function tauriCall<T>(command: string, tauriArgs: Record<string, unknown>, mockArgs?: Record<string, unknown>): Promise<T> {
   return isTauri() ? invoke<T>(command, tauriArgs) : mockInvoke<T>(command, mockArgs ?? tauriArgs)
@@ -159,9 +160,12 @@ export function useVaultLoader(vaultPath: string) {
     commitWithPush(vaultPath, message), [vaultPath])
 
   const reloadVault = useCallback(
-    () => tauriCall<VaultEntry[]>('reload_vault', { path: vaultPath })
-      .then((entries) => { setEntries(entries); loadModifiedFiles(); return entries })
-      .catch((err) => { console.warn('Vault reload failed:', err); return [] as VaultEntry[] }),
+    () => {
+      clearPrefetchCache()
+      return tauriCall<VaultEntry[]>('reload_vault', { path: vaultPath })
+        .then((entries) => { setEntries(entries); loadModifiedFiles(); return entries })
+        .catch((err) => { console.warn('Vault reload failed:', err); return [] as VaultEntry[] })
+    },
     [vaultPath, loadModifiedFiles],
   )
 

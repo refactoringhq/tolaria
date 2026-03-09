@@ -28,35 +28,64 @@ export function useEntryActions({
 }: EntryActionsConfig) {
   const handleTrashNote = useCallback(async (path: string) => {
     await onBeforeAction?.(path)
-    const now = new Date().toISOString().slice(0, 10)
-    await handleUpdateFrontmatter(path, 'Trashed', true)
-    await handleUpdateFrontmatter(path, 'Trashed at', now)
-    updateEntry(path, { trashed: true, trashedAt: Date.now() / 1000 })
+    // Optimistic: update UI immediately, write to disk async with rollback on failure
+    const trashedAt = Date.now() / 1000
+    updateEntry(path, { trashed: true, trashedAt })
     setToastMessage('Note moved to trash')
-    onFrontmatterPersisted?.()
+    const now = new Date().toISOString().slice(0, 10)
+    try {
+      await handleUpdateFrontmatter(path, 'Trashed', true)
+      await handleUpdateFrontmatter(path, 'Trashed at', now)
+      onFrontmatterPersisted?.()
+    } catch (err) {
+      updateEntry(path, { trashed: false, trashedAt: null })
+      setToastMessage('Failed to trash note — rolled back')
+      console.error('Optimistic trash rollback:', err)
+    }
   }, [onBeforeAction, handleUpdateFrontmatter, updateEntry, setToastMessage, onFrontmatterPersisted])
 
   const handleRestoreNote = useCallback(async (path: string) => {
-    await handleUpdateFrontmatter(path, 'Trashed', false)
-    await handleDeleteProperty(path, 'Trashed at')
+    // Optimistic: update UI immediately
     updateEntry(path, { trashed: false, trashedAt: null })
     setToastMessage('Note restored from trash')
-    onFrontmatterPersisted?.()
+    try {
+      await handleUpdateFrontmatter(path, 'Trashed', false)
+      await handleDeleteProperty(path, 'Trashed at')
+      onFrontmatterPersisted?.()
+    } catch (err) {
+      updateEntry(path, { trashed: true, trashedAt: Date.now() / 1000 })
+      setToastMessage('Failed to restore note — rolled back')
+      console.error('Optimistic restore rollback:', err)
+    }
   }, [handleUpdateFrontmatter, handleDeleteProperty, updateEntry, setToastMessage, onFrontmatterPersisted])
 
   const handleArchiveNote = useCallback(async (path: string) => {
     await onBeforeAction?.(path)
-    await handleUpdateFrontmatter(path, 'archived', true)
+    // Optimistic: update UI immediately, write to disk async with rollback on failure
     updateEntry(path, { archived: true })
     setToastMessage('Note archived')
-    onFrontmatterPersisted?.()
+    try {
+      await handleUpdateFrontmatter(path, 'archived', true)
+      onFrontmatterPersisted?.()
+    } catch (err) {
+      updateEntry(path, { archived: false })
+      setToastMessage('Failed to archive note — rolled back')
+      console.error('Optimistic archive rollback:', err)
+    }
   }, [onBeforeAction, handleUpdateFrontmatter, updateEntry, setToastMessage, onFrontmatterPersisted])
 
   const handleUnarchiveNote = useCallback(async (path: string) => {
-    await handleUpdateFrontmatter(path, 'archived', false)
+    // Optimistic: update UI immediately
     updateEntry(path, { archived: false })
     setToastMessage('Note unarchived')
-    onFrontmatterPersisted?.()
+    try {
+      await handleUpdateFrontmatter(path, 'archived', false)
+      onFrontmatterPersisted?.()
+    } catch (err) {
+      updateEntry(path, { archived: true })
+      setToastMessage('Failed to unarchive note — rolled back')
+      console.error('Optimistic unarchive rollback:', err)
+    }
   }, [handleUpdateFrontmatter, updateEntry, setToastMessage, onFrontmatterPersisted])
 
   const handleCustomizeType = useCallback(async (typeName: string, icon: string, color: string) => {

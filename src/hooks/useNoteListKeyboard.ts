@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import type { VirtuosoHandle } from 'react-virtuoso'
 import type { VaultEntry } from '../types'
+import { prefetchNoteContent } from './useTabManagement'
 
 interface NoteListKeyboardOptions {
   items: VaultEntry[]
@@ -29,6 +30,7 @@ export function useNoteListKeyboard({
       setHighlightedIndex(prev => {
         const next = Math.min((prev < 0 ? -1 : prev) + 1, items.length - 1)
         virtuosoRef.current?.scrollToIndex({ index: next, behavior: 'auto' })
+        if (next >= 0 && next < items.length) prefetchNoteContent(items[next].path)
         return next
       })
     } else if (e.key === 'ArrowUp') {
@@ -36,6 +38,7 @@ export function useNoteListKeyboard({
       setHighlightedIndex(prev => {
         const next = Math.max((prev < 0 ? items.length : prev) - 1, 0)
         virtuosoRef.current?.scrollToIndex({ index: next, behavior: 'auto' })
+        if (next >= 0 && next < items.length) prefetchNoteContent(items[next].path)
         return next
       })
     } else if (e.key === 'Enter' && highlightedIndex >= 0 && highlightedIndex < items.length) {
