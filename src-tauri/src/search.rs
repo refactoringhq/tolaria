@@ -1,4 +1,5 @@
 use crate::indexing;
+use crate::vault;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
@@ -160,16 +161,19 @@ pub fn search_vault(
 
     let results: Vec<SearchResult> = qmd_results
         .into_iter()
-        .map(|r| {
+        .filter_map(|r| {
             let path = qmd_uri_to_vault_path(&r.file, vault_path);
+            if vault::is_file_trashed(Path::new(&path)) {
+                return None;
+            }
             let snippet = extract_clean_snippet(&r.snippet);
-            SearchResult {
+            Some(SearchResult {
                 title: r.title,
                 path,
                 snippet,
                 score: r.score,
                 note_type: None,
-            }
+            })
         })
         .collect();
 

@@ -13,7 +13,7 @@ pub use getting_started::{create_getting_started_vault, default_vault_path, vaul
 pub use image::{copy_image_to_vault, save_image};
 pub use migration::migrate_is_a_to_type;
 pub use rename::{move_note_to_type_folder, rename_note, MoveResult, RenameResult};
-pub use trash::{delete_note, purge_trash};
+pub use trash::{delete_note, is_file_trashed, purge_trash};
 
 use parsing::{
     contains_wikilink, count_body_words, extract_outgoing_links, extract_snippet, extract_title,

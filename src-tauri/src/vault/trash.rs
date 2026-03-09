@@ -57,6 +57,37 @@ pub fn delete_note(path: &str) -> Result<String, String> {
     Ok(path.to_string())
 }
 
+/// Check whether a file's frontmatter marks it as trashed.
+/// Returns `true` if `Trashed: true` or `Trashed at` is present.
+pub fn is_file_trashed(path: &Path) -> bool {
+    let content = match fs::read_to_string(path) {
+        Ok(c) => c,
+        Err(_) => return false,
+    };
+    let matter = Matter::<YAML>::new();
+    let parsed = matter.parse(&content);
+
+    // Check for "Trashed at" field — its presence implies trashed
+    if extract_trashed_at_string(&parsed.data).is_some() {
+        return true;
+    }
+
+    // Check for "Trashed: true"
+    if let Some(gray_matter::Pod::Hash(ref map)) = parsed.data {
+        if let Some(pod) = map.get("Trashed").or_else(|| map.get("trashed")) {
+            return match pod {
+                gray_matter::Pod::Boolean(b) => *b,
+                gray_matter::Pod::String(s) => {
+                    matches!(s.to_ascii_lowercase().as_str(), "yes" | "true")
+                }
+                _ => false,
+            };
+        }
+    }
+
+    false
+}
+
 /// Scan all markdown files in the vault and delete those where
 /// `Trashed at` frontmatter is more than 30 days ago.
 /// Returns the list of deleted file paths.
@@ -247,5 +278,68 @@ mod tests {
         let deleted = purge_trash(dir.path().to_str().unwrap()).unwrap();
         assert_eq!(deleted.len(), 1);
         assert!(deleted[0].contains("old.md"));
+    }
+
+    #[test]
+    fn test_is_file_trashed_with_trashed_true() {
+        let dir = TempDir::new().unwrap();
+        create_test_file(
+            dir.path(),
+            "trashed.md",
+            "---\nTrashed: true\n---\n# Gone\n",
+        );
+        assert!(is_file_trashed(&dir.path().join("trashed.md")));
+    }
+
+    #[test]
+    fn test_is_file_trashed_with_trashed_at() {
+        let dir = TempDir::new().unwrap();
+        create_test_file(
+            dir.path(),
+            "trashed.md",
+            "---\nTrashed at: \"2026-01-01\"\n---\n# Gone\n",
+        );
+        assert!(is_file_trashed(&dir.path().join("trashed.md")));
+    }
+
+    #[test]
+    fn test_is_file_trashed_with_trashed_yes() {
+        let dir = TempDir::new().unwrap();
+        create_test_file(dir.path(), "trashed.md", "---\nTrashed: Yes\n---\n# Gone\n");
+        assert!(is_file_trashed(&dir.path().join("trashed.md")));
+    }
+
+    #[test]
+    fn test_is_file_trashed_normal_note() {
+        let dir = TempDir::new().unwrap();
+        create_test_file(dir.path(), "normal.md", "---\ntype: Note\n---\n# Normal\n");
+        assert!(!is_file_trashed(&dir.path().join("normal.md")));
+    }
+
+    #[test]
+    fn test_is_file_trashed_archived_not_trashed() {
+        let dir = TempDir::new().unwrap();
+        create_test_file(
+            dir.path(),
+            "archived.md",
+            "---\nArchived: true\n---\n# Archived\n",
+        );
+        assert!(!is_file_trashed(&dir.path().join("archived.md")));
+    }
+
+    #[test]
+    fn test_is_file_trashed_nonexistent_file() {
+        assert!(!is_file_trashed(Path::new("/nonexistent/path.md")));
+    }
+
+    #[test]
+    fn test_is_file_trashed_with_trashed_false() {
+        let dir = TempDir::new().unwrap();
+        create_test_file(
+            dir.path(),
+            "active.md",
+            "---\nTrashed: false\n---\n# Active\n",
+        );
+        assert!(!is_file_trashed(&dir.path().join("active.md")));
     }
 }

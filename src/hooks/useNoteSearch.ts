@@ -32,7 +32,7 @@ export function useNoteSearch(entries: VaultEntry[], query: string, maxResults =
   const typeEntryMap = useMemo(() => buildTypeEntryMap(entries), [entries])
 
   const searchableEntries = useMemo(
-    () => entries.filter((e) => !SEARCH_EXCLUDED_TYPES.has(e.isA ?? '')),
+    () => entries.filter((e) => !e.trashed && !SEARCH_EXCLUDED_TYPES.has(e.isA ?? '')),
     [entries],
   )
 

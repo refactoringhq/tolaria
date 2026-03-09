@@ -220,6 +220,35 @@ describe('useNoteSearch', () => {
     expect(result.current.results[0].title).toBe('Refactoring Notes')
   })
 
+  it('excludes trashed notes from results', () => {
+    const withTrashed: VaultEntry[] = [
+      makeEntry({ path: '/vault/a.md', title: 'Active Note', modifiedAt: 1700000003 }),
+      makeEntry({ path: '/vault/t.md', title: 'Trashed Note', trashed: true, trashedAt: 1700000000, modifiedAt: 1700000002 }),
+      makeEntry({ path: '/vault/b.md', title: 'Another Active', modifiedAt: 1700000001 }),
+    ]
+    const { result } = renderHook(() => useNoteSearch(withTrashed, ''))
+    expect(result.current.results.map(r => r.title)).toEqual(['Active Note', 'Another Active'])
+  })
+
+  it('excludes trashed notes from search results by query', () => {
+    const withTrashed: VaultEntry[] = [
+      makeEntry({ path: '/vault/a.md', title: 'Meeting Notes', modifiedAt: 1700000002 }),
+      makeEntry({ path: '/vault/t.md', title: 'Meeting Draft', trashed: true, modifiedAt: 1700000001 }),
+    ]
+    const { result } = renderHook(() => useNoteSearch(withTrashed, 'Meeting'))
+    expect(result.current.results).toHaveLength(1)
+    expect(result.current.results[0].title).toBe('Meeting Notes')
+  })
+
+  it('does not exclude archived notes from results', () => {
+    const withArchived: VaultEntry[] = [
+      makeEntry({ path: '/vault/a.md', title: 'Active Note', modifiedAt: 1700000002 }),
+      makeEntry({ path: '/vault/ar.md', title: 'Archived Note', archived: true, modifiedAt: 1700000001 }),
+    ]
+    const { result } = renderHook(() => useNoteSearch(withArchived, ''))
+    expect(result.current.results).toHaveLength(2)
+  })
+
   it('resolves custom type color from Type entries', () => {
     const withTypes: VaultEntry[] = [
       makeEntry({ path: '/vault/t/recipe.md', title: 'Recipe', isA: 'Type', color: 'orange', icon: 'cooking-pot' }),

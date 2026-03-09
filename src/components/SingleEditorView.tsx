@@ -62,7 +62,7 @@ export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange
   const typeEntryMap = useMemo(() => buildTypeEntryMap(entries), [entries])
 
   const baseItems = useMemo(
-    () => deduplicateByPath(entries.map(entry => ({
+    () => deduplicateByPath(entries.filter(e => !e.trashed).map(entry => ({
       title: entry.title,
       aliases: [...new Set([entry.filename.replace(/\.md$/, ''), ...entry.aliases])],
       group: entry.isA || 'Note',

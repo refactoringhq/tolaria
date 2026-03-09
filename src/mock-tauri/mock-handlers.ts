@@ -269,6 +269,7 @@ export const mockHandlers: Record<string, (args: any) => any> = {
     if (!q) return { results: [], elapsed_ms: 0, query: q, mode: args.mode }
     const matches = MOCK_ENTRIES
       .filter(e => {
+        if (e.trashed) return false
         const content = MOCK_CONTENT[e.path] ?? ''
         return e.title.toLowerCase().includes(q) || content.toLowerCase().includes(q)
       })
