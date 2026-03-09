@@ -16,10 +16,10 @@ import {
   buildDailyNoteContent,
   resolveDailyNote,
   findDailyNote,
-  useNoteActions,
   DEFAULT_TEMPLATES,
   resolveTemplate,
-} from './useNoteActions'
+} from '../utils/noteBuilders'
+import { useNoteActions } from './useNoteActions'
 import type { NoteActionsConfig } from './useNoteActions'
 
 // Mock dependencies
