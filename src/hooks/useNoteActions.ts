@@ -5,6 +5,7 @@ import type { VaultEntry } from '../types'
 import type { FrontmatterValue } from '../components/Inspector'
 import { useTabManagement } from './useTabManagement'
 import { updateMockFrontmatter, deleteMockFrontmatterProperty } from './mockFrontmatterHelpers'
+import { resolveEntry } from '../utils/wikilink'
 
 interface NewEntryParams {
   path: string
@@ -123,14 +124,8 @@ export function generateUntitledName(entries: VaultEntry[], type: string, pendin
   return title
 }
 
-export function entryMatchesTarget(e: VaultEntry, targetLower: string, targetAsWords: string): boolean {
-  if (e.title.toLowerCase() === targetLower) return true
-  if (e.aliases.some((a) => a.toLowerCase() === targetLower)) return true
-  const pathStem = e.path.replace(/^.*\/Laputa\//, '').replace(/\.md$/, '')
-  if (pathStem.toLowerCase() === targetLower) return true
-  const fileStem = e.filename.replace(/\.md$/, '')
-  if (fileStem.toLowerCase() === targetLower.split('/').pop()) return true
-  return e.title.toLowerCase() === targetAsWords
+export function entryMatchesTarget(e: VaultEntry, target: string): boolean {
+  return resolveEntry([e], target) === e
 }
 
 async function invokeFrontmatter(command: string, args: Record<string, unknown>): Promise<string> {
@@ -262,9 +257,7 @@ function openDailyNote(entries: VaultEntry[], selectNote: (e: VaultEntry) => voi
 }
 
 function findWikilinkTarget(entries: VaultEntry[], target: string): VaultEntry | undefined {
-  const targetLower = target.toLowerCase()
-  const targetAsWords = target.split('/').pop()?.replace(/-/g, ' ').toLowerCase() ?? targetLower
-  return entries.find((e) => entryMatchesTarget(e, targetLower, targetAsWords))
+  return resolveEntry(entries, target)
 }
 
 /** Navigate to a wikilink target, logging a warning if not found. */
