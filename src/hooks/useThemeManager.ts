@@ -124,6 +124,8 @@ export interface ThemeManager {
   reloadThemes: () => Promise<void>
   /** Update a single frontmatter property on the active theme note. */
   updateThemeProperty: (key: string, value: string) => Promise<void>
+  /** Notify that the active theme note was saved with new content (live-reload on Cmd+S). */
+  notifyThemeSaved: (path: string, content: string) => void
 }
 
 /** Manages loading and persisting the active theme path from vault settings. */
@@ -275,6 +277,10 @@ export function useThemeManager(
 
   const reloadThemes = useCallback(async () => { await reload() }, [reload])
 
+  const notifyThemeSaved = useCallback((path: string, content: string) => {
+    if (path === activeThemeId) setCachedThemeContent(content)
+  }, [activeThemeId])
+
   const updateThemeProperty = useCallback(async (key: string, value: string) => {
     if (!activeThemeId) return
     try {
@@ -290,6 +296,6 @@ export function useThemeManager(
   return {
     themes, activeThemeId, activeTheme,
     activeThemeContent: cachedThemeContent,
-    isDark, switchTheme, createTheme, reloadThemes, updateThemeProperty,
+    isDark, switchTheme, createTheme, reloadThemes, updateThemeProperty, notifyThemeSaved,
   }
 }

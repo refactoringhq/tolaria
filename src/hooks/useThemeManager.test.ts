@@ -441,6 +441,55 @@ describe('useThemeManager', () => {
     expect(result.current.isDark).toBe(false)
   })
 
+  it('notifyThemeSaved updates CSS vars when active theme is saved', async () => {
+    const { result } = renderHook(() =>
+      useThemeManager('/vault', entries, allContent)
+    )
+    await waitFor(() => {
+      expect(result.current.activeThemeId).toBe(THEME_PATH_DEFAULT)
+    })
+    expect(document.documentElement.style.getPropertyValue('--background')).toBe('#FFFFFF')
+
+    const updatedContent = `---
+type: Theme
+Description: Light theme
+background: "#1a1a2e"
+foreground: "#e0e0e0"
+primary: "#155DFF"
+sidebar: "#2a2a3e"
+text-primary: "#e0e0e0"
+---
+
+# Default Theme
+`
+    act(() => {
+      result.current.notifyThemeSaved(THEME_PATH_DEFAULT, updatedContent)
+    })
+
+    await waitFor(() => {
+      expect(document.documentElement.style.getPropertyValue('--background')).toBe('#1a1a2e')
+    })
+    expect(document.documentElement.style.getPropertyValue('--sidebar')).toBe('#2a2a3e')
+  })
+
+  it('notifyThemeSaved is a no-op for non-active theme path', async () => {
+    const { result } = renderHook(() =>
+      useThemeManager('/vault', entries, allContent)
+    )
+    await waitFor(() => {
+      expect(result.current.activeThemeId).toBe(THEME_PATH_DEFAULT)
+    })
+    expect(document.documentElement.style.getPropertyValue('--background')).toBe('#FFFFFF')
+
+    act(() => {
+      result.current.notifyThemeSaved(THEME_PATH_DARK, DARK_THEME_CONTENT)
+    })
+
+    // Background should still be the default theme's white, not dark
+    await new Promise(r => setTimeout(r, 50))
+    expect(document.documentElement.style.getPropertyValue('--background')).toBe('#FFFFFF')
+  })
+
   it('calls ensure_vault_themes on mount with vaultPath', async () => {
     renderHook(() => useThemeManager('/vault', entries, allContent))
     await waitFor(() => {

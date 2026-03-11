@@ -306,10 +306,16 @@ function App() {
     triggerIncrementalIndex()
   }, [vault, triggerIncrementalIndex])
 
+  const { notifyThemeSaved } = themeManager
+  const onNotePersisted = useCallback((path: string, content: string) => {
+    vault.clearUnsaved(path)
+    notifyThemeSaved(path, content)
+  }, [vault, notifyThemeSaved])
+
   const { handleSave: handleSaveRaw, handleContentChange, savePendingForPath, savePending } = useEditorSaveWithLinks({
     updateEntry: vault.updateEntry,
     setTabs: notes.setTabs, setToastMessage, onAfterSave,
-    onNotePersisted: vault.clearUnsaved,
+    onNotePersisted,
   })
   useEffect(() => { contentChangeRef.current = handleContentChange }, [handleContentChange])
 

@@ -13,8 +13,8 @@ interface EditorSaveConfig {
   setTabs: (fn: SetStateAction<any[]>) => void
   setToastMessage: (msg: string | null) => void
   onAfterSave?: () => void
-  /** Called after content is persisted — used to clear unsaved state. */
-  onNotePersisted?: (path: string) => void
+  /** Called after content is persisted — used to clear unsaved state and live-reload themes. */
+  onNotePersisted?: (path: string, content: string) => void
 }
 
 /**
@@ -41,8 +41,9 @@ export function useEditorSave({ updateVaultContent, setTabs, setToastMessage, on
     if (!pending) return false
     if (pathFilter && pending.path !== pathFilter) return false
     await saveNote(pending.path, pending.content)
+    const savedContent = pending.content
     pendingContentRef.current = null
-    onNotePersisted?.(pending.path)
+    onNotePersisted?.(pending.path, savedContent)
     return true
   }, [saveNote, onNotePersisted])
 
@@ -53,7 +54,7 @@ export function useEditorSave({ updateVaultContent, setTabs, setToastMessage, on
       const saved = await flushPending()
       if (!saved && unsavedFallback) {
         await saveNote(unsavedFallback.path, unsavedFallback.content)
-        onNotePersisted?.(unsavedFallback.path)
+        onNotePersisted?.(unsavedFallback.path, unsavedFallback.content)
         setToastMessage('Saved')
         onAfterSave()
         return

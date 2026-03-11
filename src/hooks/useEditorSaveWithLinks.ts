@@ -8,7 +8,7 @@ export function useEditorSaveWithLinks(config: {
   setTabs: Parameters<typeof useEditorSave>[0]['setTabs']
   setToastMessage: (msg: string | null) => void
   onAfterSave: () => void
-  onNotePersisted?: (path: string) => void
+  onNotePersisted?: (path: string, content: string) => void
 }) {
   const { updateEntry } = config
   const saveContent = useCallback((path: string, content: string) => {
