@@ -109,8 +109,9 @@ export function useImageDrop({ containerRef, onImageUrl, vaultPath }: UseImageDr
         unlisten = await getCurrentWebview().onDragDropEvent((event) => {
           const payload = event.payload
           if (payload.type === 'over') {
-            // Tauri 'over' events don't include paths — show overlay for any drag
-            setIsDragOver(true)
+            // Tauri 'over' events don't include paths and can't distinguish
+            // OS file drags from internal drags (tabs, blocks). Let the HTML5
+            // dragover handler drive isDragOver — it checks hasImageFiles().
           } else if (payload.type === 'drop') {
             setIsDragOver(false)
             const imagePaths = payload.paths.filter(isImagePath)
