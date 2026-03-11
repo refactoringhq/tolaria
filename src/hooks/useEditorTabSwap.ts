@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import type { useCreateBlockNote } from '@blocknote/react'
 import type { VaultEntry } from '../types'
 import { splitFrontmatter, preProcessWikilinks, injectWikilinks, restoreWikilinksInBlocks } from '../utils/wikilinks'
+import { compactMarkdown } from '../utils/compact-markdown'
 
 interface Tab {
   entry: VaultEntry
@@ -111,7 +112,7 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange,
     // Convert blocks → markdown, restoring wikilinks first
     const blocks = editor.document
     const restored = restoreWikilinksInBlocks(blocks)
-    const bodyMarkdown = editor.blocksToMarkdownLossy(restored as typeof blocks)
+    const bodyMarkdown = compactMarkdown(editor.blocksToMarkdownLossy(restored as typeof blocks))
 
     // Reconstruct full file: frontmatter + body (which now includes H1 if present)
     const [frontmatter] = splitFrontmatter(tab.content)
