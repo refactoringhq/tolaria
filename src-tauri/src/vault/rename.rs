@@ -549,7 +549,12 @@ mod tests {
         create_test_file(vault, "note/test.md", "# Test\n");
 
         let old_path = vault.join("note/test.md");
-        let result = rename_note(vault.to_str().unwrap(), old_path.to_str().unwrap(), "  ", None);
+        let result = rename_note(
+            vault.to_str().unwrap(),
+            old_path.to_str().unwrap(),
+            "  ",
+            None,
+        );
         assert!(result.is_err());
     }
 
@@ -1033,11 +1038,7 @@ mod tests {
         // If old_title_hint == new_title, should be a noop
         let dir = TempDir::new().unwrap();
         let vault = dir.path();
-        create_test_file(
-            vault,
-            "note/my-note.md",
-            "# My Note\n\nContent.\n",
-        );
+        create_test_file(vault, "note/my-note.md", "# My Note\n\nContent.\n");
 
         let old_path = vault.join("note/my-note.md");
         let result = rename_note(
