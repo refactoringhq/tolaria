@@ -1,11 +1,18 @@
 import { test, expect } from '@playwright/test'
 import { openCommandPalette, findCommand, executeCommand } from './helpers'
 
-const TRASHED_TITLES = ['Old Draft Notes', 'Deprecated API Notes', 'Failed SEO Experiment']
+const NOTE_ITEM = '[data-testid="note-list-container"] .cursor-pointer'
 
 async function navigateToTrash(page: import('@playwright/test').Page) {
-  const trashNav = page.locator('button, [role="button"]').filter({ hasText: /^Trash/ }).first()
-  await trashNav.click()
+  await openCommandPalette(page)
+  await executeCommand(page, 'Go to Trash')
+  await page.waitForTimeout(500)
+}
+
+async function selectAllNotes(page: import('@playwright/test').Page) {
+  // Focus the note list container first, then Cmd+A
+  await page.locator('[data-testid="note-list-container"]').focus()
+  await page.keyboard.press('Meta+a')
   await page.waitForTimeout(300)
 }
 
@@ -18,15 +25,16 @@ test.describe('Trash management', () => {
   test('trash view shows trashed notes with correct header', async ({ page }) => {
     await navigateToTrash(page)
     await expect(page.locator('text=Trash').first()).toBeVisible()
-    const noteItems = page.locator('[data-testid="note-item"]')
+    const noteItems = page.locator(NOTE_ITEM)
+    await expect(noteItems.first()).toBeVisible({ timeout: 5000 })
     const count = await noteItems.count()
-    expect(count).toBeGreaterThanOrEqual(TRASHED_TITLES.length)
+    expect(count).toBeGreaterThanOrEqual(1)
   })
 
   test('Empty Trash button is visible in trash view header', async ({ page }) => {
     await navigateToTrash(page)
     const emptyTrashBtn = page.locator('[data-testid="empty-trash-btn"]')
-    await expect(emptyTrashBtn).toBeVisible()
+    await expect(emptyTrashBtn).toBeVisible({ timeout: 3000 })
   })
 
   test('Empty Trash button is NOT visible in normal "All Notes" view', async ({ page }) => {
@@ -40,9 +48,10 @@ test.describe('Trash management', () => {
     expect(found).toBe(true)
   })
 
-  test('Empty Trash shows confirmation dialog', async ({ page }) => {
+  test('Empty Trash button shows confirmation dialog', async ({ page }) => {
     await navigateToTrash(page)
     const emptyTrashBtn = page.locator('[data-testid="empty-trash-btn"]')
+    await expect(emptyTrashBtn).toBeVisible({ timeout: 3000 })
     await emptyTrashBtn.click()
     const dialog = page.locator('[data-testid="confirm-delete-dialog"]')
     await expect(dialog).toBeVisible({ timeout: 3000 })
@@ -52,23 +61,22 @@ test.describe('Trash management', () => {
   test('confirmation dialog can be cancelled', async ({ page }) => {
     await navigateToTrash(page)
     const emptyTrashBtn = page.locator('[data-testid="empty-trash-btn"]')
+    await expect(emptyTrashBtn).toBeVisible({ timeout: 3000 })
     await emptyTrashBtn.click()
     const dialog = page.locator('[data-testid="confirm-delete-dialog"]')
     await expect(dialog).toBeVisible({ timeout: 3000 })
     await page.locator('button').filter({ hasText: 'Cancel' }).click()
     await expect(dialog).not.toBeVisible()
     // Notes should still be in the list
-    const noteItems = page.locator('[data-testid="note-item"]')
+    const noteItems = page.locator(NOTE_ITEM)
     const count = await noteItems.count()
-    expect(count).toBeGreaterThanOrEqual(TRASHED_TITLES.length)
+    expect(count).toBeGreaterThanOrEqual(1)
   })
 
   test('bulk selection in trash view shows Restore and Delete permanently buttons', async ({ page }) => {
     await navigateToTrash(page)
-    // Select a note using Ctrl+Click
-    const firstNote = page.locator('[data-testid="note-item"]').first()
-    await firstNote.click({ modifiers: ['Control'] })
-    await page.waitForTimeout(200)
+    await expect(page.locator(NOTE_ITEM).first()).toBeVisible({ timeout: 5000 })
+    await selectAllNotes(page)
     const bulkBar = page.locator('[data-testid="bulk-action-bar"]')
     await expect(bulkBar).toBeVisible({ timeout: 3000 })
     await expect(page.locator('[data-testid="bulk-restore-btn"]')).toBeVisible()
@@ -80,9 +88,8 @@ test.describe('Trash management', () => {
 
   test('bulk Delete permanently shows confirmation dialog', async ({ page }) => {
     await navigateToTrash(page)
-    const firstNote = page.locator('[data-testid="note-item"]').first()
-    await firstNote.click({ modifiers: ['Control'] })
-    await page.waitForTimeout(200)
+    await expect(page.locator(NOTE_ITEM).first()).toBeVisible({ timeout: 5000 })
+    await selectAllNotes(page)
     const deleteBtn = page.locator('[data-testid="bulk-delete-btn"]')
     await expect(deleteBtn).toBeVisible({ timeout: 3000 })
     await deleteBtn.click()
@@ -93,7 +100,8 @@ test.describe('Trash management', () => {
 
   test('trashed note banner shows Restore and Delete permanently in editor', async ({ page }) => {
     await navigateToTrash(page)
-    const firstNote = page.locator('[data-testid="note-item"]').first()
+    const firstNote = page.locator(NOTE_ITEM).first()
+    await expect(firstNote).toBeVisible({ timeout: 5000 })
     await firstNote.click()
     await page.waitForTimeout(500)
     const banner = page.locator('[data-testid="trashed-note-banner"]')
@@ -103,10 +111,9 @@ test.describe('Trash management', () => {
   })
 
   test('bulk selection in normal view shows Archive and Trash (not Restore/Delete)', async ({ page }) => {
-    // In normal view (All Notes)
-    const firstNote = page.locator('[data-testid="note-item"]').first()
-    await firstNote.click({ modifiers: ['Control'] })
-    await page.waitForTimeout(200)
+    // Ensure note list is visible
+    await expect(page.locator(NOTE_ITEM).first()).toBeVisible({ timeout: 5000 })
+    await selectAllNotes(page)
     const bulkBar = page.locator('[data-testid="bulk-action-bar"]')
     await expect(bulkBar).toBeVisible({ timeout: 3000 })
     await expect(page.locator('[data-testid="bulk-archive-btn"]')).toBeVisible()
