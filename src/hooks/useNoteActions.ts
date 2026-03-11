@@ -104,6 +104,11 @@ export function slugify(text: string): string {
   return result || 'untitled'
 }
 
+/** Check if a note's filename doesn't match the slug of its current title. */
+export function needsRenameOnSave(title: string, filename: string): boolean {
+  return `${slugify(title)}.md` !== filename
+}
+
 /** Generate a unique "Untitled <type>" name by checking existing entries and pending names. */
 export function generateUntitledName(entries: VaultEntry[], type: string, pending?: Set<string>): string {
   const baseName = `Untitled ${type.toLowerCase()}`

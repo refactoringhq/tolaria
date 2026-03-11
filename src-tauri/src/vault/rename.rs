@@ -368,21 +368,31 @@ pub fn rename_note(
         .unwrap_or_default();
     let old_title = super::extract_title(&content, &old_filename);
 
-    if old_title == new_title {
+    // Check both title and filename: even if the title in content matches,
+    // the filename may still be stale (e.g. "untitled-note.md" after user changed H1).
+    let expected_filename = format!("{}.md", title_to_slug(new_title));
+    let title_unchanged = old_title == new_title;
+    let filename_matches = old_filename == expected_filename;
+
+    if title_unchanged && filename_matches {
         return Ok(RenameResult {
             new_path: old_path.to_string(),
             updated_files: 0,
         });
     }
 
-    // Update content (H1 + frontmatter title)
-    let updated_content = update_note_title_in_content(&content, new_title);
+    // Update content only if the title actually changed
+    let updated_content = if title_unchanged {
+        content.clone()
+    } else {
+        update_note_title_in_content(&content, new_title)
+    };
 
-    // Compute new path and write file
+    // Compute new path, handling collisions with numeric suffix
     let parent_dir = old_file
         .parent()
         .ok_or("Cannot determine parent directory")?;
-    let new_file = parent_dir.join(format!("{}.md", title_to_slug(new_title)));
+    let new_file = unique_dest_path(parent_dir, &expected_filename);
     let new_path_str = new_file.to_string_lossy().to_string();
 
     fs::write(&new_file, &updated_content)
@@ -647,6 +657,80 @@ mod tests {
         );
         assert!(content.contains("title: Renamed Note"));
         assert!(content.contains("# Renamed Note"));
+    }
+
+    // --- rename-on-save: filename doesn't match title slug ---
+
+    #[test]
+    fn test_rename_note_filename_mismatch_same_title() {
+        // Simulates: user created "Untitled note", changed H1 to "My New Note",
+        // saved content (H1 now correct), but filename is still "untitled-note.md".
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path();
+        create_test_file(
+            vault,
+            "note/untitled-note.md",
+            "---\ntitle: My New Note\ntype: Note\n---\n\n# My New Note\n\nContent.\n",
+        );
+
+        let old_path = vault.join("note/untitled-note.md");
+        let result = rename_note(
+            vault.to_str().unwrap(),
+            old_path.to_str().unwrap(),
+            "My New Note",
+        )
+        .unwrap();
+
+        // File should be renamed to match the title slug
+        assert!(
+            result.new_path.ends_with("my-new-note.md"),
+            "expected my-new-note.md, got {}",
+            result.new_path
+        );
+        assert!(!old_path.exists(), "old file should be removed");
+        assert!(Path::new(&result.new_path).exists());
+
+        // Content should be preserved (title was already correct)
+        let content = fs::read_to_string(&result.new_path).unwrap();
+        assert!(content.contains("# My New Note"));
+        assert!(content.contains("title: My New Note"));
+    }
+
+    #[test]
+    fn test_rename_note_collision_appends_suffix() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path();
+        // Existing file with the slug we want
+        create_test_file(
+            vault,
+            "note/my-note.md",
+            "---\ntitle: My Note\ntype: Note\n---\n\n# My Note\n\nExisting.\n",
+        );
+        // File with wrong name that should be renamed to my-note.md
+        create_test_file(
+            vault,
+            "note/untitled-note.md",
+            "---\ntitle: My Note\ntype: Note\n---\n\n# My Note\n\nNew content.\n",
+        );
+
+        let old_path = vault.join("note/untitled-note.md");
+        let result = rename_note(
+            vault.to_str().unwrap(),
+            old_path.to_str().unwrap(),
+            "My Note",
+        )
+        .unwrap();
+
+        // Should get a suffixed name to avoid collision
+        assert!(
+            result.new_path.ends_with("my-note-2.md"),
+            "expected my-note-2.md, got {}",
+            result.new_path
+        );
+        assert!(!old_path.exists());
+        assert!(Path::new(&result.new_path).exists());
+        // Original file should be untouched
+        assert!(vault.join("note/my-note.md").exists());
     }
 
     // --- move_note_to_type_folder tests ---

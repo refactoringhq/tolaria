@@ -5,6 +5,7 @@ import { isTauri, mockInvoke } from '../mock-tauri'
 import type { VaultEntry } from '../types'
 import {
   slugify,
+  needsRenameOnSave,
   buildNewEntry,
   generateUntitledName,
   entryMatchesTarget,
@@ -91,6 +92,22 @@ describe('slugify', () => {
     expect(slugify('!!!')).not.toBe('')
     expect(slugify('---')).not.toBe('')
     expect(slugify('@#$')).not.toBe('')
+  })
+})
+
+describe('needsRenameOnSave', () => {
+  it('returns true when filename does not match title slug', () => {
+    expect(needsRenameOnSave('My New Note', 'untitled-note.md')).toBe(true)
+    expect(needsRenameOnSave('Run good ads for newsletter', 'untitled-note-9.md')).toBe(true)
+  })
+
+  it('returns false when filename matches title slug', () => {
+    expect(needsRenameOnSave('My Note', 'my-note.md')).toBe(false)
+    expect(needsRenameOnSave('Hello World', 'hello-world.md')).toBe(false)
+  })
+
+  it('returns false for untitled note with matching slug', () => {
+    expect(needsRenameOnSave('Untitled note', 'untitled-note.md')).toBe(false)
   })
 })
 

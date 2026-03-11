@@ -17,7 +17,7 @@ import { WelcomeScreen } from './components/WelcomeScreen'
 import { useMcpStatus } from './hooks/useMcpStatus'
 import { useVaultLoader } from './hooks/useVaultLoader'
 import { useSettings } from './hooks/useSettings'
-import { useNoteActions } from './hooks/useNoteActions'
+import { useNoteActions, needsRenameOnSave } from './hooks/useNoteActions'
 import { useCommitFlow } from './hooks/useCommitFlow'
 import { useViewMode } from './hooks/useViewMode'
 import { useEntryActions } from './hooks/useEntryActions'
@@ -358,14 +358,25 @@ function App() {
     }
   }, [resolvedPath, vault.entries, notes, dialogs])
 
+  const handleRenameTab = useCallback(async (path: string, newTitle: string) => {
+    await savePendingForPath(path)
+    await notes.handleRenameNote(path, newTitle, resolvedPath, vault.replaceEntry).then(vault.loadModifiedFiles)
+  }, [notes, resolvedPath, vault, savePendingForPath])
+
   // Wrap handleSave to also persist unsaved notes that have no pending edits (user pressed Cmd+S without typing)
+  // and trigger file rename when the title slug doesn't match the filename.
   const handleSave = useCallback(async () => {
     const activeTab = notes.tabs.find(t => t.entry.path === notes.activeTabPath)
     const fallback = activeTab && vault.unsavedPaths.has(activeTab.entry.path)
       ? { path: activeTab.entry.path, content: activeTab.content }
       : undefined
     await handleSaveRaw(fallback)
-  }, [handleSaveRaw, notes.tabs, notes.activeTabPath, vault.unsavedPaths])
+
+    // After saving, check if filename needs to match the current title
+    if (activeTab && needsRenameOnSave(activeTab.entry.title, activeTab.entry.filename)) {
+      await handleRenameTab(activeTab.entry.path, activeTab.entry.title)
+    }
+  }, [handleSaveRaw, handleRenameTab, notes.tabs, notes.activeTabPath, vault.unsavedPaths])
 
   const commitFlow = useCommitFlow({ savePending, loadModifiedFiles: vault.loadModifiedFiles, commitAndPush: vault.commitAndPush, setToastMessage })
 
@@ -396,11 +407,6 @@ function App() {
     notes.handleCreateType(name)
     setToastMessage(`Type "${name}" created`)
   }, [notes])
-
-  const handleRenameTab = useCallback(async (path: string, newTitle: string) => {
-    await savePendingForPath(path)
-    await notes.handleRenameNote(path, newTitle, resolvedPath, vault.replaceEntry).then(vault.loadModifiedFiles)
-  }, [notes, resolvedPath, vault, savePendingForPath])
 
   /** H1→title sync: update VaultEntry.title and tab entry in memory. */
   const handleTitleSync = useCallback((path: string, newTitle: string) => {
