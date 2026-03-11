@@ -103,9 +103,16 @@ pub const MINIMAL_THEME: &str = r##"{
   }
 }"##;
 
-/// CSS variable key-value pairs for the default light vault theme.
-pub const DEFAULT_VAULT_THEME_VARS: [(&str, &str); 46] = [
-    // shadcn/ui base
+// ---------------------------------------------------------------------------
+// Vault-based theme notes (markdown with frontmatter CSS custom properties)
+// ---------------------------------------------------------------------------
+
+/// Complete set of CSS variable key-value pairs for the default light vault theme.
+/// Includes both UI chrome colours and all editor styling properties from theme.json.
+/// Numeric values that need CSS units include the `px` suffix; unitless values
+/// (line-height, font-weight) are bare numbers.
+pub const DEFAULT_VAULT_THEME_VARS: [(&str, &str); 140] = [
+    // ── shadcn/ui base colours ──────────────────────────────────────────
     ("background", "#FFFFFF"),
     ("foreground", "#37352F"),
     ("card", "#FFFFFF"),
@@ -126,19 +133,21 @@ pub const DEFAULT_VAULT_THEME_VARS: [(&str, &str); 46] = [
     ("sidebar-foreground", "#37352F"),
     ("sidebar-border", "#E9E9E7"),
     ("sidebar-accent", "#EBEBEA"),
-    // Text hierarchy
+    // ── Text hierarchy ──────────────────────────────────────────────────
     ("text-primary", "#37352F"),
     ("text-secondary", "#787774"),
+    ("text-tertiary", "#B4B4B4"),
     ("text-muted", "#B4B4B4"),
     ("text-heading", "#37352F"),
-    // Backgrounds
+    // ── Backgrounds ─────────────────────────────────────────────────────
     ("bg-primary", "#FFFFFF"),
+    ("bg-card", "#FFFFFF"),
     ("bg-sidebar", "#F7F6F3"),
     ("bg-hover", "#EBEBEA"),
     ("bg-hover-subtle", "#F0F0EF"),
     ("bg-selected", "#E8F4FE"),
     ("border-primary", "#E9E9E7"),
-    // Accent colours
+    // ── Accent colours ──────────────────────────────────────────────────
     ("accent-blue", "#155DFF"),
     ("accent-green", "#00B38B"),
     ("accent-orange", "#D9730D"),
@@ -150,185 +159,286 @@ pub const DEFAULT_VAULT_THEME_VARS: [(&str, &str); 46] = [
     ("accent-purple-light", "#A932FF14"),
     ("accent-red-light", "#E03E3E14"),
     ("accent-yellow-light", "#F0B10014"),
-    // Typography
+    // ── Typography base ─────────────────────────────────────────────────
     (
         "font-family",
         "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
     ),
     ("font-size-base", "14px"),
-    // Editor
-    ("editor-font-size", "16"),
+    // ── Editor (from theme.json → editor) ───────────────────────────────
+    (
+        "editor-font-family",
+        "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+    ),
+    ("editor-font-size", "15px"),
     ("editor-line-height", "1.5"),
-    ("editor-max-width", "720"),
+    ("editor-max-width", "720px"),
+    ("editor-padding-horizontal", "40px"),
+    ("editor-padding-vertical", "20px"),
+    ("editor-paragraph-spacing", "8px"),
+    // ── Headings H1 ────────────────────────────────────────────────────
+    ("headings-h1-font-size", "32px"),
+    ("headings-h1-font-weight", "700"),
+    ("headings-h1-line-height", "1.2"),
+    ("headings-h1-margin-top", "32px"),
+    ("headings-h1-margin-bottom", "12px"),
+    ("headings-h1-color", "var(--text-heading)"),
+    ("headings-h1-letter-spacing", "-0.5px"),
+    // ── Headings H2 ────────────────────────────────────────────────────
+    ("headings-h2-font-size", "27px"),
+    ("headings-h2-font-weight", "600"),
+    ("headings-h2-line-height", "1.4"),
+    ("headings-h2-margin-top", "28px"),
+    ("headings-h2-margin-bottom", "10px"),
+    ("headings-h2-color", "var(--text-heading)"),
+    ("headings-h2-letter-spacing", "-0.5px"),
+    // ── Headings H3 ────────────────────────────────────────────────────
+    ("headings-h3-font-size", "20px"),
+    ("headings-h3-font-weight", "600"),
+    ("headings-h3-line-height", "1.4"),
+    ("headings-h3-margin-top", "24px"),
+    ("headings-h3-margin-bottom", "8px"),
+    ("headings-h3-color", "var(--text-heading)"),
+    ("headings-h3-letter-spacing", "-0.5px"),
+    // ── Headings H4 ────────────────────────────────────────────────────
+    ("headings-h4-font-size", "20px"),
+    ("headings-h4-font-weight", "600"),
+    ("headings-h4-line-height", "1.4"),
+    ("headings-h4-margin-top", "20px"),
+    ("headings-h4-margin-bottom", "6px"),
+    ("headings-h4-color", "var(--text-heading)"),
+    ("headings-h4-letter-spacing", "0px"),
+    // ── Lists ───────────────────────────────────────────────────────────
+    ("lists-bullet-size", "28px"),
+    ("lists-bullet-color", "#177bfd"),
+    ("lists-indent-size", "24px"),
+    ("lists-item-spacing", "4px"),
+    ("lists-padding-left", "8px"),
+    ("lists-bullet-gap", "6px"),
+    // ── Checkboxes ──────────────────────────────────────────────────────
+    ("checkboxes-size", "18px"),
+    ("checkboxes-border-radius", "3px"),
+    ("checkboxes-checked-color", "var(--accent-blue)"),
+    ("checkboxes-unchecked-border-color", "var(--text-muted)"),
+    ("checkboxes-gap", "8px"),
+    // ── Inline styles: bold ─────────────────────────────────────────────
+    ("inline-styles-bold-font-weight", "700"),
+    ("inline-styles-bold-color", "var(--text-primary)"),
+    // ── Inline styles: italic ───────────────────────────────────────────
+    ("inline-styles-italic-font-style", "italic"),
+    ("inline-styles-italic-color", "var(--text-primary)"),
+    // ── Inline styles: strikethrough ────────────────────────────────────
+    ("inline-styles-strikethrough-color", "var(--text-tertiary)"),
+    (
+        "inline-styles-strikethrough-text-decoration",
+        "line-through",
+    ),
+    // ── Inline styles: code ─────────────────────────────────────────────
+    (
+        "inline-styles-code-font-family",
+        "'SF Mono', 'Fira Code', monospace",
+    ),
+    ("inline-styles-code-font-size", "14px"),
+    (
+        "inline-styles-code-background-color",
+        "var(--bg-hover-subtle)",
+    ),
+    ("inline-styles-code-padding-horizontal", "4px"),
+    ("inline-styles-code-padding-vertical", "2px"),
+    ("inline-styles-code-border-radius", "3px"),
+    ("inline-styles-code-color", "var(--text-secondary)"),
+    // ── Inline styles: link ─────────────────────────────────────────────
+    ("inline-styles-link-color", "var(--accent-blue)"),
+    ("inline-styles-link-text-decoration", "underline"),
+    // ── Inline styles: wikilink ─────────────────────────────────────────
+    ("inline-styles-wikilink-color", "var(--accent-blue)"),
+    ("inline-styles-wikilink-text-decoration", "none"),
+    (
+        "inline-styles-wikilink-border-bottom",
+        "1px dotted currentColor",
+    ),
+    ("inline-styles-wikilink-cursor", "pointer"),
+    // ── Code blocks ─────────────────────────────────────────────────────
+    (
+        "code-blocks-font-family",
+        "'SF Mono', 'Fira Code', monospace",
+    ),
+    ("code-blocks-font-size", "13px"),
+    ("code-blocks-line-height", "1.5"),
+    ("code-blocks-background-color", "var(--bg-card)"),
+    ("code-blocks-padding-horizontal", "16px"),
+    ("code-blocks-padding-vertical", "12px"),
+    ("code-blocks-border-radius", "6px"),
+    ("code-blocks-margin-vertical", "12px"),
+    // ── Blockquote ──────────────────────────────────────────────────────
+    ("blockquote-border-left-width", "3px"),
+    ("blockquote-border-left-color", "var(--accent-blue)"),
+    ("blockquote-padding-left", "16px"),
+    ("blockquote-margin-vertical", "12px"),
+    ("blockquote-color", "var(--text-secondary)"),
+    ("blockquote-font-style", "italic"),
+    // ── Table ───────────────────────────────────────────────────────────
+    ("table-border-color", "var(--border-primary)"),
+    ("table-header-background", "var(--bg-card)"),
+    ("table-cell-padding-horizontal", "12px"),
+    ("table-cell-padding-vertical", "8px"),
+    ("table-font-size", "14px"),
+    // ── Horizontal rule ─────────────────────────────────────────────────
+    ("horizontal-rule-color", "var(--border-primary)"),
+    ("horizontal-rule-margin-vertical", "24px"),
+    ("horizontal-rule-thickness", "1px"),
+    // ── Colors (semantic aliases from theme.json → colors) ──────────────
+    ("colors-background", "var(--bg-primary)"),
+    ("colors-text", "var(--text-primary)"),
+    ("colors-text-secondary", "var(--text-secondary)"),
+    ("colors-text-muted", "var(--text-muted)"),
+    ("colors-heading", "var(--text-heading)"),
+    ("colors-accent", "var(--accent-blue)"),
+    ("colors-selection", "var(--bg-selected)"),
+    ("colors-cursor", "var(--text-primary)"),
 ];
 
-/// Vault-based theme note for the built-in Default theme.
-pub const DEFAULT_VAULT_THEME: &str = "---\n\
-type: Theme\n\
-Description: Light theme with warm, paper-like tones\n\
-background: \"#FFFFFF\"\n\
-foreground: \"#37352F\"\n\
-card: \"#FFFFFF\"\n\
-popover: \"#FFFFFF\"\n\
-primary: \"#155DFF\"\n\
-primary-foreground: \"#FFFFFF\"\n\
-secondary: \"#EBEBEA\"\n\
-secondary-foreground: \"#37352F\"\n\
-muted: \"#F0F0EF\"\n\
-muted-foreground: \"#787774\"\n\
-accent: \"#EBEBEA\"\n\
-accent-foreground: \"#37352F\"\n\
-destructive: \"#E03E3E\"\n\
-border: \"#E9E9E7\"\n\
-input: \"#E9E9E7\"\n\
-ring: \"#155DFF\"\n\
-sidebar: \"#F7F6F3\"\n\
-sidebar-foreground: \"#37352F\"\n\
-sidebar-border: \"#E9E9E7\"\n\
-sidebar-accent: \"#EBEBEA\"\n\
-text-primary: \"#37352F\"\n\
-text-secondary: \"#787774\"\n\
-text-muted: \"#B4B4B4\"\n\
-text-heading: \"#37352F\"\n\
-bg-primary: \"#FFFFFF\"\n\
-bg-sidebar: \"#F7F6F3\"\n\
-bg-hover: \"#EBEBEA\"\n\
-bg-hover-subtle: \"#F0F0EF\"\n\
-bg-selected: \"#E8F4FE\"\n\
-border-primary: \"#E9E9E7\"\n\
-accent-blue: \"#155DFF\"\n\
-accent-green: \"#00B38B\"\n\
-accent-orange: \"#D9730D\"\n\
-accent-red: \"#E03E3E\"\n\
-accent-purple: \"#A932FF\"\n\
-accent-yellow: \"#F0B100\"\n\
-accent-blue-light: \"#155DFF14\"\n\
-accent-green-light: \"#00B38B14\"\n\
-accent-purple-light: \"#A932FF14\"\n\
-accent-red-light: \"#E03E3E14\"\n\
-accent-yellow-light: \"#F0B10014\"\n\
-font-family: \"'Inter', -apple-system, BlinkMacSystemFont, sans-serif\"\n\
-font-size-base: 14px\n\
-editor-font-size: 16\n\
-editor-line-height: 1.5\n\
-editor-max-width: 720\n\
----\n\
-\n\
-# Default Theme\n\
-\n\
-The default light theme for Laputa. Clean and warm, inspired by Notion.\n";
+/// UI-colour overrides for the Dark vault theme (keys that differ from default).
+const DARK_COLOR_OVERRIDES: &[(&str, &str)] = &[
+    ("background", "#0f0f1a"),
+    ("foreground", "#e0e0e0"),
+    ("card", "#16162a"),
+    ("popover", "#1e1e3a"),
+    ("secondary", "#2a2a4a"),
+    ("secondary-foreground", "#e0e0e0"),
+    ("muted", "#1e1e3a"),
+    ("muted-foreground", "#888888"),
+    ("accent", "#2a2a4a"),
+    ("accent-foreground", "#e0e0e0"),
+    ("destructive", "#f44336"),
+    ("border", "#2a2a4a"),
+    ("input", "#2a2a4a"),
+    ("sidebar", "#1a1a2e"),
+    ("sidebar-foreground", "#e0e0e0"),
+    ("sidebar-border", "#2a2a4a"),
+    ("sidebar-accent", "#2a2a4a"),
+    ("text-primary", "#e0e0e0"),
+    ("text-secondary", "#888888"),
+    ("text-tertiary", "#666666"),
+    ("text-muted", "#666666"),
+    ("text-heading", "#e0e0e0"),
+    ("bg-primary", "#0f0f1a"),
+    ("bg-card", "#16162a"),
+    ("bg-sidebar", "#1a1a2e"),
+    ("bg-hover", "#2a2a4a"),
+    ("bg-hover-subtle", "#1e1e3a"),
+    ("bg-selected", "#155DFF22"),
+    ("border-primary", "#2a2a4a"),
+    ("accent-red", "#f44336"),
+    ("accent-blue-light", "#155DFF33"),
+    ("accent-green-light", "#00B38B33"),
+    ("accent-purple-light", "#A932FF33"),
+    ("accent-red-light", "#f4433633"),
+    ("accent-yellow-light", "#F0B10033"),
+    ("lists-bullet-color", "#155DFF"),
+];
 
-/// Vault-based theme note for the built-in Dark theme.
-pub const DARK_VAULT_THEME: &str = "---\n\
-type: Theme\n\
-Description: Dark variant with deep navy tones\n\
-background: \"#0f0f1a\"\n\
-foreground: \"#e0e0e0\"\n\
-card: \"#16162a\"\n\
-popover: \"#1e1e3a\"\n\
-primary: \"#155DFF\"\n\
-primary-foreground: \"#FFFFFF\"\n\
-secondary: \"#2a2a4a\"\n\
-secondary-foreground: \"#e0e0e0\"\n\
-muted: \"#1e1e3a\"\n\
-muted-foreground: \"#888888\"\n\
-accent: \"#2a2a4a\"\n\
-accent-foreground: \"#e0e0e0\"\n\
-destructive: \"#f44336\"\n\
-border: \"#2a2a4a\"\n\
-input: \"#2a2a4a\"\n\
-ring: \"#155DFF\"\n\
-sidebar: \"#1a1a2e\"\n\
-sidebar-foreground: \"#e0e0e0\"\n\
-sidebar-border: \"#2a2a4a\"\n\
-sidebar-accent: \"#2a2a4a\"\n\
-text-primary: \"#e0e0e0\"\n\
-text-secondary: \"#888888\"\n\
-text-muted: \"#666666\"\n\
-text-heading: \"#e0e0e0\"\n\
-bg-primary: \"#0f0f1a\"\n\
-bg-sidebar: \"#1a1a2e\"\n\
-bg-hover: \"#2a2a4a\"\n\
-bg-hover-subtle: \"#1e1e3a\"\n\
-bg-selected: \"#155DFF22\"\n\
-border-primary: \"#2a2a4a\"\n\
-accent-blue: \"#155DFF\"\n\
-accent-green: \"#00B38B\"\n\
-accent-orange: \"#D9730D\"\n\
-accent-red: \"#f44336\"\n\
-accent-purple: \"#A932FF\"\n\
-accent-yellow: \"#F0B100\"\n\
-accent-blue-light: \"#155DFF33\"\n\
-accent-green-light: \"#00B38B33\"\n\
-accent-purple-light: \"#A932FF33\"\n\
-accent-red-light: \"#f4433633\"\n\
-accent-yellow-light: \"#F0B10033\"\n\
-font-family: \"'Inter', -apple-system, BlinkMacSystemFont, sans-serif\"\n\
-font-size-base: 14px\n\
-editor-font-size: 16\n\
-editor-line-height: 1.5\n\
-editor-max-width: 720\n\
----\n\
-\n\
-# Dark Theme\n\
-\n\
-A dark theme with deep navy tones for comfortable night-time reading.\n";
+/// UI-colour + editor-property overrides for the Minimal vault theme.
+const MINIMAL_OVERRIDES: &[(&str, &str)] = &[
+    ("background", "#FAFAFA"),
+    ("foreground", "#111111"),
+    ("primary", "#000000"),
+    ("secondary", "#F0F0F0"),
+    ("secondary-foreground", "#111111"),
+    ("muted", "#F5F5F5"),
+    ("muted-foreground", "#666666"),
+    ("accent", "#F0F0F0"),
+    ("accent-foreground", "#111111"),
+    ("destructive", "#CC0000"),
+    ("border", "#E0E0E0"),
+    ("input", "#E0E0E0"),
+    ("ring", "#000000"),
+    ("sidebar", "#F5F5F5"),
+    ("sidebar-foreground", "#111111"),
+    ("sidebar-border", "#E0E0E0"),
+    ("sidebar-accent", "#E8E8E8"),
+    ("text-primary", "#111111"),
+    ("text-secondary", "#666666"),
+    ("text-tertiary", "#999999"),
+    ("text-muted", "#999999"),
+    ("text-heading", "#111111"),
+    ("bg-primary", "#FAFAFA"),
+    ("bg-card", "#FFFFFF"),
+    ("bg-sidebar", "#F5F5F5"),
+    ("bg-hover", "#EBEBEB"),
+    ("bg-hover-subtle", "#F5F5F5"),
+    ("bg-selected", "#00000014"),
+    ("border-primary", "#E0E0E0"),
+    ("accent-blue", "#000000"),
+    ("accent-green", "#006600"),
+    ("accent-orange", "#996600"),
+    ("accent-red", "#CC0000"),
+    ("accent-purple", "#660099"),
+    ("accent-yellow", "#996600"),
+    ("accent-blue-light", "#00000014"),
+    ("accent-green-light", "#00660014"),
+    ("accent-purple-light", "#66009914"),
+    ("accent-red-light", "#CC000014"),
+    ("accent-yellow-light", "#99660014"),
+    ("font-family", "'SF Mono', 'Menlo', monospace"),
+    ("font-size-base", "13px"),
+    ("editor-font-size", "15px"),
+    ("editor-line-height", "1.6"),
+    ("editor-max-width", "680px"),
+    ("lists-bullet-color", "#000000"),
+];
 
-/// Vault-based theme note for the built-in Minimal theme.
-pub const MINIMAL_VAULT_THEME: &str = "---\n\
-type: Theme\n\
-Description: High contrast, minimal chrome\n\
-background: \"#FAFAFA\"\n\
-foreground: \"#111111\"\n\
-card: \"#FFFFFF\"\n\
-popover: \"#FFFFFF\"\n\
-primary: \"#000000\"\n\
-primary-foreground: \"#FFFFFF\"\n\
-secondary: \"#F0F0F0\"\n\
-secondary-foreground: \"#111111\"\n\
-muted: \"#F5F5F5\"\n\
-muted-foreground: \"#666666\"\n\
-accent: \"#F0F0F0\"\n\
-accent-foreground: \"#111111\"\n\
-destructive: \"#CC0000\"\n\
-border: \"#E0E0E0\"\n\
-input: \"#E0E0E0\"\n\
-ring: \"#000000\"\n\
-sidebar: \"#F5F5F5\"\n\
-sidebar-foreground: \"#111111\"\n\
-sidebar-border: \"#E0E0E0\"\n\
-sidebar-accent: \"#E8E8E8\"\n\
-text-primary: \"#111111\"\n\
-text-secondary: \"#666666\"\n\
-text-muted: \"#999999\"\n\
-text-heading: \"#111111\"\n\
-bg-primary: \"#FAFAFA\"\n\
-bg-sidebar: \"#F5F5F5\"\n\
-bg-hover: \"#EBEBEB\"\n\
-bg-hover-subtle: \"#F5F5F5\"\n\
-bg-selected: \"#00000014\"\n\
-border-primary: \"#E0E0E0\"\n\
-accent-blue: \"#000000\"\n\
-accent-green: \"#006600\"\n\
-accent-orange: \"#996600\"\n\
-accent-red: \"#CC0000\"\n\
-accent-purple: \"#660099\"\n\
-accent-yellow: \"#996600\"\n\
-accent-blue-light: \"#00000014\"\n\
-accent-green-light: \"#00660014\"\n\
-accent-purple-light: \"#66009914\"\n\
-accent-red-light: \"#CC000014\"\n\
-accent-yellow-light: \"#99660014\"\n\
-font-family: \"'SF Mono', 'Menlo', monospace\"\n\
-font-size-base: 13px\n\
-editor-font-size: 15\n\
-editor-line-height: 1.6\n\
-editor-max-width: 680\n\
----\n\
-\n\
-# Minimal Theme\n\
-\n\
-High contrast, minimal chrome. Monospace typography throughout.\n";
+/// Build a vault theme note string from a set of CSS variable pairs.
+///
+/// Values containing `#`, `'`, `,`, or `(` are YAML-quoted to avoid parse errors.
+fn build_vault_theme_note(name: &str, description: &str, vars: &[(&str, &str)]) -> String {
+    let mut fm = format!("---\ntype: Theme\nDescription: {description}\n");
+    for (key, value) in vars {
+        if value.contains('#') || value.contains('\'') || value.contains(',') || value.contains('(')
+        {
+            fm.push_str(&format!("{key}: \"{value}\"\n"));
+        } else {
+            fm.push_str(&format!("{key}: {value}\n"));
+        }
+    }
+    fm.push_str("---\n\n");
+    fm.push_str(&format!("# {name} Theme\n\n{description}.\n"));
+    fm
+}
+
+/// Apply overrides on top of DEFAULT_VAULT_THEME_VARS, returning a new Vec.
+fn apply_overrides(
+    overrides: &[(&'static str, &'static str)],
+) -> Vec<(&'static str, &'static str)> {
+    let mut vars: Vec<(&'static str, &'static str)> = DEFAULT_VAULT_THEME_VARS.to_vec();
+    for &(key, value) in overrides {
+        if let Some(entry) = vars.iter_mut().find(|e| e.0 == key) {
+            entry.1 = value;
+        }
+    }
+    vars
+}
+
+/// Generate the Default vault theme note content.
+pub fn default_vault_theme() -> String {
+    build_vault_theme_note(
+        "Default",
+        "Light theme with warm, paper-like tones",
+        &DEFAULT_VAULT_THEME_VARS,
+    )
+}
+
+/// Generate the Dark vault theme note content.
+pub fn dark_vault_theme() -> String {
+    let vars = apply_overrides(DARK_COLOR_OVERRIDES);
+    build_vault_theme_note("Dark", "Dark variant with deep navy tones", &vars)
+}
+
+/// Generate the Minimal vault theme note content.
+pub fn minimal_vault_theme() -> String {
+    let vars = apply_overrides(MINIMAL_OVERRIDES);
+    build_vault_theme_note("Minimal", "High contrast, minimal chrome", &vars)
+}
 
 /// Type definition for the Theme note type.
 pub const THEME_TYPE_DEFINITION: &str = "---\n\

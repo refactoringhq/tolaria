@@ -329,23 +329,153 @@ export const mockHandlers: Record<string, (args: any) => any> = {
     const slug = displayName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'untitled-theme'
     const path = `${args.vaultPath}/theme/${slug}.md`
     MOCK_CONTENT[path] = `---
-type: Theme
-title: ${displayName}
-primary: "#155DFF"
+Is A: Theme
+Description: ${displayName} theme
 background: "#FFFFFF"
 foreground: "#37352F"
-sidebar: "#F7F6F3"
-border: "#E9E9E7"
+card: "#FFFFFF"
+popover: "#FFFFFF"
+primary: "#155DFF"
+primary-foreground: "#FFFFFF"
+secondary: "#EBEBEA"
+secondary-foreground: "#37352F"
 muted: "#F0F0EF"
-muted-foreground: "#9B9A97"
-accent: "#F0F7FF"
-accent-foreground: "#0A3B8F"
+muted-foreground: "#787774"
+accent: "#EBEBEA"
+accent-foreground: "#37352F"
+destructive: "#E03E3E"
+border: "#E9E9E7"
+input: "#E9E9E7"
+ring: "#155DFF"
+sidebar: "#F7F6F3"
+sidebar-foreground: "#37352F"
+sidebar-border: "#E9E9E7"
+sidebar-accent: "#EBEBEA"
+text-primary: "#37352F"
+text-secondary: "#787774"
+text-tertiary: "#B4B4B4"
+text-muted: "#B4B4B4"
+text-heading: "#37352F"
+bg-primary: "#FFFFFF"
+bg-card: "#FFFFFF"
+bg-sidebar: "#F7F6F3"
+bg-hover: "#EBEBEA"
+bg-hover-subtle: "#F0F0EF"
+bg-selected: "#E8F4FE"
+border-primary: "#E9E9E7"
+accent-blue: "#155DFF"
+accent-green: "#00B38B"
+accent-orange: "#D9730D"
+accent-red: "#E03E3E"
+accent-purple: "#A932FF"
+accent-yellow: "#F0B100"
+accent-blue-light: "#155DFF14"
+accent-green-light: "#00B38B14"
+accent-purple-light: "#A932FF14"
+accent-red-light: "#E03E3E14"
+accent-yellow-light: "#F0B10014"
 font-family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
-font-size-base: 14
-line-height-base: 1.6
+font-size-base: 14px
+editor-font-family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+editor-font-size: 15px
+editor-line-height: 1.5
+editor-max-width: 720px
+editor-padding-horizontal: 40px
+editor-padding-vertical: 20px
+editor-paragraph-spacing: 8px
+headings-h1-font-size: 32px
+headings-h1-font-weight: 700
+headings-h1-line-height: 1.2
+headings-h1-margin-top: 32px
+headings-h1-margin-bottom: 12px
+headings-h1-color: "var(--text-heading)"
+headings-h1-letter-spacing: -0.5px
+headings-h2-font-size: 27px
+headings-h2-font-weight: 600
+headings-h2-line-height: 1.4
+headings-h2-margin-top: 28px
+headings-h2-margin-bottom: 10px
+headings-h2-color: "var(--text-heading)"
+headings-h2-letter-spacing: -0.5px
+headings-h3-font-size: 20px
+headings-h3-font-weight: 600
+headings-h3-line-height: 1.4
+headings-h3-margin-top: 24px
+headings-h3-margin-bottom: 8px
+headings-h3-color: "var(--text-heading)"
+headings-h3-letter-spacing: -0.5px
+headings-h4-font-size: 20px
+headings-h4-font-weight: 600
+headings-h4-line-height: 1.4
+headings-h4-margin-top: 20px
+headings-h4-margin-bottom: 6px
+headings-h4-color: "var(--text-heading)"
+headings-h4-letter-spacing: 0px
+lists-bullet-size: 28px
+lists-bullet-color: "#177bfd"
+lists-indent-size: 24px
+lists-item-spacing: 4px
+lists-padding-left: 8px
+lists-bullet-gap: 6px
+checkboxes-size: 18px
+checkboxes-border-radius: 3px
+checkboxes-checked-color: "var(--accent-blue)"
+checkboxes-unchecked-border-color: "var(--text-muted)"
+checkboxes-gap: 8px
+inline-styles-bold-font-weight: 700
+inline-styles-bold-color: "var(--text-primary)"
+inline-styles-italic-font-style: italic
+inline-styles-italic-color: "var(--text-primary)"
+inline-styles-strikethrough-color: "var(--text-tertiary)"
+inline-styles-strikethrough-text-decoration: line-through
+inline-styles-code-font-family: "'SF Mono', 'Fira Code', monospace"
+inline-styles-code-font-size: 14px
+inline-styles-code-background-color: "var(--bg-hover-subtle)"
+inline-styles-code-padding-horizontal: 4px
+inline-styles-code-padding-vertical: 2px
+inline-styles-code-border-radius: 3px
+inline-styles-code-color: "var(--text-secondary)"
+inline-styles-link-color: "var(--accent-blue)"
+inline-styles-link-text-decoration: underline
+inline-styles-wikilink-color: "var(--accent-blue)"
+inline-styles-wikilink-text-decoration: none
+inline-styles-wikilink-border-bottom: "1px dotted currentColor"
+inline-styles-wikilink-cursor: pointer
+code-blocks-font-family: "'SF Mono', 'Fira Code', monospace"
+code-blocks-font-size: 13px
+code-blocks-line-height: 1.5
+code-blocks-background-color: "var(--bg-card)"
+code-blocks-padding-horizontal: 16px
+code-blocks-padding-vertical: 12px
+code-blocks-border-radius: 6px
+code-blocks-margin-vertical: 12px
+blockquote-border-left-width: 3px
+blockquote-border-left-color: "var(--accent-blue)"
+blockquote-padding-left: 16px
+blockquote-margin-vertical: 12px
+blockquote-color: "var(--text-secondary)"
+blockquote-font-style: italic
+table-border-color: "var(--border-primary)"
+table-header-background: "var(--bg-card)"
+table-cell-padding-horizontal: 12px
+table-cell-padding-vertical: 8px
+table-font-size: 14px
+horizontal-rule-color: "var(--border-primary)"
+horizontal-rule-margin-vertical: 24px
+horizontal-rule-thickness: 1px
+colors-background: "var(--bg-primary)"
+colors-text: "var(--text-primary)"
+colors-text-secondary: "var(--text-secondary)"
+colors-text-muted: "var(--text-muted)"
+colors-heading: "var(--text-heading)"
+colors-accent: "var(--accent-blue)"
+colors-selection: "var(--bg-selected)"
+colors-cursor: "var(--text-primary)"
 ---
 
 # ${displayName}
+
+A custom ${displayName} theme for Laputa.
 `
     const now = Date.now() / 1000
     MOCK_ENTRIES.push({

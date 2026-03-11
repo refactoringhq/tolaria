@@ -258,7 +258,7 @@ mod tests {
 
     #[test]
     fn test_vault_theme_content_contains_all_vars() {
-        let content = DEFAULT_VAULT_THEME;
+        let content = default_vault_theme();
         assert!(content.contains("background:"));
         assert!(content.contains("primary:"));
         assert!(content.contains("sidebar:"));

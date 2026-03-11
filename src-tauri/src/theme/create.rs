@@ -93,7 +93,8 @@ fn find_available_stem(dir: &Path, base: &str, ext: &str) -> String {
 fn vault_theme_note_content(name: &str, vars: &[(&str, &str)]) -> String {
     let mut fm = format!("---\nIs A: Theme\nDescription: {name} theme\n");
     for (key, value) in vars {
-        if value.contains('#') || value.contains('\'') || value.contains(',') {
+        if value.contains('#') || value.contains('\'') || value.contains(',') || value.contains('(')
+        {
             fm.push_str(&format!("{key}: \"{value}\"\n"));
         } else {
             fm.push_str(&format!("{key}: {value}\n"));
@@ -215,5 +216,86 @@ mod tests {
         assert_eq!(slugify("My Cool Theme"), "my-cool-theme");
         assert_eq!(slugify("default"), "default");
         assert_eq!(slugify("Dark Mode!"), "dark-mode");
+    }
+
+    #[test]
+    fn test_create_vault_theme_contains_all_default_css_vars() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("vault");
+        fs::create_dir_all(&vault).unwrap();
+        let vp = vault.to_str().unwrap();
+
+        let path = create_vault_theme(vp, Some("Full Theme")).unwrap();
+        let content = fs::read_to_string(&path).unwrap();
+
+        // Every entry in DEFAULT_VAULT_THEME_VARS must appear in the generated file
+        for (key, _) in &DEFAULT_VAULT_THEME_VARS {
+            assert!(
+                content.contains(&format!("{key}:")),
+                "missing key in theme file: {key}"
+            );
+        }
+
+        // Spot-check editor properties from theme.json that were previously missing
+        assert!(
+            content.contains("editor-font-family:"),
+            "missing editor-font-family"
+        );
+        assert!(
+            content.contains("editor-padding-horizontal:"),
+            "missing editor-padding-horizontal"
+        );
+        assert!(
+            content.contains("headings-h1-font-size:"),
+            "missing headings-h1-font-size"
+        );
+        assert!(
+            content.contains("lists-bullet-size:"),
+            "missing lists-bullet-size"
+        );
+        assert!(
+            content.contains("lists-bullet-color:"),
+            "missing lists-bullet-color"
+        );
+        assert!(
+            content.contains("checkboxes-size:"),
+            "missing checkboxes-size"
+        );
+        assert!(
+            content.contains("inline-styles-bold-font-weight:"),
+            "missing inline-styles-bold-font-weight"
+        );
+        assert!(
+            content.contains("code-blocks-font-family:"),
+            "missing code-blocks-font-family"
+        );
+        assert!(
+            content.contains("blockquote-border-left-width:"),
+            "missing blockquote-border-left-width"
+        );
+        assert!(
+            content.contains("table-border-color:"),
+            "missing table-border-color"
+        );
+        assert!(
+            content.contains("horizontal-rule-thickness:"),
+            "missing horizontal-rule-thickness"
+        );
+        assert!(content.contains("colors-text:"), "missing colors-text");
+        assert!(content.contains("colors-cursor:"), "missing colors-cursor");
+
+        // Numeric values that need CSS units must have px suffix
+        assert!(
+            content.contains("editor-font-size: 15px"),
+            "editor-font-size should have px unit"
+        );
+        assert!(
+            content.contains("editor-max-width: 720px"),
+            "editor-max-width should have px unit"
+        );
+        assert!(
+            content.contains("editor-padding-horizontal: 40px"),
+            "editor-padding-horizontal should have px unit"
+        );
     }
 }

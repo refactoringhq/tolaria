@@ -31,6 +31,15 @@ pub fn seed_default_themes(vault_path: &str) {
     );
 }
 
+/// Write a vault theme file if it doesn't exist or is empty (corrupt).
+fn write_if_missing(path: &Path, content: &str) -> Result<bool, String> {
+    let needs_write = !path.exists() || fs::metadata(path).map_or(true, |m| m.len() == 0);
+    if needs_write {
+        fs::write(path, content).map_err(|e| format!("Failed to write {}: {e}", path.display()))?;
+    }
+    Ok(needs_write)
+}
+
 /// Seed the vault `theme/` directory with built-in vault-based theme notes.
 /// Per-file idempotent: creates the directory if missing, writes each default
 /// file only when it doesn't exist or is empty (corrupt). Never overwrites
@@ -40,19 +49,18 @@ pub fn seed_vault_themes(vault_path: &str) {
     if fs::create_dir_all(&theme_dir).is_err() {
         return;
     }
+    let default_content = default_vault_theme();
+    let dark_content = dark_vault_theme();
+    let minimal_content = minimal_vault_theme();
     let defaults: &[(&str, &str)] = &[
-        ("default.md", DEFAULT_VAULT_THEME),
-        ("dark.md", DARK_VAULT_THEME),
-        ("minimal.md", MINIMAL_VAULT_THEME),
+        ("default.md", &default_content),
+        ("dark.md", &dark_content),
+        ("minimal.md", &minimal_content),
     ];
     let mut seeded = false;
     for (name, content) in defaults {
-        let path = theme_dir.join(name);
-        let needs_write = !path.exists() || fs::metadata(&path).map_or(true, |m| m.len() == 0);
-        if needs_write {
-            let _ = fs::write(&path, content);
-            seeded = true;
-        }
+        let wrote = write_if_missing(&theme_dir.join(name), content).unwrap_or(false);
+        seeded = seeded || wrote;
     }
     if seeded {
         log::info!("Seeded theme/ with built-in vault themes");
@@ -64,17 +72,17 @@ pub fn seed_vault_themes(vault_path: &str) {
 pub fn ensure_vault_themes(vault_path: &str) -> Result<(), String> {
     let theme_dir = Path::new(vault_path).join("theme");
     fs::create_dir_all(&theme_dir).map_err(|e| format!("Failed to create theme directory: {e}"))?;
+    let default_content = default_vault_theme();
+    let dark_content = dark_vault_theme();
+    let minimal_content = minimal_vault_theme();
     let defaults: &[(&str, &str)] = &[
-        ("default.md", DEFAULT_VAULT_THEME),
-        ("dark.md", DARK_VAULT_THEME),
-        ("minimal.md", MINIMAL_VAULT_THEME),
+        ("default.md", &default_content),
+        ("dark.md", &dark_content),
+        ("minimal.md", &minimal_content),
     ];
     for (name, content) in defaults {
-        let path = theme_dir.join(name);
-        let needs_write = !path.exists() || fs::metadata(&path).map_or(true, |m| m.len() == 0);
-        if needs_write {
-            fs::write(&path, content).map_err(|e| format!("Failed to write theme/{name}: {e}"))?;
-        }
+        write_if_missing(&theme_dir.join(name), content)
+            .map_err(|e| format!("Failed to write theme/{name}: {e}"))?;
     }
     Ok(())
 }
@@ -93,12 +101,7 @@ pub fn restore_default_themes(vault_path: &str) -> Result<String, String> {
         ("minimal.json", MINIMAL_THEME),
     ];
     for (name, content) in json_defaults {
-        let path = themes_dir.join(name);
-        let needs_write = !path.exists() || fs::metadata(&path).map_or(true, |m| m.len() == 0);
-        if needs_write {
-            fs::write(&path, content)
-                .map_err(|e| format!("Failed to write _themes/{name}: {e}"))?;
-        }
+        write_if_missing(&themes_dir.join(name), content)?;
     }
 
     // Seed theme/ markdown notes (reuses ensure_vault_themes for consistency)
@@ -114,12 +117,7 @@ pub fn restore_default_themes(vault_path: &str) -> Result<String, String> {
 pub fn ensure_theme_type_definition(vault_path: &str) -> Result<(), String> {
     let type_dir = Path::new(vault_path).join("type");
     fs::create_dir_all(&type_dir).map_err(|e| format!("Failed to create type directory: {e}"))?;
-    let path = type_dir.join("theme.md");
-    let needs_write = !path.exists() || fs::metadata(&path).map_or(true, |m| m.len() == 0);
-    if needs_write {
-        fs::write(&path, THEME_TYPE_DEFINITION)
-            .map_err(|e| format!("Failed to write type/theme.md: {e}"))?;
-    }
+    write_if_missing(&type_dir.join("theme.md"), THEME_TYPE_DEFINITION)?;
     Ok(())
 }
 
@@ -162,7 +160,7 @@ mod tests {
         let vault = dir.path().join("vault");
         let theme_dir = vault.join("theme");
         fs::create_dir_all(&theme_dir).unwrap();
-        fs::write(theme_dir.join("default.md"), DEFAULT_VAULT_THEME).unwrap();
+        fs::write(theme_dir.join("default.md"), &default_vault_theme()).unwrap();
         let vp = vault.to_str().unwrap();
 
         seed_vault_themes(vp);
@@ -330,7 +328,7 @@ mod tests {
         fs::create_dir_all(&themes_dir).unwrap();
         fs::create_dir_all(&theme_dir).unwrap();
         fs::write(themes_dir.join("default.json"), DEFAULT_THEME).unwrap();
-        fs::write(theme_dir.join("default.md"), DEFAULT_VAULT_THEME).unwrap();
+        fs::write(theme_dir.join("default.md"), &default_vault_theme()).unwrap();
         let vp = vault.to_str().unwrap();
 
         restore_default_themes(vp).unwrap();
@@ -340,5 +338,55 @@ mod tests {
         assert!(theme_dir.join("minimal.md").exists());
         let content = fs::read_to_string(theme_dir.join("default.md")).unwrap();
         assert!(content.contains("Light theme with warm"));
+    }
+
+    #[test]
+    fn test_seeded_default_theme_contains_editor_properties() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("vault");
+        fs::create_dir_all(&vault).unwrap();
+        let vp = vault.to_str().unwrap();
+
+        ensure_vault_themes(vp).unwrap();
+        let content = fs::read_to_string(vault.join("theme").join("default.md")).unwrap();
+
+        // Must contain all editor properties from theme.json
+        assert!(
+            content.contains("editor-font-family:"),
+            "missing editor-font-family"
+        );
+        assert!(
+            content.contains("headings-h1-font-size:"),
+            "missing headings-h1-font-size"
+        );
+        assert!(
+            content.contains("lists-bullet-size:"),
+            "missing lists-bullet-size"
+        );
+        assert!(
+            content.contains("checkboxes-size:"),
+            "missing checkboxes-size"
+        );
+        assert!(
+            content.contains("inline-styles-bold-font-weight:"),
+            "missing inline-styles-bold"
+        );
+        assert!(
+            content.contains("code-blocks-font-family:"),
+            "missing code-blocks-font-family"
+        );
+        assert!(
+            content.contains("blockquote-border-left-width:"),
+            "missing blockquote"
+        );
+        assert!(
+            content.contains("table-border-color:"),
+            "missing table-border-color"
+        );
+        assert!(
+            content.contains("horizontal-rule-thickness:"),
+            "missing horizontal-rule"
+        );
+        assert!(content.contains("colors-text:"), "missing colors-text");
     }
 }

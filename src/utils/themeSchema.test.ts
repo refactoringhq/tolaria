@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
 import { buildThemeSchema, formatValueForFrontmatter, parseValueFromFrontmatter } from './themeSchema'
 import type { ThemeProperty } from './themeSchema'
 
@@ -123,6 +125,41 @@ describe('buildThemeSchema', () => {
     expect(fontStyle.inputType).toBe('select')
     expect(fontStyle.options).toContain('normal')
     expect(fontStyle.options).toContain('italic')
+  })
+
+  it('every var(--xxx) in EditorTheme.css has a matching default in theme schema or base UI', () => {
+    const cssPath = resolve(__dirname, '../components/EditorTheme.css')
+    const css = readFileSync(cssPath, 'utf-8')
+
+    // Extract all var(--xxx) references (first arg only, ignore fallbacks)
+    const varRegex = /var\(--([a-z0-9-]+)/g
+    const usedVars = new Set<string>()
+    let match: RegExpExecArray | null
+    while ((match = varRegex.exec(css)) !== null) {
+      usedVars.add(match[1])
+    }
+
+    // Collect all CSS var names from the schema
+    const schemaVars = new Set<string>()
+    for (const section of schema) {
+      for (const prop of section.properties) schemaVars.add(prop.cssVar)
+      for (const sub of section.subsections) {
+        for (const prop of sub.properties) schemaVars.add(prop.cssVar)
+      }
+    }
+
+    // Base UI color vars set by the theme color system (not in theme.json schema)
+    const baseUIVars = new Set([
+      'border-primary', 'bg-primary', 'bg-card', 'bg-hover-subtle', 'bg-selected',
+      'text-primary', 'text-secondary', 'text-muted', 'text-heading', 'text-tertiary',
+      'accent-blue',
+    ])
+
+    for (const varName of usedVars) {
+      expect(
+        schemaVars.has(varName) || baseUIVars.has(varName),
+      ).toBe(true)
+    }
   })
 })
 

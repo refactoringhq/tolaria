@@ -43,6 +43,11 @@ async function setCmContent(page: Page, newContent: string) {
 
 test.describe('Theme live reload on save', () => {
   test.beforeEach(async ({ page }) => {
+    // Block the vault API ping so the app falls back to mock content
+    // instead of reading real files from the filesystem.
+    await page.route('**/api/vault/ping', (route) =>
+      route.fulfill({ status: 404, body: 'blocked for testing' }),
+    )
     await page.goto('/')
     await page.waitForLoadState('networkidle')
   })
