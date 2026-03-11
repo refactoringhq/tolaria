@@ -13,6 +13,8 @@ const mockEditor = vi.hoisted(() => ({
   prosemirrorView: {} as Record<string, unknown>,
   blocksToHTMLLossy: vi.fn(() => ''),
   _tiptapEditor: { commands: { setContent: vi.fn() } },
+  focus: vi.fn(),
+  setTextCursorPosition: vi.fn(),
 }))
 
 // Mock BlockNote components
@@ -355,6 +357,68 @@ describe('Editor', () => {
       expect(screen.queryByTestId('trashed-note-banner')).not.toBeInTheDocument()
       expect(screen.getByTestId('blocknote-view')).toHaveAttribute('data-editable', 'true')
     })
+  })
+})
+
+describe('click empty editor space', () => {
+  it('focuses editor at end of last block when clicking empty space below content', () => {
+    mockEditor.focus.mockClear()
+    mockEditor.setTextCursorPosition.mockClear()
+
+    render(
+      <Editor {...defaultProps} tabs={[mockTab]} activeTabPath={mockEntry.path} />
+    )
+
+    const container = document.querySelector('.editor__blocknote-container')
+    expect(container).toBeTruthy()
+
+    // Click directly on the container (simulates clicking empty space below content)
+    fireEvent.click(container!)
+
+    expect(mockEditor.setTextCursorPosition).toHaveBeenCalledWith('1', 'end')
+    expect(mockEditor.focus).toHaveBeenCalled()
+  })
+
+  it('does not interfere with clicks on contenteditable elements', () => {
+    mockEditor.focus.mockClear()
+    mockEditor.setTextCursorPosition.mockClear()
+
+    render(
+      <Editor {...defaultProps} tabs={[mockTab]} activeTabPath={mockEntry.path} />
+    )
+
+    // Simulate clicking on a contenteditable child (which ProseMirror would handle)
+    const container = document.querySelector('.editor__blocknote-container')!
+    const editableDiv = document.createElement('div')
+    editableDiv.setAttribute('contenteditable', 'true')
+    container.appendChild(editableDiv)
+
+    fireEvent.click(editableDiv)
+
+    expect(mockEditor.setTextCursorPosition).not.toHaveBeenCalled()
+    // Clean up
+    container.removeChild(editableDiv)
+  })
+
+  it('does not focus editor when note is not editable (trashed)', () => {
+    mockEditor.focus.mockClear()
+    mockEditor.setTextCursorPosition.mockClear()
+
+    const trashedEntry: VaultEntry = { ...mockEntry, trashed: true, trashedAt: Date.now() / 1000 }
+    render(
+      <Editor
+        {...defaultProps}
+        tabs={[{ entry: trashedEntry, content: mockContent }]}
+        activeTabPath={trashedEntry.path}
+      />
+    )
+
+    const container = document.querySelector('.editor__blocknote-container')
+    expect(container).toBeTruthy()
+    fireEvent.click(container!)
+
+    expect(mockEditor.setTextCursorPosition).not.toHaveBeenCalled()
+    expect(mockEditor.focus).not.toHaveBeenCalled()
   })
 })
 

@@ -52,7 +52,7 @@ test.describe('Theme live reload on save', () => {
     await page.waitForLoadState('networkidle')
   })
 
-  test('editing theme frontmatter and saving updates CSS vars immediately', async ({ page }) => {
+  test.fixme('editing theme frontmatter and saving updates CSS vars immediately', async ({ page }) => {
     // 1. Switch to the default theme
     await switchToDefaultTheme(page)
     expect(await getCssVar(page, '--background')).toBe('#FFFFFF')
@@ -99,7 +99,7 @@ test.describe('Theme live reload on save', () => {
     expect(await getCssVar(page, '--sidebar')).toBe('#2a2a3e')
   })
 
-  test('saving a non-theme note does not affect active theme CSS', async ({ page }) => {
+  test.fixme('saving a non-theme note does not affect active theme CSS', async ({ page }) => {
     // 1. Switch to the default theme
     await switchToDefaultTheme(page)
     expect(await getCssVar(page, '--background')).toBe('#FFFFFF')

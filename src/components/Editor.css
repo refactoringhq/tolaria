@@ -31,6 +31,7 @@
   display: flex;
   justify-content: center;
   position: relative;
+  cursor: text;
 }
 
 /* Drag-over state: subtle border highlight */

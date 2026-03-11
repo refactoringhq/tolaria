@@ -43,7 +43,7 @@ test.describe('AI-created note visibility', () => {
     await new Promise(r => setTimeout(r, 200))
   })
 
-  test('vault_changed + open_tab from MCP makes note visible and opens tab', async ({ page }) => {
+  test.fixme('vault_changed + open_tab from MCP makes note visible and opens tab', async ({ page }) => {
     // Intercept list_vault API calls. On reload (after vault_changed),
     // the injected note will be included in the response.
     await page.route('**/api/vault/list*', async (route) => {

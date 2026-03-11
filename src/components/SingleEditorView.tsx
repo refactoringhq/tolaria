@@ -39,6 +39,17 @@ export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange
   const onImageUrl = useInsertImageCallback(editor)
   const { isDragOver } = useImageDrop({ containerRef, onImageUrl, vaultPath })
 
+  const handleContainerClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!editable) return
+    const target = e.target as HTMLElement
+    if (target.closest('[contenteditable="true"]')) return
+    const blocks = editor.document
+    if (blocks.length > 0) {
+      editor.setTextCursorPosition(blocks[blocks.length - 1].id, 'end')
+    }
+    editor.focus()
+  }, [editor, editable])
+
   useEffect(() => {
     _wikilinkEntriesRef.current = entries
   }, [entries])
@@ -94,7 +105,7 @@ export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange
   }, [baseItems, insertWikilink, typeEntryMap])
 
   return (
-    <div ref={containerRef} className={`editor__blocknote-container${isDragOver ? ' editor__blocknote-container--drag-over' : ''}`} style={cssVars as React.CSSProperties}>
+    <div ref={containerRef} className={`editor__blocknote-container${isDragOver ? ' editor__blocknote-container--drag-over' : ''}`} style={cssVars as React.CSSProperties} onClick={handleContainerClick}>
       {isDragOver && (
         <div className="editor__drop-overlay">
           <div className="editor__drop-overlay-label">Drop image here</div>
