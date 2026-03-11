@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { preProcessWikilinks, injectWikilinks, restoreWikilinksInBlocks, splitFrontmatter, countWords, extractOutgoingLinks, extractBacklinkContext } from './wikilinks'
+import { preProcessWikilinks, injectWikilinks, restoreWikilinksInBlocks, splitFrontmatter, countWords, extractOutgoingLinks, extractBacklinkContext, extractSnippet } from './wikilinks'
 
 interface TestBlock {
   type?: string
@@ -483,5 +483,99 @@ describe('extractBacklinkContext', () => {
     const content = '---\ntitle: X\n---\n\n# X\n\nShort [[My Note]].'
     const result = extractBacklinkContext(content, targets, 200)
     expect(result).toBe('Short [[My Note]].')
+  })
+})
+
+describe('extractSnippet', () => {
+  it('extracts first paragraph after frontmatter and title', () => {
+    const content = '---\ntype: Note\n---\n\n# My Note\n\nThis is the first paragraph of content.\n\n## Section Two\n\nMore content here.'
+    const snippet = extractSnippet(content)
+    expect(snippet).toContain('This is the first paragraph')
+    expect(snippet).toContain('More content here')
+  })
+
+  it('strips markdown formatting (bold, italic, code)', () => {
+    const content = '# Title\n\nSome **bold** and *italic* and `code` text.'
+    expect(extractSnippet(content)).toBe('Some bold and italic and code text.')
+  })
+
+  it('strips markdown links, keeps display text', () => {
+    const content = '# Title\n\nSee [this link](https://example.com) and [[wiki link]].'
+    const snippet = extractSnippet(content)
+    expect(snippet).toContain('this link')
+    expect(snippet).not.toContain('https://example.com')
+    expect(snippet).toContain('wiki link')
+    expect(snippet).not.toContain('[[')
+  })
+
+  it('uses display text from aliased wikilinks', () => {
+    const content = '# Title\n\nDiscussed in [[meetings/standup|standup]] today.'
+    expect(extractSnippet(content)).toBe('Discussed in standup today.')
+  })
+
+  it('truncates long content to ~160 chars with ellipsis', () => {
+    const content = `# Title\n\n${'word '.repeat(100)}`
+    const snippet = extractSnippet(content)
+    expect(snippet.length).toBeLessThanOrEqual(165)
+    expect(snippet).toMatch(/\.\.\.$/)
+  })
+
+  it('returns empty string for note with only title', () => {
+    const content = '---\ntype: Note\n---\n\n# Just a Title\n'
+    expect(extractSnippet(content)).toBe('')
+  })
+
+  it('skips code fence delimiters', () => {
+    const content = '# Title\n\n```rust\nfn main() {}\n```\n\nReal content here.'
+    const snippet = extractSnippet(content)
+    expect(snippet).not.toContain('```')
+    expect(snippet).toContain('Real content here')
+  })
+
+  it('returns empty for content with only headings', () => {
+    const content = '# Title\n\n## Section One\n\n### Sub Section\n'
+    expect(extractSnippet(content)).toBe('')
+  })
+
+  it('handles content without frontmatter or title', () => {
+    const content = 'Just plain text content without any heading.'
+    expect(extractSnippet(content)).toBe('Just plain text content without any heading.')
+  })
+
+  it('skips horizontal rules', () => {
+    const content = '# Title\n\n---\n\nContent after rule.'
+    expect(extractSnippet(content)).toBe('Content after rule.')
+  })
+
+  it('handles strikethrough', () => {
+    const content = '# Title\n\n~~deleted~~ text remains.'
+    expect(extractSnippet(content)).toBe('deleted text remains.')
+  })
+
+  it('extracts snippet from project-template note with body text', () => {
+    const content = [
+      '---', 'type: Project', 'status: Active', '---', '',
+      '# Ship MVP of Tolaria', '',
+      '## Objective', '',
+      'Ship the minimum viable product for Tolaria marketplace.', '',
+      '## Key Results', '',
+      '- 100 beta users signed up',
+    ].join('\n')
+    const snippet = extractSnippet(content)
+    expect(snippet).toContain('Ship the minimum viable product')
+  })
+
+  it('includes list items in snippet', () => {
+    const content = '# Title\n\n- First item\n- Second item\n- Third item'
+    const snippet = extractSnippet(content)
+    expect(snippet).toContain('First item')
+    expect(snippet).toContain('Second item')
+  })
+
+  it('includes code content lines (not fences) in snippet', () => {
+    const content = '# Title\n\n```\nfn main() {}\n```\n\nSome text.'
+    const snippet = extractSnippet(content)
+    expect(snippet).toContain('fn main()')
+    expect(snippet).toContain('Some text.')
   })
 })

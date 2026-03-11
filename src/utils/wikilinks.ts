@@ -154,6 +154,62 @@ export function extractBacklinkContext(
   return null
 }
 
+/** Check if a line is useful for snippet extraction (not blank, heading, code fence, or rule). */
+function isSnippetLine(line: string): boolean {
+  const t = line.trim()
+  return t !== '' && !t.startsWith('#') && !t.startsWith('```') && !t.startsWith('---')
+}
+
+/** Remove the first H1 heading line, allowing leading blank lines. */
+function removeH1Line(body: string): string {
+  const lines = body.split('\n')
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim().startsWith('# ')) return lines.slice(i + 1).join('\n')
+    if (lines[i].trim() !== '') return body
+  }
+  return body
+}
+
+/** Strip markdown formatting chars: bold, italic, code, strikethrough, and resolve links. */
+function stripMarkdownChars(s: string): string {
+  let result = ''
+  let i = 0
+  while (i < s.length) {
+    if (s[i] === '[' && s[i + 1] === '[') {
+      i += 2
+      let inner = ''
+      while (i < s.length - 1 && !(s[i] === ']' && s[i + 1] === ']')) { inner += s[i]; i++ }
+      if (i < s.length - 1) i += 2
+      const pipe = inner.indexOf('|')
+      result += pipe !== -1 ? inner.slice(pipe + 1) : inner
+    } else if (s[i] === '[') {
+      i++
+      let text = ''
+      while (i < s.length && s[i] !== ']') { text += s[i]; i++ }
+      if (i < s.length) i++
+      if (i < s.length && s[i] === '(') { i++; while (i < s.length && s[i] !== ')') i++; if (i < s.length) i++ }
+      result += text
+    } else if (s[i] === '*' || s[i] === '_' || s[i] === '`' || s[i] === '~') {
+      i++
+    } else {
+      result += s[i]
+      i++
+    }
+  }
+  return result
+}
+
+/** Extract a snippet: first ~160 chars of body content, stripped of markdown.
+ *  Mirrors the Rust extract_snippet() logic for frontend use. */
+export function extractSnippet(content: string): string {
+  const [, body] = splitFrontmatter(content)
+  const withoutH1 = removeH1Line(body)
+  const clean = withoutH1.split('\n').filter(isSnippetLine).join(' ')
+  const stripped = stripMarkdownChars(clean)
+  if (stripped.length <= 160) return stripped
+  return stripped.slice(0, 160) + '...'
+}
+
 export function countWords(content: string): number {
   const [, body] = splitFrontmatter(content)
   const withoutTitle = body.replace(/^\s*# [^\n]+\n?/, '')

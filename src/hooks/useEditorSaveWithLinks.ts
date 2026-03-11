@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react'
 import { useEditorSave } from './useEditorSave'
-import { extractOutgoingLinks } from '../utils/wikilinks'
+import { extractOutgoingLinks, extractSnippet, countWords } from '../utils/wikilinks'
 import type { VaultEntry } from '../types'
 
 export function useEditorSaveWithLinks(config: {
@@ -12,7 +12,11 @@ export function useEditorSaveWithLinks(config: {
 }) {
   const { updateEntry } = config
   const saveContent = useCallback((path: string, content: string) => {
-    updateEntry(path, { outgoingLinks: extractOutgoingLinks(content) })
+    updateEntry(path, {
+      outgoingLinks: extractOutgoingLinks(content),
+      snippet: extractSnippet(content),
+      wordCount: countWords(content),
+    })
   }, [updateEntry])
   const editor = useEditorSave({ updateVaultContent: saveContent, setTabs: config.setTabs, setToastMessage: config.setToastMessage, onAfterSave: config.onAfterSave, onNotePersisted: config.onNotePersisted })
   const { handleContentChange: rawOnChange } = editor
