@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "playwright:smoke": "playwright test tests/smoke/",
+    "playwright:integration": "playwright test --config playwright.integration.config.ts",
     "test:coverage": "vitest run --coverage",
     "prepare": "husky"
   },

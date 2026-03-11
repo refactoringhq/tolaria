@@ -82,6 +82,8 @@
   --accent-teal-light: rgba(49, 151, 149, 0.1);
   --accent-pink: #D53F8C;
   --accent-pink-light: rgba(213, 63, 140, 0.1);
+  --accent-gray: #718096;
+  --accent-gray-light: rgba(113, 128, 150, 0.1);
   --border-primary: #E9E9E7;
   --border-subtle: #E9E9E7;
   --border-input: #E9E9E7;

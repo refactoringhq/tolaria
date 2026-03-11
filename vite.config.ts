@@ -129,12 +129,19 @@ function parseMarkdownFile(filePath: string): VaultEntry | null {
       }
     }
 
-    // Boolean field helper
+    // Boolean field helper — handles both real booleans and YAML 1.1 string
+    // variants ("Yes"/"yes"/"True"/"true") that js-yaml 4.x (YAML 1.2) leaves as strings.
     const getBool = (...keys: string[]): boolean | null => {
       for (const k of keys) {
         for (const fk of Object.keys(fm)) {
-          if (fk.toLowerCase() === k.toLowerCase() && typeof fm[fk] === 'boolean') {
-            return fm[fk]
+          if (fk.toLowerCase() === k.toLowerCase()) {
+            const v = fm[fk]
+            if (typeof v === 'boolean') return v
+            if (typeof v === 'string') {
+              const lc = v.toLowerCase()
+              if (lc === 'true' || lc === 'yes') return true
+              if (lc === 'false' || lc === 'no') return false
+            }
           }
         }
       }
@@ -201,7 +208,7 @@ function vaultApiPlugin(): Plugin {
   return {
     name: 'vault-api',
     configureServer(server) {
-      server.middlewares.use((req, res, next) => {
+      server.middlewares.use(async (req, res, next) => {
         const url = new URL(req.url ?? '/', `http://${req.headers.host}`)
 
         if (url.pathname === '/api/vault/ping') {
@@ -255,6 +262,122 @@ function vaultApiPlugin(): Plugin {
           }
           res.setHeader('Content-Type', 'application/json')
           res.end(JSON.stringify(contentMap))
+          return
+        }
+
+        if (url.pathname === '/api/vault/entry') {
+          const filePath = url.searchParams.get('path')
+          if (!filePath || !fs.existsSync(filePath)) {
+            res.statusCode = 400
+            res.end(JSON.stringify({ error: 'Invalid or missing path' }))
+            return
+          }
+          const entry = parseMarkdownFile(filePath)
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify(entry))
+          return
+        }
+
+        if (url.pathname === '/api/vault/search') {
+          const vaultPath = url.searchParams.get('vault_path')
+          const query = (url.searchParams.get('query') ?? '').toLowerCase()
+          const mode = url.searchParams.get('mode') ?? 'all'
+          if (!vaultPath || !query) {
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({ results: [], elapsed_ms: 0, query, mode }))
+            return
+          }
+          const files = findMarkdownFiles(vaultPath)
+          const results: { title: string; path: string; snippet: string; score: number; note_type: string | null }[] = []
+          for (const f of files) {
+            const entry = parseMarkdownFile(f)
+            if (!entry || entry.trashed) continue
+            const raw = fs.readFileSync(f, 'utf-8')
+            if (entry.title.toLowerCase().includes(query) || raw.toLowerCase().includes(query)) {
+              results.push({ title: entry.title, path: entry.path, snippet: entry.snippet, score: 1.0, note_type: entry.isA })
+            }
+          }
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ results: results.slice(0, 20), elapsed_ms: 1, query, mode }))
+          return
+        }
+
+        // --- POST endpoints for write operations ---
+
+        if (url.pathname === '/api/vault/save' && req.method === 'POST') {
+          try {
+            const body = await readRequestBody(req)
+            const { path: filePath, content } = JSON.parse(body)
+            if (!filePath || content === undefined) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: 'Missing path or content' }))
+              return
+            }
+            fs.mkdirSync(path.dirname(filePath), { recursive: true })
+            fs.writeFileSync(filePath, content, 'utf-8')
+            res.setHeader('Content-Type', 'application/json')
+            res.end('null')
+          } catch (err: unknown) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'Save failed' }))
+          }
+          return
+        }
+
+        if (url.pathname === '/api/vault/rename' && req.method === 'POST') {
+          try {
+            const body = await readRequestBody(req)
+            const { vault_path: vaultPath, old_path: oldPath, new_title: newTitle } = JSON.parse(body)
+            const oldContent = fs.readFileSync(oldPath, 'utf-8')
+            const h1Match = oldContent.match(/^# (.+)$/m)
+            const oldTitle = h1Match ? h1Match[1].trim() : ''
+            const slug = newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+            const parentDir = path.dirname(oldPath)
+            const newPath = path.join(parentDir, `${slug}.md`)
+            const newContent = oldContent.replace(/^# .+$/m, `# ${newTitle}`)
+            fs.writeFileSync(newPath, newContent, 'utf-8')
+            if (newPath !== oldPath) fs.unlinkSync(oldPath)
+            let updatedFiles = 0
+            if (oldTitle && vaultPath) {
+              const allFiles = findMarkdownFiles(vaultPath)
+              const escaped = oldTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+              const pattern = new RegExp(`\\[\\[${escaped}(\\|[^\\]]*?)?\\]\\]`, 'g')
+              for (const f of allFiles) {
+                if (f === newPath) continue
+                try {
+                  const c = fs.readFileSync(f, 'utf-8')
+                  const replaced = c.replace(pattern, (_m: string, pipe: string | undefined) =>
+                    pipe ? `[[${newTitle}${pipe}]]` : `[[${newTitle}]]`
+                  )
+                  if (replaced !== c) { fs.writeFileSync(f, replaced, 'utf-8'); updatedFiles++ }
+                } catch { /* skip */ }
+              }
+            }
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({ new_path: newPath, updated_files: updatedFiles }))
+          } catch (err: unknown) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'Rename failed' }))
+          }
+          return
+        }
+
+        if (url.pathname === '/api/vault/delete' && req.method === 'POST') {
+          try {
+            const body = await readRequestBody(req)
+            const { path: filePath } = JSON.parse(body)
+            if (!filePath) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: 'Missing path' }))
+              return
+            }
+            fs.unlinkSync(filePath)
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify(filePath))
+          } catch (err: unknown) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'Delete failed' }))
+          }
           return
         }
 
