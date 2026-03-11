@@ -155,6 +155,7 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onReindexVault: config.onReindexVault,
     onReloadVault: config.onReloadVault,
     onRepairVault: config.onRepairVault,
+    onEmptyTrash: config.onEmptyTrash,
     activeTabPathRef: config.activeTabPathRef,
     handleCloseTabRef: config.handleCloseTabRef,
     activeTabPath: config.activeTabPath,

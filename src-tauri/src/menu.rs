@@ -38,6 +38,7 @@ const GO_CHANGES: &str = "go-changes";
 
 const NOTE_ARCHIVE: &str = "note-archive";
 const NOTE_TRASH: &str = "note-trash";
+const NOTE_EMPTY_TRASH: &str = "note-empty-trash";
 
 const VAULT_OPEN: &str = "vault-open";
 const VAULT_REMOVE: &str = "vault-remove";
@@ -82,6 +83,7 @@ const CUSTOM_IDS: &[&str] = &[
     GO_CHANGES,
     NOTE_ARCHIVE,
     NOTE_TRASH,
+    NOTE_EMPTY_TRASH,
     VAULT_OPEN,
     VAULT_REMOVE,
     VAULT_RESTORE_GETTING_STARTED,
@@ -287,6 +289,9 @@ fn build_note_menu(app: &App) -> MenuResult {
         .id(NOTE_TRASH)
         .accelerator("CmdOrCtrl+Backspace")
         .build(app)?;
+    let empty_trash = MenuItemBuilder::new("Empty Trash…")
+        .id(NOTE_EMPTY_TRASH)
+        .build(app)?;
     let toggle_raw_editor = MenuItemBuilder::new("Toggle Raw Editor")
         .id(EDIT_TOGGLE_RAW_EDITOR)
         .accelerator("CmdOrCtrl+\\")
@@ -302,6 +307,7 @@ fn build_note_menu(app: &App) -> MenuResult {
     Ok(SubmenuBuilder::new(app, "Note")
         .item(&archive_note)
         .item(&trash_note)
+        .item(&empty_trash)
         .separator()
         .item(&toggle_raw_editor)
         .item(&toggle_ai_chat)
@@ -471,6 +477,7 @@ mod tests {
             GO_CHANGES,
             NOTE_ARCHIVE,
             NOTE_TRASH,
+            NOTE_EMPTY_TRASH,
             VAULT_OPEN,
             VAULT_REMOVE,
             VAULT_RESTORE_GETTING_STARTED,
