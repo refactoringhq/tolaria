@@ -227,7 +227,16 @@ export const mockHandlers: Record<string, (args: any) => any> = {
     if (currentFolder === slug) return { new_path: args.note_path, updated_links: 0, moved: false }
     const filename = args.note_path.split('/').pop() ?? ''
     const vaultPath = args.vault_path.replace(/\/$/, '')
-    const newPath = `${vaultPath}/${slug}/${filename}`
+    // Handle collisions: append -2, -3, etc. if the target path already exists
+    // (mirrors the Rust unique_dest_path logic).
+    let newPath = `${vaultPath}/${slug}/${filename}`
+    if (newPath in MOCK_CONTENT && newPath !== args.note_path) {
+      const stem = filename.replace(/\.md$/, '')
+      const ext = filename.endsWith('.md') ? '.md' : ''
+      let counter = 2
+      while (`${vaultPath}/${slug}/${stem}-${counter}${ext}` in MOCK_CONTENT) counter++
+      newPath = `${vaultPath}/${slug}/${stem}-${counter}${ext}`
+    }
     const content = MOCK_CONTENT[args.note_path] ?? ''
     delete MOCK_CONTENT[args.note_path]
     MOCK_CONTENT[newPath] = content

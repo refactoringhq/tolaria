@@ -476,16 +476,19 @@ export function useNoteActions(config: NoteActionsConfig) {
         try {
           const result = await performMoveToTypeFolder(config.vaultPath, path, value)
           if (result.moved) {
-            const entry = entries.find(e => e.path === path)
-            if (entry) {
-              const newFilename = result.new_path.split('/').pop() ?? entry.filename
-              const newContent = await loadNoteContent(result.new_path)
-              config.replaceEntry?.(path, { ...entry, path: result.new_path, filename: newFilename })
-              setTabs(prev => prev.map(t => t.entry.path === path
-                ? { entry: { ...t.entry, path: result.new_path, filename: newFilename }, content: newContent }
-                : t))
-              if (activeTabPathRef.current === path) handleSwitchTab(result.new_path)
-            }
+            const newFilename = result.new_path.split('/').pop() ?? ''
+            // Update the vault entry with the new path.  Only pass the changed
+            // fields — avoid spreading a stale closure entry which would revert
+            // the isA update that runFrontmatterOp already applied.
+            config.replaceEntry?.(path, { path: result.new_path, filename: newFilename } as Partial<VaultEntry> & { path: string })
+            // Preserve the tab content already set by runFrontmatterOp.
+            // Re-reading from disk via loadNoteContent is unnecessary (the move
+            // does not change content) and dangerous: if the path collides or a
+            // stale cache intervenes it could return a different note's content.
+            setTabs(prev => prev.map(t => t.entry.path === path
+              ? { entry: { ...t.entry, path: result.new_path, filename: newFilename }, content: t.content }
+              : t))
+            if (activeTabPathRef.current === path) handleSwitchTab(result.new_path)
             const folder = result.new_path.split('/').slice(-2, -1)[0] ?? ''
             setToastMessage(`Note moved to ${folder}/`)
           }
@@ -493,7 +496,7 @@ export function useNoteActions(config: NoteActionsConfig) {
           console.error('Failed to move note to type folder:', err)
         }
       }
-    }, [runFrontmatterOp, config.vaultPath, config.replaceEntry, entries, setTabs, activeTabPathRef, handleSwitchTab, setToastMessage]),
+    }, [runFrontmatterOp, config.vaultPath, config.replaceEntry, setTabs, activeTabPathRef, handleSwitchTab, setToastMessage]),
     handleDeleteProperty: useCallback((path: string, key: string) => runFrontmatterOp('delete', path, key), [runFrontmatterOp]),
     handleAddProperty: useCallback((path: string, key: string, value: FrontmatterValue) => runFrontmatterOp('update', path, key, value), [runFrontmatterOp]),
     handleRenameNote,

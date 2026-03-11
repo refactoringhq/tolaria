@@ -988,6 +988,42 @@ describe('useNoteActions hook', () => {
       }))
     })
 
+    it('preserves note content after type change — never loads another note (regression)', async () => {
+      // The mock updateMockFrontmatter returns '---\nupdated: true\n---\n' —
+      // this represents the note's own content after the frontmatter update.
+      const frontmatterUpdatedContent = '---\nupdated: true\n---\n'
+      const wrongContent = '---\ntype: Project\n---\n# Feedback for Laputa\n\nCompletely different note.\n'
+
+      const entry = makeEntry({ path: '/test/vault/note/migrate-newsletter.md', filename: 'migrate-newsletter.md', title: 'Migrate newsletter to Beehiiv', isA: 'Note' })
+      const replaceEntry = vi.fn()
+      const config = makeConfig([entry])
+      config.replaceEntry = replaceEntry
+
+      vi.mocked(mockInvoke).mockImplementation(async (cmd: string) => {
+        if (cmd === 'move_note_to_type_folder') return { new_path: '/test/vault/project/migrate-newsletter.md', updated_links: 0, moved: true }
+        // Simulate the bug: get_note_content returns a DIFFERENT note's content
+        // (e.g. path collision, stale cache, or filesystem race)
+        if (cmd === 'get_note_content') return wrongContent
+        return ''
+      })
+
+      const { result } = renderHook(() => useNoteActions(config))
+
+      // Open the tab first so we have a tab to check
+      act(() => { result.current.openTabWithContent(entry, '---\ntype: Note\n---\n# Migrate\n') })
+
+      await act(async () => {
+        await result.current.handleUpdateFrontmatter('/test/vault/note/migrate-newsletter.md', 'type', 'Project')
+      })
+
+      // The tab content must be the note's OWN content (from the frontmatter update),
+      // NEVER the content of a different note loaded via get_note_content.
+      const tab = result.current.tabs.find(t => t.entry.path === '/test/vault/project/migrate-newsletter.md')
+      expect(tab).toBeDefined()
+      expect(tab!.content).toBe(frontmatterUpdatedContent)
+      expect(tab!.content).not.toBe(wrongContent)
+    })
+
     it('does not move when value is empty or null-like', async () => {
       const config = makeConfig()
       vi.mocked(mockInvoke).mockResolvedValue('')

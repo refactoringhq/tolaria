@@ -827,6 +827,36 @@ mod tests {
     }
 
     #[test]
+    fn test_move_note_collision_preserves_both_contents() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path();
+        let moving_content =
+            "---\ntype: Quarter\n---\n# Migrate newsletter to Beehiiv\n\nImportant content.\n";
+        let existing_content =
+            "---\ntype: Quarter\n---\n# Feedback for Laputa\n\nCompletely different note.\n";
+        create_test_file(vault, "note/my-note.md", moving_content);
+        create_test_file(vault, "quarter/my-note.md", existing_content);
+
+        let old_path = vault.join("note/my-note.md");
+        let result = move_note_to_type_folder(
+            vault.to_str().unwrap(),
+            old_path.to_str().unwrap(),
+            "Quarter",
+        )
+        .unwrap();
+
+        assert!(result.moved);
+        // Must get a unique path, not the existing file's path
+        assert!(result.new_path.contains("/quarter/my-note-2.md"));
+        // Moved note must retain its own content
+        let moved_content = fs::read_to_string(&result.new_path).unwrap();
+        assert_eq!(moved_content, moving_content);
+        // Existing note must be untouched
+        let untouched = fs::read_to_string(vault.join("quarter/my-note.md")).unwrap();
+        assert_eq!(untouched, existing_content);
+    }
+
+    #[test]
     fn test_move_note_empty_type_error() {
         let dir = TempDir::new().unwrap();
         let vault = dir.path();
