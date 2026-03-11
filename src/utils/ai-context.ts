@@ -4,7 +4,7 @@
  */
 
 import type { VaultEntry } from '../types'
-import { wikilinkTarget } from './wikilink'
+import { wikilinkTarget, resolveEntry } from './wikilink'
 import { splitFrontmatter } from './wikilinks'
 
 /** Extract only the body text from raw file content (strips YAML frontmatter). */
@@ -13,16 +13,10 @@ function extractBody(rawContent: string): string {
   return body.trim()
 }
 
-/** Resolve a link target string to a VaultEntry by matching title, aliases, or filename stem. */
+/** Resolve a link target string to a VaultEntry by matching title, aliases, or filename stem.
+ *  Delegates to the unified resolveEntry for consistent matching. */
 export function resolveTarget(target: string, entries: VaultEntry[]): VaultEntry | undefined {
-  const lower = target.toLowerCase()
-  return entries.find(e => {
-    if (e.title.toLowerCase() === lower) return true
-    if (e.aliases.some(a => a.toLowerCase() === lower)) return true
-    const stem = e.filename.replace(/\.md$/, '')
-    if (stem.toLowerCase() === lower) return true
-    return false
-  })
+  return resolveEntry(entries, target)
 }
 
 /** Collect first-degree linked notes from the active entry. */

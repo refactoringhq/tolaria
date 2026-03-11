@@ -182,32 +182,37 @@ describe('generateUntitledName', () => {
 describe('entryMatchesTarget', () => {
   it('matches by exact title (case-insensitive)', () => {
     const entry = makeEntry({ title: 'My Project' })
-    expect(entryMatchesTarget(entry, 'my project', 'my project')).toBe(true)
+    expect(entryMatchesTarget(entry, 'my project')).toBe(true)
   })
 
   it('matches by alias', () => {
     const entry = makeEntry({ aliases: ['MP', 'TheProject'] })
-    expect(entryMatchesTarget(entry, 'mp', 'mp')).toBe(true)
+    expect(entryMatchesTarget(entry, 'mp')).toBe(true)
   })
 
-  it('matches by path stem (relative to Laputa)', () => {
+  it('matches by path suffix (type/slug)', () => {
     const entry = makeEntry({ path: '/Users/luca/Laputa/project/my-project.md' })
-    expect(entryMatchesTarget(entry, 'project/my-project', 'project/my-project')).toBe(true)
+    expect(entryMatchesTarget(entry, 'project/my-project')).toBe(true)
   })
 
   it('matches by filename stem', () => {
     const entry = makeEntry({ filename: 'my-project.md' })
-    expect(entryMatchesTarget(entry, 'my-project', 'my-project')).toBe(true)
+    expect(entryMatchesTarget(entry, 'my-project')).toBe(true)
   })
 
   it('matches when target as words matches title', () => {
     const entry = makeEntry({ title: 'my project' })
-    expect(entryMatchesTarget(entry, 'project/my-project', 'my project')).toBe(true)
+    expect(entryMatchesTarget(entry, 'my-project')).toBe(true)
   })
 
   it('returns false when nothing matches', () => {
     const entry = makeEntry({ title: 'Something Else', aliases: [], filename: 'else.md' })
-    expect(entryMatchesTarget(entry, 'nonexistent', 'nonexistent')).toBe(false)
+    expect(entryMatchesTarget(entry, 'nonexistent')).toBe(false)
+  })
+
+  it('handles pipe syntax targets', () => {
+    const entry = makeEntry({ path: '/vault/project/alpha.md', filename: 'alpha.md', title: 'Alpha' })
+    expect(entryMatchesTarget(entry, 'project/alpha|Alpha Project')).toBe(true)
   })
 })
 

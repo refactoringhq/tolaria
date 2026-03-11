@@ -4,21 +4,15 @@
  */
 import type { VaultEntry } from '../types'
 import { getTypeColor } from './typeColors'
+import { resolveEntry } from './wikilink'
 
 /** Broken-link color: muted text to signal the target note doesn't exist */
 const BROKEN_LINK_COLOR = 'var(--text-muted)'
 
-/** Find a vault entry matching a wikilink target string */
+/** Find a vault entry matching a wikilink target string.
+ *  Delegates to the unified resolveEntry for consistent case-insensitive matching. */
 export function findEntryByTarget(entries: VaultEntry[], target: string): VaultEntry | undefined {
-  // Handle pipe syntax: [[path|display name]] → use path part for matching
-  const key = target.includes('|') ? target.split('|')[0] : target
-  const suffix = '/' + key + '.md'
-  return entries.find(e =>
-    e.title === key ||
-    e.filename.replace(/\.md$/, '') === key ||
-    e.aliases.includes(key) ||
-    e.path.endsWith(suffix),
-  )
+  return resolveEntry(entries, target)
 }
 
 /** Resolve the accent color for a given entry based on its type */

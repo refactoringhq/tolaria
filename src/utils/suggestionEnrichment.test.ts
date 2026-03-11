@@ -42,6 +42,34 @@ describe('attachClickHandlers', () => {
     )
     expect(result[0]).toMatchObject({ title: 'X', aliases: ['y'], group: 'Topic', path: '/x.md' })
   })
+
+  it('uses path|title target when candidates have duplicate titles', () => {
+    const insertWikilink = vi.fn()
+    const candidates = [
+      { title: 'Status Update', aliases: [], group: 'Project', entryTitle: 'Status Update', path: '/vault/project/status-update.md' },
+      { title: 'Status Update', aliases: [], group: 'Journal', entryTitle: 'Status Update', path: '/vault/journal/status-update.md' },
+    ]
+
+    const result = attachClickHandlers(candidates, insertWikilink)
+
+    result[0].onItemClick()
+    expect(insertWikilink).toHaveBeenCalledWith('project/status-update|Status Update')
+    result[1].onItemClick()
+    expect(insertWikilink).toHaveBeenCalledWith('journal/status-update|Status Update')
+  })
+
+  it('uses title-only target when titles are unique', () => {
+    const insertWikilink = vi.fn()
+    const candidates = [
+      { title: 'Alpha', aliases: [], group: 'Note', entryTitle: 'Alpha', path: '/vault/note/alpha.md' },
+      { title: 'Beta', aliases: [], group: 'Note', entryTitle: 'Beta', path: '/vault/note/beta.md' },
+    ]
+
+    const result = attachClickHandlers(candidates, insertWikilink)
+
+    result[0].onItemClick()
+    expect(insertWikilink).toHaveBeenCalledWith('Alpha')
+  })
 })
 
 describe('enrichSuggestionItems', () => {
