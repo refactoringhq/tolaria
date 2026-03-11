@@ -23,8 +23,9 @@ function parseInlineArray(value: string): FrontmatterValue {
 
 function parseScalar(value: string): FrontmatterValue {
   const clean = unquote(value)
-  if (clean.toLowerCase() === 'true') return true
-  if (clean.toLowerCase() === 'false') return false
+  const lower = clean.toLowerCase()
+  if (lower === 'true' || lower === 'yes') return true
+  if (lower === 'false' || lower === 'no') return false
   return clean
 }
 
