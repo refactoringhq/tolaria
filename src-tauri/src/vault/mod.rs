@@ -1261,6 +1261,17 @@ References:
         assert_eq!(fs::read_to_string(&path).unwrap(), content);
     }
 
+    #[test]
+    fn test_save_note_content_deeply_nested_new_directory() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("a/b/c/deep-note.md");
+        let content = "---\ntitle: Deep\n---\n";
+
+        save_note_content(path.to_str().unwrap(), content).unwrap();
+        assert!(path.exists());
+        assert_eq!(fs::read_to_string(&path).unwrap(), content);
+    }
+
     // --- sidebar_label tests ---
 
     #[test]

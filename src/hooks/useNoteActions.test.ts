@@ -77,12 +77,20 @@ describe('slugify', () => {
     expect(slugify('--hello--')).toBe('hello')
   })
 
-  it('handles empty string', () => {
-    expect(slugify('')).toBe('')
+  it('handles empty string with fallback', () => {
+    expect(slugify('')).toBe('untitled')
   })
 
   it('collapses multiple separators into one hyphen', () => {
     expect(slugify('hello   world---foo')).toBe('hello-world-foo')
+  })
+
+  it('returns fallback for strings with only special characters', () => {
+    // slugify('+++') should not return empty string — it causes invalid paths
+    expect(slugify('+++')).not.toBe('')
+    expect(slugify('!!!')).not.toBe('')
+    expect(slugify('---')).not.toBe('')
+    expect(slugify('@#$')).not.toBe('')
   })
 })
 
@@ -269,6 +277,20 @@ describe('resolveNewNote', () => {
     const { entry } = resolveNewNote('Test', 'Note', '/other/vault')
     expect(entry.path).toBe('/other/vault/note/test.md')
     expect(entry.path).not.toContain('/Users/luca/Laputa')
+  })
+
+  it('produces a valid path for custom types with special characters', () => {
+    const { entry } = resolveNewNote('My Note', 'Q&A', '/vault')
+    expect(entry.path).not.toContain('//')
+    expect(entry.path).toMatch(/\.md$/)
+    expect(entry.filename).not.toBe('.md')
+  })
+
+  it('produces a valid path when type is all special characters', () => {
+    const { entry } = resolveNewNote('My Note', '+++', '/vault')
+    // folder should not be empty, path should not have double slashes
+    expect(entry.path).not.toContain('//')
+    expect(entry.path).toMatch(/\.md$/)
   })
 })
 
@@ -610,6 +632,34 @@ describe('useNoteActions hook', () => {
     const tabContent = result.current.tabs[0].content
     expect(tabContent).toContain('## Ingredients')
     expect(tabContent).toContain('## Steps')
+  })
+
+  it('handleCreateNoteImmediate does not throw for custom types with special characters', () => {
+    const { result } = renderHook(() => useNoteActions(makeConfig()))
+
+    expect(() => {
+      act(() => {
+        result.current.handleCreateNoteImmediate('Q&A')
+      })
+    }).not.toThrow()
+
+    const [entry] = addEntry.mock.calls[0]
+    expect(entry.isA).toBe('Q&A')
+    expect(entry.path).not.toContain('//')
+  })
+
+  it('handleCreateNoteImmediate does not throw for types that slugify to empty string', () => {
+    const { result } = renderHook(() => useNoteActions(makeConfig()))
+
+    expect(() => {
+      act(() => {
+        result.current.handleCreateNoteImmediate('+++')
+      })
+    }).not.toThrow()
+
+    const [entry] = addEntry.mock.calls[0]
+    expect(entry.path).not.toContain('//')
+    expect(entry.filename).not.toBe('.md')
   })
 
   it('handleCreateNoteImmediate uses template for typed notes', () => {

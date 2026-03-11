@@ -100,7 +100,8 @@ export function buildNewEntry({ path, slug, title, type, status }: NewEntryParam
 }
 
 export function slugify(text: string): string {
-  return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+  const result = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+  return result || 'untitled'
 }
 
 /** Generate a unique "Untitled <type>" name by checking existing entries and pending names. */
@@ -392,17 +393,22 @@ export function useNoteActions(config: NoteActionsConfig) {
   }, [entries, persistNew, config.vaultPath])
 
   const handleCreateNoteImmediate = useCallback((type?: string) => {
-    const noteType = type || 'Note'
-    const title = generateUntitledName(entries, noteType, pendingNamesRef.current)
-    pendingNamesRef.current.add(title)
-    const template = resolveTemplate(entries, noteType)
-    const resolved = resolveNewNote(title, noteType, config.vaultPath, template)
-    openTabWithContent(resolved.entry, resolved.content)
-    addEntryWithMock(resolved.entry, resolved.content, addEntry)
-    config.trackUnsaved?.(resolved.entry.path)
-    config.markContentPending?.(resolved.entry.path, resolved.content)
-    signalFocusEditor({ selectTitle: true })
-    setTimeout(() => pendingNamesRef.current.delete(title), 500)
+    try {
+      const noteType = type || 'Note'
+      const title = generateUntitledName(entries, noteType, pendingNamesRef.current)
+      pendingNamesRef.current.add(title)
+      const template = resolveTemplate(entries, noteType)
+      const resolved = resolveNewNote(title, noteType, config.vaultPath, template)
+      openTabWithContent(resolved.entry, resolved.content)
+      addEntryWithMock(resolved.entry, resolved.content, addEntry)
+      config.trackUnsaved?.(resolved.entry.path)
+      config.markContentPending?.(resolved.entry.path, resolved.content)
+      signalFocusEditor({ selectTitle: true })
+      setTimeout(() => pendingNamesRef.current.delete(title), 500)
+    } catch (err) {
+      console.error('Failed to create note:', err)
+      setToastMessage('Failed to create note')
+    }
   }, [entries, openTabWithContent, addEntry, config.vaultPath, config.trackUnsaved, config.markContentPending]) // eslint-disable-line react-hooks/exhaustive-deps -- config callbacks are stable
 
   /** Close tab and discard entry+unsaved state if the note was never persisted. */
