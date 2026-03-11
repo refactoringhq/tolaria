@@ -158,33 +158,151 @@ describe('replaceTitleInFrontmatter', () => {
   })
 })
 
+const blocksA = [{ type: 'paragraph', content: [{ type: 'text', text: 'A' }] }]
+const blocksB = [{ type: 'paragraph', content: [{ type: 'text', text: 'B' }] }]
+
+function makeTab(path: string, title: string) {
+  return {
+    entry: { path, title, filename: `${title}.md`, type: 'Note', status: 'Active', aliases: [], isA: '' } as never,
+    content: `---\ntitle: ${title}\n---\n\n# ${title}\n\nBody of ${title}.`,
+  }
+}
+
+function makeMockEditor(docRef: { current: unknown[] }) {
+  return {
+    document: docRef.current,
+    get prosemirrorView() { return {} },
+    onMount: (cb: () => void) => { cb(); return () => {} },
+    replaceBlocks: vi.fn((_old, newBlocks) => { docRef.current = newBlocks }),
+    insertBlocks: vi.fn(),
+    blocksToMarkdownLossy: vi.fn(() => ''),
+    blocksToHTMLLossy: vi.fn(() => ''),
+    tryParseMarkdownToBlocks: vi.fn(() => blocksA),
+    _tiptapEditor: { commands: { setContent: vi.fn() } },
+    _docRef: docRef,
+  }
+}
+
+describe('useEditorTabSwap raw mode sync', () => {
+  afterEach(() => { vi.restoreAllMocks() })
+
+  it('re-parses from tab.content when rawMode transitions from true to false', async () => {
+    vi.spyOn(document, 'querySelector').mockReturnValue({ scrollTop: 0 } as unknown as Element)
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => { cb(0); return 0 })
+
+    const docRef = { current: blocksA as unknown[] }
+    const mockEditor = makeMockEditor(docRef)
+    Object.defineProperty(mockEditor, 'document', { get: () => docRef.current })
+
+    const tabA = makeTab('a.md', 'Note A')
+
+    const { rerender } = renderHook(
+      ({ tabs, activeTabPath, rawMode }) => useEditorTabSwap({
+        tabs, activeTabPath, editor: mockEditor as never, rawMode,
+      }),
+      { initialProps: { tabs: [tabA], activeTabPath: 'a.md', rawMode: false as boolean } },
+    )
+
+    // Initial load — parses and caches blocks
+    await act(() => new Promise(r => setTimeout(r, 0)))
+
+    // Enter raw mode
+    rerender({ tabs: [tabA], activeTabPath: 'a.md', rawMode: true })
+    await act(() => new Promise(r => setTimeout(r, 0)))
+
+    // Simulate raw editing: tab content was updated externally
+    const updatedTab = {
+      ...tabA,
+      content: '---\ntitle: Updated Title\n---\n\n# Updated Title\n\nNew body content.',
+    }
+    mockEditor.tryParseMarkdownToBlocks.mockClear()
+    mockEditor.replaceBlocks.mockClear()
+
+    // Exit raw mode with updated content
+    rerender({ tabs: [updatedTab], activeTabPath: 'a.md', rawMode: false })
+    await act(() => new Promise(r => setTimeout(r, 0)))
+
+    // Verify re-parse happened with updated body content
+    expect(mockEditor.tryParseMarkdownToBlocks).toHaveBeenCalledWith(
+      expect.stringContaining('Updated Title'),
+    )
+    expect(mockEditor.replaceBlocks).toHaveBeenCalled()
+  })
+
+  it('does not skip swap when rawMode is on (editor hidden)', async () => {
+    vi.spyOn(document, 'querySelector').mockReturnValue({ scrollTop: 0 } as unknown as Element)
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => { cb(0); return 0 })
+
+    const docRef = { current: blocksA as unknown[] }
+    const mockEditor = makeMockEditor(docRef)
+    Object.defineProperty(mockEditor, 'document', { get: () => docRef.current })
+
+    const tabA = makeTab('a.md', 'Note A')
+
+    const { rerender } = renderHook(
+      ({ tabs, activeTabPath, rawMode }) => useEditorTabSwap({
+        tabs, activeTabPath, editor: mockEditor as never, rawMode,
+      }),
+      { initialProps: { tabs: [tabA], activeTabPath: 'a.md', rawMode: false as boolean } },
+    )
+
+    await act(() => new Promise(r => setTimeout(r, 0)))
+    mockEditor.replaceBlocks.mockClear()
+
+    // Enter raw mode and update content
+    const updatedTab = { ...tabA, content: '---\ntitle: Changed\n---\n\n# Changed\n\nEdited.' }
+    rerender({ tabs: [updatedTab], activeTabPath: 'a.md', rawMode: true })
+    await act(() => new Promise(r => setTimeout(r, 0)))
+
+    // While in raw mode, the editor should NOT be updated
+    expect(mockEditor.replaceBlocks).not.toHaveBeenCalled()
+  })
+
+  it('preserves content through multiple BlockNote→raw→BlockNote cycles', async () => {
+    vi.spyOn(document, 'querySelector').mockReturnValue({ scrollTop: 0 } as unknown as Element)
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => { cb(0); return 0 })
+
+    const docRef = { current: blocksA as unknown[] }
+    const mockEditor = makeMockEditor(docRef)
+    Object.defineProperty(mockEditor, 'document', { get: () => docRef.current })
+
+    const tabA = makeTab('a.md', 'Note A')
+
+    const { rerender } = renderHook(
+      ({ tabs, activeTabPath, rawMode }) => useEditorTabSwap({
+        tabs, activeTabPath, editor: mockEditor as never, rawMode,
+      }),
+      { initialProps: { tabs: [tabA], activeTabPath: 'a.md', rawMode: false as boolean } },
+    )
+    await act(() => new Promise(r => setTimeout(r, 0)))
+
+    // Cycle 1: raw mode on → edit → raw mode off
+    rerender({ tabs: [tabA], activeTabPath: 'a.md', rawMode: true })
+    await act(() => new Promise(r => setTimeout(r, 0)))
+
+    const edit1 = { ...tabA, content: '---\ntitle: Edit 1\n---\n\n# Edit 1\n\nFirst edit.' }
+    mockEditor.tryParseMarkdownToBlocks.mockClear()
+    rerender({ tabs: [edit1], activeTabPath: 'a.md', rawMode: false })
+    await act(() => new Promise(r => setTimeout(r, 0)))
+    expect(mockEditor.tryParseMarkdownToBlocks).toHaveBeenCalledWith(
+      expect.stringContaining('Edit 1'),
+    )
+
+    // Cycle 2: raw mode on → edit → raw mode off
+    rerender({ tabs: [edit1], activeTabPath: 'a.md', rawMode: true })
+    await act(() => new Promise(r => setTimeout(r, 0)))
+
+    const edit2 = { ...tabA, content: '---\ntitle: Edit 2\n---\n\n# Edit 2\n\nSecond edit.' }
+    mockEditor.tryParseMarkdownToBlocks.mockClear()
+    rerender({ tabs: [edit2], activeTabPath: 'a.md', rawMode: false })
+    await act(() => new Promise(r => setTimeout(r, 0)))
+    expect(mockEditor.tryParseMarkdownToBlocks).toHaveBeenCalledWith(
+      expect.stringContaining('Edit 2'),
+    )
+  })
+})
+
 describe('useEditorTabSwap scroll position', () => {
-  const blocksA = [{ type: 'paragraph', content: [{ type: 'text', text: 'A' }] }]
-  const blocksB = [{ type: 'paragraph', content: [{ type: 'text', text: 'B' }] }]
-
-  function makeTab(path: string, title: string) {
-    return {
-      entry: { path, title, filename: `${title}.md`, type: 'Note', status: 'Active', aliases: [], isA: '' } as never,
-      content: `---\ntitle: ${title}\n---\n\n# ${title}\n\nBody of ${title}.`,
-    }
-  }
-
-  function makeMockEditor(docRef: { current: unknown[] }) {
-    const mountCallbacks: Array<() => void> = []
-    return {
-      document: docRef.current,
-      get prosemirrorView() { return {} },
-      onMount: (cb: () => void) => { mountCallbacks.push(cb); return () => {} },
-      replaceBlocks: vi.fn((_old, newBlocks) => { docRef.current = newBlocks }),
-      insertBlocks: vi.fn(),
-      blocksToMarkdownLossy: vi.fn(() => ''),
-      blocksToHTMLLossy: vi.fn(() => ''),
-      tryParseMarkdownToBlocks: vi.fn(() => blocksA),
-      _tiptapEditor: { commands: { setContent: vi.fn() } },
-      // Make document getter dynamic
-      _docRef: docRef,
-    }
-  }
 
   afterEach(() => { vi.restoreAllMocks() })
 

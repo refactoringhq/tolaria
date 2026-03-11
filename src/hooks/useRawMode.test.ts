@@ -84,4 +84,32 @@ describe('useRawMode', () => {
     // Cannot activate raw mode without an active tab path
     expect(result.current.rawMode).toBe(false)
   })
+
+  it('calls onBeforeRawEnd when deactivating raw mode', async () => {
+    const onBeforeRawEnd = vi.fn()
+    const { result } = renderHook(
+      ({ path }) => useRawMode({ activeTabPath: path, onFlushPending, onBeforeRawEnd }),
+      { initialProps: { path: '/note.md' } },
+    )
+
+    await act(async () => { await result.current.handleToggleRaw() })
+    expect(result.current.rawMode).toBe(true)
+
+    await act(async () => { await result.current.handleToggleRaw() })
+
+    expect(onBeforeRawEnd).toHaveBeenCalledOnce()
+    expect(result.current.rawMode).toBe(false)
+  })
+
+  it('does not call onBeforeRawEnd when activating raw mode', async () => {
+    const onBeforeRawEnd = vi.fn()
+    const { result } = renderHook(
+      ({ path }) => useRawMode({ activeTabPath: path, onFlushPending, onBeforeRawEnd }),
+      { initialProps: { path: '/note.md' } },
+    )
+
+    await act(async () => { await result.current.handleToggleRaw() })
+
+    expect(onBeforeRawEnd).not.toHaveBeenCalled()
+  })
 })

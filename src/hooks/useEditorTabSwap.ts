@@ -19,6 +19,8 @@ interface UseEditorTabSwapOptions {
   onH1Change?: (h1Text: string | null) => void
   /** When .current is false, handleEditorChange won't update frontmatter title from H1. */
   syncActiveRef?: React.MutableRefObject<boolean>
+  /** When true, the BlockNote editor is hidden (raw/CodeMirror mode active). */
+  rawMode?: boolean
 }
 
 /** Strip the YAML frontmatter from raw file content, returning the body
@@ -61,13 +63,17 @@ export function replaceTitleInFrontmatter(frontmatter: string, newTitle: string)
  *
  * Returns `handleEditorChange`, the onChange callback for SingleEditorView.
  */
-export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange, onH1Change, syncActiveRef }: UseEditorTabSwapOptions) {
+export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange, onH1Change, syncActiveRef, rawMode }: UseEditorTabSwapOptions) {
   // Cache parsed blocks + scroll position per tab path for instant switching
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- BlockNote block arrays
   const tabCacheRef = useRef<Map<string, { blocks: any[]; scrollTop: number }>>(new Map())
   const prevActivePathRef = useRef<string | null>(null)
   const editorMountedRef = useRef(false)
   const pendingSwapRef = useRef<(() => void) | null>(null)
+  const prevRawModeRef = useRef(!!rawMode)
+  // Guard: prevents a subsequent effect run from re-caching stale blocks
+  // while a raw-mode swap is still pending in a microtask/pendingSwap.
+  const rawSwapPendingRef = useRef(false)
 
   // Suppress onChange during programmatic content swaps (tab switching / initial load)
   const suppressChangeRef = useRef(false)
@@ -137,6 +143,15 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange,
     const prevPath = prevActivePathRef.current
     const pathChanged = prevPath !== activeTabPath
 
+    // Detect raw mode transition: true → false means we need to re-parse
+    // from tab.content since the cached blocks are stale.
+    const rawModeJustEnded = prevRawModeRef.current && !rawMode
+    prevRawModeRef.current = !!rawMode
+
+    // While raw mode is active the BlockNote editor is hidden — skip all
+    // swap logic to avoid touching the invisible editor.
+    if (rawMode) return
+
     // Save current editor state + scroll position for the tab we're leaving
     if (prevPath && pathChanged && editorMountedRef.current) {
       const scrollEl = document.querySelector('.editor__blocknote-container')
@@ -147,19 +162,31 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange,
     }
     prevActivePathRef.current = activeTabPath
 
-    // When tab content updates but the active tab stays the same (e.g. after
-    // Cmd+S save), refresh the cache with the current editor blocks so a later
-    // tab switch doesn't revert to stale content. Do NOT re-apply blocks —
-    // the editor already shows the user's edits.
     if (!pathChanged) {
-      if (activeTabPath && editorMountedRef.current) {
-        const scrollEl = document.querySelector('.editor__blocknote-container')
-        cache.set(activeTabPath, {
-          blocks: editor.document,
-          scrollTop: scrollEl?.scrollTop ?? 0,
-        })
+      if (rawModeJustEnded && activeTabPath) {
+        // Raw mode just ended — invalidate stale cached blocks so we
+        // re-parse from the latest tab.content below.
+        cache.delete(activeTabPath)
+        rawSwapPendingRef.current = true
+      } else {
+        // While a raw-mode swap is pending (scheduled via microtask), a second
+        // effect run can fire due to the tabs prop updating.  Skip re-caching
+        // stale editor.document to avoid poisoning the cache before doSwap runs.
+        if (rawSwapPendingRef.current) return
+
+        // When tab content updates but the active tab stays the same (e.g. after
+        // Cmd+S save), refresh the cache with the current editor blocks so a later
+        // tab switch doesn't revert to stale content. Do NOT re-apply blocks —
+        // the editor already shows the user's edits.
+        if (activeTabPath && editorMountedRef.current) {
+          const scrollEl = document.querySelector('.editor__blocknote-container')
+          cache.set(activeTabPath, {
+            blocks: editor.document,
+            scrollTop: scrollEl?.scrollTop ?? 0,
+          })
+        }
+        return
       }
-      return
     }
 
     if (!activeTabPath) return
@@ -202,6 +229,7 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange,
     const doSwap = () => {
       // Guard: bail if user switched tabs since this swap was scheduled
       if (prevActivePathRef.current !== targetPath) return
+      rawSwapPendingRef.current = false
 
       if (cache.has(targetPath)) {
         const cached = cache.get(targetPath)!
@@ -268,7 +296,7 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange,
     } else {
       pendingSwapRef.current = doSwap
     }
-  }, [activeTabPath, tabs, editor])
+  }, [activeTabPath, tabs, editor, rawMode])
 
   // Clean up cache entries when tabs are closed
   const tabPathsRef = useRef<Set<string>>(new Set())

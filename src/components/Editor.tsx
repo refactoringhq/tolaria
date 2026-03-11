@@ -150,9 +150,24 @@ export const Editor = memo(function Editor({
     onTitleSync: onTitleSync ?? (() => {}),
   })
 
+  // Ref updated by RawEditorView on every keystroke — used to flush
+  // debounced content synchronously before leaving raw mode.
+  const rawLatestContentRef = useRef<string | null>(null)
+
+  const handleBeforeRawEnd = useCallback(() => {
+    if (rawLatestContentRef.current != null && activeTabPath) {
+      onContentChange?.(activeTabPath, rawLatestContentRef.current)
+    }
+    rawLatestContentRef.current = null
+  }, [activeTabPath, onContentChange])
+
+  const { rawMode, handleToggleRaw } = useRawMode({
+    activeTabPath, onBeforeRawEnd: handleBeforeRawEnd,
+  })
+
   const { handleEditorChange, editorMountedRef } = useEditorTabSwap({
     tabs, activeTabPath, editor, onContentChange,
-    onH1Change: onH1Changed, syncActiveRef,
+    onH1Change: onH1Changed, syncActiveRef, rawMode,
   })
   useEditorFocus(editor, editorMountedRef)
 
@@ -165,8 +180,6 @@ export const Editor = memo(function Editor({
   const { diffMode, diffContent, diffLoading, handleToggleDiff, handleViewCommitDiff } = useDiffMode({
     activeTabPath, onLoadDiff, onLoadDiffAtCommit,
   })
-
-  const { rawMode, handleToggleRaw } = useRawMode({ activeTabPath })
 
   const { handleToggleDiffExclusive, handleToggleRawExclusive } = useEditorModeExclusion({
     diffMode, rawMode, handleToggleDiff, handleToggleRaw, rawToggleRef, diffToggleRef,
@@ -224,6 +237,7 @@ export const Editor = memo(function Editor({
               onUnarchiveNote={onUnarchiveNote}
               vaultPath={vaultPath}
               isDarkTheme={isDarkTheme}
+              rawLatestContentRef={rawLatestContentRef}
             />
         }
         {(showAIChat || !inspectorCollapsed) && <ResizeHandle onResize={onInspectorResize} />}
