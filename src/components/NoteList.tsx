@@ -4,7 +4,7 @@ import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso'
 import type { VaultEntry, SidebarSelection, ModifiedFile, NoteStatus } from '../types'
 import { Input } from '@/components/ui/input'
 import {
-  MagnifyingGlass, Plus, CaretDown, CaretRight, Warning,
+  MagnifyingGlass, Plus, CaretDown, CaretRight, Warning, Trash,
 } from '@phosphor-icons/react'
 import { getTypeColor, getTypeLightColor, buildTypeEntryMap } from '../utils/typeColors'
 import { NoteItem, getTypeIcon } from './NoteItem'
@@ -35,6 +35,9 @@ interface NoteListProps {
   onCreateNote: () => void
   onBulkArchive?: (paths: string[]) => void
   onBulkTrash?: (paths: string[]) => void
+  onBulkRestore?: (paths: string[]) => void
+  onBulkDeletePermanently?: (paths: string[]) => void
+  onEmptyTrash?: () => void
   onUpdateTypeSort?: (path: string, key: string, value: string | number | boolean | string[] | null) => void
   updateEntry?: (path: string, patch: Partial<VaultEntry>) => void
 }
@@ -423,10 +426,12 @@ function useMultiSelectKeyboard(multiSelect: MultiSelectState, isEntityView: boo
 
 // --- Header component ---
 
-function NoteListHeader({ title, typeDocument, isEntityView, listSort, listDirection, customProperties, sidebarCollapsed, searchVisible, search, onSortChange, onCreateNote, onOpenType, onToggleSearch, onSearchChange }: {
+function NoteListHeader({ title, typeDocument, isEntityView, isTrashView, trashCount, listSort, listDirection, customProperties, sidebarCollapsed, searchVisible, search, onSortChange, onCreateNote, onOpenType, onToggleSearch, onSearchChange, onEmptyTrash }: {
   title: string
   typeDocument: VaultEntry | null
   isEntityView: boolean
+  isTrashView: boolean
+  trashCount: number
   listSort: SortOption
   listDirection: SortDirection
   customProperties: string[]
@@ -438,6 +443,7 @@ function NoteListHeader({ title, typeDocument, isEntityView, listSort, listDirec
   onOpenType: (entry: VaultEntry) => void
   onToggleSearch: () => void
   onSearchChange: (value: string) => void
+  onEmptyTrash?: () => void
 }) {
   const { onMouseDown: onDragMouseDown } = useDragRegion()
   return (
@@ -456,9 +462,21 @@ function NoteListHeader({ title, typeDocument, isEntityView, listSort, listDirec
           <button className="flex items-center text-muted-foreground transition-colors hover:text-foreground" onClick={onToggleSearch} title="Search notes">
             <MagnifyingGlass size={16} />
           </button>
-          <button className="flex items-center text-muted-foreground transition-colors hover:text-foreground" onClick={() => onCreateNote()} title="Create new note">
-            <Plus size={16} />
-          </button>
+          {isTrashView && trashCount > 0 && (
+            <button
+              className="flex items-center text-destructive transition-colors hover:text-destructive/80"
+              onClick={onEmptyTrash}
+              title="Empty Trash"
+              data-testid="empty-trash-btn"
+            >
+              <Trash size={16} />
+            </button>
+          )}
+          {!isTrashView && (
+            <button className="flex items-center text-muted-foreground transition-colors hover:text-foreground" onClick={() => onCreateNote()} title="Create new note">
+              <Plus size={16} />
+            </button>
+          )}
         </div>
       </div>
       {searchVisible && (
@@ -484,7 +502,7 @@ function useModifiedFilesState(modifiedFiles: ModifiedFile[] | undefined, getNot
   return { modifiedPathSet, modifiedSuffixes, resolvedGetNoteStatus }
 }
 
-function NoteListInner({ entries, selection, selectedNote, modifiedFiles, modifiedFilesError, getNoteStatus, sidebarCollapsed, onSelectNote, onReplaceActiveTab, onCreateNote, onBulkArchive, onBulkTrash, onUpdateTypeSort, updateEntry }: NoteListProps) {
+function NoteListInner({ entries, selection, selectedNote, modifiedFiles, modifiedFilesError, getNoteStatus, sidebarCollapsed, onSelectNote, onReplaceActiveTab, onCreateNote, onBulkArchive, onBulkTrash, onBulkRestore, onBulkDeletePermanently, onEmptyTrash, onUpdateTypeSort, updateEntry }: NoteListProps) {
   const { modifiedPathSet, modifiedSuffixes, resolvedGetNoteStatus } = useModifiedFilesState(modifiedFiles, getNoteStatus)
   const { listSort, listDirection, customProperties, handleSortChange, sortPrefs, typeDocument } = useNoteListSort({ entries, selection, modifiedPathSet, modifiedSuffixes, onUpdateTypeSort, updateEntry })
   const { search, setSearch, query, searchVisible, toggleSearch } = useNoteListSearch()
@@ -505,7 +523,11 @@ function NoteListInner({ entries, selection, selectedNote, modifiedFiles, modifi
 
   const handleBulkArchive = useCallback(() => { const paths = [...multiSelect.selectedPaths]; multiSelect.clear(); onBulkArchive?.(paths) }, [multiSelect, onBulkArchive])
   const handleBulkTrash = useCallback(() => { const paths = [...multiSelect.selectedPaths]; multiSelect.clear(); onBulkTrash?.(paths) }, [multiSelect, onBulkTrash])
-  useMultiSelectKeyboard(multiSelect, isEntityView, handleBulkArchive, handleBulkTrash)
+  const handleBulkRestore = useCallback(() => { const paths = [...multiSelect.selectedPaths]; multiSelect.clear(); onBulkRestore?.(paths) }, [multiSelect, onBulkRestore])
+  const handleBulkDeletePermanently = useCallback(() => { const paths = [...multiSelect.selectedPaths]; multiSelect.clear(); onBulkDeletePermanently?.(paths) }, [multiSelect, onBulkDeletePermanently])
+  const bulkArchiveOrRestore = isTrashView ? handleBulkRestore : handleBulkArchive
+  const bulkTrashOrDelete = isTrashView ? handleBulkDeletePermanently : handleBulkTrash
+  useMultiSelectKeyboard(multiSelect, isEntityView, bulkArchiveOrRestore, bulkTrashOrDelete)
 
   const renderItem = useCallback((entry: VaultEntry) => (
     <NoteItem key={entry.path} entry={entry} isSelected={selectedNote?.path === entry.path} isMultiSelected={multiSelect.selectedPaths.has(entry.path)} isHighlighted={entry.path === noteListKeyboard.highlightedPath} noteStatus={resolvedGetNoteStatus(entry.path)} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} onPrefetch={prefetchNoteContent} />
@@ -516,7 +538,7 @@ function NoteListInner({ entries, selection, selectedNote, modifiedFiles, modifi
 
   return (
     <div className="flex flex-col select-none overflow-hidden border-r border-border bg-card text-foreground" style={{ height: '100%' }}>
-      <NoteListHeader title={title} typeDocument={typeDocument} isEntityView={isEntityView} listSort={listSort} listDirection={listDirection} customProperties={customProperties} sidebarCollapsed={sidebarCollapsed} searchVisible={searchVisible} search={search} onSortChange={handleSortChange} onCreateNote={onCreateNote} onOpenType={onReplaceActiveTab} onToggleSearch={toggleSearch} onSearchChange={setSearch} />
+      <NoteListHeader title={title} typeDocument={typeDocument} isEntityView={isEntityView} isTrashView={isTrashView} trashCount={searched.length} listSort={listSort} listDirection={listDirection} customProperties={customProperties} sidebarCollapsed={sidebarCollapsed} searchVisible={searchVisible} search={search} onSortChange={handleSortChange} onCreateNote={onCreateNote} onOpenType={onReplaceActiveTab} onToggleSearch={toggleSearch} onSearchChange={setSearch} onEmptyTrash={onEmptyTrash} />
       <div className="flex-1 overflow-hidden outline-none" style={{ minHeight: 0 }} tabIndex={0} onKeyDown={noteListKeyboard.handleKeyDown} onFocus={noteListKeyboard.handleFocus} data-testid="note-list-container">
         {entitySelection ? (
           <EntityView entity={entitySelection.entry} groups={searchedGroups} query={query} collapsedGroups={collapsedGroups} sortPrefs={sortPrefs} onToggleGroup={toggleGroup} onSortChange={handleSortChange} renderItem={renderItem} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
@@ -525,7 +547,7 @@ function NoteListInner({ entries, selection, selectedNote, modifiedFiles, modifi
         )}
       </div>
       {multiSelect.isMultiSelecting && (
-        <BulkActionBar count={multiSelect.selectedPaths.size} onArchive={handleBulkArchive} onTrash={handleBulkTrash} onClear={multiSelect.clear} />
+        <BulkActionBar count={multiSelect.selectedPaths.size} isTrashView={isTrashView} onArchive={handleBulkArchive} onTrash={handleBulkTrash} onRestore={handleBulkRestore} onDeletePermanently={handleBulkDeletePermanently} onClear={multiSelect.clear} />
       )}
     </div>
   )

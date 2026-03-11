@@ -143,6 +143,8 @@ pub fn run() {
             commands::copy_image_to_vault,
             commands::purge_trash,
             commands::delete_note,
+            commands::batch_delete_notes,
+            commands::empty_trash,
             commands::migrate_is_a_to_type,
             commands::batch_archive_notes,
             commands::batch_trash_notes,

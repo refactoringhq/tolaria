@@ -20,6 +20,8 @@ interface CommandRegistryConfig {
   modifiedCount: number
   mcpStatus?: string
   onInstallMcp?: () => void
+  onEmptyTrash?: () => void
+  trashedCount?: number
   onReindexVault?: () => void
   onReloadVault?: () => void
   onRepairVault?: () => void
@@ -199,6 +201,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     onCreateType,
     onRemoveActiveVault, onRestoreGettingStarted, onRestoreDefaultThemes, isGettingStartedHidden, vaultCount,
     mcpStatus, onInstallMcp,
+    onEmptyTrash, trashedCount,
     onReindexVault,
     onReloadVault,
     onRepairVault,
@@ -222,6 +225,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
       { id: 'go-all', label: 'Go to All Notes', group: 'Navigation', keywords: ['filter'], enabled: true, execute: () => onSelect({ kind: 'filter', filter: 'all' }) },
       { id: 'go-archived', label: 'Go to Archived', group: 'Navigation', keywords: [], enabled: true, execute: () => onSelect({ kind: 'filter', filter: 'archived' }) },
       { id: 'go-trash', label: 'Go to Trash', group: 'Navigation', keywords: ['deleted'], enabled: true, execute: () => onSelect({ kind: 'filter', filter: 'trash' }) },
+      { id: 'empty-trash', label: 'Empty Trash', group: 'Note', keywords: ['delete', 'permanently', 'purge', 'clear', 'trash'], enabled: (trashedCount ?? 0) > 0, execute: () => onEmptyTrash?.() },
       { id: 'go-changes', label: 'Go to Changes', group: 'Navigation', keywords: ['git', 'modified', 'pending'], enabled: true, execute: () => onSelect({ kind: 'filter', filter: 'changes' }) },
       { id: 'go-pulse', label: 'Go to Pulse', group: 'Navigation', keywords: ['activity', 'history', 'commits', 'git', 'feed'], enabled: true, execute: () => onSelect({ kind: 'filter', filter: 'pulse' }) },
       { id: 'go-back', label: 'Go Back', group: 'Navigation', shortcut: '⌘[', keywords: ['previous', 'history', 'back'], enabled: !!canGoBack, execute: () => onGoBack?.() },
@@ -284,6 +288,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): CommandAction
     vaultTypes, themes, activeThemeId, onSwitchTheme, onCreateTheme, onOpenTheme, onRestoreDefaultThemes,
     onRemoveActiveVault, onRestoreGettingStarted, isGettingStartedHidden, vaultCount,
     mcpStatus, onInstallMcp,
+    onEmptyTrash, trashedCount,
     onReindexVault, onReloadVault, onRepairVault,
   ])
 }

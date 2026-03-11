@@ -115,6 +115,18 @@ pub fn delete_note(path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
+pub fn batch_delete_notes(paths: Vec<String>) -> Result<Vec<String>, String> {
+    let expanded: Vec<String> = paths.iter().map(|p| expand_tilde(p).into_owned()).collect();
+    vault::batch_delete_notes(&expanded)
+}
+
+#[tauri::command]
+pub fn empty_trash(vault_path: String) -> Result<Vec<String>, String> {
+    let vault_path = expand_tilde(&vault_path);
+    vault::empty_trash(&vault_path)
+}
+
+#[tauri::command]
 pub fn migrate_is_a_to_type(vault_path: String) -> Result<usize, String> {
     let vault_path = expand_tilde(&vault_path);
     vault::migrate_is_a_to_type(&vault_path)

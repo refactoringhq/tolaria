@@ -88,6 +88,47 @@ pub fn is_file_trashed(path: &Path) -> bool {
     false
 }
 
+/// Delete multiple note files from disk.
+/// Returns the list of successfully deleted paths.
+/// Skips files that don't exist or fail to delete (logs warnings).
+pub fn batch_delete_notes(paths: &[String]) -> Result<Vec<String>, String> {
+    let mut deleted = Vec::new();
+    for path in paths {
+        let file = Path::new(path.as_str());
+        match try_purge_file(file) {
+            Some(p) => deleted.push(p),
+            None if !file.exists() => {
+                log::warn!("File does not exist, skipping: {}", path);
+            }
+            None => {} // try_purge_file already logged the warning
+        }
+    }
+    Ok(deleted)
+}
+
+/// Scan all markdown files in the vault and delete ALL trashed notes
+/// (regardless of age). Returns the list of deleted file paths.
+pub fn empty_trash(vault_path: &str) -> Result<Vec<String>, String> {
+    let vault = Path::new(vault_path);
+    if !vault.exists() || !vault.is_dir() {
+        return Err(format!(
+            "Vault path does not exist or is not a directory: {}",
+            vault_path
+        ));
+    }
+
+    let deleted: Vec<String> = WalkDir::new(vault)
+        .follow_links(true)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| is_markdown_file(e.path()))
+        .filter(|e| is_file_trashed(e.path()))
+        .filter_map(|entry| try_purge_file(entry.path()))
+        .collect();
+
+    Ok(deleted)
+}
+
 /// Scan all markdown files in the vault and delete those where
 /// `Trashed at` frontmatter is more than 30 days ago.
 /// Returns the list of deleted file paths.
@@ -341,5 +382,82 @@ mod tests {
             "---\nTrashed: false\n---\n# Active\n",
         );
         assert!(!is_file_trashed(&dir.path().join("active.md")));
+    }
+
+    #[test]
+    fn test_batch_delete_notes_removes_files() {
+        let dir = TempDir::new().unwrap();
+        create_test_file(dir.path(), "a.md", "---\ntitle: A\n---\n# A\n");
+        create_test_file(dir.path(), "b.md", "---\ntitle: B\n---\n# B\n");
+        create_test_file(dir.path(), "keep.md", "---\ntitle: Keep\n---\n# Keep\n");
+
+        let paths = vec![
+            dir.path().join("a.md").to_str().unwrap().to_string(),
+            dir.path().join("b.md").to_str().unwrap().to_string(),
+        ];
+        let deleted = batch_delete_notes(&paths).unwrap();
+        assert_eq!(deleted.len(), 2);
+        assert!(!dir.path().join("a.md").exists());
+        assert!(!dir.path().join("b.md").exists());
+        assert!(dir.path().join("keep.md").exists());
+    }
+
+    #[test]
+    fn test_batch_delete_notes_skips_nonexistent() {
+        let dir = TempDir::new().unwrap();
+        create_test_file(dir.path(), "exists.md", "---\ntitle: X\n---\n# X\n");
+
+        let paths = vec![
+            dir.path().join("exists.md").to_str().unwrap().to_string(),
+            "/nonexistent/path.md".to_string(),
+        ];
+        let deleted = batch_delete_notes(&paths).unwrap();
+        assert_eq!(deleted.len(), 1);
+        assert!(!dir.path().join("exists.md").exists());
+    }
+
+    #[test]
+    fn test_empty_trash_deletes_all_trashed() {
+        let dir = TempDir::new().unwrap();
+        // Recently trashed — should be deleted
+        let recent = chrono::Utc::now()
+            .date_naive()
+            .format("%Y-%m-%d")
+            .to_string();
+        create_test_file(
+            dir.path(),
+            "recent.md",
+            &format!(
+                "---\nTrashed: true\nTrashed at: \"{}\"\n---\n# Recent\n",
+                recent
+            ),
+        );
+        // Old trashed — should be deleted
+        create_test_file(
+            dir.path(),
+            "old.md",
+            "---\nTrashed: true\nTrashed at: \"2025-01-01\"\n---\n# Old\n",
+        );
+        // Not trashed — should be kept
+        create_test_file(dir.path(), "normal.md", "---\ntype: Note\n---\n# Normal\n");
+
+        let deleted = empty_trash(dir.path().to_str().unwrap()).unwrap();
+        assert_eq!(deleted.len(), 2);
+        assert!(!dir.path().join("recent.md").exists());
+        assert!(!dir.path().join("old.md").exists());
+        assert!(dir.path().join("normal.md").exists());
+    }
+
+    #[test]
+    fn test_empty_trash_empty_vault() {
+        let dir = TempDir::new().unwrap();
+        let deleted = empty_trash(dir.path().to_str().unwrap()).unwrap();
+        assert!(deleted.is_empty());
+    }
+
+    #[test]
+    fn test_empty_trash_nonexistent_path() {
+        let result = empty_trash("/nonexistent/path/that/does/not/exist");
+        assert!(result.is_err());
     }
 }

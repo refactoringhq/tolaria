@@ -520,7 +520,7 @@ The vault backend (`src-tauri/src/vault/`) is split into focused submodules:
 | `vault_list.rs` | Vault list persistence |
 | `menu.rs` | Native macOS menu bar |
 
-## Tauri IPC Commands (62 total)
+## Tauri IPC Commands (64 total)
 
 ### Vault Operations
 
@@ -533,6 +533,8 @@ The vault backend (`src-tauri/src/vault/`) is split into focused submodules:
 | `rename_note` | Rename note + update cross-vault wikilinks |
 | `batch_archive_notes` | Archive multiple notes |
 | `batch_trash_notes` | Trash multiple notes |
+| `batch_delete_notes` | Permanently delete notes from disk |
+| `empty_trash` | Permanently delete all trashed notes from disk |
 | `purge_trash` | Delete notes trashed >30 days ago |
 | `reload_vault` | Invalidate cache and full rescan from filesystem → `Vec<VaultEntry>` |
 | `reload_vault_entry` | Re-read a single file from disk → `VaultEntry` |
