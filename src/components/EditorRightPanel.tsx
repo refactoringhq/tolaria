@@ -22,6 +22,7 @@ interface EditorRightPanelProps {
   onUpdateFrontmatter?: (path: string, key: string, value: FrontmatterValue) => Promise<void>
   onDeleteProperty?: (path: string, key: string) => Promise<void>
   onAddProperty?: (path: string, key: string, value: FrontmatterValue) => Promise<void>
+  onCreateAndOpenNote?: (title: string) => Promise<boolean>
   onOpenNote?: (path: string) => void
   onFileCreated?: (relativePath: string) => void
   onFileModified?: (relativePath: string) => void
@@ -33,7 +34,7 @@ export function EditorRightPanel({
   inspectorEntry, inspectorContent, entries, gitHistory, vaultPath, openTabs,
   noteList, noteListFilter,
   onToggleInspector, onToggleAIChat, onNavigateWikilink, onViewCommitDiff,
-  onUpdateFrontmatter, onDeleteProperty, onAddProperty, onOpenNote,
+  onUpdateFrontmatter, onDeleteProperty, onAddProperty, onCreateAndOpenNote, onOpenNote,
   onFileCreated, onFileModified, onVaultChanged,
 }: EditorRightPanelProps) {
   if (showAIChat) {
@@ -79,6 +80,7 @@ export function EditorRightPanel({
         onUpdateFrontmatter={onUpdateFrontmatter}
         onDeleteProperty={onDeleteProperty}
         onAddProperty={onAddProperty}
+        onCreateAndOpenNote={onCreateAndOpenNote}
       />
     </div>
   )

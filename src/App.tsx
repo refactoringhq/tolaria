@@ -621,6 +621,7 @@ function App() {
             onUpdateFrontmatter={notes.handleUpdateFrontmatter}
             onDeleteProperty={notes.handleDeleteProperty}
             onAddProperty={notes.handleAddProperty}
+            onCreateAndOpenNote={notes.handleCreateNoteForRelationship}
             showAIChat={dialogs.showAIChat}
             onToggleAIChat={dialogs.toggleAIChat}
             vaultPath={resolvedPath}

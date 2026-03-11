@@ -407,6 +407,190 @@ describe('DynamicRelationshipsPanel', () => {
       expect(screen.getByTestId('add-relation-ref')).toBeInTheDocument()
     })
   })
+
+  describe('create & open from inline add', () => {
+    const onUpdateProperty = vi.fn()
+    const onDeleteProperty = vi.fn()
+    const onCreateAndOpenNote = vi.fn<(title: string) => Promise<boolean>>()
+
+    beforeEach(() => {
+      vi.clearAllMocks()
+      onCreateAndOpenNote.mockResolvedValue(true)
+    })
+
+    it('shows "Create & open" option when typed title does not match any note', () => {
+      render(
+        <DynamicRelationshipsPanel
+          typeEntryMap={{}}
+          frontmatter={{ 'Belongs to': ['[[project/my-project]]'] }}
+          entries={entries}
+          onNavigate={onNavigate}
+          onUpdateProperty={onUpdateProperty}
+          onDeleteProperty={onDeleteProperty}
+          onCreateAndOpenNote={onCreateAndOpenNote}
+        />
+      )
+      fireEvent.click(screen.getByTestId('add-relation-ref'))
+      const input = screen.getByTestId('add-relation-ref-input')
+      fireEvent.change(input, { target: { value: 'Brand New Note' } })
+      expect(screen.getByTestId('create-and-open-option')).toBeInTheDocument()
+      expect(screen.getByText(/Create & open/)).toBeInTheDocument()
+      expect(screen.getByText(/Brand New Note/)).toBeInTheDocument()
+    })
+
+    it('does not show "Create & open" when typed title matches an existing note', () => {
+      render(
+        <DynamicRelationshipsPanel
+          typeEntryMap={{}}
+          frontmatter={{ 'Belongs to': ['[[project/my-project]]'] }}
+          entries={entries}
+          onNavigate={onNavigate}
+          onUpdateProperty={onUpdateProperty}
+          onDeleteProperty={onDeleteProperty}
+          onCreateAndOpenNote={onCreateAndOpenNote}
+        />
+      )
+      fireEvent.click(screen.getByTestId('add-relation-ref'))
+      const input = screen.getByTestId('add-relation-ref-input')
+      fireEvent.change(input, { target: { value: 'AI' } })
+      expect(screen.queryByTestId('create-and-open-option')).not.toBeInTheDocument()
+    })
+
+    it('calls onCreateAndOpenNote and adds wikilink when "Create & open" clicked', async () => {
+      render(
+        <DynamicRelationshipsPanel
+          typeEntryMap={{}}
+          frontmatter={{ 'Belongs to': ['[[project/my-project]]'] }}
+          entries={entries}
+          onNavigate={onNavigate}
+          onUpdateProperty={onUpdateProperty}
+          onDeleteProperty={onDeleteProperty}
+          onCreateAndOpenNote={onCreateAndOpenNote}
+        />
+      )
+      fireEvent.click(screen.getByTestId('add-relation-ref'))
+      const input = screen.getByTestId('add-relation-ref-input')
+      fireEvent.change(input, { target: { value: 'Brand New Note' } })
+      fireEvent.click(screen.getByTestId('create-and-open-option'))
+      expect(onCreateAndOpenNote).toHaveBeenCalledWith('Brand New Note')
+      await vi.waitFor(() => {
+        expect(onUpdateProperty).toHaveBeenCalledWith('Belongs to', ['[[project/my-project]]', '[[Brand New Note]]'])
+      })
+    })
+
+    it('does not add wikilink when note creation fails', async () => {
+      onCreateAndOpenNote.mockResolvedValue(false)
+      render(
+        <DynamicRelationshipsPanel
+          typeEntryMap={{}}
+          frontmatter={{ 'Belongs to': ['[[project/my-project]]'] }}
+          entries={entries}
+          onNavigate={onNavigate}
+          onUpdateProperty={onUpdateProperty}
+          onDeleteProperty={onDeleteProperty}
+          onCreateAndOpenNote={onCreateAndOpenNote}
+        />
+      )
+      fireEvent.click(screen.getByTestId('add-relation-ref'))
+      const input = screen.getByTestId('add-relation-ref-input')
+      fireEvent.change(input, { target: { value: 'Failing Note' } })
+      fireEvent.click(screen.getByTestId('create-and-open-option'))
+      expect(onCreateAndOpenNote).toHaveBeenCalledWith('Failing Note')
+      // Give async handler time to resolve
+      await vi.waitFor(() => {
+        expect(onCreateAndOpenNote).toHaveBeenCalled()
+      })
+      expect(onUpdateProperty).not.toHaveBeenCalled()
+    })
+
+    it('shows both existing matches and "Create & open" for partial matches', () => {
+      render(
+        <DynamicRelationshipsPanel
+          typeEntryMap={{}}
+          frontmatter={{ 'Belongs to': ['[[project/my-project]]'] }}
+          entries={entries}
+          onNavigate={onNavigate}
+          onUpdateProperty={onUpdateProperty}
+          onDeleteProperty={onDeleteProperty}
+          onCreateAndOpenNote={onCreateAndOpenNote}
+        />
+      )
+      fireEvent.click(screen.getByTestId('add-relation-ref'))
+      const input = screen.getByTestId('add-relation-ref-input')
+      // "My" partially matches "My Project" but is not an exact match
+      fireEvent.change(input, { target: { value: 'My' } })
+      // Should show search results AND create option
+      expect(screen.getByTestId('create-and-open-option')).toBeInTheDocument()
+    })
+
+    it('does not show "Create & open" when onCreateAndOpenNote is not provided', () => {
+      render(
+        <DynamicRelationshipsPanel
+          typeEntryMap={{}}
+          frontmatter={{ 'Belongs to': ['[[project/my-project]]'] }}
+          entries={entries}
+          onNavigate={onNavigate}
+          onUpdateProperty={onUpdateProperty}
+          onDeleteProperty={onDeleteProperty}
+        />
+      )
+      fireEvent.click(screen.getByTestId('add-relation-ref'))
+      const input = screen.getByTestId('add-relation-ref-input')
+      fireEvent.change(input, { target: { value: 'Brand New Note' } })
+      expect(screen.queryByTestId('create-and-open-option')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('create & open from AddRelationshipForm', () => {
+    const onCreateAndOpenNote = vi.fn<(title: string) => Promise<boolean>>()
+
+    beforeEach(() => {
+      vi.clearAllMocks()
+      onCreateAndOpenNote.mockResolvedValue(true)
+    })
+
+    it('shows "Create & open" option in target input when title does not exist', () => {
+      render(
+        <DynamicRelationshipsPanel
+          typeEntryMap={{}}
+          frontmatter={{}}
+          entries={entries}
+          onNavigate={onNavigate}
+          onAddProperty={onAddProperty}
+          onCreateAndOpenNote={onCreateAndOpenNote}
+        />
+      )
+      fireEvent.click(screen.getByText('+ Link existing'))
+      fireEvent.change(screen.getByPlaceholderText('Relationship name'), { target: { value: 'Mentions' } })
+      const noteInput = screen.getByPlaceholderText('Note title')
+      fireEvent.focus(noteInput)
+      fireEvent.change(noteInput, { target: { value: 'New Person' } })
+      expect(screen.getByTestId('create-and-open-option')).toBeInTheDocument()
+    })
+
+    it('creates note and adds relationship via form', async () => {
+      render(
+        <DynamicRelationshipsPanel
+          typeEntryMap={{}}
+          frontmatter={{}}
+          entries={entries}
+          onNavigate={onNavigate}
+          onAddProperty={onAddProperty}
+          onCreateAndOpenNote={onCreateAndOpenNote}
+        />
+      )
+      fireEvent.click(screen.getByText('+ Link existing'))
+      fireEvent.change(screen.getByPlaceholderText('Relationship name'), { target: { value: 'Mentions' } })
+      const noteInput = screen.getByPlaceholderText('Note title')
+      fireEvent.focus(noteInput)
+      fireEvent.change(noteInput, { target: { value: 'New Person' } })
+      fireEvent.click(screen.getByTestId('create-and-open-option'))
+      expect(onCreateAndOpenNote).toHaveBeenCalledWith('New Person')
+      await vi.waitFor(() => {
+        expect(onAddProperty).toHaveBeenCalledWith('Mentions', '[[New Person]]')
+      })
+    })
+  })
 })
 
 describe('BacklinksPanel', () => {

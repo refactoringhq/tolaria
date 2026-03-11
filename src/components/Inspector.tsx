@@ -23,6 +23,7 @@ interface InspectorProps {
   onUpdateFrontmatter?: (path: string, key: string, value: FrontmatterValue) => Promise<void>
   onDeleteProperty?: (path: string, key: string) => Promise<void>
   onAddProperty?: (path: string, key: string, value: FrontmatterValue) => Promise<void>
+  onCreateAndOpenNote?: (title: string) => Promise<boolean>
 }
 
 function useBacklinks(
@@ -114,7 +115,7 @@ function EmptyInspector() {
 
 export function Inspector({
   collapsed, onToggle, entry, content, entries, gitHistory, onNavigate,
-  onViewCommitDiff, onUpdateFrontmatter, onDeleteProperty, onAddProperty,
+  onViewCommitDiff, onUpdateFrontmatter, onDeleteProperty, onAddProperty, onCreateAndOpenNote,
 }: InspectorProps) {
   const referencedBy = useReferencedBy(entry, entries)
   const backlinks = useBacklinks(entry, entries, referencedBy)
@@ -157,6 +158,7 @@ export function Inspector({
                 onAddProperty={onAddProperty ? handleAddProperty : undefined}
                 onUpdateProperty={onUpdateFrontmatter ? handleUpdateProperty : undefined}
                 onDeleteProperty={onDeleteProperty ? handleDeleteProperty : undefined}
+                onCreateAndOpenNote={onCreateAndOpenNote}
               />
               <InstancesPanel entry={entry} entries={entries} typeEntryMap={typeEntryMap} onNavigate={onNavigate} />
               <ReferencedByPanel items={referencedBy} typeEntryMap={typeEntryMap} onNavigate={onNavigate} />
