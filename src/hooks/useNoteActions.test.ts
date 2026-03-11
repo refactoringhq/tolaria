@@ -1059,4 +1059,113 @@ describe('useNoteActions hook', () => {
       expect(mockInvoke).not.toHaveBeenCalledWith('move_note_to_type_folder', expect.anything())
     })
   })
+
+  describe('rename note updates wikilinks', () => {
+    it('handleRenameNote passes entry title as old_title to rename_note', async () => {
+      const entry = makeEntry({
+        path: '/test/vault/note/weekly-review.md',
+        filename: 'weekly-review.md',
+        title: 'Weekly Review',
+      })
+      const replaceEntry = vi.fn()
+      const config = makeConfig([entry])
+      config.replaceEntry = replaceEntry
+
+      vi.mocked(mockInvoke).mockImplementation(async (cmd: string) => {
+        if (cmd === 'rename_note') return { new_path: '/test/vault/note/sprint-retro.md', updated_files: 2 }
+        if (cmd === 'get_note_content') return '---\nIs A: Note\n---\n# Sprint Retro\n'
+        return ''
+      })
+
+      const { result } = renderHook(() => useNoteActions(config))
+
+      await act(async () => {
+        await result.current.handleRenameNote(
+          '/test/vault/note/weekly-review.md',
+          'Sprint Retro',
+          '/test/vault',
+          replaceEntry,
+        )
+      })
+
+      expect(mockInvoke).toHaveBeenCalledWith('rename_note', expect.objectContaining({
+        vault_path: '/test/vault',
+        old_path: '/test/vault/note/weekly-review.md',
+        new_title: 'Sprint Retro',
+        old_title: 'Weekly Review',
+      }))
+      expect(setToastMessage).toHaveBeenCalledWith('Renamed — updated 2 wiki links')
+    })
+
+    it('handleRenameNote passes null old_title when entry not found', async () => {
+      const config = makeConfig([])
+
+      vi.mocked(mockInvoke).mockImplementation(async (cmd: string) => {
+        if (cmd === 'rename_note') return { new_path: '/test/vault/note/new.md', updated_files: 0 }
+        if (cmd === 'get_note_content') return '# New\n'
+        return ''
+      })
+
+      const { result } = renderHook(() => useNoteActions(config))
+
+      await act(async () => {
+        await result.current.handleRenameNote(
+          '/test/vault/note/old.md', 'New', '/test/vault', vi.fn(),
+        )
+      })
+
+      expect(mockInvoke).toHaveBeenCalledWith('rename_note', expect.objectContaining({
+        old_title: null,
+      }))
+    })
+
+    it('handleUpdateFrontmatter triggers rename when title key is changed', async () => {
+      const entry = makeEntry({
+        path: '/test/vault/note/old-name.md',
+        filename: 'old-name.md',
+        title: 'Old Name',
+      })
+      const replaceEntry = vi.fn()
+      const config = makeConfig([entry])
+      config.replaceEntry = replaceEntry
+
+      vi.mocked(mockInvoke).mockImplementation(async (cmd: string) => {
+        if (cmd === 'rename_note') return { new_path: '/test/vault/note/new-name.md', updated_files: 1 }
+        if (cmd === 'get_note_content') return '---\ntitle: New Name\n---\n# New Name\n'
+        return ''
+      })
+
+      const { result } = renderHook(() => useNoteActions(config))
+
+      // Open a tab for the entry so the rename can find it via tabsRef
+      await act(async () => { result.current.handleSelectNote(entry) })
+
+      await act(async () => {
+        await result.current.handleUpdateFrontmatter('/test/vault/note/old-name.md', 'title', 'New Name')
+      })
+
+      expect(mockInvoke).toHaveBeenCalledWith('rename_note', expect.objectContaining({
+        old_path: '/test/vault/note/old-name.md',
+        new_title: 'New Name',
+        old_title: 'Old Name',
+      }))
+      expect(replaceEntry).toHaveBeenCalledWith(
+        '/test/vault/note/old-name.md',
+        expect.objectContaining({ path: '/test/vault/note/new-name.md', title: 'New Name' }),
+      )
+    })
+
+    it('handleUpdateFrontmatter does not trigger rename for non-title keys', async () => {
+      const config = makeConfig()
+      vi.mocked(mockInvoke).mockResolvedValue('')
+
+      const { result } = renderHook(() => useNoteActions(config))
+
+      await act(async () => {
+        await result.current.handleUpdateFrontmatter('/vault/note.md', 'status', 'Done')
+      })
+
+      expect(mockInvoke).not.toHaveBeenCalledWith('rename_note', expect.anything())
+    })
+  })
 })

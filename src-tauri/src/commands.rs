@@ -84,10 +84,11 @@ pub fn rename_note(
     vault_path: String,
     old_path: String,
     new_title: String,
+    old_title: Option<String>,
 ) -> Result<RenameResult, String> {
     let vault_path = expand_tilde(&vault_path);
     let old_path = expand_tilde(&old_path);
-    vault::rename_note(&vault_path, &old_path, &new_title)
+    vault::rename_note(&vault_path, &old_path, &new_title, old_title.as_deref())
 }
 
 #[tauri::command]

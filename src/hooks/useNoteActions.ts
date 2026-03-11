@@ -61,15 +61,21 @@ function isTypeKey(key: string): boolean {
   return k === 'type' || k === 'is_a'
 }
 
+/** Check if a frontmatter key represents the note title. */
+function isTitleKey(key: string): boolean {
+  return key.toLowerCase().replace(/\s+/g, '_') === 'title'
+}
+
 async function performRename(
   path: string,
   newTitle: string,
   vaultPath: string,
+  oldTitle?: string,
 ): Promise<RenameResult> {
   if (isTauri()) {
-    return invoke<RenameResult>('rename_note', { vaultPath, oldPath: path, newTitle })
+    return invoke<RenameResult>('rename_note', { vaultPath, oldPath: path, newTitle, oldTitle: oldTitle ?? null })
   }
-  return mockInvoke<RenameResult>('rename_note', { vault_path: vaultPath, old_path: path, new_title: newTitle })
+  return mockInvoke<RenameResult>('rename_note', { vault_path: vaultPath, old_path: path, new_title: newTitle, old_title: oldTitle ?? null })
 }
 
 function buildRenamedEntry(entry: VaultEntry, newTitle: string, newPath: string): VaultEntry {
@@ -443,9 +449,9 @@ export function useNoteActions(config: NoteActionsConfig) {
     onEntryRenamed: (oldPath: string, newEntry: Partial<VaultEntry> & { path: string }, newContent: string) => void,
   ) => {
     try {
-      const result = await performRename(path, newTitle, vaultPath)
-      const newContent = await loadNoteContent(result.new_path)
       const entry = entries.find((e) => e.path === path)
+      const result = await performRename(path, newTitle, vaultPath, entry?.title)
+      const newContent = await loadNoteContent(result.new_path)
       const newEntry = buildRenamedEntry(entry ?? {} as VaultEntry, newTitle, result.new_path)
       const otherTabPaths = tabsRef.current.filter(t => t.entry.path !== path).map(t => t.entry.path)
       setTabs((prev) => prev.map((t) => t.entry.path === path ? { entry: newEntry, content: newContent } : t))
@@ -470,6 +476,26 @@ export function useNoteActions(config: NoteActionsConfig) {
     createTypeEntrySilent,
     handleUpdateFrontmatter: useCallback(async (path: string, key: string, value: FrontmatterValue) => {
       await runFrontmatterOp('update', path, key, value)
+      if (isTitleKey(key) && typeof value === 'string' && value !== '') {
+        try {
+          const oldTitle = tabsRef.current.find(t => t.entry.path === path)?.entry.title
+          const result = await performRename(path, value, config.vaultPath, oldTitle)
+          if (result.new_path !== path) {
+            const newFilename = result.new_path.split('/').pop() ?? ''
+            config.replaceEntry?.(path, { path: result.new_path, filename: newFilename, title: value } as Partial<VaultEntry> & { path: string })
+            const newContent = await loadNoteContent(result.new_path)
+            setTabs(prev => prev.map(t => t.entry.path === path
+              ? { entry: { ...t.entry, path: result.new_path, filename: newFilename, title: value }, content: newContent }
+              : t))
+            if (activeTabPathRef.current === path) handleSwitchTab(result.new_path)
+            const otherTabPaths = tabsRef.current.filter(t => t.entry.path !== path && t.entry.path !== result.new_path).map(t => t.entry.path)
+            await reloadTabsAfterRename(otherTabPaths, updateTabContent)
+          }
+          setToastMessage(renameToastMessage(result.updated_files))
+        } catch (err) {
+          console.error('Failed to rename note after title change:', err)
+        }
+      }
       if (isTypeKey(key) && typeof value === 'string' && value !== '') {
         try {
           const result = await performMoveToTypeFolder(config.vaultPath, path, value)
@@ -494,7 +520,7 @@ export function useNoteActions(config: NoteActionsConfig) {
           console.error('Failed to move note to type folder:', err)
         }
       }
-    }, [runFrontmatterOp, config.vaultPath, config.replaceEntry, setTabs, activeTabPathRef, handleSwitchTab, setToastMessage]),
+    }, [runFrontmatterOp, config.vaultPath, config.replaceEntry, setTabs, activeTabPathRef, handleSwitchTab, setToastMessage, updateTabContent]),
     handleDeleteProperty: useCallback((path: string, key: string) => runFrontmatterOp('delete', path, key), [runFrontmatterOp]),
     handleAddProperty: useCallback((path: string, key: string, value: FrontmatterValue) => runFrontmatterOp('update', path, key, value), [runFrontmatterOp]),
     handleRenameNote,

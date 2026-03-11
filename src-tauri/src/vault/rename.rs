@@ -344,10 +344,16 @@ pub fn move_note_to_type_folder(
 }
 
 /// Rename a note: update its title, rename the file, and update wiki links across the vault.
+///
+/// When `old_title_hint` is provided it is used instead of extracting the title from
+/// the file's H1 heading.  This is needed when the caller has already saved updated
+/// content to disk (e.g. the editor saved a new H1 before triggering the rename)
+/// so the on-disk H1 already matches `new_title`.
 pub fn rename_note(
     vault_path: &str,
     old_path: &str,
     new_title: &str,
+    old_title_hint: Option<&str>,
 ) -> Result<RenameResult, String> {
     let vault = Path::new(vault_path);
     let old_file = Path::new(old_path);
@@ -366,7 +372,8 @@ pub fn rename_note(
         .file_name()
         .map(|f| f.to_string_lossy().to_string())
         .unwrap_or_default();
-    let old_title = super::extract_title(&content, &old_filename);
+    let extracted_title = super::extract_title(&content, &old_filename);
+    let old_title = old_title_hint.unwrap_or(&extracted_title);
 
     // Check both title and filename: even if the title in content matches,
     // the filename may still be stale (e.g. "untitled-note.md" after user changed H1).
@@ -407,7 +414,7 @@ pub fn rename_note(
     let old_path_stem = to_path_stem(old_path, &vault_prefix);
     let updated_files = update_wikilinks_in_vault(&WikilinkReplacement {
         vault_path: vault,
-        old_title: &old_title,
+        old_title,
         new_title,
         old_path_stem,
         exclude_path: &new_file,
@@ -465,6 +472,7 @@ mod tests {
             vault.to_str().unwrap(),
             old_path.to_str().unwrap(),
             "Sprint Retrospective",
+            None,
         )
         .unwrap();
 
@@ -501,6 +509,7 @@ mod tests {
             vault.to_str().unwrap(),
             old_path.to_str().unwrap(),
             "Sprint Retrospective",
+            None,
         )
         .unwrap();
 
@@ -525,6 +534,7 @@ mod tests {
             vault.to_str().unwrap(),
             old_path.to_str().unwrap(),
             "My Note",
+            None,
         )
         .unwrap();
 
@@ -539,7 +549,12 @@ mod tests {
         create_test_file(vault, "note/test.md", "# Test\n");
 
         let old_path = vault.join("note/test.md");
-        let result = rename_note(vault.to_str().unwrap(), old_path.to_str().unwrap(), "  ");
+        let result = rename_note(
+            vault.to_str().unwrap(),
+            old_path.to_str().unwrap(),
+            "  ",
+            None,
+        );
         assert!(result.is_err());
     }
 
@@ -559,6 +574,7 @@ mod tests {
             vault.to_str().unwrap(),
             old_path.to_str().unwrap(),
             "Sprint Retro",
+            None,
         )
         .unwrap();
 
@@ -582,6 +598,7 @@ mod tests {
             vault.to_str().unwrap(),
             old_path.to_str().unwrap(),
             "New Name",
+            None,
         )
         .unwrap();
 
@@ -604,6 +621,7 @@ mod tests {
             vault.to_str().unwrap(),
             old_path.to_str().unwrap(),
             new_title,
+            None,
         )
         .expect("rename_note should succeed");
 
@@ -678,6 +696,7 @@ mod tests {
             vault.to_str().unwrap(),
             old_path.to_str().unwrap(),
             "My New Note",
+            None,
         )
         .unwrap();
 
@@ -718,6 +737,7 @@ mod tests {
             vault.to_str().unwrap(),
             old_path.to_str().unwrap(),
             "My Note",
+            None,
         )
         .unwrap();
 
@@ -938,6 +958,101 @@ mod tests {
         // Existing note must be untouched
         let untouched = fs::read_to_string(vault.join("quarter/my-note.md")).unwrap();
         assert_eq!(untouched, existing_content);
+    }
+
+    #[test]
+    fn test_rename_note_with_old_title_hint_updates_wikilinks() {
+        // Simulates H1 sync: content already saved with new H1, but wikilinks still use old title.
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path();
+        // Note file already has the NEW H1 (simulating savePendingForPath before rename)
+        create_test_file(
+            vault,
+            "note/weekly-review.md",
+            "---\nIs A: Note\n---\n# Sprint Retrospective\n\nContent.\n",
+        );
+        create_test_file(
+            vault,
+            "note/other.md",
+            "---\nIs A: Note\n---\n# Other\n\nSee [[Weekly Review]] for details.\n",
+        );
+        create_test_file(
+            vault,
+            "project/my-project.md",
+            "---\nIs A: Project\nRelated to:\n  - \"[[Weekly Review]]\"\n---\n# My Project\n",
+        );
+
+        let old_path = vault.join("note/weekly-review.md");
+        // Without old_title_hint, rename_note would see H1 = "Sprint Retrospective" == new_title → noop
+        // With old_title_hint = "Weekly Review", it knows to search for [[Weekly Review]] and replace
+        let result = rename_note(
+            vault.to_str().unwrap(),
+            old_path.to_str().unwrap(),
+            "Sprint Retrospective",
+            Some("Weekly Review"),
+        )
+        .unwrap();
+
+        assert_eq!(result.updated_files, 2);
+        assert!(result.new_path.ends_with("sprint-retrospective.md"));
+        assert!(!vault.join("note/weekly-review.md").exists());
+
+        let other_content = fs::read_to_string(vault.join("note/other.md")).unwrap();
+        assert!(other_content.contains("[[Sprint Retrospective]]"));
+        assert!(!other_content.contains("[[Weekly Review]]"));
+
+        let project_content = fs::read_to_string(vault.join("project/my-project.md")).unwrap();
+        assert!(project_content.contains("[[Sprint Retrospective]]"));
+    }
+
+    #[test]
+    fn test_rename_note_without_hint_backward_compatible() {
+        // Existing behavior: no hint, extracts title from H1
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path();
+        create_test_file(
+            vault,
+            "note/weekly-review.md",
+            "---\nIs A: Note\n---\n# Weekly Review\n\nContent.\n",
+        );
+        create_test_file(
+            vault,
+            "note/other.md",
+            "See [[Weekly Review]] for details.\n",
+        );
+
+        let old_path = vault.join("note/weekly-review.md");
+        let result = rename_note(
+            vault.to_str().unwrap(),
+            old_path.to_str().unwrap(),
+            "Sprint Retrospective",
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(result.updated_files, 1);
+        let other_content = fs::read_to_string(vault.join("note/other.md")).unwrap();
+        assert!(other_content.contains("[[Sprint Retrospective]]"));
+    }
+
+    #[test]
+    fn test_rename_note_hint_same_as_new_title_noop() {
+        // If old_title_hint == new_title, should be a noop
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path();
+        create_test_file(vault, "note/my-note.md", "# My Note\n\nContent.\n");
+
+        let old_path = vault.join("note/my-note.md");
+        let result = rename_note(
+            vault.to_str().unwrap(),
+            old_path.to_str().unwrap(),
+            "My Note",
+            Some("My Note"),
+        )
+        .unwrap();
+
+        assert_eq!(result.new_path, old_path.to_str().unwrap());
+        assert_eq!(result.updated_files, 0);
     }
 
     #[test]

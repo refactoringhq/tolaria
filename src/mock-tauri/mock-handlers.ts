@@ -114,7 +114,13 @@ const mockThemes: ThemeFile[] = [
 
 let mockDeviceFlowPollCount = 0
 
-function handleRenameNote(args: { vault_path: string; old_path: string; new_title: string }) {
+function handleRenameNote(args: { vault_path: string; old_path: string; new_title: string; old_title?: string | null }) {
+  const oldEntry = MOCK_ENTRIES.find(e => e.path === args.old_path)
+  const oldTitle = args.old_title ?? oldEntry?.title ?? ''
+  if (oldTitle === args.new_title) {
+    return { new_path: args.old_path, updated_files: 0 }
+  }
+
   const oldContent = MOCK_CONTENT[args.old_path] ?? ''
   const slug = args.new_title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
   const parentDir = args.old_path.replace(/\/[^/]+$/, '')
@@ -123,9 +129,6 @@ function handleRenameNote(args: { vault_path: string; old_path: string; new_titl
 
   delete MOCK_CONTENT[args.old_path]
   MOCK_CONTENT[newPath] = newContent
-
-  const oldEntry = MOCK_ENTRIES.find(e => e.path === args.old_path)
-  const oldTitle = oldEntry?.title ?? ''
   let updatedFiles = 0
   if (oldTitle) {
     const pattern = new RegExp(`\\[\\[${oldTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\|[^\\]]*?)?\\]\\]`, 'g')

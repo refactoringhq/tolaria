@@ -408,13 +408,11 @@ function App() {
     setToastMessage(`Type "${name}" created`)
   }, [notes])
 
-  /** H1→title sync: update VaultEntry.title and tab entry in memory. */
-  const handleTitleSync = useCallback((path: string, newTitle: string) => {
-    vault.updateEntry(path, { title: newTitle })
-    notes.setTabs(prev => prev.map(t =>
-      t.entry.path === path ? { ...t, entry: { ...t.entry, title: newTitle } } : t
-    ))
-  }, [vault, notes])
+  /** H1→title sync: save pending content then rename file + update wikilinks. */
+  const handleTitleSync = useCallback(async (path: string, newTitle: string) => {
+    await savePendingForPath(path)
+    await notes.handleRenameNote(path, newTitle, resolvedPath, vault.replaceEntry).then(vault.loadModifiedFiles)
+  }, [notes, resolvedPath, vault, savePendingForPath])
 
   const bulkActions = useBulkActions(entryActions, setToastMessage)
 
