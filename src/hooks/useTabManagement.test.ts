@@ -439,6 +439,111 @@ describe('useTabManagement', () => {
     })
   })
 
+  describe('closed tab history', () => {
+    it('handleCloseTab records the closed tab in history', async () => {
+      const { result } = renderHook(() => useTabManagement())
+
+      await act(async () => {
+        await result.current.handleSelectNote(makeEntry({ path: '/vault/a.md', title: 'A' }))
+      })
+
+      act(() => { result.current.handleCloseTab('/vault/a.md') })
+
+      expect(result.current.closedTabHistory.canReopen).toBe(true)
+    })
+
+    it('handleReopenClosedTab reopens the last closed tab', async () => {
+      const { result } = renderHook(() => useTabManagement())
+
+      await act(async () => {
+        await result.current.handleSelectNote(makeEntry({ path: '/vault/a.md', title: 'A' }))
+      })
+      await act(async () => {
+        await result.current.handleSelectNote(makeEntry({ path: '/vault/b.md', title: 'B' }))
+      })
+
+      act(() => { result.current.handleCloseTab('/vault/b.md') })
+
+      await act(async () => {
+        await result.current.handleReopenClosedTab()
+      })
+
+      expect(result.current.tabs).toHaveLength(2)
+      expect(result.current.activeTabPath).toBe('/vault/b.md')
+    })
+
+    it('close 3 tabs then reopen all 3 in correct LIFO order', async () => {
+      const { result } = renderHook(() => useTabManagement())
+
+      await act(async () => {
+        await result.current.handleSelectNote(makeEntry({ path: '/vault/a.md', title: 'A' }))
+      })
+      await act(async () => {
+        await result.current.handleSelectNote(makeEntry({ path: '/vault/b.md', title: 'B' }))
+      })
+      await act(async () => {
+        await result.current.handleSelectNote(makeEntry({ path: '/vault/c.md', title: 'C' }))
+      })
+
+      // Close C, B, A
+      act(() => { result.current.handleCloseTab('/vault/c.md') })
+      act(() => { result.current.handleCloseTab('/vault/b.md') })
+      act(() => { result.current.handleCloseTab('/vault/a.md') })
+
+      expect(result.current.tabs).toHaveLength(0)
+
+      // Reopen: should get A first (last closed), then B, then C
+      await act(async () => { await result.current.handleReopenClosedTab() })
+      expect(result.current.activeTabPath).toBe('/vault/a.md')
+
+      await act(async () => { await result.current.handleReopenClosedTab() })
+      expect(result.current.activeTabPath).toBe('/vault/b.md')
+
+      await act(async () => { await result.current.handleReopenClosedTab() })
+      expect(result.current.activeTabPath).toBe('/vault/c.md')
+
+      expect(result.current.tabs).toHaveLength(3)
+    })
+
+    it('does nothing when history is empty', async () => {
+      const { result } = renderHook(() => useTabManagement())
+
+      await act(async () => {
+        await result.current.handleReopenClosedTab()
+      })
+
+      expect(result.current.tabs).toHaveLength(0)
+      expect(result.current.activeTabPath).toBeNull()
+    })
+
+    it('does not duplicate tab if note is already open', async () => {
+      const { result } = renderHook(() => useTabManagement())
+
+      await act(async () => {
+        await result.current.handleSelectNote(makeEntry({ path: '/vault/a.md', title: 'A' }))
+      })
+      await act(async () => {
+        await result.current.handleSelectNote(makeEntry({ path: '/vault/b.md', title: 'B' }))
+      })
+
+      // Close B
+      act(() => { result.current.handleCloseTab('/vault/b.md') })
+
+      // Manually reopen B via handleSelectNote
+      await act(async () => {
+        await result.current.handleSelectNote(makeEntry({ path: '/vault/b.md', title: 'B' }))
+      })
+
+      // Now try to reopen from history — B is already open, should just switch
+      await act(async () => {
+        await result.current.handleReopenClosedTab()
+      })
+
+      expect(result.current.tabs).toHaveLength(2)
+      expect(result.current.activeTabPath).toBe('/vault/b.md')
+    })
+  })
+
   describe('rapid switching safety', () => {
     it('only activates the last note when switching rapidly', async () => {
       const { mockInvoke } = await import('../mock-tauri')

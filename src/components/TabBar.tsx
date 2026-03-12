@@ -218,6 +218,7 @@ function TabItem({ tab, isActive, isEditing, noteStatus, isDragging, showDropBef
 }) {
   return (
     <div
+      data-tab-path={tab.entry.path}
       draggable={!isEditing}
       {...dragProps}
       className={cn(

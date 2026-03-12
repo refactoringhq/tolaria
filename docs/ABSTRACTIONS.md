@@ -416,6 +416,10 @@ The Inspector panel (`src/components/Inspector.tsx`) is composed of sub-panels:
 
 4. **GitHistoryPanel**: Shows recent commits from file history with relative timestamps.
 
+## Closed Tab History
+
+`useClosedTabHistory` hook (`src/hooks/useClosedTabHistory.ts`) provides a LIFO stack for closed tab entries, used by `useTabManagement` to support Cmd+Shift+T reopen. Each entry stores the note's path, tab index, and full `VaultEntry`. The stack is in-memory only (resets on restart), capped at 20 entries, and deduplicates by path.
+
 ## Search & Indexing
 
 ### Search Modes

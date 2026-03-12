@@ -596,6 +596,7 @@ function App() {
     onInstallMcp: installMcp,
     onEmptyTrash: handleEmptyTrash,
     trashedCount,
+    onReopenClosedTab: notes.handleReopenClosedTab,
     onReindexVault: indexing.triggerFullReindex,
     onReloadVault: vault.reloadVault,
     onRepairVault: handleRepairVault,

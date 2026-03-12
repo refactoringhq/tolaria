@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { isTauri, mockInvoke } from '../mock-tauri'
 import type { VaultEntry } from '../types'
+import { useClosedTabHistory } from './useClosedTabHistory'
 
 interface Tab {
   entry: VaultEntry
@@ -137,6 +138,7 @@ export function useTabManagement() {
   const tabsRef = useRef(tabs)
   useEffect(() => { tabsRef.current = tabs })
   const handleCloseTabRef = useRef<(path: string) => void>(() => {})
+  const closedTabHistory = useClosedTabHistory()
 
   // Sequence counter for rapid-switch safety: only the latest navigation wins.
   // Prevents stale content from an earlier click appearing after a later click.
@@ -151,11 +153,13 @@ export function useTabManagement() {
 
   const handleCloseTab = useCallback((path: string) => {
     setTabs((prev) => {
+      const idx = prev.findIndex((t) => t.entry.path === path)
+      if (idx !== -1) closedTabHistory.push(path, idx, prev[idx].entry)
       const next = prev.filter((t) => t.entry.path !== path)
       if (path === activeTabPathRef.current) { setActiveTabPath(resolveNextActiveTab(prev, path)) }
       return next
     })
-  }, [])
+  }, [closedTabHistory])
   useEffect(() => { handleCloseTabRef.current = handleCloseTab })
 
   const handleSwitchTab = useCallback((path: string) => { setActiveTabPath(path) }, [])
@@ -179,6 +183,18 @@ export function useTabManagement() {
     await loadAndSetTab(entry, (prev, content) => replaceTabEntry(prev, currentPath, entry, content), setTabs)
     if (navSeqRef.current === seq) setActiveTabPath(entry.path)
   }, [handleSelectNote])
+
+  const handleReopenClosedTab = useCallback(async () => {
+    const closed = closedTabHistory.pop()
+    if (!closed) return
+    // If tab is already open, just switch to it
+    if (isTabOpen(tabsRef.current, closed.path)) {
+      setActiveTabPath(closed.path)
+      return
+    }
+    // Reopen using the stored VaultEntry — loads fresh content from disk
+    await handleSelectNote(closed.entry)
+  }, [closedTabHistory, handleSelectNote])
 
   const closeAllTabs = useCallback(() => {
     setTabs([])
@@ -209,6 +225,8 @@ export function useTabManagement() {
     handleSwitchTab,
     handleReorderTabs,
     handleReplaceActiveTab,
+    handleReopenClosedTab,
     closeAllTabs,
+    closedTabHistory,
   }
 }

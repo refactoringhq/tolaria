@@ -67,6 +67,7 @@ interface AppCommandsConfig {
   onInstallMcp?: () => void
   onEmptyTrash?: () => void
   trashedCount?: number
+  onReopenClosedTab?: () => void
   onReindexVault?: () => void
   onReloadVault?: () => void
   onRepairVault?: () => void
@@ -116,6 +117,7 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onGoForward: config.onGoForward,
     onToggleAIChat: config.onToggleAIChat,
     onToggleRawEditor: config.onToggleRawEditor,
+    onReopenClosedTab: config.onReopenClosedTab,
     activeTabPathRef: config.activeTabPathRef,
     handleCloseTabRef: config.handleCloseTabRef,
   })
@@ -156,6 +158,7 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onReloadVault: config.onReloadVault,
     onRepairVault: config.onRepairVault,
     onEmptyTrash: config.onEmptyTrash,
+    onReopenClosedTab: config.onReopenClosedTab,
     activeTabPathRef: config.activeTabPathRef,
     handleCloseTabRef: config.handleCloseTabRef,
     activeTabPath: config.activeTabPath,

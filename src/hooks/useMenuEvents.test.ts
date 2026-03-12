@@ -36,6 +36,7 @@ function makeHandlers(): MenuEventHandlers {
     onInstallMcp: vi.fn(),
     onReindexVault: vi.fn(),
     onReloadVault: vi.fn(),
+    onReopenClosedTab: vi.fn(),
     activeTabPathRef: { current: '/vault/test.md' } as React.MutableRefObject<string | null>,
     handleCloseTabRef: { current: vi.fn() } as React.MutableRefObject<(path: string) => void>,
     activeTabPath: '/vault/test.md',
@@ -311,6 +312,13 @@ describe('dispatchMenuEvent', () => {
     const h = makeHandlers()
     dispatchMenuEvent('vault-reload', h)
     expect(h.onReloadVault).toHaveBeenCalled()
+  })
+
+  // File menu: reopen closed tab
+  it('file-reopen-closed-tab triggers reopen closed tab', () => {
+    const h = makeHandlers()
+    dispatchMenuEvent('file-reopen-closed-tab', h)
+    expect(h.onReopenClosedTab).toHaveBeenCalled()
   })
 
   // Edge cases

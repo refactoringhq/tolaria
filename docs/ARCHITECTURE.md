@@ -651,7 +651,7 @@ No Redux or global context. State lives in the root `App.tsx` and custom hooks:
 | `App.tsx` | `selection`, panel widths, dialog visibility, toast, view mode | UI state |
 | `useVaultLoader` | `entries`, `allContent`, `modifiedFiles` | Vault data |
 | `useNoteActions` | `tabs`, `activeTabPath` | Open tabs and note operations |
-| `useTabManagement` | Tab ordering, pinning, swapping | Tab lifecycle |
+| `useTabManagement` | Tab ordering, pinning, swapping, closed-tab history | Tab lifecycle |
 | `useVaultSwitcher` | `vaultPath`, `extraVaults` | Vault switching |
 | `useThemeManager` | `themes`, `activeThemeId`, `isDark` | Theme state |
 | `useAIChat` | `messages`, `isStreaming` | AI chat conversation |
@@ -672,6 +672,7 @@ Data flows unidirectionally: `App` passes data and callbacks as props to child c
 | Cmd+N | Create new note |
 | Cmd+S | Save current note |
 | Cmd+W | Close active tab |
+| Cmd+Shift+T | Reopen last closed tab (LIFO history, up to 20) |
 | Cmd+Z / Cmd+Shift+Z | Undo / Redo |
 | Cmd+1–9 | Switch to tab N |
 | Cmd+[ / Cmd+] | Navigate back / forward |

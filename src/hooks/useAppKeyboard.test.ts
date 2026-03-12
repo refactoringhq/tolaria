@@ -183,6 +183,23 @@ describe('useAppKeyboard', () => {
     expect(actions.onZoomReset).toHaveBeenCalled()
   })
 
+  it('Cmd+Shift+T triggers reopen closed tab', () => {
+    const actions = makeActions()
+    const onReopenClosedTab = vi.fn()
+    renderHook(() => useAppKeyboard({ ...actions, onReopenClosedTab }))
+    fireKey('t', { metaKey: true, shiftKey: true })
+    expect(onReopenClosedTab).toHaveBeenCalled()
+  })
+
+  it('Cmd+Shift+T does not trigger other shortcuts', () => {
+    const actions = makeActions()
+    const onReopenClosedTab = vi.fn()
+    renderHook(() => useAppKeyboard({ ...actions, onReopenClosedTab }))
+    fireKey('t', { metaKey: true, shiftKey: true })
+    expect(actions.onQuickOpen).not.toHaveBeenCalled()
+    expect(actions.onCreateNote).not.toHaveBeenCalled()
+  })
+
   it('Cmd+I triggers toggle AI chat', () => {
     const actions = makeActions()
     const onToggleAIChat = vi.fn()
