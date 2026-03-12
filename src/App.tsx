@@ -26,7 +26,6 @@ import { useDialogs } from './hooks/useDialogs'
 import { useVaultSwitcher } from './hooks/useVaultSwitcher'
 import { useGitHistory } from './hooks/useGitHistory'
 import { useUpdater, restartApp } from './hooks/useUpdater'
-import { useNavigationHistory } from './hooks/useNavigationHistory'
 import { useAutoSync } from './hooks/useAutoSync'
 import { useConflictResolver } from './hooks/useConflictResolver'
 import { useIndexing } from './hooks/useIndexing'
@@ -36,7 +35,7 @@ import { useBuildNumber } from './hooks/useBuildNumber'
 import { useOnboarding } from './hooks/useOnboarding'
 import { useThemeManager } from './hooks/useThemeManager'
 import { useEditorSaveWithLinks } from './hooks/useEditorSaveWithLinks'
-import { useNavigationGestures } from './hooks/useNavigationGestures'
+import { useAppNavigation } from './hooks/useAppNavigation'
 import { useAiActivity } from './hooks/useAiActivity'
 import { useBulkActions } from './hooks/useBulkActions'
 import { useDeleteActions } from './hooks/useDeleteActions'
@@ -179,53 +178,13 @@ function App() {
     })
   }, [vault.entries]) // eslint-disable-line react-hooks/exhaustive-deps -- notes.setTabs is stable (useState setter)
 
-  const navHistory = useNavigationHistory()
-
-  // Push to navigation history whenever the active tab changes (user-initiated)
-  const navFromHistoryRef = useRef(false)
-  useEffect(() => {
-    if (notes.activeTabPath && !navFromHistoryRef.current) {
-      navHistory.push(notes.activeTabPath)
-    }
-    navFromHistoryRef.current = false
-  }, [notes.activeTabPath]) // eslint-disable-line react-hooks/exhaustive-deps -- navHistory.push is stable
-
-  const isEntryExists = useCallback((path: string) => vault.entries.some(e => e.path === path), [vault.entries])
-
-  const handleGoBack = useCallback(() => {
-    const target = navHistory.goBack(isEntryExists)
-    if (target) {
-      navFromHistoryRef.current = true
-      if (notes.tabs.some(t => t.entry.path === target)) {
-        notes.handleSwitchTab(target)
-      } else {
-        const entry = vault.entries.find(e => e.path === target)
-        if (entry) notes.handleSelectNote(entry)
-      }
-    }
-  }, [navHistory, isEntryExists, vault.entries, notes])
-
-  const handleGoForward = useCallback(() => {
-    const target = navHistory.goForward(isEntryExists)
-    if (target) {
-      navFromHistoryRef.current = true
-      if (notes.tabs.some(t => t.entry.path === target)) {
-        notes.handleSwitchTab(target)
-      } else {
-        const entry = vault.entries.find(e => e.path === target)
-        if (entry) notes.handleSelectNote(entry)
-      }
-    }
-  }, [navHistory, isEntryExists, vault.entries, notes])
-
-  useNavigationGestures({ onGoBack: handleGoBack, onGoForward: handleGoForward })
-
-  // O(1) path lookup map — rebuilt only when vault.entries changes
-  const entriesByPath = useMemo(() => {
-    const map = new Map<string, VaultEntry>()
-    for (const e of vault.entries) map.set(e.path, e)
-    return map
-  }, [vault.entries])
+  const { handleGoBack, handleGoForward, canGoBack, canGoForward, entriesByPath } = useAppNavigation({
+    entries: vault.entries,
+    tabs: notes.tabs,
+    activeTabPath: notes.activeTabPath,
+    onSelectNote: notes.handleSelectNote,
+    onSwitchTab: notes.handleSwitchTab,
+  })
 
   // MCP UI bridge: react to AI-driven open/highlight/vault-change events
   const openNoteByPath = useCallback((path: string) => {
@@ -473,7 +432,7 @@ function App() {
     onSwitchTab: notes.handleSwitchTab, onReplaceActiveTab: notes.handleReplaceActiveTab,
     onSelectNote: notes.handleSelectNote,
     onGoBack: handleGoBack, onGoForward: handleGoForward,
-    canGoBack: navHistory.canGoBack, canGoForward: navHistory.canGoForward,
+    canGoBack: canGoBack, canGoForward: canGoForward,
     themes: themeManager.themes, activeThemeId: themeManager.activeThemeId,
     onSwitchTheme: themeManager.switchTheme,
     onCreateTheme: async () => {
@@ -615,8 +574,8 @@ function App() {
             onTitleSync={handleTitleSync}
             rawToggleRef={rawToggleRef}
             diffToggleRef={diffToggleRef}
-            canGoBack={navHistory.canGoBack}
-            canGoForward={navHistory.canGoForward}
+            canGoBack={canGoBack}
+            canGoForward={canGoForward}
             onGoBack={handleGoBack}
             onGoForward={handleGoForward}
             leftPanelsCollapsed={!sidebarVisible && !noteListVisible}
