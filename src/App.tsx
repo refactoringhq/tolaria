@@ -39,6 +39,7 @@ import { useEditorSaveWithLinks } from './hooks/useEditorSaveWithLinks'
 import { useNavigationGestures } from './hooks/useNavigationGestures'
 import { useAiActivity } from './hooks/useAiActivity'
 import { useBulkActions } from './hooks/useBulkActions'
+import { useDeleteActions } from './hooks/useDeleteActions'
 import { ConflictResolverModal } from './components/ConflictResolverModal'
 import { ConfirmDeleteDialog } from './components/ConfirmDeleteDialog'
 import { UpdateBanner } from './components/UpdateBanner'
@@ -366,75 +367,13 @@ function App() {
     onBeforeAction: flushBeforeAction,
   })
 
-  const deleteNoteFromDisk = useCallback(async (path: string) => {
-    try {
-      if (isTauri()) await invoke('delete_note', { path })
-      else await mockInvoke('delete_note', { path })
-      notes.handleCloseTab(path)
-      vault.removeEntry(path)
-      return true
-    } catch (e) {
-      setToastMessage(`Failed to delete note: ${e}`)
-      return false
-    }
-  }, [notes, vault, setToastMessage])
-
-  // Confirmation dialog state for permanent delete
-  const [confirmDelete, setConfirmDelete] = useState<{ title: string; message: string; confirmLabel?: string; onConfirm: () => void } | null>(null)
-
-  const handleDeleteNote = useCallback(async (path: string) => {
-    setConfirmDelete({
-      title: 'Delete permanently?',
-      message: 'This note will be permanently deleted. This cannot be undone.',
-      onConfirm: async () => {
-        setConfirmDelete(null)
-        const ok = await deleteNoteFromDisk(path)
-        if (ok) setToastMessage('Note permanently deleted')
-      },
-    })
-  }, [deleteNoteFromDisk, setToastMessage])
-
-  const handleBulkDeletePermanently = useCallback((paths: string[]) => {
-    const count = paths.length
-    setConfirmDelete({
-      title: `Delete ${count} ${count === 1 ? 'note' : 'notes'} permanently?`,
-      message: `${count === 1 ? 'This note' : `These ${count} notes`} will be permanently deleted. This cannot be undone.`,
-      onConfirm: async () => {
-        setConfirmDelete(null)
-        let ok = 0
-        for (const path of paths) {
-          if (await deleteNoteFromDisk(path)) ok++
-        }
-        if (ok > 0) setToastMessage(`${ok} note${ok > 1 ? 's' : ''} permanently deleted`)
-      },
-    })
-  }, [deleteNoteFromDisk, setToastMessage])
-
-  const trashedCount = useMemo(() => vault.entries.filter(e => e.trashed).length, [vault.entries])
-
-  const handleEmptyTrash = useCallback(() => {
-    if (trashedCount === 0) return
-    setConfirmDelete({
-      title: 'Empty Trash?',
-      message: `Permanently delete all ${trashedCount} trashed ${trashedCount === 1 ? 'note' : 'notes'}? This cannot be undone.`,
-      confirmLabel: 'Empty Trash',
-      onConfirm: async () => {
-        setConfirmDelete(null)
-        try {
-          const tauriInvoke = isTauri() ? invoke : mockInvoke
-          const deleted = await tauriInvoke<string[]>('empty_trash', { vaultPath: resolvedPath })
-          // Close tabs and remove entries for deleted notes
-          for (const path of deleted) {
-            notes.handleCloseTab(path)
-            vault.removeEntry(path)
-          }
-          setToastMessage(`${deleted.length} note${deleted.length !== 1 ? 's' : ''} permanently deleted`)
-        } catch (e) {
-          setToastMessage(`Failed to empty trash: ${e}`)
-        }
-      },
-    })
-  }, [trashedCount, resolvedPath, notes, vault, setToastMessage])
+  const deleteActions = useDeleteActions({
+    vaultPath: resolvedPath,
+    entries: vault.entries,
+    handleCloseTab: notes.handleCloseTab,
+    removeEntry: vault.removeEntry,
+    setToastMessage,
+  })
 
   const gitHistory = useGitHistory(notes.activeTabPath, vault.loadGitHistory)
 
@@ -561,8 +500,8 @@ function App() {
     vaultCount: vaultSwitcher.allVaults.length,
     mcpStatus,
     onInstallMcp: installMcp,
-    onEmptyTrash: handleEmptyTrash,
-    trashedCount,
+    onEmptyTrash: deleteActions.handleEmptyTrash,
+    trashedCount: deleteActions.trashedCount,
     onReopenClosedTab: notes.handleReopenClosedTab,
     onReindexVault: indexing.triggerFullReindex,
     onReloadVault: vault.reloadVault,
@@ -630,7 +569,7 @@ function App() {
               {selection.kind === 'filter' && selection.filter === 'pulse' ? (
                 <PulseView vaultPath={resolvedPath} onOpenNote={handlePulseOpenNote} sidebarCollapsed={!sidebarVisible} onExpandSidebar={() => setViewMode('all')} />
               ) : (
-                <NoteList entries={vault.entries} selection={selection} selectedNote={activeTab?.entry ?? null} modifiedFiles={vault.modifiedFiles} modifiedFilesError={vault.modifiedFilesError} getNoteStatus={vault.getNoteStatus} sidebarCollapsed={!sidebarVisible} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={notes.handleReplaceActiveTab} onCreateNote={notes.handleCreateNoteImmediate} onBulkArchive={bulkActions.handleBulkArchive} onBulkTrash={bulkActions.handleBulkTrash} onBulkRestore={bulkActions.handleBulkRestore} onBulkDeletePermanently={handleBulkDeletePermanently} onEmptyTrash={handleEmptyTrash} onUpdateTypeSort={notes.handleUpdateFrontmatter} updateEntry={vault.updateEntry} />
+                <NoteList entries={vault.entries} selection={selection} selectedNote={activeTab?.entry ?? null} modifiedFiles={vault.modifiedFiles} modifiedFilesError={vault.modifiedFilesError} getNoteStatus={vault.getNoteStatus} sidebarCollapsed={!sidebarVisible} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={notes.handleReplaceActiveTab} onCreateNote={notes.handleCreateNoteImmediate} onBulkArchive={bulkActions.handleBulkArchive} onBulkTrash={bulkActions.handleBulkTrash} onBulkRestore={bulkActions.handleBulkRestore} onBulkDeletePermanently={deleteActions.handleBulkDeletePermanently} onEmptyTrash={deleteActions.handleEmptyTrash} onUpdateTypeSort={notes.handleUpdateFrontmatter} updateEntry={vault.updateEntry} />
               )}
             </div>
             <ResizeHandle onResize={layout.handleNoteListResize} />
@@ -667,7 +606,7 @@ function App() {
             noteListFilter={aiNoteListFilter}
             onTrashNote={entryActions.handleTrashNote}
             onRestoreNote={entryActions.handleRestoreNote}
-            onDeleteNote={handleDeleteNote}
+            onDeleteNote={deleteActions.handleDeleteNote}
             onArchiveNote={entryActions.handleArchiveNote}
             onUnarchiveNote={entryActions.handleUnarchiveNote}
             onRenameTab={handleRenameTab}
@@ -716,14 +655,14 @@ function App() {
         onOpenSettings={() => { dialogs.closeGitHubVault(); dialogs.openSettings() }}
         onGitHubConnected={(token, username) => saveSettings({ ...settings, github_token: token, github_username: username })}
       />
-      {confirmDelete && (
+      {deleteActions.confirmDelete && (
         <ConfirmDeleteDialog
           open={true}
-          title={confirmDelete.title}
-          message={confirmDelete.message}
-          confirmLabel={confirmDelete.confirmLabel}
-          onConfirm={confirmDelete.onConfirm}
-          onCancel={() => setConfirmDelete(null)}
+          title={deleteActions.confirmDelete.title}
+          message={deleteActions.confirmDelete.message}
+          confirmLabel={deleteActions.confirmDelete.confirmLabel}
+          onConfirm={deleteActions.confirmDelete.onConfirm}
+          onCancel={() => deleteActions.setConfirmDelete(null)}
         />
       )}
     </div>
