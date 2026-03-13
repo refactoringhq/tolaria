@@ -31,6 +31,22 @@ Vault data exists in three forms simultaneously:
 
 These must never diverge permanently. If they do, the filesystem wins and the cache/state are rebuilt.
 
+```mermaid
+flowchart LR
+    FS["🗂️ Filesystem\n.md files on disk\n(source of truth)"]
+    Cache["⚡ Cache\n~/.laputa/cache/\n(fast startup index)"]
+    RS["⚛️ React State\nVaultEntry[]\n(in-memory session)"]
+
+    FS -->|"scan_vault_cached()"| Cache
+    Cache -->|"useVaultLoader on load"| RS
+    FS -->|"reload_vault (full rescan)"| RS
+    RS -.->|"write via Tauri IPC first"| FS
+
+    style FS fill:#d4edda,stroke:#28a745,color:#000
+    style Cache fill:#fff3cd,stroke:#ffc107,color:#000
+    style RS fill:#cce5ff,stroke:#004085,color:#000
+```
+
 #### Ownership rules
 
 | Layer | Owner | Writes to | Reads from |
@@ -160,21 +176,38 @@ Full agent mode — spawns Claude CLI as a subprocess with tool access and MCP v
 
 #### Agent Event Flow
 
-```
-User sends message in AiPanel
-  → useAiAgent.sendMessage(text, references)
-    → buildContextSnapshot(activeNote, linkedNotes, openTabs)
-    → invoke('stream_claude_agent', { message, systemPrompt, vaultPath })
-      → Rust spawns: claude -p <msg> --output-format stream-json --mcp-config <json>
-      → NDJSON lines parsed into ClaudeStreamEvent variants:
-          Init, TextDelta, ThinkingDelta, ToolStart, ToolDone, Result, Error, Done
-      → Events emitted via Tauri: app_handle.emit("claude-agent-stream", &event)
-    → Frontend listener routes events:
-        onText → accumulate response (revealed on Done)
-        onThinking → show reasoning block (collapsed on first text)
-        onToolStart → add AiActionCard with spinner
-        onToolDone → update card with output
-        onDone → reveal full response, detect file operations
+```mermaid
+sequenceDiagram
+    participant U as User (AiPanel)
+    participant FE as useAiAgent (Frontend)
+    participant R as claude_cli.rs (Rust)
+    participant C as Claude CLI
+    participant V as Vault (MCP)
+
+    U->>FE: sendMessage(text, references)
+    FE->>FE: buildContextSnapshot(activeNote, linkedNotes, openTabs)
+    FE->>R: invoke('stream_claude_agent', {message, systemPrompt, vaultPath})
+    R->>C: spawn claude -p <msg> --output-format stream-json --mcp-config <json>
+
+    loop NDJSON stream
+        C-->>R: Init | TextDelta | ThinkingDelta | ToolStart | ToolDone | Result | Done
+        R-->>FE: emit("claude-agent-stream", event)
+        alt TextDelta
+            FE->>FE: accumulate response (revealed on Done)
+        else ThinkingDelta
+            FE->>FE: show reasoning block (collapses on first text)
+        else ToolStart
+            FE->>FE: add AiActionCard with spinner
+        else ToolDone
+            FE->>FE: update card with output
+        else Done
+            FE->>FE: reveal full response
+            FE->>FE: detect file operations → reload vault if needed
+        end
+    end
+
+    C->>V: MCP tool calls (search_notes, read_note, edit_note…)
+    V-->>C: tool results
 ```
 
 #### File Operation Detection
@@ -317,16 +350,28 @@ Search uses the external `qmd` binary (semantic search engine) with three modes:
 
 ### Indexing Flow
 
-```
-Vault opened
-  → check_index_status() → parse qmd status output
-  → if stale or missing:
-    → start_indexing() (two phases):
-        Phase 1 (Scanning): qmd update — scan all .md files
-        Phase 2 (Embedding): qmd embed — generate vector embeddings
-    → Progress streamed via Tauri "indexing-progress" event
-    → Metadata saved to .laputa-index.json (last_indexed_commit, timestamp)
-  → run_incremental_update() for subsequent changes
+```mermaid
+flowchart TD
+    A([Vault opened]) --> B[check_index_status]
+    B --> C{Index status?}
+    C -->|Fresh| D[run_incremental_update\ngit diff since last commit]
+    C -->|Stale / Missing| E
+
+    subgraph E[Full Indexing — start_indexing]
+        E1["Phase 1: qmd update\n(scan all .md files)"]
+        E2["Phase 2: qmd embed\n(generate vector embeddings)"]
+        E1 --> E2
+    end
+
+    E --> F[Save .laputa-index.json\nlast_indexed_commit + timestamp]
+    D --> G([Search ready])
+    F --> G
+
+    E2 -.->|failure is non-fatal| G
+    G --> H{Search mode}
+    H -->|keyword| I[qmd search]
+    H -->|semantic| J[qmd vsearch]
+    H -->|hybrid| K[qmd query]
 ```
 
 Embedding failure is non-fatal — keyword search still works.
@@ -432,30 +477,40 @@ Backend: `get_vault_pulse` Tauri command parses `git log` with `--name-status`.
 
 ### Startup Sequence
 
-```
-1. Tauri setup:
-   a. run_startup_tasks() → purge trash, migrate frontmatter, seed themes, migrate AGENTS.md, seed config files, register MCP
-   b. spawn_ws_bridge() → start MCP WebSocket bridge (ports 9710, 9711)
-2. App mounts
-3. useOnboarding checks vault exists → WelcomeScreen if not
-4. useVaultLoader fires:
-   a. invoke('list_vault', { path }) → scan_vault_cached() → VaultEntry[]
-   b. Load modified files via invoke('get_modified_files')
-   c. useMcpStatus → register MCP if needed
-   d. useThemeManager → load and apply active theme
-   e. useIndexing → check index status, trigger incremental update if needed
-5. User clicks note in NoteList
-6. useNoteActions.handleSelectNote:
-   a. invoke('get_note_content') → raw markdown
-   b. Add tab { entry, content } to tabs state
-   c. Set activeTabPath
-7. Editor renders BlockNoteTab:
-   a. splitFrontmatter(content) → [yaml, body]
-   b. preProcessWikilinks(body) → replaces [[target]] with tokens
-   c. editor.tryParseMarkdownToBlocks(preprocessed)
-   d. injectWikilinks(blocks) → replaces tokens with wikilink nodes
-   e. editor.replaceBlocks()
-8. Inspector renders frontmatter parsed from content
+```mermaid
+sequenceDiagram
+    participant T as Tauri (Rust)
+    participant A as App.tsx
+    participant VL as useVaultLoader
+    participant MCP as MCP Server
+    participant U as User
+
+    T->>T: run_startup_tasks()<br/>(purge trash, seed themes, register MCP)
+    T->>MCP: spawn_ws_bridge() — ports 9710 + 9711
+    T->>A: App mounts
+
+    A->>A: useOnboarding — vault exists?
+    alt Vault missing
+        A-->>U: WelcomeScreen
+    else Vault found
+        A->>VL: useVaultLoader fires
+        VL->>T: invoke('list_vault') → scan_vault_cached()
+        T-->>VL: VaultEntry[]
+        VL->>T: invoke('get_modified_files')
+        VL->>T: useMcpStatus — register if needed
+        VL->>T: useThemeManager — load active theme
+        VL->>T: useIndexing — incremental update if stale
+        VL-->>A: entries ready
+    end
+
+    U->>A: clicks note in NoteList
+    A->>T: invoke('get_note_content')
+    T-->>A: raw markdown
+    A->>A: splitFrontmatter → [yaml, body]
+    A->>A: preProcessWikilinks(body)
+    A->>A: tryParseMarkdownToBlocks()
+    A->>A: injectWikilinks(blocks)
+    A-->>U: Editor renders note
 ```
 
 ### Auto-Save Flow

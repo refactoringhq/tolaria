@@ -32,7 +32,56 @@ All data lives in markdown files with YAML frontmatter. There is no database —
 
 ### VaultEntry
 
-The core data type representing a single note, defined in Rust (`src-tauri/src/vault/mod.rs`) and TypeScript (`src/types.ts`):
+The core data type representing a single note, defined in Rust (`src-tauri/src/vault/mod.rs`) and TypeScript (`src/types.ts`).
+
+```mermaid
+classDiagram
+    class VaultEntry {
+        +String path
+        +String filename
+        +String title
+        +String? isA
+        +String[] aliases
+        +String[] belongsTo
+        +String[] relatedTo
+        +Record~string,string[]~ relationships
+        +String[] outgoingLinks
+        +String? status
+        +String? owner
+        +Number? modifiedAt
+        +Number? createdAt
+        +Number wordCount
+        +String? snippet
+        +Boolean archived
+        +Boolean trashed
+        +Number? trashedAt
+        +Record~string,string~ properties
+    }
+
+    class TypeDocument {
+        +String icon
+        +String color
+        +Number order
+        +String sidebarLabel
+        +String template
+        +String sort
+        +Boolean visible
+    }
+
+    class Frontmatter {
+        +String type
+        +String status
+        +String url
+        +String[] belongsTo
+        +String[] relatedTo
+        +String[] aliases
+        ...custom fields
+    }
+
+    VaultEntry --> Frontmatter : parsed from
+    VaultEntry --> TypeDocument : isA resolves to
+    VaultEntry "many" --> "1" TypeDocument : grouped by type
+```
 
 ```typescript
 // src/types.ts
@@ -315,25 +364,31 @@ const WikiLink = createReactInlineContentSpec(
 
 ### Markdown-to-BlockNote Pipeline
 
-```
-Raw markdown
-  → splitFrontmatter() → [yaml, body]
-  → preProcessWikilinks(body) → replaces [[target]] with Unicode placeholder tokens
-  → editor.tryParseMarkdownToBlocks() → BlockNote block tree
-  → injectWikilinks(blocks) → walks tree, replaces placeholders with wikilink inline content nodes
-  → editor.replaceBlocks()
+```mermaid
+flowchart LR
+    A["📄 Raw markdown\n(from disk)"] --> B["splitFrontmatter()\n→ yaml + body"]
+    B --> C["preProcessWikilinks(body)\n[[target]] → ‹token›"]
+    C --> D["tryParseMarkdownToBlocks()\n→ BlockNote block tree"]
+    D --> E["injectWikilinks(blocks)\n‹token› → WikiLink node"]
+    E --> F["editor.replaceBlocks()\n→ rendered editor"]
+
+    style A fill:#f8f9fa,stroke:#6c757d,color:#000
+    style F fill:#d4edda,stroke:#28a745,color:#000
 ```
 
-Placeholder tokens use `\u2039` and `\u203A` to avoid colliding with markdown syntax.
+> Placeholder tokens use `\u2039` and `\u203A` to avoid colliding with markdown syntax.
 
 ### BlockNote-to-Markdown Pipeline (Save)
 
-```
-BlockNote blocks
-  → editor.blocksToMarkdownLossy()
-  → postProcessWikilinks() → restore [[target]] syntax from wikilink nodes
-  → prepend frontmatter yaml
-  → invoke('save_note_content', { path, content })
+```mermaid
+flowchart LR
+    A["✏️ BlockNote blocks\n(editor state)"] --> B["blocksToMarkdownLossy()"]
+    B --> C["postProcessWikilinks()\nWikiLink node → [[target]]"]
+    C --> D["prepend frontmatter yaml"]
+    D --> E["invoke('save_note_content')\n→ disk write"]
+
+    style A fill:#cce5ff,stroke:#004085,color:#000
+    style E fill:#d4edda,stroke:#28a745,color:#000
 ```
 
 ### Wikilink Navigation
