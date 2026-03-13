@@ -39,6 +39,7 @@ import { useAppNavigation } from './hooks/useAppNavigation'
 import { useAiActivity } from './hooks/useAiActivity'
 import { useBulkActions } from './hooks/useBulkActions'
 import { useDeleteActions } from './hooks/useDeleteActions'
+import { useLayoutPanels } from './hooks/useLayoutPanels'
 import { ConflictResolverModal } from './components/ConflictResolverModal'
 import { ConfirmDeleteDialog } from './components/ConfirmDeleteDialog'
 import { UpdateBanner } from './components/UpdateBanner'
@@ -61,17 +62,6 @@ declare global {
 }
 
 const DEFAULT_SELECTION: SidebarSelection = { kind: 'filter', filter: 'all' }
-
-function useLayoutPanels() {
-  const [sidebarWidth, setSidebarWidth] = useState(250)
-  const [noteListWidth, setNoteListWidth] = useState(300)
-  const [inspectorWidth, setInspectorWidth] = useState(280)
-  const [inspectorCollapsed, setInspectorCollapsed] = useState(false)
-  const handleSidebarResize = useCallback((delta: number) => setSidebarWidth((w) => Math.max(150, Math.min(400, w + delta))), [])
-  const handleNoteListResize = useCallback((delta: number) => setNoteListWidth((w) => Math.max(200, Math.min(500, w + delta))), [])
-  const handleInspectorResize = useCallback((delta: number) => setInspectorWidth((w) => Math.max(200, Math.min(500, w - delta))), [])
-  return { sidebarWidth, noteListWidth, inspectorWidth, inspectorCollapsed, setInspectorCollapsed, handleSidebarResize, handleNoteListResize, handleInspectorResize }
-}
 
 /** Wraps useEditorSave to also keep outgoingLinks in sync on save and on content change. */
 function App() {
