@@ -47,6 +47,15 @@ test.beforeEach(async ({ page }) => {
         ref.get_last_vault_path = () => vaultPath
         ref.get_default_vault_path = () => vaultPath
         ref.save_vault_list = () => null
+        ref.update_frontmatter = async (args: { path: string; key: string; value: unknown }) => {
+          const res = await fetch('/api/vault/update-frontmatter', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: args.path, key: args.key, value: args.value }),
+          })
+          if (!res.ok) throw new Error('Vault API update_frontmatter failed')
+          return res.json()
+        }
       },
       get() { return ref },
       configurable: true,
