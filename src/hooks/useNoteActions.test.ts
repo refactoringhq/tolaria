@@ -1026,6 +1026,7 @@ describe('useNoteActions hook', () => {
         // Simulate the bug: get_note_content returns a DIFFERENT note's content
         // (e.g. path collision, stale cache, or filesystem race)
         if (cmd === 'get_note_content') return wrongContent
+        if (cmd === 'update_frontmatter') return frontmatterUpdatedContent
         return ''
       })
 

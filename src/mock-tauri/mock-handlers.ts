@@ -6,6 +6,7 @@
 import type { VaultEntry, VaultConfig, ModifiedFile, Settings, DeviceFlowStart, DeviceFlowPollResult, GitHubUser, GitPullResult, GitPushResult, LastCommitInfo, ThemeFile, VaultSettings, PulseCommit } from '../types'
 import { MOCK_CONTENT } from './mock-content'
 import { MOCK_ENTRIES } from './mock-entries'
+import { updateMockFrontmatter } from '../hooks/mockFrontmatterHelpers'
 
 function syncWindowContent(): void {
   if (typeof window !== 'undefined') {
@@ -264,6 +265,13 @@ export const mockHandlers: Record<string, (args: any) => any> = {
   batch_delete_notes: (args: { paths: string[] }) => args.paths,
   empty_trash: () => [],
   migrate_is_a_to_type: () => 0,
+  update_frontmatter: (args: { path: string; key: string; value: unknown }) => {
+    const content = updateMockFrontmatter(args.path, args.key, args.value as string | number | boolean | string[])
+    MOCK_CONTENT[args.path] = content
+    syncWindowContent()
+    mockSavedSinceCommit.add(args.path)
+    return content
+  },
   batch_archive_notes: (args: { paths: string[] }) => args.paths.length,
   batch_trash_notes: (args: { paths: string[] }) => args.paths.length,
   github_device_flow_start: (): DeviceFlowStart => {

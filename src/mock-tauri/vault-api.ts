@@ -48,6 +48,8 @@ const VAULT_API_COMMANDS: Record<string, (args: Record<string, unknown>) => Vaul
     args.old_path ? { url: '/api/vault/rename', method: 'POST', body: { vault_path: args.vault_path, old_path: args.old_path, new_title: args.new_title } } : null,
   delete_note: (args) =>
     args.path ? { url: '/api/vault/delete', method: 'POST', body: { path: args.path } } : null,
+  update_frontmatter: (args) =>
+    args.path && args.key != null ? { url: '/api/vault/update-frontmatter', method: 'POST', body: { path: args.path, key: args.key, value: args.value } } : null,
   search_vault: (args) => {
     const q = args.query as string
     if (!q || !lastVaultPath) return null

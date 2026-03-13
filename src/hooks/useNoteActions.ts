@@ -4,7 +4,7 @@ import { isTauri, mockInvoke, addMockEntry, updateMockContent, trackMockChange }
 import type { VaultEntry } from '../types'
 import type { FrontmatterValue } from '../components/Inspector'
 import { useTabManagement } from './useTabManagement'
-import { updateMockFrontmatter, deleteMockFrontmatterProperty } from './mockFrontmatterHelpers'
+import { deleteMockFrontmatterProperty } from './mockFrontmatterHelpers'
 import { resolveEntry } from '../utils/wikilink'
 
 interface NewEntryParams {
@@ -136,13 +136,6 @@ export function entryMatchesTarget(e: VaultEntry, target: string): boolean {
 
 async function invokeFrontmatter(command: string, args: Record<string, unknown>): Promise<string> {
   return invoke<string>(command, args)
-}
-
-function applyMockFrontmatterUpdate(path: string, key: string, value: FrontmatterValue): string {
-  const content = updateMockFrontmatter(path, key, value)
-  updateMockContent(path, content)
-  trackMockChange(path)
-  return content
 }
 
 function applyMockFrontmatterDelete(path: string, key: string): string {
@@ -313,7 +306,7 @@ function createAndPersist(
 
 async function executeFrontmatterOp(op: 'update' | 'delete', path: string, key: string, value?: FrontmatterValue): Promise<string> {
   if (op === 'update') {
-    return isTauri() ? invokeFrontmatter('update_frontmatter', { path, key, value }) : applyMockFrontmatterUpdate(path, key, value!)
+    return isTauri() ? invokeFrontmatter('update_frontmatter', { path, key, value }) : mockInvoke<string>('update_frontmatter', { path, key, value })
   }
   return isTauri() ? invokeFrontmatter('delete_frontmatter_property', { path, key }) : applyMockFrontmatterDelete(path, key)
 }

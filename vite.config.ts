@@ -362,6 +362,29 @@ function vaultApiPlugin(): Plugin {
           return
         }
 
+        if (url.pathname === '/api/vault/update-frontmatter' && req.method === 'POST') {
+          try {
+            const body = await readRequestBody(req)
+            const { path: filePath, key, value } = JSON.parse(body)
+            if (!filePath || !key) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: 'Missing path or key' }))
+              return
+            }
+            const raw = fs.readFileSync(filePath, 'utf-8')
+            const parsed = matter(raw)
+            parsed.data[key] = value
+            const updated = matter.stringify(parsed.content, parsed.data)
+            fs.writeFileSync(filePath, updated, 'utf-8')
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify(updated))
+          } catch (err: unknown) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'Update frontmatter failed' }))
+          }
+          return
+        }
+
         if (url.pathname === '/api/vault/delete' && req.method === 'POST') {
           try {
             const body = await readRequestBody(req)

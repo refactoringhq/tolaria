@@ -228,3 +228,32 @@ test('editor shows real file content from disk', async ({ page }) => {
   // Verify editor shows the actual file content — H1 heading from the file
   await expect(page.getByRole('heading', { name: 'Team Meeting', level: 1 })).toBeVisible({ timeout: 5_000 })
 })
+
+// ---------------------------------------------------------------------------
+// 9. Archive note via command palette updates frontmatter on disk
+// ---------------------------------------------------------------------------
+
+test('archive note via command palette updates frontmatter on disk', async ({ page }) => {
+  // Open Note B
+  await openNote(page, 'Note B')
+
+  // Open command palette and execute "Archive Note"
+  await page.locator('body').click()
+  await page.keyboard.press('Control+k')
+  const cmdInput = page.locator('input[placeholder="Type a command..."]')
+  await expect(cmdInput).toBeVisible({ timeout: 2_000 })
+  await cmdInput.fill('Archive Note')
+  await page.locator('[data-selected="true"]').first().waitFor({ timeout: 2_000 })
+  await page.keyboard.press('Enter')
+
+  // Verify Note B is removed from the note list (archived notes are hidden)
+  const list = noteList(page)
+  await expect(list.getByText('Note B', { exact: true })).not.toBeVisible({ timeout: 5_000 })
+
+  // Verify the file on disk now has archived: true in its frontmatter
+  const noteBPath = path.join(tempVaultDir, 'note', 'note-b.md')
+  await expect(async () => {
+    const content = fs.readFileSync(noteBPath, 'utf-8')
+    expect(content).toMatch(/archived:\s*true/i)
+  }).toPass({ timeout: 5_000 })
+})
