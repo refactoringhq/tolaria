@@ -1,0 +1,5 @@
+# Exclude third-party tools and their dependencies from CodeScene analysis
+tools/
+e2e/
+tests/
+scripts/
