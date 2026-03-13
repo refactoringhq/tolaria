@@ -86,42 +86,52 @@ flowchart LR
 
 ## System Overview
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                       Tauri v2 Window                            │
-│                                                                  │
-│  ┌──────────────────── React Frontend ────────────────────────┐  │
-│  │                                                            │  │
-│  │  App.tsx (orchestrator)                                    │  │
-│  │    ├── WelcomeScreen     (onboarding / vault-missing)     │  │
-│  │    ├── Sidebar           (navigation + filters + types)   │  │
-│  │    ├── NoteList / PulseView (filtered list / activity)    │  │
-│  │    ├── Editor            (BlockNote + tabs + diff + raw)  │  │
-│  │    │     ├── Inspector   (metadata + relationships)       │  │
-│  │    │     ├── AIChatPanel (API-based chat)                 │  │
-│  │    │     └── AiPanel     (Claude CLI agent + tools)       │  │
-│  │    ├── SearchPanel       (keyword/semantic/hybrid search) │  │
-│  │    ├── SettingsPanel     (API keys, GitHub, zoom, theme)  │  │
-│  │    ├── StatusBar         (vault picker + sync + version)  │  │
-│  │    ├── CommandPalette    (Cmd+K fuzzy command launcher)   │  │
-│  │    └── Modals (CreateNote, CreateType, Commit, GitHub)    │  │
-│  │                                                            │  │
-│  └──────────────┬──────────┬──────────────────────────────────┘  │
-│                 │          │                                      │
-│        Tauri IPC│     Vite Proxy / WS                            │
-│  ┌──────────────▼────┐ ┌──▼────────────────────────────────┐    │
-│  │   Rust Backend    │ │   External Services               │    │
-│  │  lib.rs → 62 cmds │ │  Anthropic API (Claude chat)      │    │
-│  │  vault/           │ │  Claude CLI (agent subprocess)    │    │
-│  │  frontmatter/     │ │  MCP Server (ws://9710, 9711)     │    │
-│  │  git/             │ │  qmd (search/indexing engine)     │    │
-│  │  github/          │ │  GitHub API (OAuth, repos, clone) │    │
-│  │  theme/           │ │                                   │    │
-│  │  search.rs        │ └───────────────────────────────────┘    │
-│  │  indexing.rs      │                                           │
-│  │  claude_cli.rs    │                                           │
-│  └───────────────────┘                                           │
-└──────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph TW["Tauri v2 Window"]
+        subgraph FE["React Frontend"]
+            App["App.tsx (orchestrator)"]
+            WS["WelcomeScreen\n(onboarding)"]
+            SB["Sidebar\n(navigation + filters + types)"]
+            NL["NoteList / PulseView\n(filtered list / activity)"]
+            ED["Editor\n(BlockNote + tabs + diff + raw)"]
+            IN["Inspector\n(metadata + relationships)"]
+            AIC["AIChatPanel\n(API-based chat)"]
+            AIP["AiPanel\n(Claude CLI agent + tools)"]
+            SP["SearchPanel\n(keyword/semantic/hybrid)"]
+            ST["StatusBar\n(vault picker + sync + version)"]
+            CP["CommandPalette\n(Cmd+K launcher)"]
+
+            App --> WS & SB & NL & ED & SP & ST & CP
+            ED --> IN & AIC & AIP
+        end
+
+        subgraph RB["Rust Backend"]
+            LIB["lib.rs → 64 Tauri commands"]
+            VAULT["vault/"]
+            FM["frontmatter/"]
+            GIT["git/"]
+            GH["github/"]
+            THEME["theme/"]
+            SEARCH["search.rs + indexing.rs"]
+            CLI["claude_cli.rs"]
+        end
+
+        subgraph EXT["External Services"]
+            ANTH["Anthropic API\n(Claude chat)"]
+            CCLI["Claude CLI\n(agent subprocess)"]
+            MCP["MCP Server\n(ws://9710, 9711)"]
+            QMD["qmd\n(search engine)"]
+            GHAPI["GitHub API\n(OAuth, repos, clone)"]
+        end
+
+        FE -->|"Tauri IPC"| RB
+        FE -->|"Vite Proxy / WS"| EXT
+    end
+
+    style FE fill:#e8f4fd,stroke:#2196f3,color:#000
+    style RB fill:#fff8e1,stroke:#ff9800,color:#000
+    style EXT fill:#f3e5f5,stroke:#9c27b0,color:#000
 ```
 
 ## Four-Panel Layout
@@ -284,36 +294,31 @@ Registration is non-destructive (additive, preserves other servers) and uses `up
 
 ### Architecture
 
-```
-┌─────────────────────────────────────────────────────┐
-│                 MCP Server (Node.js)                 │
-│                                                     │
-│  index.js ─── stdio transport ──→ Claude Code       │
-│     │                              Cursor           │
-│     ├── vault.js (9 vault operations)               │
-│     │     ├── findMarkdownFiles  ├── deleteNote     │
-│     │     ├── readNote           ├── linkNotes      │
-│     │     ├── createNote         ├── listNotes      │
-│     │     ├── searchNotes        ├── vaultContext    │
-│     │     ├── appendToNote                          │
-│     │     └── editNoteFrontmatter                   │
-│     │                                               │
-│     └── ws-bridge.js                                │
-│           ├── port 9710: tool bridge ←→ AI clients  │
-│           └── port 9711: UI bridge  ←→ Frontend     │
-│                                                     │
-│  Spawned by Tauri (mcp.rs) on app startup           │
-│  Auto-registered in ~/.claude/mcp.json              │
-└─────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph MCP["MCP Server (Node.js) — spawned by Tauri on startup"]
+        IDX["index.js"]
+        VAULT["vault.js\n(findMarkdownFiles, readNote, createNote,\nsearchNotes, appendToNote, editNoteFrontmatter,\ndeleteNote, linkNotes, listNotes, vaultContext)"]
+        WSB["ws-bridge.js"]
+
+        IDX -->|"stdio transport"| STDIO["Claude Code / Cursor"]
+        IDX --> VAULT
+        IDX --> WSB
+        WSB -->|"port 9710 — tool bridge"| AI["AI Clients\n(Claude Code, external)"]
+        WSB -->|"port 9711 — UI bridge"| FE["Frontend\n(useAiActivity)"]
+    end
+
+    TAURI["Tauri (mcp.rs)"] -->|"spawn on startup"| MCP
+    TAURI -->|"auto-register"| CFG["~/.claude/mcp.json\n~/.cursor/mcp.json"]
 ```
 
 ### WebSocket Bridge
 
-The WebSocket bridge enables real-time vault operations from both the frontend and external AI clients:
-
-```
-Frontend (useMcpBridge) ←→ ws://localhost:9710 ←→ ws-bridge.js ←→ vault.js
-MCP stdio tools         ←→ ws://localhost:9711 ←→ Frontend UI actions (useAiActivity)
+```mermaid
+flowchart LR
+    FE["Frontend\n(useMcpBridge)"] <-->|"ws://localhost:9710"| WSB["ws-bridge.js"]
+    WSB <--> VAULT["vault.js"]
+    STDIO["MCP stdio tools"] <-->|"ws://localhost:9711"| FE2["Frontend UI actions\n(useAiActivity)"]
 ```
 
 **Tool bridge protocol** (port 9710):
@@ -394,9 +399,19 @@ The vault cache (`src-tauri/src/vault/cache.rs`) accelerates vault scanning usin
 
 ### Three Cache Strategies
 
-1. **Same Commit (Cache Hit)**: Git HEAD matches cached hash → only re-parse uncommitted changed files via `git status --porcelain`
-2. **Different Commit (Incremental Update)**: Uses `git diff <old>..<new> --name-only` to find changed files + uncommitted changes → selective re-parse
-3. **No Cache / Corrupt Cache (Full Scan)**: Recursive `walkdir` of all `.md` files → full parse
+```mermaid
+flowchart TD
+    A([scan_vault_cached]) --> B{Cache exists\nand valid?}
+    B -->|No / Corrupt| C["🔴 Full Scan\nwalkdir all .md files\n→ full parse"]
+    B -->|Yes| D{Git HEAD\nmatches cache?}
+    D -->|Same commit| E["🟢 Cache Hit\ngit status --porcelain\n→ re-parse only uncommitted changes"]
+    D -->|Different commit| F["🟡 Incremental Update\ngit diff old..new --name-only\n→ selective re-parse of changed files"]
+
+    C --> G[Write cache atomically\n.tmp → rename]
+    E --> G
+    F --> G
+    G --> H([VaultEntry[] ready])
+```
 
 ## Theme System
 
@@ -515,28 +530,31 @@ sequenceDiagram
 
 ### Auto-Save Flow
 
-```
-Editor content changes
-  → useEditorSave detects change (debounced)
-    → serialize BlockNote blocks → markdown
-    → postProcessWikilinks → restore [[target]] syntax
-    → invoke('save_note_content', { path, content })
-    → Update tab status indicator
+```mermaid
+flowchart LR
+    A["✏️ Editor content changes"] --> B["useEditorSave\n(debounced)"]
+    B --> C["blocksToMarkdownLossy()"]
+    C --> D["postProcessWikilinks()\n→ restore [[target]] syntax"]
+    D --> E["invoke('save_note_content')"]
+    E --> F["💾 Disk write"]
+    F --> G["Update tab status indicator"]
 ```
 
 ### Git Sync Flow
 
-```
-useAutoSync (configurable interval, default from settings):
-  → invoke('git_pull') → GitPullResult
-    → if conflicts → ConflictResolverModal
-    → if fast-forward → reload vault
-  → invoke('git_push') → GitPushResult
+```mermaid
+flowchart TD
+    AS["useAutoSync\n(configurable interval)"] --> PULL["invoke('git_pull')"]
+    PULL --> PC{Result?}
+    PC -->|Conflicts| CM["ConflictResolverModal"]
+    PC -->|Fast-forward| RV["reload vault"]
+    PC -->|Up to date| DONE["idle"]
 
-Manual commit:
-  → CommitDialog → invoke('git_commit', { message })
-    → invoke('git_push')
-    → Reload modified files
+    AS --> PUSH["invoke('git_push')"]
+
+    MAN["Manual commit\n(CommitDialog)"] --> GC["invoke('git_commit', message)"]
+    GC --> GP["invoke('git_push')"]
+    GP --> RM["Reload modified files"]
 ```
 
 ## Vault Module Structure

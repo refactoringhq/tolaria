@@ -338,3 +338,23 @@ git commit --no-verify   # also forbidden for pre-push bypass
 The hook runs: tsc, Vite build, frontend tests, frontend coverage, Rust coverage, Clippy, rustfmt, CodeScene. Fix any failures before pushing — do not skip.
 
 If a check fails, fix the issue and push again. The hook is the gate — not remote CI.
+
+## Documentation Diagrams
+
+**Prefer Mermaid for all diagrams in `docs/`.** Use ASCII art only when the diagram is inherently spatial (e.g. the four-panel UI wireframe). For everything else — architecture, flows, sequences, data models — use Mermaid:
+
+```markdown
+# Architecture diagrams
+flowchart TD / LR / BT
+
+# Sequence diagrams (multi-actor interactions)
+sequenceDiagram
+
+# Data models
+classDiagram
+
+# State machines
+stateDiagram-v2
+```
+
+When updating existing docs, convert ASCII diagrams to Mermaid. When adding new diagrams, always use Mermaid. GitHub renders Mermaid natively in markdown.
