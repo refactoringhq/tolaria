@@ -104,26 +104,40 @@ else
   echo "⏭️  [4/5] Playwright smoke tests — skipped (no tests/smoke/*.spec.ts)"
 fi
 
-# ── 5. CodeScene code health gate (≥9.2) ────────────────────────────────
+# ── 5. CodeScene code health gate ────────────────────────────────────────
 echo ""
-echo "🏥 [5/5] CodeScene code health gate (≥9.2)..."
+echo "🏥 [5/5] CodeScene code health gate (hotspot ≥9.2, average ≥8.8)..."
 if [ -z "$CODESCENE_PAT" ] || [ -z "$CODESCENE_PROJECT_ID" ]; then
   echo "  ⚠️  CODESCENE_PAT or CODESCENE_PROJECT_ID not set — skipping"
 else
-  THRESHOLD=9.2
-  SCORE=$(curl -sf \
+  HOTSPOT_THRESHOLD=9.2
+  AVERAGE_THRESHOLD=8.8
+  API_RESPONSE=$(curl -sf \
     -H "Authorization: Bearer $CODESCENE_PAT" \
     -H "Accept: application/json" \
-    "https://api.codescene.io/v2/projects/$CODESCENE_PROJECT_ID" \
-    | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['analysis']['hotspot_code_health']['now'])")
-  echo "  Hotspot Code Health: $SCORE (threshold: $THRESHOLD)"
+    "https://api.codescene.io/v2/projects/$CODESCENE_PROJECT_ID")
+  HOTSPOT_SCORE=$(echo "$API_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['analysis']['hotspot_code_health']['now'])")
+  AVERAGE_SCORE=$(echo "$API_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['analysis']['average_code_health']['now'])")
+  echo "  Hotspot Code Health: $HOTSPOT_SCORE (threshold: $HOTSPOT_THRESHOLD)"
+  echo "  Average Code Health: $AVERAGE_SCORE (threshold: $AVERAGE_THRESHOLD)"
   python3 -c "
-score = float('$SCORE')
-threshold = float('$THRESHOLD')
-if score < threshold:
-    print(f'  ❌ Code Health {score:.2f} below threshold {threshold}')
+hotspot = float('$HOTSPOT_SCORE')
+average = float('$AVERAGE_SCORE')
+ht = float('$HOTSPOT_THRESHOLD')
+at = float('$AVERAGE_THRESHOLD')
+failed = False
+if hotspot < ht:
+    print(f'  ❌ Hotspot Code Health {hotspot:.2f} below threshold {ht}')
+    failed = True
+else:
+    print(f'  ✅ Hotspot Code Health {hotspot:.2f} ≥ {ht}')
+if average < at:
+    print(f'  ❌ Average Code Health {average:.2f} below threshold {at}')
+    failed = True
+else:
+    print(f'  ✅ Average Code Health {average:.2f} ≥ {at}')
+if failed:
     exit(1)
-print(f'  ✅ Code Health {score:.2f} ≥ {threshold}')
 "
 fi
 
