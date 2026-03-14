@@ -182,35 +182,6 @@ Broader audiences will follow as the onboarding experience matures and the conve
 
 ---
 
-## Current state
-
-A living snapshot of what's built. Updated as features ship.
-
-### ✅ Working today
-
-- BlockNote editor with Markdown files on disk; Cmd+S save; dirty state indicator
-- 4-panel layout: sidebar / note list / editor / inspector
-- Tabs with drag-to-reorder; quick open (Cmd+P); virtual list (handles 9000+ notes)
-- `type:` as canonical frontmatter field; inspector with editable properties
-- Bidirectional relationships; editable relation chips; wikilink autocomplete (`[[`)
-- Sidebar sections with custom icons and colors
-- Git integration: commit & push, version history per note, dirty state tracking
-- Dynamic vault picker; create or clone vaults from GitHub
-- GitHub OAuth (device flow); AI chat panel; Claude CLI agent panel
-- Auto-updater; universal macOS binary; CI with coverage gates
-
-### 🚧 Ahead (consolidation sprint → features)
-
-**Consolidation sprint (current):**
-Fixing architectural foundations before building further — cache model, type field canonicalization, allContent removal, hardcoded paths.
-
-**Next features:**
-Inbox section, semantic properties (status chips, progress indicators), default relationships in properties panel, workspace filter, mobile apps (iPhone for capture, iPad as desktop mirror).
-
-*For the full roadmap, see [ROADMAP.md](./ROADMAP.md).*
-
----
-
 ## Design principles
 
 1. **Opinionated but not rigid** — ship the method and the defaults; allow customization where it matters

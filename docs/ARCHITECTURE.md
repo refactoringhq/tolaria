@@ -410,7 +410,7 @@ flowchart TD
     C --> G[Write cache atomically\n.tmp → rename]
     E --> G
     F --> G
-    G --> H([VaultEntry[] ready])
+    G --> H([VaultEntry list ready])
 ```
 
 ## Theme System
