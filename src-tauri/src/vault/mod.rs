@@ -17,7 +17,7 @@ pub use trash::{batch_delete_notes, delete_note, empty_trash, is_file_trashed, p
 
 use parsing::{
     contains_wikilink, count_body_words, extract_outgoing_links, extract_snippet, extract_title,
-    parse_iso_date, title_case_folder,
+    parse_iso_date,
 };
 
 use gray_matter::engine::YAML;
@@ -320,31 +320,6 @@ fn extract_properties(
     }
 
     properties
-}
-
-/// Infer entity type from a parent folder name.
-fn infer_type_from_folder(folder: &str) -> String {
-    match folder {
-        "person" => "Person",
-        "project" => "Project",
-        "procedure" => "Procedure",
-        "responsibility" => "Responsibility",
-        "event" => "Event",
-        "topic" => "Topic",
-        "experiment" => "Experiment",
-        "type" => "Type",
-        "note" => "Note",
-        "quarter" => "Quarter",
-        "measure" => "Measure",
-        "target" => "Target",
-        "journal" => "Journal",
-        "month" => "Month",
-        "config" => "Config",
-        "essay" => "Essay",
-        "evergreen" => "Evergreen",
-        _ => return title_case_folder(folder),
-    }
-    .to_string()
 }
 
 /// Resolve `is_a` from frontmatter only. Folder-based inference is no longer used
