@@ -1,6 +1,7 @@
 import type { FrontmatterValue } from '../components/Inspector'
 import { isValidCssColor, isColorKeyName } from './colorUtils'
 import { updateVaultConfigField } from './vaultConfigStore'
+import { CalendarIcon, Type, ToggleLeft, Circle, Link, Tag, Palette } from 'lucide-react'
 
 export type PropertyDisplayMode = 'text' | 'date' | 'boolean' | 'status' | 'url' | 'tags' | 'color'
 
@@ -112,3 +113,17 @@ export function toISODate(value: string): string {
   }
   return value
 }
+
+export const DISPLAY_MODE_ICONS: Record<PropertyDisplayMode, typeof Type> = {
+  text: Type, date: CalendarIcon, boolean: ToggleLeft, status: Circle, url: Link, tags: Tag, color: Palette,
+}
+
+export const DISPLAY_MODE_OPTIONS: { value: PropertyDisplayMode; label: string }[] = [
+  { value: 'text', label: 'Text' },
+  { value: 'date', label: 'Date' },
+  { value: 'boolean', label: 'Boolean' },
+  { value: 'status', label: 'Status' },
+  { value: 'url', label: 'URL' },
+  { value: 'tags', label: 'Tags' },
+  { value: 'color', label: 'Color' },
+]
