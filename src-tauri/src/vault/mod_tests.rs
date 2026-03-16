@@ -690,8 +690,7 @@ fn test_sidebar_label_not_in_relationships() {
 #[test]
 fn test_parse_template_from_type_entry() {
     let dir = TempDir::new().unwrap();
-    let content =
-        "---\ntype: Type\ntemplate: \"## Objective\\n\\n## Timeline\"\n---\n# Project\n";
+    let content = "---\ntype: Type\ntemplate: \"## Objective\\n\\n## Timeline\"\n---\n# Project\n";
     let entry = parse_test_entry(&dir, "project.md", content);
     assert!(entry.template.is_some());
 }
