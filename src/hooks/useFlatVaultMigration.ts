@@ -27,7 +27,7 @@ interface FlatVaultMigration {
 export function useFlatVaultMigration(
   vaultPath: string,
   entriesLoaded: boolean,
-  reloadVault: () => Promise<void>,
+  reloadVault: () => Promise<unknown>,
 ): FlatVaultMigration {
   const [strayFiles, setStrayFiles] = useState<string[]>([])
   const [dismissed, setDismissed] = useState(false)
