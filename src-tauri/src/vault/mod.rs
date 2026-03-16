@@ -743,9 +743,17 @@ mod tests {
     fn test_scan_vault_includes_all_protected_folders() {
         let dir = TempDir::new().unwrap();
         create_test_file(dir.path(), "root.md", "# Root\n");
-        create_test_file(dir.path(), "type/event.md", "---\ntype: Type\n---\n# Event\n");
+        create_test_file(
+            dir.path(),
+            "type/event.md",
+            "---\ntype: Type\n---\n# Event\n",
+        );
         create_test_file(dir.path(), "config/ui.config.md", "---\n---\n# Config\n");
-        create_test_file(dir.path(), "theme/default.md", "---\ntype: Theme\n---\n# Default\n");
+        create_test_file(
+            dir.path(),
+            "theme/default.md",
+            "---\ntype: Theme\n---\n# Default\n",
+        );
         create_test_file(dir.path(), "_themes/legacy.md", "---\n---\n# Legacy\n");
         create_test_file(dir.path(), "attachments/notes.md", "# Attachment note\n");
 

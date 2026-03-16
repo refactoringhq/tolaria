@@ -377,9 +377,7 @@ pub fn vault_health_check(vault_path: &str) -> Result<VaultHealthReport, String>
         if KEEP_FOLDERS.iter().any(|&k| k == top_folder) || top_folder.starts_with('.') {
             continue;
         }
-        report
-            .stray_files
-            .push(rel.to_string_lossy().to_string());
+        report.stray_files.push(rel.to_string_lossy().to_string());
     }
 
     // 2. Detect filename-title mismatches (root .md files only)
@@ -744,7 +742,11 @@ mod tests {
         let tmp = tempdir().unwrap();
         let vault = tmp.path();
         write_file(vault, "my-note.md", "# My Note\n");
-        write_nested_file(vault, "type/project.md", "---\ntype: Type\n---\n# Project\n");
+        write_nested_file(
+            vault,
+            "type/project.md",
+            "---\ntype: Type\n---\n# Project\n",
+        );
 
         let report = vault_health_check(vault.to_str().unwrap()).unwrap();
         assert!(report.stray_files.is_empty());
@@ -764,18 +766,17 @@ mod tests {
         let report = vault_health_check(vault.to_str().unwrap()).unwrap();
         assert_eq!(report.title_mismatches.len(), 1);
         assert_eq!(report.title_mismatches[0].filename, "wrong-name.md");
-        assert_eq!(report.title_mismatches[0].expected_filename, "my-actual-title.md");
+        assert_eq!(
+            report.title_mismatches[0].expected_filename,
+            "my-actual-title.md"
+        );
     }
 
     #[test]
     fn test_health_check_no_mismatch_when_correct() {
         let tmp = tempdir().unwrap();
         let vault = tmp.path();
-        write_file(
-            vault,
-            "my-note.md",
-            "---\ntype: Note\n---\n# My Note\n",
-        );
+        write_file(vault, "my-note.md", "---\ntype: Note\n---\n# My Note\n");
 
         let report = vault_health_check(vault.to_str().unwrap()).unwrap();
         assert!(report.title_mismatches.is_empty());
