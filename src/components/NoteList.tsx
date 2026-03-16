@@ -176,9 +176,9 @@ function ListView({ isTrashView, isChangesView, changesError, expiredTrashCount,
 }) {
   const emptyText = resolveEmptyText(!!isChangesView, changesError ?? null, isTrashView, query)
   const hasHeader = isTrashView && expiredTrashCount > 0
-  const showDeleted = !!isChangesView && deletedCount > 0
+  const hasDeletedOnly = !!isChangesView && deletedCount > 0 && searched.length === 0
 
-  if (searched.length === 0 && !showDeleted) {
+  if (searched.length === 0 && !hasDeletedOnly) {
     return (
       <div className="h-full overflow-y-auto">
         {hasHeader && <ListViewHeader isTrashView={isTrashView} expiredTrashCount={expiredTrashCount} />}
@@ -187,28 +187,21 @@ function ListView({ isTrashView, isChangesView, changesError, expiredTrashCount,
     )
   }
 
-  if (searched.length === 0 && showDeleted) {
-    return (
-      <div className="h-full overflow-y-auto">
-        <DeletedNotesBanner count={deletedCount} />
-      </div>
-    )
+  if (hasDeletedOnly) {
+    return <div className="h-full" />
   }
 
   return (
-    <div className="h-full flex flex-col" style={{ minHeight: 0 }}>
-      <Virtuoso
-        ref={virtuosoRef}
-        style={{ flex: 1 }}
-        data={searched}
-        overscan={200}
-        components={{
-          Header: hasHeader ? () => <ListViewHeader isTrashView={isTrashView} expiredTrashCount={expiredTrashCount} /> : undefined,
-        }}
-        itemContent={(_index, entry) => renderItem(entry)}
-      />
-      {showDeleted && <DeletedNotesBanner count={deletedCount} />}
-    </div>
+    <Virtuoso
+      ref={virtuosoRef}
+      style={{ height: '100%' }}
+      data={searched}
+      overscan={200}
+      components={{
+        Header: hasHeader ? () => <ListViewHeader isTrashView={isTrashView} expiredTrashCount={expiredTrashCount} /> : undefined,
+      }}
+      itemContent={(_index, entry) => renderItem(entry)}
+    />
   )
 }
 
@@ -565,12 +558,15 @@ function NoteListInner({ entries, selection, selectedNote, modifiedFiles, modifi
   return (
     <div className="flex flex-col select-none overflow-hidden border-r border-border bg-card text-foreground" style={{ height: '100%' }}>
       <NoteListHeader title={title} typeDocument={typeDocument} isEntityView={isEntityView} isTrashView={isTrashView} trashCount={searched.length} listSort={listSort} listDirection={listDirection} customProperties={customProperties} sidebarCollapsed={sidebarCollapsed} searchVisible={searchVisible} search={search} onSortChange={handleSortChange} onCreateNote={onCreateNote} onOpenType={onReplaceActiveTab} onToggleSearch={toggleSearch} onSearchChange={setSearch} onEmptyTrash={onEmptyTrash} />
-      <div className="flex-1 overflow-hidden outline-none" style={{ minHeight: 0 }} tabIndex={0} onKeyDown={noteListKeyboard.handleKeyDown} onFocus={noteListKeyboard.handleFocus} data-testid="note-list-container">
-        {entitySelection ? (
-          <EntityView entity={entitySelection.entry} groups={searchedGroups} query={query} collapsedGroups={collapsedGroups} sortPrefs={sortPrefs} onToggleGroup={toggleGroup} onSortChange={handleSortChange} renderItem={renderItem} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
-        ) : (
-          <ListView isTrashView={isTrashView} isChangesView={isChangesView} changesError={modifiedFilesError} expiredTrashCount={expiredTrashCount} deletedCount={deletedCount} searched={searched} query={query} renderItem={renderItem} virtuosoRef={noteListKeyboard.virtuosoRef} />
-        )}
+      <div className="flex flex-1 flex-col overflow-hidden outline-none" style={{ minHeight: 0 }} tabIndex={0} onKeyDown={noteListKeyboard.handleKeyDown} onFocus={noteListKeyboard.handleFocus} data-testid="note-list-container">
+        <div className="flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+          {entitySelection ? (
+            <EntityView entity={entitySelection.entry} groups={searchedGroups} query={query} collapsedGroups={collapsedGroups} sortPrefs={sortPrefs} onToggleGroup={toggleGroup} onSortChange={handleSortChange} renderItem={renderItem} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
+          ) : (
+            <ListView isTrashView={isTrashView} isChangesView={isChangesView} changesError={modifiedFilesError} expiredTrashCount={expiredTrashCount} deletedCount={deletedCount} searched={searched} query={query} renderItem={renderItem} virtuosoRef={noteListKeyboard.virtuosoRef} />
+          )}
+        </div>
+        {isChangesView && deletedCount > 0 && <DeletedNotesBanner count={deletedCount} />}
       </div>
       {multiSelect.isMultiSelecting && (
         <BulkActionBar count={multiSelect.selectedPaths.size} isTrashView={isTrashView} onArchive={handleBulkArchive} onTrash={handleBulkTrash} onRestore={handleBulkRestore} onDeletePermanently={handleBulkDeletePermanently} onClear={multiSelect.clear} />
