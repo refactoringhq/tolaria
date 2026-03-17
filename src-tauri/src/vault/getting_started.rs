@@ -543,10 +543,7 @@ mod tests {
         create_getting_started_vault(vault_path.to_str().unwrap()).unwrap();
 
         let agents_path = vault_path.join("AGENTS.md");
-        assert!(
-            agents_path.exists(),
-            "AGENTS.md should exist at vault root"
-        );
+        assert!(agents_path.exists(), "AGENTS.md should exist at vault root");
 
         let content = fs::read_to_string(&agents_path).unwrap();
         assert!(content.contains("Vault Instructions for AI Agents"));

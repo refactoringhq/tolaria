@@ -467,7 +467,10 @@ mod tests {
         migrate_theme_dir_to_root(vp);
 
         let content = fs::read_to_string(vault.join("default-theme.md")).unwrap();
-        assert!(content.contains("#CUSTOM"), "must preserve existing root file");
+        assert!(
+            content.contains("#CUSTOM"),
+            "must preserve existing root file"
+        );
     }
 
     #[test]
