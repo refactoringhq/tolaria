@@ -3,16 +3,15 @@ use std::path::Path;
 
 use super::defaults::DEFAULT_VAULT_THEME_VARS;
 
-/// Create a new vault theme note in `theme/` directory.
+/// Create a new vault theme note at vault root (flat structure).
 /// Returns the absolute path to the newly created theme note.
 pub fn create_vault_theme(vault_path: &str, name: Option<&str>) -> Result<String, String> {
-    let theme_dir = Path::new(vault_path).join("theme");
-    fs::create_dir_all(&theme_dir).map_err(|e| format!("Failed to create theme directory: {e}"))?;
+    let vault_dir = Path::new(vault_path);
 
     let display_name = name.unwrap_or("Untitled Theme");
     let slug = slugify(display_name);
-    let filename = format!("{}.md", find_available_stem(&theme_dir, &slug, "md"));
-    let path = theme_dir.join(&filename);
+    let filename = format!("{}.md", find_available_stem(vault_dir, &slug, "md"));
+    let path = vault_dir.join(&filename);
 
     let content = vault_theme_note_content(display_name, &DEFAULT_VAULT_THEME_VARS);
     fs::write(&path, content).map_err(|e| format!("Failed to write theme note: {e}"))?;

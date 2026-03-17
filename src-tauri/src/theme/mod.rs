@@ -10,8 +10,8 @@ use std::path::Path;
 pub use create::{create_theme, create_vault_theme};
 pub use defaults::*;
 pub use seed::{
-    ensure_theme_type_definition, ensure_vault_themes, restore_default_themes, seed_default_themes,
-    seed_vault_themes,
+    ensure_theme_type_definition, ensure_vault_themes, migrate_theme_dir_to_root,
+    restore_default_themes, seed_default_themes, seed_vault_themes,
 };
 
 /// A theme file parsed from _themes/*.json in the vault.

@@ -388,19 +388,9 @@ pub fn create_getting_started_vault(target_path: &str) -> Result<String, String>
     fs::create_dir_all(vault_dir)
         .map_err(|e| format!("Failed to create vault directory: {}", e))?;
 
-    // Write config/agents.md with vault instructions for AI agents
-    let config_dir = vault_dir.join("config");
-    fs::create_dir_all(&config_dir)
-        .map_err(|e| format!("Failed to create config directory: {}", e))?;
-    fs::write(config_dir.join("agents.md"), AGENTS_MD)
-        .map_err(|e| format!("Failed to write config/agents.md: {}", e))?;
-
-    // Write root AGENTS.md stub for Codex discoverability
-    fs::write(
-        vault_dir.join("AGENTS.md"),
-        "# Agent Instructions\n\nSee config/agents.md for vault instructions.\n",
-    )
-    .map_err(|e| format!("Failed to write AGENTS.md stub: {}", e))?;
+    // Write AGENTS.md with vault instructions at root (flat structure)
+    fs::write(vault_dir.join("AGENTS.md"), AGENTS_MD)
+        .map_err(|e| format!("Failed to write AGENTS.md: {}", e))?;
 
     for sample in SAMPLE_FILES {
         let file_path = vault_dir.join(sample.rel_path);
@@ -423,21 +413,19 @@ pub fn create_getting_started_vault(target_path: &str) -> Result<String, String>
     fs::write(themes_dir.join("minimal.json"), crate::theme::MINIMAL_THEME)
         .map_err(|e| format!("Failed to write minimal theme: {e}"))?;
 
-    let theme_notes_dir = vault_dir.join("theme");
-    fs::create_dir_all(&theme_notes_dir)
-        .map_err(|e| format!("Failed to create theme directory: {e}"))?;
+    // Vault theme notes at root (flat structure)
     fs::write(
-        theme_notes_dir.join("default.md"),
+        vault_dir.join("default-theme.md"),
         crate::theme::default_vault_theme(),
     )
     .map_err(|e| format!("Failed to write default vault theme: {e}"))?;
     fs::write(
-        theme_notes_dir.join("dark.md"),
+        vault_dir.join("dark-theme.md"),
         crate::theme::dark_vault_theme(),
     )
     .map_err(|e| format!("Failed to write dark vault theme: {e}"))?;
     fs::write(
-        theme_notes_dir.join("minimal.md"),
+        vault_dir.join("minimal-theme.md"),
         crate::theme::minimal_vault_theme(),
     )
     .map_err(|e| format!("Failed to write minimal vault theme: {e}"))?;
@@ -475,9 +463,9 @@ mod tests {
         let result = create_getting_started_vault(vault_path.to_str().unwrap());
         assert!(result.is_ok());
 
-        // Verify key files exist
-        assert!(vault_path.join("config/agents.md").exists());
+        // Verify key files exist (flat structure — no config/ or theme/ dirs)
         assert!(vault_path.join("AGENTS.md").exists());
+        assert!(!vault_path.join("config").exists());
         assert!(vault_path.join("welcome-to-laputa.md").exists());
         assert!(vault_path.join("editor-basics.md").exists());
         assert!(vault_path.join("using-properties.md").exists());
@@ -544,20 +532,20 @@ mod tests {
         create_getting_started_vault(vault_path.to_str().unwrap()).unwrap();
 
         let entries = crate::vault::scan_vault(&vault_path).unwrap();
-        // SAMPLE_FILES (all at root) + AGENTS.md stub
-        assert_eq!(entries.len(), SAMPLE_FILES.len() + 1);
+        // SAMPLE_FILES + AGENTS.md + 3 vault theme notes (all at root)
+        assert_eq!(entries.len(), SAMPLE_FILES.len() + 1 + 3);
     }
 
     #[test]
-    fn test_config_agents_md_present_after_vault_creation() {
+    fn test_agents_md_present_at_root_after_vault_creation() {
         let dir = tempfile::TempDir::new().unwrap();
         let vault_path = dir.path().join("agents-vault");
         create_getting_started_vault(vault_path.to_str().unwrap()).unwrap();
 
-        let agents_path = vault_path.join("config/agents.md");
+        let agents_path = vault_path.join("AGENTS.md");
         assert!(
             agents_path.exists(),
-            "config/agents.md should exist in vault"
+            "AGENTS.md should exist at vault root"
         );
 
         let content = fs::read_to_string(&agents_path).unwrap();
@@ -567,35 +555,20 @@ mod tests {
         assert!(content.contains("## Wikilinks"));
         assert!(content.contains("## Type definitions"));
         assert!(content.contains("## Conventions"));
-    }
-
-    #[test]
-    fn test_root_agents_md_is_stub_after_vault_creation() {
-        let dir = tempfile::TempDir::new().unwrap();
-        let vault_path = dir.path().join("stub-vault");
-        create_getting_started_vault(vault_path.to_str().unwrap()).unwrap();
-
-        let root_path = vault_path.join("AGENTS.md");
-        assert!(root_path.exists(), "Root AGENTS.md stub should exist");
-
-        let content = fs::read_to_string(&root_path).unwrap();
+        // Must NOT be a stub
         assert!(
-            content.contains("See config/agents.md"),
-            "Root AGENTS.md should redirect to config/agents.md"
-        );
-        assert!(
-            !content.contains("## Structure"),
-            "Root AGENTS.md should not contain full instructions"
+            !content.contains("See config/agents.md"),
+            "AGENTS.md should have full content, not a redirect"
         );
     }
 
     #[test]
-    fn test_config_agents_md_parseable_as_vault_entry() {
+    fn test_agents_md_parseable_as_vault_entry() {
         let dir = tempfile::TempDir::new().unwrap();
         let vault_path = dir.path().join("agents-parse-vault");
         create_getting_started_vault(vault_path.to_str().unwrap()).unwrap();
 
-        let entry = crate::vault::parse_md_file(&vault_path.join("config/agents.md")).unwrap();
+        let entry = crate::vault::parse_md_file(&vault_path.join("AGENTS.md")).unwrap();
         assert_eq!(
             entry.title,
             "AGENTS.md \u{2014} Vault Instructions for AI Agents"
@@ -635,10 +608,12 @@ mod tests {
         let themes = crate::theme::list_themes(vault_path.to_str().unwrap()).unwrap();
         assert_eq!(themes.len(), 3);
 
-        // Vault-based theme notes
-        assert!(vault_path.join("theme/default.md").exists());
-        assert!(vault_path.join("theme/dark.md").exists());
-        assert!(vault_path.join("theme/minimal.md").exists());
+        // Vault-based theme notes at root (flat structure)
+        assert!(vault_path.join("default-theme.md").exists());
+        assert!(vault_path.join("dark-theme.md").exists());
+        assert!(vault_path.join("minimal-theme.md").exists());
+        // Must NOT create a theme/ subdirectory
+        assert!(!vault_path.join("theme").exists());
 
         // Theme type definition
         assert!(vault_path.join("theme.md").exists());

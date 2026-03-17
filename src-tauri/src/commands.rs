@@ -552,9 +552,10 @@ pub fn restore_default_themes(vault_path: String) -> Result<String, String> {
 #[tauri::command]
 pub fn repair_vault(vault_path: String) -> Result<String, String> {
     let vault_path = expand_tilde(&vault_path);
-    // Repair themes
+    // Migrate legacy theme/ directory to root, then repair themes
+    theme::migrate_theme_dir_to_root(&vault_path);
     theme::restore_default_themes(&vault_path)?;
-    // Repair config files (config/agents.md, config.md type def, AGENTS.md stub)
+    // Repair config files (AGENTS.md at root, config.md type def)
     vault::repair_config_files(&vault_path)?;
     // Ensure .gitignore with sensible defaults exists
     git::ensure_gitignore(&vault_path)?;

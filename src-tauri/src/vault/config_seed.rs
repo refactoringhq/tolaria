@@ -18,28 +18,26 @@ sidebar label: Config
 Vault configuration files. These control how AI agents, tools, and other integrations interact with this vault.
 ";
 
-/// Minimal root `AGENTS.md` stub that redirects to `config/agents.md`.
-const AGENTS_MD_STUB: &str = "\
-# Agent Instructions
+/// Write a file if it doesn't exist or is empty (corrupt). Returns true if written.
+fn write_if_missing(path: &Path, content: &str) -> Result<bool, String> {
+    let needs_write = !path.exists() || fs::metadata(path).map_or(true, |m| m.len() == 0);
+    if needs_write {
+        fs::write(path, content).map_err(|e| format!("Failed to write {}: {e}", path.display()))?;
+    }
+    Ok(needs_write)
+}
 
-See config/agents.md for vault instructions.
-";
-
-/// Seed `config/agents.md` if missing or empty (idempotent, per-file).
+/// Seed `AGENTS.md` at vault root if missing or empty (idempotent, per-file).
 /// Also seeds `config.md` type definition for sidebar visibility.
 pub fn seed_config_files(vault_path: &str) {
     let vault = Path::new(vault_path);
-    let config_dir = vault.join("config");
-    if fs::create_dir_all(&config_dir).is_err() {
-        return;
-    }
 
-    let agents_path = config_dir.join("agents.md");
+    let agents_path = vault.join("AGENTS.md");
     let needs_write =
         !agents_path.exists() || fs::metadata(&agents_path).map_or(true, |m| m.len() == 0);
     if needs_write {
         let _ = fs::write(&agents_path, AGENTS_MD);
-        log::info!("Seeded config/agents.md");
+        log::info!("Seeded AGENTS.md at vault root");
     }
 
     ensure_config_type_definition(vault_path);
@@ -54,100 +52,93 @@ fn ensure_config_type_definition(vault_path: &str) {
     }
 }
 
-/// Migrate root `AGENTS.md` → `config/agents.md` for existing vaults.
+/// Migrate legacy `config/agents.md` → root `AGENTS.md` for existing vaults.
 ///
-/// - If root `AGENTS.md` exists and `config/agents.md` does not: move content, write stub.
-/// - If root `AGENTS.md` exists and `config/agents.md` also exists: just replace root with stub.
-/// - If root `AGENTS.md` doesn't exist: write the stub anyway (for Codex discoverability).
+/// - If `config/agents.md` has real content and root `AGENTS.md` is missing/empty/stub:
+///   move content to root, remove legacy file.
+/// - If root `AGENTS.md` doesn't exist: write defaults.
+/// - Cleans up empty `config/` directory after migration.
 ///
 /// Always idempotent and silent.
 pub fn migrate_agents_md(vault_path: &str) {
     let vault = Path::new(vault_path);
     let root_agents = vault.join("AGENTS.md");
-    let config_dir = vault.join("config");
-    let config_agents = config_dir.join("agents.md");
+    let config_agents = vault.join("config").join("agents.md");
 
-    // Ensure config/ directory exists
-    if fs::create_dir_all(&config_dir).is_err() {
-        return;
+    // If legacy config/agents.md exists with real content, migrate it to root
+    if config_agents.exists() {
+        let config_content = fs::read_to_string(&config_agents).unwrap_or_default();
+        if !config_content.is_empty() {
+            // Only migrate if root AGENTS.md is missing, empty, or is a stub
+            let root_is_stub_or_missing = !root_agents.exists()
+                || fs::read_to_string(&root_agents)
+                    .map_or(true, |c| c.is_empty() || c.contains("See config/agents.md"));
+
+            if root_is_stub_or_missing {
+                let _ = fs::write(&root_agents, &config_content);
+                log::info!("Migrated config/agents.md content to root AGENTS.md");
+            }
+            // Remove legacy file
+            let _ = fs::remove_file(&config_agents);
+            log::info!("Removed legacy config/agents.md");
+        }
     }
 
-    // If root AGENTS.md has real content (not already a stub), migrate it
-    if root_agents.exists() {
-        let content = fs::read_to_string(&root_agents).unwrap_or_default();
-        let is_stub = content.contains("See config/agents.md");
-
-        if !is_stub {
-            // Only move content if config/agents.md doesn't exist yet
-            let config_needs_write = !config_agents.exists()
-                || fs::metadata(&config_agents).map_or(true, |m| m.len() == 0);
-            if config_needs_write {
-                let _ = fs::write(&config_agents, &content);
-                log::info!("Migrated AGENTS.md content to config/agents.md");
-            }
-            // Replace root with stub
-            let _ = fs::write(&root_agents, AGENTS_MD_STUB);
-            log::info!("Replaced root AGENTS.md with stub pointing to config/agents.md");
+    // Clean up empty config/ directory
+    let config_dir = vault.join("config");
+    if config_dir.is_dir() {
+        let is_empty = fs::read_dir(&config_dir).map_or(true, |mut d| d.next().is_none());
+        if is_empty {
+            let _ = fs::remove_dir(&config_dir);
+            log::info!("Removed empty config/ directory");
         }
-    } else {
-        // No root AGENTS.md — write stub for Codex discoverability
-        let _ = fs::write(&root_agents, AGENTS_MD_STUB);
+    }
+
+    // Ensure root AGENTS.md exists with content
+    if !root_agents.exists() {
+        let _ = fs::write(&root_agents, AGENTS_MD);
     }
 }
 
-/// Repair config files: re-create missing `config/agents.md` and `config.md` type definition.
+/// Repair config files: ensure `AGENTS.md` at vault root and `config.md` type definition.
+/// Migrates legacy `config/agents.md` to root if present.
 /// Called by the "Repair Vault" command. Returns a status message.
 pub fn repair_config_files(vault_path: &str) -> Result<String, String> {
     let vault = Path::new(vault_path);
-
-    // Ensure config/ directory
-    let config_dir = vault.join("config");
-    fs::create_dir_all(&config_dir)
-        .map_err(|e| format!("Failed to create config directory: {e}"))?;
-
-    let agents_path = config_dir.join("agents.md");
     let root_agents = vault.join("AGENTS.md");
+    let config_agents = vault.join("config").join("agents.md");
 
-    // Step 1: Migrate root AGENTS.md content → config/agents.md if needed
-    if root_agents.exists() {
-        let root_content = fs::read_to_string(&root_agents).unwrap_or_default();
-        let is_stub = root_content.contains("See config/agents.md");
-        if !is_stub && !root_content.is_empty() {
-            let config_needs_write =
-                !agents_path.exists() || fs::metadata(&agents_path).map_or(true, |m| m.len() == 0);
-            if config_needs_write {
-                fs::write(&agents_path, &root_content)
-                    .map_err(|e| format!("Failed to migrate AGENTS.md: {e}"))?;
+    // Step 1: Migrate legacy config/agents.md → root AGENTS.md
+    if config_agents.exists() {
+        let config_content = fs::read_to_string(&config_agents).unwrap_or_default();
+        if !config_content.is_empty() {
+            let root_is_stub_or_missing = !root_agents.exists()
+                || fs::read_to_string(&root_agents)
+                    .map_or(true, |c| c.is_empty() || c.contains("See config/agents.md"));
+
+            if root_is_stub_or_missing {
+                fs::write(&root_agents, &config_content)
+                    .map_err(|e| format!("Failed to write AGENTS.md: {e}"))?;
             }
-            fs::write(&root_agents, AGENTS_MD_STUB)
-                .map_err(|e| format!("Failed to write AGENTS.md stub: {e}"))?;
+            fs::remove_file(&config_agents)
+                .map_err(|e| format!("Failed to remove config/agents.md: {e}"))?;
         }
     }
 
-    // Step 2: Seed config/agents.md with defaults if still missing or empty
-    let needs_write =
-        !agents_path.exists() || fs::metadata(&agents_path).map_or(true, |m| m.len() == 0);
-    if needs_write {
-        fs::write(&agents_path, AGENTS_MD)
-            .map_err(|e| format!("Failed to write config/agents.md: {e}"))?;
+    // Step 2: Clean up empty config/ directory
+    let config_dir = vault.join("config");
+    if config_dir.is_dir() {
+        let is_empty = fs::read_dir(&config_dir).map_or(true, |mut d| d.next().is_none());
+        if is_empty {
+            let _ = fs::remove_dir(&config_dir);
+        }
     }
 
-    // Step 3: Ensure config.md type definition at vault root
-    let config_type_path = vault.join("config.md");
-    let type_needs_write = !config_type_path.exists()
-        || fs::metadata(&config_type_path).map_or(true, |m| m.len() == 0);
-    if type_needs_write {
-        fs::write(&config_type_path, CONFIG_TYPE_DEFINITION)
-            .map_err(|e| format!("Failed to write config.md: {e}"))?;
-    }
+    // Step 3: Seed AGENTS.md with defaults if still missing or empty
+    write_if_missing(&root_agents, AGENTS_MD)?;
 
-    // Step 4: Ensure root AGENTS.md stub exists
-    let stub_needs_write = !root_agents.exists()
-        || fs::read_to_string(&root_agents).map_or(true, |c| !c.contains("See config/agents.md"));
-    if stub_needs_write {
-        fs::write(&root_agents, AGENTS_MD_STUB)
-            .map_err(|e| format!("Failed to write AGENTS.md stub: {e}"))?;
-    }
+    // Step 4: Ensure config.md type definition at vault root
+    write_if_missing(&vault.join("config.md"), CONFIG_TYPE_DEFINITION)?;
 
     Ok("Config files repaired".to_string())
 }
@@ -159,17 +150,18 @@ mod tests {
     use tempfile::TempDir;
 
     #[test]
-    fn test_seed_config_files_creates_dir_and_agents() {
+    fn test_seed_config_files_creates_agents_at_root() {
         let dir = TempDir::new().unwrap();
         let vault = dir.path().join("vault");
         fs::create_dir_all(&vault).unwrap();
 
         seed_config_files(vault.to_str().unwrap());
 
-        assert!(vault.join("config").is_dir());
-        assert!(vault.join("config/agents.md").exists());
-        let content = fs::read_to_string(vault.join("config/agents.md")).unwrap();
+        assert!(vault.join("AGENTS.md").exists());
+        let content = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
         assert!(content.contains("Vault Instructions for AI Agents"));
+        // Must NOT create config/ directory
+        assert!(!vault.join("config").exists());
     }
 
     #[test]
@@ -193,14 +185,13 @@ mod tests {
         fs::create_dir_all(&vault).unwrap();
 
         seed_config_files(vault.to_str().unwrap());
-        // Customize the file
-        let custom = "---\nIs A: Config\n---\n# Custom Agents\nMy custom instructions\n";
-        fs::write(vault.join("config/agents.md"), custom).unwrap();
+        let custom = "# Custom Agent Config\nMy custom instructions\n";
+        fs::write(vault.join("AGENTS.md"), custom).unwrap();
 
         seed_config_files(vault.to_str().unwrap());
-        let content = fs::read_to_string(vault.join("config/agents.md")).unwrap();
+        let content = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
         assert!(
-            content.contains("Custom Agents"),
+            content.contains("Custom Agent Config"),
             "must preserve existing content"
         );
     }
@@ -209,71 +200,70 @@ mod tests {
     fn test_seed_config_files_reseeds_empty() {
         let dir = TempDir::new().unwrap();
         let vault = dir.path().join("vault");
-        let config_dir = vault.join("config");
-        fs::create_dir_all(&config_dir).unwrap();
-        fs::write(config_dir.join("agents.md"), "").unwrap();
+        fs::create_dir_all(&vault).unwrap();
+        fs::write(vault.join("AGENTS.md"), "").unwrap();
 
         seed_config_files(vault.to_str().unwrap());
-        let content = fs::read_to_string(config_dir.join("agents.md")).unwrap();
+        let content = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
         assert!(content.contains("Vault Instructions for AI Agents"));
     }
 
     #[test]
-    fn test_migrate_agents_md_moves_content() {
-        let dir = TempDir::new().unwrap();
-        let vault = dir.path().join("vault");
-        fs::create_dir_all(&vault).unwrap();
-        fs::write(vault.join("AGENTS.md"), AGENTS_MD).unwrap();
-
-        migrate_agents_md(vault.to_str().unwrap());
-
-        // config/agents.md should have the original content
-        let config_content = fs::read_to_string(vault.join("config/agents.md")).unwrap();
-        assert!(config_content.contains("Vault Instructions for AI Agents"));
-
-        // Root AGENTS.md should be a stub
-        let root_content = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
-        assert!(root_content.contains("See config/agents.md"));
-        assert!(!root_content.contains("## Structure"));
-    }
-
-    #[test]
-    fn test_migrate_agents_md_preserves_existing_config() {
+    fn test_migrate_agents_md_moves_config_to_root() {
         let dir = TempDir::new().unwrap();
         let vault = dir.path().join("vault");
         let config_dir = vault.join("config");
         fs::create_dir_all(&config_dir).unwrap();
-        let custom = "# Custom agent instructions\n";
+        let custom = "# My vault agent instructions\nCustom content\n";
         fs::write(config_dir.join("agents.md"), custom).unwrap();
-        fs::write(vault.join("AGENTS.md"), AGENTS_MD).unwrap();
 
         migrate_agents_md(vault.to_str().unwrap());
 
-        // config/agents.md should preserve custom content
-        let content = fs::read_to_string(config_dir.join("agents.md")).unwrap();
-        assert!(content.contains("Custom agent instructions"));
-
-        // Root should be a stub
-        let root = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
-        assert!(root.contains("See config/agents.md"));
+        let root_content = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
+        assert!(root_content.contains("My vault agent instructions"));
+        assert!(!config_dir.join("agents.md").exists());
+        assert!(!config_dir.exists());
     }
 
     #[test]
-    fn test_migrate_agents_md_idempotent_on_stub() {
+    fn test_migrate_agents_md_preserves_existing_root() {
         let dir = TempDir::new().unwrap();
         let vault = dir.path().join("vault");
-        fs::create_dir_all(&vault).unwrap();
-        fs::write(vault.join("AGENTS.md"), AGENTS_MD_STUB).unwrap();
+        let config_dir = vault.join("config");
+        fs::create_dir_all(&config_dir).unwrap();
+        let custom_root = "# My root agent config\nDo not overwrite\n";
+        fs::write(vault.join("AGENTS.md"), custom_root).unwrap();
+        fs::write(config_dir.join("agents.md"), "Legacy content").unwrap();
 
         migrate_agents_md(vault.to_str().unwrap());
 
-        // Stub should remain unchanged
-        let root = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
-        assert!(root.contains("See config/agents.md"));
+        let content = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
+        assert!(content.contains("My root agent config"));
+        assert!(!config_dir.join("agents.md").exists());
     }
 
     #[test]
-    fn test_migrate_agents_md_writes_stub_when_no_root() {
+    fn test_migrate_agents_md_replaces_stub_with_config_content() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("vault");
+        let config_dir = vault.join("config");
+        fs::create_dir_all(&config_dir).unwrap();
+        fs::write(
+            vault.join("AGENTS.md"),
+            "# Agent Instructions\nSee config/agents.md for vault instructions.\n",
+        )
+        .unwrap();
+        let real_content = "# Real Agent Config\nImportant instructions\n";
+        fs::write(config_dir.join("agents.md"), real_content).unwrap();
+
+        migrate_agents_md(vault.to_str().unwrap());
+
+        let content = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
+        assert!(content.contains("Real Agent Config"));
+    }
+
+    #[test]
+    fn test_migrate_agents_md_idempotent_when_no_legacy() {
         let dir = TempDir::new().unwrap();
         let vault = dir.path().join("vault");
         fs::create_dir_all(&vault).unwrap();
@@ -282,7 +272,23 @@ mod tests {
 
         assert!(vault.join("AGENTS.md").exists());
         let root = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
-        assert!(root.contains("See config/agents.md"));
+        assert!(root.contains("Vault Instructions"));
+    }
+
+    #[test]
+    fn test_migrate_agents_md_keeps_nonempty_config_dir() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("vault");
+        let config_dir = vault.join("config");
+        fs::create_dir_all(&config_dir).unwrap();
+        fs::write(config_dir.join("agents.md"), "Agent content").unwrap();
+        fs::write(config_dir.join("other.md"), "Other file").unwrap();
+
+        migrate_agents_md(vault.to_str().unwrap());
+
+        assert!(config_dir.exists());
+        assert!(config_dir.join("other.md").exists());
+        assert!(!config_dir.join("agents.md").exists());
     }
 
     #[test]
@@ -294,34 +300,25 @@ mod tests {
         let msg = repair_config_files(vault.to_str().unwrap()).unwrap();
         assert_eq!(msg, "Config files repaired");
 
-        assert!(vault.join("config/agents.md").exists());
-        assert!(vault.join("config.md").exists());
         assert!(vault.join("AGENTS.md").exists());
+        assert!(vault.join("config.md").exists());
+        assert!(!vault.join("config").exists());
 
-        let agents = fs::read_to_string(vault.join("config/agents.md")).unwrap();
+        let agents = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
         assert!(agents.contains("Vault Instructions for AI Agents"));
-
-        let stub = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
-        assert!(stub.contains("See config/agents.md"));
     }
 
     #[test]
     fn test_repair_config_files_preserves_custom_content() {
         let dir = TempDir::new().unwrap();
         let vault = dir.path().join("vault");
-        let config_dir = vault.join("config");
-        fs::create_dir_all(&config_dir).unwrap();
+        fs::create_dir_all(&vault).unwrap();
         let custom = "# My custom agent config\nDo not overwrite me\n";
-        fs::write(config_dir.join("agents.md"), custom).unwrap();
-        fs::write(
-            vault.join("AGENTS.md"),
-            "# Agent Instructions\nSee config/agents.md for vault instructions.\n",
-        )
-        .unwrap();
+        fs::write(vault.join("AGENTS.md"), custom).unwrap();
 
         repair_config_files(vault.to_str().unwrap()).unwrap();
 
-        let content = fs::read_to_string(config_dir.join("agents.md")).unwrap();
+        let content = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
         assert!(
             content.contains("My custom agent config"),
             "must preserve existing content"
@@ -329,21 +326,38 @@ mod tests {
     }
 
     #[test]
-    fn test_repair_config_files_migrates_root_agents() {
+    fn test_repair_config_files_migrates_legacy_config() {
         let dir = TempDir::new().unwrap();
         let vault = dir.path().join("vault");
-        fs::create_dir_all(&vault).unwrap();
+        let config_dir = vault.join("config");
+        fs::create_dir_all(&config_dir).unwrap();
         let original = "# My vault agents instructions\nCustom content here\n";
-        fs::write(vault.join("AGENTS.md"), original).unwrap();
+        fs::write(config_dir.join("agents.md"), original).unwrap();
 
         repair_config_files(vault.to_str().unwrap()).unwrap();
 
-        // Root should be a stub
         let root = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
-        assert!(root.contains("See config/agents.md"));
+        assert!(root.contains("My vault agents instructions"));
+        assert!(!config_dir.join("agents.md").exists());
+    }
 
-        // config/agents.md should have the original content
-        let config = fs::read_to_string(vault.join("config/agents.md")).unwrap();
-        assert!(config.contains("My vault agents instructions"));
+    #[test]
+    fn test_repair_config_files_replaces_stub_with_legacy() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("vault");
+        let config_dir = vault.join("config");
+        fs::create_dir_all(&config_dir).unwrap();
+        fs::write(
+            vault.join("AGENTS.md"),
+            "# Agent Instructions\nSee config/agents.md for vault instructions.\n",
+        )
+        .unwrap();
+        let real = "# Real Instructions\nImportant stuff\n";
+        fs::write(config_dir.join("agents.md"), real).unwrap();
+
+        repair_config_files(vault.to_str().unwrap()).unwrap();
+
+        let content = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
+        assert!(content.contains("Real Instructions"));
     }
 }
