@@ -478,31 +478,12 @@ function App() {
 
   // Show welcome/onboarding screen when vault doesn't exist
   if (onboarding.state.status === 'welcome' || onboarding.state.status === 'vault-missing') {
-    const defaultPath = onboarding.state.defaultPath
-    return (
-      <div className="app-shell">
-        <WelcomeScreen
-          mode={onboarding.state.status === 'welcome' ? 'welcome' : 'vault-missing'}
-          missingPath={onboarding.state.status === 'vault-missing' ? onboarding.state.vaultPath : undefined}
-          defaultVaultPath={defaultPath}
-          onCreateVault={onboarding.handleCreateVault}
-          onOpenFolder={onboarding.handleOpenFolder}
-          creating={onboarding.creating}
-          error={onboarding.error}
-        />
-      </div>
-    )
+    return <WelcomeView onboarding={onboarding} />
   }
 
   // Show loading spinner while checking vault
   if (onboarding.state.status === 'loading') {
-    return (
-      <div className="app-shell">
-        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--sidebar)' }}>
-          <span style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>Loading…</span>
-        </div>
-      </div>
-    )
+    return <LoadingView />
   }
 
   return (
@@ -629,6 +610,37 @@ function App() {
           onCancel={() => deleteActions.setConfirmDelete(null)}
         />
       )}
+    </div>
+  )
+}
+
+type OnboardingState = ReturnType<typeof useOnboarding>
+
+/** Welcome screen view - extracted from main App component */
+function WelcomeView({ onboarding }: { onboarding: OnboardingState }) {
+  const state = onboarding.state as { status: 'welcome' | 'vault-missing'; defaultPath: string; vaultPath?: string }
+  return (
+    <div className="app-shell">
+      <WelcomeScreen
+        mode={state.status === 'welcome' ? 'welcome' : 'vault-missing'}
+        missingPath={state.status === 'vault-missing' ? state.vaultPath : undefined}
+        defaultVaultPath={state.defaultPath}
+        onCreateVault={onboarding.handleCreateVault}
+        onOpenFolder={onboarding.handleOpenFolder}
+        creating={onboarding.creating}
+        error={onboarding.error}
+      />
+    </div>
+  )
+}
+
+/** Loading spinner view - extracted from main App component */
+function LoadingView() {
+  return (
+    <div className="app-shell">
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--sidebar)' }}>
+        <span style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>Loading…</span>
+      </div>
     </div>
   )
 }
