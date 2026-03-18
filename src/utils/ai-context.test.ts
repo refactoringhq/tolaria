@@ -11,8 +11,6 @@ const makeEntry = (overrides: Partial<VaultEntry> = {}): VaultEntry => ({
   belongsTo: [],
   relatedTo: [],
   status: null,
-  owner: null,
-  cadence: null,
   archived: false,
   trashed: false,
   trashedAt: null,
@@ -157,7 +155,7 @@ describe('buildContextualPrompt', () => {
 })
 
 describe('buildContextSnapshot', () => {
-  const active = makeEntry({ path: '/vault/a.md', title: 'Alpha', isA: 'Project', status: 'active', owner: 'Alice' })
+  const active = makeEntry({ path: '/vault/a.md', title: 'Alpha', isA: 'Project', status: 'active', properties: { Owner: 'Alice' } })
   const entries = [
     active,
     makeEntry({ path: '/vault/b.md', title: 'Beta', isA: 'Person' }),

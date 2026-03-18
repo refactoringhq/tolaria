@@ -358,17 +358,26 @@ mod tests {
 
     #[test]
     fn test_extract_title_fallback_to_filename() {
-        assert_eq!(extract_title(None, "", "fallback-title.md"), "Fallback Title");
+        assert_eq!(
+            extract_title(None, "", "fallback-title.md"),
+            "Fallback Title"
+        );
     }
 
     #[test]
     fn test_extract_title_empty_fm_falls_back_to_h1() {
-        assert_eq!(extract_title(Some(""), "# From H1\n", "empty-h1.md"), "From H1");
+        assert_eq!(
+            extract_title(Some(""), "# From H1\n", "empty-h1.md"),
+            "From H1"
+        );
     }
 
     #[test]
     fn test_extract_title_empty_fm_no_h1_falls_back_to_filename() {
-        assert_eq!(extract_title(Some(""), "No heading here.", "empty-h1.md"), "Empty H1");
+        assert_eq!(
+            extract_title(Some(""), "No heading here.", "empty-h1.md"),
+            "Empty H1"
+        );
     }
 
     // --- extract_snippet tests ---

@@ -76,8 +76,14 @@ fn test_parse_full_frontmatter_scalars() {
     let dir = TempDir::new().unwrap();
     let entry = parse_test_entry(&dir, "laputa.md", FULL_FM_CONTENT);
     assert_eq!(entry.status, Some("Active".to_string()));
-    assert_eq!(entry.properties.get("Owner").and_then(|v| v.as_str()), Some("Luca"));
-    assert_eq!(entry.properties.get("Cadence").and_then(|v| v.as_str()), Some("Weekly"));
+    assert_eq!(
+        entry.properties.get("Owner").and_then(|v| v.as_str()),
+        Some("Luca")
+    );
+    assert_eq!(
+        entry.properties.get("Cadence").and_then(|v| v.as_str()),
+        Some("Weekly")
+    );
 }
 
 #[test]
@@ -509,7 +515,10 @@ fn test_created_at_from_filesystem() {
 
     let entry = parse_md_file(&dir.path().join("test.md")).unwrap();
     // created_at should be set from filesystem metadata (not None)
-    assert!(entry.created_at.is_some(), "created_at should come from filesystem");
+    assert!(
+        entry.created_at.is_some(),
+        "created_at should come from filesystem"
+    );
 }
 
 // --- Type relationship tests ---
@@ -806,8 +815,14 @@ Priority: High
         entry.properties.get("Priority").and_then(|v| v.as_str()),
         Some("High")
     );
-    assert_eq!(entry.properties.get("Owner").and_then(|v| v.as_str()), Some("Luca"));
-    assert_eq!(entry.properties.get("Cadence").and_then(|v| v.as_str()), Some("Weekly"));
+    assert_eq!(
+        entry.properties.get("Owner").and_then(|v| v.as_str()),
+        Some("Luca")
+    );
+    assert_eq!(
+        entry.properties.get("Cadence").and_then(|v| v.as_str()),
+        Some("Weekly")
+    );
 }
 
 #[test]
@@ -1058,7 +1073,10 @@ fn test_single_element_array_owner_unwraps_to_scalar() {
     let dir = TempDir::new().unwrap();
     let content = "---\ntype: Responsibility\nOwner:\n  - Luca\n---\n# Test\n";
     let entry = parse_test_entry(&dir, "test.md", content);
-    assert_eq!(entry.properties.get("Owner").and_then(|v| v.as_str()), Some("Luca"));
+    assert_eq!(
+        entry.properties.get("Owner").and_then(|v| v.as_str()),
+        Some("Luca")
+    );
     assert_eq!(entry.is_a, Some("Responsibility".to_string()));
 }
 
@@ -1067,7 +1085,10 @@ fn test_single_element_array_cadence_unwraps_to_scalar() {
     let dir = TempDir::new().unwrap();
     let content = "---\ntype: Procedure\nCadence:\n  - Weekly\n---\n# Test\n";
     let entry = parse_test_entry(&dir, "test.md", content);
-    assert_eq!(entry.properties.get("Cadence").and_then(|v| v.as_str()), Some("Weekly"));
+    assert_eq!(
+        entry.properties.get("Cadence").and_then(|v| v.as_str()),
+        Some("Weekly")
+    );
     assert_eq!(entry.is_a, Some("Procedure".to_string()));
 }
 
@@ -1085,8 +1106,14 @@ fn test_scalar_fields_unchanged() {
     let dir = TempDir::new().unwrap();
     let content = "---\ntype: Project\nOwner: Luca\nCadence: Daily\nStatus: Done\n---\n# Test\n";
     let entry = parse_test_entry(&dir, "test.md", content);
-    assert_eq!(entry.properties.get("Owner").and_then(|v| v.as_str()), Some("Luca"));
-    assert_eq!(entry.properties.get("Cadence").and_then(|v| v.as_str()), Some("Daily"));
+    assert_eq!(
+        entry.properties.get("Owner").and_then(|v| v.as_str()),
+        Some("Luca")
+    );
+    assert_eq!(
+        entry.properties.get("Cadence").and_then(|v| v.as_str()),
+        Some("Daily")
+    );
     assert_eq!(entry.status, Some("Done".to_string()));
 }
 

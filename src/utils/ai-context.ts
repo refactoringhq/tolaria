@@ -85,7 +85,11 @@ function entryFrontmatter(e: VaultEntry): Record<string, unknown> {
   const fm: Record<string, unknown> = {}
   if (e.isA) fm.type = e.isA
   if (e.status) fm.status = e.status
-  if (e.owner) fm.owner = e.owner
+  // Owner and cadence are now stored in properties, not first-class fields
+  const owner = e.properties?.Owner ?? e.properties?.owner
+  const cadence = e.properties?.Cadence ?? e.properties?.cadence
+  if (owner) fm.owner = typeof owner === 'string' ? owner : String(owner)
+  if (cadence) fm.cadence = typeof cadence === 'string' ? cadence : String(cadence)
   if (e.belongsTo.length > 0) fm.belongsTo = e.belongsTo
   if (e.relatedTo.length > 0) fm.relatedTo = e.relatedTo
   if (Object.keys(e.relationships).length > 0) fm.relationships = e.relationships
