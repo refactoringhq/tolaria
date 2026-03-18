@@ -3,34 +3,6 @@ use std::path::Path;
 
 use super::defaults::*;
 
-/// Create `dir` and write each `(filename, content)` pair if the directory doesn't exist yet.
-fn seed_dir_with_files(dir: &Path, files: &[(&str, &str)], log_msg: &str) {
-    if dir.is_dir() {
-        return;
-    }
-    if fs::create_dir_all(dir).is_err() {
-        return;
-    }
-    for (name, content) in files {
-        let _ = fs::write(dir.join(name), content);
-    }
-    log::info!("{log_msg}");
-}
-
-/// Seed the `_themes/` directory with built-in themes if it doesn't exist yet.
-/// Safe to call multiple times — only writes files that are missing.
-pub fn seed_default_themes(vault_path: &str) {
-    seed_dir_with_files(
-        &Path::new(vault_path).join("_themes"),
-        &[
-            ("default.json", DEFAULT_THEME),
-            ("dark.json", DARK_THEME),
-            ("minimal.json", MINIMAL_THEME),
-        ],
-        "Seeded _themes/ with built-in themes",
-    );
-}
-
 /// Write a vault theme file if it doesn't exist or is empty (corrupt).
 fn write_if_missing(path: &Path, content: &str) -> Result<bool, String> {
     let needs_write = !path.exists() || fs::metadata(path).map_or(true, |m| m.len() == 0);
@@ -85,24 +57,11 @@ pub fn ensure_vault_themes(vault_path: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Restore default themes for a vault: seeds both `_themes/` (JSON) and
-/// vault root theme notes (flat structure). Per-file idempotent — never
+/// Restore default themes for a vault: seeds vault root theme notes (flat
+/// structure) and the theme.md type definition. Per-file idempotent — never
 /// overwrites files that already have content. Returns an error on read-only
 /// filesystems.
 pub fn restore_default_themes(vault_path: &str) -> Result<String, String> {
-    // Seed _themes/ JSON files (per-file idempotent)
-    let themes_dir = Path::new(vault_path).join("_themes");
-    fs::create_dir_all(&themes_dir)
-        .map_err(|e| format!("Failed to create _themes directory: {e}"))?;
-    let json_defaults: &[(&str, &str)] = &[
-        ("default.json", DEFAULT_THEME),
-        ("dark.json", DARK_THEME),
-        ("minimal.json", MINIMAL_THEME),
-    ];
-    for (name, content) in json_defaults {
-        write_if_missing(&themes_dir.join(name), content)?;
-    }
-
     // Seed vault theme notes at root (flat structure)
     ensure_vault_themes(vault_path)?;
 
@@ -162,6 +121,38 @@ pub fn migrate_theme_dir_to_root(vault_path: &str) {
             log::info!("Removed empty theme/ directory");
         }
     }
+}
+
+/// Remove the legacy `_themes/` directory if it only contains default JSON files.
+/// Leaves the directory intact if it has any custom (non-default) files.
+/// Idempotent and silent.
+pub fn migrate_legacy_themes_dir(vault_path: &str) {
+    let themes_dir = Path::new(vault_path).join("_themes");
+    if !themes_dir.is_dir() {
+        return;
+    }
+
+    let default_filenames: &[&str] = &["default.json", "dark.json", "minimal.json"];
+
+    // Check if directory only has default files (or is empty)
+    let has_custom = fs::read_dir(&themes_dir).is_ok_and(|entries| {
+        entries.filter_map(|e| e.ok()).any(|e| {
+            let name = e.file_name();
+            let name_str = name.to_string_lossy();
+            !default_filenames.contains(&name_str.as_ref())
+        })
+    });
+
+    if has_custom {
+        return;
+    }
+
+    // Remove default JSON files then the empty directory
+    for name in default_filenames {
+        let _ = fs::remove_file(themes_dir.join(name));
+    }
+    let _ = fs::remove_dir(&themes_dir);
+    log::info!("Removed legacy _themes/ directory");
 }
 
 #[cfg(test)]
@@ -291,10 +282,8 @@ mod tests {
 
         let msg = restore_default_themes(vp).unwrap();
         assert_eq!(msg, "Default themes restored");
-        // _themes/ JSON files (legacy)
-        assert!(vault.join("_themes").join("default.json").exists());
-        assert!(vault.join("_themes").join("dark.json").exists());
-        assert!(vault.join("_themes").join("minimal.json").exists());
+        // Must NOT create _themes/ directory (legacy)
+        assert!(!vault.join("_themes").exists());
         // Vault theme notes at root (flat structure)
         assert!(vault.join("default-theme.md").exists());
         assert!(vault.join("dark-theme.md").exists());
@@ -366,15 +355,13 @@ mod tests {
     fn test_restore_default_themes_fills_partial_state() {
         let dir = TempDir::new().unwrap();
         let vault = dir.path().join("vault");
-        let themes_dir = vault.join("_themes");
-        fs::create_dir_all(&themes_dir).unwrap();
-        fs::write(themes_dir.join("default.json"), DEFAULT_THEME).unwrap();
+        fs::create_dir_all(&vault).unwrap();
         fs::write(vault.join("default-theme.md"), &default_vault_theme()).unwrap();
         let vp = vault.to_str().unwrap();
 
         restore_default_themes(vp).unwrap();
-        assert!(themes_dir.join("dark.json").exists());
-        assert!(themes_dir.join("minimal.json").exists());
+        // Must NOT create _themes/ directory
+        assert!(!vault.join("_themes").exists());
         assert!(vault.join("dark-theme.md").exists());
         assert!(vault.join("minimal-theme.md").exists());
         let content = fs::read_to_string(vault.join("default-theme.md")).unwrap();
@@ -499,5 +486,69 @@ mod tests {
         assert!(vault.join("default-theme.md").exists());
         assert!(theme_dir.join("custom-theme.md").exists());
         assert!(theme_dir.exists());
+    }
+
+    #[test]
+    fn test_migrate_legacy_themes_dir_removes_defaults_only() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("vault");
+        let themes_dir = vault.join("_themes");
+        fs::create_dir_all(&themes_dir).unwrap();
+        fs::write(themes_dir.join("default.json"), DEFAULT_THEME).unwrap();
+        fs::write(themes_dir.join("dark.json"), DARK_THEME).unwrap();
+        fs::write(themes_dir.join("minimal.json"), MINIMAL_THEME).unwrap();
+        let vp = vault.to_str().unwrap();
+
+        migrate_legacy_themes_dir(vp);
+
+        assert!(
+            !themes_dir.exists(),
+            "_themes/ must be removed when only defaults"
+        );
+    }
+
+    #[test]
+    fn test_migrate_legacy_themes_dir_keeps_custom_files() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("vault");
+        let themes_dir = vault.join("_themes");
+        fs::create_dir_all(&themes_dir).unwrap();
+        fs::write(themes_dir.join("default.json"), DEFAULT_THEME).unwrap();
+        fs::write(themes_dir.join("custom.json"), r#"{"name":"Custom"}"#).unwrap();
+        let vp = vault.to_str().unwrap();
+
+        migrate_legacy_themes_dir(vp);
+
+        assert!(
+            themes_dir.exists(),
+            "_themes/ must be kept when custom files present"
+        );
+        assert!(themes_dir.join("default.json").exists());
+        assert!(themes_dir.join("custom.json").exists());
+    }
+
+    #[test]
+    fn test_migrate_legacy_themes_dir_noop_when_absent() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("vault");
+        fs::create_dir_all(&vault).unwrap();
+        let vp = vault.to_str().unwrap();
+
+        migrate_legacy_themes_dir(vp);
+
+        assert!(!vault.join("_themes").exists());
+    }
+
+    #[test]
+    fn test_migrate_legacy_themes_dir_removes_empty() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("vault");
+        let themes_dir = vault.join("_themes");
+        fs::create_dir_all(&themes_dir).unwrap();
+        let vp = vault.to_str().unwrap();
+
+        migrate_legacy_themes_dir(vp);
+
+        assert!(!themes_dir.exists(), "empty _themes/ must be removed");
     }
 }

@@ -168,12 +168,11 @@ fn test_scan_vault_skips_non_protected_subfolders() {
 fn test_scan_vault_includes_all_protected_folders() {
     let dir = TempDir::new().unwrap();
     create_test_file(dir.path(), "root.md", "# Root\n");
-    create_test_file(dir.path(), "_themes/legacy.md", "---\n---\n# Legacy\n");
     create_test_file(dir.path(), "attachments/notes.md", "# Attachment note\n");
     create_test_file(dir.path(), "assets/image.md", "# Asset\n");
 
     let entries = scan_vault(dir.path()).unwrap();
-    assert_eq!(entries.len(), 4);
+    assert_eq!(entries.len(), 3);
 }
 
 #[test]

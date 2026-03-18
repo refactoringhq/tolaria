@@ -10,8 +10,8 @@ use std::path::Path;
 pub use create::{create_theme, create_vault_theme};
 pub use defaults::*;
 pub use seed::{
-    ensure_theme_type_definition, ensure_vault_themes, migrate_theme_dir_to_root,
-    restore_default_themes, seed_default_themes, seed_vault_themes,
+    ensure_theme_type_definition, ensure_vault_themes, migrate_legacy_themes_dir,
+    migrate_theme_dir_to_root, restore_default_themes, seed_vault_themes,
 };
 
 /// A theme file parsed from _themes/*.json in the vault.
@@ -38,13 +38,10 @@ pub struct VaultSettings {
     pub theme: Option<String>,
 }
 
-/// List all theme files in _themes/ directory of the vault.
-/// Seeds built-in themes if the directory is missing.
+/// List all theme files in _themes/ directory of the vault (legacy).
+/// Returns an empty list if the directory doesn't exist.
 pub fn list_themes(vault_path: &str) -> Result<Vec<ThemeFile>, String> {
     let themes_dir = Path::new(vault_path).join("_themes");
-    if !themes_dir.is_dir() {
-        seed_default_themes(vault_path);
-    }
     if !themes_dir.is_dir() {
         return Ok(Vec::new());
     }
@@ -153,16 +150,13 @@ mod tests {
     }
 
     #[test]
-    fn test_list_themes_seeds_defaults_when_no_dir() {
+    fn test_list_themes_returns_empty_when_no_dir() {
         let dir = TempDir::new().unwrap();
         let vault = dir.path().join("empty-vault");
         fs::create_dir_all(&vault).unwrap();
         let themes = list_themes(vault.to_str().unwrap()).unwrap();
-        assert_eq!(themes.len(), 3);
-        let names: Vec<&str> = themes.iter().map(|t| t.name.as_str()).collect();
-        assert!(names.contains(&"Default"));
-        assert!(names.contains(&"Dark"));
-        assert!(names.contains(&"Minimal"));
+        assert!(themes.is_empty(), "must return empty when _themes/ absent");
+        assert!(!vault.join("_themes").exists(), "must not create _themes/");
     }
 
     #[test]

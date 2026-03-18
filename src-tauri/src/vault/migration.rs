@@ -118,8 +118,8 @@ pub fn migrate_is_a_to_type(vault_path: &str) -> Result<usize, String> {
     Ok(migrated)
 }
 
-/// Folders that are NOT flattened — they contain assets/themes, not notes.
-const KEEP_FOLDERS: &[&str] = &["attachments", "_themes", "assets"];
+/// Folders that are NOT flattened — they contain assets, not notes.
+const KEEP_FOLDERS: &[&str] = &["attachments", "assets"];
 
 /// Determine a unique filename at `dest_dir`, appending -2, -3, etc. on collision.
 fn unique_filename(dest_dir: &Path, filename: &str, taken: &HashSet<String>) -> String {
@@ -601,14 +601,12 @@ mod tests {
         let tmp = tempdir().unwrap();
         let vault = tmp.path();
         write_nested_file(vault, "attachments/image.md", "# Image note\n");
-        write_nested_file(vault, "_themes/legacy.md", "---\n---\n# Legacy\n");
         write_nested_file(vault, "note/hello.md", "---\ntype: Note\n---\n# Hello\n");
 
         let count = flatten_vault(vault.to_str().unwrap()).unwrap();
         assert_eq!(count, 1);
         assert!(vault.join("hello.md").exists());
         assert!(vault.join("attachments/image.md").exists());
-        assert!(vault.join("_themes/legacy.md").exists());
     }
 
     #[test]

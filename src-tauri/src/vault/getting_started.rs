@@ -402,18 +402,7 @@ pub fn create_getting_started_vault(target_path: &str) -> Result<String, String>
             .map_err(|e| format!("Failed to write {}: {}", sample.rel_path, e))?;
     }
 
-    // Seed built-in themes (both JSON legacy and vault-based markdown notes)
-    let themes_dir = vault_dir.join("_themes");
-    fs::create_dir_all(&themes_dir)
-        .map_err(|e| format!("Failed to create _themes directory: {e}"))?;
-    fs::write(themes_dir.join("default.json"), crate::theme::DEFAULT_THEME)
-        .map_err(|e| format!("Failed to write default theme: {e}"))?;
-    fs::write(themes_dir.join("dark.json"), crate::theme::DARK_THEME)
-        .map_err(|e| format!("Failed to write dark theme: {e}"))?;
-    fs::write(themes_dir.join("minimal.json"), crate::theme::MINIMAL_THEME)
-        .map_err(|e| format!("Failed to write minimal theme: {e}"))?;
-
-    // Vault theme notes at root (flat structure)
+    // Seed vault theme notes at root (flat structure)
     fs::write(
         vault_dir.join("default-theme.md"),
         crate::theme::default_vault_theme(),
@@ -595,13 +584,8 @@ mod tests {
         let vault_path = dir.path().join("theme-vault");
         create_getting_started_vault(vault_path.to_str().unwrap()).unwrap();
 
-        // JSON legacy themes
-        assert!(vault_path.join("_themes/default.json").exists());
-        assert!(vault_path.join("_themes/dark.json").exists());
-        assert!(vault_path.join("_themes/minimal.json").exists());
-
-        let themes = crate::theme::list_themes(vault_path.to_str().unwrap()).unwrap();
-        assert_eq!(themes.len(), 3);
+        // Must NOT create legacy _themes/ directory
+        assert!(!vault_path.join("_themes").exists());
 
         // Vault-based theme notes at root (flat structure)
         assert!(vault_path.join("default-theme.md").exists());

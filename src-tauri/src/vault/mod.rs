@@ -114,9 +114,9 @@ pub fn reload_entry(path: &Path) -> Result<VaultEntry, String> {
     parse_md_file(path)
 }
 
-/// Folders that are scanned recursively (themes, attachments, assets).
+/// Folders that are scanned recursively (attachments, assets).
 /// All other subfolders are ignored — notes and type definitions live flat at the vault root.
-const PROTECTED_FOLDERS: &[&str] = &["attachments", "_themes", "assets"];
+const PROTECTED_FOLDERS: &[&str] = &["attachments", "assets"];
 
 fn is_md_file(path: &Path) -> bool {
     path.is_file() && path.extension().is_some_and(|ext| ext == "md")

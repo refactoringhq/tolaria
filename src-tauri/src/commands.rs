@@ -566,6 +566,8 @@ pub fn repair_vault(vault_path: String) -> Result<String, String> {
     vault::migrate_is_a_to_type(&vault_path)?;
     // Flatten vault: move notes from type-based subfolders to root
     vault::flatten_vault(&vault_path)?;
+    // Remove legacy _themes/ directory (JSON theme store) if only defaults remain
+    theme::migrate_legacy_themes_dir(&vault_path);
     // Migrate legacy theme/ directory to root, then repair themes
     theme::migrate_theme_dir_to_root(&vault_path);
     theme::restore_default_themes(&vault_path)?;

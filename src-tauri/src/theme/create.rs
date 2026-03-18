@@ -21,10 +21,12 @@ pub fn create_vault_theme(vault_path: &str, name: Option<&str>) -> Result<String
 
 /// Create a new theme file by copying the active theme (or default).
 /// Returns the ID of the new theme.
+/// NOTE: Legacy — operates on `_themes/` JSON store. Prefer `create_vault_theme`.
 pub fn create_theme(vault_path: &str, source_id: Option<&str>) -> Result<String, String> {
     let themes_dir = Path::new(vault_path).join("_themes");
-    fs::create_dir_all(&themes_dir)
-        .map_err(|e| format!("Failed to create _themes directory: {e}"))?;
+    if !themes_dir.is_dir() {
+        return Err("Legacy _themes/ directory not found — use vault themes instead".to_string());
+    }
 
     let new_id = find_available_stem(&themes_dir, "untitled", "json");
 
