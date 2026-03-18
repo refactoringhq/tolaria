@@ -242,6 +242,36 @@ describe('DynamicRelationshipsPanel', () => {
     expect(screen.getByText('My Cool Project')).toBeInTheDocument()
   })
 
+  it('shows emoji icon before label when entry has an emoji', () => {
+    const emojiEntry = makeEntry({
+      path: '/vault/note/rocket.md', filename: 'rocket.md', title: 'Rocket Note', isA: 'Note', icon: '🚀',
+    })
+    render(
+      <DynamicRelationshipsPanel
+        typeEntryMap={{}}
+        frontmatter={{ 'Belongs to': ['[[Rocket Note]]'] }}
+        entries={[emojiEntry]}
+        onNavigate={onNavigate}
+      />
+    )
+    expect(screen.getByText('🚀')).toBeInTheDocument()
+    expect(screen.getByText('Rocket Note')).toBeInTheDocument()
+  })
+
+  it('does not show emoji when entry has no icon', () => {
+    render(
+      <DynamicRelationshipsPanel
+        typeEntryMap={{}}
+        frontmatter={{ 'Belongs to': ['[[project/my-project]]'] }}
+        entries={entries}
+        onNavigate={onNavigate}
+      />
+    )
+    const link = screen.getByText('My Project')
+    const container = link.closest('.group\\/link')
+    expect(container?.textContent).not.toMatch(/^[\p{Emoji_Presentation}]/u)
+  })
+
   describe('relation editing', () => {
     const onUpdateProperty = vi.fn()
     const onDeleteProperty = vi.fn()
@@ -648,6 +678,29 @@ describe('BacklinksPanel', () => {
     expect(screen.getByText('Note A')).toBeInTheDocument()
     fireEvent.click(screen.getByTestId('backlinks-toggle'))
     expect(screen.queryByText('Note A')).not.toBeInTheDocument()
+  })
+
+  it('shows emoji icon before backlink title when entry has an emoji', () => {
+    const backlinks = [{
+      entry: makeEntry({ title: 'Starred Note', icon: '⭐' }),
+      context: null,
+    }]
+    render(<BacklinksPanel typeEntryMap={{}} backlinks={backlinks} onNavigate={onNavigate} />)
+    fireEvent.click(screen.getByTestId('backlinks-toggle'))
+    expect(screen.getByText('⭐')).toBeInTheDocument()
+    expect(screen.getByText('Starred Note')).toBeInTheDocument()
+  })
+
+  it('does not show emoji when backlink entry has no icon', () => {
+    const backlinks = [{ entry: makeEntry({ title: 'Plain Note' }), context: null }]
+    render(<BacklinksPanel typeEntryMap={{}} backlinks={backlinks} onNavigate={onNavigate} />)
+    fireEvent.click(screen.getByTestId('backlinks-toggle'))
+    expect(screen.getByText('Plain Note')).toBeInTheDocument()
+    const btn = screen.getByText('Plain Note').closest('button')
+    const spans = btn?.querySelectorAll('span.shrink-0')
+    // No emoji span should exist (only possible shrink-0 spans are trash icon, not emoji)
+    const emojiSpans = Array.from(spans ?? []).filter(s => /[\p{Emoji_Presentation}]/u.test(s.textContent ?? ''))
+    expect(emojiSpans).toHaveLength(0)
   })
 })
 

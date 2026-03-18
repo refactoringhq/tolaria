@@ -7,8 +7,9 @@ export function StatusSuffix({ isArchived, isTrashed }: { isArchived: boolean; i
   return null
 }
 
-export function LinkButton({ label, typeColor, bgColor, isArchived, isTrashed, onClick, onRemove, title, TypeIcon }: {
+export function LinkButton({ label, emoji, typeColor, bgColor, isArchived, isTrashed, onClick, onRemove, title, TypeIcon }: {
   label: string
+  emoji?: string | null
   typeColor: string
   bgColor?: string
   isArchived: boolean
@@ -33,6 +34,7 @@ export function LinkButton({ label, typeColor, bgColor, isArchived, isTrashed, o
     >
       <span className="flex items-center gap-1 flex-1 truncate">
         {isTrashed && <Trash size={12} className="shrink-0" />}
+        {emoji && <span className="shrink-0">{emoji}</span>}
         {label}
         <StatusSuffix isArchived={isArchived} isTrashed={isTrashed} />
       </span>

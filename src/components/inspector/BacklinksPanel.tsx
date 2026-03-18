@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { VaultEntry } from '../../types'
 import { CaretRight, Trash } from '@phosphor-icons/react'
 import { getTypeColor } from '../../utils/typeColors'
+import { isEmoji } from '../../utils/emoji'
 import { entryStatusTitle } from './shared'
 import { StatusSuffix } from './LinkButton'
 
@@ -29,6 +30,7 @@ function BacklinkEntry({ entry, context, typeEntryMap, onNavigate }: {
         style={{ color: isDimmed ? 'var(--muted-foreground)' : getTypeColor(entry.isA, te?.color) }}
       >
         {entry.trashed && <Trash size={12} className="shrink-0" />}
+        {entry.icon && isEmoji(entry.icon) && <span className="shrink-0">{entry.icon}</span>}
         {entry.title}
         <StatusSuffix isArchived={entry.archived} isTrashed={entry.trashed} />
       </span>

@@ -3,6 +3,7 @@ import type { VaultEntry } from '../../types'
 import { getTypeColor, getTypeLightColor } from '../../utils/typeColors'
 import { getTypeIcon } from '../NoteItem'
 import { findEntryByTarget } from '../../utils/wikilinkColors'
+import { isEmoji } from '../../utils/emoji'
 
 export function isWikilink(value: string): boolean {
   return /^\[\[.*\]\]$/.test(value)
@@ -30,8 +31,10 @@ export function resolveRefProps(ref: string, entries: VaultEntry[], typeEntryMap
   const resolved = resolveRef(ref, entries)
   const refType = resolved?.isA ?? null
   const te = typeEntryMap[refType ?? '']
+  const icon = resolved?.icon
   return {
     label: wikilinkDisplay(ref),
+    emoji: icon && isEmoji(icon) ? icon : null,
     typeColor: getTypeColor(refType, te?.color),
     bgColor: getTypeLightColor(refType, te?.color),
     isArchived: resolved?.archived ?? false,
