@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useEditorSave } from './useEditorSave'
 
@@ -254,6 +254,114 @@ describe('useEditorSave', () => {
       '/vault/theme/default.md',
       '---\nbackground: "#FF0000"\n---\n',
     )
+  })
+
+  describe('auto-save debounce', () => {
+    beforeEach(() => { vi.useFakeTimers() })
+    afterEach(() => { vi.useRealTimers() })
+
+    it('auto-saves 500ms after last content change', async () => {
+      const onNotePersisted = vi.fn()
+      const { result } = renderHook(() =>
+        useEditorSave({ updateVaultContent, setTabs, setToastMessage, onNotePersisted })
+      )
+
+      act(() => {
+        result.current.handleContentChange('/test/note.md', 'auto-saved content')
+      })
+
+      // Not saved yet
+      expect(mockInvokeFn).not.toHaveBeenCalled()
+
+      // Advance 500ms
+      await act(async () => { vi.advanceTimersByTime(500) })
+
+      expect(mockInvokeFn).toHaveBeenCalledWith('save_note_content', {
+        path: '/test/note.md',
+        content: 'auto-saved content',
+      })
+      expect(onNotePersisted).toHaveBeenCalledWith('/test/note.md', 'auto-saved content')
+    })
+
+    it('resets debounce timer on each content change', async () => {
+      const { result } = renderHook(() =>
+        useEditorSave({ updateVaultContent, setTabs, setToastMessage })
+      )
+
+      act(() => { result.current.handleContentChange('/test/note.md', 'v1') })
+
+      // Advance 400ms (not yet 500ms)
+      await act(async () => { vi.advanceTimersByTime(400) })
+      expect(mockInvokeFn).not.toHaveBeenCalled()
+
+      // New edit resets timer
+      act(() => { result.current.handleContentChange('/test/note.md', 'v2') })
+
+      // Another 400ms (800ms total, but only 400ms from last edit)
+      await act(async () => { vi.advanceTimersByTime(400) })
+      expect(mockInvokeFn).not.toHaveBeenCalled()
+
+      // 100ms more = 500ms from last edit
+      await act(async () => { vi.advanceTimersByTime(100) })
+      expect(mockInvokeFn).toHaveBeenCalledWith('save_note_content', {
+        path: '/test/note.md',
+        content: 'v2',
+      })
+    })
+
+    it('auto-save does not show toast', async () => {
+      const { result } = renderHook(() =>
+        useEditorSave({ updateVaultContent, setTabs, setToastMessage })
+      )
+
+      act(() => { result.current.handleContentChange('/test/note.md', 'content') })
+      await act(async () => { vi.advanceTimersByTime(500) })
+
+      expect(setToastMessage).not.toHaveBeenCalled()
+    })
+
+    it('Cmd+S cancels pending auto-save and saves immediately', async () => {
+      const { result } = renderHook(() =>
+        useEditorSave({ updateVaultContent, setTabs, setToastMessage })
+      )
+
+      act(() => { result.current.handleContentChange('/test/note.md', 'content') })
+
+      // Cmd+S before debounce fires
+      await act(async () => { await result.current.handleSave() })
+
+      expect(mockInvokeFn).toHaveBeenCalledTimes(1)
+      expect(setToastMessage).toHaveBeenCalledWith('Saved')
+
+      // Advancing timer should NOT cause a second save
+      await act(async () => { vi.advanceTimersByTime(500) })
+      expect(mockInvokeFn).toHaveBeenCalledTimes(1)
+    })
+
+    it('auto-save calls onAfterSave', async () => {
+      const onAfterSave = vi.fn()
+      const { result } = renderHook(() =>
+        useEditorSave({ updateVaultContent, setTabs, setToastMessage, onAfterSave })
+      )
+
+      act(() => { result.current.handleContentChange('/test/note.md', 'content') })
+      await act(async () => { vi.advanceTimersByTime(500) })
+
+      expect(onAfterSave).toHaveBeenCalled()
+    })
+
+    it('clears auto-save timer on unmount', async () => {
+      const { result, unmount } = renderHook(() =>
+        useEditorSave({ updateVaultContent, setTabs, setToastMessage })
+      )
+
+      act(() => { result.current.handleContentChange('/test/note.md', 'content') })
+      unmount()
+
+      await act(async () => { vi.advanceTimersByTime(500) })
+      // Should not save after unmount
+      expect(mockInvokeFn).not.toHaveBeenCalled()
+    })
   })
 
   it('successive edits and saves persist each version correctly', async () => {

@@ -313,6 +313,22 @@ function App() {
     }
   }, [resolvedPath, vault.entries, notes, dialogs])
 
+  /** Flush pending auto-save before closing a tab to prevent data loss. */
+  const handleCloseTabWithFlush = useCallback((path: string) => {
+    savePendingForPath(path).catch(() => {})
+    notes.handleCloseTab(path)
+  }, [savePendingForPath, notes])
+
+  // Wrap the close-tab ref so Cmd+W and menu bar also flush auto-save
+  const closeTabWithFlushRef = useRef<(path: string) => void>(handleCloseTabWithFlush)
+  useEffect(() => {
+    const original = notes.handleCloseTabRef.current
+    closeTabWithFlushRef.current = (path: string) => {
+      savePendingForPath(path).catch(() => {})
+      original(path)
+    }
+  })
+
   const handleRenameTab = useCallback(async (path: string, newTitle: string) => {
     await savePendingForPath(path)
     await notes.handleRenameNote(path, newTitle, resolvedPath, vault.replaceEntry).then(vault.loadModifiedFiles)
@@ -426,7 +442,7 @@ function App() {
 
   const commands = useAppCommands({
     activeTabPath: notes.activeTabPath, activeTabPathRef: notes.activeTabPathRef,
-    handleCloseTabRef: notes.handleCloseTabRef, tabs: notes.tabs,
+    handleCloseTabRef: closeTabWithFlushRef, tabs: notes.tabs,
     entries: vault.entries,
     modifiedCount: vault.modifiedFiles.length,
     activeNoteModified: vault.modifiedFiles.some(f => f.path === notes.activeTabPath),
@@ -548,7 +564,7 @@ function App() {
             activeTabPath={notes.activeTabPath}
             entries={vault.entries}
             onSwitchTab={notes.handleSwitchTab}
-            onCloseTab={notes.handleCloseTab}
+            onCloseTab={handleCloseTabWithFlush}
             onReorderTabs={notes.handleReorderTabs}
             onNavigateWikilink={notes.handleNavigateWikilink}
             onLoadDiff={vault.loadDiff}

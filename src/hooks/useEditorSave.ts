@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import type { SetStateAction } from 'react'
 import { useSaveNote } from './useSaveNote'
 
@@ -18,13 +18,16 @@ interface EditorSaveConfig {
 }
 
 /**
- * Hook that manages explicit save (Cmd+S) for editor content.
- * Tracks pending (unsaved) content and provides save + pre-rename helpers.
+ * Hook that manages editor content persistence with auto-save.
+ * Content is auto-saved 500ms after the last edit. Cmd+S flushes immediately.
  */
 const noop = () => {}
 
+const AUTO_SAVE_DEBOUNCE_MS = 500
+
 export function useEditorSave({ updateVaultContent, setTabs, setToastMessage, onAfterSave = noop, onNotePersisted }: EditorSaveConfig) {
   const pendingContentRef = useRef<{ path: string; content: string } | null>(null)
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const updateTabAndContent = useCallback((path: string, content: string) => {
     updateVaultContent(path, content)
@@ -47,9 +50,22 @@ export function useEditorSave({ updateVaultContent, setTabs, setToastMessage, on
     return true
   }, [saveNote, onNotePersisted])
 
+  // Stable ref for onAfterSave so the auto-save timer closure always calls the latest version
+  const onAfterSaveRef = useRef(onAfterSave)
+  useEffect(() => { onAfterSaveRef.current = onAfterSave }, [onAfterSave])
+
+  /** Cancel any pending auto-save timer. */
+  const cancelAutoSave = useCallback(() => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current)
+      autoSaveTimerRef.current = null
+    }
+  }, [])
+
   /** Called by Cmd+S — persists the current editor content to disk.
    *  Accepts optional fallback for unsaved notes with no pending edits. */
   const handleSave = useCallback(async (unsavedFallback?: { path: string; content: string }) => {
+    cancelAutoSave()
     try {
       const saved = await flushPending()
       if (!saved && unsavedFallback) {
@@ -65,26 +81,39 @@ export function useEditorSave({ updateVaultContent, setTabs, setToastMessage, on
       console.error('Save failed:', err)
       setToastMessage(`Save failed: ${err}`)
     }
-  }, [flushPending, setToastMessage, onAfterSave, saveNote, onNotePersisted])
+  }, [cancelAutoSave, flushPending, setToastMessage, onAfterSave, saveNote, onNotePersisted])
 
-  /** Called by Editor onChange — buffers the latest content and syncs tab state
-   *  so consumers (e.g. AI panel) always see current editor content. */
+  /** Called by Editor onChange — buffers the latest content, syncs tab state,
+   *  and schedules an auto-save after 500ms of inactivity. */
   const handleContentChange = useCallback((path: string, content: string) => {
     pendingContentRef.current = { path, content }
     setTabs((prev: Tab[]) =>
       prev.map((t) => t.entry.path === path ? { ...t, content } : t)
     )
-  }, [setTabs])
+    cancelAutoSave()
+    autoSaveTimerRef.current = setTimeout(async () => {
+      autoSaveTimerRef.current = null
+      try {
+        const saved = await flushPending()
+        if (saved) onAfterSaveRef.current()
+      } catch (err) {
+        console.error('Auto-save failed:', err)
+      }
+    }, AUTO_SAVE_DEBOUNCE_MS)
+  }, [setTabs, cancelAutoSave, flushPending])
 
-  /** Save pending content for a specific path (used before rename) */
+  // Clear auto-save timer on unmount
+  useEffect(() => () => cancelAutoSave(), [cancelAutoSave])
+
+  /** Save pending content for a specific path (used before rename / tab close) */
   const savePendingForPath = useCallback(
-    (path: string): Promise<boolean> => flushPending(path),
-    [flushPending],
+    (path: string): Promise<boolean> => { cancelAutoSave(); return flushPending(path) },
+    [cancelAutoSave, flushPending],
   )
 
   /** Flush any pending content to disk silently (used before git commit).
    * Does NOT call onAfterSave — callers manage their own refresh. */
-  const savePending = useCallback((): Promise<boolean> => flushPending(), [flushPending])
+  const savePending = useCallback((): Promise<boolean> => { cancelAutoSave(); return flushPending() }, [cancelAutoSave, flushPending])
 
   return { handleSave, handleContentChange, savePendingForPath, savePending }
 }

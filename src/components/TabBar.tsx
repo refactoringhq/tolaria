@@ -182,7 +182,7 @@ function DropIndicator({ side }: { side: 'left' | 'right' }) {
 }
 
 const STATUS_DOT: Record<string, { color: string; testId: string; title: string; pulse?: boolean }> = {
-  unsaved: { color: 'var(--accent-blue, #3b82f6)', testId: 'tab-unsaved-indicator', title: 'Unsaved — Cmd+S to save' },
+  unsaved: { color: 'var(--accent-blue, #3b82f6)', testId: 'tab-unsaved-indicator', title: 'Auto-saving…', pulse: true },
   pendingSave: { color: 'var(--accent-green)', testId: 'tab-pending-save-indicator', title: 'Saving to disk…', pulse: true },
   new: { color: 'var(--accent-green)', testId: 'tab-new-indicator', title: 'New (uncommitted)' },
   modified: { color: 'var(--accent-orange)', testId: 'tab-modified-indicator', title: 'Modified (uncommitted)' },
@@ -242,7 +242,7 @@ function TabItem({ tab, isActive, isEditing, noteStatus, isDragging, showDropBef
       {isEditing ? (
         <InlineTabEdit initialValue={tab.entry.title} onSave={onRenameSave} onCancel={onRenameCancel} />
       ) : (
-        <span className="truncate" style={noteStatus === 'unsaved' ? { fontStyle: 'italic' } : undefined} onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick() }}>
+        <span className="truncate" onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick() }}>
           {tab.entry.icon && isEmoji(tab.entry.icon) && <span className="mr-1">{tab.entry.icon}</span>}
           {tab.entry.title}
         </span>
