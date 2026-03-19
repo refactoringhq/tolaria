@@ -17,7 +17,7 @@ export async function openNoteInNewWindow(notePath: string, vaultPath: string, n
     width: 800,
     height: 700,
     resizable: true,
-    titleBarStyle: 'Overlay',
+    titleBarStyle: 'overlay',
     hiddenTitle: true,
   })
 }
