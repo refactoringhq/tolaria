@@ -118,7 +118,7 @@ export function DynamicPropertiesPanel({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5">
         <TypeSelector isA={entry.isA} customColorKey={customColorKey} availableTypes={availableTypes} typeColorKeys={typeColorKeys} typeIconKeys={typeIconKeys} onUpdateProperty={onUpdateProperty} onNavigate={onNavigate} />
         {propertyEntries.map(([key, value]) => (
           <PropertyRow
