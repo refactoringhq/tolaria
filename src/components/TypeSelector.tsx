@@ -22,17 +22,19 @@ function TypeSelectorItem({ type, typeColorKeys, typeIconKeys }: {
 function ReadOnlyType({ isA, customColorKey, onNavigate }: { isA?: string | null; customColorKey?: string | null; onNavigate?: (target: string) => void }) {
   if (!isA) return null
   return (
-    <div className="flex min-w-0 items-center justify-between gap-2 px-1.5">
+    <div className="grid min-w-0 grid-cols-2 items-center gap-2 px-1.5">
       <span className="font-mono-overline shrink-0 text-muted-foreground">Type</span>
-      {onNavigate ? (
-        <button
-          className="min-w-0 truncate border-none text-right cursor-pointer hover:opacity-80"
-          style={{ background: getTypeLightColor(isA, customColorKey), color: getTypeColor(isA, customColorKey), borderRadius: 6, padding: '2px 8px', fontSize: 12, fontWeight: 500 }}
-          onClick={() => onNavigate(isA.toLowerCase())} title={isA}
-        >{isA}</button>
-      ) : (
-        <span className="text-right text-[12px] text-secondary-foreground">{isA}</span>
-      )}
+      <div className="min-w-0">
+        {onNavigate ? (
+          <button
+            className="min-w-0 max-w-full truncate border-none cursor-pointer ring-inset hover:ring-1 hover:ring-current"
+            style={{ background: getTypeLightColor(isA, customColorKey), color: getTypeColor(isA, customColorKey), borderRadius: 6, padding: '2px 8px', fontSize: 12, fontWeight: 500 }}
+            onClick={() => onNavigate(isA.toLowerCase())} title={isA}
+          >{isA}</button>
+        ) : (
+          <span className="text-[12px] text-secondary-foreground">{isA}</span>
+        )}
+      </div>
     </div>
   )
 }
@@ -55,23 +57,24 @@ export function TypeSelector({ isA, customColorKey, availableTypes, typeColorKey
   const typeLightColor = isA ? getTypeLightColor(isA, typeColorKeys[isA] ?? customColorKey) : undefined
 
   return (
-    <div className="flex min-w-0 items-center justify-between gap-2 px-1.5" data-testid="type-selector">
+    <div className="grid min-w-0 grid-cols-2 items-center gap-2 px-1.5" data-testid="type-selector">
       <span className="font-mono-overline shrink-0 text-muted-foreground">Type</span>
-      <Select value={currentValue} onValueChange={v => onUpdateProperty('type', v === TYPE_NONE ? null : v)}>
-        <SelectTrigger
-          size="sm"
-          className={`h-auto shrink-0 gap-1 border-none shadow-none [&_svg]:text-current ring-inset${isA ? ' hover:ring-1 hover:ring-current' : ' bg-muted hover:opacity-80'}`}
-          style={{
-            background: typeLightColor ?? undefined,
-            color: typeColor ?? undefined,
-            borderRadius: 6,
-            padding: '4px 8px',
-            fontSize: 12,
-            fontWeight: 500,
-          }}
-        >
-          <SelectValue placeholder="None" />
-        </SelectTrigger>
+      <div className="min-w-0">
+        <Select value={currentValue} onValueChange={v => onUpdateProperty('type', v === TYPE_NONE ? null : v)}>
+          <SelectTrigger
+            size="sm"
+            className={`h-auto max-w-full gap-1 border-none shadow-none [&_svg]:text-current ring-inset${isA ? ' hover:ring-1 hover:ring-current' : ' bg-muted hover:opacity-80'}`}
+            style={{
+              background: typeLightColor ?? undefined,
+              color: typeColor ?? undefined,
+              borderRadius: 6,
+              padding: '4px 8px',
+              fontSize: 12,
+              fontWeight: 500,
+            }}
+          >
+            <SelectValue placeholder="None" />
+          </SelectTrigger>
         <SelectContent position="popper" side="left">
           <SelectItem value={TYPE_NONE}>None</SelectItem>
           <SelectSeparator />
@@ -81,7 +84,8 @@ export function TypeSelector({ isA, customColorKey, availableTypes, typeColorKey
             </SelectItem>
           ))}
         </SelectContent>
-      </Select>
+        </Select>
+      </div>
     </div>
   )
 }
