@@ -540,13 +540,22 @@ title: No Code
     create_test_file(dir.path(), "no-code.md", content);
     let entry = parse_md_file(&dir.path().join("no-code.md")).unwrap();
 
-    let notes = entry.relationships.get("Notes").expect("Notes relationship should exist");
+    let notes = entry
+        .relationships
+        .get("Notes")
+        .expect("Notes relationship should exist");
     assert_eq!(notes.len(), 32, "All 32 Notes entries should be parsed");
 
-    let referred = entry.relationships.get("Referred by Data").expect("Referred by Data should exist");
+    let referred = entry
+        .relationships
+        .get("Referred by Data")
+        .expect("Referred by Data should exist");
     assert_eq!(referred.len(), 2);
 
-    let belongs = entry.relationships.get("Belongs to").expect("Belongs to should exist");
+    let belongs = entry
+        .relationships
+        .get("Belongs to")
+        .expect("Belongs to should exist");
     assert_eq!(belongs.len(), 1);
 }
 
