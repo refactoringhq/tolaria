@@ -13,7 +13,6 @@ const FILE_DAILY_NOTE: &str = "file-daily-note";
 const FILE_QUICK_OPEN: &str = "file-quick-open";
 const FILE_SAVE: &str = "file-save";
 
-
 const EDIT_FIND_IN_VAULT: &str = "edit-find-in-vault";
 const EDIT_TOGGLE_RAW_EDITOR: &str = "edit-toggle-raw-editor";
 const EDIT_TOGGLE_DIFF: &str = "edit-toggle-diff";
