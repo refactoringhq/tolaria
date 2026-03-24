@@ -192,3 +192,4 @@ Broader audiences will follow as the onboarding experience matures and the conve
 6. **Capture and organize are separate** — the inbox makes unorganized notes visible; Inbox Zero is the discipline
 7. **Relations as first-class citizens** — connections between notes are as important as the notes themselves
 8. **Filesystem as the single source of truth** — the app never owns the data; cache and UI state are always derived and reconstructible
+9. **Convention over system config files** — app configuration and preferences that belong to a note (e.g. type-level UI preferences) are stored in that note's frontmatter using the `_field` underscore convention, not in separate config files or localStorage. Everything that matters lives in the vault as plain text.

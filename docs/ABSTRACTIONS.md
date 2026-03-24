@@ -27,6 +27,30 @@ These frontmatter field names have special meaning in Laputa's UI:
 
 The list of default-shown relationships and semantic property rendering rules can be customized via `config/relations.md` and `config/semantic-properties.md` in the vault.
 
+### System Properties (underscore convention)
+
+Any frontmatter field whose name starts with `_` is a **system property**:
+
+- It is **not shown** in the Properties panel (neither for notes nor for Type notes)
+- It is **not exposed** as a user-visible property in search, filters, or the UI
+- It **is editable** directly in the raw editor (power users can access it if needed)
+- It is used by Laputa internally for configuration, behavior, and UI preferences
+
+Examples:
+```yaml
+_pinned_properties:       # which properties appear in the editor inline bar (per-type)
+  - key: status
+    icon: circle-dot
+_icon: shapes             # icon assigned to a type
+_color: blue              # color assigned to a type
+_order: 10                # sort order in the sidebar
+_sidebar_label: Projects  # override label in sidebar
+```
+
+**This convention is universal** — apply it to all future system-level frontmatter fields. When a new feature needs to store configuration in a note's frontmatter (especially in Type notes), use `_field_name` to keep it hidden from normal user-facing surfaces while still stored on-disk as plain text.
+
+The frontmatter parser (Rust: `vault/mod.rs`, TS: `utils/frontmatter.ts`) must filter out `_*` fields before passing `properties` to the UI.
+
 ## Document Model
 
 All data lives in markdown files with YAML frontmatter. There is no database — the filesystem is the source of truth.
