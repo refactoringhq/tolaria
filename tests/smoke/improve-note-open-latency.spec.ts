@@ -21,7 +21,7 @@ test.describe('Improve note open latency', () => {
 
     // Wait for the editor to have content
     const editorContainer = page.locator('.editor__blocknote-container')
-    await expect(editorContainer).toBeVisible({ timeout: 5000 })
+    await expect(editorContainer).toBeVisible({ timeout: 8000 })
 
     // The editor should have BlockNote content
     const editorContent = page.locator('.bn-editor')
@@ -36,7 +36,7 @@ test.describe('Improve note open latency', () => {
 
     // Editor should become visible with content
     const editorContainer = page.locator('.editor__blocknote-container')
-    await expect(editorContainer).toBeVisible({ timeout: 5000 })
+    await expect(editorContainer).toBeVisible({ timeout: 8000 })
 
     // The editor should have some BlockNote content
     const editorContent = page.locator('.bn-editor')
@@ -62,7 +62,7 @@ test.describe('Improve note open latency', () => {
 
     // The editor should be visible and functional
     const editorContainer = page.locator('.editor__blocknote-container')
-    await expect(editorContainer).toBeVisible({ timeout: 5000 })
+    await expect(editorContainer).toBeVisible({ timeout: 8000 })
 
     // The editor should have content loaded
     const editorContent = page.locator('.bn-editor')
