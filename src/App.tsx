@@ -14,6 +14,7 @@ import { StatusBar } from './components/StatusBar'
 import { SettingsPanel } from './components/SettingsPanel'
 import { GitHubVaultModal } from './components/GitHubVaultModal'
 import { WelcomeScreen } from './components/WelcomeScreen'
+import { TelemetryConsentDialog } from './components/TelemetryConsentDialog'
 import { useMcpStatus } from './hooks/useMcpStatus'
 import { useVaultLoader } from './hooks/useVaultLoader'
 import { useSettings } from './hooks/useSettings'
@@ -93,7 +94,7 @@ function App() {
   const resolvedPath = onboarding.state.status === 'ready' ? onboarding.state.vaultPath : vaultSwitcher.vaultPath
   const vault = useVaultLoader(resolvedPath)
   useVaultConfig(resolvedPath)
-  const { settings, saveSettings } = useSettings()
+  const { settings, loaded: settingsLoaded, saveSettings } = useSettings()
   const flatVaultMigration = useFlatVaultMigration(resolvedPath, vault.entries.length > 0, vault.reloadVault)
   const { mcpStatus, installMcp } = useMcpStatus(resolvedPath, setToastMessage)
 
@@ -520,6 +521,21 @@ function App() {
   // Show loading spinner while checking vault
   if (onboarding.state.status === 'loading') {
     return <LoadingView />
+  }
+
+  // Show telemetry consent dialog on first launch (or first upgrade with telemetry)
+  if (settingsLoaded && settings.telemetry_consent === null) {
+    return (
+      <TelemetryConsentDialog
+        onAccept={() => {
+          const id = crypto.randomUUID()
+          saveSettings({ ...settings, telemetry_consent: true, crash_reporting_enabled: true, analytics_enabled: true, anonymous_id: id })
+        }}
+        onDecline={() => {
+          saveSettings({ ...settings, telemetry_consent: false, crash_reporting_enabled: false, analytics_enabled: false, anonymous_id: null })
+        }}
+      />
+    )
   }
 
   return (

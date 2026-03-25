@@ -124,6 +124,8 @@ function SettingsPanelInner({ settings, onSave, onClose }: Omit<SettingsPanelPro
   const [githubToken, setGithubToken] = useState(settings.github_token)
   const [githubUsername, setGithubUsername] = useState(settings.github_username)
   const [pullInterval, setPullInterval] = useState(settings.auto_pull_interval_minutes ?? 5)
+  const [crashReporting, setCrashReporting] = useState(settings.crash_reporting_enabled ?? false)
+  const [analytics, setAnalytics] = useState(settings.analytics_enabled ?? false)
   const panelRef = useRef<HTMLDivElement>(null)
 
   // Auto-focus first input when settings panel opens
@@ -142,11 +144,11 @@ function SettingsPanelInner({ settings, onSave, onClose }: Omit<SettingsPanelPro
     github_token: ghOverride ? ghOverride.token : (githubToken ?? null),
     github_username: ghOverride ? ghOverride.username : (githubUsername ?? null),
     auto_pull_interval_minutes: pullInterval,
-    telemetry_consent: settings.telemetry_consent,
-    crash_reporting_enabled: settings.crash_reporting_enabled,
-    analytics_enabled: settings.analytics_enabled,
-    anonymous_id: settings.anonymous_id,
-  }), [openaiKey, googleKey, githubToken, githubUsername, pullInterval, settings.telemetry_consent, settings.crash_reporting_enabled, settings.analytics_enabled, settings.anonymous_id])
+    telemetry_consent: (crashReporting || analytics) ? true : (settings.telemetry_consent === null ? null : false),
+    crash_reporting_enabled: crashReporting,
+    analytics_enabled: analytics,
+    anonymous_id: (crashReporting || analytics) ? (settings.anonymous_id ?? crypto.randomUUID()) : settings.anonymous_id,
+  }), [openaiKey, googleKey, githubToken, githubUsername, pullInterval, crashReporting, analytics, settings.telemetry_consent, settings.anonymous_id])
 
   const handleSave = () => {
     onSave(buildSettings())
@@ -196,6 +198,8 @@ function SettingsPanelInner({ settings, onSave, onClose }: Omit<SettingsPanelPro
           githubToken={githubToken ?? null} githubUsername={githubUsername ?? null}
           onGitHubConnected={handleGitHubConnected} onGitHubDisconnect={handleGitHubDisconnect}
           pullInterval={pullInterval} setPullInterval={setPullInterval}
+          crashReporting={crashReporting} setCrashReporting={setCrashReporting}
+          analytics={analytics} setAnalytics={setAnalytics}
         />
         <SettingsFooter onClose={onClose} onSave={handleSave} />
       </div>
@@ -228,6 +232,8 @@ interface SettingsBodyProps {
   onGitHubConnected: (token: string, username: string) => void
   onGitHubDisconnect: () => void
   pullInterval: number; setPullInterval: (v: number) => void
+  crashReporting: boolean; setCrashReporting: (v: boolean) => void
+  analytics: boolean; setAnalytics: (v: boolean) => void
 }
 
 function SettingsBody(props: SettingsBodyProps) {
@@ -285,7 +291,31 @@ function SettingsBody(props: SettingsBodyProps) {
           <option value={30}>30</option>
         </select>
       </div>
+
+      <div style={{ height: 1, background: 'var(--border)' }} />
+
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 4 }}>Privacy &amp; Telemetry</div>
+        <div style={{ fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
+          Anonymous data helps us fix bugs and improve Laputa. No vault content, note titles, or file paths are ever sent.
+        </div>
+      </div>
+
+      <TelemetryToggle label="Crash reporting" description="Send anonymous error reports" checked={props.crashReporting} onChange={props.setCrashReporting} testId="settings-crash-reporting" />
+      <TelemetryToggle label="Usage analytics" description="Share anonymous usage patterns" checked={props.analytics} onChange={props.setAnalytics} testId="settings-analytics" />
     </div>
+  )
+}
+
+function TelemetryToggle({ label, description, checked, onChange, testId }: { label: string; description: string; checked: boolean; onChange: (v: boolean) => void; testId: string }) {
+  return (
+    <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} data-testid={testId}>
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--primary)' }} />
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)' }}>{label}</div>
+        <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{description}</div>
+      </div>
+    </label>
   )
 }
 

@@ -403,4 +403,45 @@ describe('SettingsPanel', () => {
       })
     })
   })
+
+  describe('Privacy & Telemetry section', () => {
+    it('renders crash reporting and analytics toggles', () => {
+      render(
+        <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
+      )
+      expect(screen.getByTestId('settings-crash-reporting')).toBeInTheDocument()
+      expect(screen.getByTestId('settings-analytics')).toBeInTheDocument()
+    })
+
+    it('toggles reflect initial settings state', () => {
+      const withTelemetry: Settings = {
+        ...emptySettings,
+        telemetry_consent: true,
+        crash_reporting_enabled: true,
+        analytics_enabled: false,
+        anonymous_id: 'test-uuid',
+      }
+      render(
+        <SettingsPanel open={true} settings={withTelemetry} onSave={onSave} onClose={onClose} />
+      )
+      const crashCheckbox = screen.getByTestId('settings-crash-reporting').querySelector('input') as HTMLInputElement
+      const analyticsCheckbox = screen.getByTestId('settings-analytics').querySelector('input') as HTMLInputElement
+      expect(crashCheckbox.checked).toBe(true)
+      expect(analyticsCheckbox.checked).toBe(false)
+    })
+
+    it('saves telemetry settings when toggled and saved', () => {
+      render(
+        <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
+      )
+      const crashCheckbox = screen.getByTestId('settings-crash-reporting').querySelector('input')!
+      fireEvent.click(crashCheckbox)
+      fireEvent.click(screen.getByTestId('settings-save'))
+
+      expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
+        crash_reporting_enabled: true,
+        analytics_enabled: false,
+      }))
+    })
+  })
 })
