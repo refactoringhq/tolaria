@@ -77,6 +77,10 @@ export interface Settings {
   github_token: string | null
   github_username: string | null
   auto_pull_interval_minutes: number | null
+  telemetry_consent: boolean | null
+  crash_reporting_enabled: boolean | null
+  analytics_enabled: boolean | null
+  anonymous_id: string | null
 }
 
 export interface GitPullResult {

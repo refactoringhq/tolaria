@@ -142,7 +142,11 @@ function SettingsPanelInner({ settings, onSave, onClose }: Omit<SettingsPanelPro
     github_token: ghOverride ? ghOverride.token : (githubToken ?? null),
     github_username: ghOverride ? ghOverride.username : (githubUsername ?? null),
     auto_pull_interval_minutes: pullInterval,
-  }), [openaiKey, googleKey, githubToken, githubUsername, pullInterval])
+    telemetry_consent: settings.telemetry_consent,
+    crash_reporting_enabled: settings.crash_reporting_enabled,
+    analytics_enabled: settings.analytics_enabled,
+    anonymous_id: settings.anonymous_id,
+  }), [openaiKey, googleKey, githubToken, githubUsername, pullInterval, settings.telemetry_consent, settings.crash_reporting_enabled, settings.analytics_enabled, settings.anonymous_id])
 
   const handleSave = () => {
     onSave(buildSettings())

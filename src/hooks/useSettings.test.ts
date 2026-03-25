@@ -10,6 +10,10 @@ const defaultSettings: Settings = {
   github_token: null,
   github_username: null,
   auto_pull_interval_minutes: null,
+  telemetry_consent: null,
+  crash_reporting_enabled: null,
+  analytics_enabled: null,
+  anonymous_id: null,
 }
 
 const savedSettings: Settings = {
@@ -19,6 +23,10 @@ const savedSettings: Settings = {
   github_token: null,
   github_username: null,
   auto_pull_interval_minutes: null,
+  telemetry_consent: null,
+  crash_reporting_enabled: null,
+  analytics_enabled: null,
+  anonymous_id: null,
 }
 
 let mockSettingsStore: Settings = { ...defaultSettings }
@@ -80,6 +88,10 @@ describe('useSettings', () => {
       github_token: null,
       github_username: null,
       auto_pull_interval_minutes: null,
+      telemetry_consent: null,
+      crash_reporting_enabled: null,
+      analytics_enabled: null,
+      anonymous_id: null,
     }
 
     await act(async () => {

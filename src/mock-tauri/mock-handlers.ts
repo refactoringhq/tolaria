@@ -81,6 +81,10 @@ let mockSettings: Settings = {
   github_token: null,
   github_username: null,
   auto_pull_interval_minutes: 5,
+  telemetry_consent: null,
+  crash_reporting_enabled: null,
+  analytics_enabled: null,
+  anonymous_id: null,
 }
 
 let mockLastVaultPath: string | null = null

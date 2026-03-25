@@ -10,6 +10,10 @@ pub struct Settings {
     pub github_token: Option<String>,
     pub github_username: Option<String>,
     pub auto_pull_interval_minutes: Option<u32>,
+    pub telemetry_consent: Option<bool>,
+    pub crash_reporting_enabled: Option<bool>,
+    pub analytics_enabled: Option<bool>,
+    pub anonymous_id: Option<String>,
 }
 
 fn settings_path() -> Result<PathBuf, String> {
@@ -56,6 +60,13 @@ fn save_settings_at(path: &PathBuf, settings: Settings) -> Result<(), String> {
             .map(|k| k.trim().to_string())
             .filter(|k| !k.is_empty()),
         auto_pull_interval_minutes: settings.auto_pull_interval_minutes,
+        telemetry_consent: settings.telemetry_consent,
+        crash_reporting_enabled: settings.crash_reporting_enabled,
+        analytics_enabled: settings.analytics_enabled,
+        anonymous_id: settings
+            .anonymous_id
+            .map(|k| k.trim().to_string())
+            .filter(|k| !k.is_empty()),
     };
 
     let json = serde_json::to_string_pretty(&cleaned)
@@ -122,6 +133,10 @@ mod tests {
         assert!(s.github_token.is_none());
         assert!(s.github_username.is_none());
         assert!(s.auto_pull_interval_minutes.is_none());
+        assert!(s.telemetry_consent.is_none());
+        assert!(s.crash_reporting_enabled.is_none());
+        assert!(s.analytics_enabled.is_none());
+        assert!(s.anonymous_id.is_none());
     }
 
     #[test]
@@ -132,6 +147,10 @@ mod tests {
             google_key: Some("AIza-test".to_string()),
             github_token: Some("gho_xyz789".to_string()),
             github_username: Some("lucaong".to_string()),
+            telemetry_consent: Some(true),
+            crash_reporting_enabled: Some(true),
+            analytics_enabled: Some(false),
+            anonymous_id: Some("abc-123-uuid".to_string()),
             ..Default::default()
         };
         let json = serde_json::to_string(&settings).unwrap();
@@ -140,6 +159,10 @@ mod tests {
         assert_eq!(parsed.google_key, settings.google_key);
         assert_eq!(parsed.github_token, settings.github_token);
         assert_eq!(parsed.github_username, settings.github_username);
+        assert_eq!(parsed.telemetry_consent, Some(true));
+        assert_eq!(parsed.crash_reporting_enabled, Some(true));
+        assert_eq!(parsed.analytics_enabled, Some(false));
+        assert_eq!(parsed.anonymous_id.as_deref(), Some("abc-123-uuid"));
     }
 
     #[test]
@@ -159,6 +182,7 @@ mod tests {
             github_token: Some("gho_token123".to_string()),
             github_username: Some("lucaong".to_string()),
             auto_pull_interval_minutes: Some(10),
+            ..Default::default()
         });
         assert_eq!(loaded.anthropic_key.as_deref(), Some("sk-ant-key"));
         assert_eq!(loaded.openai_key.as_deref(), Some("sk-openai"));
@@ -221,6 +245,35 @@ mod tests {
 
         let err = get_settings_at(&path).unwrap_err();
         assert!(err.contains("Failed to parse settings"));
+    }
+
+    #[test]
+    fn test_telemetry_fields_roundtrip() {
+        let loaded = save_and_reload(Settings {
+            telemetry_consent: Some(true),
+            crash_reporting_enabled: Some(true),
+            analytics_enabled: Some(false),
+            anonymous_id: Some("test-uuid-v4".to_string()),
+            ..Default::default()
+        });
+        assert_eq!(loaded.telemetry_consent, Some(true));
+        assert_eq!(loaded.crash_reporting_enabled, Some(true));
+        assert_eq!(loaded.analytics_enabled, Some(false));
+        assert_eq!(loaded.anonymous_id.as_deref(), Some("test-uuid-v4"));
+    }
+
+    #[test]
+    fn test_old_settings_json_missing_telemetry_fields() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = dir.path().join("settings.json");
+        // Simulate old settings.json without telemetry fields
+        fs::write(&path, r#"{"anthropic_key":"sk-test"}"#).unwrap();
+        let loaded = get_settings_at(&path).unwrap();
+        assert_eq!(loaded.anthropic_key.as_deref(), Some("sk-test"));
+        assert!(loaded.telemetry_consent.is_none());
+        assert!(loaded.crash_reporting_enabled.is_none());
+        assert!(loaded.analytics_enabled.is_none());
+        assert!(loaded.anonymous_id.is_none());
     }
 
     #[test]

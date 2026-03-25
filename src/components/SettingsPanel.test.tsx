@@ -24,6 +24,10 @@ const emptySettings: Settings = {
   github_token: null,
   github_username: null,
   auto_pull_interval_minutes: null,
+  telemetry_consent: null,
+  crash_reporting_enabled: null,
+  analytics_enabled: null,
+  anonymous_id: null,
 }
 
 const populatedSettings: Settings = {
@@ -33,6 +37,10 @@ const populatedSettings: Settings = {
   github_token: null,
   github_username: null,
   auto_pull_interval_minutes: 5,
+  telemetry_consent: null,
+  crash_reporting_enabled: null,
+  analytics_enabled: null,
+  anonymous_id: null,
 }
 
 describe('SettingsPanel', () => {
@@ -87,14 +95,14 @@ describe('SettingsPanel', () => {
 
     fireEvent.click(screen.getByTestId('settings-save'))
 
-    expect(onSave).toHaveBeenCalledWith({
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
       anthropic_key: null,
       openai_key: 'sk-openai-test',
       google_key: null,
       github_token: null,
       github_username: null,
       auto_pull_interval_minutes: 5,
-    })
+    }))
     expect(onClose).toHaveBeenCalled()
   })
 
@@ -108,14 +116,14 @@ describe('SettingsPanel', () => {
 
     fireEvent.click(screen.getByTestId('settings-save'))
 
-    expect(onSave).toHaveBeenCalledWith({
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
       anthropic_key: null,
       openai_key: null,
       google_key: null,
       github_token: null,
       github_username: null,
       auto_pull_interval_minutes: 5,
-    })
+    }))
   })
 
   it('calls onClose when Cancel is clicked', () => {
@@ -150,14 +158,14 @@ describe('SettingsPanel', () => {
     fireEvent.change(openaiInput, { target: { value: 'sk-openai-test' } })
     fireEvent.keyDown(screen.getByTestId('settings-panel'), { key: 'Enter', metaKey: true })
 
-    expect(onSave).toHaveBeenCalledWith({
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
       anthropic_key: null,
       openai_key: 'sk-openai-test',
       google_key: null,
       github_token: null,
       github_username: null,
       auto_pull_interval_minutes: 5,
-    })
+    }))
   })
 
   it('calls onClose when clicking backdrop', () => {
