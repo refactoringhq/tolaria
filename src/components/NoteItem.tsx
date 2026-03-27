@@ -1,5 +1,5 @@
 import { useMemo, type ComponentType, type SVGAttributes } from 'react'
-import type { VaultEntry, NoteStatus, PinnedPropertyConfig } from '../types'
+import type { VaultEntry, NoteStatus } from '../types'
 import { cn } from '@/lib/utils'
 import {
   Wrench, Flask, Target, ArrowsClockwise,
@@ -9,7 +9,6 @@ import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 import { resolveIcon } from '../utils/iconRegistry'
 import { relativeDate, getDisplayDate } from '../utils/noteListHelpers'
 import { isEmoji } from '../utils/emoji'
-import { NoteListPinnedValues } from './NoteListPinnedValues'
 
 const TYPE_ICON_MAP: Record<string, ComponentType<SVGAttributes<SVGSVGElement>>> = {
   Project: Wrench,
@@ -26,15 +25,6 @@ const TYPE_ICON_MAP: Record<string, ComponentType<SVGAttributes<SVGSVGElement>>>
 export function getTypeIcon(isA: string | null, customIcon?: string | null): ComponentType<SVGAttributes<SVGSVGElement>> {
   if (customIcon) return resolveIcon(customIcon)
   return (isA && TYPE_ICON_MAP[isA]) || FileText
-}
-
-function defaultPinnedConfigs(entry: VaultEntry): PinnedPropertyConfig[] {
-  if (!entry.isA) return []
-  const pins: PinnedPropertyConfig[] = []
-  if (entry.status != null) pins.push({ key: 'Status', icon: 'circle-dot' })
-  if (entry.belongsTo.length > 0) pins.push({ key: 'Belongs to', icon: 'arrow-up-right' })
-  if (entry.relatedTo.length > 0) pins.push({ key: 'Related to', icon: 'arrows-left-right' })
-  return pins
 }
 
 const THIRTY_DAYS_SECS = 86400 * 30
@@ -101,37 +91,6 @@ function noteItemStyle(isSelected: boolean, isMultiSelected: boolean, typeColor:
   return base
 }
 
-
-function NoteItemTitle({ entry, noteStatus, isSelected }: { entry: VaultEntry; noteStatus: NoteStatus; isSelected: boolean }) {
-  return (
-    <div className="pr-5">
-      <div className={cn("truncate text-[13px] text-foreground", isSelected ? "font-semibold" : "font-medium")}>
-        {noteStatus !== 'clean' && <StatusDot noteStatus={noteStatus} />}
-        {entry.icon && isEmoji(entry.icon) && <span className="mr-1">{entry.icon}</span>}
-        {entry.title}
-        <StateBadge archived={entry.archived} trashed={entry.trashed} />
-      </div>
-    </div>
-  )
-}
-
-function NoteItemFooter({ entry, pinnedConfigs }: { entry: VaultEntry; pinnedConfigs: PinnedPropertyConfig[] }) {
-  return (
-    <>
-      {entry.snippet && (
-        <div className="mt-0.5 text-[12px] leading-[1.5] text-muted-foreground" data-testid="note-snippet" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-          {entry.snippet}
-        </div>
-      )}
-      {pinnedConfigs.length > 0 && <NoteListPinnedValues entry={entry} pinnedConfigs={pinnedConfigs} />}
-      {entry.trashed && entry.trashedAt
-        ? <TrashDateLine entry={entry} />
-        : <div className="mt-0.5 text-[10px] text-muted-foreground">{relativeDate(getDisplayDate(entry))}</div>
-      }
-    </>
-  )
-}
-
 export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlighted = false, noteStatus = 'clean', typeEntryMap, onClickNote, onPrefetch }: {
   entry: VaultEntry
   isSelected: boolean
@@ -146,10 +105,6 @@ export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlig
   const typeColor = getTypeColor(entry.isA ?? 'Note', te?.color)
   const typeLightColor = getTypeLightColor(entry.isA ?? 'Note', te?.color)
   const TypeIcon = useMemo(() => getTypeIcon(entry.isA, te?.icon), [entry.isA, te?.icon])
-  const pinnedConfigs = useMemo((): PinnedPropertyConfig[] => {
-    if (te?.pinnedProperties && te.pinnedProperties.length > 0) return te.pinnedProperties
-    return defaultPinnedConfigs(entry)
-  }, [te, entry])
 
   return (
     <div
@@ -167,8 +122,23 @@ export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlig
     >
       {/* eslint-disable-next-line react-hooks/static-components -- icon lookup from static map, no internal state */}
       <TypeIcon width={14} height={14} className="absolute right-3 top-2.5" style={{ color: typeColor }} data-testid="type-icon" />
-      <NoteItemTitle entry={entry} noteStatus={noteStatus} isSelected={isSelected} />
-      <NoteItemFooter entry={entry} pinnedConfigs={pinnedConfigs} />
+      <div className="pr-5">
+        <div className={cn("truncate text-[13px] text-foreground", isSelected ? "font-semibold" : "font-medium")}>
+          {noteStatus !== 'clean' && <StatusDot noteStatus={noteStatus} />}
+          {entry.icon && isEmoji(entry.icon) && <span className="mr-1">{entry.icon}</span>}
+          {entry.title}
+          <StateBadge archived={entry.archived} trashed={entry.trashed} />
+        </div>
+      </div>
+      {entry.snippet && (
+        <div className="mt-0.5 text-[12px] leading-[1.5] text-muted-foreground" data-testid="note-snippet" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          {entry.snippet}
+        </div>
+      )}
+      {entry.trashed && entry.trashedAt
+        ? <TrashDateLine entry={entry} />
+        : <div className="mt-0.5 text-[10px] text-muted-foreground">{relativeDate(getDisplayDate(entry))}</div>
+      }
     </div>
   )
 }

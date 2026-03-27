@@ -19,7 +19,7 @@ export function buildNewEntry({ path, slug, title, type, status }: NewEntryParam
     aliases: [], belongsTo: [], relatedTo: [],
     status, archived: false, trashed: false, trashedAt: null,
     modifiedAt: now, createdAt: now, fileSize: 0,
-    snippet: '', wordCount: 0, relationships: {}, icon: null, color: null, order: null, outgoingLinks: [], sidebarLabel: null, template: null, sort: null, view: null, visible: null, properties: {}, pinnedProperties: [],
+    snippet: '', wordCount: 0, relationships: {}, icon: null, color: null, order: null, outgoingLinks: [], sidebarLabel: null, template: null, sort: null, view: null, visible: null, properties: {},
   }
 }
 

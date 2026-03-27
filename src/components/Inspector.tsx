@@ -8,7 +8,6 @@ import { DynamicPropertiesPanel } from './DynamicPropertiesPanel'
 import { DynamicRelationshipsPanel, BacklinksPanel, ReferencedByPanel, GitHistoryPanel, InstancesPanel } from './InspectorPanels'
 import { wikilinkTarget } from '../utils/wikilink'
 import type { ReferencedByItem, BacklinkItem } from './InspectorPanels'
-import { usePinnedProperties } from '../hooks/usePinnedProperties'
 
 export type FrontmatterValue = string | number | boolean | string[] | null
 
@@ -139,11 +138,6 @@ export function Inspector({
     if (entry && onAddProperty) onAddProperty(entry.path, key, value)
   }, [entry, onAddProperty])
 
-  const { isPinned, pinProperty, unpinProperty } = usePinnedProperties({
-    entry, entries, frontmatter,
-    onUpdateTypeFrontmatter: onUpdateFrontmatter,
-  })
-
   return (
     <aside className={cn("flex flex-1 flex-col overflow-hidden border-l border-border bg-background text-foreground transition-[width] duration-200", collapsed && "!w-10 !min-w-10")}>
       <InspectorHeader collapsed={collapsed} onToggle={onToggle} />
@@ -158,7 +152,6 @@ export function Inspector({
                 onDeleteProperty={onDeleteProperty ? handleDeleteProperty : undefined}
                 onAddProperty={onAddProperty ? handleAddProperty : undefined}
                 onNavigate={onNavigate}
-                isPinned={isPinned} onPin={pinProperty} onUnpin={unpinProperty}
               />
               <DynamicRelationshipsPanel
                 frontmatter={frontmatter} entries={entries} typeEntryMap={typeEntryMap} onNavigate={onNavigate}

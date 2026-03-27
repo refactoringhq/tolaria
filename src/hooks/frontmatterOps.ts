@@ -4,7 +4,6 @@ import type { VaultEntry } from '../types'
 import type { FrontmatterValue } from '../components/Inspector'
 import { updateMockFrontmatter, deleteMockFrontmatterProperty } from './mockFrontmatterHelpers'
 import { updateMockContent, trackMockChange } from '../mock-tauri'
-import { parsePinnedConfig } from './usePinnedProperties'
 
 const ENTRY_DELETE_MAP: Record<string, Partial<VaultEntry>> = {
   type: { isA: null }, is_a: { isA: null }, status: { status: null }, color: { color: null },
@@ -43,17 +42,9 @@ export function frontmatterToEntryPatch(
 ): EntryPatchResult {
   const k = key.toLowerCase().replace(/\s+/g, '_')
   if (op === 'delete') {
-    if (k === '_pinned_properties') return { patch: { pinnedProperties: [] }, relationshipPatch: null }
     const relPatch: RelationshipPatch = { [key]: null }
     return { patch: ENTRY_DELETE_MAP[k] ?? {}, relationshipPatch: relPatch }
   }
-
-  // Handle _pinned_properties for Type entries
-  if (k === '_pinned_properties' && Array.isArray(value)) {
-    const pinned = parsePinnedConfig(value.map(String))
-    return { patch: { pinnedProperties: pinned }, relationshipPatch: null }
-  }
-
   const str = value != null ? String(value) : null
   const arr = Array.isArray(value) ? value.map(String) : []
   const updates: Record<string, Partial<VaultEntry>> = {

@@ -80,7 +80,6 @@ function collectAllVaultTags(entries: VaultEntry[] | undefined): Record<string, 
 }
 
 function isVisibleProperty([key, value]: [string, FrontmatterValue]): boolean {
-  if (key.startsWith('_')) return false
   return !SKIP_KEYS.has(key.toLowerCase()) && !containsWikilinks(value)
 }
 

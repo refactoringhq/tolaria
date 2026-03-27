@@ -264,11 +264,11 @@ describe('NoteList', () => {
     expect(titleTexts).toEqual(['Newest', 'Middle', 'Oldest'])
   })
 
-  it('shows pinned status values in note items', () => {
+  it('does not render type badge or status on note items', () => {
     render(<NoteList {...defaultFilterProps} entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} onCreateNote={vi.fn()} />)
-    // Pinned properties feature shows status values as chips in note items
-    const activeChips = screen.queryAllByText('Active')
-    expect(activeChips.length).toBeGreaterThanOrEqual(0) // status shown if entry has one
+    // Type badges like "Project", "Note" etc. should not appear as separate badge elements
+    // The word "Project" should only appear in the ALL CAPS pill "PROJECTS 1", not as a standalone badge
+    expect(screen.queryByText('Active')).not.toBeInTheDocument()
   })
 
   it('header shows search and plus icons instead of count badge', () => {

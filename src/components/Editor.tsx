@@ -264,7 +264,6 @@ export const Editor = memo(function Editor(props: EditorProps) {
               isConflicted={isConflicted}
               onKeepMine={onKeepMine}
               onKeepTheirs={onKeepTheirs}
-              onUpdateFrontmatter={onUpdateFrontmatter}
             />
         }
         {(showAIChat || !inspectorCollapsed) && <ResizeHandle onResize={onInspectorResize} />}

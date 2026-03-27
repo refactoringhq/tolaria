@@ -39,9 +39,8 @@ Any frontmatter field whose name starts with `_` is a **system property**:
 Examples:
 ```yaml
 _pinned_properties:       # which properties appear in the editor inline bar (per-type)
-  - "Status:circle-dot"   # format: "key:icon" (icon is optional)
-  - "Belongs to:arrow-up-right"
-  - "Due date:calendar"
+  - key: status
+    icon: circle-dot
 _icon: shapes             # icon assigned to a type
 _color: blue              # color assigned to a type
 _order: 10                # sort order in the sidebar
@@ -179,7 +178,6 @@ Each entity type can have a corresponding **type document** in the `type/` folde
 | `sort` | string | Default sort: "modified:desc", "title:asc", "property:Priority:asc" |
 | `view` | string | Default view mode: "all", "editor-list", "editor-only" |
 | `visible` | bool | Whether type appears in sidebar (default: true) |
-| `_pinned_properties` | list | Pinned properties shown in editor bar + note list. Each item: `"key:icon"` |
 
 **Type relationship**: When any entry has an `isA` value (e.g., "Project"), the Rust backend automatically adds a `"Type"` entry to its `relationships` map pointing to `[[type/project]]`. This makes the type navigable from the Inspector panel.
 

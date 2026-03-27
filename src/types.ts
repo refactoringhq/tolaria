@@ -1,9 +1,3 @@
-/** A single pinned-property config item from a Type's `_pinned_properties` list. */
-export interface PinnedPropertyConfig {
-  key: string
-  icon: string | null
-}
-
 export interface VaultEntry {
   path: string
   filename: string
@@ -45,8 +39,6 @@ export interface VaultEntry {
   outgoingLinks: string[]
   /** Custom scalar frontmatter properties (non-relationship, non-structural). */
   properties: Record<string, string | number | boolean | null>
-  /** Pinned properties config for Type entries. Parsed from `_pinned_properties` frontmatter. */
-  pinnedProperties: PinnedPropertyConfig[]
 }
 
 export type NoteStatus = 'new' | 'modified' | 'clean' | 'pendingSave' | 'unsaved'

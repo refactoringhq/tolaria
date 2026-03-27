@@ -8,7 +8,7 @@ use super::{parse_md_file, scan_vault, VaultEntry};
 // --- Vault Cache ---
 
 /// Bump this when VaultEntry fields change to force a full rescan.
-const CACHE_VERSION: u32 = 9;
+const CACHE_VERSION: u32 = 8;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct VaultCache {

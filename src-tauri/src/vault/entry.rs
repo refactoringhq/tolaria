@@ -1,13 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// A single pinned-property config item stored in the type's frontmatter.
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub struct PinnedPropertyConfig {
-    pub key: String,
-    pub icon: Option<String>,
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct VaultEntry {
     pub path: String,
@@ -66,7 +59,4 @@ pub struct VaultEntry {
     /// Only includes strings, numbers, and booleans — arrays/objects are excluded.
     #[serde(default)]
     pub properties: HashMap<String, serde_json::Value>,
-    /// Pinned properties configuration for Type entries.
-    #[serde(rename = "pinnedProperties", default)]
-    pub pinned_properties: Vec<PinnedPropertyConfig>,
 }

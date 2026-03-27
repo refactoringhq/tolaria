@@ -1,4 +1,3 @@
-use crate::vault::entry::PinnedPropertyConfig;
 use crate::vault::parsing::contains_wikilink;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -194,9 +193,6 @@ pub(crate) fn extract_relationships(
     let mut relationships = HashMap::new();
 
     for (key, value) in data {
-        if key.starts_with('_') {
-            continue;
-        }
         if SKIP_KEYS.iter().any(|k| k.eq_ignore_ascii_case(key)) {
             continue;
         }
@@ -232,9 +228,6 @@ pub(crate) fn extract_properties(
     let mut properties = HashMap::new();
 
     for (key, value) in data {
-        if key.starts_with('_') {
-            continue;
-        }
         let lower = key.to_ascii_lowercase();
         if SKIP_KEYS.iter().any(|k| k.eq_ignore_ascii_case(&lower)) {
             continue;
@@ -272,38 +265,6 @@ pub(crate) fn resolve_is_a(fm_is_a: Option<StringOrList>) -> Option<String> {
     fm_is_a.and_then(|a| a.into_vec().into_iter().next())
 }
 
-/// Parse a single pinned-property entry from "key:icon" format.
-fn parse_pinned_entry(s: &str) -> PinnedPropertyConfig {
-    match s.split_once(':') {
-        Some((key, icon)) if !icon.is_empty() => PinnedPropertyConfig {
-            key: key.trim().to_string(),
-            icon: Some(icon.trim().to_string()),
-        },
-        _ => PinnedPropertyConfig {
-            key: s.trim().to_string(),
-            icon: None,
-        },
-    }
-}
-
-/// Extract `_pinned_properties` from raw YAML frontmatter.
-pub(crate) fn extract_pinned_properties(
-    data: &HashMap<String, serde_json::Value>,
-) -> Vec<PinnedPropertyConfig> {
-    let value = match data.get("_pinned_properties") {
-        Some(v) => v,
-        None => return Vec::new(),
-    };
-    match value {
-        serde_json::Value::Array(arr) => arr
-            .iter()
-            .filter_map(|v| v.as_str())
-            .map(parse_pinned_entry)
-            .collect(),
-        _ => Vec::new(),
-    }
-}
-
 /// Convert gray_matter::Pod to serde_json::Value
 fn pod_to_json(pod: gray_matter::Pod) -> serde_json::Value {
     match pod {
@@ -323,26 +284,17 @@ fn pod_to_json(pod: gray_matter::Pod) -> serde_json::Value {
     }
 }
 
-/// Return type for `extract_fm_and_rels`: (frontmatter, relationships, properties, pinned).
-type FrontmatterBundle = (
+/// Extract frontmatter, relationships, and custom properties from parsed gray_matter data.
+pub(crate) fn extract_fm_and_rels(
+    data: Option<gray_matter::Pod>,
+) -> (
     Frontmatter,
     HashMap<String, Vec<String>>,
     HashMap<String, serde_json::Value>,
-    Vec<PinnedPropertyConfig>,
-);
-
-/// Extract frontmatter, relationships, custom properties, and pinned-property config.
-pub(crate) fn extract_fm_and_rels(data: Option<gray_matter::Pod>) -> FrontmatterBundle {
+) {
     let hash = match data {
         Some(gray_matter::Pod::Hash(map)) => map,
-        _ => {
-            return (
-                Frontmatter::default(),
-                HashMap::new(),
-                HashMap::new(),
-                Vec::new(),
-            )
-        }
+        _ => return (Frontmatter::default(), HashMap::new(), HashMap::new()),
     };
     let json_map: HashMap<String, serde_json::Value> =
         hash.into_iter().map(|(k, v)| (k, pod_to_json(v))).collect();
@@ -350,70 +302,5 @@ pub(crate) fn extract_fm_and_rels(data: Option<gray_matter::Pod>) -> Frontmatter
         parse_frontmatter(&json_map),
         extract_relationships(&json_map),
         extract_properties(&json_map),
-        extract_pinned_properties(&json_map),
     )
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_pinned_entry_with_icon() {
-        let result = parse_pinned_entry("Status:circle-dot");
-        assert_eq!(result.key, "Status");
-        assert_eq!(result.icon, Some("circle-dot".to_string()));
-    }
-
-    #[test]
-    fn test_parse_pinned_entry_without_icon() {
-        let result = parse_pinned_entry("Priority");
-        assert_eq!(result.key, "Priority");
-        assert_eq!(result.icon, None);
-    }
-
-    #[test]
-    fn test_extract_pinned_properties_array() {
-        let mut data = HashMap::new();
-        data.insert(
-            "_pinned_properties".to_string(),
-            serde_json::json!(["Status:circle-dot", "Belongs to:arrow-up-right", "date"]),
-        );
-        let result = extract_pinned_properties(&data);
-        assert_eq!(result.len(), 3);
-        assert_eq!(result[0].key, "Status");
-        assert_eq!(result[0].icon, Some("circle-dot".to_string()));
-        assert_eq!(result[1].key, "Belongs to");
-        assert_eq!(result[1].icon, Some("arrow-up-right".to_string()));
-        assert_eq!(result[2].key, "date");
-        assert_eq!(result[2].icon, None);
-    }
-
-    #[test]
-    fn test_extract_pinned_properties_missing() {
-        let data = HashMap::new();
-        assert!(extract_pinned_properties(&data).is_empty());
-    }
-
-    #[test]
-    fn test_underscore_keys_excluded_from_properties() {
-        let mut data = HashMap::new();
-        data.insert("_pinned_properties".to_string(), serde_json::json!(["a:b"]));
-        data.insert("_hidden".to_string(), serde_json::json!("secret"));
-        data.insert("visible_key".to_string(), serde_json::json!("value"));
-        let props = extract_properties(&data);
-        assert!(!props.contains_key("_pinned_properties"));
-        assert!(!props.contains_key("_hidden"));
-        assert!(props.contains_key("visible_key"));
-    }
-
-    #[test]
-    fn test_underscore_keys_excluded_from_relationships() {
-        let mut data = HashMap::new();
-        data.insert("_refs".to_string(), serde_json::json!("[[note]]"));
-        data.insert("Topics".to_string(), serde_json::json!("[[topic]]"));
-        let rels = extract_relationships(&data);
-        assert!(!rels.contains_key("_refs"));
-        assert!(rels.contains_key("Topics"));
-    }
 }
