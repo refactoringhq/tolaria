@@ -179,6 +179,13 @@
   flex-shrink: 0;
 }
 
+.title-section__row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding-top: 16px;
+}
+
 .title-section__separator {
   border-bottom: 1px solid var(--border-primary, rgba(0, 0, 0, 0.08));
   margin-top: 12px;
@@ -186,7 +193,6 @@
 
 /* --- Note Icon Area --- */
 .note-icon-area {
-  padding: 16px 0 0;
   flex-shrink: 0;
 }
 
@@ -203,8 +209,10 @@
 }
 
 .note-icon-button--active {
-  font-size: 40px;
+  font-size: 32px;
+  line-height: 1.2;
   transition: transform 0.1s;
+  margin-right: 8px;
 }
 
 .note-icon-button--active:hover:not(:disabled) {
@@ -272,8 +280,8 @@
 
 /* --- Title Field --- */
 .title-field {
-  padding: 4px 0 0;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .title-field__input {
@@ -282,13 +290,12 @@
   border: none;
   outline: none;
   background: transparent;
-  font-size: var(--headings-h1-font-size);
-  font-weight: var(--headings-h1-font-weight);
-  line-height: var(--headings-h1-line-height);
-  letter-spacing: var(--headings-h1-letter-spacing);
+  font-size: var(--headings-h1-font-size, 28px);
+  font-weight: var(--headings-h1-font-weight, 700);
+  line-height: var(--headings-h1-line-height, 1.2);
+  letter-spacing: var(--headings-h1-letter-spacing, -0.015em);
   color: var(--foreground);
   padding: 0;
-  margin-left: 8px;
 }
 
 .title-field__input::placeholder {

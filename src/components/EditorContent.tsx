@@ -203,18 +203,20 @@ export function EditorContent({
       {showEditor && activeTab && (
         <div className="editor-scroll-area">
           <div className="title-section">
-            <NoteIcon
-              icon={emojiIcon}
-              editable={!isTrashed}
-              onSetIcon={handleSetIcon}
-              onRemoveIcon={handleRemoveIcon}
-            />
-            <TitleField
-              title={activeTab.entry.title}
-              filename={activeTab.entry.filename}
-              editable={!isTrashed}
-              onTitleChange={(newTitle) => onTitleChange?.(activeTab.entry.path, newTitle)}
-            />
+            <div className="title-section__row">
+              <NoteIcon
+                icon={emojiIcon}
+                editable={!isTrashed}
+                onSetIcon={handleSetIcon}
+                onRemoveIcon={handleRemoveIcon}
+              />
+              <TitleField
+                title={activeTab.entry.title}
+                filename={activeTab.entry.filename}
+                editable={!isTrashed}
+                onTitleChange={(newTitle) => onTitleChange?.(activeTab.entry.path, newTitle)}
+              />
+            </div>
             <div className="title-section__separator" />
           </div>
           <SingleEditorView editor={editor} entries={entries} onNavigateWikilink={onNavigateWikilink} onChange={onEditorChange} vaultPath={vaultPath} editable={!isTrashed} />
