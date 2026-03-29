@@ -20,7 +20,6 @@ import { useMcpStatus } from './hooks/useMcpStatus'
 import { useVaultLoader } from './hooks/useVaultLoader'
 import { useSettings } from './hooks/useSettings'
 import { useNoteActions } from './hooks/useNoteActions'
-import { needsRenameOnSave } from './hooks/useNoteRename'
 import { useCommitFlow } from './hooks/useCommitFlow'
 import { useViewMode } from './hooks/useViewMode'
 import { useEntryActions } from './hooks/useEntryActions'
@@ -36,12 +35,14 @@ import { useZoom } from './hooks/useZoom'
 import { useVaultConfig } from './hooks/useVaultConfig'
 import { useBuildNumber } from './hooks/useBuildNumber'
 import { useOnboarding } from './hooks/useOnboarding'
-import { useEditorSaveWithLinks } from './hooks/useEditorSaveWithLinks'
 import { useAppNavigation } from './hooks/useAppNavigation'
 import { useAiActivity } from './hooks/useAiActivity'
 import { useBulkActions } from './hooks/useBulkActions'
 import { useDeleteActions } from './hooks/useDeleteActions'
 import { useLayoutPanels } from './hooks/useLayoutPanels'
+import { useConflictFlow } from './hooks/useConflictFlow'
+import { useAppSave } from './hooks/useAppSave'
+import { useVaultBridge } from './hooks/useVaultBridge'
 import { ConflictResolverModal } from './components/ConflictResolverModal'
 import { ConfirmDeleteDialog } from './components/ConfirmDeleteDialog'
 import { UpdateBanner } from './components/UpdateBanner'
@@ -49,12 +50,10 @@ import { FlatVaultMigrationBanner } from './components/FlatVaultMigrationBanner'
 import { useFlatVaultMigration } from './hooks/useFlatVaultMigration'
 import { invoke } from '@tauri-apps/api/core'
 import { isTauri, mockInvoke } from './mock-tauri'
-import type { SidebarSelection, VaultEntry, InboxPeriod } from './types'
+import type { SidebarSelection, InboxPeriod } from './types'
 import type { NoteListItem } from './utils/ai-context'
 import { filterEntries, filterInboxEntries, type NoteListFilter } from './utils/noteListHelpers'
-import { openLocalFile } from './utils/url'
 import { openNoteInNewWindow } from './utils/openNoteWindow'
-import { flushEditorContent } from './utils/autoSave'
 import './App.css'
 
 // Type declarations for mock content storage and test overrides
@@ -111,9 +110,6 @@ function App() {
     onToast: (msg) => setToastMessage(msg),
   })
 
-  // Ref bridges for conflict resolution callbacks (notes declared below)
-  const openConflictFileRef = useRef<(relativePath: string) => void>(() => {})
-
   const conflictResolver = useConflictResolver({
     vaultPath: resolvedPath,
     onResolved: () => {
@@ -123,70 +119,10 @@ function App() {
       autoSync.triggerSync()
     },
     onToast: (msg) => setToastMessage(msg),
-    onOpenFile: (relativePath) => openConflictFileRef.current(relativePath),
+    onOpenFile: (relativePath) => conflictFlow.openConflictFileRef.current(relativePath),
   })
 
-  const handleOpenConflictResolver = useCallback(async () => {
-    let files = autoSync.conflictFiles
-    // If no cached conflicts, check directly — there may be pre-existing
-    // conflicts from a prior session that the pull flow didn't detect.
-    if (files.length === 0) {
-      try {
-        files = isTauri()
-          ? await invoke<string[]>('get_conflict_files', { vaultPath: resolvedPath })
-          : await mockInvoke<string[]>('get_conflict_files', { vaultPath: resolvedPath })
-      } catch {
-        return
-      }
-      if (files.length === 0) {
-        setToastMessage('No merge conflicts to resolve')
-        return
-      }
-    }
-    autoSync.pausePull()
-    conflictResolver.initFiles(files)
-    dialogs.openConflictResolver()
-  }, [autoSync, conflictResolver, dialogs, resolvedPath])
-
-  const handleCloseConflictResolver = useCallback(() => {
-    autoSync.resumePull()
-    dialogs.closeConflictResolver()
-  }, [autoSync, dialogs])
-
-  /** Resolve a single file conflict from the in-editor banner. */
-  const handleResolveConflictInline = useCallback(async (filePath: string, strategy: 'ours' | 'theirs') => {
-    try {
-      const relativePath = filePath.replace(resolvedPath + '/', '')
-      const call = isTauri() ? invoke : mockInvoke
-      await call('git_resolve_conflict', { vaultPath: resolvedPath, file: relativePath, strategy })
-      // Reload the note content to show the resolved version
-      const content = await (isTauri() ? invoke<string> : mockInvoke<string>)('get_note_content', { path: filePath })
-      // Check remaining conflicts
-      const remaining = await (isTauri() ? invoke<string[]> : mockInvoke<string[]>)('get_conflict_files', { vaultPath: resolvedPath })
-      if (remaining.length === 0) {
-        // All resolved — auto-commit the merge and push
-        await (isTauri() ? invoke : mockInvoke)('git_commit_conflict_resolution', { vaultPath: resolvedPath })
-        vault.reloadVault()
-        autoSync.triggerSync()
-        setToastMessage('All conflicts resolved — merge committed')
-      } else {
-        void content // content reload happens via vault reload
-        vault.reloadVault()
-        setToastMessage(`Resolved — ${remaining.length} conflict${remaining.length > 1 ? 's' : ''} remaining`)
-      }
-    } catch (err) {
-      setToastMessage(`Failed to resolve conflict: ${err}`)
-    }
-  }, [resolvedPath, vault, autoSync, setToastMessage])
-
-  const handleKeepMine = useCallback((path: string) => handleResolveConflictInline(path, 'ours'), [handleResolveConflictInline])
-  const handleKeepTheirs = useCallback((path: string) => handleResolveConflictInline(path, 'theirs'), [handleResolveConflictInline])
-
-  // Ref bridges handleContentChange (created after notes) into useNoteActions.
-  // Read at callback time, so it's always current when user presses Cmd+N.
-  const contentChangeRef = useRef<(path: string, content: string) => void>(() => {})
-
-  const notes = useNoteActions({ addEntry: vault.addEntry, removeEntry: vault.removeEntry, entries: vault.entries, setToastMessage, updateEntry: vault.updateEntry, vaultPath: resolvedPath, addPendingSave: vault.addPendingSave, removePendingSave: vault.removePendingSave, trackUnsaved: vault.trackUnsaved, clearUnsaved: vault.clearUnsaved, unsavedPaths: vault.unsavedPaths, markContentPending: (path, content) => contentChangeRef.current(path, content), onNewNotePersisted: vault.loadModifiedFiles, replaceEntry: vault.replaceEntry })
+  const notes = useNoteActions({ addEntry: vault.addEntry, removeEntry: vault.removeEntry, entries: vault.entries, setToastMessage, updateEntry: vault.updateEntry, vaultPath: resolvedPath, addPendingSave: vault.addPendingSave, removePendingSave: vault.removePendingSave, trackUnsaved: vault.trackUnsaved, clearUnsaved: vault.clearUnsaved, unsavedPaths: vault.unsavedPaths, markContentPending: (path, content) => appSave.contentChangeRef.current(path, content), onNewNotePersisted: vault.loadModifiedFiles, replaceEntry: vault.replaceEntry })
 
   // Keep note entry in sync with vault entries so banners (trash/archive)
   // and read-only state react immediately without reopening the note.
@@ -211,56 +147,43 @@ function App() {
     onSelectNote: notes.handleSelectNote,
   })
 
-  // MCP UI bridge: react to AI-driven open/highlight/vault-change events
-  const openNoteByPath = useCallback((path: string) => {
-    const entry = entriesByPath.get(path) ?? entriesByPath.get(`${resolvedPath}/${path}`)
-    if (entry) {
-      notes.handleSelectNote(entry)
-    } else {
-      // Entry not yet in vault (just created) — reload then open
-      vault.reloadVault().then(freshEntries => {
-        const fresh = (freshEntries as VaultEntry[]).find(e => e.path === path || e.path === `${resolvedPath}/${path}`)
-        if (fresh) notes.handleSelectNote(fresh)
-      })
-    }
-  }, [entriesByPath, vault, notes, resolvedPath])
+  const vaultBridge = useVaultBridge({
+    entriesByPath, resolvedPath,
+    reloadVault: vault.reloadVault,
+    onSelectNote: notes.handleSelectNote,
+    activeTabPath: notes.activeTabPath,
+  })
+
+  const conflictFlow = useConflictFlow({
+    resolvedPath, entries: vault.entries,
+    conflictFiles: autoSync.conflictFiles,
+    pausePull: autoSync.pausePull, resumePull: autoSync.resumePull,
+    triggerSync: autoSync.triggerSync, reloadVault: vault.reloadVault,
+    initConflictFiles: conflictResolver.initFiles,
+    openConflictResolver: dialogs.openConflictResolver,
+    closeConflictResolver: dialogs.closeConflictResolver,
+    onSelectNote: notes.handleSelectNote,
+    activeTabPath: notes.activeTabPath,
+    setToastMessage,
+  })
+
+  const appSave = useAppSave({
+    updateEntry: vault.updateEntry, setTabs: notes.setTabs, setToastMessage,
+    loadModifiedFiles: vault.loadModifiedFiles,
+    clearUnsaved: vault.clearUnsaved, unsavedPaths: vault.unsavedPaths,
+    tabs: notes.tabs, activeTabPath: notes.activeTabPath,
+    handleRenameNote: notes.handleRenameNote,
+    replaceEntry: vault.replaceEntry, resolvedPath,
+  })
 
   const aiActivity = useAiActivity({
-    onOpenNote: openNoteByPath,
-    onOpenTab: openNoteByPath,
+    onOpenNote: vaultBridge.openNoteByPath,
+    onOpenTab: vaultBridge.openNoteByPath,
     onSetFilter: (filterType) => {
       handleSetSelection({ kind: 'sectionGroup', type: filterType })
     },
     onVaultChanged: () => { vault.reloadVault() },
   })
-
-  // Stable callback for Pulse "open note" — never triggers reloadVault.
-  // Pulse files always exist in the vault; if somehow not found, silently skip.
-  const handlePulseOpenNote = useCallback((relativePath: string) => {
-    const fullPath = `${resolvedPath}/${relativePath}`
-    const entry = entriesByPath.get(fullPath) ?? entriesByPath.get(relativePath)
-    if (entry) notes.handleSelectNote(entry)
-  }, [entriesByPath, resolvedPath, notes])
-
-  // Agent file operation handlers: auto-open created notes, live-refresh modified notes
-  const handleAgentFileCreated = useCallback((relativePath: string) => {
-    vault.reloadVault().then(freshEntries => {
-      const entry = (freshEntries as VaultEntry[]).find(e => e.path === relativePath || e.path === `${resolvedPath}/${relativePath}`)
-      if (entry) notes.handleSelectNote(entry)
-    })
-  }, [vault, notes, resolvedPath])
-
-  const handleAgentFileModified = useCallback((relativePath: string) => {
-    const fullPath = `${resolvedPath}/${relativePath}`
-    const currentPath = notes.activeTabPath
-    if (currentPath === relativePath || currentPath === fullPath) {
-      vault.reloadVault()
-    }
-  }, [vault, notes.activeTabPath, resolvedPath])
-
-  const handleAgentVaultChanged = useCallback(() => {
-    vault.reloadVault()
-  }, [vault])
 
   const handleSetNoteIcon = useCallback(async (path: string, emoji: string) => {
     await notes.handleUpdateFrontmatter(path, 'icon', emoji)
@@ -270,103 +193,24 @@ function App() {
     await notes.handleDeleteProperty(path, 'icon')
   }, [notes])
 
-  /** Command palette: open the emoji picker on the active note's NoteIcon. */
   const handleSetNoteIconCommand = useCallback(() => {
     window.dispatchEvent(new CustomEvent('laputa:open-icon-picker'))
   }, [])
 
-  /** Command palette: remove the active note's emoji icon. */
   const handleRemoveNoteIconCommand = useCallback(() => {
     if (notes.activeTabPath) handleRemoveNoteIcon(notes.activeTabPath)
   }, [notes.activeTabPath, handleRemoveNoteIcon])
 
-  /** Open the active note in a new window (command palette / keyboard shortcut). */
   const handleOpenInNewWindow = useCallback(() => {
     const activeTab = notes.tabs.find(t => t.entry.path === notes.activeTabPath)
     if (activeTab) openNoteInNewWindow(activeTab.entry.path, resolvedPath, activeTab.entry.title)
-  }, [notes.tabs, notes.activeTabPath, resolvedPath]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [notes.tabs, notes.activeTabPath, resolvedPath])
 
-  /** Open a specific note entry in a new window (Cmd+Shift+Click). */
-  const handleOpenEntryInNewWindow = useCallback((entry: VaultEntry) => {
+  const handleOpenEntryInNewWindow = useCallback((entry: { path: string; title: string }) => {
     openNoteInNewWindow(entry.path, resolvedPath, entry.title)
   }, [resolvedPath])
 
-  const onAfterSave = useCallback(() => {
-    vault.loadModifiedFiles()
-  }, [vault])
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- signature required by useEditorSave
-  const onNotePersisted = useCallback((path: string, _content: string) => {
-    vault.clearUnsaved(path)
-  }, [vault])
-
-  const { handleSave: handleSaveRaw, handleContentChange, savePendingForPath, savePending } = useEditorSaveWithLinks({
-    updateEntry: vault.updateEntry,
-    setTabs: notes.setTabs, setToastMessage, onAfterSave,
-    onNotePersisted,
-  })
-  useEffect(() => { contentChangeRef.current = handleContentChange }, [handleContentChange])
-
-  // Refs for stable closure in flushBeforeAction (avoids re-creating on every tab/content change)
-  const tabsRef = useRef(notes.tabs)
-  tabsRef.current = notes.tabs // eslint-disable-line react-hooks/refs -- ref sync pattern
-  const unsavedPathsRef = useRef(vault.unsavedPaths)
-  unsavedPathsRef.current = vault.unsavedPaths // eslint-disable-line react-hooks/refs -- ref sync pattern
-
-  /** Auto-save unsaved editor content before a destructive action (trash/archive). */
-  const { clearUnsaved: vaultClearUnsaved } = vault
-  const flushBeforeAction = useCallback(async (path: string) => {
-    try {
-      await flushEditorContent(path, {
-        savePendingForPath,
-        getTabContent: (p) => tabsRef.current.find(t => t.entry.path === p)?.content,
-        isUnsaved: (p) => unsavedPathsRef.current.has(p),
-        onSaved: (p) => { vaultClearUnsaved(p) },
-      })
-    } catch (err) {
-      setToastMessage(`Auto-save failed: ${err}`)
-      throw err
-    }
-  }, [savePendingForPath, vaultClearUnsaved, setToastMessage])
-
-  // Wire conflict file opener now that notes is available
-  useEffect(() => {
-    openConflictFileRef.current = (relativePath: string) => {
-      const fullPath = `${resolvedPath}/${relativePath}`
-      const entry = vault.entries.find(e => e.path === fullPath)
-      if (entry) {
-        // Markdown note — open inside Laputa editor
-        notes.handleSelectNote(entry)
-        dialogs.closeConflictResolver()
-      } else {
-        // Non-note file (e.g. settings.json) —
-        // open with system default app so the user can inspect/edit it
-        openLocalFile(fullPath)
-      }
-    }
-  }, [resolvedPath, vault.entries, notes, dialogs])
-
-  const handleRenameTab = useCallback(async (path: string, newTitle: string) => {
-    await savePendingForPath(path)
-    await notes.handleRenameNote(path, newTitle, resolvedPath, vault.replaceEntry).then(vault.loadModifiedFiles)
-  }, [notes, resolvedPath, vault, savePendingForPath])
-
-  // Wrap handleSave to also persist unsaved notes that have no pending edits (user pressed Cmd+S without typing)
-  // and trigger file rename when the title slug doesn't match the filename.
-  const handleSave = useCallback(async () => {
-    const activeTab = notes.tabs.find(t => t.entry.path === notes.activeTabPath)
-    const fallback = activeTab && vault.unsavedPaths.has(activeTab.entry.path)
-      ? { path: activeTab.entry.path, content: activeTab.content }
-      : undefined
-    await handleSaveRaw(fallback)
-
-    // After saving, check if filename needs to match the current title
-    if (activeTab && needsRenameOnSave(activeTab.entry.title, activeTab.entry.filename)) {
-      await handleRenameTab(activeTab.entry.path, activeTab.entry.title)
-    }
-  }, [handleSaveRaw, handleRenameTab, notes.tabs, notes.activeTabPath, vault.unsavedPaths])
-
-  const commitFlow = useCommitFlow({ savePending, loadModifiedFiles: vault.loadModifiedFiles, commitAndPush: vault.commitAndPush, setToastMessage, onPushRejected: autoSync.handlePushRejected })
+  const commitFlow = useCommitFlow({ savePending: appSave.savePending, loadModifiedFiles: vault.loadModifiedFiles, commitAndPush: vault.commitAndPush, setToastMessage, onPushRejected: autoSync.handlePushRejected })
 
   const entryActions = useEntryActions({
     entries: vault.entries, updateEntry: vault.updateEntry,
@@ -374,7 +218,7 @@ function App() {
     handleDeleteProperty: notes.handleDeleteProperty, setToastMessage,
     createTypeEntry: notes.createTypeEntrySilent,
     onFrontmatterPersisted: vault.loadModifiedFiles,
-    onBeforeAction: flushBeforeAction,
+    onBeforeAction: appSave.flushBeforeAction,
   })
 
   const deleteActions = useDeleteActions({
@@ -391,14 +235,6 @@ function App() {
     notes.handleCreateType(name)
     setToastMessage(`Type "${name}" created`)
   }, [notes])
-
-  /** Title field change: save pending content then rename file + update wikilinks (non-blocking). */
-  const handleTitleSync = useCallback((path: string, newTitle: string) => {
-    savePendingForPath(path)
-      .then(() => notes.handleRenameNote(path, newTitle, resolvedPath, vault.replaceEntry))
-      .then(vault.loadModifiedFiles)
-      .catch((err) => console.error('Title rename failed:', err))
-  }, [notes, resolvedPath, vault, savePendingForPath])
 
   const bulkActions = useBulkActions(entryActions, setToastMessage)
 
@@ -428,7 +264,6 @@ function App() {
     } else if (result === 'error') {
       setToastMessage('Could not check for updates')
     }
-    // 'available' → UpdateBanner handles it automatically
   }, [updateActions, updateStatus.state, setToastMessage])
 
   const handleRepairVault = useCallback(async () => {
@@ -454,13 +289,13 @@ function App() {
     onCreateNote: notes.handleCreateNoteImmediate,
     onOpenDailyNote: notes.handleOpenDailyNote,
     onCreateNoteOfType: notes.handleCreateNoteImmediate,
-    onSave: handleSave,
+    onSave: appSave.handleSave,
     onOpenSettings: dialogs.openSettings,
     onTrashNote: entryActions.handleTrashNote, onRestoreNote: entryActions.handleRestoreNote,
     onArchiveNote: entryActions.handleArchiveNote, onUnarchiveNote: entryActions.handleUnarchiveNote,
     onCommitPush: commitFlow.openCommitDialog,
     onPull: autoSync.triggerSync,
-    onResolveConflicts: handleOpenConflictResolver,
+    onResolveConflicts: conflictFlow.handleOpenConflictResolver,
     onSetViewMode: setViewMode,
     onToggleInspector: () => layout.setInspectorCollapsed(c => !c),
     onToggleDiff: () => diffToggleRef.current(),
@@ -555,7 +390,7 @@ function App() {
           <>
             <div className={`app__note-list${aiActivity.highlightElement === 'notelist' ? ' ai-highlight' : ''}`} style={{ width: layout.noteListWidth }}>
               {selection.kind === 'filter' && selection.filter === 'pulse' ? (
-                <PulseView vaultPath={resolvedPath} onOpenNote={handlePulseOpenNote} sidebarCollapsed={!sidebarVisible} onExpandSidebar={() => setViewMode('all')} />
+                <PulseView vaultPath={resolvedPath} onOpenNote={vaultBridge.handlePulseOpenNote} sidebarCollapsed={!sidebarVisible} onExpandSidebar={() => setViewMode('all')} />
               ) : (
                 <NoteList entries={vault.entries} selection={selection} selectedNote={activeTab?.entry ?? null} noteListFilter={noteListFilter} onNoteListFilterChange={setNoteListFilter} inboxPeriod={inboxPeriod} onInboxPeriodChange={setInboxPeriod} modifiedFiles={vault.modifiedFiles} modifiedFilesError={vault.modifiedFilesError} getNoteStatus={vault.getNoteStatus} sidebarCollapsed={!sidebarVisible} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={notes.handleReplaceActiveTab} onCreateNote={notes.handleCreateNoteImmediate} onBulkArchive={bulkActions.handleBulkArchive} onBulkTrash={bulkActions.handleBulkTrash} onBulkRestore={bulkActions.handleBulkRestore} onBulkDeletePermanently={deleteActions.handleBulkDeletePermanently} onEmptyTrash={deleteActions.handleEmptyTrash} onUpdateTypeSort={notes.handleUpdateFrontmatter} updateEntry={vault.updateEntry} onOpenInNewWindow={handleOpenEntryInNewWindow} />
               )}
@@ -594,9 +429,9 @@ function App() {
             onDeleteNote={deleteActions.handleDeleteNote}
             onArchiveNote={entryActions.handleArchiveNote}
             onUnarchiveNote={entryActions.handleUnarchiveNote}
-            onContentChange={handleContentChange}
-            onSave={handleSave}
-            onTitleSync={handleTitleSync}
+            onContentChange={appSave.handleContentChange}
+            onSave={appSave.handleSave}
+            onTitleSync={appSave.handleTitleSync}
             rawToggleRef={rawToggleRef}
             diffToggleRef={diffToggleRef}
             canGoBack={canGoBack}
@@ -604,14 +439,14 @@ function App() {
             onGoBack={handleGoBack}
             onGoForward={handleGoForward}
             leftPanelsCollapsed={!sidebarVisible && !noteListVisible}
-            onFileCreated={handleAgentFileCreated}
-            onFileModified={handleAgentFileModified}
-            onVaultChanged={handleAgentVaultChanged}
+            onFileCreated={vaultBridge.handleAgentFileCreated}
+            onFileModified={vaultBridge.handleAgentFileModified}
+            onVaultChanged={vaultBridge.handleAgentVaultChanged}
             onSetNoteIcon={handleSetNoteIcon}
             onRemoveNoteIcon={handleRemoveNoteIcon}
-            isConflicted={!!notes.activeTabPath && autoSync.conflictFiles.some(f => notes.activeTabPath?.endsWith(f))}
-            onKeepMine={handleKeepMine}
-            onKeepTheirs={handleKeepTheirs}
+            isConflicted={conflictFlow.isConflicted}
+            onKeepMine={conflictFlow.handleKeepMine}
+            onKeepTheirs={conflictFlow.handleKeepTheirs}
           />
         </div>
       </div>
@@ -627,7 +462,7 @@ function App() {
         />
       )}
       <UpdateBanner status={updateStatus} actions={updateActions} />
-      <StatusBar noteCount={vault.entries.length} modifiedCount={vault.modifiedFiles.length} vaultPath={vaultSwitcher.vaultPath} vaults={vaultSwitcher.allVaults} onSwitchVault={vaultSwitcher.switchVault} onOpenSettings={dialogs.openSettings} onOpenLocalFolder={vaultSwitcher.handleOpenLocalFolder} onConnectGitHub={dialogs.openGitHubVault} onClickPending={() => handleSetSelection({ kind: 'filter', filter: 'changes' })} hasGitHub={!!settings.github_token} syncStatus={autoSync.syncStatus} lastSyncTime={autoSync.lastSyncTime} conflictCount={autoSync.conflictFiles.length} lastCommitInfo={autoSync.lastCommitInfo} remoteStatus={autoSync.remoteStatus} onTriggerSync={autoSync.triggerSync} onPullAndPush={autoSync.pullAndPush} onOpenConflictResolver={handleOpenConflictResolver} zoomLevel={zoom.zoomLevel} onZoomReset={zoom.zoomReset} buildNumber={buildNumber} onCheckForUpdates={handleCheckForUpdates} onRemoveVault={vaultSwitcher.removeVault} mcpStatus={mcpStatus} onInstallMcp={installMcp} />
+      <StatusBar noteCount={vault.entries.length} modifiedCount={vault.modifiedFiles.length} vaultPath={vaultSwitcher.vaultPath} vaults={vaultSwitcher.allVaults} onSwitchVault={vaultSwitcher.switchVault} onOpenSettings={dialogs.openSettings} onOpenLocalFolder={vaultSwitcher.handleOpenLocalFolder} onConnectGitHub={dialogs.openGitHubVault} onClickPending={() => handleSetSelection({ kind: 'filter', filter: 'changes' })} hasGitHub={!!settings.github_token} syncStatus={autoSync.syncStatus} lastSyncTime={autoSync.lastSyncTime} conflictCount={autoSync.conflictFiles.length} lastCommitInfo={autoSync.lastCommitInfo} remoteStatus={autoSync.remoteStatus} onTriggerSync={autoSync.triggerSync} onPullAndPush={autoSync.pullAndPush} onOpenConflictResolver={conflictFlow.handleOpenConflictResolver} zoomLevel={zoom.zoomLevel} onZoomReset={zoom.zoomReset} buildNumber={buildNumber} onCheckForUpdates={handleCheckForUpdates} onRemoveVault={vaultSwitcher.removeVault} mcpStatus={mcpStatus} onInstallMcp={installMcp} />
       <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
       <QuickOpenPalette open={dialogs.showQuickOpen} entries={vault.entries} onSelect={notes.handleSelectNote} onClose={dialogs.closeQuickOpen} />
       <CommandPalette open={dialogs.showCommandPalette} commands={commands} onClose={dialogs.closeCommandPalette} />
@@ -643,7 +478,7 @@ function App() {
         onResolveFile={conflictResolver.resolveFile}
         onOpenInEditor={conflictResolver.openInEditor}
         onCommit={conflictResolver.commitResolution}
-        onClose={handleCloseConflictResolver}
+        onClose={conflictFlow.handleCloseConflictResolver}
       />
       <SettingsPanel open={dialogs.showSettings} settings={settings} onSave={saveSettings} onClose={dialogs.closeSettings} />
       <GitHubVaultModal
