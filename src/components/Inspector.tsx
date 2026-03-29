@@ -3,6 +3,7 @@ import { useDragRegion } from '../hooks/useDragRegion'
 import type { VaultEntry, GitCommit } from '../types'
 import { cn } from '@/lib/utils'
 import { SlidersHorizontal, X } from '@phosphor-icons/react'
+import { Separator } from './ui/separator'
 import { parseFrontmatter } from '../utils/frontmatter'
 import { DynamicPropertiesPanel } from './DynamicPropertiesPanel'
 import { DynamicRelationshipsPanel, BacklinksPanel, ReferencedByPanel, GitHistoryPanel, InstancesPanel } from './InspectorPanels'
@@ -162,7 +163,9 @@ export function Inspector({
               />
               <InstancesPanel entry={entry} entries={entries} typeEntryMap={typeEntryMap} onNavigate={onNavigate} />
               <ReferencedByPanel items={referencedBy} typeEntryMap={typeEntryMap} onNavigate={onNavigate} />
-              <BacklinksPanel backlinks={backlinks} typeEntryMap={typeEntryMap} onNavigate={onNavigate} />
+              {backlinks.length > 0 && <Separator />}
+              <BacklinksPanel backlinks={backlinks} onNavigate={onNavigate} />
+              {gitHistory.length > 0 && <Separator />}
               <GitHistoryPanel commits={gitHistory} onViewCommitDiff={onViewCommitDiff} />
             </>
           ) : (

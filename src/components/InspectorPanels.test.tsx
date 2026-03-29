@@ -632,7 +632,7 @@ describe('BacklinksPanel', () => {
   })
 
   it('renders nothing when empty', () => {
-    const { container } = render(<BacklinksPanel typeEntryMap={{}} backlinks={[]} onNavigate={onNavigate} />)
+    const { container } = render(<BacklinksPanel backlinks={[]} onNavigate={onNavigate} />)
     expect(container.innerHTML).toBe('')
   })
 
@@ -641,23 +641,16 @@ describe('BacklinksPanel', () => {
     { entry: makeEntry({ title: 'Another Note', isA: 'Project', path: '/vault/project/another.md' }), context: null },
   ]
 
-  it('renders collapsed by default with count badge', () => {
-    render(<BacklinksPanel typeEntryMap={{}} backlinks={twoBacklinks} onNavigate={onNavigate} />)
-    expect(screen.getByText('Backlinks (2)')).toBeInTheDocument()
-    expect(screen.queryByText('Referencing Note')).not.toBeInTheDocument()
-  })
-
-  it('expands to show backlink entries when toggle clicked', () => {
-    render(<BacklinksPanel typeEntryMap={{}} backlinks={twoBacklinks} onNavigate={onNavigate} />)
-    fireEvent.click(screen.getByTestId('backlinks-toggle'))
+  it('renders header and all backlinks immediately (no collapse)', () => {
+    render(<BacklinksPanel backlinks={twoBacklinks} onNavigate={onNavigate} />)
+    expect(screen.getByText('Backlinks')).toBeInTheDocument()
     expect(screen.getByText('Referencing Note')).toBeInTheDocument()
     expect(screen.getByText('Another Note')).toBeInTheDocument()
   })
 
   it('navigates when clicking backlink', () => {
     const backlinks = [{ entry: makeEntry({ title: 'Reference' }), context: null }]
-    render(<BacklinksPanel typeEntryMap={{}} backlinks={backlinks} onNavigate={onNavigate} />)
-    fireEvent.click(screen.getByTestId('backlinks-toggle'))
+    render(<BacklinksPanel backlinks={backlinks} onNavigate={onNavigate} />)
     fireEvent.click(screen.getByText('Reference'))
     expect(onNavigate).toHaveBeenCalledWith('Reference')
   })
@@ -666,18 +659,8 @@ describe('BacklinksPanel', () => {
     const backlinks = [
       { entry: makeEntry({ title: 'Referencing Note' }), context: 'This references [[My Note]] in context.' },
     ]
-    render(<BacklinksPanel typeEntryMap={{}} backlinks={backlinks} onNavigate={onNavigate} />)
-    fireEvent.click(screen.getByTestId('backlinks-toggle'))
+    render(<BacklinksPanel backlinks={backlinks} onNavigate={onNavigate} />)
     expect(screen.getByText('This references [[My Note]] in context.')).toBeInTheDocument()
-  })
-
-  it('collapses when toggle clicked twice', () => {
-    const backlinks = [{ entry: makeEntry({ title: 'Note A' }), context: null }]
-    render(<BacklinksPanel typeEntryMap={{}} backlinks={backlinks} onNavigate={onNavigate} />)
-    fireEvent.click(screen.getByTestId('backlinks-toggle'))
-    expect(screen.getByText('Note A')).toBeInTheDocument()
-    fireEvent.click(screen.getByTestId('backlinks-toggle'))
-    expect(screen.queryByText('Note A')).not.toBeInTheDocument()
   })
 
   it('shows emoji icon before backlink title when entry has an emoji', () => {
@@ -685,20 +668,17 @@ describe('BacklinksPanel', () => {
       entry: makeEntry({ title: 'Starred Note', icon: '⭐' }),
       context: null,
     }]
-    render(<BacklinksPanel typeEntryMap={{}} backlinks={backlinks} onNavigate={onNavigate} />)
-    fireEvent.click(screen.getByTestId('backlinks-toggle'))
+    render(<BacklinksPanel backlinks={backlinks} onNavigate={onNavigate} />)
     expect(screen.getByText('⭐')).toBeInTheDocument()
     expect(screen.getByText('Starred Note')).toBeInTheDocument()
   })
 
   it('does not show emoji when backlink entry has no icon', () => {
     const backlinks = [{ entry: makeEntry({ title: 'Plain Note' }), context: null }]
-    render(<BacklinksPanel typeEntryMap={{}} backlinks={backlinks} onNavigate={onNavigate} />)
-    fireEvent.click(screen.getByTestId('backlinks-toggle'))
+    render(<BacklinksPanel backlinks={backlinks} onNavigate={onNavigate} />)
     expect(screen.getByText('Plain Note')).toBeInTheDocument()
     const btn = screen.getByText('Plain Note').closest('button')
     const spans = btn?.querySelectorAll('span.shrink-0')
-    // No emoji span should exist (only possible shrink-0 spans are trash icon, not emoji)
     const emojiSpans = Array.from(spans ?? []).filter(s => /[\p{Emoji_Presentation}]/u.test(s.textContent ?? ''))
     expect(emojiSpans).toHaveLength(0)
   })
@@ -764,12 +744,12 @@ describe('GitHistoryPanel', () => {
     vi.clearAllMocks()
   })
 
-  it('shows "No revision history" when empty', () => {
-    render(<GitHistoryPanel commits={[]} />)
-    expect(screen.getByText('No revision history')).toBeInTheDocument()
+  it('renders nothing when empty', () => {
+    const { container } = render(<GitHistoryPanel commits={[]} />)
+    expect(container.innerHTML).toBe('')
   })
 
-  it('renders commit entries', () => {
+  it('renders commit entries with hash and message', () => {
     const commits: GitCommit[] = [
       { hash: 'abc1234567890', shortHash: 'abc1234', message: 'Initial commit', author: 'luca', date: Math.floor(Date.now() / 1000) - 3600 },
       { hash: 'def4567890123', shortHash: 'def4567', message: 'Fix bug', author: 'jane', date: Math.floor(Date.now() / 1000) - 86400 * 2 },
@@ -777,13 +757,9 @@ describe('GitHistoryPanel', () => {
     render(<GitHistoryPanel commits={commits} onViewCommitDiff={onViewCommitDiff} />)
     expect(screen.getByText('abc1234')).toBeInTheDocument()
     expect(screen.getByText('def4567')).toBeInTheDocument()
-    expect(screen.getByText('Initial commit')).toBeInTheDocument()
-    expect(screen.getByText('Fix bug')).toBeInTheDocument()
-    expect(screen.getByText('luca')).toBeInTheDocument()
-    expect(screen.getByText('jane')).toBeInTheDocument()
   })
 
-  it('calls onViewCommitDiff when clicking commit hash', () => {
+  it('calls onViewCommitDiff when clicking commit entry', () => {
     const commits: GitCommit[] = [
       { hash: 'abc1234567890', shortHash: 'abc1234', message: 'test', author: '', date: Math.floor(Date.now() / 1000) },
     ]

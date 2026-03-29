@@ -1,3 +1,4 @@
+import { ArrowCounterClockwise } from '@phosphor-icons/react'
 import type { GitCommit } from '../../types'
 
 function formatRelativeDate(timestamp: number): string {
@@ -11,26 +12,32 @@ function formatRelativeDate(timestamp: number): string {
 }
 
 export function GitHistoryPanel({ commits, onViewCommitDiff }: { commits: GitCommit[]; onViewCommitDiff?: (commitHash: string) => void }) {
+  if (commits.length === 0) return null
+
   return (
     <div>
-      <h4 className="font-mono-overline mb-2 text-muted-foreground">History</h4>
-      {commits.length === 0
-        ? <p className="m-0 text-[13px] text-muted-foreground">No revision history</p>
-        : (
-          <div className="flex flex-col gap-2.5">
-            {commits.map((c) => (
-              <div key={c.hash} style={{ borderLeft: '2px solid var(--border)', paddingLeft: 10 }}>
-                <div className="mb-0.5 flex items-center justify-between">
-                  <button className="border-none bg-transparent p-0 font-mono text-primary cursor-pointer hover:underline" style={{ fontSize: 11 }} onClick={() => onViewCommitDiff?.(c.hash)} title={`View diff for ${c.shortHash}`}>{c.shortHash}</button>
-                  <span className="text-muted-foreground" style={{ fontSize: 10 }}>{formatRelativeDate(c.date)}</span>
-                </div>
-                <div className="truncate text-xs text-secondary-foreground">{c.message}</div>
-                {c.author && <div className="truncate text-muted-foreground" style={{ fontSize: 10, marginTop: 1 }}>{c.author}</div>}
-              </div>
-            ))}
+      <h4 className="font-mono-overline mb-2 flex items-center gap-1 text-muted-foreground">
+        <ArrowCounterClockwise size={12} className="shrink-0" />
+        History
+      </h4>
+      <div className="flex flex-col gap-2.5">
+        {commits.map((c) => (
+          <div key={c.hash} style={{ borderLeft: '2px solid var(--border)', paddingLeft: 10 }}>
+            <button
+              className="mb-0.5 w-full cursor-pointer truncate border-none bg-transparent p-0 text-left text-xs text-primary hover:underline"
+              onClick={() => onViewCommitDiff?.(c.hash)}
+              title={`View diff for ${c.shortHash}`}
+            >
+              <span className="font-mono" style={{ fontSize: 11 }}>{c.shortHash}</span>
+              {' · '}
+              {c.message}
+            </button>
+            <div className="text-muted-foreground" style={{ fontSize: 10 }}>
+              {formatRelativeDate(c.date)}
+            </div>
           </div>
-        )
-      }
+        ))}
+      </div>
     </div>
   )
 }

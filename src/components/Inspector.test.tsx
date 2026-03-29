@@ -188,10 +188,7 @@ This is a test note with some words to count.
         entries={[mockEntry, referrerEntry]}
       />
     )
-    // Backlinks section is collapsed by default, but header with count is visible
-    expect(screen.getByText('Backlinks (1)')).toBeInTheDocument()
-    // Expand to see the backlink entry
-    fireEvent.click(screen.getByTestId('backlinks-toggle'))
+    expect(screen.getByText('Backlinks')).toBeInTheDocument()
     expect(screen.getByText('Referrer Note')).toBeInTheDocument()
   })
 
@@ -204,10 +201,8 @@ This is a test note with some words to count.
         entries={[mockEntry, { ...referrerEntry, outgoingLinks: [] }]}
       />
     )
-    // Initially no backlinks — section is hidden entirely
-    expect(screen.queryByTestId('backlinks-toggle')).not.toBeInTheDocument()
+    expect(screen.queryByText('Backlinks')).not.toBeInTheDocument()
 
-    // Rerender with updated outgoingLinks (simulates adding [[Test Project]] to referrer)
     rerender(
       <Inspector
         {...defaultProps}
@@ -216,8 +211,7 @@ This is a test note with some words to count.
         entries={[mockEntry, { ...referrerEntry, outgoingLinks: ['Test Project'] }]}
       />
     )
-    expect(screen.getByText('Backlinks (1)')).toBeInTheDocument()
-    fireEvent.click(screen.getByTestId('backlinks-toggle'))
+    expect(screen.getByText('Backlinks')).toBeInTheDocument()
     expect(screen.getByText('Referrer Note')).toBeInTheDocument()
   })
 
@@ -230,7 +224,7 @@ This is a test note with some words to count.
         entries={[mockEntry]}
       />
     )
-    expect(screen.queryByTestId('backlinks-toggle')).not.toBeInTheDocument()
+    expect(screen.queryByText('Backlinks')).not.toBeInTheDocument()
   })
 
   it('navigates when a backlink is clicked', () => {
@@ -244,7 +238,6 @@ This is a test note with some words to count.
         onNavigate={onNavigate}
       />
     )
-    fireEvent.click(screen.getByTestId('backlinks-toggle'))
     fireEvent.click(screen.getByText('Referrer Note'))
     expect(onNavigate).toHaveBeenCalledWith('Referrer Note')
   })
@@ -260,12 +253,11 @@ This is a test note with some words to count.
     )
     expect(screen.getByText('History')).toBeInTheDocument()
     expect(screen.getByText('a1b2c3d')).toBeInTheDocument()
-    expect(screen.getByText('Update test with latest changes')).toBeInTheDocument()
     expect(screen.getByText('e4f5g6h')).toBeInTheDocument()
     expect(screen.getByText('i7j8k9l')).toBeInTheDocument()
   })
 
-  it('renders commit hashes as clickable buttons', () => {
+  it('renders commit entries as clickable buttons', () => {
     const onViewCommitDiff = vi.fn()
     render(
       <Inspector
@@ -277,25 +269,13 @@ This is a test note with some words to count.
       />
     )
     const hashBtn = screen.getByText('a1b2c3d')
-    expect(hashBtn.tagName).toBe('BUTTON')
-    hashBtn.click()
+    const button = hashBtn.closest('button')!
+    expect(button.tagName).toBe('BUTTON')
+    button.click()
     expect(onViewCommitDiff).toHaveBeenCalledWith('a1b2c3d4e5f6a7b8')
   })
 
-  it('shows author name in commit rows', () => {
-    render(
-      <Inspector
-        {...defaultProps}
-        entry={mockEntry}
-        content={mockContent}
-        gitHistory={mockGitHistory}
-      />
-    )
-    const authors = screen.getAllByText('Luca Rossi')
-    expect(authors.length).toBeGreaterThan(0)
-  })
-
-  it('shows "No revision history" when no commits', () => {
+  it('hides history section when no commits', () => {
     render(
       <Inspector
         {...defaultProps}
@@ -304,7 +284,7 @@ This is a test note with some words to count.
         gitHistory={[]}
       />
     )
-    expect(screen.getByText('No revision history')).toBeInTheDocument()
+    expect(screen.queryByText('History')).not.toBeInTheDocument()
   })
 
   it('shows separate Info section with read-only metadata', () => {
