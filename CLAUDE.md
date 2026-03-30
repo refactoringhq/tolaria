@@ -50,21 +50,14 @@ BASE_URL="http://localhost:5201" npx playwright test tests/smoke/<slug>.spec.ts
 
 **Phase 2 — Native app QA (also you):**
 
-Install the latest release build and test on the real app before marking done. This catches visual/layout issues that Playwright misses.
+Run the app in dev mode and test natively — no need to build a release DMG:
 
 ```bash
-# Download and install latest release
-gh release download --repo refactoringhq/laputa-app \
-  --pattern "*aarch64.dmg" --dir /tmp/ --clobber
-osascript -e 'quit app "laputa"' 2>/dev/null; sleep 2
-trash /Applications/laputa.app 2>/dev/null || true
-hdiutil attach /tmp/*.dmg -nobrowse -quiet
-cp -R /Volumes/laputa/laputa.app /Applications/
-hdiutil detach /Volumes/laputa -quiet
-open /Applications/laputa.app; sleep 5
+pnpm tauri dev &
+sleep 10  # wait for app to start
 ```
 
-Then use the QA scripts to test:
+Then use the QA scripts:
 ```bash
 bash ~/.openclaw/skills/laputa-qa/scripts/focus-app.sh laputa
 bash ~/.openclaw/skills/laputa-qa/scripts/screenshot.sh /tmp/qa-native.png
@@ -72,15 +65,11 @@ bash ~/.openclaw/skills/laputa-qa/scripts/screenshot.sh /tmp/qa-native.png
 bash ~/.openclaw/skills/laputa-qa/scripts/shortcut.sh "command" "s"
 ```
 
-Use `osascript` for keyboard interactions. Write the result as a comment on the Todoist task:
+Use `osascript` for keyboard interactions. Write the result as a Todoist comment on the task:
 - ✅ if native QA passes (describe what you tested and saw)
 - ❌ if it fails (describe what's wrong) — fix and repeat from Phase 1
 
 **⚠️ WKWebView limitation:** `osascript keystroke` is blocked inside the editor for text input. For features requiring text input: verify app launches + stability, then rely on Playwright for correctness.
-
-**Phase 3 — Brian's review (after push):**
-
-Brian installs the release build and does a final visual check. You've already done the hard part — this is a sanity check. Tasks that pass your Phase 2 rarely fail here.
 
 ---
 
