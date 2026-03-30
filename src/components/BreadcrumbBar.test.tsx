@@ -48,6 +48,14 @@ const defaultProps = {
   onToggleDiff: vi.fn(),
 }
 
+describe('BreadcrumbBar — drag region', () => {
+  it('has data-tauri-drag-region on the container', () => {
+    const { container } = render(<BreadcrumbBar entry={baseEntry} {...defaultProps} />)
+    const bar = container.firstElementChild as HTMLElement
+    expect(bar.dataset.tauriDragRegion).toBeDefined()
+  })
+})
+
 describe('BreadcrumbBar — trash/restore', () => {
   it('shows trash button for non-trashed note', () => {
     render(<BreadcrumbBar entry={baseEntry} {...defaultProps} onTrash={vi.fn()} onRestore={vi.fn()} />)
