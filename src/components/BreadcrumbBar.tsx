@@ -171,7 +171,7 @@ export const BreadcrumbBar = memo(function BreadcrumbBar({
       data-tauri-drag-region
       className="flex shrink-0 items-center justify-between"
       style={{
-        height: 45,
+        height: 52,
         background: 'var(--background)',
         borderBottom: '1px solid var(--border)',
         padding: '6px 16px',

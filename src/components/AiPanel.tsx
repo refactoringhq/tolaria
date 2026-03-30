@@ -28,7 +28,7 @@ function PanelHeader({ onClose, onClear }: { onClose: () => void; onClear: () =>
   return (
     <div
       className="flex shrink-0 items-center border-b border-border"
-      style={{ height: 45, padding: '0 12px', gap: 8 }}
+      style={{ height: 52, padding: '0 12px', gap: 8 }}
     >
       <Robot size={16} className="shrink-0 text-muted-foreground" />
       <span className="flex-1 text-muted-foreground" style={{ fontSize: 13, fontWeight: 600 }}>

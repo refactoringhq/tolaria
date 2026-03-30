@@ -90,7 +90,7 @@ function useReferencedBy(entry: VaultEntry | null, entries: VaultEntry[]): Refer
 function InspectorHeader({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const { onMouseDown } = useDragRegion()
   return (
-    <div className="flex shrink-0 items-center border-b border-border" style={{ height: 45, padding: '6px 12px', gap: 8, cursor: 'default' }} onMouseDown={onMouseDown}>
+    <div className="flex shrink-0 items-center border-b border-border" style={{ height: 52, padding: '6px 12px', gap: 8, cursor: 'default' }} onMouseDown={onMouseDown}>
       {collapsed ? (
         <button className="shrink-0 border-none bg-transparent p-1 text-muted-foreground cursor-pointer hover:text-foreground" onClick={onToggle} title="Properties (⌘⇧I)">
           <SlidersHorizontal size={16} />

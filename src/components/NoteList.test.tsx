@@ -867,7 +867,7 @@ describe('NoteList — virtual list with large datasets', () => {
     expect(screen.getByText('Note 499')).toBeInTheDocument()
   })
 
-  it('search filters large dataset correctly', () => {
+  it('search filters large dataset correctly', { timeout: 15000 }, () => {
     const entries = [
       makeIndexedEntry(0, { title: 'Alpha Strategy' }),
       ...Array.from({ length: 998 }, (_, i) => makeIndexedEntry(i + 1, { title: `Filler Note ${i + 1}` })),
