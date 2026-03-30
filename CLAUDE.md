@@ -144,19 +144,12 @@ After adding a Tauri command, new component/hook, data model change, or new inte
 
 ## 3. Product Rules
 
-### Keyboard-first (mandatory)
+### User vault (`~/Laputa/`)
 
-Every feature must be reachable via keyboard. Every new command palette entry must also appear in the macOS menu bar (File / Edit / View / Note / Vault / Window). This is a QA requirement.
-
-### Never modify the user vault for testing
-
-`~/Laputa/` is Luca's real vault. Never create, edit, or delete notes there for any reason.
-
-Use `demo-vault-v2/` for all testing. If a test genuinely needs real vault data (e.g. git history), read only — never write. Any commit that touches `~/Laputa/` content is a bug.
-
-### Vault retrocompatibility
-
-Every feature that depends on vault files must auto-bootstrap: check if file/folder exists on vault open, create with defaults if missing (silent, idempotent). Register with `Cmd+K → "Repair Vault"`.
+You may use `~/Laputa/` for testing when the demo vault isn't sufficient (e.g. verifying against real git history). But:
+- **Never commit changes to `~/Laputa/`** — discard them before finishing
+- After any testing that touched the vault, run: `cd ~/Laputa && git checkout -- . && git clean -fd`
+- Default to `demo-vault-v2/` whenever possible
 
 ### UI design
 
