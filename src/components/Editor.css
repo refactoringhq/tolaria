@@ -184,11 +184,13 @@
   flex-direction: row;
   align-items: flex-start;
   padding-top: 32px;
+  margin-left: 8px;
 }
 
 .title-section__separator {
   border-bottom: 1px solid var(--border-primary, rgba(0, 0, 0, 0.08));
   margin-top: 12px;
+  margin-left: 8px;
 }
 
 /* --- Note Icon Area --- */
@@ -227,7 +229,6 @@
   font-size: 13px;
   opacity: 0;
   transition: opacity 0.15s;
-  margin-top: 16px;
 }
 
 .title-section:hover .note-icon-button--add,

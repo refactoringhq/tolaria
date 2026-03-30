@@ -13,6 +13,7 @@ import { RawEditorView } from './RawEditorView'
 import { countWords } from '../utils/wikilinks'
 import { SingleEditorView } from './SingleEditorView'
 import { isEmoji } from '../utils/emoji'
+import { useEditorTheme } from '../hooks/useTheme'
 
 interface Tab {
   entry: VaultEntry
@@ -160,6 +161,7 @@ export function EditorContent({
 }: EditorContentProps) {
   // Look up trashed/archived from the latest vault entries, not the tab snapshot,
   // so the banner appears regardless of navigation context.
+  const { cssVars } = useEditorTheme()
   const freshEntry = activeTab ? entries.find(e => e.path === activeTab.entry.path) : undefined
   const isTrashed = freshEntry?.trashed ?? activeTab?.entry.trashed ?? false
   const isArchived = freshEntry?.archived ?? activeTab?.entry.archived ?? false
@@ -201,25 +203,15 @@ export function EditorContent({
       {diffMode && <DiffModeView diffContent={diffContent} onToggleDiff={onToggleDiff} />}
       <RawModeEditorSection rawMode={rawMode} activeTab={activeTab} entries={entries} onContentChange={onRawContentChange} onSave={onSave} latestContentRef={rawLatestContentRef} />
       {showEditor && activeTab && (
-        <div className="editor-scroll-area">
+        <div className="editor-scroll-area" style={cssVars as React.CSSProperties}>
           <div className="title-section">
-            {!emojiIcon && (
+            <div className="title-section__row">
               <NoteIcon
-                icon={null}
+                icon={emojiIcon}
                 editable={!isTrashed}
                 onSetIcon={handleSetIcon}
                 onRemoveIcon={handleRemoveIcon}
               />
-            )}
-            <div className="title-section__row">
-              {emojiIcon && (
-                <NoteIcon
-                  icon={emojiIcon}
-                  editable={!isTrashed}
-                  onSetIcon={handleSetIcon}
-                  onRemoveIcon={handleRemoveIcon}
-                />
-              )}
               <TitleField
                 title={activeTab.entry.title}
                 filename={activeTab.entry.filename}
