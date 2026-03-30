@@ -8,10 +8,10 @@ interface InboxFilterPillsProps {
 }
 
 const PILLS: { value: InboxPeriod; label: string }[] = [
-  { value: 'week', label: 'This week' },
-  { value: 'month', label: 'This month' },
-  { value: 'quarter', label: 'This quarter' },
-  { value: 'all', label: 'All time' },
+  { value: 'week', label: 'Week' },
+  { value: 'month', label: 'Month' },
+  { value: 'quarter', label: 'Quarter' },
+  { value: 'all', label: 'All' },
 ]
 
 function InboxFilterPillsInner({ active, counts, onChange }: InboxFilterPillsProps) {
