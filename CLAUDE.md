@@ -89,7 +89,11 @@ print("NO_TASKS — exiting")
 
 ### 1d. QA phases
 
-**Phase 1 (you):** Write a Playwright smoke test in `tests/smoke/<slug>.spec.ts` covering every acceptance criterion. Must fail before fix, pass after.
+Both phases run **before** you fire the done signal (steps 1–3 above).
+
+**Phase 1 — Playwright (you):**
+
+Write a smoke test in `tests/smoke/<slug>.spec.ts` covering every acceptance criterion. Must fail before fix, pass after.
 
 ```bash
 pnpm dev --port 5201 &
@@ -97,9 +101,39 @@ sleep 3
 BASE_URL="http://localhost:5201" npx playwright test tests/smoke/<slug>.spec.ts
 ```
 
-For tasks touching filesystem, git, AI, MCP, or native Tauri: also test with `pnpm tauri dev` against `demo-vault-v2/` using `osascript` keyboard events.
+**Phase 2 — Native app QA (also you):**
 
-**Phase 2 (Brian):** Installs release build, runs native QA. You don't need to do anything — just make sure Phase 1 passes before firing the done signal.
+Install the latest release build and test on the real app before marking done. This catches visual/layout issues that Playwright misses.
+
+```bash
+# Download and install latest release
+gh release download --repo refactoringhq/laputa-app \
+  --pattern "*aarch64.dmg" --dir /tmp/ --clobber
+osascript -e 'quit app "laputa"' 2>/dev/null; sleep 2
+trash /Applications/laputa.app 2>/dev/null || true
+hdiutil attach /tmp/*.dmg -nobrowse -quiet
+cp -R /Volumes/laputa/laputa.app /Applications/
+hdiutil detach /Volumes/laputa -quiet
+open /Applications/laputa.app; sleep 5
+```
+
+Then use the QA scripts to test:
+```bash
+bash ~/.openclaw/skills/laputa-qa/scripts/focus-app.sh laputa
+bash ~/.openclaw/skills/laputa-qa/scripts/screenshot.sh /tmp/qa-native.png
+# Analyze screenshot with image tool — verify the feature looks correct
+bash ~/.openclaw/skills/laputa-qa/scripts/shortcut.sh "command" "s"
+```
+
+Use `osascript` for keyboard interactions. Write the result as a comment on the Todoist task:
+- ✅ if native QA passes (describe what you tested and saw)
+- ❌ if it fails (describe what's wrong) — fix and repeat from Phase 1
+
+**⚠️ WKWebView limitation:** `osascript keystroke` is blocked inside the editor for text input. For features requiring text input: verify app launches + stability, then rely on Playwright for correctness.
+
+**Phase 3 — Brian's review (after push):**
+
+Brian installs the release build and does a final visual check. You've already done the hard part — this is a sanity check. Tasks that pass your Phase 2 rarely fail here.
 
 ---
 
