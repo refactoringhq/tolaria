@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import { Package, RefreshCw, FileText, Bell, Settings, FolderOpen, Check, Github, CircleDot, AlertTriangle, Loader2, GitCommitHorizontal, X, Cpu, ArrowDown, GitBranch } from 'lucide-react'
+import { Package, RefreshCw, FileText, Bell, Settings, FolderOpen, Check, Github, AlertTriangle, Loader2, GitCommitHorizontal, X, Cpu, ArrowDown, GitBranch } from 'lucide-react'
+import { GitDiff, Pulse } from '@phosphor-icons/react'
 import type { GitRemoteStatus, LastCommitInfo, SyncStatus } from '../types'
 import type { McpStatus } from '../hooks/useMcpStatus'
 import { openExternalUrl } from '../utils/url'
@@ -20,6 +21,9 @@ interface StatusBarProps {
   onOpenLocalFolder?: () => void
   onConnectGitHub?: () => void
   onClickPending?: () => void
+  onClickPulse?: () => void
+  onCommitPush?: () => void
+  isGitVault?: boolean
   hasGitHub?: boolean
   syncStatus?: SyncStatus
   lastSyncTime?: number | null
@@ -328,7 +332,7 @@ function ConflictBadge({ count, onClick }: { count: number; onClick?: () => void
   )
 }
 
-function PendingBadge({ count, onClick }: { count: number; onClick?: () => void }) {
+function ChangesBadge({ count, onClick, onCommitPush }: { count: number; onClick?: () => void; onCommitPush?: () => void }) {
   if (count <= 0) return null
   return (
     <>
@@ -341,7 +345,50 @@ function PendingBadge({ count, onClick }: { count: number; onClick?: () => void 
         onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover)' }}
         onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
         data-testid="status-modified-count"
-      ><CircleDot size={13} style={{ color: 'var(--accent-orange)' }} />{count} pending</span>
+      >
+        <GitDiff size={13} style={{ color: 'var(--accent-orange)' }} />
+        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent-orange)', color: '#fff', borderRadius: 9, padding: '0 5px', fontSize: 10, fontWeight: 600, minWidth: 16, lineHeight: '16px' }}>{count}</span>
+        Changes
+      </span>
+      {onCommitPush && (
+        <span
+          role="button"
+          onClick={onCommitPush}
+          style={{ ...ICON_STYLE, cursor: 'pointer', padding: '2px 4px', borderRadius: 3, background: 'transparent' }}
+          title="Commit & Push"
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+          data-testid="status-commit-push"
+        >
+          <GitCommitHorizontal size={13} style={{ color: 'var(--accent-orange)' }} />
+        </span>
+      )}
+    </>
+  )
+}
+
+function PulseBadge({ onClick, disabled }: { onClick?: () => void; disabled?: boolean }) {
+  return (
+    <>
+      <span style={SEP_STYLE}>|</span>
+      <span
+        role={disabled ? undefined : 'button'}
+        onClick={disabled ? undefined : onClick}
+        style={{
+          ...ICON_STYLE,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          padding: '2px 4px',
+          borderRadius: 3,
+          background: 'transparent',
+          opacity: disabled ? 0.4 : 1,
+        }}
+        title={disabled ? 'Pulse is only available for git-enabled vaults' : 'View pulse'}
+        onMouseEnter={disabled ? undefined : (e) => { e.currentTarget.style.background = 'var(--hover)' }}
+        onMouseLeave={disabled ? undefined : (e) => { e.currentTarget.style.background = 'transparent' }}
+        data-testid="status-pulse"
+      >
+        <Pulse size={13} />Pulse
+      </span>
     </>
   )
 }
@@ -381,7 +428,7 @@ function McpBadge({ status, onInstall }: { status: McpStatus; onInstall?: () => 
   )
 }
 
-export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onSwitchVault, onOpenSettings, onOpenLocalFolder, onConnectGitHub, onClickPending, hasGitHub, syncStatus = 'idle', lastSyncTime = null, conflictCount = 0, lastCommitInfo, remoteStatus, onTriggerSync, onPullAndPush, onOpenConflictResolver, zoomLevel = 100, onZoomReset, buildNumber, onCheckForUpdates, onRemoveVault, mcpStatus, onInstallMcp }: StatusBarProps) {
+export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onSwitchVault, onOpenSettings, onOpenLocalFolder, onConnectGitHub, onClickPending, onClickPulse, onCommitPush, isGitVault = false, hasGitHub, syncStatus = 'idle', lastSyncTime = null, conflictCount = 0, lastCommitInfo, remoteStatus, onTriggerSync, onPullAndPush, onOpenConflictResolver, zoomLevel = 100, onZoomReset, buildNumber, onCheckForUpdates, onRemoveVault, mcpStatus, onInstallMcp }: StatusBarProps) {
   const [, setTick] = useState(0)
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 30_000)
@@ -406,7 +453,8 @@ export function StatusBar({ noteCount, modifiedCount = 0, vaultPath, vaults, onS
         <SyncBadge status={syncStatus} lastSyncTime={lastSyncTime} remoteStatus={remoteStatus} onTriggerSync={onTriggerSync} onPullAndPush={onPullAndPush} onOpenConflictResolver={onOpenConflictResolver} />
         {lastCommitInfo && <CommitBadge info={lastCommitInfo} />}
         <ConflictBadge count={conflictCount} onClick={onOpenConflictResolver} />
-        <PendingBadge count={modifiedCount} onClick={onClickPending} />
+        <ChangesBadge count={modifiedCount} onClick={onClickPending} onCommitPush={onCommitPush} />
+        <PulseBadge onClick={onClickPulse} disabled={!isGitVault} />
         {mcpStatus && <McpBadge status={mcpStatus} onInstall={onInstallMcp} />}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

@@ -12,9 +12,9 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
-  FileText, Trash, Archive, CaretLeft, GitDiff, Pulse, Tray,
+  FileText, Trash, Archive, CaretLeft, Tray,
 } from '@phosphor-icons/react'
-import { GitCommitHorizontal, SlidersHorizontal } from 'lucide-react'
+import { SlidersHorizontal } from 'lucide-react'
 import {
   type SectionGroup, isSelectionActive,
   NavItem, SectionContent, type SectionContentProps, VisibilityPopover,
@@ -33,11 +33,8 @@ interface SidebarProps {
   onReorderSections?: (orderedTypes: { typeName: string; order: number }[]) => void
   onRenameSection?: (typeName: string, label: string) => void
   onToggleTypeVisibility?: (typeName: string) => void
-  modifiedCount?: number
   inboxCount?: number
-  onCommitPush?: () => void
   onCollapse?: () => void
-  isGitVault?: boolean
 }
 
 // --- Hooks ---
@@ -140,21 +137,6 @@ function SortableSection({ group, sectionProps }: {
   )
 }
 
-function CommitButton({ modifiedCount, onClick }: { modifiedCount: number; onClick?: () => void }) {
-  if (!onClick) return null
-  return (
-    <div className="shrink-0 border-t border-border" style={{ padding: 12 }}>
-      <button className="flex w-full items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" style={{ borderRadius: 6, gap: 6, padding: '8px 16px', border: 'none', cursor: 'pointer' }} onClick={onClick}>
-        <GitCommitHorizontal size={14} />
-        <span className="text-[13px] font-medium">Commit & Push</span>
-        {modifiedCount > 0 && (
-          <span className="text-white font-semibold" style={{ background: '#ffffff40', borderRadius: 9, padding: '0 6px', fontSize: 10 }}>{modifiedCount}</span>
-        )}
-      </button>
-    </div>
-  )
-}
-
 function SidebarTitleBar({ onCollapse }: { onCollapse?: () => void }) {
   const { onMouseDown } = useDragRegion()
   return (
@@ -223,7 +205,7 @@ export const Sidebar = memo(function Sidebar({
   entries, selection, onSelect, onSelectNote, onCreateType, onCreateNewType,
   onCustomizeType, onUpdateTypeTemplate, onReorderSections, onRenameSection,
   onToggleTypeVisibility,
-  modifiedCount = 0, inboxCount = 0, onCommitPush, onCollapse, isGitVault = false,
+  inboxCount = 0, onCollapse,
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [customizeTarget, setCustomizeTarget] = useState<string | null>(null)
@@ -333,14 +315,6 @@ export const Sidebar = memo(function Sidebar({
         </DndContext>
       </nav>
 
-      {/* Secondary area: Changes + Pulse */}
-      <div className="shrink-0 border-t border-border" data-testid="sidebar-secondary" style={{ padding: '4px 6px' }}>
-        {modifiedCount > 0 && (
-          <NavItem icon={GitDiff} label="Changes" count={modifiedCount} isActive={isSelectionActive(selection, { kind: 'filter', filter: 'changes' })} activeClassName="bg-[color:var(--accent-orange)]/10 text-[var(--accent-orange)]" badgeClassName="text-white" badgeStyle={{ background: 'var(--accent-orange)' }} onClick={() => onSelect({ kind: 'filter', filter: 'changes' })} compact />
-        )}
-        <NavItem icon={Pulse} label="Pulse" isActive={isSelectionActive(selection, { kind: 'filter', filter: 'pulse' })} disabled={!isGitVault} disabledTooltip="Pulse is only available for git-enabled vaults" onClick={isGitVault ? () => onSelect({ kind: 'filter', filter: 'pulse' }) : undefined} compact />
-      </div>
-      <CommitButton modifiedCount={modifiedCount} onClick={onCommitPush} />
       <ContextMenuOverlay pos={contextMenuPos} type={contextMenuType} innerRef={contextMenuRef} onOpenCustomize={(type) => { closeContextMenu(); setCustomizeTarget(type) }} onStartRename={handleStartRename} />
       <CustomizeOverlay target={customizeTarget} typeEntryMap={typeEntryMap} innerRef={popoverRef} onCustomize={handleCustomize} onChangeTemplate={handleChangeTemplate} onClose={closeCustomizeTarget} />
     </aside>

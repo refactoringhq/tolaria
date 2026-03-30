@@ -389,63 +389,11 @@ describe('Sidebar', () => {
     expect(screen.queryByTitle('New Project')).not.toBeInTheDocument()
   })
 
-  it('renders commit button even when no modified files', () => {
-    render(<Sidebar entries={[]} selection={defaultSelection} onSelect={() => {}} onCommitPush={() => {}} />)
-    expect(screen.getByText('Commit & Push')).toBeInTheDocument()
-  })
-
-  it('shows badge on commit button when modified files exist', () => {
-    render(<Sidebar entries={[]} selection={defaultSelection} onSelect={() => {}} modifiedCount={3} onCommitPush={() => {}} />)
-    expect(screen.getByText('Commit & Push')).toBeInTheDocument()
-    const badges = screen.getAllByText('3')
-    expect(badges.length).toBeGreaterThanOrEqual(1)
-  })
-
-  it('shows Changes nav item when modifiedCount > 0', () => {
-    render(<Sidebar entries={[]} selection={defaultSelection} onSelect={() => {}} modifiedCount={5} />)
-    expect(screen.getByText('Changes')).toBeInTheDocument()
-  })
-
-  it('hides Changes nav item when modifiedCount is 0', () => {
-    render(<Sidebar entries={[]} selection={defaultSelection} onSelect={() => {}} modifiedCount={0} />)
+  it('does not render Changes or Pulse in sidebar', () => {
+    render(<Sidebar entries={[]} selection={defaultSelection} onSelect={() => {}} />)
     expect(screen.queryByText('Changes')).not.toBeInTheDocument()
-  })
-
-  it('calls onSelect with changes filter when clicking Changes', () => {
-    const onSelect = vi.fn()
-    render(<Sidebar entries={[]} selection={defaultSelection} onSelect={onSelect} modifiedCount={3} />)
-    fireEvent.click(screen.getByText('Changes'))
-    expect(onSelect).toHaveBeenCalledWith({ kind: 'filter', filter: 'changes' })
-  })
-
-  describe('Changes and Pulse in secondary bottom area', () => {
-    it('renders Changes outside the main top nav section', () => {
-      render(<Sidebar entries={[]} selection={defaultSelection} onSelect={() => {}} modifiedCount={3} isGitVault />)
-      const changesEl = screen.getByText('Changes')
-      // Changes should be inside the secondary bottom area, not the top nav
-      const secondaryArea = changesEl.closest('[data-testid="sidebar-secondary"]')
-      expect(secondaryArea).not.toBeNull()
-    })
-
-    it('renders Pulse outside the main top nav section', () => {
-      render(<Sidebar entries={[]} selection={defaultSelection} onSelect={() => {}} isGitVault />)
-      const pulseEl = screen.getByText('Pulse')
-      const secondaryArea = pulseEl.closest('[data-testid="sidebar-secondary"]')
-      expect(secondaryArea).not.toBeNull()
-    })
-
-    it('does not render Changes or Pulse inside the top nav section', () => {
-      render(<Sidebar entries={[]} selection={defaultSelection} onSelect={() => {}} modifiedCount={3} isGitVault />)
-      const topNav = screen.getByTestId('sidebar-top-nav')
-      expect(topNav.textContent).not.toContain('Changes')
-      expect(topNav.textContent).not.toContain('Pulse')
-    })
-
-    it('shows Changes badge count in secondary area', () => {
-      render(<Sidebar entries={[]} selection={defaultSelection} onSelect={() => {}} modifiedCount={7} isGitVault />)
-      const secondaryArea = screen.getByTestId('sidebar-secondary')
-      expect(secondaryArea.textContent).toContain('7')
-    })
+    expect(screen.queryByText('Pulse')).not.toBeInTheDocument()
+    expect(screen.queryByText('Commit & Push')).not.toBeInTheDocument()
   })
 
   describe('dynamic custom type sections', () => {

@@ -182,18 +182,19 @@ describe('StatusBar', () => {
     expect(screen.getByText('Connect GitHub repo')).toBeInTheDocument()
   })
 
-  it('shows modified count when modifiedCount is > 0', () => {
+  it('shows Changes badge with count when modifiedCount is > 0', () => {
     render(<StatusBar noteCount={100} modifiedCount={3} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} />)
     expect(screen.getByTestId('status-modified-count')).toBeInTheDocument()
-    expect(screen.getByText('3 pending')).toBeInTheDocument()
+    expect(screen.getByText('Changes')).toBeInTheDocument()
+    expect(screen.getByText('3')).toBeInTheDocument()
   })
 
-  it('does not show modified count when modifiedCount is 0', () => {
+  it('does not show Changes badge when modifiedCount is 0', () => {
     render(<StatusBar noteCount={100} modifiedCount={0} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} />)
     expect(screen.queryByTestId('status-modified-count')).not.toBeInTheDocument()
   })
 
-  it('does not show modified count when modifiedCount is not provided', () => {
+  it('does not show Changes badge when modifiedCount is not provided', () => {
     render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} />)
     expect(screen.queryByTestId('status-modified-count')).not.toBeInTheDocument()
   })
@@ -311,6 +312,39 @@ describe('StatusBar', () => {
     expect(screen.getByText('main')).toBeInTheDocument()
     expect(screen.getByText(/2 ahead/)).toBeInTheDocument()
     expect(screen.getByText(/1 behind/)).toBeInTheDocument()
+  })
+
+  it('shows Pulse badge in status bar', () => {
+    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} isGitVault />)
+    expect(screen.getByTestId('status-pulse')).toBeInTheDocument()
+    expect(screen.getByText('Pulse')).toBeInTheDocument()
+  })
+
+  it('calls onClickPulse when clicking Pulse badge', () => {
+    const onClickPulse = vi.fn()
+    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} isGitVault onClickPulse={onClickPulse} />)
+    fireEvent.click(screen.getByTestId('status-pulse'))
+    expect(onClickPulse).toHaveBeenCalledOnce()
+  })
+
+  it('disables Pulse badge when isGitVault is false', () => {
+    const onClickPulse = vi.fn()
+    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} isGitVault={false} onClickPulse={onClickPulse} />)
+    fireEvent.click(screen.getByTestId('status-pulse'))
+    expect(onClickPulse).not.toHaveBeenCalled()
+  })
+
+  it('shows Commit & Push button next to Changes badge', () => {
+    const onCommitPush = vi.fn()
+    render(<StatusBar noteCount={100} modifiedCount={5} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onCommitPush={onCommitPush} />)
+    expect(screen.getByTestId('status-commit-push')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('status-commit-push'))
+    expect(onCommitPush).toHaveBeenCalledOnce()
+  })
+
+  it('hides Commit & Push button when no modified files', () => {
+    render(<StatusBar noteCount={100} modifiedCount={0} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onCommitPush={vi.fn()} />)
+    expect(screen.queryByTestId('status-commit-push')).not.toBeInTheDocument()
   })
 
 })
