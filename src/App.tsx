@@ -50,12 +50,14 @@ import { UpdateBanner } from './components/UpdateBanner'
 import { FlatVaultMigrationBanner } from './components/FlatVaultMigrationBanner'
 import { useFlatVaultMigration } from './hooks/useFlatVaultMigration'
 import { invoke } from '@tauri-apps/api/core'
+import { invoke } from '@tauri-apps/api/core'
 import { isTauri, mockInvoke } from './mock-tauri'
 import type { SidebarSelection, InboxPeriod } from './types'
 import type { NoteListItem } from './utils/ai-context'
 import { filterEntries, filterInboxEntries, type NoteListFilter } from './utils/noteListHelpers'
 import { openNoteInNewWindow } from './utils/openNoteWindow'
 import { isNoteWindow, getNoteWindowParams } from './utils/windowMode'
+import { GitRequiredModal } from './components/GitRequiredModal'
 import './App.css'
 
 // Type declarations for mock content storage and test overrides
@@ -95,6 +97,24 @@ function App() {
 
   // When onboarding resolves to a different vault path, update the switcher
   const resolvedPath = noteWindowParams?.vaultPath ?? (onboarding.state.status === 'ready' ? onboarding.state.vaultPath : vaultSwitcher.vaultPath)
+  // Git repo check: 'checking' | 'required' | 'ready'
+  const [gitRepoState, setGitRepoState] = useState<'checking' | 'required' | 'ready'>('checking')
+  useEffect(() => {
+    if (!resolvedPath) return
+    setGitRepoState('checking')
+    const check = isTauri()
+      ? invoke<boolean>('is_git_repo', { vaultPath: resolvedPath })
+      : Promise.resolve(true) // browser mock: assume git
+    check
+      .then(isGit => setGitRepoState(isGit ? 'ready' : 'required'))
+      .catch(() => setGitRepoState('ready')) // fail open
+  }, [resolvedPath])
+
+  const handleInitGitRepo = useCallback(async () => {
+    if (isTauri()) await invoke('init_git_repo', { vaultPath: resolvedPath })
+    setGitRepoState('ready')
+  }, [resolvedPath])
+
   const vault = useVaultLoader(resolvedPath)
   useVaultConfig(resolvedPath)
   const { settings, loaded: settingsLoaded, saveSettings } = useSettings()
@@ -389,6 +409,23 @@ function App() {
 
   // Show loading spinner while checking vault (skip for note windows)
   if (!noteWindowParams && onboarding.state.status === 'loading') {
+    return <LoadingView />
+  }
+
+  // Show git-required modal when vault has no git repo (skip for note windows)
+  if (!noteWindowParams && gitRepoState === 'required') {
+    return (
+      <div className="app-shell">
+        <GitRequiredModal
+          onCreateRepo={handleInitGitRepo}
+          onChooseVault={vaultSwitcher.handleOpenLocalFolder}
+        />
+      </div>
+    )
+  }
+
+  // Show loading spinner while checking git status
+  if (!noteWindowParams && gitRepoState === 'checking' && onboarding.state.status === 'ready') {
     return <LoadingView />
   }
 

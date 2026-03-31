@@ -128,6 +128,20 @@ pub async fn git_remote_status(vault_path: String) -> Result<GitRemoteStatus, St
         .map_err(|e| format!("Task panicked: {e}"))?
 }
 
+#[cfg(desktop)]
+#[tauri::command]
+pub fn is_git_repo(vault_path: String) -> bool {
+    let vault_path = expand_tilde(&vault_path);
+    std::path::Path::new(vault_path.as_ref()).join(".git").is_dir()
+}
+
+#[cfg(desktop)]
+#[tauri::command]
+pub fn init_git_repo(vault_path: String) -> Result<(), String> {
+    let vault_path = expand_tilde(&vault_path);
+    crate::git::init_repo(&vault_path)
+}
+
 // ── Git commands (mobile stubs) ─────────────────────────────────────────────
 
 #[cfg(mobile)]
@@ -229,4 +243,16 @@ pub async fn git_remote_status(_vault_path: String) -> Result<GitRemoteStatus, S
         ahead: 0,
         behind: 0,
     })
+}
+
+#[cfg(mobile)]
+#[tauri::command]
+pub fn is_git_repo(_vault_path: String) -> bool {
+    false
+}
+
+#[cfg(mobile)]
+#[tauri::command]
+pub fn init_git_repo(_vault_path: String) -> Result<(), String> {
+    Err("Git init is not available on mobile".into())
 }

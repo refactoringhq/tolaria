@@ -138,6 +138,8 @@ pub fn run() {
             commands::get_conflict_mode,
             commands::git_resolve_conflict,
             commands::git_commit_conflict_resolution,
+            commands::is_git_repo,
+            commands::init_git_repo,
             commands::check_claude_cli,
             commands::stream_claude_chat,
             commands::stream_claude_agent,
