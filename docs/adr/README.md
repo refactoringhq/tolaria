@@ -86,3 +86,5 @@ proposed → active → superseded
 | [0028](0028-cli-agent-only-no-api-key.md) | CLI agent only — no direct Anthropic API key | active |
 | [0029](0029-domain-command-builder-pattern.md) | Domain command builder pattern for useCommandRegistry | active |
 | [0030](0030-rust-commands-module-split.md) | Rust commands/ module split by domain | active |
+| [0031](0031-full-app-for-note-windows.md) | Full App instance for secondary note windows | active |
+| [0032](0032-status-bar-for-git-actions.md) | Git actions (Changes, Pulse, Commit) in status bar, not sidebar | active |
