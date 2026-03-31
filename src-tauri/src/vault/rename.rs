@@ -279,7 +279,10 @@ pub fn detect_renames(vault_path: &str) -> Result<Vec<DetectedRename>, String> {
                 let old = parts[1].to_string();
                 let new = parts[2].to_string();
                 if old.ends_with(".md") && new.ends_with(".md") {
-                    return Some(DetectedRename { old_path: old, new_path: new });
+                    return Some(DetectedRename {
+                        old_path: old,
+                        new_path: new,
+                    });
                 }
             }
             None
@@ -291,13 +294,22 @@ pub fn detect_renames(vault_path: &str) -> Result<Vec<DetectedRename>, String> {
 
 /// Update wikilinks across the vault for a list of detected renames.
 /// Returns the total number of files updated.
-pub fn update_wikilinks_for_renames(vault_path: &str, renames: &[DetectedRename]) -> Result<usize, String> {
+pub fn update_wikilinks_for_renames(
+    vault_path: &str,
+    renames: &[DetectedRename],
+) -> Result<usize, String> {
     let vault = Path::new(vault_path);
     let mut total_updated = 0;
 
     for rename in renames {
-        let old_stem = rename.old_path.strip_suffix(".md").unwrap_or(&rename.old_path);
-        let new_stem = rename.new_path.strip_suffix(".md").unwrap_or(&rename.new_path);
+        let old_stem = rename
+            .old_path
+            .strip_suffix(".md")
+            .unwrap_or(&rename.old_path);
+        let new_stem = rename
+            .new_path
+            .strip_suffix(".md")
+            .unwrap_or(&rename.new_path);
         let old_filename_stem = old_stem.split('/').next_back().unwrap_or(old_stem);
         let new_filename_stem = new_stem.split('/').next_back().unwrap_or(new_stem);
 

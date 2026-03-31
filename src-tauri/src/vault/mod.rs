@@ -18,7 +18,9 @@ pub use file::{get_note_content, save_note_content};
 pub use getting_started::{create_getting_started_vault, default_vault_path, vault_exists};
 pub use image::{copy_image_to_vault, save_image};
 pub use migration::{flatten_vault, migrate_is_a_to_type, vault_health_check, VaultHealthReport};
-pub use rename::{detect_renames, rename_note, update_wikilinks_for_renames, DetectedRename, RenameResult};
+pub use rename::{
+    detect_renames, rename_note, update_wikilinks_for_renames, DetectedRename, RenameResult,
+};
 pub use title_sync::{sync_title_on_open, SyncAction};
 pub use trash::{batch_delete_notes, delete_note, empty_trash, is_file_trashed, purge_trash};
 

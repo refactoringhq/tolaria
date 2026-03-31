@@ -160,7 +160,11 @@ fn test_scan_vault_includes_subdirectory_notes() {
     );
 
     let entries = scan_vault(dir.path()).unwrap();
-    assert_eq!(entries.len(), 3, "all .md files including subdirs should be scanned");
+    assert_eq!(
+        entries.len(),
+        3,
+        "all .md files including subdirs should be scanned"
+    );
     let filenames: Vec<&str> = entries.iter().map(|e| e.filename.as_str()).collect();
     assert!(filenames.contains(&"root.md"));
     assert!(filenames.contains(&"nested.md"));

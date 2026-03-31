@@ -50,7 +50,10 @@ pub fn detect_renames(vault_path: String) -> Result<Vec<DetectedRename>, String>
 }
 
 #[tauri::command]
-pub fn update_wikilinks_for_renames(vault_path: String, renames: Vec<DetectedRename>) -> Result<usize, String> {
+pub fn update_wikilinks_for_renames(
+    vault_path: String,
+    renames: Vec<DetectedRename>,
+) -> Result<usize, String> {
     let vault_path = expand_tilde(&vault_path);
     vault::update_wikilinks_for_renames(&vault_path, &renames)
 }

@@ -132,7 +132,9 @@ pub async fn git_remote_status(vault_path: String) -> Result<GitRemoteStatus, St
 #[tauri::command]
 pub fn is_git_repo(vault_path: String) -> bool {
     let vault_path = expand_tilde(&vault_path);
-    std::path::Path::new(vault_path.as_ref()).join(".git").is_dir()
+    std::path::Path::new(vault_path.as_ref())
+        .join(".git")
+        .is_dir()
 }
 
 #[cfg(desktop)]
