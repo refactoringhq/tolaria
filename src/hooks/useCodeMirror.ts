@@ -5,7 +5,7 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { frontmatterHighlightPlugin, frontmatterHighlightTheme } from '../extensions/frontmatterHighlight'
 import { zoomCursorFix } from '../extensions/zoomCursorFix'
 
-const FONT_FAMILY = '"Berkeley Mono", "JetBrains Mono", "Fira Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+const FONT_FAMILY = '"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
 
 export interface CodeMirrorCallbacks {
   onDocChange: (doc: string) => void
