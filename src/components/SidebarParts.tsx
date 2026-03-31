@@ -27,7 +27,7 @@ export function isSelectionActive(current: SidebarSelection, check: SidebarSelec
 
 // --- NavItem ---
 
-export function NavItem({ icon: Icon, label, count, isActive, activeClassName = 'bg-primary/10 text-primary', badgeClassName, badgeStyle, onClick, disabled, disabledTooltip, compact }: {
+export function NavItem({ icon: Icon, label, count, isActive, activeClassName = 'bg-primary/10 text-primary', badgeClassName, badgeStyle, activeBadgeClassName, activeBadgeStyle, onClick, disabled, disabledTooltip, compact }: {
   icon: ComponentType<IconProps>
   label: string
   count?: number
@@ -35,6 +35,8 @@ export function NavItem({ icon: Icon, label, count, isActive, activeClassName = 
   activeClassName?: string
   badgeClassName?: string
   badgeStyle?: React.CSSProperties
+  activeBadgeClassName?: string
+  activeBadgeStyle?: React.CSSProperties
   onClick?: () => void
   disabled?: boolean
   disabledTooltip?: string
@@ -43,6 +45,8 @@ export function NavItem({ icon: Icon, label, count, isActive, activeClassName = 
   const iconSize = compact ? 14 : 16
   const textClass = compact ? 'text-[12px]' : 'text-[13px]'
   const padding = compact ? '4px 16px' : '6px 16px'
+  const resolvedBadgeClass = isActive && activeBadgeClassName ? activeBadgeClassName : badgeClassName
+  const resolvedBadgeStyle = isActive && activeBadgeStyle ? activeBadgeStyle : badgeStyle
 
   if (disabled) {
     return (
@@ -58,10 +62,10 @@ export function NavItem({ icon: Icon, label, count, isActive, activeClassName = 
       style={{ padding, borderRadius: 4 }}
       onClick={onClick}
     >
-      <Icon size={iconSize} />
+      <Icon size={iconSize} weight={isActive ? 'fill' : 'regular'} />
       <span className={cn("flex-1 font-medium", textClass)}>{label}</span>
       {count !== undefined && count > 0 && (
-        <span className={cn("flex items-center justify-center", badgeClassName)} style={{ height: compact ? 18 : 20, borderRadius: 9999, padding: '0 6px', fontSize: 10, ...badgeStyle }}>
+        <span className={cn("flex items-center justify-center", resolvedBadgeClass)} style={{ height: compact ? 18 : 20, borderRadius: 9999, padding: '0 6px', fontSize: 10, ...resolvedBadgeStyle }}>
           {count}
         </span>
       )}
