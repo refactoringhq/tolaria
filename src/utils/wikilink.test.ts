@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { VaultEntry } from '../types'
-import { wikilinkTarget, wikilinkDisplay, resolveEntry } from './wikilink'
+import { wikilinkTarget, wikilinkDisplay, resolveEntry, relativePathStem } from './wikilink'
 
 function makeEntry(overrides: Partial<VaultEntry>): VaultEntry {
   return {
@@ -95,5 +95,32 @@ describe('resolveEntry', () => {
     expect(resolveEntry(ambiguous, 'foo')).toBe(fooEntry)
     // Searching for "bar" should match barEntry (by filename stem) not fooEntry (by title)
     expect(resolveEntry(ambiguous, 'bar')).toBe(barEntry)
+  })
+
+  it('resolves path-style target by matching path suffix', () => {
+    const adr = makeEntry({ path: '/vault/docs/adr/0031-foo.md', filename: '0031-foo.md', title: '0031 Foo' })
+    const flat = makeEntry({ path: '/vault/hello.md', filename: 'hello.md', title: 'Hello' })
+    expect(resolveEntry([adr, flat], 'docs/adr/0031-foo')).toBe(adr)
+  })
+
+  it('disambiguates same-name files in different subfolders via path', () => {
+    const alpha = makeEntry({ path: '/vault/projects/alpha.md', filename: 'alpha.md', title: 'Alpha' })
+    const alphaArchived = makeEntry({ path: '/vault/archive/alpha.md', filename: 'alpha.md', title: 'Alpha' })
+    expect(resolveEntry([alpha, alphaArchived], 'projects/alpha')).toBe(alpha)
+    expect(resolveEntry([alpha, alphaArchived], 'archive/alpha')).toBe(alphaArchived)
+  })
+})
+
+describe('relativePathStem', () => {
+  it('extracts relative path stem from absolute path and vault path', () => {
+    expect(relativePathStem('/Users/luca/Vault/note.md', '/Users/luca/Vault')).toBe('note')
+  })
+
+  it('preserves subdirectory structure', () => {
+    expect(relativePathStem('/Users/luca/Vault/docs/adr/0031.md', '/Users/luca/Vault')).toBe('docs/adr/0031')
+  })
+
+  it('falls back to filename stem when vault path does not match', () => {
+    expect(relativePathStem('/other/path/note.md', '/Users/luca/Vault')).toBe('note')
   })
 })

@@ -29,6 +29,15 @@ interface InspectorProps {
   onToggleRawEditor?: () => void
 }
 
+function targetMatchesEntry(target: string, entryPath: string, matchTargets: Set<string>): boolean {
+  if (matchTargets.has(target)) return true
+  const lastSegment = target.split('/').pop() ?? ''
+  if (matchTargets.has(lastSegment)) return true
+  // Path-suffix match: "projects/alpha" matches entry path ending with "/projects/alpha.md"
+  if (target.includes('/') && entryPath.toLowerCase().endsWith('/' + target.toLowerCase() + '.md')) return true
+  return false
+}
+
 function useBacklinks(
   entry: VaultEntry | null,
   entries: VaultEntry[],
@@ -39,7 +48,6 @@ function useBacklinks(
     const matchTargets = new Set([
       entry.title, ...entry.aliases,
       entry.filename.replace(/\.md$/, ''),
-      entry.path.replace(/^.*\/Laputa\//, '').replace(/\.md$/, ''),
     ])
 
     const referencedByPaths = new Set(referencedBy.map((item) => item.entry.path))
@@ -48,9 +56,7 @@ function useBacklinks(
       .filter((e) => {
         if (e.path === entry.path) return false
         if (referencedByPaths.has(e.path)) return false
-        return e.outgoingLinks.some((target) =>
-          matchTargets.has(target) || matchTargets.has(target.split('/').pop() ?? '')
-        )
+        return e.outgoingLinks.some((target) => targetMatchesEntry(target, entry.path, matchTargets))
       })
       .map((e) => ({
         entry: e,
@@ -70,9 +76,8 @@ function useReferencedBy(entry: VaultEntry | null, entries: VaultEntry[]): Refer
   return useMemo(() => {
     if (!entry) return []
 
-    const pathStem = entry.path.replace(/^.*\/Laputa\//, '').replace(/\.md$/, '')
     const filenameStem = entry.filename.replace(/\.md$/, '')
-    const matchTargets = new Set([pathStem, filenameStem, entry.title, ...entry.aliases])
+    const matchTargets = new Set([filenameStem, entry.title, ...entry.aliases])
 
     const results: ReferencedByItem[] = []
 

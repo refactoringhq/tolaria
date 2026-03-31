@@ -25,7 +25,8 @@ export function preFilterWikilinks<T extends WikilinkBaseItem>(
   return items.filter(item =>
     item.title.toLowerCase().includes(lowerQuery) ||
     item.aliases.some(a => a.toLowerCase().includes(lowerQuery)) ||
-    item.group.toLowerCase().includes(lowerQuery)
+    item.group.toLowerCase().includes(lowerQuery) ||
+    item.path.toLowerCase().includes(lowerQuery)
   )
 }
 
