@@ -288,7 +288,10 @@ fn pod_to_json(pod: gray_matter::Pod) -> serde_json::Value {
 fn unquote(s: &str) -> &str {
     s.strip_prefix('"')
         .and_then(|rest| rest.strip_suffix('"'))
-        .or_else(|| s.strip_prefix('\'').and_then(|rest| rest.strip_suffix('\'')))
+        .or_else(|| {
+            s.strip_prefix('\'')
+                .and_then(|rest| rest.strip_suffix('\''))
+        })
         .unwrap_or(s)
 }
 
@@ -346,7 +349,9 @@ fn fallback_parse_yaml_string(raw: &str) -> HashMap<String, serde_json::Value> {
             flush_list(&mut map, &mut list_key, &mut list_items);
         }
 
-        let Some(key) = extract_yaml_key(line) else { continue };
+        let Some(key) = extract_yaml_key(line) else {
+            continue;
+        };
         let value_part = line.split_once(':').map(|(_, v)| v.trim()).unwrap_or("");
         if value_part.is_empty() {
             list_key = Some(key.to_string());
@@ -361,7 +366,9 @@ fn fallback_parse_yaml_string(raw: &str) -> HashMap<String, serde_json::Value> {
 /// Extract the raw YAML frontmatter string from between `---` delimiters.
 fn extract_raw_frontmatter(content: &str) -> Option<&str> {
     let rest = content.strip_prefix("---")?;
-    let rest = rest.strip_prefix('\n').or_else(|| rest.strip_prefix("\r\n"))?;
+    let rest = rest
+        .strip_prefix('\n')
+        .or_else(|| rest.strip_prefix("\r\n"))?;
     let end = rest.find("\n---")?;
     Some(&rest[..end])
 }
