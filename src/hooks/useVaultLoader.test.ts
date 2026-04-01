@@ -128,6 +128,15 @@ describe('useVaultLoader', () => {
       expect(result.current.entries[0].archived).toBe(true)
       expect(result.current.entries[0].status).toBe('Done')
     })
+
+    it('preserves entries reference when path does not exist (no-op)', async () => {
+      const { result } = await renderVaultLoader()
+      const entriesBefore = result.current.entries
+
+      act(() => { result.current.updateEntry('/vault/note/nonexistent.md', { archived: true }) })
+
+      expect(result.current.entries).toBe(entriesBefore)
+    })
   })
 
   describe('getNoteStatus', () => {

@@ -169,21 +169,17 @@ interface ImmediateCreateDeps {
 
 /** Create an untitled note without persisting to disk (deferred save). */
 function createNoteImmediate(deps: ImmediateCreateDeps, type?: string): void {
-  try {
-    const noteType = type || 'Note'
-    const title = generateUntitledName(deps.entries, noteType, deps.pendingNames)
-    deps.pendingNames.add(title)
-    const template = resolveTemplate(deps.entries, noteType)
-    const resolved = resolveNewNote(title, noteType, deps.vaultPath, template)
-    deps.openTabWithContent(resolved.entry, resolved.content)
-    addEntryWithMock(resolved.entry, resolved.content, deps.addEntry)
-    deps.trackUnsaved?.(resolved.entry.path)
-    deps.markContentPending?.(resolved.entry.path, resolved.content)
-    signalFocusEditor({ selectTitle: true })
-    setTimeout(() => deps.pendingNames.delete(title), 500)
-  } catch (err) {
-    console.error('Failed to create note:', err)
-  }
+  const noteType = type || 'Note'
+  const title = generateUntitledName(deps.entries, noteType, deps.pendingNames)
+  deps.pendingNames.add(title)
+  const template = resolveTemplate(deps.entries, noteType)
+  const resolved = resolveNewNote(title, noteType, deps.vaultPath, template)
+  deps.openTabWithContent(resolved.entry, resolved.content)
+  addEntryWithMock(resolved.entry, resolved.content, deps.addEntry)
+  deps.trackUnsaved?.(resolved.entry.path)
+  deps.markContentPending?.(resolved.entry.path, resolved.content)
+  signalFocusEditor({ selectTitle: true })
+  setTimeout(() => deps.pendingNames.delete(title), 500)
 }
 
 interface RelationshipCreateDeps {
@@ -261,7 +257,7 @@ export function useNoteCreation(config: NoteCreationConfig, tabDeps: CreationTab
       entries, vaultPath: config.vaultPath, pendingNames: pendingNamesRef.current,
       openTabWithContent, addEntry, trackUnsaved: config.trackUnsaved, markContentPending: config.markContentPending,
     }, type)
-  }, [entries, openTabWithContent, addEntry, config.vaultPath, config.trackUnsaved, config.markContentPending, setToastMessage])
+  }, [entries, openTabWithContent, addEntry, config.vaultPath, config.trackUnsaved, config.markContentPending])
 
   const handleCreateNoteForRelationship = useCallback((title: string): Promise<boolean> => {
     createNoteForRelationship({

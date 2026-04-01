@@ -1,10 +1,11 @@
 ---
 type: ADR
 id: "0032"
-title: "Git actions (Changes, Pulse, Commit) in status bar, not sidebar"
+title: 0032 Status Bar For Git Actions
 status: active
 date: 2026-03-31
 ---
+[[Subfolder scanning and folder tree navigation]]
 
 ## Context
 
@@ -16,14 +17,14 @@ The Laputa sidebar originally surfaced git-related affordances — a "Changes" n
 
 ## Options considered
 
-- **Keep git items in sidebar** (status quo): familiar placement, visible at all times. Rejected — mixes navigation and action concerns; sidebar becomes harder to scan.
-- **Status bar** (chosen): consistent with app conventions (build number, sync status, vault switcher already live there); persistent but unobtrusive; follows macOS app patterns where status/action items live at window bottom.
-- **Toolbar / breadcrumb bar**: would require a new chrome layer or polluting the per-note breadcrumb with global git state. Rejected.
+* **Keep git items in sidebar** (status quo): familiar placement, visible at all times. Rejected — mixes navigation and action concerns; sidebar becomes harder to scan.
+* **Status bar** (chosen): consistent with app conventions (build number, sync status, vault switcher already live there); persistent but unobtrusive; follows macOS app patterns where status/action items live at window bottom.
+* **Toolbar / breadcrumb bar**: would require a new chrome layer or polluting the per-note breadcrumb with global git state. Rejected.
 
 ## Consequences
 
-- Sidebar props `modifiedCount`, `onCommitPush`, `isGitVault` removed; sidebar renders navigation-only
-- `StatusBar` gains `onClickPending`, `onClickPulse`, `onCommitPush`, `isGitVault` props
-- Sidebar tests for Changes/Pulse/Commit button removed; StatusBar tests extended
-- Users find Commit & Push in the status bar (same location as sync indicators) rather than bottom of sidebar — small discoverability change, offset by status bar being always visible regardless of sidebar collapsed state
-- Triggers re-evaluation if: user research shows git actions are hard to discover in the status bar
+* Sidebar props `modifiedCount`, `onCommitPush`, `isGitVault` removed; sidebar renders navigation-only
+* `StatusBar` gains `onClickPending`, `onClickPulse`, `onCommitPush`, `isGitVault` props
+* Sidebar tests for Changes/Pulse/Commit button removed; StatusBar tests extended
+* Users find Commit & Push in the status bar (same location as sync indicators) rather than bottom of sidebar — small discoverability change, offset by status bar being always visible regardless of sidebar collapsed state
+* Triggers re-evaluation if: user research shows git actions are hard to discover in the status bar

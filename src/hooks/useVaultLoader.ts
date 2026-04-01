@@ -133,8 +133,16 @@ export function useVaultLoader(vaultPath: string) {
     })
   }, [tracker])
 
-  const updateEntry = useCallback((path: string, patch: Partial<VaultEntry>) =>
-    setEntries((prev) => prev.map((e) => e.path === path ? { ...e, ...patch } : e)), [])
+  const updateEntry = useCallback((path: string, patch: Partial<VaultEntry>) => {
+    setEntries((prev) => {
+      let changed = false
+      const next = prev.map((e) => {
+        if (e.path === path) { changed = true; return { ...e, ...patch } }
+        return e
+      })
+      return changed ? next : prev
+    })
+  }, [])
 
   const removeEntry = useCallback((path: string) => {
     setEntries((prev) => prev.filter((e) => e.path !== path))
