@@ -29,11 +29,7 @@ pub(crate) struct Frontmatter {
     pub trashed: Option<bool>,
     #[serde(rename = "Status", alias = "status", default)]
     pub status: Option<StringOrList>,
-    #[serde(
-        rename = "_trashed_at",
-        alias = "Trashed at",
-        alias = "trashed_at"
-    )]
+    #[serde(rename = "_trashed_at", alias = "Trashed at", alias = "trashed_at")]
     pub trashed_at: Option<StringOrList>,
     #[serde(default)]
     pub icon: Option<StringOrList>,
