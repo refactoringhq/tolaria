@@ -1,6 +1,8 @@
 use crate::frontmatter::FrontmatterValue;
 use crate::search::SearchResponse;
-use crate::vault::{DetectedRename, FolderNode, RenameResult, VaultEntry};
+use crate::vault::{
+    DetectedRename, FolderNode, RenameResult, VaultEntry, ViewDefinition, ViewFile,
+};
 use crate::{frontmatter, git, search, vault};
 
 use super::expand_tilde;
@@ -156,6 +158,30 @@ pub fn save_image(vault_path: String, filename: String, data: String) -> Result<
 pub fn copy_image_to_vault(vault_path: String, source_path: String) -> Result<String, String> {
     let vault_path = expand_tilde(&vault_path);
     vault::copy_image_to_vault(&vault_path, &source_path)
+}
+
+// ── View commands ──────────────────────────────────────────────────────────
+
+#[tauri::command]
+pub fn list_views(vault_path: String) -> Vec<ViewFile> {
+    let path = expand_tilde(&vault_path);
+    vault::scan_views(std::path::Path::new(path.as_ref()))
+}
+
+#[tauri::command]
+pub fn save_view_cmd(
+    vault_path: String,
+    filename: String,
+    definition: ViewDefinition,
+) -> Result<(), String> {
+    let path = expand_tilde(&vault_path);
+    vault::save_view(std::path::Path::new(path.as_ref()), &filename, &definition)
+}
+
+#[tauri::command]
+pub fn delete_view_cmd(vault_path: String, filename: String) -> Result<(), String> {
+    let path = expand_tilde(&vault_path);
+    vault::delete_view(std::path::Path::new(path.as_ref()), &filename)
 }
 
 // ── Frontmatter commands ────────────────────────────────────────────────────

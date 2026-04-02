@@ -10,6 +10,7 @@ mod parsing;
 mod rename;
 mod title_sync;
 mod trash;
+mod views;
 
 pub use cache::{invalidate_cache, scan_vault_cached};
 pub use config_seed::{migrate_agents_md, repair_config_files, seed_config_files};
@@ -23,6 +24,10 @@ pub use rename::{
 };
 pub use title_sync::{sync_title_on_open, SyncAction};
 pub use trash::{batch_delete_notes, delete_note, empty_trash, is_file_trashed, purge_trash};
+pub use views::{
+    delete_view, evaluate_view, save_view, scan_views, FilterCondition, FilterGroup, FilterNode,
+    FilterOp, ViewDefinition, ViewFile,
+};
 
 use file::read_file_metadata;
 use frontmatter::{extract_fm_and_rels, resolve_is_a};

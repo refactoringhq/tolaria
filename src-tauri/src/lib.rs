@@ -176,7 +176,10 @@ pub fn run() {
             commands::register_mcp_tools,
             commands::check_mcp_status,
             commands::repair_vault,
-            commands::reinit_telemetry
+            commands::reinit_telemetry,
+            commands::list_views,
+            commands::save_view_cmd,
+            commands::delete_view_cmd
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
