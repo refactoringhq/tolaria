@@ -73,13 +73,15 @@ export function useTabManagement() {
 
   /** Open a note — replaces the current note (single-note model). */
   const handleSelectNote = useCallback(async (entry: VaultEntry) => {
+    // Binary files cannot be opened
+    if (entry.fileKind === 'binary') return
     // Already viewing this note — no-op
     if (tabsRef.current.some(t => t.entry.path === entry.path)) {
       setActiveTabPath(entry.path)
       return
     }
     const seq = ++navSeqRef.current
-    await syncNoteTitle(entry.path)
+    if (!entry.fileKind || entry.fileKind === 'markdown') await syncNoteTitle(entry.path)
     try {
       const content = await loadNoteContent(entry.path)
       if (navSeqRef.current === seq) {
@@ -104,6 +106,8 @@ export function useTabManagement() {
   }, [])
 
   const handleReplaceActiveTab = useCallback(async (entry: VaultEntry) => {
+    // Binary files cannot be opened
+    if (entry.fileKind === 'binary') return
     // In single-note model, replace is the same as select
     if (tabsRef.current.some(t => t.entry.path === entry.path)) {
       setActiveTabPath(entry.path)

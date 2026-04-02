@@ -307,6 +307,7 @@ export function buildRelationshipGroups(
 }
 
 const isActive = (e: VaultEntry) => !e.archived && !e.trashed
+const isMarkdown = (e: VaultEntry) => e.fileKind === 'markdown' || !e.fileKind
 
 function applySubFilter(entries: VaultEntry[], subFilter: NoteListFilter): VaultEntry[] {
   if (subFilter === 'archived') return entries.filter((e) => e.archived && !e.trashed)
@@ -324,18 +325,21 @@ function filterByKind(entries: VaultEntry[], selection: SidebarSelection, subFil
   if (selection.kind === 'view') {
     const view = views?.find((v) => v.filename === selection.filename)
     if (!view) return []
-    return evaluateView(view.definition, entries)
+    return evaluateView(view.definition, entries.filter(isMarkdown))
   }
   if (selection.kind === 'folder') {
+    // Folder view shows ALL files (text + binary), not just markdown
     const folderEntries = entries.filter((e) => isInFolder(e.path, selection.path))
     return subFilter ? applySubFilter(folderEntries, subFilter) : folderEntries.filter(isActive)
   }
   if (selection.kind === 'sectionGroup') {
-    const typeEntries = entries.filter((e) => e.isA === selection.type)
+    const typeEntries = entries.filter((e) => isMarkdown(e) && e.isA === selection.type)
     return subFilter ? applySubFilter(typeEntries, subFilter) : typeEntries.filter(isActive)
   }
-  if (selection.filter === 'all' && subFilter) return applySubFilter(entries, subFilter)
-  return filterByFilterType(entries, selection.filter)
+  // Non-folder views: only markdown files
+  const mdEntries = entries.filter(isMarkdown)
+  if (selection.filter === 'all' && subFilter) return applySubFilter(mdEntries, subFilter)
+  return filterByFilterType(mdEntries, selection.filter)
 }
 
 function filterByFilterType(entries: VaultEntry[], filter: string): VaultEntry[] {
@@ -355,7 +359,7 @@ export function filterEntries(entries: VaultEntry[], selection: SidebarSelection
 export function countByFilter(entries: VaultEntry[], type: string): Record<NoteListFilter, number> {
   let open = 0, archived = 0, trashed = 0
   for (const e of entries) {
-    if (e.isA !== type) continue
+    if (!isMarkdown(e) || e.isA !== type) continue
     if (e.trashed) trashed++
     else if (e.archived) archived++
     else open++
@@ -367,6 +371,7 @@ export function countByFilter(entries: VaultEntry[], type: string): Record<NoteL
 export function countAllByFilter(entries: VaultEntry[]): Record<NoteListFilter, number> {
   let open = 0, archived = 0, trashed = 0
   for (const e of entries) {
+    if (!isMarkdown(e)) continue
     if (e.trashed) trashed++
     else if (e.archived) archived++
     else open++

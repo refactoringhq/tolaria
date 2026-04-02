@@ -43,6 +43,9 @@ export interface VaultEntry {
   outgoingLinks: string[]
   /** Custom scalar frontmatter properties (non-relationship, non-structural). */
   properties: Record<string, string | number | boolean | null>
+  /** File kind: "markdown", "text", or "binary". Determines editor behavior.
+   *  Defaults to "markdown" when absent (for backwards compatibility). */
+  fileKind?: 'markdown' | 'text' | 'binary'
 }
 
 export type NoteStatus = 'new' | 'modified' | 'clean' | 'pendingSave' | 'unsaved'

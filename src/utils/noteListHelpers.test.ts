@@ -739,3 +739,38 @@ describe('filterEntries — folder selection', () => {
     expect(result.find(e => e.title === 'Archived')).toBeUndefined()
   })
 })
+
+describe('filterEntries — fileKind filtering', () => {
+  const entries = [
+    makeEntry({ path: '/vault/note.md', title: 'Note', fileKind: 'markdown' }),
+    makeEntry({ path: '/vault/config.yml', title: 'config.yml', fileKind: 'text' }),
+    makeEntry({ path: '/vault/photo.png', title: 'photo.png', fileKind: 'binary' }),
+    makeEntry({ path: '/vault/projects/readme.md', title: 'README', fileKind: 'markdown' }),
+    makeEntry({ path: '/vault/projects/data.json', title: 'data.json', fileKind: 'text' }),
+    makeEntry({ path: '/vault/projects/image.jpg', title: 'image.jpg', fileKind: 'binary' }),
+  ]
+
+  it('all-notes filter only shows markdown files', () => {
+    const result = filterEntries(entries, { kind: 'filter', filter: 'all' })
+    expect(result.map(e => e.title)).toEqual(['Note', 'README'])
+  })
+
+  it('folder view shows all file kinds including binary', () => {
+    const result = filterEntries(entries, { kind: 'folder', path: 'projects' })
+    expect(result.map(e => e.title)).toEqual(['README', 'data.json', 'image.jpg'])
+  })
+
+  it('sectionGroup filter only shows markdown files', () => {
+    const typed = entries.map(e => ({ ...e, isA: 'Note' }))
+    const result = filterEntries(typed, { kind: 'sectionGroup', type: 'Note' })
+    expect(result.map(e => e.title)).toEqual(['Note', 'README'])
+  })
+
+  it('entries without fileKind are treated as markdown', () => {
+    const legacy = [
+      makeEntry({ path: '/vault/old.md', title: 'Old' }),
+    ]
+    const result = filterEntries(legacy, { kind: 'filter', filter: 'all' })
+    expect(result.map(e => e.title)).toEqual(['Old'])
+  })
+})

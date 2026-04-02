@@ -133,15 +133,20 @@ fn test_scan_vault_root_and_protected_folders() {
         "---\ntype: Type\n---\n# Project\n",
     );
     create_test_file(dir.path(), "attachments/notes.md", "# Attachment note\n");
-    create_test_file(dir.path(), "not-markdown.txt", "This should be ignored");
+    create_test_file(dir.path(), "not-markdown.txt", "This should be included as text");
 
     let entries = scan_vault(dir.path(), &HashMap::new()).unwrap();
-    assert_eq!(entries.len(), 3);
+    assert_eq!(entries.len(), 4);
 
     let filenames: Vec<&str> = entries.iter().map(|e| e.filename.as_str()).collect();
     assert!(filenames.contains(&"root.md"));
     assert!(filenames.contains(&"project.md"));
     assert!(filenames.contains(&"notes.md"));
+    assert!(filenames.contains(&"not-markdown.txt"));
+
+    let txt_entry = entries.iter().find(|e| e.filename == "not-markdown.txt").unwrap();
+    assert_eq!(txt_entry.file_kind, "text");
+    assert_eq!(txt_entry.title, "not-markdown.txt");
 }
 
 #[test]

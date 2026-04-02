@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NoteList } from './NoteList'
+import { NoteItem } from './NoteItem'
 import { getSortComparator, filterEntries, countByFilter, countAllByFilter } from '../utils/noteListHelpers'
 import type { NoteListFilter } from '../utils/noteListHelpers'
 import type { VaultEntry, SidebarSelection } from '../types'
@@ -1452,5 +1453,45 @@ describe('countAllByFilter', () => {
     ]
     const counts = countAllByFilter(entries)
     expect(counts).toEqual({ open: 2, archived: 1, trashed: 2 })
+  })
+
+  it('excludes non-markdown files from counts', () => {
+    const entries = [
+      makeEntry({ path: '/1.md', isA: 'Note', fileKind: 'markdown' }),
+      makeEntry({ path: '/2.yml', isA: undefined, fileKind: 'text' }),
+      makeEntry({ path: '/3.png', isA: undefined, fileKind: 'binary' }),
+    ]
+    const counts = countAllByFilter(entries)
+    expect(counts).toEqual({ open: 1, archived: 0, trashed: 0 })
+  })
+})
+
+describe('NoteItem — binary file rendering', () => {
+  it('renders binary files as non-clickable with muted style', () => {
+    const binaryEntry = makeEntry({
+      path: '/vault/photo.png', filename: 'photo.png', title: 'photo.png', fileKind: 'binary',
+    })
+    const onClick = vi.fn()
+    render(<NoteItem entry={binaryEntry} isSelected={false} typeEntryMap={{}} onClickNote={onClick} />)
+
+    const item = screen.getByTestId('binary-file-item')
+    expect(item).toBeTruthy()
+    expect(item.className).toContain('opacity-50')
+    expect(item).toHaveAttribute('title', 'Cannot open this file type')
+
+    fireEvent.click(item)
+    expect(onClick).not.toHaveBeenCalled()
+  })
+
+  it('renders text files as clickable', () => {
+    const textEntry = makeEntry({
+      path: '/vault/config.yml', filename: 'config.yml', title: 'config.yml', fileKind: 'text',
+    })
+    const onClick = vi.fn()
+    render(<NoteItem entry={textEntry} isSelected={false} typeEntryMap={{}} onClickNote={onClick} />)
+
+    const item = screen.getByText('config.yml').closest('div')!
+    fireEvent.click(item)
+    expect(onClick).toHaveBeenCalled()
   })
 })

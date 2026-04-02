@@ -170,7 +170,10 @@ export function EditorContent({
   const freshEntry = activeTab ? entries.find(e => e.path === activeTab.entry.path) : undefined
   const isTrashed = freshEntry?.trashed ?? activeTab?.entry.trashed ?? false
   const isArchived = freshEntry?.archived ?? activeTab?.entry.archived ?? false
-  const showEditor = !diffMode && !rawMode
+  // Non-markdown text files always use the raw editor (no BlockNote)
+  const isNonMarkdownText = activeTab?.entry.fileKind === 'text'
+  const effectiveRawMode = rawMode || isNonMarkdownText
+  const showEditor = !diffMode && !effectiveRawMode
   const entryIcon = activeTab?.entry.icon ?? null
   const emojiIcon = entryIcon && isEmoji(entryIcon) ? entryIcon : null
 
@@ -206,7 +209,7 @@ export function EditorContent({
         <ActiveTabBreadcrumb
           activeTab={activeTab}
           barRef={breadcrumbBarRef}
-          props={{ diffMode, diffContent, onToggleDiff, rawMode, onToggleRaw, ...breadcrumbProps }}
+          props={{ diffMode, diffContent, onToggleDiff, rawMode: effectiveRawMode, onToggleRaw, ...breadcrumbProps }}
         />
       )}
       {activeTab && isTrashed && (
@@ -225,7 +228,7 @@ export function EditorContent({
         />
       )}
       {diffMode && <DiffModeView diffContent={diffContent} onToggleDiff={onToggleDiff} />}
-      <RawModeEditorSection rawMode={rawMode} activeTab={activeTab} entries={entries} onContentChange={onRawContentChange} onSave={onSave} latestContentRef={rawLatestContentRef} vaultPath={vaultPath} />
+      <RawModeEditorSection rawMode={effectiveRawMode} activeTab={activeTab} entries={entries} onContentChange={onRawContentChange} onSave={onSave} latestContentRef={rawLatestContentRef} vaultPath={vaultPath} />
       {showEditor && activeTab && (
         <div className="editor-scroll-area" style={cssVars as React.CSSProperties}>
           <div ref={titleSectionRef} className="title-section">

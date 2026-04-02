@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import {
   Wrench, Flask, Target, ArrowsClockwise,
   Users, CalendarBlank, Tag, FileText, StackSimple,
+  File, FileDashed,
 } from '@phosphor-icons/react'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 import { resolveIcon } from '../utils/iconRegistry'
@@ -91,6 +92,12 @@ function noteItemStyle(isSelected: boolean, isMultiSelected: boolean, typeColor:
   return base
 }
 
+function getFileKindIcon(fileKind: string | undefined): ComponentType<SVGAttributes<SVGSVGElement>> {
+  if (fileKind === 'text') return File
+  if (fileKind === 'binary') return FileDashed
+  return FileText
+}
+
 export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlighted = false, noteStatus = 'clean', typeEntryMap, onClickNote, onPrefetch }: {
   entry: VaultEntry
   isSelected: boolean
@@ -101,47 +108,55 @@ export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlig
   onClickNote: (entry: VaultEntry, e: React.MouseEvent) => void
   onPrefetch?: (path: string) => void
 }) {
+  const isBinary = entry.fileKind === 'binary'
+  const isNonMarkdown = !!entry.fileKind && entry.fileKind !== 'markdown'
   const te = typeEntryMap[entry.isA ?? '']
-  const typeColor = getTypeColor(entry.isA ?? 'Note', te?.color)
+  const typeColor = isBinary ? 'var(--muted-foreground)' : getTypeColor(entry.isA ?? 'Note', te?.color)
   const typeLightColor = getTypeLightColor(entry.isA ?? 'Note', te?.color)
-  const TypeIcon = useMemo(() => getTypeIcon(entry.isA, te?.icon), [entry.isA, te?.icon])
+  const TypeIcon = useMemo(() => {
+    if (isNonMarkdown) return getFileKindIcon(entry.fileKind)
+    return getTypeIcon(entry.isA, te?.icon)
+  }, [entry.isA, te?.icon, entry.fileKind, isNonMarkdown])
+
+  const handleClick = isBinary
+    ? (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation() }
+    : (e: React.MouseEvent) => onClickNote(entry, e)
 
   return (
     <div
       className={cn(
-        "relative cursor-pointer border-b border-[var(--border)] transition-colors",
-        isSelected && !isMultiSelected && "border-l-[3px]",
-        !isSelected && !isMultiSelected && "hover:bg-muted",
-        isHighlighted && !isSelected && !isMultiSelected && "bg-muted"
+        "relative border-b border-[var(--border)] transition-colors",
+        isBinary ? "cursor-default opacity-50" : "cursor-pointer",
+        isSelected && !isMultiSelected && !isBinary && "border-l-[3px]",
+        !isSelected && !isMultiSelected && !isBinary && "hover:bg-muted",
+        isHighlighted && !isSelected && !isMultiSelected && !isBinary && "bg-muted"
       )}
-      style={noteItemStyle(isSelected, isMultiSelected, typeColor, typeLightColor)}
-      onClick={(e: React.MouseEvent) => onClickNote(entry, e)}
-      onMouseEnter={onPrefetch ? () => onPrefetch(entry.path) : undefined}
-      data-testid={isMultiSelected ? 'multi-selected-item' : undefined}
+      style={isBinary ? { padding: '14px 16px' } : noteItemStyle(isSelected, isMultiSelected, typeColor, typeLightColor)}
+      onClick={handleClick}
+      onMouseEnter={!isBinary && onPrefetch ? () => onPrefetch(entry.path) : undefined}
+      data-testid={isMultiSelected ? 'multi-selected-item' : isBinary ? 'binary-file-item' : undefined}
       data-highlighted={isHighlighted || undefined}
+      title={isBinary ? 'Cannot open this file type' : undefined}
     >
       {/* eslint-disable-next-line react-hooks/static-components -- icon lookup from static map, no internal state */}
       <TypeIcon width={14} height={14} className="absolute right-3 top-2.5" style={{ color: typeColor }} data-testid="type-icon" />
       <div className="pr-5">
-        <div className={cn("truncate text-[13px] text-foreground", isSelected ? "font-semibold" : "font-medium")}>
-          {noteStatus !== 'clean' && <StatusDot noteStatus={noteStatus} />}
+        <div className={cn("truncate text-[13px]", isBinary ? "text-muted-foreground" : "text-foreground", isSelected && !isBinary ? "font-semibold" : "font-medium")}>
+          {noteStatus !== 'clean' && !isBinary && <StatusDot noteStatus={noteStatus} />}
           {entry.icon && isEmoji(entry.icon) && <span className="mr-1">{entry.icon}</span>}
           {entry.title}
-          <StateBadge archived={entry.archived} trashed={entry.trashed} />
+          {!isBinary && <StateBadge archived={entry.archived} trashed={entry.trashed} />}
         </div>
-        {entry.path.includes('/') && (
-          <div className="truncate text-[10px] text-muted-foreground" data-testid="note-path">{entry.path}</div>
-        )}
       </div>
-      {entry.snippet && (
+      {entry.snippet && !isBinary && (
         <div className="mt-0.5 text-[12px] leading-[1.5] text-muted-foreground" data-testid="note-snippet" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {entry.snippet}
         </div>
       )}
-      {entry.trashed && entry.trashedAt
+      {!isBinary && (entry.trashed && entry.trashedAt
         ? <TrashDateLine entry={entry} />
         : <div className="mt-0.5 text-[10px] text-muted-foreground">{relativeDate(getDisplayDate(entry))}</div>
-      }
+      )}
     </div>
   )
 }

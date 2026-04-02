@@ -120,6 +120,33 @@ pub fn parse_md_file(path: &Path, git_dates: Option<(u64, u64)>) -> Result<Vault
         word_count,
         outgoing_links,
         properties,
+        file_kind: "markdown".to_string(),
+    })
+}
+
+/// Parse a non-markdown file into a minimal VaultEntry.
+/// Uses filename as title, no frontmatter extraction.
+pub(crate) fn parse_non_md_file(path: &Path, git_dates: Option<(u64, u64)>) -> Result<VaultEntry, String> {
+    let filename = path
+        .file_name()
+        .map(|f| f.to_string_lossy().to_string())
+        .unwrap_or_default();
+    let (fs_modified, fs_created, file_size) = read_file_metadata(path)?;
+    let (modified_at, created_at) = match git_dates {
+        Some((git_mod, git_create)) => (Some(git_mod), Some(git_create)),
+        None => (fs_modified, fs_created),
+    };
+    let file_kind = classify_file_kind(path).to_string();
+
+    Ok(VaultEntry {
+        path: path.to_string_lossy().to_string(),
+        filename: filename.clone(),
+        title: filename,
+        file_kind,
+        modified_at,
+        created_at,
+        file_size,
+        ..VaultEntry::default()
     })
 }
 
@@ -129,7 +156,11 @@ pub fn reload_entry(path: &Path) -> Result<VaultEntry, String> {
     if !path.exists() {
         return Err(format!("File does not exist: {}", path.display()));
     }
-    parse_md_file(path, None)
+    if is_md_file(path) {
+        parse_md_file(path, None)
+    } else {
+        parse_non_md_file(path, None)
+    }
 }
 
 /// Directories that are never shown in the folder tree or scanned for notes.
@@ -139,8 +170,43 @@ fn is_hidden_dir(name: &str) -> bool {
     name.starts_with('.') || HIDDEN_DIRS.contains(&name)
 }
 
-fn is_md_file(path: &Path) -> bool {
+pub(crate) fn is_md_file(path: &Path) -> bool {
     path.is_file() && path.extension().is_some_and(|ext| ext == "md")
+}
+
+/// Extensions recognized as editable text files (opened in raw editor).
+const TEXT_EXTENSIONS: &[&str] = &[
+    "yml", "yaml", "json", "txt", "toml", "csv", "xml", "html", "htm", "css", "scss", "less",
+    "ts", "tsx", "js", "jsx", "py", "rs", "sh", "bash", "zsh", "fish", "rb", "go", "java",
+    "kt", "c", "cpp", "h", "hpp", "swift", "lua", "sql", "graphql", "env", "ini", "cfg",
+    "conf", "properties", "makefile", "dockerfile", "gitignore", "editorconfig", "mdx",
+    "svelte", "vue", "astro", "tf", "hcl", "nix", "zig", "hs", "ml", "ex", "exs", "erl",
+    "clj", "lisp", "el", "vim", "r", "jl", "ps1", "bat", "cmd",
+];
+
+/// Classify a file extension into "markdown", "text", or "binary".
+pub(crate) fn classify_file_kind(path: &Path) -> &'static str {
+    let ext = match path.extension() {
+        Some(e) => e.to_string_lossy().to_lowercase(),
+        None => {
+            // Files without extension: check if name itself is a known text file
+            let name = path.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
+            return if ["makefile", "dockerfile", "rakefile", "gemfile", "procfile", "brewfile",
+                       ".gitignore", ".gitattributes", ".editorconfig", ".env"]
+                .contains(&name.as_str()) {
+                "text"
+            } else {
+                "binary"
+            };
+        }
+    };
+    if ext == "md" || ext == "markdown" {
+        "markdown"
+    } else if TEXT_EXTENSIONS.contains(&ext.as_str()) {
+        "text"
+    } else {
+        "binary"
+    }
 }
 
 use crate::git::GitDates;
@@ -159,22 +225,27 @@ fn lookup_git_dates(
     git_dates.get(&rel).map(|d| (d.modified_at, d.created_at))
 }
 
-fn try_parse_md(
+fn try_parse_file(
     path: &Path,
     vault_path: &Path,
     git_dates: &HashMap<String, GitDates>,
     entries: &mut Vec<VaultEntry>,
 ) {
     let dates = lookup_git_dates(path, vault_path, git_dates);
-    match parse_md_file(path, dates) {
+    let result = if is_md_file(path) {
+        parse_md_file(path, dates)
+    } else {
+        parse_non_md_file(path, dates)
+    };
+    match result {
         Ok(vault_entry) => entries.push(vault_entry),
         Err(e) => log::warn!("Skipping file: {}", e),
     }
 }
 
-/// Scan all .md files in the vault, including subdirectories.
+/// Scan all files in the vault, including subdirectories.
 /// Hidden directories (starting with `.`) are excluded.
-fn scan_all_md_files(
+fn scan_all_files(
     vault_path: &Path,
     git_dates: &HashMap<String, GitDates>,
     entries: &mut Vec<VaultEntry>,
@@ -194,13 +265,18 @@ fn scan_all_md_files(
             true
         });
     for entry in walker.filter_map(|e| e.ok()) {
-        if is_md_file(entry.path()) {
-            try_parse_md(entry.path(), vault_path, git_dates, entries);
+        if entry.path().is_file() {
+            // Skip hidden files (starting with '.') — e.g. .gitignore, .DS_Store
+            let fname = entry.file_name().to_string_lossy();
+            if fname.starts_with('.') {
+                continue;
+            }
+            try_parse_file(entry.path(), vault_path, git_dates, entries);
         }
     }
 }
 
-/// Scan a directory recursively for .md files and return VaultEntry for each.
+/// Scan a directory recursively for all files and return VaultEntry for each.
 /// Pass an empty map for `git_dates` to use filesystem dates only.
 pub fn scan_vault(
     vault_path: &Path,
@@ -220,7 +296,7 @@ pub fn scan_vault(
     }
 
     let mut entries = Vec::new();
-    scan_all_md_files(vault_path, git_dates, &mut entries);
+    scan_all_files(vault_path, git_dates, &mut entries);
 
     entries.sort_by(|a, b| b.modified_at.cmp(&a.modified_at));
     Ok(entries)

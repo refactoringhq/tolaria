@@ -6,12 +6,12 @@ use std::path::{Path, PathBuf};
 use crate::git::{get_all_file_dates, GitDates};
 use std::collections::HashMap;
 
-use super::{parse_md_file, scan_vault, VaultEntry};
+use super::{is_md_file, parse_md_file, parse_non_md_file, scan_vault, VaultEntry};
 
 // --- Vault Cache ---
 
 /// Bump this when VaultEntry fields change to force a full rescan.
-const CACHE_VERSION: u32 = 10;
+const CACHE_VERSION: u32 = 11;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct VaultCache {
@@ -175,7 +175,8 @@ fn to_relative_path(abs_path: &str, vault: &Path) -> String {
         .to_string()
 }
 
-/// Parse .md files from a list of relative paths, skipping any that don't exist.
+/// Parse files from a list of relative paths, skipping any that don't exist.
+/// Dispatches to the appropriate parser based on file extension.
 fn parse_files_at(
     vault: &Path,
     rel_paths: &[String],
@@ -189,7 +190,11 @@ fn parse_files_at(
                 let dates = git_dates
                     .get(rel.as_str())
                     .map(|d| (d.modified_at, d.created_at));
-                parse_md_file(&abs, dates).ok()
+                if is_md_file(&abs) {
+                    parse_md_file(&abs, dates).ok()
+                } else {
+                    parse_non_md_file(&abs, dates).ok()
+                }
             } else {
                 None
             }
