@@ -154,6 +154,28 @@ describe('SearchPanel', () => {
     })
   })
 
+  it('shows note title from VaultEntry instead of filename from search result', async () => {
+    mockInvokeFn.mockResolvedValue({
+      results: [
+        { title: 'ai-apis', path: '/vault/essay/ai-apis.md', snippet: '...designing APIs...', score: 0.87, note_type: null },
+      ],
+      elapsed_ms: 12,
+    })
+
+    render(
+      <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={vi.fn()} onClose={vi.fn()} />,
+    )
+
+    const input = screen.getByPlaceholderText('Search in all notes...')
+    fireEvent.change(input, { target: { value: 'api' } })
+
+    await waitFor(() => {
+      // Should show VaultEntry title, not filename-based search result title
+      expect(screen.getByText('How to Design AI-first APIs')).toBeInTheDocument()
+      expect(screen.queryByText('ai-apis')).not.toBeInTheDocument()
+    })
+  })
+
   it('shows no results message when search returns empty', async () => {
     mockInvokeFn.mockResolvedValue({ results: [], elapsed_ms: 10 })
 
@@ -186,13 +208,13 @@ describe('SearchPanel', () => {
     fireEvent.change(input, { target: { value: 'test' } })
 
     await waitFor(() => {
-      expect(screen.getByText('Result One')).toBeInTheDocument()
+      expect(screen.getByText('How to Design AI-first APIs')).toBeInTheDocument()
     })
 
     fireEvent.keyDown(input, { key: 'ArrowDown' })
 
     await waitFor(() => {
-      const resultTwo = screen.getByText('Result Two').closest('[class*="cursor-pointer"]')!
+      const resultTwo = screen.getByText('Refactoring Retreat').closest('[class*="cursor-pointer"]')!
       expect(resultTwo.className).toContain('bg-accent')
     })
   })
@@ -330,9 +352,9 @@ describe('SearchPanel', () => {
       elapsed_ms: 30,
     })
 
-    // Spinner disappears after search completes
+    // Spinner disappears after search completes — VaultEntry title shown instead of search result title
     await waitFor(() => {
-      expect(screen.getByText('Result')).toBeInTheDocument()
+      expect(screen.getByText('How to Design AI-first APIs')).toBeInTheDocument()
       expect(screen.queryByTestId('search-spinner')).not.toBeInTheDocument()
     })
   })
@@ -358,9 +380,9 @@ describe('SearchPanel', () => {
     fireEvent.change(input, { target: { value: 'first' } })
     fireEvent.change(input, { target: { value: 'second' } })
 
-    // Only second query results should appear
+    // Only second query results should appear — VaultEntry title shown
     await waitFor(() => {
-      expect(screen.getByText('Second Result')).toBeInTheDocument()
+      expect(screen.getByText('Refactoring Retreat')).toBeInTheDocument()
     })
   })
 

@@ -213,7 +213,7 @@ function SearchContent({
                     <TypeIcon width={14} height={14} className="shrink-0" style={{ color: typeColor ?? 'var(--muted-foreground)' }} />
                     <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">
                       {entry?.icon && isEmoji(entry.icon) && <span className="mr-1">{entry.icon}</span>}
-                      {result.title}
+                      {entry?.title ?? result.title}
                     </span>
                     {noteType && (
                       <span className="shrink-0 text-[11px] text-muted-foreground/70">{noteType}</span>
