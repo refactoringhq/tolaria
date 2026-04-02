@@ -279,7 +279,7 @@ function App() {
       } else {
         await mockInvoke('create_vault_folder', { vaultPath: resolvedPath, folderName: name })
       }
-      await vault.reloadVault()
+      await vault.reloadFolders()
       setToastMessage(`Created folder "${name}"`)
     } catch (e) {
       setToastMessage(`Failed to create folder: ${e}`)

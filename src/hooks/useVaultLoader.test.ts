@@ -424,6 +424,32 @@ describe('useVaultLoader', () => {
     })
   })
 
+  describe('reloadFolders', () => {
+    it('refreshes folder tree from backend', async () => {
+      const folders = [{ name: 'projects', path: 'projects', children: [] }]
+      mockInvokeFn.mockImplementation(((cmd: string) => {
+        if (cmd === 'list_vault') return Promise.resolve(mockEntries)
+        if (cmd === 'get_modified_files') return Promise.resolve([])
+        if (cmd === 'list_vault_folders') return Promise.resolve(folders)
+        return Promise.resolve(null)
+      }) as typeof defaultMockInvoke)
+
+      const { result } = await renderVaultLoader()
+
+      expect(result.current.folders).toEqual(folders)
+
+      const updatedFolders = [...folders, { name: 'journal', path: 'journal', children: [] }]
+      mockInvokeFn.mockImplementation(((cmd: string) => {
+        if (cmd === 'list_vault_folders') return Promise.resolve(updatedFolders)
+        return defaultMockInvoke(cmd)
+      }) as typeof defaultMockInvoke)
+
+      await act(async () => { await result.current.reloadFolders() })
+
+      expect(result.current.folders).toEqual(updatedFolders)
+    })
+  })
+
   describe('loadModifiedFiles', () => {
     it('refreshes modified files list', async () => {
       const { result } = renderHook(() => useVaultLoader('/vault'))

@@ -169,6 +169,13 @@ export function useVaultLoader(vaultPath: string) {
   const commitAndPush = useCallback((message: string): Promise<GitPushResult> =>
     commitWithPush(vaultPath, message), [vaultPath])
 
+  const reloadFolders = useCallback(
+    () => tauriCall<FolderNode[]>('list_vault_folders', { path: vaultPath })
+      .then((f) => { setFolders(f ?? []) })
+      .catch(() => { /* folders are optional — ignore errors */ }),
+    [vaultPath],
+  )
+
   const reloadVault = useCallback(
     () => {
       clearPrefetchCache()
@@ -183,7 +190,7 @@ export function useVaultLoader(vaultPath: string) {
     entries, folders, modifiedFiles, modifiedFilesError,
     addEntry, updateEntry, removeEntry, replaceEntry,
     loadModifiedFiles, loadGitHistory, loadDiff, loadDiffAtCommit,
-    getNoteStatus, commitAndPush, reloadVault,
+    getNoteStatus, commitAndPush, reloadVault, reloadFolders,
     addPendingSave: pendingSave.addPendingSave,
     removePendingSave: pendingSave.removePendingSave,
     unsavedPaths: unsaved.unsavedPaths,
