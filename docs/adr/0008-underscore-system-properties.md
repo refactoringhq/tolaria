@@ -27,3 +27,16 @@ As Laputa added more features that store configuration in note frontmatter (pinn
 - Power users can still access and edit system properties via the raw editor.
 - Type documents use `_icon`, `_color`, `_order`, `_sidebar_label`, `_pinned_properties`.
 - Re-evaluation trigger: if the number of system properties grows large enough to warrant a structured sub-object.
+
+## Normalized system properties
+
+| Canonical key | Old keys (read with fallback) | Written by |
+|---|---|---|
+| `_archived` | `Archived`, `archived` | Archive action |
+| `_trashed` | `Trashed`, `trashed` | Trash action |
+| `_trashed_at` | `Trashed at`, `trashed_at` | Trash action |
+| `_favorite` | — | Favorite toggle |
+| `_favorite_index` | — | Favorite reorder |
+
+**Write rule**: always use the canonical `_`-prefixed key.
+**Read rule**: accept both canonical and legacy keys (case-insensitive). Do NOT rewrite on read — migration is a separate concern.

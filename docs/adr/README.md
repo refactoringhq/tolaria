@@ -93,3 +93,7 @@ proposed → active → superseded
 | [0035](0035-path-suffix-wikilink-resolution.md) | Path-suffix wikilink resolution for subfolder vaults | active |
 | [0036](0036-external-rename-detection-via-git-diff.md) | External rename detection via git diff on focus regain | active |
 | [0037](0037-codemirror-language-markdown-highlighting.md) | Language-based markdown syntax highlighting in raw editor | active |
+| [0038](0038-frontmatter-backed-favorites.md) | Frontmatter-backed favorites (_favorite, _favorite_index) | active |
+| [0039](0039-git-history-for-note-dates.md) | Git history as source of truth for note creation/modification dates | active |
+| [0040](0040-custom-views-yml-filter-engine.md) | Custom Views — .laputa/views/*.yml with YAML filter engine | active |
+| [0041](0041-filekind-all-files-in-vault-scanner.md) | fileKind field — scan all vault files, not just markdown | active |
