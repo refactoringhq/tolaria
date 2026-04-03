@@ -223,7 +223,7 @@ function FavoritesSection({ entries, selection, onSelect, onSelectNote, onReorde
   if (favorites.length === 0) return null
 
   return (
-    <div style={{ padding: '4px 6px 0' }}>
+    <div style={{ padding: '4px 6px' }}>
       <button
         className="flex w-full cursor-pointer select-none items-center justify-between border-none bg-transparent text-muted-foreground"
         style={{ padding: '6px 14px 6px 16px' }}
@@ -430,7 +430,7 @@ export const Sidebar = memo(function Sidebar({
 
         {/* Views */}
         {hasViews && (
-          <div className="border-b border-border" style={{ padding: '4px 6px 0' }}>
+          <div className="border-b border-border" style={{ padding: '4px 6px' }}>
             <button
               className="flex w-full cursor-pointer select-none items-center justify-between border-none bg-transparent text-muted-foreground"
               style={{ padding: '6px 14px 6px 16px' }}
@@ -476,7 +476,7 @@ export const Sidebar = memo(function Sidebar({
         )}
 
         {/* Sections header + visibility popover */}
-        <div ref={customizeRef} className="border-b border-border" style={{ position: 'relative', padding: '4px 6px 0' }}>
+        <div ref={customizeRef} className="border-b border-border" style={{ position: 'relative', padding: '4px 6px' }}>
           <button
             className="flex w-full cursor-pointer select-none items-center justify-between border-none bg-transparent text-muted-foreground"
             style={{ padding: '6px 14px 6px 16px' }}

@@ -102,7 +102,7 @@ export const FolderTree = memo(function FolderTree({ folders, selection, onSelec
   if (folders.length === 0 && !isCreating) return null
 
   return (
-    <div style={{ padding: '4px 6px 0' }}>
+    <div style={{ padding: '4px 6px' }}>
       {/* Header */}
       <button
         className="flex w-full cursor-pointer select-none items-center justify-between border-none bg-transparent text-muted-foreground"
