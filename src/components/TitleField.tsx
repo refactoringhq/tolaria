@@ -67,7 +67,7 @@ export function TitleField({ title, filename, editable = true, notePath, vaultPa
   const { value, isEditing, handleFocus, commitTitle, revert, setEdit } =
     useOptimisticTitle(title, onTitleChange)
 
-  // Auto-resize textarea to fit content
+  // Auto-resize textarea to fit content (fallback for browsers without field-sizing: content)
   const autoResize = useCallback(() => {
     const el = inputRef.current
     if (!el) return
@@ -75,7 +75,22 @@ export function TitleField({ title, filename, editable = true, notePath, vaultPa
     el.style.height = el.scrollHeight + 'px'
   }, [])
 
-  useEffect(() => { autoResize() }, [value, autoResize])
+  useEffect(() => {
+    autoResize()
+    // Schedule a second measurement after the browser has painted, to catch
+    // cases where scrollHeight is stale on the first read (e.g. tab switch).
+    const id = requestAnimationFrame(autoResize)
+    return () => cancelAnimationFrame(id)
+  }, [value, autoResize])
+
+  // Re-measure when container width changes (text may re-wrap)
+  useEffect(() => {
+    const el = inputRef.current
+    if (!el) return
+    const ro = new ResizeObserver(autoResize)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [autoResize])
 
   useEffect(() => {
     const handler = (e: Event) => {

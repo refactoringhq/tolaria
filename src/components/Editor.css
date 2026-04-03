@@ -336,6 +336,7 @@
   resize: none;
   overflow: hidden;
   font-family: inherit;
+  field-sizing: content;
 }
 
 .title-field__input::placeholder {
