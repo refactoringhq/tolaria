@@ -67,3 +67,7 @@ CODE-HEALTH-REPORT.md
 # Tauri signing keys (never commit private keys)
 *.key
 *.key.pub
+
+# Local environment variables (never commit)
+.env.local
+.env.*.local
