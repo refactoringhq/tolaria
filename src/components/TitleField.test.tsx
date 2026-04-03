@@ -36,8 +36,12 @@ describe('TitleField', () => {
     expect(input).toHaveValue('Keep This')
   })
 
-  it('shows filename indicator when slug differs from current filename', () => {
+  it('shows filename indicator when slug differs and title is focused', () => {
     render(<TitleField title="My Note" filename="wrong-name.md" onTitleChange={() => {}} />)
+    // Not shown when unfocused
+    expect(screen.queryByTestId('title-field-filename')).not.toBeInTheDocument()
+    // Shown when focused
+    fireEvent.focus(screen.getByTestId('title-field-input'))
     expect(screen.getByTestId('title-field-filename')).toHaveTextContent('my-note.md')
   })
 
@@ -147,5 +151,18 @@ describe('TitleField', () => {
     render(<TitleField title="Note" filename="note.md" onTitleChange={() => {}} />)
     fireEvent.focus(screen.getByTestId('title-field-input'))
     expect(screen.queryByTestId('title-field-path')).not.toBeInTheDocument()
+  })
+
+  it('resolves vault-relative path when paths differ by symlink prefix', () => {
+    // vaultPath uses symlink /Users/luca/... but notePath is canonical /Volumes/Jupiter/...
+    render(<TitleField title="ADR" filename="0001-tauri-stack.md" notePath="/Volumes/Jupiter/Workspace/laputa-app/demo-vault-v2/docs/adr/0001-tauri-stack.md" vaultPath="/Users/luca/Workspace/laputa-app/demo-vault-v2" onTitleChange={() => {}} />)
+    fireEvent.focus(screen.getByTestId('title-field-input'))
+    expect(screen.getByTestId('title-field-path')).toHaveTextContent('docs/adr/0001-tauri-stack')
+  })
+
+  it('handles vaultPath with trailing slash', () => {
+    render(<TitleField title="ADR" filename="0001-tauri-stack.md" notePath="/Users/luca/Laputa/docs/adr/0001-tauri-stack.md" vaultPath="/Users/luca/Laputa/" onTitleChange={() => {}} />)
+    fireEvent.focus(screen.getByTestId('title-field-input'))
+    expect(screen.getByTestId('title-field-path')).toHaveTextContent('docs/adr/0001-tauri-stack')
   })
 })

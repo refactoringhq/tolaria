@@ -119,15 +119,25 @@ export function TitleField({ title, filename, editable = true, notePath, vaultPa
   const currentStem = filename.replace(/\.md$/, '')
 
   // Compute vault-relative path (only for notes in subdirectories)
-  const relativePath = notePath && vaultPath
-    ? notePath.replace(vaultPath + '/', '').replace(/\.md$/, '')
-    : null
+  const relativePath = (() => {
+    if (!notePath || !vaultPath) return null
+    const vp = vaultPath.replace(/\/+$/, '')
+    const np = notePath.replace(/\.md$/, '')
+    if (np.startsWith(vp + '/')) return np.slice(vp.length + 1)
+    // Fallback: match by vault directory name for symlink-resolved paths
+    const vaultName = vp.split('/').pop()
+    if (!vaultName) return null
+    const segments = np.split('/')
+    const idx = segments.lastIndexOf(vaultName)
+    if (idx >= 0) return segments.slice(idx + 1).join('/')
+    return null
+  })()
   const isSubdirectory = relativePath != null && relativePath.includes('/')
 
   // Show path only when title is focused and note is in a subdirectory
   const showRelativePath = isFocused && isSubdirectory
-  // Show filename hint when slug differs, but suppress when path is already visible
-  const showFilename = !showRelativePath && (isEditing || currentStem !== expectedSlug)
+  // Show filename hint when slug differs, but only when focused (not always)
+  const showFilename = isFocused && !showRelativePath && (isEditing || currentStem !== expectedSlug)
 
   return (
     <div className="title-field" data-testid="title-field">
