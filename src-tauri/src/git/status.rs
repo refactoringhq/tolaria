@@ -63,6 +63,80 @@ pub fn get_modified_files(vault_path: &str) -> Result<Vec<ModifiedFile>, String>
     Ok(files)
 }
 
+/// Discard uncommitted changes to a single file.
+///
+/// - **Modified / Deleted**: `git checkout -- <file>` restores the last committed version.
+/// - **Untracked / Added**: the file is removed from disk.
+///
+/// The `relative_path` must be relative to `vault_path` (the same format
+/// returned by [`get_modified_files`]).
+pub fn discard_file_changes(vault_path: &str, relative_path: &str) -> Result<(), String> {
+    let vault = Path::new(vault_path);
+    let abs = vault.join(relative_path);
+
+    // Safety: ensure the resolved path stays inside the vault.
+    // Safety: reject any relative_path that tries to escape the vault via `..`.
+    for component in std::path::Path::new(relative_path).components() {
+        if matches!(component, std::path::Component::ParentDir) {
+            return Err("File path is outside the vault".into());
+        }
+    }
+    if abs.exists() {
+        let canonical_vault = vault
+            .canonicalize()
+            .map_err(|e| format!("Cannot resolve vault path: {e}"))?;
+        let canonical_file = abs
+            .canonicalize()
+            .map_err(|e| format!("Cannot resolve file path: {e}"))?;
+        if !canonical_file.starts_with(&canonical_vault) {
+            return Err("File path is outside the vault".into());
+        }
+    }
+
+    // Determine the file status from `git status --porcelain`.
+    let output = Command::new("git")
+        .args(["status", "--porcelain", "--", relative_path])
+        .current_dir(vault)
+        .output()
+        .map_err(|e| format!("Failed to run git status: {e}"))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let line = stdout.lines().find(|l| l.len() >= 4);
+
+    let status_code = line
+        .map(|l| l[..2].trim().to_string())
+        .unwrap_or_default();
+
+    match status_code.as_str() {
+        "??" => {
+            // Untracked — remove from disk.
+            std::fs::remove_file(&abs)
+                .map_err(|e| format!("Failed to delete untracked file: {e}"))?;
+        }
+        _ => {
+            // Modified, deleted, added-to-index, renamed, etc. — restore via git.
+            // Unstage first (ignore errors — file might not be staged).
+            let _ = Command::new("git")
+                .args(["reset", "HEAD", "--", relative_path])
+                .current_dir(vault)
+                .output();
+
+            let checkout = Command::new("git")
+                .args(["checkout", "--", relative_path])
+                .current_dir(vault)
+                .output()
+                .map_err(|e| format!("Failed to run git checkout: {e}"))?;
+
+            if !checkout.status.success() {
+                let stderr = String::from_utf8_lossy(&checkout.stderr);
+                return Err(format!("git checkout failed: {}", stderr.trim()));
+            }
+        }
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -170,6 +244,84 @@ mod tests {
             after.is_empty(),
             "No modified files should remain after commit, found: {:?}",
             after
+        );
+    }
+
+    #[test]
+    fn test_discard_modified_file() {
+        let dir = setup_git_repo();
+        let vault = dir.path();
+        let vp = vault.to_str().unwrap();
+
+        fs::write(vault.join("note.md"), "# Original\n").unwrap();
+        git_commit(vp, "initial").unwrap();
+
+        // Modify the file
+        fs::write(vault.join("note.md"), "# Changed\n").unwrap();
+        assert_eq!(get_modified_files(vp).unwrap().len(), 1);
+
+        // Discard
+        discard_file_changes(vp, "note.md").unwrap();
+
+        let content = fs::read_to_string(vault.join("note.md")).unwrap();
+        assert_eq!(content, "# Original\n");
+        assert!(get_modified_files(vp).unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_discard_untracked_file() {
+        let dir = setup_git_repo();
+        let vault = dir.path();
+        let vp = vault.to_str().unwrap();
+
+        fs::write(vault.join("init.md"), "# Init\n").unwrap();
+        git_commit(vp, "initial").unwrap();
+
+        // Create an untracked file
+        fs::write(vault.join("new.md"), "# New\n").unwrap();
+        assert!(vault.join("new.md").exists());
+
+        discard_file_changes(vp, "new.md").unwrap();
+
+        assert!(!vault.join("new.md").exists());
+        assert!(get_modified_files(vp).unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_discard_deleted_file() {
+        let dir = setup_git_repo();
+        let vault = dir.path();
+        let vp = vault.to_str().unwrap();
+
+        fs::write(vault.join("note.md"), "# Original\n").unwrap();
+        git_commit(vp, "initial").unwrap();
+
+        // Delete the file
+        fs::remove_file(vault.join("note.md")).unwrap();
+        assert!(!vault.join("note.md").exists());
+
+        discard_file_changes(vp, "note.md").unwrap();
+
+        assert!(vault.join("note.md").exists());
+        let content = fs::read_to_string(vault.join("note.md")).unwrap();
+        assert_eq!(content, "# Original\n");
+    }
+
+    #[test]
+    fn test_discard_rejects_path_outside_vault() {
+        let dir = setup_git_repo();
+        let vault = dir.path();
+        let vp = vault.to_str().unwrap();
+
+        // Need an initial commit so git status works
+        fs::write(vault.join("init.md"), "# Init\n").unwrap();
+        git_commit(vp, "initial").unwrap();
+
+        let result = discard_file_changes(vp, "../../../etc/passwd");
+        assert!(result.is_err(), "Should reject path outside vault, got: {:?}", result);
+        assert!(
+            result.unwrap_err().contains("outside the vault"),
+            "Error should mention 'outside the vault'"
         );
     }
 }

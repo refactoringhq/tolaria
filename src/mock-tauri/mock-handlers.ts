@@ -155,6 +155,7 @@ export const mockHandlers: Record<string, (args: any) => any> = {
   },
   get_file_diff: (args: { path: string }) => mockFileDiff(args.path),
   get_file_diff_at_commit: (args: { path: string; commitHash: string }) => mockFileDiffAtCommit(args.path, args.commitHash),
+  git_discard_file: () => {},
   git_commit: (args: { message: string }) => {
     const count = (mockHasChanges ? mockModifiedFiles().length : 0) + mockSavedSinceCommit.size
     mockHasChanges = false

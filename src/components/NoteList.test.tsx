@@ -1081,6 +1081,64 @@ describe('NoteList — virtual list with large datasets', () => {
       )
       expect(screen.queryByText(/notes? deleted/)).not.toBeInTheDocument()
     })
+
+    it('shows context menu with "Discard changes" on right-click when onDiscardFile is provided', () => {
+      const onDiscard = vi.fn()
+      render(
+        <NoteList {...defaultFilterProps} entries={mockEntries} selection={changesSelection} selectedNote={null} modifiedFiles={modifiedFiles} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} onCreateNote={vi.fn()} onDiscardFile={onDiscard} />
+      )
+      const noteItem = screen.getByText('Build Laputa App').closest('[class*="border-b"]')!
+      fireEvent.contextMenu(noteItem)
+      expect(screen.getByTestId('changes-context-menu')).toBeInTheDocument()
+      expect(screen.getByTestId('discard-changes-button')).toBeInTheDocument()
+    })
+
+    it('does not show context menu when onDiscardFile is not provided', () => {
+      render(
+        <NoteList {...defaultFilterProps} entries={mockEntries} selection={changesSelection} selectedNote={null} modifiedFiles={modifiedFiles} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} onCreateNote={vi.fn()} />
+      )
+      const noteItem = screen.getByText('Build Laputa App').closest('[class*="border-b"]')!
+      fireEvent.contextMenu(noteItem)
+      expect(screen.queryByTestId('changes-context-menu')).not.toBeInTheDocument()
+    })
+
+    it('shows confirmation dialog after clicking "Discard changes"', () => {
+      const onDiscard = vi.fn()
+      render(
+        <NoteList {...defaultFilterProps} entries={mockEntries} selection={changesSelection} selectedNote={null} modifiedFiles={modifiedFiles} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} onCreateNote={vi.fn()} onDiscardFile={onDiscard} />
+      )
+      const noteItem = screen.getByText('Build Laputa App').closest('[class*="border-b"]')!
+      fireEvent.contextMenu(noteItem)
+      fireEvent.click(screen.getByTestId('discard-changes-button'))
+      expect(screen.getByTestId('discard-confirm-dialog')).toBeInTheDocument()
+      // Dialog mentions the note title
+      const dialog = screen.getByTestId('discard-confirm-dialog')
+      expect(dialog.textContent).toContain('Build Laputa App')
+    })
+
+    it('calls onDiscardFile with relativePath when discard is confirmed', async () => {
+      const onDiscard = vi.fn().mockResolvedValue(undefined)
+      render(
+        <NoteList {...defaultFilterProps} entries={mockEntries} selection={changesSelection} selectedNote={null} modifiedFiles={modifiedFiles} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} onCreateNote={vi.fn()} onDiscardFile={onDiscard} />
+      )
+      const noteItem = screen.getByText('Build Laputa App').closest('[class*="border-b"]')!
+      fireEvent.contextMenu(noteItem)
+      fireEvent.click(screen.getByTestId('discard-changes-button'))
+      fireEvent.click(screen.getByTestId('discard-confirm-button'))
+      expect(onDiscard).toHaveBeenCalledWith('project/26q1-laputa-app.md')
+    })
+
+    it('does not call onDiscardFile when cancel is clicked', () => {
+      const onDiscard = vi.fn()
+      render(
+        <NoteList {...defaultFilterProps} entries={mockEntries} selection={changesSelection} selectedNote={null} modifiedFiles={modifiedFiles} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} onCreateNote={vi.fn()} onDiscardFile={onDiscard} />
+      )
+      const noteItem = screen.getByText('Build Laputa App').closest('[class*="border-b"]')!
+      fireEvent.contextMenu(noteItem)
+      fireEvent.click(screen.getByTestId('discard-changes-button'))
+      fireEvent.click(screen.getByText('Cancel'))
+      expect(onDiscard).not.toHaveBeenCalled()
+    })
   })
 })
 

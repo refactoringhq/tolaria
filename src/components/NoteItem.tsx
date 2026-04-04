@@ -152,7 +152,7 @@ function getFileKindIcon(fileKind: string | undefined): ComponentType<SVGAttribu
   return FileText
 }
 
-export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlighted = false, noteStatus = 'clean', typeEntryMap, onClickNote, onPrefetch }: {
+export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlighted = false, noteStatus = 'clean', typeEntryMap, onClickNote, onPrefetch, onContextMenu }: {
   entry: VaultEntry
   isSelected: boolean
   isMultiSelected?: boolean
@@ -161,6 +161,7 @@ export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlig
   typeEntryMap: Record<string, VaultEntry>
   onClickNote: (entry: VaultEntry, e: React.MouseEvent) => void
   onPrefetch?: (path: string) => void
+  onContextMenu?: (entry: VaultEntry, e: React.MouseEvent) => void
 }) {
   const isBinary = entry.fileKind === 'binary'
   const isNonMarkdown = !!entry.fileKind && entry.fileKind !== 'markdown'
@@ -187,6 +188,7 @@ export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlig
       )}
       style={isBinary ? { padding: '14px 16px' } : noteItemStyle(isSelected, isMultiSelected, typeColor, typeLightColor)}
       onClick={handleClick}
+      onContextMenu={onContextMenu ? (e) => onContextMenu(entry, e) : undefined}
       onMouseEnter={!isBinary && onPrefetch ? () => onPrefetch(entry.path) : undefined}
       data-testid={isMultiSelected ? 'multi-selected-item' : isBinary ? 'binary-file-item' : undefined}
       data-highlighted={isHighlighted || undefined}

@@ -130,6 +130,13 @@ pub async fn git_remote_status(vault_path: String) -> Result<GitRemoteStatus, St
 
 #[cfg(desktop)]
 #[tauri::command]
+pub fn git_discard_file(vault_path: String, relative_path: String) -> Result<(), String> {
+    let vault_path = expand_tilde(&vault_path);
+    crate::git::discard_file_changes(&vault_path, &relative_path)
+}
+
+#[cfg(desktop)]
+#[tauri::command]
 pub fn is_git_repo(vault_path: String) -> bool {
     let vault_path = expand_tilde(&vault_path);
     std::path::Path::new(vault_path.as_ref())
@@ -245,6 +252,12 @@ pub async fn git_remote_status(_vault_path: String) -> Result<GitRemoteStatus, S
         ahead: 0,
         behind: 0,
     })
+}
+
+#[cfg(mobile)]
+#[tauri::command]
+pub fn git_discard_file(_vault_path: String, _relative_path: String) -> Result<(), String> {
+    Err("Git discard is not available on mobile".into())
 }
 
 #[cfg(mobile)]
