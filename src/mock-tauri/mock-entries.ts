@@ -37,7 +37,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: ['q1-2026', 'software-development', 'matteo-cellini', 'maria-bianchi', 'marco-verdi'],
     properties: { Priority: 'High', 'Due date': '2026-06-15', Owner: 'Luca Rossi' },
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/grow-newsletter.md',
@@ -73,7 +73,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: ['on-writing-well', 'engineering-leadership-101', 'ai-agents-primer', 'growth', 'writing'],
     properties: { Priority: 'High', Rating: 5, Cadence: 'Weekly', Owner: 'Luca Rossi' },
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/manage-sponsorships.md',
@@ -103,7 +103,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: ['matteo-cellini'],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/write-weekly-essays.md',
@@ -133,7 +133,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: ['grow-newsletter'],
     properties: { Owner: 'Luca Rossi', Cadence: 'Weekly' },
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/run-sponsorships.md',
@@ -163,7 +163,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: ['manage-sponsorships'],
     properties: { Owner: 'Matteo Cellini', Cadence: 'Weekly' },
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/stock-screener.md',
@@ -194,7 +194,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: ['trading', 'algorithmic-trading', 'ema200-backtest-results'],
     properties: { Priority: 'Low', 'Due date': '2026-03-01', Owner: 'Luca Rossi' },
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/facebook-ads-strategy.md',
@@ -225,7 +225,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: ['26q1-laputa-app', 'growth', 'ads'],
     properties: { Priority: 'Medium', Rating: 4 },
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/budget-allocation.md',
@@ -255,7 +255,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: ['26q1-laputa-app'],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/matteo-cellini.md',
@@ -284,7 +284,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: { Company: 'Acme Corp', Role: 'Engineering Lead' },
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/maria-bianchi.md',
@@ -313,7 +313,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: { Company: 'TechStart', Role: 'Product Manager' },
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/marco-verdi.md',
@@ -342,7 +342,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/elena-russo.md',
@@ -371,7 +371,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/2026-02-14-laputa-app-kickoff.md',
@@ -401,7 +401,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: ['26q1-laputa-app', 'matteo-cellini'],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/software-development.md',
@@ -431,7 +431,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/trading.md',
@@ -461,7 +461,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/on-writing-well.md',
@@ -491,7 +491,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: ['grow-newsletter'],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/engineering-leadership-101.md',
@@ -522,7 +522,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: ['grow-newsletter', 'software-development'],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/ai-agents-primer.md',
@@ -552,7 +552,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: ['grow-newsletter'],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   // --- Type documents ---
   {
@@ -580,7 +580,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/responsibility.md',
@@ -607,7 +607,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/procedure.md',
@@ -634,7 +634,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/experiment.md',
@@ -661,7 +661,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: false,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/person.md',
@@ -688,7 +688,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/event.md',
@@ -715,7 +715,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/topic.md',
@@ -742,7 +742,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/essay.md',
@@ -769,7 +769,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/note.md',
@@ -796,7 +796,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   // --- Custom type documents ---
   {
@@ -824,7 +824,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/recipe.md',
@@ -851,7 +851,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/book.md',
@@ -878,7 +878,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   // --- Instances of custom types ---
   {
@@ -908,7 +908,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/pasta-carbonara.md',
@@ -937,7 +937,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: { Difficulty: 'Easy', 'Prep time': '30 min', Servings: 4 },
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/designing-data-intensive-applications.md',
@@ -966,7 +966,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: { Author: 'Martin Kleppmann', Rating: 5, 'Year published': 2017 },
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   // --- Trashed entries ---
   {
@@ -997,7 +997,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/deprecated-api-notes.md',
@@ -1026,7 +1026,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/failed-seo-experiment.md',
@@ -1056,7 +1056,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: { Owner: 'Luca Rossi' },
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   // --- Archived entries ---
   {
@@ -1087,7 +1087,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
       'Belongs to': ['[[q3-2025]]'],
       'Type': ['[[project]]'],
     },
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/twitter-thread-experiment.md',
@@ -1117,7 +1117,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
       'Related to': ['[[grow-newsletter]]'],
       'Type': ['[[experiment]]'],
     },
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   // --- Refactoring entries for exact-match search testing ---
   {
@@ -1145,7 +1145,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/refactoring-ideas.md',
@@ -1172,7 +1172,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/refactoring-key-ideas.md',
@@ -1199,7 +1199,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
   {
     path: '/Users/luca/Laputa/refactoring-patterns.md',
@@ -1226,7 +1226,7 @@ export const MOCK_ENTRIES: VaultEntry[] = [
     template: null, sort: null, view: null, visible: null,
     outgoingLinks: [],
     properties: {},
-    favorite: false, favoriteIndex: null,
+    favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
   },
 ]
 
@@ -1279,7 +1279,7 @@ function generateBulkEntries(count: number): VaultEntry[] {
       sidebarLabel: null,
       template: null, sort: null, view: null, visible: null,
       properties: {},
-      favorite: false, favoriteIndex: null,
+      favorite: false, favoriteIndex: null, listPropertiesDisplay: [],
     })
   }
   return entries
