@@ -190,4 +190,58 @@ describe('evaluateView', () => {
     const result = evaluateView(view, entries)
     expect(result.map((e) => e.title)).toEqual(['Exact'])
   })
+
+  it('before operator works with ISO date strings in properties', () => {
+    const view: ViewDefinition = {
+      name: 'Before', icon: null, color: null, sort: null,
+      filters: { all: [{ field: 'Date', op: 'before', value: '2024-06-01' }] },
+    }
+    const entries = [
+      makeEntry({ title: 'Early', properties: { Date: '2024-03-15' } }),
+      makeEntry({ title: 'Late', properties: { Date: '2024-09-01' } }),
+      makeEntry({ title: 'NoDate', properties: {} }),
+    ]
+    const result = evaluateView(view, entries)
+    expect(result.map((e) => e.title)).toEqual(['Early'])
+  })
+
+  it('after operator works with ISO date strings in properties', () => {
+    const view: ViewDefinition = {
+      name: 'After', icon: null, color: null, sort: null,
+      filters: { all: [{ field: 'Date', op: 'after', value: '2024-06-01' }] },
+    }
+    const entries = [
+      makeEntry({ title: 'Early', properties: { Date: '2024-03-15' } }),
+      makeEntry({ title: 'Late', properties: { Date: '2024-09-01' } }),
+    ]
+    const result = evaluateView(view, entries)
+    expect(result.map((e) => e.title)).toEqual(['Late'])
+  })
+
+  it('before/after works with ISO datetime strings', () => {
+    const view: ViewDefinition = {
+      name: 'Before datetime', icon: null, color: null, sort: null,
+      filters: { all: [{ field: 'Date', op: 'before', value: '2024-03-15T12:00:00' }] },
+    }
+    const entries = [
+      makeEntry({ title: 'Morning', properties: { Date: '2024-03-15T08:00:00' } }),
+      makeEntry({ title: 'Evening', properties: { Date: '2024-03-15T18:00:00' } }),
+    ]
+    const result = evaluateView(view, entries)
+    expect(result.map((e) => e.title)).toEqual(['Morning'])
+  })
+
+  it('before/after works with numeric Unix timestamps', () => {
+    const view: ViewDefinition = {
+      name: 'After ts', icon: null, color: null, sort: null,
+      filters: { all: [{ field: 'Date', op: 'after', value: '2024-01-01' }] },
+    }
+    // Unix timestamp for 2024-06-15 in seconds
+    const ts = Math.floor(new Date('2024-06-15').getTime() / 1000)
+    const entries = [
+      makeEntry({ title: 'Match', properties: { Date: ts } }),
+    ]
+    const result = evaluateView(view, entries)
+    expect(result.map((e) => e.title)).toEqual(['Match'])
+  })
 })

@@ -104,11 +104,17 @@ function evaluateCondition(cond: FilterCondition, entry: VaultEntry): boolean {
 
   // Date comparisons
   if (op === 'before' || op === 'after') {
-    const ts = typeof resolved.scalar === 'number' ? resolved.scalar : null
-    if (!ts) return false
-    const target = Date.parse(condVal) / 1000
+    let tsMs: number | null = null
+    if (typeof resolved.scalar === 'number') {
+      tsMs = resolved.scalar * 1000 // Unix timestamp (seconds) → milliseconds
+    } else if (typeof resolved.scalar === 'string') {
+      const parsed = Date.parse(resolved.scalar)
+      tsMs = isNaN(parsed) ? null : parsed
+    }
+    if (tsMs == null) return false
+    const target = Date.parse(condVal)
     if (isNaN(target)) return false
-    return op === 'before' ? ts < target : ts > target
+    return op === 'before' ? tsMs < target : tsMs > target
   }
 
   return false
