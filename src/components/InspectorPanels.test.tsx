@@ -139,7 +139,7 @@ describe('DynamicRelationshipsPanel', () => {
     expect(screen.getByText('Luca')).toBeInTheDocument()
   })
 
-  it('renders + Link existing button when onAddProperty provided', () => {
+  it('renders + Add relationship button when onAddProperty provided', () => {
     render(
       <DynamicRelationshipsPanel
         typeEntryMap={{}}
@@ -149,7 +149,7 @@ describe('DynamicRelationshipsPanel', () => {
         onAddProperty={onAddProperty}
       />
     )
-    expect(screen.getByText('+ Link existing')).toBeInTheDocument()
+    expect(screen.getByText('+ Add relationship')).toBeInTheDocument()
   })
 
   it('opens add relationship form when button clicked', () => {
@@ -162,7 +162,7 @@ describe('DynamicRelationshipsPanel', () => {
         onAddProperty={onAddProperty}
       />
     )
-    fireEvent.click(screen.getByText('+ Link existing'))
+    fireEvent.click(screen.getByText('+ Add relationship'))
     expect(screen.getByPlaceholderText('Relationship name')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Note title')).toBeInTheDocument()
   })
@@ -177,7 +177,7 @@ describe('DynamicRelationshipsPanel', () => {
         onAddProperty={onAddProperty}
       />
     )
-    fireEvent.click(screen.getByText('+ Link existing'))
+    fireEvent.click(screen.getByText('+ Add relationship'))
     fireEvent.change(screen.getByPlaceholderText('Relationship name'), { target: { value: 'Related to' } })
     fireEvent.change(screen.getByPlaceholderText('Note title'), { target: { value: 'AI' } })
     fireEvent.click(screen.getByText('Add'))
@@ -194,9 +194,9 @@ describe('DynamicRelationshipsPanel', () => {
         onAddProperty={onAddProperty}
       />
     )
-    fireEvent.click(screen.getByText('+ Link existing'))
+    fireEvent.click(screen.getByText('+ Add relationship'))
     fireEvent.click(screen.getByText('Cancel'))
-    expect(screen.getByText('+ Link existing')).toBeInTheDocument()
+    expect(screen.getByText('+ Add relationship')).toBeInTheDocument()
   })
 
   it('dims archived entries', () => {
@@ -591,7 +591,7 @@ describe('DynamicRelationshipsPanel', () => {
           onCreateAndOpenNote={onCreateAndOpenNote}
         />
       )
-      fireEvent.click(screen.getByText('+ Link existing'))
+      fireEvent.click(screen.getByText('+ Add relationship'))
       fireEvent.change(screen.getByPlaceholderText('Relationship name'), { target: { value: 'Mentions' } })
       const noteInput = screen.getByPlaceholderText('Note title')
       fireEvent.focus(noteInput)
@@ -610,7 +610,7 @@ describe('DynamicRelationshipsPanel', () => {
           onCreateAndOpenNote={onCreateAndOpenNote}
         />
       )
-      fireEvent.click(screen.getByText('+ Link existing'))
+      fireEvent.click(screen.getByText('+ Add relationship'))
       fireEvent.change(screen.getByPlaceholderText('Relationship name'), { target: { value: 'Mentions' } })
       const noteInput = screen.getByPlaceholderText('Note title')
       fireEvent.focus(noteInput)
