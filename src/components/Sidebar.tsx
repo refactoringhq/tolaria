@@ -392,7 +392,7 @@ function FavoritesSection({ entries, selection, onSelect, onSelectNote, onReorde
       {!collapsed && (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={favIds} strategy={verticalListSortingStrategy}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingBottom: 4 }}>
               {favorites.map((entry) => {
                 const isActive = isSelectionActive(selection, { kind: 'entity', entry })
                 return (
