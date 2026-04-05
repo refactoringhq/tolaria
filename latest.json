@@ -1,11 +1,11 @@
 {
-  "version": "0.20260405.606",
+  "version": "0.20260405.607",
   "notes": "See https://refactoringhq.github.io/laputa-app/ for full release notes.",
-  "pub_date": "2026-04-05T12:10:03Z",
+  "pub_date": "2026-04-05T12:58:44Z",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSY3I3L2VKNUJ0cUtVQ3p3MXRzekRleXR2Z28zdUtFZGRXU2xucVAzK2MvV3cyeWM5bjF1TXptSGhDNXE5U3pLQ0xURHZPYjVrMytjUWQzZFdWWXplUFJPZm9vR3VQemdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc1MzkwOTgzCWZpbGU6bGFwdXRhLmFwcC50YXIuZ3oKYzZIVWNVQ0dFU1FOdHRZeHFram10OEZlQmJYYmNPQjBUcVdLL0xpdk5pbXRPT2FKc1pPQVpLazBPZ3ZUa1FiMjFIMGZBYmFtNzBRaTlZQ1RMQ0JIQXc9PQo=",
-      "url": "https://github.com/refactoringhq/laputa-app/releases/download/v0.20260405.606/laputa.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSY3I3L2VKNUJ0cUw0SUIvZ2lGMkJYeHB5Rm1zUGE3YnZVRWJ5WVQ0OUFGUG9YUTM4aUgvbXJHK0cxbTJsMjNaNU9LN0l2NGNqTEI0MlgyYmc3TGIycHJLYk9lRXlXakFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc1MzkzOTA5CWZpbGU6bGFwdXRhLmFwcC50YXIuZ3oKMTRjekN6N0NqRmVCTnNiZGt4Y2t4clVuclhYWitJV0FCdElIY1d6TmFxd2laMG0xK3VHNVlobEtZaFl1bDkzbThibXl2ZittbWFTNFhRd2FJYjBHQnc9PQo=",
+      "url": "https://github.com/refactoringhq/laputa-app/releases/download/v0.20260405.607/laputa.app.tar.gz"
     }
   }
 }
