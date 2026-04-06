@@ -617,6 +617,43 @@ describe('DynamicPropertiesPanel', () => {
       fireEvent.click(screen.getByText('Status'))
       expect(onAddProperty).toHaveBeenCalledWith('Status', '')
     })
+
+    it('auto-opens editor when property appears after clicking suggested slot', () => {
+      const addProp = vi.fn()
+      const { rerender } = render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{}}
+          onAddProperty={addProp}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+      // Click the Status suggested slot
+      fireEvent.click(screen.getByText('Status'))
+      expect(addProp).toHaveBeenCalledWith('Status', '')
+
+      // Simulate the frontmatter being updated (as if the backend wrote it)
+      // The useEffect detects the new key in propertyEntries and sets editingKey
+      rerender(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ Status: '' }}
+          onAddProperty={addProp}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+
+      // The suggested slot for Status should be gone
+      const remainingSlots = screen.getAllByTestId('suggested-property')
+      expect(remainingSlots.length).toBe(2) // Date and URL remain
+      // Status dropdown is portaled to body — check for it there
+      const dropdown = document.querySelector('[data-testid="status-dropdown-popover"]')
+      expect(dropdown).toBeInTheDocument()
+      const searchInput = document.querySelector('[data-testid="status-search-input"]')
+      expect(searchInput).toBeInTheDocument()
+    })
   })
 
   describe('URL property rendering', () => {
