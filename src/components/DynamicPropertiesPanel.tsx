@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useEffect } from 'react'
+import { useMemo, useCallback, useEffect, useState } from 'react'
 import type { VaultEntry } from '../types'
 import type { FrontmatterValue } from './Inspector'
 import type { ParsedFrontmatter } from '../utils/frontmatter'
@@ -74,6 +74,17 @@ const SUGGESTED_PROPERTIES = [
   { key: 'icon', label: 'Icon' },
 ] as const
 
+const SUGGESTED_PROPERTY_MODES: Record<string, PropertyDisplayMode> = {
+  Status: 'status',
+  Date: 'date',
+  URL: 'url',
+  icon: 'text',
+}
+
+function getSuggestedDisplayMode(key: string): PropertyDisplayMode {
+  return SUGGESTED_PROPERTY_MODES[key] ?? 'text'
+}
+
 function SuggestedPropertySlot({ label, onAdd }: { label: string; onAdd: () => void }) {
   return (
     <button
@@ -107,6 +118,7 @@ export function DynamicPropertiesPanel({
     availableTypes, customColorKey, typeColorKeys, typeIconKeys, vaultStatuses, vaultTagsByKey, propertyEntries,
     handleSaveValue, handleSaveList, handleAdd, handleDisplayModeChange,
   } = usePropertyPanelState({ entries, entryIsA: entry.isA, frontmatter, onUpdateProperty, onDeleteProperty, onAddProperty })
+  const [pendingSuggestedKey, setPendingSuggestedKey] = useState<string | null>(null)
 
   const existingKeys = useMemo(() => {
     const keys = new Set(propertyEntries.map(([k]) => k.toLowerCase()))
@@ -116,14 +128,33 @@ export function DynamicPropertiesPanel({
   }, [propertyEntries, frontmatter])
 
   const missingSuggested = onAddProperty
-    ? SUGGESTED_PROPERTIES.filter(p => !existingKeys.has(p.key.toLowerCase()))
+    ? SUGGESTED_PROPERTIES.filter(
+      p => !existingKeys.has(p.key.toLowerCase()) && p.key !== pendingSuggestedKey,
+    )
     : []
 
   const handleSuggestedAdd = useCallback((key: string) => {
     if (!onAddProperty) return
-    // Open the editor immediately - no need to wait for frontmatter to update
+    setPendingSuggestedKey(key)
     setEditingKey(key)
-    onAddProperty(key, '')
+  }, [onAddProperty, setEditingKey])
+
+  const handlePendingSuggestedEdit = useCallback((key: string | null) => {
+    setEditingKey(key)
+    if (key === null) setPendingSuggestedKey(null)
+  }, [setEditingKey])
+
+  const handleSaveSuggestedValue = useCallback((key: string, newValue: string) => {
+    setEditingKey(null)
+    setPendingSuggestedKey(null)
+    if (!onAddProperty) {
+      return
+    }
+    const trimmed = newValue.trim()
+    if (!trimmed) {
+      return
+    }
+    onAddProperty(key, trimmed)
   }, [onAddProperty, setEditingKey])
 
   useEffect(() => {
@@ -158,6 +189,24 @@ export function DynamicPropertiesPanel({
             onDisplayModeChange={handleDisplayModeChange}
           />
         ))}
+        {pendingSuggestedKey && editingKey === pendingSuggestedKey && (
+          <PropertyRow
+            key={`pending:${pendingSuggestedKey}`}
+            propKey={pendingSuggestedKey}
+            value=""
+            editingKey={editingKey}
+            displayMode={getSuggestedDisplayMode(pendingSuggestedKey)}
+            autoMode={getSuggestedDisplayMode(pendingSuggestedKey)}
+            vaultStatuses={vaultStatuses}
+            vaultTags={vaultTagsByKey[pendingSuggestedKey] ?? []}
+            onStartEdit={handlePendingSuggestedEdit}
+            onSave={handleSaveSuggestedValue}
+            onSaveList={handleSaveList}
+            onUpdate={undefined}
+            onDelete={undefined}
+            onDisplayModeChange={handleDisplayModeChange}
+          />
+        )}
         {missingSuggested.map(({ key, label }) => (
           <SuggestedPropertySlot key={key} label={label} onAdd={() => handleSuggestedAdd(key)} />
         ))}

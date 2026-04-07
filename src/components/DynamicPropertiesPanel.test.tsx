@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { DynamicPropertiesPanel, containsWikilinks } from './DynamicPropertiesPanel'
 import type { VaultEntry } from '../types'
 import { bindVaultConfigStore, getVaultConfig, resetVaultConfigStore } from '../utils/vaultConfigStore'
@@ -550,6 +550,12 @@ describe('DynamicPropertiesPanel', () => {
   })
 
   describe('suggested property slots', () => {
+    function findSuggestedSlot(label: string): HTMLElement {
+      const slot = screen.getAllByTestId('suggested-property').find((node) => node.textContent?.includes(label))
+      expect(slot).toBeDefined()
+      return slot as HTMLElement
+    }
+
     it('shows Status/Date/URL/Icon slots when no properties exist and onAddProperty provided', () => {
       render(
         <DynamicPropertiesPanel
@@ -606,7 +612,7 @@ describe('DynamicPropertiesPanel', () => {
       expect(screen.queryByTestId('suggested-property')).not.toBeInTheDocument()
     })
 
-    it('calls onAddProperty when clicking a suggested slot', () => {
+    it('opens the status editor without writing an empty property when clicking a suggested slot', async () => {
       render(
         <DynamicPropertiesPanel
           entry={makeEntry()}
@@ -615,45 +621,68 @@ describe('DynamicPropertiesPanel', () => {
           onAddProperty={onAddProperty}
         />
       )
-      fireEvent.click(screen.getByText('Status'))
-      expect(onAddProperty).toHaveBeenCalledWith('Status', '')
+      fireEvent.click(findSuggestedSlot('Status'))
+      expect(onAddProperty).not.toHaveBeenCalled()
+      await waitFor(() => {
+        expect(document.querySelector('[data-testid="status-dropdown-popover"]')).toBeInTheDocument()
+      })
     })
 
-    it('auto-opens editor when property appears after clicking suggested slot', () => {
-      const addProp = vi.fn()
-      const { rerender } = render(
+    it('writes the suggested status only after the user picks a value', async () => {
+      render(
         <DynamicPropertiesPanel
           entry={makeEntry()}
           content=""
           frontmatter={{}}
-          onAddProperty={addProp}
+          onAddProperty={onAddProperty}
           onUpdateProperty={onUpdateProperty}
         />
       )
-      // Click the Status suggested slot
-      fireEvent.click(screen.getByText('Status'))
-      expect(addProp).toHaveBeenCalledWith('Status', '')
+      fireEvent.click(findSuggestedSlot('Status'))
 
-      // Simulate the frontmatter being updated (as if the backend wrote it)
-      // The useEffect detects the new key in propertyEntries and sets editingKey
-      rerender(
+      await waitFor(() => {
+        expect(document.querySelector('[data-testid="status-option-Active"]')).toBeInTheDocument()
+      })
+      fireEvent.click(document.querySelector('[data-testid="status-option-Active"]') as Element)
+
+      expect(onAddProperty).toHaveBeenCalledWith('Status', 'Active')
+    })
+
+    it('cancels a suggested status edit without writing frontmatter', async () => {
+      render(
         <DynamicPropertiesPanel
           entry={makeEntry()}
           content=""
-          frontmatter={{ Status: '' }}
-          onAddProperty={addProp}
-          onUpdateProperty={onUpdateProperty}
+          frontmatter={{}}
+          onAddProperty={onAddProperty}
         />
       )
+      fireEvent.click(findSuggestedSlot('Status'))
 
-      // The suggested slot for Status should be gone
-      const remainingSlots = screen.getAllByTestId('suggested-property')
-      expect(remainingSlots.length).toBe(3) // Date, URL, and Icon remain
-      // Status dropdown is portaled to body — check for it there
-      const dropdown = document.querySelector('[data-testid="status-dropdown-popover"]')
-      expect(dropdown).toBeInTheDocument()
-      const searchInput = document.querySelector('[data-testid="status-search-input"]')
-      expect(searchInput).toBeInTheDocument()
+      await waitFor(() => {
+        expect(document.querySelector('[data-testid="status-search-input"]')).toBeInTheDocument()
+      })
+      fireEvent.keyDown(document.querySelector('[data-testid="status-search-input"]') as Element, { key: 'Escape' })
+
+      expect(onAddProperty).not.toHaveBeenCalled()
+      expect(findSuggestedSlot('Status')).toBeInTheDocument()
+    })
+
+    it('opens the date picker without writing an empty property when clicking the Date slot', async () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{}}
+          onAddProperty={onAddProperty}
+        />
+      )
+      fireEvent.click(findSuggestedSlot('Date'))
+
+      expect(onAddProperty).not.toHaveBeenCalled()
+      await waitFor(() => {
+        expect(screen.getByTestId('date-picker-popover')).toBeInTheDocument()
+      })
     })
   })
 

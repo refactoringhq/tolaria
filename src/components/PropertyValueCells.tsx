@@ -142,10 +142,13 @@ function BooleanToggle({ value, onToggle }: { value: boolean; onToggle: () => vo
   )
 }
 
-function DateValue({ value, onSave }: {
-  value: string; onSave: (newValue: string) => void
+function DateValue({ value, onSave, autoOpen = false, onCancel }: {
+  value: string
+  onSave: (newValue: string) => void
+  autoOpen?: boolean
+  onCancel?: () => void
 }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(autoOpen)
   const formatted = formatDateValue(value)
   const selectedDate = parseDateValue(value)
 
@@ -161,7 +164,13 @@ function DateValue({ value, onSave }: {
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen)
+        if (!nextOpen && !value) onCancel?.()
+      }}
+    >
       <PopoverTrigger asChild>
         <button
           className={`inline-flex h-6 min-w-0 cursor-pointer items-center gap-1 border-none px-2 text-right text-[12px] font-medium transition-colors hover:opacity-80${formatted ? ' rounded-md bg-muted text-accent-foreground' : ' bg-transparent text-muted-foreground'}`}
@@ -301,7 +310,15 @@ function ScalarValueCell({ propKey, value, displayMode, isEditing, vaultStatuses
     case 'tags':
       return <TagsValue propKey={propKey} value={value ? [String(value)] : []} isEditing={isEditing} vaultTags={vaultTags} onSave={onSaveList} onStartEdit={onStartEdit} />
     case 'date':
-      return <DateValue value={String(value ?? '')} onSave={(v) => onSave(propKey, v)} />
+      return (
+        <DateValue
+          key={`${propKey}:${isEditing ? 'editing' : 'view'}`}
+          value={String(value ?? '')}
+          onSave={(v) => onSave(propKey, v)}
+          autoOpen={isEditing}
+          onCancel={() => onStartEdit(null)}
+        />
+      )
     case 'boolean': {
       const boolVal = toBooleanValue(value)
       return <BooleanToggle value={boolVal} onToggle={() => onUpdate?.(propKey, !boolVal)} />
