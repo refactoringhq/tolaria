@@ -152,7 +152,12 @@ export interface SearchResponse {
 
 export type SearchMode = 'keyword' | 'semantic' | 'hybrid'
 
-/** Vault-wide UI configuration stored in ui.config.md at vault root. */
+/** Vault-scoped UI configuration stored locally per vault path. */
+export interface InboxConfig {
+  noteListProperties: string[] | null
+}
+
+/** Vault-scoped UI configuration stored locally per vault path. */
 export interface VaultConfig {
   zoom: number | null
   view_mode: string | null
@@ -160,6 +165,7 @@ export interface VaultConfig {
   tag_colors: Record<string, string> | null
   status_colors: Record<string, string> | null
   property_display_modes: Record<string, string> | null
+  inbox?: InboxConfig | null
 }
 
 export interface PulseFile {

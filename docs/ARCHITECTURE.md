@@ -413,12 +413,13 @@ Managed by `useVaultSwitcher` hook. Switching vaults resets sidebar and clears t
 
 ### Vault Config
 
-Per-vault UI settings stored in `ui.config.md` at vault root (YAML frontmatter in a markdown note):
+Per-vault UI settings stored locally per vault path (currently in browser/Tauri localStorage, not synced via git):
 - `zoom`: Float zoom level (0.8–1.5)
 - `view_mode`: "all" | "editor-list" | "editor-only"
 - `editor_mode`: "raw" | "preview" (persists across note switches and sessions)
 - `tag_colors`, `status_colors`: Custom color overrides
 - `property_display_modes`: Property display preferences
+- `inbox.noteListProperties`: Optional Inbox-only property chip override for the note list
 
 ### Getting Started Vault
 

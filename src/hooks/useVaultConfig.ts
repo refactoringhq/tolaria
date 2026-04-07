@@ -22,6 +22,7 @@ function loadFromStorage(vaultPath: string): VaultConfig {
   const DEFAULT: VaultConfig = {
     zoom: null, view_mode: null, editor_mode: null,
     tag_colors: null, status_colors: null, property_display_modes: null,
+    inbox: null,
   }
   try {
     const raw = localStorage.getItem(storageKey(vaultPath))

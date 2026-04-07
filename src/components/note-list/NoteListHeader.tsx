@@ -4,9 +4,9 @@ import type { SortOption, SortDirection } from '../../utils/noteListHelpers'
 import { Input } from '@/components/ui/input'
 import { useDragRegion } from '../../hooks/useDragRegion'
 import { SortDropdown } from '../SortDropdown'
-import { ListPropertiesPopover } from './ListPropertiesPopover'
+import { ListPropertiesPopover, type ListPropertiesPopoverProps } from './ListPropertiesPopover'
 
-export function NoteListHeader({ title, typeDocument, isEntityView, listSort, listDirection, customProperties, sidebarCollapsed, searchVisible, search, isSectionGroup, entries, onSortChange, onCreateNote, onOpenType, onToggleSearch, onSearchChange, onUpdateTypeProperty }: {
+export function NoteListHeader({ title, typeDocument, isEntityView, listSort, listDirection, customProperties, sidebarCollapsed, searchVisible, search, propertyPicker, onSortChange, onCreateNote, onOpenType, onToggleSearch, onSearchChange }: {
   title: string
   typeDocument: VaultEntry | null
   isEntityView: boolean
@@ -16,14 +16,12 @@ export function NoteListHeader({ title, typeDocument, isEntityView, listSort, li
   sidebarCollapsed?: boolean
   searchVisible: boolean
   search: string
-  isSectionGroup?: boolean
-  entries?: VaultEntry[]
+  propertyPicker?: ListPropertiesPopoverProps | null
   onSortChange: (groupLabel: string, option: SortOption, direction: SortDirection) => void
   onCreateNote: () => void
   onOpenType: (entry: VaultEntry) => void
   onToggleSearch: () => void
   onSearchChange: (value: string) => void
-  onUpdateTypeProperty?: (path: string, key: string, value: string | number | boolean | string[] | null) => void
 }) {
   const { onMouseDown: onDragMouseDown } = useDragRegion()
   return (
@@ -42,9 +40,7 @@ export function NoteListHeader({ title, typeDocument, isEntityView, listSort, li
           <button className="flex items-center text-muted-foreground transition-colors hover:text-foreground" onClick={onToggleSearch} title="Search notes">
             <MagnifyingGlass size={16} />
           </button>
-          {isSectionGroup && typeDocument && entries && onUpdateTypeProperty && (
-            <ListPropertiesPopover typeDocument={typeDocument} entries={entries} onSave={onUpdateTypeProperty} />
-          )}
+          {propertyPicker && <ListPropertiesPopover {...propertyPicker} />}
           <button className="flex items-center text-muted-foreground transition-colors hover:text-foreground" onClick={() => onCreateNote()} title="Create new note">
             <Plus size={16} />
           </button>

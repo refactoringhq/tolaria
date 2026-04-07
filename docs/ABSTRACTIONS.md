@@ -496,10 +496,9 @@ No indexing step required — search runs directly against the filesystem.
 
 ### Vault Config
 
-Per-vault settings stored in `ui.config.md` at vault root:
-- Editable as a normal note (YAML frontmatter)
+Per-vault settings stored locally and scoped by vault path:
 - Managed by `useVaultConfig` hook and `vaultConfigStore`
-- Settings: zoom, view mode, tag colors, status colors, property display modes
+- Settings: zoom, view mode, tag colors, status colors, property display modes, Inbox note-list column overrides
 - One-time migration from localStorage (`configMigration.ts`)
 
 ### Getting Started / Onboarding

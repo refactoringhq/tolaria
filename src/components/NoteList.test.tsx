@@ -5,6 +5,7 @@ import { NoteItem } from './NoteItem'
 import { getSortComparator, filterEntries, countByFilter, countAllByFilter } from '../utils/noteListHelpers'
 import type { NoteListFilter } from '../utils/noteListHelpers'
 import type { VaultEntry, SidebarSelection } from '../types'
+import { openNoteListPropertiesPicker } from './note-list/noteListPropertiesEvents'
 
 const allSelection: SidebarSelection = { kind: 'filter', filter: 'all' }
 const noopSelect = vi.fn()
@@ -168,6 +169,15 @@ const makeIndexedEntry = (i: number, overrides?: Partial<VaultEntry>): VaultEntr
     ...overrides,
   })
 
+const makeTypeDefinition = (title: string, displayProps: string[] = []): VaultEntry =>
+  makeEntry({
+    path: `/vault/type/${title.toLowerCase()}.md`,
+    filename: `${title.toLowerCase()}.md`,
+    title,
+    isA: 'Type',
+    listPropertiesDisplay: displayProps,
+  })
+
 describe('NoteList', () => {
   it('shows empty state when no entries', () => {
     render(<NoteList {...defaultFilterProps} entries={[]} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} onCreateNote={vi.fn()} />)
@@ -314,6 +324,107 @@ describe('NoteList', () => {
     )
     // Snippet text appears in the prominent card
     expect(screen.getByText('Build a personal knowledge management app.')).toBeInTheDocument()
+  })
+
+  it('shows the Inbox customize columns button and falls back to type-defined chips', () => {
+    const entries = [
+      makeTypeDefinition('Book', ['Priority']),
+      makeEntry({
+        path: '/vault/book.md',
+        filename: 'book.md',
+        title: 'Book Note',
+        isA: 'Book',
+        properties: { Priority: 'High', Owner: 'Luca' },
+        createdAt: 1700000000,
+      }),
+    ]
+
+    render(
+      <NoteList
+        {...defaultFilterProps}
+        entries={entries}
+        selection={{ kind: 'filter', filter: 'inbox' }}
+        selectedNote={null}
+        onSelectNote={noopSelect}
+        onReplaceActiveTab={noopReplace}
+        onCreateNote={vi.fn()}
+        inboxNoteListProperties={null}
+        onUpdateInboxNoteListProperties={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByTitle('Customize Inbox columns')).toBeInTheDocument()
+    expect(screen.getByText('High')).toBeInTheDocument()
+    expect(screen.queryByText('Luca')).not.toBeInTheDocument()
+  })
+
+  it('opens the Inbox column picker from the global event and saves the selected columns', () => {
+    const onUpdateInboxNoteListProperties = vi.fn()
+    const entries = [
+      makeTypeDefinition('Book', ['Priority']),
+      makeEntry({
+        path: '/vault/book.md',
+        filename: 'book.md',
+        title: 'Book Note',
+        isA: 'Book',
+        properties: { Priority: 'High', Owner: 'Luca' },
+        createdAt: 1700000000,
+      }),
+    ]
+
+    render(
+      <NoteList
+        {...defaultFilterProps}
+        entries={entries}
+        selection={{ kind: 'filter', filter: 'inbox' }}
+        selectedNote={null}
+        onSelectNote={noopSelect}
+        onReplaceActiveTab={noopReplace}
+        onCreateNote={vi.fn()}
+        inboxNoteListProperties={null}
+        onUpdateInboxNoteListProperties={onUpdateInboxNoteListProperties}
+      />,
+    )
+
+    act(() => { openNoteListPropertiesPicker('inbox') })
+
+    expect(screen.getByTestId('list-properties-popover')).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Priority' })).toBeChecked()
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Owner' }))
+
+    expect(onUpdateInboxNoteListProperties).toHaveBeenCalledWith(['Priority', 'Owner'])
+  })
+
+  it('uses the Inbox override chips when configured', () => {
+    const entries = [
+      makeTypeDefinition('Book', ['Priority']),
+      makeEntry({
+        path: '/vault/book.md',
+        filename: 'book.md',
+        title: 'Book Note',
+        isA: 'Book',
+        properties: { Priority: 'High', Owner: 'Luca' },
+        createdAt: 1700000000,
+      }),
+    ]
+
+    render(
+      <NoteList
+        {...defaultFilterProps}
+        entries={entries}
+        selection={{ kind: 'filter', filter: 'inbox' }}
+        selectedNote={null}
+        onSelectNote={noopSelect}
+        onReplaceActiveTab={noopReplace}
+        onCreateNote={vi.fn()}
+        inboxNoteListProperties={['Owner']}
+        onUpdateInboxNoteListProperties={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Luca')).toBeInTheDocument()
+    expect(screen.queryByText('High')).not.toBeInTheDocument()
   })
 })
 

@@ -30,6 +30,8 @@ interface CommandRegistryConfig {
   onOpenInNewWindow?: () => void
   onToggleFavorite?: (path: string) => void
   onToggleOrganized?: (path: string) => void
+  onCustomizeInboxColumns?: () => void
+  canCustomizeInboxColumns?: boolean
   onRestoreDeletedNote?: () => void
   canRestoreDeletedNote?: boolean
   onQuickOpen: () => void
@@ -87,6 +89,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
     onReloadVault, onRepairVault,
     onSetNoteIcon, onRemoveNoteIcon, activeNoteHasIcon,
     onOpenInNewWindow, onToggleFavorite, onToggleOrganized,
+    onCustomizeInboxColumns, canCustomizeInboxColumns,
     onRestoreDeletedNote, canRestoreDeletedNote,
     selection, noteListFilter, onSetNoteListFilter,
   } = config
@@ -117,6 +120,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
     ...buildViewCommands({
       hasActiveNote, activeNoteModified, onSetViewMode, onToggleInspector,
       onToggleDiff, onToggleRawEditor, onToggleAIChat, zoomLevel, onZoomIn, onZoomOut, onZoomReset,
+      onCustomizeInboxColumns, canCustomizeInboxColumns,
     }),
     ...buildSettingsCommands({
       mcpStatus, vaultCount, isGettingStartedHidden,
@@ -141,6 +145,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
     onSetNoteIcon, onRemoveNoteIcon, activeNoteHasIcon,
     isSectionGroup, noteListFilter, onSetNoteListFilter,
     onOpenInNewWindow, onToggleFavorite, isFavorite,
-    onToggleOrganized, onRestoreDeletedNote, canRestoreDeletedNote, activeEntry,
+    onToggleOrganized, onCustomizeInboxColumns, canCustomizeInboxColumns,
+    onRestoreDeletedNote, canRestoreDeletedNote, activeEntry,
   ])
 }

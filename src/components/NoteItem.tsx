@@ -147,7 +147,12 @@ function getFileKindIcon(fileKind: string | undefined): ComponentType<SVGAttribu
   return FileText
 }
 
-export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlighted = false, noteStatus = 'clean', changeStatus, typeEntryMap, onClickNote, onPrefetch, onContextMenu }: {
+function resolveDisplayProps(entry: VaultEntry, typeEntryMap: Record<string, VaultEntry>, displayPropsOverride?: string[] | null): string[] {
+  if (displayPropsOverride && displayPropsOverride.length > 0) return displayPropsOverride
+  return typeEntryMap[entry.isA ?? '']?.listPropertiesDisplay ?? []
+}
+
+export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlighted = false, noteStatus = 'clean', changeStatus, typeEntryMap, displayPropsOverride, onClickNote, onPrefetch, onContextMenu }: {
   entry: VaultEntry
   isSelected: boolean
   isMultiSelected?: boolean
@@ -156,6 +161,7 @@ export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlig
   /** When set, renders in Changes-view style: filename + change type icon */
   changeStatus?: 'modified' | 'added' | 'deleted' | 'untracked' | 'renamed'
   typeEntryMap: Record<string, VaultEntry>
+  displayPropsOverride?: string[] | null
   onClickNote: (entry: VaultEntry, e: React.MouseEvent) => void
   onPrefetch?: (path: string) => void
   onContextMenu?: (entry: VaultEntry, e: React.MouseEvent) => void
@@ -164,6 +170,7 @@ export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlig
   const isNonMarkdown = !!entry.fileKind && entry.fileKind !== 'markdown'
   const isDeletedChange = changeStatus === 'deleted'
   const te = typeEntryMap[entry.isA ?? '']
+  const displayProps = resolveDisplayProps(entry, typeEntryMap, displayPropsOverride)
   const typeColor = isBinary ? 'var(--muted-foreground)' : getTypeColor(entry.isA ?? 'Note', te?.color)
   const typeLightColor = getTypeLightColor(entry.isA ?? 'Note', te?.color)
   const TypeIcon = useMemo(() => {
@@ -227,8 +234,8 @@ export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlig
               {entry.snippet}
             </div>
           )}
-          {!isBinary && te?.listPropertiesDisplay && te.listPropertiesDisplay.length > 0 && (
-            <PropertyChips entry={entry} displayProps={te.listPropertiesDisplay} />
+          {!isBinary && displayProps.length > 0 && (
+            <PropertyChips entry={entry} displayProps={displayProps} />
           )}
           {!isBinary && (
             <div className="mt-0.5 text-[10px] text-muted-foreground">{relativeDate(getDisplayDate(entry))}</div>

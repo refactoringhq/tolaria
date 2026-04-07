@@ -1,38 +1,39 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { SlidersHorizontal, DotsSixVertical } from '@phosphor-icons/react'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
-import type { VaultEntry } from '../../types'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
-  DndContext, closestCenter, KeyboardSensor, PointerSensor,
+  OPEN_NOTE_LIST_PROPERTIES_EVENT,
+  type NoteListPropertiesScope,
+  type OpenListPropertiesEventDetail,
+} from './noteListPropertiesEvents'
+import {
+  DndContext, closestCenter, PointerSensor,
   useSensor, useSensors, type DragEndEvent,
 } from '@dnd-kit/core'
 import {
-  SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy,
+  SortableContext, useSortable, verticalListSortingStrategy,
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
-interface ListPropertiesPopoverProps {
-  typeDocument: VaultEntry
-  entries: VaultEntry[]
-  onSave: (path: string, key: string, value: string[] | null) => void
+export interface ListPropertiesPopoverProps {
+  scope: NoteListPropertiesScope
+  availableProperties: string[]
+  currentDisplay: string[]
+  onSave: (value: string[] | null) => void
+  triggerTitle: string
 }
 
-/** Collect all available property/relationship keys from notes of this type. */
-function collectAvailableProperties(entries: VaultEntry[], typeName: string): string[] {
-  const keys = new Set<string>()
-  for (const entry of entries) {
-    if (entry.isA !== typeName) continue
-    for (const k of Object.keys(entry.properties)) keys.add(k)
-    for (const k of Object.keys(entry.relationships)) keys.add(k)
-  }
-  // Sort alphabetically for stable ordering
-  return [...keys].sort((a, b) => a.localeCompare(b))
+function propertyInputId(id: string): string {
+  return `list-prop-${id.replace(/[^a-z0-9_-]+/gi, '-')}`
 }
 
 function SortablePropertyItem({ id, checked, onToggle }: { id: string; checked: boolean; onToggle: (key: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id })
   const style = { transform: CSS.Transform.toString(transform), transition }
+  const inputId = propertyInputId(id)
 
   return (
     <div
@@ -41,84 +42,104 @@ function SortablePropertyItem({ id, checked, onToggle }: { id: string; checked: 
       className="flex items-center gap-2 rounded px-1 py-1 hover:bg-muted"
       data-testid={`list-prop-item-${id}`}
     >
-      <button
+      <Checkbox
+        id={inputId}
+        checked={checked}
+        onCheckedChange={() => onToggle(id)}
+        aria-label={id}
+      />
+      <label
+        htmlFor={inputId}
+        className="flex flex-1 cursor-pointer items-center gap-2 text-[13px]"
+        onClick={(event) => {
+          event.preventDefault()
+          onToggle(id)
+        }}
+      >
+        <span className="truncate">{id}</span>
+      </label>
+      <Button
         type="button"
-        className="flex shrink-0 cursor-grab items-center text-muted-foreground active:cursor-grabbing"
+        variant="ghost"
+        size="icon-xs"
+        className="shrink-0 cursor-grab text-muted-foreground active:cursor-grabbing"
+        tabIndex={-1}
+        aria-label={`Reorder ${id}`}
         {...attributes}
         {...listeners}
       >
         <DotsSixVertical size={14} />
-      </button>
-      <label className="flex flex-1 cursor-pointer items-center gap-2 text-[13px]">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={() => onToggle(id)}
-          className="accent-primary"
-          style={{ width: 14, height: 14 }}
-        />
-        <span className="truncate">{id}</span>
-      </label>
+      </Button>
     </div>
   )
 }
 
-export function ListPropertiesPopover({ typeDocument, entries, onSave }: ListPropertiesPopoverProps) {
+export function ListPropertiesPopover({
+  scope,
+  availableProperties,
+  currentDisplay,
+  onSave,
+  triggerTitle,
+}: ListPropertiesPopoverProps) {
   const [open, setOpen] = useState(false)
-  const currentDisplay = typeDocument.listPropertiesDisplay ?? []
 
-  const availableProperties = useMemo(
-    () => collectAvailableProperties(entries, typeDocument.title),
-    [entries, typeDocument.title],
-  )
-
-  // Merge: selected props first (in order), then unselected alphabetically
   const orderedItems = useMemo(() => {
-    const selected = currentDisplay.filter((p) => availableProperties.includes(p))
-    const unselected = availableProperties.filter((p) => !selected.includes(p))
+    const selected = currentDisplay.filter((property) => availableProperties.includes(property))
+    const unselected = availableProperties.filter((property) => !selected.includes(property))
     return [...selected, ...unselected]
-  }, [currentDisplay, availableProperties])
+  }, [availableProperties, currentDisplay])
 
   const selectedSet = useMemo(() => new Set(currentDisplay), [currentDisplay])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<OpenListPropertiesEventDetail>).detail
+      if (detail?.scope === scope) setOpen(true)
+    }
+    window.addEventListener(OPEN_NOTE_LIST_PROPERTIES_EVENT, handler)
+    return () => window.removeEventListener(OPEN_NOTE_LIST_PROPERTIES_EVENT, handler)
+  }, [scope])
+
   const handleToggle = useCallback((key: string) => {
-    const newSelected = selectedSet.has(key)
-      ? currentDisplay.filter((k) => k !== key)
+    const nextSelected = selectedSet.has(key)
+      ? currentDisplay.filter((property) => property !== key)
       : [...currentDisplay, key]
-    onSave(typeDocument.path, '_list_properties_display', newSelected.length > 0 ? newSelected : null)
-  }, [selectedSet, currentDisplay, typeDocument.path, onSave])
+    onSave(nextSelected.length > 0 ? nextSelected : null)
+  }, [currentDisplay, onSave, selectedSet])
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
 
-    // Only reorder within selected items
-    const selected = currentDisplay.filter((p) => availableProperties.includes(p))
+    const selected = currentDisplay.filter((property) => availableProperties.includes(property))
     const oldIndex = selected.indexOf(String(active.id))
     const newIndex = selected.indexOf(String(over.id))
     if (oldIndex === -1 || newIndex === -1) return
 
     const reordered = arrayMove(selected, oldIndex, newIndex)
-    onSave(typeDocument.path, '_list_properties_display', reordered)
-  }, [currentDisplay, availableProperties, typeDocument.path, onSave])
+    onSave(reordered.length > 0 ? reordered : null)
+  }, [availableProperties, currentDisplay, onSave])
 
   if (availableProperties.length === 0) return null
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          className="flex items-center text-muted-foreground transition-colors hover:text-foreground"
-          title="Configure list properties"
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          className="text-muted-foreground hover:text-foreground"
+          title={triggerTitle}
+          aria-label={triggerTitle}
           data-testid="list-properties-btn"
         >
           <SlidersHorizontal size={16} />
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-56 p-2" data-testid="list-properties-popover">
         <div className="mb-2 px-1 text-[11px] font-medium text-muted-foreground">

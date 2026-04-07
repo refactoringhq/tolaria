@@ -28,7 +28,7 @@ function readJson<T>(key: string): T | null {
 export function migrateLocalStorageToVaultConfig(loaded: VaultConfig | null): VaultConfig {
   const base: VaultConfig = loaded ?? {
     zoom: null, view_mode: null, editor_mode: null, tag_colors: null,
-    status_colors: null, property_display_modes: null,
+    status_colors: null, property_display_modes: null, inbox: null,
   }
 
   // Skip migration if already done

@@ -67,6 +67,8 @@ interface AppCommandsConfig {
   onOpenInNewWindow?: () => void
   onToggleFavorite?: (path: string) => void
   onToggleOrganized?: (path: string) => void
+  onCustomizeInboxColumns?: () => void
+  canCustomizeInboxColumns?: boolean
   onRestoreDeletedNote?: () => void
   canRestoreDeletedNote?: boolean
 }
@@ -209,6 +211,8 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onOpenInNewWindow: config.onOpenInNewWindow,
     onToggleFavorite: config.onToggleFavorite,
     onToggleOrganized: config.onToggleOrganized,
+    onCustomizeInboxColumns: config.onCustomizeInboxColumns,
+    canCustomizeInboxColumns: config.canCustomizeInboxColumns,
     onRestoreDeletedNote: config.onRestoreDeletedNote,
     canRestoreDeletedNote: config.canRestoreDeletedNote,
   })

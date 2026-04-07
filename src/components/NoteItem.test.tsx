@@ -101,6 +101,21 @@ describe('NoteItem property chips', () => {
     expect(screen.getByText('www.example.com')).toBeInTheDocument()
   })
 
+  it('prefers displayPropsOverride over the type defaults', () => {
+    const entry = makeEntry({
+      properties: { rating: 4, Owner: 'Luca' },
+    })
+    const typeEntry = makeTypeEntry({ listPropertiesDisplay: ['rating'] })
+
+    render(
+      <NoteItem entry={entry} isSelected={false} noteStatus="clean"
+        typeEntryMap={{ Movie: typeEntry }} displayPropsOverride={['Owner']} onClickNote={noop} />
+    )
+
+    expect(screen.getByText('Luca')).toBeInTheDocument()
+    expect(screen.queryByText('4')).not.toBeInTheDocument()
+  })
+
   it('does not render chips for binary files', () => {
     const entry = makeEntry({
       fileKind: 'binary',

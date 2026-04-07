@@ -59,6 +59,7 @@ import { openNoteInNewWindow } from './utils/openNoteWindow'
 import { isNoteWindow, getNoteWindowParams } from './utils/windowMode'
 import { GitRequiredModal } from './components/GitRequiredModal'
 import { RenameDetectedBanner, type DetectedRename } from './components/RenameDetectedBanner'
+import { openNoteListPropertiesPicker } from './components/note-list/noteListPropertiesEvents'
 import { trackEvent } from './lib/telemetry'
 import { extractDeletedContentFromDiff } from './components/note-list/noteListUtils'
 import './App.css'
@@ -120,7 +121,7 @@ function App() {
   }, [resolvedPath])
 
   const vault = useVaultLoader(resolvedPath)
-  useVaultConfig(resolvedPath)
+  const { config: vaultConfig, updateConfig } = useVaultConfig(resolvedPath)
   const { settings, loaded: settingsLoaded, saveSettings } = useSettings()
   useTelemetry(settings, settingsLoaded)
 
@@ -286,6 +287,17 @@ function App() {
   const handleSetNoteIconCommand = useCallback(() => {
     window.dispatchEvent(new CustomEvent('laputa:open-icon-picker'))
   }, [])
+
+  const handleCustomizeInboxColumns = useCallback(() => {
+    openNoteListPropertiesPicker('inbox')
+  }, [])
+
+  const handleUpdateInboxNoteListProperties = useCallback((value: string[] | null) => {
+    updateConfig('inbox', {
+      ...(vaultConfig.inbox ?? { noteListProperties: null }),
+      noteListProperties: value && value.length > 0 ? value : null,
+    })
+  }, [updateConfig, vaultConfig.inbox])
 
   const handleCreateFolder = useCallback(async (name: string) => {
     try {
@@ -536,6 +548,8 @@ function App() {
     onOpenInNewWindow: handleOpenInNewWindow,
     onToggleFavorite: entryActions.handleToggleFavorite,
     onToggleOrganized: entryActions.handleToggleOrganized,
+    onCustomizeInboxColumns: handleCustomizeInboxColumns,
+    canCustomizeInboxColumns: selection.kind === 'filter' && selection.filter === 'inbox',
     onRestoreDeletedNote: activeDeletedFile ? () => { void handleDiscardFile(activeDeletedFile.relativePath) } : undefined,
     canRestoreDeletedNote: !!activeDeletedFile,
   })
@@ -617,7 +631,7 @@ function App() {
               {selection.kind === 'filter' && selection.filter === 'pulse' ? (
                 <PulseView vaultPath={resolvedPath} onOpenNote={vaultBridge.handlePulseOpenNote} sidebarCollapsed={!sidebarVisible} onExpandSidebar={() => setViewMode('all')} />
               ) : (
-                <NoteList entries={vault.entries} selection={selection} selectedNote={activeTab?.entry ?? null} noteListFilter={noteListFilter} onNoteListFilterChange={setNoteListFilter} inboxPeriod={inboxPeriod} modifiedFiles={vault.modifiedFiles} modifiedFilesError={vault.modifiedFilesError} getNoteStatus={vault.getNoteStatus} sidebarCollapsed={!sidebarVisible} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={notes.handleReplaceActiveTab} onCreateNote={notes.handleCreateNoteImmediate} onBulkArchive={bulkActions.handleBulkArchive} onBulkDeletePermanently={deleteActions.handleBulkDeletePermanently} onUpdateTypeSort={notes.handleUpdateFrontmatter} updateEntry={vault.updateEntry} onOpenInNewWindow={handleOpenEntryInNewWindow} onDiscardFile={handleDiscardFile} onAutoTriggerDiff={() => diffToggleRef.current()} onOpenDeletedNote={handleOpenDeletedNote} views={vault.views} visibleNotesRef={visibleNotesRef} />
+                <NoteList entries={vault.entries} selection={selection} selectedNote={activeTab?.entry ?? null} noteListFilter={noteListFilter} onNoteListFilterChange={setNoteListFilter} inboxPeriod={inboxPeriod} modifiedFiles={vault.modifiedFiles} modifiedFilesError={vault.modifiedFilesError} getNoteStatus={vault.getNoteStatus} sidebarCollapsed={!sidebarVisible} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={notes.handleReplaceActiveTab} onCreateNote={notes.handleCreateNoteImmediate} onBulkArchive={bulkActions.handleBulkArchive} onBulkDeletePermanently={deleteActions.handleBulkDeletePermanently} onUpdateTypeSort={notes.handleUpdateFrontmatter} updateEntry={vault.updateEntry} onOpenInNewWindow={handleOpenEntryInNewWindow} onDiscardFile={handleDiscardFile} onAutoTriggerDiff={() => diffToggleRef.current()} onOpenDeletedNote={handleOpenDeletedNote} inboxNoteListProperties={vaultConfig.inbox?.noteListProperties ?? null} onUpdateInboxNoteListProperties={handleUpdateInboxNoteListProperties} views={vault.views} visibleNotesRef={visibleNotesRef} />
               )}
             </div>
             <ResizeHandle onResize={layout.handleNoteListResize} />

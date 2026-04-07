@@ -165,6 +165,33 @@ describe('useCommandRegistry', () => {
     const cmd = findCommand(result.current, 'restore-deleted-note')
     expect(cmd!.enabled).toBe(false)
   })
+
+  it('includes Customize Inbox columns when the Inbox action is available', () => {
+    const onCustomizeInboxColumns = vi.fn()
+    const config = makeConfig({
+      selection: { kind: 'filter', filter: 'inbox' },
+      onCustomizeInboxColumns,
+      canCustomizeInboxColumns: true,
+    })
+    const { result } = renderHook(() => useCommandRegistry(config))
+    const cmd = findCommand(result.current, 'customize-inbox-columns')
+    expect(cmd).toBeDefined()
+    expect(cmd!.enabled).toBe(true)
+
+    cmd!.execute()
+    expect(onCustomizeInboxColumns).toHaveBeenCalled()
+  })
+
+  it('disables Customize Inbox columns outside the Inbox view', () => {
+    const config = makeConfig({
+      selection: { kind: 'filter', filter: 'all' },
+      onCustomizeInboxColumns: vi.fn(),
+      canCustomizeInboxColumns: false,
+    })
+    const { result } = renderHook(() => useCommandRegistry(config))
+    const cmd = findCommand(result.current, 'customize-inbox-columns')
+    expect(cmd!.enabled).toBe(false)
+  })
 })
 
 describe('pluralizeType', () => {
