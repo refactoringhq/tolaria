@@ -159,7 +159,7 @@ mod tests {
 
         assert!(vault.join("AGENTS.md").exists());
         let content = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
-        assert!(content.contains("Vault Instructions for AI Agents"));
+        assert!(content.contains("Laputa Vault"));
         // Must NOT create config/ directory
         assert!(!vault.join("config").exists());
     }
@@ -205,7 +205,7 @@ mod tests {
 
         seed_config_files(vault.to_str().unwrap());
         let content = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
-        assert!(content.contains("Vault Instructions for AI Agents"));
+        assert!(content.contains("Laputa Vault"));
     }
 
     #[test]
@@ -272,7 +272,7 @@ mod tests {
 
         assert!(vault.join("AGENTS.md").exists());
         let root = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
-        assert!(root.contains("Vault Instructions"));
+        assert!(root.contains("Laputa Vault"));
     }
 
     #[test]
@@ -305,7 +305,7 @@ mod tests {
         assert!(!vault.join("config").exists());
 
         let agents = fs::read_to_string(vault.join("AGENTS.md")).unwrap();
-        assert!(agents.contains("Vault Instructions for AI Agents"));
+        assert!(agents.contains("Laputa Vault"));
     }
 
     #[test]

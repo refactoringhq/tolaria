@@ -1,70 +1,59 @@
-# CLAUDE.md — Laputa Vault Guide
+# CLAUDE.md — Laputa Vault
 
-This file explains how Laputa vaults work so you can create and edit notes correctly.
+This is a [Laputa](https://github.com/refactoringhq/laputa-app) vault — a folder of markdown files with YAML frontmatter forming a personal knowledge graph.
 
 ## Note structure
 
-Every note is a markdown file with YAML frontmatter:
+Every note is a markdown file. The **first H1 heading in the body is the title** — there is no `title:` frontmatter field.
 
 ```yaml
 ---
-title: My Note Title        # required — do NOT use H1 in the body
-is_a: TypeName              # the note's type (must match a type file in the vault)
-status: Active              # example property
-url: https://example.com   # example property
-belongs_to: "[[Other Note]]"  # relationship via wikilink
+is_a: TypeName        # the note's type (must match the title of a type file in the vault)
+url: https://...      # example property
+belongs_to: "[[other-note]]"
 related_to:
-  - "[[Note A]]"
-  - "[[Note B]]"
+  - "[[note-a]]"
+  - "[[note-b]]"
 ---
 
-Body content in markdown. No H1 — the title is in the frontmatter.
+# Note Title
+
+Body content in markdown.
 ```
 
-**Key rules:**
-- `title` is the note's display name — never use `# H1` in the body
-- `is_a` must match the `title` of an existing type file
-- Properties are any YAML key-value pairs in the frontmatter
-- System properties are prefixed with `_` (e.g. `_pinned`, `_organized`, `_icon`) — don't show these to users
+System properties are prefixed with `_` (e.g. `_organized`, `_pinned`, `_icon`) — these are app-managed, do not set or show them to users unless specifically asked.
 
 ## Types
 
-A type is a note with `is_a: Type` in the frontmatter. It lives in the vault root:
+A type is a note with `is_a: Type`. Type files live in the vault root:
 
 ```yaml
 ---
-title: Book
 is_a: Type
-_icon: BookOpen          # Phosphor icon name
-_color: "#8b5cf6"        # hex color for sidebar
+_icon: books          # Phosphor icon name in kebab-case
+_color: "#8b5cf6"     # hex color
 ---
-Description of the type.
+
+# TypeName
 ```
 
-To create a new type: create a markdown file with `is_a: Type`.
+To find what types exist: look for files with `is_a: Type` in the vault root.
 
 ## Relationships
 
-Relationships are frontmatter properties whose values are wikilinks:
+Any frontmatter property whose value is a wikilink is a relationship. Backlinks are computed automatically.
 
-```yaml
-belongs_to: "[[Project Name]]"
-related_to:
-  - "[[Note A]]"
-  - "[[Note B]]"
-has:
-  - "[[Child Note]]"
-```
-
-Standard names: `belongs_to`, `related_to`, `has`. Custom names are allowed.
+Standard names: `belongs_to`, `related_to`, `has`. Custom names are valid.
 
 ## Wikilinks
 
-Syntax: `[[Note Title]]` or `[[filename]]`. Used for relationships and inline references.
+- `[[filename]]` or `[[Note Title]]` — link by filename or title
+- `[[filename|display text]]` — with custom display text
+- Works in frontmatter values and markdown body
 
 ## Views
 
-Saved filters stored as `.view.json` in the `views/` folder:
+Saved filters live in `views/` as `.view.json` files:
 
 ```json
 {
@@ -77,13 +66,16 @@ Saved filters stored as `.view.json` in the `views/` folder:
 }
 ```
 
-## What you can do on this vault
+## Filenames
 
-- Create/edit notes with correct frontmatter
+Use kebab-case: `my-note-title.md`. One note per file.
+
+## What you can do
+
+- Create/edit notes with correct frontmatter and H1 title
 - Create new type files
-- Add or modify relationships between notes
+- Add or modify relationships
 - Create/edit views in `views/`
-- Change `_icon` and `_color` on type files
 - Edit `CLAUDE.md` (this file)
 
-**Do not** modify app configuration files — those are local to each installation.
+Do not modify app configuration files — those are local to each installation.

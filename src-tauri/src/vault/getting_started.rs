@@ -18,103 +18,91 @@ struct SampleFile {
     content: &'static str,
 }
 
-/// Content for config/agents.md — vault instructions for AI agents.
-/// This file has no YAML frontmatter — it is a convention file for AI agents,
-/// not a vault note. The vault scanner will still pick it up as a regular entry.
-pub(super) const AGENTS_MD: &str = r#"# AGENTS.md — Vault Instructions for AI Agents
+/// Default AGENTS.md content — vault instructions for AI agents.
+/// Describes Laputa vault mechanics only; no vault-specific structure.
+/// The vault scanner will pick this up as a regular entry.
+pub(super) const AGENTS_MD: &str = r##"# AGENTS.md — Laputa Vault
 
-This is a [Laputa](https://github.com/refactoring-ai/laputa) vault — a folder of markdown files with YAML frontmatter that form a personal knowledge graph.
+This is a [Laputa](https://github.com/refactoringhq/laputa-app) vault — a folder of markdown files with YAML frontmatter forming a personal knowledge graph.
 
-## Structure
+## Note structure
 
-Files are organized in folders by type:
-
-| Folder | Type | Purpose |
-|--------|------|---------|
-| `note/` | Note | General-purpose documents, research, meeting notes |
-| `project/` | Project | Time-bounded efforts with clear goals |
-| `person/` | Person | People — colleagues, collaborators, contacts |
-| `topic/` | Topic | Subject areas that group related notes |
-| `responsibility/` | Responsibility | Long-running duties with KPIs |
-| `procedure/` | Procedure | Recurring workflows (weekly, monthly) |
-| `event/` | Event | Something that happened on a specific date |
-| `quarter/` | Quarter | Time containers (e.g. 24Q1) |
-| `measure/` | Measure | Trackable metrics tied to responsibilities |
-| `target/` | Target | Time-bound goals for a measure |
-| `type/` | Type | Type definitions — icon, color, ordering |
-
-Custom folders are valid — the folder name becomes the type (capitalized).
-
-## Frontmatter
-
-YAML frontmatter between `---` delimiters defines metadata:
+Every note is a markdown file. The **first H1 heading in the body is the title** — there is no `title:` frontmatter field.
 
 ```yaml
 ---
-type: Project
-Status: Active
-Owner: "[[person/jane-doe]]"
-Belongs to: "[[quarter/24q1]]"
-Related to:
-  - "[[topic/growth]]"
-  - "[[note/research-findings]]"
+is_a: TypeName        # the note's type (must match the title of a type file in the vault)
+url: https://...      # example property
+belongs_to: "[[other-note]]"
+related_to:
+  - "[[note-a]]"
+  - "[[note-b]]"
 ---
+
+# Note Title
+
+Body content in markdown.
 ```
 
-### Standard fields
+System properties are prefixed with `_` (e.g. `_organized`, `_pinned`, `_icon`) — these are app-managed, do not set or show them to users unless specifically asked.
 
-| Field | Purpose |
-|-------|---------|
-| `type` | Entity type (usually inferred from folder) |
-| `Status` | Active, Done, Paused, Archived, Dropped |
-| `Owner` | Person responsible (wikilink) |
-| `Belongs to` | Parent relationship(s) |
-| `Related to` | Lateral associations |
-| `Cadence` | For Procedures: Weekly, Monthly, etc. |
-| `aliases` | Alternative names for wikilink resolution |
+## Types
 
-### Custom fields
-
-Any YAML field containing `[[wikilinks]]` becomes a navigable relationship:
+A type is a note with `is_a: Type`. Type files live in the vault root:
 
 ```yaml
-Has Measures: ["[[measure/revenue]]", "[[measure/churn]]"]
-Resources: "[[note/api-docs]]"
+---
+is_a: Type
+_icon: books          # Phosphor icon name in kebab-case
+_color: "#8b5cf6"     # hex color
+---
+
+# TypeName
 ```
+
+To find what types exist: look for files with `is_a: Type` in the vault root.
+
+## Relationships
+
+Any frontmatter property whose value is a wikilink is a relationship. Backlinks are computed automatically.
+
+Standard names: `belongs_to`, `related_to`, `has`. Custom names are valid.
 
 ## Wikilinks
 
-Connect notes with double-bracket syntax:
+- `[[filename]]` or `[[Note Title]]` — link by filename or title
+- `[[filename|display text]]` — with custom display text
+- Works in frontmatter values and markdown body
 
-- `[[note/my-note]]` — link by path
-- `[[My Note Title]]` — link by title or alias
-- `[[note/my-note|display text]]` — link with custom display text
+## Views
 
-Wikilinks work in both frontmatter values and markdown body. Backlinks are computed automatically — linking A to B makes B show a backlink to A.
+Saved filters live in `views/` as `.view.json` files:
 
-## Type definitions
-
-Files in `type/` define entity types and control how they appear in the sidebar:
-
-```yaml
----
-type: Type
-icon: rocket-launch
-color: purple
-order: 1
----
+```json
+{
+  "title": "Active Notes",
+  "filters": [
+    {"property": "is_a", "operator": "equals", "value": "Note"},
+    {"property": "status", "operator": "equals", "value": "Active"}
+  ],
+  "sort": {"property": "title", "direction": "asc"}
+}
 ```
 
-Available colors: red, purple, blue, green, yellow, orange. Icons are Phosphor names in kebab-case.
+## Filenames
 
-## Conventions
+Use kebab-case: `my-note-title.md`. One note per file.
 
-- First `# Heading` in a file becomes its title
-- One entity per file
-- Filenames use kebab-case: `my-note-title.md`
-- Type is inferred from parent folder if not set in frontmatter
-- Relationships are bidirectional via automatic backlinks
-"#;
+## What you can do
+
+- Create/edit notes with correct frontmatter and H1 title
+- Create new type files
+- Add or modify relationships
+- Create/edit views in `views/`
+- Edit `AGENTS.md` (this file)
+
+Do not modify app configuration files — those are local to each installation.
+"##;
 
 const SAMPLE_FILES: &[SampleFile] = &[
     SampleFile {
@@ -519,12 +507,12 @@ mod tests {
         assert!(agents_path.exists(), "AGENTS.md should exist at vault root");
 
         let content = fs::read_to_string(&agents_path).unwrap();
-        assert!(content.contains("Vault Instructions for AI Agents"));
-        assert!(content.contains("## Structure"));
-        assert!(content.contains("## Frontmatter"));
+        assert!(content.contains("Laputa Vault"));
+        assert!(content.contains("## Note structure"));
+        assert!(content.contains("## Types"));
         assert!(content.contains("## Wikilinks"));
-        assert!(content.contains("## Type definitions"));
-        assert!(content.contains("## Conventions"));
+        assert!(content.contains("## Relationships"));
+        assert!(content.contains("## Views"));
         // Must NOT be a stub
         assert!(
             !content.contains("See config/agents.md"),
@@ -542,7 +530,7 @@ mod tests {
         // H1 is now the primary title source
         assert_eq!(
             entry.title,
-            "AGENTS.md \u{2014} Vault Instructions for AI Agents"
+            "AGENTS.md \u{2014} Laputa Vault"
         );
         // Config files have no frontmatter type field — type is None
         assert_eq!(entry.is_a, None);
