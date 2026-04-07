@@ -473,10 +473,11 @@ function App() {
   }, [resolvedPath, vault, setToastMessage])
 
   const activeDeletedFile = useMemo(() => {
-    if (!notes.activeTabPath) return null
+    const activeTabPath = notes.activeTabPath
+    if (!activeTabPath) return null
     return vault.modifiedFiles.find((file) =>
       file.status === 'deleted'
-      && (file.path === notes.activeTabPath || notes.activeTabPath.endsWith('/' + file.relativePath)),
+      && (file.path === activeTabPath || activeTabPath.endsWith('/' + file.relativePath)),
     ) ?? null
   }, [notes.activeTabPath, vault.modifiedFiles])
 
