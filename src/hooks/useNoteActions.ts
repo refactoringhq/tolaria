@@ -1,9 +1,7 @@
 import { useCallback } from 'react'
-import { invoke } from '@tauri-apps/api/core'
-import { isTauri } from '../mock-tauri'
 import type { VaultEntry } from '../types'
 import type { FrontmatterValue } from '../components/Inspector'
-import { useTabManagement, syncNoteTitle } from './useTabManagement'
+import { useTabManagement } from './useTabManagement'
 import { resolveEntry } from '../utils/wikilink'
 import { useNoteCreation } from './useNoteCreation'
 import {
@@ -82,37 +80,15 @@ export function useNoteActions(config: NoteActionsConfig) {
     setTabs((prev) => prev.map((t) => t.entry.path === path ? { ...t, content: newContent } : t))
   }, [setTabs])
 
-  // After opening a note, reload its VaultEntry so title reflects any sync.
-  const handleSelectNoteWithSync = useCallback(async (entry: VaultEntry) => {
-    // Always sync title with filename — even for already-open tabs.
-    // handleSelectNote skips sync for open tabs (early return), so we call it here first.
-    const wasModified = await syncNoteTitle(entry.path)
-    await handleSelectNote(entry)
-    // Reload entry from disk to pick up title changes from sync_note_title
-    if (isTauri()) {
-      try {
-        const fresh = await invoke<VaultEntry>('reload_vault_entry', { path: entry.path })
-        if (fresh.title !== entry.title) updateEntry(entry.path, { title: fresh.title })
-        // If sync modified the file and tab was already open, refresh tab content
-        if (wasModified) {
-          const content = await loadNoteContent(entry.path)
-          setTabs(prev => prev.map(t => t.entry.path === entry.path
-            ? { entry: { ...t.entry, title: fresh.title }, content }
-            : t))
-        }
-      } catch { /* non-fatal: entry display may be stale */ }
-    }
-  }, [handleSelectNote, updateEntry, setTabs])
-
-  const creation = useNoteCreation(config, { openTabWithContent, handleSelectNote: handleSelectNoteWithSync })
+  const creation = useNoteCreation(config, { openTabWithContent, handleSelectNote })
   const rename = useNoteRename(
     { entries, setToastMessage },
     { tabs: tabMgmt.tabs, setTabs, activeTabPathRef, handleSwitchTab, updateTabContent },
   )
 
   const handleNavigateWikilink = useCallback(
-    (target: string) => navigateWikilink(entries, target, handleSelectNoteWithSync),
-    [entries, handleSelectNoteWithSync],
+    (target: string) => navigateWikilink(entries, target, handleSelectNote),
+    [entries, handleSelectNote],
   )
 
   const runFrontmatterOp = useCallback(
@@ -123,7 +99,6 @@ export function useNoteActions(config: NoteActionsConfig) {
 
   return {
     ...tabMgmt,
-    handleSelectNote: handleSelectNoteWithSync,
     handleNavigateWikilink,
     handleCreateNote: creation.handleCreateNote,
     handleCreateNoteImmediate: creation.handleCreateNoteImmediate,

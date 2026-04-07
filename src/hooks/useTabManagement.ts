@@ -47,16 +47,6 @@ async function loadNoteContent(path: string): Promise<string> {
     : mockInvoke<string>('get_note_content', { path })
 }
 
-/** Sync title frontmatter with filename on note open.
- *  Returns true if the file was modified. */
-export async function syncNoteTitle(path: string): Promise<boolean> {
-  try {
-    return isTauri()
-      ? await invoke<boolean>('sync_note_title', { path })
-      : false // mock: no-op
-  } catch { return false }
-}
-
 export type { Tab }
 
 export function useTabManagement() {
@@ -81,7 +71,6 @@ export function useTabManagement() {
       return
     }
     const seq = ++navSeqRef.current
-    if (!entry.fileKind || entry.fileKind === 'markdown') await syncNoteTitle(entry.path)
     try {
       const content = await loadNoteContent(entry.path)
       if (navSeqRef.current === seq) {

@@ -546,8 +546,8 @@ The vault backend (`src-tauri/src/vault/`) is split into focused submodules:
 | File | Purpose |
 |------|---------|
 | `mod.rs` | Core types (`VaultEntry`, `Frontmatter`), `parse_md_file`, `scan_vault`, relationship/link extraction |
-| `parsing.rs` | Text processing: snippet extraction, markdown stripping, ISO date parsing, `extract_title`, `slug_to_title` |
-| `title_sync.rs` | `sync_title_on_open` — ensures `title` frontmatter matches filename on note open |
+| `parsing.rs` | Text processing: snippet extraction, markdown stripping, ISO date parsing, `extract_title` (H1 → legacy frontmatter → filename), `slug_to_title` |
+| `title_sync.rs` | Legacy filename → `title` frontmatter sync helper; no longer used by the normal note-open flow |
 | `cache.rs` | Git-based incremental vault caching (`scan_vault_cached`), git helpers |
 | `rename.rs` | `rename_note` — renames files, updates `title` frontmatter, and updates wikilinks across the vault |
 | `image.rs` | `save_image` — saves base64-encoded attachments with sanitized filenames |
@@ -583,7 +583,7 @@ The vault backend (`src-tauri/src/vault/`) is split into focused submodules:
 | `save_note_content` | Write note content to disk |
 | `delete_note` | Permanently delete note from disk (with confirm dialog) |
 | `rename_note` | Rename note + update `title` frontmatter + cross-vault wikilinks |
-| `sync_note_title` | Sync `title` frontmatter with filename on note open → `bool` (modified) |
+| `sync_note_title` | Legacy helper: rewrite `title` frontmatter from filename → `bool` (modified); not used by the normal note-open flow |
 | `batch_archive_notes` | Archive multiple notes |
 | `batch_delete_notes` | Permanently delete notes from disk |
 | `reload_vault` | Invalidate cache and full rescan from filesystem → `Vec<VaultEntry>` |

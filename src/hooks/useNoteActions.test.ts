@@ -1045,38 +1045,25 @@ describe('useNoteActions hook', () => {
     })
   })
 
-  describe('title sync on reopen', () => {
-    it('calls sync_note_title when reopening an already-open tab', async () => {
+  describe('note open is read-only', () => {
+    it('does not sync title or reload entry when opening or reopening a note', async () => {
       vi.mocked(isTauri).mockReturnValue(true)
       const entry = makeEntry({ path: '/test/vault/qa-test.md', filename: 'qa-test.md', title: 'Qa Test' })
-
-      // First open: handleSelectNoteWithSync calls sync, then handleSelectNote calls sync again + loads
-      vi.mocked(invoke)
-        .mockResolvedValueOnce(false)           // sync_note_title (from handleSelectNoteWithSync)
-        .mockResolvedValueOnce(false)           // sync_note_title (from handleSelectNote)
-        .mockResolvedValueOnce('# Qa Test\n')   // get_note_content
-        .mockResolvedValueOnce({ ...entry })    // reload_vault_entry (first open)
-
-      // Second open (reopen, tab already exists): handleSelectNoteWithSync calls sync + reload
-      vi.mocked(invoke)
-        .mockResolvedValueOnce(true)            // sync_note_title (reopen — file was modified)
-        .mockResolvedValueOnce('---\ntitle: Qa Test\n---\n# Qa Test\n') // get_note_content (reload)
-        .mockResolvedValueOnce({ ...entry, title: 'Qa Test' }) // reload_vault_entry (reopen)
+      vi.mocked(invoke).mockResolvedValueOnce('# Qa Test\n')
 
       const { result } = renderHook(() => useNoteActions(makeConfig([entry])))
 
-      // Open the note (creates tab)
       await act(async () => { await result.current.handleSelectNote(entry) })
+      const callCountAfterFirstOpen = vi.mocked(invoke).mock.calls.length
 
-      // Reopen the same note (tab already open — this is the Cmd+P reopen scenario)
       const desyncedEntry = { ...entry, title: 'Wrong Title Desynced' }
       await act(async () => { await result.current.handleSelectNote(desyncedEntry) })
 
-      // sync_note_title should have been called for both opens (3 total: 2 for first open, 1 for reopen)
-      const syncCalls = vi.mocked(invoke).mock.calls.filter(c => c[0] === 'sync_note_title')
-      expect(syncCalls.length).toBeGreaterThanOrEqual(2)
-      // Critical: sync was called on reopen (the bug fix)
-      expect(syncCalls.at(-1)).toEqual(['sync_note_title', { path: '/test/vault/qa-test.md' }])
+      expect(vi.mocked(invoke)).toHaveBeenCalledTimes(callCountAfterFirstOpen)
+      expect(vi.mocked(invoke).mock.calls).toEqual([
+        ['get_note_content', { path: '/test/vault/qa-test.md' }],
+      ])
+      expect(result.current.tabs[0].entry.title).toBe('Qa Test')
     })
   })
 

@@ -232,16 +232,20 @@ All `[[wikilinks]]` in the note body (not frontmatter) are extracted by regex an
 
 ### Title / Filename Sync
 
-Every note has a `title` field in frontmatter that stores the human-readable title. The filename is always the slug of the title (`slugify(title).md`). The two are kept in sync:
+Laputa separates **display title** from the file identifier:
 
-- **Source of truth**: filename (on open), user input (on rename inside Laputa)
-- **`extract_title`** reads `title` from frontmatter; falls back to deriving a title from the filename via `slug_to_title()` (hyphens → spaces, title-case). Never reads from H1. Logic in `vault/parsing.rs`.
-- **On note open** (`sync_title_on_open`): if `title` frontmatter is absent or desynced from the filename, it is auto-corrected (filename wins). Logic in `vault/title_sync.rs`.
-- **On rename** (`rename_note`): updates both `title` frontmatter and filename atomically, plus wikilinks across the vault. Always writes `title` to frontmatter.
+- **Display title resolution** (`extract_title` in `vault/parsing.rs`): first `# H1` on the first non-empty body line, then legacy frontmatter `title:`, then slug-to-title from the filename stem.
+- **Opening a note is read-only**: selecting a note does not inject or auto-correct `title:` frontmatter.
+- **On rename / explicit title edits** (`rename_note`): Laputa updates both filename and `title` frontmatter atomically, plus wikilinks across the vault.
+- **Untitled drafts** start as `untitled-*.md` and are auto-renamed on save once the note gains an H1.
 
 ### Title Field (UI)
 
-The editor displays a dedicated `TitleField` component above the BlockNote editor. This is the primary title editing surface — the H1 block inside BlockNote is hidden via CSS. Changing the title field triggers `onTitleSync`, which updates the frontmatter `title:` field and renames the file to match `slugify(title).md`. The title field also responds to `laputa:focus-editor` events with `selectTitle: true` for new note creation.
+The dedicated `TitleField` is a fallback editing surface, not the canonical one:
+
+- If the note already has an H1, the editor body is the primary title surface and the dedicated title row is hidden.
+- If the note has no H1 and is not an untitled draft, `TitleField` appears above the editor and `onTitleSync` updates `title:` frontmatter plus the filename.
+- `TitleField` also responds to `laputa:focus-editor` events with `selectTitle: true` for new-note flows that start without an H1.
 
 ### Sidebar Selection
 
