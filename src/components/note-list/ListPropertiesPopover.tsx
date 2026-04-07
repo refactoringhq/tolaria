@@ -34,6 +34,7 @@ function SortablePropertyItem({ id, checked, onToggle }: { id: string; checked: 
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id })
   const style = { transform: CSS.Transform.toString(transform), transition }
   const inputId = propertyInputId(id)
+  const dragAttributes = { ...attributes, tabIndex: -1 }
 
   return (
     <div
@@ -63,9 +64,8 @@ function SortablePropertyItem({ id, checked, onToggle }: { id: string; checked: 
         variant="ghost"
         size="icon-xs"
         className="shrink-0 cursor-grab text-muted-foreground active:cursor-grabbing"
-        tabIndex={-1}
         aria-label={`Reorder ${id}`}
-        {...attributes}
+        {...dragAttributes}
         {...listeners}
       >
         <DotsSixVertical size={14} />
