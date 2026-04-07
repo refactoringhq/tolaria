@@ -12,64 +12,35 @@ async function openCreateViewDialog(page: Page) {
   await expect(page.locator('text=Create View')).toBeVisible({ timeout: 5000 })
 }
 
-test.describe('Filter wikilink autocomplete', () => {
+test.describe('Filter value input', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
   })
 
-  test('typing [[ in filter value field shows wikilink autocomplete', async ({ page }) => {
+  test('default text filters use a plain text input instead of a dropdown', async ({ page }) => {
     await openCreateViewDialog(page)
+    const dialog = page.getByRole('dialog')
 
-    // Default field is 'type' which has valueSuggestions (shows Select, not text input).
-    // Change to 'title' field which has no suggestions → renders WikilinkValueInput.
-    const fieldSelect = page.locator('button:has-text("type")').first()
-    await fieldSelect.click()
-    await page.locator('[role="option"]:has-text("title")').click()
-
-    // The filter value input has data-testid="filter-value-input"
-    const valueInput = page.getByTestId('filter-value-input')
+    const valueInput = dialog.getByTestId('filter-value-input')
     await expect(valueInput).toBeVisible()
-
-    // Type [[ without enough chars - dropdown should not appear
-    await valueInput.fill('[[')
-    await expect(page.getByTestId('wikilink-dropdown')).not.toBeVisible()
-
-    // Type enough characters to trigger the dropdown
-    await valueInput.fill('[[un')
-    await expect(page.getByTestId('wikilink-dropdown')).toBeVisible({ timeout: 2000 })
-
-    // Verify dropdown contains note suggestions
-    const dropdownItems = page.locator('.wikilink-menu__item')
-    const count = await dropdownItems.count()
-    expect(count).toBeGreaterThan(0)
-
-    // Click a suggestion to select it
-    const firstItem = dropdownItems.first()
-    const itemText = await firstItem.locator('.wikilink-menu__title').textContent()
-    await firstItem.click()
-
-    // Verify the value was set to [[note-title]]
-    const inputValue = await valueInput.inputValue()
-    expect(inputValue).toMatch(/^\[\[.+\]\]$/)
-    expect(inputValue).toContain(itemText?.trim() ?? '')
-
-    // Verify dropdown closed after selection
-    await expect(page.getByTestId('wikilink-dropdown')).not.toBeVisible()
+    await valueInput.fill('Project')
+    await expect(valueInput).toHaveValue('Project')
+    await expect(dialog.getByTestId('wikilink-dropdown')).toHaveCount(0)
   })
 
-  test('plain text in filter value does not trigger autocomplete', async ({ page }) => {
+  test('wikilink-like text stays raw input with no autocomplete', async ({ page }) => {
     await openCreateViewDialog(page)
+    const dialog = page.getByRole('dialog')
 
-    // Change field to 'title' (no suggestions → WikilinkValueInput)
-    const fieldSelect = page.locator('button:has-text("type")').first()
+    const fieldSelect = dialog.locator('button:has-text("type")').first()
     await fieldSelect.click()
     await page.locator('[role="option"]:has-text("title")').click()
 
-    const valueInput = page.getByTestId('filter-value-input')
-    await valueInput.fill('some plain text')
+    const valueInput = dialog.getByTestId('filter-value-input')
+    await valueInput.fill('[[un')
 
-    // No dropdown should appear
-    await expect(page.getByTestId('wikilink-dropdown')).not.toBeVisible()
+    await expect(valueInput).toHaveValue('[[un')
+    await expect(dialog.getByTestId('wikilink-dropdown')).toHaveCount(0)
   })
 })
