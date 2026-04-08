@@ -88,7 +88,10 @@ pub fn search_vault(
         };
 
         let content_lower = content.to_lowercase();
-        let filename = path.file_name().and_then(|value| value.to_str()).unwrap_or("");
+        let filename = path
+            .file_name()
+            .and_then(|value| value.to_str())
+            .unwrap_or("");
         let title = crate::vault::derive_markdown_title_from_content(&content, filename);
         let title_lower = title.to_lowercase();
 
@@ -179,7 +182,8 @@ mod tests {
         )
         .unwrap();
 
-        let response = search_vault(dir.path().to_str().unwrap(), "keyword", "keyword", 10).unwrap();
+        let response =
+            search_vault(dir.path().to_str().unwrap(), "keyword", "keyword", 10).unwrap();
 
         assert_eq!(response.results.len(), 1);
         assert_eq!(response.results[0].title, "Updated Display Title");
