@@ -19,5 +19,8 @@ export default defineConfig({
     command: `pnpm dev --host 127.0.0.1 --port ${port} --strictPort`,
     url: baseURL,
     reuseExistingServer,
+    timeout: 30_000,
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
 })

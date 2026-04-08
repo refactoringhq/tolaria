@@ -156,14 +156,9 @@ echo ""
 SMOKE_FILES=$(find tests/smoke tests/integration -name '*.spec.ts' 2>/dev/null | head -1)
 if [ -n "$SMOKE_FILES" ]; then
   echo "🎭 [4/5] Playwright core smoke tests..."
-  set +e
-  SMOKE_OUTPUT=$(pnpm playwright:smoke 2>&1)
-  SMOKE_STATUS=$?
-  set -e
-  echo "$SMOKE_OUTPUT" | tail -20
-  if [ "$SMOKE_STATUS" -ne 0 ]; then
+  if ! pnpm playwright:smoke; then
     echo "  ❌ Core smoke tests FAILED"
-    exit "$SMOKE_STATUS"
+    exit 1
   fi
   echo "  ✅ Core smoke tests OK"
 else
