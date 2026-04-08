@@ -1,19 +1,24 @@
 import { useState, useMemo, useCallback, useEffect, useRef, memo } from 'react'
 import type { VaultEntry, SidebarSelection, ModifiedFile, NoteStatus, InboxPeriod, ViewFile } from '../types'
 import type { NoteListFilter } from '../utils/noteListHelpers'
-import { countByFilter, countAllByFilter, filterInboxEntries } from '../utils/noteListHelpers'
+import { countByFilter, countAllByFilter } from '../utils/noteListHelpers'
 import { NoteItem } from './NoteItem'
-import { prefetchNoteContent } from '../hooks/useTabManagement'
 import { BulkActionBar } from './BulkActionBar'
-import { useMultiSelect } from '../hooks/useMultiSelect'
-import { useNoteListKeyboard } from '../hooks/useNoteListKeyboard'
 import { NoteListHeader } from './note-list/NoteListHeader'
 import { FilterPills } from './note-list/FilterPills'
 import { EntityView, ListView } from './note-list/NoteListViews'
-import { type DeletedNoteEntry, isDeletedNoteEntry, routeNoteClick, toggleSetMember, resolveHeaderTitle } from './note-list/noteListUtils'
+import { type DeletedNoteEntry, resolveHeaderTitle } from './note-list/noteListUtils'
 import {
-  useTypeEntryMap, useNoteListData, useNoteListSearch,
-  useNoteListSort, useMultiSelectKeyboard, useModifiedFilesState,
+  useChangeStatusResolver,
+  useListPropertyPicker,
+  useModifiedFilesState,
+  useMultiSelectKeyboard,
+  useNoteListData,
+  useNoteListInteractions,
+  useNoteListSearch,
+  useNoteListSort,
+  useTypeEntryMap,
+  useVisibleNotesSync,
 } from './note-list/noteListHooks'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -29,34 +34,6 @@ function useViewFlags(selection: SidebarSelection) {
   const isChangesView = selection.kind === 'filter' && selection.filter === 'changes'
   const showFilterPills = isSectionGroup || isFolderView || isAllNotesView
   return { isSectionGroup, isFolderView, isInboxView, isAllNotesView, isChangesView, showFilterPills }
-}
-
-function collectAvailableProperties(entries: VaultEntry[]): string[] {
-  const keys = new Set<string>()
-  for (const entry of entries) {
-    for (const key of Object.keys(entry.properties ?? {})) keys.add(key)
-    for (const key of Object.keys(entry.relationships ?? {})) keys.add(key)
-  }
-  return [...keys].sort((a, b) => a.localeCompare(b))
-}
-
-function collectTypeAvailableProperties(entries: VaultEntry[], typeName: string): string[] {
-  return collectAvailableProperties(entries.filter((entry) => entry.isA === typeName))
-}
-
-function deriveInboxDefaultDisplay(entries: VaultEntry[], typeEntryMap: Record<string, VaultEntry>): string[] {
-  const ordered: string[] = []
-  const seen = new Set<string>()
-
-  for (const entry of entries) {
-    for (const key of typeEntryMap[entry.isA ?? '']?.listPropertiesDisplay ?? []) {
-      if (seen.has(key)) continue
-      seen.add(key)
-      ordered.push(key)
-    }
-  }
-
-  return ordered
 }
 
 function useBulkActions(
@@ -201,151 +178,54 @@ function NoteListInner({ entries, selection, selectedNote, noteListFilter, onNot
 
   const { listSort, listDirection, customProperties, handleSortChange, sortPrefs, typeDocument } = useNoteListSort({ entries, selection, modifiedPathSet, modifiedSuffixes, subFilter, inboxPeriod: isInboxView ? inboxPeriod : undefined, onUpdateTypeSort, updateEntry })
   const { search, setSearch, query, searchVisible, toggleSearch } = useNoteListSearch()
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
-
   const typeEntryMap = useTypeEntryMap(entries)
-  const inboxEntries = useMemo(
-    () => isInboxView ? filterInboxEntries(entries, inboxPeriod) : [],
-    [entries, inboxPeriod, isInboxView],
-  )
-  const typeAvailableProperties = useMemo(
-    () => typeDocument ? collectTypeAvailableProperties(entries, typeDocument.title) : [],
-    [entries, typeDocument],
-  )
-  const inboxAvailableProperties = useMemo(
-    () => collectAvailableProperties(inboxEntries),
-    [inboxEntries],
-  )
-  const inboxDefaultDisplay = useMemo(
-    () => deriveInboxDefaultDisplay(inboxEntries, typeEntryMap),
-    [inboxEntries, typeEntryMap],
-  )
-  const hasCustomInboxProperties = !!(inboxNoteListProperties && inboxNoteListProperties.length > 0)
-  const inboxDisplayOverride = isInboxView && hasCustomInboxProperties ? inboxNoteListProperties : null
-  const propertyPicker = useMemo(() => {
-    if (isInboxView && onUpdateInboxNoteListProperties) {
-      return {
-        scope: 'inbox' as const,
-        availableProperties: inboxAvailableProperties,
-        currentDisplay: hasCustomInboxProperties ? inboxNoteListProperties ?? [] : inboxDefaultDisplay,
-        onSave: onUpdateInboxNoteListProperties,
-        triggerTitle: 'Customize Inbox columns',
-      }
-    }
-
-    if (isSectionGroup && typeDocument && onUpdateTypeSort) {
-      return {
-        scope: 'type' as const,
-        availableProperties: typeAvailableProperties,
-        currentDisplay: typeDocument.listPropertiesDisplay ?? [],
-        onSave: (value: string[] | null) => onUpdateTypeSort(typeDocument.path, '_list_properties_display', value),
-        triggerTitle: 'Customize columns',
-      }
-    }
-
-    return null
-  }, [
-    hasCustomInboxProperties,
-    inboxAvailableProperties,
-    inboxDefaultDisplay,
+  const { inboxDisplayOverride, propertyPicker } = useListPropertyPicker({
+    entries,
+    selection,
+    inboxPeriod,
+    typeDocument,
+    typeEntryMap,
     inboxNoteListProperties,
-    isInboxView,
-    isSectionGroup,
     onUpdateInboxNoteListProperties,
     onUpdateTypeSort,
-    typeAvailableProperties,
-    typeDocument,
-  ])
-  const changeStatusMap = useMemo(() => {
-    if (!isChangesView || !modifiedFiles) return undefined
-    const map = new Map<string, ModifiedFile['status']>()
-    for (const mf of modifiedFiles) {
-      map.set(mf.path, mf.status)
-      // Also index by suffix for matching (vault entries may use different path formats)
-      map.set('/' + mf.relativePath, mf.status)
-    }
-    return map
-  }, [isChangesView, modifiedFiles])
+  })
   const { isEntityView, isArchivedView, searched, searchedGroups } = useNoteListData({ entries, selection, query, listSort, listDirection, modifiedPathSet, modifiedSuffixes, modifiedFiles, subFilter, inboxPeriod: isInboxView ? inboxPeriod : undefined, views })
-  // Keep the visible notes ref in sync for keyboard navigation (Cmd+Option+Arrow)
-  if (visibleNotesRef) {
-    visibleNotesRef.current = isEntityView
-      ? searchedGroups.flatMap((g) => g.entries).filter((entry) => !isDeletedNoteEntry(entry))
-      : searched.filter((entry) => !isDeletedNoteEntry(entry))
-  }
+  useVisibleNotesSync({ visibleNotesRef, isEntityView, searched, searchedGroups })
   const entitySelection = isEntityView && selection.kind === 'entity' ? selection : null
 
-  const handleKeyboardOpen = useCallback((entry: VaultEntry) => {
-    if (isDeletedNoteEntry(entry)) {
-      onOpenDeletedNote?.(entry)
-      return
-    }
-    onReplaceActiveTab(entry)
-  }, [onOpenDeletedNote, onReplaceActiveTab])
-  const handleKeyboardPrefetch = useCallback((entry: VaultEntry) => {
-    if (!isDeletedNoteEntry(entry)) prefetchNoteContent(entry.path)
-  }, [])
-  const noteListKeyboard = useNoteListKeyboard({ items: searched, selectedNotePath: selectedNote?.path ?? null, onOpen: handleKeyboardOpen, onPrefetch: handleKeyboardPrefetch, enabled: !isEntityView })
-  const multiSelect = useMultiSelect(searched, selectedNote?.path ?? null)
-  useEffect(() => { multiSelect.clear() }, [selection, noteListFilter]) // eslint-disable-line react-hooks/exhaustive-deps -- clear on selection/filter change
-
-  const handleClickNote = useCallback((entry: VaultEntry, e: React.MouseEvent) => {
-    if (isDeletedNoteEntry(entry)) {
-      routeNoteClick(entry, e, {
-        onReplace: () => onOpenDeletedNote?.(entry),
-        onSelect: () => onOpenDeletedNote?.(entry),
-        multiSelect,
-      })
-      return
-    }
-    routeNoteClick(entry, e, { onReplace: onReplaceActiveTab, onSelect: onSelectNote, onOpenInNewWindow, multiSelect })
-    if (isChangesView && onAutoTriggerDiff) {
-      // Small delay to let the tab open before triggering diff
-      setTimeout(onAutoTriggerDiff, 50)
-    }
-  }, [onOpenDeletedNote, onReplaceActiveTab, onSelectNote, onOpenInNewWindow, multiSelect, isChangesView, onAutoTriggerDiff])
+  const { handleNoteContextMenu, openContextMenuForEntry, contextMenuNode, dialogNode } = ChangesContextMenu({ isChangesView, onDiscardFile, modifiedFiles })
+  const {
+    collapsedGroups,
+    handleClickNote,
+    handleCreateNote,
+    handleListKeyDown,
+    multiSelect,
+    noteListKeyboard,
+    toggleGroup,
+  } = useNoteListInteractions({
+    searched,
+    selectedNotePath: selectedNote?.path ?? null,
+    selection,
+    noteListFilter,
+    isEntityView,
+    isChangesView,
+    onReplaceActiveTab,
+    onSelectNote,
+    onOpenDeletedNote,
+    onOpenInNewWindow,
+    onAutoTriggerDiff,
+    onDiscardFile,
+    openContextMenuForEntry,
+    onCreateNote,
+  })
+  const getChangeStatus = useChangeStatusResolver(isChangesView, modifiedFiles)
 
   const { handleBulkArchive, handleBulkDeletePermanently, handleBulkUnarchive, bulkArchiveOrUnarchive } = useBulkActions(multiSelect, onBulkArchive, onBulkDeletePermanently, isArchivedView)
   useMultiSelectKeyboard(multiSelect, isEntityView, bulkArchiveOrUnarchive, handleBulkDeletePermanently)
 
-  const { handleNoteContextMenu, openContextMenuForEntry, contextMenuNode, dialogNode } = ChangesContextMenu({ isChangesView, onDiscardFile, modifiedFiles })
-
-  const getChangeStatus = useCallback((path: string) => {
-    if (!changeStatusMap) return undefined
-    const direct = changeStatusMap.get(path)
-    if (direct) return direct
-    // Try suffix match
-    for (const [key, status] of changeStatusMap) {
-      if (path.endsWith(key) || key.endsWith(path.split('/').slice(-1)[0])) return status
-    }
-    return undefined
-  }, [changeStatusMap])
-
-  const handleListKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (isChangesView && onDiscardFile && e.shiftKey && e.key === 'F10' && noteListKeyboard.highlightedPath) {
-      const entry = searched.find((candidate) => candidate.path === noteListKeyboard.highlightedPath)
-      if (!entry) return
-      e.preventDefault()
-      e.stopPropagation()
-      const row = document.querySelector<HTMLElement>(`[data-note-path="${entry.path}"]`)
-      const rect = row?.getBoundingClientRect()
-      openContextMenuForEntry(entry, {
-        x: rect ? rect.left + 24 : 160,
-        y: rect ? rect.bottom - 8 : 160,
-      })
-      return
-    }
-    noteListKeyboard.handleKeyDown(e)
-  }, [isChangesView, onDiscardFile, noteListKeyboard, searched, openContextMenuForEntry])
-
   const renderItem = useCallback((entry: VaultEntry) => (
-    <NoteItem key={entry.path} entry={entry} isSelected={selectedNote?.path === entry.path} isMultiSelected={multiSelect.selectedPaths.has(entry.path)} isHighlighted={entry.path === noteListKeyboard.highlightedPath} noteStatus={resolvedGetNoteStatus(entry.path)} changeStatus={getChangeStatus(entry.path)} typeEntryMap={typeEntryMap} allEntries={entries} displayPropsOverride={inboxDisplayOverride} onClickNote={handleClickNote} onPrefetch={isDeletedNoteEntry(entry) ? undefined : prefetchNoteContent} onContextMenu={isChangesView && onDiscardFile ? handleNoteContextMenu : undefined} />
+    <NoteItem key={entry.path} entry={entry} isSelected={selectedNote?.path === entry.path} isMultiSelected={multiSelect.selectedPaths.has(entry.path)} isHighlighted={entry.path === noteListKeyboard.highlightedPath} noteStatus={resolvedGetNoteStatus(entry.path)} changeStatus={getChangeStatus(entry.path)} typeEntryMap={typeEntryMap} allEntries={entries} displayPropsOverride={inboxDisplayOverride} onClickNote={handleClickNote} onContextMenu={isChangesView && onDiscardFile ? handleNoteContextMenu : undefined} />
   ), [entries, selectedNote?.path, handleClickNote, typeEntryMap, resolvedGetNoteStatus, getChangeStatus, multiSelect.selectedPaths, noteListKeyboard.highlightedPath, isChangesView, onDiscardFile, handleNoteContextMenu, inboxDisplayOverride])
-
-  const handleCreateNote = useCallback(() => {
-    onCreateNote(selection.kind === 'sectionGroup' ? selection.type : undefined)
-  }, [onCreateNote, selection])
-  const toggleGroup = useCallback((label: string) => { setCollapsedGroups((prev) => toggleSetMember(prev, label)) }, [])
   const title = resolveHeaderTitle(selection, typeDocument, views)
 
   return (

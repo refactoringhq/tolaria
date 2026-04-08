@@ -1,307 +1,76 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { NoteItem } from './NoteItem'
-import type { VaultEntry } from '../types'
+import { makeEntry } from '../test-utils/noteListTestUtils'
 
-vi.mock('../mock-tauri', () => ({ isTauri: () => false, mockInvoke: vi.fn() }))
-
-function makeEntry(overrides: Partial<VaultEntry> = {}): VaultEntry {
-  return {
-    path: '/vault/test.md', filename: 'test.md', title: 'Test Note',
-    isA: 'Movie', aliases: [], belongsTo: [], relatedTo: [],
-    status: null, archived: false,
-    modifiedAt: 1700000000, createdAt: null, fileSize: 100,
-    snippet: 'A snippet', wordCount: 50,
-    relationships: {}, icon: null, color: null, order: null,
-    sidebarLabel: null, template: null, sort: null, view: null,
-    visible: null, favorite: false, favoriteIndex: null,
-    outgoingLinks: [], properties: {},
-    listPropertiesDisplay: [],
-    ...overrides,
-  }
-}
-
-function makeTypeEntry(overrides: Partial<VaultEntry> = {}): VaultEntry {
-  return makeEntry({
-    path: '/vault/movie.md', filename: 'movie.md', title: 'Movie',
-    isA: 'Type', listPropertiesDisplay: [],
-    ...overrides,
-  })
-}
-
-const noop = vi.fn()
-
-describe('NoteItem property chips', () => {
-  it('renders property chips when type has listPropertiesDisplay', () => {
-    const entry = makeEntry({
-      properties: { rating: 4, genre: 'Drama' },
-    })
-    const typeEntry = makeTypeEntry({ listPropertiesDisplay: ['rating', 'genre'] })
-
-    render(
-      <NoteItem entry={entry} isSelected={false} noteStatus="clean"
-        typeEntryMap={{ Movie: typeEntry }} onClickNote={noop} />
-    )
-
-    expect(screen.getByTestId('property-chips')).toBeInTheDocument()
-    expect(screen.getByText('4')).toBeInTheDocument()
-    expect(screen.getByText('Drama')).toBeInTheDocument()
-  })
-
-  it('does not render chips when listPropertiesDisplay is empty', () => {
-    const entry = makeEntry({ properties: { rating: 4 } })
-    const typeEntry = makeTypeEntry({ listPropertiesDisplay: [] })
-
-    render(
-      <NoteItem entry={entry} isSelected={false} noteStatus="clean"
-        typeEntryMap={{ Movie: typeEntry }} onClickNote={noop} />
-    )
-
-    expect(screen.queryByTestId('property-chips')).not.toBeInTheDocument()
-  })
-
-  it('skips chips for missing properties', () => {
-    const entry = makeEntry({ properties: { rating: 4 } })
-    const typeEntry = makeTypeEntry({ listPropertiesDisplay: ['rating', 'genre'] })
-
-    render(
-      <NoteItem entry={entry} isSelected={false} noteStatus="clean"
-        typeEntryMap={{ Movie: typeEntry }} onClickNote={noop} />
-    )
-
-    expect(screen.getByText('4')).toBeInTheDocument()
-    expect(screen.queryByText('genre')).not.toBeInTheDocument()
-  })
-
-  it('renders relationship values as display labels', () => {
-    const entry = makeEntry({
-      relationships: { Director: ['[[spielberg|Steven Spielberg]]'] },
-    })
-    const typeEntry = makeTypeEntry({ listPropertiesDisplay: ['Director'] })
-
-    render(
-      <NoteItem entry={entry} isSelected={false} noteStatus="clean"
-        typeEntryMap={{ Movie: typeEntry }} onClickNote={noop} />
-    )
-
-    expect(screen.getByText('Steven Spielberg')).toBeInTheDocument()
-  })
-
-  it('shows the target note icon as a prefix on relationship chips', () => {
-    const entry = makeEntry({
-      relationships: { Director: ['[[spielberg|Steven Spielberg]]'] },
-    })
-    const director = makeEntry({
-      path: '/vault/spielberg.md',
-      filename: 'spielberg.md',
-      title: 'Steven Spielberg',
-      isA: 'Person',
-      icon: 'star',
-    })
-    const movieType = makeTypeEntry({ listPropertiesDisplay: ['Director'] })
-    const personType = makeTypeEntry({
-      path: '/vault/person.md',
-      filename: 'person.md',
-      title: 'Person',
-      icon: 'users',
-    })
-
-    render(
-      <NoteItem
-        entry={entry}
-        isSelected={false}
-        noteStatus="clean"
-        typeEntryMap={{ Movie: movieType, Person: personType }}
-        allEntries={[entry, director, movieType, personType]}
-        onClickNote={noop}
-      />
-    )
-
-    const chip = screen.getByText('Steven Spielberg').parentElement
-    expect(chip?.querySelector('svg')).toBeInTheDocument()
-    expect(chip?.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
-  })
-
-  it('falls back to the target type icon when the target note has no icon', () => {
-    const entry = makeEntry({
-      relationships: { Director: ['[[spielberg|Steven Spielberg]]'] },
-    })
-    const director = makeEntry({
-      path: '/vault/spielberg.md',
-      filename: 'spielberg.md',
-      title: 'Steven Spielberg',
-      isA: 'Person',
-      icon: null,
-    })
-    const movieType = makeTypeEntry({ listPropertiesDisplay: ['Director'] })
-    const personType = makeTypeEntry({
-      path: '/vault/person.md',
-      filename: 'person.md',
-      title: 'Person',
-      icon: 'users',
-    })
-
-    render(
-      <NoteItem
-        entry={entry}
-        isSelected={false}
-        noteStatus="clean"
-        typeEntryMap={{ Movie: movieType, Person: personType }}
-        allEntries={[entry, director, movieType, personType]}
-        onClickNote={noop}
-      />
-    )
-
-    const chip = screen.getByText('Steven Spielberg').parentElement
-    expect(chip?.querySelector('svg')).toBeInTheDocument()
-  })
-
-  it('renders relationship chips without a prefix when neither note nor type has an icon', () => {
-    const entry = makeEntry({
-      relationships: { Director: ['[[spielberg|Steven Spielberg]]'] },
-    })
-    const director = makeEntry({
-      path: '/vault/spielberg.md',
-      filename: 'spielberg.md',
-      title: 'Steven Spielberg',
-      isA: 'Person',
-      icon: null,
-    })
-    const movieType = makeTypeEntry({ listPropertiesDisplay: ['Director'] })
-    const personType = makeTypeEntry({
-      path: '/vault/person.md',
-      filename: 'person.md',
-      title: 'Person',
-      icon: null,
-    })
-
-    render(
-      <NoteItem
-        entry={entry}
-        isSelected={false}
-        noteStatus="clean"
-        typeEntryMap={{ Movie: movieType, Person: personType }}
-        allEntries={[entry, director, movieType, personType]}
-        onClickNote={noop}
-      />
-    )
-
-    const chip = screen.getByText('Steven Spielberg').parentElement
-    expect(chip?.querySelector('svg')).toBeNull()
-    expect(chip?.querySelector('img')).toBeNull()
-  })
-
-  it('falls back to the target type icon when the target note image icon fails to load', () => {
-    const entry = makeEntry({
-      relationships: { Director: ['[[spielberg|Steven Spielberg]]'] },
-    })
-    const director = makeEntry({
-      path: '/vault/spielberg.md',
-      filename: 'spielberg.md',
-      title: 'Steven Spielberg',
-      isA: 'Person',
-      icon: 'https://example.com/director.png',
-    })
-    const movieType = makeTypeEntry({ listPropertiesDisplay: ['Director'] })
-    const personType = makeTypeEntry({
-      path: '/vault/person.md',
-      filename: 'person.md',
-      title: 'Person',
-      icon: 'users',
-    })
-
-    render(
-      <NoteItem
-        entry={entry}
-        isSelected={false}
-        noteStatus="clean"
-        typeEntryMap={{ Movie: movieType, Person: personType }}
-        allEntries={[entry, director, movieType, personType]}
-        onClickNote={noop}
-      />
-    )
-
-    const chip = screen.getByText('Steven Spielberg').parentElement
-    const image = chip?.querySelector('img')
-    expect(image).toBeInTheDocument()
-    fireEvent.error(image!)
-    expect(chip?.querySelector('img')).toBeNull()
-    expect(chip?.querySelector('svg')).toBeInTheDocument()
-  })
-
-  it('shows hostname for URL properties', () => {
-    const entry = makeEntry({
-      properties: { url: 'https://www.example.com/page/123' },
-    })
-    const typeEntry = makeTypeEntry({ listPropertiesDisplay: ['url'] })
-
-    render(
-      <NoteItem entry={entry} isSelected={false} noteStatus="clean"
-        typeEntryMap={{ Movie: typeEntry }} onClickNote={noop} />
-    )
-
-    expect(screen.getByText('www.example.com')).toBeInTheDocument()
-  })
-
-  it('prefers displayPropsOverride over the type defaults', () => {
-    const entry = makeEntry({
-      properties: { rating: 4, Owner: 'Luca' },
-    })
-    const typeEntry = makeTypeEntry({ listPropertiesDisplay: ['rating'] })
-
-    render(
-      <NoteItem entry={entry} isSelected={false} noteStatus="clean"
-        typeEntryMap={{ Movie: typeEntry }} displayPropsOverride={['Owner']} onClickNote={noop} />
-    )
-
-    expect(screen.getByText('Luca')).toBeInTheDocument()
-    expect(screen.queryByText('4')).not.toBeInTheDocument()
-  })
-
-  it('does not render chips for binary files', () => {
-    const entry = makeEntry({
+describe('NoteItem', () => {
+  it('renders binary files as non-clickable muted rows', () => {
+    const binaryEntry = makeEntry({
+      path: '/vault/photo.png',
+      filename: 'photo.png',
+      title: 'photo.png',
       fileKind: 'binary',
-      properties: { rating: 4 },
     })
-    const typeEntry = makeTypeEntry({ listPropertiesDisplay: ['rating'] })
+    const onClickNote = vi.fn()
 
-    render(
-      <NoteItem entry={entry} isSelected={false} noteStatus="clean"
-        typeEntryMap={{ Movie: typeEntry }} onClickNote={noop} />
-    )
+    render(<NoteItem entry={binaryEntry} isSelected={false} typeEntryMap={{}} onClickNote={onClickNote} />)
 
-    expect(screen.queryByTestId('property-chips')).not.toBeInTheDocument()
-  })
-})
+    const item = screen.getByTestId('binary-file-item')
+    expect(item.className).toContain('opacity-50')
+    expect(item).toHaveAttribute('title', 'Cannot open this file type')
 
-describe('NoteItem note icons', () => {
-  it('renders a Phosphor note icon in the note row', () => {
-    render(
-      <NoteItem
-        entry={makeEntry({ icon: 'star' })}
-        isSelected={false}
-        noteStatus="clean"
-        typeEntryMap={{ Movie: makeTypeEntry() }}
-        onClickNote={noop}
-      />
-    )
-
-    expect(screen.getByTestId('note-title-icon').tagName.toLowerCase()).toBe('svg')
+    fireEvent.click(item)
+    expect(onClickNote).not.toHaveBeenCalled()
   })
 
-  it('renders an image note icon in the note row', () => {
-    render(
-      <NoteItem
-        entry={makeEntry({ icon: 'https://example.com/favicon.png' })}
-        isSelected={false}
-        noteStatus="clean"
-        typeEntryMap={{ Movie: makeTypeEntry() }}
-        onClickNote={noop}
-      />
-    )
+  it('renders text files as clickable rows', () => {
+    const textEntry = makeEntry({
+      path: '/vault/config.yml',
+      filename: 'config.yml',
+      title: 'config.yml',
+      fileKind: 'text',
+    })
+    const onClickNote = vi.fn()
 
-    const icon = screen.getByTestId('note-title-icon')
-    expect(icon.tagName.toLowerCase()).toBe('img')
-    expect(icon).toHaveAttribute('src', 'https://example.com/favicon.png')
+    render(<NoteItem entry={textEntry} isSelected={false} typeEntryMap={{}} onClickNote={onClickNote} />)
+
+    const item = screen.getByText('config.yml').closest('div')!
+    fireEvent.click(item)
+    expect(onClickNote).toHaveBeenCalled()
+  })
+
+  it('shows filenames instead of titles when a change status is present', () => {
+    const entry = makeEntry({ filename: 'my-note.md', title: 'My Note Title' })
+
+    render(<NoteItem entry={entry} isSelected={false} typeEntryMap={{}} onClickNote={vi.fn()} changeStatus="modified" />)
+
+    expect(screen.getByText('my-note.md')).toBeInTheDocument()
+    expect(screen.queryByText('My Note Title')).not.toBeInTheDocument()
+  })
+
+  it('renders the correct symbol for modified files', () => {
+    const entry = makeEntry({ filename: 'note.md' })
+
+    render(<NoteItem entry={entry} isSelected={false} typeEntryMap={{}} onClickNote={vi.fn()} changeStatus="modified" />)
+
+    expect(screen.getByTestId('change-status-icon').textContent).toBe('·')
+  })
+
+  it('renders the correct symbol for added files', () => {
+    const entry = makeEntry({ filename: 'new-note.md' })
+
+    render(<NoteItem entry={entry} isSelected={false} typeEntryMap={{}} onClickNote={vi.fn()} changeStatus="added" />)
+
+    expect(screen.getByTestId('change-status-icon').textContent).toBe('+')
+  })
+
+  it('renders the regular title when no change status is set', () => {
+    const entry = makeEntry({ filename: 'note.md', title: 'My Note' })
+
+    render(<NoteItem entry={entry} isSelected={false} typeEntryMap={{}} onClickNote={vi.fn()} />)
+
+    expect(screen.getByText('My Note')).toBeInTheDocument()
+    expect(screen.queryByText('note.md')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('change-status-icon')).not.toBeInTheDocument()
   })
 })
