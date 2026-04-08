@@ -2,9 +2,9 @@ import type React from 'react'
 import { useEffect, useRef } from 'react'
 import type { useCreateBlockNote } from '@blocknote/react'
 import type { NoteStatus, VaultEntry } from '../../types'
-import { countWords } from '../../utils/wikilinks'
 import { useEditorTheme } from '../../hooks/useTheme'
 import { resolveNoteIcon } from '../../utils/noteIcon'
+import { deriveEditorContentState } from './editorContentState'
 
 export interface Tab {
   entry: VaultEntry
@@ -55,21 +55,24 @@ export function useEditorContentModel(props: EditorContentProps) {
   } = props
 
   const { cssVars } = useEditorTheme()
-  const freshEntry = activeTab ? entries.find((entry) => entry.path === activeTab.entry.path) : undefined
-  const isArchived = freshEntry?.archived ?? activeTab?.entry.archived ?? false
-  const hasH1 = freshEntry?.hasH1 ?? activeTab?.entry.hasH1 ?? false
-  const isDeletedPreview = !!activeTab && !freshEntry
-  const isNonMarkdownText = activeTab?.entry.fileKind === 'text'
-  const effectiveRawMode = rawMode || isNonMarkdownText
-  const showEditor = !diffMode && !effectiveRawMode
+  const {
+    isArchived,
+    isDeletedPreview,
+    isNonMarkdownText,
+    effectiveRawMode,
+    showEditor: showContentEditor,
+    path,
+    showTitleSection,
+    wordCount,
+  } = deriveEditorContentState({
+    activeTab,
+    entries,
+    rawMode,
+    activeStatus,
+  })
+  const showEditor = !diffMode && showContentEditor
   const entryIcon = activeTab?.entry.icon ?? null
   const hasDisplayIcon = resolveNoteIcon(entryIcon).kind !== 'none'
-  const isUntitledDraft = !!activeTab
-    && activeTab.entry.filename.startsWith('untitled-')
-    && (activeStatus === 'new' || activeStatus === 'unsaved' || activeStatus === 'pendingSave')
-  const showTitleSection = !isDeletedPreview && !hasH1 && !isUntitledDraft
-  const path = activeTab?.entry.path ?? ''
-  const wordCount = activeTab ? countWords(activeTab.content) : 0
 
   const titleSectionRef = useRef<HTMLDivElement | null>(null)
   const breadcrumbBarRef = useRef<HTMLDivElement | null>(null)

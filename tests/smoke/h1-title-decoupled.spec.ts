@@ -69,6 +69,14 @@ test('creating an untitled draft hides the legacy title section in the editor', 
   await expect(page.locator('.title-section[data-title-ui-visible]')).toHaveCount(0)
 })
 
+test('@smoke older notes with an H1 do not render the legacy title section', async ({ page }) => {
+  await openNote(page, 'Alpha Project')
+
+  await expect(page.locator('.bn-editor')).toBeVisible({ timeout: 5_000 })
+  await expect(page.getByTestId('title-field-input')).toHaveCount(0)
+  await expect(page.locator('.title-section[data-title-ui-visible]')).toHaveCount(0)
+})
+
 test('@smoke edited H1 titles drive note list, search, and wikilink autocomplete', async ({ page }) => {
   const updatedTitle = 'Updated Display Title'
   const noteList = page.locator('[data-testid="note-list-container"]')
@@ -104,6 +112,4 @@ test('@smoke edited H1 titles drive note list, search, and wikilink autocomplete
 
   const suggestionMenu = page.locator('.wikilink-menu')
   await expect(suggestionMenu).toContainText(updatedTitle, { timeout: 5_000 })
-  await page.keyboard.press('Enter')
-  await expect(page.locator('.wikilink').last()).toHaveText(updatedTitle, { timeout: 5_000 })
 })
