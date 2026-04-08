@@ -277,11 +277,13 @@ function GitStatusPopup({
 }
 
 export function CommitBadge({ info }: { info: LastCommitInfo }) {
-  if (info.commitUrl) {
+  const commitUrl = info.commitUrl
+
+  if (commitUrl) {
     return (
       <span
         role="button"
-        onClick={() => openExternalUrl(info.commitUrl)}
+        onClick={() => openExternalUrl(commitUrl)}
         style={{ ...ICON_STYLE, color: 'var(--muted-foreground)', textDecoration: 'none', cursor: 'pointer', padding: '2px 4px', borderRadius: 3 }}
         title={`Open commit ${info.shortHash} on GitHub`}
         data-testid="status-commit-link"
