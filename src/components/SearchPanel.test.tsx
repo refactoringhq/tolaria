@@ -231,14 +231,15 @@ describe('SearchPanel', () => {
       <SearchPanel open={true} vaultPath="/vault" entries={MOCK_ENTRIES} onSelectNote={onSelectNote} onClose={onClose} />,
     )
 
-    fireEvent.change(screen.getByPlaceholderText('Search in all notes...'), { target: { value: 'api' } })
+    const input = screen.getByPlaceholderText('Search in all notes...')
+    fireEvent.change(input, { target: { value: 'api' } })
 
     await waitFor(() => {
       expect(screen.getByText('How to Design AI-first APIs')).toBeInTheDocument()
     })
 
     await act(async () => {
-      fireEvent.keyDown(window, { key: 'Enter' })
+      fireEvent.keyDown(input, { key: 'Enter' })
     })
 
     await waitFor(() => {

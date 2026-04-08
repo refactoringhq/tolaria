@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useLayoutEffect } from 'react'
 import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import type { SearchResult, VaultEntry } from '../types'
@@ -23,10 +23,8 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
 
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 50)
-  }, [open])
+  const resultsRef = useRef(results)
+  const selectedIndexRef = useRef(selectedIndex)
 
   useEffect(() => {
     if (!listRef.current) return
@@ -42,26 +40,38 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
     }
   }, [entries, onSelectNote, onClose])
 
+  useLayoutEffect(() => {
+    resultsRef.current = results
+    selectedIndexRef.current = selectedIndex
+  }, [results, selectedIndex])
+
+  useEffect(() => {
+    if (open) setTimeout(() => inputRef.current?.focus(), 50)
+  }, [open])
+
+  const handleKeyDown = useCallback((e: { key: string; preventDefault: () => void }) => {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      onClose()
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setSelectedIndex(i => Math.min(i + 1, resultsRef.current.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setSelectedIndex(i => Math.max(i - 1, 0))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      const result = resultsRef.current[selectedIndexRef.current]
+      if (result) handleSelect(result)
+    }
+  }, [handleSelect, onClose, setSelectedIndex])
+
   useEffect(() => {
     if (!open) return
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onClose()
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault()
-        setSelectedIndex(i => Math.min(i + 1, results.length - 1))
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault()
-        setSelectedIndex(i => Math.max(i - 1, 0))
-      } else if (e.key === 'Enter') {
-        e.preventDefault()
-        if (results[selectedIndex]) handleSelect(results[selectedIndex])
-      }
-    }
+    const handleKey = (e: KeyboardEvent) => handleKeyDown(e)
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [open, results, selectedIndex, handleSelect, setSelectedIndex, onClose])
+  }, [open, handleKeyDown])
 
   const typeEntryMap = useMemo(() => buildTypeEntryMap(entries), [entries])
   const entryLookup = useMemo(() => {
@@ -86,6 +96,7 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
           query={query}
           loading={loading}
           onChange={setQuery}
+          onKeyDown={handleKeyDown}
         />
         <SearchContent
           query={query}
@@ -110,10 +121,11 @@ interface SearchInputProps {
   query: string
   loading: boolean
   onChange: (value: string) => void
+  onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>
 }
 
 const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
-  function SearchInput({ query, loading, onChange }, ref) {
+  function SearchInput({ query, loading, onChange, onKeyDown }, ref) {
     return (
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
         <svg className="h-4 w-4 shrink-0 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -127,6 +139,7 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
           placeholder="Search in all notes..."
           value={query}
           onChange={e => onChange(e.target.value)}
+          onKeyDown={onKeyDown}
         />
         {loading && (
           <svg

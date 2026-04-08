@@ -13,6 +13,7 @@ import {
   buildChangesEntries, filterByQuery, filterGroupsByQuery, createNoteStatusResolver,
   isDeletedNoteEntry, isModifiedEntry, routeNoteClick, toggleSetMember,
 } from './noteListUtils'
+import type { DeletedNoteEntry } from './noteListUtils'
 import { useMultiSelect, type MultiSelectState } from '../../hooks/useMultiSelect'
 import { useNoteListKeyboard } from '../../hooks/useNoteListKeyboard'
 import { prefetchNoteContent } from '../../hooks/useTabManagement'
@@ -415,7 +416,7 @@ interface UseNoteListInteractionsParams {
   isChangesView: boolean
   onReplaceActiveTab: (entry: VaultEntry) => void
   onSelectNote: (entry: VaultEntry) => void
-  onOpenDeletedNote?: (entry: VaultEntry) => void
+  onOpenDeletedNote?: (entry: DeletedNoteEntry) => void
   onOpenInNewWindow?: (entry: VaultEntry) => void
   onAutoTriggerDiff?: () => void
   onDiscardFile?: (relativePath: string) => Promise<void>

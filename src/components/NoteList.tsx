@@ -3,6 +3,7 @@ import type { VaultEntry, SidebarSelection, ModifiedFile, NoteStatus, InboxPerio
 import type { NoteListFilter } from '../utils/noteListHelpers'
 import { countByFilter, countAllByFilter } from '../utils/noteListHelpers'
 import { NoteItem } from './NoteItem'
+import type { MultiSelectState } from '../hooks/useMultiSelect'
 import { BulkActionBar } from './BulkActionBar'
 import { NoteListHeader } from './note-list/NoteListHeader'
 import { FilterPills } from './note-list/FilterPills'
@@ -37,7 +38,7 @@ function useViewFlags(selection: SidebarSelection) {
 }
 
 function useBulkActions(
-  multiSelect: ReturnType<typeof useMultiSelect>,
+  multiSelect: MultiSelectState,
   onBulkArchive: NoteListProps['onBulkArchive'],
   onBulkDeletePermanently: NoteListProps['onBulkDeletePermanently'],
   isArchivedView: boolean,

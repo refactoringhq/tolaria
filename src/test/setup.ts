@@ -63,7 +63,17 @@ vi.mock('react-day-picker', () => ({
   getDefaultClassNames: () => ({}),
 }))
 
-// Mock react-virtuoso: JSDOM has no real viewport, so render all items directly
+function getVirtualizedIndexes(length: number): number[] {
+  if (length <= 200) return Array.from({ length }, (_, index) => index)
+
+  const edgeSize = 50
+  return [
+    ...Array.from({ length: edgeSize }, (_, index) => index),
+    ...Array.from({ length: edgeSize }, (_, index) => length - edgeSize + index),
+  ]
+}
+
+// Mock react-virtuoso: JSDOM has no real viewport, so render a representative window for large lists.
 vi.mock('react-virtuoso', () => ({
   Virtuoso: ({ data, itemContent, components }: {
     data?: unknown[]
@@ -71,10 +81,12 @@ vi.mock('react-virtuoso', () => ({
     components?: { Header?: ComponentType }
   }) => {
     const Header = components?.Header
+    const resolvedData = data ?? []
+    const renderedIndexes = getVirtualizedIndexes(resolvedData.length)
     return createElement('div', { 'data-testid': 'virtuoso-mock' },
       Header ? createElement(Header) : null,
-      data?.map((item: unknown, index: number) =>
-        createElement('div', { key: index }, itemContent?.(index, item))
+      renderedIndexes.map((index) =>
+        createElement('div', { key: index }, itemContent?.(index, resolvedData[index]))
       )
     )
   },
