@@ -117,4 +117,18 @@ describe('EditorContentLayout', () => {
     expect(titleRow?.querySelector('[data-testid="note-icon-display"]')).not.toBeNull()
     expect(titleRow?.querySelector('[data-testid="title-field-input"]')).not.toBeNull()
   })
+
+  it('shows the loading skeleton instead of stale editor chrome while switching tabs', () => {
+    const { container } = render(
+      <EditorContentLayout
+        {...createModel({
+          activeTab: null,
+          isLoadingNewTab: true,
+        })}
+      />,
+    )
+
+    expect(container.querySelector('.animate-pulse')).not.toBeNull()
+    expect(screen.queryByTestId('title-field-input')).not.toBeInTheDocument()
+  })
 })

@@ -302,7 +302,11 @@ export function EditorContentLayout(model: EditorContentModel) {
   } = model
 
   if (!activeTab) {
-    return <div className="flex flex-1 flex-col min-w-0 min-h-0" />
+    return (
+      <div className="flex flex-1 flex-col min-w-0 min-h-0">
+        {isLoadingNewTab && showEditor && <EditorLoadingSkeleton />}
+      </div>
+    )
   }
 
   return (

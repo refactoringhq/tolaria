@@ -49,6 +49,69 @@ async function loadNoteContent(path: string): Promise<string> {
 
 export type { Tab }
 
+function syncActiveTabPath(
+  activeTabPathRef: React.MutableRefObject<string | null>,
+  setActiveTabPath: React.Dispatch<React.SetStateAction<string | null>>,
+  path: string | null,
+) {
+  activeTabPathRef.current = path
+  setActiveTabPath(path)
+}
+
+function setSingleTab(
+  tabsRef: React.MutableRefObject<Tab[]>,
+  setTabs: React.Dispatch<React.SetStateAction<Tab[]>>,
+  nextTab: Tab,
+) {
+  tabsRef.current = [nextTab]
+  setTabs([nextTab])
+}
+
+function isAlreadyViewingPath(
+  tabsRef: React.MutableRefObject<Tab[]>,
+  activeTabPathRef: React.MutableRefObject<string | null>,
+  path: string,
+) {
+  return activeTabPathRef.current === path || tabsRef.current.some((tab) => tab.entry.path === path)
+}
+
+async function navigateToEntry(options: {
+  entry: VaultEntry
+  navSeqRef: React.MutableRefObject<number>
+  tabsRef: React.MutableRefObject<Tab[]>
+  activeTabPathRef: React.MutableRefObject<string | null>
+  setTabs: React.Dispatch<React.SetStateAction<Tab[]>>
+  setActiveTabPath: React.Dispatch<React.SetStateAction<string | null>>
+}) {
+  const {
+    entry,
+    navSeqRef,
+    tabsRef,
+    activeTabPathRef,
+    setTabs,
+    setActiveTabPath,
+  } = options
+
+  if (entry.fileKind === 'binary') return
+  if (isAlreadyViewingPath(tabsRef, activeTabPathRef, entry.path)) {
+    syncActiveTabPath(activeTabPathRef, setActiveTabPath, entry.path)
+    return
+  }
+
+  const seq = ++navSeqRef.current
+  syncActiveTabPath(activeTabPathRef, setActiveTabPath, entry.path)
+
+  try {
+    const content = await loadNoteContent(entry.path)
+    if (navSeqRef.current !== seq) return
+    setSingleTab(tabsRef, setTabs, { entry, content })
+  } catch (err) {
+    console.warn('Failed to load note content:', err)
+    if (navSeqRef.current !== seq) return
+    setSingleTab(tabsRef, setTabs, { entry, content: '' })
+  }
+}
+
 export function useTabManagement() {
   // Single-note model: tabs has 0 or 1 elements.
   const [tabs, setTabs] = useState<Tab[]>([])
@@ -63,64 +126,41 @@ export function useTabManagement() {
 
   /** Open a note — replaces the current note (single-note model). */
   const handleSelectNote = useCallback(async (entry: VaultEntry) => {
-    // Binary files cannot be opened
-    if (entry.fileKind === 'binary') return
-    // Already viewing this note — no-op
-    if (tabsRef.current.some(t => t.entry.path === entry.path)) {
-      setActiveTabPath(entry.path)
-      return
-    }
-    const seq = ++navSeqRef.current
-    try {
-      const content = await loadNoteContent(entry.path)
-      if (navSeqRef.current === seq) {
-        setTabs([{ entry, content }])
-        setActiveTabPath(entry.path)
-      }
-    } catch (err) {
-      console.warn('Failed to load note content:', err)
-      if (navSeqRef.current === seq) {
-        setTabs([{ entry, content: '' }])
-        setActiveTabPath(entry.path)
-      }
-    }
+    await navigateToEntry({
+      entry,
+      navSeqRef,
+      tabsRef,
+      activeTabPathRef,
+      setTabs,
+      setActiveTabPath,
+    })
   }, [])
 
-  const handleSwitchTab = useCallback((path: string) => { setActiveTabPath(path) }, [])
+  const handleSwitchTab = useCallback((path: string) => {
+    syncActiveTabPath(activeTabPathRef, setActiveTabPath, path)
+  }, [])
 
   /** Open a tab with known content — no IPC round-trip. Used for newly created notes. */
   const openTabWithContent = useCallback((entry: VaultEntry, content: string) => {
-    setTabs([{ entry, content }])
-    setActiveTabPath(entry.path)
+    setSingleTab(tabsRef, setTabs, { entry, content })
+    syncActiveTabPath(activeTabPathRef, setActiveTabPath, entry.path)
   }, [])
 
   const handleReplaceActiveTab = useCallback(async (entry: VaultEntry) => {
-    // Binary files cannot be opened
-    if (entry.fileKind === 'binary') return
-    // In single-note model, replace is the same as select
-    if (tabsRef.current.some(t => t.entry.path === entry.path)) {
-      setActiveTabPath(entry.path)
-      return
-    }
-    const seq = ++navSeqRef.current
-    try {
-      const content = await loadNoteContent(entry.path)
-      if (navSeqRef.current === seq) {
-        setTabs([{ entry, content }])
-        setActiveTabPath(entry.path)
-      }
-    } catch (err) {
-      console.warn('Failed to load note content:', err)
-      if (navSeqRef.current === seq) {
-        setTabs([{ entry, content: '' }])
-        setActiveTabPath(entry.path)
-      }
-    }
+    await navigateToEntry({
+      entry,
+      navSeqRef,
+      tabsRef,
+      activeTabPathRef,
+      setTabs,
+      setActiveTabPath,
+    })
   }, [])
 
   const closeAllTabs = useCallback(() => {
+    tabsRef.current = []
     setTabs([])
-    setActiveTabPath(null)
+    syncActiveTabPath(activeTabPathRef, setActiveTabPath, null)
   }, [])
 
   return {

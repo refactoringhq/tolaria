@@ -33,6 +33,26 @@ const makeEntry = (overrides: Partial<VaultEntry> = {}): VaultEntry => ({
   ...overrides,
 })
 
+type HookState = { current: ReturnType<typeof useTabManagement> }
+
+async function selectNote(result: HookState, overrides: Partial<VaultEntry>) {
+  await act(async () => {
+    await result.current.handleSelectNote(makeEntry(overrides))
+  })
+}
+
+async function replaceActiveNote(result: HookState, overrides: Partial<VaultEntry>) {
+  await act(async () => {
+    await result.current.handleReplaceActiveTab(makeEntry(overrides))
+  })
+}
+
+function expectSingleActiveTab(result: HookState, path: string) {
+  expect(result.current.tabs).toHaveLength(1)
+  expect(result.current.tabs[0].entry.path).toBe(path)
+  expect(result.current.activeTabPath).toBe(path)
+}
+
 describe('useTabManagement (single-note model)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -47,41 +67,47 @@ describe('useTabManagement (single-note model)', () => {
   describe('handleSelectNote', () => {
     it('opens a note and sets it active', async () => {
       const { result } = renderHook(() => useTabManagement())
-      const entry = makeEntry({ path: '/vault/note/a.md' })
+      await selectNote(result, { path: '/vault/note/a.md' })
+      expectSingleActiveTab(result, '/vault/note/a.md')
+    })
 
-      await act(async () => {
-        await result.current.handleSelectNote(entry)
+    it('switches the active path immediately while the next note is still loading', async () => {
+      const { mockInvoke } = await import('../mock-tauri')
+
+      let resolveContent: (value: string) => void
+      vi.mocked(mockInvoke).mockImplementationOnce(
+        () => new Promise<string>((resolve) => { resolveContent = resolve }),
+      )
+
+      const { result } = renderHook(() => useTabManagement())
+      void act(() => {
+        void result.current.handleSelectNote(makeEntry({ path: '/vault/note/pending.md', title: 'Pending' }))
       })
 
-      expect(result.current.tabs).toHaveLength(1)
-      expect(result.current.tabs[0].entry.path).toBe('/vault/note/a.md')
-      expect(result.current.activeTabPath).toBe('/vault/note/a.md')
+      expect(result.current.activeTabPath).toBe('/vault/note/pending.md')
+      expect(result.current.tabs).toEqual([])
+
+      await act(async () => {
+        resolveContent!('# Pending content')
+      })
+
+      expect(result.current.tabs[0].entry.path).toBe('/vault/note/pending.md')
+      expect(result.current.tabs[0].content).toBe('# Pending content')
     })
 
     it('replaces the current note when selecting a different one', async () => {
       const { result } = renderHook(() => useTabManagement())
-
-      await act(async () => {
-        await result.current.handleSelectNote(makeEntry({ path: '/vault/a.md', title: 'A' }))
-      })
-      await act(async () => {
-        await result.current.handleSelectNote(makeEntry({ path: '/vault/b.md', title: 'B' }))
-      })
-
-      expect(result.current.tabs).toHaveLength(1)
-      expect(result.current.tabs[0].entry.path).toBe('/vault/b.md')
-      expect(result.current.activeTabPath).toBe('/vault/b.md')
+      await selectNote(result, { path: '/vault/a.md', title: 'A' })
+      await selectNote(result, { path: '/vault/b.md', title: 'B' })
+      expectSingleActiveTab(result, '/vault/b.md')
     })
 
     it('is a no-op when selecting the already-open note', async () => {
       const { result } = renderHook(() => useTabManagement())
-      const entry = makeEntry({ path: '/vault/a.md' })
-
+      const entry = { path: '/vault/a.md' }
+      await selectNote(result, entry)
       await act(async () => {
-        await result.current.handleSelectNote(entry)
-      })
-      await act(async () => {
-        await result.current.handleSelectNote(entry)
+        await result.current.handleSelectNote(makeEntry(entry))
       })
 
       expect(result.current.tabs).toHaveLength(1)
@@ -93,11 +119,7 @@ describe('useTabManagement (single-note model)', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       const { result } = renderHook(() => useTabManagement())
-      const entry = makeEntry()
-
-      await act(async () => {
-        await result.current.handleSelectNote(entry)
-      })
+      await selectNote(result, {})
 
       expect(result.current.tabs).toHaveLength(1)
       expect(result.current.tabs[0].content).toBe('')
@@ -108,31 +130,17 @@ describe('useTabManagement (single-note model)', () => {
   describe('handleReplaceActiveTab', () => {
     it('replaces the current note with a new entry', async () => {
       const { result } = renderHook(() => useTabManagement())
-
-      await act(async () => {
-        await result.current.handleSelectNote(makeEntry({ path: '/vault/a.md', title: 'A' }))
-      })
-
-      const replacement = makeEntry({ path: '/vault/b.md', title: 'B' })
-      await act(async () => {
-        await result.current.handleReplaceActiveTab(replacement)
-      })
-
-      expect(result.current.tabs).toHaveLength(1)
-      expect(result.current.tabs[0].entry.path).toBe('/vault/b.md')
-      expect(result.current.activeTabPath).toBe('/vault/b.md')
+      await selectNote(result, { path: '/vault/a.md', title: 'A' })
+      await replaceActiveNote(result, { path: '/vault/b.md', title: 'B' })
+      expectSingleActiveTab(result, '/vault/b.md')
     })
 
     it('is a no-op when replacing with the same entry', async () => {
       const { result } = renderHook(() => useTabManagement())
-      const entry = makeEntry({ path: '/vault/a.md' })
-
+      const entry = { path: '/vault/a.md' }
+      await selectNote(result, entry)
       await act(async () => {
-        await result.current.handleSelectNote(entry)
-      })
-
-      await act(async () => {
-        await result.current.handleReplaceActiveTab(entry)
+        await result.current.handleReplaceActiveTab(makeEntry(entry))
       })
 
       expect(result.current.tabs).toHaveLength(1)
@@ -140,14 +148,8 @@ describe('useTabManagement (single-note model)', () => {
 
     it('opens a note when no note is active', async () => {
       const { result } = renderHook(() => useTabManagement())
-      const entry = makeEntry({ path: '/vault/a.md' })
-
-      await act(async () => {
-        await result.current.handleReplaceActiveTab(entry)
-      })
-
-      expect(result.current.tabs).toHaveLength(1)
-      expect(result.current.activeTabPath).toBe('/vault/a.md')
+      await replaceActiveNote(result, { path: '/vault/a.md' })
+      expectSingleActiveTab(result, '/vault/a.md')
     })
   })
 
@@ -189,10 +191,7 @@ describe('useTabManagement (single-note model)', () => {
   describe('closeAllTabs', () => {
     it('clears the note and active path', async () => {
       const { result } = renderHook(() => useTabManagement())
-
-      await act(async () => {
-        await result.current.handleSelectNote(makeEntry({ path: '/vault/a.md' }))
-      })
+      await selectNote(result, { path: '/vault/a.md' })
 
       act(() => {
         result.current.closeAllTabs()
@@ -212,9 +211,7 @@ describe('useTabManagement (single-note model)', () => {
       await vi.waitFor(() => expect(vi.mocked(mockInvoke)).toHaveBeenCalledTimes(1))
 
       const { result } = renderHook(() => useTabManagement())
-      await act(async () => {
-        await result.current.handleSelectNote(makeEntry({ path: '/vault/note/pre.md', title: 'Pre' }))
-      })
+      await selectNote(result, { path: '/vault/note/pre.md', title: 'Pre' })
 
       expect(result.current.tabs[0].content).toBe('# Prefetched content')
       expect(vi.mocked(mockInvoke)).toHaveBeenCalledTimes(1)
@@ -231,9 +228,7 @@ describe('useTabManagement (single-note model)', () => {
       vi.mocked(mockInvoke).mockResolvedValue('# Fresh')
 
       const { result } = renderHook(() => useTabManagement())
-      await act(async () => {
-        await result.current.handleSelectNote(makeEntry({ path: '/vault/note/stale.md', title: 'Stale' }))
-      })
+      await selectNote(result, { path: '/vault/note/stale.md', title: 'Stale' })
 
       expect(result.current.tabs[0].content).toBe('# Fresh')
       expect(vi.mocked(mockInvoke)).toHaveBeenCalledTimes(2)
