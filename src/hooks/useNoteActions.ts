@@ -27,6 +27,8 @@ export interface NoteActionsConfig {
   replaceEntry?: (oldPath: string, patch: Partial<VaultEntry> & { path: string }) => void
   /** Called after frontmatter is written to disk — used for live-reloading theme CSS vars. */
   onFrontmatterContentChanged?: (path: string, content: string) => void
+  /** Called after a frontmatter mutation is fully persisted, including follow-up renames. */
+  onFrontmatterPersisted?: () => void
 }
 
 function isTitleKey(key: string): boolean {
@@ -42,6 +44,12 @@ interface TitleRenameDeps {
   handleSwitchTab: (path: string) => void
   setToastMessage: (msg: string | null) => void
   updateTabContent: (path: string, content: string) => void
+}
+
+function applyFrontmatterCallbacks(config: NoteActionsConfig, path: string, newContent: string | undefined): boolean {
+  if (!newContent) return false
+  config.onFrontmatterContentChanged?.(path, newContent)
+  return true
 }
 
 async function renameAfterTitleChange(path: string, newTitle: string, deps: TitleRenameDeps): Promise<void> {
@@ -69,6 +77,20 @@ function navigateWikilink(entries: VaultEntry[], target: string, selectNote: (e:
   const found = resolveEntry(entries, target)
   if (found) selectNote(found)
   else console.warn(`Navigation target not found: ${target}`)
+}
+
+async function maybeRenameAfterFrontmatterUpdate(
+  path: string,
+  key: string,
+  value: FrontmatterValue,
+  deps: TitleRenameDeps,
+): Promise<void> {
+  if (!shouldRenameOnTitleUpdate(key, value)) return
+  try {
+    await renameAfterTitleChange(path, value, deps)
+  } catch (err) {
+    console.error('Failed to rename note after title change:', err)
+  }
 }
 
 export function useNoteActions(config: NoteActionsConfig) {
@@ -108,25 +130,22 @@ export function useNoteActions(config: NoteActionsConfig) {
     createTypeEntrySilent: creation.createTypeEntrySilent,
     handleUpdateFrontmatter: useCallback(async (path: string, key: string, value: FrontmatterValue, options?: FrontmatterOpOptions) => {
       const newContent = await runFrontmatterOp('update', path, key, value, options)
-      if (newContent) config.onFrontmatterContentChanged?.(path, newContent)
-      if (shouldRenameOnTitleUpdate(key, value)) {
-        try {
-          await renameAfterTitleChange(path, value, {
-            vaultPath: config.vaultPath, tabsRef: rename.tabsRef, replaceEntry: config.replaceEntry,
-            setTabs, activeTabPathRef, handleSwitchTab, setToastMessage, updateTabContent,
-          })
-        } catch (err) {
-          console.error('Failed to rename note after title change:', err)
-        }
-      }
+      if (!applyFrontmatterCallbacks(config, path, newContent)) return
+      await maybeRenameAfterFrontmatterUpdate(path, key, value, {
+        vaultPath: config.vaultPath, tabsRef: rename.tabsRef, replaceEntry: config.replaceEntry,
+        setTabs, activeTabPathRef, handleSwitchTab, setToastMessage, updateTabContent,
+      })
+      config.onFrontmatterPersisted?.()
     }, [runFrontmatterOp, config, rename.tabsRef, setTabs, activeTabPathRef, handleSwitchTab, setToastMessage, updateTabContent]),
     handleDeleteProperty: useCallback(async (path: string, key: string, options?: FrontmatterOpOptions) => {
       const newContent = await runFrontmatterOp('delete', path, key, undefined, options)
-      if (newContent) config.onFrontmatterContentChanged?.(path, newContent)
+      if (!applyFrontmatterCallbacks(config, path, newContent)) return
+      config.onFrontmatterPersisted?.()
     }, [runFrontmatterOp, config]),
     handleAddProperty: useCallback(async (path: string, key: string, value: FrontmatterValue) => {
       const newContent = await runFrontmatterOp('update', path, key, value)
-      if (newContent) config.onFrontmatterContentChanged?.(path, newContent)
+      if (!applyFrontmatterCallbacks(config, path, newContent)) return
+      config.onFrontmatterPersisted?.()
     }, [runFrontmatterOp, config]),
     handleRenameNote: rename.handleRenameNote,
   }

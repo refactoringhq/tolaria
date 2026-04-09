@@ -641,4 +641,3 @@ describe('useNoteActions hook', () => {
     })
   })
 })
-
