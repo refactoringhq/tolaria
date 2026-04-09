@@ -395,12 +395,15 @@ function useTabSwapEffect(options: {
     if (!rememberPendingTabArrival(activeTabPath, activeTab, pendingTabArrivalPathRef)) {
       return
     }
+    const targetPath = activeTabPath
+    const readyActiveTab = activeTab
+    if (!targetPath || !readyActiveTab) return
 
     scheduleTabSwap({
       editor,
       cache,
-      targetPath: activeTabPath,
-      activeTab: activeTab!,
+      targetPath,
+      activeTab: readyActiveTab,
       pendingSwapRef,
       prevActivePathRef,
       rawSwapPendingRef,
