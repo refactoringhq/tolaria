@@ -86,13 +86,17 @@ export function SettingsPanel({
   )
 }
 
+type SettingsPanelInnerProps = Omit<SettingsPanelProps, 'open' | 'explicitOrganizationEnabled'> & {
+  explicitOrganizationEnabled: boolean
+}
+
 function SettingsPanelInner({
   settings,
   onSave,
   explicitOrganizationEnabled,
   onSaveExplicitOrganization,
   onClose,
-}: Omit<SettingsPanelProps, 'open'>) {
+}: SettingsPanelInnerProps) {
   const [githubToken, setGithubToken] = useState(settings.github_token)
   const [githubUsername, setGithubUsername] = useState(settings.github_username)
   const [pullInterval, setPullInterval] = useState(settings.auto_pull_interval_minutes ?? 5)
