@@ -1,7 +1,9 @@
 import { Bell, FileText, Package, Settings } from 'lucide-react'
+import { Megaphone } from '@phosphor-icons/react'
 import type { ClaudeCodeStatus } from '../../hooks/useClaudeCodeStatus'
 import type { McpStatus } from '../../hooks/useMcpStatus'
 import type { GitRemoteStatus, LastCommitInfo, SyncStatus } from '../../types'
+import { Button } from '@/components/ui/button'
 import {
   ClaudeCodeBadge,
   CommitBadge,
@@ -49,6 +51,7 @@ interface StatusBarSecondarySectionProps {
   noteCount: number
   zoomLevel: number
   onZoomReset?: () => void
+  onOpenFeedback?: () => void
   onOpenSettings?: () => void
 }
 
@@ -127,6 +130,7 @@ export function StatusBarSecondarySection({
   noteCount,
   zoomLevel,
   onZoomReset,
+  onOpenFeedback,
   onOpenSettings,
 }: StatusBarSecondarySectionProps) {
   return (
@@ -147,6 +151,20 @@ export function StatusBarSecondarySection({
         >
           {zoomLevel}%
         </span>
+      )}
+      {onOpenFeedback && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          className="h-6 px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+          onClick={onOpenFeedback}
+          title="Share feedback"
+          data-testid="status-feedback"
+        >
+          <Megaphone size={14} />
+          Feedback
+        </Button>
       )}
       <span style={DISABLED_STYLE} title="Coming soon">
         <Bell size={14} />

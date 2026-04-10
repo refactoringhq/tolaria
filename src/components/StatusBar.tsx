@@ -34,6 +34,7 @@ interface StatusBarProps {
   onOpenConflictResolver?: () => void
   zoomLevel?: number
   onZoomReset?: () => void
+  onOpenFeedback?: () => void
   buildNumber?: string
   onCheckForUpdates?: () => void
   onRemoveVault?: (path: string) => void
@@ -67,6 +68,7 @@ export function StatusBar({
   onOpenConflictResolver,
   zoomLevel = 100,
   onZoomReset,
+  onOpenFeedback,
   buildNumber,
   onCheckForUpdates,
   onRemoveVault,
@@ -131,6 +133,7 @@ export function StatusBar({
         noteCount={noteCount}
         zoomLevel={zoomLevel}
         onZoomReset={onZoomReset}
+        onOpenFeedback={onOpenFeedback}
         onOpenSettings={onOpenSettings}
       />
     </footer>

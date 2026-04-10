@@ -39,6 +39,7 @@ interface CommandRegistryConfig {
   onCreateNoteOfType: (type: string) => void
   onSave: () => void
   onOpenSettings: () => void
+  onOpenFeedback?: () => void
   onOpenVault?: () => void
   onCreateType?: () => void
   onDeleteNote: (path: string) => void
@@ -76,7 +77,7 @@ interface CommandRegistryConfig {
 export function useCommandRegistry(config: CommandRegistryConfig): import('./commands/types').CommandAction[] {
   const {
     activeTabPath, entries, modifiedCount,
-    onQuickOpen, onCreateNote, onCreateNoteOfType, onSave, onOpenSettings,
+    onQuickOpen, onCreateNote, onCreateNoteOfType, onSave, onOpenSettings, onOpenFeedback,
     onDeleteNote, onArchiveNote, onUnarchiveNote,
     onCommitPush, onPull, onResolveConflicts, onSetViewMode, onToggleInspector, onToggleDiff, onToggleRawEditor, onToggleAIChat, onOpenVault,
     activeNoteModified,
@@ -124,14 +125,14 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
     }),
     ...buildSettingsCommands({
       mcpStatus, vaultCount, isGettingStartedHidden,
-      onOpenSettings, onOpenVault, onRemoveActiveVault, onRestoreGettingStarted,
+      onOpenSettings, onOpenFeedback, onOpenVault, onRemoveActiveVault, onRestoreGettingStarted,
       onCheckForUpdates, onInstallMcp, onReloadVault, onRepairVault,
     }),
     ...buildTypeCommands(vaultTypes, onCreateNoteOfType, onSelect),
     ...buildFilterCommands({ isSectionGroup, noteListFilter, onSetNoteListFilter }),
   ], [
     hasActiveNote, activeTabPath, isArchived, modifiedCount, activeNoteModified,
-    onQuickOpen, onCreateNote, onCreateNoteOfType, onCreateType, onSave, onOpenSettings,
+    onQuickOpen, onCreateNote, onCreateNoteOfType, onCreateType, onSave, onOpenSettings, onOpenFeedback,
     onDeleteNote, onArchiveNote, onUnarchiveNote,
     onCommitPush, onPull, onResolveConflicts, onSetViewMode, onToggleInspector, onToggleDiff, onToggleRawEditor, onToggleAIChat, onOpenVault,
     onCheckForUpdates,

@@ -17,6 +17,7 @@ import { SettingsPanel } from './components/SettingsPanel'
 import { GitHubVaultModal } from './components/GitHubVaultModal'
 import { WelcomeScreen } from './components/WelcomeScreen'
 import { TelemetryConsentDialog } from './components/TelemetryConsentDialog'
+import { FeedbackDialog } from './components/FeedbackDialog'
 import { useTelemetry } from './hooks/useTelemetry'
 import { useMcpStatus } from './hooks/useMcpStatus'
 import { useClaudeCodeStatus } from './hooks/useClaudeCodeStatus'
@@ -91,6 +92,9 @@ function App() {
   const visibleNotesRef = useRef<VaultEntry[]>([])
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const dialogs = useDialogs()
+  const [showFeedback, setShowFeedback] = useState(false)
+  const openFeedback = useCallback(() => setShowFeedback(true), [])
+  const closeFeedback = useCallback(() => setShowFeedback(false), [])
 
   // onSwitch closure captures `notes` declared below — safe because it's only
   // called on user interaction, never during render (refs inside the hook
@@ -509,6 +513,7 @@ function App() {
     onCreateNoteOfType: notes.handleCreateNoteImmediate,
     onSave: appSave.handleSave,
     onOpenSettings: dialogs.openSettings,
+    onOpenFeedback: openFeedback,
     onDeleteNote: deleteActions.handleDeleteNote,
     onArchiveNote: entryActions.handleArchiveNote, onUnarchiveNote: entryActions.handleUnarchiveNote,
     onCommitPush: commitFlow.openCommitDialog,
@@ -692,7 +697,7 @@ function App() {
       </div>
       <UpdateBanner status={updateStatus} actions={updateActions} />
       <RenameDetectedBanner renames={detectedRenames} onUpdate={handleUpdateWikilinks} onDismiss={handleDismissRenames} />
-      <StatusBar noteCount={vault.entries.length} modifiedCount={vault.modifiedFiles.length} vaultPath={vaultSwitcher.vaultPath} vaults={vaultSwitcher.allVaults} onSwitchVault={vaultSwitcher.switchVault} onOpenSettings={dialogs.openSettings} onOpenLocalFolder={vaultSwitcher.handleOpenLocalFolder} onConnectGitHub={dialogs.openGitHubVault} onClickPending={() => handleSetSelection({ kind: 'filter', filter: 'changes' })} onClickPulse={() => handleSetSelection({ kind: 'filter', filter: 'pulse' })} onCommitPush={commitFlow.openCommitDialog} isGitVault={!vault.modifiedFilesError} hasGitHub={!!settings.github_token} syncStatus={autoSync.syncStatus} lastSyncTime={autoSync.lastSyncTime} conflictCount={autoSync.conflictFiles.length} lastCommitInfo={autoSync.lastCommitInfo} remoteStatus={autoSync.remoteStatus} onTriggerSync={autoSync.triggerSync} onPullAndPush={autoSync.pullAndPush} onOpenConflictResolver={conflictFlow.handleOpenConflictResolver} zoomLevel={zoom.zoomLevel} onZoomReset={zoom.zoomReset} buildNumber={buildNumber} onCheckForUpdates={handleCheckForUpdates} onRemoveVault={vaultSwitcher.removeVault} mcpStatus={mcpStatus} onInstallMcp={installMcp} claudeCodeStatus={claudeCodeStatus} claudeCodeVersion={claudeCodeVersion} />
+      <StatusBar noteCount={vault.entries.length} modifiedCount={vault.modifiedFiles.length} vaultPath={vaultSwitcher.vaultPath} vaults={vaultSwitcher.allVaults} onSwitchVault={vaultSwitcher.switchVault} onOpenSettings={dialogs.openSettings} onOpenFeedback={openFeedback} onOpenLocalFolder={vaultSwitcher.handleOpenLocalFolder} onConnectGitHub={dialogs.openGitHubVault} onClickPending={() => handleSetSelection({ kind: 'filter', filter: 'changes' })} onClickPulse={() => handleSetSelection({ kind: 'filter', filter: 'pulse' })} onCommitPush={commitFlow.openCommitDialog} isGitVault={!vault.modifiedFilesError} hasGitHub={!!settings.github_token} syncStatus={autoSync.syncStatus} lastSyncTime={autoSync.lastSyncTime} conflictCount={autoSync.conflictFiles.length} lastCommitInfo={autoSync.lastCommitInfo} remoteStatus={autoSync.remoteStatus} onTriggerSync={autoSync.triggerSync} onPullAndPush={autoSync.pullAndPush} onOpenConflictResolver={conflictFlow.handleOpenConflictResolver} zoomLevel={zoom.zoomLevel} onZoomReset={zoom.zoomReset} buildNumber={buildNumber} onCheckForUpdates={handleCheckForUpdates} onRemoveVault={vaultSwitcher.removeVault} mcpStatus={mcpStatus} onInstallMcp={installMcp} claudeCodeStatus={claudeCodeStatus} claudeCodeVersion={claudeCodeVersion} />
       <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
       <QuickOpenPalette open={dialogs.showQuickOpen} entries={vault.entries} onSelect={notes.handleSelectNote} onClose={dialogs.closeQuickOpen} />
       <CommandPalette open={dialogs.showCommandPalette} commands={commands} onClose={dialogs.closeCommandPalette} />
@@ -712,6 +717,7 @@ function App() {
         onClose={conflictFlow.handleCloseConflictResolver}
       />
       <SettingsPanel open={dialogs.showSettings} settings={settings} onSave={saveSettings} onClose={dialogs.closeSettings} />
+      <FeedbackDialog open={showFeedback} onClose={closeFeedback} />
       <GitHubVaultModal
         open={dialogs.showGitHubVault}
         githubToken={settings.github_token}

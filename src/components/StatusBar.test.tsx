@@ -51,6 +51,19 @@ describe('StatusBar', () => {
     expect(screen.queryByText('main')).not.toBeInTheDocument()
   })
 
+  it('shows Feedback button when callback is provided', () => {
+    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onOpenFeedback={vi.fn()} />)
+    expect(screen.getByTestId('status-feedback')).toBeInTheDocument()
+    expect(screen.getByText('Feedback')).toBeInTheDocument()
+  })
+
+  it('calls onOpenFeedback when Feedback is clicked', () => {
+    const onOpenFeedback = vi.fn()
+    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onOpenFeedback={onOpenFeedback} />)
+    fireEvent.click(screen.getByTestId('status-feedback'))
+    expect(onOpenFeedback).toHaveBeenCalledOnce()
+  })
+
   it('shows clickable commit hash that opens URL via openExternalUrl', () => {
     render(
       <StatusBar

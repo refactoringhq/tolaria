@@ -5,6 +5,7 @@ interface SettingsCommandsConfig {
   vaultCount?: number
   isGettingStartedHidden?: boolean
   onOpenSettings: () => void
+  onOpenFeedback?: () => void
   onOpenVault?: () => void
   onRemoveActiveVault?: () => void
   onRestoreGettingStarted?: () => void
@@ -17,12 +18,13 @@ interface SettingsCommandsConfig {
 export function buildSettingsCommands(config: SettingsCommandsConfig): CommandAction[] {
   const {
     mcpStatus, vaultCount, isGettingStartedHidden,
-    onOpenSettings, onOpenVault, onRemoveActiveVault, onRestoreGettingStarted,
+    onOpenSettings, onOpenFeedback, onOpenVault, onRemoveActiveVault, onRestoreGettingStarted,
     onCheckForUpdates, onInstallMcp, onReloadVault, onRepairVault,
   } = config
 
   return [
     { id: 'open-settings', label: 'Open Settings', group: 'Settings', shortcut: '⌘,', keywords: ['preferences', 'config'], enabled: true, execute: onOpenSettings },
+    { id: 'give-feedback', label: 'Give Feedback', group: 'Settings', keywords: ['feedback', 'issue', 'bug', 'github', 'report'], enabled: !!onOpenFeedback, execute: () => onOpenFeedback?.() },
     { id: 'open-vault', label: 'Open Vault…', group: 'Settings', keywords: ['vault', 'folder', 'switch', 'open', 'workspace'], enabled: true, execute: () => onOpenVault?.() },
     { id: 'remove-vault', label: 'Remove Vault from List', group: 'Settings', keywords: ['vault', 'remove', 'disconnect', 'hide'], enabled: (vaultCount ?? 0) > 1 && !!onRemoveActiveVault, execute: () => onRemoveActiveVault?.() },
     { id: 'restore-getting-started', label: 'Restore Getting Started Vault', group: 'Settings', keywords: ['vault', 'restore', 'demo', 'getting started', 'reset'], enabled: !!isGettingStartedHidden && !!onRestoreGettingStarted, execute: () => onRestoreGettingStarted?.() },

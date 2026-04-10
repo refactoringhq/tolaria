@@ -23,6 +23,7 @@ interface AppCommandsConfig {
   onCreateNoteOfType: (type: string) => void
   onSave: () => void
   onOpenSettings: () => void
+  onOpenFeedback?: () => void
   onDeleteNote: (path: string) => void
   onArchiveNote: (path: string) => void
   onUnarchiveNote: (path: string) => void
@@ -171,6 +172,7 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     onCreateNoteOfType: config.onCreateNoteOfType,
     onSave: config.onSave,
     onOpenSettings: config.onOpenSettings,
+    onOpenFeedback: config.onOpenFeedback,
     onDeleteNote: config.onDeleteNote,
     onArchiveNote: config.onArchiveNote,
     onUnarchiveNote: config.onUnarchiveNote,

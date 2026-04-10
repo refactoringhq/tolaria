@@ -200,6 +200,19 @@ describe('useCommandRegistry', () => {
     expect(findCommand(result.current, 'toggle-organized')?.shortcut).toBe('⌘E')
     expect(findCommand(result.current, 'archive-note')?.shortcut).toBeUndefined()
   })
+
+  it('includes Give Feedback in the Settings group when available', () => {
+    const onOpenFeedback = vi.fn()
+    const config = makeConfig({ onOpenFeedback })
+    const { result } = renderHook(() => useCommandRegistry(config))
+    const cmd = findCommand(result.current, 'give-feedback')
+    expect(cmd).toBeDefined()
+    expect(cmd!.group).toBe('Settings')
+    expect(cmd!.enabled).toBe(true)
+
+    cmd!.execute()
+    expect(onOpenFeedback).toHaveBeenCalledOnce()
+  })
 })
 
 describe('pluralizeType', () => {
