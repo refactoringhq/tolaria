@@ -163,32 +163,69 @@ function StandardNoteContent({
     <>
       {/* eslint-disable-next-line react-hooks/static-components -- icon lookup from static map, no internal state */}
       <TypeIcon width={14} height={14} className="absolute right-3 top-2.5" style={{ color: typeColor }} data-testid="type-icon" />
-      <div className="pr-5">
-        <div className={cn('truncate text-[13px]', isBinary ? 'text-muted-foreground' : 'text-foreground', isSelected && !isBinary ? 'font-semibold' : 'font-medium')}>
-          {noteStatus !== 'clean' && !isBinary && <StatusDot noteStatus={noteStatus} />}
-          <NoteTitleIcon icon={entry.icon} size={15} className="mr-1" testId="note-title-icon" />
-          {entry.title}
-          {!isBinary && <StateBadge archived={entry.archived} />}
-        </div>
-      </div>
-      {entry.snippet && !isBinary && (
-        <div className="mt-0.5 text-[12px] leading-[1.5] text-muted-foreground" data-testid="note-snippet" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-          {entry.snippet}
-        </div>
-      )}
-      {!isBinary && displayProps.length > 0 && (
-        <PropertyChips
+      <div className="space-y-2 pr-5" data-testid="note-content-stack">
+        <NoteTitleRow
           entry={entry}
-          displayProps={displayProps}
-          allEntries={allEntries}
-          typeEntryMap={typeEntryMap}
-          onOpenNote={onClickNote}
+          isBinary={isBinary}
+          isSelected={isSelected}
+          noteStatus={noteStatus}
         />
-      )}
-      {!isBinary && (
-        <div className="mt-0.5 text-[10px] text-muted-foreground">{relativeDate(getDisplayDate(entry))}</div>
-      )}
+        {!isBinary && entry.snippet && (
+          <div
+            className="text-[12px] leading-[1.5] text-muted-foreground"
+            data-testid="note-snippet"
+            style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+          >
+            {entry.snippet}
+          </div>
+        )}
+        {!isBinary && displayProps.length > 0 && (
+          <PropertyChips
+            entry={entry}
+            displayProps={displayProps}
+            allEntries={allEntries}
+            typeEntryMap={typeEntryMap}
+            onOpenNote={onClickNote}
+          />
+        )}
+        {!isBinary && <NoteDateRow entry={entry} />}
+      </div>
     </>
+  )
+}
+
+function NoteTitleRow({
+  entry,
+  isBinary,
+  isSelected,
+  noteStatus,
+}: {
+  entry: VaultEntry
+  isBinary: boolean
+  isSelected: boolean
+  noteStatus: NoteStatus
+}) {
+  return (
+    <div className={cn('truncate text-[13px]', isBinary ? 'text-muted-foreground' : 'text-foreground', isSelected && !isBinary ? 'font-semibold' : 'font-medium')}>
+      {noteStatus !== 'clean' && !isBinary && <StatusDot noteStatus={noteStatus} />}
+      <NoteTitleIcon icon={entry.icon} size={15} className="mr-1" testId="note-title-icon" />
+      {entry.title}
+      {!isBinary && <StateBadge archived={entry.archived} />}
+    </div>
+  )
+}
+
+function NoteDateRow({ entry }: { entry: VaultEntry }) {
+  const modifiedLabel = relativeDate(getDisplayDate(entry))
+  const createdLabel = entry.createdAt ? `Created ${relativeDate(entry.createdAt)}` : null
+
+  if (!modifiedLabel && !createdLabel) return null
+
+  return (
+    <div className="flex items-center justify-between gap-3 text-[10px] text-muted-foreground" data-testid="note-date-row">
+      <span>{modifiedLabel}</span>
+      {createdLabel && <span className="shrink-0">{createdLabel}</span>}
+    </div>
   )
 }
 

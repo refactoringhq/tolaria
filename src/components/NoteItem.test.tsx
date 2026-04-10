@@ -12,6 +12,8 @@ const { openExternalUrl } = await import('../utils/url') as typeof import('../ut
   openExternalUrl: ReturnType<typeof vi.fn>
 }
 
+const NOW_SECONDS = 1_744_286_400
+
 describe('NoteItem', () => {
   beforeEach(() => {
     openExternalUrl.mockClear()
@@ -85,6 +87,60 @@ describe('NoteItem', () => {
     expect(screen.getByText('My Note')).toBeInTheDocument()
     expect(screen.queryByText('note.md')).not.toBeInTheDocument()
     expect(screen.queryByTestId('change-status-icon')).not.toBeInTheDocument()
+  })
+
+  it('adds more breathing room between note sections', () => {
+    const entry = makeEntry({
+      title: 'Spaced note',
+      snippet: 'Body preview',
+      createdAt: NOW_SECONDS - 86400 * 3,
+      modifiedAt: NOW_SECONDS - 86400,
+      properties: { Status: 'Active' },
+    })
+
+    render(
+      <NoteItem
+        entry={entry}
+        isSelected={false}
+        typeEntryMap={{}}
+        displayPropsOverride={['Status']}
+        onClickNote={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByTestId('note-content-stack').className).toContain('space-y-2')
+  })
+
+  it('shows created date on the right side of the date row when available', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(NOW_SECONDS * 1000))
+    const entry = makeEntry({
+      title: 'Dated note',
+      createdAt: NOW_SECONDS - 86400 * 5,
+      modifiedAt: NOW_SECONDS - 86400 * 2,
+    })
+
+    render(<NoteItem entry={entry} isSelected={false} typeEntryMap={{}} onClickNote={vi.fn()} />)
+
+    const dateRow = screen.getByTestId('note-date-row')
+    expect(dateRow.className).toContain('justify-between')
+    expect(dateRow).toHaveTextContent('2d ago')
+    expect(dateRow).toHaveTextContent('Created 5d ago')
+  })
+
+  it('leaves the right side empty when no creation date exists', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(NOW_SECONDS * 1000))
+    const entry = makeEntry({
+      title: 'Modified note',
+      createdAt: null,
+      modifiedAt: NOW_SECONDS - 3600,
+    })
+
+    render(<NoteItem entry={entry} isSelected={false} typeEntryMap={{}} onClickNote={vi.fn()} />)
+
+    expect(screen.getByTestId('note-date-row')).toHaveTextContent('1h ago')
+    expect(screen.queryByText(/Created /)).not.toBeInTheDocument()
   })
 
   it('colors relationship chips by target type and opens the related note on Cmd+click only', () => {
