@@ -35,6 +35,13 @@ describe('EditableValue', () => {
     expect(onStartEdit).toHaveBeenCalled()
   })
 
+  it('uses a full-width truncating layout in view mode', () => {
+    render(<EditableValue value="A very long property value" onSave={onSave} onCancel={onCancel} isEditing={false} onStartEdit={onStartEdit} />)
+    const value = screen.getByText('A very long property value')
+    expect(value.parentElement).toHaveClass('w-full', 'overflow-hidden')
+    expect(value).toHaveClass('truncate')
+  })
+
   it('shows input in editing mode', () => {
     render(<EditableValue value="Active" onSave={onSave} onCancel={onCancel} isEditing={true} onStartEdit={onStartEdit} />)
     const input = screen.getByDisplayValue('Active')
@@ -168,6 +175,11 @@ describe('TagPillList', () => {
     fireEvent.blur(input)
     expect(onSave).not.toHaveBeenCalled()
   })
+
+  it('truncates long pill labels independently', () => {
+    render(<TagPillList items={['A very long property list value']} onSave={onSave} label="Tags" />)
+    expect(screen.getByText('A very long property list value')).toHaveClass('truncate')
+  })
 })
 
 describe('isUrlValue', () => {
@@ -236,6 +248,14 @@ describe('UrlValue', () => {
     render(<UrlValue value="example.com" onSave={onSave} onCancel={onCancel} isEditing={false} onStartEdit={onStartEdit} />)
     fireEvent.click(screen.getByTestId('url-link'))
     expect(openExternalUrl).toHaveBeenCalledWith('https://example.com')
+  })
+
+  it('uses a flexible truncating layout for long URL values', () => {
+    render(<UrlValue value="https://example.com/very/long/path/that/needs/truncation" onSave={onSave} onCancel={onCancel} isEditing={false} onStartEdit={onStartEdit} />)
+    const link = screen.getByTestId('url-link')
+    const value = screen.getByText('https://example.com/very/long/path/that/needs/truncation')
+    expect(link).toHaveClass('flex-1', 'overflow-hidden')
+    expect(value).toHaveClass('truncate')
   })
 
   it('does not open malformed URL', () => {

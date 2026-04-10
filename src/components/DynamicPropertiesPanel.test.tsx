@@ -700,6 +700,22 @@ describe('DynamicPropertiesPanel', () => {
       expect(screen.getByTestId('url-link')).toHaveTextContent('https://example.com')
     })
 
+    it('gives long URL values a truncating value-cell layout inside the properties panel', () => {
+      render(
+        <DynamicPropertiesPanel
+          entry={makeEntry()}
+          content=""
+          frontmatter={{ url: 'https://example.com/very/long/path/that/should/truncate' }}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )
+
+      const link = screen.getByTestId('url-link')
+      const value = screen.getByText('https://example.com/very/long/path/that/should/truncate')
+      expect(link).toHaveClass('flex-1', 'overflow-hidden')
+      expect(value).toHaveClass('truncate')
+    })
+
     it('renders bare domain values as URL links', () => {
       render(
         <DynamicPropertiesPanel

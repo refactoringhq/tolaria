@@ -64,14 +64,14 @@ export function UrlValue({
   }
 
   return (
-    <span className="group/url flex min-w-0 max-w-full items-center gap-1">
+    <span className="group/url flex w-full min-w-0 items-center gap-1">
       <span
-        className="inline-flex h-6 min-w-0 cursor-pointer items-center truncate rounded-md px-2 text-right text-[12px] text-[var(--accent-blue)] underline decoration-[var(--accent-blue)]/40 transition-colors hover:decoration-[var(--accent-blue)]"
+        className="inline-flex h-6 min-w-0 flex-1 cursor-pointer items-center justify-end overflow-hidden rounded-md px-2 text-right text-[12px] text-[var(--accent-blue)] underline decoration-[var(--accent-blue)]/40 transition-colors hover:decoration-[var(--accent-blue)]"
         onClick={handleOpen}
         title={value}
         data-testid="url-link"
       >
-        {value || '\u2014'}
+        <span className="min-w-0 truncate">{value || '\u2014'}</span>
       </span>
       <button
         className="shrink-0 border-none bg-transparent p-0 text-[12px] leading-none text-muted-foreground opacity-0 transition-all hover:text-foreground group-hover/url:opacity-100"
@@ -125,11 +125,11 @@ export function EditableValue({
 
   return (
     <span
-      className="inline-flex h-6 min-w-0 max-w-full cursor-pointer items-center truncate rounded-md px-2 text-right text-[12px] text-secondary-foreground transition-colors hover:bg-muted"
+      className="inline-flex h-6 w-full min-w-0 cursor-pointer items-center justify-end overflow-hidden rounded-md px-2 text-right text-[12px] text-secondary-foreground transition-colors hover:bg-muted"
       onClick={onStartEdit}
       title={value || 'Click to edit'}
     >
-      {value || '\u2014'}
+      <span className="min-w-0 truncate">{value || '\u2014'}</span>
     </span>
   )
 }
@@ -212,7 +212,7 @@ export function TagPillList({
         ) : (
           <span
             key={idx}
-            className="group/pill relative inline-flex h-6 cursor-pointer items-center rounded-md transition-colors"
+            className="group/pill relative inline-flex h-6 max-w-full min-w-0 cursor-pointer items-center overflow-hidden rounded-md transition-colors"
             style={{
               ...getTagStyle(item),
               backgroundColor: getTagStyle(item).bg,
@@ -223,7 +223,7 @@ export function TagPillList({
             onClick={() => handleStartEdit(idx)}
             title="Click to edit"
           >
-            {item}
+            <span className="min-w-0 truncate pr-4">{item}</span>
             <button
               className="absolute right-0.5 top-1/2 flex h-3.5 w-3.5 -translate-y-1/2 items-center justify-center rounded-full border-none p-0 text-[10px] leading-none opacity-0 transition-all hover:bg-[var(--accent-red-light)] hover:text-[var(--accent-red)] group-hover/pill:opacity-100"
               style={{ color: getTagStyle(item).color, backgroundColor: getTagStyle(item).bg }}
