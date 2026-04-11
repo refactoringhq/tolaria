@@ -89,15 +89,23 @@ export interface NoteContentParams {
   type: string
   status: string | null
   template?: string | null
+  initialEmptyHeading?: boolean
 }
 
-export function buildNoteContent({ title, type, status, template }: NoteContentParams): string {
+function buildNoteBody({ template, initialEmptyHeading }: Pick<NoteContentParams, 'template' | 'initialEmptyHeading'>): string {
+  if (initialEmptyHeading) {
+    return template ? `\n# \n\n${template}` : '\n# \n\n'
+  }
+  return template ? `\n${template}` : ''
+}
+
+export function buildNoteContent({ title, type, status, template, initialEmptyHeading = false }: NoteContentParams): string {
   const lines = ['---']
   if (title) lines.push(`title: ${title}`)
   lines.push(`type: ${type}`)
   if (status) lines.push(`status: ${status}`)
   lines.push('---')
-  const body = template ? `\n${template}` : ''
+  const body = buildNoteBody({ template, initialEmptyHeading })
   return `${lines.join('\n')}\n${body}`
 }
 
@@ -246,12 +254,12 @@ function createNoteImmediate(deps: ImmediateCreateDeps, type?: string): void {
   const template = resolveTemplate({ entries: deps.entries, typeName: noteType })
   const status = NO_STATUS_TYPES.has(noteType) ? null : 'Active'
   const entry = buildNewEntry({ path: `${deps.vaultPath}/${slug}.md`, slug, title, type: noteType, status })
-  const content = buildNoteContent({ title: null, type: noteType, status, template })
+  const content = buildNoteContent({ title: null, type: noteType, status, template, initialEmptyHeading: true })
   deps.openTabWithContent(entry, content)
   addEntryWithMock(entry, content, deps.addEntry)
   deps.trackUnsaved?.(entry.path)
   deps.markContentPending?.(entry.path, content)
-  signalFocusEditor({ path: entry.path })
+  signalFocusEditor({ path: entry.path, selectTitle: true })
 }
 
 interface RelationshipCreateDeps {

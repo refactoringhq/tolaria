@@ -211,6 +211,22 @@ describe('buildNoteContent', () => {
     const content = buildNoteContent({ title: 'My Note', type: 'Note', status: 'Active', template: null })
     expect(content).toBe('---\ntitle: My Note\ntype: Note\nstatus: Active\n---\n')
   })
+
+  it('prepends an empty H1 for untitled-note creation flows', () => {
+    const content = buildNoteContent({ title: null, type: 'Note', status: 'Active', initialEmptyHeading: true })
+    expect(content).toBe('---\ntype: Note\nstatus: Active\n---\n\n# \n\n')
+  })
+
+  it('keeps the empty H1 ahead of templates for typed untitled notes', () => {
+    const content = buildNoteContent({
+      title: null,
+      type: 'Project',
+      status: 'Active',
+      template: '## Objective\n\n## Notes\n\n',
+      initialEmptyHeading: true,
+    })
+    expect(content).toBe('---\ntype: Project\nstatus: Active\n---\n\n# \n\n## Objective\n\n## Notes\n\n')
+  })
 })
 
 describe('resolveTemplate', () => {

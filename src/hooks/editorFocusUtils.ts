@@ -1,4 +1,5 @@
-const EDITABLE_SELECTOR = '.bn-editor [contenteditable="true"], .ProseMirror[contenteditable="true"]'
+const ROOT_EDITABLE_SELECTOR = '.ProseMirror[contenteditable="true"]'
+const FALLBACK_EDITABLE_SELECTOR = '.bn-editor [contenteditable="true"]'
 const MAX_FOCUS_ATTEMPTS = 12
 
 interface TiptapChain {
@@ -33,7 +34,7 @@ function selectFirstHeading(editor: FocusableEditor): void {
     }
   })
 
-  if (from === -1 || from >= to) return
+  if (from === -1 || to === -1 || from > to) return
   tiptap.chain().setTextSelection({ from, to }).run()
 }
 
@@ -42,11 +43,43 @@ function hasEditableFocus(): boolean {
   return Boolean(active?.isContentEditable || active?.closest('[contenteditable="true"]'))
 }
 
-function focusEditableNode(): boolean {
-  const editable = document.querySelector<HTMLElement>(EDITABLE_SELECTOR)
-  if (!editable) return false
+function canFocusWindow(): boolean {
+  return !navigator.userAgent.toLowerCase().includes('jsdom')
+}
+
+function focusEditableCandidate(editable: HTMLElement): boolean {
+  if (canFocusWindow()) {
+    window.focus?.()
+  }
   editable.focus()
-  return true
+
+  if (hasEditableFocus()) return true
+
+  const selection = window.getSelection()
+  if (selection && editable.isContentEditable) {
+    const range = document.createRange()
+    range.selectNodeContents(editable)
+    range.collapse(true)
+    selection.removeAllRanges()
+    selection.addRange(range)
+    editable.focus()
+  }
+
+  return hasEditableFocus()
+}
+
+function focusEditableNode(): boolean {
+  const rootEditable = document.querySelector<HTMLElement>(ROOT_EDITABLE_SELECTOR)
+  if (rootEditable && focusEditableCandidate(rootEditable)) {
+    return true
+  }
+
+  const fallbackEditable = document.querySelector<HTMLElement>(FALLBACK_EDITABLE_SELECTOR)
+  if (fallbackEditable && focusEditableCandidate(fallbackEditable)) {
+    return true
+  }
+
+  return false
 }
 
 function logFocusTiming(t0: number | undefined, label: 'focus' | 'focus+select'): void {

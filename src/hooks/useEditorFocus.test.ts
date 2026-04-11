@@ -2,10 +2,10 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useEditorFocus } from './useEditorFocus'
 
-function makeTiptapMock(hasHeading = true) {
+function makeTiptapMock(hasHeading = true, headingNodeSize = 15) {
   const chainResult = { setTextSelection: vi.fn().mockReturnThis(), run: vi.fn() }
   const descendantsMock = vi.fn().mockImplementation((cb: (node: { type: { name: string }; nodeSize: number }, pos: number) => boolean | void) => {
-    if (hasHeading) cb({ type: { name: 'heading' }, nodeSize: 15 }, 2)
+    if (hasHeading) cb({ type: { name: 'heading' }, nodeSize: headingNodeSize }, 2)
   })
   return {
     state: { doc: { descendants: descendantsMock } },
@@ -220,6 +220,19 @@ describe('useEditorFocus', () => {
       // After rAF 2: heading is selected
       expect(tiptap.chain).toHaveBeenCalled()
       expect(tiptap._chainResult.setTextSelection).toHaveBeenCalledWith({ from: 3, to: 16 })
+      expect(tiptap._chainResult.run).toHaveBeenCalled()
+    })
+
+    it('collapses selection to the caret for an empty H1', () => {
+      vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => { cb(0); return 0 })
+      const tiptap = makeTiptapMock(true, 2)
+      const { editor } = setup(true, tiptap)
+
+      window.dispatchEvent(new CustomEvent('laputa:focus-editor', { detail: { selectTitle: true } }))
+
+      expect(editor.focus).toHaveBeenCalled()
+      expect(tiptap.chain).toHaveBeenCalled()
+      expect(tiptap._chainResult.setTextSelection).toHaveBeenCalledWith({ from: 3, to: 3 })
       expect(tiptap._chainResult.run).toHaveBeenCalled()
     })
   })

@@ -76,11 +76,20 @@ function cacheEditorState(
 }
 
 function buildFastPathBlocks(preprocessed: string): EditorBlocks | null {
-  if (!preprocessed.trim()) {
+  const trimmed = preprocessed.trim()
+
+  if (!trimmed) {
     return [{ type: 'paragraph', content: [] }]
   }
 
-  const h1OnlyMatch = preprocessed.trim().match(/^# (.+)$/)
+  if (trimmed === '#') {
+    return [
+      { type: 'heading', props: { level: 1, textColor: 'default', backgroundColor: 'default', textAlignment: 'left' }, content: [], children: [] },
+      { type: 'paragraph', content: [], children: [] },
+    ]
+  }
+
+  const h1OnlyMatch = trimmed.match(/^# (.+)$/)
   if (!h1OnlyMatch) return null
 
   return [
@@ -91,6 +100,21 @@ function buildFastPathBlocks(preprocessed: string): EditorBlocks | null {
 
 function isBlankBodyContent(content: string): boolean {
   return extractEditorBody(content).trim() === ''
+}
+
+function extractBodyRemainderAfterEmptyH1(content: string): string | null {
+  const body = extractEditorBody(content)
+  const [firstLine, secondLine, ...rest] = body.split('\n')
+  if (!firstLine) return null
+
+  const normalizedFirstLine = firstLine.trimEnd()
+  if (normalizedFirstLine !== '#' && normalizedFirstLine !== '# ') return null
+
+  if (secondLine === '') {
+    return rest.join('\n').trimStart()
+  }
+
+  return [secondLine, ...rest].join('\n').trimStart()
 }
 
 function blankParagraphBlocks(): EditorBlocks {
@@ -185,6 +209,40 @@ function applyBlankStateToEditor(
     const scrollEl = document.querySelector('.editor__blocknote-container')
     if (scrollEl) scrollEl.scrollTop = 0
   })
+}
+
+function applyHtmlStateToEditor(
+  editor: ReturnType<typeof useCreateBlockNote>,
+  html: string,
+  suppressChangeRef: MutableRefObject<boolean>,
+) {
+  suppressChangeRef.current = true
+  try {
+    editor._tiptapEditor.commands.setContent(html)
+  } catch (err) {
+    console.error('applyHtmlStateToEditor failed:', err)
+    suppressChangeRef.current = false
+    throw err
+  }
+
+  queueMicrotask(() => { suppressChangeRef.current = false })
+  requestAnimationFrame(() => {
+    const scrollEl = document.querySelector('.editor__blocknote-container')
+    if (scrollEl) scrollEl.scrollTop = 0
+  })
+}
+
+async function resolveEmptyHeadingHtml(
+  editor: ReturnType<typeof useCreateBlockNote>,
+  content: string,
+): Promise<string | null> {
+  const remainder = extractBodyRemainderAfterEmptyH1(content)
+  if (remainder === null) return null
+  if (!remainder.trim()) return '<h1></h1><p></p>'
+
+  const parsed = await parseMarkdownBlocks(editor, preProcessWikilinks(remainder))
+  const withWikilinks = injectWikilinks(parsed)
+  return `<h1></h1>${editor.blocksToHTMLLossy(withWikilinks as typeof parsed)}`
 }
 
 function findActiveTab(tabs: Tab[], activeTabPath: string | null): Tab | undefined {
@@ -350,14 +408,34 @@ function scheduleTabSwap(options: {
     suppressChangeRef,
   } = options
 
+  suppressChangeRef.current = true
+
   const doSwap = () => {
-    if (prevActivePathRef.current !== targetPath) return
+    if (prevActivePathRef.current !== targetPath) {
+      suppressChangeRef.current = false
+      return
+    }
     rawSwapPendingRef.current = false
 
     if (isBlankBodyContent(activeTab.content)) {
       cache.set(targetPath, { blocks: blankParagraphBlocks(), scrollTop: 0 })
       applyBlankStateToEditor(editor, suppressChangeRef)
       requestAnimationFrame(() => signalEditorTabSwapped(targetPath))
+      return
+    }
+
+    void resolveEmptyHeadingHtml(editor, activeTab.content)
+      .then((html) => {
+        if (prevActivePathRef.current !== targetPath || !html) return
+        applyHtmlStateToEditor(editor, html, suppressChangeRef)
+        requestAnimationFrame(() => signalEditorTabSwapped(targetPath))
+      })
+      .catch((err: unknown) => {
+        suppressChangeRef.current = false
+        console.error('Failed to render empty heading state:', err)
+      })
+
+    if (extractBodyRemainderAfterEmptyH1(activeTab.content) !== null) {
       return
     }
 
@@ -368,6 +446,7 @@ function scheduleTabSwap(options: {
         requestAnimationFrame(() => signalEditorTabSwapped(targetPath))
       })
       .catch((err: unknown) => {
+        suppressChangeRef.current = false
         console.error('Failed to parse/swap editor content:', err)
       })
   }

@@ -36,6 +36,25 @@ function untitledRow(page: Page, typeLabel: string) {
   return page.getByText(new RegExp(`^Untitled ${typeLabel}(?: \\d+)?$`, 'i')).first()
 }
 
+async function expectReadyEmptyTitleHeading(page: Page): Promise<void> {
+  await expect.poll(async () => page.evaluate(() => {
+    const active = document.activeElement as HTMLElement | null
+    const firstBlock = document.querySelector('.bn-block-content') as HTMLElement | null
+    const inlineHeading = firstBlock?.querySelector('.bn-inline-content') as HTMLElement | null
+    return {
+      editorFocused: Boolean(active?.isContentEditable || active?.closest('[contenteditable="true"]')),
+      contentType: firstBlock?.getAttribute('data-content-type') ?? null,
+      placeholder: inlineHeading ? getComputedStyle(inlineHeading, '::before').content : null,
+    }
+  }), {
+    timeout: 5_000,
+  }).toEqual({
+    editorFocused: true,
+    contentType: 'heading',
+    placeholder: '"Title"',
+  })
+}
+
 test.describe('Create note crash fix', () => {
   test.beforeEach(() => {
     tempVaultDir = createFixtureVaultCopy()
@@ -53,6 +72,7 @@ test.describe('Create note crash fix', () => {
     await selectSection(page, 'Projects')
     await createNoteFromListHeader(page)
     await expect(untitledRow(page, 'project')).toBeVisible({ timeout: 5_000 })
+    await expectReadyEmptyTitleHeading(page)
 
     expect(errors).toEqual([])
   })
@@ -66,6 +86,7 @@ test.describe('Create note crash fix', () => {
     await page.locator('body').click()
     await sendShortcut(page, 'n', ['Control'])
     await expect(untitledRow(page, 'note')).toBeVisible({ timeout: 5_000 })
+    await expectReadyEmptyTitleHeading(page)
 
     expect(errors).toEqual([])
   })
@@ -78,6 +99,7 @@ test.describe('Create note crash fix', () => {
     await selectSection(page, 'Events')
     await createNoteFromListHeader(page)
     await expect(untitledRow(page, 'event')).toBeVisible({ timeout: 5_000 })
+    await expectReadyEmptyTitleHeading(page)
 
     expect(errors).toEqual([])
   })
@@ -93,6 +115,7 @@ test.describe('Create note crash fix', () => {
     await executeCommand(page, 'new procedure')
 
     await expect(untitledRow(page, 'procedure')).toBeVisible({ timeout: 5_000 })
+    await expectReadyEmptyTitleHeading(page)
     expect(errors).toEqual([])
   })
 })

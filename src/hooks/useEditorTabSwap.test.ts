@@ -51,6 +51,11 @@ describe('extractEditorBody', () => {
     const content = '---\ntitle: My Project\ntype: Project\nstatus: Active\n---\n\n# My Project\n\n'
     expect(extractEditorBody(content)).toBe('# My Project\n\n')
   })
+
+  it('preserves an empty H1 for untitled-note content', () => {
+    const content = '---\ntype: Note\nstatus: Active\n---\n\n# \n\n'
+    expect(extractEditorBody(content)).toBe('# \n\n')
+  })
 })
 
 describe('getH1TextFromBlocks', () => {
@@ -167,7 +172,14 @@ function makeTab(path: string, title: string) {
   }
 }
 
-function makeUntitledTab(path: string, title = 'Untitled Note 1') {
+function makeUntitledTab(path: string, title = 'Untitled Note 1', remainder = '') {
+  return {
+    entry: { path, title, filename: `${title}.md`, type: 'Note', status: 'Active', aliases: [], isA: '' } as never,
+    content: `---\ntype: Note\nstatus: Active\n---\n\n# \n\n${remainder}`,
+  }
+}
+
+function makeBlankBodyTab(path: string, title = 'Untitled Note 1') {
   return {
     entry: { path, title, filename: `${title}.md`, type: 'Note', status: 'Active', aliases: [], isA: '' } as never,
     content: '---\ntype: Note\nstatus: Active\n---\n',
@@ -270,7 +282,7 @@ describe('useEditorTabSwap raw mode sync', () => {
     Object.defineProperty(mockEditor, 'document', { get: () => docRef.current })
 
     const populatedTab = makeTab('a.md', 'Note A')
-    const untitledTab = makeUntitledTab('untitled.md')
+    const untitledTab = makeBlankBodyTab('untitled.md')
 
     const { rerender } = renderHook(
       ({ tabs, activeTabPath, rawMode }) => useEditorTabSwap({
@@ -288,6 +300,109 @@ describe('useEditorTabSwap raw mode sync', () => {
 
     expect(mockEditor._tiptapEditor.commands.setContent).toHaveBeenCalledWith('<p></p>')
     expect(mockEditor.replaceBlocks).not.toHaveBeenCalled()
+  })
+
+  it('renders empty H1 untitled notes via TipTap HTML content', async () => {
+    vi.spyOn(document, 'querySelector').mockReturnValue({ scrollTop: 0 } as unknown as Element)
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => { cb(0); return 0 })
+
+    const docRef = { current: blocksA as unknown[] }
+    const mockEditor = makeMockEditor(docRef)
+    Object.defineProperty(mockEditor, 'document', { get: () => docRef.current })
+
+    const populatedTab = makeTab('a.md', 'Note A')
+    const untitledTab = makeUntitledTab('untitled.md')
+
+    const { rerender } = renderHook(
+      ({ tabs, activeTabPath, rawMode }) => useEditorTabSwap({
+        tabs, activeTabPath, editor: mockEditor as never, rawMode,
+      }),
+      { initialProps: { tabs: [populatedTab], activeTabPath: 'a.md', rawMode: false as boolean } },
+    )
+
+    await act(() => new Promise(r => setTimeout(r, 0)))
+    mockEditor.tryParseMarkdownToBlocks.mockClear()
+    mockEditor.replaceBlocks.mockClear()
+    mockEditor._tiptapEditor.commands.setContent.mockClear()
+
+    rerender({ tabs: [untitledTab], activeTabPath: 'untitled.md', rawMode: false })
+    await act(() => new Promise(r => setTimeout(r, 0)))
+
+    expect(mockEditor.tryParseMarkdownToBlocks).not.toHaveBeenCalled()
+    expect(mockEditor.replaceBlocks).not.toHaveBeenCalled()
+    expect(mockEditor._tiptapEditor.commands.setContent).toHaveBeenCalledWith('<h1></h1><p></p>')
+  })
+
+  it('renders empty H1 typed notes with template content under the title', async () => {
+    vi.spyOn(document, 'querySelector').mockReturnValue({ scrollTop: 0 } as unknown as Element)
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => { cb(0); return 0 })
+
+    const docRef = { current: blocksA as unknown[] }
+    const mockEditor = makeMockEditor(docRef)
+    mockEditor.blocksToHTMLLossy.mockReturnValue('<h2>Objective</h2><p></p>')
+    Object.defineProperty(mockEditor, 'document', { get: () => docRef.current })
+
+    const populatedTab = makeTab('a.md', 'Note A')
+    const typedUntitledTab = makeUntitledTab('untitled.md', 'Untitled Project 1', '## Objective\n\n')
+
+    const { rerender } = renderHook(
+      ({ tabs, activeTabPath, rawMode }) => useEditorTabSwap({
+        tabs, activeTabPath, editor: mockEditor as never, rawMode,
+      }),
+      { initialProps: { tabs: [populatedTab], activeTabPath: 'a.md', rawMode: false as boolean } },
+    )
+
+    await act(() => new Promise(r => setTimeout(r, 0)))
+    mockEditor.tryParseMarkdownToBlocks.mockClear()
+    mockEditor._tiptapEditor.commands.setContent.mockClear()
+
+    rerender({ tabs: [typedUntitledTab], activeTabPath: 'untitled.md', rawMode: false })
+    await act(() => new Promise(r => setTimeout(r, 0)))
+
+    expect(mockEditor.tryParseMarkdownToBlocks).toHaveBeenCalledWith('## Objective\n\n')
+    expect(mockEditor._tiptapEditor.commands.setContent).toHaveBeenCalledWith('<h1></h1><h2>Objective</h2><p></p>')
+  })
+
+  it('ignores editor change events before the pending tab swap applies a new untitled note', async () => {
+    vi.spyOn(document, 'querySelector').mockReturnValue({ scrollTop: 0 } as unknown as Element)
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => { cb(0); return 0 })
+
+    const onContentChange = vi.fn()
+    const docRef = { current: blocksA as unknown[] }
+    const mockEditor = makeMockEditor(docRef)
+    Object.defineProperty(mockEditor, 'document', { get: () => docRef.current })
+
+    const populatedTab = makeTab('a.md', 'Note A')
+    const untitledTab = makeUntitledTab('untitled.md')
+
+    const { result, rerender } = renderHook(
+      ({ tabs, activeTabPath }) => useEditorTabSwap({
+        tabs, activeTabPath, editor: mockEditor as never, onContentChange,
+      }),
+      { initialProps: { tabs: [populatedTab], activeTabPath: 'a.md' } },
+    )
+
+    await act(() => new Promise(r => setTimeout(r, 0)))
+
+    const queued: Array<() => void> = []
+    vi.spyOn(globalThis, 'queueMicrotask').mockImplementation((cb: VoidFunction) => {
+      queued.push(cb)
+    })
+
+    rerender({ tabs: [untitledTab], activeTabPath: 'untitled.md' })
+
+    expect(queued).toHaveLength(1)
+
+    act(() => {
+      result.current.handleEditorChange()
+    })
+
+    expect(onContentChange).not.toHaveBeenCalled()
+
+    await act(async () => {
+      queued.shift()?.()
+      await Promise.resolve()
+    })
   })
 
   it('re-parses from tab.content when rawMode transitions from true to false', async () => {

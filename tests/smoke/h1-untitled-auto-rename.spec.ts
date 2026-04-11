@@ -18,21 +18,17 @@ function slugifyTitle(title: string): string {
 }
 
 async function createUntitledNote(page: Page): Promise<void> {
+  await page.locator('body').click()
   await triggerMenuCommand(page, 'file-new-note')
   await expect(page.locator('.bn-editor')).toBeVisible({ timeout: 5_000 })
   await expect(page.getByTestId('breadcrumb-filename-trigger')).toContainText(/untitled-note-\d+(?:-\d+)?/i, {
     timeout: 5_000,
   })
-  await expect.poll(async () => page.evaluate(() => {
-    const active = document.activeElement as HTMLElement | null
-    return Boolean(active?.isContentEditable || active?.closest('[contenteditable="true"]'))
-  }), {
-    timeout: 5_000,
-  }).toBe(true)
+  await expectReadyEmptyTitleHeading(page)
 }
 
 async function writeNewHeading(page: Page, title: string): Promise<void> {
-  await page.keyboard.type(`# ${title}`)
+  await page.keyboard.type(title)
   await page.keyboard.press('Enter')
 }
 
@@ -60,6 +56,23 @@ async function expectEditorFocused(page: Page): Promise<void> {
   }), {
     timeout: 5_000,
   }).toBe(true)
+}
+
+async function expectReadyEmptyTitleHeading(page: Page): Promise<void> {
+  await expectEditorFocused(page)
+  await expect.poll(async () => page.evaluate(() => {
+    const firstBlock = document.querySelector('.bn-block-content') as HTMLElement | null
+    const inlineHeading = firstBlock?.querySelector('.bn-inline-content') as HTMLElement | null
+    return {
+      contentType: firstBlock?.getAttribute('data-content-type') ?? null,
+      placeholder: inlineHeading ? getComputedStyle(inlineHeading, '::before').content : null,
+    }
+  }), {
+    timeout: 5_000,
+  }).toEqual({
+    contentType: 'heading',
+    placeholder: '"Title"',
+  })
 }
 
 let tempVaultDir: string
@@ -90,11 +103,11 @@ test('@smoke new-note H1 auto-rename keeps the editor usable and leaves no untit
 
   for (const [index, title] of titles.entries()) {
     await createUntitledNote(page)
-    await expectEditorFocused(page)
     await writeNewHeading(page, title)
     await expectActiveFilename(page, slugifyTitle(title))
     await expectRenamedFile(tempVaultDir, `${slugifyTitle(title)}.md`)
     await expectEditorFocused(page)
+    await expectFileContentContains(tempVaultDir, `${slugifyTitle(title)}.md`, `# ${title}`)
 
     if (index === 0) {
       await page.keyboard.type(' focus-probe')

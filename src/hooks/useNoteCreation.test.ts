@@ -132,6 +132,21 @@ describe('buildNoteContent', () => {
     const content = buildNoteContent({ title: 'P', type: 'Project', status: 'Active', template: '## Objective\n\n' })
     expect(content).toContain('## Objective')
   })
+
+  it('prepends an empty H1 when requested for untitled-note flows', () => {
+    expect(buildNoteContent({ title: null, type: 'Note', status: 'Active', initialEmptyHeading: true })).toBe('---\ntype: Note\nstatus: Active\n---\n\n# \n\n')
+  })
+
+  it('keeps the empty H1 before any template content', () => {
+    const content = buildNoteContent({
+      title: null,
+      type: 'Project',
+      status: 'Active',
+      template: '## Objective\n\n',
+      initialEmptyHeading: true,
+    })
+    expect(content).toBe('---\ntype: Project\nstatus: Active\n---\n\n# \n\n## Objective\n\n')
+  })
 })
 
 describe('resolveNewNote', () => {
@@ -247,6 +262,7 @@ describe('useNoteCreation hook', () => {
     expect(addEntry).toHaveBeenCalledTimes(1)
     expect(addEntry.mock.calls[0][0].title).toBe('Untitled Note 1700000000')
     expect(addEntry.mock.calls[0][0].filename).toBe('untitled-note-1700000000.md')
+    expect(openTabWithContent.mock.calls[0][1]).toBe('---\ntype: Note\nstatus: Active\n---\n\n# \n\n')
     vi.restoreAllMocks()
   })
 
@@ -352,6 +368,7 @@ describe('useNoteCreation hook', () => {
     expect(focusListener).toHaveBeenCalledTimes(1)
     const event = focusListener.mock.calls[0][0] as CustomEvent
     expect(event.detail.path).toMatch(/\/test\/vault\/untitled-note-\d+\.md$/)
+    expect(event.detail.selectTitle).toBe(true)
 
     window.removeEventListener('laputa:focus-editor', focusListener)
   })

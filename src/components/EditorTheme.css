@@ -68,6 +68,12 @@
   color: var(--headings-h1-color);
   letter-spacing: var(--headings-h1-letter-spacing);
 }
+.editor__blocknote-container [data-content-type="heading"]:not([data-level])[data-is-empty-and-focused] .bn-inline-content:has(> .ProseMirror-trailingBreak:only-child)::before,
+.editor__blocknote-container [data-content-type="heading"]:not([data-level])[data-is-only-empty-block] .bn-inline-content:has(> .ProseMirror-trailingBreak:only-child)::before,
+.editor__blocknote-container [data-content-type="heading"][data-level="1"][data-is-empty-and-focused] .bn-inline-content:has(> .ProseMirror-trailingBreak:only-child)::before,
+.editor__blocknote-container [data-content-type="heading"][data-level="1"][data-is-only-empty-block] .bn-inline-content:has(> .ProseMirror-trailingBreak:only-child)::before {
+  content: "Title" !important;
+}
 
 .editor__blocknote-container .bn-block-outer:has(> .bn-block > [data-content-type="heading"][data-level="2"]) {
   margin-top: var(--headings-h2-margin-top) !important;
