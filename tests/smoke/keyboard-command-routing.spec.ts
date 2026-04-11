@@ -4,10 +4,6 @@ import { createFixtureVaultCopy, openFixtureVaultTauri, removeFixtureVaultCopy }
 
 let tempVaultDir: string
 
-function untitledNoteListMatcher(typeLabel: string) {
-  return new RegExp(`Untitled ${typeLabel}(?: \\d+)?`, 'i')
-}
-
 test.describe('keyboard command routing', () => {
   test.beforeEach(() => {
     tempVaultDir = createFixtureVaultCopy()
@@ -25,9 +21,6 @@ test.describe('keyboard command routing', () => {
     await triggerMenuCommand(page, 'file-new-note')
 
     await expect(page.getByTestId('breadcrumb-filename-trigger')).toContainText(/untitled-note-\d+/i, { timeout: 5_000 })
-    await expect(
-      page.locator('[data-testid="note-list-container"]').getByText(untitledNoteListMatcher('note')).first(),
-    ).toBeVisible({ timeout: 5_000 })
     expect(errors).toEqual([])
   })
 

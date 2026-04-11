@@ -5,6 +5,8 @@ import path from 'path'
 
 const FIXTURE_VAULT = path.resolve('tests/fixtures/test-vault')
 const FIXTURE_VAULT_READY_TIMEOUT = 30_000
+const FIXTURE_VAULT_REMOVE_RETRIES = 10
+const FIXTURE_VAULT_REMOVE_RETRY_DELAY_MS = 100
 
 function copyDirSync(src: string, dest: string): void {
   fs.mkdirSync(dest, { recursive: true })
@@ -27,7 +29,12 @@ export function createFixtureVaultCopy(): string {
 
 export function removeFixtureVaultCopy(tempVaultDir: string | null | undefined): void {
   if (!tempVaultDir) return
-  fs.rmSync(tempVaultDir, { recursive: true, force: true })
+  fs.rmSync(tempVaultDir, {
+    recursive: true,
+    force: true,
+    maxRetries: FIXTURE_VAULT_REMOVE_RETRIES,
+    retryDelay: FIXTURE_VAULT_REMOVE_RETRY_DELAY_MS,
+  })
 }
 
 export async function openFixtureVault(
