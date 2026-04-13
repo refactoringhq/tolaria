@@ -2,6 +2,7 @@ import type { FrontmatterValue } from './Inspector'
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 import { getTypeIcon } from './NoteItem'
+import { PROPERTY_PANEL_COLUMN_STYLE } from './propertyPanelLayout'
 
 const TYPE_NONE = '__none__'
 
@@ -22,7 +23,7 @@ function TypeSelectorItem({ type, typeColorKeys, typeIconKeys }: {
 function ReadOnlyType({ isA, customColorKey, onNavigate }: { isA?: string | null; customColorKey?: string | null; onNavigate?: (target: string) => void }) {
   if (!isA) return null
   return (
-    <div className="grid min-w-0 grid-cols-2 items-center gap-2 px-1.5">
+    <div className="grid min-w-0 grid-cols-2 items-center gap-2 px-1.5" style={PROPERTY_PANEL_COLUMN_STYLE}>
       <span className="text-[12px] shrink-0 text-muted-foreground">Type</span>
       <div className="min-w-0">
         {onNavigate ? (
@@ -57,7 +58,7 @@ export function TypeSelector({ isA, customColorKey, availableTypes, typeColorKey
   const typeLightColor = isA ? getTypeLightColor(isA, typeColorKeys[isA] ?? customColorKey) : undefined
 
   return (
-    <div className="grid min-w-0 grid-cols-2 items-center gap-2 px-1.5" data-testid="type-selector">
+    <div className="grid min-w-0 grid-cols-2 items-center gap-2 px-1.5" style={PROPERTY_PANEL_COLUMN_STYLE} data-testid="type-selector">
       <span className="text-[12px] shrink-0 text-muted-foreground">Type</span>
       <div className="min-w-0">
         <Select value={currentValue} onValueChange={v => onUpdateProperty('type', v === TYPE_NONE ? null : v)}>
