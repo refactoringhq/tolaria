@@ -138,6 +138,10 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
+          VITE_POSTHOG_HOST: ${{ secrets.VITE_POSTHOG_HOST }}
         run: |
           # Alpha releases only need the notarized app bundle and updater tarball.
           # Skipping DMG packaging avoids fragile bundle_dmg.sh failures on macOS runners.

@@ -40,6 +40,18 @@ CODESCENE_PROJECT_ID=<your-project-id>
 Il PAT di CodeScene è lo stesso che usi localmente (~/.codescene/token).
 Il project ID lo trovi nella dashboard CodeScene.
 
+### Telemetry Secrets For Release Builds
+Aggiungi anche questi secrets per i workflow `release.yml` e `release-stable.yml`:
+
+```
+VITE_SENTRY_DSN=<frontend sentry dsn>
+SENTRY_DSN=<same dsn for rust/native crash reporting>
+VITE_POSTHOG_KEY=<posthog project api key>
+VITE_POSTHOG_HOST=https://eu.i.posthog.com
+```
+
+Senza questi valori, i build distribuiti possono mantenere i toggle telemetry nelle Settings ma non inizializzare davvero PostHog/Sentry.
+
 ### Coverage Thresholds
 Configura in `vitest.config.ts`:
 

@@ -14,6 +14,26 @@ Nel repository GitHub (Settings → Secrets and variables → Actions → New re
 **CODESCENE_PROJECT_ID**  
 Trova l'ID del progetto nella dashboard CodeScene (URL: `https://codescene.io/projects/<PROJECT_ID>/...`)
 
+**VITE_SENTRY_DSN**
+```
+<frontend Sentry DSN used by shipped Tolaria builds>
+```
+
+**SENTRY_DSN**
+```
+<same DSN as VITE_SENTRY_DSN, passed to the Rust/Tauri build for native crash reporting>
+```
+
+**VITE_POSTHOG_KEY**
+```
+<PostHog project API key used by shipped Tolaria builds>
+```
+
+**VITE_POSTHOG_HOST**
+```
+https://eu.i.posthog.com
+```
+
 ### 2. Enable GitHub Actions
 
 - Vai su Settings → Actions → General
@@ -64,6 +84,12 @@ cargo fmt --manifest-path=src-tauri/Cargo.toml -- --check
 - CodeScene delta analysis
 - **Fail se code health diminuisce**
 - Confronta HEAD vs base branch
+
+### 📡 Telemetry In Release Builds
+- `release.yml` e `release-stable.yml` devono ricevere `VITE_SENTRY_DSN`, `SENTRY_DSN`, `VITE_POSTHOG_KEY`, `VITE_POSTHOG_HOST`
+- `VITE_SENTRY_DSN` inizializza il frontend Sentry bundle
+- `SENTRY_DSN` inizializza Sentry nel binary Rust/Tauri
+- `VITE_POSTHOG_KEY` / `VITE_POSTHOG_HOST` permettono ai build distribuiti di inizializzare PostHog quando l'utente abilita analytics
 
 ### 📝 Documentation
 - **Warning se modifichi `src/` o `src-tauri/` ma non aggiorni `docs/`**
