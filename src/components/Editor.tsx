@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect, useCallback, useState, memo } from 'react'
+import { useRef, useEffect, useCallback, memo } from 'react'
 import { useEditorTabSwap } from '../hooks/useEditorTabSwap'
 import { useCreateBlockNote } from '@blocknote/react'
 import '@blocknote/mantine/style.css'
@@ -9,22 +9,17 @@ import type { NoteListItem } from '../utils/ai-context'
 import type { FrontmatterValue } from './Inspector'
 import { ResizeHandle } from './ResizeHandle'
 import { useDiffMode, type CommitDiffRequest } from '../hooks/useDiffMode'
-import { useRawMode } from '../hooks/useRawMode'
 import { useEditorFocus } from '../hooks/useEditorFocus'
 import { useDragRegion } from '../hooks/useDragRegion'
 import { EditorRightPanel } from './EditorRightPanel'
 import { EditorContent } from './EditorContent'
 import { schema } from './editorSchema'
-import { clearTableResizeState } from './tableResizeState'
 import {
-  type PendingRawExitContent,
   applyPendingRawExitContent,
-  buildPendingRawExitContent,
-  rememberPendingRawExitContent,
   resolvePendingRawExitContent,
   resolveRawModeContent,
-  syncActiveTabIntoRawBuffer,
 } from './editorRawModeSync'
+import { useRawModeWithFlush } from './useRawModeWithFlush'
 import './Editor.css'
 import './EditorTheme.css'
 
@@ -157,65 +152,6 @@ interface EditorSetupParams {
   getNoteStatus?: (path: string) => NoteStatus
   rawToggleRef?: React.MutableRefObject<() => void>
   diffToggleRef?: React.MutableRefObject<() => void>
-}
-
-function useRawModeWithFlush(
-  editor: ReturnType<typeof useCreateBlockNote>,
-  activeTabPath: string | null,
-  activeTabContent: string | null,
-  onContentChange?: (path: string, content: string) => void,
-) {
-  const rawLatestContentRef = useRef<string | null>(null)
-  const rawBufferPathRef = useRef<string | null>(null)
-  const [pendingRawExitContent, setPendingRawExitContent] = useState<PendingRawExitContent | null>(null)
-  const [rawModeContentOverride, setRawModeContentOverride] = useState<PendingRawExitContent | null>(null)
-
-  useLayoutEffect(() => {
-    if (!activeTabPath) {
-      rawLatestContentRef.current = null
-      rawBufferPathRef.current = null
-      return
-    }
-
-    if (rawBufferPathRef.current === activeTabPath) {
-      return
-    }
-
-    rawLatestContentRef.current = activeTabContent
-    rawBufferPathRef.current = activeTabContent === null ? null : activeTabPath
-  }, [activeTabContent, activeTabPath])
-
-  const handleFlushPending = useCallback(async () => {
-    const syncedContent = syncActiveTabIntoRawBuffer({
-      editor,
-      activeTabPath,
-      activeTabContent,
-      rawLatestContentRef,
-      onContentChange,
-    })
-    setRawModeContentOverride(buildPendingRawExitContent(activeTabPath, syncedContent))
-    clearTableResizeState(editor)
-    return true
-  }, [activeTabContent, activeTabPath, editor, onContentChange])
-
-  const handleBeforeRawEnd = useCallback(() => {
-    setPendingRawExitContent(rememberPendingRawExitContent({
-      activeTabPath,
-      rawLatestContentRef,
-      onContentChange,
-    }))
-    setRawModeContentOverride(null)
-    rawBufferPathRef.current = null
-    rawLatestContentRef.current = null
-  }, [activeTabPath, onContentChange])
-
-  const { rawMode, handleToggleRaw } = useRawMode({
-    activeTabPath,
-    onFlushPending: handleFlushPending,
-    onBeforeRawEnd: handleBeforeRawEnd,
-  })
-
-  return { rawMode, handleToggleRaw, rawLatestContentRef, pendingRawExitContent, setPendingRawExitContent, rawModeContentOverride }
 }
 
 function useEditorSetup({
