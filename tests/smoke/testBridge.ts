@@ -13,12 +13,7 @@ async function waitForDispatchBrowserMenuCommand(page: Page): Promise<void> {
   )
 }
 
-function shouldFallbackToDispatch(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error)
-  return message.includes('dispatchBrowserMenuCommand')
-}
-
-async function tryTriggerMenuCommand(commandId: string): Promise<boolean> {
+async function attemptTriggerMenuCommandInPage(commandId: string): Promise<boolean> {
   const triggerMenuCommand = window.__laputaTest?.triggerMenuCommand
   if (typeof triggerMenuCommand !== 'function') {
     return false
@@ -28,31 +23,29 @@ async function tryTriggerMenuCommand(commandId: string): Promise<boolean> {
     await triggerMenuCommand(commandId)
     return true
   } catch (error) {
-    if (!shouldFallbackToDispatch(error)) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (!message.includes('dispatchBrowserMenuCommand')) {
       throw error
     }
     return false
   }
 }
 
-async function dispatchMenuCommandInPage(commandId: string): Promise<void> {
+function dispatchMenuCommandFallbackInPage(commandId: string): void {
   const dispatchBrowserMenuCommand = window.__laputaTest?.dispatchBrowserMenuCommand
-
   if (typeof dispatchBrowserMenuCommand !== 'function') {
     throw new Error('Tolaria test bridge is missing dispatchBrowserMenuCommand')
   }
-
-  const didTrigger = await tryTriggerMenuCommand(commandId)
-  if (didTrigger) {
-    return
-  }
-
   dispatchBrowserMenuCommand(commandId)
 }
 
 export async function triggerMenuCommand(page: Page, id: string): Promise<void> {
   await waitForDispatchBrowserMenuCommand(page)
-  await page.evaluate(dispatchMenuCommandInPage, id)
+  const didTrigger = await page.evaluate(attemptTriggerMenuCommandInPage, id)
+  if (didTrigger) {
+    return
+  }
+  await page.evaluate(dispatchMenuCommandFallbackInPage, id)
 }
 
 export async function seedBlockNoteTable(
