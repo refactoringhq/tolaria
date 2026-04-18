@@ -1,5 +1,4 @@
-[![CodeScene Average Code Health](https://codescene.io/projects/76865/status-badges/average-code-health)](https://codescene.io/projects/76865) [![CodeScene Hotspot Code Health](https://codescene.io/projects/76865/status-badges/hotspot-code-health)](https://codescene.io/projects/76865)
-
+[![CodeScene Hotspot Code Health](https://codescene.io/projects/76865/status-badges/hotspot-code-health)](https://codescene.io/projects/76865) [![CodeScene Average Code Health](https://codescene.io/projects/76865/status-badges/average-code-health)](https://codescene.io/projects/76865)
 # Tolaria App
 
 Personal knowledge and life management desktop app built with Tauri v2 + React + TypeScript + BlockNote.
