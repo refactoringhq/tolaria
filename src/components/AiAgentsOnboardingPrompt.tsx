@@ -6,6 +6,7 @@ import {
   isAiAgentsStatusChecking,
   type AiAgentsStatus,
 } from '../lib/aiAgents'
+import { useDragRegion } from '../hooks/useDragRegion'
 import { openExternalUrl } from '../utils/url'
 import { Button } from './ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card'
@@ -80,13 +81,15 @@ export function AiAgentsOnboardingPrompt({
   const copy = getPromptCopy(statuses)
   const showLegacyClaudeCompatibility = statuses.claude_code.status !== 'installed'
   const missingAgents = AI_AGENT_DEFINITIONS.filter((definition) => statuses[definition.id].status === 'missing')
+  const { onMouseDown } = useDragRegion()
 
   return (
     <div
       className="flex h-full w-full items-center justify-center bg-sidebar px-6 py-10"
       data-testid="ai-agents-onboarding-screen"
+      onMouseDown={onMouseDown}
     >
-      <Card className="w-full max-w-2xl border-border bg-background shadow-sm">
+      <Card className="w-full max-w-2xl border-border bg-background shadow-sm" data-no-drag>
         <CardHeader className="items-center gap-5 text-center">
           <div className={`flex size-16 items-center justify-center rounded-2xl ${copy.accentClassName}`}>
             {copy.icon}

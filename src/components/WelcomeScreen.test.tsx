@@ -1,6 +1,12 @@
 import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { WelcomeScreen } from './WelcomeScreen'
+
+const dragRegionMouseDown = vi.fn()
+
+vi.mock('../hooks/useDragRegion', () => ({
+  useDragRegion: () => ({ onMouseDown: dragRegionMouseDown }),
+}))
 
 const defaultProps = {
   mode: 'welcome' as const,
@@ -16,6 +22,10 @@ const defaultProps = {
 }
 
 describe('WelcomeScreen', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   describe('welcome mode', () => {
     it('renders welcome title and subtitle', () => {
       render(<WelcomeScreen {...defaultProps} />)
@@ -145,6 +155,16 @@ describe('WelcomeScreen', () => {
     it('has welcome-screen container testid', () => {
       render(<WelcomeScreen {...defaultProps} />)
       expect(screen.getByTestId('welcome-screen')).toBeInTheDocument()
+    })
+
+    it('uses the surrounding surface as a drag region and excludes the card', () => {
+      render(<WelcomeScreen {...defaultProps} />)
+
+      const screenContainer = screen.getByTestId('welcome-screen')
+      fireEvent.mouseDown(screenContainer)
+
+      expect(dragRegionMouseDown).toHaveBeenCalledOnce()
+      expect(screenContainer.querySelector('[data-no-drag]')).not.toBeNull()
     })
   })
 })

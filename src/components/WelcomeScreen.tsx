@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { FolderOpen, Plus, AlertTriangle, Loader2, Rocket } from 'lucide-react'
+import { useDragRegion } from '../hooks/useDragRegion'
 
 interface WelcomeScreenProps {
   mode: 'welcome' | 'vault-missing'
@@ -247,10 +248,11 @@ export function WelcomeScreen({
 }: WelcomeScreenProps) {
   const busy = creatingAction !== null
   const presentation = getWelcomeScreenPresentation(mode, defaultVaultPath, isOffline)
+  const { onMouseDown } = useDragRegion()
 
   return (
-    <div style={CONTAINER_STYLE} data-testid="welcome-screen">
-      <div style={CARD_STYLE}>
+    <div style={CONTAINER_STYLE} data-testid="welcome-screen" onMouseDown={onMouseDown}>
+      <div style={CARD_STYLE} data-no-drag>
         <div
           style={{
             ...ICON_WRAP_STYLE,
