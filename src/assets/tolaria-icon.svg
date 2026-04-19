@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="tolaria-tile" x1="18" y1="14" x2="110" y2="114" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FBFAF7" />
+      <stop offset="1" stop-color="#EEF4EE" />
+    </linearGradient>
+    <linearGradient id="tolaria-mark" x1="34" y1="28" x2="94" y2="98" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#35CBB1" />
+      <stop offset="1" stop-color="#18A88E" />
+    </linearGradient>
+    <filter id="tolaria-tile-shadow" x="2" y="4" width="124" height="122" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feOffset dy="4" />
+      <feGaussianBlur stdDeviation="3" />
+      <feColorMatrix
+        type="matrix"
+        values="0 0 0 0 0.0627451 0 0 0 0 0.0980392 0 0 0 0 0.164706 0 0 0 0.14 0"
+      />
+    </filter>
+    <filter id="tolaria-mark-shadow" x="12" y="14" width="104" height="96" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feOffset dy="4" />
+      <feGaussianBlur stdDeviation="3" />
+      <feColorMatrix
+        type="matrix"
+        values="0 0 0 0 0.0705882 0 0 0 0 0.333333 0 0 0 0 0.278431 0 0 0 0.18 0"
+      />
+    </filter>
+  </defs>
+
+  <g filter="url(#tolaria-tile-shadow)">
+    <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#tolaria-tile)" />
+    <rect x="8.75" y="8.75" width="110.5" height="110.5" rx="27.25" stroke="#0F172A" stroke-opacity="0.08" stroke-width="1.5" />
+  </g>
+
+  <g filter="url(#tolaria-mark-shadow)" fill="url(#tolaria-mark)">
+    <circle cx="64" cy="40" r="18" />
+    <circle cx="42" cy="56" r="18" />
+    <circle cx="86" cy="56" r="18" />
+    <circle cx="48" cy="80" r="24" />
+    <circle cx="80" cy="80" r="24" />
+    <rect x="32" y="56" width="64" height="44" rx="18" />
+  </g>
+</svg>

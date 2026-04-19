@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { FolderOpen, Plus, AlertTriangle, Loader2, Rocket } from 'lucide-react'
 import { OnboardingShell } from './OnboardingShell'
 import { Button } from '@/components/ui/button'
+import tolariaIcon from '@/assets/tolaria-icon.svg'
 
 interface WelcomeScreenProps {
   mode: 'welcome' | 'vault-missing'
@@ -103,6 +104,12 @@ const ICON_WRAP_STYLE: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+}
+
+const BRAND_ICON_STYLE: React.CSSProperties = {
+  width: 64,
+  height: 64,
+  display: 'block',
 }
 
 const TITLE_STYLE: React.CSSProperties = {
@@ -267,10 +274,10 @@ function getWelcomeScreenPresentation(
 ): WelcomeScreenPresentation {
   if (mode === 'welcome') {
     return {
-      heroBackground: 'var(--accent-blue-light, #EBF4FF)',
-      heroIcon: <span style={{ fontSize: 28, color: 'var(--accent-blue)' }}>&#10022;</span>,
+      heroBackground: 'transparent',
+      heroIcon: <img src={tolariaIcon} alt="Tolaria icon" style={BRAND_ICON_STYLE} />,
       openFolderLabel: 'Open existing vault',
-      subtitle: 'Wiki-linked knowledge management for deep thinkers.\nChoose how to get started.',
+      subtitle: 'Markdown knowledge management for the age of AI',
       templateDescription: isOffline
         ? `Requires internet — clone later. Suggested path: ${defaultVaultPath}`
         : 'Download the getting started vault',
