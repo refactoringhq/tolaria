@@ -6,8 +6,6 @@ import { frontmatterHighlightPlugin, frontmatterHighlightTheme } from '../extens
 import { markdownLanguage } from '../extensions/markdownHighlight'
 import { zoomCursorFix } from '../extensions/zoomCursorFix'
 
-const FONT_FAMILY = '"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
-
 export interface CodeMirrorCallbacks {
   onDocChange: (doc: string) => void
   onCursorActivity: (view: EditorView) => void
@@ -15,37 +13,31 @@ export interface CodeMirrorCallbacks {
   onEscape: () => boolean
 }
 
-function buildBaseTheme() {
-  const bg = '#ffffff'
-  const fg = '#1e1e1e'
-  const gutterBg = '#ffffff'
-  const gutterColor = '#aaa'
-  const activeLineBg = 'rgba(0,100,255,0.06)'
-  const gutterBorder = '#eee'
-
+function buildBaseTheme(isDarkMode: boolean) {
+  void isDarkMode
   return EditorView.theme({
     '&': {
       fontSize: '13px',
-      fontFamily: FONT_FAMILY,
-      backgroundColor: bg,
-      color: fg,
+      fontFamily: 'var(--font-mono)',
+      backgroundColor: 'var(--background)',
+      color: 'var(--foreground)',
       flex: '1',
       minHeight: '0',
     },
     '.cm-scroller': {
-      fontFamily: FONT_FAMILY,
+      fontFamily: 'var(--font-mono)',
       lineHeight: '1.6',
       padding: '16px 0',
       overflow: 'auto',
     },
     '.cm-content': {
       padding: '0 32px 0 16px',
-      caretColor: fg,
+      caretColor: 'var(--foreground)',
     },
     '.cm-gutters': {
-      backgroundColor: gutterBg,
-      color: gutterColor,
-      borderRight: `1px solid ${gutterBorder}`,
+      backgroundColor: 'var(--sidebar)',
+      color: 'var(--muted-foreground)',
+      borderRight: '1px solid var(--border)',
       paddingLeft: '16px',
     },
     '.cm-lineNumbers .cm-gutterElement': {
@@ -54,10 +46,10 @@ function buildBaseTheme() {
       textAlign: 'right',
     },
     '.cm-activeLine': {
-      backgroundColor: activeLineBg,
+      backgroundColor: 'var(--bg-selected)',
     },
     '.cm-activeLineGutter': {
-      backgroundColor: activeLineBg,
+      backgroundColor: 'var(--bg-selected)',
     },
     '&.cm-focused': { outline: 'none' },
     '.cm-line': { padding: '0' },
@@ -77,6 +69,7 @@ function buildSaveKeymap(callbacks: { current: CodeMirrorCallbacks }) {
 export function useCodeMirror(
   containerRef: React.RefObject<HTMLDivElement | null>,
   content: string,
+  isDarkMode: boolean,
   callbacks: CodeMirrorCallbacks,
 ) {
   const viewRef = useRef<EditorView | null>(null)
@@ -109,9 +102,9 @@ export function useCodeMirror(
         history(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
         buildSaveKeymap(callbacksRef),
-        buildBaseTheme(),
+        buildBaseTheme(isDarkMode),
         markdownLanguage(),
-        frontmatterHighlightTheme(),
+        frontmatterHighlightTheme(isDarkMode),
         frontmatterHighlightPlugin,
         zoomCursorFix(),
         EditorView.updateListener.of((update) => {
@@ -146,7 +139,7 @@ export function useCodeMirror(
       viewRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [isDarkMode])
 
   return viewRef
 }

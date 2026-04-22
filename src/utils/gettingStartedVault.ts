@@ -1,4 +1,9 @@
 export const GETTING_STARTED_VAULT_NAME = 'Getting Started'
+const LEGACY_GETTING_STARTED_VAULT_NAMES = new Set([
+  GETTING_STARTED_VAULT_NAME.toLowerCase(),
+  'demo-vault',
+  'demo-vault-v2',
+])
 
 const CLONE_PATH_ERRORS = [
   'already exists and is not empty',
@@ -20,6 +25,18 @@ export function buildGettingStartedVaultPath(parentPath: string): string {
 export function labelFromPath(path: string): string {
   const trimmed = path.trim().replace(/[\\/]+$/g, '')
   return trimmed.split(/[\\/]/).pop() || 'Vault'
+}
+
+export function isGettingStartedVaultPath(path: string, resolvedDefaultPath?: string | null): boolean {
+  if (!path) {
+    return false
+  }
+
+  if (resolvedDefaultPath && path === resolvedDefaultPath) {
+    return true
+  }
+
+  return LEGACY_GETTING_STARTED_VAULT_NAMES.has(labelFromPath(path).toLowerCase())
 }
 
 export function formatGettingStartedCloneError(err: unknown): string {

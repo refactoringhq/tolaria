@@ -330,7 +330,7 @@ function OpenCommandPalette({
     >
       <div
         className={cn(
-          'flex w-[520px] max-h-[440px] max-w-[90vw] flex-col self-start overflow-hidden rounded-xl border border-[var(--border-dialog)] bg-popover shadow-[0_8px_32px_var(--shadow-dialog)]',
+          'glass-floating flex w-[520px] max-h-[440px] max-w-[90vw] flex-col self-start overflow-hidden rounded-xl border border-[var(--border-dialog)] bg-popover shadow-[0_8px_32px_var(--shadow-dialog)]',
           aiMode && 'min-h-[220px]',
         )}
         onClick={(event) => event.stopPropagation()}

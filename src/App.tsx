@@ -29,6 +29,7 @@ import { useAutoGit } from './hooks/useAutoGit'
 import { useVaultLoader } from './hooks/useVaultLoader'
 import { useAiAgentPreferences } from './hooks/useAiAgentPreferences'
 import { useSettings } from './hooks/useSettings'
+import { useAppearancePreferences } from './hooks/useAppearancePreferences'
 import { useNoteActions } from './hooks/useNoteActions'
 import { slugify } from './hooks/useNoteCreation'
 import { useCommitFlow } from './hooks/useCommitFlow'
@@ -90,6 +91,7 @@ import {
 import { extractDeletedContentFromDiff } from './components/note-list/noteListUtils'
 import { hasNoteIconValue } from './utils/noteIcon'
 import { filenameStemToTitle } from './utils/noteTitle'
+import { isGettingStartedVaultPath } from './utils/gettingStartedVault'
 import {
   focusNoteListContainer,
   isEditableElement,
@@ -225,9 +227,11 @@ function App() {
   const [showFeedback, setShowFeedback] = useState(false)
   const [showMcpSetupDialog, setShowMcpSetupDialog] = useState(false)
   const [mcpDialogAction, setMcpDialogAction] = useState<'connect' | 'disconnect' | null>(null)
+  const pendingFreshStartOnboardingRef = useRef(false)
   const openFeedback = useCallback(() => setShowFeedback(true), [])
   const closeFeedback = useCallback(() => setShowFeedback(false), [])
   const networkStatus = useNetworkStatus()
+  const appearancePreferences = useAppearancePreferences()
 
   useEffect(() => {
     const handleOpenAiChat = () => {
@@ -399,6 +403,13 @@ function App() {
     aiAgentsStatus,
     onToast: setToastMessage,
   })
+
+  useEffect(() => {
+    if (!noteWindowParams && settingsLoaded && settings.telemetry_consent === null) {
+      pendingFreshStartOnboardingRef.current = true
+    }
+  }, [noteWindowParams, settings.telemetry_consent, settingsLoaded])
+
   useTelemetry(settings, settingsLoaded)
 
   const vaultOpenedRef = useRef('')
@@ -1251,15 +1262,19 @@ function App() {
     return { type: null, query: '' }
   }, [effectiveSelection])
 
-  const shouldResumeFreshStartOnboarding = useMemo(() => {
-    if (onboarding.state.status !== 'ready' || !vaultSwitcher.loaded) return false
-    const remembersOnlyDefaultVault = selectedVaultPath === null || selectedVaultPath === defaultPath
-
-    return remembersOnlyDefaultVault
-      && vaultSwitcher.allVaults.length === 1
-      && vaultSwitcher.allVaults[0]?.path === vaultSwitcher.vaultPath
-      && onboarding.state.vaultPath === vaultSwitcher.vaultPath
-  }, [defaultPath, onboarding.state, selectedVaultPath, vaultSwitcher.allVaults, vaultSwitcher.loaded, vaultSwitcher.vaultPath])
+  const shouldResumeFreshStartOnboarding =
+    pendingFreshStartOnboardingRef.current
+    && onboarding.state.status === 'ready'
+    && vaultSwitcher.loaded
+    && (selectedVaultPath === null || isGettingStartedVaultPath(selectedVaultPath, defaultPath))
+    && (
+      vaultSwitcher.allVaults.length === 0
+      || (
+        vaultSwitcher.allVaults.length === 1
+        && vaultSwitcher.allVaults[0]?.path === vaultSwitcher.vaultPath
+      )
+    )
+    && onboarding.state.vaultPath === vaultSwitcher.vaultPath
 
   // Show loading spinner while checking vault (skip for note windows)
   if (!noteWindowParams && onboarding.state.status === 'loading') {
@@ -1285,7 +1300,30 @@ function App() {
   // Show welcome/onboarding screen when vault doesn't exist (skip for note windows — vault path is known)
   if (!noteWindowParams && (onboarding.state.status === 'welcome' || onboarding.state.status === 'vault-missing' || shouldResumeFreshStartOnboarding)) {
     const welcomeOnboarding = shouldResumeFreshStartOnboarding
-      ? { ...onboarding, state: { status: 'welcome' as const, defaultPath: vaultSwitcher.vaultPath } }
+      ? {
+          ...onboarding,
+          state: { status: 'welcome' as const, defaultPath: vaultSwitcher.vaultPath },
+          handleCreateVault: async () => {
+            pendingFreshStartOnboardingRef.current = false
+            await onboarding.handleCreateVault()
+          },
+          retryCreateVault: async () => {
+            pendingFreshStartOnboardingRef.current = false
+            await onboarding.retryCreateVault()
+          },
+          handleCreateEmptyVault: async () => {
+            pendingFreshStartOnboardingRef.current = false
+            await onboarding.handleCreateEmptyVault()
+          },
+          handleOpenFolder: async () => {
+            pendingFreshStartOnboardingRef.current = false
+            await onboarding.handleOpenFolder()
+          },
+          handleDismiss: () => {
+            pendingFreshStartOnboardingRef.current = false
+            onboarding.handleDismiss()
+          },
+        }
       : onboarding
     return <WelcomeView onboarding={welcomeOnboarding} isOffline={networkStatus.isOffline} />
   }
@@ -1352,6 +1390,7 @@ function App() {
             tabs={notes.tabs}
             activeTabPath={notes.activeTabPath}
             entries={vault.entries}
+            resolvedAppearance={appearancePreferences.resolvedColorMode}
             onNavigateWikilink={notes.handleNavigateWikilink}
             onLoadDiff={vault.loadDiff}
             onLoadDiffAtCommit={vault.loadDiffAtCommit}
@@ -1440,7 +1479,18 @@ function App() {
         onCommit={conflictResolver.commitResolution}
         onClose={conflictFlow.handleCloseConflictResolver}
       />
-      <SettingsPanel open={dialogs.showSettings} settings={settings} aiAgentsStatus={aiAgentsStatus} isGitVault={isGitVault} onSave={saveSettings} explicitOrganizationEnabled={explicitOrganizationEnabled} onSaveExplicitOrganization={handleSaveExplicitOrganization} onClose={dialogs.closeSettings} />
+      <SettingsPanel
+        open={dialogs.showSettings}
+        settings={settings}
+        appearancePreferences={appearancePreferences.preferences}
+        aiAgentsStatus={aiAgentsStatus}
+        isGitVault={isGitVault}
+        onSave={saveSettings}
+        onSaveAppearancePreferences={appearancePreferences.savePreferences}
+        explicitOrganizationEnabled={explicitOrganizationEnabled}
+        onSaveExplicitOrganization={handleSaveExplicitOrganization}
+        onClose={dialogs.closeSettings}
+      />
       <FeedbackDialog open={showFeedback} onClose={closeFeedback} />
       <McpSetupDialog open={showMcpSetupDialog} status={mcpStatus} busyAction={mcpDialogAction} onClose={closeMcpSetupDialog} onConnect={handleConnectMcp} onDisconnect={handleDisconnectMcp} />
       <CloneVaultModal key={dialogs.showCloneVault ? 'clone-open' : 'clone-closed'} open={dialogs.showCloneVault} onClose={dialogs.closeCloneVault} onVaultCloned={vaultSwitcher.handleVaultCloned} />

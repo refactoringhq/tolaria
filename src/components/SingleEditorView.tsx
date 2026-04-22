@@ -11,6 +11,7 @@ import { components } from '@blocknote/mantine'
 import { MantineContext, MantineProvider } from '@mantine/core'
 import { useEditorTheme } from '../hooks/useTheme'
 import { useImageDrop } from '../hooks/useImageDrop'
+import type { ResolvedAppearance } from '../lib/appearance'
 import { buildTypeEntryMap } from '../utils/typeColors'
 import { preFilterWikilinks, deduplicateByPath, MIN_QUERY_LENGTH } from '../utils/wikilinkSuggestions'
 import { filterPersonMentions, PERSON_MENTION_MIN_QUERY } from '../utils/personMentionSuggestions'
@@ -262,9 +263,10 @@ function useInsertImageCallback(editor: ReturnType<typeof useCreateBlockNote>) {
 }
 
 /** Single BlockNote editor view — content is swapped via replaceBlocks */
-export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange, vaultPath, editable = true }: {
+export function SingleEditorView({ editor, entries, resolvedAppearance, onNavigateWikilink, onChange, vaultPath, editable = true }: {
   editor: ReturnType<typeof useCreateBlockNote>
   entries: VaultEntry[]
+  resolvedAppearance: ResolvedAppearance
   onNavigateWikilink: (target: string) => void
   onChange?: () => void
   vaultPath?: string
@@ -308,7 +310,7 @@ export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange
       )}
       <SharedContextBlockNoteView
         editor={editor}
-        theme="light"
+        theme={resolvedAppearance}
         onChange={onChange}
         editable={editable}
         formattingToolbar={false}

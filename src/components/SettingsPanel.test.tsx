@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { SettingsPanel } from './SettingsPanel'
+import type { AppearancePreferences } from '../lib/appearance'
 import type { Settings } from '../types'
 
 const emptySettings: Settings = {
@@ -13,6 +14,11 @@ const emptySettings: Settings = {
   analytics_enabled: null,
   anonymous_id: null,
   release_channel: null,
+}
+
+const defaultAppearance: AppearancePreferences = {
+  themeId: 'graphiteSapphire',
+  surfaceMode: 'glass',
 }
 
 function installPointerCapturePolyfill() {
@@ -48,12 +54,30 @@ describe('SettingsPanel', () => {
       <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
     )
     expect(screen.getByText('Settings')).toBeInTheDocument()
+    expect(screen.getByText('Appearance')).toBeInTheDocument()
     expect(screen.getByText('Sync & Updates')).toBeInTheDocument()
   })
 
-  it('calls onSave with stable defaults on save', () => {
+  it('defaults appearance controls to the graphite sapphire theme with glass surfaces enabled', () => {
     render(
       <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
+    )
+
+    expect(screen.getByTestId('settings-appearance-mode')).toHaveAttribute('data-value', 'graphiteSapphire')
+    expect(screen.getByTestId('settings-theme-preview')).toBeInTheDocument()
+    expect(screen.getByRole('switch', { name: 'Glass surfaces' })).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('calls onSave with stable defaults on save', () => {
+    const onSaveAppearancePreferences = vi.fn()
+    render(
+      <SettingsPanel
+        open={true}
+        settings={emptySettings}
+        onSave={onSave}
+        onSaveAppearancePreferences={onSaveAppearancePreferences}
+        onClose={onClose}
+      />
     )
 
     fireEvent.click(screen.getByTestId('settings-save'))
@@ -65,7 +89,29 @@ describe('SettingsPanel', () => {
       autogit_inactive_threshold_seconds: 30,
       release_channel: null,
     }))
+    expect(onSaveAppearancePreferences).toHaveBeenCalledWith(defaultAppearance)
     expect(onClose).toHaveBeenCalled()
+  })
+
+  it('saves the appearance preferences when provided', () => {
+    const onSaveAppearancePreferences = vi.fn()
+    render(
+      <SettingsPanel
+        open={true}
+        settings={emptySettings}
+        appearancePreferences={{ themeId: 'midnightPlum', surfaceMode: 'solid' }}
+        onSave={onSave}
+        onSaveAppearancePreferences={onSaveAppearancePreferences}
+        onClose={onClose}
+      />
+    )
+
+    fireEvent.click(screen.getByTestId('settings-save'))
+
+    expect(onSaveAppearancePreferences).toHaveBeenCalledWith({
+      themeId: 'midnightPlum',
+      surfaceMode: 'solid',
+    })
   })
 
   it('defaults the release channel trigger to stable', () => {

@@ -1,6 +1,6 @@
 {
   "editor": {
-    "fontFamily": "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+    "fontFamily": "var(--font-body)",
     "fontSize": 15,
     "lineHeight": 1.5,
     "maxWidth": 720,
@@ -77,7 +77,7 @@
       "textDecoration": "line-through"
     },
     "code": {
-      "fontFamily": "'SF Mono', 'Fira Code', monospace",
+      "fontFamily": "var(--font-mono)",
       "fontSize": 14,
       "backgroundColor": "var(--bg-hover-subtle)",
       "paddingHorizontal": 4,

@@ -1,6 +1,7 @@
 import type React from 'react'
 import { useRef } from 'react'
 import type { useCreateBlockNote } from '@blocknote/react'
+import type { ResolvedAppearance } from '../../lib/appearance'
 import type { NoteStatus, VaultEntry } from '../../types'
 import { useEditorTheme } from '../../hooks/useTheme'
 import { deriveEditorContentState } from './editorContentState'
@@ -14,6 +15,7 @@ export interface EditorContentProps {
   activeTab: Tab | null
   isLoadingNewTab: boolean
   entries: VaultEntry[]
+  resolvedAppearance: ResolvedAppearance
   editor: ReturnType<typeof useCreateBlockNote>
   diffMode: boolean
   diffContent: string | null

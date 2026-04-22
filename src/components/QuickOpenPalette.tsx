@@ -53,7 +53,7 @@ export function QuickOpenPalette({ open, entries, onSelect, onClose }: QuickOpen
       onClick={onClose}
     >
       <div
-        className="flex w-[500px] max-w-[90vw] max-h-[400px] flex-col self-start overflow-hidden rounded-xl border border-[var(--border-dialog)] bg-popover shadow-[0_8px_32px_var(--shadow-dialog)]"
+        className="glass-floating flex w-[500px] max-w-[90vw] max-h-[400px] flex-col self-start overflow-hidden rounded-xl border border-[var(--border-dialog)] bg-popover shadow-[0_8px_32px_var(--shadow-dialog)]"
         onClick={(e) => e.stopPropagation()}
       >
         <input

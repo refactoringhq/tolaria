@@ -2,13 +2,43 @@
 @import "tw-animate-css";
 
 /* ============================================================
-   Theme Variables — Light mode only (dark mode removed for now)
+   Appearance Tokens — semantic app-wide theme tokens
    ============================================================ */
 
 :root {
-  /* --- Font defaults --- */
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    Oxygen, Ubuntu, Cantarell, sans-serif;
+  --theme-app-background: #07090c;
+  --theme-gradient-start: #07090c;
+  --theme-gradient-mid: #10151d;
+  --theme-gradient-end: #111827;
+  --theme-blob-1: rgba(10, 132, 255, 0.14);
+  --theme-blob-2: rgba(100, 210, 255, 0.12);
+  --theme-blob-3: rgba(148, 163, 184, 0.1);
+  --theme-glass-fill: rgba(234, 242, 255, 0.08);
+  --theme-glass-fill-strong: rgba(234, 242, 255, 0.12);
+  --theme-glass-stroke: rgba(216, 231, 255, 0.16);
+  --theme-glass-highlight: rgba(255, 255, 255, 0.26);
+  --theme-glass-shadow: rgba(0, 0, 0, 0.72);
+  --theme-text-primary: #f5f7fa;
+  --theme-text-secondary: #c3cbd6;
+  --theme-text-muted: #8792a2;
+  --theme-text-disabled: #5d6673;
+  --theme-accent-primary: #0a84ff;
+  --theme-accent-secondary: #64d2ff;
+  --theme-success: #30d158;
+  --theme-warning: #ffd60a;
+  --theme-danger: #ff453a;
+  --theme-selection: rgba(10, 132, 255, 0.2);
+  --theme-focus-ring: #64d2ff;
+  --theme-button-gradient-start: #0a84ff;
+  --theme-button-gradient-end: #64d2ff;
+  --theme-primary-foreground: #071321;
+  --theme-danger-foreground: #ffffff;
+  --font-display: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --font-body: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --font-caption: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --font-mono: "SF Mono", "SFMono-Regular", ui-monospace, Menlo, Monaco, monospace;
+
+  font-family: var(--font-body);
   line-height: 1.5;
   font-weight: 400;
   font-size: 14px;
@@ -17,84 +47,248 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* --- shadcn theme variables (light mode) --- */
-  --radius: 0.5rem;
-  --background: #FFFFFF;
-  --foreground: #37352F;
-  --card: #FFFFFF;
-  --card-foreground: #37352F;
-  --popover: #FFFFFF;
-  --popover-foreground: #37352F;
-  --primary: #155DFF;
-  --primary-foreground: #FFFFFF;
-  --secondary: #EBEBEA;
-  --secondary-foreground: #37352F;
-  --muted: #F0F0EF;
-  --muted-foreground: #787774;
-  --accent: #EBEBEA;
-  --accent-foreground: #37352F;
-  --destructive: #E03E3E;
-  --destructive-foreground: #FFFFFF;
-  --border: #E9E9E7;
-  --input: #E9E9E7;
-  --ring: #155DFF;
-  --sidebar: #F7F6F3;
-  --sidebar-foreground: #37352F;
-  --sidebar-primary: #155DFF;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #EBEBEA;
-  --sidebar-accent-foreground: #37352F;
-  --sidebar-border: #E9E9E7;
-  --sidebar-ring: #155DFF;
-
-  /* --- App-specific variables (light mode) --- */
-  color-scheme: light;
-  --bg-primary: #FFFFFF;
-  --bg-sidebar: #F7F6F3;
-  --bg-card: #FFFFFF;
-  --bg-hover: #EBEBEA;
-  --bg-hover-subtle: #F0F0EF;
-  --bg-selected: #E8F4FE;
-  --bg-input: #FFFFFF;
-  --bg-button: #EBEBEA;
-  --bg-dialog: #FFFFFF;
-  --text-primary: #37352F;
-  --text-secondary: #787774;
-  --text-tertiary: #787774;
-  --text-muted: #B4B4B4;
-  --text-faint: #B4B4B4;
-  --text-heading: #37352F;
-  --accent-blue: #155DFF;
-  --accent-blue-bg: #155DFF18;
-  --accent-blue-hover: #0D4AD6;
-  --accent-green: #38A169;
-  --accent-orange: #D9730D;
-  --accent-orange-light: rgba(217, 115, 13, 0.1);
-  --accent-red: #E53E3E;
-  --accent-purple: #805AD5;
-  --accent-yellow: #D69E2E;
-  --accent-blue-light: #155DFF14;
-  --accent-green-light: rgba(56, 161, 105, 0.1);
-  --accent-purple-light: rgba(128, 90, 213, 0.1);
-  --accent-red-light: rgba(229, 62, 62, 0.1);
-  --accent-yellow-light: rgba(214, 158, 46, 0.1);
-  --accent-teal: #319795;
-  --accent-teal-light: rgba(49, 151, 149, 0.1);
-  --accent-pink: #D53F8C;
-  --accent-pink-light: rgba(213, 63, 140, 0.1);
-  --accent-gray: #718096;
-  --accent-gray-light: rgba(113, 128, 150, 0.1);
-  --border-primary: #E9E9E7;
-  --border-subtle: #E9E9E7;
-  --border-input: #E9E9E7;
-  --border-dialog: #E9E9E7;
-  --link-color: #155DFF;
-  --link-hover: #0D4AD6;
-  --shadow-overlay: rgba(0, 0, 0, 0.3);
-  --shadow-dialog: rgba(0, 0, 0, 0.15);
+  --radius: 14px;
+  --panel-radius: 22px;
+  --panel-radius-lg: 28px;
+  --panel-blur: 24px;
+  --panel-saturation: 155%;
+  --panel-highlight: var(--theme-glass-highlight);
+  --panel-shadow: 0 24px 80px var(--theme-glass-shadow);
+  --panel-shadow-soft: 0 18px 48px color-mix(in srgb, var(--theme-glass-shadow) 58%, transparent);
+  --panel-shadow-strong: 0 32px 96px color-mix(in srgb, var(--theme-glass-shadow) 84%, transparent);
+  --overlay-scrim: color-mix(in srgb, var(--theme-app-background) 74%, transparent);
+  --warning-bg: color-mix(in srgb, var(--theme-warning) 18%, transparent);
+  --warning-border: color-mix(in srgb, var(--theme-warning) 34%, transparent);
+  --warning-text: #2a1600;
+  --button-gradient: linear-gradient(135deg, var(--theme-button-gradient-start) 0%, var(--theme-button-gradient-end) 100%);
+  --button-border: color-mix(in srgb, var(--theme-glass-highlight) 68%, transparent);
+  --button-shadow: 0 20px 48px color-mix(in srgb, var(--theme-glass-shadow) 58%, transparent);
+  --field-background: color-mix(in srgb, var(--theme-glass-fill-strong) 88%, var(--theme-app-background) 12%);
+  --field-background-hover: color-mix(in srgb, var(--theme-glass-fill-strong) 78%, var(--theme-text-primary) 22%);
+  --field-border: color-mix(in srgb, var(--theme-glass-stroke) 82%, var(--theme-focus-ring) 18%);
+  --field-ring: var(--theme-focus-ring);
+  --canvas-background:
+    radial-gradient(circle at 18% 14%, var(--theme-blob-1), transparent 28%),
+    radial-gradient(circle at 82% 18%, var(--theme-blob-2), transparent 24%),
+    radial-gradient(circle at 74% 84%, var(--theme-blob-3), transparent 26%),
+    linear-gradient(155deg, var(--theme-gradient-start) 0%, var(--theme-gradient-mid) 42%, var(--theme-gradient-end) 100%);
+  --app-ambient-primary: var(--theme-blob-1);
+  --app-ambient-secondary: var(--theme-blob-2);
 }
 
-/* Dark mode variables removed — light mode only for now */
+:root,
+:root[data-appearance='light'] {
+  color-scheme: light;
+
+  --surface-solid-background: color-mix(in srgb, var(--theme-app-background) 74%, white 26%);
+  --surface-solid-card: color-mix(in srgb, var(--theme-app-background) 58%, white 42%);
+  --surface-solid-popover: color-mix(in srgb, var(--theme-app-background) 50%, white 50%);
+  --surface-solid-sidebar: color-mix(in srgb, var(--theme-app-background) 80%, white 20%);
+  --surface-solid-muted: color-mix(in srgb, var(--theme-app-background) 90%, black 10%);
+  --surface-solid-accent: color-mix(in srgb, var(--theme-accent-primary) 10%, white 90%);
+
+  --surface-glass-background: var(--theme-glass-fill);
+  --surface-glass-card: var(--theme-glass-fill-strong);
+  --surface-glass-popover: color-mix(in srgb, var(--theme-glass-fill-strong) 92%, white 8%);
+  --surface-glass-sidebar: color-mix(in srgb, var(--theme-glass-fill) 82%, var(--theme-app-background) 18%);
+  --surface-glass-muted: color-mix(in srgb, var(--theme-glass-fill-strong) 72%, var(--theme-app-background) 28%);
+  --surface-glass-accent: color-mix(in srgb, var(--theme-accent-primary) 12%, var(--theme-glass-fill-strong) 88%);
+
+  --foreground: var(--theme-text-primary);
+  --card-foreground: var(--theme-text-primary);
+  --popover-foreground: var(--theme-text-primary);
+  --primary: var(--theme-accent-primary);
+  --primary-foreground: var(--theme-primary-foreground);
+  --secondary-foreground: var(--theme-text-primary);
+  --muted-foreground: var(--theme-text-secondary);
+  --accent-foreground: var(--theme-text-primary);
+  --destructive: var(--theme-danger);
+  --destructive-foreground: var(--theme-danger-foreground);
+  --ring: var(--theme-focus-ring);
+  --sidebar-foreground: var(--theme-text-primary);
+  --sidebar-primary: var(--theme-accent-primary);
+  --sidebar-primary-foreground: var(--theme-primary-foreground);
+  --sidebar-accent-foreground: var(--theme-text-primary);
+  --sidebar-ring: var(--theme-focus-ring);
+
+  --background: var(--surface-glass-background);
+  --card: var(--surface-glass-card);
+  --popover: var(--surface-glass-popover);
+  --secondary: var(--surface-glass-muted);
+  --muted: var(--surface-glass-muted);
+  --accent: var(--surface-glass-accent);
+  --border: color-mix(in srgb, var(--theme-glass-stroke) 78%, transparent);
+  --input: color-mix(in srgb, var(--theme-glass-stroke) 78%, transparent);
+  --sidebar: var(--surface-glass-sidebar);
+  --sidebar-accent: var(--surface-glass-accent);
+  --sidebar-border: color-mix(in srgb, var(--theme-glass-stroke) 76%, transparent);
+
+  --bg-primary: var(--background);
+  --bg-sidebar: var(--sidebar);
+  --bg-card: var(--card);
+  --bg-hover: color-mix(in srgb, var(--theme-text-primary) 10%, var(--card) 90%);
+  --bg-hover-subtle: color-mix(in srgb, var(--theme-text-primary) 5%, var(--background) 95%);
+  --bg-selected: var(--theme-selection);
+  --bg-input: var(--field-background);
+  --bg-button: color-mix(in srgb, var(--theme-accent-primary) 8%, var(--card) 92%);
+  --bg-dialog: var(--popover);
+  --text-primary: var(--theme-text-primary);
+  --text-secondary: var(--theme-text-secondary);
+  --text-tertiary: color-mix(in srgb, var(--theme-text-secondary) 74%, var(--theme-text-muted) 26%);
+  --text-muted: var(--theme-text-muted);
+  --text-faint: var(--theme-text-disabled);
+  --text-heading: var(--theme-text-primary);
+
+  --accent-blue: var(--theme-accent-primary);
+  --accent-blue-bg: var(--theme-selection);
+  --accent-blue-hover: color-mix(in srgb, var(--theme-accent-primary) 76%, black 24%);
+  --accent-blue-light: var(--theme-selection);
+  --accent-green: var(--theme-success);
+  --accent-green-light: color-mix(in srgb, var(--theme-success) 18%, transparent);
+  --accent-orange: var(--theme-warning);
+  --accent-orange-light: color-mix(in srgb, var(--theme-warning) 18%, transparent);
+  --accent-red: var(--theme-danger);
+  --accent-red-light: color-mix(in srgb, var(--theme-danger) 18%, transparent);
+  --accent-purple: var(--theme-accent-secondary);
+  --accent-purple-light: color-mix(in srgb, var(--theme-accent-secondary) 18%, transparent);
+  --accent-yellow: var(--theme-warning);
+  --accent-yellow-light: color-mix(in srgb, var(--theme-warning) 18%, transparent);
+  --accent-teal: color-mix(in srgb, var(--theme-accent-primary) 58%, var(--theme-success) 42%);
+  --accent-teal-light: color-mix(in srgb, var(--accent-teal) 18%, transparent);
+  --accent-pink: color-mix(in srgb, var(--theme-accent-secondary) 58%, var(--theme-danger) 42%);
+  --accent-pink-light: color-mix(in srgb, var(--accent-pink) 18%, transparent);
+  --accent-gray: var(--theme-text-muted);
+  --accent-gray-light: color-mix(in srgb, var(--theme-text-muted) 18%, transparent);
+
+  --border-primary: color-mix(in srgb, var(--theme-glass-stroke) 82%, transparent);
+  --border-subtle: color-mix(in srgb, var(--theme-glass-stroke) 60%, transparent);
+  --border-input: color-mix(in srgb, var(--theme-glass-stroke) 90%, transparent);
+  --border-dialog: color-mix(in srgb, var(--theme-glass-stroke) 88%, transparent);
+  --link-color: var(--theme-accent-primary);
+  --link-hover: color-mix(in srgb, var(--theme-accent-primary) 80%, black 20%);
+  --shadow-overlay: color-mix(in srgb, var(--theme-glass-shadow) 60%, transparent);
+  --shadow-dialog: color-mix(in srgb, var(--theme-glass-shadow) 56%, transparent);
+  --warning-text: #2a1600;
+}
+
+:root.dark {
+  color-scheme: dark;
+  --panel-highlight: color-mix(in srgb, var(--theme-glass-highlight) 72%, transparent);
+  --panel-shadow: 0 28px 84px color-mix(in srgb, var(--theme-glass-shadow) 76%, transparent);
+  --panel-shadow-soft: 0 18px 48px color-mix(in srgb, var(--theme-glass-shadow) 54%, transparent);
+  --panel-shadow-strong: 0 40px 96px color-mix(in srgb, var(--theme-glass-shadow) 88%, transparent);
+  --overlay-scrim: color-mix(in srgb, var(--theme-app-background) 78%, transparent);
+  --warning-bg: color-mix(in srgb, var(--theme-warning) 14%, transparent);
+  --warning-border: color-mix(in srgb, var(--theme-warning) 28%, transparent);
+  --warning-text: color-mix(in srgb, var(--theme-warning) 72%, white 28%);
+  --button-border: color-mix(in srgb, var(--theme-glass-highlight) 42%, transparent);
+  --button-shadow: 0 24px 56px color-mix(in srgb, var(--theme-glass-shadow) 72%, transparent);
+
+  --surface-solid-background: color-mix(in srgb, var(--theme-app-background) 90%, white 10%);
+  --surface-solid-card: color-mix(in srgb, var(--theme-app-background) 84%, white 16%);
+  --surface-solid-popover: color-mix(in srgb, var(--theme-app-background) 78%, white 22%);
+  --surface-solid-sidebar: color-mix(in srgb, var(--theme-app-background) 92%, white 8%);
+  --surface-solid-muted: color-mix(in srgb, var(--theme-app-background) 72%, white 28%);
+  --surface-solid-accent: color-mix(in srgb, var(--theme-accent-primary) 12%, var(--theme-app-background) 88%);
+
+  --surface-glass-background: var(--theme-glass-fill);
+  --surface-glass-card: var(--theme-glass-fill-strong);
+  --surface-glass-popover: color-mix(in srgb, var(--theme-glass-fill-strong) 90%, var(--theme-app-background) 10%);
+  --surface-glass-sidebar: color-mix(in srgb, var(--theme-glass-fill) 88%, var(--theme-app-background) 12%);
+  --surface-glass-muted: color-mix(in srgb, var(--theme-glass-fill-strong) 74%, var(--theme-app-background) 26%);
+  --surface-glass-accent: color-mix(in srgb, var(--theme-accent-primary) 14%, var(--theme-glass-fill-strong) 86%);
+
+  --foreground: var(--theme-text-primary);
+  --card-foreground: var(--theme-text-primary);
+  --popover-foreground: var(--theme-text-primary);
+  --primary: var(--theme-accent-primary);
+  --primary-foreground: var(--theme-primary-foreground);
+  --secondary-foreground: var(--theme-text-primary);
+  --muted-foreground: var(--theme-text-secondary);
+  --accent-foreground: var(--theme-text-primary);
+  --destructive: var(--theme-danger);
+  --destructive-foreground: var(--theme-danger-foreground);
+  --ring: var(--theme-focus-ring);
+  --sidebar-foreground: var(--theme-text-primary);
+  --sidebar-primary: var(--theme-accent-primary);
+  --sidebar-primary-foreground: var(--theme-primary-foreground);
+  --sidebar-accent-foreground: var(--theme-text-primary);
+  --sidebar-ring: var(--theme-focus-ring);
+
+  --background: var(--surface-glass-background);
+  --card: var(--surface-glass-card);
+  --popover: var(--surface-glass-popover);
+  --secondary: var(--surface-glass-muted);
+  --muted: var(--surface-glass-muted);
+  --accent: var(--surface-glass-accent);
+  --border: color-mix(in srgb, var(--theme-glass-stroke) 82%, transparent);
+  --input: color-mix(in srgb, var(--theme-glass-stroke) 84%, transparent);
+  --sidebar: var(--surface-glass-sidebar);
+  --sidebar-accent: var(--surface-glass-accent);
+  --sidebar-border: color-mix(in srgb, var(--theme-glass-stroke) 78%, transparent);
+
+  --bg-primary: var(--background);
+  --bg-sidebar: var(--sidebar);
+  --bg-card: var(--card);
+  --bg-hover: color-mix(in srgb, var(--theme-text-primary) 8%, var(--card) 92%);
+  --bg-hover-subtle: color-mix(in srgb, var(--theme-text-primary) 4%, var(--background) 96%);
+  --bg-selected: var(--theme-selection);
+  --bg-input: var(--field-background);
+  --bg-button: color-mix(in srgb, var(--theme-accent-primary) 10%, var(--card) 90%);
+  --bg-dialog: var(--popover);
+  --text-primary: var(--theme-text-primary);
+  --text-secondary: var(--theme-text-secondary);
+  --text-tertiary: color-mix(in srgb, var(--theme-text-secondary) 72%, var(--theme-text-muted) 28%);
+  --text-muted: var(--theme-text-muted);
+  --text-faint: var(--theme-text-disabled);
+  --text-heading: var(--theme-text-primary);
+
+  --accent-blue: var(--theme-accent-primary);
+  --accent-blue-bg: var(--theme-selection);
+  --accent-blue-hover: color-mix(in srgb, var(--theme-accent-primary) 78%, white 22%);
+  --accent-blue-light: var(--theme-selection);
+  --accent-green: var(--theme-success);
+  --accent-green-light: color-mix(in srgb, var(--theme-success) 18%, transparent);
+  --accent-orange: var(--theme-warning);
+  --accent-orange-light: color-mix(in srgb, var(--theme-warning) 18%, transparent);
+  --accent-red: var(--theme-danger);
+  --accent-red-light: color-mix(in srgb, var(--theme-danger) 18%, transparent);
+  --accent-purple: var(--theme-accent-secondary);
+  --accent-purple-light: color-mix(in srgb, var(--theme-accent-secondary) 18%, transparent);
+  --accent-yellow: var(--theme-warning);
+  --accent-yellow-light: color-mix(in srgb, var(--theme-warning) 18%, transparent);
+  --accent-teal: color-mix(in srgb, var(--theme-accent-primary) 54%, var(--theme-success) 46%);
+  --accent-teal-light: color-mix(in srgb, var(--accent-teal) 18%, transparent);
+  --accent-pink: color-mix(in srgb, var(--theme-accent-secondary) 56%, var(--theme-danger) 44%);
+  --accent-pink-light: color-mix(in srgb, var(--accent-pink) 18%, transparent);
+  --accent-gray: var(--theme-text-muted);
+  --accent-gray-light: color-mix(in srgb, var(--theme-text-muted) 18%, transparent);
+
+  --border-primary: color-mix(in srgb, var(--theme-glass-stroke) 86%, transparent);
+  --border-subtle: color-mix(in srgb, var(--theme-glass-stroke) 64%, transparent);
+  --border-input: color-mix(in srgb, var(--theme-glass-stroke) 92%, transparent);
+  --border-dialog: color-mix(in srgb, var(--theme-glass-stroke) 88%, transparent);
+  --link-color: var(--theme-accent-primary);
+  --link-hover: color-mix(in srgb, var(--theme-accent-primary) 80%, white 20%);
+  --shadow-overlay: color-mix(in srgb, var(--theme-glass-shadow) 66%, transparent);
+  --shadow-dialog: color-mix(in srgb, var(--theme-glass-shadow) 62%, transparent);
+}
+
+:root[data-surface-mode='solid'] {
+  --background: var(--surface-solid-background);
+  --card: var(--surface-solid-card);
+  --popover: var(--surface-solid-popover);
+  --secondary: var(--surface-solid-muted);
+  --muted: var(--surface-solid-muted);
+  --accent: var(--surface-solid-accent);
+  --sidebar: var(--surface-solid-sidebar);
+  --sidebar-accent: var(--surface-solid-accent);
+  --bg-primary: var(--background);
+  --bg-sidebar: var(--sidebar);
+  --bg-card: var(--card);
+  --bg-input: var(--surface-solid-popover);
+  --bg-button: var(--surface-solid-accent);
+}
 
 /* --- Tailwind v4 theme inline: register colors + radii --- */
 @theme inline {
@@ -137,8 +331,14 @@
     @apply border-border;
     box-sizing: border-box;
   }
+  html {
+    height: 100%;
+    width: 100%;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background: var(--canvas-background);
+    background-attachment: fixed;
     margin: 0;
     padding: 0;
     overflow: hidden;
@@ -153,17 +353,110 @@
   }
 }
 
+.chrome-panel {
+  position: relative;
+  border-radius: var(--panel-radius);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--panel-shadow-soft);
+  backdrop-filter: blur(var(--panel-blur)) saturate(var(--panel-saturation));
+  -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(var(--panel-saturation));
+}
+
+.chrome-panel::before,
+.glass-floating::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border-top: 1px solid var(--panel-highlight);
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.chrome-panel--sidebar,
+.chrome-panel--stack,
+.chrome-panel--editor,
+.chrome-panel--inspector {
+  box-shadow: var(--panel-shadow);
+}
+
+.chrome-panel--statusbar {
+  border-radius: calc(var(--panel-radius) - 0.3rem);
+  box-shadow: var(--panel-shadow-soft);
+}
+
+.glass-floating {
+  position: relative;
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(calc(var(--panel-blur) + 4px)) saturate(calc(var(--panel-saturation) + 10%));
+  -webkit-backdrop-filter: blur(calc(var(--panel-blur) + 4px)) saturate(calc(var(--panel-saturation) + 10%));
+}
+
+:root[data-surface-mode='solid'] .chrome-panel,
+:root[data-surface-mode='solid'] .glass-floating {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+button[data-slot='button'][data-variant='default'] {
+  background-image: var(--button-gradient);
+  border: 1px solid var(--button-border);
+  box-shadow: var(--button-shadow);
+}
+
+button[data-slot='button'][data-variant='default']:hover {
+  filter: brightness(1.04) saturate(1.05);
+}
+
+button[data-slot='button'][data-variant='outline'],
+button[data-slot='button'][data-variant='secondary'] {
+  background: var(--field-background);
+  border-color: var(--field-border);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--theme-glass-shadow) 34%, transparent);
+}
+
+button[data-slot='button'][data-variant='ghost'] {
+  color: var(--foreground);
+}
+
+[data-slot='input'],
+[data-slot='textarea'],
+[data-slot='select-trigger'] {
+  background: var(--field-background);
+  border-color: var(--field-border);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--theme-glass-highlight) 56%, transparent);
+}
+
+[data-slot='input']:hover,
+[data-slot='textarea']:hover,
+[data-slot='select-trigger']:hover {
+  background: var(--field-background-hover);
+}
+
+[data-slot='switch'] {
+  border-color: var(--field-border);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--theme-glass-highlight) 54%, transparent);
+}
+
+[data-slot='switch'][aria-checked='false'] {
+  background: color-mix(in srgb, var(--field-background) 82%, var(--theme-text-primary) 18%);
+}
+
+[data-slot='switch-thumb'] {
+  background: color-mix(in srgb, var(--theme-text-primary) 94%, white 6%);
+}
+
 /* --- Label typography (Inter, sentence case) --- */
 /* t8: Section labels, metadata tags — 11px medium */
 .font-mono-label {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-caption);
   font-size: 11px;
   font-weight: 500;
 }
 
 /* t9: Overlines, category labels — 10px regular */
 .font-mono-overline {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-caption);
   font-size: 10px;
   font-weight: 400;
   letter-spacing: 0.02em;
@@ -212,7 +505,7 @@
 .ai-markdown li > ol { margin: 0.1em 0; }
 
 .ai-markdown code {
-  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 0.9em;
   background: var(--muted);
   border-radius: 3px;

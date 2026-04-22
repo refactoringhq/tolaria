@@ -199,7 +199,7 @@ export function Inspector({
   })
 
   return (
-    <aside className={cn('flex flex-1 flex-col overflow-hidden border-l border-border bg-background text-foreground transition-[width] duration-200', collapsed && '!w-10 !min-w-10')}>
+    <aside className={cn('chrome-panel chrome-panel--inspector flex flex-1 flex-col overflow-hidden border-l border-border bg-background text-foreground transition-[width] duration-200', collapsed && '!w-10 !min-w-10')}>
       <InspectorHeader collapsed={collapsed} onToggle={onToggle} />
       {!collapsed && (
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-3">

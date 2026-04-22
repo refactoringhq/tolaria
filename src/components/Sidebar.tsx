@@ -121,7 +121,7 @@ export const Sidebar = memo(function Sidebar({
   const hasViews = views.length > 0 || !!onCreateView
 
   return (
-    <aside className="flex h-full flex-col overflow-hidden border-r border-[var(--sidebar-border)] bg-sidebar text-sidebar-foreground">
+    <aside className="chrome-panel chrome-panel--sidebar flex h-full flex-col overflow-hidden border-r border-[var(--sidebar-border)] bg-sidebar text-sidebar-foreground">
       <SidebarTitleBar onCollapse={onCollapse} />
       <nav className="flex-1 overflow-y-auto">
         <SidebarTopNav

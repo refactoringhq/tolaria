@@ -423,7 +423,7 @@ export const PulseView = memo(function PulseView({ vaultPath, onOpenNote, sideba
   const dayGroups = groupCommitsByDay(commits)
 
   return (
-    <div className="flex h-full flex-col overflow-hidden border-r border-[var(--sidebar-border)] bg-background">
+    <div className="chrome-panel chrome-panel--stack flex h-full flex-col overflow-hidden border-r border-[var(--sidebar-border)] bg-background">
       <PulseHeader sidebarCollapsed={sidebarCollapsed} onExpandSidebar={onExpandSidebar} />
 
       <div className="flex-1 overflow-y-auto">

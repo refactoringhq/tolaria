@@ -124,8 +124,8 @@ describe('RawEditorView behavior coverage', () => {
     vi.useFakeTimers()
     noteSearchListState.lastProps = null
     viewRefState.current = createMockView()
-    useCodeMirrorMock.mockImplementation((_containerRef: unknown, _content: string, callbacks: unknown) => {
-      useCodeMirrorMock.mock.calls[useCodeMirrorMock.mock.calls.length - 1]![2] = callbacks
+    useCodeMirrorMock.mockImplementation((_containerRef: unknown, _content: string, _isDarkMode: boolean, callbacks: unknown) => {
+      useCodeMirrorMock.mock.calls[useCodeMirrorMock.mock.calls.length - 1]![3] = callbacks
       return viewRefState
     })
     buildRawEditorBaseItemsMock.mockReturnValue([{ title: 'Base item' }])
@@ -161,7 +161,7 @@ describe('RawEditorView behavior coverage', () => {
       />,
     )
 
-    const callbacks = useCodeMirrorMock.mock.calls[0]![2] as {
+    const callbacks = useCodeMirrorMock.mock.calls[0]![3] as {
       onDocChange: (doc: string) => void
       onSave: () => void
     }
@@ -230,7 +230,7 @@ describe('RawEditorView behavior coverage', () => {
       />,
     )
 
-    const callbacks = useCodeMirrorMock.mock.calls[0]![2] as {
+    const callbacks = useCodeMirrorMock.mock.calls[0]![3] as {
       onCursorActivity: (view: unknown) => void
       onEscape: () => boolean
     }
@@ -291,7 +291,7 @@ describe('RawEditorView behavior coverage', () => {
       />,
     )
 
-    let callbacks = useCodeMirrorMock.mock.calls[0]![2] as {
+    let callbacks = useCodeMirrorMock.mock.calls[0]![3] as {
       onCursorActivity: (view: unknown) => void
       onEscape: () => boolean
     }
@@ -302,14 +302,14 @@ describe('RawEditorView behavior coverage', () => {
 
     expect(screen.queryByTestId('raw-editor-wikilink-dropdown')).not.toBeInTheDocument()
 
-    callbacks = useCodeMirrorMock.mock.calls.at(-1)![2] as typeof callbacks
+    callbacks = useCodeMirrorMock.mock.calls.at(-1)![3] as typeof callbacks
 
     act(() => {
       callbacks.onCursorActivity(mockView)
     })
 
     expect(screen.getByTestId('raw-editor-wikilink-dropdown')).toBeInTheDocument()
-    callbacks = useCodeMirrorMock.mock.calls.at(-1)![2] as typeof callbacks
+    callbacks = useCodeMirrorMock.mock.calls.at(-1)![3] as typeof callbacks
     expect(callbacks.onEscape()).toBe(true)
   })
 })

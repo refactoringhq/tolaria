@@ -102,6 +102,7 @@ export function StatusBar({
   return (
     <TooltipProvider>
       <footer
+        className="chrome-panel chrome-panel--statusbar"
         style={{
           height: 30,
           flexShrink: 0,

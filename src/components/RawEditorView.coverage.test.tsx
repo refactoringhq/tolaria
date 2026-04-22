@@ -164,7 +164,7 @@ describe('RawEditorView additional coverage', () => {
       text: 'Before [[Alpha]]',
       cursor: 15,
     })
-    useCodeMirrorMock.mockImplementation((_container, _content, callbacks: CodeMirrorCallbacks) => {
+    useCodeMirrorMock.mockImplementation((_container, _content, _isDarkMode: boolean, callbacks: CodeMirrorCallbacks) => {
       latestCallbacks = callbacks
       return latestViewRef
     })

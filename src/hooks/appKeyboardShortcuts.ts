@@ -5,6 +5,7 @@ import {
   findShortcutCommandIdForEvent,
   recordSuppressedShortcutCommand,
   type AppCommandHandlers,
+  type AppCommandId,
 } from './appCommandDispatcher'
 
 export type KeyboardActions = Pick<
@@ -34,7 +35,7 @@ export type KeyboardActions = Pick<
 >
 
 const TEXT_EDITING_KEYS = new Set(['Backspace', 'Delete'])
-const TEXT_EDITING_BLOCKED_COMMANDS = new Set([
+const TEXT_EDITING_BLOCKED_COMMANDS: ReadonlySet<AppCommandId> = new Set([
   APP_COMMAND_IDS.viewGoBack,
   APP_COMMAND_IDS.viewGoForward,
 ])

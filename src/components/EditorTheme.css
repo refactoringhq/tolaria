@@ -71,6 +71,7 @@
 }
 .editor__blocknote-container [data-content-type="heading"]:not([data-level]) .bn-inline-content,
 .editor__blocknote-container [data-content-type="heading"][data-level="1"] .bn-inline-content {
+  font-family: var(--font-display);
   font-size: var(--headings-h1-font-size);
   font-weight: var(--headings-h1-font-weight);
   line-height: var(--headings-h1-line-height);
@@ -89,6 +90,7 @@
   margin-bottom: var(--headings-h2-margin-bottom) !important;
 }
 .editor__blocknote-container [data-content-type="heading"][data-level="2"] .bn-inline-content {
+  font-family: var(--font-display);
   font-size: var(--headings-h2-font-size);
   font-weight: var(--headings-h2-font-weight);
   line-height: var(--headings-h2-line-height);
@@ -101,6 +103,7 @@
   margin-bottom: var(--headings-h3-margin-bottom) !important;
 }
 .editor__blocknote-container [data-content-type="heading"][data-level="3"] .bn-inline-content {
+  font-family: var(--font-display);
   font-size: var(--headings-h3-font-size);
   font-weight: var(--headings-h3-font-weight);
   line-height: var(--headings-h3-line-height);
@@ -113,6 +116,7 @@
   margin-bottom: var(--headings-h4-margin-bottom) !important;
 }
 .editor__blocknote-container [data-content-type="heading"][data-level="4"] .bn-inline-content {
+  font-family: var(--font-display);
   font-size: var(--headings-h4-font-size);
   font-weight: var(--headings-h4-font-weight);
   line-height: var(--headings-h4-line-height);

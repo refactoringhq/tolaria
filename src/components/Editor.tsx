@@ -4,6 +4,7 @@ import { useCreateBlockNote } from '@blocknote/react'
 import '@blocknote/mantine/style.css'
 import { uploadImageFile } from '../hooks/useImageDrop'
 import { DEFAULT_AI_AGENT, type AiAgentId } from '../lib/aiAgents'
+import type { ResolvedAppearance } from '../lib/appearance'
 import type { VaultEntry, GitCommit, NoteStatus } from '../types'
 import type { NoteListItem } from '../utils/ai-context'
 import type { FrontmatterValue } from './Inspector'
@@ -33,6 +34,7 @@ interface EditorProps {
   tabs: Tab[]
   activeTabPath: string | null
   entries: VaultEntry[]
+  resolvedAppearance: ResolvedAppearance
   onNavigateWikilink: (target: string) => void
   onLoadDiff?: (path: string) => Promise<string>
   onLoadDiffAtCommit?: (path: string, commitHash: string) => Promise<string>
@@ -265,6 +267,7 @@ function EditorLayout({
   activeTab,
   isLoadingNewTab,
   entries,
+  resolvedAppearance,
   editor,
   diffMode,
   diffContent,
@@ -318,6 +321,7 @@ function EditorLayout({
   activeTab: Tab | null
   isLoadingNewTab: boolean
   entries: VaultEntry[]
+  resolvedAppearance: ResolvedAppearance
   editor: ReturnType<typeof useCreateBlockNote>
   diffMode: boolean
   diffContent: string | null
@@ -368,7 +372,7 @@ function EditorLayout({
   onVaultChanged?: () => void
 }) {
   return (
-    <div className="editor flex flex-col min-h-0 overflow-hidden bg-background text-foreground">
+    <div className="chrome-panel chrome-panel--editor editor flex flex-col min-h-0 overflow-hidden bg-background text-foreground">
       <div className="flex flex-1 min-h-0">
         {tabs.length === 0
           ? <EditorEmptyState />
@@ -376,6 +380,7 @@ function EditorLayout({
               activeTab={activeTab}
               isLoadingNewTab={isLoadingNewTab}
               entries={entries}
+              resolvedAppearance={resolvedAppearance}
               editor={editor}
               diffMode={diffMode}
               diffContent={diffContent}
@@ -444,7 +449,7 @@ function EditorLayout({
 
 export const Editor = memo(function Editor(props: EditorProps) {
   const {
-    tabs, activeTabPath, entries, onNavigateWikilink,
+    tabs, activeTabPath, entries, resolvedAppearance, onNavigateWikilink,
     getNoteStatus,
     inspectorCollapsed, onToggleInspector, inspectorWidth,
     defaultAiAgent = DEFAULT_AI_AGENT, defaultAiAgentReady = true,
@@ -489,6 +494,7 @@ export const Editor = memo(function Editor(props: EditorProps) {
       activeTab={activeTab}
       isLoadingNewTab={isLoadingNewTab}
       entries={entries}
+      resolvedAppearance={resolvedAppearance}
       editor={editor}
       diffMode={diffMode}
       diffContent={diffContent}

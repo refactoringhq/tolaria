@@ -68,7 +68,7 @@ proposed → active → superseded
 | [0010](0010-dynamic-wikilink-relationship-detection.md) | Dynamic wikilink relationship detection | active |
 | [0011](0011-mcp-server-for-ai-integration.md) | MCP server for AI tool integration | superseded → [0074](0074-explicit-external-ai-tool-setup-and-least-privilege-desktop-scope.md) |
 | [0012](0012-claude-cli-for-ai-agent.md) | Claude CLI subprocess for AI agent | active |
-| [0013](0013-remove-theming-system.md) | Remove vault-based theming system | active |
+| [0013](0013-remove-theming-system.md) | Remove vault-based theming system | superseded → [0075](0075-installation-local-appearance-modes-and-glass-surfaces.md) |
 | [0014](0014-git-based-vault-cache.md) | Git-based incremental vault cache | active |
 | [0015](0015-auto-save-with-debounce.md) | Auto-save with 500ms debounce | active |
 | [0016](0016-sentry-posthog-telemetry.md) | Sentry + PostHog telemetry with consent | active |
@@ -130,3 +130,4 @@ proposed → active → superseded
 | [0072](0072-confirmed-vault-paths-gate-startup-state.md) | Confirmed vault paths gate startup state | active |
 | [0073](0073-persistent-linkify-protocol-registry-across-editor-remounts.md) | Persistent linkify protocol registry across editor remounts | active |
 | [0074](0074-explicit-external-ai-tool-setup-and-least-privilege-desktop-scope.md) | Explicit external AI tool setup and least-privilege desktop scope | active |
+| [0075](0075-installation-local-appearance-modes-and-glass-surfaces.md) | Installation-local appearance modes and glass surfaces | active |

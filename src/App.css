@@ -5,7 +5,42 @@
   height: 100%;
   width: 100%;
   overflow: hidden;
-  box-shadow: inset 0 0 0 1px var(--border-primary);
+  position: relative;
+  isolation: isolate;
+  padding: 12px;
+  gap: 10px;
+}
+
+.app-shell::before,
+.app-shell::after {
+  content: '';
+  position: absolute;
+  inset: auto;
+  pointer-events: none;
+  filter: blur(90px);
+  opacity: 0.95;
+  z-index: 0;
+}
+
+.app-shell::before {
+  top: -8%;
+  left: 8%;
+  width: 32rem;
+  height: 32rem;
+  background: radial-gradient(circle, var(--app-ambient-primary), transparent 68%);
+}
+
+.app-shell::after {
+  right: -6%;
+  bottom: -12%;
+  width: 28rem;
+  height: 28rem;
+  background: radial-gradient(circle, var(--app-ambient-secondary), transparent 72%);
+}
+
+.app-shell > * {
+  position: relative;
+  z-index: 1;
 }
 
 .app {
@@ -18,23 +53,27 @@
 .app__sidebar {
   flex-shrink: 1;
   min-width: 180px;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
 .app__sidebar > * {
   flex: 1;
+  min-height: 0;
 }
 
 .app__note-list {
   flex-shrink: 10;
   min-width: 220px;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
 .app__note-list > * {
   flex: 1;
+  min-height: 0;
 }
 
 .app__editor {
@@ -68,9 +107,9 @@
 
 /* AI highlight animation — applied by useAiActivity when MCP calls ui_highlight */
 @keyframes ai-highlight-glow {
-  0% { box-shadow: inset 0 0 0 2px rgba(99, 102, 241, 0.8); }
-  50% { box-shadow: inset 0 0 8px 2px rgba(99, 102, 241, 0.4); }
-  100% { box-shadow: inset 0 0 0 2px rgba(99, 102, 241, 0); }
+  0% { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 72%, transparent); }
+  50% { box-shadow: inset 0 0 18px 2px color-mix(in srgb, var(--primary) 32%, transparent); }
+  100% { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 0%, transparent); }
 }
 
 .ai-highlight {

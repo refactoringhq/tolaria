@@ -88,7 +88,7 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
       onClick={onClose}
     >
       <div
-        className="flex w-[540px] max-w-[90vw] max-h-[480px] flex-col self-start overflow-hidden rounded-xl border border-[var(--border-dialog)] bg-popover shadow-[0_8px_32px_var(--shadow-dialog)]"
+        className="glass-floating flex w-[540px] max-w-[90vw] max-h-[480px] flex-col self-start overflow-hidden rounded-xl border border-[var(--border-dialog)] bg-popover shadow-[0_8px_32px_var(--shadow-dialog)]"
         onClick={e => e.stopPropagation()}
       >
         <SearchInput

@@ -17,6 +17,9 @@ import {
 } from 'react'
 import { X } from '@phosphor-icons/react'
 import type { Settings } from '../types'
+import type { AppearancePreferences, SurfaceMode } from '../lib/appearance'
+import { DEFAULT_APPEARANCE_PREFERENCES } from '../lib/appearance'
+import { getThemeById, getThemeSelectOptions, type ThemeId } from '../lib/appThemes'
 import { normalizeReleaseChannel, serializeReleaseChannel, type ReleaseChannel } from '../lib/releaseChannel'
 import { trackEvent } from '../lib/telemetry'
 import { Button } from './ui/button'
@@ -34,8 +37,10 @@ import { Switch } from './ui/switch'
 interface SettingsPanelProps {
   open: boolean
   settings: Settings
+  appearancePreferences?: AppearancePreferences
   aiAgentsStatus?: AiAgentsStatus
   onSave: (settings: Settings) => void
+  onSaveAppearancePreferences?: (preferences: AppearancePreferences) => void
   isGitVault?: boolean
   explicitOrganizationEnabled?: boolean
   onSaveExplicitOrganization?: (enabled: boolean) => void
@@ -43,6 +48,8 @@ interface SettingsPanelProps {
 }
 
 interface SettingsDraft {
+  themeId: ThemeId
+  surfaceMode: SurfaceMode
   pullInterval: number
   autoGitEnabled: boolean
   autoGitIdleThresholdSeconds: number
@@ -56,6 +63,10 @@ interface SettingsDraft {
 }
 
 interface SettingsBodyProps {
+  themeId: ThemeId
+  setThemeId: (value: ThemeId) => void
+  surfaceMode: SurfaceMode
+  setSurfaceMode: (value: SurfaceMode) => void
   pullInterval: number
   setPullInterval: (value: number) => void
   isGitVault: boolean
@@ -83,6 +94,7 @@ interface SettingsBodyProps {
 const PULL_INTERVAL_OPTIONS = [1, 2, 5, 10, 15, 30] as const
 const DEFAULT_AUTOGIT_IDLE_THRESHOLD_SECONDS = 90
 const DEFAULT_AUTOGIT_INACTIVE_THRESHOLD_SECONDS = 30
+const THEME_OPTIONS = getThemeSelectOptions()
 
 function isSaveShortcut(event: ReactKeyboardEvent): boolean {
   return event.key === 'Enter' && (event.metaKey || event.ctrlKey)
@@ -91,8 +103,11 @@ function isSaveShortcut(event: ReactKeyboardEvent): boolean {
 function createSettingsDraft(
   settings: Settings,
   explicitOrganizationEnabled: boolean,
+  appearancePreferences: AppearancePreferences,
 ): SettingsDraft {
   return {
+    themeId: appearancePreferences.themeId,
+    surfaceMode: appearancePreferences.surfaceMode,
     pullInterval: settings.auto_pull_interval_minutes ?? 5,
     autoGitEnabled: settings.autogit_enabled ?? false,
     autoGitIdleThresholdSeconds: sanitizePositiveInteger(
@@ -158,8 +173,10 @@ function sanitizePositiveInteger(value: number | null | undefined, fallback: num
 export function SettingsPanel({
   open,
   settings,
+  appearancePreferences = DEFAULT_APPEARANCE_PREFERENCES,
   aiAgentsStatus = createMissingAiAgentsStatus(),
   onSave,
+  onSaveAppearancePreferences,
   isGitVault = true,
   explicitOrganizationEnabled = true,
   onSaveExplicitOrganization,
@@ -170,8 +187,10 @@ export function SettingsPanel({
   return (
     <SettingsPanelInner
       settings={settings}
+      appearancePreferences={appearancePreferences}
       aiAgentsStatus={aiAgentsStatus}
       onSave={onSave}
+      onSaveAppearancePreferences={onSaveAppearancePreferences}
       isGitVault={isGitVault}
       explicitOrganizationEnabled={explicitOrganizationEnabled}
       onSaveExplicitOrganization={onSaveExplicitOrganization}
@@ -188,14 +207,20 @@ type SettingsPanelInnerProps = Omit<SettingsPanelProps, 'open' | 'explicitOrgani
 
 function SettingsPanelInner({
   settings,
+  appearancePreferences,
   aiAgentsStatus,
   onSave,
+  onSaveAppearancePreferences,
   isGitVault,
   explicitOrganizationEnabled,
   onSaveExplicitOrganization,
   onClose,
 }: SettingsPanelInnerProps) {
-  const [draft, setDraft] = useState(() => createSettingsDraft(settings, explicitOrganizationEnabled))
+  const [draft, setDraft] = useState(() => createSettingsDraft(
+    settings,
+    explicitOrganizationEnabled,
+    appearancePreferences ?? DEFAULT_APPEARANCE_PREFERENCES,
+  ))
   const panelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -216,9 +241,13 @@ function SettingsPanelInner({
   const handleSave = useCallback(() => {
     trackTelemetryConsentChange(settings.analytics_enabled === true, draft.analytics)
     onSave(buildSettingsFromDraft(settings, draft))
+    onSaveAppearancePreferences?.({
+      themeId: draft.themeId,
+      surfaceMode: draft.surfaceMode,
+    })
     onSaveExplicitOrganization?.(draft.explicitOrganization)
     onClose()
-  }, [draft, onClose, onSave, onSaveExplicitOrganization, settings])
+  }, [draft, onClose, onSave, onSaveAppearancePreferences, onSaveExplicitOrganization, settings])
 
   const handleBackdropClick = useCallback(
     (event: ReactMouseEvent<HTMLDivElement>) => {
@@ -246,18 +275,22 @@ function SettingsPanelInner({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.4)' }}
+      style={{ background: 'var(--overlay-scrim)' }}
       onClick={handleBackdropClick}
       onKeyDown={handleKeyDown}
       data-testid="settings-panel"
     >
       <div
         ref={panelRef}
-        className="bg-background border border-border rounded-lg shadow-xl"
+        className="glass-floating bg-background border border-border rounded-lg shadow-xl"
         style={{ width: 520, maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
       >
         <SettingsHeader onClose={onClose} />
         <SettingsBody
+          themeId={draft.themeId}
+          setThemeId={(value) => updateDraft('themeId', value)}
+          surfaceMode={draft.surfaceMode}
+          setSurfaceMode={(value) => updateDraft('surfaceMode', value)}
           pullInterval={draft.pullInterval}
           setPullInterval={(value) => updateDraft('pullInterval', value)}
           isGitVault={isGitVault}
@@ -308,6 +341,10 @@ function SettingsHeader({ onClose }: { onClose: () => void }) {
 }
 
 function SettingsBody({
+  themeId,
+  setThemeId,
+  surfaceMode,
+  setSurfaceMode,
   pullInterval,
   setPullInterval,
   isGitVault,
@@ -334,6 +371,15 @@ function SettingsBody({
   return (
     <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 0, overflow: 'auto' }}>
       <SettingsSection showDivider={false}>
+        <AppearanceSection
+          themeId={themeId}
+          setThemeId={setThemeId}
+          surfaceMode={surfaceMode}
+          setSurfaceMode={setSurfaceMode}
+        />
+      </SettingsSection>
+
+      <SettingsSection>
         <SyncAndUpdatesSection
           pullInterval={pullInterval}
           setPullInterval={setPullInterval}
@@ -388,6 +434,106 @@ function SettingsBody({
   )
 }
 
+function AppearanceSection({
+  themeId,
+  setThemeId,
+  surfaceMode,
+  setSurfaceMode,
+}: Pick<
+  SettingsBodyProps,
+  'themeId' | 'setThemeId' | 'surfaceMode' | 'setSurfaceMode'
+>) {
+  const selectedTheme = getThemeById(themeId)
+  const gradientStops = selectedTheme.tokens.backgroundGradient.join(', ')
+  const accentSwatches = [
+    selectedTheme.tokens.accentPrimary,
+    selectedTheme.tokens.accentSecondary,
+    selectedTheme.tokens.success,
+    selectedTheme.tokens.warning,
+  ]
+
+  return (
+    <>
+      <SectionHeading
+        title="Appearance"
+        description="Pick a premium dark glass theme and keep the same semantic styling across the sidebar, editor, panels, overlays, and controls. Glass mode keeps the chrome translucent without sacrificing readability."
+      />
+
+      <LabeledSelect
+        label="Theme"
+        value={themeId}
+        onValueChange={(value) => setThemeId(value as ThemeId)}
+        options={THEME_OPTIONS}
+        testId="settings-appearance-mode"
+        autoFocus={true}
+      />
+
+      <div
+        data-testid="settings-theme-preview"
+        className="relative overflow-hidden rounded-[var(--panel-radius)] border border-border"
+        style={{
+          padding: 16,
+          background: `linear-gradient(135deg, ${gradientStops})`,
+          boxShadow: 'var(--panel-shadow-soft)',
+        }}
+      >
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `radial-gradient(circle at 22% 18%, ${selectedTheme.tokens.ambientBlobColors[0]}, transparent 32%), radial-gradient(circle at 82% 16%, ${selectedTheme.tokens.ambientBlobColors[1]}, transparent 26%), radial-gradient(circle at 72% 84%, ${selectedTheme.tokens.ambientBlobColors[2]}, transparent 28%)`,
+          }}
+        />
+        <div
+          className="relative rounded-[calc(var(--panel-radius)-10px)] border"
+          style={{
+            padding: 16,
+            background: selectedTheme.tokens.glassFillStrong,
+            borderColor: selectedTheme.tokens.glassStroke,
+            backdropFilter: 'blur(18px) saturate(150%)',
+            WebkitBackdropFilter: 'blur(18px) saturate(150%)',
+            boxShadow: `0 18px 48px ${selectedTheme.tokens.glassShadow}`,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, color: selectedTheme.tokens.textPrimary }}>
+                {selectedTheme.name}
+              </span>
+              <span style={{ fontSize: 12, color: selectedTheme.tokens.textSecondary }}>
+                {selectedTheme.mood}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {accentSwatches.map((color) => (
+                <span
+                  key={color}
+                  aria-hidden="true"
+                  style={{
+                    display: 'inline-flex',
+                    width: 12,
+                    height: 12,
+                    borderRadius: 999,
+                    background: color,
+                    border: `1px solid ${selectedTheme.tokens.glassHighlight}`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <SettingsSwitchRow
+        label="Glass surfaces"
+        description="Use translucent panels with richer edge highlights and deeper shadows. Turn this off to keep the same theme palette with denser solid surfaces."
+        checked={surfaceMode === 'glass'}
+        onChange={(value) => setSurfaceMode(value ? 'glass' : 'solid')}
+        testId="settings-surface-mode"
+      />
+    </>
+  )
+}
+
 function SyncAndUpdatesSection({
   pullInterval,
   setPullInterval,
@@ -410,7 +556,6 @@ function SyncAndUpdatesSection({
           label: `${value}`,
         }))}
         testId="settings-pull-interval"
-        autoFocus={true}
       />
 
       <LabeledSelect

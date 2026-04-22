@@ -3,6 +3,7 @@ import {
   GETTING_STARTED_VAULT_NAME,
   buildGettingStartedVaultPath,
   formatGettingStartedCloneError,
+  isGettingStartedVaultPath,
   labelFromPath,
 } from './gettingStartedVault'
 
@@ -21,6 +22,20 @@ describe('gettingStartedVault', () => {
 
   it('derives a label from the final path segment', () => {
     expect(labelFromPath('/Users/luca/Documents/Getting Started')).toBe(GETTING_STARTED_VAULT_NAME)
+  })
+
+  it('recognizes legacy starter vault aliases across machines', () => {
+    expect(isGettingStartedVaultPath('/Volumes/Jupiter/Workspace/laputa-app/demo-vault-v2')).toBe(true)
+    expect(isGettingStartedVaultPath('/Volumes/Jupiter/Workspace/laputa-app/demo-vault')).toBe(true)
+  })
+
+  it('recognizes the current resolved starter vault path', () => {
+    expect(
+      isGettingStartedVaultPath(
+        '/Users/luca/Documents/Getting Started',
+        '/Users/luca/Documents/Getting Started',
+      ),
+    ).toBe(true)
   })
 
   it('passes through destination errors verbatim', () => {

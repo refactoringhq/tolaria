@@ -63,13 +63,21 @@ function RawModeEditorSection({
   entries,
   rawMode,
   rawModeContent,
+  resolvedAppearance,
   onRawContentChange,
   onSave,
   rawLatestContentRef,
   vaultPath,
 }: Pick<
   EditorContentModel,
-  'activeTab' | 'entries' | 'onRawContentChange' | 'onSave' | 'rawLatestContentRef' | 'rawModeContent' | 'vaultPath'
+  | 'activeTab'
+  | 'entries'
+  | 'onRawContentChange'
+  | 'onSave'
+  | 'rawLatestContentRef'
+  | 'rawModeContent'
+  | 'resolvedAppearance'
+  | 'vaultPath'
 > & {
   rawMode: boolean
 }) {
@@ -81,6 +89,7 @@ function RawModeEditorSection({
       content={rawModeContent ?? activeTab.content}
       path={activeTab.entry.path}
       entries={entries}
+      resolvedAppearance={resolvedAppearance}
       onContentChange={onRawContentChange ?? (() => {})}
       onSave={onSave ?? (() => {})}
       latestContentRef={rawLatestContentRef}
@@ -170,6 +179,7 @@ function EditorCanvas({
   onNavigateWikilink,
   onEditorChange,
   isDeletedPreview,
+  resolvedAppearance,
   vaultPath,
 }: Pick<
   EditorContentModel,
@@ -180,6 +190,7 @@ function EditorCanvas({
   | 'onNavigateWikilink'
   | 'onEditorChange'
   | 'isDeletedPreview'
+  | 'resolvedAppearance'
   | 'vaultPath'
 >) {
   if (!showEditor) return null
@@ -190,6 +201,7 @@ function EditorCanvas({
         <SingleEditorView
           editor={editor}
           entries={entries}
+          resolvedAppearance={resolvedAppearance}
           onNavigateWikilink={onNavigateWikilink}
           onChange={onEditorChange}
           vaultPath={vaultPath}
@@ -223,6 +235,7 @@ export function EditorContentLayout(model: EditorContentModel) {
     wordCount,
     vaultPath,
     cssVars,
+    resolvedAppearance,
     onNavigateWikilink,
     onEditorChange,
     isDeletedPreview,
@@ -281,6 +294,7 @@ export function EditorContentLayout(model: EditorContentModel) {
         entries={entries}
         rawMode={effectiveRawMode}
         rawModeContent={rawModeContent}
+        resolvedAppearance={resolvedAppearance}
         onRawContentChange={onRawContentChange}
         onSave={onSave}
         rawLatestContentRef={rawLatestContentRef}
@@ -292,6 +306,7 @@ export function EditorContentLayout(model: EditorContentModel) {
         vaultPath={vaultPath}
         editor={editor}
         entries={entries}
+        resolvedAppearance={resolvedAppearance}
         onNavigateWikilink={onNavigateWikilink}
         onEditorChange={onEditorChange}
         isDeletedPreview={isDeletedPreview}

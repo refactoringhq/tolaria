@@ -523,10 +523,12 @@ While the user types, `useEditorSaveWithLinks` derives a transient `VaultEntry` 
 
 ## Styling
 
-The app uses a single light theme — the vault-based theming system was removed (see [ADR-0013](adr/0013-remove-theming-system.md)). Styling is defined in two layers:
+Tolaria uses installation-local appearance preferences rather than vault-authored themes (see [ADR-0075](adr/0075-installation-local-appearance-modes-and-glass-surfaces.md)). Styling is defined in three layers:
 
-1. **Global CSS variables** (`src/index.css`): App-wide colors via `:root`, bridged to Tailwind v4
-2. **Editor theme** (`src/theme.json`): BlockNote typography, flattened to CSS vars by `useEditorTheme`
+1. **Theme catalog** (`src/lib/appThemes.ts`): the curated list of named themes, each expressed as semantic tokens for background, glass surfaces, text, accent states, typography, and radii
+2. **Appearance preferences** (`src/lib/appearance.ts`, `src/hooks/useAppearancePreferences.ts`): installation-local `themeId` + `surfaceMode` persistence, legacy preference migration, and document-root CSS variable application so the app chrome, overlays, and editors stay in sync
+3. **Global CSS variables** (`src/index.css`): semantic tokens bridged into app-wide surfaces, shadcn variables, controls, and ambient backgrounds
+4. **Editor theme** (`src/theme.json`): BlockNote typography, flattened to CSS vars by `useEditorTheme`
 
 ## Inspector Abstraction
 

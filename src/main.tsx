@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import './index.css'
 import App from './App.tsx'
+import { applyStoredAppearanceToDocument } from './lib/appearance'
 import {
   APP_COMMAND_EVENT_NAME,
   isAppCommandId,
@@ -21,6 +22,8 @@ import {
 if ('__TAURI__' in window || '__TAURI_INTERNALS__' in window) {
   document.addEventListener('contextmenu', (e) => e.preventDefault(), true)
 }
+
+applyStoredAppearanceToDocument()
 
 function dispatchDeterministicShortcutEvent(init: AppCommandShortcutEventInit) {
   const target =

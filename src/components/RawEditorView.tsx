@@ -4,6 +4,7 @@ import type { EditorView } from '@codemirror/view'
 import { MIN_QUERY_LENGTH } from '../utils/wikilinkSuggestions'
 import { buildTypeEntryMap } from '../utils/typeColors'
 import { NoteSearchList } from './NoteSearchList'
+import type { ResolvedAppearance } from '../lib/appearance'
 import {
   buildRawEditorAutocompleteState,
   buildRawEditorBaseItems,
@@ -20,6 +21,7 @@ export interface RawEditorViewProps {
   content: string
   path: string
   entries: VaultEntry[]
+  resolvedAppearance: ResolvedAppearance
   onContentChange: (path: string, content: string) => void
   vaultPath?: string
   onSave: () => void
@@ -31,7 +33,7 @@ export interface RawEditorViewProps {
 const DEBOUNCE_MS = 500
 const DROPDOWN_MAX_HEIGHT = 200
 
-export function RawEditorView({ content, path, entries, onContentChange, onSave, latestContentRef, vaultPath }: RawEditorViewProps) {
+export function RawEditorView({ content, path, entries, resolvedAppearance, onContentChange, onSave, latestContentRef, vaultPath }: RawEditorViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pathRef = useRef(path)
@@ -99,7 +101,7 @@ export function RawEditorView({ content, path, entries, onContentChange, onSave,
     return false
   }, [autocomplete])
 
-  const viewRef = useCodeMirror(containerRef, content, {
+  const viewRef = useCodeMirror(containerRef, content, resolvedAppearance === 'dark', {
     onDocChange: handleDocChange,
     onCursorActivity: handleCursorActivity,
     onSave: handleSave,
@@ -167,7 +169,11 @@ export function RawEditorView({ content, path, entries, onContentChange, onSave,
       {yamlError && (
         <div
           className="flex items-center gap-2 px-4 py-2 text-xs border-b shrink-0"
-          style={{ background: '#fef3c7', borderColor: '#d97706', color: '#92400e' }}
+          style={{
+            background: 'var(--warning-bg)',
+            borderColor: 'var(--warning-border)',
+            color: 'var(--warning-text)',
+          }}
           role="alert"
           data-testid="raw-editor-yaml-error"
         >

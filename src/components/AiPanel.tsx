@@ -82,7 +82,7 @@ export function AiPanelView({
     <aside
       ref={panelRef}
       tabIndex={-1}
-      className="flex flex-1 flex-col overflow-hidden bg-background text-foreground"
+      className="chrome-panel chrome-panel--inspector flex flex-1 flex-col overflow-hidden bg-background text-foreground"
       style={{
         outline: 'none',
         borderLeft: isActive

@@ -400,10 +400,12 @@ flowchart TD
 
 ## Styling
 
-The app uses a single light theme with no user-configurable theming (see [ADR-0013](adr/0013-remove-theming-system.md)).
+Tolaria uses installation-local appearance preferences rather than vault-backed themes (see [ADR-0075](adr/0075-installation-local-appearance-modes-and-glass-surfaces.md)). The current implementation exposes a curated theme catalog with one compatibility light theme (`tolariaDawn`) and a set of named dark glass themes, plus a separate `glass` / `solid` surface mode.
 
-1. **Global CSS variables** (`src/index.css`): App-wide colors, borders, backgrounds. Bridged to Tailwind v4 via `@theme inline`.
-2. **Editor theme** (`src/theme.json`): BlockNote-specific typography. Flattened to CSS vars by `useEditorTheme`.
+1. **Theme catalog** (`src/lib/appThemes.ts`): Centralized semantic tokens for gradients, glass fills, strokes, typography, accents, selection, focus, and corner radii. Views consume semantic roles rather than hardcoded colors.
+2. **Appearance preference layer** (`src/lib/appearance.ts`, `src/hooks/useAppearancePreferences.ts`): Reads and persists the selected `themeId` and `surfaceMode`, migrates legacy `system` / `light` / `dark` values, applies CSS variables to the document root before React mounts, and exposes the resolved light/dark appearance for editor integrations.
+3. **Global CSS variables** (`src/index.css`): App-wide material treatments, borders, shadows, buttons, fields, ambient backgrounds, and shadcn token bridging via `@theme inline`.
+4. **Editor theme** (`src/theme.json`): BlockNote-specific typography. Flattened to CSS vars by `useEditorTheme`.
 
 ## Vault Management
 
@@ -739,6 +741,7 @@ No Redux or global context. State lives in the root `App.tsx` and custom hooks:
 | `frontmatterOps` | — (pure functions) | Frontmatter CRUD: key→VaultEntry mapping, mock/Tauri dispatch |
 | `useTabManagement` | Navigation history, note switching | Note navigation lifecycle |
 | `useVaultSwitcher` | `vaultPath`, `extraVaults` | Vault switching |
+| `useAppearancePreferences` | Installation-local appearance + material preference | App-level appearance persistence |
 | `useTheme` | Editor theme CSS vars | Editor typography theme |
 | `useCliAiAgent` | `messages`, `status`, tool actions | Selected AI agent conversation |
 | `useAutoSync` | Sync interval, pull/push state | Git auto-sync |

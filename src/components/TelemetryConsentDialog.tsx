@@ -10,8 +10,8 @@ export function TelemetryConsentDialog({ onAccept, onDecline }: TelemetryConsent
   return (
     <OnboardingShell
       className="fixed inset-0 z-50"
-      contentClassName="w-full rounded-lg border border-border bg-background shadow-xl"
-      style={{ background: 'rgba(0,0,0,0.4)' }}
+      contentClassName="glass-floating w-full rounded-lg border border-border bg-background shadow-xl"
+      style={{ background: 'var(--overlay-scrim)' }}
       contentStyle={{
         width: 'min(440px, 100%)',
         padding: 32,
