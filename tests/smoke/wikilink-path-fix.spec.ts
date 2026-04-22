@@ -1,8 +1,12 @@
 import { test, expect, type Page } from '@playwright/test'
+import { createFixtureVaultCopy, openFixtureVault, removeFixtureVaultCopy } from '../helpers/fixtureVault'
 
-const SOURCE_NOTE_TITLE = 'Grow Newsletter'
-const INSERTED_WIKILINK_QUERY = '[[Mana'
-const INSERTED_WIKILINK_TITLE = 'Manage Sponsorships'
+const SOURCE_NOTE_TITLE = 'Alpha Project'
+const INSERTED_WIKILINK_QUERY = '[[No'
+const INSERTED_WIKILINK_TITLE = 'Note C'
+const SOURCE_NOTE_BODY = 'This is a test project that references other notes.'
+
+let tempVaultDir: string
 
 async function insertWikilink(page: Page) {
   const editor = page.locator('.bn-editor')
@@ -11,7 +15,7 @@ async function insertWikilink(page: Page) {
   const firstParagraph = editor.locator('p').first()
   await expect(
     firstParagraph,
-  ).toContainText('Build a sustainable audience through high-quality weekly essays', { timeout: 5000 })
+  ).toContainText(SOURCE_NOTE_BODY, { timeout: 5000 })
   await firstParagraph.click()
   await page.keyboard.press('End')
   await page.keyboard.press('Enter')
@@ -32,13 +36,16 @@ async function insertWikilink(page: Page) {
 
 test.describe('Wikilink insertion and navigation', () => {
   test.beforeEach(async ({ page }) => {
-    await page.route('**/api/vault/ping', route => route.fulfill({ status: 503 }))
-    await page.goto('/')
-    await page.waitForTimeout(500)
+    tempVaultDir = createFixtureVaultCopy()
+    await openFixtureVault(page, tempVaultDir)
 
-    const noteItem = page.locator('.app__note-list .cursor-pointer').filter({ hasText: SOURCE_NOTE_TITLE }).first()
+    const noteItem = page.getByTestId('note-list-container').getByText(SOURCE_NOTE_TITLE, { exact: true }).first()
     await noteItem.click()
     await page.waitForTimeout(1000)
+  })
+
+  test.afterEach(async () => {
+    removeFixtureVaultCopy(tempVaultDir)
   })
 
   test('[[ autocomplete inserts wikilink that is not broken', async ({ page }) => {
