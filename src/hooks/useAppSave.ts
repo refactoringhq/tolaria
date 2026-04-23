@@ -414,6 +414,7 @@ interface AppSaveDeps {
   setToastMessage: (msg: string | null) => void
   loadModifiedFiles: () => void
   reloadViews?: () => Promise<void>
+  trackUnsaved?: (path: string) => void
   clearUnsaved: (path: string) => void
   unsavedPaths: Set<string>
   tabs: TabState[]
@@ -587,6 +588,7 @@ function useEditorPersistence({
   setTabs,
   setToastMessage,
   loadModifiedFiles,
+  trackUnsaved,
   clearUnsaved,
   reloadViews,
   scheduleUntitledRename,
@@ -597,6 +599,7 @@ function useEditorPersistence({
   setTabs: AppSaveDeps['setTabs']
   setToastMessage: AppSaveDeps['setToastMessage']
   loadModifiedFiles: AppSaveDeps['loadModifiedFiles']
+  trackUnsaved?: AppSaveDeps['trackUnsaved']
   clearUnsaved: AppSaveDeps['clearUnsaved']
   reloadViews: AppSaveDeps['reloadViews']
   scheduleUntitledRename: (path: string, content: string) => void
@@ -629,8 +632,10 @@ function useEditorPersistence({
   })
 
   const handleContentChange = useCallback((path: string, content: string) => {
-    handleContentChangeRaw(resolveCurrentPath(path), content)
-  }, [handleContentChangeRaw, resolveCurrentPath])
+    const resolvedPath = resolveCurrentPath(path)
+    trackUnsaved?.(resolvedPath)
+    handleContentChangeRaw(resolvedPath, content)
+  }, [handleContentChangeRaw, resolveCurrentPath, trackUnsaved])
 
   const savePendingForPath = useCallback((path: string) => (
     savePendingForPathRaw(resolveCurrentPath(path))
@@ -736,7 +741,7 @@ function useAppSaveHandlers({
 
 export function useAppSave({
   updateEntry, setTabs, handleSwitchTab, setToastMessage, loadModifiedFiles, reloadViews,
-  clearUnsaved, unsavedPaths, tabs, activeTabPath, handleRenameNote,
+  trackUnsaved, clearUnsaved, unsavedPaths, tabs, activeTabPath, handleRenameNote,
   handleRenameFilename: handleRenameFilenameRaw, replaceEntry, resolvedPath,
   initialH1AutoRenameEnabled,
 }: AppSaveDeps) {
@@ -760,6 +765,7 @@ export function useAppSave({
     setTabs,
     setToastMessage,
     loadModifiedFiles,
+    trackUnsaved,
     clearUnsaved,
     reloadViews,
     scheduleUntitledRename,
