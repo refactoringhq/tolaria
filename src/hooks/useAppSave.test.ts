@@ -38,6 +38,7 @@ describe('useAppSave', () => {
     handleSwitchTab: vi.fn(),
     setToastMessage: vi.fn(),
     loadModifiedFiles: vi.fn(),
+    trackUnsaved: vi.fn(),
     clearUnsaved: vi.fn(),
     unsavedPaths: new Set<string>(),
     tabs: [] as Array<{ entry: VaultEntry; content: string }>,
@@ -56,6 +57,7 @@ describe('useAppSave', () => {
     deps.unsavedPaths = new Set()
     deps.tabs = []
     deps.activeTabPath = null
+    deps.trackUnsaved.mockReset()
     deps.handleRenameNote.mockResolvedValue(undefined)
     deps.handleRenameFilename.mockResolvedValue(undefined)
     deps.initialH1AutoRenameEnabled = true
@@ -170,6 +172,20 @@ describe('useAppSave', () => {
   it('handleContentChange is a function', () => {
     const { result } = renderSave()
     expect(typeof result.current.handleContentChange).toBe('function')
+  })
+
+  it('marks the edited path as unsaved immediately on content change', () => {
+    const entry = makeEntry('/vault/note.md', 'Note', 'note.md')
+    const { result } = renderSave({
+      tabs: [{ entry, content: '# Note\n\nBefore' }],
+      activeTabPath: entry.path,
+    })
+
+    act(() => {
+      result.current.handleContentChange(entry.path, '# Note\n\nAfter')
+    })
+
+    expect(deps.trackUnsaved).toHaveBeenCalledWith(entry.path)
   })
 
   it('bumps modifiedAt in live entry state after saving', async () => {
