@@ -69,6 +69,11 @@ Tauri 2 on Linux requires WebKit2GTK 4.1 and GTK 3:
     libappindicator-gtk3-devel librsvg2-devel
   ```
 
+The bundled MCP server runs on Node 18+. On Linux it spawns the system
+`node` binary at runtime — install Node from your distro package
+manager so external AI tooling works against the vault. The app falls
+back gracefully when `node` is missing.
+
 ### Quick start
 
 ```bash
