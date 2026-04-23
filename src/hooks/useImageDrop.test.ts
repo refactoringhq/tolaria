@@ -178,6 +178,38 @@ describe('useImageDrop', () => {
     // Should render without error; Tauri event listener is skipped in browser mode
     expect(result.current.isDragOver).toBe(false)
   })
+
+  it('prevents drop default when file lands outside the editor container', () => {
+    renderImageDrop()
+    const file = new File(['data'], 'photo.png', { type: 'image/png' })
+    const dropEvent = createDragEvent('drop', [file])
+    document.body.dispatchEvent(dropEvent)
+    expect(dropEvent.defaultPrevented).toBe(true)
+  })
+
+  it('prevents dragover default when file is dragged outside the editor container', () => {
+    renderImageDrop()
+    const file = new File(['data'], 'photo.png', { type: 'image/png' })
+    const dragOverEvent = createDragEvent('dragover', [file])
+    document.body.dispatchEvent(dragOverEvent)
+    expect(dragOverEvent.defaultPrevented).toBe(true)
+  })
+
+  it('does not block drop dispatched on the editor container itself', () => {
+    renderImageDrop()
+    const file = new File(['data'], 'photo.png', { type: 'image/png' })
+    const dropEvent = createDragEvent('drop', [file])
+    container.dispatchEvent(dropEvent)
+    expect(dropEvent.defaultPrevented).toBe(false)
+  })
+
+  it('ignores non-file drags outside the container', () => {
+    renderImageDrop()
+    const dt = { items: { length: 0 }, files: [], dropEffect: 'none' } as unknown as DataTransfer
+    const dragOverEvent = new DragEvent('dragover', { dataTransfer: dt, bubbles: true, cancelable: true })
+    document.body.dispatchEvent(dragOverEvent)
+    expect(dragOverEvent.defaultPrevented).toBe(false)
+  })
 })
 
 describe('useImageDrop — Tauri native drag-drop', () => {

@@ -12,6 +12,13 @@ function hasImageFiles(dt: DataTransfer): boolean {
   return false
 }
 
+function hasAnyFiles(dt: DataTransfer): boolean {
+  for (let i = 0; i < dt.items.length; i++) {
+    if (dt.items[i].kind === 'file') return true
+  }
+  return false
+}
+
 function isImagePath(path: string): boolean {
   const ext = path.split('.').pop()?.toLowerCase() ?? ''
   return IMAGE_EXTENSIONS.includes(ext)
@@ -59,6 +66,29 @@ export function useImageDrop({ containerRef, onImageUrl, vaultPath }: UseImageDr
   useEffect(() => { onImageUrlRef.current = onImageUrl }, [onImageUrl])
   const vaultPathRef = useRef(vaultPath)
   useEffect(() => { vaultPathRef.current = vaultPath }, [vaultPath])
+
+  // Prevent WKWebView from navigating to a dropped file when it lands outside the editor.
+  // dragDropEnabled:false in tauri.conf means OS file drops arrive as HTML5 events — without
+  // a global guard the browser opens the file and destroys the app UI.
+  useEffect(() => {
+    const onWindowDragOver = (e: DragEvent) => {
+      if (!e.dataTransfer || !hasAnyFiles(e.dataTransfer)) return
+      if (containerRef.current?.contains(e.target as Node)) return
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'none'
+    }
+    const onWindowDrop = (e: DragEvent) => {
+      if (!e.dataTransfer || !hasAnyFiles(e.dataTransfer)) return
+      if (containerRef.current?.contains(e.target as Node)) return
+      e.preventDefault()
+    }
+    window.addEventListener('dragover', onWindowDragOver)
+    window.addEventListener('drop', onWindowDrop)
+    return () => {
+      window.removeEventListener('dragover', onWindowDragOver)
+      window.removeEventListener('drop', onWindowDrop)
+    }
+  }, [containerRef])
 
   // HTML5 DnD visual feedback (works in browser mode; BlockNote handles the actual upload)
   useEffect(() => {
