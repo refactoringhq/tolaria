@@ -3,6 +3,10 @@ export function expandedTreePaths(path: string): string[] {
   return segments.map((_, index) => segments.slice(0, index + 1).join('/'))
 }
 
+export function ancestorTreePaths(path: string): string[] {
+  return expandedTreePaths(path).slice(0, -1)
+}
+
 export function mergeExpandedPaths(
   current: Record<string, boolean>,
   paths: string[],

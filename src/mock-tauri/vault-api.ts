@@ -62,6 +62,16 @@ const VAULT_API_COMMANDS: Record<string, (args: Record<string, unknown>) => Vaul
         new_filename_stem: args.new_filename_stem,
       },
     } : null,
+  move_note_to_folder: (args) =>
+    args.old_path && args.folder_path ? {
+      url: '/api/vault/move-to-folder',
+      method: 'POST',
+      body: {
+        vault_path: args.vault_path,
+        old_path: args.old_path,
+        folder_path: args.folder_path,
+      },
+    } : null,
   delete_note: (args) =>
     args.path ? { url: '/api/vault/delete', method: 'POST', body: { path: args.path } } : null,
   search_vault: (args) => {

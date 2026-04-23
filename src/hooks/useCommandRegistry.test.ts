@@ -152,6 +152,42 @@ describe('useCommandRegistry', () => {
     expect(onSetNoteIcon).toHaveBeenCalled()
   })
 
+  it('includes Change Note Type when the active note can be retargeted', () => {
+    const onChangeNoteType = vi.fn()
+    const config = makeConfig({ onChangeNoteType })
+    const { result } = renderHook(() => useCommandRegistry(config))
+    const cmd = findCommand(result.current, 'change-note-type')
+
+    expect(cmd).toBeDefined()
+    expect(cmd!.enabled).toBe(true)
+
+    cmd!.execute()
+    expect(onChangeNoteType).toHaveBeenCalledOnce()
+  })
+
+  it('enables Move Note to Folder only when another folder destination exists', () => {
+    const onMoveNoteToFolder = vi.fn()
+    const { result, rerender } = renderHook(
+      (props) => useCommandRegistry(props),
+      {
+        initialProps: makeConfig({
+          onMoveNoteToFolder,
+          canMoveNoteToFolder: true,
+        }),
+      },
+    )
+
+    expect(findCommand(result.current, 'move-note-to-folder')?.enabled).toBe(true)
+    findCommand(result.current, 'move-note-to-folder')!.execute()
+    expect(onMoveNoteToFolder).toHaveBeenCalledOnce()
+
+    rerender(makeConfig({
+      onMoveNoteToFolder,
+      canMoveNoteToFolder: false,
+    }))
+    expect(findCommand(result.current, 'move-note-to-folder')?.enabled).toBe(false)
+  })
+
   it('includes restore deleted note command when provided', () => {
     const config = makeConfig({ onRestoreDeletedNote: vi.fn(), canRestoreDeletedNote: true })
     const { result } = renderHook(() => useCommandRegistry(config))

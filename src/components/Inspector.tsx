@@ -32,7 +32,7 @@ interface InspectorProps {
   onUpdateFrontmatter?: (path: string, key: string, value: FrontmatterValue) => Promise<void>
   onDeleteProperty?: (path: string, key: string) => Promise<void>
   onAddProperty?: (path: string, key: string, value: FrontmatterValue) => Promise<void>
-  onCreateMissingType?: (path: string, missingType: string, nextTypeName: string) => Promise<void>
+  onCreateMissingType?: (path: string, missingType: string, nextTypeName: string) => Promise<boolean | void>
   onCreateAndOpenNote?: (title: string) => Promise<boolean>
   onInitializeProperties?: (path: string) => void
   onToggleRawEditor?: () => void
@@ -71,7 +71,7 @@ function ValidFrontmatterPanels({
   onUpdateProperty?: (key: string, value: FrontmatterValue) => void
   onDeleteProperty?: (key: string) => void
   onAddProperty?: (key: string, value: FrontmatterValue) => void
-  onCreateMissingType?: (typeName: string) => Promise<void>
+  onCreateMissingType?: (typeName: string) => Promise<boolean | void>
 }) {
   return (
     <>
@@ -134,7 +134,7 @@ function PrimaryInspectorPanel({
   onUpdateProperty?: (key: string, value: FrontmatterValue) => void
   onDeleteProperty?: (key: string) => void
   onAddProperty?: (key: string, value: FrontmatterValue) => void
-  onCreateMissingType?: (typeName: string) => Promise<void>
+  onCreateMissingType?: (typeName: string) => Promise<boolean | void>
 }) {
   if (frontmatterState === 'valid') {
     return (
@@ -162,12 +162,10 @@ function PrimaryInspectorPanel({
   return onInitializeProperties ? <InitializePropertiesPrompt onClick={() => onInitializeProperties(entry.path)} /> : null
 }
 
-export function Inspector({
-  collapsed,
-  onToggle,
+function InspectorBody({
   entry,
-  content,
   entries,
+  content,
   gitHistory,
   vaultPath,
   onNavigate,
@@ -179,7 +177,7 @@ export function Inspector({
   onCreateAndOpenNote,
   onInitializeProperties,
   onToggleRawEditor,
-}: InspectorProps) {
+}: Omit<InspectorProps, 'collapsed' | 'onToggle'>) {
   const referencedBy = useReferencedBy(entry, entries)
   const backlinks = useBacklinks(entry, entries, referencedBy)
   const frontmatter = useMemo(() => parseFrontmatter(content), [content])
@@ -198,40 +196,46 @@ export function Inspector({
     onCreateMissingType,
   })
 
+  if (!entry) {
+    return <EmptyInspector />
+  }
+
+  return (
+    <>
+      <PrimaryInspectorPanel
+        entry={entry}
+        frontmatterState={frontmatterState}
+        frontmatter={frontmatter}
+        entries={entries}
+        typeEntryMap={typeEntryMap}
+        vaultPath={vaultPath}
+        referencedBy={referencedBy}
+        onNavigate={onNavigate}
+        onToggleRawEditor={onToggleRawEditor}
+        onInitializeProperties={onInitializeProperties}
+        onCreateAndOpenNote={onCreateAndOpenNote}
+        onUpdateProperty={onUpdateFrontmatter ? handleUpdateProperty : undefined}
+        onDeleteProperty={onDeleteProperty ? handleDeleteProperty : undefined}
+        onAddProperty={onAddProperty ? handleAddProperty : undefined}
+        onCreateMissingType={onCreateMissingType ? handleCreateMissingType : undefined}
+      />
+      {backlinks.length > 0 && <Separator />}
+      <BacklinksPanel backlinks={backlinks} onNavigate={onNavigate} />
+      <Separator />
+      <NoteInfoPanel entry={entry} content={content} />
+      {gitHistory.length > 0 && <Separator />}
+      <GitHistoryPanel commits={gitHistory} onViewCommitDiff={onViewCommitDiff} />
+    </>
+  )
+}
+
+export function Inspector({ collapsed, onToggle, ...bodyProps }: InspectorProps) {
   return (
     <aside className={cn('flex flex-1 flex-col overflow-hidden border-l border-border bg-background text-foreground transition-[width] duration-200', collapsed && '!w-10 !min-w-10')}>
       <InspectorHeader collapsed={collapsed} onToggle={onToggle} />
       {!collapsed && (
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-3">
-          {entry ? (
-            <>
-              <PrimaryInspectorPanel
-                entry={entry}
-                frontmatterState={frontmatterState}
-                frontmatter={frontmatter}
-                entries={entries}
-                typeEntryMap={typeEntryMap}
-                vaultPath={vaultPath}
-                referencedBy={referencedBy}
-                onNavigate={onNavigate}
-                onToggleRawEditor={onToggleRawEditor}
-                onInitializeProperties={onInitializeProperties}
-                onCreateAndOpenNote={onCreateAndOpenNote}
-                onUpdateProperty={onUpdateFrontmatter ? handleUpdateProperty : undefined}
-                onDeleteProperty={onDeleteProperty ? handleDeleteProperty : undefined}
-                onAddProperty={onAddProperty ? handleAddProperty : undefined}
-                onCreateMissingType={onCreateMissingType ? handleCreateMissingType : undefined}
-              />
-              {backlinks.length > 0 && <Separator />}
-              <BacklinksPanel backlinks={backlinks} onNavigate={onNavigate} />
-              <Separator />
-              <NoteInfoPanel entry={entry} content={content} />
-              {gitHistory.length > 0 && <Separator />}
-              <GitHistoryPanel commits={gitHistory} onViewCommitDiff={onViewCommitDiff} />
-            </>
-          ) : (
-            <EmptyInspector />
-          )}
+          <InspectorBody {...bodyProps} />
         </div>
       )}
     </aside>

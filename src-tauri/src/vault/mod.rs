@@ -20,13 +20,13 @@ pub use config_seed::{
     seed_config_files, AiGuidanceFileState, VaultAiGuidanceStatus,
 };
 pub use entry::{FolderNode, VaultEntry};
-pub use file::{get_note_content, save_note_content};
+pub use file::{create_note_content, get_note_content, save_note_content};
 pub use folders::{delete_folder, rename_folder, FolderRenameResult};
 pub use getting_started::{create_getting_started_vault, default_vault_path, vault_exists};
 pub use image::{copy_image_to_vault, save_image};
 pub use migration::migrate_is_a_to_type;
 pub use rename::{
-    auto_rename_untitled, detect_renames, rename_note, rename_note_filename,
+    auto_rename_untitled, detect_renames, move_note_to_folder, rename_note, rename_note_filename,
     update_wikilinks_for_renames, DetectedRename, RenameResult,
 };
 pub use title_sync::{sync_title_on_open, SyncAction};

@@ -1,4 +1,5 @@
 import { StrictMode } from 'react'
+import * as Sentry from '@sentry/react'
 import { createRoot } from 'react-dom/client'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import './index.css'
@@ -72,7 +73,20 @@ window.__laputaTest = {
   },
 }
 
-createRoot(document.getElementById('root')!).render(
+const sentryReactErrorHandler = Sentry.reactErrorHandler()
+
+function captureReactRootError(
+  error: unknown,
+  errorInfo: { componentStack?: string },
+): void {
+  sentryReactErrorHandler(error, { componentStack: errorInfo.componentStack ?? '' })
+}
+
+createRoot(document.getElementById('root')!, {
+  onCaughtError: captureReactRootError,
+  onUncaughtError: captureReactRootError,
+  onRecoverableError: captureReactRootError,
+}).render(
   <StrictMode>
     <TooltipProvider>
       <App />

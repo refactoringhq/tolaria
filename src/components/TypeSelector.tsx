@@ -118,7 +118,7 @@ function MissingTypeWarning({
   onCreateMissingType,
 }: {
   missingTypeName: string
-  onCreateMissingType?: (typeName: string) => void | Promise<void>
+  onCreateMissingType?: (typeName: string) => boolean | void | Promise<boolean | void>
 }) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const canCreateMissingType = Boolean(onCreateMissingType)
@@ -148,9 +148,7 @@ function MissingTypeWarning({
         <CreateTypeDialog
           open={dialogOpen}
           onClose={() => setDialogOpen(false)}
-          onCreate={async (typeName) => {
-            await onCreateMissingType?.(typeName)
-          }}
+          onCreate={(typeName) => onCreateMissingType?.(typeName)}
           initialName={missingTypeName}
         />
       )}
@@ -165,7 +163,7 @@ function TypeRowValue({
 }: {
   children: ReactNode
   missingTypeName?: string | null
-  onCreateMissingType?: (typeName: string) => void | Promise<void>
+  onCreateMissingType?: (typeName: string) => boolean | void | Promise<boolean | void>
 }) {
   return (
     <div className="flex min-w-0 items-center justify-start gap-1">
@@ -191,7 +189,7 @@ function ReadOnlyType({
   customColorKey?: string | null
   onNavigate?: (target: string) => void
   missingTypeName?: string | null
-  onCreateMissingType?: (typeName: string) => void | Promise<void>
+  onCreateMissingType?: (typeName: string) => boolean | void | Promise<boolean | void>
 }) {
   if (!isA) return null
   return (
@@ -230,7 +228,7 @@ interface TypeSelectorProps {
   onUpdateProperty?: (key: string, value: FrontmatterValue) => void
   onNavigate?: (target: string) => void
   missingTypeName?: string | null
-  onCreateMissingType?: (typeName: string) => void | Promise<void>
+  onCreateMissingType?: (typeName: string) => boolean | void | Promise<boolean | void>
 }
 
 export function TypeSelector({ onUpdateProperty, ...props }: TypeSelectorProps) {

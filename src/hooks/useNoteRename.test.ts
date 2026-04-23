@@ -248,4 +248,44 @@ describe('useNoteRename hook', () => {
 
     expect(setToastMessage).toHaveBeenCalledWith('A note with that name already exists')
   })
+
+  it('handleMoveNoteToFolder moves the note and keeps its title intact', async () => {
+    const entry = makeEntry({ path: '/vault/notes/project-kickoff.md', filename: 'project-kickoff.md', title: 'Project Kickoff' })
+    vi.mocked(mockInvoke).mockImplementation(async (cmd: string) => {
+      if (cmd === 'move_note_to_folder') {
+        return {
+          new_path: '/vault/projects/project-kickoff.md',
+          updated_files: 1,
+          failed_updates: 0,
+        }
+      }
+      if (cmd === 'get_note_content') return '# Project Kickoff\n'
+      return ''
+    })
+
+    const { result } = renderHook(() => useNoteRename(
+      { entries: [entry], setToastMessage },
+      { tabs: [], setTabs, activeTabPathRef, handleSwitchTab, updateTabContent },
+    ))
+
+    const onEntryRenamed = vi.fn()
+    await act(async () => {
+      await result.current.handleMoveNoteToFolder('/vault/notes/project-kickoff.md', 'projects', '/vault', onEntryRenamed)
+    })
+
+    expect(mockInvoke).toHaveBeenCalledWith('move_note_to_folder', expect.objectContaining({
+      old_path: '/vault/notes/project-kickoff.md',
+      folder_path: 'projects',
+    }))
+    expect(onEntryRenamed).toHaveBeenCalledWith(
+      '/vault/notes/project-kickoff.md',
+      expect.objectContaining({
+        path: '/vault/projects/project-kickoff.md',
+        filename: 'project-kickoff.md',
+        title: 'Project Kickoff',
+      }),
+      '# Project Kickoff\n',
+    )
+    expect(setToastMessage).toHaveBeenCalledWith('Moved to "projects" and updated 1 note')
+  })
 })

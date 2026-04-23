@@ -19,6 +19,8 @@ import {
 } from '../SidebarParts'
 import { TypeCustomizePopover } from '../TypeCustomizePopover'
 import { useDragRegion } from '../../hooks/useDragRegion'
+import { NoteDropTarget } from '../note-retargeting/NoteDropTarget'
+import { useNoteRetargetingContext } from '../note-retargeting/noteRetargetingContext'
 import { SidebarGroupHeader } from './SidebarGroupHeader'
 import { SidebarViewItem } from './SidebarViewItem'
 import { countByFilter } from '../../utils/noteListHelpers'
@@ -95,9 +97,24 @@ function SortableSection({
   group: SectionGroup
   sectionProps: SidebarSectionProps
 }) {
+  const noteRetargeting = useNoteRetargetingContext()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: group.type })
   const itemCount = countByFilter(sectionProps.entries, group.type).open
   const isRenaming = sectionProps.renamingType === group.type
+  const content = (
+    <SectionContent
+      group={group}
+      itemCount={itemCount}
+      selection={sectionProps.selection}
+      onSelect={sectionProps.onSelect}
+      onContextMenu={sectionProps.onContextMenu}
+      dragHandleProps={listeners}
+      isRenaming={isRenaming}
+      renameInitialValue={isRenaming ? sectionProps.renameInitialValue : undefined}
+      onRenameSubmit={sectionProps.onRenameSubmit}
+      onRenameCancel={sectionProps.onRenameCancel}
+    />
+  )
 
   return (
     <div
@@ -110,18 +127,14 @@ function SortableSection({
       }}
       {...attributes}
     >
-      <SectionContent
-        group={group}
-        itemCount={itemCount}
-        selection={sectionProps.selection}
-        onSelect={sectionProps.onSelect}
-        onContextMenu={sectionProps.onContextMenu}
-        dragHandleProps={listeners}
-        isRenaming={isRenaming}
-        renameInitialValue={isRenaming ? sectionProps.renameInitialValue : undefined}
-        onRenameSubmit={sectionProps.onRenameSubmit}
-        onRenameCancel={sectionProps.onRenameCancel}
-      />
+      {noteRetargeting ? (
+        <NoteDropTarget
+          canAcceptNotePath={(notePath) => noteRetargeting.canDropNoteOnType(notePath, group.type)}
+          onDropNote={(notePath) => noteRetargeting.dropNoteOnType(notePath, group.type)}
+        >
+          {content}
+        </NoteDropTarget>
+      ) : content}
     </div>
   )
 }

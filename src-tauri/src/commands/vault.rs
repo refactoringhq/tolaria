@@ -140,6 +140,22 @@ mod tests {
     }
 
     #[test]
+    fn test_create_note_content_rejects_traversal_outside_active_vault() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let vault_path = dir.path();
+        let escape_path = vault_path.join("../outside.md");
+
+        let err = create_note_content(
+            escape_path,
+            "# Outside\n".to_string(),
+            vault_path_arg(vault_path),
+        )
+        .expect_err("expected traversal create to be rejected");
+
+        assert_eq!(err, ACTIVE_VAULT_PATH_ERROR);
+    }
+
+    #[test]
     fn test_create_vault_folder_rejects_escape_path() {
         let dir = tempfile::TempDir::new().unwrap();
 

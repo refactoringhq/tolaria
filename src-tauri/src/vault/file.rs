@@ -1,4 +1,5 @@
 use std::fs;
+use std::io::{ErrorKind, Write};
 use std::path::Path;
 use std::time::UNIX_EPOCH;
 
@@ -62,4 +63,26 @@ pub fn save_note_content(path: &str, content: &str) -> Result<(), String> {
     }
     validate_save_path(file_path, path)?;
     fs::write(file_path, content).map_err(|e| format!("Failed to save {}: {}", path, e))
+}
+
+/// Create a new note file without overwriting any existing file.
+pub fn create_note_content(path: &str, content: &str) -> Result<(), String> {
+    let file_path = Path::new(path);
+    if let Some(parent) = file_path.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create directory {}: {}", parent.display(), e))?;
+        }
+    }
+    validate_save_path(file_path, path)?;
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(file_path)
+        .map_err(|e| match e.kind() {
+            ErrorKind::AlreadyExists => format!("File already exists: {}", path),
+            _ => format!("Failed to create {}: {}", path, e),
+        })?;
+    file.write_all(content.as_bytes())
+        .map_err(|e| format!("Failed to save {}: {}", path, e))
 }

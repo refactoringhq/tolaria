@@ -40,6 +40,9 @@ interface CommandRegistryConfig {
   onRepairVault?: () => void
   onSetNoteIcon?: () => void
   onRemoveNoteIcon?: () => void
+  onChangeNoteType?: () => void
+  onMoveNoteToFolder?: () => void
+  canMoveNoteToFolder?: boolean
   onOpenInNewWindow?: () => void
   onToggleFavorite?: (path: string) => void
   onToggleOrganized?: (path: string) => void
@@ -109,7 +112,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
     mcpStatus, onInstallMcp, aiAgentsStatus, vaultAiGuidanceStatus,
     onOpenAiAgents, onRestoreVaultAiGuidance, onSetDefaultAiAgent, selectedAiAgent, onCycleDefaultAiAgent, selectedAiAgentLabel,
     onReloadVault, onRepairVault,
-    onSetNoteIcon, onRemoveNoteIcon, activeNoteHasIcon,
+    onSetNoteIcon, onRemoveNoteIcon, activeNoteHasIcon, onChangeNoteType, onMoveNoteToFolder, canMoveNoteToFolder,
     onOpenInNewWindow, onToggleFavorite, onToggleOrganized,
     onCustomizeNoteListColumns, canCustomizeNoteListColumns,
     onRestoreDeletedNote, canRestoreDeletedNote,
@@ -150,6 +153,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
       hasActiveNote, activeTabPath, isArchived,
       onCreateNote, onCreateType, onSave,
       onDeleteNote, onArchiveNote, onUnarchiveNote,
+      onChangeNoteType, onMoveNoteToFolder, canMoveNoteToFolder,
       onSetNoteIcon, onRemoveNoteIcon, activeNoteHasIcon, onOpenInNewWindow, onToggleFavorite, isFavorite,
       onToggleOrganized, isOrganized: activeEntry?.organized ?? false,
       onRestoreDeletedNote, canRestoreDeletedNote,
@@ -200,7 +204,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
     mcpStatus, onInstallMcp, aiAgentsStatus, vaultAiGuidanceStatus,
     onOpenAiAgents, onRestoreVaultAiGuidance, onSetDefaultAiAgent, selectedAiAgent, onCycleDefaultAiAgent, selectedAiAgentLabel,
     onReloadVault, onRepairVault,
-    onSetNoteIcon, onRemoveNoteIcon, activeNoteHasIcon,
+    onSetNoteIcon, onRemoveNoteIcon, activeNoteHasIcon, onChangeNoteType, onMoveNoteToFolder, canMoveNoteToFolder,
     isSectionGroup, noteListFilter, onSetNoteListFilter,
     selection,
     onOpenInNewWindow, onToggleFavorite, isFavorite,

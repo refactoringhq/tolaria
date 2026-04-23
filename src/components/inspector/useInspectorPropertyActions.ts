@@ -8,7 +8,7 @@ interface InspectorPropertyActionsConfig {
   onUpdateFrontmatter?: (path: string, key: string, value: FrontmatterValue) => Promise<void>
   onDeleteProperty?: (path: string, key: string) => Promise<void>
   onAddProperty?: (path: string, key: string, value: FrontmatterValue) => Promise<void>
-  onCreateMissingType?: (path: string, missingType: string, nextTypeName: string) => Promise<void>
+  onCreateMissingType?: (path: string, missingType: string, nextTypeName: string) => Promise<boolean | void>
 }
 
 function bindEntryAction<TArgs extends unknown[], TResult>(
@@ -21,7 +21,7 @@ function bindEntryAction<TArgs extends unknown[], TResult>(
 
 function bindMissingTypeAction(
   entry: VaultEntry | null,
-  action: ((path: string, missingType: string, nextTypeName: string) => Promise<void>) | undefined,
+  action: ((path: string, missingType: string, nextTypeName: string) => Promise<boolean | void>) | undefined,
 ) {
   const missingType = entry?.isA
   if (!entry || !missingType || !action) return undefined

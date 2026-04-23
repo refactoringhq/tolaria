@@ -132,10 +132,104 @@ export function resolveNewType({ typeName, vaultPath }: NewTypeParams): { entry:
   return { entry, content: `---\ntype: Type\n---\n` }
 }
 
+type ResolvedEntry = { entry: VaultEntry; content: string }
+
+interface BlockedCreationPlan {
+  status: 'blocked'
+  message: string
+}
+
+interface ReadyCreationPlan {
+  status: 'create'
+  resolved: ResolvedEntry
+}
+
+interface ExistingTypeCreationPlan {
+  status: 'existing'
+  entry: VaultEntry
+}
+
+export type NoteCreationPlan = BlockedCreationPlan | ReadyCreationPlan
+export type TypeCreationPlan = BlockedCreationPlan | ExistingTypeCreationPlan | ReadyCreationPlan
+
+function normalizeComparablePath(path: string): string {
+  return path.replace(/\\/g, '/').toLocaleLowerCase()
+}
+
+function findPathCollision(entries: VaultEntry[], path: string): VaultEntry | undefined {
+  const target = normalizeComparablePath(path)
+  return entries.find((entry) => normalizeComparablePath(entry.path) === target)
+}
+
+function buildCreationCollisionMessage({ noun, title, path }: { noun: 'note' | 'type'; title: string; path: string }): string {
+  const filename = path.split('/').pop() ?? path
+  return `Cannot create ${noun} "${title}" because ${filename} already exists`
+}
+
+function findEquivalentTypeEntry(entries: VaultEntry[], typeName: string): VaultEntry | undefined {
+  const trimmed = typeName.trim()
+  const targetSlug = slugify(trimmed)
+  return entries.find((entry) =>
+    entry.isA === 'Type' && (entry.title === trimmed || slugify(entry.title) === targetSlug)
+  )
+}
+
+export function planNewNoteCreation({
+  entries,
+  title,
+  type,
+  vaultPath,
+  template,
+}: NewNoteParams & { entries: VaultEntry[] }): NoteCreationPlan {
+  const resolved = resolveNewNote({ title, type, vaultPath, template })
+  const collision = findPathCollision(entries, resolved.entry.path)
+  if (collision) {
+    return {
+      status: 'blocked',
+      message: buildCreationCollisionMessage({ noun: 'note', title, path: resolved.entry.path }),
+    }
+  }
+  return { status: 'create', resolved }
+}
+
+export function planNewTypeCreation({
+  entries,
+  typeName,
+  vaultPath,
+}: NewTypeParams & { entries: VaultEntry[] }): TypeCreationPlan {
+  const existingType = findEquivalentTypeEntry(entries, typeName)
+  if (existingType) return { status: 'existing', entry: existingType }
+
+  const resolved = resolveNewType({ typeName, vaultPath })
+  const collision = findPathCollision(entries, resolved.entry.path)
+  if (collision) {
+    return {
+      status: 'blocked',
+      message: buildCreationCollisionMessage({ noun: 'type', title: typeName, path: resolved.entry.path }),
+    }
+  }
+  return { status: 'create', resolved }
+}
+
+function isAlreadyExistsError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return /already exists|file exists|eexist/i.test(message)
+}
+
+function createPersistFailureMessage(entry: VaultEntry, error: unknown): string {
+  if (isAlreadyExistsError(error)) {
+    const noun = entry.isA === 'Type' ? 'type' : 'note'
+    return buildCreationCollisionMessage({ noun, title: entry.title, path: entry.path })
+  }
+  return entry.isA === 'Type'
+    ? 'Failed to create type — disk write error'
+    : 'Failed to create note — disk write error'
+}
+
 /** Persist a newly created note to disk. Returns a Promise for error handling. */
 export function persistNewNote(path: string, content: string): Promise<void> {
   if (!isTauri()) return Promise.resolve()
-  return invoke<void>('save_note_content', { path, content }).then(() => {})
+  return invoke<void>('create_note_content', { path, content }).then(() => {})
 }
 
 // Rapid Cmd+N bursts can outpace the note-list render path on desktop. Keep
@@ -156,33 +250,125 @@ function signalFocusEditor(opts?: { selectTitle?: boolean; path?: string }): voi
 }
 
 interface PersistCallbacks {
-  onFail: (p: string) => void
   onStart?: (p: string) => void
   onEnd?: (p: string) => void
   onPersisted?: () => void
 }
 
-/** Persist to disk; track pending state via onStart/onEnd; revert on failure. */
-function persistOptimistic(path: string, content: string, cbs: PersistCallbacks): void {
+/** Persist to disk; track pending state via onStart/onEnd. */
+async function persistOptimistic(path: string, content: string, cbs: PersistCallbacks): Promise<void> {
   cbs.onStart?.(path)
-  persistNewNote(path, content)
-    .then(() => { cbs.onEnd?.(path); cbs.onPersisted?.() })
-    .catch(() => { cbs.onEnd?.(path); cbs.onFail(path) })
+  try {
+    await persistNewNote(path, content)
+    cbs.onPersisted?.()
+  } finally {
+    cbs.onEnd?.(path)
+  }
 }
 
-type ResolvedNote = { entry: VaultEntry; content: string }
-type PersistFn = (resolved: ResolvedNote) => void
+interface PersistResolvedOptions {
+  openTab?: boolean
+}
 
-/** Optimistically open note, add entry to vault, and persist to disk. */
-function createAndPersist(
-  resolved: ResolvedNote,
-  addFn: (e: VaultEntry) => void,
-  openTab: (e: VaultEntry, c: string) => void,
-  cbs: PersistCallbacks,
-): void {
-  openTab(resolved.entry, resolved.content)
-  addEntryWithMock(resolved.entry, resolved.content, addFn)
-  persistOptimistic(resolved.entry.path, resolved.content, cbs)
+type PersistResolvedEntryFn = (
+  resolved: ResolvedEntry,
+  options?: PersistResolvedOptions,
+) => Promise<void>
+
+interface CreationDeps {
+  entries: VaultEntry[]
+  vaultPath: string
+  setToastMessage: (msg: string | null) => void
+  persistResolvedEntry: PersistResolvedEntryFn
+}
+
+interface NoteCreationRequest extends CreationDeps {
+  title: string
+  type: string
+  creationPath?: 'plus_button'
+}
+
+async function createNamedNote({
+  entries,
+  title,
+  type,
+  vaultPath,
+  setToastMessage,
+  persistResolvedEntry,
+  creationPath,
+}: NoteCreationRequest): Promise<boolean> {
+  const template = resolveTemplate({ entries, typeName: type })
+  const plan = planNewNoteCreation({ entries, title, type, vaultPath, template })
+  if (plan.status === 'blocked') {
+    setToastMessage(plan.message)
+    return false
+  }
+
+  try {
+    await persistResolvedEntry(plan.resolved)
+    if (creationPath) {
+      trackEvent('note_created', { has_type: type !== 'Note' ? 1 : 0, creation_path: creationPath })
+    }
+    return true
+  } catch (error) {
+    setToastMessage(createPersistFailureMessage(plan.resolved.entry, error))
+    return false
+  }
+}
+
+interface TypeCreationRequest extends CreationDeps {
+  typeName: string
+}
+
+async function createTypeFromName({
+  entries,
+  typeName,
+  vaultPath,
+  setToastMessage,
+  persistResolvedEntry,
+}: TypeCreationRequest): Promise<boolean> {
+  const plan = planNewTypeCreation({ entries, typeName, vaultPath })
+  if (plan.status === 'existing') {
+    setToastMessage(`Type "${plan.entry.title}" already exists`)
+    return false
+  }
+  if (plan.status === 'blocked') {
+    setToastMessage(plan.message)
+    return false
+  }
+
+  try {
+    await persistResolvedEntry(plan.resolved)
+    trackEvent('type_created')
+    return true
+  } catch (error) {
+    setToastMessage(createPersistFailureMessage(plan.resolved.entry, error))
+    return false
+  }
+}
+
+async function createTypeSilently({
+  entries,
+  typeName,
+  vaultPath,
+  setToastMessage,
+  persistResolvedEntry,
+}: TypeCreationRequest): Promise<VaultEntry> {
+  const plan = planNewTypeCreation({ entries, typeName, vaultPath })
+  if (plan.status === 'existing') return plan.entry
+  if (plan.status === 'blocked') {
+    setToastMessage(plan.message)
+    throw new Error(plan.message)
+  }
+
+  try {
+    await persistResolvedEntry(plan.resolved, { openTab: false })
+    return plan.resolved.entry
+  } catch (error) {
+    const message = createPersistFailureMessage(plan.resolved.entry, error)
+    setToastMessage(message)
+    throw new Error(message)
+  }
 }
 
 interface ImmediateCreateDeps {
@@ -318,30 +504,6 @@ function useImmediateCreateQueue(config: ImmediateCreateQueueConfig): (type?: st
   }, [syncDeps, executeRequest, scheduleQueuedBurst])
 }
 
-interface RelationshipCreateDeps {
-  entries: VaultEntry[]
-  vaultPath: string
-  openTabWithContent: (entry: VaultEntry, content: string) => void
-  addEntry: (entry: VaultEntry) => void
-  removeEntry: (path: string) => void
-  setToastMessage: (msg: string | null) => void
-  onNewNotePersisted?: () => void
-}
-
-/** Create a note for a relationship link; persist in background. */
-function createNoteForRelationship(deps: RelationshipCreateDeps, title: string): void {
-  const template = resolveTemplate({ entries: deps.entries, typeName: 'Note' })
-  const resolved = resolveNewNote({ title, type: 'Note', vaultPath: deps.vaultPath, template })
-  deps.openTabWithContent(resolved.entry, resolved.content)
-  addEntryWithMock(resolved.entry, resolved.content, deps.addEntry)
-  persistNewNote(resolved.entry.path, resolved.content)
-    .then(() => deps.onNewNotePersisted?.())
-    .catch(() => {
-      deps.removeEntry(resolved.entry.path)
-      deps.setToastMessage('Failed to create note — disk write error')
-    })
-}
-
 export interface NoteCreationConfig {
   addEntry: (entry: VaultEntry) => void
   removeEntry: (path: string) => void
@@ -362,59 +524,58 @@ interface CreationTabDeps {
 }
 
 export function useNoteCreation(config: NoteCreationConfig, tabDeps: CreationTabDeps) {
-  const { addEntry, removeEntry, entries, setToastMessage, addPendingSave, removePendingSave } = config
+  const { addEntry, removeEntry, entries, setToastMessage, addPendingSave, removePendingSave, vaultPath } = config
   const { openTabWithContent } = tabDeps
 
-  const revertOptimisticNote = useCallback((path: string) => {
-    removeEntry(path)
-    setToastMessage('Failed to create note — disk write error')
-  }, [removeEntry, setToastMessage])
+  const persistResolvedEntry = useCallback(async (
+    resolved: ResolvedEntry,
+    options?: PersistResolvedOptions,
+  ): Promise<void> => {
+    if (options?.openTab !== false) openTabWithContent(resolved.entry, resolved.content)
+    addEntryWithMock(resolved.entry, resolved.content, addEntry)
+    try {
+      await persistOptimistic(resolved.entry.path, resolved.content, {
+        onStart: addPendingSave,
+        onEnd: removePendingSave,
+        onPersisted: config.onNewNotePersisted,
+      })
+    } catch (error) {
+      removeEntry(resolved.entry.path)
+      throw error
+    }
+  }, [openTabWithContent, addEntry, addPendingSave, removePendingSave, config.onNewNotePersisted, removeEntry])
 
-  const persistNew: PersistFn = useCallback(
-    (resolved) => createAndPersist(resolved, addEntry, openTabWithContent, {
-      onFail: revertOptimisticNote,
-      onStart: addPendingSave,
-      onEnd: removePendingSave,
-      onPersisted: config.onNewNotePersisted,
-    }),
-    [openTabWithContent, addEntry, revertOptimisticNote, addPendingSave, removePendingSave, config.onNewNotePersisted],
-  )
+  const creationDeps = {
+    entries,
+    vaultPath,
+    setToastMessage,
+    persistResolvedEntry,
+  }
+
+  const handleCreateNote = useCallback((title: string, type: string): Promise<boolean> =>
+    createNamedNote({ ...creationDeps, title, type, creationPath: 'plus_button' }),
+  [creationDeps])
+
+  const handleCreateType = useCallback((typeName: string): Promise<boolean> =>
+    createTypeFromName({ ...creationDeps, typeName }),
+  [creationDeps])
+
+  const createTypeEntrySilent = useCallback((typeName: string): Promise<VaultEntry> =>
+    createTypeSilently({ ...creationDeps, typeName }),
+  [creationDeps])
+
+  const handleCreateNoteForRelationship = useCallback((title: string): Promise<boolean> =>
+    createNamedNote({ ...creationDeps, title, type: 'Note' }),
+  [creationDeps])
 
   const handleCreateNoteImmediate = useImmediateCreateQueue({
     entries,
-    vaultPath: config.vaultPath,
+    vaultPath,
     addEntry,
     openTabWithContent,
     trackUnsaved: config.trackUnsaved,
     markContentPending: config.markContentPending,
   })
-
-  const handleCreateNote = useCallback((title: string, type: string) => {
-    const template = resolveTemplate({ entries, typeName: type })
-    persistNew(resolveNewNote({ title, type, vaultPath: config.vaultPath, template }))
-    trackEvent('note_created', { has_type: type !== 'Note' ? 1 : 0, creation_path: 'plus_button' })
-  }, [entries, persistNew, config.vaultPath])
-
-  const handleCreateNoteForRelationship = useCallback((title: string): Promise<boolean> => {
-    createNoteForRelationship({
-      entries, vaultPath: config.vaultPath, openTabWithContent, addEntry,
-      removeEntry, setToastMessage, onNewNotePersisted: config.onNewNotePersisted,
-    }, title)
-    return Promise.resolve(true)
-  }, [entries, openTabWithContent, addEntry, removeEntry, setToastMessage, config.vaultPath, config.onNewNotePersisted])
-
-  const handleCreateType = useCallback((typeName: string) => {
-    persistNew(resolveNewType({ typeName, vaultPath: config.vaultPath }))
-    trackEvent('type_created')
-  }, [persistNew, config.vaultPath])
-
-  /** Create a Type entry file silently (no tab opened). Adds to state and persists to disk. */
-  const createTypeEntrySilent = useCallback(async (typeName: string): Promise<VaultEntry> => {
-    const resolved = resolveNewType({ typeName, vaultPath: config.vaultPath })
-    addEntryWithMock(resolved.entry, resolved.content, addEntry)
-    await persistNewNote(resolved.entry.path, resolved.content)
-    return resolved.entry
-  }, [addEntry, config.vaultPath])
 
   return {
     handleCreateNote,

@@ -348,12 +348,53 @@ describe('useNoteCreation hook', () => {
     expect(addEntry.mock.calls[0][0].title).toBe('Recipe')
   })
 
+  it('handleCreateType blocks when a non-type file already uses the target filename', async () => {
+    const existing = makeEntry({ path: '/test/vault/briefing.md', filename: 'briefing.md', title: 'Briefing', isA: 'Note' })
+    const { result } = renderHook(() => useNoteCreation(makeConfig([existing]), tabDeps))
+
+    let created = true
+    await act(async () => {
+      created = await result.current.handleCreateType('Briefing')
+    })
+
+    expect(created).toBe(false)
+    expect(addEntry).not.toHaveBeenCalled()
+    expect(openTabWithContent).not.toHaveBeenCalled()
+    expect(setToastMessage).toHaveBeenCalledWith('Cannot create type "Briefing" because briefing.md already exists')
+  })
+
   it('createTypeEntrySilent persists without opening tab', async () => {
     const { result } = renderHook(() => useNoteCreation(makeConfig(), tabDeps))
     const entry = await act(async () => result.current.createTypeEntrySilent('Recipe'))
     expect(addEntry).toHaveBeenCalledTimes(1)
     expect(openTabWithContent).not.toHaveBeenCalled()
     expect(entry.isA).toBe('Type')
+  })
+
+  it('createTypeEntrySilent reuses an existing slug-equivalent type', async () => {
+    const existing = makeEntry({ path: '/test/vault/briefing.md', filename: 'briefing.md', title: 'Briefing', isA: 'Type' })
+    const { result } = renderHook(() => useNoteCreation(makeConfig([existing]), tabDeps))
+
+    const entry = await act(async () => result.current.createTypeEntrySilent('briefing'))
+
+    expect(entry).toBe(existing)
+    expect(addEntry).not.toHaveBeenCalled()
+    expect(openTabWithContent).not.toHaveBeenCalled()
+  })
+
+  it('handleCreateNoteForRelationship blocks when the generated filename already exists', async () => {
+    const existing = makeEntry({ path: '/test/vault/briefing.md', filename: 'briefing.md', title: 'Existing Briefing', isA: 'Note' })
+    const { result } = renderHook(() => useNoteCreation(makeConfig([existing]), tabDeps))
+
+    let created = true
+    await act(async () => {
+      created = await result.current.handleCreateNoteForRelationship('Briefing')
+    })
+
+    expect(created).toBe(false)
+    expect(addEntry).not.toHaveBeenCalled()
+    expect(openTabWithContent).not.toHaveBeenCalled()
+    expect(setToastMessage).toHaveBeenCalledWith('Cannot create note "Briefing" because briefing.md already exists')
   })
 
   it('reverts optimistic creation when disk write fails (Tauri)', async () => {

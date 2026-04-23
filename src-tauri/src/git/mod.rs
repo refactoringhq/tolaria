@@ -79,9 +79,22 @@ pub fn init_repo(path: &str) -> Result<(), String> {
     ensure_gitignore(path)?;
 
     run_git(dir, &["add", "."])?;
-    run_git(dir, &["commit", "-m", "Initial vault setup"])?;
+    commit_initial_vault_setup(dir)?;
 
     Ok(())
+}
+
+fn commit_initial_vault_setup(dir: &Path) -> Result<(), String> {
+    run_git(
+        dir,
+        &[
+            "-c",
+            "commit.gpgsign=false",
+            "commit",
+            "-m",
+            "Initial vault setup",
+        ],
+    )
 }
 
 /// Run a git command in the given directory, returning an error on failure.
@@ -90,7 +103,7 @@ fn run_git(dir: &Path, args: &[&str]) -> Result<(), String> {
         .args(args)
         .current_dir(dir)
         .output()
-        .map_err(|e| format!("Failed to run git {}: {}", args[0], e))?;
+        .map_err(|e| format!("Failed to run git {}: {e}", git_command_label(args)))?;
 
     if output.status.success() {
         return Ok(());
@@ -98,9 +111,17 @@ fn run_git(dir: &Path, args: &[&str]) -> Result<(), String> {
 
     Err(format!(
         "git {} failed: {}",
-        args[0],
+        git_command_label(args),
         String::from_utf8_lossy(&output.stderr)
     ))
+}
+
+fn git_command_label<'a>(args: &'a [&'a str]) -> &'a str {
+    if args.first() == Some(&"-c") {
+        return args.get(2).copied().unwrap_or(args[0]);
+    }
+
+    args[0]
 }
 
 /// Set local user.name and user.email if not already configured.
@@ -287,6 +308,39 @@ mod tests {
             .unwrap();
         let log_str = String::from_utf8_lossy(&log.stdout);
         assert!(log_str.contains("Initial vault setup"));
+    }
+
+    #[test]
+    fn test_init_repo_creates_initial_commit_when_signing_is_misconfigured() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("new-vault");
+        fs::create_dir_all(&vault).unwrap();
+        fs::write(vault.join("note.md"), "# Test\n").unwrap();
+
+        Command::new("git")
+            .args(["init"])
+            .current_dir(&vault)
+            .output()
+            .unwrap();
+        Command::new("git")
+            .args(["config", "commit.gpgsign", "true"])
+            .current_dir(&vault)
+            .output()
+            .unwrap();
+        Command::new("git")
+            .args(["config", "gpg.program", "/missing/tolaria-test-gpg"])
+            .current_dir(&vault)
+            .output()
+            .unwrap();
+
+        init_repo(vault.to_str().unwrap()).unwrap();
+
+        let log = Command::new("git")
+            .args(["log", "--oneline"])
+            .current_dir(&vault)
+            .output()
+            .unwrap();
+        assert!(String::from_utf8_lossy(&log.stdout).contains("Initial vault setup"));
     }
 
     #[test]

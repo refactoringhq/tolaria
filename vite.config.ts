@@ -88,88 +88,96 @@ function parseYamlBool(value: unknown): boolean | null {
 const vitestCoverageDirectory = process.env.VITEST_COVERAGE_DIR
   ?? path.join(os.tmpdir(), 'tolaria-vitest-coverage', String(process.pid))
 
+const devServerWatchIgnored = [
+  '**/coverage/**',
+  '**/test-results/**',
+  '**/playwright-report/**',
+  '**/dist/**',
+  '**/src-tauri/target/**',
+]
+
+function frontmatterString(frontmatter: Record<string, unknown>, ...keys: string[]): string | null {
+  const value = getFrontmatterValue(frontmatter, keys)
+  return typeof value === 'string' ? value : null
+}
+
+function frontmatterStringArray(frontmatter: Record<string, unknown>, ...keys: string[]): string[] {
+  const value = getFrontmatterValue(frontmatter, keys)
+  if (Array.isArray(value)) return value.map(String)
+  if (typeof value === 'string') return [value]
+  return []
+}
+
+function frontmatterBool(frontmatter: Record<string, unknown>, ...keys: string[]): boolean | null {
+  return parseYamlBool(getFrontmatterValue(frontmatter, keys))
+}
+
+function markdownTitle(content: string, frontmatter: Record<string, unknown>, fallback: string): string {
+  const title = frontmatterString(frontmatter, 'title')
+  if (title) return title
+
+  const h1Match = content.match(/^#\s+(.+)$/m)
+  return h1Match ? h1Match[1].trim() : fallback
+}
+
+function markdownBodyText(content: string): string {
+  return content.replace(/^#+\s+.+$/gm, '').replace(/[\n\r]+/g, ' ').trim()
+}
+
+function frontmatterWikiLinks(frontmatter: Record<string, unknown>, ...keys: string[]): string[] {
+  return frontmatterStringArray(frontmatter, ...keys).flatMap((value) => extractWikiLinks(value))
+}
+
+function frontmatterRelationships(frontmatter: Record<string, unknown>): Record<string, string[]> {
+  const relationships: Record<string, string[]> = {}
+  for (const [key, value] of Object.entries(frontmatter)) {
+    if (DEDICATED_KEYS.has(key.toLowerCase())) continue
+    const links = wikiLinksFromValue(value)
+    if (links.length > 0) relationships[key] = links
+  }
+  return relationships
+}
+
 function parseMarkdownFile(filePath: string): VaultEntry | null {
   try {
     const raw = fs.readFileSync(filePath, 'utf-8')
     const stats = fs.statSync(filePath)
-    const { data: fm, content } = matter(raw)
+    const { data, content } = matter(raw)
+    const fm = data as Record<string, unknown>
 
     const filename = path.basename(filePath)
     const basename = filename.replace(/\.md$/, '')
 
-    // Title: first H1 in body, or frontmatter title, or filename
-    const h1Match = content.match(/^#\s+(.+)$/m)
-    const title = (fm.title as string) || (h1Match ? h1Match[1].trim() : basename)
-
-    // Helper to get a frontmatter string field (case-insensitive key)
-    const getString = (...keys: string[]): string | null => {
-      const value = getFrontmatterValue(fm, keys)
-      return typeof value === 'string' ? value : null
-    }
-
-    // Helper to get a frontmatter array-of-strings field
-    const getArray = (...keys: string[]): string[] => {
-      const value = getFrontmatterValue(fm, keys)
-      if (Array.isArray(value)) return value.map(String)
-      if (typeof value === 'string') return [value]
-      return []
-    }
-
-    const aliases = getArray('aliases')
-    const belongsToRaw = getArray('belongs_to', 'belongs to')
-    const relatedToRaw = getArray('related_to', 'related to')
-    const belongsTo = belongsToRaw.flatMap((v) => extractWikiLinks(v))
-    const relatedTo = relatedToRaw.flatMap((v) => extractWikiLinks(v))
-
-    // Created at from filesystem metadata (birthtime), not frontmatter
-    const createdAt = stats.birthtimeMs
-
-    // Snippet: first 200 chars of body after frontmatter, stripped of markdown
-    const bodyText = content.replace(/^#+\s+.+$/gm, '').replace(/[\n\r]+/g, ' ').trim()
+    const title = markdownTitle(content, fm, basename)
+    const bodyText = markdownBodyText(content)
     const snippet = bodyText.slice(0, 200)
-
-    // Generic relationships: any frontmatter key whose value contains wiki-links
-    const relationships: Record<string, string[]> = {}
-    for (const key of Object.keys(fm)) {
-      if (DEDICATED_KEYS.has(key.toLowerCase())) continue
-      const links = wikiLinksFromValue(fm[key])
-      if (links.length > 0) {
-        relationships[key] = links
-      }
-    }
-
-    // Boolean field helper — handles both real booleans and YAML 1.1 string
-    // variants ("Yes"/"yes"/"True"/"true") that js-yaml 4.x (YAML 1.2) leaves as strings.
-    const getBool = (...keys: string[]): boolean | null => {
-      return parseYamlBool(getFrontmatterValue(fm, keys))
-    }
 
     return {
       path: filePath,
       filename,
       title,
-      isA: getString('is_a', 'is a', 'type'),
-      aliases,
-      belongsTo,
-      relatedTo,
-      status: getString('status'),
-      archived: getBool('archived') ?? false,
-      trashed: getBool('trashed') ?? false,
+      isA: frontmatterString(fm, 'is_a', 'is a', 'type'),
+      aliases: frontmatterStringArray(fm, 'aliases'),
+      belongsTo: frontmatterWikiLinks(fm, 'belongs_to', 'belongs to'),
+      relatedTo: frontmatterWikiLinks(fm, 'related_to', 'related to'),
+      status: frontmatterString(fm, 'status'),
+      archived: frontmatterBool(fm, 'archived') ?? false,
+      trashed: frontmatterBool(fm, 'trashed') ?? false,
       trashedAt: null,
       modifiedAt: stats.mtimeMs,
-      createdAt,
+      createdAt: stats.birthtimeMs,
       fileSize: stats.size,
       snippet,
       wordCount: bodyText.split(/\s+/).filter(Boolean).length,
-      relationships,
-      icon: getString('icon'),
-      color: getString('color'),
+      relationships: frontmatterRelationships(fm),
+      icon: frontmatterString(fm, 'icon'),
+      color: frontmatterString(fm, 'color'),
       order: fm.order != null ? Number(fm.order) : null,
-      sidebarLabel: getString('sidebar label', 'sidebar_label'),
-      template: getString('template'),
-      sort: getString('sort'),
-      view: getString('view'),
-      visible: getBool('visible'),
+      sidebarLabel: frontmatterString(fm, 'sidebar label', 'sidebar_label'),
+      template: frontmatterString(fm, 'template'),
+      sort: frontmatterString(fm, 'sort'),
+      view: frontmatterString(fm, 'view'),
+      visible: frontmatterBool(fm, 'visible'),
       outgoingLinks: [],
       properties: {},
     }
@@ -365,6 +373,21 @@ async function handleVaultRename(url: URL, req: IncomingMessage, res: ServerResp
   return true
 }
 
+type FilenameStemValidation =
+  | { ok: true; stem: string }
+  | { ok: false; error: string }
+
+function validateMarkdownFilenameStem(value: unknown): FilenameStemValidation {
+  const stem = String(value ?? '').trim().replace(/\.md$/i, '').trim()
+  if (!stem) return { ok: false, error: 'New filename cannot be empty' }
+  if (isUnsafeMarkdownFilenameStem(stem)) return { ok: false, error: 'Invalid filename' }
+  return { ok: true, stem }
+}
+
+function isUnsafeMarkdownFilenameStem(stem: string): boolean {
+  return stem === '.' || stem === '..' || stem.includes('/') || stem.includes('\\')
+}
+
 async function handleVaultRenameFilename(url: URL, req: IncomingMessage, res: ServerResponse): Promise<boolean> {
   if (url.pathname !== '/api/vault/rename-filename' || req.method !== 'POST') return false
   try {
@@ -374,17 +397,13 @@ async function handleVaultRenameFilename(url: URL, req: IncomingMessage, res: Se
       old_path: oldPath,
       new_filename_stem: newFilenameStem,
     } = JSON.parse(body)
-    const trimmed = String(newFilenameStem ?? '').trim().replace(/\.md$/i, '').trim()
-    if (!trimmed) {
-      sendJson(res, { error: 'New filename cannot be empty' }, 400)
-      return true
-    }
-    if (trimmed === '.' || trimmed === '..' || trimmed.includes('/') || trimmed.includes('\\')) {
-      sendJson(res, { error: 'Invalid filename' }, 400)
+    const filename = validateMarkdownFilenameStem(newFilenameStem)
+    if (!filename.ok) {
+      sendJson(res, { error: filename.error }, 400)
       return true
     }
 
-    const newPath = path.join(path.dirname(oldPath), `${trimmed}.md`)
+    const newPath = path.join(path.dirname(oldPath), `${filename.stem}.md`)
     const oldTitle = parseMarkdownFile(oldPath)?.title ?? path.basename(oldPath, '.md')
     if (newPath !== oldPath && fs.existsSync(newPath)) {
       sendJson(res, { error: 'A note with that name already exists' }, 409)
@@ -505,6 +524,9 @@ export default defineConfig({
     port: 5202,
     strictPort: true,
     allowedHosts: true,
+    watch: {
+      ignored: devServerWatchIgnored,
+    },
   },
 
   // Env variables starting with TAURI_ are exposed to the frontend
