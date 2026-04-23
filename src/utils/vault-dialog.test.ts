@@ -11,6 +11,12 @@ vi.mock('../lib/appUpdater', () => ({
   isRestartRequiredAfterUpdate: vi.fn(() => false),
 }))
 
+const openMock = vi.fn()
+
+vi.mock('@tauri-apps/plugin-dialog', () => ({
+  open: (...args: unknown[]) => openMock(...args),
+}))
+
 import { pickFolder } from './vault-dialog'
 import { isTauri } from '../mock-tauri'
 import {
@@ -48,10 +54,44 @@ describe('pickFolder', () => {
     expect(window.prompt).toHaveBeenCalledWith('Enter folder path:')
   })
 
+  it('normalizes file URLs returned by the browser fallback prompt', async () => {
+    vi.mocked(isTauri).mockReturnValue(false)
+    vi.spyOn(window, 'prompt').mockReturnValue('file:///Users/test/My%20Vault')
+
+    const result = await pickFolder('Select vault')
+
+    expect(result).toBe('/Users/test/My Vault')
+  })
+
   it('blocks the native folder picker when a restart is required after update install', async () => {
     vi.mocked(isTauri).mockReturnValue(true)
     vi.mocked(isRestartRequiredAfterUpdate).mockReturnValue(true)
 
     await expect(pickFolder('Select vault')).rejects.toThrow(RESTART_REQUIRED_FOLDER_PICKER_MESSAGE)
+  })
+
+  it('normalizes a native single-selection array to its first folder path', async () => {
+    vi.mocked(isTauri).mockReturnValue(true)
+    vi.mocked(isRestartRequiredAfterUpdate).mockReturnValue(false)
+    openMock.mockResolvedValue(['/Users/test/my-vault'])
+
+    const result = await pickFolder('Select vault')
+
+    expect(result).toBe('/Users/test/my-vault')
+    expect(openMock).toHaveBeenCalledWith({
+      directory: true,
+      multiple: false,
+      title: 'Select vault',
+    })
+  })
+
+  it('normalizes native file URLs to filesystem paths', async () => {
+    vi.mocked(isTauri).mockReturnValue(true)
+    vi.mocked(isRestartRequiredAfterUpdate).mockReturnValue(false)
+    openMock.mockResolvedValue('file:///Users/test/My%20Vault')
+
+    const result = await pickFolder('Select vault')
+
+    expect(result).toBe('/Users/test/My Vault')
   })
 })

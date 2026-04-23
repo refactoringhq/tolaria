@@ -157,6 +157,43 @@ describe('useVaultSwitcher', () => {
     })
   })
 
+  it('registers an onboarding vault selection before switching to it', async () => {
+    const { result } = await renderLoadedVaultSwitcher()
+
+    await act(async () => {
+      await result.current.registerVaultSelection('/selected/vault', 'Selected Vault')
+    })
+
+    expect(result.current.vaultPath).toBe('/selected/vault')
+    expect(result.current.selectedVaultPath).toBe('/selected/vault')
+    expect(mockVaultListStore).toEqual({
+      vaults: [{ label: 'Selected Vault', path: '/selected/vault' }],
+      active_vault: '/selected/vault',
+      hidden_defaults: [],
+    })
+  })
+
+  it('registers the canonical Getting Started vault without persisting a duplicate entry', async () => {
+    setMockInvokeBehavior({
+      checkVaultExists: ({ path }) => path === expectedDefaultVaultPath,
+    })
+
+    const { result } = await renderLoadedVaultSwitcher()
+
+    await act(async () => {
+      await result.current.registerVaultSelection(expectedDefaultVaultPath, 'Getting Started')
+    })
+
+    expect(result.current.vaultPath).toBe(expectedDefaultVaultPath)
+    expect(result.current.selectedVaultPath).toBe(expectedDefaultVaultPath)
+    expect(result.current.allVaults).toEqual([{ label: 'Getting Started', path: expectedDefaultVaultPath }])
+    expect(mockVaultListStore).toEqual({
+      vaults: [],
+      active_vault: expectedDefaultVaultPath,
+      hidden_defaults: [],
+    })
+  })
+
   it('persists active vault when switching', async () => {
     mockVaultListStore = {
       vaults: [{ label: 'Work', path: '/work/vault' }],
