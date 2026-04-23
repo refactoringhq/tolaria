@@ -6,6 +6,7 @@ import {
   type AiAgentId,
   type AiAgentsStatus,
 } from '../lib/aiAgents'
+import { UI_LANGUAGE_OPTIONS, normalizeUiLocale, t as translateMessage, useI18n } from '../lib/i18n'
 import {
   useState,
   useRef,
@@ -17,6 +18,7 @@ import {
 } from 'react'
 import { X } from '@phosphor-icons/react'
 import type { Settings } from '../types'
+import type { UiLocale } from '../types'
 import { normalizeReleaseChannel, serializeReleaseChannel, type ReleaseChannel } from '../lib/releaseChannel'
 import { trackEvent } from '../lib/telemetry'
 import { Button } from './ui/button'
@@ -43,6 +45,7 @@ interface SettingsPanelProps {
 }
 
 interface SettingsDraft {
+  uiLanguage: UiLocale
   pullInterval: number
   autoGitEnabled: boolean
   autoGitIdleThresholdSeconds: number
@@ -56,6 +59,8 @@ interface SettingsDraft {
 }
 
 interface SettingsBodyProps {
+  uiLanguage: UiLocale
+  setUiLanguage: (value: UiLocale) => void
   pullInterval: number
   setPullInterval: (value: number) => void
   isGitVault: boolean
@@ -93,6 +98,7 @@ function createSettingsDraft(
   explicitOrganizationEnabled: boolean,
 ): SettingsDraft {
   return {
+    uiLanguage: normalizeUiLocale(settings.ui_language) ?? 'zh-CN',
     pullInterval: settings.auto_pull_interval_minutes ?? 5,
     autoGitEnabled: settings.autogit_enabled ?? false,
     autoGitIdleThresholdSeconds: sanitizePositiveInteger(
@@ -138,6 +144,7 @@ function buildSettingsFromDraft(settings: Settings, draft: SettingsDraft): Setti
     release_channel: serializeReleaseChannel(draft.releaseChannel),
     initial_h1_auto_rename_enabled: draft.initialH1AutoRename,
     default_ai_agent: draft.defaultAiAgent,
+    ui_language: draft.uiLanguage,
   }
 }
 
@@ -258,6 +265,8 @@ function SettingsPanelInner({
       >
         <SettingsHeader onClose={onClose} />
         <SettingsBody
+          uiLanguage={draft.uiLanguage}
+          setUiLanguage={(value) => updateDraft('uiLanguage', value)}
           pullInterval={draft.pullInterval}
           setPullInterval={(value) => updateDraft('pullInterval', value)}
           isGitVault={isGitVault}
@@ -288,18 +297,19 @@ function SettingsPanelInner({
 }
 
 function SettingsHeader({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n()
   return (
     <div
       className="flex items-center justify-between shrink-0"
       style={{ height: 56, padding: '0 24px', borderBottom: '1px solid var(--border)' }}
     >
-      <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--foreground)' }}>Settings</span>
+      <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--foreground)' }}>{t('Settings')}</span>
       <Button
         variant="ghost"
         size="icon-sm"
         onClick={onClose}
-        title="Close settings"
-        aria-label="Close settings"
+        title={t('Close settings')}
+        aria-label={t('Close settings')}
       >
         <X size={16} />
       </Button>
@@ -308,6 +318,8 @@ function SettingsHeader({ onClose }: { onClose: () => void }) {
 }
 
 function SettingsBody({
+  uiLanguage,
+  setUiLanguage,
   pullInterval,
   setPullInterval,
   isGitVault,
@@ -334,6 +346,13 @@ function SettingsBody({
   return (
     <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 0, overflow: 'auto' }}>
       <SettingsSection showDivider={false}>
+        <LanguageSection
+          uiLanguage={uiLanguage}
+          setUiLanguage={setUiLanguage}
+        />
+      </SettingsSection>
+
+      <SettingsSection>
         <SyncAndUpdatesSection
           pullInterval={pullInterval}
           setPullInterval={setPullInterval}
@@ -394,15 +413,16 @@ function SyncAndUpdatesSection({
   releaseChannel,
   setReleaseChannel,
 }: Pick<SettingsBodyProps, 'pullInterval' | 'setPullInterval' | 'releaseChannel' | 'setReleaseChannel'>) {
+  const { t } = useI18n()
   return (
     <>
       <SectionHeading
-        title="Sync & Updates"
-        description="Configure background pulling and which update feed Tolaria follows. Stable only receives manually promoted releases, while Alpha follows every push to main."
+        title={t('Sync & Updates')}
+        description={t('Configure background pulling and which update feed Tolaria follows. Stable only receives manually promoted releases, while Alpha follows every push to main.')}
       />
 
       <LabeledSelect
-        label="Pull interval (minutes)"
+        label={t('Pull interval (minutes)')}
         value={`${pullInterval}`}
         onValueChange={(value) => setPullInterval(Number(value))}
         options={PULL_INTERVAL_OPTIONS.map((value) => ({
@@ -414,12 +434,12 @@ function SyncAndUpdatesSection({
       />
 
       <LabeledSelect
-        label="Release channel"
+        label={t('Release channel')}
         value={releaseChannel}
         onValueChange={(value) => setReleaseChannel(value as ReleaseChannel)}
         options={[
-          { value: 'stable', label: 'Stable' },
-          { value: 'alpha', label: 'Alpha' },
+          { value: 'stable', label: t('Stable') },
+          { value: 'alpha', label: t('Alpha') },
         ]}
         testId="settings-release-channel"
       />
@@ -451,16 +471,17 @@ function AutoGitSettingsSection({
   | 'autoGitInactiveThresholdSeconds'
   | 'setAutoGitInactiveThresholdSeconds'
 >) {
+  const { t } = useI18n()
   return (
     <>
       <SectionHeading
-        title="AutoGit"
-        description={autoGitSectionDescription(isGitVault)}
+        title={t('AutoGit')}
+        description={t(autoGitSectionDescription(isGitVault))}
       />
 
       <SettingsSwitchRow
-        label="Enable AutoGit"
-        description="When enabled, Tolaria will commit and push saved local changes automatically after an idle pause or after the app becomes inactive."
+        label={t('Enable AutoGit')}
+        description={t('When enabled, Tolaria will commit and push saved local changes automatically after an idle pause or after the app becomes inactive.')}
         checked={autoGitEnabled}
         onChange={setAutoGitEnabled}
         disabled={!isGitVault}
@@ -468,7 +489,7 @@ function AutoGitSettingsSection({
       />
 
       <LabeledNumberInput
-        label="Idle threshold (seconds)"
+        label={t('Idle threshold (seconds)')}
         value={autoGitIdleThresholdSeconds}
         onValueChange={setAutoGitIdleThresholdSeconds}
         testId="settings-autogit-idle-threshold"
@@ -476,7 +497,7 @@ function AutoGitSettingsSection({
       />
 
       <LabeledNumberInput
-        label="Inactive-app grace period (seconds)"
+        label={t('Inactive-app grace period (seconds)')}
         value={autoGitInactiveThresholdSeconds}
         onValueChange={setAutoGitInactiveThresholdSeconds}
         testId="settings-autogit-inactive-threshold"
@@ -490,16 +511,17 @@ function TitleSettingsSection({
   initialH1AutoRename,
   setInitialH1AutoRename,
 }: Pick<SettingsBodyProps, 'initialH1AutoRename' | 'setInitialH1AutoRename'>) {
+  const { t } = useI18n()
   return (
     <>
       <SectionHeading
-        title="Titles & Filenames"
-        description="Choose whether Tolaria automatically syncs untitled note filenames from the first H1 title."
+        title={t('Titles & Filenames')}
+        description={t('Choose whether Tolaria automatically syncs untitled note filenames from the first H1 title.')}
       />
 
       <SettingsSwitchRow
-        label="Auto-rename untitled notes from first H1"
-        description="When enabled, Tolaria renames untitled-note files as soon as the first H1 becomes a real title. Turn this off to keep the filename unchanged until you rename it manually from the breadcrumb bar."
+        label={t('Auto-rename untitled notes from first H1')}
+        description={t('When enabled, Tolaria renames untitled-note files as soon as the first H1 becomes a real title. Turn this off to keep the filename unchanged until you rename it manually from the breadcrumb bar.')}
         checked={initialH1AutoRename}
         onChange={setInitialH1AutoRename}
         testId="settings-initial-h1-auto-rename"
@@ -512,11 +534,11 @@ function buildDefaultAiAgentOptions(aiAgentsStatus: AiAgentsStatus): Array<{ val
   return AI_AGENT_DEFINITIONS.map((definition) => {
     const status = aiAgentsStatus[definition.id]
     const suffix = status.status === 'installed'
-      ? ` (installed${status.version ? ` ${status.version}` : ''})`
-      : ' (missing)'
+      ? ` (${translateMessage('installed')}${status.version ? ` ${status.version}` : ''})`
+      : ` (${translateMessage('missing')})`
     return {
       value: definition.id,
-      label: `${definition.label}${suffix}`,
+      label: `${translateMessage(definition.label)}${suffix}`,
     }
   })
 }
@@ -526,15 +548,16 @@ function AiAgentSettingsSection({
   defaultAiAgent,
   setDefaultAiAgent,
 }: Pick<SettingsBodyProps, 'aiAgentsStatus' | 'defaultAiAgent' | 'setDefaultAiAgent'>) {
+  const { t } = useI18n()
   return (
     <>
       <SectionHeading
-        title="AI Agents"
-        description="Choose which CLI AI agent Tolaria uses in the AI panel and command palette."
+        title={t('AI Agents')}
+        description={t('Choose which CLI AI agent Tolaria uses in the AI panel and command palette.')}
       />
 
       <LabeledSelect
-        label="Default AI agent"
+        label={t('Default AI agent')}
         value={defaultAiAgent}
         onValueChange={(value) => setDefaultAiAgent(value as AiAgentId)}
         options={buildDefaultAiAgentOptions(aiAgentsStatus)}
@@ -554,23 +577,24 @@ function PrivacySettingsSection({
   analytics,
   setAnalytics,
 }: Pick<SettingsBodyProps, 'crashReporting' | 'setCrashReporting' | 'analytics' | 'setAnalytics'>) {
+  const { t } = useI18n()
   return (
     <>
       <SectionHeading
-        title="Privacy & Telemetry"
-        description="Anonymous data helps us fix bugs and improve Tolaria. No vault content, note titles, or file paths are ever sent."
+        title={t('Privacy & Telemetry')}
+        description={t('Anonymous data helps us fix bugs and improve Tolaria. No vault content, note titles, or file paths are ever sent.')}
       />
 
       <TelemetryToggle
-        label="Crash reporting"
-        description="Send anonymous error reports"
+        label={t('Crash reporting')}
+        description={t('Send anonymous error reports')}
         checked={crashReporting}
         onChange={setCrashReporting}
         testId="settings-crash-reporting"
       />
       <TelemetryToggle
-        label="Usage analytics"
-        description="Share anonymous usage patterns"
+        label={t('Usage analytics')}
+        description={t('Share anonymous usage patterns')}
         checked={analytics}
         onChange={setAnalytics}
         testId="settings-analytics"
@@ -629,9 +653,36 @@ function renderDefaultAiAgentSummary(defaultAiAgent: AiAgentId, aiAgentsStatus: 
   const definition = getAiAgentDefinition(defaultAiAgent)
   const status = aiAgentsStatus[defaultAiAgent]
   if (status.status === 'installed') {
-    return `${definition.label}${status.version ? ` ${status.version}` : ''} is ready to use.`
+    return status.version
+      ? translateMessage('{label} {version} is ready to use.', { label: translateMessage(definition.label), version: status.version })
+      : translateMessage('{label} is ready to use.', { label: translateMessage(definition.label) })
   }
-  return `${definition.label} is not installed yet. You can still select it now and install it later.`
+  return translateMessage('{label} is not installed yet. You can still select it now and install it later.', { label: translateMessage(definition.label) })
+}
+
+function LanguageSection({
+  uiLanguage,
+  setUiLanguage,
+}: Pick<SettingsBodyProps, 'uiLanguage' | 'setUiLanguage'>) {
+  const { t } = useI18n()
+
+  return (
+    <>
+      <SectionHeading
+        title={t('Language')}
+        description={t('Choose the interface language used across Tolaria.')}
+      />
+
+      <LabeledSelect
+        label={t('Interface language')}
+        value={uiLanguage}
+        onValueChange={(value) => setUiLanguage(value as UiLocale)}
+        options={UI_LANGUAGE_OPTIONS}
+        testId="settings-ui-language"
+        autoFocus={true}
+      />
+    </>
+  )
 }
 
 function LabeledSelect({
@@ -711,16 +762,17 @@ function OrganizationWorkflowSection({
   checked: boolean
   onChange: (value: boolean) => void
 }) {
+  const { t } = useI18n()
   return (
     <>
       <SectionHeading
-        title="Workflow"
-        description="Choose whether Tolaria shows the Inbox workflow and the organized toggle."
+        title={t('Workflow')}
+        description={t('Choose whether Tolaria shows the Inbox workflow and the organized toggle.')}
       />
 
       <SettingsSwitchRow
-        label="Organize notes explicitly"
-        description="When enabled, an Inbox section shows unorganized notes, and a toggle lets you mark notes as organized."
+        label={t('Organize notes explicitly')}
+        description={t('When enabled, an Inbox section shows unorganized notes, and a toggle lets you mark notes as organized.')}
         checked={checked}
         onChange={onChange}
         testId="settings-explicit-organization"
@@ -784,18 +836,19 @@ function TelemetryToggle({
 }
 
 function SettingsFooter({ onClose, onSave }: { onClose: () => void; onSave: () => void }) {
+  const { t } = useI18n()
   return (
     <div
       className="flex items-center justify-between shrink-0"
       style={{ height: 56, padding: '0 24px', borderTop: '1px solid var(--border)' }}
     >
-      <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{'\u2318'}, to open settings</span>
+      <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{t('⌘, to open settings')}</span>
       <div className="flex gap-2">
         <Button variant="outline" onClick={onClose}>
-          Cancel
+          {t('Cancel')}
         </Button>
         <Button onClick={onSave} data-testid="settings-save">
-          Save
+          {t('Save')}
         </Button>
       </div>
     </div>

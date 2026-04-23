@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
+import { t } from '../lib/i18n'
 import { isTauri, mockInvoke } from '../mock-tauri'
 
 function tauriCall<T>(cmd: string, args: Record<string, unknown>): Promise<T> {
@@ -74,7 +75,7 @@ export function useConflictResolver({
     try {
       await tauriCall<string>('git_commit_conflict_resolution', { vaultPath })
       onResolved()
-      onToast('Conflicts resolved — sync resumed')
+      onToast(t('Conflicts resolved — sync resumed'))
     } catch (err) {
       setError(`Commit failed: ${err}`)
     } finally {

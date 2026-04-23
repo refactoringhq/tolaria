@@ -1,4 +1,5 @@
 import { AlertTriangle } from 'lucide-react'
+import { t } from '../lib/i18n'
 
 interface ConflictNoteBannerProps {
   onKeepMine: () => void
@@ -22,7 +23,7 @@ export function ConflictNoteBanner({ onKeepMine, onKeepTheirs }: ConflictNoteBan
       }}
     >
       <AlertTriangle size={13} />
-      <span>This note has a merge conflict</span>
+      <span>{t('This note has a merge conflict')}</span>
       <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
         <button
           data-testid="conflict-keep-mine-btn"
@@ -39,9 +40,9 @@ export function ConflictNoteBanner({ onKeepMine, onKeepTheirs }: ConflictNoteBan
             color: 'var(--foreground)',
             cursor: 'pointer',
           }}
-          title="Keep my local version"
+          title={t('Keep my local version')}
         >
-          Keep mine
+          {t('Keep mine')}
         </button>
         <button
           data-testid="conflict-keep-theirs-btn"
@@ -58,9 +59,9 @@ export function ConflictNoteBanner({ onKeepMine, onKeepTheirs }: ConflictNoteBan
             color: 'var(--foreground)',
             cursor: 'pointer',
           }}
-          title="Keep the remote version"
+          title={t('Keep the remote version')}
         >
-          Keep theirs
+          {t('Keep theirs')}
         </button>
       </div>
     </div>

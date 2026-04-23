@@ -1,4 +1,5 @@
 import type { VaultEntry, SidebarSelection, ModifiedFile, NoteStatus, ViewFile } from '../../types'
+import { t } from '../../lib/i18n'
 import type { RelationshipGroup } from '../../utils/noteListHelpers'
 import { filenameStemToTitle } from '../../utils/noteTitle'
 
@@ -10,7 +11,8 @@ export interface DeletedNoteEntry extends VaultEntry {
   __changeBinary: boolean
 }
 
-const FILTER_TITLES: Partial<Record<'archived' | 'changes' | 'inbox' | 'pulse', string>> = {
+const FILTER_TITLES: Partial<Record<'all' | 'archived' | 'changes' | 'inbox' | 'pulse', string>> = {
+  all: 'All Notes',
   archived: 'Archive',
   changes: 'Changes',
   inbox: 'Inbox',
@@ -19,18 +21,19 @@ const FILTER_TITLES: Partial<Record<'archived' | 'changes' | 'inbox' | 'pulse', 
 
 function resolveSelectionFilterTitle(selection: SidebarSelection): string | null {
   if (selection.kind !== 'filter') return null
-  return FILTER_TITLES[selection.filter as keyof typeof FILTER_TITLES] ?? null
+  const title = FILTER_TITLES[selection.filter as keyof typeof FILTER_TITLES]
+  return title ? t(title) : null
 }
 
 export function resolveHeaderTitle(selection: SidebarSelection, typeDocument: VaultEntry | null, views?: ViewFile[]): string {
   if (selection.kind === 'view') {
     const view = views?.find((v) => v.filename === selection.filename)
-    return view?.definition.name ?? 'View'
+    return view?.definition.name ?? t('View')
   }
   if (selection.kind === 'entity') return selection.entry.title
   if (typeDocument) return typeDocument.title
 
-  return resolveSelectionFilterTitle(selection) ?? 'Notes'
+  return resolveSelectionFilterTitle(selection) ?? t('Notes')
 }
 
 export function filterByQuery<T extends { title: string }>(items: T[], query: string): T[] {

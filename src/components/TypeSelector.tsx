@@ -7,6 +7,7 @@ import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
+import { t } from '../lib/i18n'
 import { getTypeIcon } from './NoteItem'
 import { CreateTypeDialog } from './CreateTypeDialog'
 import { PROPERTY_CHIP_STYLE } from './propertyChipStyles'
@@ -19,7 +20,7 @@ import {
 const TYPE_NONE = '__none__'
 const MIN_POPOVER_WIDTH = 220
 const OPEN_COMBOBOX_KEYS = new Set(['ArrowDown', 'ArrowUp', 'Enter', ' '])
-const MISSING_TYPE_TOOLTIP = 'Missing type'
+const MISSING_TYPE_TOOLTIP = t('Missing type')
 
 interface TypeSelectorItemProps {
   type: string
@@ -424,9 +425,9 @@ function EditableTypeSelector({
               <Input
                 ref={inputRef}
                 value={query}
-                placeholder="Search types..."
+                placeholder={t('Search types...')}
                 autoComplete="off"
-                aria-label="Search types"
+                aria-label={t('Search types')}
                 className="h-8 text-sm"
                 data-testid="type-selector-search-input"
                 onChange={(event) => handleSearchChange(event.target.value)}
@@ -436,7 +437,7 @@ function EditableTypeSelector({
             <div ref={listRef} className="max-h-60 overflow-y-auto p-1">
               {options.length === 0 ? (
                 <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-                  No matching types
+                   {t('No matching types')}
                 </div>
               ) : (
                 <div id={listboxId} role="listbox">
@@ -460,7 +461,7 @@ function EditableTypeSelector({
                         onClick={() => selectType(type)}
                       >
                         {type === TYPE_NONE ? (
-                          <span className="truncate text-muted-foreground">None</span>
+                           <span className="truncate text-muted-foreground">{t('None')}</span>
                         ) : (
                           <span className="flex min-w-0 items-center gap-2 truncate">
                             <TypeSelectorItem type={type} typeColorKeys={typeColorKeys} typeIconKeys={typeIconKeys} />

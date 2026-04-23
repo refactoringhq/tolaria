@@ -1,5 +1,6 @@
 import { startTransition, useCallback, useEffect, useRef, type MutableRefObject } from 'react'
 import { invoke } from '@tauri-apps/api/core'
+import { t } from '../lib/i18n'
 import { useEditorSaveWithLinks } from './useEditorSaveWithLinks'
 import { flushEditorContent } from '../utils/autoSave'
 import { extractH1TitleFromContent } from '../utils/noteTitle'
@@ -489,7 +490,7 @@ function useFlushBeforeAction({
       })
       await flushPendingUntitledRename(currentPath)
     } catch (err) {
-      setToastMessage(`Auto-save failed: ${err}`)
+      setToastMessage(t('Auto-save failed: {error}', { error: String(err) }))
       throw err
     }
   }, [resolveCurrentPath, savePendingForPath, tabsRef, unsavedPathsRef, clearUnsaved, setToastMessage, flushPendingUntitledRename])

@@ -18,6 +18,7 @@ pub struct Settings {
     pub release_channel: Option<String>,
     pub initial_h1_auto_rename_enabled: Option<bool>,
     pub default_ai_agent: Option<String>,
+    pub ui_language: Option<String>,
 }
 
 fn normalize_optional_string(value: Option<String>) -> Option<String> {
@@ -52,6 +53,14 @@ pub fn normalize_default_ai_agent(value: Option<&str>) -> Option<String> {
     }
 }
 
+pub fn normalize_ui_language(value: Option<&str>) -> Option<String> {
+    match value.map(|candidate| candidate.trim().to_ascii_lowercase()) {
+        Some(language) if language == "en" => Some("en".to_string()),
+        Some(language) if language == "zh" || language == "zh-cn" => Some("zh-CN".to_string()),
+        _ => None,
+    }
+}
+
 fn normalize_settings(settings: Settings) -> Settings {
     Settings {
         auto_pull_interval_minutes: settings.auto_pull_interval_minutes,
@@ -69,6 +78,7 @@ fn normalize_settings(settings: Settings) -> Settings {
         release_channel: normalize_release_channel(settings.release_channel.as_deref()),
         initial_h1_auto_rename_enabled: settings.initial_h1_auto_rename_enabled,
         default_ai_agent: normalize_default_ai_agent(settings.default_ai_agent.as_deref()),
+        ui_language: normalize_ui_language(settings.ui_language.as_deref()),
     }
 }
 
@@ -176,6 +186,7 @@ mod tests {
         Option<&'a str>,
         Option<bool>,
         Option<&'a str>,
+        Option<&'a str>,
     );
 
     fn settings_snapshot(settings: &Settings) -> SettingsSnapshot<'_> {
@@ -191,13 +202,14 @@ mod tests {
             settings.release_channel.as_deref(),
             settings.initial_h1_auto_rename_enabled,
             settings.default_ai_agent.as_deref(),
+            settings.ui_language.as_deref(),
         )
     }
 
     fn assert_empty_settings(settings: &Settings) {
         assert_eq!(
             settings_snapshot(settings),
-            (None, None, None, None, None, None, None, None, None, None, None)
+            (None, None, None, None, None, None, None, None, None, None, None, None)
         );
     }
 
@@ -241,6 +253,7 @@ mod tests {
             release_channel: Some("alpha".to_string()),
             initial_h1_auto_rename_enabled: Some(false),
             default_ai_agent: Some("codex".to_string()),
+            ui_language: Some("zh-CN".to_string()),
         };
         let json = serde_json::to_string(&settings).unwrap();
         let parsed: Settings = serde_json::from_str(&json).unwrap();
@@ -265,6 +278,7 @@ mod tests {
             release_channel: Some("alpha".to_string()),
             initial_h1_auto_rename_enabled: Some(false),
             default_ai_agent: Some("codex".to_string()),
+            ui_language: Some("zh-CN".to_string()),
             ..Default::default()
         });
         assert_eq!(loaded.auto_pull_interval_minutes, Some(10));
@@ -274,6 +288,7 @@ mod tests {
         assert_eq!(loaded.release_channel.as_deref(), Some("alpha"));
         assert_eq!(loaded.initial_h1_auto_rename_enabled, Some(false));
         assert_eq!(loaded.default_ai_agent.as_deref(), Some("codex"));
+        assert_eq!(loaded.ui_language.as_deref(), Some("zh-CN"));
     }
 
     #[test]
@@ -282,11 +297,13 @@ mod tests {
             anonymous_id: Some("  test-uuid  ".to_string()),
             release_channel: Some("  alpha  ".to_string()),
             default_ai_agent: Some("  codex  ".to_string()),
+            ui_language: Some(" zh ".to_string()),
             ..Default::default()
         });
         assert_eq!(loaded.anonymous_id.as_deref(), Some("test-uuid"));
         assert_eq!(loaded.release_channel.as_deref(), Some("alpha"));
         assert_eq!(loaded.default_ai_agent.as_deref(), Some("codex"));
+        assert_eq!(loaded.ui_language.as_deref(), Some("zh-CN"));
     }
 
     #[test]
@@ -387,6 +404,7 @@ mod tests {
                 Some(true),
                 Some(false),
                 Some("test-uuid-v4"),
+                None,
                 None,
                 None,
                 None,

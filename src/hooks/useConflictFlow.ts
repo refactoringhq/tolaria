@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { isTauri, mockInvoke } from '../mock-tauri'
 import type { VaultEntry } from '../types'
+import { t } from '../lib/i18n'
 import { openLocalFile } from '../utils/url'
 
 function tauriCall<T>(cmd: string, args: Record<string, unknown>): Promise<T> {
@@ -66,7 +67,7 @@ export function useConflictFlow({
     if (files.length === 0) {
       try { files = await fetchConflictFiles(resolvedPath) } catch { return }
       if (files.length === 0) {
-        setToastMessage('No merge conflicts to resolve')
+        setToastMessage(t('No merge conflicts to resolve'))
         return
       }
     }
@@ -87,13 +88,17 @@ export function useConflictFlow({
         await commitMergeResolution(resolvedPath)
         reloadVault()
         triggerSync()
-        setToastMessage('All conflicts resolved — merge committed')
+        setToastMessage(t('All conflicts resolved — merge committed'))
       } else {
         reloadVault()
-        setToastMessage(`Resolved — ${remaining.length} conflict${remaining.length > 1 ? 's' : ''} remaining`)
+        setToastMessage(
+          remaining.length === 1
+            ? t('Resolved — 1 conflict remaining')
+            : t('Resolved — {count} conflicts remaining', { count: remaining.length }),
+        )
       }
     } catch (err) {
-      setToastMessage(`Failed to resolve conflict: ${err}`)
+      setToastMessage(t('Failed to resolve conflict: {error}', { error: String(err) }))
     }
   }, [resolvedPath, reloadVault, triggerSync, setToastMessage])
 

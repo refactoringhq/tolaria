@@ -5,7 +5,8 @@ import { fuzzyMatch } from '../utils/fuzzyMatch'
 import { queueAiPrompt, requestOpenAiChat } from '../utils/aiPromptBridge'
 import type { NoteReference } from '../utils/ai-context'
 import type { CommandAction, CommandGroup } from '../hooks/useCommandRegistry'
-import { groupSortKey } from '../hooks/useCommandRegistry'
+import { getCommandGroupLabel, getCommandLabel, groupSortKey } from '../hooks/useCommandRegistry'
+import { useI18n } from '../lib/i18n'
 import { CommandPaletteAiMode } from './CommandPaletteAiMode'
 
 interface CommandPaletteProps {
@@ -41,7 +42,7 @@ function focusPaletteTarget(target: HTMLInputElement | HTMLDivElement | null) {
 }
 
 function matchCommand(query: string, command: CommandAction): ScoredCommand | null {
-  const labelResult = fuzzyMatch(query, command.label)
+  const labelResult = fuzzyMatch(query, getCommandLabel(command))
   if (labelResult.match) return { command, score: labelResult.score }
 
   for (const keyword of command.keywords ?? []) {
@@ -49,7 +50,7 @@ function matchCommand(query: string, command: CommandAction): ScoredCommand | nu
     if (keywordResult.match) return { command, score: keywordResult.score - 1 }
   }
 
-  const groupResult = fuzzyMatch(query, command.group)
+  const groupResult = fuzzyMatch(query, getCommandGroupLabel(command))
   if (groupResult.match) return { command, score: groupResult.score - 2 }
 
   return null
@@ -109,17 +110,19 @@ function CommandPaletteInput({
   inputRef,
   query,
   onChange,
+  placeholder,
 }: {
   inputRef: React.RefObject<HTMLInputElement | null>
   query: string
   onChange: (value: string) => void
+  placeholder: string
 }) {
   return (
     <input
       ref={inputRef}
       className="border-b border-border bg-transparent px-4 py-3 text-[15px] text-foreground outline-none placeholder:text-muted-foreground"
       type="text"
-      placeholder="Type a command..."
+      placeholder={placeholder}
       value={query}
       onChange={(event) => onChange(event.target.value)}
     />
@@ -132,12 +135,14 @@ function CommandPaletteResults({
   listRef,
   onHover,
   onSelect,
+  emptyLabel,
 }: {
   groups: { group: CommandGroup; items: CommandAction[] }[]
   selectedIndex: number
   listRef: React.RefObject<HTMLDivElement | null>
   onHover: (index: number) => void
   onSelect: (command: CommandAction) => void
+  emptyLabel: string
 }) {
   const flatList = groups.flatMap((group) => group.items)
 
@@ -145,7 +150,7 @@ function CommandPaletteResults({
     return (
       <div className="flex-1 overflow-y-auto py-1" ref={listRef}>
         <div className="px-4 py-6 text-center text-[13px] text-muted-foreground">
-          No matching commands
+          {emptyLabel}
         </div>
       </div>
     )
@@ -169,7 +174,7 @@ function CommandPaletteResults({
         return (
           <div key={group}>
             <div className="px-4 pb-1 pt-2 text-[11px] font-medium text-muted-foreground">
-              {group}
+              {items[0] ? getCommandGroupLabel(items[0]) : group}
             </div>
             {items.map((command, index) => {
               const globalIndex = startIndex + index
@@ -193,15 +198,17 @@ function CommandPaletteResults({
 function CommandPaletteFooter({
   aiMode,
   aiAgentLabel = 'Claude Code',
+  t,
 }: {
   aiMode: boolean
   aiAgentLabel?: string
+  t: (message: string, params?: Record<string, string | number | boolean | null | undefined>) => string
 }) {
   return (
     <div className="flex items-center gap-4 border-t border-border px-4 py-1.5 text-[11px] text-muted-foreground">
-      <span>{aiMode ? `${aiAgentLabel} mode` : '↑↓ navigate'}</span>
-      <span>{aiMode ? '↵ send' : '↵ select'}</span>
-      <span>esc close</span>
+      <span>{aiMode ? t('{label} mode', { label: aiAgentLabel }) : t('↑↓ navigate')}</span>
+      <span>{aiMode ? t('↵ send') : t('↵ select')}</span>
+      <span>{t('esc close')}</span>
     </div>
   )
 }
@@ -219,6 +226,7 @@ function OpenCommandPalette({
   aiAgentLabel = 'Claude Code',
   onClose,
 }: Omit<CommandPaletteProps, 'open'>) {
+  const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [aiValue, setAiValue] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -348,15 +356,21 @@ function OpenCommandPalette({
           />
         ) : (
           <>
-            <CommandPaletteInput inputRef={inputRef} query={query} onChange={handleQueryChange} />
+            <CommandPaletteInput
+              inputRef={inputRef}
+              query={query}
+              onChange={handleQueryChange}
+              placeholder={t('Type a command...')}
+            />
             <CommandPaletteResults
               groups={groups}
               selectedIndex={selectedIndex}
               listRef={listRef}
               onHover={setSelectedIndex}
               onSelect={handleSelectCommand}
+              emptyLabel={t('No matching commands')}
             />
-            <CommandPaletteFooter aiMode={false} aiAgentLabel={aiAgentLabel} />
+            <CommandPaletteFooter aiMode={false} aiAgentLabel={aiAgentLabel} t={t} />
           </>
         )}
       </div>
@@ -382,7 +396,7 @@ function CommandRow({ command, selected, onHover, onSelect }: CommandRowProps) {
       onClick={onSelect}
       onMouseEnter={onHover}
     >
-      <span className="text-sm text-foreground">{command.label}</span>
+      <span className="text-sm text-foreground">{getCommandLabel(command)}</span>
       {command.shortcut && (
         <span className="text-[11px] text-muted-foreground">{command.shortcut}</span>
       )}

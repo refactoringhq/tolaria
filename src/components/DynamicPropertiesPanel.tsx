@@ -9,6 +9,7 @@ import { getEffectiveDisplayMode, detectPropertyType, DISPLAY_MODE_ICONS } from 
 import { SmartPropertyValueCell, DisplayModeSelector } from './PropertyValueCells'
 import { TypeSelector } from './TypeSelector'
 import { AddPropertyForm } from './AddPropertyForm'
+import { t } from '../lib/i18n'
 import type { PropertyDisplayMode } from '../utils/propertyTypes'
 import { FOCUS_NOTE_ICON_PROPERTY_EVENT } from './noteIconPropertyEvents'
 import {
@@ -57,7 +58,7 @@ function PropertyRow({ propKey, value, editingKey, displayMode, autoMode, vaultS
         <DisplayModeSelector propKey={propKey} currentMode={displayMode} autoMode={autoMode} onSelect={onDisplayModeChange} />
         <span className="min-w-0 flex-1 truncate">{humanizePropertyKey(propKey)}</span>
         {onDelete && (
-          <button className="border-none bg-transparent p-0 text-sm leading-none text-muted-foreground opacity-0 transition-all hover:text-destructive group-hover/prop:opacity-100" onClick={() => onDelete(propKey)} title="Delete property">&times;</button>
+          <button className="border-none bg-transparent p-0 text-sm leading-none text-muted-foreground opacity-0 transition-all hover:text-destructive group-hover/prop:opacity-100" onClick={() => onDelete(propKey)} title={t('Delete property')}>&times;</button>
         )}
       </span>
       <div className="min-w-0">
@@ -86,7 +87,7 @@ function AddPropertyButton({ onClick, disabled }: { onClick: () => void; disable
         >
           <Plus className="size-3.5" aria-hidden="true" />
         </span>
-        <span className="min-w-0 truncate">Add property</span>
+        <span className="min-w-0 truncate">{t('Add property')}</span>
       </span>
       <span aria-hidden="true" className={PROPERTY_PANEL_PLACEHOLDER_VALUE_CLASS_NAME} />
     </Button>

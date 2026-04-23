@@ -4,6 +4,7 @@ import type { VaultEntry } from '../types'
 import type { FrontmatterValue } from '../components/Inspector'
 import { updateMockFrontmatter, deleteMockFrontmatterProperty } from './mockFrontmatterHelpers'
 import { updateMockContent, trackMockChange } from '../mock-tauri'
+import { t } from '../lib/i18n'
 import { parseFrontmatter } from '../utils/frontmatter'
 import { canonicalSystemMetadataKey, isSystemMetadataKey } from '../utils/systemMetadata'
 
@@ -189,12 +190,12 @@ export async function runFrontmatterAndApply(
       }
     }
     if (Object.keys(fullPatch).length > 0) callbacks.updateEntry(path, fullPatch)
-    if (!options?.silent) callbacks.toast(op === 'update' ? 'Property updated' : 'Property deleted')
+    if (!options?.silent) callbacks.toast(op === 'update' ? t('Property updated') : t('Property deleted'))
     return newContent
   } catch (err) {
     console.error(`Failed to ${op} frontmatter:`, err)
     if (options?.silent) throw err
-    callbacks.toast(`Failed to ${op} property`)
+    callbacks.toast(op === 'update' ? t('Failed to update property') : t('Failed to delete property'))
     return undefined
   }
 }

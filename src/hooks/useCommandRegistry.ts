@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { AiAgentId, AiAgentsStatus } from '../lib/aiAgents'
+import { useI18n } from '../lib/i18n'
 import type { VaultAiGuidanceStatus } from '../lib/vaultAiGuidance'
 import type { SidebarSelection, VaultEntry } from '../types'
 import type { NoteListFilter } from '../utils/noteListHelpers'
@@ -16,7 +17,7 @@ import { extractVaultTypes } from '../utils/vaultTypes'
 
 // Re-export types and helpers for backward compatibility
 export type { CommandAction, CommandGroup } from './commands/types'
-export { groupSortKey } from './commands/types'
+export { getCommandGroupLabel, getCommandLabel, groupSortKey } from './commands/types'
 export { pluralizeType, buildTypeCommands } from './commands/typeCommands'
 export { extractVaultTypes } from '../utils/vaultTypes'
 export { buildViewCommands } from './commands/viewCommands'
@@ -97,6 +98,7 @@ interface CommandRegistryConfig {
 }
 
 export function useCommandRegistry(config: CommandRegistryConfig): import('./commands/types').CommandAction[] {
+  const { t } = useI18n()
   const {
     activeTabPath, entries, modifiedCount,
     onQuickOpen, onCreateNote, onCreateNoteOfType, onSave, onOpenSettings, onOpenFeedback,
@@ -130,14 +132,15 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
   const isSectionGroup = selection?.kind === 'sectionGroup'
   const noteListColumnsLabel = config.noteListColumnsLabel ?? (
     selection?.kind === 'filter' && selection.filter === 'all'
-      ? 'Customize All Notes columns'
-      : 'Customize Inbox columns'
+      ? t('Customize All Notes columns')
+      : t('Customize Inbox columns')
   )
 
   const vaultTypes = useMemo(() => extractVaultTypes(entries), [entries])
 
-  return useMemo(() => [
-    ...buildNavigationCommands({
+  return useMemo(() => {
+    const commands = [
+      ...buildNavigationCommands({
       onQuickOpen,
       onSelect,
       selection,
@@ -188,8 +191,26 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
       onCycleDefaultAiAgent,
     }),
     ...buildTypeCommands(vaultTypes, onCreateNoteOfType, onSelect),
-    ...buildFilterCommands({ isSectionGroup, noteListFilter, onSetNoteListFilter }),
-  ], [
+      ...buildFilterCommands({ isSectionGroup, noteListFilter, onSetNoteListFilter }),
+    ]
+
+    return commands.map((command) => {
+      const translatedLabel = t(command.label)
+      const translatedGroup = t(command.group)
+      const translatedKeywords = Array.from(new Set([
+        ...(command.keywords ?? []),
+        translatedLabel,
+        translatedGroup,
+      ]))
+
+      return {
+        ...command,
+        displayLabel: translatedLabel,
+        displayGroup: translatedGroup,
+        keywords: translatedKeywords,
+      }
+    })
+  }, [
     hasActiveNote, activeTabPath, isArchived, modifiedCount, activeNoteModified,
     onQuickOpen, onCreateNote, onCreateNoteOfType, onCreateType, onSave, onOpenSettings, onOpenFeedback,
     onDeleteNote, onArchiveNote, onUnarchiveNote,
@@ -209,6 +230,6 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
     selection,
     onOpenInNewWindow, onToggleFavorite, isFavorite,
     onToggleOrganized, onCustomizeNoteListColumns, canCustomizeNoteListColumns, noteListColumnsLabel,
-    onRestoreDeletedNote, canRestoreDeletedNote, activeEntry,
+    onRestoreDeletedNote, canRestoreDeletedNote, activeEntry, t,
   ])
 }

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FilterBuilder } from './FilterBuilder'
 import { EmojiPicker } from './EmojiPicker'
+import { t } from '../lib/i18n'
 import type { FilterGroup, ViewDefinition } from '../types'
 
 interface CreateViewDialogProps {
@@ -75,12 +76,12 @@ function CreateViewDialogForm({
     <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-4">
       <div className="flex gap-2">
         <div className="w-16 space-y-1.5 relative">
-          <label className="text-xs font-medium text-muted-foreground">Icon</label>
+          <label className="text-xs font-medium text-muted-foreground">{t('Icon')}</label>
           <button
             type="button"
             className="flex h-9 w-full items-center justify-center rounded-md border border-input bg-background text-xl cursor-pointer hover:bg-accent transition-colors"
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            title="Pick icon"
+            title={t('Pick icon')}
           >
             {icon || <span className="text-sm text-muted-foreground">📋</span>}
           </button>
@@ -89,17 +90,17 @@ function CreateViewDialogForm({
           )}
         </div>
         <div className="flex-1 space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">Name</label>
+          <label className="text-xs font-medium text-muted-foreground">{t('Name')}</label>
           <Input
             ref={inputRef}
-            placeholder="e.g. Active Projects, Reading List..."
+            placeholder={t('e.g. Active Projects, Reading List...')}
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
       </div>
       <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto">
-        <label className="text-xs font-medium text-muted-foreground">Filters</label>
+          <label className="text-xs font-medium text-muted-foreground">{t('Filters')}</label>
         <FilterBuilder
           group={filters}
           onChange={setFilters}
@@ -107,8 +108,8 @@ function CreateViewDialogForm({
         />
       </div>
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-        <Button type="submit" disabled={isCreateDisabled}>{isEditing ? 'Save' : 'Create'}</Button>
+        <Button type="button" variant="outline" onClick={onClose}>{t('Cancel')}</Button>
+        <Button type="submit" disabled={isCreateDisabled}>{isEditing ? t('Save') : t('Create')}</Button>
       </DialogFooter>
     </form>
   )
@@ -123,9 +124,9 @@ export function CreateViewDialog({ open, onClose, onCreate, availableFields, edi
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose() }}>
       <DialogContent showCloseButton={false} className="flex max-h-[80vh] flex-col sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit View' : 'Create View'}</DialogTitle>
+          <DialogTitle>{isEditing ? t('Edit View') : t('Create View')}</DialogTitle>
           <DialogDescription className="sr-only">
-            {isEditing ? 'Update the name, icon, and filters for this saved view.' : 'Create a saved view by choosing a name, icon, and filter rules.'}
+            {isEditing ? t('Update the name, icon, and filters for this saved view.') : t('Create a saved view by choosing a name, icon, and filter rules.')}
           </DialogDescription>
         </DialogHeader>
         {open && (

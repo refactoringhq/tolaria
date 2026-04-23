@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import type { SearchResult, VaultEntry } from '../types'
 import { useUnifiedSearch } from '../hooks/useUnifiedSearch'
+import { useI18n } from '../lib/i18n'
 import { getTypeColor, buildTypeEntryMap } from '../utils/typeColors'
 import { formatSearchSubtitle } from '../utils/noteListHelpers'
 import { getTypeIcon } from './NoteItem'
@@ -17,6 +18,7 @@ interface SearchPanelProps {
 }
 
 export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }: SearchPanelProps) {
+  const { t } = useI18n()
   const {
     query, setQuery, results, selectedIndex, setSelectedIndex, loading, elapsedMs,
   } = useUnifiedSearch(vaultPath, open)
@@ -97,6 +99,7 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
           loading={loading}
           onChange={setQuery}
           onKeyDown={handleKeyDown}
+          placeholder={t('Search in all notes...')}
         />
         <SearchContent
           query={query}
@@ -109,6 +112,7 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
           listRef={listRef}
           onSelect={handleSelect}
           onHover={setSelectedIndex}
+          t={t}
         />
       </div>
     </div>
@@ -122,10 +126,11 @@ interface SearchInputProps {
   loading: boolean
   onChange: (value: string) => void
   onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>
+  placeholder: string
 }
 
 const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
-  function SearchInput({ query, loading, onChange, onKeyDown }, ref) {
+  function SearchInput({ query, loading, onChange, onKeyDown, placeholder }, ref) {
     return (
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
         <svg className="h-4 w-4 shrink-0 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -136,7 +141,7 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
           ref={ref}
           className="flex-1 bg-transparent text-[15px] text-foreground outline-none placeholder:text-muted-foreground"
           type="text"
-          placeholder="Search in all notes..."
+          placeholder={placeholder}
           value={query}
           onChange={e => onChange(e.target.value)}
           onKeyDown={onKeyDown}
@@ -168,31 +173,39 @@ interface SearchContentProps {
   listRef: React.RefObject<HTMLDivElement | null>
   onSelect: (result: SearchResult) => void
   onHover: (index: number) => void
+  t: (message: string, params?: Record<string, string | number | boolean | null | undefined>) => string
 }
 
 function SearchContent({
-  query, results, selectedIndex, loading, elapsedMs, entryLookup, typeEntryMap, listRef, onSelect, onHover,
+  query, results, selectedIndex, loading, elapsedMs, entryLookup, typeEntryMap, listRef, onSelect, onHover, t,
 }: SearchContentProps) {
+  const resultMeta = elapsedMs !== null
+    ? t(results.length === 1 ? '{count} result · {elapsedMs}ms' : '{count} results · {elapsedMs}ms', {
+      count: results.length,
+      elapsedMs,
+    })
+    : t(results.length === 1 ? '{count} result' : '{count} results', { count: results.length })
+
   return (
     <div className="flex-1 overflow-y-auto">
       {!query.trim() && (
         <div className="px-4 py-8 text-center">
-          <p className="text-[13px] text-muted-foreground">Search across all note contents</p>
+          <p className="text-[13px] text-muted-foreground">{t('Search across all note contents')}</p>
           <p className="mt-1 text-[11px] text-muted-foreground/60">
-            Enter to open · Esc to close
+            {t('Enter to open · Esc to close')}
           </p>
         </div>
       )}
 
       {query.trim() && results.length === 0 && loading && (
         <div className="px-4 py-8 text-center text-[13px] text-muted-foreground">
-          Searching...
+          {t('Searching...')}
         </div>
       )}
 
       {query.trim() && results.length === 0 && !loading && (
         <div className="px-4 py-8 text-center">
-          <p className="text-[13px] text-muted-foreground">No results found</p>
+          <p className="text-[13px] text-muted-foreground">{t('No results found')}</p>
         </div>
       )}
 
@@ -200,7 +213,7 @@ function SearchContent({
         <>
           <div className="border-b border-border/50 px-4 py-1.5">
             <span className="text-[11px] text-muted-foreground">
-              {results.length} result{results.length !== 1 ? 's' : ''}{elapsedMs !== null ? ` · ${elapsedMs}ms` : ''}
+              {resultMeta}
             </span>
           </div>
           <div ref={listRef}>

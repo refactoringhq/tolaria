@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, FileText, Check, Loader2 } from 'lucide-react'
+import { t } from '../lib/i18n'
 import type { ConflictFileState } from '../hooks/useConflictResolver'
 
 interface ConflictResolverModalProps {
@@ -27,7 +28,11 @@ function fileName(path: string): string {
 
 function ResolutionLabel({ resolution }: { resolution: ConflictFileState['resolution'] }) {
   if (!resolution) return null
-  const labels = { ours: 'Keeping mine', theirs: 'Keeping theirs', manual: 'Edited manually' }
+  const labels = {
+    ours: t('Keeping mine'),
+    theirs: t('Keeping theirs'),
+    manual: t('Edited manually'),
+  }
   return (
     <span className="flex items-center gap-1 text-xs text-green-600">
       <Check size={12} />{labels[resolution]}
@@ -83,10 +88,10 @@ function ConflictFileRow({
               className="text-xs h-7 px-2"
               onClick={() => onResolve('ours')}
               disabled={state.resolving}
-              title="Keep my local version (K)"
+               title={t('Keep my local version (K)')}
               data-testid={`resolve-ours-${state.file}`}
             >
-              Keep mine
+              {t('Keep mine')}
             </Button>
             <Button
               variant="outline"
@@ -94,10 +99,10 @@ function ConflictFileRow({
               className="text-xs h-7 px-2"
               onClick={() => onResolve('theirs')}
               disabled={state.resolving}
-              title="Keep remote version (T)"
+               title={t('Keep remote version (T)')}
               data-testid={`resolve-theirs-${state.file}`}
             >
-              Keep theirs
+              {t('Keep theirs')}
             </Button>
             {!binary && (
               <Button
@@ -105,10 +110,10 @@ function ConflictFileRow({
                 size="sm"
                 className="text-xs h-7 px-2"
                 onClick={onOpenInEditor}
-                title="Open file in editor (O)"
+                 title={t('Open file in editor (O)')}
                 data-testid={`resolve-open-${state.file}`}
               >
-                Open in editor
+                {t('Open in editor')}
               </Button>
             )}
           </>
@@ -189,10 +194,12 @@ export function ConflictResolverModal({
         <DialogHeader>
           <div className="flex items-center gap-2">
             <AlertTriangle size={18} className="text-orange-500" />
-            <DialogTitle>Resolve Merge Conflicts</DialogTitle>
+            <DialogTitle>{t('Resolve Merge Conflicts')}</DialogTitle>
           </div>
           <DialogDescription>
-            {fileStates.length} file{fileStates.length !== 1 ? 's have' : ' has'} merge conflicts. Choose how to resolve each file.
+            {fileStates.length === 1
+              ? t('1 file has merge conflicts. Choose how to resolve each file.')
+              : t('{count} files have merge conflicts. Choose how to resolve each file.', { count: fileStates.length })}
           </DialogDescription>
         </DialogHeader>
 
@@ -223,19 +230,19 @@ export function ConflictResolverModal({
 
         <DialogFooter className="flex-row items-center justify-between sm:justify-between">
           <span className="text-[11px] text-muted-foreground">
-            K = keep mine · T = keep theirs · O = open · Enter = commit
+            {t('K = keep mine · T = keep theirs · O = open · Enter = commit')}
           </span>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button variant="outline" onClick={onClose}>{t('Cancel')}</Button>
             <Button
               onClick={onCommit}
               disabled={!allResolved || committing}
               data-testid="conflict-commit-btn"
             >
               {committing ? (
-                <><Loader2 size={14} className="animate-spin mr-1" />Committing…</>
+                <><Loader2 size={14} className="animate-spin mr-1" />{t('Committing…')}</>
               ) : (
-                'Commit & continue'
+                t('Commit & continue')
               )}
             </Button>
           </div>

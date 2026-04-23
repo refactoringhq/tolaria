@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, type MutableRefObject } from 'react'
 import type { SetStateAction } from 'react'
+import { t } from '../lib/i18n'
 import { useSaveNote } from './useSaveNote'
 
 interface Tab {
@@ -209,11 +210,11 @@ function useImmediateSaveCommands({
         resolvePath,
         resolvePathBeforeSave,
       })
-      setToastMessage(saved || savedFallback ? 'Saved' : 'Nothing to save')
+      setToastMessage(saved || savedFallback ? t('Saved') : t('Nothing to save'))
       onAfterSave()
     } catch (err) {
       console.error('Save failed:', err)
-      setToastMessage(`Save failed: ${err}`)
+      setToastMessage(t('Save failed: {error}', { error: String(err) }))
     }
   }, [cancelAutoSave, flushPending, onAfterSave, onNotePersisted, resolvePath, resolvePathBeforeSave, saveNote, setToastMessage])
 

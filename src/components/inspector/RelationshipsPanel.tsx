@@ -19,6 +19,7 @@ import {
   PROPERTY_PANEL_LABEL_CLASS_NAME,
 } from '../propertyPanelLayout'
 import { humanizePropertyKey } from '../../utils/propertyLabels'
+import { t } from '../../lib/i18n'
 
 const RELATIONSHIP_SECTION_ROW_CLASS_NAME = 'flex min-w-0 flex-col gap-1 px-1.5'
 const RELATIONSHIPS_PANEL_GRID_CLASS_NAME = 'grid min-w-0 gap-x-2 gap-y-3'
@@ -227,9 +228,7 @@ function CreateAndOpenOption({ title, selected, onClick, onHover }: {
       onMouseEnter={onHover}
     >
       <Plus size={14} className="shrink-0 text-muted-foreground" />
-      <span className="truncate text-foreground">
-        Create &amp; open <strong>{title}</strong>
-      </span>
+      <span className="truncate text-foreground">{t('Create & open {title}', { title })}</span>
     </div>
   )
 }
@@ -386,7 +385,7 @@ function InlineAddNote({ entries, vaultPath, onAdd, onCreateAndOpenNote }: {
         onClick={() => setActive(true)}
         data-testid="add-relation-ref"
       >
-        Add
+        {t('Add')}
       </button>
     )
   }
@@ -399,7 +398,7 @@ function InlineAddNote({ entries, vaultPath, onAdd, onCreateAndOpenNote }: {
           autoFocus
           className="w-full border border-border bg-transparent text-foreground"
           style={{ borderRadius: 6, outline: 'none', minWidth: 0, padding: '6px 10px', fontSize: 12 }}
-          placeholder="Note title"
+          placeholder={t('Note title')}
           value={query}
           onChange={e => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -527,7 +526,7 @@ function NoteTargetInput({ entries, value, onChange, onSubmit, onCancel, onCreat
       <input
         className="w-full border border-border bg-transparent px-2 py-1 text-xs text-foreground"
         style={{ borderRadius: 4, outline: 'none' }}
-        placeholder="Note title"
+        placeholder={t('Note title')}
         value={value}
         onChange={e => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
@@ -653,7 +652,7 @@ function AddRelationshipForm({ entries, vaultPath, onAddProperty, onCreateAndOpe
 
   if (!showForm) {
     return (
-      <button className="mt-2 w-full border border-border bg-transparent text-center text-muted-foreground" style={{ borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }} onClick={() => { setShowForm(true); setTimeout(() => keyInputRef.current?.focus(), 0) }}>+ Add relationship</button>
+      <button className="mt-2 w-full border border-border bg-transparent text-center text-muted-foreground" style={{ borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }} onClick={() => { setShowForm(true); setTimeout(() => keyInputRef.current?.focus(), 0) }}>+ {t('Add relationship')}</button>
     )
   }
 
@@ -664,7 +663,7 @@ function AddRelationshipForm({ entries, vaultPath, onAddProperty, onCreateAndOpe
         autoFocus
         className="w-full border border-border bg-transparent px-2 py-1 text-xs text-foreground"
         style={{ borderRadius: 4, outline: 'none' }}
-        placeholder="Relationship name"
+        placeholder={t('Relationship name')}
         value={relKey}
         onChange={e => setRelKey(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') submitForm(); else if (e.key === 'Escape') resetForm() }}
@@ -679,8 +678,8 @@ function AddRelationshipForm({ entries, vaultPath, onAddProperty, onCreateAndOpe
         onSubmitWithCreate={handleCreateAndSubmit}
       />
       <div className="flex gap-1.5">
-        <button className="flex-1 border border-border bg-transparent text-xs text-foreground" style={{ borderRadius: 4, padding: '4px 0' }} onClick={() => submitForm()} disabled={!relKey.trim() || !relTarget.trim()} data-testid="submit-add-relationship">Add</button>
-        <button className="border border-border bg-transparent text-xs text-muted-foreground" style={{ borderRadius: 4, padding: '4px 8px' }} onClick={resetForm}>Cancel</button>
+        <button className="flex-1 border border-border bg-transparent text-xs text-foreground" style={{ borderRadius: 4, padding: '4px 0' }} onClick={() => submitForm()} disabled={!relKey.trim() || !relTarget.trim()} data-testid="submit-add-relationship">{t('Add')}</button>
+        <button className="border border-border bg-transparent text-xs text-muted-foreground" style={{ borderRadius: 4, padding: '4px 8px' }} onClick={resetForm}>{t('Cancel')}</button>
       </div>
     </div>
   )
@@ -700,7 +699,7 @@ function updateRefsForAddition(refs: string[], refToAdd: string): FrontmatterVal
 
 function DisabledLinkButton() {
   return (
-    <button className="mt-2 w-full border border-border bg-transparent text-center text-muted-foreground" style={{ borderRadius: 6, padding: '6px 12px', fontSize: 12, opacity: 0.5, cursor: 'not-allowed' }} disabled>+ Add relationship</button>
+    <button className="mt-2 w-full border border-border bg-transparent text-center text-muted-foreground" style={{ borderRadius: 6, padding: '6px 12px', fontSize: 12, opacity: 0.5, cursor: 'not-allowed' }} disabled>+ {t('Add relationship')}</button>
   )
 }
 

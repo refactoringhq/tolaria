@@ -2,6 +2,8 @@ import { act, render, screen, fireEvent, waitFor, within } from '@testing-librar
 import type { ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+declare const __DEMO_VAULT_PATH__: string | undefined
+
 // Provide a localStorage mock that supports all methods (jsdom's may be incomplete)
 const localStorageMock = (() => {
   let store: Record<string, string> = {}
@@ -341,7 +343,7 @@ describe('App', () => {
 
   it('renders the four-panel layout', async () => {
     render(<App />)
-    expect(await screen.findByText('All Notes', {}, { timeout: 5000 })).toBeInTheDocument()
+    expect(await screen.findByText('全部笔记', {}, { timeout: 5000 })).toBeInTheDocument()
   })
 
   it('loads and displays vault entries in sidebar', async () => {
@@ -370,13 +372,13 @@ describe('App', () => {
   it('registers keyboard shortcuts without error', async () => {
     render(<App />)
     await waitFor(() => {
-      expect(screen.getByText('All Notes')).toBeInTheDocument()
+      expect(screen.getByText('全部笔记')).toBeInTheDocument()
     })
 
-    // Cmd+S with no pending changes shows "Nothing to save"
+    // Cmd+S with no pending changes shows the localized "Nothing to save"
     fireEvent.keyDown(window, { key: 's', metaKey: true })
     await waitFor(() => {
-      expect(screen.getByText('Nothing to save')).toBeInTheDocument()
+      expect(screen.getByText('没有可保存的内容')).toBeInTheDocument()
     })
   })
 
@@ -425,7 +427,7 @@ describe('App', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText('Help improve Tolaria')).toBeInTheDocument()
+      expect(screen.getByText('帮助改进 Tolaria')).toBeInTheDocument()
     })
 
     fireEvent.click(screen.getByTestId('telemetry-accept'))
@@ -433,14 +435,16 @@ describe('App', () => {
     await waitFor(() => {
       expect(screen.getByTestId('welcome-screen')).toBeInTheDocument()
     })
-    expect(screen.getByTestId('welcome-open-folder')).toHaveTextContent('Open existing vault')
+    expect(screen.getByTestId('welcome-open-folder')).toHaveTextContent('打开已有 vault')
   })
 
   it.each([
-    ['telemetry-accept', 'Allow anonymous reporting'],
-    ['telemetry-decline', 'No thanks'],
+    ['telemetry-accept', '允许匿名报告'],
+    ['telemetry-decline', '不用了'],
   ])('ignores a remembered default vault after %s when onboarding was never completed', async (buttonTestId) => {
-    const rememberedDefaultVaultPath = '/Volumes/Jupiter/Workspace/laputa-app/demo-vault-v2'
+    const rememberedDefaultVaultPath = typeof __DEMO_VAULT_PATH__ !== 'undefined'
+      ? __DEMO_VAULT_PATH__
+      : '/Users/mock/Documents/Getting Started'
     localStorage.setItem('tolaria_welcome_dismissed', '1')
     mockCommandResults.get_default_vault_path = rememberedDefaultVaultPath
     mockCommandResults.get_settings = {
@@ -461,7 +465,7 @@ describe('App', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText('Help improve Tolaria')).toBeInTheDocument()
+      expect(screen.getByText('帮助改进 Tolaria')).toBeInTheDocument()
     })
 
     fireEvent.click(screen.getByTestId(buttonTestId))
@@ -469,7 +473,7 @@ describe('App', () => {
     await waitFor(() => {
       expect(screen.getByTestId('welcome-screen')).toBeInTheDocument()
     })
-    expect(screen.getByTestId('welcome-open-folder')).toHaveTextContent('Open existing vault')
+    expect(screen.getByTestId('welcome-open-folder')).toHaveTextContent('打开已有 vault')
   })
 
   it('keeps startup on a neutral loading state while the last vault is still resolving', async () => {
@@ -521,9 +525,9 @@ describe('App', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText('Vault not found')).toBeInTheDocument()
+      expect(screen.getByText('未找到 vault')).toBeInTheDocument()
     })
-    expect(screen.getByTestId('welcome-open-folder')).toHaveTextContent('Choose a different folder')
+    expect(screen.getByTestId('welcome-open-folder')).toHaveTextContent('选择其他文件夹')
   })
 
   it('shows welcome instead of vault-missing when the missing path was not a persisted active vault', async () => {
@@ -538,18 +542,18 @@ describe('App', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText('Welcome to Tolaria')).toBeInTheDocument()
+      expect(screen.getByText('欢迎使用 Tolaria')).toBeInTheDocument()
     })
-    expect(screen.queryByText('Vault not found')).not.toBeInTheDocument()
-    expect(screen.getByTestId('welcome-open-folder')).toHaveTextContent('Open existing vault')
+    expect(screen.queryByText('未找到 vault')).not.toBeInTheDocument()
+    expect(screen.getByTestId('welcome-open-folder')).toHaveTextContent('打开已有 vault')
   })
 
   it('renders sidebar with correct default selection (All Notes)', async () => {
     render(<App />)
     await waitFor(() => {
       // "All Notes" should be rendered as the selected nav item
-      expect(screen.getByText('All Notes')).toBeInTheDocument()
-      expect(screen.getByText('Archive')).toBeInTheDocument()
+      expect(screen.getByText('全部笔记')).toBeInTheDocument()
+      expect(screen.getByText('归档')).toBeInTheDocument()
     })
   })
 
@@ -562,7 +566,7 @@ describe('App', () => {
     const getHeader = () => getHeaderForNoteList(noteListContainer)
 
     await waitFor(() => {
-      expect(getHeader()).toHaveTextContent('Inbox')
+      expect(getHeader()).toHaveTextContent('收件箱')
     })
 
     await enterNeighborhood(noteListContainer, 'Alpha')
@@ -597,7 +601,7 @@ describe('App', () => {
     await pressEscape()
 
     await waitFor(() => {
-      expect(getHeader()).toHaveTextContent('Inbox')
+      expect(getHeader()).toHaveTextContent('收件箱')
     })
   })
 
@@ -639,8 +643,8 @@ describe('App', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(within(screen.getByTestId('sidebar-top-nav')).queryByText('Inbox')).not.toBeInTheDocument()
-      expect(screen.getByText('All Notes')).toBeInTheDocument()
+      expect(within(screen.getByTestId('sidebar-top-nav')).queryByText('收件箱')).not.toBeInTheDocument()
+      expect(within(screen.getByTestId('sidebar-top-nav')).getByText('全部笔记')).toBeInTheDocument()
     })
   })
 
@@ -648,7 +652,7 @@ describe('App', () => {
     render(<App />)
     // StatusBar should be present
     await waitFor(() => {
-      expect(screen.getByText('All Notes')).toBeInTheDocument()
+      expect(screen.getByText('全部笔记')).toBeInTheDocument()
     })
     // The status bar element should exist in the DOM
     const appShell = document.querySelector('.app-shell')
@@ -682,7 +686,7 @@ describe('App', () => {
   it('Cmd+1 hides sidebar and note list (editor-only mode)', async () => {
     render(<App />)
     await waitFor(() => {
-      expect(screen.getByText('All Notes')).toBeInTheDocument()
+      expect(screen.getByText('全部笔记')).toBeInTheDocument()
     })
 
     // All panels visible by default
@@ -700,7 +704,7 @@ describe('App', () => {
   it('Cmd+2 shows editor + note list (sidebar hidden)', async () => {
     render(<App />)
     await waitFor(() => {
-      expect(screen.getByText('All Notes')).toBeInTheDocument()
+      expect(screen.getByText('全部笔记')).toBeInTheDocument()
     })
 
     fireEvent.keyDown(window, { key: '2', metaKey: true })
@@ -713,7 +717,7 @@ describe('App', () => {
   it('Cmd+3 restores all panels after Cmd+1', async () => {
     render(<App />)
     await waitFor(() => {
-      expect(screen.getByText('All Notes')).toBeInTheDocument()
+      expect(screen.getByText('全部笔记')).toBeInTheDocument()
     })
 
     // Switch to editor-only first
@@ -735,7 +739,7 @@ describe('App', () => {
 
     render(<App />)
     await waitFor(() => {
-      expect(screen.getByText('All Notes')).toBeInTheDocument()
+      expect(screen.getByText('全部笔记')).toBeInTheDocument()
     })
 
     invoke.mockClear()

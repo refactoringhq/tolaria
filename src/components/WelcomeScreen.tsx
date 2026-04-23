@@ -4,6 +4,7 @@ import { FolderOpen, Plus, AlertTriangle, Loader2, Rocket } from 'lucide-react'
 import { OnboardingShell } from './OnboardingShell'
 import { Button } from '@/components/ui/button'
 import tolariaIcon from '@/assets/tolaria-icon.svg'
+import { useI18n } from '../lib/i18n'
 
 interface WelcomeScreenProps {
   mode: 'welcome' | 'vault-missing'
@@ -271,29 +272,30 @@ function getWelcomeScreenPresentation(
   mode: WelcomeScreenProps['mode'],
   defaultVaultPath: string,
   isOffline: boolean,
+  t: (message: string, params?: Record<string, string | number | boolean | null | undefined>) => string,
 ): WelcomeScreenPresentation {
   if (mode === 'welcome') {
     return {
       heroBackground: 'transparent',
       heroIcon: <img src={tolariaIcon} alt="Tolaria icon" style={BRAND_ICON_STYLE} />,
-      openFolderLabel: 'Open existing vault',
-      subtitle: 'Markdown knowledge management for the age of AI',
+      openFolderLabel: t('Open existing vault'),
+      subtitle: t('Markdown knowledge management for the age of AI'),
       templateDescription: isOffline
-        ? `Requires internet — clone later. Suggested path: ${defaultVaultPath}`
-        : 'Download the getting started vault',
-      title: 'Welcome to Tolaria',
+        ? t('Requires internet — clone later. Suggested path: {path}', { path: defaultVaultPath })
+        : t('Download the getting started vault'),
+      title: t('Welcome to Tolaria'),
     }
   }
 
   return {
     heroBackground: 'var(--accent-yellow-light, #FFF3E0)',
     heroIcon: <AlertTriangle size={28} style={{ color: 'var(--accent-orange)' }} />,
-    openFolderLabel: 'Choose a different folder',
-    subtitle: 'The vault folder could not be found on disk.\nIt may have been moved or deleted.',
+    openFolderLabel: t('Choose a different folder'),
+    subtitle: t('The vault folder could not be found on disk.\nIt may have been moved or deleted.'),
     templateDescription: isOffline
-      ? `Requires internet — clone later. Suggested path: ${defaultVaultPath}`
-      : 'Download the getting started vault',
-    title: 'Vault not found',
+      ? t('Requires internet — clone later. Suggested path: {path}', { path: defaultVaultPath })
+      : t('Download the getting started vault'),
+    title: t('Vault not found'),
   }
 }
 
@@ -380,8 +382,9 @@ export function WelcomeScreen({
   error,
   canRetryTemplate,
 }: WelcomeScreenProps) {
+  const { t } = useI18n()
   const busy = creatingAction !== null
-  const presentation = getWelcomeScreenPresentation(mode, defaultVaultPath, isOffline)
+  const presentation = getWelcomeScreenPresentation(mode, defaultVaultPath, isOffline, t)
   const { templateActionRef, createEmptyActionRef, openFolderActionRef } = useWelcomeActionButtons({
     mode,
     busy,
@@ -420,10 +423,10 @@ export function WelcomeScreen({
           <OptionButton
             icon={<Rocket size={18} style={{ color: 'var(--accent-purple)' }} />}
             iconBg="var(--accent-purple-light, #F3E8FF)"
-            label="Get started with a template"
+            label={t('Get started with a template')}
             description={presentation.templateDescription}
-            loadingLabel="Downloading template…"
-            loadingDescription="Cloning the Getting Started vault template"
+            loadingLabel={t('Downloading template…')}
+            loadingDescription={t('Cloning the Getting Started vault template')}
             onClick={onCreateVault}
             disabled={busy || isOffline}
             loading={creatingAction === 'template'}
@@ -435,10 +438,10 @@ export function WelcomeScreen({
           <OptionButton
             icon={<Plus size={18} style={{ color: 'var(--accent-blue)' }} />}
             iconBg="var(--accent-blue-light, #EBF4FF)"
-            label="Create empty vault"
-            description="Start fresh in an empty folder with Tolaria defaults"
-            loadingLabel="Creating vault…"
-            loadingDescription="Preparing Tolaria defaults in the selected folder"
+            label={t('Create empty vault')}
+            description={t('Start fresh in an empty folder with Tolaria defaults')}
+            loadingLabel={t('Creating vault…')}
+            loadingDescription={t('Preparing Tolaria defaults in the selected folder')}
             onClick={onCreateEmptyVault}
             disabled={busy}
             loading={creatingAction === 'empty'}
@@ -450,7 +453,7 @@ export function WelcomeScreen({
             icon={<FolderOpen size={18} style={{ color: 'var(--accent-green)' }} />}
             iconBg="var(--accent-green-light, #E8F5E9)"
             label={presentation.openFolderLabel}
-            description="Point to a folder you already have"
+            description={t('Point to a folder you already have')}
             onClick={onOpenFolder}
             disabled={busy}
             testId="welcome-open-folder"
@@ -460,7 +463,7 @@ export function WelcomeScreen({
 
         {creatingAction === 'template' && (
           <p style={STATUS_STYLE} data-testid="welcome-status" role="status" aria-live="polite">
-            Downloading the Getting Started vault template…
+            {t('Downloading the Getting Started vault template…')}
           </p>
         )}
 
@@ -478,7 +481,7 @@ export function WelcomeScreen({
                 data-testid="welcome-retry-template"
                 className="shadow-none"
               >
-                Retry download
+                {t('Retry download')}
               </Button>
             )}
           </div>

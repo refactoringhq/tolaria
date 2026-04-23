@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { EMOJI_GROUPS, EMOJIS_BY_GROUP, GROUP_SHORT_LABELS, searchEmojis } from '../utils/emoji'
+import { t } from '../lib/i18n'
 
 interface EmojiPickerProps {
   onSelect: (emoji: string) => void
@@ -59,7 +60,7 @@ export function EmojiPicker({ onSelect, onClose }: EmojiPickerProps) {
           ref={inputRef}
           type="text"
           className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
-          placeholder="Search emoji by name..."
+          placeholder={t('Search emoji by name...')}
           value={search}
           onChange={e => setSearch(e.target.value)}
           data-testid="emoji-picker-search"
@@ -84,7 +85,7 @@ export function EmojiPicker({ onSelect, onClose }: EmojiPickerProps) {
             </div>
           ) : (
             <div className="py-8 text-center text-sm text-muted-foreground">
-              No emojis found
+              {t('No emojis found')}
             </div>
           )
         ) : (

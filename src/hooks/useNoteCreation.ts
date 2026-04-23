@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { isTauri, addMockEntry } from '../mock-tauri'
 import type { VaultEntry } from '../types'
 import { resolveEntry } from '../utils/wikilink'
+import { t } from '../lib/i18n'
 import { trackEvent } from '../lib/telemetry'
 
 export interface NewEntryParams {
@@ -329,7 +330,7 @@ async function createTypeFromName({
 }: TypeCreationRequest): Promise<boolean> {
   const plan = planNewTypeCreation({ entries, typeName, vaultPath })
   if (plan.status === 'existing') {
-    setToastMessage(`Type "${plan.entry.title}" already exists`)
+    setToastMessage(t('Type "{name}" already exists', { name: plan.entry.title }))
     return false
   }
   if (plan.status === 'blocked') {

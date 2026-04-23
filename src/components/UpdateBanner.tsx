@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react'
 import { Download, ExternalLink, RefreshCw, X } from 'lucide-react'
 import type { UpdateStatus, UpdateActions } from '../hooks/useUpdater'
 import { restartApp } from '../hooks/useUpdater'
+import { t } from '../lib/i18n'
 import { Button } from './ui/button'
 
 interface UpdateBannerProps {
@@ -67,7 +68,7 @@ function renderAvailableContent(status: Extract<VisibleUpdateStatus, { state: 'a
     <>
       <Download size={14} style={iconStyle} />
       <span>
-        <strong>Tolaria {status.displayVersion}</strong> is available
+        {t('Tolaria {displayVersion} is available', { displayVersion: status.displayVersion })}
       </span>
       <Button
         type="button"
@@ -77,7 +78,7 @@ function renderAvailableContent(status: Extract<VisibleUpdateStatus, { state: 'a
         onClick={actions.openReleaseNotes}
         style={{ color: '#fff', padding: 0, height: 'auto' }}
       >
-        Release Notes <ExternalLink size={11} />
+        {t('Release Notes')} <ExternalLink size={11} />
       </Button>
       <Button
         type="button"
@@ -86,7 +87,7 @@ function renderAvailableContent(status: Extract<VisibleUpdateStatus, { state: 'a
         onClick={actions.startDownload}
         style={primaryActionStyle}
       >
-        Update Now
+        {t('Update Now')}
       </Button>
       <Button
         type="button"
@@ -95,7 +96,7 @@ function renderAvailableContent(status: Extract<VisibleUpdateStatus, { state: 'a
         data-testid="update-dismiss"
         onClick={actions.dismiss}
         style={dismissButtonStyle}
-        aria-label="Dismiss"
+        aria-label={t('Dismiss')}
       >
         <X size={14} />
       </Button>
@@ -107,7 +108,7 @@ function renderDownloadingContent(status: Extract<VisibleUpdateStatus, { state: 
   return (
     <>
       <RefreshCw size={14} style={{ ...iconStyle, animation: 'spin 1s linear infinite' }} />
-      <span>Downloading Tolaria {status.displayVersion}...</span>
+      <span>{t('Downloading Tolaria {displayVersion}...', { displayVersion: status.displayVersion })}</span>
       <div style={progressTrackStyle}>
         <div
           data-testid="update-progress"
@@ -130,7 +131,7 @@ function renderReadyContent(status: Extract<VisibleUpdateStatus, { state: 'ready
     <>
       <RefreshCw size={14} style={readyIconStyle} />
       <span>
-        <strong>Tolaria {status.displayVersion}</strong> is ready - restart to apply
+        {t('Tolaria {displayVersion} is ready - restart to apply', { displayVersion: status.displayVersion })}
       </span>
       <Button
         type="button"
@@ -142,7 +143,7 @@ function renderReadyContent(status: Extract<VisibleUpdateStatus, { state: 'ready
           background: 'var(--accent-green, #0F7B0F)',
         }}
       >
-        Restart Now
+        {t('Restart Now')}
       </Button>
     </>
   )

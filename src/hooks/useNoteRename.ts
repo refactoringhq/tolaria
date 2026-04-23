@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react'
 import { invoke } from '@tauri-apps/api/core'
+import { t } from '../lib/i18n'
 import { isTauri, mockInvoke } from '../mock-tauri'
 import type { VaultEntry } from '../types'
 import { slugify } from './useNoteCreation'
@@ -114,12 +115,14 @@ export async function loadNoteContent({ path }: LoadNoteContentRequest): Promise
 }
 
 function rewriteSummaryLabel(params: { updatedFiles: number }): string {
-  return params.updatedFiles === 1 ? 'Updated 1 note' : `Updated ${params.updatedFiles} notes`
+  return params.updatedFiles === 1 ? t('Updated 1 note') : t('Updated {count} notes', { count: params.updatedFiles })
 }
 
 function manualUpdateWarning(params: { failedUpdates: number }): string {
   const { failedUpdates } = params
-  return `${failedUpdates} linked note${failedUpdates > 1 ? 's' : ''} need${failedUpdates === 1 ? 's' : ''} manual updates`
+  return failedUpdates === 1
+    ? t('1 linked note needs manual updates')
+    : t('{count} linked notes need manual updates', { count: failedUpdates })
 }
 
 function formatRewriteToast(
@@ -138,21 +141,28 @@ function formatRewriteToast(
   } = params
   if (failedUpdates > 0) {
     if (updatedFiles === 0) {
-      return `${action}, but ${manualUpdateWarning({ failedUpdates })}`
+      return t('{action}, but {warning}', { action, warning: manualUpdateWarning({ failedUpdates }) })
     }
     if (preferBareUpdate) {
-      return `${rewriteSummaryLabel({ updatedFiles })}, but ${manualUpdateWarning({ failedUpdates })}`
+      return t('{summary}, but {warning}', {
+        summary: rewriteSummaryLabel({ updatedFiles }),
+        warning: manualUpdateWarning({ failedUpdates }),
+      })
     }
-    return `${action} and ${rewriteSummaryLabel({ updatedFiles }).toLowerCase()}, but ${manualUpdateWarning({ failedUpdates })}`
+    return t('{action} and {summary}, but {warning}', {
+      action,
+      summary: rewriteSummaryLabel({ updatedFiles }).toLowerCase(),
+      warning: manualUpdateWarning({ failedUpdates }),
+    })
   }
   if (updatedFiles === 0) return action
   return preferBareUpdate
     ? rewriteSummaryLabel({ updatedFiles })
-    : `${action} and ${rewriteSummaryLabel({ updatedFiles }).toLowerCase()}`
+    : t('{action} and {summary}', { action, summary: rewriteSummaryLabel({ updatedFiles }).toLowerCase() })
 }
 
 export function renameToastMessage(updatedFiles: number, failedUpdates = 0): string {
-  return formatRewriteToast({ action: 'Renamed', updatedFiles, failedUpdates, preferBareUpdate: true })
+  return formatRewriteToast({ action: t('Renamed'), updatedFiles, failedUpdates, preferBareUpdate: true })
 }
 
 function folderLabel(params: { folderPath: string }): string {
@@ -162,7 +172,7 @@ function folderLabel(params: { folderPath: string }): string {
 
 function moveToastMessage(folderPath: string, updatedFiles: number, failedUpdates = 0): string {
   return formatRewriteToast({
-    action: `Moved to "${folderLabel({ folderPath })}"`,
+    action: t('Moved to "{folder}"', { folder: folderLabel({ folderPath }) }),
     updatedFiles,
     failedUpdates,
   })
@@ -200,10 +210,10 @@ function renameErrorMessage(err: unknown): string {
     : err instanceof Error
       ? err.message.trim()
       : ''
-  if (message === 'A note with that name already exists' || message === 'Invalid filename') {
-    return message
-  }
-  return 'Failed to rename note'
+    if (message === 'A note with that name already exists' || message === 'Invalid filename') {
+    return t(message)
+    }
+  return t('Failed to rename note')
 }
 
 function moveNoteErrorMessage(err: unknown): string {
@@ -212,7 +222,7 @@ function moveNoteErrorMessage(err: unknown): string {
     : err instanceof Error
       ? err.message.trim()
       : ''
-  return message || 'Failed to move note'
+  return message || t('Failed to move note')
 }
 
 export interface NoteRenameConfig {

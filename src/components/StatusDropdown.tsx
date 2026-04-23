@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } fr
 import { createPortal } from 'react-dom'
 import { getStatusStyle, SUGGESTED_STATUSES, setStatusColor, getStatusColorKey } from '../utils/statusStyles'
 import { ACCENT_COLORS } from '../utils/typeColors'
+import { t } from '../lib/i18n'
 
 export function StatusPill({ status, className }: { status: string; className?: string }) {
   const style = getStatusStyle(status)
@@ -87,7 +88,7 @@ function StatusOption({
           className="flex size-4 shrink-0 items-center justify-center rounded-full border-none p-0"
           style={{ backgroundColor: style.color }}
           onClick={() => onToggleColor(status)}
-          title="Change color"
+            title={t('Change color')}
           data-testid={`status-color-swatch-${status}`}
         />
       </div>
@@ -296,7 +297,7 @@ export function StatusDropdown({
               <input
                 ref={inputRef}
                 className="w-full border-none bg-transparent text-[12px] text-foreground outline-none placeholder:text-muted-foreground"
-                placeholder="Type a status..."
+                placeholder={t('Type a status...')}
                 value={query}
                 onChange={e => handleQueryChange(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -321,7 +322,7 @@ export function StatusDropdown({
               />
               {allFiltered.length === 0 && !showCreateOption && (
                 <div className="px-2 py-2 text-center text-[11px] text-muted-foreground">
-                  No matching statuses
+                  {t('No matching statuses')}
                 </div>
               )}
             </div>
@@ -337,7 +338,7 @@ function VaultSection({ statuses, ...props }: StatusOptionProps & { statuses: st
   if (statuses.length === 0) return null
   return (
     <div>
-      <SectionLabel>From vault</SectionLabel>
+      <SectionLabel>{t('From vault')}</SectionLabel>
       <StatusOptionList statuses={statuses} {...props} />
     </div>
   )
@@ -348,7 +349,7 @@ function SuggestedSection({ statuses, showDivider, ...props }: StatusOptionProps
   return (
     <div>
       {showDivider && <div className="my-1 h-px bg-border" />}
-      <SectionLabel>Suggested</SectionLabel>
+      <SectionLabel>{t('Suggested')}</SectionLabel>
       <StatusOptionList statuses={statuses} {...props} />
     </div>
   )
@@ -374,7 +375,7 @@ function CreateSection({ show, query, showDivider, highlighted, onSave, onMouseE
         onMouseEnter={onMouseEnter}
         data-testid="status-create-option"
       >
-        Create <StatusPill status={trimmed} />
+        {t('Create')} <StatusPill status={trimmed} />
       </button>
     </>
   )

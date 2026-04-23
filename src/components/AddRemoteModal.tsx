@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { t } from '../lib/i18n'
 import type { GitAddRemoteResult } from '../types'
 import { isTauri, mockInvoke } from '../mock-tauri'
 
@@ -129,21 +130,20 @@ export function AddRemoteModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[520px]" data-testid="add-remote-modal">
         <DialogHeader>
-          <DialogTitle>Add Remote</DialogTitle>
+          <DialogTitle>{t('Add Remote')}</DialogTitle>
           <DialogDescription>
-            Connect this local vault to a git remote. Your existing local commits stay intact; Tolaria
-            will only connect the vault when the remote history is safe to use.
+            {t('Connect this local vault to a git remote. Your existing local commits stay intact; Tolaria will only connect the vault when the remote history is safe to use.')}
           </DialogDescription>
         </DialogHeader>
 
         <form className="flex flex-col gap-4 py-2" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-foreground" htmlFor="add-remote-url">Repository URL</label>
+            <label className="text-xs font-medium text-foreground" htmlFor="add-remote-url">{t('Repository URL')}</label>
             <Input
               id="add-remote-url"
               ref={inputRef}
               autoFocus
-              placeholder="git@host:owner/repo.git or https://host/owner/repo.git"
+              placeholder={t('git@host:owner/repo.git or https://host/owner/repo.git')}
               value={remoteUrl}
               onChange={handleRemoteUrlChange}
               data-testid="add-remote-url"
@@ -151,8 +151,7 @@ export function AddRemoteModal({
           </div>
 
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Use an empty repository or one created from this vault. SSH keys, Git Credential Manager,
-            and other system git auth methods all work.
+            {t('Use an empty repository or one created from this vault. SSH keys, Git Credential Manager, and other system git auth methods all work.')}
           </p>
 
           {connectError && (
@@ -161,7 +160,7 @@ export function AddRemoteModal({
 
           <DialogFooter className="flex-row items-center justify-end sm:justify-end">
             <Button type="submit" disabled={connectDisabled} data-testid="add-remote-submit">
-              {connectState === 'connecting' ? 'Connecting...' : 'Connect Remote'}
+              {connectState === 'connecting' ? t('Connecting...') : t('Connect Remote')}
             </Button>
           </DialogFooter>
         </form>

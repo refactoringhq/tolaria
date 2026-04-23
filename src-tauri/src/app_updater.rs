@@ -75,10 +75,19 @@ fn to_update_metadata(update: tauri_plugin_updater::Update) -> AppUpdateMetadata
     }
 }
 
+/// Development placeholder version used in tauri.conf.json and Cargo.toml.
+/// Builds from CI replace this with the actual release version.
+const DEV_PLACEHOLDER_VERSION: &str = "0.1.0";
+
 pub async fn check_for_app_update<R: Runtime>(
     app_handle: AppHandle<R>,
     release_channel: Option<String>,
 ) -> Result<Option<AppUpdateMetadata>, String> {
+    let current_version = app_handle.package_info().version.to_string();
+    if current_version == DEV_PLACEHOLDER_VERSION {
+        return Ok(None);
+    }
+
     let channel = ReleaseChannel::from_settings_value(release_channel.as_deref());
     let updater = build_updater(&app_handle, channel)?;
     let update = updater
@@ -95,6 +104,11 @@ pub async fn download_and_install_app_update<R: Runtime>(
     expected_version: String,
     on_event: Channel<AppUpdateDownloadEvent>,
 ) -> Result<(), String> {
+    let current_version = app_handle.package_info().version.to_string();
+    if current_version == DEV_PLACEHOLDER_VERSION {
+        return Err("App updates are not available in development mode".into());
+    }
+
     let channel = ReleaseChannel::from_settings_value(release_channel.as_deref());
     let updater = build_updater(&app_handle, channel)?;
     let update = updater

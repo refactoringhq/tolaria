@@ -130,11 +130,11 @@ const GIT_NO_REMOTE_DEPENDENT_IDS: &[&str] = &[VAULT_ADD_REMOTE];
 type MenuResult = Result<Submenu<tauri::Wry>, Box<dyn std::error::Error>>;
 
 fn build_app_menu(app: &App) -> MenuResult {
-    let settings_item = MenuItemBuilder::new("Settings...")
+    let settings_item = MenuItemBuilder::new("设置...")
         .id(APP_SETTINGS)
         .accelerator("CmdOrCtrl+,")
         .build(app)?;
-    let check_updates_item = MenuItemBuilder::new("Check for Updates...")
+    let check_updates_item = MenuItemBuilder::new("检查更新...")
         .id(APP_CHECK_FOR_UPDATES)
         .build(app)?;
 
@@ -156,26 +156,26 @@ fn build_app_menu(app: &App) -> MenuResult {
 }
 
 fn build_file_menu(app: &App) -> MenuResult {
-    let new_note = MenuItemBuilder::new("New Note")
+    let new_note = MenuItemBuilder::new("新建笔记")
         .id(FILE_NEW_NOTE)
         .accelerator("CmdOrCtrl+N")
         .build(app)?;
-    let new_type = MenuItemBuilder::new("New Type")
+    let new_type = MenuItemBuilder::new("新建类型")
         .id(FILE_NEW_TYPE)
         .build(app)?;
-    let quick_open = MenuItemBuilder::new("Quick Open")
+    let quick_open = MenuItemBuilder::new("快速打开")
         .id(FILE_QUICK_OPEN)
         .accelerator("CmdOrCtrl+P")
         .build(app)?;
-    let quick_open_alias = MenuItemBuilder::new("Quick Open (Cmd+O)")
+    let quick_open_alias = MenuItemBuilder::new("快速打开 (Cmd+O)")
         .id(FILE_QUICK_OPEN_ALIAS)
         .accelerator("CmdOrCtrl+O")
         .build(app)?;
-    let save = MenuItemBuilder::new("Save")
+    let save = MenuItemBuilder::new("保存")
         .id(FILE_SAVE)
         .accelerator("CmdOrCtrl+S")
         .build(app)?;
-    Ok(SubmenuBuilder::new(app, "File")
+    Ok(SubmenuBuilder::new(app, "文件")
         .item(&new_note)
         .item(&new_type)
         .item(&quick_open)
@@ -186,20 +186,20 @@ fn build_file_menu(app: &App) -> MenuResult {
 }
 
 fn build_edit_menu(app: &App) -> MenuResult {
-    let find_in_vault = MenuItemBuilder::new("Find in Vault")
+    let find_in_vault = MenuItemBuilder::new("在 Vault 中查找")
         .id(EDIT_FIND_IN_VAULT)
         .accelerator("CmdOrCtrl+Shift+F")
         .build(app)?;
-    let toggle_note_list_search = MenuItemBuilder::new("Toggle Note List Search")
+    let toggle_note_list_search = MenuItemBuilder::new("切换笔记列表搜索")
         .id(EDIT_TOGGLE_NOTE_LIST_SEARCH)
         .accelerator("CmdOrCtrl+F")
         .enabled(false)
         .build(app)?;
-    let toggle_diff = MenuItemBuilder::new("Toggle Diff Mode")
+    let toggle_diff = MenuItemBuilder::new("切换 Diff 模式")
         .id(EDIT_TOGGLE_DIFF)
         .build(app)?;
 
-    Ok(SubmenuBuilder::new(app, "Edit")
+    Ok(SubmenuBuilder::new(app, "编辑")
         .undo()
         .redo()
         .separator()
@@ -216,41 +216,41 @@ fn build_edit_menu(app: &App) -> MenuResult {
 }
 
 fn build_view_menu(app: &App) -> MenuResult {
-    let editor_only = MenuItemBuilder::new("Editor Only")
+    let editor_only = MenuItemBuilder::new("仅编辑器")
         .id(VIEW_EDITOR_ONLY)
         .accelerator("CmdOrCtrl+1")
         .build(app)?;
-    let editor_list = MenuItemBuilder::new("Editor + Notes")
+    let editor_list = MenuItemBuilder::new("编辑器 + 笔记")
         .id(VIEW_EDITOR_LIST)
         .accelerator("CmdOrCtrl+2")
         .build(app)?;
-    let all_panels = MenuItemBuilder::new("All Panels")
+    let all_panels = MenuItemBuilder::new("全部面板")
         .id(VIEW_ALL)
         .accelerator("CmdOrCtrl+3")
         .build(app)?;
     // Keep Cmd+Shift+I on the renderer path. The menu item stays available,
     // but the native accelerator has proven unreliable for this command.
-    let toggle_properties = MenuItemBuilder::new("Toggle Properties Panel")
+    let toggle_properties = MenuItemBuilder::new("切换属性面板")
         .id(VIEW_TOGGLE_PROPERTIES)
         .build(app)?;
-    let command_palette = MenuItemBuilder::new("Command Palette")
+    let command_palette = MenuItemBuilder::new("命令面板")
         .id(VIEW_COMMAND_PALETTE)
         .accelerator("CmdOrCtrl+K")
         .build(app)?;
-    let zoom_in = MenuItemBuilder::new("Zoom In")
+    let zoom_in = MenuItemBuilder::new("放大")
         .id(VIEW_ZOOM_IN)
         .accelerator("CmdOrCtrl+=")
         .build(app)?;
-    let zoom_out = MenuItemBuilder::new("Zoom Out")
+    let zoom_out = MenuItemBuilder::new("缩小")
         .id(VIEW_ZOOM_OUT)
         .accelerator("CmdOrCtrl+-")
         .build(app)?;
-    let zoom_reset = MenuItemBuilder::new("Actual Size")
+    let zoom_reset = MenuItemBuilder::new("实际大小")
         .id(VIEW_ZOOM_RESET)
         .accelerator("CmdOrCtrl+0")
         .build(app)?;
 
-    Ok(SubmenuBuilder::new(app, "View")
+    Ok(SubmenuBuilder::new(app, "视图")
         .item(&editor_only)
         .item(&editor_list)
         .item(&all_panels)
@@ -266,24 +266,24 @@ fn build_view_menu(app: &App) -> MenuResult {
 }
 
 fn build_go_menu(app: &App) -> MenuResult {
-    let all_notes = MenuItemBuilder::new("All Notes")
+    let all_notes = MenuItemBuilder::new("全部笔记")
         .id(GO_ALL_NOTES)
         .build(app)?;
-    let archived = MenuItemBuilder::new("Archived")
+    let archived = MenuItemBuilder::new("已归档")
         .id(GO_ARCHIVED)
         .build(app)?;
-    let changes = MenuItemBuilder::new("Changes").id(GO_CHANGES).build(app)?;
-    let inbox = MenuItemBuilder::new("Inbox").id(GO_INBOX).build(app)?;
-    let go_back = MenuItemBuilder::new("Go Back")
+    let changes = MenuItemBuilder::new("变更").id(GO_CHANGES).build(app)?;
+    let inbox = MenuItemBuilder::new("收件箱").id(GO_INBOX).build(app)?;
+    let go_back = MenuItemBuilder::new("后退")
         .id(VIEW_GO_BACK)
         .accelerator("CmdOrCtrl+Left")
         .build(app)?;
-    let go_forward = MenuItemBuilder::new("Go Forward")
+    let go_forward = MenuItemBuilder::new("前进")
         .id(VIEW_GO_FORWARD)
         .accelerator("CmdOrCtrl+Right")
         .build(app)?;
 
-    Ok(SubmenuBuilder::new(app, "Go")
+    Ok(SubmenuBuilder::new(app, "转到")
         .item(&all_notes)
         .item(&archived)
         .item(&changes)
@@ -295,38 +295,38 @@ fn build_go_menu(app: &App) -> MenuResult {
 }
 
 fn build_note_menu(app: &App) -> MenuResult {
-    let toggle_organized = MenuItemBuilder::new("Toggle Organized")
+    let toggle_organized = MenuItemBuilder::new("切换已整理")
         .id(NOTE_TOGGLE_ORGANIZED)
         .accelerator("CmdOrCtrl+E")
         .build(app)?;
-    let archive_note = MenuItemBuilder::new("Archive Note")
+    let archive_note = MenuItemBuilder::new("归档笔记")
         .id(NOTE_ARCHIVE)
         .build(app)?;
-    let delete_note = MenuItemBuilder::new("Delete Note")
+    let delete_note = MenuItemBuilder::new("删除笔记")
         .id(NOTE_DELETE)
         .accelerator("CmdOrCtrl+Backspace")
         .build(app)?;
-    let restore_deleted_note = MenuItemBuilder::new("Restore Deleted Note")
+    let restore_deleted_note = MenuItemBuilder::new("恢复已删除笔记")
         .id(NOTE_RESTORE_DELETED)
         .enabled(false)
         .build(app)?;
-    let open_new_window = MenuItemBuilder::new("Open in New Window")
+    let open_new_window = MenuItemBuilder::new("在新窗口中打开")
         .id(NOTE_OPEN_IN_NEW_WINDOW)
         .accelerator("CmdOrCtrl+Shift+O")
         .build(app)?;
-    let toggle_raw_editor = MenuItemBuilder::new("Toggle Raw Editor")
+    let toggle_raw_editor = MenuItemBuilder::new("切换原始编辑器")
         .id(EDIT_TOGGLE_RAW_EDITOR)
         .accelerator("CmdOrCtrl+\\")
         .build(app)?;
-    let toggle_ai_chat = MenuItemBuilder::new("Toggle AI Panel")
+    let toggle_ai_chat = MenuItemBuilder::new("切换 AI 面板")
         .id(VIEW_TOGGLE_AI_CHAT)
         .accelerator("Cmd+Shift+L")
         .build(app)?;
-    let toggle_backlinks = MenuItemBuilder::new("Toggle Backlinks")
+    let toggle_backlinks = MenuItemBuilder::new("切换反向链接")
         .id(VIEW_TOGGLE_BACKLINKS)
         .build(app)?;
 
-    Ok(SubmenuBuilder::new(app, "Note")
+    Ok(SubmenuBuilder::new(app, "笔记")
         .item(&toggle_organized)
         .item(&archive_note)
         .item(&delete_note)
@@ -341,39 +341,39 @@ fn build_note_menu(app: &App) -> MenuResult {
 }
 
 fn build_vault_menu(app: &App) -> MenuResult {
-    let open_vault = MenuItemBuilder::new("Open Vault…")
+    let open_vault = MenuItemBuilder::new("打开 Vault…")
         .id(VAULT_OPEN)
         .build(app)?;
-    let remove_vault = MenuItemBuilder::new("Remove Vault from List")
+    let remove_vault = MenuItemBuilder::new("从列表中移除 Vault")
         .id(VAULT_REMOVE)
         .build(app)?;
-    let restore_getting_started = MenuItemBuilder::new("Restore Getting Started")
+    let restore_getting_started = MenuItemBuilder::new("恢复入门内容")
         .id(VAULT_RESTORE_GETTING_STARTED)
         .build(app)?;
-    let add_remote = MenuItemBuilder::new("Add Remote…")
+    let add_remote = MenuItemBuilder::new("添加远端…")
         .id(VAULT_ADD_REMOTE)
         .enabled(false)
         .build(app)?;
-    let commit_push = MenuItemBuilder::new("Commit & Push")
+    let commit_push = MenuItemBuilder::new("提交并推送")
         .id(VAULT_COMMIT_PUSH)
         .build(app)?;
-    let pull = MenuItemBuilder::new("Pull from Remote")
+    let pull = MenuItemBuilder::new("从远端拉取")
         .id(VAULT_PULL)
         .build(app)?;
-    let resolve_conflicts = MenuItemBuilder::new("Resolve Conflicts")
+    let resolve_conflicts = MenuItemBuilder::new("解决冲突")
         .id(VAULT_RESOLVE_CONFLICTS)
         .enabled(false)
         .build(app)?;
-    let view_changes = MenuItemBuilder::new("View Pending Changes")
+    let view_changes = MenuItemBuilder::new("查看待提交变更")
         .id(VAULT_VIEW_CHANGES)
         .build(app)?;
-    let install_mcp = MenuItemBuilder::new("Set Up External AI Tools…")
+    let install_mcp = MenuItemBuilder::new("设置外部 AI 工具…")
         .id(VAULT_INSTALL_MCP)
         .build(app)?;
-    let reload = MenuItemBuilder::new("Reload Vault")
+    let reload = MenuItemBuilder::new("重新加载 Vault")
         .id(VAULT_RELOAD)
         .build(app)?;
-    let repair = MenuItemBuilder::new("Repair Vault")
+    let repair = MenuItemBuilder::new("修复 Vault")
         .id(VAULT_REPAIR)
         .build(app)?;
 
@@ -395,7 +395,7 @@ fn build_vault_menu(app: &App) -> MenuResult {
 }
 
 fn build_window_menu(app: &App) -> MenuResult {
-    Ok(SubmenuBuilder::new(app, "Window")
+    Ok(SubmenuBuilder::new(app, "窗口")
         .minimize()
         .maximize()
         .separator()

@@ -9,6 +9,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { useI18n } from '../lib/i18n'
 
 interface ConfirmDeleteDialogProps {
   open: boolean
@@ -27,6 +28,7 @@ export const ConfirmDeleteDialog = memo(function ConfirmDeleteDialog({
   onConfirm,
   onCancel,
 }: ConfirmDeleteDialogProps) {
+  const { t } = useI18n()
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onCancel() }}>
       <DialogContent showCloseButton={false} data-testid="confirm-delete-dialog">
@@ -38,9 +40,9 @@ export const ConfirmDeleteDialog = memo(function ConfirmDeleteDialog({
           <DialogDescription>{message}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button variant="outline" onClick={onCancel}>{t('Cancel')}</Button>
           <Button variant="destructive" onClick={onConfirm} data-testid="confirm-delete-btn">
-            {confirmLabel}
+            {t(confirmLabel)}
           </Button>
         </DialogFooter>
       </DialogContent>

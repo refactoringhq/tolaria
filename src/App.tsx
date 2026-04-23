@@ -31,6 +31,7 @@ import { useAutoGit } from './hooks/useAutoGit'
 import { useVaultLoader } from './hooks/useVaultLoader'
 import { useAiAgentPreferences } from './hooks/useAiAgentPreferences'
 import { useSettings } from './hooks/useSettings'
+import { t, useUiLocaleSync } from './lib/i18n'
 import { useNoteActions } from './hooks/useNoteActions'
 import { planNewTypeCreation } from './hooks/useNoteCreation'
 import { useCommitFlow } from './hooks/useCommitFlow'
@@ -264,7 +265,7 @@ function App() {
 
   const handleGettingStartedVaultReady = useCallback((vaultPath: string) => {
     rememberOnboardingVaultChoice(vaultPath)
-    setToastMessage(`Getting Started vault cloned and opened at ${vaultPath}`)
+    setToastMessage(t('Getting Started vault cloned and opened at {path}', { path: vaultPath }))
   }, [rememberOnboardingVaultChoice])
   const cloneGettingStartedVault = useGettingStartedClone({
     onError: (message) => setToastMessage(message),
@@ -358,6 +359,7 @@ function App() {
     })
   }, [updateConfig, vaultConfig.inbox?.noteListProperties])
   const { settings, loaded: settingsLoaded, saveSettings } = useSettings()
+  useUiLocaleSync(settings.ui_language ?? 'zh-CN')
   const aiAgentPreferences = useAiAgentPreferences({
     settings,
     saveSettings,
@@ -424,9 +426,9 @@ function App() {
       const count = await invoke<number>('update_wikilinks_for_renames', { vaultPath: resolvedPath, renames: detectedRenames })
       setDetectedRenames([])
       vault.reloadVault()
-      setToastMessage(`Updated wikilinks in ${count} file${count !== 1 ? 's' : ''}`)
+      setToastMessage(t('Updated wikilinks in {count} files', { count }))
     } catch (err) {
-      setToastMessage(`Failed to update wikilinks: ${err}`)
+      setToastMessage(t('Failed to update wikilinks: {error}', { error: String(err) }))
     }
   }, [resolvedPath, detectedRenames, vault, setToastMessage])
 
@@ -505,7 +507,7 @@ function App() {
     onVaultUpdated: handlePulledVaultUpdate,
     onConflict: (files) => {
       const names = files.map((f) => f.split('/').pop()).join(', ')
-      setToastMessage(`Conflict in ${names} — click to resolve`)
+      setToastMessage(t('Conflict in {names} — click to resolve', { names }))
     },
     onToast: (msg) => setToastMessage(msg),
   })
@@ -529,7 +531,7 @@ function App() {
       }
       if (noteWindowMissingPathRef.current === noteWindowParams.notePath) return
       noteWindowMissingPathRef.current = noteWindowParams.notePath
-      setToastMessage(`Could not open "${noteWindowParams.noteTitle}" in this window`)
+      setToastMessage(t('Could not open "{title}" in this window', { title: noteWindowParams.noteTitle }))
     })
 
     return () => {
@@ -711,10 +713,10 @@ function App() {
         await mockInvoke('create_vault_folder', { vaultPath: resolvedPath, folderName: name })
       }
       await vault.reloadFolders()
-      setToastMessage(`Created folder "${name}"`)
+      setToastMessage(t('Created folder "{name}"', { name }))
       return true
     } catch (e) {
-      setToastMessage(`Failed to create folder: ${e}`)
+      setToastMessage(t('Failed to create folder: {error}', { error: String(e) }))
       return false
     }
   }, [resolvedPath, vault, setToastMessage])
@@ -767,12 +769,12 @@ function App() {
         notes.closeAllTabs()
       }
     } catch (err) {
-      setToastMessage(typeof err === 'string' ? err : 'Failed to discard changes')
+      setToastMessage(typeof err === 'string' ? err : t('Failed to discard changes'))
     }
   }, [resolvedPath, vault, notes, setToastMessage])
 
   const handleOpenDeletedNote = useCallback(async (entry: DeletedNoteEntry) => {
-    let previewContent = 'Content not available (untracked)'
+    let previewContent = t('Content not available (untracked)')
     let hasDiff = false
     try {
       const diff = await vault.loadDiff(entry.path)
@@ -785,7 +787,7 @@ function App() {
     if (hasDiff) {
       setTimeout(() => diffToggleRef.current(), 50)
     } else {
-      setToastMessage('Content not available (untracked)')
+      setToastMessage(t('Content not available (untracked)'))
     }
   }, [vault, notes, setToastMessage])
 
@@ -904,7 +906,7 @@ function App() {
 
   const handleCreateType = useCallback(async (name: string) => {
     const created = await notes.handleCreateType(name)
-    if (created) setToastMessage(`Type "${name}" created`)
+    if (created) setToastMessage(t('Type "{name}" created', { name }))
     return created
   }, [notes, setToastMessage])
 
@@ -980,7 +982,7 @@ function App() {
     if (selection.kind === 'view' && selection.filename === filename) {
       handleSetSelection({ kind: 'filter', filter: 'all' })
     }
-    setToastMessage('View deleted')
+    setToastMessage(t('View deleted'))
   }, [resolvedPath, vault, selection, handleSetSelection])
 
   const availableFields = useMemo(() => {
@@ -1052,7 +1054,7 @@ function App() {
 
   const handleCheckForUpdates = useCallback(async () => {
     if (updateStatus.state === 'downloading') {
-      setToastMessage('Update is downloading…')
+      setToastMessage(t('Update is downloading…'))
       return
     }
     if (updateStatus.state === 'ready') {
@@ -1061,9 +1063,9 @@ function App() {
     }
     const result = await updateActions.checkForUpdates()
     if (result === 'up-to-date') {
-      setToastMessage("You're on the latest version")
+      setToastMessage(t("You're on the latest version"))
     } else if (result === 'error') {
-      setToastMessage('Could not check for updates')
+      setToastMessage(t('Could not check for updates'))
     }
   }, [updateActions, updateStatus.state, setToastMessage])
 
@@ -1076,11 +1078,11 @@ function App() {
       await refreshVaultAiGuidance()
       setToastMessage(msg)
     } catch (err) {
-      setToastMessage(`Failed to repair vault: ${err}`)
+      setToastMessage(t('Failed to repair vault: {error}', { error: String(err) }))
     }
   }, [refreshVaultAiGuidance, resolvedPath, vault, setToastMessage])
 
-  const restoreVaultAiGuidance = useCallback(async (successToast: string | null = 'Tolaria AI guidance restored') => {
+  const restoreVaultAiGuidance = useCallback(async (successToast: string | null = t('Tolaria AI guidance restored')) => {
     if (!resolvedPath) return
     try {
       const tauriInvoke = isTauri() ? invoke : mockInvoke
@@ -1089,7 +1091,7 @@ function App() {
       await refreshVaultAiGuidance()
       if (successToast) setToastMessage(successToast)
     } catch (err) {
-      setToastMessage(`Failed to restore Tolaria AI guidance: ${err}`)
+      setToastMessage(t('Failed to restore Tolaria AI guidance: {error}', { error: String(err) }))
     }
   }, [refreshVaultAiGuidance, resolvedPath, vault, setToastMessage])
 
@@ -1307,10 +1309,11 @@ function App() {
   const shouldResumeFreshStartOnboarding = useMemo(() => {
     if (onboarding.state.status !== 'ready' || !vaultSwitcher.loaded) return false
     const remembersOnlyDefaultVault = selectedVaultPath === null || selectedVaultPath === defaultPath
+    const hasNoNonDefaultVaults = vaultSwitcher.allVaults.every((vault) => vault.path === vaultSwitcher.vaultPath)
 
     return remembersOnlyDefaultVault
-      && vaultSwitcher.allVaults.length === 1
-      && vaultSwitcher.allVaults[0]?.path === vaultSwitcher.vaultPath
+      && vaultSwitcher.vaultPath === defaultPath
+      && hasNoNonDefaultVaults
       && onboarding.state.vaultPath === vaultSwitcher.vaultPath
   }, [defaultPath, onboarding.state, selectedVaultPath, vaultSwitcher.allVaults, vaultSwitcher.loaded, vaultSwitcher.vaultPath])
 

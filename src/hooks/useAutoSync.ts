@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import { invoke } from '@tauri-apps/api/core'
+import { t } from '../lib/i18n'
 import { isTauri, mockInvoke } from '../mock-tauri'
 import type { GitPullResult, GitPushResult, GitRemoteStatus, LastCommitInfo, SyncStatus } from '../types'
 import { trackEvent } from '../lib/telemetry'
@@ -146,7 +147,7 @@ async function handleUpdatedPull(options: {
   clearConflictState(setSyncStatus, setConflictFiles)
   await callbacksRef.current.onVaultUpdated(result.updatedFiles)
   await callbacksRef.current.onSyncUpdated?.()
-  await callbacksRef.current.onToast(`Pulled ${result.updatedFiles.length} update(s) from remote`)
+  await callbacksRef.current.onToast(t('Pulled {count} update(s) from remote', { count: result.updatedFiles.length }))
 }
 
 async function resolvePullError(options: PullErrorResolution): Promise<void> {
@@ -176,12 +177,12 @@ function handlePushResult(options: {
   } = options
   if (pushResult.status === 'ok') {
     clearConflictState(setSyncStatus, setConflictFiles)
-    void callbacksRef.current.onToast('Pulled and pushed successfully')
+    void callbacksRef.current.onToast(t('Pulled and pushed successfully'))
     return
   }
   if (pushResult.status === 'rejected') {
     setSyncStatus('pull_required')
-    void callbacksRef.current.onToast('Push still rejected after pull — try again')
+    void callbacksRef.current.onToast(t('Push still rejected after pull — try again'))
     return
   }
   setSyncStatus('error')

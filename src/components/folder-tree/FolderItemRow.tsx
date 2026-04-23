@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { FolderNode } from '../../types'
+import { t } from '../../lib/i18n'
 import { useFolderRowInteractions } from './useFolderRowInteractions'
 
 interface FolderItemRowProps {
@@ -83,7 +84,7 @@ export function FolderItemRow({
             <FolderActionButton
               ariaLabel={`Rename ${node.name}`}
               testId={`rename-folder-btn:${node.path}`}
-              title="Rename folder"
+              title={t('Rename folder')}
               onClick={() => {
                 onSelect()
                 onStartRenameFolder(node.path)
@@ -96,7 +97,7 @@ export function FolderItemRow({
             <FolderActionButton
               ariaLabel={`Delete ${node.name}`}
               testId={`delete-folder-btn:${node.path}`}
-              title="Delete folder"
+              title={t('Delete folder')}
               destructive
               onClick={() => {
                 onSelect()

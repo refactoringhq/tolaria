@@ -1,5 +1,6 @@
 import { ShieldCheck } from '@phosphor-icons/react'
 import { OnboardingShell } from './OnboardingShell'
+import { useI18n } from '../lib/i18n'
 
 interface TelemetryConsentDialogProps {
   onAccept: () => void
@@ -7,6 +8,7 @@ interface TelemetryConsentDialogProps {
 }
 
 export function TelemetryConsentDialog({ onAccept, onDecline }: TelemetryConsentDialogProps) {
+  const { t } = useI18n()
   return (
     <OnboardingShell
       className="fixed inset-0 z-50"
@@ -27,24 +29,25 @@ export function TelemetryConsentDialog({ onAccept, onDecline }: TelemetryConsent
 
         <div style={{ textAlign: 'center' }}>
           <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--foreground)', margin: 0 }}>
-            Help improve Tolaria
+            {t('Help improve Tolaria')}
           </h2>
           <p style={{ fontSize: 13, color: 'var(--muted-foreground)', lineHeight: 1.6, marginTop: 8 }}>
-            Send anonymous crash reports to help us fix bugs faster.
-            No vault content, no personal data, no tracking.
+            {t('Send anonymous crash reports to help us fix bugs faster.')}
+            {' '}
+            {t('No vault content, no personal data, no tracking.')}
           </p>
         </div>
 
         <div style={{ fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.6, width: '100%' }}>
-          <p style={{ margin: '0 0 6px', fontWeight: 500, color: 'var(--foreground)' }}>What we collect:</p>
+          <p style={{ margin: '0 0 6px', fontWeight: 500, color: 'var(--foreground)' }}>{t('What we collect:')}</p>
           <ul style={{ margin: 0, paddingLeft: 18 }}>
-            <li>Stack traces from errors (JS &amp; Rust)</li>
-            <li>App version, OS, and architecture</li>
+            <li>{t('Stack traces from errors (JS & Rust)')}</li>
+            <li>{t('App version, OS, and architecture')}</li>
           </ul>
-          <p style={{ margin: '10px 0 6px', fontWeight: 500, color: 'var(--foreground)' }}>What we never collect:</p>
+          <p style={{ margin: '10px 0 6px', fontWeight: 500, color: 'var(--foreground)' }}>{t('What we never collect:')}</p>
           <ul style={{ margin: 0, paddingLeft: 18 }}>
-            <li>No vault content, note titles, or file paths</li>
-            <li>No personal data or IP addresses</li>
+            <li>{t('No vault content, note titles, or file paths')}</li>
+            <li>{t('No personal data or IP addresses')}</li>
           </ul>
         </div>
 
@@ -56,7 +59,7 @@ export function TelemetryConsentDialog({ onAccept, onDecline }: TelemetryConsent
             data-testid="telemetry-decline"
             autoFocus
           >
-            No thanks
+            {t('No thanks')}
           </button>
           <button
             className="border-none rounded cursor-pointer"
@@ -64,12 +67,12 @@ export function TelemetryConsentDialog({ onAccept, onDecline }: TelemetryConsent
             onClick={onAccept}
             data-testid="telemetry-accept"
           >
-            Allow anonymous reporting
+            {t('Allow anonymous reporting')}
           </button>
         </div>
 
         <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: 0, textAlign: 'center' }}>
-          You can change this anytime in Settings.
+          {t('You can change this anytime in Settings.')}
         </p>
       </>
     </OnboardingShell>

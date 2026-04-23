@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { Archive, ArrowCounterClockwise, CheckCircle, Trash, X } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
+import { t } from '../lib/i18n'
 
 interface BulkActionBarProps {
   count: number
@@ -49,19 +50,19 @@ function renderPrimaryActions(
   onDelete: () => void,
   onUnarchive: (() => void) | undefined,
 ) {
-  const archiveLabel = isArchivedView ? 'Unarchive selected notes' : 'Archive selected notes'
+  const archiveLabel = isArchivedView ? t('Unarchive selected notes') : t('Archive selected notes')
   const archiveIcon = isArchivedView ? <ArrowCounterClockwise size={16} /> : <Archive size={16} />
   const archiveHandler = isArchivedView ? onUnarchive : onArchive
 
   return (
     <>
-      <BulkActionButton ariaLabel="Organize selected notes" onClick={onOrganize} testId="bulk-organize-btn">
+      <BulkActionButton ariaLabel={t('Organize selected notes')} onClick={onOrganize} testId="bulk-organize-btn">
         <CheckCircle size={16} weight="fill" />
       </BulkActionButton>
       <BulkActionButton ariaLabel={archiveLabel} onClick={archiveHandler} testId={isArchivedView ? 'bulk-unarchive-btn' : 'bulk-archive-btn'}>
         {archiveIcon}
       </BulkActionButton>
-      <BulkActionButton ariaLabel="Permanently delete selected notes" destructive onClick={onDelete} testId="bulk-delete-btn">
+      <BulkActionButton ariaLabel={t('Permanently delete selected notes')} destructive onClick={onDelete} testId="bulk-delete-btn">
         <Trash size={16} />
       </BulkActionButton>
     </>
@@ -81,7 +82,7 @@ function BulkActionBarInner({ count, isArchivedView, onOrganize, onArchive, onDe
       data-testid="bulk-action-bar"
     >
       <span style={{ fontSize: 13, fontWeight: 500 }}>
-        {count} selected
+        {t('{count} selected', { count })}
       </span>
       <div className="flex items-center gap-1.5">
         {renderPrimaryActions(Boolean(isArchivedView), onOrganize, onArchive, onDelete, onUnarchive)}
@@ -91,8 +92,8 @@ function BulkActionBarInner({ count, isArchivedView, onOrganize, onArchive, onDe
           variant="ghost"
           className="h-8 w-8 rounded-lg text-white/55 hover:bg-white/10 hover:text-background focus-visible:ring-white/30"
           onClick={onClear}
-          aria-label="Clear selection"
-          title="Clear selection"
+          aria-label={t('Clear selection')}
+          title={t('Clear selection')}
           data-testid="bulk-clear-btn"
         >
           <X size={16} />

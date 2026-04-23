@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import { t } from '../lib/i18n'
 import type { VaultEntry } from '../types'
 import type { FrontmatterOpOptions } from './frontmatterOps'
 import { trackEvent } from '../lib/telemetry'
@@ -33,13 +34,13 @@ export function useEntryActions({
     // Optimistic: update UI immediately, write to disk async with rollback on failure
     updateEntry(path, { archived: true })
     trackEvent('note_archived')
-    setToastMessage('Note archived')
+    setToastMessage(t('Note archived'))
     try {
       await handleUpdateFrontmatter(path, '_archived', true, { silent: true })
       onFrontmatterPersisted?.()
     } catch (err) {
       updateEntry(path, { archived: false })
-      setToastMessage('Failed to archive note — rolled back')
+      setToastMessage(t('Failed to archive note — rolled back'))
       console.error('Optimistic archive rollback:', err)
     }
   }, [onBeforeAction, handleUpdateFrontmatter, updateEntry, setToastMessage, onFrontmatterPersisted])
@@ -47,13 +48,13 @@ export function useEntryActions({
   const handleUnarchiveNote = useCallback(async (path: string) => {
     // Optimistic: update UI immediately
     updateEntry(path, { archived: false })
-    setToastMessage('Note unarchived')
+    setToastMessage(t('Note unarchived'))
     try {
       await handleDeleteProperty(path, '_archived', { silent: true })
       onFrontmatterPersisted?.()
     } catch (err) {
       updateEntry(path, { archived: true })
-      setToastMessage('Failed to unarchive note — rolled back')
+      setToastMessage(t('Failed to unarchive note — rolled back'))
       console.error('Optimistic unarchive rollback:', err)
     }
   }, [handleDeleteProperty, updateEntry, setToastMessage, onFrontmatterPersisted])
@@ -106,7 +107,7 @@ export function useEntryActions({
         onFrontmatterPersisted?.()
       } catch {
         updateEntry(path, { favorite: true, favoriteIndex: entry.favoriteIndex })
-        setToastMessage('Failed to unfavorite — rolled back')
+        setToastMessage(t('Failed to unfavorite — rolled back'))
       }
     } else {
       trackEvent('note_favorited')
@@ -119,7 +120,7 @@ export function useEntryActions({
         onFrontmatterPersisted?.()
       } catch {
         updateEntry(path, { favorite: false, favoriteIndex: null })
-        setToastMessage('Failed to favorite — rolled back')
+        setToastMessage(t('Failed to favorite — rolled back'))
       }
     }
   }, [entries, updateEntry, handleUpdateFrontmatter, handleDeleteProperty, setToastMessage, onFrontmatterPersisted])
@@ -135,7 +136,7 @@ export function useEntryActions({
         onFrontmatterPersisted?.()
       } catch {
         updateEntry(path, { organized: true })
-        setToastMessage('Failed to unorganize — rolled back')
+        setToastMessage(t('Failed to unorganize — rolled back'))
       }
     } else {
       trackEvent('note_organized')
@@ -145,7 +146,7 @@ export function useEntryActions({
         onFrontmatterPersisted?.()
       } catch {
         updateEntry(path, { organized: false })
-        setToastMessage('Failed to organize — rolled back')
+        setToastMessage(t('Failed to organize — rolled back'))
       }
     }
   }, [entries, updateEntry, handleUpdateFrontmatter, handleDeleteProperty, setToastMessage, onFrontmatterPersisted])

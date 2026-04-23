@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CalendarIcon, Check, X } from 'lucide-react'
+import { t } from '../lib/i18n'
 import {
   type PropertyDisplayMode,
   formatDateValue,
@@ -47,7 +48,7 @@ function AddBooleanInput({ value, onChange }: { value: string; onChange: (v: str
       onClick={() => onChange(boolVal ? 'false' : 'true')}
       data-testid="add-property-boolean-toggle"
     >
-      {boolVal ? '\u2713 Yes' : '\u2717 No'}
+      {boolVal ? t('✓ Yes') : t('✗ No')}
     </button>
   )
 }
@@ -64,7 +65,7 @@ function AddDateInput({ value, onChange }: { value: string; onChange: (v: string
         >
           <CalendarIcon className="size-3 shrink-0 text-muted-foreground" />
           <span className={`min-w-0 truncate${!formatted ? ' text-muted-foreground' : ' text-foreground'}`}>
-            {formatted || 'Pick a date\u2026'}
+            {formatted || t('Pick a date…')}
           </span>
         </button>
       </PopoverTrigger>
@@ -89,7 +90,7 @@ function AddStatusInput({ value, onChange, vaultStatuses }: { value: string; onC
         onClick={() => setShowDropdown(true)}
         data-testid="add-property-status-trigger"
       >
-        {value ? <StatusPill status={value} /> : <span className="text-muted-foreground">Status{'\u2026'}</span>}
+        {value ? <StatusPill status={value} /> : <span className="text-muted-foreground">{t('Status…')}</span>}
       </button>
       {showDropdown && (
         <StatusDropdown
@@ -113,7 +114,7 @@ function AddNumberInput({ value, onChange, onKeyDown }: {
       className={`${ADD_INPUT_CLASS} font-mono tabular-nums`}
       type="text"
       inputMode="decimal"
-      placeholder="0"
+      placeholder={t('0')}
       value={value}
       onChange={(event) => onChange(event.target.value)}
       onKeyDown={onKeyDown}
@@ -133,12 +134,12 @@ function AddPropertyValueInput({ displayMode, value, onChange, onKeyDown, vaultS
     case 'date': return <AddDateInput value={value} onChange={onChange} />
     case 'status': return <AddStatusInput value={value} onChange={onChange} vaultStatuses={vaultStatuses} />
     case 'tags': return (
-      <Input className={ADD_INPUT_CLASS} type="text" placeholder="tag1, tag2, ..." value={value}
+      <Input className={ADD_INPUT_CLASS} type="text" placeholder={t('tag1, tag2, ...')} value={value}
         onChange={(e) => onChange(e.target.value)} onKeyDown={onKeyDown}
       />
     )
     default: return (
-      <Input className={ADD_INPUT_CLASS} type="text" placeholder="Value" value={value}
+      <Input className={ADD_INPUT_CLASS} type="text" placeholder={t('Value')} value={value}
         onChange={(e) => onChange(e.target.value)} onKeyDown={onKeyDown}
       />
     )
@@ -169,7 +170,7 @@ export function AddPropertyForm({ onAdd, onCancel, vaultStatuses }: {
     <div className="mt-1 flex flex-wrap items-center gap-1.5 rounded px-1.5 py-1" data-testid="add-property-form">
       <Input
         className="h-[26px] w-20 shrink-0 rounded border border-border bg-muted px-1.5 text-[12px] text-foreground outline-none focus:border-primary"
-        type="text" placeholder="Property name" value={newKey}
+        type="text" placeholder={t('Property name')} value={newKey}
         onChange={(e) => setNewKey(e.target.value)} onKeyDown={handleKeyDown} autoFocus
       />
       <Select value={displayMode} onValueChange={(v) => handleModeChange(v as PropertyDisplayMode)}>
@@ -196,12 +197,12 @@ export function AddPropertyForm({ onAdd, onCancel, vaultStatuses }: {
       <AddPropertyValueInput displayMode={displayMode} value={newValue} onChange={setNewValue} onKeyDown={handleKeyDown} vaultStatuses={vaultStatuses} />
       <Button
         size="icon-xs" onClick={() => onAdd(newKey, newValue, displayMode)}
-        disabled={!canSubmit} title="Add property"
+        disabled={!canSubmit} title={t('Add property')}
         data-testid="add-property-confirm"
       >
         <Check className="size-3.5" />
       </Button>
-      <Button size="icon-xs" variant="outline" onClick={onCancel} title="Cancel" data-testid="add-property-cancel">
+      <Button size="icon-xs" variant="outline" onClick={onCancel} title={t('Cancel')} data-testid="add-property-cancel">
         <X className="size-3.5" />
       </Button>
     </div>

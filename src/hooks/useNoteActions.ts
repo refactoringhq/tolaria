@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import { t } from '../lib/i18n'
 import type { VaultEntry } from '../types'
 import type { FrontmatterValue } from '../components/Inspector'
 import { useTabManagement } from './useTabManagement'
@@ -204,7 +205,7 @@ function buildTabManagementOptions(
   } = {
     onMissingNotePath: (entry) => {
       const label = entry.title.trim() || entry.filename
-      config.setToastMessage(`"${label}" could not be opened because its file is missing or moved.`)
+      config.setToastMessage(t('"{label}" could not be opened because its file is missing or moved.', { label }))
       void config.reloadVault?.()
     },
   }

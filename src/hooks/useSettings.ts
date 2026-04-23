@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { isTauri, mockInvoke } from '../mock-tauri'
 import { normalizeStoredAiAgent } from '../lib/aiAgents'
+import { normalizeUiLocale } from '../lib/i18n'
 import { normalizeReleaseChannel, serializeReleaseChannel } from '../lib/releaseChannel'
 import type { Settings } from '../types'
 
@@ -20,6 +21,7 @@ const EMPTY_SETTINGS: Settings = {
   anonymous_id: null,
   release_channel: null,
   default_ai_agent: null,
+  ui_language: null,
 }
 
 function normalizeSettings(settings: Settings): Settings {
@@ -29,6 +31,7 @@ function normalizeSettings(settings: Settings): Settings {
       normalizeReleaseChannel(settings.release_channel),
     ),
     default_ai_agent: normalizeStoredAiAgent(settings.default_ai_agent),
+    ui_language: normalizeUiLocale(settings.ui_language),
   }
 }
 

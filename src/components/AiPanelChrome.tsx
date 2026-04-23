@@ -3,6 +3,7 @@ import { Robot, X, PaperPlaneRight, Plus, Link } from '@phosphor-icons/react'
 import { AiMessage } from './AiMessage'
 import { WikilinkChatInput } from './WikilinkChatInput'
 import { extractInlineWikilinkReferences } from './inlineWikilinkText'
+import { t } from '../lib/i18n'
 import type { AiAgentMessage } from '../hooks/useCliAiAgent'
 import type { NoteReference } from '../utils/ai-context'
 import type { VaultEntry } from '../types'
@@ -51,14 +52,14 @@ function getComposerPlaceholder(
   hasContext: boolean,
 ): string {
   if (!agentReady) {
-    return `${agentLabel} is not installed. Open AI Agents in Settings.`
+    return t('{agentLabel} is not installed. Open AI Agents in Settings.', { agentLabel })
   }
 
   if (legacyCopy) {
-    return hasContext ? 'Ask about this note...' : 'Ask the AI agent...'
+    return hasContext ? t('Ask about this note...') : t('Ask the AI agent...')
   }
 
-  return hasContext ? `Ask ${agentLabel} about this note...` : `Ask ${agentLabel}...`
+  return hasContext ? t('Ask {agentLabel} about this note...', { agentLabel }) : t('Ask {agentLabel}...', { agentLabel })
 }
 
 function AiPanelEmptyState({
@@ -75,10 +76,10 @@ function AiPanelEmptyState({
       >
         <Robot size={24} style={{ marginBottom: 8, opacity: 0.5 }} />
         <p style={{ fontSize: 13, margin: '0 0 4px' }}>
-          {agentLabel} is not available on this machine
+          {t('{agentLabel} is not available on this machine', { agentLabel })}
         </p>
         <p style={{ fontSize: 11, margin: 0, opacity: 0.6 }}>
-          Install it or switch the default AI agent in Settings
+          {t('Install it or switch the default AI agent in Settings')}
         </p>
       </div>
     )
@@ -90,18 +91,18 @@ function AiPanelEmptyState({
       style={{ paddingTop: 40 }}
     >
       <Robot size={24} style={{ marginBottom: 8, opacity: 0.5 }} />
-      <p style={{ fontSize: 13, margin: '0 0 4px' }}>
-        {hasContext
-          ? legacyCopy ? 'Ask about this note and its linked context' : `Ask ${agentLabel} about this note and its linked context`
-          : legacyCopy ? 'Open a note, then ask the AI about it' : `Open a note, then ask ${agentLabel} about it`
+        <p style={{ fontSize: 13, margin: '0 0 4px' }}>
+          {hasContext
+          ? legacyCopy ? t('Ask about this note and its linked context') : t('Ask {agentLabel} about this note and its linked context', { agentLabel })
+          : legacyCopy ? t('Open a note, then ask the AI about it') : t('Open a note, then ask {agentLabel} about it', { agentLabel })
         }
-      </p>
-      <p style={{ fontSize: 11, margin: 0, opacity: 0.6 }}>
-        {hasContext
-          ? 'Summarize, find connections, expand ideas'
-          : 'The AI will use the active note as context'
+        </p>
+        <p style={{ fontSize: 11, margin: 0, opacity: 0.6 }}>
+          {hasContext
+          ? t('Summarize, find connections, expand ideas')
+          : t('The AI will use the active note as context')
         }
-      </p>
+        </p>
     </div>
   )
 }
@@ -121,27 +122,27 @@ export function AiPanelHeader({
       <Robot size={16} className="shrink-0 text-muted-foreground" />
       <div className="flex flex-1 flex-col overflow-hidden">
         <span className="text-muted-foreground" style={{ fontSize: 13, fontWeight: 600 }}>
-          {legacyCopy ? 'AI Chat' : 'AI Agent'}
+          {legacyCopy ? t('AI Chat') : t('AI Agent')}
         </span>
         {!legacyCopy && (
           <span className="truncate text-[11px] text-muted-foreground">
             {agentLabel}
-            {!agentReady ? ' · not installed' : ''}
+            {!agentReady ? ` · ${t('not installed')}` : ''}
           </span>
         )}
       </div>
       <button
         className="shrink-0 border-none bg-transparent p-1 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
         onClick={onNewChat}
-        aria-label="New AI chat"
-        title="New AI chat"
+        aria-label={t('New AI chat')}
+        title={t('New AI chat')}
       >
         <Plus size={16} />
       </button>
       <button
         className="shrink-0 border-none bg-transparent p-1 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
         onClick={onClose}
-        title="Close AI panel"
+        title={t('Close AI panel')}
       >
         <X size={16} />
       </button>
@@ -159,7 +160,7 @@ export function AiPanelContextBar({ activeEntry, linkedCount }: AiPanelContextBa
       <Link size={12} className="shrink-0" />
       <span className="truncate" style={{ fontWeight: 500 }}>{activeEntry.title}</span>
       {linkedCount > 0 && (
-        <span style={{ opacity: 0.6 }}>+ {linkedCount} linked</span>
+        <span style={{ opacity: 0.6 }}>{t('+ {linkedCount} linked', { linkedCount })}</span>
       )}
     </div>
   )
@@ -250,7 +251,7 @@ export function AiPanelComposer({
           style={sendButtonStyle}
           onClick={() => onSend(input, extractInlineWikilinkReferences(input, entries))}
           disabled={!canSend}
-          title="Send message"
+          title={t('Send message')}
           data-testid="agent-send"
         >
           <PaperPlaneRight size={16} />

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { t } from '../lib/i18n'
 
 interface CreateTypeDialogProps {
   open: boolean
@@ -31,25 +32,25 @@ function CreateTypeDialogForm({ initialName, onClose, onCreate }: CreateTypeDial
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-muted-foreground">
-          Type Name
+          {t('Type Name')}
         </label>
         <Input
           autoFocus
-          placeholder="e.g. Recipe, Book, Habit..."
+          placeholder={t('e.g. Recipe, Book, Habit...')}
           value={name}
           onChange={(e) => setName(e.target.value)}
           onFocus={(e) => e.currentTarget.select()}
         />
         <p className="text-xs text-muted-foreground">
-          Creates a type document. Its properties become defaults for new docs of this type.
+          {t('Creates a type document. Its properties become defaults for new docs of this type.')}
         </p>
       </div>
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onClose}>
-          Cancel
+          {t('Cancel')}
         </Button>
         <Button type="submit" disabled={!name.trim()}>
-          Create
+          {t('Create')}
         </Button>
       </DialogFooter>
     </form>
@@ -61,9 +62,9 @@ export function CreateTypeDialog({ open, onClose, onCreate, initialName = '' }: 
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose() }}>
       <DialogContent showCloseButton={false} className="sm:max-w-[380px]">
         <DialogHeader>
-          <DialogTitle>Create New Type</DialogTitle>
+          <DialogTitle>{t('Create New Type')}</DialogTitle>
           <DialogDescription>
-            Create a type document so notes of this type can inherit templates and metadata.
+            {t('Create a type document so notes of this type can inherit templates and metadata.')}
           </DialogDescription>
         </DialogHeader>
         <CreateTypeDialogForm

@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react'
+import { t } from '../lib/i18n'
 import type { FolderNode, SidebarSelection, VaultEntry } from '../types'
 import type { FrontmatterOpOptions } from './frontmatterOps'
 import { extractVaultTypes } from '../utils/vaultTypes'
@@ -120,11 +121,11 @@ async function changeEntryType({
   try {
     await updateFrontmatter(notePath, 'type', normalizedType, { silent: true })
     updateEntitySelection(selection, setSelection, notePath, { path: notePath, isA: normalizedType })
-    setToastMessage(`Type set to "${normalizedType}"`)
+    setToastMessage(t('Type set to "{type}"', { type: normalizedType }))
     return 'updated'
   } catch (error) {
     console.error('Failed to change note type:', error)
-    setToastMessage(typeof error === 'string' ? error : 'Failed to change note type')
+    setToastMessage(typeof error === 'string' ? error : t('Failed to change note type'))
     return 'error'
   }
 }

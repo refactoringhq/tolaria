@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, memo, type KeyboardEvent } fr
 import { invoke } from '@tauri-apps/api/core'
 import { cn } from '@/lib/utils'
 import { isTauri, mockInvoke } from '../mock-tauri'
+import { getUiLocale, t } from '../lib/i18n'
 import { useDragRegion } from '../hooks/useDragRegion'
 import type { PulseCommit, PulseFile } from '../types'
 import { relativeDate } from '../utils/noteListHelpers'
@@ -23,9 +24,10 @@ interface PulseViewProps {
 
 function groupCommitsByDay(commits: PulseCommit[]): Map<string, PulseCommit[]> {
   const groups = new Map<string, PulseCommit[]>()
+  const locale = getUiLocale() === 'zh-CN' ? 'zh-CN' : 'en-US'
   for (const commit of commits) {
     const date = new Date(commit.date * 1000)
-    const key = date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    const key = date.toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
     const existing = groups.get(key)
     if (existing) {
       existing.push(commit)
@@ -37,19 +39,21 @@ function groupCommitsByDay(commits: PulseCommit[]): Map<string, PulseCommit[]> {
 }
 
 function isToday(dateKey: string): boolean {
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+  const locale = getUiLocale() === 'zh-CN' ? 'zh-CN' : 'en-US'
+  const today = new Date().toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
   return dateKey === today
 }
 
 function isYesterday(dateKey: string): boolean {
+  const locale = getUiLocale() === 'zh-CN' ? 'zh-CN' : 'en-US'
   const yesterday = new Date(Date.now() - 86400000)
-    .toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    .toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
   return dateKey === yesterday
 }
 
 function formatDayLabel(dateKey: string): string {
-  if (isToday(dateKey)) return 'Today'
-  if (isYesterday(dateKey)) return 'Yesterday'
+  if (isToday(dateKey)) return t('Today')
+  if (isYesterday(dateKey)) return t('Yesterday')
   return dateKey
 }
 
@@ -173,7 +177,7 @@ function CommitCard({
                     window.open(commit.githubUrl!, '_blank')
                   }
                 }}
-                title="Open on GitHub"
+                 title={t('Open on GitHub')}
               >
                 {commit.shortHash}
                 <ArrowSquareOut size={10} />
@@ -192,7 +196,7 @@ function CommitCard({
             event.stopPropagation()
             toggleExpanded()
           }}
-          aria-label={expanded ? 'Collapse files' : 'Expand files'}
+            aria-label={expanded ? t('Collapse files') : t('Expand files')}
         >
           <Chevron size={12} />
         </button>
@@ -236,7 +240,7 @@ function DayGroup({ label, commits, onOpenNote }: {
           {label}
         </span>
         <span className="text-[11px] text-muted-foreground">
-          ({commits.length} {commits.length === 1 ? 'commit' : 'commits'})
+          ({t(commits.length === 1 ? '{count} commit' : '{count} commits', { count: commits.length })})
         </span>
       </div>
       {!collapsed && commits.map((commit) => (
@@ -266,13 +270,13 @@ function PulseHeader({
             className="flex shrink-0 cursor-pointer items-center justify-center rounded border-none bg-transparent p-0 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             style={{ width: 24, height: 24 }}
             onClick={onExpandSidebar}
-            aria-label="Expand sidebar"
+            aria-label={t('Expand sidebar')}
           >
             <CaretRight size={14} weight="bold" />
           </button>
         )}
         <Pulse size={16} className="text-primary" />
-        <span className="text-[14px] font-semibold text-foreground">History</span>
+        <span className="text-[14px] font-semibold text-foreground">{t('History')}</span>
       </div>
     </div>
   )
@@ -282,9 +286,9 @@ function EmptyState() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center text-muted-foreground" style={{ padding: 32 }}>
       <Pulse size={32} style={{ marginBottom: 8, opacity: 0.5 }} />
-      <p className="text-[13px]">No activity yet</p>
+      <p className="text-[13px]">{t('No activity yet')}</p>
       <p className="text-[12px]" style={{ marginTop: 4 }}>
-        Commit changes to see your vault's history
+        {t("Commit changes to see your vault's history")}
       </p>
     </div>
   )
@@ -298,7 +302,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
         className="mt-2 cursor-pointer rounded border border-border bg-transparent px-3 py-1 text-[12px] text-foreground transition-colors hover:bg-accent"
         onClick={onRetry}
       >
-        Retry
+        {t('Retry')}
       </button>
     </div>
   )
@@ -326,7 +330,7 @@ function PulseFeed({
   if (loading) {
     return (
       <div className="flex items-center justify-center" style={{ padding: 32 }}>
-        <span className="text-[13px] text-muted-foreground">Loading activity…</span>
+          <span className="text-[13px] text-muted-foreground">{t('Loading activity…')}</span>
       </div>
     )
   }
@@ -352,7 +356,7 @@ function PulseFeed({
       <div ref={sentinelRef} style={{ height: 1 }} />
       {loadingMore && (
         <div className="flex items-center justify-center" style={{ padding: 12 }}>
-          <span className="text-[12px] text-muted-foreground">Loading…</span>
+          <span className="text-[12px] text-muted-foreground">{t('Loading…')}</span>
         </div>
       )}
     </>
@@ -383,7 +387,7 @@ export const PulseView = memo(function PulseView({ vaultPath, onOpenNote, sideba
       setHasMore(result.length >= PAGE_SIZE)
       setSkip(result.length)
     } catch (err) {
-      const msg = typeof err === 'string' ? err : 'Failed to load activity'
+      const msg = typeof err === 'string' ? err : t('Failed to load activity')
       setError(msg)
     } finally {
       setLoading(false)

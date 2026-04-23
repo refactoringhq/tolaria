@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { t } from '../../lib/i18n'
 import type { SidebarSelection, VaultEntry } from '../../types'
 import {
   clearDeletedFolderTabs,
@@ -40,9 +41,9 @@ export function useFolderDelete({
     clearFolderRename()
     setConfirmDeleteFolder({
       path: folderPath,
-      title: `Delete "${folderLabel({ folderPath })}" and everything inside it?`,
-      message: 'This permanently removes the folder, all nested folders, and every note or file inside it. This cannot be undone.',
-      confirmLabel: 'Delete folder',
+      title: t('Delete "{folder}" and everything inside it?', { folder: folderLabel({ folderPath }) }),
+      message: t('This permanently removes the folder, all nested folders, and every note or file inside it. This cannot be undone.'),
+      confirmLabel: t('Delete folder'),
     })
   }, [clearFolderRename])
 
@@ -71,9 +72,9 @@ export function useFolderDelete({
         setSelection,
         vaultPath,
       })
-      setToastMessage(`Deleted folder "${folderLabel({ folderPath })}"`)
+      setToastMessage(t('Deleted folder "{folder}"', { folder: folderLabel({ folderPath }) }))
     } catch (error) {
-      setToastMessage(`Failed to delete folder: ${error}`)
+      setToastMessage(t('Failed to delete folder: {error}', { error: String(error) }))
     }
   }, [activeTabPathRef, closeAllTabs, confirmDeleteFolder, reloadFolders, reloadVault, selection, setSelection, setTabs, setToastMessage, vaultPath])
 

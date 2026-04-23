@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState, type MutableRefObject } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import type { GitPushResult, GitRemoteStatus, ModifiedFile } from '../types'
+import { t } from '../lib/i18n'
 import { trackEvent } from '../lib/telemetry'
 import { isTauri, mockInvoke } from '../mock-tauri'
 import { generateAutomaticCommitMessage } from '../utils/automaticCommitMessage'
@@ -90,16 +91,16 @@ async function executeCommitAction({
 }: CommitExecutionArgs): Promise<CommitResult> {
   await commitLocally({ vaultPath, message })
   if (commitMode === 'local') {
-    return { status: 'local_only', message: 'Committed locally (no remote configured)' }
+    return { status: 'local_only', message: t('Committed locally (no remote configured)') }
   }
 
   return pushCommittedChanges({ vaultPath })
 }
 
 function commitToastMessage(result: CommitResult): string {
-  if (result.status === 'ok') return 'Committed and pushed'
+  if (result.status === 'ok') return t('Committed and pushed')
   if (result.status === 'local_only') return result.message
-  if (result.status === 'rejected') return 'Committed, but push rejected — remote has new commits. Pull first.'
+  if (result.status === 'rejected') return t('Committed, but push rejected — remote has new commits. Pull first.')
   return result.message
 }
 
@@ -116,13 +117,13 @@ function shouldRetryPush(remoteStatus: GitRemoteStatus | null): boolean {
 }
 
 function nothingToCommitToast(remoteStatus: GitRemoteStatus | null): string {
-  return remoteStatus?.hasRemote === false ? 'Nothing to commit' : 'Nothing to commit or push'
+  return remoteStatus?.hasRemote === false ? t('Nothing to commit') : t('Nothing to commit or push')
 }
 
 function checkpointToastMessage(result: CommitResult, action: CheckpointAction): string {
   if (action === 'push_only') {
-    if (result.status === 'ok') return 'Pushed committed changes'
-    if (result.status === 'rejected') return 'Push rejected — remote has new commits. Pull first.'
+    if (result.status === 'ok') return t('Pushed committed changes')
+    if (result.status === 'rejected') return t('Push rejected — remote has new commits. Pull first.')
     return result.message
   }
 
@@ -234,7 +235,7 @@ function useAutomaticCheckpointAction({
       return true
     } catch (err) {
       console.error('Commit failed:', err)
-      setToastMessage(`Commit failed: ${formatCommitError(err)}`)
+      setToastMessage(t('Commit failed: {error}', { error: formatCommitError(err) }))
       return false
     } finally {
       checkpointInFlightRef.current = false
@@ -280,7 +281,7 @@ function useManualCommitPushAction({
       })
     } catch (err) {
       console.error('Commit failed:', err)
-      setToastMessage(`Commit failed: ${formatCommitError(err)}`)
+      setToastMessage(t('Commit failed: {error}', { error: formatCommitError(err) }))
     } finally {
       checkpointInFlightRef.current = false
     }

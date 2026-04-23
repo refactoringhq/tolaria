@@ -1,5 +1,6 @@
 import { startTransition, useCallback, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
+import { t } from '../lib/i18n'
 import { isTauri, mockInvoke } from '../mock-tauri'
 import { trackEvent } from '../lib/telemetry'
 
@@ -21,26 +22,26 @@ interface UseDeleteActionsInput {
 }
 
 function describeNotes(count: number): string {
-  return count === 1 ? 'note' : `${count} notes`
+  return count === 1 ? t('note') : t('{count} notes', { count })
 }
 
 function buildDeleteProgressMessage(count: number): string {
-  return `Deleting ${describeNotes(count)}...`
+  return t('Deleting {notes}...', { notes: describeNotes(count) })
 }
 
 function buildDeleteSuccessMessage(count: number): string {
-  return count === 1 ? 'Note permanently deleted' : `${count} notes permanently deleted`
+  return count === 1 ? t('Note permanently deleted') : t('{count} notes permanently deleted', { count })
 }
 
 function buildDeleteFailureMessage(error: unknown, count: number): string {
-  return `Failed to delete ${describeNotes(count)}: ${error}`
+  return t('Failed to delete {notes}: {error}', { notes: describeNotes(count), error: String(error) })
 }
 
 function buildPartialDeleteMessage(deletedCount: number, requestedCount: number): string {
   if (deletedCount === 0) {
-    return `Failed to delete ${describeNotes(requestedCount)}. The note list was reloaded.`
+    return t('Failed to delete {notes}. The note list was reloaded.', { notes: describeNotes(requestedCount) })
   }
-  return `Deleted ${deletedCount} of ${requestedCount} notes. The note list was reloaded to recover failed items.`
+  return t('Deleted {deletedCount} of {requestedCount} notes. The note list was reloaded to recover failed items.', { deletedCount, requestedCount })
 }
 
 async function runDeleteCommand(paths: string[]): Promise<string[]> {
@@ -145,8 +146,8 @@ export function useDeleteActions({
 
   const handleDeleteNote = useCallback(async (path: string) => {
     setConfirmDelete({
-      title: 'Delete permanently?',
-      message: 'Delete permanently? This cannot be undone. You can recover it from Git history.',
+      title: t('Delete permanently?'),
+      message: t('Delete permanently? This cannot be undone. You can recover it from Git history.'),
       onConfirm: async () => {
         setConfirmDelete(null)
         await deleteNoteFromDisk(path)
@@ -157,8 +158,12 @@ export function useDeleteActions({
   const handleBulkDeletePermanently = useCallback((paths: string[]) => {
     const count = paths.length
     setConfirmDelete({
-      title: `Delete ${count} ${count === 1 ? 'note' : 'notes'} permanently?`,
-      message: `${count === 1 ? 'This note' : `These ${count} notes`} will be permanently deleted. This cannot be undone.`,
+      title: count === 1
+        ? t('Delete 1 note permanently?')
+        : t('Delete {count} notes permanently?', { count }),
+      message: count === 1
+        ? t('This note will be permanently deleted. This cannot be undone.')
+        : t('These {count} notes will be permanently deleted. This cannot be undone.', { count }),
       onConfirm: async () => {
         setConfirmDelete(null)
         await deleteNotesFromDisk(paths)

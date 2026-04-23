@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useI18n } from '../lib/i18n'
 import { isTauri, mockInvoke } from '../mock-tauri'
 
 type CloneStatus = 'idle' | 'cloning' | 'error'
@@ -131,6 +132,7 @@ function useCloneVaultForm(onClose: () => void, onVaultCloned: (path: string, la
 }
 
 export function CloneVaultModal({ open, onClose, onVaultCloned }: CloneVaultModalProps) {
+  const { t } = useI18n()
   const {
     repoUrl,
     localPath,
@@ -150,19 +152,18 @@ export function CloneVaultModal({ open, onClose, onVaultCloned }: CloneVaultModa
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[520px]" data-testid="clone-vault-modal">
         <DialogHeader>
-          <DialogTitle>Clone Git Repo</DialogTitle>
+          <DialogTitle>{t('Clone Git Repo')}</DialogTitle>
           <DialogDescription>
-            Clone any remote repository into a local vault folder. Tolaria uses your existing system git
-            configuration for authentication.
+            {t('Clone any remote repository into a local vault folder. Tolaria uses your existing system git configuration for authentication.')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4 py-2">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-foreground" htmlFor="clone-repo-url">Repository URL</label>
+            <label className="text-xs font-medium text-foreground" htmlFor="clone-repo-url">{t('Repository URL')}</label>
             <Input
               id="clone-repo-url"
-              placeholder="git@host:owner/repo.git or https://host/owner/repo.git"
+              placeholder={t('git@host:owner/repo.git or https://host/owner/repo.git')}
               value={repoUrl}
               onChange={(event) => handleRepoUrlChange(event.target.value)}
               data-testid="clone-repo-url"
@@ -170,10 +171,10 @@ export function CloneVaultModal({ open, onClose, onVaultCloned }: CloneVaultModa
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-foreground" htmlFor="clone-vault-path">Clone to</label>
+            <label className="text-xs font-medium text-foreground" htmlFor="clone-vault-path">{t('Clone to')}</label>
             <Input
               id="clone-vault-path"
-              placeholder="~/Vaults/my-vault"
+              placeholder={t('~/Vaults/my-vault')}
               value={localPath}
               onChange={(event) => handleLocalPathChange(event.target.value)}
               data-testid="clone-vault-path"
@@ -181,7 +182,7 @@ export function CloneVaultModal({ open, onClose, onVaultCloned }: CloneVaultModa
           </div>
 
           <p className="text-xs text-muted-foreground">
-            SSH keys, the git credential manager, `gh auth`, and other system git auth methods all work.
+            {t('SSH keys, the git credential manager, `gh auth`, and other system git auth methods all work.')}
           </p>
 
           {cloneError && (
@@ -195,7 +196,7 @@ export function CloneVaultModal({ open, onClose, onVaultCloned }: CloneVaultModa
             disabled={isCloneDisabled}
             data-testid="clone-vault-submit"
           >
-            {cloneStatus === 'cloning' ? 'Cloning...' : 'Clone & Open'}
+            {cloneStatus === 'cloning' ? t('Cloning...') : t('Clone & Open')}
           </Button>
         </DialogFooter>
       </DialogContent>
