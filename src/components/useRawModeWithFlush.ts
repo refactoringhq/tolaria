@@ -135,6 +135,7 @@ function useHandleFlushPending({
   pendingRawRestoreRef,
   pendingRoundTripRawRestoreRef,
   setRawModeContentOverride,
+  vaultPath,
 }: {
   editor: ReturnType<typeof useCreateBlockNote>
   activeTabPath: string | null
@@ -145,6 +146,7 @@ function useHandleFlushPending({
   pendingRawRestoreRef: React.MutableRefObject<CodeMirrorRestoreState | null>
   pendingRoundTripRawRestoreRef: React.MutableRefObject<PendingRoundTripRawRestore | null>
   setRawModeContentOverride: React.Dispatch<React.SetStateAction<PendingRawExitContent | null>>
+  vaultPath?: string
 }) {
   return useCallback(async () => {
     rawSourceContentRef.current = activeTabContent
@@ -153,6 +155,7 @@ function useHandleFlushPending({
       activeTabPath,
       activeTabContent,
       rawLatestContentRef,
+      vaultPath,
     })
     rawInitialContentRef.current = syncedContent ?? activeTabContent
     pendingRawRestoreRef.current = buildPendingRawRestore({
@@ -176,6 +179,7 @@ function useHandleFlushPending({
     rawLatestContentRef,
     rawSourceContentRef,
     setRawModeContentOverride,
+    vaultPath,
   ])
 }
 
@@ -246,21 +250,16 @@ function useSyncRawModeContentOverride({
   rawSourceContentRef: React.MutableRefObject<string | null>
   setRawModeContentOverride: React.Dispatch<React.SetStateAction<PendingRawExitContent | null>>
 }) {
-  const syncRawModeContentOverride = (
-    current: PendingRawExitContent | null,
-    nextContent: string,
-  ) => {
-    if (!current) return current
-    if (current.path !== activeTabPath || current.content === nextContent) return current
-    return { path: activeTabPath, content: nextContent }
-  }
-
   useLayoutEffect(() => {
     if (!activeTabPath || activeTabContent === null) return
     if (rawSourceContentRef.current === null || activeTabContent === rawSourceContentRef.current) return
     const nextContent = activeTabContent
 
-    setRawModeContentOverride((current) => syncRawModeContentOverride(current, nextContent))
+    setRawModeContentOverride((current) => {
+      if (!current) return current
+      if (current.path !== activeTabPath || current.content === nextContent) return current
+      return { path: activeTabPath, content: nextContent }
+    })
   }, [activeTabContent, activeTabPath, rawSourceContentRef, setRawModeContentOverride])
 }
 
@@ -269,6 +268,7 @@ export function useRawModeWithFlush(
   activeTabPath: string | null,
   activeTabContent: string | null,
   onContentChange?: (path: string, content: string) => void,
+  vaultPath?: string,
 ) {
   const rawLatestContentRef = useRef<string | null>(null)
   const rawInitialContentRef = useRef<string | null>(null)
@@ -304,6 +304,7 @@ export function useRawModeWithFlush(
     pendingRawRestoreRef,
     pendingRoundTripRawRestoreRef,
     setRawModeContentOverride,
+    vaultPath,
   })
   const handleBeforeRawEnd = useHandleBeforeRawEnd({
     activeTabPath,

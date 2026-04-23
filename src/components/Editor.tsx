@@ -184,6 +184,7 @@ function useEditorSetup({
     activeTabPath,
     activeTab?.content ?? null,
     onContentChange,
+    vaultPath,
   )
   const tabsForEditorSwap = applyPendingRawExitContent(tabs, pendingRawExitContent)
   const rawModeContent = resolveRawModeContent({ activeTab, rawModeContentOverride })
@@ -197,7 +198,7 @@ function useEditorSetup({
   }, [activeTabPath, setPendingRawExitContent, tabs])
 
   const { handleEditorChange, editorMountedRef } = useEditorTabSwap({
-    tabs: tabsForEditorSwap, activeTabPath, editor, onContentChange, rawMode,
+    tabs: tabsForEditorSwap, activeTabPath, editor, onContentChange, rawMode, vaultPath,
   })
   useEditorFocus(editor, editorMountedRef)
 
