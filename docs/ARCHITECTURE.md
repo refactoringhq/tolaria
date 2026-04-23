@@ -890,7 +890,7 @@ sequenceDiagram
 
 **Architecture:**
 - **Rust:** `sentry` crate initialized in `lib.rs::setup()` via `telemetry::init_sentry_from_settings()`
-- **JS:** `@sentry/react` + `posthog-js` initialized lazily by `useTelemetry` hook
+- **JS:** `@sentry/react` + `posthog-js` initialized lazily by `useTelemetry` hook; the React root also wires `onCaughtError`, `onUncaughtError`, and `onRecoverableError` through `Sentry.reactErrorHandler()` so production React invariants include component stack context when crash reporting is enabled.
 - **Settings:** `telemetry_consent`, `crash_reporting_enabled`, `analytics_enabled`, `anonymous_id` in `Settings` struct
 - **Consent:** `TelemetryConsentDialog` shown when `telemetry_consent === null`
 
