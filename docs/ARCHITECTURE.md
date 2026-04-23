@@ -214,6 +214,8 @@ Full agent mode — spawns the selected local CLI agent as a subprocess with too
 3. **Agent adapters** — Claude Code still uses `claude_cli.rs`; Codex runs through `codex exec --json` with the CLI's normal approval / sandbox defaults
 4. **MCP Integration** — Claude receives the generated MCP config file path, while Codex receives the same Tolaria MCP server via transient `-c mcp_servers.tolaria.*` config overrides
 
+Claude Code availability intentionally does not depend only on the desktop app's inherited `PATH`. The detector checks the current process path, the user's login shell, and supported local/toolchain install locations such as native `~/.local/bin`, local `~/.claude/local`, Mise/asdf shims, npm-global, and Homebrew paths so first-run onboarding works on fresh macOS installs.
+
 #### Agent Event Flow
 
 ```mermaid
@@ -441,6 +443,8 @@ On first launch, `useOnboarding` checks if the default vault exists. If not, it 
 - **Open an existing folder** → system file picker
 - **Get started with a template** → pick a parent folder, then call `create_getting_started_vault()` with the derived `.../Getting Started` child path so the cloned vault opens into the populated repo root immediately
 
+When an opened folder is not yet a git repo, `init_git_repo` runs `git init`, ensures Tolaria's default `.gitignore`, stages the vault, and writes the initial `Initial vault setup` commit. That app-managed setup commit explicitly disables commit signing for the single command so inherited global or local `commit.gpgsign` preferences cannot strand onboarding when GPG is missing or misconfigured.
+
 Once a vault is ready, `useAiAgentsOnboarding` can show a one-time `AiAgentsOnboardingPrompt`. That prompt reads `useAiAgentsStatus` so first launch surfaces whether Claude Code and Codex are installed, offers per-agent install links when they are missing, and stores local dismissal so the prompt does not repeat on every launch.
 
 `useGettingStartedClone` reuses the same parent-folder semantics for the status-bar / command-palette clone action, and `Toast` is rendered through the AI-agents onboarding gate so the resolved destination path stays visible right after a successful clone.
@@ -646,6 +650,7 @@ The vault backend (`src-tauri/src/vault/`) is split into focused submodules:
 
 | Command | Description |
 |---------|-------------|
+| `init_git_repo` | Initialize a local repo, add default `.gitignore`, and create the unsigned setup commit |
 | `git_commit` | Stage all + commit |
 | `git_pull` | Pull from remote |
 | `git_push` | Push to remote |
