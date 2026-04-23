@@ -211,11 +211,17 @@ pub fn reload_entry(path: &Path) -> Result<VaultEntry, String> {
     }
 }
 
-/// Directories that are never shown in the folder tree or scanned for notes.
+/// Directories hidden from user-facing vault scans.
 const HIDDEN_DIRS: &[&str] = &[".git", ".laputa", ".DS_Store"];
+/// System folders that hold Tolaria metadata or assets rather than user note groups.
+const FOLDER_TREE_EXCLUDED_DIRS: &[&str] = &["attachments", "type", "views"];
 
 fn is_hidden_dir(name: &str) -> bool {
     name.starts_with('.') || HIDDEN_DIRS.contains(&name)
+}
+
+fn is_folder_tree_hidden_dir(name: &str) -> bool {
+    is_hidden_dir(name) || FOLDER_TREE_EXCLUDED_DIRS.contains(&name)
 }
 
 pub(crate) fn is_md_file(path: &Path) -> bool {
@@ -431,8 +437,7 @@ pub fn scan_vault(
     Ok(entries)
 }
 
-/// Build a tree of visible folders in the vault.
-/// Excludes hidden directories (starting with `.`).
+/// Build a tree of user-created folders in the vault.
 pub fn scan_vault_folders(vault_path: &Path) -> Result<Vec<FolderNode>, String> {
     if !vault_path.is_dir() {
         return Err(format!("Not a directory: {}", vault_path.display()));
@@ -449,7 +454,7 @@ pub fn scan_vault_folders(vault_path: &Path) -> Result<Vec<FolderNode>, String> 
                 continue;
             }
             let name = entry.file_name().to_string_lossy().to_string();
-            if is_hidden_dir(&name) {
+            if is_folder_tree_hidden_dir(&name) {
                 continue;
             }
             let rel_path = path

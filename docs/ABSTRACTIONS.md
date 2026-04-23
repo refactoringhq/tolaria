@@ -304,6 +304,8 @@ type SidebarSelection =
    - Reads entity type from `type:` frontmatter field (`Is A:` accepted as legacy alias); type is never inferred from folder
    - Parses dates as ISO 8601 to Unix timestamps
    - Extracts relationships, outgoing links, custom properties, word count, snippet
+
+The folder tree is narrower than the scanner: it exposes user-created folders only, while system folders such as `attachments/`, `type/`, and `views/` remain hidden from folder navigation.
 6. Sorts by `modified_at` descending
 7. Skips unparseable files with a warning log
 

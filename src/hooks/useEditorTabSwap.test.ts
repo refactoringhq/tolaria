@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { extractEditorBody, getH1TextFromBlocks, replaceTitleInFrontmatter, useEditorTabSwap } from './useEditorTabSwap'
+import { normalizeParsedImageBlocks } from './editorTabContent'
 
 describe('extractEditorBody', () => {
   it('strips frontmatter and preserves H1 heading for new note content', () => {
@@ -136,6 +137,62 @@ describe('replaceTitleInFrontmatter', () => {
 
   it('handles empty string as frontmatter', () => {
     expect(replaceTitleInFrontmatter('', 'Title')).toBe('')
+  })
+})
+
+describe('normalizeParsedImageBlocks', () => {
+  it('clears broken-image fallback widths from local asset image blocks', () => {
+    const blocks = normalizeParsedImageBlocks([{
+      type: 'image',
+      props: {
+        url: 'asset://localhost/%2Fvault%2Fattachments%2Fshot.png',
+        previewWidth: 16,
+      },
+    }])
+
+    expect(blocks).toEqual([{
+      type: 'image',
+      props: {
+        url: 'asset://localhost/%2Fvault%2Fattachments%2Fshot.png',
+        previewWidth: undefined,
+      },
+    }])
+  })
+
+  it('preserves explicit image widths and non-local image URLs', () => {
+    const blocks = normalizeParsedImageBlocks([
+      {
+        type: 'image',
+        props: {
+          url: 'asset://localhost/%2Fvault%2Fattachments%2Fresized.png',
+          previewWidth: 240,
+        },
+      },
+      {
+        type: 'image',
+        props: {
+          url: 'https://example.test/preview.png',
+          previewWidth: 16,
+        },
+      },
+    ])
+
+    expect(blocks).toEqual([
+      {
+        type: 'image',
+        props: {
+          url: 'asset://localhost/%2Fvault%2Fattachments%2Fresized.png',
+          previewWidth: 240,
+        },
+      },
+      {
+        type: 'image',
+        props: {
+          url: 'https://example.test/preview.png',
+          previewWidth: 16,
+        },
+      },
+    ])
   })
 })
 

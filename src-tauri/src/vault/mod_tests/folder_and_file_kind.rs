@@ -34,6 +34,20 @@ fn test_scan_vault_folders_excludes_hidden() {
 }
 
 #[test]
+fn test_scan_vault_folders_excludes_system_asset_folders() {
+    let dir = TempDir::new().unwrap();
+    std::fs::create_dir_all(dir.path().join("attachments")).unwrap();
+    std::fs::create_dir_all(dir.path().join("type")).unwrap();
+    std::fs::create_dir_all(dir.path().join("views")).unwrap();
+    std::fs::create_dir_all(dir.path().join("projects")).unwrap();
+
+    let folders = scan_vault_folders(dir.path()).unwrap();
+    let names: Vec<&str> = folders.iter().map(|folder| folder.name.as_str()).collect();
+
+    assert_eq!(names, vec!["projects"]);
+}
+
+#[test]
 fn test_scan_vault_folders_flat_vault() {
     let dir = TempDir::new().unwrap();
     create_test_file(dir.path(), "note.md", "# Note\n");

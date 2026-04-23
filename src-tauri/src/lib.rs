@@ -14,7 +14,7 @@ pub mod vault;
 pub mod vault_list;
 
 #[cfg(desktop)]
-use std::path::Path;
+use std::path::{Path, PathBuf};
 #[cfg(desktop)]
 use std::process::Child;
 #[cfg(desktop)]
@@ -24,7 +24,7 @@ use std::sync::Mutex;
 struct WsBridgeChild(Mutex<Option<Child>>);
 
 #[cfg(desktop)]
-struct ActiveAssetScopeRoot(Mutex<Option<std::path::PathBuf>>);
+struct ActiveAssetScopeRoots(Mutex<Vec<PathBuf>>);
 
 #[cfg(desktop)]
 fn log_startup_result(label: &str, result: Result<usize, String>) {
@@ -148,45 +148,49 @@ fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[cfg(desktop)]
-pub(crate) fn sync_vault_asset_scope(
-    app_handle: &tauri::AppHandle,
-    vault_path: &Path,
-) -> Result<(), String> {
-    use tauri::Manager;
-
+fn vault_asset_scope_roots(vault_path: &Path) -> Result<Vec<PathBuf>, String> {
     let canonical_vault_path = std::fs::canonicalize(vault_path).map_err(|e| {
         format!(
             "Failed to resolve asset scope for {}: {e}",
             vault_path.display()
         )
     })?;
+    let mut roots = vec![canonical_vault_path.clone()];
+    let requested_vault_path = vault_path.to_path_buf();
+    if requested_vault_path != canonical_vault_path {
+        roots.push(requested_vault_path);
+    }
+    Ok(roots)
+}
+
+#[cfg(desktop)]
+pub(crate) fn sync_vault_asset_scope(
+    app_handle: &tauri::AppHandle,
+    vault_path: &Path,
+) -> Result<(), String> {
+    use tauri::Manager;
+
+    let next_roots = vault_asset_scope_roots(vault_path)?;
     let scope = app_handle.asset_protocol_scope();
-    let state: tauri::State<'_, ActiveAssetScopeRoot> = app_handle.state();
-    let mut active_root = state
+    let state: tauri::State<'_, ActiveAssetScopeRoots> = app_handle.state();
+    let mut active_roots = state
         .0
         .lock()
         .map_err(|_| "Failed to lock active asset scope state".to_string())?;
 
-    if active_root.as_ref() == Some(&canonical_vault_path) {
-        return Ok(());
+    for root in &next_roots {
+        scope
+            .allow_directory(root, true)
+            .map_err(|e| format!("Failed to allow asset access for {}: {e}", root.display()))?;
     }
 
-    scope
-        .allow_directory(&canonical_vault_path, true)
-        .map_err(|e| {
-            format!(
-                "Failed to allow asset access for {}: {e}",
-                canonical_vault_path.display()
-            )
-        })?;
-
-    if let Some(previous_root) = active_root.as_ref() {
-        if previous_root != &canonical_vault_path {
+    for previous_root in active_roots.iter() {
+        if !next_roots.contains(previous_root) {
             let _ = scope.forbid_directory(previous_root, true);
         }
     }
 
-    *active_root = Some(canonical_vault_path);
+    *active_roots = next_roots;
     Ok(())
 }
 
@@ -297,7 +301,7 @@ pub fn run() {
     #[cfg(desktop)]
     let builder = builder
         .manage(WsBridgeChild(Mutex::new(None)))
-        .manage(ActiveAssetScopeRoot(Mutex::new(None)));
+        .manage(ActiveAssetScopeRoots(Mutex::new(Vec::new())));
 
     with_invoke_handler(builder)
         .setup(setup_app)
@@ -313,8 +317,26 @@ pub fn run() {
 mod tests {
     use super::MACOS_WEBVIEW_RESERVED_COMMAND_SHIFT_KEYS;
 
+    #[cfg(all(desktop, unix))]
+    use super::vault_asset_scope_roots;
+
     #[test]
     fn macos_webview_shortcut_prevention_includes_ai_panel_shortcut() {
         assert_eq!(MACOS_WEBVIEW_RESERVED_COMMAND_SHIFT_KEYS, ["L"]);
+    }
+
+    #[cfg(all(desktop, unix))]
+    #[test]
+    fn vault_asset_scope_roots_include_requested_symlink_path() {
+        let dir = tempfile::tempdir().unwrap();
+        let canonical_vault = dir.path().join("Getting Started");
+        let symlinked_vault = dir.path().join("Symlinked Getting Started");
+        std::fs::create_dir(&canonical_vault).unwrap();
+        std::os::unix::fs::symlink(&canonical_vault, &symlinked_vault).unwrap();
+
+        let roots = vault_asset_scope_roots(&symlinked_vault).unwrap();
+
+        assert_eq!(roots[0], canonical_vault.canonicalize().unwrap());
+        assert!(roots.contains(&symlinked_vault));
     }
 }

@@ -9,6 +9,7 @@ import {
   extractEditorBody,
   getH1TextFromBlocks,
   isUntitledPath,
+  normalizeParsedImageBlocks,
   pathStem,
   slugifyPathStem,
 } from './editorTabContent'
@@ -154,7 +155,7 @@ async function resolveBlocksForTarget(
     return nextState
   }
 
-  const parsed = await parseMarkdownBlocks(editor, preprocessed)
+  const parsed = normalizeParsedImageBlocks(await parseMarkdownBlocks(editor, preprocessed)) as EditorBlocks
   const withWikilinks = injectWikilinks(parsed)
   const nextState = { blocks: withWikilinks, scrollTop: 0, sourceContent: content }
   cacheEditorState(cache, targetPath, nextState)
@@ -244,7 +245,9 @@ async function resolveEmptyHeadingHtml(
   if (!remainder.trim()) return '<h1></h1><p></p>'
 
   const withImages = vaultPath ? resolveImageUrls(remainder, vaultPath) : remainder
-  const parsed = await parseMarkdownBlocks(editor, preProcessWikilinks(withImages))
+  const parsed = normalizeParsedImageBlocks(
+    await parseMarkdownBlocks(editor, preProcessWikilinks(withImages)),
+  ) as EditorBlocks
   const withWikilinks = injectWikilinks(parsed)
   return `<h1></h1>${editor.blocksToHTMLLossy(withWikilinks as typeof parsed)}`
 }

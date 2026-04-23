@@ -12,6 +12,10 @@ vi.mock('../mock-tauri', () => ({
 }))
 
 function assetUrl(path: string): string {
+  return `http://asset.localhost/${encodeURIComponent(path)}`
+}
+
+function legacyAssetUrl(path: string): string {
   return `asset://localhost/${encodeURIComponent(path)}`
 }
 
@@ -49,7 +53,7 @@ describe('resolveImageUrls', () => {
 
   it('rewrites legacy asset URLs from a different vault', () => {
     tauriMode = true
-    const legacyUrl = assetUrl('/Users/luca/Workspace/tolaria-getting-started/attachments/CleanShot.png')
+    const legacyUrl = legacyAssetUrl('/Users/luca/Workspace/tolaria-getting-started/attachments/CleanShot.png')
     const markdown = `![CleanShot](${legacyUrl})`
 
     expect(resolveImageUrls(markdown, '/Users/john/Documents/Getting Started')).toBe(
@@ -68,7 +72,7 @@ describe('resolveImageUrls', () => {
 
   it('handles multiple images in one document', () => {
     tauriMode = true
-    const markdown = `![a](${assetUrl('/old/attachments/a.png')})\n\n![b](attachments/b.png)`
+    const markdown = `![a](${legacyAssetUrl('/old/attachments/a.png')})\n\n![b](attachments/b.png)`
 
     const result = resolveImageUrls(markdown, '/vault')
 
@@ -101,6 +105,15 @@ describe('portableImageUrls', () => {
 
     expect(portableImageUrls(markdown, '/vault')).toBe(
       '![screenshot](attachments/1776369786040-CleanShot.png)',
+    )
+  })
+
+  it('converts legacy asset protocol attachment URLs to relative paths', () => {
+    const url = legacyAssetUrl('/vault/attachments/legacy.png')
+    const markdown = `![screenshot](${url})`
+
+    expect(portableImageUrls(markdown, '/vault')).toBe(
+      '![screenshot](attachments/legacy.png)',
     )
   })
 
