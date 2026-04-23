@@ -248,9 +248,15 @@ function App() {
     onSwitch: () => { handleSetSelection(DEFAULT_SELECTION); notes.closeAllTabs() },
     onToast: (msg) => setToastMessage(msg),
   })
-  const { allVaults, defaultPath, handleVaultCloned, selectedVaultPath, switchVault } = vaultSwitcher
+  const {
+    allVaults,
+    registerVaultSelection,
+    selectedVaultPath,
+    syncVaultSelection,
+    switchVault,
+  } = vaultSwitcher
 
-  const rememberOnboardingVaultChoice = useCallback((vaultPath: string) => {
+  const rememberVaultChoice = useCallback((vaultPath: string) => {
     if (!vaultPath) return
 
     if (allVaults.some((vault) => vault.path === vaultPath)) {
@@ -259,33 +265,30 @@ function App() {
     }
 
     const label = vaultPath.split('/').filter(Boolean).pop() || 'Local Vault'
-    handleVaultCloned(vaultPath, label)
-  }, [allVaults, handleVaultCloned, switchVault])
+    syncVaultSelection(vaultPath, label)
+  }, [allVaults, switchVault, syncVaultSelection])
 
   const handleGettingStartedVaultReady = useCallback((vaultPath: string) => {
-    rememberOnboardingVaultChoice(vaultPath)
+    rememberVaultChoice(vaultPath)
     setToastMessage(`Getting Started vault cloned and opened at ${vaultPath}`)
-  }, [rememberOnboardingVaultChoice])
+  }, [rememberVaultChoice])
+
+  const handleOnboardingVaultReady = useCallback((vaultPath: string, source: 'template' | 'empty' | 'existing') => {
+    rememberVaultChoice(vaultPath)
+    if (source === 'template') {
+      setToastMessage(`Getting Started vault cloned and opened at ${vaultPath}`)
+    }
+  }, [rememberVaultChoice])
   const cloneGettingStartedVault = useGettingStartedClone({
     onError: (message) => setToastMessage(message),
     onSuccess: handleGettingStartedVaultReady,
   })
-  const onboarding = useOnboarding(vaultSwitcher.vaultPath, (vaultPath) => {
-    handleGettingStartedVaultReady(vaultPath)
+  const onboarding = useOnboarding(vaultSwitcher.vaultPath, {
+    onVaultReady: handleOnboardingVaultReady,
+    registerVault: registerVaultSelection,
   }, vaultSwitcher.loaded)
   const aiAgentsStatus = useAiAgentsStatus()
   const aiAgentsOnboarding = useAiAgentsOnboarding(onboarding.state.status === 'ready' && !noteWindowParams)
-  const lastHandledOnboardingUserVaultPathRef = useRef<string | null>(null)
-
-  useEffect(() => {
-    const onboardingVaultPath = onboarding.userReadyVaultPath
-    if (!onboardingVaultPath || lastHandledOnboardingUserVaultPathRef.current === onboardingVaultPath) return
-
-    lastHandledOnboardingUserVaultPathRef.current = onboardingVaultPath
-    if (onboardingVaultPath !== vaultSwitcher.vaultPath) {
-      rememberOnboardingVaultChoice(onboardingVaultPath)
-    }
-  }, [onboarding.userReadyVaultPath, rememberOnboardingVaultChoice, vaultSwitcher.vaultPath])
 
   // Onboarding can briefly own the vault path for a newly created/opened vault
   // before the persisted switcher catches up, but once the path is already in
@@ -1306,13 +1309,13 @@ function App() {
 
   const shouldResumeFreshStartOnboarding = useMemo(() => {
     if (onboarding.state.status !== 'ready' || !vaultSwitcher.loaded) return false
-    const remembersOnlyDefaultVault = selectedVaultPath === null || selectedVaultPath === defaultPath
+    const remembersOnlyImplicitDefaultVault = selectedVaultPath === null
 
-    return remembersOnlyDefaultVault
+    return remembersOnlyImplicitDefaultVault
       && vaultSwitcher.allVaults.length === 1
       && vaultSwitcher.allVaults[0]?.path === vaultSwitcher.vaultPath
       && onboarding.state.vaultPath === vaultSwitcher.vaultPath
-  }, [defaultPath, onboarding.state, selectedVaultPath, vaultSwitcher.allVaults, vaultSwitcher.loaded, vaultSwitcher.vaultPath])
+  }, [onboarding.state, selectedVaultPath, vaultSwitcher.allVaults, vaultSwitcher.loaded, vaultSwitcher.vaultPath])
 
   // Show loading spinner while checking vault (skip for note windows)
   if (!noteWindowParams && onboarding.state.status === 'loading') {

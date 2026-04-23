@@ -549,6 +549,97 @@ describe('App', () => {
     expect(screen.getByTestId('welcome-open-folder')).toHaveTextContent('Open existing vault')
   })
 
+  it('persists and opens an existing vault chosen from onboarding', async () => {
+    const selectedVaultPath = '/Users/mock/Documents/Work Vault'
+    const selectedVaultUrl = 'file:///Users/mock/Documents/Work%20Vault'
+    const saveVaultList = vi.fn()
+    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue(selectedVaultUrl)
+
+    mockCommandResults.load_vault_list = { vaults: [], active_vault: null, hidden_defaults: [] }
+    mockCommandResults.check_vault_exists = (args?: { path?: string }) => args?.path === selectedVaultPath
+    mockCommandResults.save_vault_list = (args?: {
+      list?: { vaults?: Array<{ label: string; path: string }>; active_vault?: string | null }
+    }) => {
+      saveVaultList(args)
+      return null
+    }
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('welcome-screen')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('welcome-open-folder'))
+
+    await waitFor(() => {
+      expect(saveVaultList).toHaveBeenCalledWith({
+        list: {
+          vaults: [{ label: 'Work Vault', path: selectedVaultPath }],
+          active_vault: selectedVaultPath,
+          hidden_defaults: [],
+        },
+      })
+    })
+    expect(saveVaultList).toHaveBeenCalledTimes(1)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('status-vault-trigger')).toHaveTextContent('Work Vault')
+    })
+
+    promptSpy.mockRestore()
+  })
+
+  it('persists and opens the onboarding template vault after cloning', async () => {
+    let templateExists = false
+    const saveVaultList = vi.fn()
+    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('file:///Users/mock/Documents')
+    const expectedLabel = 'Getting Started'
+
+    mockCommandResults.load_vault_list = { vaults: [], active_vault: null, hidden_defaults: [] }
+    mockCommandResults.check_vault_exists = (args?: { path?: string }) => {
+      if (args?.path === expectedDefaultVaultPath) {
+        return templateExists
+      }
+      return false
+    }
+    mockCommandResults.create_getting_started_vault = () => {
+      templateExists = true
+      return expectedDefaultVaultPath
+    }
+    mockCommandResults.save_vault_list = (args?: {
+      list?: { vaults?: Array<{ label: string; path: string }>; active_vault?: string | null }
+    }) => {
+      saveVaultList(args)
+      return null
+    }
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('welcome-screen')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('welcome-create-vault'))
+
+    await waitFor(() => {
+      expect(saveVaultList).toHaveBeenCalledWith({
+        list: {
+          vaults: [],
+          active_vault: expectedDefaultVaultPath,
+          hidden_defaults: [],
+        },
+      })
+    })
+    expect(saveVaultList).toHaveBeenCalledTimes(1)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('status-vault-trigger')).toHaveTextContent(expectedLabel)
+    })
+
+    promptSpy.mockRestore()
+  })
+
   it('renders sidebar with correct default selection (All Notes)', async () => {
     render(<App />)
     await waitFor(() => {
