@@ -91,7 +91,30 @@ fn setup_desktop_plugins(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
         .plugin(tauri_plugin_updater::Builder::new().build())?;
     app.handle().plugin(tauri_plugin_process::init())?;
     app.handle().plugin(tauri_plugin_opener::init())?;
+    // GTK menubar pulls the system theme (often dark) and sits above the React
+    // chrome — skip it on Linux. Shortcuts and the command palette cover all
+    // menu actions; the macOS/Windows native menu remains intact.
+    #[cfg(not(target_os = "linux"))]
     menu::setup_menu(app)?;
+    setup_linux_window_chrome(app)?;
+    Ok(())
+}
+
+#[cfg(all(desktop, target_os = "linux"))]
+fn setup_linux_window_chrome(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    use tauri::Manager;
+    if let Some(window) = app.get_webview_window("main") {
+        // Drop GTK server-side decorations so the React-rendered chrome owns
+        // the titlebar — matches the macOS Overlay layout already used by the app.
+        let _ = window.set_decorations(false);
+    }
+    Ok(())
+}
+
+#[cfg(not(all(desktop, target_os = "linux")))]
+fn setup_linux_window_chrome(
+    _app: &mut tauri::App,
+) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
