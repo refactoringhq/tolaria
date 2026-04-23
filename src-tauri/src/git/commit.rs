@@ -1,6 +1,11 @@
 use std::path::Path;
 use std::process::Command;
 
+struct CommitFailure {
+    stdout: String,
+    stderr: String,
+}
+
 /// Commit all changes with a message.
 pub fn git_commit(vault_path: &str, message: &str) -> Result<String, String> {
     let vault = Path::new(vault_path);
@@ -17,26 +22,65 @@ pub fn git_commit(vault_path: &str, message: &str) -> Result<String, String> {
         return Err(format!("git add failed: {}", stderr));
     }
 
-    // Commit
-    let commit = Command::new("git")
+    match run_commit(vault, message, false) {
+        Ok(stdout) => Ok(stdout),
+        Err(failure) if is_commit_signing_failure(&failure.detail()) => {
+            run_commit(vault, message, true).map_err(|retry_failure| {
+                format!(
+                    "git commit signing failed; retried without signing but git commit still failed: {}",
+                    retry_failure.detail()
+                )
+            })
+        }
+        Err(failure) => Err(format!("git commit failed: {}", failure.detail())),
+    }
+}
+
+fn run_commit(vault: &Path, message: &str, disable_signing: bool) -> Result<String, CommitFailure> {
+    let mut command = Command::new("git");
+    if disable_signing {
+        command.args(["-c", "commit.gpgsign=false"]);
+    }
+
+    let commit = command
         .args(["commit", "-m", message])
         .current_dir(vault)
         .output()
-        .map_err(|e| format!("Failed to run git commit: {}", e))?;
+        .map_err(|e| CommitFailure {
+            stdout: String::new(),
+            stderr: format!("Failed to run git commit: {}", e),
+        })?;
 
-    if !commit.status.success() {
-        let stderr = String::from_utf8_lossy(&commit.stderr);
-        let stdout = String::from_utf8_lossy(&commit.stdout);
-        // git writes "nothing to commit" to stdout, not stderr
-        let detail = if stderr.trim().is_empty() {
-            stdout
-        } else {
-            stderr
-        };
-        return Err(format!("git commit failed: {}", detail.trim()));
+    if commit.status.success() {
+        return Ok(String::from_utf8_lossy(&commit.stdout).to_string());
     }
 
-    Ok(String::from_utf8_lossy(&commit.stdout).to_string())
+    Err(CommitFailure {
+        stdout: String::from_utf8_lossy(&commit.stdout).to_string(),
+        stderr: String::from_utf8_lossy(&commit.stderr).to_string(),
+    })
+}
+
+impl CommitFailure {
+    fn detail(&self) -> String {
+        // git writes "nothing to commit" to stdout, not stderr.
+        let detail = if self.stderr.trim().is_empty() {
+            &self.stdout
+        } else {
+            &self.stderr
+        };
+        detail.trim().to_string()
+    }
+}
+
+fn is_commit_signing_failure(detail: &str) -> bool {
+    let lower = detail.to_ascii_lowercase();
+    lower.contains("cannot run gpg")
+        || lower.contains("gpg failed to sign")
+        || lower.contains("failed to sign the data")
+        || lower.contains("gpg.ssh")
+        || (lower.contains("failed to write commit object")
+            && (lower.contains("sign") || lower.contains("gpg")))
 }
 
 #[cfg(test)]
@@ -83,5 +127,54 @@ mod tests {
             result.unwrap_err().contains("nothing to commit"),
             "Error should mention 'nothing to commit'"
         );
+    }
+
+    #[test]
+    fn test_git_commit_retries_without_signing_when_gpg_is_missing() {
+        let dir = setup_git_repo();
+        let vault = dir.path();
+        let vp = vault.to_str().unwrap();
+
+        Command::new("git")
+            .args(["config", "commit.gpgsign", "true"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+        Command::new("git")
+            .args(["config", "gpg.program", "/missing/tolaria-test-gpg"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+        fs::write(vault.join("signed-config.md"), "# Signed config\n").unwrap();
+
+        let result = git_commit(vp, "Commit with broken signing config");
+        assert!(
+            result.is_ok(),
+            "commit should retry unsigned when signing helper is missing: {result:?}"
+        );
+
+        let log = Command::new("git")
+            .args(["log", "--oneline", "-1"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+        assert!(String::from_utf8_lossy(&log.stdout).contains("Commit with broken signing config"));
+
+        let config = Command::new("git")
+            .args(["config", "commit.gpgsign"])
+            .current_dir(vault)
+            .output()
+            .unwrap();
+        assert_eq!(String::from_utf8_lossy(&config.stdout).trim(), "true");
+    }
+
+    #[test]
+    fn test_commit_signing_failure_detection_is_specific() {
+        assert!(is_commit_signing_failure(
+            "error: cannot run gpg: No such file or directory\nfatal: failed to write commit object"
+        ));
+        assert!(!is_commit_signing_failure(
+            "On branch main\nnothing to commit, working tree clean"
+        ));
     }
 }
