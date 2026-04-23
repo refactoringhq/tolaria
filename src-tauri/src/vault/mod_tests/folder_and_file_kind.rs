@@ -34,7 +34,7 @@ fn test_scan_vault_folders_excludes_hidden() {
 }
 
 #[test]
-fn test_scan_vault_folders_excludes_system_asset_folders() {
+fn test_scan_vault_folders_keeps_default_vault_folders_visible() {
     let dir = TempDir::new().unwrap();
     std::fs::create_dir_all(dir.path().join("attachments")).unwrap();
     std::fs::create_dir_all(dir.path().join("type")).unwrap();
@@ -44,7 +44,7 @@ fn test_scan_vault_folders_excludes_system_asset_folders() {
     let folders = scan_vault_folders(dir.path()).unwrap();
     let names: Vec<&str> = folders.iter().map(|folder| folder.name.as_str()).collect();
 
-    assert_eq!(names, vec!["projects"]);
+    assert_eq!(names, vec!["attachments", "projects", "views"]);
 }
 
 #[test]

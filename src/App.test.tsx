@@ -1,6 +1,7 @@
 import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { DEFAULT_VAULTS } from './hooks/useVaultSwitcher'
 
 // Provide a localStorage mock that supports all methods (jsdom's may be incomplete)
 const localStorageMock = (() => {
@@ -95,6 +96,9 @@ const mockVaultList = {
   hidden_defaults: [],
 }
 
+const mockDefaultVaultPath = '/Users/mock/Documents/Getting Started'
+const expectedDefaultVaultPath = DEFAULT_VAULTS[0].path || mockDefaultVaultPath
+
 const mockCommandResults: Record<string, unknown> = {
   load_vault_list: mockVaultList,
   list_vault: mockEntries,
@@ -108,7 +112,7 @@ const mockCommandResults: Record<string, unknown> = {
   git_pull: { status: 'up_to_date', message: 'Already up to date', updatedFiles: [], conflictFiles: [] },
   save_settings: null,
   check_vault_exists: true,
-  get_default_vault_path: '/Users/mock/Documents/Getting Started',
+  get_default_vault_path: expectedDefaultVaultPath,
   list_themes: [],
   get_vault_settings: { theme: null },
 }
@@ -245,7 +249,7 @@ function resetMockCommandResults() {
     },
     save_settings: null,
     check_vault_exists: true,
-    get_default_vault_path: '/Users/mock/Documents/Getting Started',
+    get_default_vault_path: expectedDefaultVaultPath,
     list_themes: [],
     get_vault_settings: { theme: null },
   })
@@ -421,7 +425,7 @@ describe('App', () => {
       release_channel: null,
     }
     mockCommandResults.load_vault_list = { vaults: [], active_vault: null, hidden_defaults: [] }
-    mockCommandResults.check_vault_exists = (args?: { path?: string }) => args?.path === '/Users/mock/Documents/Getting Started'
+    mockCommandResults.check_vault_exists = (args?: { path?: string }) => args?.path === expectedDefaultVaultPath
 
     render(<App />)
 
@@ -441,7 +445,7 @@ describe('App', () => {
     ['telemetry-accept', 'Allow anonymous reporting'],
     ['telemetry-decline', 'No thanks'],
   ])('ignores a remembered default vault after %s when onboarding was never completed', async (buttonTestId) => {
-    const rememberedDefaultVaultPath = '/Volumes/Jupiter/Workspace/laputa-app/demo-vault-v2'
+    const rememberedDefaultVaultPath = expectedDefaultVaultPath
     localStorage.setItem('tolaria_welcome_dismissed', '1')
     mockCommandResults.get_default_vault_path = rememberedDefaultVaultPath
     mockCommandResults.get_settings = {
@@ -517,7 +521,7 @@ describe('App', () => {
       active_vault: '/missing-vault',
       hidden_defaults: [],
     }
-    mockCommandResults.check_vault_exists = (args?: { path?: string }) => args?.path === '/Users/mock/Documents/Getting Started'
+    mockCommandResults.check_vault_exists = (args?: { path?: string }) => args?.path === expectedDefaultVaultPath
 
     render(<App />)
 
@@ -534,7 +538,7 @@ describe('App', () => {
       active_vault: null,
       hidden_defaults: [],
     }
-    mockCommandResults.check_vault_exists = (args?: { path?: string }) => args?.path === '/Users/mock/Documents/Getting Started'
+    mockCommandResults.check_vault_exists = (args?: { path?: string }) => args?.path === expectedDefaultVaultPath
 
     render(<App />)
 

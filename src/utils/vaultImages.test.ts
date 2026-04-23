@@ -12,11 +12,11 @@ vi.mock('../mock-tauri', () => ({
 }))
 
 function assetUrl(path: string): string {
-  return `http://asset.localhost/${encodeURIComponent(path)}`
+  return `asset://localhost/${encodeURIComponent(path)}`
 }
 
-function legacyAssetUrl(path: string): string {
-  return `asset://localhost/${encodeURIComponent(path)}`
+function httpAssetUrl(path: string): string {
+  return `http://asset.localhost/${encodeURIComponent(path)}`
 }
 
 describe('resolveImageUrls', () => {
@@ -53,12 +53,20 @@ describe('resolveImageUrls', () => {
 
   it('rewrites legacy asset URLs from a different vault', () => {
     tauriMode = true
-    const legacyUrl = legacyAssetUrl('/Users/luca/Workspace/tolaria-getting-started/attachments/CleanShot.png')
+    const legacyUrl = assetUrl('/Users/luca/Workspace/tolaria-getting-started/attachments/CleanShot.png')
     const markdown = `![CleanShot](${legacyUrl})`
 
     expect(resolveImageUrls(markdown, '/Users/john/Documents/Getting Started')).toBe(
       `![CleanShot](${assetUrl('/Users/john/Documents/Getting Started/attachments/CleanShot.png')})`,
     )
+  })
+
+  it('leaves already-correct http asset URLs unchanged', () => {
+    tauriMode = true
+    const url = httpAssetUrl('/vault/attachments/file.png')
+    const markdown = `![alt](${url})`
+
+    expect(resolveImageUrls(markdown, '/vault')).toBe(markdown)
   })
 
   it('leaves external URLs unchanged', () => {
@@ -72,7 +80,7 @@ describe('resolveImageUrls', () => {
 
   it('handles multiple images in one document', () => {
     tauriMode = true
-    const markdown = `![a](${legacyAssetUrl('/old/attachments/a.png')})\n\n![b](attachments/b.png)`
+    const markdown = `![a](${assetUrl('/old/attachments/a.png')})\n\n![b](attachments/b.png)`
 
     const result = resolveImageUrls(markdown, '/vault')
 
@@ -91,7 +99,7 @@ describe('resolveImageUrls', () => {
 
   it('skips unknown asset URLs without an attachments segment', () => {
     tauriMode = true
-    const url = assetUrl('/some/other/path/file.png')
+    const url = httpAssetUrl('/some/other/path/file.png')
     const markdown = `![alt](${url})`
 
     expect(resolveImageUrls(markdown, '/vault')).toBe(markdown)
@@ -109,7 +117,7 @@ describe('portableImageUrls', () => {
   })
 
   it('converts legacy asset protocol attachment URLs to relative paths', () => {
-    const url = legacyAssetUrl('/vault/attachments/legacy.png')
+    const url = httpAssetUrl('/vault/attachments/legacy.png')
     const markdown = `![screenshot](${url})`
 
     expect(portableImageUrls(markdown, '/vault')).toBe(

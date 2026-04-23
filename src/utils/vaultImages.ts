@@ -17,7 +17,7 @@ type MarkdownImageUrl = string
 const MD_IMAGE_PATTERN = /!\[([^\]]*)\]\(([^)\s"]+)(\s+"[^"]*")?\)/g
 
 function assetUrl(path: AbsolutePath): MarkdownImageUrl {
-  return normalizeWebviewAssetUrl(convertFileSrc(path), path)
+  return convertFileSrc(path)
 }
 
 function vaultAttachmentPath(vaultPath: VaultPath, attachmentPath: AttachmentPath): AbsolutePath {
@@ -30,13 +30,6 @@ function extractAttachmentPath(absolutePath: AbsolutePath): AttachmentPath | nul
 
   const filename = absolutePath.slice(index + ATTACHMENTS_SEGMENT.length)
   return filename ? `${RELATIVE_ATTACHMENTS_PREFIX}${filename}` : null
-}
-
-function normalizeWebviewAssetUrl(url: MarkdownImageUrl, path: AbsolutePath): MarkdownImageUrl {
-  if (url.startsWith(ASSET_URL_PREFIX)) {
-    return `${HTTP_ASSET_URL_PREFIX}${encodeURIComponent(path)}`
-  }
-  return url
 }
 
 function assetUrlPrefix(url: MarkdownImageUrl): string | null {
