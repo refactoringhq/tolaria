@@ -19,6 +19,9 @@ const command = packageManagerExec ? process.execPath : 'pnpm'
 const baseCommandArgs = packageManagerExec
   ? [packageManagerExec, 'exec', 'vitest', 'run', '--coverage']
   : ['exec', 'vitest', 'run', '--coverage']
+const clearCacheCommandArgs = packageManagerExec
+  ? [packageManagerExec, 'exec', 'vitest', '--clearCache']
+  : ['exec', 'vitest', '--clearCache']
 
 function isKnownVitestInternalStateFlake(output) {
   return output.includes('Vitest failed to access its internal state.')
@@ -39,6 +42,7 @@ async function runCoverageAttempt(attempt) {
   await mkdir(runCoverageDir, { recursive: true })
   // Vitest writes per-worker coverage shards under reportsDirectory/.tmp.
   await mkdir(runCoverageTempDir, { recursive: true })
+  await clearVitestCache()
 
   const commandArgs = [
     ...baseCommandArgs,
@@ -88,6 +92,30 @@ async function runCoverageAttempt(attempt) {
     exitCode,
     output,
     runCoverageDir,
+  }
+}
+
+async function clearVitestCache() {
+  const exitCode = await new Promise((resolveExit, rejectExit) => {
+    const child = spawn(command, clearCacheCommandArgs, {
+      cwd: rootDir,
+      env: process.env,
+      stdio: 'inherit',
+    })
+
+    child.on('error', rejectExit)
+    child.on('exit', (code, signal) => {
+      if (signal) {
+        rejectExit(new Error(`Vitest cache clear exited via signal: ${signal}`))
+        return
+      }
+
+      resolveExit(code ?? 1)
+    })
+  })
+
+  if (exitCode !== 0) {
+    throw new Error(`Vitest cache clear failed with exit code ${exitCode}`)
   }
 }
 
