@@ -25,7 +25,7 @@ describe('useCodeMirror', () => {
   it('creates an EditorView in the container', () => {
     const ref = { current: container }
     const { result } = renderHook(() =>
-      useCodeMirror(ref, 'hello world', false, noopCallbacks),
+      useCodeMirror(ref, 'hello world', noopCallbacks),
     )
     expect(result.current.current).not.toBeNull()
     expect(container.querySelector('.cm-editor')).toBeInTheDocument()
@@ -34,7 +34,7 @@ describe('useCodeMirror', () => {
   it('calls requestMeasure when laputa-zoom-change event fires', () => {
     const ref = { current: container }
     const { result } = renderHook(() =>
-      useCodeMirror(ref, 'hello', false, noopCallbacks),
+      useCodeMirror(ref, 'hello', noopCallbacks),
     )
     const view = result.current.current!
     const spy = vi.spyOn(view, 'requestMeasure')
@@ -50,7 +50,7 @@ describe('useCodeMirror', () => {
   it('stops listening for zoom changes after unmount', () => {
     const ref = { current: container }
     const { result, unmount } = renderHook(() =>
-      useCodeMirror(ref, 'hello', false, noopCallbacks),
+      useCodeMirror(ref, 'hello', noopCallbacks),
     )
     const view = result.current.current!
     const spy = vi.spyOn(view, 'requestMeasure')
@@ -72,7 +72,7 @@ describe('useCodeMirror', () => {
     const onDocChange = vi.fn()
     const callbacks = { ...noopCallbacks, onDocChange }
     const { result, rerender } = renderHook(
-      ({ content }) => useCodeMirror(ref, content, false, callbacks),
+      ({ content }) => useCodeMirror(ref, content, callbacks),
       { initialProps: { content: '---\ntitle: Hello\n---\nBody' } },
     )
     const view = result.current.current!
@@ -89,7 +89,7 @@ describe('useCodeMirror', () => {
   it('does not sync when content matches current editor state', () => {
     const ref = { current: container }
     const { result, rerender } = renderHook(
-      ({ content }) => useCodeMirror(ref, content, false, noopCallbacks),
+      ({ content }) => useCodeMirror(ref, content, noopCallbacks),
       { initialProps: { content: 'hello' } },
     )
     const view = result.current.current!
@@ -104,7 +104,7 @@ describe('useCodeMirror', () => {
   it('installs zoomCursorFix that overrides posAtCoords on the view instance', () => {
     const ref = { current: container }
     const { result } = renderHook(() =>
-      useCodeMirror(ref, 'hello world', false, noopCallbacks),
+      useCodeMirror(ref, 'hello world', noopCallbacks),
     )
     const view = result.current.current!
     // The extension overrides posAtCoords on the instance (not the prototype)

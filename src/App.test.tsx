@@ -278,6 +278,7 @@ vi.mock('./utils/ai-chat', () => ({
 vi.mock('@blocknote/core', () => ({
   BlockNoteSchema: { create: () => ({ extend: () => ({}) }) },
   createCodeBlockSpec: vi.fn(() => ({})),
+  createExtension: (factory: unknown) => () => factory,
   defaultInlineContentSpecs: {},
   filterSuggestionItems: vi.fn(() => []),
 }))

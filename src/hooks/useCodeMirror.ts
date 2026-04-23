@@ -4,6 +4,7 @@ import { EditorState } from '@codemirror/state'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { frontmatterHighlightPlugin, frontmatterHighlightTheme } from '../extensions/frontmatterHighlight'
 import { markdownLanguage } from '../extensions/markdownHighlight'
+import { resolveArrowLigatureInput } from '../utils/arrowLigatures'
 import { zoomCursorFix } from '../extensions/zoomCursorFix'
 
 const FONT_FAMILY = '"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
@@ -74,6 +75,38 @@ function buildSaveKeymap(callbacks: { current: CodeMirrorCallbacks }) {
   }])
 }
 
+function buildArrowLigaturesExtension() {
+  let literalAsciiCursor: number | null = null
+
+  return EditorView.inputHandler.of((view, from, _to, text) => {
+    const beforeText = view.state.doc.sliceString(Math.max(0, from - 2), from)
+    const resolution = resolveArrowLigatureInput({
+      beforeText,
+      cursor: from,
+      inputText: text,
+      literalAsciiCursor,
+    })
+    literalAsciiCursor = resolution.nextLiteralAsciiCursor
+
+    if (!resolution.change) {
+      return false
+    }
+
+    view.dispatch({
+      changes: {
+        from: resolution.change.from,
+        to: resolution.change.to,
+        insert: resolution.change.insert,
+      },
+      selection: {
+        anchor: resolution.change.from + resolution.change.insert.length,
+      },
+      userEvent: 'input.type',
+    })
+    return true
+  })
+}
+
 export function useCodeMirror(
   containerRef: React.RefObject<HTMLDivElement | null>,
   content: string,
@@ -107,6 +140,7 @@ export function useCodeMirror(
         highlightActiveLine(),
         EditorView.lineWrapping,
         history(),
+        buildArrowLigaturesExtension(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
         buildSaveKeymap(callbacksRef),
         buildBaseTheme(),
