@@ -642,7 +642,7 @@ function App() {
   const appSave = useAppSave({
     updateEntry: vault.updateEntry, setTabs: notes.setTabs, handleSwitchTab: notes.handleSwitchTab, setToastMessage,
     loadModifiedFiles: vault.loadModifiedFiles, reloadViews: async () => { await vault.reloadViews() },
-    clearUnsaved: vault.clearUnsaved, unsavedPaths: vault.unsavedPaths,
+    trackUnsaved: vault.trackUnsaved, clearUnsaved: vault.clearUnsaved, unsavedPaths: vault.unsavedPaths,
     tabs: notes.tabs, activeTabPath: notes.activeTabPath,
     handleRenameNote: notes.handleRenameNote, handleRenameFilename: notes.handleRenameFilename,
     replaceEntry: vault.replaceEntry, resolvedPath,
