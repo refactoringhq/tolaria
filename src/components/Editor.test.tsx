@@ -24,6 +24,7 @@ const mockEditor = vi.hoisted(() => ({
   insertBlocks: vi.fn(),
   document: [{ id: '1', type: 'paragraph', content: [], props: {}, children: [] }],
   insertInlineContent: vi.fn(),
+  headless: false,
   onMount: vi.fn((cb: () => void) => { cb(); return () => {} }),
   prosemirrorView: {} as Record<string, unknown>,
   blocksToHTMLLossy: vi.fn(() => ''),
@@ -37,6 +38,7 @@ const mockEditor = vi.hoisted(() => ({
 vi.mock('@blocknote/core', () => ({
   BlockNoteSchema: { create: () => ({ extend: () => ({}) }) },
   createCodeBlockSpec: vi.fn(() => ({})),
+  createExtension: (factory: unknown) => () => factory,
   defaultInlineContentSpecs: {},
   filterSuggestionItems: vi.fn(() => []),
 }))
