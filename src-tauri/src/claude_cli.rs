@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::BufRead;
-use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::path::{Path, PathBuf};
+use std::process::{Command, ExitStatus, Stdio};
 
 /// Status returned by `check_claude_cli`.
 #[derive(Debug, Serialize, Clone)]
@@ -63,33 +63,98 @@ pub struct AgentStreamRequest {
 // ---------------------------------------------------------------------------
 
 pub(crate) fn find_claude_binary() -> Result<PathBuf, String> {
-    // Try `which claude` first (works when PATH is inherited).
+    if let Some(binary) = find_claude_binary_on_path()? {
+        return Ok(binary);
+    }
+
+    if let Some(binary) = find_claude_binary_in_user_shell() {
+        return Ok(binary);
+    }
+
+    if let Some(binary) = find_existing_binary(claude_binary_candidates()) {
+        return Ok(binary);
+    }
+
+    Err("Claude CLI not found. Install it: https://docs.anthropic.com/en/docs/claude-code".into())
+}
+
+fn find_claude_binary_on_path() -> Result<Option<PathBuf>, String> {
     let output = Command::new("which")
         .arg("claude")
         .output()
         .map_err(|e| format!("Failed to run `which claude`: {e}"))?;
+
+    Ok(path_from_successful_output(&output))
+}
+
+fn find_claude_binary_in_user_shell() -> Option<PathBuf> {
+    user_shell_candidates()
+        .into_iter()
+        .filter(|shell| shell.exists())
+        .find_map(|shell| command_path_from_shell(&shell, "claude"))
+}
+
+fn user_shell_candidates() -> Vec<PathBuf> {
+    let mut shells = Vec::new();
+    if let Some(shell) = std::env::var_os("SHELL") {
+        if !shell.is_empty() {
+            shells.push(PathBuf::from(shell));
+        }
+    }
+    shells.push(PathBuf::from("/bin/zsh"));
+    shells.push(PathBuf::from("/bin/bash"));
+    shells
+}
+
+fn command_path_from_shell(shell: &Path, command: &str) -> Option<PathBuf> {
+    Command::new(shell)
+        .arg("-lc")
+        .arg(format!("command -v {command}"))
+        .output()
+        .ok()
+        .and_then(|output| path_from_successful_output(&output))
+}
+
+fn path_from_successful_output(output: &std::process::Output) -> Option<PathBuf> {
     if output.status.success() {
-        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        if !path.is_empty() {
-            return Ok(PathBuf::from(path));
-        }
+        first_existing_path(&String::from_utf8_lossy(&output.stdout))
+    } else {
+        None
     }
+}
 
-    // Fallback: check common install locations.
-    let home = dirs::home_dir().unwrap_or_default();
-    let candidates = [
+fn first_existing_path(stdout: &str) -> Option<PathBuf> {
+    stdout.lines().find_map(|line| {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            return None;
+        }
+        let candidate = PathBuf::from(trimmed);
+        candidate.exists().then_some(candidate)
+    })
+}
+
+fn claude_binary_candidates() -> Vec<PathBuf> {
+    dirs::home_dir()
+        .map(|home| claude_binary_candidates_for_home(&home))
+        .unwrap_or_default()
+}
+
+fn claude_binary_candidates_for_home(home: &Path) -> Vec<PathBuf> {
+    vec![
         home.join(".local/bin/claude"),
+        home.join(".claude/local/claude"),
+        home.join(".local/share/mise/shims/claude"),
+        home.join(".asdf/shims/claude"),
+        home.join(".npm-global/bin/claude"),
         home.join(".npm/bin/claude"),
-        PathBuf::from("/usr/local/bin/claude"),
         PathBuf::from("/opt/homebrew/bin/claude"),
-    ];
-    for p in &candidates {
-        if p.exists() {
-            return Ok(p.clone());
-        }
-    }
+        PathBuf::from("/usr/local/bin/claude"),
+    ]
+}
 
-    Err("Claude CLI not found. Install it: https://docs.anthropic.com/en/docs/claude-code".into())
+fn find_existing_binary(candidates: Vec<PathBuf>) -> Option<PathBuf> {
+    candidates.into_iter().find(|candidate| candidate.exists())
 }
 
 // ---------------------------------------------------------------------------
@@ -292,22 +357,33 @@ where
     let status = child.wait().map_err(|e| format!("Wait failed: {e}"))?;
 
     if !status.success() && state.session_id.is_empty() {
-        let msg = if stderr_output.contains("not logged in")
-            || stderr_output.contains("authentication")
-            || stderr_output.contains("auth")
-        {
-            "Claude CLI is not authenticated. Run `claude auth login` in your terminal.".into()
-        } else if stderr_output.is_empty() {
-            format!("claude exited with status {status}")
-        } else {
-            stderr_output.lines().take(3).collect::<Vec<_>>().join("\n")
-        };
-        emit(ClaudeStreamEvent::Error { message: msg });
+        emit(ClaudeStreamEvent::Error {
+            message: format_failed_claude_exit(&stderr_output, status),
+        });
     }
 
     emit(ClaudeStreamEvent::Done);
 
     Ok(state.session_id)
+}
+
+fn format_failed_claude_exit(stderr_output: &str, status: ExitStatus) -> String {
+    if is_claude_auth_error(stderr_output) {
+        return "Claude CLI is not authenticated. Run `claude auth login` in your terminal.".into();
+    }
+
+    if stderr_output.is_empty() {
+        format!("claude exited with status {status}")
+    } else {
+        stderr_output.lines().take(3).collect::<Vec<_>>().join("\n")
+    }
+}
+
+fn is_claude_auth_error(stderr_output: &str) -> bool {
+    let lower = stderr_output.to_ascii_lowercase();
+    ["not logged in", "authentication", "auth"]
+        .iter()
+        .any(|pattern| lower.contains(pattern))
 }
 
 /// Parse a single JSON line from the stream and emit the appropriate event.
@@ -1002,6 +1078,26 @@ mod tests {
     }
 
     // --- find_claude_binary ---
+
+    #[test]
+    fn claude_binary_candidates_include_supported_local_and_toolchain_installs() {
+        let home = PathBuf::from("/Users/alex");
+        let candidates = claude_binary_candidates_for_home(&home);
+        let expected = [
+            home.join(".local/bin/claude"),
+            home.join(".claude/local/claude"),
+            home.join(".local/share/mise/shims/claude"),
+            home.join(".npm-global/bin/claude"),
+        ];
+
+        for candidate in expected {
+            assert!(
+                candidates.contains(&candidate),
+                "missing {}",
+                candidate.display()
+            );
+        }
+    }
 
     #[test]
     fn find_claude_binary_returns_result() {

@@ -6,6 +6,7 @@ interface FolderNameInputProps {
   ariaLabel: string
   initialValue: string
   placeholder: string
+  leftInset?: number
   selectTextOnFocus?: boolean
   submitOnBlur?: boolean
   testId: string
@@ -17,6 +18,7 @@ export function FolderNameInput({
   ariaLabel,
   initialValue,
   placeholder,
+  leftInset = 16,
   selectTextOnFocus = false,
   submitOnBlur = false,
   testId,
@@ -45,12 +47,12 @@ export function FolderNameInput({
   }, [onSubmit, value])
 
   return (
-    <div className="flex items-center gap-2" style={{ padding: '4px 8px' }}>
-      <Folder size={18} className="shrink-0 text-muted-foreground" />
+    <div className="flex items-center gap-2 rounded" style={{ paddingTop: 6, paddingBottom: 6, paddingRight: 16, paddingLeft: leftInset, borderRadius: 4 }}>
+      <Folder size={17} className="size-[17px] shrink-0 text-muted-foreground" />
       <Input
         ref={inputRef}
         aria-label={ariaLabel}
-        className="h-7 flex-1 rounded-sm px-2 text-[13px]"
+        className="h-auto min-h-0 flex-1 rounded-sm px-2 py-[3px] text-[13px] font-medium"
         value={value}
         onChange={(event) => setValue(event.target.value)}
         onBlur={submitOnBlur ? () => { void handleSubmit() } : undefined}

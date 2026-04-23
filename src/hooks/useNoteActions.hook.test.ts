@@ -70,18 +70,48 @@ describe('useNoteActions hook', () => {
     vi.useRealTimers()
   })
 
-  it('handleCreateNote calls addEntry and creates correct entry', () => {
-    const { result } = renderHook(() => useNoteActions(makeConfig()))
+  function renderActions(entries: VaultEntry[] = []) {
+    return renderHook(() => useNoteActions(makeConfig(entries)))
+  }
+
+  function createImmediateEntry(type?: string) {
+    vi.spyOn(Date, 'now').mockReturnValue(1700000000000)
+    const { result } = renderActions()
+    act(() => {
+      result.current.handleCreateNoteImmediate(type)
+    })
+    const [createdEntry] = addEntry.mock.calls[0]
+    vi.restoreAllMocks()
+    return createdEntry as VaultEntry
+  }
+
+  it.each([
+    {
+      name: 'handleCreateNote',
+      run: (result: ReturnType<typeof renderActions>['result']) => result.current.handleCreateNote('Test Note', 'Note'),
+      expectedTitle: 'Test Note',
+      expectedType: 'Note',
+      expectedPathFragment: 'test-note.md',
+    },
+    {
+      name: 'handleCreateType',
+      run: (result: ReturnType<typeof renderActions>['result']) => result.current.handleCreateType('Recipe'),
+      expectedTitle: 'Recipe',
+      expectedType: 'Type',
+      expectedPathFragment: 'recipe.md',
+    },
+  ])('$name creates the expected entry', ({ run, expectedTitle, expectedType, expectedPathFragment }) => {
+    const { result } = renderActions()
 
     act(() => {
-      result.current.handleCreateNote('Test Note', 'Note')
+      run(result)
     })
 
     expect(addEntry).toHaveBeenCalledTimes(1)
     const [createdEntry] = addEntry.mock.calls[0]
-    expect(createdEntry.title).toBe('Test Note')
-    expect(createdEntry.isA).toBe('Note')
-    expect(createdEntry.path).toContain('test-note.md')
+    expect(createdEntry.title).toBe(expectedTitle)
+    expect(createdEntry.isA).toBe(expectedType)
+    expect(createdEntry.path).toContain(expectedPathFragment)
   })
 
   it('handleCreateNote opens tab immediately (before addEntry resolves)', () => {
@@ -100,19 +130,6 @@ describe('useNoteActions hook', () => {
     expect(result.current.tabs).toHaveLength(1)
     expect(result.current.tabs[0].entry.title).toBe('Fast Note')
     expect(result.current.activeTabPath).toContain('fast-note.md')
-  })
-
-  it('handleCreateType creates type entry', () => {
-    const { result } = renderHook(() => useNoteActions(makeConfig()))
-
-    act(() => {
-      result.current.handleCreateType('Recipe')
-    })
-
-    expect(addEntry).toHaveBeenCalledTimes(1)
-    const [createdEntry] = addEntry.mock.calls[0]
-    expect(createdEntry.isA).toBe('Type')
-    expect(createdEntry.title).toBe('Recipe')
   })
 
   it('handleNavigateWikilink finds entry by title', async () => {
@@ -178,19 +195,10 @@ describe('useNoteActions hook', () => {
   })
 
   it('handleCreateNoteImmediate creates note with timestamp-based title', () => {
-    vi.spyOn(Date, 'now').mockReturnValue(1700000000000)
-    const { result } = renderHook(() => useNoteActions(makeConfig()))
-
-    act(() => {
-      result.current.handleCreateNoteImmediate()
-    })
-
-    expect(addEntry).toHaveBeenCalledTimes(1)
-    const [createdEntry] = addEntry.mock.calls[0]
+    const createdEntry = createImmediateEntry()
     expect(createdEntry.title).toBe('Untitled Note 1700000000')
     expect(createdEntry.filename).toBe('untitled-note-1700000000.md')
     expect(createdEntry.isA).toBe('Note')
-    vi.restoreAllMocks()
   })
 
   it('handleCreateNoteImmediate generates unique names on rapid calls via timestamp', () => {
@@ -217,18 +225,9 @@ describe('useNoteActions hook', () => {
   })
 
   it('handleCreateNoteImmediate accepts custom type', () => {
-    vi.spyOn(Date, 'now').mockReturnValue(1700000000000)
-    const { result } = renderHook(() => useNoteActions(makeConfig()))
-
-    act(() => {
-      result.current.handleCreateNoteImmediate('Project')
-    })
-
-    expect(addEntry).toHaveBeenCalledTimes(1)
-    const [createdEntry] = addEntry.mock.calls[0]
+    const createdEntry = createImmediateEntry('Project')
     expect(createdEntry.filename).toMatch(/^untitled-project-\d+\.md$/)
     expect(createdEntry.isA).toBe('Project')
-    vi.restoreAllMocks()
   })
 
   it('handleCreateNote uses default template for Project type', () => {
@@ -435,7 +434,11 @@ describe('useNoteActions hook', () => {
 
       expect(addEntry).toHaveBeenCalledTimes(1)
       expect(removeEntry).toHaveBeenCalledWith(expect.stringContaining(pathFragment))
-      expect(setToastMessage).toHaveBeenCalledWith('Failed to create note — disk write error')
+      expect(setToastMessage).toHaveBeenCalledWith(
+        type === 'Type'
+          ? 'Failed to create type — disk write error'
+          : 'Failed to create note — disk write error',
+      )
     })
 
     it('does not revert when disk write succeeds', async () => {

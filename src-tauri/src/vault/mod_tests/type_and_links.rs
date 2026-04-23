@@ -165,3 +165,29 @@ fn test_save_note_content_deeply_nested_new_directory() {
     assert!(path.exists());
     assert_eq!(fs::read_to_string(&path).unwrap(), content);
 }
+
+#[test]
+fn test_create_note_content_creates_parent_directory() {
+    let dir = TempDir::new().unwrap();
+    let path = dir.path().join("new-type/briefing.md");
+    let content = "---\ntitle: Briefing\ntype: Note\n---\n";
+
+    assert!(!path.parent().unwrap().exists());
+    create_note_content(path.to_str().unwrap(), content).unwrap();
+
+    assert!(path.exists());
+    assert_eq!(fs::read_to_string(&path).unwrap(), content);
+}
+
+#[test]
+fn test_create_note_content_rejects_existing_file() {
+    let dir = TempDir::new().unwrap();
+    let path = dir.path().join("briefing.md");
+    fs::write(&path, "# Existing\n").unwrap();
+
+    let err = create_note_content(path.to_str().unwrap(), "# Replacement\n")
+        .expect_err("expected create-only write to reject collisions");
+
+    assert!(err.contains("already exists"));
+    assert_eq!(fs::read_to_string(&path).unwrap(), "# Existing\n");
+}

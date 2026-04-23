@@ -239,7 +239,7 @@ export function DynamicPropertiesPanel({
   onDeleteProperty?: (key: string) => void
   onAddProperty?: (key: string, value: FrontmatterValue) => void
   onNavigate?: (target: string) => void
-  onCreateMissingType?: (typeName: string) => void | Promise<void>
+  onCreateMissingType?: (typeName: string) => boolean | void | Promise<boolean | void>
 }) {
   const {
     editingKey, setEditingKey, showAddDialog, setShowAddDialog, displayOverrides,

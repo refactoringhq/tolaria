@@ -152,6 +152,43 @@ describe('aiAgentStreamCallbacks', () => {
     ])
   })
 
+  it('finishes with a readable empty state when Claude exits without assistant text', () => {
+    const messages = createMessageStore([
+      {
+        id: 'msg-1',
+        userMessage: '/exit',
+        actions: [],
+        isStreaming: true,
+      },
+    ])
+    const status = createStatusStore('thinking')
+
+    const callbacks = createStreamCallbacks({
+      messageId: 'msg-1',
+      vaultPath: '/vault',
+      setMessages: messages.setMessages,
+      setStatus: status.setStatus,
+      abortRef: { current: { aborted: false } },
+      responseAccRef: { current: '' },
+      toolInputMapRef: { current: new Map() },
+      fileCallbacksRef: { current: undefined },
+    })
+
+    callbacks.onDone()
+
+    expect(status.getStatus()).toBe('done')
+    expect(messages.getMessages()).toEqual([
+      {
+        id: 'msg-1',
+        userMessage: '/exit',
+        actions: [],
+        isStreaming: false,
+        reasoningDone: true,
+        response: 'Claude Code finished without returning a reply.',
+      },
+    ])
+  })
+
   it('ignores stream events after the request has been aborted', () => {
     const messages = createMessageStore([
       {

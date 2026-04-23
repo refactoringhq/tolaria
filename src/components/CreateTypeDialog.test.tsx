@@ -46,6 +46,19 @@ describe('CreateTypeDialog', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled())
   })
 
+  it('stays open when create reports a handled collision', async () => {
+    const onClose = vi.fn()
+    const onCreate = vi.fn().mockResolvedValue(false)
+    render(<CreateTypeDialog open={true} onClose={onClose} onCreate={onCreate} />)
+
+    fireEvent.change(screen.getByPlaceholderText('e.g. Recipe, Book, Habit...'), { target: { value: 'Recipe' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+
+    await waitFor(() => expect(onCreate).toHaveBeenCalledWith('Recipe'))
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByText('Create New Type')).toBeInTheDocument()
+  })
+
   it('calls onClose when Cancel is clicked', () => {
     const onClose = vi.fn()
     render(<CreateTypeDialog open={true} onClose={onClose} onCreate={() => {}} />)

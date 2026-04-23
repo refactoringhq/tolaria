@@ -6,14 +6,14 @@ import { Input } from '@/components/ui/input'
 interface CreateTypeDialogProps {
   open: boolean
   onClose: () => void
-  onCreate: (name: string) => void | Promise<void>
+  onCreate: (name: string) => boolean | void | Promise<boolean | void>
   initialName?: string
 }
 
 interface CreateTypeDialogFormProps {
   initialName: string
   onClose: () => void
-  onCreate: (name: string) => void | Promise<void>
+  onCreate: (name: string) => boolean | void | Promise<boolean | void>
 }
 
 function CreateTypeDialogForm({ initialName, onClose, onCreate }: CreateTypeDialogFormProps) {
@@ -23,8 +23,8 @@ function CreateTypeDialogForm({ initialName, onClose, onCreate }: CreateTypeDial
     e.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) return
-    await onCreate(trimmed)
-    onClose()
+    const created = await onCreate(trimmed)
+    if (created !== false) onClose()
   }
 
   return (

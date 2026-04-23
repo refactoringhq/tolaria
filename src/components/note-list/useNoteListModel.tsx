@@ -11,6 +11,7 @@ import type {
 import type { NoteListFilter } from '../../utils/noteListHelpers'
 import { countByFilter, countAllByFilter, countAllNotesByFilter } from '../../utils/noteListHelpers'
 import { NoteItem } from '../NoteItem'
+import { DraggableNoteItem } from '../note-retargeting/DraggableNoteItem'
 import { prefetchNoteContent } from '../../hooks/useTabManagement'
 import type { MultiSelectState } from '../../hooks/useMultiSelect'
 import { isDeletedNoteEntry, resolveHeaderTitle, type DeletedNoteEntry } from './noteListUtils'
@@ -349,21 +350,39 @@ function useRenderItem({
   const contextMenuHandler = isChangesView && onDiscardFile ? noteContextMenu : undefined
 
   return useCallback((entry: VaultEntry, options?: { forceSelected?: boolean }) => (
-    <NoteItem
-      key={entry.path}
-      entry={entry}
-      isSelected={options?.forceSelected || selectedNotePath === entry.path}
-      isMultiSelected={multiSelect.selectedPaths.has(entry.path)}
-      isHighlighted={entry.path === noteListKeyboard.highlightedPath}
-      noteStatus={resolvedGetNoteStatus(entry.path)}
-      changeStatus={getChangeStatus(entry.path)}
-      typeEntryMap={typeEntryMap}
-      allEntries={entries}
-      displayPropsOverride={displayPropsOverride}
-      onClickNote={handleClickNote}
-      onPrefetch={isDeletedNoteEntry(entry) ? undefined : prefetchNoteContent}
-      onContextMenu={contextMenuHandler}
-    />
+    isDeletedNoteEntry(entry) ? (
+      <NoteItem
+        key={entry.path}
+        entry={entry}
+        isSelected={options?.forceSelected || selectedNotePath === entry.path}
+        isMultiSelected={multiSelect.selectedPaths.has(entry.path)}
+        isHighlighted={entry.path === noteListKeyboard.highlightedPath}
+        noteStatus={resolvedGetNoteStatus(entry.path)}
+        changeStatus={getChangeStatus(entry.path)}
+        typeEntryMap={typeEntryMap}
+        allEntries={entries}
+        displayPropsOverride={displayPropsOverride}
+        onClickNote={handleClickNote}
+        onContextMenu={contextMenuHandler}
+      />
+    ) : (
+      <DraggableNoteItem key={entry.path} notePath={entry.path}>
+        <NoteItem
+          entry={entry}
+          isSelected={options?.forceSelected || selectedNotePath === entry.path}
+          isMultiSelected={multiSelect.selectedPaths.has(entry.path)}
+          isHighlighted={entry.path === noteListKeyboard.highlightedPath}
+          noteStatus={resolvedGetNoteStatus(entry.path)}
+          changeStatus={getChangeStatus(entry.path)}
+          typeEntryMap={typeEntryMap}
+          allEntries={entries}
+          displayPropsOverride={displayPropsOverride}
+          onClickNote={handleClickNote}
+          onPrefetch={prefetchNoteContent}
+          onContextMenu={contextMenuHandler}
+        />
+      </DraggableNoteItem>
+    )
   ), [
     contextMenuHandler,
     displayPropsOverride,
@@ -581,18 +600,22 @@ export function useNoteListModel({
       interaction.noteListKeyboard.focusList()
     })
   }
+  const {
+    isPanelActive: isNoteListSearchActive,
+    toggleSearchShortcut,
+  } = interaction.noteListKeyboard
 
   useEffect(() => {
-    dispatchNoteListSearchAvailability(interaction.noteListKeyboard.isPanelActive)
+    dispatchNoteListSearchAvailability(isNoteListSearchActive)
     return () => dispatchNoteListSearchAvailability(false)
-  }, [interaction.noteListKeyboard.isPanelActive])
+  }, [isNoteListSearchActive])
 
   useEffect(() => {
     return addNoteListSearchToggleListener(() => {
-      if (!interaction.noteListKeyboard.isPanelActive) return
-      interaction.noteListKeyboard.toggleSearchShortcut()
+      if (!isNoteListSearchActive) return
+      toggleSearchShortcut()
     })
-  }, [interaction.noteListKeyboard.isPanelActive, interaction.noteListKeyboard.toggleSearchShortcut])
+  }, [isNoteListSearchActive, toggleSearchShortcut])
 
   return buildNoteListLayoutModel({
     selection,

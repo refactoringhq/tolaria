@@ -343,5 +343,6 @@ export function useNoteActions(config: NoteActionsConfig) {
     handleAddProperty: frontmatterActions.handleAddProperty,
     handleRenameNote: rename.handleRenameNote,
     handleRenameFilename: rename.handleRenameFilename,
+    handleMoveNoteToFolder: rename.handleMoveNoteToFolder,
   }
 }

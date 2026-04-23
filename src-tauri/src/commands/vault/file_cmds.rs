@@ -39,6 +39,22 @@ fn with_requested_root_path<T>(
     with_requested_root(raw_vault_path.as_ref(), action)
 }
 
+fn with_writable_note_path<T>(
+    path: PathBuf,
+    vault_path: Option<PathBuf>,
+    action: impl FnOnce(&str) -> Result<T, String>,
+) -> Result<T, String> {
+    with_validated_path(
+        path.to_string_lossy().as_ref(),
+        vault_path
+            .as_ref()
+            .map(|value| value.to_string_lossy())
+            .as_deref(),
+        ValidatedPathMode::Writable,
+        action,
+    )
+}
+
 #[tauri::command]
 pub fn get_note_content(path: PathBuf, vault_path: Option<PathBuf>) -> Result<String, String> {
     with_note_path(
@@ -55,15 +71,20 @@ pub fn save_note_content(
     content: String,
     vault_path: Option<PathBuf>,
 ) -> Result<(), String> {
-    with_validated_path(
-        path.to_string_lossy().as_ref(),
-        vault_path
-            .as_ref()
-            .map(|value| value.to_string_lossy())
-            .as_deref(),
-        ValidatedPathMode::Writable,
-        |validated_path| vault::save_note_content(validated_path, &content),
-    )
+    with_writable_note_path(path, vault_path, |validated_path| {
+        vault::save_note_content(validated_path, &content)
+    })
+}
+
+#[tauri::command]
+pub fn create_note_content(
+    path: PathBuf,
+    content: String,
+    vault_path: Option<PathBuf>,
+) -> Result<(), String> {
+    with_writable_note_path(path, vault_path, |validated_path| {
+        vault::create_note_content(validated_path, &content)
+    })
 }
 
 #[tauri::command]

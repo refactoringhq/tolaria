@@ -269,6 +269,42 @@ function handleRenameNoteFilename(args: {
   return { new_path: newPath, updated_files: updatedFiles, failed_updates: 0 }
 }
 
+function handleMoveNoteToFolder(args: {
+  vault_path: string
+  old_path: string
+  folder_path: string
+}) {
+  const oldEntry = MOCK_ENTRIES.find(e => e.path === args.old_path)
+  const oldContent = MOCK_CONTENT[args.old_path] ?? ''
+  const oldTitle = oldEntry?.title ?? ''
+  const oldFilename = args.old_path.split('/').pop() ?? ''
+  const normalizedFolderPath = args.folder_path.trim().replace(/^\/+|\/+$/g, '')
+
+  if (!normalizedFolderPath) {
+    throw new Error('Folder path cannot be empty')
+  }
+
+  const vaultRoot = args.vault_path.replace(/\/+$/, '')
+  const newPath = `${vaultRoot}/${normalizedFolderPath}/${oldFilename}`
+  if (newPath === args.old_path) {
+    return { new_path: args.old_path, updated_files: 0, failed_updates: 0 }
+  }
+  if (Object.prototype.hasOwnProperty.call(MOCK_CONTENT, newPath)) {
+    throw new Error('A note with that name already exists')
+  }
+
+  delete MOCK_CONTENT[args.old_path]
+  MOCK_CONTENT[newPath] = oldContent
+
+  const oldPathStem = relativePathStem({ path: args.old_path, vaultPath: args.vault_path })
+  const newPathStem = relativePathStem({ path: newPath, vaultPath: args.vault_path })
+  const oldTargets = canonicalRenameTargets({ oldTitle, oldPathStem })
+  const updatedFiles = updateMockRenameReferences({ newPath, newPathStem, oldTargets })
+
+  syncWindowContent()
+  return { new_path: newPath, updated_files: updatedFiles, failed_updates: 0 }
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock handler map accepts heterogeneous arg types
 export const mockHandlers: Record<string, (args: any) => any> = {
   list_vault: () => MOCK_ENTRIES,
@@ -386,6 +422,7 @@ export const mockHandlers: Record<string, (args: any) => any> = {
   save_vault_list: (args: { list: typeof mockVaultList }) => { mockVaultList = { ...args.list }; return null },
   rename_note: handleRenameNote,
   rename_note_filename: handleRenameNoteFilename,
+  move_note_to_folder: handleMoveNoteToFolder,
   clone_repo: (args: { url: string; localPath?: string; local_path?: string }) => {
     const localPath = args.localPath ?? args.local_path ?? ''
     setMockRemoteState(localPath, true)

@@ -385,6 +385,57 @@ pub fn rename_note_filename(
     Ok(finalize_rename(vault, &old_targets, committed.new_file()))
 }
 
+/// Move a note into a different folder while preserving its filename and content.
+pub fn move_note_to_folder(
+    vault_path: &str,
+    old_path: &str,
+    destination_folder_path: &str,
+) -> Result<RenameResult, String> {
+    let vault = Path::new(vault_path);
+    let old_file = Path::new(old_path);
+    let destination_dir = Path::new(destination_folder_path);
+
+    recover_pending_rename_transactions(vault)?;
+    ensure_existing_note(old_file, old_path)?;
+
+    if !destination_dir.exists() {
+        return Err(format!(
+            "Folder does not exist: {}",
+            destination_folder_path
+        ));
+    }
+    if !destination_dir.is_dir() {
+        return Err(format!(
+            "Folder is not a directory: {}",
+            destination_folder_path
+        ));
+    }
+
+    let old_filename = old_file
+        .file_name()
+        .map(|f| f.to_string_lossy().to_string())
+        .unwrap_or_default();
+    let content =
+        fs::read_to_string(old_file).map_err(|e| format!("Failed to read {}: {}", old_path, e))?;
+    let fm_title = extract_fm_title_value(&content);
+    let old_title = super::extract_title(fm_title.as_deref(), &content, &old_filename);
+    let new_file = destination_dir.join(&old_filename);
+
+    if new_file == old_file {
+        return Ok(unchanged_result(old_path));
+    }
+
+    let workspace = RenameWorkspace::new(vault)?;
+    let committed = workspace
+        .operation(old_path, old_file)
+        .rename_exact(workspace.stage_note_content(&content)?, &new_file)?;
+
+    let vault_prefix = format!("{}/", vault.to_string_lossy());
+    let old_path_stem = to_path_stem(old_path, &vault_prefix);
+    let old_targets = collect_legacy_wikilink_targets(&old_title, old_path_stem);
+    Ok(finalize_rename(vault, &old_targets, committed.new_file()))
+}
+
 /// Check if a filename matches the untitled pattern (e.g. "untitled-note-1234567890.md").
 fn is_untitled_filename(filename: &str) -> bool {
     let stem = filename.strip_suffix(".md").unwrap_or(filename);
@@ -926,6 +977,72 @@ mod tests {
             vault.to_str().unwrap(),
             vault.join("note/current.md").to_str().unwrap(),
             "manual-name",
+        );
+
+        assert_eq!(result.unwrap_err(), "A note with that name already exists");
+    }
+
+    #[test]
+    fn test_move_note_to_folder_preserves_filename_and_updates_wikilinks() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path();
+        create_test_file(
+            vault,
+            "projects/weekly-review.md",
+            "---\ntitle: Weekly Review\n---\n# Weekly Review\nBody\n",
+        );
+        create_test_file(
+            vault,
+            "areas/linked.md",
+            "Reference [[projects/weekly-review]]\n",
+        );
+
+        let result = move_note_to_folder(
+            vault.to_str().unwrap(),
+            vault.join("projects/weekly-review.md").to_str().unwrap(),
+            vault.join("areas").to_str().unwrap(),
+        )
+        .expect("move should succeed");
+
+        assert!(result.new_path.ends_with("areas/weekly-review.md"));
+        assert!(!vault.join("projects/weekly-review.md").exists());
+        assert!(vault.join("areas/weekly-review.md").exists());
+        assert_eq!(
+            fs::read_to_string(vault.join("areas/linked.md")).unwrap(),
+            "Reference [[areas/weekly-review]]\n"
+        );
+    }
+
+    #[test]
+    fn test_move_note_to_folder_noop_when_destination_matches_current_parent() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path();
+        create_test_file(vault, "projects/weekly-review.md", "# Weekly Review\n");
+
+        let source = vault.join("projects/weekly-review.md");
+        let result = move_note_to_folder(
+            vault.to_str().unwrap(),
+            source.to_str().unwrap(),
+            vault.join("projects").to_str().unwrap(),
+        )
+        .expect("move should noop");
+
+        assert_eq!(result.new_path, source.to_string_lossy());
+        assert!(source.exists());
+        assert_eq!(result.updated_files, 0);
+    }
+
+    #[test]
+    fn test_move_note_to_folder_rejects_existing_destination() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path();
+        create_test_file(vault, "projects/weekly-review.md", "# Weekly Review\n");
+        create_test_file(vault, "areas/weekly-review.md", "# Existing\n");
+
+        let result = move_note_to_folder(
+            vault.to_str().unwrap(),
+            vault.join("projects/weekly-review.md").to_str().unwrap(),
+            vault.join("areas").to_str().unwrap(),
         );
 
         assert_eq!(result.unwrap_err(), "A note with that name already exists");
