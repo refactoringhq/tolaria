@@ -712,7 +712,7 @@ function LabeledSelect({
         >
           <SelectValue />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent position="popper" data-anchor-strategy="popper">
           {options.map((option) => (
             <SelectItem key={option.value} value={option.value}>
               {option.label}

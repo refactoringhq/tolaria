@@ -77,6 +77,29 @@ describe('SettingsPanel', () => {
     expect(screen.queryByText(/Beta\/Stable/i)).not.toBeInTheDocument()
   })
 
+  it('anchors the default agent dropdown with the popper strategy', () => {
+    render(
+      <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
+    )
+
+    fireEvent.pointerDown(screen.getByTestId('settings-default-ai-agent'), { button: 0, pointerType: 'mouse' })
+
+    expect(document.querySelector('[data-anchor-strategy="popper"]')).toBeInTheDocument()
+  })
+
+  it('keeps keyboard opening enabled for the default agent dropdown', () => {
+    render(
+      <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
+    )
+
+    const trigger = screen.getByTestId('settings-default-ai-agent')
+    trigger.focus()
+    fireEvent.keyDown(trigger, { key: 'ArrowDown', code: 'ArrowDown' })
+
+    expect(document.querySelector('[data-anchor-strategy="popper"]')).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /Codex/i })).toBeInTheDocument()
+  })
+
   it('treats a legacy beta release channel as stable', () => {
     render(
       <SettingsPanel
