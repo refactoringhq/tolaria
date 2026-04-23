@@ -20,6 +20,7 @@ import {
   resolveRawModeContent,
 } from './editorRawModeSync'
 import { useRawModeWithFlush } from './useRawModeWithFlush'
+import { createArrowLigaturesExtension } from './arrowLigaturesExtension'
 import { useFilenameAutolinkGuard } from './useFilenameAutolinkGuard'
 import './Editor.css'
 import './EditorTheme.css'
@@ -169,6 +170,7 @@ function useEditorSetup({
   const editor = useCreateBlockNote({
     schema,
     uploadFile: (file: File) => uploadImageFile(file, vaultPathRef.current),
+    extensions: [createArrowLigaturesExtension()],
   })
   useFilenameAutolinkGuard(editor)
   const activeTab = tabs.find((t) => t.entry.path === activeTabPath) ?? null
