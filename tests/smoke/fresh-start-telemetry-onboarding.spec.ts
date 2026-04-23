@@ -1,6 +1,7 @@
+import path from 'node:path'
 import { test, expect, type Page } from '@playwright/test'
 
-const REMEMBERED_DEFAULT_VAULT_PATH = '/Volumes/Jupiter/Workspace/laputa-app/demo-vault-v2'
+const DEFAULT_VAULT_PATH = path.resolve(process.cwd(), 'demo-vault-v2')
 
 async function mockFreshStart(
   page: Page,
@@ -11,36 +12,51 @@ async function mockFreshStart(
   },
 ) {
   await page.addInitScript((config) => {
+    type Handler = (args?: Record<string, unknown>) => unknown
+    type BrowserWindow = Window & typeof globalThis & {
+      __mockHandlers?: Record<string, Handler>
+    }
+
+    const browserWindow = window as BrowserWindow
+
     localStorage.clear()
+    localStorage.setItem('tolaria:ai-agents-onboarding-dismissed', '1')
+    localStorage.setItem('tolaria:claude-code-onboarding-dismissed', '1')
     if (config.rememberWelcomeDismissal) {
       localStorage.setItem('tolaria_welcome_dismissed', '1')
     }
 
-    let ref: Record<string, unknown> | null = null
+    const applyOverrides = (handlers?: Record<string, Handler> | null) => {
+      if (!handlers) return handlers ?? null
 
-    Object.defineProperty(window, '__mockHandlers', {
+      const originalGetSettings = handlers.get_settings
+      handlers.get_settings = () => ({
+        ...(typeof originalGetSettings === 'function' ? originalGetSettings() as Record<string, unknown> : {}),
+        telemetry_consent: null,
+        crash_reporting_enabled: null,
+        analytics_enabled: null,
+        anonymous_id: null,
+      })
+      handlers.load_vault_list = () => ({
+        vaults: [],
+        active_vault: config.activeVault,
+        hidden_defaults: [],
+      })
+      handlers.get_default_vault_path = () => config.checkExistingPath
+      handlers.check_vault_exists = (args?: Record<string, unknown>) => args?.path === config.checkExistingPath
+
+      return handlers
+    }
+
+    let ref = applyOverrides(browserWindow.__mockHandlers) ?? null
+
+    Object.defineProperty(browserWindow, '__mockHandlers', {
       configurable: true,
       set(value) {
-        ref = value as Record<string, unknown>
-
-        const originalGetSettings = ref.get_settings as (() => Record<string, unknown>) | undefined
-        ref.get_settings = () => ({
-          ...(originalGetSettings ? originalGetSettings() : {}),
-          telemetry_consent: null,
-          crash_reporting_enabled: null,
-          analytics_enabled: null,
-          anonymous_id: null,
-        })
-        ref.load_vault_list = () => ({
-          vaults: [],
-          active_vault: config.activeVault,
-          hidden_defaults: [],
-        })
-        ref.get_default_vault_path = () => config.checkExistingPath
-        ref.check_vault_exists = (args: { path?: string }) => args?.path === config.checkExistingPath
+        ref = applyOverrides(value as Record<string, Handler> | undefined) ?? null
       },
       get() {
-        return ref
+        return applyOverrides(ref) ?? ref
       },
     })
   }, options)
@@ -49,7 +65,7 @@ async function mockFreshStart(
 test('accepting telemetry consent on a fresh start opens the vault choice wizard @smoke', async ({ page }) => {
   await mockFreshStart(page, {
     activeVault: null,
-    checkExistingPath: '/Users/mock/Documents/Getting Started',
+    checkExistingPath: DEFAULT_VAULT_PATH,
   })
 
   await page.goto('/', { waitUntil: 'domcontentloaded' })
@@ -65,7 +81,7 @@ test('accepting telemetry consent on a fresh start opens the vault choice wizard
 test('telemetry consent still leaves the welcome wizard fully keyboard navigable @smoke', async ({ page }) => {
   await mockFreshStart(page, {
     activeVault: null,
-    checkExistingPath: '/Users/mock/Documents/Getting Started',
+    checkExistingPath: DEFAULT_VAULT_PATH,
   })
 
   await page.goto('/', { waitUntil: 'domcontentloaded' })
@@ -104,8 +120,8 @@ test('telemetry consent still leaves the welcome wizard fully keyboard navigable
 for (const action of ['accept', 'decline'] as const) {
   test(`${action} telemetry still resumes onboarding with only a remembered default vault @smoke`, async ({ page }) => {
     await mockFreshStart(page, {
-      activeVault: REMEMBERED_DEFAULT_VAULT_PATH,
-      checkExistingPath: REMEMBERED_DEFAULT_VAULT_PATH,
+      activeVault: DEFAULT_VAULT_PATH,
+      checkExistingPath: DEFAULT_VAULT_PATH,
       rememberWelcomeDismissal: true,
     })
 

@@ -305,7 +305,7 @@ type SidebarSelection =
    - Parses dates as ISO 8601 to Unix timestamps
    - Extracts relationships, outgoing links, custom properties, word count, snippet
 
-The folder tree is narrower than the scanner: it exposes user-created folders only, while system folders such as `attachments/`, `type/`, and `views/` remain hidden from folder navigation.
+The folder tree hides only the dedicated `type/` directory, since note types already have their own sidebar section. Default vault folders such as `attachments/` and `views/` remain visible alongside user-created folders.
 6. Sorts by `modified_at` descending
 7. Skips unparseable files with a warning log
 

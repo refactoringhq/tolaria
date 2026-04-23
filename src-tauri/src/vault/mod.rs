@@ -213,8 +213,8 @@ pub fn reload_entry(path: &Path) -> Result<VaultEntry, String> {
 
 /// Directories hidden from user-facing vault scans.
 const HIDDEN_DIRS: &[&str] = &[".git", ".laputa", ".DS_Store"];
-/// System folders that hold Tolaria metadata or assets rather than user note groups.
-const FOLDER_TREE_EXCLUDED_DIRS: &[&str] = &["attachments", "type", "views"];
+/// Keep type definitions in their dedicated sidebar section instead of the generic folder tree.
+const FOLDER_TREE_EXCLUDED_DIRS: &[&str] = &["type"];
 
 fn is_hidden_dir(name: &str) -> bool {
     name.starts_with('.') || HIDDEN_DIRS.contains(&name)
