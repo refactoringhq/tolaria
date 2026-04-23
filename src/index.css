@@ -151,6 +151,10 @@
     width: 100%;
     height: 100%;
   }
+  body.linux-chrome {
+    padding-top: 32px;
+    box-sizing: border-box;
+  }
 }
 
 /* --- Label typography (Inter, sentence case) --- */

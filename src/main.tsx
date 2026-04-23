@@ -4,6 +4,12 @@ import { createRoot } from 'react-dom/client'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import './index.css'
 import App from './App.tsx'
+import { LinuxTitlebar } from './components/LinuxTitlebar'
+import { isLinux } from './utils/platform'
+
+if (isLinux()) {
+  document.body.classList.add('linux-chrome')
+}
 import {
   APP_COMMAND_EVENT_NAME,
   isAppCommandId,
@@ -89,6 +95,7 @@ createRoot(document.getElementById('root')!, {
 }).render(
   <StrictMode>
     <TooltipProvider>
+      <LinuxTitlebar />
       <App />
     </TooltipProvider>
   </StrictMode>,
