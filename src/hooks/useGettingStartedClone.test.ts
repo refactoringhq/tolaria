@@ -8,11 +8,15 @@ vi.mock('../mock-tauri', () => ({
   mockInvoke: (...args: unknown[]) => mockInvokeFn(...args),
 }))
 
-vi.mock('../utils/vault-dialog', () => ({
-  pickFolder: vi.fn(),
-}))
+vi.mock('../utils/vault-dialog', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../utils/vault-dialog')>()
+  return {
+    ...actual,
+    pickFolder: vi.fn(),
+  }
+})
 
-import { pickFolder } from '../utils/vault-dialog'
+import { NativeFolderPickerBlockedError, pickFolder } from '../utils/vault-dialog'
 import { useGettingStartedClone } from './useGettingStartedClone'
 
 describe('useGettingStartedClone', () => {
@@ -69,5 +73,22 @@ describe('useGettingStartedClone', () => {
 
     expect(onSuccess).not.toHaveBeenCalled()
     expect(onError).toHaveBeenCalledWith('Could not download Getting Started vault. Check your connection and try again.')
+  })
+
+  it('surfaces the restart-required message when folder picking is blocked after update install', async () => {
+    vi.mocked(pickFolder).mockRejectedValue(new NativeFolderPickerBlockedError())
+
+    const onSuccess = vi.fn()
+    const onError = vi.fn()
+    const { result } = renderHook(() => useGettingStartedClone({ onError, onSuccess }))
+
+    await act(async () => {
+      await result.current()
+    })
+
+    expect(onSuccess).not.toHaveBeenCalled()
+    expect(onError).toHaveBeenCalledWith(
+      'Tolaria needs a restart before macOS can open another folder picker. Restart to apply the downloaded update and try again.',
+    )
   })
 })

@@ -1,6 +1,10 @@
 import { renderHook, act } from '@testing-library/react'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { useUpdater } from './useUpdater'
+import {
+  clearRestartRequiredAfterUpdate,
+  isRestartRequiredAfterUpdate,
+} from '../lib/appUpdater'
 
 vi.mock('../mock-tauri', () => ({
   isTauri: vi.fn(() => false),
@@ -108,6 +112,7 @@ describe('useUpdater', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.clearAllMocks()
+    clearRestartRequiredAfterUpdate()
     vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 
@@ -270,6 +275,7 @@ describe('useUpdater', () => {
       version: '2026.4.16',
       displayVersion: '2026.4.16',
     })
+    expect(isRestartRequiredAfterUpdate()).toBe(true)
   })
 
   it('transitions to error when download fails', async () => {

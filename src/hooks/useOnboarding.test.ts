@@ -30,11 +30,15 @@ vi.mock('../mock-tauri', () => ({
 
 vi.mock('./useVaultSwitcher', () => ({}))
 
-vi.mock('../utils/vault-dialog', () => ({
-  pickFolder: vi.fn(),
-}))
+vi.mock('../utils/vault-dialog', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../utils/vault-dialog')>()
+  return {
+    ...actual,
+    pickFolder: vi.fn(),
+  }
+})
 
-import { pickFolder } from '../utils/vault-dialog'
+import { NativeFolderPickerBlockedError, pickFolder } from '../utils/vault-dialog'
 import { useOnboarding } from './useOnboarding'
 
 function mockCommands(overrides: Record<string, MockOverride> = {}) {
@@ -312,6 +316,23 @@ describe('useOnboarding', () => {
     await expectCancelledPickerLeavesWelcome(async (onboarding) => {
       await onboarding.handleOpenFolder()
     })
+  })
+
+  it('shows the restart-required picker message instead of crashing the welcome flow', async () => {
+    mockCommands()
+    vi.mocked(pickFolder).mockRejectedValue(new NativeFolderPickerBlockedError())
+
+    const { result } = await renderOnboarding()
+
+    await expectStatus(result, 'welcome')
+    await act(async () => {
+      await result.current.handleOpenFolder()
+    })
+
+    expect(result.current.error).toBe(
+      'Tolaria needs a restart before macOS can open another folder picker. Restart to apply the downloaded update and try again.',
+    )
+    expect(result.current.state.status).toBe('welcome')
   })
 
   it('marks the welcome screen dismissed and keeps the initial vault path', async () => {

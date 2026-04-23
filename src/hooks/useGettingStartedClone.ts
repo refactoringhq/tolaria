@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { isTauri, mockInvoke } from '../mock-tauri'
-import { pickFolder } from '../utils/vault-dialog'
+import { formatFolderPickerActionError, pickFolder } from '../utils/vault-dialog'
 import {
   buildGettingStartedVaultPath,
   formatGettingStartedCloneError,
@@ -22,7 +22,14 @@ export function useGettingStartedClone({
   onSuccess,
 }: UseGettingStartedCloneOptions) {
   return useCallback(async () => {
-    const parentPath = await pickFolder('Choose a parent folder for the Getting Started vault')
+    let parentPath: string | null
+    try {
+      parentPath = await pickFolder('Choose a parent folder for the Getting Started vault')
+    } catch (err) {
+      onError(formatFolderPickerActionError('Could not choose a parent folder', err))
+      return
+    }
+
     if (!parentPath) return
 
     const targetPath = buildGettingStartedVaultPath(parentPath)

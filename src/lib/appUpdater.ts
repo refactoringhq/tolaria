@@ -13,6 +13,23 @@ export type AppUpdateDownloadEvent =
   | { event: 'Progress'; data: { chunkLength: number } }
   | { event: 'Finished' }
 
+export const RESTART_REQUIRED_FOLDER_PICKER_MESSAGE =
+  'Tolaria needs a restart before macOS can open another folder picker. Restart to apply the downloaded update and try again.'
+
+let restartRequiredAfterUpdate = false
+
+export function markRestartRequiredAfterUpdate(): void {
+  restartRequiredAfterUpdate = true
+}
+
+export function clearRestartRequiredAfterUpdate(): void {
+  restartRequiredAfterUpdate = false
+}
+
+export function isRestartRequiredAfterUpdate(): boolean {
+  return restartRequiredAfterUpdate
+}
+
 export async function checkForAppUpdate(
   releaseChannel: string | null | undefined,
 ): Promise<AppUpdateMetadata | null> {
@@ -34,4 +51,5 @@ export async function downloadAndInstallAppUpdate(
     expectedVersion,
     onEvent: channel,
   })
+  markRestartRequiredAfterUpdate()
 }

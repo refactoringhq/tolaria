@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { isTauri, mockInvoke } from '../mock-tauri'
-import { pickFolder } from '../utils/vault-dialog'
+import { formatFolderPickerActionError, pickFolder } from '../utils/vault-dialog'
 import { loadVaultList, saveVaultList } from '../utils/vaultListStore'
 import type { VaultOption } from '../components/StatusBar'
 import { trackEvent } from '../lib/telemetry'
@@ -650,7 +650,14 @@ function useOpenLocalFolderAction(
   onToastRef: MutableRefObject<(msg: string) => void>,
 ) {
   return useCallback(async () => {
-    const path = await pickFolder('Open vault folder')
+    let path: string | null
+    try {
+      path = await pickFolder('Open vault folder')
+    } catch (err) {
+      onToastRef.current(formatFolderPickerActionError('Could not open vault folder', err))
+      return
+    }
+
     if (!path) return
 
     const label = labelFromPath({ path })
@@ -664,10 +671,16 @@ function useCreateEmptyVaultAction(
   onToastRef: MutableRefObject<(msg: string) => void>,
 ) {
   return useCallback(async () => {
+    let targetPath: string | null
     try {
-      const targetPath = await pickFolder('Choose where to create your vault')
-      if (!targetPath) return
+      targetPath = await pickFolder('Choose where to create your vault')
+    } catch (err) {
+      onToastRef.current(formatFolderPickerActionError('Could not choose where to create your vault', err))
+      return
+    }
 
+    try {
+      if (!targetPath) return
       const vaultPath = await tauriCall<string>('create_empty_vault', { targetPath })
       const label = labelFromPath({ path: vaultPath })
       addAndSwitch(vaultPath, label)
