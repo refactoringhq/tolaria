@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
-use std::fs;
+use std::fs::{self, OpenOptions};
 use std::hash::{Hash, Hasher};
+use std::io::{ErrorKind, Write};
 use std::path::{Path, PathBuf};
+use std::time::Duration;
+use uuid::Uuid;
 
 use crate::git::{get_all_file_dates, GitDates};
 use std::collections::HashMap;
@@ -14,8 +17,9 @@ use super::{is_md_file, parse_md_file, parse_non_md_file, scan_vault, VaultEntry
 /// v12: fix gray_matter YAML sanitization (unquoted colons / hash comments in list items)
 /// v13: preserve plain square brackets in parsed markdown H1 titles
 const CACHE_VERSION: u32 = 13;
+const CACHE_WRITE_LOCK_STALE_SECS: u64 = 30;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct VaultCache {
     #[serde(default = "default_cache_version")]
     version: u32,
@@ -25,6 +29,51 @@ struct VaultCache {
     vault_path: String,
     commit_hash: String,
     entries: Vec<VaultEntry>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct CacheFileFingerprint {
+    byte_len: usize,
+    content_hash: u64,
+}
+
+#[derive(Debug)]
+struct LoadedCache {
+    cache: VaultCache,
+    fingerprint: CacheFileFingerprint,
+}
+
+#[derive(Debug)]
+enum CacheLoadState {
+    Missing,
+    Loaded(LoadedCache),
+    Invalid(String),
+    Unreadable(String),
+}
+
+#[derive(Debug, Eq, PartialEq)]
+enum CacheWriteOutcome {
+    Replaced,
+    SkippedConcurrentUpdate,
+    SkippedActiveWriter,
+}
+
+struct CacheWriteLock {
+    path: PathBuf,
+}
+
+impl Drop for CacheWriteLock {
+    fn drop(&mut self) {
+        if let Err(error) = fs::remove_file(&self.path) {
+            if error.kind() != ErrorKind::NotFound {
+                log::warn!(
+                    "Failed to release cache write lock {}: {}",
+                    self.path.display(),
+                    error
+                );
+            }
+        }
+    }
 }
 
 fn default_cache_version() -> u32 {
@@ -51,6 +100,18 @@ fn cache_dir() -> PathBuf {
 
 fn cache_path(vault: &Path) -> PathBuf {
     cache_dir().join(format!("{}.json", vault_path_hash(vault)))
+}
+
+fn cache_lock_path(vault: &Path) -> PathBuf {
+    cache_path(vault).with_extension("lock")
+}
+
+fn cache_temp_path(final_path: &Path) -> PathBuf {
+    let file_name = final_path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("cache.json");
+    final_path.with_file_name(format!("{file_name}.{}.tmp", Uuid::new_v4()))
 }
 
 /// Legacy cache path inside the vault directory (pre-migration).
@@ -156,23 +217,232 @@ fn git_uncommitted_files(vault: &Path) -> Vec<String> {
     files
 }
 
-fn load_cache(vault: &Path) -> Option<VaultCache> {
-    let data = fs::read_to_string(cache_path(vault)).ok()?;
-    serde_json::from_str(&data).ok()
+fn cache_fingerprint(bytes: &[u8]) -> CacheFileFingerprint {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    bytes.hash(&mut hasher);
+    CacheFileFingerprint {
+        byte_len: bytes.len(),
+        content_hash: hasher.finish(),
+    }
 }
 
-/// Write cache atomically: write to a temp file then rename.
-fn write_cache(vault: &Path, cache: &VaultCache) {
-    let final_path = cache_path(vault);
-    if let Some(parent) = final_path.parent() {
-        let _ = fs::create_dir_all(parent);
+fn read_cache_bytes(path: &Path) -> Result<Option<Vec<u8>>, String> {
+    match fs::read(path) {
+        Ok(bytes) => Ok(Some(bytes)),
+        Err(error) if error.kind() == ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(format!(
+            "Failed to read cache {}: {}",
+            path.display(),
+            error
+        )),
     }
-    let tmp_path = final_path.with_extension("tmp");
-    if let Ok(data) = serde_json::to_string(cache) {
-        if fs::write(&tmp_path, &data).is_ok() {
-            let _ = fs::rename(&tmp_path, &final_path);
+}
+
+fn read_cache_fingerprint(path: &Path) -> Result<Option<CacheFileFingerprint>, String> {
+    Ok(read_cache_bytes(path)?.map(|bytes| cache_fingerprint(&bytes)))
+}
+
+fn load_cache(vault: &Path) -> CacheLoadState {
+    let path = cache_path(vault);
+    let Some(bytes) = (match read_cache_bytes(&path) {
+        Ok(bytes) => bytes,
+        Err(error) => return CacheLoadState::Unreadable(error),
+    }) else {
+        return CacheLoadState::Missing;
+    };
+
+    let fingerprint = cache_fingerprint(&bytes);
+    match serde_json::from_slice(&bytes) {
+        Ok(cache) => CacheLoadState::Loaded(LoadedCache { cache, fingerprint }),
+        Err(error) => CacheLoadState::Invalid(format!(
+            "Failed to parse cache {}: {}",
+            path.display(),
+            error
+        )),
+    }
+}
+
+fn lock_is_stale(lock_path: &Path) -> bool {
+    fs::metadata(lock_path)
+        .ok()
+        .and_then(|metadata| metadata.modified().ok())
+        .and_then(|modified| modified.elapsed().ok())
+        .map(|elapsed| elapsed > Duration::from_secs(CACHE_WRITE_LOCK_STALE_SECS))
+        .unwrap_or(false)
+}
+
+fn ensure_cache_parent_dir(path: &Path) -> Result<(), String> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|error| {
+            format!(
+                "Failed to create cache directory {}: {}",
+                parent.display(),
+                error
+            )
+        })?;
+    }
+    Ok(())
+}
+
+fn initialize_cache_write_lock(
+    mut file: fs::File,
+    lock_path: &Path,
+) -> Result<CacheWriteLock, String> {
+    let pid = std::process::id().to_string();
+    if let Err(error) = file.write_all(pid.as_bytes()).and_then(|_| file.sync_all()) {
+        let _ = fs::remove_file(lock_path);
+        return Err(format!(
+            "Failed to initialize cache write lock {}: {}",
+            lock_path.display(),
+            error
+        ));
+    }
+    Ok(CacheWriteLock {
+        path: lock_path.to_path_buf(),
+    })
+}
+
+fn try_create_cache_write_lock(lock_path: &Path) -> Result<Option<CacheWriteLock>, String> {
+    match OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(lock_path)
+    {
+        Ok(file) => initialize_cache_write_lock(file, lock_path).map(Some),
+        Err(error) if error.kind() == ErrorKind::AlreadyExists => Ok(None),
+        Err(error) => Err(format!(
+            "Failed to acquire cache write lock {}: {}",
+            lock_path.display(),
+            error
+        )),
+    }
+}
+
+fn remove_stale_cache_write_lock(lock_path: &Path) -> Result<bool, String> {
+    if !lock_is_stale(lock_path) {
+        return Ok(false);
+    }
+
+    log::warn!("Removing stale cache write lock {}", lock_path.display());
+    match fs::remove_file(lock_path) {
+        Ok(()) => Ok(true),
+        Err(error) if error.kind() == ErrorKind::NotFound => Ok(true),
+        Err(error) => Err(format!(
+            "Failed to remove stale cache write lock {}: {}",
+            lock_path.display(),
+            error
+        )),
+    }
+}
+
+fn acquire_cache_write_lock(lock_path: &Path) -> Result<Option<CacheWriteLock>, String> {
+    ensure_cache_parent_dir(lock_path)?;
+    if let Some(lock) = try_create_cache_write_lock(lock_path)? {
+        return Ok(Some(lock));
+    }
+    if !remove_stale_cache_write_lock(lock_path)? {
+        return Ok(None);
+    }
+    try_create_cache_write_lock(lock_path)
+}
+
+fn remove_cache_file(path: &Path, reason: &str) {
+    if let Err(error) = fs::remove_file(path) {
+        if error.kind() != ErrorKind::NotFound {
+            log::warn!("Failed to remove {reason} {}: {}", path.display(), error);
         }
     }
+}
+
+#[cfg(unix)]
+fn sync_parent_directory(path: &Path) -> Result<(), String> {
+    let Some(parent) = path.parent() else {
+        return Ok(());
+    };
+    fs::File::open(parent)
+        .and_then(|dir| dir.sync_all())
+        .map_err(|error| {
+            format!(
+                "Failed to sync cache directory {}: {}",
+                parent.display(),
+                error
+            )
+        })
+}
+
+#[cfg(not(unix))]
+fn sync_parent_directory(_path: &Path) -> Result<(), String> {
+    Ok(())
+}
+
+/// Replace the cache file using a temp file + rename, but only if the on-disk
+/// cache still matches the version we loaded earlier.
+fn write_cache(
+    vault: &Path,
+    cache: &VaultCache,
+    expected_previous: Option<CacheFileFingerprint>,
+) -> Result<CacheWriteOutcome, String> {
+    let final_path = cache_path(vault);
+    let lock_path = cache_lock_path(vault);
+    let Some(_lock) = acquire_cache_write_lock(&lock_path)? else {
+        return Ok(CacheWriteOutcome::SkippedActiveWriter);
+    };
+
+    let current_fingerprint = read_cache_fingerprint(&final_path)?;
+    let still_matches_loaded_state = match expected_previous.as_ref() {
+        Some(expected) => current_fingerprint.as_ref() == Some(expected),
+        None => current_fingerprint.is_none(),
+    };
+    if !still_matches_loaded_state {
+        return Ok(CacheWriteOutcome::SkippedConcurrentUpdate);
+    }
+
+    ensure_cache_parent_dir(&final_path)?;
+
+    let data = serde_json::to_vec(cache).map_err(|error| {
+        format!(
+            "Failed to serialize cache {}: {}",
+            final_path.display(),
+            error
+        )
+    })?;
+    let tmp_path = cache_temp_path(&final_path);
+    let mut tmp_file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&tmp_path)
+        .map_err(|error| {
+            format!(
+                "Failed to create temp cache file {}: {}",
+                tmp_path.display(),
+                error
+            )
+        })?;
+
+    if let Err(error) = tmp_file.write_all(&data).and_then(|_| tmp_file.sync_all()) {
+        remove_cache_file(&tmp_path, "temp cache file");
+        return Err(format!(
+            "Failed to flush temp cache file {}: {}",
+            tmp_path.display(),
+            error
+        ));
+    }
+    drop(tmp_file);
+
+    if let Err(error) = fs::rename(&tmp_path, &final_path) {
+        remove_cache_file(&tmp_path, "temp cache file");
+        return Err(format!(
+            "Failed to replace cache {}: {}",
+            final_path.display(),
+            error
+        ));
+    }
+
+    if let Err(error) = sync_parent_directory(&final_path) {
+        log::warn!("{error}");
+    }
+
+    Ok(CacheWriteOutcome::Replaced)
 }
 
 /// Normalize an absolute path to a relative path for comparison with git output.
@@ -213,7 +483,7 @@ fn parse_files_at(
         .collect()
 }
 
-/// Copy legacy cache data to the new external location atomically.
+/// Copy legacy cache data to the new external location via temp file + rename.
 fn copy_legacy_cache_to(legacy: &Path, dest: &Path) {
     if let Some(parent) = dest.parent() {
         let _ = fs::create_dir_all(parent);
@@ -272,10 +542,15 @@ fn prune_stale_entries(vault: &Path, entries: &mut Vec<VaultEntry>) -> bool {
 }
 
 /// Sort entries by modified_at descending and write the cache.
-fn finalize_and_cache(vault: &Path, mut entries: Vec<VaultEntry>, hash: String) -> Vec<VaultEntry> {
+fn finalize_and_cache(
+    vault: &Path,
+    mut entries: Vec<VaultEntry>,
+    hash: String,
+    expected_previous: Option<CacheFileFingerprint>,
+) -> Vec<VaultEntry> {
     prune_stale_entries(vault, &mut entries);
     entries.sort_by_key(|entry| std::cmp::Reverse(entry.modified_at));
-    write_cache(
+    let outcome = write_cache(
         vault,
         &VaultCache {
             version: CACHE_VERSION,
@@ -283,7 +558,20 @@ fn finalize_and_cache(vault: &Path, mut entries: Vec<VaultEntry>, hash: String) 
             commit_hash: hash,
             entries: entries.clone(),
         },
+        expected_previous,
     );
+    match outcome {
+        Ok(CacheWriteOutcome::Replaced) => {}
+        Ok(CacheWriteOutcome::SkippedConcurrentUpdate) => log::info!(
+            "Skipped replacing cache {} because another scan refreshed it first",
+            cache_path(vault).display()
+        ),
+        Ok(CacheWriteOutcome::SkippedActiveWriter) => log::info!(
+            "Skipped replacing cache {} because another writer is active",
+            cache_path(vault).display()
+        ),
+        Err(error) => log::warn!("{error}"),
+    }
     entries
 }
 
@@ -292,9 +580,10 @@ fn finalize_and_cache(vault: &Path, mut entries: Vec<VaultEntry>, hash: String) 
 /// deleted outside git (e.g., via Finder) are removed from the cache on vault open.
 fn update_same_commit(
     vault: &Path,
-    cache: VaultCache,
+    loaded_cache: LoadedCache,
     git_dates: &HashMap<String, GitDates>,
 ) -> Vec<VaultEntry> {
+    let LoadedCache { cache, fingerprint } = loaded_cache;
     let changed = git_uncommitted_files(vault);
     let mut entries = cache.entries;
     if !changed.is_empty() {
@@ -304,16 +593,17 @@ fn update_same_commit(
     }
     // Always finalize: prune_stale_entries inside finalize_and_cache removes
     // entries for files deleted outside git (e.g., via Finder or another app).
-    finalize_and_cache(vault, entries, cache.commit_hash)
+    finalize_and_cache(vault, entries, cache.commit_hash, Some(fingerprint))
 }
 
 /// Handle different-commit cache: incremental update via git diff.
 fn update_different_commit(
     vault: &Path,
-    cache: VaultCache,
+    loaded_cache: LoadedCache,
     current_hash: String,
     git_dates: &HashMap<String, GitDates>,
 ) -> Vec<VaultEntry> {
+    let LoadedCache { cache, fingerprint } = loaded_cache;
     let changed_files = git_changed_files(vault, &cache.commit_hash, &current_hash);
     let changed_set: std::collections::HashSet<String> = changed_files.iter().cloned().collect();
 
@@ -324,7 +614,7 @@ fn update_different_commit(
         .collect();
     entries.extend(parse_files_at(vault, &changed_files, git_dates));
 
-    finalize_and_cache(vault, entries, current_hash)
+    finalize_and_cache(vault, entries, current_hash, Some(fingerprint))
 }
 
 fn cache_requires_full_rescan(cache: &VaultCache, vault_path: &Path) -> bool {
@@ -337,9 +627,15 @@ fn scan_and_cache_full(
     vault_path: &Path,
     git_dates: &HashMap<String, GitDates>,
     current_hash: String,
+    expected_previous: Option<CacheFileFingerprint>,
 ) -> Result<Vec<VaultEntry>, String> {
     let entries = scan_vault(vault_path, git_dates)?;
-    Ok(finalize_and_cache(vault_path, entries, current_hash))
+    Ok(finalize_and_cache(
+        vault_path,
+        entries,
+        current_hash,
+        expected_previous,
+    ))
 }
 
 /// Delete the cache file for a vault, forcing a full rescan on the next
@@ -347,7 +643,7 @@ fn scan_and_cache_full(
 /// explicit user-triggered reloads always read from the filesystem.
 pub fn invalidate_cache(vault_path: &Path) {
     let path = cache_path(vault_path);
-    let _ = fs::remove_file(&path);
+    remove_cache_file(&path, "cache file");
 }
 
 /// Scan vault with incremental caching via git.
@@ -371,24 +667,37 @@ pub fn scan_vault_cached(vault_path: &Path) -> Result<Vec<VaultEntry>, String> {
     // Build git dates map once — used by all code paths below
     let git_dates = get_all_file_dates(vault_path);
 
-    if let Some(cache) = load_cache(vault_path) {
-        if cache_requires_full_rescan(&cache, vault_path) {
-            return scan_and_cache_full(vault_path, &git_dates, current_hash);
+    match load_cache(vault_path) {
+        CacheLoadState::Missing => {}
+        CacheLoadState::Unreadable(error) => log::warn!("{error}"),
+        CacheLoadState::Invalid(error) => {
+            log::warn!("{error}");
+            remove_cache_file(&cache_path(vault_path), "invalid cache file");
         }
-        return if cache.commit_hash == current_hash {
-            Ok(update_same_commit(vault_path, cache, &git_dates))
-        } else {
-            Ok(update_different_commit(
-                vault_path,
-                cache,
-                current_hash,
-                &git_dates,
-            ))
-        };
+        CacheLoadState::Loaded(loaded_cache) => {
+            if cache_requires_full_rescan(&loaded_cache.cache, vault_path) {
+                return scan_and_cache_full(
+                    vault_path,
+                    &git_dates,
+                    current_hash,
+                    Some(loaded_cache.fingerprint),
+                );
+            }
+            return if loaded_cache.cache.commit_hash == current_hash {
+                Ok(update_same_commit(vault_path, loaded_cache, &git_dates))
+            } else {
+                Ok(update_different_commit(
+                    vault_path,
+                    loaded_cache,
+                    current_hash,
+                    &git_dates,
+                ))
+            };
+        }
     }
 
     // No cache — full scan and write cache
-    scan_and_cache_full(vault_path, &git_dates, current_hash)
+    scan_and_cache_full(vault_path, &git_dates, current_hash, None)
 }
 
 #[cfg(test)]
@@ -499,7 +808,7 @@ mod tests {
     }
 
     #[test]
-    fn test_atomic_write_no_tmp_file_left() {
+    fn test_cache_write_no_tmp_file_left() {
         let _lock = ENV_LOCK.lock().unwrap();
         let cache_dir = TempDir::new().unwrap();
         set_test_cache_dir(cache_dir.path());
@@ -514,18 +823,19 @@ mod tests {
             entries: vec![],
         };
 
-        write_cache(vault, &cache);
+        write_cache(vault, &cache, None).unwrap();
 
         // Final file should exist
         let final_path = cache_path(vault);
         assert!(final_path.exists(), "cache file must exist after write");
 
-        // Tmp file should NOT exist (renamed away)
-        let tmp_path = final_path.with_extension("tmp");
-        assert!(
-            !tmp_path.exists(),
-            "tmp file must not exist after atomic write"
-        );
+        // Tmp files should NOT remain beside the cache file
+        let tmp_count = fs::read_dir(cache_dir.path())
+            .unwrap()
+            .filter_map(Result::ok)
+            .filter(|entry| entry.file_name().to_string_lossy().contains(".tmp"))
+            .count();
+        assert_eq!(tmp_count, 0, "cache write must not leave tmp files behind");
 
         // Content must be valid JSON
         let data = fs::read_to_string(&final_path).unwrap();
@@ -972,7 +1282,7 @@ mod tests {
             commit_hash: hash,
             entries: vec![stale_entry],
         };
-        write_cache(vault, &stale_cache);
+        write_cache(vault, &stale_cache, None).unwrap();
 
         // Load via cached path — stale version must trigger full rescan
         let entries = scan_vault_cached(vault).unwrap();
@@ -1032,6 +1342,81 @@ mod tests {
         assert!(
             entries2.iter().any(|e| e.path.contains("my-view.yml")),
             "committed .yml file must be picked up by incremental cache update"
+        );
+    }
+
+    #[test]
+    fn test_load_cache_marks_invalid_json() {
+        let (_lock, _cache_tmp, dir) = setup_git_vault();
+        let vault = dir.path();
+
+        fs::write(cache_path(vault), "{ not-json").unwrap();
+
+        let load = load_cache(vault);
+        assert!(
+            matches!(load, CacheLoadState::Invalid(_)),
+            "invalid cache JSON must be distinguished from a cache miss"
+        );
+    }
+
+    #[test]
+    fn test_write_cache_skips_overwriting_newer_cache() {
+        let (_lock, _cache_tmp, dir) = setup_git_vault();
+        let vault = dir.path();
+
+        let original = VaultCache {
+            version: CACHE_VERSION,
+            vault_path: vault.to_string_lossy().to_string(),
+            commit_hash: "original".to_string(),
+            entries: vec![],
+        };
+        write_cache(vault, &original, None).unwrap();
+
+        let CacheLoadState::Loaded(loaded) = load_cache(vault) else {
+            panic!("expected original cache to load");
+        };
+
+        let newer = VaultCache {
+            commit_hash: "newer".to_string(),
+            ..original
+        };
+        write_cache(vault, &newer, Some(loaded.fingerprint.clone())).unwrap();
+
+        let stale = VaultCache {
+            commit_hash: "stale".to_string(),
+            ..newer
+        };
+        let outcome = write_cache(vault, &stale, Some(loaded.fingerprint)).unwrap();
+        assert_eq!(outcome, CacheWriteOutcome::SkippedConcurrentUpdate);
+
+        let CacheLoadState::Loaded(final_cache) = load_cache(vault) else {
+            panic!("expected final cache to load");
+        };
+        assert_eq!(final_cache.cache.commit_hash, "newer");
+    }
+
+    #[test]
+    fn test_write_cache_skips_when_writer_lock_is_held() {
+        let (_lock, _cache_tmp, dir) = setup_git_vault();
+        let vault = dir.path();
+
+        let lock_path = cache_lock_path(vault);
+        if let Some(parent) = lock_path.parent() {
+            fs::create_dir_all(parent).unwrap();
+        }
+        fs::write(&lock_path, "busy").unwrap();
+
+        let cache = VaultCache {
+            version: CACHE_VERSION,
+            vault_path: vault.to_string_lossy().to_string(),
+            commit_hash: "busy".to_string(),
+            entries: vec![],
+        };
+        let outcome = write_cache(vault, &cache, None).unwrap();
+        assert_eq!(outcome, CacheWriteOutcome::SkippedActiveWriter);
+        assert!(
+            !cache_path(vault).exists(),
+            "active writer lock must prevent a competing cache write"
         );
     }
 }
