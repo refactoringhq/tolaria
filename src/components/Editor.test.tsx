@@ -514,6 +514,27 @@ describe('raw-mode sync content guards', () => {
     expect(rawLatestContentRef.current).toBe(result)
   })
 
+  it('keeps raw-mode serialization portable for vault attachment images', () => {
+    const rawLatestContentRef = { current: null as string | null }
+
+    mockEditor.blocksToMarkdownLossy.mockReturnValueOnce(
+      '# Test Project\n\n![shot](asset://localhost/%2Fvault%2Fattachments%2Fshot.png)\n',
+    )
+
+    const result = syncActiveTabIntoRawBuffer({
+      editor: mockEditor as never,
+      activeTabPath: mockEntry.path,
+      activeTabContent: mockContent,
+      rawLatestContentRef,
+      vaultPath: '/vault',
+    })
+
+    expect(result).toBe(
+      '---\ntitle: Test Project\nis_a: Project\nStatus: Active\n---\n# Test Project\n\n![shot](attachments/shot.png)\n',
+    )
+    expect(rawLatestContentRef.current).toBe(result)
+  })
+
   it('does not emit a content change when leaving raw mode without user edits', () => {
     const onContentChange = vi.fn()
     const normalizedContent = '---\ntitle: Test Project\nis_a: Project\nStatus: Active\n---\n# Test Project\n\nThis is a test note with some words to count.\n'

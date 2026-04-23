@@ -4,6 +4,15 @@ import type { VaultEntry } from '../types'
 import { splitFrontmatter, preProcessWikilinks, injectWikilinks, restoreWikilinksInBlocks } from '../utils/wikilinks'
 import { compactMarkdown } from '../utils/compact-markdown'
 import { failNoteOpenTrace, finishNoteOpenTrace } from '../utils/noteOpenPerformance'
+import { resolveImageUrls, portableImageUrls } from '../utils/vaultImages'
+import {
+  extractEditorBody,
+  getH1TextFromBlocks,
+  isUntitledPath,
+  pathStem,
+  slugifyPathStem,
+} from './editorTabContent'
+export { extractEditorBody, getH1TextFromBlocks, replaceTitleInFrontmatter } from './editorTabContent'
 
 interface Tab {
   entry: VaultEntry
@@ -32,6 +41,7 @@ interface UseEditorTabSwapOptions {
   onContentChange?: (path: string, content: string) => void
   /** When true, the BlockNote editor is hidden (raw/CodeMirror mode active). */
   rawMode?: boolean
+  vaultPath?: string
 }
 
 function signalEditorTabSwapped(path: string): void {
@@ -39,63 +49,6 @@ function signalEditorTabSwapped(path: string): void {
     detail: { path },
   }))
   finishNoteOpenTrace(path)
-}
-
-/** Strip the YAML frontmatter from raw file content, returning the body
- *  (including any H1 heading) that should appear in the editor. */
-export function extractEditorBody(rawFileContent: string): string {
-  const [, rawBody] = splitFrontmatter(rawFileContent)
-  return rawBody.trimStart()
-}
-
-type HeadingTextInline = { type?: string; text?: string }
-
-function extractH1Content(blocks: unknown[]): HeadingTextInline[] | null {
-  const first = blocks?.[0] as {
-    type?: string
-    props?: { level?: number }
-    content?: HeadingTextInline[]
-  } | undefined
-
-  if (!first) return null
-  if (first.type !== 'heading') return null
-  if (first.props?.level !== 1) return null
-  if (!Array.isArray(first.content)) return null
-  return first.content
-}
-
-/** Extract H1 text from the editor's first block, or null if not an H1. */
-export function getH1TextFromBlocks(blocks: unknown[]): string | null {
-  const content = extractH1Content(blocks)
-  if (!content) return null
-
-  let text = ''
-  for (const item of content) {
-    if (item.type === 'text') {
-      text += item.text || ''
-    }
-  }
-
-  const trimmed = text.trim()
-  return trimmed || null
-}
-
-/** Replace the title: line in YAML frontmatter with a new title value. */
-export function replaceTitleInFrontmatter(frontmatter: string, newTitle: string): string {
-  return frontmatter.replace(/^(title:\s*).+$/m, `$1${newTitle}`)
-}
-
-function pathStem(path: string): string {
-  const filename = path.split('/').pop() ?? path
-  return filename.replace(/\.md$/, '')
-}
-
-function slugifyPathStem(title: string): string {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-}
-
-function isUntitledPath(path: string): boolean {
-  return pathStem(path).startsWith('untitled-')
 }
 
 function readEditorScrollTop(): number {
@@ -179,16 +132,21 @@ async function parseMarkdownBlocks(
 }
 
 async function resolveBlocksForTarget(
-  editor: ReturnType<typeof useCreateBlockNote>,
-  cache: Map<string, CachedTabState>,
-  targetPath: string,
-  content: string,
+  options: {
+    editor: ReturnType<typeof useCreateBlockNote>
+    cache: Map<string, CachedTabState>
+    targetPath: string
+    content: string
+    vaultPath?: string
+  },
 ): Promise<CachedTabState> {
+  const { editor, cache, targetPath, content, vaultPath } = options
   const cached = cache.get(targetPath)
   if (cached?.sourceContent === content) return cached
 
   const body = extractEditorBody(content)
-  const preprocessed = preProcessWikilinks(body)
+  const withImages = vaultPath ? resolveImageUrls(body, vaultPath) : body
+  const preprocessed = preProcessWikilinks(withImages)
   const fastPathBlocks = buildFastPathBlocks({ preprocessed })
   if (fastPathBlocks) {
     const nextState = { blocks: fastPathBlocks, scrollTop: 0, sourceContent: content }
@@ -279,12 +237,14 @@ function applyHtmlStateToEditor(
 async function resolveEmptyHeadingHtml(
   editor: ReturnType<typeof useCreateBlockNote>,
   content: string,
+  vaultPath?: string,
 ): Promise<string | null> {
   const remainder = extractBodyRemainderAfterEmptyH1({ content })
   if (remainder === null) return null
   if (!remainder.trim()) return '<h1></h1><p></p>'
 
-  const parsed = await parseMarkdownBlocks(editor, preProcessWikilinks(remainder))
+  const withImages = vaultPath ? resolveImageUrls(remainder, vaultPath) : remainder
+  const parsed = await parseMarkdownBlocks(editor, preProcessWikilinks(withImages))
   const withWikilinks = injectWikilinks(parsed)
   return `<h1></h1>${editor.blocksToHTMLLossy(withWikilinks as typeof parsed)}`
 }
@@ -375,6 +335,7 @@ function useEditorChangeHandler(options: {
   suppressChangeRef: MutableRefObject<boolean>
   tabCacheRef: MutableRefObject<Map<string, CachedTabState>>
   pendingLocalContentRef: MutableRefObject<PendingLocalContent | null>
+  vaultPathRef: MutableRefObject<string | undefined>
 }) {
   const {
     editor,
@@ -384,6 +345,7 @@ function useEditorChangeHandler(options: {
     suppressChangeRef,
     tabCacheRef,
     pendingLocalContentRef,
+    vaultPathRef,
   } = options
 
   return useCallback(() => {
@@ -396,7 +358,10 @@ function useEditorChangeHandler(options: {
 
     const blocks = editor.document
     const restored = restoreWikilinksInBlocks(blocks)
-    const bodyMarkdown = compactMarkdown(editor.blocksToMarkdownLossy(restored as typeof blocks))
+    const rawBodyMarkdown = compactMarkdown(editor.blocksToMarkdownLossy(restored as typeof blocks))
+    const bodyMarkdown = vaultPathRef.current
+      ? portableImageUrls(rawBodyMarkdown, vaultPathRef.current)
+      : rawBodyMarkdown
     const [frontmatter] = splitFrontmatter(tab.content)
     const nextContent = `${frontmatter}${bodyMarkdown}`
     pendingLocalContentRef.current = { path, content: nextContent }
@@ -406,7 +371,7 @@ function useEditorChangeHandler(options: {
       sourceContent: nextContent,
     })
     onContentChangeRef.current?.(path, nextContent)
-  }, [editor, onContentChangeRef, pendingLocalContentRef, prevActivePathRef, suppressChangeRef, tabCacheRef, tabsRef])
+  }, [editor, onContentChangeRef, pendingLocalContentRef, prevActivePathRef, suppressChangeRef, tabCacheRef, tabsRef, vaultPathRef])
 }
 
 function consumeRawModeTransition(
@@ -781,6 +746,7 @@ function scheduleEmptyHeadingSwap(options: {
   content: string
   prevActivePathRef: MutableRefObject<string | null>
   suppressChangeRef: MutableRefObject<boolean>
+  vaultPath?: string
 }) {
   const {
     editor,
@@ -788,11 +754,12 @@ function scheduleEmptyHeadingSwap(options: {
     content,
     prevActivePathRef,
     suppressChangeRef,
+    vaultPath,
   } = options
 
   if (extractBodyRemainderAfterEmptyH1({ content }) === null) return false
 
-  void resolveEmptyHeadingHtml(editor, content)
+  void resolveEmptyHeadingHtml(editor, content, vaultPath)
     .then((html) => {
       if (prevActivePathRef.current !== targetPath || !html) return
       applyHtmlStateToEditor(editor, html, suppressChangeRef)
@@ -814,6 +781,7 @@ function scheduleParsedBlockSwap(options: {
   content: string
   prevActivePathRef: MutableRefObject<string | null>
   suppressChangeRef: MutableRefObject<boolean>
+  vaultPath?: string
 }) {
   const {
     editor,
@@ -822,9 +790,10 @@ function scheduleParsedBlockSwap(options: {
     content,
     prevActivePathRef,
     suppressChangeRef,
+    vaultPath,
   } = options
 
-  void resolveBlocksForTarget(editor, cache, targetPath, content)
+  void resolveBlocksForTarget({ editor, cache, targetPath, content, vaultPath })
     .then(({ blocks, scrollTop }) => {
       if (prevActivePathRef.current !== targetPath) return
       applyBlocksToEditor(editor, blocks, scrollTop, suppressChangeRef)
@@ -846,6 +815,7 @@ function scheduleTabSwap(options: {
   prevActivePathRef: MutableRefObject<string | null>
   rawSwapPendingRef: MutableRefObject<boolean>
   suppressChangeRef: MutableRefObject<boolean>
+  vaultPath?: string
 }) {
   const {
     editor,
@@ -856,6 +826,7 @@ function scheduleTabSwap(options: {
     prevActivePathRef,
     rawSwapPendingRef,
     suppressChangeRef,
+    vaultPath,
   } = options
 
   suppressChangeRef.current = true
@@ -881,6 +852,7 @@ function scheduleTabSwap(options: {
       content: activeTab.content,
       prevActivePathRef,
       suppressChangeRef,
+      vaultPath,
     })) {
       return
     }
@@ -892,6 +864,7 @@ function scheduleTabSwap(options: {
       content: activeTab.content,
       prevActivePathRef,
       suppressChangeRef,
+      vaultPath,
     })
   }
 
@@ -991,6 +964,7 @@ function runTabSwapEffect(options: {
   rawSwapPendingRef: MutableRefObject<boolean>
   suppressChangeRef: MutableRefObject<boolean>
   pendingLocalContentRef: MutableRefObject<PendingLocalContent | null>
+  vaultPath?: string
 }) {
   const {
     tabs,
@@ -1005,6 +979,7 @@ function runTabSwapEffect(options: {
     rawSwapPendingRef,
     suppressChangeRef,
     pendingLocalContentRef,
+    vaultPath,
   } = options
 
   const rawModeJustEnded = consumeRawModeTransition(prevRawModeRef, rawMode)
@@ -1040,6 +1015,7 @@ function runTabSwapEffect(options: {
     prevActivePathRef,
     rawSwapPendingRef,
     suppressChangeRef,
+    vaultPath,
   })
 }
 
@@ -1056,6 +1032,7 @@ function useTabSwapEffect(options: {
   rawSwapPendingRef: MutableRefObject<boolean>
   suppressChangeRef: MutableRefObject<boolean>
   pendingLocalContentRef: MutableRefObject<PendingLocalContent | null>
+  vaultPathRef: MutableRefObject<string | undefined>
 }) {
   const {
     tabs,
@@ -1070,6 +1047,7 @@ function useTabSwapEffect(options: {
     rawSwapPendingRef,
     suppressChangeRef,
     pendingLocalContentRef,
+    vaultPathRef,
   } = options
 
   useEffect(() => {
@@ -1086,6 +1064,7 @@ function useTabSwapEffect(options: {
       rawSwapPendingRef,
       suppressChangeRef,
       pendingLocalContentRef,
+      vaultPath: vaultPathRef.current,
     })
   }, [
     activeTabPath,
@@ -1100,6 +1079,7 @@ function useTabSwapEffect(options: {
     tabCacheRef,
     tabs,
     pendingLocalContentRef,
+    vaultPathRef,
   ])
 }
 
@@ -1114,7 +1094,7 @@ function useTabSwapEffect(options: {
  *
  * Returns `handleEditorChange`, the onChange callback for SingleEditorView.
  */
-export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange, rawMode }: UseEditorTabSwapOptions) {
+export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange, rawMode, vaultPath }: UseEditorTabSwapOptions) {
   const tabCacheRef = useRef<Map<string, CachedTabState>>(new Map())
   const pendingLocalContentRef = useRef<PendingLocalContent | null>(null)
   const prevActivePathRef = useRef<string | null>(null)
@@ -1125,6 +1105,7 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange,
   const suppressChangeRef = useRef(false)
   const onContentChangeRef = useLatestRef(onContentChange)
   const tabsRef = useLatestRef(tabs)
+  const vaultPathRef = useLatestRef(vaultPath)
   const handleEditorChange = useEditorChangeHandler({
     editor,
     tabsRef,
@@ -1133,6 +1114,7 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange,
     suppressChangeRef,
     tabCacheRef,
     pendingLocalContentRef,
+    vaultPathRef,
   })
 
   useEditorMountState(editor, editorMountedRef, pendingSwapRef)
@@ -1149,6 +1131,7 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange,
     rawSwapPendingRef,
     suppressChangeRef,
     pendingLocalContentRef,
+    vaultPathRef,
   })
 
   return { handleEditorChange, editorMountedRef }
