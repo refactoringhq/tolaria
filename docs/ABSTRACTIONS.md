@@ -322,7 +322,7 @@ Command-layer path access is fenced to the active vault before file operations r
 3. If cache is valid and same commit → only re-parse uncommitted changed files
 4. If different commit → use `git diff` to find changed files → selective re-parse
 5. If no cache → full scan
-6. Writes updated cache atomically (write to `.tmp`, then rename)
+6. Replaces the cache with a temp-file write + rename only if a short-lived writer lock and cache fingerprint check show another scan has not already refreshed it
 7. On first run, migrates any legacy `.laputa-cache.json` from inside the vault
 
 ### Frontmatter Manipulation (Rust)
