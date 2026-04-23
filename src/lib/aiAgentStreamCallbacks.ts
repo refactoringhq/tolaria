@@ -20,6 +20,12 @@ export interface StreamMutationContext {
   fileCallbacksRef: MutableRefObject<AgentFileCallbacks | undefined>
 }
 
+const EMPTY_CLAUDE_RESPONSE = 'Claude Code finished without returning a reply.'
+
+function finalResponseText(response: string): string {
+  return response.trim() ? response : EMPTY_CLAUDE_RESPONSE
+}
+
 export function createStreamCallbacks(context: StreamMutationContext) {
   const {
     messageId,
@@ -95,7 +101,7 @@ export function createStreamCallbacks(context: StreamMutationContext) {
       if (abortRef.current.aborted) return
 
       setStatus('done')
-      const finalResponse = responseAccRef.current || undefined
+      const finalResponse = finalResponseText(responseAccRef.current)
       updateMessage(setMessages, messageId, (message) => ({
         ...message,
         isStreaming: false,
