@@ -127,7 +127,7 @@ function useCommitInfoRefresher(
   return useCallback(() => {
     tauriCall<LastCommitInfo | null>('get_last_commit_info', { vaultPath })
       .then(info => setLastCommitInfo(info))
-      .catch(() => {})
+      .catch((err) => console.warn('[sync] Auto-sync failed:', err))
   }, [vaultPath, setLastCommitInfo])
 }
 

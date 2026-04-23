@@ -58,7 +58,7 @@ export function useEditorLinkActivation(
 
       event.preventDefault()
       event.stopPropagation()
-      openExternalUrl(urlTarget).catch(() => {})
+      openExternalUrl(urlTarget).catch((err) => console.warn('[link] Failed to open URL:', err))
     }
 
     container.addEventListener('click', handleClick, true)

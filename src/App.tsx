@@ -412,7 +412,7 @@ function App() {
     const handleFocus = () => {
       invoke<DetectedRename[]>('detect_renames', { vaultPath: resolvedPath })
         .then(renames => { if (renames.length > 0) setDetectedRenames(renames) })
-        .catch(() => {}) // ignore errors (e.g., no git)
+        .catch((err) => console.warn('[vault] Git init skipped:', err))
     }
     window.addEventListener('focus', handleFocus)
     return () => window.removeEventListener('focus', handleFocus)
@@ -545,7 +545,7 @@ function App() {
     if (!isTauri()) { document.title = title; return }
     import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
       getCurrentWindow().setTitle(title)
-    }).catch(() => {})
+    }).catch((err) => console.warn('[vault] Async operation failed:', err))
   }, [noteWindowParams, notes.tabs, notes.activeTabPath])
 
   // Keep note entry in sync with vault entries so banners (trash/archive)
@@ -1022,7 +1022,7 @@ function App() {
       inspectorCollapsed: nextInspectorCollapsed,
     })
 
-    void applyMainWindowSizeConstraints(minWidth).catch(() => {})
+    void applyMainWindowSizeConstraints(minWidth).catch((err) => console.warn('[window] Size constraints failed:', err))
   }, [layout.inspectorCollapsed, noteWindowParams])
 
   const handleSetViewMode = useCallback((mode: ViewMode) => {

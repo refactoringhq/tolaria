@@ -26,7 +26,7 @@ function syncCrashReporting(
   if (!wasEnabled) return
 
   teardownSentry()
-  tauriCall('reinit_telemetry').catch(() => {})
+  tauriCall('reinit_telemetry').catch((err) => console.warn('[telemetry] Reinit failed:', err))
 }
 
 function syncAnalytics(
