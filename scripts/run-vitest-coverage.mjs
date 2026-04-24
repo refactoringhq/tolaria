@@ -14,7 +14,10 @@ const hasFileParallelismOverride = forwardedArgs.some((arg) =>
 )
 const maxAttempts = 2
 
-const packageManagerExec = process.env.npm_execpath
+// npm_execpath may point to a native binary (e.g. pnpm-exe) rather than a JS
+// script. Only use it as a node-executed script when it ends in .js/.mjs/.cjs.
+const rawExecpath = process.env.npm_execpath
+const packageManagerExec = rawExecpath && /\.(m|c)?js$/.test(rawExecpath) ? rawExecpath : null
 const command = packageManagerExec ? process.execPath : 'pnpm'
 const baseCommandArgs = packageManagerExec
   ? [packageManagerExec, 'exec', 'vitest', 'run', '--coverage']
