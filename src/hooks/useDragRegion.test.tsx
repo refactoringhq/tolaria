@@ -2,7 +2,14 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDragRegion } from './useDragRegion'
 
-const startDragging = vi.fn().mockResolvedValue(undefined)
+const { invoke, startDragging } = vi.hoisted(() => ({
+  invoke: vi.fn().mockResolvedValue(undefined),
+  startDragging: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke,
+}))
 
 vi.mock('@tauri-apps/api/window', () => ({
   getCurrentWindow: () => ({ startDragging }),
@@ -31,6 +38,16 @@ describe('useDragRegion', () => {
     fireEvent.mouseDown(screen.getByTestId('drag-surface'), { button: 0 })
 
     expect(startDragging).toHaveBeenCalledOnce()
+    expect(invoke).not.toHaveBeenCalled()
+  })
+
+  it('runs the native title-bar action on a double-click', () => {
+    render(<DragRegionHarness />)
+
+    fireEvent.mouseDown(screen.getByTestId('drag-surface'), { button: 0, detail: 2 })
+
+    expect(invoke).toHaveBeenCalledWith('perform_current_window_titlebar_double_click')
+    expect(startDragging).not.toHaveBeenCalled()
   })
 
   it('does not start dragging from no-drag containers', () => {
@@ -39,6 +56,7 @@ describe('useDragRegion', () => {
     fireEvent.mouseDown(screen.getByTestId('no-drag-card'), { button: 0 })
 
     expect(startDragging).not.toHaveBeenCalled()
+    expect(invoke).not.toHaveBeenCalled()
   })
 
   it('does not start dragging from interactive descendants', () => {
@@ -47,6 +65,7 @@ describe('useDragRegion', () => {
     fireEvent.mouseDown(screen.getByRole('button', { name: 'Action' }), { button: 0 })
 
     expect(startDragging).not.toHaveBeenCalled()
+    expect(invoke).not.toHaveBeenCalled()
   })
 
   it('ignores non-primary mouse buttons', () => {
@@ -55,5 +74,6 @@ describe('useDragRegion', () => {
     fireEvent.mouseDown(screen.getByTestId('drag-surface'), { button: 1 })
 
     expect(startDragging).not.toHaveBeenCalled()
+    expect(invoke).not.toHaveBeenCalled()
   })
 })
