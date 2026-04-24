@@ -3,6 +3,12 @@ import { describe, it, expect, vi } from 'vitest'
 import { BreadcrumbBar } from './BreadcrumbBar'
 import type { VaultEntry } from '../types'
 
+const dragRegionMouseDown = vi.fn()
+
+vi.mock('../hooks/useDragRegion', () => ({
+  useDragRegion: () => ({ onMouseDown: dragRegionMouseDown }),
+}))
+
 const baseEntry: VaultEntry = {
   path: '/vault/note/test.md',
   filename: 'test.md',
@@ -63,6 +69,15 @@ async function expectTooltip(trigger: HTMLElement, ...parts: string[]) {
 }
 
 describe('BreadcrumbBar — drag region', () => {
+  it('forwards mousedown events to the shared drag-region hook', () => {
+    const { container } = render(<BreadcrumbBar entry={baseEntry} {...defaultProps} />)
+    const bar = container.querySelector('.breadcrumb-bar') as HTMLElement
+
+    fireEvent.mouseDown(bar, { button: 0 })
+
+    expect(dragRegionMouseDown).toHaveBeenCalledOnce()
+  })
+
   it('has data-tauri-drag-region on the container', () => {
     const { container } = render(<BreadcrumbBar entry={baseEntry} {...defaultProps} />)
     const bar = container.firstElementChild as HTMLElement
