@@ -82,7 +82,8 @@ import { filterEntries, filterInboxEntries, type NoteListFilter } from './utils/
 import { openNoteInNewWindow } from './utils/openNoteWindow'
 import { refreshPulledVaultState } from './utils/pulledVaultRefresh'
 import { isNoteWindow, getNoteWindowParams, getNoteWindowPathCandidates, findNoteWindowEntry, type NoteWindowParams } from './utils/windowMode'
-import { GitRequiredModal } from './components/GitRequiredModal'
+import { useGitRepoStatus } from './hooks/useGitRepoStatus'
+import { EnableGitDialog } from './components/EnableGitDialog'
 import { RenameDetectedBanner, type DetectedRename } from './components/RenameDetectedBanner'
 import { openNoteListPropertiesPicker } from './components/note-list/noteListPropertiesEvents'
 import type { NoteListMultiSelectionCommands } from './components/note-list/multiSelectionCommands'
@@ -305,23 +306,9 @@ function App() {
       ? onboarding.state.vaultPath
       : vaultSwitcher.vaultPath
   )
-  // Git repo check: 'checking' | 'required' | 'ready'
-  const [gitRepoState, setGitRepoState] = useState<'checking' | 'required' | 'ready'>('checking')
-  useEffect(() => {
-    if (!resolvedPath) return
-    setGitRepoState('checking')
-    const check = isTauri()
-      ? invoke<boolean>('is_git_repo', { vaultPath: resolvedPath })
-      : Promise.resolve(true) // browser mock: assume git
-    check
-      .then(isGit => setGitRepoState(isGit ? 'ready' : 'required'))
-      .catch(() => setGitRepoState('ready')) // fail open
-  }, [resolvedPath])
-
-  const handleInitGitRepo = useCallback(async () => {
-    if (isTauri()) await invoke('init_git_repo', { vaultPath: resolvedPath })
-    setGitRepoState('ready')
-  }, [resolvedPath])
+  const { isGitVault: gitRepoIsGit, refresh: refreshGitRepoStatus } = useGitRepoStatus(resolvedPath)
+  const [showEnableGitDialog, setShowEnableGitDialog] = useState(false)
+  const handleOpenEnableGitDialog = useCallback(() => setShowEnableGitDialog(true), [])
 
   const vault = useVaultLoader(resolvedPath)
   const {
@@ -379,11 +366,11 @@ function App() {
 
   const vaultOpenedRef = useRef('')
   useEffect(() => {
-    if (vault.entries.length > 0 && gitRepoState !== 'checking' && resolvedPath !== vaultOpenedRef.current) {
+    if (vault.entries.length > 0 && resolvedPath !== vaultOpenedRef.current) {
       vaultOpenedRef.current = resolvedPath
-      trackEvent('vault_opened', { has_git: gitRepoState === 'ready' ? 1 : 0, note_count: vault.entries.length })
+      trackEvent('vault_opened', { has_git: gitRepoIsGit ? 1 : 0, note_count: vault.entries.length })
     }
-  }, [vault.entries.length, gitRepoState, resolvedPath])
+  }, [vault.entries.length, gitRepoIsGit, resolvedPath])
   const { mcpStatus, connectMcp, disconnectMcp } = useMcpStatus(resolvedPath, setToastMessage)
   const gitRemoteStatus = useGitRemoteStatus(resolvedPath)
 
@@ -809,7 +796,7 @@ function App() {
     vaultPath: resolvedPath,
   })
   const suggestedCommitMessage = useMemo(() => generateCommitMessage(vault.modifiedFiles), [vault.modifiedFiles])
-  const isGitVault = !vault.modifiedFilesError
+  const isGitVault = gitRepoIsGit
   const modifiedFilesSignature = useMemo(
     () => vault.modifiedFiles.map((file) => `${file.relativePath}:${file.status}`).sort().join('|'),
     [vault.modifiedFiles],
@@ -1261,6 +1248,8 @@ function App() {
     onOpenFeedback: openFeedback,
     onDeleteNote: deleteActions.handleDeleteNote,
     onArchiveNote: entryActions.handleArchiveNote, onUnarchiveNote: entryActions.handleUnarchiveNote,
+    isGitVault,
+    onEnableGit: handleOpenEnableGitDialog,
     onCommitPush: handleCommitPush,
     onPull: autoSync.triggerSync,
     onResolveConflicts: conflictFlow.handleOpenConflictResolver,
@@ -1391,23 +1380,6 @@ function App() {
     )
   }
 
-  // Show git-required modal when vault has no git repo (skip for note windows)
-  if (!noteWindowParams && gitRepoState === 'required' && !showMcpSetupDialog) {
-    return (
-      <div className="app-shell">
-        <GitRequiredModal
-          onCreateRepo={handleInitGitRepo}
-          onChooseVault={vaultSwitcher.handleOpenLocalFolder}
-        />
-      </div>
-    )
-  }
-
-  // Show loading spinner while checking git status
-  if (!noteWindowParams && gitRepoState === 'checking' && onboarding.state.status === 'ready') {
-    return <LoadingView />
-  }
-
   return (
     <NoteRetargetingProvider value={noteRetargetingUi.contextValue}>
       <div className="app-shell">
@@ -1492,7 +1464,7 @@ function App() {
         </div>
         <UpdateBanner status={updateStatus} actions={updateActions} />
         <RenameDetectedBanner renames={detectedRenames} onUpdate={handleUpdateWikilinks} onDismiss={handleDismissRenames} />
-        <StatusBar noteCount={vault.entries.length} modifiedCount={vault.modifiedFiles.length} vaultPath={resolvedPath} vaults={vaultSwitcher.allVaults} onSwitchVault={vaultSwitcher.switchVault} onOpenSettings={dialogs.openSettings} onOpenFeedback={openFeedback} onOpenLocalFolder={vaultSwitcher.handleOpenLocalFolder} onCreateEmptyVault={vaultSwitcher.handleCreateEmptyVault} onCloneVault={dialogs.openCloneVault} onCloneGettingStarted={cloneGettingStartedVault} onClickPending={() => handleSetSelection({ kind: 'filter', filter: 'changes' })} onClickPulse={() => handleSetSelection({ kind: 'filter', filter: 'pulse' })} onCommitPush={handleCommitPush} isOffline={networkStatus.isOffline} isGitVault={isGitVault} syncStatus={autoSync.syncStatus} lastSyncTime={autoSync.lastSyncTime} conflictCount={autoSync.conflictFiles.length} remoteStatus={autoSync.remoteStatus} onTriggerSync={autoSync.triggerSync} onPullAndPush={autoSync.pullAndPush} onOpenConflictResolver={conflictFlow.handleOpenConflictResolver} zoomLevel={zoom.zoomLevel} onZoomReset={zoom.zoomReset} buildNumber={buildNumber} onCheckForUpdates={handleCheckForUpdates} onRemoveVault={vaultSwitcher.removeVault} mcpStatus={mcpStatus} onInstallMcp={openMcpSetupDialog} aiAgentsStatus={aiAgentsStatus} vaultAiGuidanceStatus={vaultAiGuidanceStatus} defaultAiAgent={aiAgentPreferences.defaultAiAgent} onSetDefaultAiAgent={aiAgentPreferences.setDefaultAiAgent} onRestoreVaultAiGuidance={() => { void restoreVaultAiGuidance() }} />
+        <StatusBar noteCount={vault.entries.length} modifiedCount={vault.modifiedFiles.length} vaultPath={resolvedPath} vaults={vaultSwitcher.allVaults} onSwitchVault={vaultSwitcher.switchVault} onOpenSettings={dialogs.openSettings} onOpenFeedback={openFeedback} onOpenLocalFolder={vaultSwitcher.handleOpenLocalFolder} onCreateEmptyVault={vaultSwitcher.handleCreateEmptyVault} onCloneVault={dialogs.openCloneVault} onCloneGettingStarted={cloneGettingStartedVault} onClickPending={() => handleSetSelection({ kind: 'filter', filter: 'changes' })} onClickPulse={() => handleSetSelection({ kind: 'filter', filter: 'pulse' })} onCommitPush={handleCommitPush} isOffline={networkStatus.isOffline} isGitVault={isGitVault} onEnableGit={handleOpenEnableGitDialog} syncStatus={autoSync.syncStatus} lastSyncTime={autoSync.lastSyncTime} conflictCount={autoSync.conflictFiles.length} remoteStatus={autoSync.remoteStatus} onTriggerSync={autoSync.triggerSync} onPullAndPush={autoSync.pullAndPush} onOpenConflictResolver={conflictFlow.handleOpenConflictResolver} zoomLevel={zoom.zoomLevel} onZoomReset={zoom.zoomReset} buildNumber={buildNumber} onCheckForUpdates={handleCheckForUpdates} onRemoveVault={vaultSwitcher.removeVault} mcpStatus={mcpStatus} onInstallMcp={openMcpSetupDialog} aiAgentsStatus={aiAgentsStatus} vaultAiGuidanceStatus={vaultAiGuidanceStatus} defaultAiAgent={aiAgentPreferences.defaultAiAgent} onSetDefaultAiAgent={aiAgentPreferences.setDefaultAiAgent} onRestoreVaultAiGuidance={() => { void restoreVaultAiGuidance() }} />
         <DeleteProgressNotice count={deleteActions.pendingDeleteCount} />
         <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
         <QuickOpenPalette open={dialogs.showQuickOpen} entries={vault.entries} onSelect={notes.handleSelectNote} onClose={dialogs.closeQuickOpen} />
@@ -1535,8 +1507,14 @@ function App() {
           onCommit={conflictResolver.commitResolution}
           onClose={conflictFlow.handleCloseConflictResolver}
         />
-        <SettingsPanel open={dialogs.showSettings} settings={settings} aiAgentsStatus={aiAgentsStatus} isGitVault={isGitVault} onSave={saveSettings} explicitOrganizationEnabled={explicitOrganizationEnabled} onSaveExplicitOrganization={handleSaveExplicitOrganization} onClose={dialogs.closeSettings} />
+        <SettingsPanel open={dialogs.showSettings} settings={settings} aiAgentsStatus={aiAgentsStatus} isGitVault={isGitVault} onEnableGit={handleOpenEnableGitDialog} onSave={saveSettings} explicitOrganizationEnabled={explicitOrganizationEnabled} onSaveExplicitOrganization={handleSaveExplicitOrganization} onClose={dialogs.closeSettings} />
         <FeedbackDialog open={showFeedback} onClose={closeFeedback} />
+        <EnableGitDialog
+          open={showEnableGitDialog}
+          vaultPath={resolvedPath ?? ''}
+          onClose={() => setShowEnableGitDialog(false)}
+          onEnabled={refreshGitRepoStatus}
+        />
         <McpSetupDialog open={showMcpSetupDialog} status={mcpStatus} busyAction={mcpDialogAction} onClose={closeMcpSetupDialog} onConnect={handleConnectMcp} onDisconnect={handleDisconnectMcp} />
         <CloneVaultModal key={dialogs.showCloneVault ? 'clone-open' : 'clone-closed'} open={dialogs.showCloneVault} onClose={dialogs.closeCloneVault} onVaultCloned={vaultSwitcher.handleVaultCloned} />
         {deleteActions.confirmDelete && (

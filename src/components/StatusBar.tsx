@@ -29,6 +29,7 @@ interface StatusBarProps {
   onCommitPush?: () => void
   isOffline?: boolean
   isGitVault?: boolean
+  onEnableGit?: () => void
   syncStatus?: SyncStatus
   lastSyncTime?: number | null
   conflictCount?: number
@@ -69,6 +70,7 @@ export function StatusBar({
   onCommitPush,
   isOffline = false,
   isGitVault = false,
+  onEnableGit,
   syncStatus = 'idle',
   lastSyncTime = null,
   conflictCount = 0,
@@ -131,6 +133,7 @@ export function StatusBar({
           onCommitPush={onCommitPush}
           isOffline={isOffline}
           isGitVault={isGitVault}
+          onEnableGit={onEnableGit}
           syncStatus={syncStatus}
           lastSyncTime={lastSyncTime}
           conflictCount={conflictCount}

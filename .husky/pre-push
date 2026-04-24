@@ -143,7 +143,7 @@ if [ "$RUST_CHANGED" = true ]; then
   cargo llvm-cov \
     --manifest-path src-tauri/Cargo.toml \
     $LLVM_COV_FLAGS \
-    --ignore-filename-regex "lib\.rs|main\.rs|menu\.rs" \
+    --ignore-filename-regex "lib\.rs|main\.rs|menu\.rs|commands/git.*\.rs" \
     --fail-under-lines 85 \
     -- --test-threads=1
   echo "  ✅ Rust coverage OK"

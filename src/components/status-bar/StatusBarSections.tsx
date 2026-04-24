@@ -16,6 +16,7 @@ import {
   CommitButton,
   ConflictBadge,
   ChangesBadge,
+  EnableGitBadge,
   McpBadge,
   NoRemoteBadge,
   OfflineBadge,
@@ -54,6 +55,7 @@ interface StatusBarPrimarySectionProps {
   onCommitPush?: () => void
   isOffline?: boolean
   isGitVault?: boolean
+  onEnableGit?: () => void
   syncStatus: SyncStatus
   lastSyncTime: number | null
   conflictCount: number
@@ -98,6 +100,7 @@ export function StatusBarPrimarySection({
   onCommitPush,
   isOffline = false,
   isGitVault = false,
+  onEnableGit,
   syncStatus,
   lastSyncTime,
   conflictCount,
@@ -162,24 +165,30 @@ export function StatusBarPrimarySection({
         </Button>
       </ActionTooltip>
       <OfflineBadge isOffline={isOffline} />
-      <NoRemoteBadge
-        remoteStatus={visibleRemoteStatus}
-        onAddRemote={() => {
-          void openAddRemote()
-        }}
-      />
-      <ChangesBadge count={modifiedCount} onClick={onClickPending} />
-      <CommitButton onClick={onCommitPush} remoteStatus={visibleRemoteStatus} />
-      <SyncBadge
-        status={syncStatus}
-        lastSyncTime={lastSyncTime}
-        remoteStatus={visibleRemoteStatus}
-        onTriggerSync={onTriggerSync}
-        onPullAndPush={onPullAndPush}
-        onOpenConflictResolver={onOpenConflictResolver}
-      />
-      <ConflictBadge count={conflictCount} onClick={onOpenConflictResolver} />
-      <PulseBadge onClick={onClickPulse} disabled={isGitVault === false} />
+      {isGitVault ? (
+        <>
+          <NoRemoteBadge
+            remoteStatus={visibleRemoteStatus}
+            onAddRemote={() => {
+              void openAddRemote()
+            }}
+          />
+          <ChangesBadge count={modifiedCount} onClick={onClickPending} />
+          <CommitButton onClick={onCommitPush} remoteStatus={visibleRemoteStatus} />
+          <SyncBadge
+            status={syncStatus}
+            lastSyncTime={lastSyncTime}
+            remoteStatus={visibleRemoteStatus}
+            onTriggerSync={onTriggerSync}
+            onPullAndPush={onPullAndPush}
+            onOpenConflictResolver={onOpenConflictResolver}
+          />
+          <ConflictBadge count={conflictCount} onClick={onOpenConflictResolver} />
+          <PulseBadge onClick={onClickPulse} />
+        </>
+      ) : (
+        <EnableGitBadge onClick={onEnableGit} />
+      )}
       {mcpStatus && <McpBadge status={mcpStatus} onInstall={onInstallMcp} />}
       {aiAgentsStatus && defaultAiAgent
         ? (

@@ -249,20 +249,40 @@ describe('SettingsPanel', () => {
     }))
   })
 
-  it('disables AutoGit controls when the current vault is not git-enabled', () => {
+  it('shows Enable Git CTA and hides AutoGit controls when the vault is not git-enabled', () => {
+    const onEnableGit = vi.fn()
     render(
       <SettingsPanel
         open={true}
         settings={emptySettings}
         isGitVault={false}
+        onEnableGit={onEnableGit}
         onSave={onSave}
         onClose={onClose}
       />
     )
 
-    expect(screen.getByRole('switch', { name: 'Enable AutoGit' })).toBeDisabled()
-    expect(screen.getByTestId('settings-autogit-idle-threshold')).toBeDisabled()
-    expect(screen.getByTestId('settings-autogit-inactive-threshold')).toBeDisabled()
+    expect(screen.getByTestId('settings-enable-git')).toBeInTheDocument()
+    expect(screen.queryByRole('switch', { name: 'Enable AutoGit' })).not.toBeInTheDocument()
+    expect(screen.queryByTestId('settings-autogit-idle-threshold')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('settings-autogit-inactive-threshold')).not.toBeInTheDocument()
+  })
+
+  it('calls onEnableGit when clicking Enable Git in settings', () => {
+    const onEnableGit = vi.fn()
+    render(
+      <SettingsPanel
+        open={true}
+        settings={emptySettings}
+        isGitVault={false}
+        onEnableGit={onEnableGit}
+        onSave={onSave}
+        onClose={onClose}
+      />
+    )
+
+    fireEvent.click(screen.getByTestId('settings-enable-git'))
+    expect(onEnableGit).toHaveBeenCalledOnce()
   })
 
   it('saves the initial H1 auto-rename preference when toggled off', () => {

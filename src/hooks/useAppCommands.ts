@@ -31,6 +31,8 @@ interface AppCommandsConfig {
   onDeleteNote: (path: string) => void
   onArchiveNote: (path: string) => void
   onUnarchiveNote: (path: string) => void
+  isGitVault?: boolean
+  onEnableGit?: () => void
   onCommitPush: () => void
   onPull?: () => void
   onResolveConflicts?: () => void
@@ -128,6 +130,8 @@ type CommandRegistryCoreActions = Pick<
   | 'onDeleteNote'
   | 'onArchiveNote'
   | 'onUnarchiveNote'
+  | 'isGitVault'
+  | 'onEnableGit'
   | 'onCommitPush'
   | 'onPull'
   | 'onResolveConflicts'
@@ -371,6 +375,8 @@ function createCommandRegistryCoreConfig(
     onDeleteNote: config.onDeleteNote,
     onArchiveNote: config.onArchiveNote,
     onUnarchiveNote: config.onUnarchiveNote,
+    isGitVault: config.isGitVault,
+    onEnableGit: config.onEnableGit,
     onCommitPush: config.onCommitPush,
     onPull: config.onPull,
     onResolveConflicts: config.onResolveConflicts,
