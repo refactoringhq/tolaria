@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo, useRef, useContext } from 'react'
+import { useEffect, useCallback, useMemo, useRef, useContext, useState } from 'react'
 import { trackEvent } from '../lib/telemetry'
 import {
   useCreateBlockNote,
@@ -323,6 +323,18 @@ export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange
 }) {
   const { cssVars } = useEditorTheme()
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // Track whether the app is in dark mode by watching the <html> class
+  const [isDark, setIsDark] = useState(() =>
+    document.documentElement.classList.contains('dark')
+  )
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'))
+    })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [])
   const handleContainerClick = useEditorContainerClickHandler({ editable, editor })
   const handleEditorChange = useCompositionAwareEditorChange({ containerRef, onChange })
   const onImageUrl = useInsertImageCallback(editor)
@@ -360,7 +372,7 @@ export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange
       )}
       <SharedContextBlockNoteView
         editor={editor}
-        theme="light"
+        theme={isDark ? 'dark' : 'light'}
         onChange={handleEditorChange}
         editable={editable}
         formattingToolbar={false}
