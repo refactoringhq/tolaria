@@ -419,7 +419,10 @@ mod tests {
         fs::write(vault.join("note.md"), "# Existing note\n").unwrap();
         fs::write(vault.join("sub/another.md"), "# Another\n").unwrap();
 
-        assert!(!vault.join(".git").is_dir(), "should not be a git repo before init");
+        assert!(
+            !vault.join(".git").is_dir(),
+            "should not be a git repo before init"
+        );
 
         init_repo(vault.to_str().unwrap()).unwrap();
 
