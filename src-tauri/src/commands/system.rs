@@ -1,4 +1,7 @@
 #[cfg(desktop)]
+use std::process::Command;
+
+#[cfg(desktop)]
 use crate::menu;
 use crate::settings::Settings;
 use crate::vault_list;
@@ -12,6 +15,76 @@ use tauri::LogicalSize;
 use tauri::Window;
 
 use super::parse_build_label;
+
+#[cfg(desktop)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum TitleBarDoubleClickAction {
+    Fill,
+    Minimize,
+    None,
+}
+
+#[cfg(desktop)]
+fn parse_title_bar_double_click_action(value: &str) -> Option<TitleBarDoubleClickAction> {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "fill" | "zoom" | "maximize" => Some(TitleBarDoubleClickAction::Fill),
+        "minimize" => Some(TitleBarDoubleClickAction::Minimize),
+        "none" | "no action" | "do nothing" => Some(TitleBarDoubleClickAction::None),
+        _ => None,
+    }
+}
+
+#[cfg(desktop)]
+fn parse_legacy_title_bar_double_click_action(value: &str) -> Option<TitleBarDoubleClickAction> {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "1" | "true" | "yes" => Some(TitleBarDoubleClickAction::Minimize),
+        "0" | "false" | "no" => Some(TitleBarDoubleClickAction::Fill),
+        _ => None,
+    }
+}
+
+#[cfg(desktop)]
+fn read_global_defaults_value(key: &str) -> Option<String> {
+    let output = Command::new("defaults")
+        .args(["read", "-g", key])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+
+    let value = String::from_utf8(output.stdout).ok()?;
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    Some(trimmed.to_string())
+}
+
+#[cfg(desktop)]
+fn resolve_title_bar_double_click_action(
+    read_value: impl Fn(&str) -> Option<String>,
+) -> TitleBarDoubleClickAction {
+    read_value("AppleActionOnDoubleClick")
+        .as_deref()
+        .and_then(parse_title_bar_double_click_action)
+        .or_else(|| {
+            read_value("AppleMiniaturizeOnDoubleClick")
+                .as_deref()
+                .and_then(parse_legacy_title_bar_double_click_action)
+        })
+        .unwrap_or(TitleBarDoubleClickAction::Fill)
+}
+
+#[cfg(desktop)]
+fn toggle_window_fill(window: &Window) -> Result<(), String> {
+    if window.is_maximized().map_err(|e| e.to_string())? {
+        window.unmaximize().map_err(|e| e.to_string())
+    } else {
+        window.maximize().map_err(|e| e.to_string())
+    }
+}
 
 // ── MCP commands (desktop) ──────────────────────────────────────────────────
 
@@ -153,6 +226,16 @@ pub fn update_current_window_min_size(
         .map_err(|e| e.to_string())
 }
 
+#[cfg(desktop)]
+#[tauri::command]
+pub fn perform_current_window_titlebar_double_click(window: Window) -> Result<(), String> {
+    match resolve_title_bar_double_click_action(read_global_defaults_value) {
+        TitleBarDoubleClickAction::Fill => toggle_window_fill(&window),
+        TitleBarDoubleClickAction::Minimize => window.minimize().map_err(|e| e.to_string()),
+        TitleBarDoubleClickAction::None => Ok(()),
+    }
+}
+
 #[cfg(mobile)]
 #[tauri::command]
 pub fn update_current_window_min_size(
@@ -161,6 +244,12 @@ pub fn update_current_window_min_size(
     _min_height: f64,
     _grow_to_fit: bool,
 ) -> Result<(), String> {
+    Ok(())
+}
+
+#[cfg(mobile)]
+#[tauri::command]
+pub fn perform_current_window_titlebar_double_click(_window: tauri::Window) -> Result<(), String> {
     Ok(())
 }
 
@@ -241,4 +330,57 @@ pub fn load_vault_list() -> Result<VaultList, String> {
 #[tauri::command]
 pub fn save_vault_list(list: VaultList) -> Result<(), String> {
     vault_list::save_vault_list(&list)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_current_title_bar_actions() {
+        assert_eq!(
+            parse_title_bar_double_click_action("Fill"),
+            Some(TitleBarDoubleClickAction::Fill)
+        );
+        assert_eq!(
+            parse_title_bar_double_click_action("zoom"),
+            Some(TitleBarDoubleClickAction::Fill)
+        );
+        assert_eq!(
+            parse_title_bar_double_click_action("Minimize"),
+            Some(TitleBarDoubleClickAction::Minimize)
+        );
+        assert_eq!(
+            parse_title_bar_double_click_action("No Action"),
+            Some(TitleBarDoubleClickAction::None)
+        );
+    }
+
+    #[test]
+    fn resolves_current_setting_before_legacy_fallback() {
+        let action = resolve_title_bar_double_click_action(|key| match key {
+            "AppleActionOnDoubleClick" => Some("No Action".to_string()),
+            "AppleMiniaturizeOnDoubleClick" => Some("1".to_string()),
+            _ => None,
+        });
+
+        assert_eq!(action, TitleBarDoubleClickAction::None);
+    }
+
+    #[test]
+    fn falls_back_to_legacy_minimize_setting() {
+        let action = resolve_title_bar_double_click_action(|key| match key {
+            "AppleMiniaturizeOnDoubleClick" => Some("1".to_string()),
+            _ => None,
+        });
+
+        assert_eq!(action, TitleBarDoubleClickAction::Minimize);
+    }
+
+    #[test]
+    fn defaults_to_fill_when_no_setting_is_available() {
+        let action = resolve_title_bar_double_click_action(|_| None);
+
+        assert_eq!(action, TitleBarDoubleClickAction::Fill);
+    }
 }

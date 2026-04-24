@@ -19,6 +19,7 @@ import {
 } from '@phosphor-icons/react'
 import { NoteTitleIcon } from './NoteTitleIcon'
 import { slugify } from '../hooks/useNoteCreation'
+import { useDragRegion } from '../hooks/useDragRegion'
 
 interface BreadcrumbBarProps {
   entry: VaultEntry
@@ -501,12 +502,15 @@ export const BreadcrumbBar = memo(function BreadcrumbBar({
   onRenameFilename,
   ...actionProps
 }: BreadcrumbBarProps) {
+  const { onMouseDown } = useDragRegion()
+
   return (
     <TooltipProvider>
       <div
         ref={barRef}
         data-tauri-drag-region
         data-title-hidden=""
+        onMouseDown={onMouseDown}
         className="breadcrumb-bar flex shrink-0 items-center border-b border-transparent"
         style={{
           height: 52,

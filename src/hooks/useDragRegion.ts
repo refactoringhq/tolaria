@@ -1,5 +1,16 @@
-import { useCallback } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import { useCallback } from 'react'
+
+const NO_DRAG_SELECTOR = 'button, input, select, a, [data-no-drag]'
+
+function isDragDisabledTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest(NO_DRAG_SELECTOR) !== null
+}
+
+function performCurrentWindowTitlebarDoubleClick(): Promise<void> {
+  return invoke<void>('perform_current_window_titlebar_double_click')
+}
 
 /**
  * Returns a mousedown handler that triggers Tauri window drag via startDragging().
@@ -8,10 +19,13 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 export function useDragRegion() {
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return
-    const target = e.target as HTMLElement
-    if (target.closest('button, input, select, a, [data-no-drag]')) return
+    if (isDragDisabledTarget(e.target)) return
     e.preventDefault()
-    getCurrentWindow().startDragging().catch(() => { /* ignore */ })
+    if (e.detail === 2) {
+      void performCurrentWindowTitlebarDoubleClick().catch(() => {})
+      return
+    }
+    void getCurrentWindow().startDragging().catch(() => {})
   }, [])
 
   return { onMouseDown }
