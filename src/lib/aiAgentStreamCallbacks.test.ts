@@ -54,6 +54,7 @@ describe('aiAgentStreamCallbacks', () => {
     const toolInputMapRef = { current: new Map<string, { tool: string; input?: string }>() }
 
     const callbacks = createStreamCallbacks({
+      agent: 'claude_code',
       messageId: 'msg-1',
       vaultPath: '/vault',
       setMessages: messages.setMessages,
@@ -122,6 +123,7 @@ describe('aiAgentStreamCallbacks', () => {
     const responseAccRef = { current: 'Partial reply' }
 
     const callbacks = createStreamCallbacks({
+      agent: 'claude_code',
       messageId: 'msg-1',
       vaultPath: '/vault',
       setMessages: messages.setMessages,
@@ -152,7 +154,7 @@ describe('aiAgentStreamCallbacks', () => {
     ])
   })
 
-  it('finishes with a readable empty state when Claude exits without assistant text', () => {
+  it('finishes with a readable empty state when the agent exits without assistant text', () => {
     const messages = createMessageStore([
       {
         id: 'msg-1',
@@ -164,6 +166,7 @@ describe('aiAgentStreamCallbacks', () => {
     const status = createStatusStore('thinking')
 
     const callbacks = createStreamCallbacks({
+      agent: 'claude_code',
       messageId: 'msg-1',
       vaultPath: '/vault',
       setMessages: messages.setMessages,
@@ -189,6 +192,34 @@ describe('aiAgentStreamCallbacks', () => {
     ])
   })
 
+  it('uses the correct agent label in the empty response', () => {
+    const messages = createMessageStore([
+      {
+        id: 'msg-1',
+        userMessage: 'test',
+        actions: [],
+        isStreaming: true,
+      },
+    ])
+    const status = createStatusStore('thinking')
+
+    const callbacks = createStreamCallbacks({
+      agent: 'pi',
+      messageId: 'msg-1',
+      vaultPath: '/vault',
+      setMessages: messages.setMessages,
+      setStatus: status.setStatus,
+      abortRef: { current: { aborted: false } },
+      responseAccRef: { current: '' },
+      toolInputMapRef: { current: new Map() },
+      fileCallbacksRef: { current: undefined },
+    })
+
+    callbacks.onDone()
+
+    expect(messages.getMessages()[0].response).toBe('Pi finished without returning a reply.')
+  })
+
   it('ignores stream events after the request has been aborted', () => {
     const messages = createMessageStore([
       {
@@ -202,6 +233,7 @@ describe('aiAgentStreamCallbacks', () => {
     const fileCallbacks = { onVaultChanged: vi.fn() }
 
     const callbacks = createStreamCallbacks({
+      agent: 'claude_code',
       messageId: 'msg-1',
       vaultPath: '/vault',
       setMessages: messages.setMessages,

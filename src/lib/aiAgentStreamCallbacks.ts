@@ -1,6 +1,7 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import type { AgentFileCallbacks, AgentStatus } from '../hooks/useAiAgent'
 import { detectFileOperation } from '../hooks/useAiAgent'
+import { getAiAgentDefinition, type AiAgentId } from './aiAgents'
 import type { AiAgentMessage } from './aiAgentConversation'
 import {
   markReasoningDone,
@@ -10,6 +11,7 @@ import {
 } from './aiAgentMessageState'
 
 export interface StreamMutationContext {
+  agent: AiAgentId
   messageId: string
   vaultPath: string
   setMessages: Dispatch<SetStateAction<AiAgentMessage[]>>
@@ -20,14 +22,14 @@ export interface StreamMutationContext {
   fileCallbacksRef: MutableRefObject<AgentFileCallbacks | undefined>
 }
 
-const EMPTY_CLAUDE_RESPONSE = 'Claude Code finished without returning a reply.'
-
-function finalResponseText(response: string): string {
-  return response.trim() ? response : EMPTY_CLAUDE_RESPONSE
+function emptyResponseForAgent(agent: AiAgentId): string {
+  const label = getAiAgentDefinition(agent).label
+  return `${label} finished without returning a reply.`
 }
 
 export function createStreamCallbacks(context: StreamMutationContext) {
   const {
+    agent,
     messageId,
     vaultPath,
     setMessages,
@@ -101,7 +103,9 @@ export function createStreamCallbacks(context: StreamMutationContext) {
       if (abortRef.current.aborted) return
 
       setStatus('done')
-      const finalResponse = finalResponseText(responseAccRef.current)
+      const finalResponse = responseAccRef.current.trim()
+        ? responseAccRef.current
+        : emptyResponseForAgent(agent)
       updateMessage(setMessages, messageId, (message) => ({
         ...message,
         isStreaming: false,
