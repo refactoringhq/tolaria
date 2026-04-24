@@ -73,7 +73,10 @@ function requestNoteContent({ path }: Pick<NoteContentCacheEntry, 'path'>): Note
  *  Cache is short-lived: cleared on vault reload via clearPrefetchCache(). */
 export function prefetchNoteContent(path: string): void {
   if (prefetchCache.has(path)) return
-  requestNoteContent({ path })
+  void requestNoteContent({ path }).promise.catch((error) => {
+    if (isNoActiveVaultSelectedError(error)) return
+    console.warn('Failed to prefetch note content:', error)
+  })
 }
 
 export function cacheNoteContent(path: string, content: string): void {
@@ -189,6 +192,15 @@ function isMissingNotePathError(error: unknown): boolean {
   return /does not exist|not found|enoent/i.test(message)
 }
 
+function isNoActiveVaultSelectedError(error: unknown): boolean {
+  const message = error instanceof Error
+    ? error.message
+    : typeof error === 'string'
+      ? error
+      : String(error)
+  return /no active vault selected/i.test(message)
+}
+
 function shouldApplyLoadedEntry(options: {
   seq: number
   navSeqRef: React.MutableRefObject<number>
@@ -238,6 +250,13 @@ function handleEntryLoadFailure(options: {
 
   console.warn('Failed to load note content:', error)
   if (navSeqRef.current !== seq) return
+  if (isNoActiveVaultSelectedError(error)) {
+    clearPrefetchCache()
+    clearTabs(tabsRef, setTabs)
+    syncActiveTabPath(activeTabPathRef, setActiveTabPath, null)
+    failNoteOpenTrace(entry.path, 'missing-active-vault')
+    return
+  }
   if (isMissingNotePathError(error)) {
     clearTabs(tabsRef, setTabs)
     syncActiveTabPath(activeTabPathRef, setActiveTabPath, null)
