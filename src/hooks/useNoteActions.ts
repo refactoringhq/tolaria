@@ -201,11 +201,16 @@ function buildTabManagementOptions(
   const options: {
     beforeNavigate?: (fromPath: string, toPath: string) => Promise<void>
     onMissingNotePath: (entry: VaultEntry) => void
+    onUnreadableNoteContent: (entry: VaultEntry) => void
   } = {
     onMissingNotePath: (entry) => {
       const label = entry.title.trim() || entry.filename
       config.setToastMessage(`"${label}" could not be opened because its file is missing or moved.`)
       void config.reloadVault?.()
+    },
+    onUnreadableNoteContent: (entry) => {
+      const label = entry.title.trim() || entry.filename
+      config.setToastMessage(`"${label}" could not be opened because it is not valid UTF-8 text.`)
     },
   }
 

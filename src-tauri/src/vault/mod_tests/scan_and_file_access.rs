@@ -120,3 +120,17 @@ fn test_get_note_content_nonexistent() {
     let result = get_note_content(Path::new("/nonexistent/path/file.md"));
     assert!(result.is_err());
 }
+
+#[test]
+fn test_get_note_content_invalid_utf8() {
+    let dir = TempDir::new().unwrap();
+    let path = dir.path().join("invalid.csv");
+    std::fs::write(&path, [0x66, 0x6f, 0x80]).unwrap();
+
+    let result = get_note_content(&path);
+
+    assert_eq!(
+        result.unwrap_err(),
+        format!("File is not valid UTF-8 text: {}", path.display())
+    );
+}
