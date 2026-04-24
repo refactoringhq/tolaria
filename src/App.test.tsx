@@ -399,6 +399,7 @@ describe('App', () => {
     mockCommandResults.get_ai_agents_status = {
       claude_code: { installed: true, version: '2.1.90' },
       codex: { installed: true, version: '0.122.0-alpha.1' },
+      pi: { installed: true, version: '0.70.2' },
     }
     mockCommandResults.check_mcp_status = 'installed'
 
