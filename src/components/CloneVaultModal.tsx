@@ -108,7 +108,7 @@ function useCloneVaultForm(onClose: () => void, onVaultCloned: (path: string, la
     setCloneError(null)
 
     try {
-      await tauriCall<string>('clone_repo', { url: trimmedUrl, localPath: trimmedPath })
+      await tauriCall<string>('clone_git_repo', { url: trimmedUrl, localPath: trimmedPath })
       onVaultCloned(trimmedPath, labelFromPath(trimmedPath))
       handleClose()
     } catch (error) {
