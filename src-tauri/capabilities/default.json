@@ -17,6 +17,10 @@
     "dialog:default",
     "updater:default",
     "process:default",
-    "opener:default"
+    "opener:default",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [{ "path": "$HOME/**" }]
+    }
   ]
 }

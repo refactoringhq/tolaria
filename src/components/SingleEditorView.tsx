@@ -25,6 +25,7 @@ import {
   TolariaFormattingToolbarController,
 } from './tolariaEditorFormatting'
 import { TolariaSideMenu } from './tolariaBlockNoteSideMenu'
+import { useEditorImageActivation } from './useEditorImageActivation'
 import { useEditorLinkActivation } from './useEditorLinkActivation'
 
 const TEST_TABLE_MARKDOWN = `| Head 1 | Head 2 | Head 3 |
@@ -329,6 +330,7 @@ export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange
   const { isDragOver } = useImageDrop({ containerRef, onImageUrl, vaultPath })
   useBlockNoteSideMenuHoverGuard(containerRef)
   useEditorLinkActivation(containerRef, onNavigateWikilink)
+  useEditorImageActivation(containerRef)
 
   useEffect(() => {
     _wikilinkEntriesRef.current = entries
