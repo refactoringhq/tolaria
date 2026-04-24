@@ -1,8 +1,6 @@
-diff --git a/dist/defaultBlocks-DE5GNdJH.js b/dist/defaultBlocks-DE5GNdJH.js
-index b2761001278486a8b2ac1d10c82420b4994e96d9..fbf4f2f450ed1351d64adeb16263ceacf9ee393c 100644
 --- a/dist/defaultBlocks-DE5GNdJH.js
 +++ b/dist/defaultBlocks-DE5GNdJH.js
-@@ -2761,7 +2761,7 @@ const B = new Ze("SuggestionMenuPlugin"), _n = k(({ editor: e }) => {
+@@ -2761,7 +2761,7 @@
              if (a === s) {
                const c = r.state.doc;
                for (const l of t) {
@@ -11,10 +9,9 @@ index b2761001278486a8b2ac1d10c82420b4994e96d9..fbf4f2f450ed1351d64adeb16263ceac
                  if (l === u)
                    return r.dispatch(r.state.tr.insertText(i)), r.dispatch(
                      r.state.tr.setMeta(B, {
-diff --git a/src/editor/managers/ExtensionManager/extensions.ts b/src/editor/managers/ExtensionManager/extensions.ts
 --- a/src/editor/managers/ExtensionManager/extensions.ts
 +++ b/src/editor/managers/ExtensionManager/extensions.ts
-@@ -84,7 +84,8 @@ export function getDefaultTiptapExtensions(
+@@ -84,7 +84,8 @@
      }).configure({
        defaultProtocol: DEFAULT_LINK_PROTOCOL,
        // only call this once if we have multiple editors installed. Or fix https://github.com/ueberdosis/tiptap/issues/5450
@@ -24,10 +21,9 @@ diff --git a/src/editor/managers/ExtensionManager/extensions.ts b/src/editor/man
      }),
      ...(Object.values(editor.schema.styleSpecs).map((styleSpec) => {
        return styleSpec.implementation.mark.configure({
-diff --git a/dist/blocknote.js b/dist/blocknote.js
 --- a/dist/blocknote.js
 +++ b/dist/blocknote.js
-@@ -2037,7 +2037,9 @@ const de = () => {
+@@ -2037,7 +2037,9 @@
      ]
    })
  );
@@ -38,8 +34,7 @@ diff --git a/dist/blocknote.js b/dist/blocknote.js
  function mn(o, e) {
    const t = [
      I.ClipboardTextSerializer,
-@@ -2063,8 +2065,9 @@ function mn(o, e) {
-       inclusive: !1
+@@ -2062,7 +2064,8 @@
      }).configure({
        defaultProtocol: Ct,
        // only call this once if we have multiple editors installed. Or fix https://github.com/ueberdosis/tiptap/issues/5450
@@ -49,7 +44,7 @@ diff --git a/dist/blocknote.js b/dist/blocknote.js
      }),
      ...Object.values(o.schema.styleSpecs).map((n) => n.implementation.mark.configure({
        editor: o
-@@ -2112,7 +2115,7 @@ function mn(o, e) {
+@@ -2112,7 +2115,7 @@
      ),
      Do(o)
    ];
@@ -58,3 +53,40 @@ diff --git a/dist/blocknote.js b/dist/blocknote.js
  }
  function kn(o, e) {
    const t = [
+--- a/src/extensions/TableHandles/TableHandles.ts
++++ b/src/extensions/TableHandles/TableHandles.ts
+@@ -572,9 +572,14 @@
+     const tableBody = this.tableElement!.querySelector("tbody");
+ 
+     if (!tableBody) {
+-      throw new Error(
+-        "Table block does not contain a 'tbody' HTML element. This should never happen.",
+-      );
++      this.state.show = false;
++      this.state.showAddOrRemoveRowsButton = false;
++      this.state.showAddOrRemoveColumnsButton = false;
++      this.state.rowIndex = undefined;
++      this.state.colIndex = undefined;
++      this.state.referencePosCell = undefined;
++      this.emitUpdate();
++      return;
+     }
+ 
+     if (
+--- a/dist/TrailingNode-CxM966vN.js
++++ b/dist/TrailingNode-CxM966vN.js
+@@ -1746,10 +1746,10 @@
+     );
+     this.state.rowIndex !== void 0 && this.state.colIndex !== void 0 && (this.state.rowIndex >= e && (this.state.rowIndex = e - 1), this.state.colIndex >= t && (this.state.colIndex = t - 1));
+     const o = this.tableElement.querySelector("tbody");
+-    if (!o)
+-      throw new Error(
+-        "Table block does not contain a 'tbody' HTML element. This should never happen."
+-      );
++    if (!o) {
++      this.state.show = !1, this.state.showAddOrRemoveRowsButton = !1, this.state.showAddOrRemoveColumnsButton = !1, this.state.rowIndex = void 0, this.state.colIndex = void 0, this.state.referencePosCell = void 0, this.emitUpdate();
++      return;
++    }
+     if (this.state.rowIndex !== void 0 && this.state.colIndex !== void 0) {
+       const i = o.children[this.state.rowIndex].children[this.state.colIndex];
+       i ? this.state.referencePosCell = i.getBoundingClientRect() : (this.state.rowIndex = void 0, this.state.colIndex = void 0);
