@@ -207,12 +207,39 @@ function editorSupportsTextStyle(
   )
 }
 
+function getSelectedBlocksSafely(
+  editor: BlockNoteEditor<BlockSchema, InlineContentSchema, StyleSchema>,
+): TolariaSelectedBlock[] {
+  try {
+    const selectionBlocks = editor.getSelection()?.blocks
+    if (selectionBlocks?.length) {
+      return selectionBlocks as TolariaSelectedBlock[]
+    }
+  } catch {
+    // BlockNote can briefly expose an invalid selection while inline actions remount blocks.
+  }
+
+  try {
+    return [editor.getTextCursorPosition().block as TolariaSelectedBlock]
+  } catch {
+    return []
+  }
+}
+
+function getCursorBlockSafely(
+  editor: BlockNoteEditor<BlockSchema, InlineContentSchema, StyleSchema>,
+): TolariaSelectedBlock | null {
+  try {
+    return editor.getTextCursorPosition().block as TolariaSelectedBlock
+  } catch {
+    return null
+  }
+}
+
 function selectionSupportsInlineFormatting(
   editor: BlockNoteEditor<BlockSchema, InlineContentSchema, StyleSchema>,
 ) {
-  return (
-    editor.getSelection()?.blocks || [editor.getTextCursorPosition().block]
-  ).some((block) => block.content !== undefined)
+  return getSelectedBlocksSafely(editor).some((block) => block.content !== undefined)
 }
 
 function getBasicTextStyleButtonState(
@@ -274,8 +301,8 @@ function getTolariaBlockTypeSelectOptions(
 function getFormattingToolbarBridgeBlockId(
   editor: BlockNoteEditor<BlockSchema, InlineContentSchema, StyleSchema>,
 ) {
-  const selectedBlock =
-    editor.getSelection()?.blocks[0] ?? editor.getTextCursorPosition().block
+  const selectedBlock = getSelectedBlocksSafely(editor)[0]
+  if (!selectedBlock) return null
 
   return FORMATTING_TOOLBAR_FILE_BLOCK_TYPES.has(selectedBlock.type)
     ? selectedBlock.id
@@ -353,14 +380,15 @@ function TolariaBlockTypeSelect() {
   >()
   const selectedBlocks = useEditorState({
     editor,
-    selector: ({ editor }): TolariaSelectedBlock[] =>
-      (editor.getSelection()?.blocks || [
-        editor.getTextCursorPosition().block,
-      ]) as TolariaSelectedBlock[],
+    selector: ({ editor }): TolariaSelectedBlock[] => getSelectedBlocksSafely(editor),
   })
-  const firstSelectedBlock = selectedBlocks[0]
+  const firstSelectedBlock = selectedBlocks[0] ?? null
   const selectItems = useMemo(
-    () => getTolariaBlockTypeSelectOptions(editor, firstSelectedBlock),
+    () => (
+      firstSelectedBlock
+        ? getTolariaBlockTypeSelectOptions(editor, firstSelectedBlock)
+        : []
+    ),
     [editor, firstSelectedBlock],
   )
   const selectedItem = selectItems.find(
@@ -509,7 +537,8 @@ export function TolariaFormattingToolbarController(props: {
   const placement = useEditorState({
     editor,
     selector: ({ editor }) => {
-      const block = editor.getTextCursorPosition().block
+      const block = getCursorBlockSafely(editor)
+      if (!block) return 'top-start'
 
       if (!blockHasType(block, editor, block.type, {
         textAlignment: defaultProps.textAlignment,
