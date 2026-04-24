@@ -306,6 +306,7 @@ vi.mock('@blocknote/react', () => ({
       {children}
     </div>
   ),
+  LinkToolbar: ({ children }: { children?: ReactNode }) => <>{children}</>,
   ComponentsContext: {
     Provider: ({ children }: { children?: ReactNode }) => <>{children}</>,
   },
@@ -318,8 +319,30 @@ vi.mock('@blocknote/react', () => ({
     focus: () => {},
     onMount: (cb: () => void) => { cb(); return () => {} },
   }),
+  LinkToolbarController: () => null,
+  EditLinkButton: () => null,
+  DeleteLinkButton: () => null,
   SideMenuController: () => null,
   SuggestionMenuController: () => null,
+  useComponentsContext: () => ({
+    LinkToolbar: {
+      Button: ({
+        children,
+        label,
+        onClick,
+      }: { children?: ReactNode; label?: string; onClick?: () => void }) => (
+        <button onClick={onClick} type="button">
+          {label}
+          {children}
+        </button>
+      ),
+    },
+  }),
+  useDictionary: () => ({
+    link_toolbar: {
+      open: { tooltip: 'Open in a new tab' },
+    },
+  }),
 }))
 
 vi.mock('@blocknote/mantine', () => ({
