@@ -2,6 +2,7 @@ mod ai;
 mod delete;
 mod folders;
 mod git;
+pub mod git_clone;
 mod git_connect;
 mod system;
 mod vault;

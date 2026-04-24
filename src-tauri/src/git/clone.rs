@@ -1,12 +1,18 @@
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Output, Stdio};
+
+struct CloneRequest<'a> {
+    url: &'a str,
+    dest: &'a Path,
+}
 
 /// Clone a git repository to a local path using the system git configuration.
 pub fn clone_repo(url: &str, local_path: &str) -> Result<String, String> {
     let dest = Path::new(local_path);
+    let request = CloneRequest { url, dest };
     prepare_clone_destination(dest)?;
 
-    if let Err(err) = run_clone(url, dest) {
+    if let Err(err) = run_clone(&request) {
         cleanup_failed_clone(dest);
         return Err(err);
     }
@@ -64,12 +70,14 @@ fn directory_has_entries(dest: &Path) -> Result<bool, String> {
         .map(|mut entries| entries.next().is_some())
 }
 
-fn run_clone(url: &str, dest: &Path) -> Result<(), String> {
-    let destination = dest
-        .to_str()
-        .ok_or_else(|| format!("Destination '{}' is not valid UTF-8", dest.display()))?;
-    let output = Command::new("git")
-        .args(["clone", "--progress", url, destination])
+fn run_clone(request: &CloneRequest<'_>) -> Result<(), String> {
+    let destination = request.dest.to_str().ok_or_else(|| {
+        format!(
+            "Destination '{}' is not valid UTF-8",
+            request.dest.display()
+        )
+    })?;
+    let output = build_clone_command(request, destination)
         .output()
         .map_err(|e| format!("Failed to run git clone: {}", e))?;
 
@@ -77,8 +85,36 @@ fn run_clone(url: &str, dest: &Path) -> Result<(), String> {
         return Ok(());
     }
 
+    Err(format!(
+        "git clone failed: {}",
+        clone_failure_message(&output)
+    ))
+}
+
+fn build_clone_command(request: &CloneRequest<'_>, destination: &str) -> Command {
+    let mut command = Command::new("git");
+    command
+        .args(["clone", "--progress", request.url, destination])
+        .env("GIT_TERMINAL_PROMPT", "0")
+        .env("SSH_ASKPASS_REQUIRE", "never")
+        .stdin(Stdio::null());
+    command
+}
+
+fn clone_failure_message(output: &Output) -> String {
     let stderr = String::from_utf8_lossy(&output.stderr);
-    Err(format!("git clone failed: {}", stderr.trim()))
+    let stderr = stderr.trim();
+    if !stderr.is_empty() {
+        return stderr.to_string();
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stdout = stdout.trim();
+    if !stdout.is_empty() {
+        return stdout.to_string();
+    }
+
+    format!("git clone exited with status {}", output.status)
 }
 
 fn cleanup_failed_clone(dest: &Path) {
@@ -91,6 +127,7 @@ fn cleanup_failed_clone(dest: &Path) {
 mod tests {
     use super::*;
     use std::fs;
+    use std::os::unix::process::ExitStatusExt;
     use std::path::Path;
     use std::process::Command as StdCommand;
 
@@ -159,5 +196,44 @@ mod tests {
             dest.to_str().unwrap(),
         );
         assert!(result.unwrap_err().contains("git clone failed"));
+    }
+
+    #[test]
+    fn test_clone_failure_message_falls_back_to_stdout() {
+        let output = Output {
+            status: std::process::ExitStatus::from_raw(128),
+            stdout: b"fatal: stdout only".to_vec(),
+            stderr: Vec::new(),
+        };
+
+        assert_eq!(clone_failure_message(&output), "fatal: stdout only");
+    }
+
+    #[test]
+    fn test_build_clone_command_disables_interactive_prompts() {
+        let dest = Path::new("/tmp/repo");
+        let request = CloneRequest {
+            url: "https://example.com/repo.git",
+            dest,
+        };
+        let command = build_clone_command(&request, "/tmp/repo");
+        let envs = command
+            .get_envs()
+            .map(|(key, value)| {
+                (
+                    key.to_string_lossy().to_string(),
+                    value.map(|entry| entry.to_string_lossy().to_string()),
+                )
+            })
+            .collect::<std::collections::HashMap<_, _>>();
+
+        assert_eq!(
+            envs.get("GIT_TERMINAL_PROMPT"),
+            Some(&Some("0".to_string()))
+        );
+        assert_eq!(
+            envs.get("SSH_ASKPASS_REQUIRE"),
+            Some(&Some("never".to_string()))
+        );
     }
 }

@@ -428,6 +428,11 @@ export const mockHandlers: Record<string, (args: any) => any> = {
     setMockRemoteState(localPath, true)
     return `Cloned to ${localPath}`
   },
+  clone_git_repo: (args: { url: string; localPath?: string; local_path?: string }) => {
+    const localPath = args.localPath ?? args.local_path ?? ''
+    setMockRemoteState(localPath, true)
+    return `Cloned to ${localPath}`
+  },
   purge_trash: () => [],
   delete_note: (args: { path: string }) => args.path,
   batch_delete_notes: (args: { paths: string[] }) => args.paths,

@@ -460,9 +460,9 @@ Tolaria no longer implements provider-specific OAuth or remote-repository APIs. 
 **Flow:**
 1. User opens `CloneVaultModal` from onboarding or the vault menu
 2. User pastes any git URL and chooses a local destination
-3. `clone_repo()` shells out to `git clone`
+3. The `clone_git_repo()` Tauri command runs `git clone` inside a blocking Tokio task so the Tauri window stays responsive during slow or failing clones
 4. `git_push()` / `git_pull()` continue to use the same system git path
-5. If auth fails, the raw git stderr is surfaced in the UI
+5. Clone commands disable interactive terminal / askpass prompts and surface the git failure back to the UI instead of freezing the app waiting for input
 
 **Auth model:**
 - SSH keys, Git Credential Manager, macOS Keychain helpers, `gh auth`, and other git helpers all work without app-specific setup
