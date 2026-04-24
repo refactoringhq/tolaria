@@ -229,7 +229,7 @@ mod tests {
             .output()
             .unwrap();
 
-        let entries = list_vault(vault_path.into()).unwrap();
+        let entries = crate::vault::scan_vault_cached(vault_path).unwrap();
         assert!(!entries[0].archived);
 
         std::fs::write(

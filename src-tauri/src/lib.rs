@@ -161,9 +161,23 @@ fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     {
         run_startup_tasks();
         spawn_ws_bridge(app);
+        prime_asset_scope_for_last_vault(app);
     }
 
     Ok(())
+}
+
+#[cfg(desktop)]
+fn prime_asset_scope_for_last_vault(app: &tauri::App) {
+    let Some(vault_path) = settings::get_last_vault() else { return };
+    let expanded = commands::expand_tilde(&vault_path).into_owned();
+    let path = Path::new(&expanded);
+    if !path.is_dir() {
+        return;
+    }
+    if let Err(e) = sync_vault_asset_scope(app.handle(), path) {
+        log::warn!("Failed to prime asset scope for {expanded}: {e}");
+    }
 }
 
 #[cfg(desktop)]

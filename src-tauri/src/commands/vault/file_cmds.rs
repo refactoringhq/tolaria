@@ -160,8 +160,14 @@ pub fn copy_image_to_vault(vault_path: PathBuf, source_path: PathBuf) -> Result<
 }
 
 #[tauri::command]
-pub fn list_vault(path: PathBuf) -> Result<Vec<VaultEntry>, String> {
-    with_expanded_vault_root(path.as_path(), vault::scan_vault_cached)
+pub fn list_vault(
+    app_handle: tauri::AppHandle,
+    path: PathBuf,
+) -> Result<Vec<VaultEntry>, String> {
+    with_expanded_vault_root(path.as_path(), |expanded| {
+        crate::sync_vault_asset_scope(&app_handle, expanded)?;
+        vault::scan_vault_cached(expanded)
+    })
 }
 
 #[tauri::command]
