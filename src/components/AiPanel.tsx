@@ -17,6 +17,7 @@ export type { AiAgentMessage } from '../hooks/useCliAiAgent'
 interface AiPanelProps {
   onClose: () => void
   onOpenNote?: (path: string) => void
+  onUnsupportedAiPaste?: (message: string) => void
   defaultAiAgent?: AiAgentId
   defaultAiAgentReady?: boolean
   onFileCreated?: (relativePath: string) => void
@@ -36,6 +37,7 @@ interface AiPanelViewProps {
   controller: AiPanelController
   onClose: () => void
   onOpenNote?: (path: string) => void
+  onUnsupportedAiPaste?: (message: string) => void
   defaultAiAgent?: AiAgentId
   defaultAiAgentReady?: boolean
   activeEntry?: VaultEntry | null
@@ -46,6 +48,7 @@ export function AiPanelView({
   controller,
   onClose,
   onOpenNote,
+  onUnsupportedAiPaste,
   defaultAiAgent: providedDefaultAiAgent,
   defaultAiAgentReady: providedDefaultAiAgentReady,
   activeEntry,
@@ -125,6 +128,7 @@ export function AiPanelView({
         legacyCopy={useLegacyAiExperience}
         onChange={setInput}
         onSend={handleSend}
+        onUnsupportedAiPaste={onUnsupportedAiPaste}
       />
     </aside>
   )
@@ -133,6 +137,7 @@ export function AiPanelView({
 export function AiPanel({
   onClose,
   onOpenNote,
+  onUnsupportedAiPaste,
   defaultAiAgent: providedDefaultAiAgent,
   defaultAiAgentReady: providedDefaultAiAgentReady,
   onFileCreated,
@@ -167,6 +172,7 @@ export function AiPanel({
       controller={controller}
       onClose={onClose}
       onOpenNote={onOpenNote}
+      onUnsupportedAiPaste={onUnsupportedAiPaste}
       defaultAiAgent={providedDefaultAiAgent}
       defaultAiAgentReady={providedDefaultAiAgentReady}
       activeEntry={activeEntry}
