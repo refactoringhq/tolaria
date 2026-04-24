@@ -49,17 +49,7 @@ fn read_global_defaults_value(key: &str) -> Option<String> {
         .args(["read", "-g", key])
         .output()
         .ok()?;
-    if !output.status.success() {
-        return None;
-    }
-
-    let value = String::from_utf8(output.stdout).ok()?;
-    let trimmed = value.trim();
-    if trimmed.is_empty() {
-        return None;
-    }
-
-    Some(trimmed.to_string())
+    parse_defaults_read_output(output)
 }
 
 #[cfg(desktop)]
@@ -78,11 +68,38 @@ fn resolve_title_bar_double_click_action(
 }
 
 #[cfg(desktop)]
-fn toggle_window_fill(window: &Window) -> Result<(), String> {
-    if window.is_maximized().map_err(|e| e.to_string())? {
-        window.unmaximize().map_err(|e| e.to_string())
-    } else {
-        window.maximize().map_err(|e| e.to_string())
+fn parse_defaults_read_output(output: std::process::Output) -> Option<String> {
+    if !output.status.success() {
+        return None;
+    }
+
+    let value = String::from_utf8(output.stdout).ok()?;
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    Some(trimmed.to_string())
+}
+
+#[cfg(desktop)]
+fn apply_title_bar_double_click_action(
+    action: TitleBarDoubleClickAction,
+    is_maximized: impl FnOnce() -> Result<bool, String>,
+    maximize: impl FnOnce() -> Result<(), String>,
+    unmaximize: impl FnOnce() -> Result<(), String>,
+    minimize: impl FnOnce() -> Result<(), String>,
+) -> Result<(), String> {
+    match action {
+        TitleBarDoubleClickAction::Fill => {
+            if is_maximized()? {
+                unmaximize()
+            } else {
+                maximize()
+            }
+        }
+        TitleBarDoubleClickAction::Minimize => minimize(),
+        TitleBarDoubleClickAction::None => Ok(()),
     }
 }
 
@@ -229,11 +246,15 @@ pub fn update_current_window_min_size(
 #[cfg(desktop)]
 #[tauri::command]
 pub fn perform_current_window_titlebar_double_click(window: Window) -> Result<(), String> {
-    match resolve_title_bar_double_click_action(read_global_defaults_value) {
-        TitleBarDoubleClickAction::Fill => toggle_window_fill(&window),
-        TitleBarDoubleClickAction::Minimize => window.minimize().map_err(|e| e.to_string()),
-        TitleBarDoubleClickAction::None => Ok(()),
-    }
+    let action = resolve_title_bar_double_click_action(read_global_defaults_value);
+
+    apply_title_bar_double_click_action(
+        action,
+        || window.is_maximized().map_err(|e| e.to_string()),
+        || window.maximize().map_err(|e| e.to_string()),
+        || window.unmaximize().map_err(|e| e.to_string()),
+        || window.minimize().map_err(|e| e.to_string()),
+    )
 }
 
 #[cfg(mobile)]
@@ -335,52 +356,171 @@ pub fn save_vault_list(list: VaultList) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(desktop)]
+    use std::cell::RefCell;
+    #[cfg(desktop)]
+    use std::os::unix::process::ExitStatusExt;
+    #[cfg(desktop)]
+    use std::process::{ExitStatus, Output};
+    #[cfg(desktop)]
+    use std::rc::Rc;
 
     #[test]
-    fn parses_current_title_bar_actions() {
-        assert_eq!(
-            parse_title_bar_double_click_action("Fill"),
-            Some(TitleBarDoubleClickAction::Fill)
-        );
-        assert_eq!(
-            parse_title_bar_double_click_action("zoom"),
-            Some(TitleBarDoubleClickAction::Fill)
-        );
-        assert_eq!(
-            parse_title_bar_double_click_action("Minimize"),
-            Some(TitleBarDoubleClickAction::Minimize)
-        );
-        assert_eq!(
-            parse_title_bar_double_click_action("No Action"),
-            Some(TitleBarDoubleClickAction::None)
-        );
+    fn parses_title_bar_action_values() {
+        for (value, expected) in [
+            ("Fill", Some(TitleBarDoubleClickAction::Fill)),
+            ("zoom", Some(TitleBarDoubleClickAction::Fill)),
+            ("Minimize", Some(TitleBarDoubleClickAction::Minimize)),
+            ("No Action", Some(TitleBarDoubleClickAction::None)),
+            ("tile", None),
+        ] {
+            assert_eq!(parse_title_bar_double_click_action(value), expected);
+        }
+
+        for (value, expected) in [
+            ("1", Some(TitleBarDoubleClickAction::Minimize)),
+            ("false", Some(TitleBarDoubleClickAction::Fill)),
+            ("maybe", None),
+        ] {
+            assert_eq!(parse_legacy_title_bar_double_click_action(value), expected);
+        }
     }
 
     #[test]
-    fn resolves_current_setting_before_legacy_fallback() {
-        let action = resolve_title_bar_double_click_action(|key| match key {
-            "AppleActionOnDoubleClick" => Some("No Action".to_string()),
-            "AppleMiniaturizeOnDoubleClick" => Some("1".to_string()),
-            _ => None,
-        });
-
-        assert_eq!(action, TitleBarDoubleClickAction::None);
+    fn resolves_title_bar_action_preferences() {
+        assert_eq!(
+            resolve_with(&[
+                ("AppleActionOnDoubleClick", "No Action"),
+                ("AppleMiniaturizeOnDoubleClick", "1"),
+            ]),
+            TitleBarDoubleClickAction::None
+        );
+        assert_eq!(
+            resolve_with(&[("AppleMiniaturizeOnDoubleClick", "1")]),
+            TitleBarDoubleClickAction::Minimize
+        );
+        assert_eq!(
+            resolve_with(&[
+                ("AppleActionOnDoubleClick", "tile"),
+                ("AppleMiniaturizeOnDoubleClick", "1"),
+            ]),
+            TitleBarDoubleClickAction::Minimize
+        );
+        assert_eq!(resolve_with(&[]), TitleBarDoubleClickAction::Fill);
     }
 
     #[test]
-    fn falls_back_to_legacy_minimize_setting() {
-        let action = resolve_title_bar_double_click_action(|key| match key {
-            "AppleMiniaturizeOnDoubleClick" => Some("1".to_string()),
-            _ => None,
-        });
-
-        assert_eq!(action, TitleBarDoubleClickAction::Minimize);
+    fn parses_defaults_output_variants() {
+        for (code, stdout, expected) in [
+            (0, b" Maximize \n".to_vec(), Some("Maximize")),
+            (1, b"Minimize\n".to_vec(), None),
+            (0, b"   \n".to_vec(), None),
+            (0, vec![0xff], None),
+        ] {
+            assert_eq!(
+                parse_defaults_read_output(output(code, stdout)),
+                expected.map(str::to_string)
+            );
+        }
     }
 
     #[test]
-    fn defaults_to_fill_when_no_setting_is_available() {
-        let action = resolve_title_bar_double_click_action(|_| None);
+    fn routes_title_bar_actions_to_expected_window_calls() {
+        for (action, state, expected_calls) in [
+            (
+                TitleBarDoubleClickAction::Fill,
+                Ok(false),
+                vec!["is_maximized", "maximize"],
+            ),
+            (
+                TitleBarDoubleClickAction::Fill,
+                Ok(true),
+                vec!["is_maximized", "unmaximize"],
+            ),
+            (
+                TitleBarDoubleClickAction::Minimize,
+                Ok(false),
+                vec!["minimize"],
+            ),
+            (TitleBarDoubleClickAction::None, Ok(false), Vec::new()),
+        ] {
+            let (result, calls) = run_action(action, state, Ok(()), Ok(()), Ok(()));
+            assert_eq!(result, Ok(()));
+            assert_eq!(calls, expected_calls);
+        }
+    }
 
-        assert_eq!(action, TitleBarDoubleClickAction::Fill);
+    #[test]
+    fn propagates_title_bar_action_errors() {
+        for (state, maximize, unmaximize, expected) in [
+            (Err("state"), Ok(()), Ok(()), "state"),
+            (Ok(false), Err("maximize"), Ok(()), "maximize"),
+            (Ok(true), Ok(()), Err("unmaximize"), "unmaximize"),
+        ] {
+            let (result, _) = run_action(
+                TitleBarDoubleClickAction::Fill,
+                state,
+                maximize,
+                unmaximize,
+                Ok(()),
+            );
+            assert_eq!(result, Err(expected.to_string()));
+        }
+    }
+
+    fn exit_status(code: i32) -> ExitStatus {
+        ExitStatus::from_raw(code << 8)
+    }
+
+    fn output(code: i32, stdout: Vec<u8>) -> Output {
+        Output {
+            status: exit_status(code),
+            stdout,
+            stderr: Vec::new(),
+        }
+    }
+
+    fn resolve_with(values: &[(&str, &str)]) -> TitleBarDoubleClickAction {
+        resolve_title_bar_double_click_action(|key| {
+            values
+                .iter()
+                .find(|(candidate, _)| *candidate == key)
+                .map(|(_, value)| (*value).to_string())
+        })
+    }
+
+    fn run_action(
+        action: TitleBarDoubleClickAction,
+        state: Result<bool, &'static str>,
+        maximize: Result<(), &'static str>,
+        unmaximize: Result<(), &'static str>,
+        minimize: Result<(), &'static str>,
+    ) -> (Result<(), String>, Vec<&'static str>) {
+        let calls = Rc::new(RefCell::new(Vec::new()));
+        let state_calls = Rc::clone(&calls);
+        let maximize_calls = Rc::clone(&calls);
+        let unmaximize_calls = Rc::clone(&calls);
+        let minimize_calls = Rc::clone(&calls);
+        let result = apply_title_bar_double_click_action(
+            action,
+            move || {
+                state_calls.borrow_mut().push("is_maximized");
+                state.map_err(str::to_string)
+            },
+            move || {
+                maximize_calls.borrow_mut().push("maximize");
+                maximize.map_err(str::to_string)
+            },
+            move || {
+                unmaximize_calls.borrow_mut().push("unmaximize");
+                unmaximize.map_err(str::to_string)
+            },
+            move || {
+                minimize_calls.borrow_mut().push("minimize");
+                minimize.map_err(str::to_string)
+            },
+        );
+        let call_log = calls.borrow().clone();
+        (result, call_log)
     }
 }
