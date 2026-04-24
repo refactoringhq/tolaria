@@ -431,13 +431,27 @@ interface PulseCommit {
 - Triggers `useCommitFlow.runAutomaticCheckpoint()` only when the vault is git-backed, pending changes exist, and no unsaved edits remain
 - Shares the same deterministic automatic commit message generator with the bottom-bar Commit button, so timer-driven checkpoints and manual quick commits produce the same `Updated N note(s)` / `Updated N file(s)` messages
 
+### Git presence signal (`isGitVault`)
+
+`useGitRepoStatus(vaultPath)` calls `is_git_repo` on mount and whenever `refresh()` is invoked. It returns `{ isGitVault, refresh }`. In browser/dev mode and on error it defaults to `true` (fail-open). `App.tsx` derives `isGitVault` from this hook and propagates it to:
+
+- `StatusBar` / `StatusBarPrimarySection` — gates Git-action badges
+- `SettingsPanel` — gates AutoGit controls and shows the Git-enable CTA
+- `useAutoGit` — already early-returns when `isGitVault === false`
+- `useAppCommands` → `buildGitCommands` — shows only "Enable Git" command when `!isGitVault`
+
+### Enable Git flow
+
+When `!isGitVault`, the status bar renders `EnableGitBadge` instead of the normal Git cluster. Clicking it (or choosing "Enable Git" in Settings → Git or the command palette) opens `EnableGitDialog`. After the user confirms, `init_git_repo` is called, `refresh()` re-checks `is_git_repo`, and `isGitVault` flips to `true`, restoring the full Git UI. The Tauri command is idempotent: if `.git` already exists it returns `Ok(())`.
+
 ### Frontend Integration
 
-- **Modified file badges**: Orange dots in sidebar
+- **Modified file badges**: Orange dots in sidebar (shown only when `isGitVault`)
 - **Diff view**: Toggle in breadcrumb bar → shows unified diff
 - **Git history**: Shown in Inspector panel for active note
 - **Commit dialog**: Triggered from sidebar or Cmd+K
 - **No remote indicator**: Neutral chip in the bottom bar when `GitRemoteStatus.hasRemote === false`
+- **Enable Git indicator**: Single `EnableGitBadge` chip when `!isGitVault`; opens `EnableGitDialog`
 - **Pulse view**: Activity feed when Pulse filter is selected
 - **Pull command**: Cmd+K → "Pull from Remote", also in Vault menu
 - **Git status popup**: Click sync badge → shows branch, ahead/behind, Pull button

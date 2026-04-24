@@ -37,6 +37,7 @@ interface SettingsPanelProps {
   aiAgentsStatus?: AiAgentsStatus
   onSave: (settings: Settings) => void
   isGitVault?: boolean
+  onEnableGit?: () => void
   explicitOrganizationEnabled?: boolean
   onSaveExplicitOrganization?: (enabled: boolean) => void
   onClose: () => void
@@ -60,6 +61,7 @@ interface SettingsBodyProps {
   pullInterval: number
   setPullInterval: (value: number) => void
   isGitVault: boolean
+  onEnableGit?: () => void
   autoGitEnabled: boolean
   setAutoGitEnabled: (value: boolean) => void
   autoGitIdleThresholdSeconds: number
@@ -166,6 +168,7 @@ export function SettingsPanel({
   aiAgentsStatus = createMissingAiAgentsStatus(),
   onSave,
   isGitVault = true,
+  onEnableGit,
   explicitOrganizationEnabled = true,
   onSaveExplicitOrganization,
   onClose,
@@ -178,6 +181,7 @@ export function SettingsPanel({
       aiAgentsStatus={aiAgentsStatus}
       onSave={onSave}
       isGitVault={isGitVault}
+      onEnableGit={onEnableGit}
       explicitOrganizationEnabled={explicitOrganizationEnabled}
       onSaveExplicitOrganization={onSaveExplicitOrganization}
       onClose={onClose}
@@ -196,6 +200,7 @@ function SettingsPanelInner({
   aiAgentsStatus,
   onSave,
   isGitVault,
+  onEnableGit,
   explicitOrganizationEnabled,
   onSaveExplicitOrganization,
   onClose,
@@ -266,6 +271,7 @@ function SettingsPanelInner({
           pullInterval={draft.pullInterval}
           setPullInterval={(value) => updateDraft('pullInterval', value)}
           isGitVault={isGitVault}
+          onEnableGit={onEnableGit}
           autoGitEnabled={draft.autoGitEnabled}
           setAutoGitEnabled={(value) => updateDraft('autoGitEnabled', value)}
           autoGitIdleThresholdSeconds={draft.autoGitIdleThresholdSeconds}
@@ -318,6 +324,7 @@ function SettingsBody({
   pullInterval,
   setPullInterval,
   isGitVault,
+  onEnableGit,
   autoGitEnabled,
   setAutoGitEnabled,
   autoGitIdleThresholdSeconds,
@@ -354,6 +361,7 @@ function SettingsBody({
       <SettingsSection>
         <AutoGitSettingsSection
           isGitVault={isGitVault}
+          onEnableGit={onEnableGit}
           autoGitEnabled={autoGitEnabled}
           setAutoGitEnabled={setAutoGitEnabled}
           autoGitIdleThresholdSeconds={autoGitIdleThresholdSeconds}
@@ -446,6 +454,7 @@ function autoGitSectionDescription(isGitVault: boolean): string {
 
 function AutoGitSettingsSection({
   isGitVault,
+  onEnableGit,
   autoGitEnabled,
   setAutoGitEnabled,
   autoGitIdleThresholdSeconds,
@@ -455,6 +464,7 @@ function AutoGitSettingsSection({
 }: Pick<
   SettingsBodyProps,
   | 'isGitVault'
+  | 'onEnableGit'
   | 'autoGitEnabled'
   | 'setAutoGitEnabled'
   | 'autoGitIdleThresholdSeconds'
@@ -462,6 +472,26 @@ function AutoGitSettingsSection({
   | 'autoGitInactiveThresholdSeconds'
   | 'setAutoGitInactiveThresholdSeconds'
 >) {
+  if (!isGitVault) {
+    return (
+      <>
+        <SectionHeading
+          title="Git"
+          description="Git is not enabled for this vault. Enable it to unlock AutoGit, commit history, change tracking, and remote sync."
+        />
+        <div style={{ marginBottom: 16 }}>
+          <Button
+            size="sm"
+            onClick={onEnableGit}
+            data-testid="settings-enable-git"
+          >
+            Enable Git
+          </Button>
+        </div>
+      </>
+    )
+  }
+
   return (
     <>
       <SectionHeading
@@ -474,7 +504,6 @@ function AutoGitSettingsSection({
         description="When enabled, Tolaria will commit and push saved local changes automatically after an idle pause or after the app becomes inactive."
         checked={autoGitEnabled}
         onChange={setAutoGitEnabled}
-        disabled={!isGitVault}
         testId="settings-autogit-enabled"
       />
 
@@ -483,7 +512,6 @@ function AutoGitSettingsSection({
         value={autoGitIdleThresholdSeconds}
         onValueChange={setAutoGitIdleThresholdSeconds}
         testId="settings-autogit-idle-threshold"
-        disabled={!isGitVault}
       />
 
       <LabeledNumberInput
@@ -491,7 +519,6 @@ function AutoGitSettingsSection({
         value={autoGitInactiveThresholdSeconds}
         onValueChange={setAutoGitInactiveThresholdSeconds}
         testId="settings-autogit-inactive-threshold"
-        disabled={!isGitVault}
       />
     </>
   )

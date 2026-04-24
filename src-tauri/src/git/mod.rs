@@ -412,6 +412,41 @@ mod tests {
     }
 
     #[test]
+    fn test_init_repo_on_populated_non_git_directory() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path().join("existing-vault");
+        fs::create_dir_all(vault.join("sub")).unwrap();
+        fs::write(vault.join("note.md"), "# Existing note\n").unwrap();
+        fs::write(vault.join("sub/another.md"), "# Another\n").unwrap();
+
+        assert!(!vault.join(".git").is_dir(), "should not be a git repo before init");
+
+        init_repo(vault.to_str().unwrap()).unwrap();
+
+        assert!(vault.join(".git").is_dir(), ".git should exist after init");
+
+        let log = Command::new("git")
+            .args(["log", "--oneline"])
+            .current_dir(&vault)
+            .output()
+            .unwrap();
+        assert!(
+            String::from_utf8_lossy(&log.stdout).contains("Initial vault setup"),
+            "initial commit should be present"
+        );
+
+        let status = Command::new("git")
+            .args(["status", "--porcelain"])
+            .current_dir(&vault)
+            .output()
+            .unwrap();
+        assert!(
+            String::from_utf8_lossy(&status.stdout).trim().is_empty(),
+            "all pre-existing files should be committed in the initial commit"
+        );
+    }
+
+    #[test]
     fn test_parse_github_repo_path_variants() {
         for url in [
             "https://github.com/owner/repo.git",

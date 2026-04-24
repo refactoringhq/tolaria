@@ -268,20 +268,20 @@ describe('StatusBar', () => {
     expect(onRemoveVault).toHaveBeenCalledWith('/Users/luca/Work')
   })
 
-  it('shows Changes badge with count when modifiedCount is > 0', () => {
-    render(<StatusBar noteCount={100} modifiedCount={3} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} />)
+  it('shows Changes badge with count when modifiedCount is > 0 and vault has git', () => {
+    render(<StatusBar noteCount={100} modifiedCount={3} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} isGitVault />)
     expect(screen.getByTestId('status-modified-count')).toBeInTheDocument()
     expect(screen.getByText('Changes')).toBeInTheDocument()
     expect(screen.getByText('3')).toBeInTheDocument()
   })
 
   it('does not show Changes badge when modifiedCount is 0', () => {
-    render(<StatusBar noteCount={100} modifiedCount={0} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} />)
+    render(<StatusBar noteCount={100} modifiedCount={0} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} isGitVault />)
     expect(screen.queryByTestId('status-modified-count')).not.toBeInTheDocument()
   })
 
   it('does not show Changes badge when modifiedCount is not provided', () => {
-    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} />)
+    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} isGitVault />)
     expect(screen.queryByTestId('status-modified-count')).not.toBeInTheDocument()
   })
 
@@ -298,7 +298,7 @@ describe('StatusBar', () => {
   it('calls onClickPending when clicking the pending count', () => {
     const onClickPending = vi.fn()
     render(
-      <StatusBar noteCount={100} modifiedCount={5} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onClickPending={onClickPending} />
+      <StatusBar noteCount={100} modifiedCount={5} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} isGitVault onClickPending={onClickPending} />
     )
     fireEvent.click(screen.getByTestId('status-modified-count'))
     expect(onClickPending).toHaveBeenCalledOnce()
@@ -306,7 +306,7 @@ describe('StatusBar', () => {
 
   it('pending changes tooltip is available on keyboard focus', async () => {
     render(
-      <StatusBar noteCount={100} modifiedCount={3} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onClickPending={vi.fn()} />
+      <StatusBar noteCount={100} modifiedCount={3} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} isGitVault onClickPending={vi.fn()} />
     )
     await expectTooltip(screen.getByRole('button', { name: 'View pending changes' }), 'View pending changes')
   })
@@ -351,7 +351,7 @@ describe('StatusBar', () => {
 
   it('shows Pull required label when syncStatus is pull_required', () => {
     render(
-      <StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} syncStatus="pull_required" />
+      <StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} isGitVault syncStatus="pull_required" />
     )
     expect(screen.getByText('Pull required')).toBeInTheDocument()
   })
@@ -370,6 +370,7 @@ describe('StatusBar', () => {
         vaultPath="/Users/luca/Laputa"
         vaults={vaults}
         onSwitchVault={vi.fn()}
+        isGitVault
         remoteStatus={{ branch: 'main', ahead: 0, behind: 0, hasRemote: false }}
       />
     )
@@ -385,6 +386,7 @@ describe('StatusBar', () => {
           vaultPath="/Users/luca/Laputa"
           vaults={vaults}
           onSwitchVault={vi.fn()}
+          isGitVault
           onAddRemote={onAddRemote}
           syncStatus="idle"
           lastSyncTime={null}
@@ -401,7 +403,7 @@ describe('StatusBar', () => {
   it('calls onPullAndPush when clicking Pull required badge', () => {
     const onPullAndPush = vi.fn()
     render(
-      <StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} syncStatus="pull_required" onPullAndPush={onPullAndPush} />
+      <StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} isGitVault syncStatus="pull_required" onPullAndPush={onPullAndPush} />
     )
     fireEvent.click(screen.getByTestId('status-sync'))
     expect(onPullAndPush).toHaveBeenCalledOnce()
@@ -414,6 +416,7 @@ describe('StatusBar', () => {
         vaultPath="/Users/luca/Laputa"
         vaults={vaults}
         onSwitchVault={vi.fn()}
+        isGitVault
         syncStatus="idle"
         remoteStatus={{ branch: 'main', ahead: 2, behind: 1, hasRemote: true }}
       />
@@ -438,16 +441,26 @@ describe('StatusBar', () => {
     expect(onClickPulse).toHaveBeenCalledOnce()
   })
 
-  it('disables History badge when isGitVault is false', () => {
-    const onClickPulse = vi.fn()
-    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} isGitVault={false} onClickPulse={onClickPulse} />)
-    fireEvent.click(screen.getByTestId('status-pulse'))
-    expect(onClickPulse).not.toHaveBeenCalled()
+  it('hides Git badges and shows Enable Git badge when isGitVault is false', () => {
+    const onEnableGit = vi.fn()
+    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} isGitVault={false} onEnableGit={onEnableGit} />)
+    expect(screen.queryByTestId('status-pulse')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('status-commit-push')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('status-modified-count')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('status-sync')).not.toBeInTheDocument()
+    expect(screen.getByTestId('status-enable-git')).toBeInTheDocument()
   })
 
-  it('shows Commit button in status bar', () => {
+  it('calls onEnableGit when clicking the Enable Git badge', () => {
+    const onEnableGit = vi.fn()
+    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} isGitVault={false} onEnableGit={onEnableGit} />)
+    fireEvent.click(screen.getByTestId('status-enable-git'))
+    expect(onEnableGit).toHaveBeenCalledOnce()
+  })
+
+  it('shows Commit button in status bar when vault has git', () => {
     const onCommitPush = vi.fn()
-    render(<StatusBar noteCount={100} modifiedCount={5} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onCommitPush={onCommitPush} />)
+    render(<StatusBar noteCount={100} modifiedCount={5} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} isGitVault onCommitPush={onCommitPush} />)
     expect(screen.getByTestId('status-commit-push')).toBeInTheDocument()
     fireEvent.click(screen.getByTestId('status-commit-push'))
     expect(onCommitPush).toHaveBeenCalledOnce()
@@ -455,7 +468,7 @@ describe('StatusBar', () => {
 
   it('activates the Commit button with the keyboard', () => {
     const onCommitPush = vi.fn()
-    render(<StatusBar noteCount={100} modifiedCount={5} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onCommitPush={onCommitPush} />)
+    render(<StatusBar noteCount={100} modifiedCount={5} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} isGitVault onCommitPush={onCommitPush} />)
     const commitButton = screen.getByTestId('status-commit-push')
     commitButton.focus()
     fireEvent.keyDown(commitButton, { key: 'Enter' })
@@ -470,6 +483,7 @@ describe('StatusBar', () => {
         vaultPath="/Users/luca/Laputa"
         vaults={vaults}
         onSwitchVault={vi.fn()}
+        isGitVault
         onCommitPush={vi.fn()}
         remoteStatus={{ branch: 'main', ahead: 0, behind: 0, hasRemote: false }}
       />
@@ -478,12 +492,12 @@ describe('StatusBar', () => {
   })
 
   it('shows Commit button even when no modified files', () => {
-    render(<StatusBar noteCount={100} modifiedCount={0} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onCommitPush={vi.fn()} />)
+    render(<StatusBar noteCount={100} modifiedCount={0} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} isGitVault onCommitPush={vi.fn()} />)
     expect(screen.getByTestId('status-commit-push')).toBeInTheDocument()
   })
 
   it('hides Commit button when no onCommitPush callback', () => {
-    render(<StatusBar noteCount={100} modifiedCount={5} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} />)
+    render(<StatusBar noteCount={100} modifiedCount={5} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} isGitVault />)
     expect(screen.queryByTestId('status-commit-push')).not.toBeInTheDocument()
   })
 

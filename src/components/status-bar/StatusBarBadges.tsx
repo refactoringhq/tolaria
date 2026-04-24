@@ -509,19 +509,28 @@ export function CommitButton({
   )
 }
 
-export function PulseBadge({ onClick, disabled }: { onClick?: () => void; disabled?: boolean }) {
+export function PulseBadge({ onClick }: { onClick?: () => void }) {
   return (
     <>
       <span style={SEP_STYLE}>|</span>
-      <StatusBarAction
-        copy={{ label: disabled ? 'History is only available for git-enabled vaults' : 'Open change history' }}
-        onClick={disabled ? undefined : onClick}
-        testId="status-pulse"
-        disabled={Boolean(disabled)}
-      >
+      <StatusBarAction copy={{ label: 'Open change history' }} onClick={onClick} testId="status-pulse">
         <span style={ICON_STYLE}>
           <Pulse size={13} />
           History
+        </span>
+      </StatusBarAction>
+    </>
+  )
+}
+
+export function EnableGitBadge({ onClick }: { onClick?: () => void }) {
+  return (
+    <>
+      <span style={SEP_STYLE}>|</span>
+      <StatusBarAction copy={{ label: 'Enable Git version control for this vault' }} onClick={onClick} testId="status-enable-git">
+        <span style={{ ...ICON_STYLE, color: 'var(--muted-foreground)' }}>
+          <GitBranch size={12} />
+          Enable Git
         </span>
       </StatusBarAction>
     </>

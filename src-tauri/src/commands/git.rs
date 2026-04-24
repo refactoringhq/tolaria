@@ -148,6 +148,9 @@ pub fn is_git_repo(vault_path: String) -> bool {
 #[tauri::command]
 pub fn init_git_repo(vault_path: String) -> Result<(), String> {
     let vault_path = expand_tilde(&vault_path);
+    if std::path::Path::new(vault_path.as_ref()).join(".git").is_dir() {
+        return Ok(());
+    }
     crate::git::init_repo(&vault_path)
 }
 

@@ -65,6 +65,8 @@ interface CommandRegistryConfig {
   onDeleteNote: (path: string) => void
   onArchiveNote: (path: string) => void
   onUnarchiveNote: (path: string) => void
+  isGitVault?: boolean
+  onEnableGit?: () => void
   onCommitPush: () => void
   onPull?: () => void
   onResolveConflicts?: () => void
@@ -101,6 +103,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
     activeTabPath, entries, modifiedCount,
     onQuickOpen, onCreateNote, onCreateNoteOfType, onSave, onOpenSettings, onOpenFeedback,
     onDeleteNote, onArchiveNote, onUnarchiveNote,
+    isGitVault, onEnableGit,
     onCommitPush, onPull, onResolveConflicts, onSetViewMode, onToggleInspector, onToggleDiff, onToggleRawEditor, onToggleAIChat, onOpenVault, onCreateEmptyVault,
     activeNoteModified,
     onZoomIn, onZoomOut, onZoomReset, zoomLevel,
@@ -159,6 +162,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
       onRestoreDeletedNote, canRestoreDeletedNote,
     }),
     ...buildGitCommands({
+      isGitVault,
       modifiedCount,
       canAddRemote: config.canAddRemote ?? false,
       onAddRemote: config.onAddRemote,
@@ -166,6 +170,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
       onPull,
       onResolveConflicts,
       onSelect,
+      onEnableGit,
     }),
     ...buildViewCommands({
       hasActiveNote, activeNoteModified, onSetViewMode, onToggleInspector,
@@ -210,5 +215,6 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
     onOpenInNewWindow, onToggleFavorite, isFavorite,
     onToggleOrganized, onCustomizeNoteListColumns, canCustomizeNoteListColumns, noteListColumnsLabel,
     onRestoreDeletedNote, canRestoreDeletedNote, activeEntry,
+    isGitVault, onEnableGit,
   ])
 }
