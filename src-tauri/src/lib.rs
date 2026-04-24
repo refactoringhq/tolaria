@@ -259,7 +259,7 @@ macro_rules! app_invoke_handler {
             commands::download_and_install_app_update,
             commands::load_vault_list,
             commands::save_vault_list,
-            commands::clone_repo,
+            commands::git_clone::clone_git_repo,
             commands::search_vault,
             commands::create_empty_vault,
             commands::create_getting_started_vault,

@@ -46,7 +46,7 @@ describe('CloneVaultModal', () => {
     expect(screen.getByTestId('clone-vault-path')).toHaveValue('~/Vaults/my-vault')
   })
 
-  it('calls clone_repo and reports the cloned vault on submit', async () => {
+  it('calls clone_git_repo and reports the cloned vault on submit', async () => {
     render(<CloneVaultModal open={true} onClose={onClose} onVaultCloned={onVaultCloned} />)
 
     fireEvent.change(screen.getByTestId('clone-repo-url'), {
@@ -55,7 +55,7 @@ describe('CloneVaultModal', () => {
     fireEvent.click(screen.getByTestId('clone-vault-submit'))
 
     await waitFor(() => {
-      expect(mockInvokeFn).toHaveBeenCalledWith('clone_repo', {
+      expect(mockInvokeFn).toHaveBeenCalledWith('clone_git_repo', {
         url: 'git@github.com:user/my-vault.git',
         localPath: '~/Vaults/my-vault',
       })
@@ -80,6 +80,29 @@ describe('CloneVaultModal', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('clone-vault-error')).toHaveTextContent('Clone failed: Error: Permission denied')
+    })
+  })
+
+  it('keeps progress visible while the clone request is pending', async () => {
+    let resolveClone: ((value: string) => void) | null = null
+    mockInvokeFn.mockReturnValueOnce(new Promise((resolve) => {
+      resolveClone = resolve
+    }))
+
+    render(<CloneVaultModal open={true} onClose={onClose} onVaultCloned={onVaultCloned} />)
+
+    fireEvent.change(screen.getByTestId('clone-repo-url'), {
+      target: { value: 'git@github.com:user/my-vault.git' },
+    })
+    fireEvent.click(screen.getByTestId('clone-vault-submit'))
+
+    expect(screen.getByTestId('clone-vault-submit')).toHaveTextContent('Cloning...')
+    expect(screen.getByTestId('clone-vault-submit')).toBeDisabled()
+
+    resolveClone?.('Cloned successfully')
+
+    await waitFor(() => {
+      expect(onVaultCloned).toHaveBeenCalledWith('~/Vaults/my-vault', 'my-vault')
     })
   })
 })
