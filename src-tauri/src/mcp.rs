@@ -115,13 +115,17 @@ pub fn spawn_ws_bridge(vault_path: &str) -> Result<Child, String> {
 }
 
 fn mcp_config_paths() -> Vec<PathBuf> {
-    [
-        dirs::home_dir().map(|home| home.join(".claude").join("mcp.json")),
-        dirs::home_dir().map(|home| home.join(".cursor").join("mcp.json")),
+    dirs::home_dir()
+        .map(|home| mcp_config_paths_for_home(&home))
+        .unwrap_or_default()
+}
+
+fn mcp_config_paths_for_home(home: &Path) -> Vec<PathBuf> {
+    vec![
+        home.join(".claude.json"),
+        home.join(".claude").join("mcp.json"),
+        home.join(".cursor").join("mcp.json"),
     ]
-    .into_iter()
-    .flatten()
-    .collect()
 }
 
 fn read_registered_mcp_entry(config_path: &Path) -> Option<serde_json::Value> {
@@ -321,6 +325,32 @@ mod tests {
         serde_json::from_str(&raw).unwrap()
     }
 
+    fn temp_config_path(file_name: &str) -> (tempfile::TempDir, PathBuf) {
+        let tmp = tempfile::tempdir().unwrap();
+        let config_path = tmp.path().join(file_name);
+        (tmp, config_path)
+    }
+
+    fn write_config_json(config_path: &Path, config: serde_json::Value) {
+        std::fs::write(config_path, serde_json::to_string(&config).unwrap()).unwrap();
+    }
+
+    fn managed_server(index_js: &str, vault_path: &str) -> serde_json::Value {
+        serde_json::json!({
+            "command": "node",
+            "args": [index_js],
+            "env": { "VAULT_PATH": vault_path }
+        })
+    }
+
+    fn write_mcp_servers_config(config_path: &Path, servers: Vec<(&str, serde_json::Value)>) {
+        let servers = servers
+            .into_iter()
+            .map(|(name, server)| (name.to_string(), server))
+            .collect::<serde_json::Map<_, _>>();
+        write_config_json(config_path, serde_json::json!({ "mcpServers": servers }));
+    }
+
     fn write_index_js(dir: &Path) -> PathBuf {
         let index_js = dir.join("index.js");
         std::fs::write(&index_js, "console.log('ok');").unwrap();
@@ -404,21 +434,44 @@ mod tests {
 
     #[test]
     fn upsert_preserves_other_servers() {
-        let tmp = tempfile::tempdir().unwrap();
-        let config_path = tmp.path().join("mcp.json");
-
-        let existing = serde_json::json!({
-            "mcpServers": {
-                "other-server": { "command": "other", "args": [] }
-            }
-        });
-        std::fs::write(&config_path, serde_json::to_string(&existing).unwrap()).unwrap();
+        let (_tmp, config_path) = temp_config_path("mcp.json");
+        write_mcp_servers_config(
+            &config_path,
+            vec![(
+                "other-server",
+                serde_json::json!({ "command": "other", "args": [] }),
+            )],
+        );
 
         let entry = build_mcp_entry("/test/index.js", "/vault");
         upsert_mcp_config(&config_path, &entry).unwrap();
 
         let raw = std::fs::read_to_string(&config_path).unwrap();
         let config: serde_json::Value = serde_json::from_str(&raw).unwrap();
+        assert!(config["mcpServers"]["other-server"].is_object());
+        assert!(config["mcpServers"][MCP_SERVER_NAME].is_object());
+    }
+
+    #[test]
+    fn upsert_preserves_other_top_level_settings() {
+        let (_tmp, config_path) = temp_config_path(".claude.json");
+        write_config_json(
+            &config_path,
+            serde_json::json!({
+                "model": "sonnet",
+                "theme": "dark",
+                "mcpServers": {
+                    "other-server": { "command": "other", "args": [] }
+                }
+            }),
+        );
+
+        let entry = build_mcp_entry("/test/index.js", "/vault");
+        upsert_mcp_config(&config_path, &entry).unwrap();
+
+        let config = read_config(&config_path);
+        assert_eq!(config["model"], "sonnet");
+        assert_eq!(config["theme"], "dark");
         assert!(config["mcpServers"]["other-server"].is_object());
         assert!(config["mcpServers"][MCP_SERVER_NAME].is_object());
     }
@@ -491,20 +544,44 @@ mod tests {
     #[test]
     fn register_mcp_to_configs_writes_multiple_configs() {
         let tmp = tempfile::tempdir().unwrap();
+        let claude_user_cfg = tmp.path().join(".claude.json");
         let claude_cfg = tmp.path().join("claude").join("mcp.json");
         let cursor_cfg = tmp.path().join("cursor").join("mcp.json");
         let entry = build_mcp_entry("/test/index.js", "/vault");
 
-        register_mcp_to_configs(&entry, &[claude_cfg.clone(), cursor_cfg.clone()]);
+        register_mcp_to_configs(
+            &entry,
+            &[
+                claude_user_cfg.clone(),
+                claude_cfg.clone(),
+                cursor_cfg.clone(),
+            ],
+        );
 
+        assert!(claude_user_cfg.exists());
         assert!(claude_cfg.exists());
         assert!(cursor_cfg.exists());
 
-        let raw = std::fs::read_to_string(&claude_cfg).unwrap();
+        let raw = std::fs::read_to_string(&claude_user_cfg).unwrap();
         let config: serde_json::Value = serde_json::from_str(&raw).unwrap();
         assert_eq!(
             config["mcpServers"][MCP_SERVER_NAME]["args"][0],
             "/test/index.js"
+        );
+    }
+
+    #[test]
+    fn mcp_config_paths_for_home_includes_claude_root_and_legacy_paths() {
+        let home = Path::new("/Users/tester");
+        let paths = mcp_config_paths_for_home(home);
+
+        assert_eq!(
+            paths,
+            vec![
+                home.join(".claude.json"),
+                home.join(".claude").join("mcp.json"),
+                home.join(".cursor").join("mcp.json"),
+            ]
         );
     }
     #[test]
@@ -528,23 +605,20 @@ mod tests {
 
     #[test]
     fn read_registered_mcp_entry_prefers_primary_server_name() {
-        let tmp = tempfile::tempdir().unwrap();
-        let config_path = tmp.path().join("mcp.json");
-        let config = serde_json::json!({
-            "mcpServers": {
-                "tolaria": {
-                    "command": "node",
-                    "args": ["/primary/index.js"],
-                    "env": { "VAULT_PATH": "/primary" }
-                },
-                "laputa": {
-                    "command": "node",
-                    "args": ["/legacy/index.js"],
-                    "env": { "VAULT_PATH": "/legacy" }
-                }
-            }
-        });
-        std::fs::write(&config_path, serde_json::to_string(&config).unwrap()).unwrap();
+        let (_tmp, config_path) = temp_config_path("mcp.json");
+        write_mcp_servers_config(
+            &config_path,
+            vec![
+                (
+                    MCP_SERVER_NAME,
+                    managed_server("/primary/index.js", "/primary"),
+                ),
+                (
+                    LEGACY_MCP_SERVER_NAME,
+                    managed_server("/legacy/index.js", "/legacy"),
+                ),
+            ],
+        );
 
         let entry = read_registered_mcp_entry(&config_path).unwrap();
         assert_eq!(entry["env"]["VAULT_PATH"], "/primary");
@@ -552,18 +626,14 @@ mod tests {
 
     #[test]
     fn read_registered_mcp_entry_uses_legacy_server_name() {
-        let tmp = tempfile::tempdir().unwrap();
-        let config_path = tmp.path().join("mcp.json");
-        let config = serde_json::json!({
-            "mcpServers": {
-                "laputa": {
-                    "command": "node",
-                    "args": ["/legacy/index.js"],
-                    "env": { "VAULT_PATH": "/legacy" }
-                }
-            }
-        });
-        std::fs::write(&config_path, serde_json::to_string(&config).unwrap()).unwrap();
+        let (_tmp, config_path) = temp_config_path("mcp.json");
+        write_mcp_servers_config(
+            &config_path,
+            vec![(
+                LEGACY_MCP_SERVER_NAME,
+                managed_server("/legacy/index.js", "/legacy"),
+            )],
+        );
 
         let entry = read_registered_mcp_entry(&config_path).unwrap();
         assert_eq!(entry["env"]["VAULT_PATH"], "/legacy");
