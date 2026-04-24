@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { WikilinkChatInput } from './WikilinkChatInput'
+import { UNSUPPORTED_INLINE_PASTE_MESSAGE } from './InlineWikilinkInput'
 import type { VaultEntry } from '../types'
 
 const makeEntry = (overrides: Partial<VaultEntry> = {}): VaultEntry => ({
@@ -37,10 +38,12 @@ const entries: VaultEntry[] = [
 
 function Controlled({
   onSend,
+  onUnsupportedPaste,
   disabled = false,
   placeholder,
 }: {
   onSend?: (text: string, refs: Array<{ title: string; path: string; type: string | null }>) => void
+  onUnsupportedPaste?: (message: string) => void
   disabled?: boolean
   placeholder?: string
 }) {
@@ -52,6 +55,7 @@ function Controlled({
       value={value}
       onChange={setValue}
       onSend={onSend ?? vi.fn()}
+      onUnsupportedPaste={onUnsupportedPaste}
       disabled={disabled}
       placeholder={placeholder}
     />
@@ -180,5 +184,42 @@ describe('WikilinkChatInput', () => {
     const editor = screen.getByTestId('agent-input')
     expect(editor).toHaveAttribute('contenteditable', 'false')
     expect(editor).toHaveAttribute('aria-disabled', 'true')
+  })
+
+  it('rejects pasted images without freezing the editor', () => {
+    const onUnsupportedPaste = vi.fn()
+    render(<Controlled onUnsupportedPaste={onUnsupportedPaste} />)
+
+    const editor = screen.getByTestId('agent-input')
+    const clipboardData = {
+      getData: vi.fn(() => ''),
+      files: [new File(['image'], 'paste.png', { type: 'image/png' })],
+      items: [{ kind: 'file', type: 'image/png' }],
+    }
+
+    fireEvent.paste(editor, { clipboardData })
+
+    expect(onUnsupportedPaste).toHaveBeenCalledWith(UNSUPPORTED_INLINE_PASTE_MESSAGE)
+
+    updateEditorText('still works')
+    expect(editor.textContent).toContain('still works')
+  })
+
+  it('recovers if unsupported media lands in the editor DOM', async () => {
+    const onUnsupportedPaste = vi.fn()
+    render(<Controlled onUnsupportedPaste={onUnsupportedPaste} />)
+
+    const editor = screen.getByTestId('agent-input')
+    editor.innerHTML = '<img alt="paste" src="data:image/png;base64,abc" />'
+
+    fireEvent.input(editor)
+
+    expect(onUnsupportedPaste).toHaveBeenCalledWith(UNSUPPORTED_INLINE_PASTE_MESSAGE)
+    await waitFor(() => {
+      expect(screen.getByTestId('agent-input').querySelector('img')).toBeNull()
+    })
+
+    updateEditorText('still works')
+    expect(screen.getByTestId('agent-input').textContent).toContain('still works')
   })
 })

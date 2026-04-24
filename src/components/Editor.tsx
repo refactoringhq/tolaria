@@ -35,6 +35,7 @@ interface EditorProps {
   activeTabPath: string | null
   entries: VaultEntry[]
   onNavigateWikilink: (target: string) => void
+  onUnsupportedAiPaste?: (message: string) => void
   onLoadDiff?: (path: string) => Promise<string>
   onLoadDiffAtCommit?: (path: string, commitHash: string) => Promise<string>
   pendingCommitDiffRequest?: CommitDiffRequest | null
@@ -316,6 +317,7 @@ function EditorLayout({
   onFileCreated,
   onFileModified,
   onVaultChanged,
+  onUnsupportedAiPaste,
 }: {
   tabs: Tab[]
   activeTab: Tab | null
@@ -369,6 +371,7 @@ function EditorLayout({
   onFileCreated?: (relativePath: string) => void
   onFileModified?: (relativePath: string) => void
   onVaultChanged?: () => void
+  onUnsupportedAiPaste?: (message: string) => void
 }) {
   return (
     <div className="editor flex flex-col min-h-0 overflow-hidden bg-background text-foreground">
@@ -417,6 +420,7 @@ function EditorLayout({
           inspectorWidth={inspectorWidth}
           defaultAiAgent={defaultAiAgent}
           defaultAiAgentReady={defaultAiAgentReady}
+          onUnsupportedAiPaste={onUnsupportedAiPaste}
           inspectorEntry={inspectorEntry}
           inspectorContent={inspectorContent}
           entries={entries}
@@ -451,6 +455,7 @@ export const Editor = memo(function Editor(props: EditorProps) {
     getNoteStatus,
     inspectorCollapsed, onToggleInspector, inspectorWidth,
     defaultAiAgent = DEFAULT_AI_AGENT, defaultAiAgentReady = true,
+    onUnsupportedAiPaste,
     onInspectorResize,
     inspectorEntry, inspectorContent, gitHistory,
     onUpdateFrontmatter, onDeleteProperty, onAddProperty, onCreateMissingType, onCreateAndOpenNote, onInitializeProperties,
@@ -525,6 +530,7 @@ export const Editor = memo(function Editor(props: EditorProps) {
       inspectorWidth={inspectorWidth}
       defaultAiAgent={defaultAiAgent}
       defaultAiAgentReady={defaultAiAgentReady}
+      onUnsupportedAiPaste={onUnsupportedAiPaste}
       inspectorEntry={inspectorEntry}
       inspectorContent={inspectorContent}
       gitHistory={gitHistory}

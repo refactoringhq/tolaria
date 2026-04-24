@@ -158,6 +158,7 @@ export function InlineWikilinkEditorField({
   inputRef,
   dataTestId,
   editorClassName,
+  onBeforeInput,
   onInput,
   onKeyDown,
   onPaste,
@@ -171,6 +172,7 @@ export function InlineWikilinkEditorField({
   inputRef: React.Ref<HTMLDivElement>
   dataTestId: string
   editorClassName?: string
+  onBeforeInput: (event: React.FormEvent<HTMLDivElement>) => void
   onInput: () => void
   onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void
   onPaste: (event: React.ClipboardEvent<HTMLDivElement>) => void
@@ -204,6 +206,7 @@ export function InlineWikilinkEditorField({
           disabled && 'cursor-not-allowed opacity-60',
           editorClassName,
         )}
+        onBeforeInput={onBeforeInput}
         onInput={onInput}
         onKeyDown={onKeyDown}
         onPaste={onPaste}
