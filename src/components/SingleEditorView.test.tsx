@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import type { VaultEntry } from '../types'
@@ -7,6 +7,7 @@ const state = vi.hoisted(() => ({
   capturedToolbarProps: null as null | Record<string, unknown>,
   capturedSuggestionProps: {} as Record<string, Record<string, unknown>>,
   capturedImageDropArgs: null as null | Record<string, unknown>,
+  capturedBlockNoteOnChange: null as null | (() => void),
   hoverGuardMock: vi.fn(),
   imageDropState: { isDragOver: false },
   linkActivationMock: vi.fn(),
@@ -24,6 +25,7 @@ vi.mock('@blocknote/react', () => ({
     formattingToolbar?: boolean
     slashMenu?: boolean
     sideMenu?: boolean
+    onChange?: () => void
   }) => {
     const {
       children,
@@ -34,6 +36,7 @@ vi.mock('@blocknote/react', () => ({
       sideMenu,
       ...restProps
     } = props
+    state.capturedBlockNoteOnChange = props.onChange ?? null
     void formattingToolbar
     void slashMenu
     void sideMenu
@@ -199,6 +202,7 @@ describe('SingleEditorView', () => {
     state.capturedToolbarProps = null
     state.capturedSuggestionProps = {}
     state.capturedImageDropArgs = null
+    state.capturedBlockNoteOnChange = null
     state.imageDropState.isDragOver = false
     state.wikilinkEntriesRef.current = []
     delete window.__laputaTest
@@ -300,5 +304,34 @@ describe('SingleEditorView', () => {
 
     expect(onWikiItemClick).toHaveBeenCalledOnce()
     expect(onMentionItemClick).toHaveBeenCalledOnce()
+  })
+
+  it('defers rich-editor change propagation until IME composition ends', async () => {
+    const editor = createEditor()
+    const onChange = vi.fn()
+
+    render(
+      <SingleEditorView
+        editor={editor as never}
+        entries={[makeEntry()]}
+        onNavigateWikilink={vi.fn()}
+        onChange={onChange}
+      />,
+    )
+
+    const blockNoteView = screen.getByTestId('blocknote-view')
+
+    fireEvent.compositionStart(blockNoteView)
+    act(() => {
+      state.capturedBlockNoteOnChange?.()
+    })
+    expect(onChange).not.toHaveBeenCalled()
+
+    fireEvent.compositionEnd(blockNoteView)
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(onChange).toHaveBeenCalledTimes(1)
   })
 })
