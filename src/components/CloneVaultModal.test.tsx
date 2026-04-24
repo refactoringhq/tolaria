@@ -36,6 +36,14 @@ describe('CloneVaultModal', () => {
     expect(screen.getByTestId('clone-vault-path')).toBeInTheDocument()
   })
 
+  it('focuses the repository field when the modal opens', async () => {
+    render(<CloneVaultModal open={true} onClose={onClose} onVaultCloned={onVaultCloned} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('clone-repo-url')).toHaveFocus()
+    })
+  })
+
   it('suggests a vault path from the repository URL', () => {
     render(<CloneVaultModal open={true} onClose={onClose} onVaultCloned={onVaultCloned} />)
 
@@ -98,6 +106,37 @@ describe('CloneVaultModal', () => {
 
     expect(screen.getByTestId('clone-vault-submit')).toHaveTextContent('Cloning...')
     expect(screen.getByTestId('clone-vault-submit')).toBeDisabled()
+
+    resolveClone?.('Cloned successfully')
+
+    await waitFor(() => {
+      expect(onVaultCloned).toHaveBeenCalledWith('~/Vaults/my-vault', 'my-vault')
+    })
+  })
+
+  it('submits with Enter and blocks overlapping clone attempts while pending', async () => {
+    let resolveClone: ((value: string) => void) | null = null
+    mockInvokeFn.mockReturnValueOnce(new Promise((resolve) => {
+      resolveClone = resolve
+    }))
+
+    render(<CloneVaultModal open={true} onClose={onClose} onVaultCloned={onVaultCloned} />)
+
+    fireEvent.change(screen.getByTestId('clone-repo-url'), {
+      target: { value: 'git@github.com:user/my-vault.git' },
+    })
+
+    fireEvent.submit(screen.getByTestId('clone-vault-form'))
+    fireEvent.submit(screen.getByTestId('clone-vault-form'))
+
+    await waitFor(() => {
+      expect(mockInvokeFn).toHaveBeenCalledTimes(1)
+    })
+
+    expect(screen.getByTestId('clone-repo-url')).toBeDisabled()
+    expect(screen.getByTestId('clone-vault-path')).toBeDisabled()
+    expect(screen.getByTestId('clone-vault-cancel')).toBeDisabled()
+    expect(screen.getByTestId('clone-vault-submit')).toHaveTextContent('Cloning...')
 
     resolveClone?.('Cloned successfully')
 
