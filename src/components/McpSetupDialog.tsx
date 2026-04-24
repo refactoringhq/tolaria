@@ -70,11 +70,12 @@ export function McpSetupDialog({
             Confirming this action will write or update Tolaria&apos;s single <code className="rounded bg-muted px-1 py-0.5 text-xs">tolaria</code> MCP entry in:
           </p>
           <div className="rounded-md border border-border bg-muted/30 px-3 py-3 font-mono text-xs text-foreground">
+            <div>~/.claude.json</div>
             <div>~/.claude/mcp.json</div>
             <div>~/.cursor/mcp.json</div>
           </div>
           <p>
-            The entry points those tools at the current vault. Cancel leaves both files untouched, reconnect is idempotent, and disconnect removes Tolaria&apos;s entry again.
+            Claude Code CLI reads <code className="rounded bg-muted px-1 py-0.5 text-xs">~/.claude.json</code>, while Tolaria also refreshes the legacy Claude MCP file for compatibility with older setups. Cancel leaves all files untouched, reconnect is idempotent, and disconnect removes Tolaria&apos;s entry again.
           </p>
         </div>
 

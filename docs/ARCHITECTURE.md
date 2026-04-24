@@ -310,7 +310,7 @@ The MCP server (`mcp-server/`) exposes vault operations as tools for AI assistan
 ### Explicit External Tool Setup
 
 Tolaria can register itself as an MCP server in:
-- `~/.claude/mcp.json` (Claude Code)
+- `~/.claude.json` and `~/.claude/mcp.json` (Claude Code compatibility across current CLI and legacy MCP-file setups)
 - `~/.cursor/mcp.json` (Cursor)
 
 That setup is user-initiated through the status bar / command palette flow, not a startup side effect. Registration is non-destructive (additive, preserves other servers), uses `upsert` semantics, and can be reversed by removing Tolaria's entry again. The `useMcpStatus` hook tracks whether the active vault is explicitly connected (`checking | installed | not_installed`).
@@ -332,7 +332,7 @@ flowchart TD
     end
 
     TAURI["Tauri (mcp.rs)"] -->|"spawn on startup"| MCP
-    UI["Status bar / Command Palette"] -->|"explicit setup or disconnect"| CFG["~/.claude/mcp.json\n~/.cursor/mcp.json"]
+    UI["Status bar / Command Palette"] -->|"explicit setup or disconnect"| CFG["~/.claude.json\n~/.claude/mcp.json\n~/.cursor/mcp.json"]
 ```
 
 ### WebSocket Bridge
