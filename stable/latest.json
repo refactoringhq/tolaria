@@ -1,12 +1,12 @@
 {
-  "version": "2026.4.23",
+  "version": "2026.4.24",
   "notes": "Stable release. See https://refactoringhq.github.io/tolaria/ for full release notes.",
-  "pub_date": "2026-04-23T09:55:15Z",
+  "pub_date": "2026-04-24T07:36:03Z",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSY3I3L2VKNUJ0cUNkMnFCUEpGYi91Y3kvSFJMYUV4aUIzRldiclNseGZaWFFpMnFYYStvWlJKR2p4NnRqSlZSTm1tdFNkSTdVd3FwZ1hsK3NNNHlOOE8rSEF1dlBIelE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc2OTM4MDk3CWZpbGU6VG9sYXJpYS5hcHAudGFyLmd6ClVhdTFOcUFRQ1Y5ZUhLeWd5NW1mWnZDSUFqekZIT1JudDExODcyNjdCaXViSVJ4dlcxejR3VUxZdG50QlBwZVZlZHhsMTlORkE3YnlicGUwaHp0bERnPT0K",
-      "url": "https://github.com/refactoringhq/tolaria/releases/download/stable-v2026.4.23/Tolaria.app.tar.gz",
-      "dmg_url": "https://github.com/refactoringhq/tolaria/releases/download/stable-v2026.4.23/Tolaria_2026.4.23_aarch64.dmg"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSY3I3L2VKNUJ0cUxEMUpEYnllRTMxbU1hVGtkb0NGT3cxdkprWXQzdzBPaWNkVW9xTS9GRENDWko3R1E1eE0wcUl4TURqYS9DZFhpTGJBZnVITWR6ajdQdXNlQnEzOUEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc3MDE2MTQ0CWZpbGU6VG9sYXJpYS5hcHAudGFyLmd6ClE3RHZML2ZmSDNyU0NRUUUwLzhSNTRvdk5Qem5ablJ2WnJudmRyM1Y0Zk93MVZRdVQwRnpUS2JwbEVTWjllNHhpTk8xdENHbTBSSllTRDBuaUo3SEN3PT0K",
+      "url": "https://github.com/refactoringhq/tolaria/releases/download/stable-v2026.4.24/Tolaria.app.tar.gz",
+      "dmg_url": "https://github.com/refactoringhq/tolaria/releases/download/stable-v2026.4.24/Tolaria_2026.4.24_aarch64.dmg"
     }
   }
 }
