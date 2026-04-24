@@ -22,6 +22,9 @@ export const createArrowLigaturesExtension = createExtension(({ editor }) => {
         if (!view) {
           return
         }
+        if (event.isComposing || view.composing) {
+          return
+        }
 
         const { from, to } = view.state.selection
         if (from !== to) {

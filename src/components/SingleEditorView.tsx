@@ -182,6 +182,57 @@ function useEditorContainerClickHandler(options: {
   }, [editor, editable])
 }
 
+function useCompositionAwareEditorChange(options: {
+  containerRef: React.RefObject<HTMLDivElement | null>
+  onChange?: () => void
+}) {
+  const { containerRef, onChange } = options
+  const onChangeRef = useRef(onChange)
+  const composingRef = useRef(false)
+  const pendingChangeRef = useRef(false)
+
+  useEffect(() => {
+    onChangeRef.current = onChange
+  }, [onChange])
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const flushPendingChange = () => {
+      if (composingRef.current || !pendingChangeRef.current) return
+      pendingChangeRef.current = false
+      onChangeRef.current?.()
+    }
+
+    const handleCompositionStart = () => {
+      composingRef.current = true
+    }
+
+    const handleCompositionEnd = () => {
+      composingRef.current = false
+      queueMicrotask(flushPendingChange)
+    }
+
+    container.addEventListener('compositionstart', handleCompositionStart, true)
+    container.addEventListener('compositionend', handleCompositionEnd, true)
+    return () => {
+      container.removeEventListener('compositionstart', handleCompositionStart, true)
+      container.removeEventListener('compositionend', handleCompositionEnd, true)
+    }
+  }, [containerRef])
+
+  return useCallback(() => {
+    if (composingRef.current) {
+      pendingChangeRef.current = true
+      return
+    }
+
+    pendingChangeRef.current = false
+    onChangeRef.current?.()
+  }, [])
+}
+
 function buildBaseSuggestionItems(entries: VaultEntry[]) {
   return deduplicateByPath(entries.map(entry => ({
     title: entry.title,
@@ -273,6 +324,7 @@ export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange
   const { cssVars } = useEditorTheme()
   const containerRef = useRef<HTMLDivElement>(null)
   const handleContainerClick = useEditorContainerClickHandler({ editable, editor })
+  const handleEditorChange = useCompositionAwareEditorChange({ containerRef, onChange })
   const onImageUrl = useInsertImageCallback(editor)
   const { isDragOver } = useImageDrop({ containerRef, onImageUrl, vaultPath })
   useBlockNoteSideMenuHoverGuard(containerRef)
@@ -309,7 +361,7 @@ export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange
       <SharedContextBlockNoteView
         editor={editor}
         theme="light"
-        onChange={onChange}
+        onChange={handleEditorChange}
         editable={editable}
         formattingToolbar={false}
         slashMenu={false}

@@ -118,4 +118,15 @@ describe('createArrowLigaturesExtension', () => {
     expect(fixture.transaction.insertText).not.toHaveBeenCalled()
     expect(fixture.view.dispatch).not.toHaveBeenCalled()
   })
+
+  it('ignores composing input so IME text is not rewritten', () => {
+    const fixture = createFixture()
+    fixture.mount()
+
+    const event = fixture.fireInput({ isComposing: true })
+
+    expect(event.preventDefault).not.toHaveBeenCalled()
+    expect(fixture.transaction.insertText).not.toHaveBeenCalled()
+    expect(fixture.view.dispatch).not.toHaveBeenCalled()
+  })
 })
