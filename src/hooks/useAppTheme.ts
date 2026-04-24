@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getAppStorageItem } from '../constants/appStorage'
+import { APP_STORAGE_KEYS, LEGACY_APP_STORAGE_KEYS, getAppStorageItem } from '../constants/appStorage'
 
 export type AppTheme = 'light' | 'dark' | 'system'
-
-const STORAGE_KEY = 'tolaria-theme'
 
 function getSystemTheme(): 'light' | 'dark' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
@@ -26,10 +24,47 @@ function applyThemeToDocument(theme: AppTheme): void {
 
 function persistTheme(theme: AppTheme): void {
   try {
-    localStorage.setItem(STORAGE_KEY, theme)
+    localStorage.setItem(APP_STORAGE_KEYS.theme, theme)
+    localStorage.removeItem(LEGACY_APP_STORAGE_KEYS.theme)
   } catch {
     // ignore
   }
+}
+
+// ---------------------------------------------------------------------------
+// Shared singleton MutationObserver for html.dark class changes
+// ---------------------------------------------------------------------------
+
+type DarkClassHandler = () => void
+const darkClassSubscribers = new Set<DarkClassHandler>()
+let darkClassObserver: MutationObserver | null = null
+
+function subscribeToDarkClass(handler: DarkClassHandler): () => void {
+  darkClassSubscribers.add(handler)
+  if (!darkClassObserver) {
+    darkClassObserver = new MutationObserver(() => {
+      darkClassSubscribers.forEach(fn => fn())
+    })
+    darkClassObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+  }
+  return () => {
+    darkClassSubscribers.delete(handler)
+    if (darkClassSubscribers.size === 0 && darkClassObserver) {
+      darkClassObserver.disconnect()
+      darkClassObserver = null
+    }
+  }
+}
+
+/** Tracks whether `<html>` has the `dark` class, sharing a single MutationObserver. */
+export function useResolvedTheme(): 'light' | 'dark' {
+  const [isDark, setIsDark] = useState(() =>
+    document.documentElement.classList.contains('dark')
+  )
+  useEffect(() => subscribeToDarkClass(() => {
+    setIsDark(document.documentElement.classList.contains('dark'))
+  }), [])
+  return isDark ? 'dark' : 'light'
 }
 
 export function useAppTheme() {

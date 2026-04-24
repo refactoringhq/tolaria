@@ -430,8 +430,8 @@ function AppearanceSection({
       />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--foreground)' }}>Theme</label>
-        <Select value={theme} onValueChange={(v) => onThemeChange?.(v as AppTheme)}>
-          <SelectTrigger className="w-full bg-transparent" data-testid="settings-theme">
+        <Select value={theme} onValueChange={(v) => onThemeChange?.(v as AppTheme)} disabled={!onThemeChange}>
+          <SelectTrigger className="w-full bg-transparent" data-testid="settings-theme" data-value={theme}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent position="popper" data-anchor-strategy="popper">
