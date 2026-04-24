@@ -4,8 +4,8 @@ import { isTauri } from '../mock-tauri'
 const ASSET_URL_PREFIX = 'asset://localhost/'
 const HTTP_ASSET_URL_PREFIX = 'http://asset.localhost/'
 const ASSET_URL_PREFIXES = [ASSET_URL_PREFIX, HTTP_ASSET_URL_PREFIX]
-const ATTACHMENTS_SEGMENT = '/attachments/'
-const RELATIVE_ATTACHMENTS_PREFIX = 'attachments/'
+const ATTACHMENTS_PREFIX = 'attachments/'
+const ATTACHMENTS_ABSOLUTE_PREFIX = `/${ATTACHMENTS_PREFIX}`
 
 type Markdown = string
 type VaultPath = string
@@ -25,11 +25,11 @@ function vaultAttachmentPath(vaultPath: VaultPath, attachmentPath: AttachmentPat
 }
 
 function extractAttachmentPath(absolutePath: AbsolutePath): AttachmentPath | null {
-  const index = absolutePath.lastIndexOf(ATTACHMENTS_SEGMENT)
+  const index = absolutePath.lastIndexOf(ATTACHMENTS_ABSOLUTE_PREFIX)
   if (index === -1) return null
 
-  const filename = absolutePath.slice(index + ATTACHMENTS_SEGMENT.length)
-  return filename ? `${RELATIVE_ATTACHMENTS_PREFIX}${filename}` : null
+  const filename = absolutePath.slice(index + ATTACHMENTS_ABSOLUTE_PREFIX.length)
+  return filename ? `${ATTACHMENTS_PREFIX}${filename}` : null
 }
 
 function assetUrlPrefix(url: MarkdownImageUrl): string | null {
@@ -60,18 +60,35 @@ function rewriteMarkdownImages(
   })
 }
 
-export function resolveImageUrls(markdown: Markdown, vaultPath: VaultPath): Markdown {
+function resolveRelativeAgainstNote(url: MarkdownImageUrl, notePath: AbsolutePath): AbsolutePath | null {
+  try {
+    const noteDir = notePath.slice(0, notePath.lastIndexOf('/') + 1)
+    return decodeURIComponent(new URL(url, `file://${noteDir}`).pathname)
+  } catch {
+    return null
+  }
+}
+
+export function resolveImageUrls(
+  markdown: Markdown,
+  vaultPath: VaultPath,
+  notePath?: AbsolutePath,
+): Markdown {
   if (!isTauri() || !vaultPath) return markdown
 
   return rewriteMarkdownImages(markdown, (url) => {
-    if (url.startsWith(RELATIVE_ATTACHMENTS_PREFIX)) {
-      return assetUrl(vaultAttachmentPath(vaultPath, url))
+    const vaultRelative = url.startsWith('/') ? url.slice(1) : url
+    if (vaultRelative.startsWith(ATTACHMENTS_PREFIX)) {
+      return assetUrl(decodeURIComponent(vaultAttachmentPath(vaultPath, vaultRelative)))
     }
 
-    if (!isAssetUrl(url) || isCurrentVaultAsset(url, vaultPath)) {
-      return null
+    if ((url.startsWith('./') || url.startsWith('../')) && notePath) {
+      const resolved = resolveRelativeAgainstNote(url, notePath)
+      if (!resolved?.startsWith(`${vaultPath}/${ATTACHMENTS_PREFIX}`)) return null
+      return assetUrl(resolved)
     }
 
+    if (!isAssetUrl(url) || isCurrentVaultAsset(url, vaultPath)) return null
     const attachmentPath = extractAttachmentPath(decodeAssetPath(url))
     return attachmentPath ? assetUrl(vaultAttachmentPath(vaultPath, attachmentPath)) : null
   })
@@ -80,7 +97,7 @@ export function resolveImageUrls(markdown: Markdown, vaultPath: VaultPath): Mark
 export function portableImageUrls(markdown: Markdown, vaultPath: VaultPath): Markdown {
   if (!vaultPath) return markdown
 
-  const attachmentsPrefix = `${vaultPath}/${RELATIVE_ATTACHMENTS_PREFIX}`
+  const attachmentsPrefix = `${vaultPath}/${ATTACHMENTS_PREFIX}`
 
   return rewriteMarkdownImages(markdown, (url) => {
     if (!isAssetUrl(url)) return null
@@ -88,6 +105,6 @@ export function portableImageUrls(markdown: Markdown, vaultPath: VaultPath): Mar
     const absolutePath = decodeAssetPath(url)
     if (!absolutePath.startsWith(attachmentsPrefix)) return null
 
-    return `${RELATIVE_ATTACHMENTS_PREFIX}${absolutePath.slice(attachmentsPrefix.length)}`
+    return `${ATTACHMENTS_PREFIX}${absolutePath.slice(attachmentsPrefix.length)}`
   })
 }

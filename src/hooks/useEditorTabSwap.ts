@@ -146,7 +146,7 @@ async function resolveBlocksForTarget(
   if (cached?.sourceContent === content) return cached
 
   const body = extractEditorBody(content)
-  const withImages = vaultPath ? resolveImageUrls(body, vaultPath) : body
+  const withImages = vaultPath ? resolveImageUrls(body, vaultPath, targetPath) : body
   const preprocessed = preProcessWikilinks(withImages)
   const fastPathBlocks = buildFastPathBlocks({ preprocessed })
   if (fastPathBlocks) {
@@ -239,12 +239,13 @@ async function resolveEmptyHeadingHtml(
   editor: ReturnType<typeof useCreateBlockNote>,
   content: string,
   vaultPath?: string,
+  notePath?: string,
 ): Promise<string | null> {
   const remainder = extractBodyRemainderAfterEmptyH1({ content })
   if (remainder === null) return null
   if (!remainder.trim()) return '<h1></h1><p></p>'
 
-  const withImages = vaultPath ? resolveImageUrls(remainder, vaultPath) : remainder
+  const withImages = vaultPath ? resolveImageUrls(remainder, vaultPath, notePath) : remainder
   const parsed = normalizeParsedImageBlocks(
     await parseMarkdownBlocks(editor, preProcessWikilinks(withImages)),
   ) as EditorBlocks
@@ -762,7 +763,7 @@ function scheduleEmptyHeadingSwap(options: {
 
   if (extractBodyRemainderAfterEmptyH1({ content }) === null) return false
 
-  void resolveEmptyHeadingHtml(editor, content, vaultPath)
+  void resolveEmptyHeadingHtml(editor, content, vaultPath, targetPath)
     .then((html) => {
       if (prevActivePathRef.current !== targetPath || !html) return
       applyHtmlStateToEditor(editor, html, suppressChangeRef)

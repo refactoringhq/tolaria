@@ -43,6 +43,15 @@ describe('resolveImageUrls', () => {
     )
   })
 
+  it('decodes URL-encoded chars in relative attachment paths', () => {
+    tauriMode = true
+    const markdown = '![pic](attachments/sub/IMAGE%202022-10-15%2015%3A47%3A07.jpg)'
+
+    expect(resolveImageUrls(markdown, '/vault')).toBe(
+      `![pic](${assetUrl('/vault/attachments/sub/IMAGE 2022-10-15 15:47:07.jpg')})`,
+    )
+  })
+
   it('leaves already-correct asset URLs unchanged', () => {
     tauriMode = true
     const url = assetUrl('/vault/attachments/file.png')
@@ -101,6 +110,67 @@ describe('resolveImageUrls', () => {
     tauriMode = true
     const url = httpAssetUrl('/some/other/path/file.png')
     const markdown = `![alt](${url})`
+
+    expect(resolveImageUrls(markdown, '/vault')).toBe(markdown)
+  })
+
+  it('resolves ../-prefixed attachment paths against the note path', () => {
+    tauriMode = true
+    const notePath = '/vault/self+psy/apeiron/seminars/skazkoterapiya.md'
+    const markdown =
+      '![BlockNote image](../../../attachments/skazkoterapiya/IMAGE%202022-10-15%2015%3A47%3A07.jpg)'
+
+    expect(resolveImageUrls(markdown, '/vault', notePath)).toBe(
+      `![BlockNote image](${assetUrl('/vault/attachments/skazkoterapiya/IMAGE 2022-10-15 15:47:07.jpg')})`,
+    )
+  })
+
+  it('resolves ./-prefixed attachment paths against the note path', () => {
+    tauriMode = true
+    const notePath = '/vault/attachments/topic/note.md'
+    const markdown = '![pic](./image.png)'
+
+    expect(resolveImageUrls(markdown, '/vault', notePath)).toBe(
+      `![pic](${assetUrl('/vault/attachments/topic/image.png')})`,
+    )
+  })
+
+  it('leaves ../-prefixed paths that escape the vault unchanged', () => {
+    tauriMode = true
+    const notePath = '/vault/note.md'
+    const markdown = '![leak](../../../../etc/passwd)'
+
+    expect(resolveImageUrls(markdown, '/vault', notePath)).toBe(markdown)
+  })
+
+  it('leaves ../-prefixed paths that resolve outside the attachments folder unchanged', () => {
+    tauriMode = true
+    const notePath = '/vault/a/b/c.md'
+    const markdown = '![sibling](../other.md)'
+
+    expect(resolveImageUrls(markdown, '/vault', notePath)).toBe(markdown)
+  })
+
+  it('leaves ../-prefixed paths unchanged when notePath is not provided', () => {
+    tauriMode = true
+    const markdown = '![x](../../../attachments/file.png)'
+
+    expect(resolveImageUrls(markdown, '/vault')).toBe(markdown)
+  })
+
+  it('resolves leading-slash /attachments/ paths as vault-root-absolute', () => {
+    tauriMode = true
+    const markdown =
+      '![BlockNote image](/attachments/skazkoterapiya/IMAGE%202022-10-15%2015%3A47%3A07.jpg)'
+
+    expect(resolveImageUrls(markdown, '/vault')).toBe(
+      `![BlockNote image](${assetUrl('/vault/attachments/skazkoterapiya/IMAGE 2022-10-15 15:47:07.jpg')})`,
+    )
+  })
+
+  it('leaves other leading-slash paths unchanged', () => {
+    tauriMode = true
+    const markdown = '![etc](/etc/passwd)'
 
     expect(resolveImageUrls(markdown, '/vault')).toBe(markdown)
   })
