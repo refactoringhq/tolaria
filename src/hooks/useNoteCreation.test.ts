@@ -43,6 +43,10 @@ describe('slugify', () => {
     expect(slugify('Hello World')).toBe('hello-world')
   })
 
+  it('preserves unicode letters when building filenames', () => {
+    expect(slugify('停智慧')).toBe('停智慧')
+  })
+
   it('removes special characters', () => {
     expect(slugify('My Project! @#$%')).toBe('my-project')
   })
@@ -173,6 +177,12 @@ describe('resolveNewType', () => {
     expect(entry.path).toBe('/vault/recipe.md')
     expect(entry.isA).toBe('Type')
     expect(content).toContain('type: Type')
+  })
+
+  it('uses the unicode title when the type name has no ASCII characters', () => {
+    const { entry } = resolveNewType({ typeName: '停智慧', vaultPath: '/vault' })
+    expect(entry.path).toBe('/vault/停智慧.md')
+    expect(entry.filename).toBe('停智慧.md')
   })
 })
 
@@ -361,6 +371,25 @@ describe('useNoteCreation hook', () => {
     expect(addEntry).not.toHaveBeenCalled()
     expect(openTabWithContent).not.toHaveBeenCalled()
     expect(setToastMessage).toHaveBeenCalledWith('Cannot create type "Briefing" because briefing.md already exists')
+  })
+
+  it('handleCreateType ignores an existing untitled draft when a unicode filename is unique', async () => {
+    const existing = makeEntry({ path: '/test/vault/untitled.md', filename: 'untitled.md', title: 'Untitled', isA: 'Note' })
+    const { result } = renderHook(() => useNoteCreation(makeConfig([existing]), tabDeps))
+
+    let created = false
+    await act(async () => {
+      created = await result.current.handleCreateType('停智慧')
+    })
+
+    expect(created).toBe(true)
+    expect(addEntry).toHaveBeenCalledWith(expect.objectContaining({
+      path: '/test/vault/停智慧.md',
+      filename: '停智慧.md',
+      title: '停智慧',
+      isA: 'Type',
+    }))
+    expect(setToastMessage).not.toHaveBeenCalled()
   })
 
   it('createTypeEntrySilent persists without opening tab', async () => {

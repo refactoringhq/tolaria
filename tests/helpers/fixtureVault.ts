@@ -297,10 +297,22 @@ async function installFixtureVaultInitScript({ page, vaultPath }: FixtureVaultPa
             content: readCommandValue(commandArgs, 'content'),
           }),
         }),
+      create_note_content: async (commandArgs?: FixtureCommandArgs) => {
+        const notePath = readCommandString(commandArgs, 'path')
+        const existing = await nativeFetch(`/api/vault/content?path=${encodeURIComponent(notePath)}`)
+        if (existing.ok) throw new Error(`File already exists: ${notePath}`)
+        return readJson('/api/vault/save', {
+          method: 'POST',
+          headers: jsonHeaders,
+          body: JSON.stringify({
+            path: notePath,
+            content: readCommandValue(commandArgs, 'content'),
+          }),
+        })
+      },
       update_frontmatter: (commandArgs?: FixtureCommandArgs) =>
-        persistFrontmatterChange(
-          readCommandString(commandArgs, 'path'),
-          (content) => replaceFrontmatterEntry(
+        persistFrontmatterChange(readCommandString(commandArgs, 'path'), (content) =>
+          replaceFrontmatterEntry(
             content,
             readCommandString(commandArgs, 'key'),
             readCommandValue(commandArgs, 'value'),
