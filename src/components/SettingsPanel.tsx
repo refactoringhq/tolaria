@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from './ui/select'
 import { Switch } from './ui/switch'
+import type { AppTheme } from '../hooks/useAppTheme'
 
 interface SettingsPanelProps {
   open: boolean
@@ -40,6 +41,8 @@ interface SettingsPanelProps {
   explicitOrganizationEnabled?: boolean
   onSaveExplicitOrganization?: (enabled: boolean) => void
   onClose: () => void
+  theme?: AppTheme
+  onThemeChange?: (theme: AppTheme) => void
 }
 
 interface SettingsDraft {
@@ -81,6 +84,8 @@ interface SettingsBodyProps {
   setCrashReporting: (value: boolean) => void
   analytics: boolean
   setAnalytics: (value: boolean) => void
+  theme?: AppTheme
+  onThemeChange?: (theme: AppTheme) => void
 }
 
 const PULL_INTERVAL_OPTIONS = [1, 2, 5, 10, 15, 30] as const
@@ -169,6 +174,8 @@ export function SettingsPanel({
   explicitOrganizationEnabled = true,
   onSaveExplicitOrganization,
   onClose,
+  theme,
+  onThemeChange,
 }: SettingsPanelProps) {
   if (!open) return null
 
@@ -181,6 +188,8 @@ export function SettingsPanel({
       explicitOrganizationEnabled={explicitOrganizationEnabled}
       onSaveExplicitOrganization={onSaveExplicitOrganization}
       onClose={onClose}
+      theme={theme}
+      onThemeChange={onThemeChange}
     />
   )
 }
@@ -199,6 +208,8 @@ function SettingsPanelInner({
   explicitOrganizationEnabled,
   onSaveExplicitOrganization,
   onClose,
+  theme = 'system',
+  onThemeChange,
 }: SettingsPanelInnerProps) {
   const [draft, setDraft] = useState(() => createSettingsDraft(settings, explicitOrganizationEnabled))
   const panelRef = useRef<HTMLDivElement>(null)
@@ -287,6 +298,8 @@ function SettingsPanelInner({
           setCrashReporting={(value) => updateDraft('crashReporting', value)}
           analytics={draft.analytics}
           setAnalytics={(value) => updateDraft('analytics', value)}
+          theme={theme}
+          onThemeChange={onThemeChange}
         />
         <SettingsFooter onClose={onClose} onSave={handleSave} />
       </div>
@@ -339,10 +352,16 @@ function SettingsBody({
   setCrashReporting,
   analytics,
   setAnalytics,
+  theme,
+  onThemeChange,
 }: SettingsBodyProps) {
   return (
     <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 0, overflow: 'auto' }}>
       <SettingsSection showDivider={false}>
+        <AppearanceSection theme={theme} onThemeChange={onThemeChange} />
+      </SettingsSection>
+
+      <SettingsSection>
         <SyncAndUpdatesSection
           pullInterval={pullInterval}
           setPullInterval={setPullInterval}
@@ -396,6 +415,33 @@ function SettingsBody({
         />
       </SettingsSection>
     </div>
+  )
+}
+
+function AppearanceSection({
+  theme = 'system',
+  onThemeChange,
+}: Pick<SettingsBodyProps, 'theme' | 'onThemeChange'>) {
+  return (
+    <>
+      <SectionHeading
+        title="Appearance"
+        description="Choose how Tolaria looks. System follows your OS dark/light mode setting."
+      />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--foreground)' }}>Theme</label>
+        <Select value={theme} onValueChange={(v) => onThemeChange?.(v as AppTheme)} disabled={!onThemeChange}>
+          <SelectTrigger className="w-full bg-transparent" data-testid="settings-theme" data-value={theme}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent position="popper" data-anchor-strategy="popper">
+            <SelectItem value="system">System</SelectItem>
+            <SelectItem value="light">Light</SelectItem>
+            <SelectItem value="dark">Dark</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </>
   )
 }
 

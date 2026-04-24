@@ -94,7 +94,83 @@
   --shadow-dialog: rgba(0, 0, 0, 0.15);
 }
 
-/* Dark mode variables removed — light mode only for now */
+/* Dark mode variables — applied when <html class="dark"> */
+html.dark {
+  /* --- shadcn theme variables (dark mode) --- */
+  --background: #1A1A1A;
+  --foreground: #E8E6E1;
+  --card: #222222;
+  --card-foreground: #E8E6E1;
+  --popover: #222222;
+  --popover-foreground: #E8E6E1;
+  --primary: #4D8BFF;
+  --primary-foreground: #FFFFFF;
+  --secondary: #2E2E2E;
+  --secondary-foreground: #E8E6E1;
+  --muted: #2A2A2A;
+  --muted-foreground: #9B9894;
+  --accent: #2E2E2E;
+  --accent-foreground: #E8E6E1;
+  --destructive: #F56565;
+  --destructive-foreground: #FFFFFF;
+  --border: #333333;
+  --input: #333333;
+  --ring: #4D8BFF;
+  --sidebar: #161616;
+  --sidebar-foreground: #E8E6E1;
+  --sidebar-primary: #4D8BFF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #2E2E2E;
+  --sidebar-accent-foreground: #E8E6E1;
+  --sidebar-border: #2A2A2A;
+  --sidebar-ring: #4D8BFF;
+
+  /* --- App-specific variables (dark mode) --- */
+  color-scheme: dark;
+  --bg-primary: #1A1A1A;
+  --bg-sidebar: #161616;
+  --bg-card: #222222;
+  --bg-hover: #2E2E2E;
+  --bg-hover-subtle: #252525;
+  --bg-selected: #1A2D4A;
+  --bg-input: #222222;
+  --bg-button: #2E2E2E;
+  --bg-dialog: #222222;
+  --text-primary: #E8E6E1;
+  --text-secondary: #9B9894;
+  --text-tertiary: #9B9894;
+  --text-muted: #5E5C58;
+  --text-faint: #5E5C58;
+  --text-heading: #E8E6E1;
+  --accent-blue: #4D8BFF;
+  --accent-blue-bg: #4D8BFF18;
+  --accent-blue-hover: #6B9FFF;
+  --accent-green: #48BB78;
+  --accent-orange: #ED8936;
+  --accent-orange-light: rgba(237, 137, 54, 0.15);
+  --accent-red: #FC8181;
+  --accent-purple: #B794F4;
+  --accent-yellow: #F6E05E;
+  --accent-blue-light: #4D8BFF14;
+  --accent-green-light: rgba(72, 187, 120, 0.15);
+  --accent-purple-light: rgba(183, 148, 244, 0.15);
+  --accent-red-light: rgba(252, 129, 129, 0.15);
+  --accent-yellow-light: rgba(246, 224, 94, 0.15);
+  --accent-teal: #4FD1C5;
+  --accent-teal-light: rgba(79, 209, 197, 0.15);
+  --accent-pink: #F687B3;
+  --accent-pink-light: rgba(246, 135, 179, 0.15);
+  --accent-gray: #A0AEC0;
+  --accent-gray-light: rgba(160, 174, 192, 0.15);
+  --border-primary: #333333;
+  --border-subtle: #2A2A2A;
+  --border-input: #333333;
+  --border-dialog: #333333;
+  --link-color: #4D8BFF;
+  --link-hover: #6B9FFF;
+  --shadow-overlay: rgba(0, 0, 0, 0.6);
+  --shadow-dialog: rgba(0, 0, 0, 0.4);
+}
 
 /* --- Tailwind v4 theme inline: register colors + radii --- */
 @theme inline {
@@ -312,6 +388,26 @@
 .ai-markdown .hljs-attribute { color: #005cc5; }
 .ai-markdown .hljs-deletion { color: #b31d28; background: #ffeef0; }
 .ai-markdown .hljs-meta { color: #6a737d; }
+
+/* --- highlight.js dark theme (GitHub Dark-style) --- */
+html.dark .ai-markdown .hljs { color: #e8e6e1; }
+html.dark .ai-markdown .hljs-comment,
+html.dark .ai-markdown .hljs-quote { color: #8b949e; font-style: italic; }
+html.dark .ai-markdown .hljs-keyword,
+html.dark .ai-markdown .hljs-selector-tag { color: #ff7b72; }
+html.dark .ai-markdown .hljs-string,
+html.dark .ai-markdown .hljs-addition { color: #a5d6ff; }
+html.dark .ai-markdown .hljs-number,
+html.dark .ai-markdown .hljs-literal { color: #79c0ff; }
+html.dark .ai-markdown .hljs-title,
+html.dark .ai-markdown .hljs-section { color: #d2a8ff; }
+html.dark .ai-markdown .hljs-built_in,
+html.dark .ai-markdown .hljs-type { color: #ffa657; }
+html.dark .ai-markdown .hljs-attr,
+html.dark .ai-markdown .hljs-name,
+html.dark .ai-markdown .hljs-attribute { color: #79c0ff; }
+html.dark .ai-markdown .hljs-deletion { color: #ffa198; background: #3d1a1a; }
+html.dark .ai-markdown .hljs-meta { color: #8b949e; }
 
 /* --- AI panel working border animation --- */
 

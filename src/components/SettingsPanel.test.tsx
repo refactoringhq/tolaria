@@ -333,4 +333,65 @@ describe('SettingsPanel', () => {
       }))
     })
   })
+
+  describe('Appearance / Theme selector', () => {
+    it('reflects the theme prop in the trigger', () => {
+      render(
+        <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} theme="dark" onThemeChange={vi.fn()} />
+      )
+      expect(screen.getByTestId('settings-theme')).toHaveAttribute('data-value', 'dark')
+    })
+
+    it('defaults to "system" when no theme prop is provided', () => {
+      render(
+        <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} onThemeChange={vi.fn()} />
+      )
+      expect(screen.getByTestId('settings-theme')).toHaveAttribute('data-value', 'system')
+    })
+
+    it('calls onThemeChange with "light" when Light is selected', () => {
+      const onThemeChange = vi.fn()
+      render(
+        <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} theme="system" onThemeChange={onThemeChange} />
+      )
+      fireEvent.pointerDown(screen.getByTestId('settings-theme'), { button: 0, pointerType: 'mouse' })
+      fireEvent.click(screen.getByRole('option', { name: 'Light' }))
+      expect(onThemeChange).toHaveBeenCalledWith('light')
+    })
+
+    it('calls onThemeChange with "dark" when Dark is selected', () => {
+      const onThemeChange = vi.fn()
+      render(
+        <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} theme="light" onThemeChange={onThemeChange} />
+      )
+      fireEvent.pointerDown(screen.getByTestId('settings-theme'), { button: 0, pointerType: 'mouse' })
+      fireEvent.click(screen.getByRole('option', { name: 'Dark' }))
+      expect(onThemeChange).toHaveBeenCalledWith('dark')
+    })
+
+    it('calls onThemeChange with "system" when System is selected', () => {
+      const onThemeChange = vi.fn()
+      render(
+        <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} theme="light" onThemeChange={onThemeChange} />
+      )
+      fireEvent.pointerDown(screen.getByTestId('settings-theme'), { button: 0, pointerType: 'mouse' })
+      fireEvent.click(screen.getByRole('option', { name: 'System' }))
+      expect(onThemeChange).toHaveBeenCalledWith('system')
+    })
+
+    it('is disabled when onThemeChange is not provided', () => {
+      render(
+        <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
+      )
+      expect(screen.getByTestId('settings-theme')).toBeDisabled()
+    })
+
+    it('does not open the dropdown when disabled', () => {
+      render(
+        <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
+      )
+      fireEvent.pointerDown(screen.getByTestId('settings-theme'), { button: 0, pointerType: 'mouse' })
+      expect(screen.queryByRole('option', { name: 'Light' })).not.toBeInTheDocument()
+    })
+  })
 })

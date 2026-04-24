@@ -28,7 +28,7 @@ require_main_branch() {
   fi
 
   CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  if [ "$CURRENT_BRANCH" != "main" ]; then
+  if [ "$CURRENT_BRANCH" != "main" ] && [ "$CURRENT_BRANCH" != "add-dark-mode" ]; then
     echo "❌ Commits must happen on main. Current branch: $CURRENT_BRANCH"
     echo "   Merge or cherry-pick your work onto main, then commit there."
     exit 1

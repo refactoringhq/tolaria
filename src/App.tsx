@@ -47,6 +47,7 @@ import { useUpdater, restartApp } from './hooks/useUpdater'
 import { useAutoSync } from './hooks/useAutoSync'
 import { useConflictResolver } from './hooks/useConflictResolver'
 import { useZoom } from './hooks/useZoom'
+import { useAppTheme } from './hooks/useAppTheme'
 import { useVaultConfig } from './hooks/useVaultConfig'
 import { useBuildNumber } from './hooks/useBuildNumber'
 import { useOnboarding } from './hooks/useOnboarding'
@@ -1017,6 +1018,7 @@ function App() {
 
   const { setViewMode, sidebarVisible, noteListVisible } = useViewMode(noteWindowParams ? 'editor-only' : undefined)
   const zoom = useZoom()
+  const appTheme = useAppTheme()
   const buildNumber = useBuildNumber()
 
   const updateMainWindowConstraints = useCallback((
@@ -1533,7 +1535,7 @@ function App() {
           onCommit={conflictResolver.commitResolution}
           onClose={conflictFlow.handleCloseConflictResolver}
         />
-        <SettingsPanel open={dialogs.showSettings} settings={settings} aiAgentsStatus={aiAgentsStatus} isGitVault={isGitVault} onSave={saveSettings} explicitOrganizationEnabled={explicitOrganizationEnabled} onSaveExplicitOrganization={handleSaveExplicitOrganization} onClose={dialogs.closeSettings} />
+        <SettingsPanel open={dialogs.showSettings} settings={settings} aiAgentsStatus={aiAgentsStatus} isGitVault={isGitVault} onSave={saveSettings} explicitOrganizationEnabled={explicitOrganizationEnabled} onSaveExplicitOrganization={handleSaveExplicitOrganization} onClose={dialogs.closeSettings} theme={appTheme.theme} onThemeChange={appTheme.setTheme} />
         <FeedbackDialog open={showFeedback} onClose={closeFeedback} />
         <McpSetupDialog open={showMcpSetupDialog} status={mcpStatus} busyAction={mcpDialogAction} onClose={closeMcpSetupDialog} onConnect={handleConnectMcp} onDisconnect={handleDisconnectMcp} />
         <CloneVaultModal key={dialogs.showCloneVault ? 'clone-open' : 'clone-closed'} open={dialogs.showCloneVault} onClose={dialogs.closeCloneVault} onVaultCloned={vaultSwitcher.handleVaultCloned} />
