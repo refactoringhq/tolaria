@@ -48,7 +48,7 @@ pub fn effective_release_channel(value: Option<&str>) -> &'static str {
 
 pub fn normalize_default_ai_agent(value: Option<&str>) -> Option<String> {
     match value.map(|candidate| candidate.trim().to_ascii_lowercase()) {
-        Some(agent) if agent == "claude_code" || agent == "codex" => Some(agent),
+        Some(agent) if agent == "claude_code" || agent == "codex" || agent == "pi" => Some(agent),
         _ => None,
     }
 }

@@ -8,6 +8,7 @@ use std::process::{Command, Stdio};
 pub enum AiAgentId {
     ClaudeCode,
     Codex,
+    Pi,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -20,6 +21,7 @@ pub struct AiAgentAvailability {
 pub struct AiAgentsStatus {
     pub claude_code: AiAgentAvailability,
     pub codex: AiAgentAvailability,
+    pub pi: AiAgentAvailability,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -63,6 +65,7 @@ pub fn get_ai_agents_status() -> AiAgentsStatus {
     AiAgentsStatus {
         claude_code: availability_from_claude(),
         codex: availability_from_codex(),
+        pi: availability_from_pi(),
     }
 }
 
@@ -84,6 +87,7 @@ where
             })
         }
         AiAgentId::Codex => run_codex_agent_stream(request, emit),
+        AiAgentId::Pi => run_pi_agent_stream(request, emit),
     }
 }
 
@@ -350,6 +354,244 @@ fn is_codex_auth_error(lower: &str) -> bool {
         .any(|pattern| lower.contains(pattern))
 }
 
+// ── Pi agent ─────────────────────────────────────────────────────────────
+
+fn availability_from_pi() -> AiAgentAvailability {
+    let binary = match find_pi_binary() {
+        Ok(binary) => binary,
+        Err(_) => {
+            return AiAgentAvailability {
+                installed: false,
+                version: None,
+            }
+        }
+    };
+
+    AiAgentAvailability {
+        installed: true,
+        version: version_for_binary(&binary),
+    }
+}
+
+fn find_pi_binary() -> Result<PathBuf, String> {
+    if let Some(binary) = find_pi_binary_on_path()? {
+        return Ok(binary);
+    }
+
+    if let Some(binary) = find_existing_binary(pi_binary_candidates()) {
+        return Ok(binary);
+    }
+
+    Err("Pi CLI not found. Install it: https://pi.dev".into())
+}
+
+fn find_pi_binary_on_path() -> Result<Option<PathBuf>, String> {
+    let output = Command::new("which")
+        .arg("pi")
+        .output()
+        .map_err(|error| format!("Failed to run `which pi`: {error}"))?;
+
+    if output.status.success() {
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !path.is_empty() {
+            return Ok(Some(PathBuf::from(path)));
+        }
+    }
+
+    Ok(None)
+}
+
+fn pi_binary_candidates() -> Vec<PathBuf> {
+    let home = dirs::home_dir().unwrap_or_default();
+    vec![
+        home.join(".local/bin/pi"),
+        home.join(".npm/bin/pi"),
+        PathBuf::from("/usr/local/bin/pi"),
+        PathBuf::from("/opt/homebrew/bin/pi"),
+    ]
+}
+
+fn run_pi_agent_stream<F>(request: AiAgentStreamRequest, mut emit: F) -> Result<String, String>
+where
+    F: FnMut(AiAgentStreamEvent),
+{
+    let binary = find_pi_binary()?;
+    let args = build_pi_args(&request)?;
+    let prompt = build_pi_prompt(&request);
+
+    let mut command = Command::new(binary);
+    command
+        .args(&args)
+        .arg(prompt)
+        .current_dir(&request.vault_path)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+
+    let mut child = command
+        .spawn()
+        .map_err(|error| format!("Failed to spawn pi: {error}"))?;
+
+    let stdout = child.stdout.take().ok_or("No stdout handle")?;
+    let reader = std::io::BufReader::new(stdout);
+
+    let mut session_id = String::new();
+
+    for line in reader.lines() {
+        let line = match line {
+            Ok(line) => line,
+            Err(error) => {
+                emit(AiAgentStreamEvent::Error {
+                    message: format!("Read error: {error}"),
+                });
+                break;
+            }
+        };
+
+        if line.trim().is_empty() {
+            continue;
+        }
+
+        let json = match serde_json::from_str::<serde_json::Value>(&line) {
+            Ok(json) => json,
+            Err(_) => continue,
+        };
+
+        dispatch_pi_event(&json, &mut session_id, &mut emit);
+    }
+
+    let stderr_output = child
+        .stderr
+        .take()
+        .and_then(|stderr| std::io::read_to_string(stderr).ok())
+        .unwrap_or_default();
+
+    let status = child
+        .wait()
+        .map_err(|error| format!("Wait failed: {error}"))?;
+    if !status.success() {
+        emit(AiAgentStreamEvent::Error {
+            message: format_pi_error(stderr_output, status.to_string()),
+        });
+    }
+
+    emit(AiAgentStreamEvent::Done);
+
+    Ok(session_id)
+}
+
+fn build_pi_args(_request: &AiAgentStreamRequest) -> Result<Vec<String>, String> {
+    Ok(vec![
+        "-p".into(),
+        "--mode".into(),
+        "json".into(),
+        "--no-skills".into(),
+        "--no-prompt-templates".into(),
+        "--no-themes".into(),
+        "--no-extensions".into(),
+        "--no-context-files".into(),
+        "--no-session".into(),
+    ])
+}
+
+fn build_pi_prompt(request: &AiAgentStreamRequest) -> String {
+    match request
+        .system_prompt
+        .as_ref()
+        .map(|prompt| prompt.trim())
+        .filter(|prompt| !prompt.is_empty())
+    {
+        Some(system_prompt) => format!(
+            "System instructions:\n{system_prompt}\n\nUser request:\n{}",
+            request.message
+        ),
+        None => request.message.clone(),
+    }
+}
+
+fn dispatch_pi_event<F>(json: &serde_json::Value, session_id: &mut String, emit: &mut F)
+where
+    F: FnMut(AiAgentStreamEvent),
+{
+    match json["type"].as_str().unwrap_or_default() {
+        "session" => {
+            if let Some(id) = json["id"].as_str() {
+                *session_id = id.to_string();
+                emit(AiAgentStreamEvent::Init {
+                    session_id: id.to_string(),
+                });
+            }
+        }
+        "message_update" => emit_pi_message_update(json, emit),
+        "tool_execution_start" => emit(AiAgentStreamEvent::ToolStart {
+            tool_name: json["toolName"]
+                .as_str()
+                .unwrap_or("unknown")
+                .to_string(),
+            tool_id: json["toolCallId"]
+                .as_str()
+                .unwrap_or("")
+                .to_string(),
+            input: json["args"]
+                .as_object()
+                .map(|args| serde_json::to_string(args).unwrap_or_default()),
+        }),
+        "tool_execution_end" => emit(AiAgentStreamEvent::ToolDone {
+            tool_id: json["toolCallId"]
+                .as_str()
+                .unwrap_or("")
+                .to_string(),
+            output: json["result"]
+                .as_str()
+                .map(|result| result.to_string()),
+        }),
+        "agent_end" => {}
+        _ => {}
+    }
+}
+
+fn emit_pi_message_update<F>(json: &serde_json::Value, emit: &mut F)
+where
+    F: FnMut(AiAgentStreamEvent),
+{
+    let event = &json["assistantMessageEvent"];
+    match event["type"].as_str().unwrap_or_default() {
+        "text_delta" => {
+            if let Some(text) = event["delta"].as_str() {
+                emit(AiAgentStreamEvent::TextDelta {
+                    text: text.to_string(),
+                });
+            }
+        }
+        "thinking_delta" => {
+            if let Some(text) = event["delta"].as_str() {
+                emit(AiAgentStreamEvent::ThinkingDelta {
+                    text: text.to_string(),
+                });
+            }
+        }
+        _ => {}
+    }
+}
+
+fn format_pi_error(stderr_output: String, status: String) -> String {
+    let lower = stderr_output.to_ascii_lowercase();
+    if is_pi_auth_error(&lower) {
+        return "Pi CLI is not authenticated. Set an API key (e.g., ANTHROPIC_API_KEY) or use `pi /login`.".into();
+    }
+
+    if stderr_output.trim().is_empty() {
+        format!("pi exited with status {status}")
+    } else {
+        stderr_output.lines().take(3).collect::<Vec<_>>().join("\n")
+    }
+}
+
+fn is_pi_auth_error(lower: &str) -> bool {
+    ["auth", "api.key", "unauthorized", "authentication", "401"]
+        .iter()
+        .any(|pattern| lower.contains(pattern))
+}
+
 fn map_claude_event(event: crate::claude_cli::ClaudeStreamEvent) -> Option<AiAgentStreamEvent> {
     match event {
         crate::claude_cli::ClaudeStreamEvent::Init { session_id } => {
@@ -386,10 +628,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn normalize_status_contains_both_agents() {
+    fn normalize_status_contains_all_agents() {
         let status = get_ai_agents_status();
         assert!(matches!(status.claude_code.installed, true | false));
         assert!(matches!(status.codex.installed, true | false));
+        assert!(matches!(status.pi.installed, true | false));
     }
 
     #[test]
@@ -479,5 +722,157 @@ mod tests {
         let mapped = map_claude_event(crate::claude_cli::ClaudeStreamEvent::Done);
 
         assert!(matches!(mapped, Some(AiAgentStreamEvent::Done)));
+    }
+
+    #[test]
+    fn build_pi_prompt_keeps_system_prompt_first() {
+        let prompt = build_pi_prompt(&AiAgentStreamRequest {
+            agent: AiAgentId::Pi,
+            message: "Rename the note".into(),
+            system_prompt: Some("Be concise".into()),
+            vault_path: "/tmp/vault".into(),
+        });
+
+        assert!(prompt.starts_with("System instructions:\nBe concise"));
+        assert!(prompt.contains("User request:\nRename the note"));
+    }
+
+    #[test]
+    fn build_pi_prompt_uses_message_only_when_no_system_prompt() {
+        let prompt = build_pi_prompt(&AiAgentStreamRequest {
+            agent: AiAgentId::Pi,
+            message: "Just the message".into(),
+            system_prompt: None,
+            vault_path: "/tmp/vault".into(),
+        });
+
+        assert_eq!(prompt, "Just the message");
+    }
+
+    #[test]
+    fn build_pi_args_uses_print_mode_and_json() {
+        if let Ok(args) = build_pi_args(&AiAgentStreamRequest {
+            agent: AiAgentId::Pi,
+            message: "Rename the note".into(),
+            system_prompt: None,
+            vault_path: "/tmp/vault".into(),
+        }) {
+            assert!(args.contains(&"-p".to_string()));
+            assert!(args.contains(&"--mode".to_string()));
+            assert!(args.contains(&"json".to_string()));
+            assert!(args.contains(&"--no-session".to_string()));
+            // Pi uses its own extension system, not the MCP bridge used by codex
+            assert!(!args.contains(&"--extension".to_string()));
+        }
+    }
+
+    #[test]
+    fn dispatch_pi_session_event_emits_init() {
+        let mut events = Vec::new();
+        let mut session_id = String::new();
+        let session = serde_json::json!({
+            "type": "session",
+            "id": "pi-session-123",
+            "version": 3
+        });
+
+        dispatch_pi_event(&session, &mut session_id, &mut |event| events.push(event));
+
+        assert_eq!(session_id, "pi-session-123");
+        assert!(matches!(
+            &events[0],
+            AiAgentStreamEvent::Init { session_id } if session_id == "pi-session-123"
+        ));
+    }
+
+    #[test]
+    fn dispatch_pi_text_delta_emits_text() {
+        let mut events = Vec::new();
+        let update = serde_json::json!({
+            "type": "message_update",
+            "assistantMessageEvent": {
+                "type": "text_delta",
+                "delta": "Hello world"
+            }
+        });
+
+        let mut session_id = String::new();
+        dispatch_pi_event(&update, &mut session_id, &mut |event| events.push(event));
+
+        assert!(matches!(
+            &events[0],
+            AiAgentStreamEvent::TextDelta { text } if text == "Hello world"
+        ));
+    }
+
+    #[test]
+    fn dispatch_pi_thinking_delta_emits_thinking() {
+        let mut events = Vec::new();
+        let update = serde_json::json!({
+            "type": "message_update",
+            "assistantMessageEvent": {
+                "type": "thinking_delta",
+                "delta": "Thinking..."
+            }
+        });
+
+        let mut session_id = String::new();
+        dispatch_pi_event(&update, &mut session_id, &mut |event| events.push(event));
+
+        assert!(matches!(
+            &events[0],
+            AiAgentStreamEvent::ThinkingDelta { text } if text == "Thinking..."
+        ));
+    }
+
+    #[test]
+    fn dispatch_pi_tool_events_map_correctly() {
+        let mut events = Vec::new();
+        let mut session_id = String::new();
+
+        let start = serde_json::json!({
+            "type": "tool_execution_start",
+            "toolCallId": "call_abc",
+            "toolName": "bash",
+            "args": { "command": "ls" }
+        });
+        dispatch_pi_event(&start, &mut session_id, &mut |event| events.push(event));
+
+        let end = serde_json::json!({
+            "type": "tool_execution_end",
+            "toolCallId": "call_abc",
+            "toolName": "bash",
+            "result": "file.txt"
+        });
+        dispatch_pi_event(&end, &mut session_id, &mut |event| events.push(event));
+
+        assert!(matches!(
+            &events[0],
+            AiAgentStreamEvent::ToolStart { tool_name, tool_id, .. }
+                if tool_name == "bash" && tool_id == "call_abc"
+        ));
+        assert!(matches!(
+            &events[1],
+            AiAgentStreamEvent::ToolDone { tool_id, output }
+                if tool_id == "call_abc" && output.as_deref() == Some("file.txt")
+        ));
+    }
+
+    #[test]
+    fn format_pi_error_detects_auth_errors() {
+        let error = format_pi_error("Error: api.key is required".into(), "exit status 1".into());
+        assert!(error.contains("not authenticated"));
+    }
+
+    #[test]
+    fn format_pi_error_shows_stderr_for_non_auth_errors() {
+        let error = format_pi_error("Something went wrong\nline 2\nline 3".into(), "exit status 1".into());
+        assert!(error.contains("Something went wrong"));
+    }
+
+    #[test]
+    fn format_pi_error_shows_status_for_empty_stderr() {
+        let error = format_pi_error("".into(), "exit status 1".into());
+        assert!(error.contains("pi exited with status"));
     }
 }
