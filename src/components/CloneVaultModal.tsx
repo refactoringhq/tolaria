@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { type FormEvent, useCallback, useRef, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import {
   Dialog,
@@ -25,6 +25,7 @@ interface CloneVaultFormState {
   localPath: string
   cloneStatus: CloneStatus
   cloneError: string | null
+  isCloning: boolean
   isCloneDisabled: boolean
   handleClose: () => void
   handleRepoUrlChange: (value: string) => void
@@ -63,6 +64,7 @@ function useCloneVaultForm(onClose: () => void, onVaultCloned: (path: string, la
   const [pathDirty, setPathDirty] = useState(false)
   const [cloneStatus, setCloneStatus] = useState<CloneStatus>('idle')
   const [cloneError, setCloneError] = useState<string | null>(null)
+  const cloneInFlightRef = useRef(false)
   const previousSuggestedPathRef = useRef('')
 
   const resetState = useCallback(() => {
@@ -75,6 +77,7 @@ function useCloneVaultForm(onClose: () => void, onVaultCloned: (path: string, la
   }, [])
 
   const handleClose = useCallback(() => {
+    if (cloneInFlightRef.current) return
     resetState()
     onClose()
   }, [onClose, resetState])
@@ -102,27 +105,38 @@ function useCloneVaultForm(onClose: () => void, onVaultCloned: (path: string, la
   const handleClone = useCallback(async () => {
     const trimmedUrl = repoUrl.trim()
     const trimmedPath = localPath.trim()
-    if (!trimmedUrl || !trimmedPath) return
+    if (!trimmedUrl || !trimmedPath || cloneInFlightRef.current) return
 
+    cloneInFlightRef.current = true
     setCloneStatus('cloning')
     setCloneError(null)
+    let cloneSucceeded = false
 
     try {
       await tauriCall<string>('clone_git_repo', { url: trimmedUrl, localPath: trimmedPath })
-      onVaultCloned(trimmedPath, labelFromPath(trimmedPath))
-      handleClose()
+      cloneSucceeded = true
     } catch (error) {
       setCloneStatus('error')
       setCloneError(`Clone failed: ${String(error)}`)
+    } finally {
+      cloneInFlightRef.current = false
+    }
+
+    if (cloneSucceeded) {
+      onVaultCloned(trimmedPath, labelFromPath(trimmedPath))
+      handleClose()
     }
   }, [handleClose, localPath, onVaultCloned, repoUrl])
+
+  const isCloning = cloneStatus === 'cloning'
 
   return {
     repoUrl,
     localPath,
     cloneStatus,
     cloneError,
-    isCloneDisabled: !repoUrl.trim() || !localPath.trim() || cloneStatus === 'cloning',
+    isCloning,
+    isCloneDisabled: !repoUrl.trim() || !localPath.trim() || isCloning,
     handleClose,
     handleRepoUrlChange,
     handleLocalPathChange,
@@ -136,6 +150,7 @@ export function CloneVaultModal({ open, onClose, onVaultCloned }: CloneVaultModa
     localPath,
     cloneStatus,
     cloneError,
+    isCloning,
     isCloneDisabled,
     handleClose,
     handleRepoUrlChange,
@@ -143,8 +158,12 @@ export function CloneVaultModal({ open, onClose, onVaultCloned }: CloneVaultModa
     handleClone,
   } = useCloneVaultForm(onClose, onVaultCloned)
   const handleOpenChange = useCallback((isOpen: boolean) => {
-    if (!isOpen) handleClose()
-  }, [handleClose])
+    if (!isOpen && !isCloning) handleClose()
+  }, [handleClose, isCloning])
+  const handleSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    void handleClone()
+  }, [handleClone])
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -157,13 +176,14 @@ export function CloneVaultModal({ open, onClose, onVaultCloned }: CloneVaultModa
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4 py-2">
+        <form className="flex flex-col gap-4 py-2" onSubmit={handleSubmit} data-testid="clone-vault-form" aria-busy={isCloning}>
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-foreground" htmlFor="clone-repo-url">Repository URL</label>
             <Input
               id="clone-repo-url"
               placeholder="git@host:owner/repo.git or https://host/owner/repo.git"
               value={repoUrl}
+              disabled={isCloning}
               onChange={(event) => handleRepoUrlChange(event.target.value)}
               data-testid="clone-repo-url"
             />
@@ -175,29 +195,41 @@ export function CloneVaultModal({ open, onClose, onVaultCloned }: CloneVaultModa
               id="clone-vault-path"
               placeholder="~/Vaults/my-vault"
               value={localPath}
+              disabled={isCloning}
               onChange={(event) => handleLocalPathChange(event.target.value)}
               data-testid="clone-vault-path"
             />
           </div>
 
           <p className="text-xs text-muted-foreground">
-            SSH keys, the git credential manager, `gh auth`, and other system git auth methods all work.
+            {isCloning
+              ? 'Cloning repository… Tolaria will open the vault when git finishes.'
+              : 'SSH keys, the git credential manager, `gh auth`, and other system git auth methods all work.'}
           </p>
 
           {cloneError && (
             <p className="text-xs text-destructive" data-testid="clone-vault-error">{cloneError}</p>
           )}
-        </div>
 
-        <DialogFooter className="flex-row items-center justify-end sm:justify-end">
-          <Button
-            onClick={handleClone}
-            disabled={isCloneDisabled}
-            data-testid="clone-vault-submit"
-          >
-            {cloneStatus === 'cloning' ? 'Cloning...' : 'Clone & Open'}
-          </Button>
-        </DialogFooter>
+          <DialogFooter className="flex-row items-center justify-end sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={isCloning}
+              data-testid="clone-vault-cancel"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isCloneDisabled}
+              data-testid="clone-vault-submit"
+            >
+              {cloneStatus === 'cloning' ? 'Cloning...' : 'Clone & Open'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

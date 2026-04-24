@@ -94,7 +94,7 @@ fn run_clone(request: &CloneRequest<'_>) -> Result<(), String> {
 fn build_clone_command(request: &CloneRequest<'_>, destination: &str) -> Command {
     let mut command = Command::new("git");
     command
-        .args(["clone", "--progress", request.url, destination])
+        .args(["clone", "--quiet", request.url, destination])
         .env("GIT_TERMINAL_PROMPT", "0")
         .env("SSH_ASKPASS_REQUIRE", "never")
         .stdin(Stdio::null());
@@ -217,6 +217,10 @@ mod tests {
             dest,
         };
         let command = build_clone_command(&request, "/tmp/repo");
+        let args = command
+            .get_args()
+            .map(|arg| arg.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
         let envs = command
             .get_envs()
             .map(|(key, value)| {
@@ -234,6 +238,15 @@ mod tests {
         assert_eq!(
             envs.get("SSH_ASKPASS_REQUIRE"),
             Some(&Some("never".to_string()))
+        );
+        assert_eq!(
+            args,
+            vec![
+                "clone".to_string(),
+                "--quiet".to_string(),
+                "https://example.com/repo.git".to_string(),
+                "/tmp/repo".to_string(),
+            ]
         );
     }
 }
