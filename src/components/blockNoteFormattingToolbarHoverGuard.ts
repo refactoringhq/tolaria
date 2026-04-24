@@ -105,8 +105,23 @@ export function shouldSuppressFormattingToolbarHoverUpdate({
 function getActiveFormattingToolbarFileBlockId(
   editor: BlockNoteEditor<BlockSchema, InlineContentSchema, StyleSchema>,
 ) {
-  const selectedBlock =
-    editor.getSelection()?.blocks[0] ?? editor.getTextCursorPosition().block
+  let selectedBlock: ReturnType<typeof editor.getTextCursorPosition>['block'] | null = null
+
+  try {
+    selectedBlock = editor.getSelection()?.blocks[0] ?? null
+  } catch {
+    selectedBlock = null
+  }
+
+  if (!selectedBlock) {
+    try {
+      selectedBlock = editor.getTextCursorPosition().block
+    } catch {
+      selectedBlock = null
+    }
+  }
+
+  if (!selectedBlock) return null
 
   return FORMATTING_TOOLBAR_FILE_BLOCK_TYPES.has(selectedBlock.type)
     ? selectedBlock.id

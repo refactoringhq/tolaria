@@ -319,4 +319,26 @@ describe('tolariaEditorFormatting behavior', () => {
       }),
     }))
   })
+
+  it('stays stable when BlockNote selection reads throw during inline action churn', () => {
+    const editor = createMockEditor('paragraph')
+    const selectionError = new RangeError('Index 0 out of range for <>')
+
+    editor.getSelection = vi.fn(() => {
+      throw selectionError
+    })
+    editor.getTextCursorPosition = vi.fn(() => {
+      throw selectionError
+    })
+    useBlockNoteEditorMock.mockReturnValue(editor)
+
+    expect(() => {
+      render(
+        <>
+          <TolariaFormattingToolbar />
+          <TolariaFormattingToolbarController />
+        </>,
+      )
+    }).not.toThrow()
+  })
 })
