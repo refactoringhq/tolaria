@@ -84,4 +84,24 @@ describe('useNoteActions missing-path recovery', () => {
     )
     warnSpy.mockRestore()
   })
+
+  it('shows a toast without reloading the vault when note content is not valid UTF-8 text', async () => {
+    vi.mocked(mockInvoke).mockRejectedValueOnce(new Error('File is not valid UTF-8 text: /test/vault/bad.csv'))
+    const config = makeConfig({ entries: [makeEntry({ path: '/test/vault/bad.csv', filename: 'bad.csv', title: 'bad.csv', fileKind: 'text' })] })
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const { result } = renderHook(() => useNoteActions(config))
+
+    await act(async () => {
+      await result.current.handleSelectNote(makeEntry({ path: '/test/vault/bad.csv', filename: 'bad.csv', title: 'bad.csv', fileKind: 'text' }))
+    })
+
+    expect(result.current.tabs).toEqual([])
+    expect(result.current.activeTabPath).toBeNull()
+    expect(config.reloadVault).not.toHaveBeenCalled()
+    expect(config.setToastMessage).toHaveBeenCalledWith(
+      '"bad.csv" could not be opened because it is not valid UTF-8 text.',
+    )
+    warnSpy.mockRestore()
+  })
 })
