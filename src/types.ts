@@ -83,6 +83,7 @@ export interface Settings {
   autogit_enabled?: boolean | null
   autogit_idle_threshold_seconds?: number | null
   autogit_inactive_threshold_seconds?: number | null
+  auto_advance_inbox_after_organize?: boolean | null
   telemetry_consent: boolean | null
   crash_reporting_enabled: boolean | null
   analytics_enabled: boolean | null

@@ -149,3 +149,28 @@ pub async fn stream_ai_agent(
 ) -> Result<String, String> {
     Err("CLI AI agents are not available on mobile".into())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::vault::AiGuidanceFileState;
+
+    #[test]
+    fn guidance_commands_report_and_restore_vault_guidance_files() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let vault_path = dir.path().to_string_lossy().to_string();
+
+        let initial = get_vault_ai_guidance_status(vault_path.clone()).unwrap();
+        assert_eq!(initial.agents_state, AiGuidanceFileState::Missing);
+        assert_eq!(initial.claude_state, AiGuidanceFileState::Missing);
+        assert!(initial.can_restore);
+
+        let restored = restore_vault_ai_guidance(vault_path.clone()).unwrap();
+        assert_eq!(restored.agents_state, AiGuidanceFileState::Managed);
+        assert_eq!(restored.claude_state, AiGuidanceFileState::Managed);
+        assert!(!restored.can_restore);
+
+        assert!(dir.path().join("AGENTS.md").exists());
+        assert!(dir.path().join("CLAUDE.md").exists());
+    }
+}

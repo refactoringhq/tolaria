@@ -8,6 +8,7 @@ const emptySettings: Settings = {
   autogit_enabled: null,
   autogit_idle_threshold_seconds: null,
   autogit_inactive_threshold_seconds: null,
+  auto_advance_inbox_after_organize: null,
   telemetry_consent: null,
   crash_reporting_enabled: null,
   analytics_enabled: null,
@@ -138,6 +139,13 @@ describe('SettingsPanel', () => {
     expect(screen.getByRole('switch', { name: 'Organize notes explicitly' })).toHaveAttribute('aria-checked', 'true')
   })
 
+  it('defaults auto-advance to the next inbox item to off', () => {
+    render(
+      <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
+    )
+    expect(screen.getByRole('switch', { name: 'Auto-advance to next Inbox item' })).toHaveAttribute('aria-checked', 'false')
+  })
+
   it('defaults the initial H1 auto-rename switch to on', () => {
     render(
       <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
@@ -218,6 +226,19 @@ describe('SettingsPanel', () => {
     fireEvent.click(screen.getByTestId('settings-save'))
 
     expect(onSaveExplicitOrganization).toHaveBeenCalledWith(false)
+  })
+
+  it('saves the auto-advance inbox preference when toggled on', () => {
+    render(
+      <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
+    )
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Auto-advance to next Inbox item' }))
+    fireEvent.click(screen.getByTestId('settings-save'))
+
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
+      auto_advance_inbox_after_organize: true,
+    }))
   })
 
   it('calls onClose when Cancel is clicked', () => {

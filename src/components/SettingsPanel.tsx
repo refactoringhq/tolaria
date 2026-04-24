@@ -47,6 +47,7 @@ interface SettingsDraft {
   autoGitEnabled: boolean
   autoGitIdleThresholdSeconds: number
   autoGitInactiveThresholdSeconds: number
+  autoAdvanceInboxAfterOrganize: boolean
   defaultAiAgent: AiAgentId
   releaseChannel: ReleaseChannel
   initialH1AutoRename: boolean
@@ -65,6 +66,8 @@ interface SettingsBodyProps {
   setAutoGitIdleThresholdSeconds: (value: number) => void
   autoGitInactiveThresholdSeconds: number
   setAutoGitInactiveThresholdSeconds: (value: number) => void
+  autoAdvanceInboxAfterOrganize: boolean
+  setAutoAdvanceInboxAfterOrganize: (value: boolean) => void
   aiAgentsStatus: AiAgentsStatus
   defaultAiAgent: AiAgentId
   setDefaultAiAgent: (value: AiAgentId) => void
@@ -103,6 +106,7 @@ function createSettingsDraft(
       settings.autogit_inactive_threshold_seconds,
       DEFAULT_AUTOGIT_INACTIVE_THRESHOLD_SECONDS,
     ),
+    autoAdvanceInboxAfterOrganize: settings.auto_advance_inbox_after_organize ?? false,
     defaultAiAgent: resolveDefaultAiAgent(settings.default_ai_agent),
     releaseChannel: normalizeReleaseChannel(settings.release_channel),
     initialH1AutoRename: settings.initial_h1_auto_rename_enabled ?? true,
@@ -131,6 +135,7 @@ function buildSettingsFromDraft(settings: Settings, draft: SettingsDraft): Setti
     autogit_enabled: draft.autoGitEnabled,
     autogit_idle_threshold_seconds: draft.autoGitIdleThresholdSeconds,
     autogit_inactive_threshold_seconds: draft.autoGitInactiveThresholdSeconds,
+    auto_advance_inbox_after_organize: draft.autoAdvanceInboxAfterOrganize,
     telemetry_consent: resolveTelemetryConsent(settings, draft),
     crash_reporting_enabled: draft.crashReporting,
     analytics_enabled: draft.analytics,
@@ -267,6 +272,8 @@ function SettingsPanelInner({
           setAutoGitIdleThresholdSeconds={(value) => updateDraft('autoGitIdleThresholdSeconds', value)}
           autoGitInactiveThresholdSeconds={draft.autoGitInactiveThresholdSeconds}
           setAutoGitInactiveThresholdSeconds={(value) => updateDraft('autoGitInactiveThresholdSeconds', value)}
+          autoAdvanceInboxAfterOrganize={draft.autoAdvanceInboxAfterOrganize}
+          setAutoAdvanceInboxAfterOrganize={(value) => updateDraft('autoAdvanceInboxAfterOrganize', value)}
           aiAgentsStatus={aiAgentsStatus}
           defaultAiAgent={draft.defaultAiAgent}
           setDefaultAiAgent={(value) => updateDraft('defaultAiAgent', value)}
@@ -317,6 +324,8 @@ function SettingsBody({
   setAutoGitIdleThresholdSeconds,
   autoGitInactiveThresholdSeconds,
   setAutoGitInactiveThresholdSeconds,
+  autoAdvanceInboxAfterOrganize,
+  setAutoAdvanceInboxAfterOrganize,
   aiAgentsStatus,
   defaultAiAgent,
   setDefaultAiAgent,
@@ -373,6 +382,8 @@ function SettingsBody({
         <OrganizationWorkflowSection
           checked={explicitOrganization}
           onChange={setExplicitOrganization}
+          autoAdvanceInboxAfterOrganize={autoAdvanceInboxAfterOrganize}
+          onChangeAutoAdvanceInboxAfterOrganize={setAutoAdvanceInboxAfterOrganize}
         />
       </SettingsSection>
 
@@ -707,15 +718,19 @@ function LabeledNumberInput({
 function OrganizationWorkflowSection({
   checked,
   onChange,
+  autoAdvanceInboxAfterOrganize,
+  onChangeAutoAdvanceInboxAfterOrganize,
 }: {
   checked: boolean
   onChange: (value: boolean) => void
+  autoAdvanceInboxAfterOrganize: boolean
+  onChangeAutoAdvanceInboxAfterOrganize: (value: boolean) => void
 }) {
   return (
     <>
       <SectionHeading
         title="Workflow"
-        description="Choose whether Tolaria shows the Inbox workflow and the organized toggle."
+        description="Choose whether Tolaria shows the Inbox workflow, plus how it moves through items while you triage them."
       />
 
       <SettingsSwitchRow
@@ -724,6 +739,14 @@ function OrganizationWorkflowSection({
         checked={checked}
         onChange={onChange}
         testId="settings-explicit-organization"
+      />
+
+      <SettingsSwitchRow
+        label="Auto-advance to next Inbox item"
+        description="When enabled, marking an Inbox note as organized immediately opens the next visible Inbox note."
+        checked={autoAdvanceInboxAfterOrganize}
+        onChange={onChangeAutoAdvanceInboxAfterOrganize}
+        testId="settings-auto-advance-inbox-after-organize"
       />
     </>
   )

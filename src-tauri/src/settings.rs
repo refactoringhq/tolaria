@@ -11,6 +11,7 @@ pub struct Settings {
     pub autogit_enabled: Option<bool>,
     pub autogit_idle_threshold_seconds: Option<u32>,
     pub autogit_inactive_threshold_seconds: Option<u32>,
+    pub auto_advance_inbox_after_organize: Option<bool>,
     pub telemetry_consent: Option<bool>,
     pub crash_reporting_enabled: Option<bool>,
     pub analytics_enabled: Option<bool>,
@@ -62,6 +63,7 @@ fn normalize_settings(settings: Settings) -> Settings {
         autogit_inactive_threshold_seconds: normalize_optional_positive_u32(
             settings.autogit_inactive_threshold_seconds,
         ),
+        auto_advance_inbox_after_organize: settings.auto_advance_inbox_after_organize,
         telemetry_consent: settings.telemetry_consent,
         crash_reporting_enabled: settings.crash_reporting_enabled,
         analytics_enabled: settings.analytics_enabled,
@@ -172,6 +174,7 @@ mod tests {
         Option<bool>,
         Option<bool>,
         Option<bool>,
+        Option<bool>,
         Option<&'a str>,
         Option<&'a str>,
         Option<bool>,
@@ -184,6 +187,7 @@ mod tests {
             settings.autogit_enabled,
             settings.autogit_idle_threshold_seconds,
             settings.autogit_inactive_threshold_seconds,
+            settings.auto_advance_inbox_after_organize,
             settings.telemetry_consent,
             settings.crash_reporting_enabled,
             settings.analytics_enabled,
@@ -197,7 +201,7 @@ mod tests {
     fn assert_empty_settings(settings: &Settings) {
         assert_eq!(
             settings_snapshot(settings),
-            (None, None, None, None, None, None, None, None, None, None, None)
+            (None, None, None, None, None, None, None, None, None, None, None, None)
         );
     }
 
@@ -234,6 +238,7 @@ mod tests {
             autogit_enabled: Some(true),
             autogit_idle_threshold_seconds: Some(90),
             autogit_inactive_threshold_seconds: Some(30),
+            auto_advance_inbox_after_organize: Some(true),
             telemetry_consent: Some(true),
             crash_reporting_enabled: Some(true),
             analytics_enabled: Some(false),
@@ -262,6 +267,7 @@ mod tests {
             autogit_enabled: Some(true),
             autogit_idle_threshold_seconds: Some(90),
             autogit_inactive_threshold_seconds: Some(30),
+            auto_advance_inbox_after_organize: Some(true),
             release_channel: Some("alpha".to_string()),
             initial_h1_auto_rename_enabled: Some(false),
             default_ai_agent: Some("codex".to_string()),
@@ -271,6 +277,7 @@ mod tests {
         assert_eq!(loaded.autogit_enabled, Some(true));
         assert_eq!(loaded.autogit_idle_threshold_seconds, Some(90));
         assert_eq!(loaded.autogit_inactive_threshold_seconds, Some(30));
+        assert_eq!(loaded.auto_advance_inbox_after_organize, Some(true));
         assert_eq!(loaded.release_channel.as_deref(), Some("alpha"));
         assert_eq!(loaded.initial_h1_auto_rename_enabled, Some(false));
         assert_eq!(loaded.default_ai_agent.as_deref(), Some("codex"));
@@ -379,6 +386,7 @@ mod tests {
         assert_eq!(
             settings_snapshot(&loaded),
             (
+                None,
                 None,
                 None,
                 None,

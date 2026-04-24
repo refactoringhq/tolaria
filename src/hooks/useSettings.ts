@@ -14,6 +14,7 @@ const EMPTY_SETTINGS: Settings = {
   autogit_enabled: null,
   autogit_idle_threshold_seconds: null,
   autogit_inactive_threshold_seconds: null,
+  auto_advance_inbox_after_organize: null,
   telemetry_consent: null,
   crash_reporting_enabled: null,
   analytics_enabled: null,

@@ -4,6 +4,7 @@ import type {
 } from '../hooks/appCommandCatalog'
 
 export interface LaputaTestBridge {
+  activeTabPath?: string | null
   dispatchAppCommand?: (id: string) => void
   dispatchShortcutEvent?: (init: AppCommandShortcutEventInit) => void
   dispatchBrowserMenuCommand?: (id: string) => void

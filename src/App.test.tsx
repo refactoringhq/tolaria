@@ -241,6 +241,7 @@ function resetMockCommandResults() {
     get_file_history: [],
     get_settings: {
       auto_pull_interval_minutes: null,
+      auto_advance_inbox_after_organize: null,
       telemetry_consent: true,
       crash_reporting_enabled: null,
       analytics_enabled: null,
@@ -267,6 +268,7 @@ vi.mock('./mock-tauri', () => ({
   mockInvoke: vi.fn(async (cmd: string, args?: unknown) => resolveMockCommandResult(cmd, args)),
   addMockEntry: vi.fn(),
   updateMockContent: vi.fn(),
+  trackMockChange: vi.fn(),
 }))
 
 // Mock ai-chat utilities
@@ -737,6 +739,44 @@ describe('App', () => {
     await waitFor(() => {
       expect(within(screen.getByTestId('sidebar-top-nav')).queryByText('Inbox')).not.toBeInTheDocument()
       expect(screen.getByText('All Notes')).toBeInTheDocument()
+    })
+  })
+
+  it('auto-advances to the next inbox item after organizing when the setting is enabled', async () => {
+    configureNeighborhoodVault()
+    mockCommandResults.get_settings = {
+      auto_pull_interval_minutes: null,
+      auto_advance_inbox_after_organize: true,
+      telemetry_consent: true,
+      crash_reporting_enabled: null,
+      analytics_enabled: null,
+      anonymous_id: null,
+      release_channel: null,
+    }
+
+    render(<App />)
+
+    const noteListContainer = await screen.findByTestId('note-list-container')
+    await waitFor(() => {
+      expect(getHeaderForNoteList(noteListContainer)).toHaveTextContent('Inbox')
+    })
+
+    await act(async () => {
+      fireEvent.click(within(noteListContainer).getByText('Alpha'))
+      await Promise.resolve()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Set note as organized' })).toBeInTheDocument()
+    })
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Set note as organized' }))
+      await Promise.resolve()
+    })
+
+    await waitFor(() => {
+      expect(window.__laputaTest?.activeTabPath).toBe('/vault/beta.md')
     })
   })
 

@@ -3,7 +3,7 @@ import type { VaultEntry } from '../types'
 
 interface BulkEntryActions {
   handleArchiveNote: (path: string) => Promise<void>
-  handleToggleOrganized: (path: string) => Promise<void>
+  handleToggleOrganized: (path: string) => Promise<boolean>
 }
 
 function formatBulkToast(count: number, label: string) {
@@ -43,8 +43,7 @@ export function useBulkActions(
   const handleBulkOrganize = useCallback(async (paths: string[]) => {
     const ok = await runBulkAction(paths, async (path) => {
       if (organizedPathSet.has(path)) return false
-      await entryActions.handleToggleOrganized(path)
-      return true
+      return entryActions.handleToggleOrganized(path)
     })
     if (ok > 0) setToastMessage(formatBulkToast(ok, 'organized'))
   }, [entryActions, organizedPathSet, setToastMessage])
