@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useRef, useState } from 'react'
+import { type ChangeEvent, type FormEvent, useCallback, useRef, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import {
   Dialog,
@@ -13,6 +13,13 @@ import { Input } from '@/components/ui/input'
 import { isTauri, mockInvoke } from '../mock-tauri'
 
 type CloneStatus = 'idle' | 'cloning' | 'error'
+type CloneAttemptResult =
+  | { ok: true }
+  | { ok: false; errorMessage: string }
+type CloneRequest = Record<string, unknown> & {
+  url: string
+  localPath: string
+}
 
 interface CloneVaultModalProps {
   open: boolean
@@ -28,8 +35,8 @@ interface CloneVaultFormState {
   isCloning: boolean
   isCloneDisabled: boolean
   handleClose: () => void
-  handleRepoUrlChange: (value: string) => void
-  handleLocalPathChange: (value: string) => void
+  handleRepoUrlChange: (event: ChangeEvent<HTMLInputElement>) => void
+  handleLocalPathChange: (event: ChangeEvent<HTMLInputElement>) => void
   handleClone: () => Promise<void>
 }
 
@@ -37,25 +44,34 @@ function tauriCall<T>(cmd: string, args: Record<string, unknown>): Promise<T> {
   return isTauri() ? invoke<T>(cmd, args) : mockInvoke<T>(cmd, args)
 }
 
-function repoNameFromUrl(url: string): string {
-  const trimmed = url.trim().replace(/\/+$/g, '')
+function repoNameFromUrl(request: Pick<CloneRequest, 'url'>): string {
+  const trimmed = request.url.trim().replace(/\/+$/g, '')
   if (!trimmed) return ''
   const segment = trimmed.split(/[/:]/).pop() ?? ''
   return segment.replace(/\.git$/i, '')
 }
 
-function suggestedPathFromUrl(url: string): string {
-  const repoName = repoNameFromUrl(url)
+function suggestedPathFromUrl(request: Pick<CloneRequest, 'url'>): string {
+  const repoName = repoNameFromUrl(request)
   return repoName ? `~/Vaults/${repoName}` : ''
 }
 
-function labelFromPath(path: string): string {
-  const trimmed = path.trim().replace(/\/+$/g, '')
+function labelFromPath(request: Pick<CloneRequest, 'localPath'>): string {
+  const trimmed = request.localPath.trim().replace(/\/+$/g, '')
   return trimmed.split('/').pop() || 'Vault'
 }
 
 function shouldSyncSuggestedPath(localPath: string, pathDirty: boolean, previousSuggestedPath: string): boolean {
   return !pathDirty || !localPath.trim() || localPath === previousSuggestedPath
+}
+
+async function attemptClone(request: CloneRequest): Promise<CloneAttemptResult> {
+  try {
+    await tauriCall<string>('clone_git_repo', request)
+    return { ok: true }
+  } catch (error) {
+    return { ok: false, errorMessage: `Clone failed: ${String(error)}` }
+  }
 }
 
 function useCloneVaultForm(onClose: () => void, onVaultCloned: (path: string, label: string) => void): CloneVaultFormState {
@@ -82,11 +98,12 @@ function useCloneVaultForm(onClose: () => void, onVaultCloned: (path: string, la
     onClose()
   }, [onClose, resetState])
 
-  const handleRepoUrlChange = useCallback((value: string) => {
+  const handleRepoUrlChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value
     setRepoUrl(value)
     setCloneError(null)
 
-    const nextSuggestedPath = suggestedPathFromUrl(value)
+    const nextSuggestedPath = suggestedPathFromUrl({ url: value })
     const previousSuggestedPath = previousSuggestedPathRef.current
 
     if (shouldSyncSuggestedPath(localPath, pathDirty, previousSuggestedPath)) {
@@ -96,7 +113,8 @@ function useCloneVaultForm(onClose: () => void, onVaultCloned: (path: string, la
     previousSuggestedPathRef.current = nextSuggestedPath
   }, [localPath, pathDirty])
 
-  const handleLocalPathChange = useCallback((value: string) => {
+  const handleLocalPathChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value
     setPathDirty(true)
     setLocalPath(value)
     setCloneError(null)
@@ -105,27 +123,23 @@ function useCloneVaultForm(onClose: () => void, onVaultCloned: (path: string, la
   const handleClone = useCallback(async () => {
     const trimmedUrl = repoUrl.trim()
     const trimmedPath = localPath.trim()
-    if (!trimmedUrl || !trimmedPath || cloneInFlightRef.current) return
+    const request = { url: trimmedUrl, localPath: trimmedPath }
+    if (!request.url || !request.localPath || cloneInFlightRef.current) return
 
     cloneInFlightRef.current = true
     setCloneStatus('cloning')
     setCloneError(null)
-    let cloneSucceeded = false
+    const result = await attemptClone(request)
+    cloneInFlightRef.current = false
 
-    try {
-      await tauriCall<string>('clone_git_repo', { url: trimmedUrl, localPath: trimmedPath })
-      cloneSucceeded = true
-    } catch (error) {
-      setCloneStatus('error')
-      setCloneError(`Clone failed: ${String(error)}`)
-    } finally {
-      cloneInFlightRef.current = false
-    }
-
-    if (cloneSucceeded) {
-      onVaultCloned(trimmedPath, labelFromPath(trimmedPath))
+    if (result.ok) {
+      onVaultCloned(request.localPath, labelFromPath({ localPath: request.localPath }))
       handleClose()
+      return
     }
+
+    setCloneStatus('error')
+    setCloneError(result.errorMessage)
   }, [handleClose, localPath, onVaultCloned, repoUrl])
 
   const isCloning = cloneStatus === 'cloning'
@@ -184,7 +198,7 @@ export function CloneVaultModal({ open, onClose, onVaultCloned }: CloneVaultModa
               placeholder="git@host:owner/repo.git or https://host/owner/repo.git"
               value={repoUrl}
               disabled={isCloning}
-              onChange={(event) => handleRepoUrlChange(event.target.value)}
+              onChange={handleRepoUrlChange}
               data-testid="clone-repo-url"
             />
           </div>
@@ -196,7 +210,7 @@ export function CloneVaultModal({ open, onClose, onVaultCloned }: CloneVaultModa
               placeholder="~/Vaults/my-vault"
               value={localPath}
               disabled={isCloning}
-              onChange={(event) => handleLocalPathChange(event.target.value)}
+              onChange={handleLocalPathChange}
               data-testid="clone-vault-path"
             />
           </div>
