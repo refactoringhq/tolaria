@@ -74,7 +74,7 @@ function requestNoteContent({ path }: Pick<NoteContentCacheEntry, 'path'>): Note
 export function prefetchNoteContent(path: string): void {
   if (prefetchCache.has(path)) return
   void requestNoteContent({ path }).promise.catch((error) => {
-    if (isNoActiveVaultSelectedError(error)) return
+    if (isNoActiveVaultSelectedError(error) || isUnreadableNoteContentError(error)) return
     console.warn('Failed to prefetch note content:', error)
   })
 }
@@ -106,6 +106,7 @@ export type { Tab }
 interface TabManagementOptions {
   beforeNavigate?: (fromPath: string, toPath: string) => Promise<void>
   onMissingNotePath?: (entry: VaultEntry, error: unknown) => void | Promise<void>
+  onUnreadableNoteContent?: (entry: VaultEntry, error: unknown) => void | Promise<void>
 }
 
 function syncActiveTabPath(
@@ -201,6 +202,15 @@ function isNoActiveVaultSelectedError(error: unknown): boolean {
   return /no active vault selected/i.test(message)
 }
 
+function isUnreadableNoteContentError(error: unknown): boolean {
+  const message = error instanceof Error
+    ? error.message
+    : typeof error === 'string'
+      ? error
+      : String(error)
+  return /not valid utf-8 text|invalid utf-8|stream did not contain valid utf-8/i.test(message)
+}
+
 function shouldApplyLoadedEntry(options: {
   seq: number
   navSeqRef: React.MutableRefObject<number>
@@ -225,6 +235,99 @@ function shouldApplyLoadedEntry(options: {
   return cachedContent !== content || !pathsMatch(activeTabPathRef.current, path)
 }
 
+type EntryLoadFailureKind =
+  | 'missing-active-vault'
+  | 'missing-path'
+  | 'unreadable-content'
+  | 'load-failed'
+
+type RecoverableEntryLoadFailureKind = Exclude<EntryLoadFailureKind, 'load-failed'>
+
+function getEntryLoadFailureKind(error: unknown): EntryLoadFailureKind {
+  if (isNoActiveVaultSelectedError(error)) return 'missing-active-vault'
+  if (isMissingNotePathError(error)) return 'missing-path'
+  if (isUnreadableNoteContentError(error)) return 'unreadable-content'
+  return 'load-failed'
+}
+
+function resetFailedEntrySelection(options: {
+  tabsRef: React.MutableRefObject<Tab[]>
+  activeTabPathRef: React.MutableRefObject<string | null>
+  setTabs: React.Dispatch<React.SetStateAction<Tab[]>>
+  setActiveTabPath: React.Dispatch<React.SetStateAction<string | null>>
+}) {
+  const { tabsRef, activeTabPathRef, setTabs, setActiveTabPath } = options
+  clearTabs(tabsRef, setTabs)
+  syncActiveTabPath(activeTabPathRef, setActiveTabPath, null)
+}
+
+function runEntryFailureCallback(options: {
+  callback?: (entry: VaultEntry, error: unknown) => void | Promise<void>
+  entry: VaultEntry
+  error: unknown
+  warning: string
+}) {
+  const { callback, entry, error, warning } = options
+  Promise.resolve(callback?.(entry, error)).catch((callbackError) => {
+    console.warn(warning, callbackError)
+  })
+}
+
+function handleRecoverableEntryLoadFailure(options: {
+  kind: RecoverableEntryLoadFailureKind
+  entry: VaultEntry
+  tabsRef: React.MutableRefObject<Tab[]>
+  activeTabPathRef: React.MutableRefObject<string | null>
+  setTabs: React.Dispatch<React.SetStateAction<Tab[]>>
+  setActiveTabPath: React.Dispatch<React.SetStateAction<string | null>>
+  error: unknown
+  onMissingNotePath?: (entry: VaultEntry, error: unknown) => void | Promise<void>
+  onUnreadableNoteContent?: (entry: VaultEntry, error: unknown) => void | Promise<void>
+}) {
+  const {
+    kind,
+    entry,
+    tabsRef,
+    activeTabPathRef,
+    setTabs,
+    setActiveTabPath,
+    error,
+    onMissingNotePath,
+    onUnreadableNoteContent,
+  } = options
+
+  if (kind === 'missing-active-vault') {
+    clearPrefetchCache()
+  }
+
+  resetFailedEntrySelection({
+    tabsRef,
+    activeTabPathRef,
+    setTabs,
+    setActiveTabPath,
+  })
+  failNoteOpenTrace(entry.path, kind)
+
+  if (kind === 'missing-path') {
+    runEntryFailureCallback({
+      callback: onMissingNotePath,
+      entry,
+      error,
+      warning: 'Failed to handle missing note path:',
+    })
+    return
+  }
+
+  if (kind === 'unreadable-content') {
+    runEntryFailureCallback({
+      callback: onUnreadableNoteContent,
+      entry,
+      error,
+      warning: 'Failed to handle unreadable note content:',
+    })
+  }
+}
+
 function handleEntryLoadFailure(options: {
   entry: VaultEntry
   seq: number
@@ -235,6 +338,7 @@ function handleEntryLoadFailure(options: {
   setActiveTabPath: React.Dispatch<React.SetStateAction<string | null>>
   error: unknown
   onMissingNotePath?: (entry: VaultEntry, error: unknown) => void | Promise<void>
+  onUnreadableNoteContent?: (entry: VaultEntry, error: unknown) => void | Promise<void>
 }) {
   const {
     entry,
@@ -246,26 +350,28 @@ function handleEntryLoadFailure(options: {
     setActiveTabPath,
     error,
     onMissingNotePath,
+    onUnreadableNoteContent,
   } = options
 
   console.warn('Failed to load note content:', error)
   if (navSeqRef.current !== seq) return
-  if (isNoActiveVaultSelectedError(error)) {
-    clearPrefetchCache()
-    clearTabs(tabsRef, setTabs)
-    syncActiveTabPath(activeTabPathRef, setActiveTabPath, null)
-    failNoteOpenTrace(entry.path, 'missing-active-vault')
-    return
-  }
-  if (isMissingNotePathError(error)) {
-    clearTabs(tabsRef, setTabs)
-    syncActiveTabPath(activeTabPathRef, setActiveTabPath, null)
-    failNoteOpenTrace(entry.path, 'missing-path')
-    Promise.resolve(onMissingNotePath?.(entry, error)).catch((callbackError) => {
-      console.warn('Failed to handle missing note path:', callbackError)
+
+  const failureKind = getEntryLoadFailureKind(error)
+  if (failureKind !== 'load-failed') {
+    handleRecoverableEntryLoadFailure({
+      kind: failureKind,
+      entry,
+      tabsRef,
+      activeTabPathRef,
+      setTabs,
+      setActiveTabPath,
+      error,
+      onMissingNotePath,
+      onUnreadableNoteContent,
     })
     return
   }
+
   setSingleTab(tabsRef, setTabs, { entry, content: '' })
   failNoteOpenTrace(entry.path, 'load-failed')
 }
@@ -279,6 +385,7 @@ async function navigateToEntry(options: {
   setTabs: React.Dispatch<React.SetStateAction<Tab[]>>
   setActiveTabPath: React.Dispatch<React.SetStateAction<string | null>>
   onMissingNotePath?: (entry: VaultEntry, error: unknown) => void | Promise<void>
+  onUnreadableNoteContent?: (entry: VaultEntry, error: unknown) => void | Promise<void>
 }) {
   const {
     entry,
@@ -289,6 +396,7 @@ async function navigateToEntry(options: {
     setTabs,
     setActiveTabPath,
     onMissingNotePath,
+    onUnreadableNoteContent,
   } = options
 
   if (entry.fileKind === 'binary') {
@@ -338,6 +446,7 @@ async function navigateToEntry(options: {
       setActiveTabPath,
       error: err,
       onMissingNotePath,
+      onUnreadableNoteContent,
     })
   }
 }
@@ -356,6 +465,7 @@ export function useTabManagement(options: TabManagementOptions = {}) {
   const beforeNavigateSeqRef = useRef(0)
   const beforeNavigate = options.beforeNavigate
   const onMissingNotePath = options.onMissingNotePath
+  const onUnreadableNoteContent = options.onUnreadableNoteContent
 
   const executeNavigationWithBoundary = useCallback(async (
     targetPath: string,
@@ -391,8 +501,9 @@ export function useTabManagement(options: TabManagementOptions = {}) {
       setTabs,
       setActiveTabPath,
       onMissingNotePath,
+      onUnreadableNoteContent,
     }))
-  }, [executeNavigationWithBoundary, onMissingNotePath])
+  }, [executeNavigationWithBoundary, onMissingNotePath, onUnreadableNoteContent])
 
   const handleSwitchTab = useCallback((path: string) => {
     syncActiveTabPath(activeTabPathRef, setActiveTabPath, path)
@@ -419,8 +530,9 @@ export function useTabManagement(options: TabManagementOptions = {}) {
       setTabs,
       setActiveTabPath,
       onMissingNotePath,
+      onUnreadableNoteContent,
     }))
-  }, [executeNavigationWithBoundary, onMissingNotePath])
+  }, [executeNavigationWithBoundary, onMissingNotePath, onUnreadableNoteContent])
 
   const closeAllTabs = useCallback(() => {
     tabsRef.current = []

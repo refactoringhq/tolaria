@@ -21,6 +21,10 @@ pub(crate) fn read_file_metadata(path: &Path) -> Result<(Option<u64>, Option<u64
     Ok((modified_at, created_at, metadata.len()))
 }
 
+fn invalid_utf8_text_error(path: &Path) -> String {
+    format!("File is not valid UTF-8 text: {}", path.display())
+}
+
 /// Read the content of a single note file.
 pub fn get_note_content(path: &Path) -> Result<String, String> {
     if !path.exists() {
@@ -29,7 +33,8 @@ pub fn get_note_content(path: &Path) -> Result<String, String> {
     if !path.is_file() {
         return Err(format!("Path is not a file: {}", path.display()));
     }
-    fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {}", path.display(), e))
+    let bytes = fs::read(path).map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
+    String::from_utf8(bytes).map_err(|_| invalid_utf8_text_error(path))
 }
 
 fn validate_save_path(file_path: &Path, display_path: &str) -> Result<(), String> {

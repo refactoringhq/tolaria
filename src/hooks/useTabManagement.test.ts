@@ -161,6 +161,29 @@ describe('useTabManagement (single-note model)', () => {
       warnSpy.mockRestore()
     })
 
+    it('returns to the empty state when note content is not valid UTF-8 text', async () => {
+      const { mockInvoke } = await import('../mock-tauri')
+      vi.mocked(mockInvoke).mockRejectedValueOnce(new Error('File is not valid UTF-8 text: /vault/note/bad.csv'))
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const onUnreadableNoteContent = vi.fn()
+
+      const { result } = renderHook(() => useTabManagement({ onUnreadableNoteContent }))
+      await selectNote(result, {
+        path: '/vault/note/bad.csv',
+        filename: 'bad.csv',
+        title: 'bad.csv',
+        fileKind: 'text',
+      })
+
+      expect(result.current.tabs).toEqual([])
+      expect(result.current.activeTabPath).toBeNull()
+      expect(onUnreadableNoteContent).toHaveBeenCalledWith(
+        expect.objectContaining({ path: '/vault/note/bad.csv', title: 'bad.csv' }),
+        expect.any(Error),
+      )
+      warnSpy.mockRestore()
+    })
+
     it('returns to the empty state when no active vault is selected', async () => {
       const { mockInvoke } = await import('../mock-tauri')
       vi.mocked(mockInvoke).mockRejectedValueOnce(new Error('No active vault selected'))
