@@ -160,6 +160,19 @@ describe('useTabManagement (single-note model)', () => {
       )
       warnSpy.mockRestore()
     })
+
+    it('returns to the empty state when no active vault is selected', async () => {
+      const { mockInvoke } = await import('../mock-tauri')
+      vi.mocked(mockInvoke).mockRejectedValueOnce(new Error('No active vault selected'))
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const { result } = renderHook(() => useTabManagement())
+      await selectNote(result, { path: '/vault/note/orphaned.md', title: 'Orphaned Note' })
+
+      expect(result.current.tabs).toEqual([])
+      expect(result.current.activeTabPath).toBeNull()
+      warnSpy.mockRestore()
+    })
   })
 
   describe('handleReplaceActiveTab', () => {
@@ -326,6 +339,24 @@ describe('useTabManagement (single-note model)', () => {
       prefetchNoteContent('/vault/note/dup.md')
 
       await vi.waitFor(() => expect(vi.mocked(mockInvoke)).toHaveBeenCalledTimes(1))
+    })
+
+    it('swallows no-active-vault prefetch failures and lets a later open recover', async () => {
+      const { mockInvoke } = await import('../mock-tauri')
+      vi.mocked(mockInvoke)
+        .mockRejectedValueOnce(new Error('No active vault selected'))
+        .mockResolvedValueOnce('# Recovered content')
+
+      prefetchNoteContent('/vault/note/recovered.md')
+      await vi.waitFor(() => expect(vi.mocked(mockInvoke)).toHaveBeenCalledTimes(1))
+      await Promise.resolve()
+      await Promise.resolve()
+
+      const { result } = renderHook(() => useTabManagement())
+      await selectNote(result, { path: '/vault/note/recovered.md', title: 'Recovered' })
+
+      expect(result.current.tabs[0].content).toBe('# Recovered content')
+      expect(vi.mocked(mockInvoke)).toHaveBeenCalledTimes(2)
     })
 
     it('serves refreshed cached content after a save replaces stale prefetched data', async () => {
