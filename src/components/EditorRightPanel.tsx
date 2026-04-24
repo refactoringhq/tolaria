@@ -13,6 +13,7 @@ interface EditorRightPanelProps {
   inspectorWidth: number
   defaultAiAgent?: AiAgentId
   defaultAiAgentReady?: boolean
+  onUnsupportedAiPaste?: (message: string) => void
   inspectorEntry: VaultEntry | null
   inspectorContent: string | null
   entries: VaultEntry[]
@@ -40,6 +41,7 @@ interface EditorRightPanelProps {
 export function EditorRightPanel({
   showAIChat, inspectorCollapsed, inspectorWidth,
   defaultAiAgent = DEFAULT_AI_AGENT, defaultAiAgentReady = true,
+  onUnsupportedAiPaste,
   inspectorEntry, inspectorContent, entries, gitHistory, vaultPath,
   noteList, noteListFilter,
   onToggleInspector, onToggleAIChat, onNavigateWikilink, onViewCommitDiff,
@@ -81,6 +83,7 @@ export function EditorRightPanel({
           controller={aiPanelController}
           onClose={() => onToggleAIChat?.()}
           onOpenNote={onOpenNote}
+          onUnsupportedAiPaste={onUnsupportedAiPaste}
           defaultAiAgent={defaultAiAgent}
           defaultAiAgentReady={defaultAiAgentReady}
           activeEntry={inspectorEntry}

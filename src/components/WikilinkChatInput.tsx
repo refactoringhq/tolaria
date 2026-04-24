@@ -7,6 +7,7 @@ interface WikilinkChatInputProps {
   value: string
   onChange: (value: string) => void
   onSend: (text: string, references: NoteReference[]) => void
+  onUnsupportedPaste?: (message: string) => void
   disabled?: boolean
   placeholder?: string
   inputRef?: React.RefObject<HTMLDivElement | null>
@@ -17,6 +18,7 @@ export function WikilinkChatInput({
   value,
   onChange,
   onSend,
+  onUnsupportedPaste,
   disabled,
   placeholder,
   inputRef,
@@ -27,6 +29,7 @@ export function WikilinkChatInput({
       value={value}
       onChange={onChange}
       onSubmit={onSend}
+      onUnsupportedPaste={onUnsupportedPaste}
       disabled={disabled}
       placeholder={placeholder}
       inputRef={inputRef}

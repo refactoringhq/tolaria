@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { AiPanel } from './AiPanel'
+import { UNSUPPORTED_INLINE_PASTE_MESSAGE } from './InlineWikilinkInput'
 import type { VaultEntry } from '../types'
 import { queueAiPrompt } from '../utils/aiPromptBridge'
 
@@ -244,5 +245,31 @@ describe('AiPanel', () => {
       { title: 'Alpha', path: '/vault/alpha.md', type: 'Project' },
     ])
     expect(screen.getByTestId('agent-send')).toBeDisabled()
+  })
+
+  it('surfaces an unsupported image paste notice without locking the composer', () => {
+    const onUnsupportedAiPaste = vi.fn()
+    const entry = makeEntry({ title: 'My Note' })
+
+    render(
+      <AiPanel
+        onClose={vi.fn()}
+        vaultPath="/tmp/vault"
+        activeEntry={entry}
+        entries={[entry]}
+        onUnsupportedAiPaste={onUnsupportedAiPaste}
+      />,
+    )
+
+    fireEvent.paste(screen.getByTestId('agent-input'), {
+      clipboardData: {
+        getData: vi.fn(() => ''),
+        files: [new File(['image'], 'paste.png', { type: 'image/png' })],
+        items: [{ kind: 'file', type: 'image/png' }],
+      },
+    })
+
+    expect(onUnsupportedAiPaste).toHaveBeenCalledWith(UNSUPPORTED_INLINE_PASTE_MESSAGE)
+    expect(screen.getByTestId('agent-input').textContent).not.toContain('paste.png')
   })
 })

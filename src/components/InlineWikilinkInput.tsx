@@ -37,6 +37,7 @@ interface InlineWikilinkInputProps {
   value: string
   onChange: (value: string) => void
   onSubmit?: (text: string, references: NoteReference[]) => void
+  onUnsupportedPaste?: (message: string) => void
   submitOnEmpty?: boolean
   disabled?: boolean
   placeholder?: string
@@ -56,6 +57,21 @@ function collapseSelectionRange(nextSelectionIndex: number) {
     end: nextSelectionIndex,
   }
 }
+
+export const UNSUPPORTED_INLINE_PASTE_MESSAGE = 'Only text paste is supported in the AI composer right now.'
+
+function hasUnsupportedClipboardPayload(clipboardData: DataTransfer) {
+  if (clipboardData.files.length > 0) return true
+
+  return Array.from(clipboardData.items).some((item) =>
+    item.kind === 'file' || item.type.startsWith('image/'),
+  )
+}
+
+function containsUnsupportedInlineContent(editor: HTMLDivElement) {
+  return editor.querySelector('img, picture, video, audio, canvas, figure, iframe, object') !== null
+}
+
 function submitInlineValue({
   onSubmit,
   submitOnEmpty,
@@ -110,6 +126,7 @@ export function InlineWikilinkInput({
   value,
   onChange,
   onSubmit,
+  onUnsupportedPaste,
   submitOnEmpty = false,
   disabled = false,
   placeholder,
@@ -122,7 +139,7 @@ export function InlineWikilinkInput({
   paletteEmptyState,
   paletteFooter,
 }: InlineWikilinkInputProps) {
-  const [, forceRender] = useState(0)
+  const [renderVersion, forceRender] = useState(0)
   const segments = useMemo(
     () => buildInlineWikilinkSegments(value, entries),
     [entries, value],
@@ -171,14 +188,39 @@ export function InlineWikilinkInput({
     onChange(nextState.value)
     setSelectionRange(nextState.selection)
   }
+  const notifyUnsupportedPaste = () => onUnsupportedPaste?.(UNSUPPORTED_INLINE_PASTE_MESSAGE)
+  const recoverUnsupportedMutation = () => {
+    pendingPasteRef.current = null
+    notifyUnsupportedPaste()
+    forceRender((current) => current + 1)
+    setSelectionRange({ ...selectionRange })
+  }
   const deleteContent = (direction: 'backward' | 'forward') => {
     const nextState = deleteInlineSelection(value, selectionRange, segments, direction)
     if (!nextState) return
     onChange(nextState.value)
     setSelectionRange(nextState.selection)
   }
+  const handleBeforeInput = (event: React.FormEvent<HTMLDivElement>) => {
+    if (disabled) return
+
+    const nativeEvent = event.nativeEvent as InputEvent
+    if (!nativeEvent.inputType.startsWith('insert')) return
+
+    const dataTransfer = nativeEvent.dataTransfer
+    if (!dataTransfer || !hasUnsupportedClipboardPayload(dataTransfer)) return
+
+    event.preventDefault()
+    notifyUnsupportedPaste()
+  }
   const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
     if (disabled) return
+
+    if (hasUnsupportedClipboardPayload(event.clipboardData)) {
+      event.preventDefault()
+      notifyUnsupportedPaste()
+      return
+    }
 
     const pastedText = normalizeInlineWikilinkValue(event.clipboardData.getData('text/plain'))
     if (!pastedText) return
@@ -192,6 +234,11 @@ export function InlineWikilinkInput({
   }
   const handleInput = () => {
     const editor = editorRef.current
+    if (editor && containsUnsupportedInlineContent(editor)) {
+      recoverUnsupportedMutation()
+      return
+    }
+
     const pendingPaste = pendingPasteRef.current
     if (editor && pendingPaste) {
       const nextValue = normalizeInlineWikilinkValue(serializeInlineNode(editor))
@@ -223,12 +270,14 @@ export function InlineWikilinkInput({
     })
   const editor = (
     <InlineWikilinkEditorField
+      key={renderVersion}
       value={value}
       placeholder={placeholder}
       disabled={disabled}
       inputRef={setCombinedRef}
       dataTestId={dataTestId}
       editorClassName={editorClassName}
+      onBeforeInput={handleBeforeInput}
       onInput={handleInput}
       onKeyDown={handleKeyDown}
       onPaste={handlePaste}

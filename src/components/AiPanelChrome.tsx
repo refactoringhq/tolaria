@@ -42,6 +42,7 @@ interface AiPanelComposerProps {
   legacyCopy: boolean
   onChange: (value: string) => void
   onSend: (text: string, references: NoteReference[]) => void
+  onUnsupportedAiPaste?: (message: string) => void
 }
 
 function getComposerPlaceholder(
@@ -215,6 +216,7 @@ export function AiPanelComposer({
   legacyCopy,
   onChange,
   onSend,
+  onUnsupportedAiPaste,
 }: AiPanelComposerProps) {
   const composerDisabled = isActive || !agentReady
   const canSend = !composerDisabled && input.trim().length > 0
@@ -240,6 +242,7 @@ export function AiPanelComposer({
             value={input}
             onChange={onChange}
             onSend={onSend}
+            onUnsupportedPaste={onUnsupportedAiPaste}
             disabled={composerDisabled}
             placeholder={placeholder}
             inputRef={inputRef}
