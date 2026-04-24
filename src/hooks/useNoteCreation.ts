@@ -25,7 +25,12 @@ export function buildNewEntry({ path, slug, title, type, status }: NewEntryParam
 }
 
 export function slugify(text: string): string {
-  const result = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+  const result = text
+    .normalize('NFKC')
+    .toLocaleLowerCase()
+    .trim()
+    .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
+    .replace(/(^-|-$)/g, '')
   return result || 'untitled'
 }
 
