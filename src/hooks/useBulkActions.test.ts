@@ -16,7 +16,7 @@ describe('useBulkActions', () => {
 
   beforeEach(() => {
     handleArchiveNote = vi.fn().mockResolvedValue(undefined)
-    handleToggleOrganized = vi.fn().mockResolvedValue(undefined)
+    handleToggleOrganized = vi.fn().mockResolvedValue(true)
     setToastMessage = vi.fn()
   })
 
@@ -116,8 +116,19 @@ describe('useBulkActions', () => {
 
     it('skips failed organize actions and reports only successes', async () => {
       handleToggleOrganized
-        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce(true)
         .mockRejectedValueOnce(new Error('fail'))
+
+      await runAction('handleBulkOrganize', [paths.a, paths.b])
+
+      expect(handleToggleOrganized).toHaveBeenCalledTimes(2)
+      expect(setToastMessage).toHaveBeenCalledWith('1 note organized')
+    })
+
+    it('does not count organize rollbacks as successes', async () => {
+      handleToggleOrganized
+        .mockResolvedValueOnce(false)
+        .mockResolvedValueOnce(true)
 
       await runAction('handleBulkOrganize', [paths.a, paths.b])
 

@@ -481,6 +481,52 @@ describe('useEntryActions', () => {
     })
   })
 
+  describe('handleToggleOrganized', () => {
+    it('returns true after organizing is persisted', async () => {
+      const entry = makeEntry({ path: '/vault/note/test.md', organized: false })
+      const { result } = setup([entry])
+      let organized = false
+
+      await act(async () => {
+        organized = await result.current.handleToggleOrganized('/vault/note/test.md')
+      })
+
+      expect(organized).toBe(true)
+      expect(handleUpdateFrontmatter).toHaveBeenCalledWith('/vault/note/test.md', '_organized', true, { silent: true })
+      expect(updateEntry).toHaveBeenCalledWith('/vault/note/test.md', { organized: true })
+    })
+
+    it('returns false and rolls back when organizing fails', async () => {
+      const entry = makeEntry({ path: '/vault/note/test.md', organized: false })
+      handleUpdateFrontmatter.mockRejectedValueOnce(new Error('disk full'))
+      const { result } = setup([entry])
+      let organized = true
+
+      await act(async () => {
+        organized = await result.current.handleToggleOrganized('/vault/note/test.md')
+      })
+
+      expect(organized).toBe(false)
+      expect(updateEntry).toHaveBeenCalledTimes(2)
+      expect(updateEntry).toHaveBeenNthCalledWith(1, '/vault/note/test.md', { organized: true })
+      expect(updateEntry).toHaveBeenNthCalledWith(2, '/vault/note/test.md', { organized: false })
+      expect(setToastMessage).toHaveBeenCalledWith('Failed to organize — rolled back')
+    })
+
+    it('returns false when the entry is missing', async () => {
+      const { result } = setup([])
+      let organized = true
+
+      await act(async () => {
+        organized = await result.current.handleToggleOrganized('/vault/missing.md')
+      })
+
+      expect(organized).toBe(false)
+      expect(handleUpdateFrontmatter).not.toHaveBeenCalled()
+      expect(handleDeleteProperty).not.toHaveBeenCalled()
+    })
+  })
+
   describe('handleReorderFavorites', () => {
     it('updates _favorite_index for all reordered paths', async () => {
       const { result } = setup()

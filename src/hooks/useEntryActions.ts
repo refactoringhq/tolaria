@@ -126,16 +126,18 @@ export function useEntryActions({
 
   const handleToggleOrganized = useCallback(async (path: string) => {
     const entry = entries.find((e) => e.path === path)
-    if (!entry) return
+    if (!entry) return false
     if (entry.organized) {
       trackEvent('note_unorganized')
       updateEntry(path, { organized: false })
       try {
         await handleDeleteProperty(path, '_organized', { silent: true })
         onFrontmatterPersisted?.()
+        return true
       } catch {
         updateEntry(path, { organized: true })
         setToastMessage('Failed to unorganize — rolled back')
+        return false
       }
     } else {
       trackEvent('note_organized')
@@ -143,9 +145,11 @@ export function useEntryActions({
       try {
         await handleUpdateFrontmatter(path, '_organized', true, { silent: true })
         onFrontmatterPersisted?.()
+        return true
       } catch {
         updateEntry(path, { organized: false })
         setToastMessage('Failed to organize — rolled back')
+        return false
       }
     }
   }, [entries, updateEntry, handleUpdateFrontmatter, handleDeleteProperty, setToastMessage, onFrontmatterPersisted])

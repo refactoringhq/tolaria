@@ -13,3 +13,32 @@ pub async fn batch_delete_notes_async(
         .await
         .map_err(|e| format!("Task panicked: {e}"))?
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn batch_delete_notes_async_validates_and_deletes_inside_vault() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let first = dir.path().join("first.md");
+        let second = dir.path().join("nested/second.md");
+        std::fs::create_dir_all(second.parent().unwrap()).unwrap();
+        std::fs::write(&first, "# First\n").unwrap();
+        std::fs::write(&second, "# Second\n").unwrap();
+
+        let deleted = batch_delete_notes_async(
+            vec![
+                first.to_string_lossy().to_string(),
+                "nested/second.md".to_string(),
+            ],
+            Some(dir.path().to_string_lossy().to_string()),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(deleted.len(), 2);
+        assert!(!first.exists());
+        assert!(!second.exists());
+    }
+}

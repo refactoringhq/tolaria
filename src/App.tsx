@@ -120,6 +120,12 @@ declare global {
 
 const DEFAULT_SELECTION: SidebarSelection = INBOX_SELECTION
 
+function getNextVisibleInboxEntry(entries: VaultEntry[], currentPath: string): VaultEntry | null {
+  const currentIndex = entries.findIndex((entry) => entry.path === currentPath)
+  if (currentIndex < 0) return null
+  return entries[currentIndex + 1] ?? null
+}
+
 function shouldPreferOnboardingVaultPath(
   onboardingState: { status: string; vaultPath?: string },
   vaults: Array<{ path: string }>,
@@ -875,6 +881,7 @@ function App() {
   useEffect(() => {
     window.__laputaTest = {
       ...window.__laputaTest,
+      activeTabPath: notes.activeTabPath,
       seedAutoGitSavedChange,
     }
 
@@ -883,7 +890,7 @@ function App() {
         delete window.__laputaTest.seedAutoGitSavedChange
       }
     }
-  }, [seedAutoGitSavedChange])
+  }, [notes.activeTabPath, seedAutoGitSavedChange])
 
   const entryActions = useEntryActions({
     entries: vault.entries, updateEntry: vault.updateEntry,
@@ -1203,7 +1210,26 @@ function App() {
     const entry = vault.entries.find((candidate) => candidate.path === notes.activeTabPath)
     return hasNoteIconValue(entry?.icon)
   }, [notes.activeTabPath, vault.entries])
-  const toggleOrganizedCommand = explicitOrganizationEnabled ? entryActions.handleToggleOrganized : undefined
+  const handleToggleOrganizedWithInboxAdvance = useCallback(async (path: string) => {
+    const entry = vault.entries.find((candidate) => candidate.path === path)
+    if (!entry) return
+
+    const shouldAutoAdvance = settings.auto_advance_inbox_after_organize === true
+      && !entry.organized
+      && notes.activeTabPath === path
+      && effectiveSelection.kind === 'filter'
+      && effectiveSelection.filter === 'inbox'
+    const nextVisibleInboxEntry = shouldAutoAdvance
+      ? getNextVisibleInboxEntry(visibleNotesRef.current, path)
+      : null
+
+    const organized = await entryActions.handleToggleOrganized(path)
+
+    if (organized && nextVisibleInboxEntry) {
+      void notes.handleSelectNote(nextVisibleInboxEntry)
+    }
+  }, [effectiveSelection, entryActions, notes, settings.auto_advance_inbox_after_organize, vault.entries])
+  const toggleOrganizedCommand = explicitOrganizationEnabled ? handleToggleOrganizedWithInboxAdvance : undefined
   const canCustomizeNoteListColumns = useMemo(() => (
     effectiveSelection.kind === 'view'
       || (
@@ -1438,7 +1464,7 @@ function App() {
               noteList={aiNoteList}
               noteListFilter={aiNoteListFilter}
               onToggleFavorite={activeDeletedFile ? undefined : entryActions.handleToggleFavorite}
-              onToggleOrganized={activeDeletedFile || !explicitOrganizationEnabled ? undefined : entryActions.handleToggleOrganized}
+              onToggleOrganized={activeDeletedFile || !explicitOrganizationEnabled ? undefined : toggleOrganizedCommand}
               onDeleteNote={activeDeletedFile ? undefined : deleteActions.handleDeleteNote}
               onArchiveNote={activeDeletedFile ? undefined : entryActions.handleArchiveNote}
               onUnarchiveNote={activeDeletedFile ? undefined : entryActions.handleUnarchiveNote}
