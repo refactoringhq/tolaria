@@ -139,6 +139,10 @@ describe('slugifyWikilinkTarget', () => {
     expect(slugifyWikilinkTarget('Weekly Review')).toBe('weekly-review')
   })
 
+  it('preserves Unicode titles when no existing entry resolves them', () => {
+    expect(slugifyWikilinkTarget('你好')).toBe('你好')
+  })
+
   it('falls back to untitled when the title has no slug characters', () => {
     expect(slugifyWikilinkTarget('+++')).toBe('untitled')
   })
@@ -164,6 +168,10 @@ describe('canonicalWikilinkTargetForTitle', () => {
 
   it('falls back to a slug for a newly created note title', () => {
     expect(canonicalWikilinkTargetForTitle('Brand New Note', [], '/vault')).toBe('brand-new-note')
+  })
+
+  it('falls back to a Unicode-preserving slug for a newly created note title', () => {
+    expect(canonicalWikilinkTargetForTitle('你好', [], '/vault')).toBe('你好')
   })
 })
 

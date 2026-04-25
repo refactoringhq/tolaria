@@ -1,4 +1,5 @@
 import { splitFrontmatter } from '../utils/wikilinks'
+import { slugifyNoteStem } from '../utils/noteSlug'
 
 type MarkdownContent = string
 type FilePath = string
@@ -61,9 +62,7 @@ export function pathStem(path: FilePath): PathStem {
   return filename.replace(/\.md$/, '')
 }
 
-export function slugifyPathStem(title: NoteTitle): PathStem {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-}
+export const slugifyPathStem = slugifyNoteStem
 
 export function isUntitledPath(path: FilePath): boolean {
   return pathStem(path).startsWith('untitled-')

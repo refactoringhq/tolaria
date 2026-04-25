@@ -98,8 +98,8 @@ export async function performMoveNoteToFolder({
 }
 
 export function buildRenamedEntry(entry: VaultEntry, newTitle: string, newPath: string): VaultEntry {
-  const slug = newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-  return { ...entry, path: newPath, filename: `${slug}.md`, title: newTitle }
+  const filename = newPath.split('/').pop() ?? entry.filename
+  return { ...entry, path: newPath, filename, title: newTitle }
 }
 
 export function buildFilenameRenamedEntry(entry: VaultEntry, newPath: string): VaultEntry {

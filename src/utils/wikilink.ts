@@ -1,6 +1,7 @@
 /** Utility functions for parsing wikilink syntax: [[target|display]] */
 
 import type { VaultEntry } from '../types'
+import { slugifyNoteStem } from './noteSlug'
 
 /** Extracts the target path from a wikilink reference (strips [[ ]] and display text). */
 export function wikilinkTarget(ref: string): string {
@@ -28,10 +29,7 @@ export function relativePathStem(absolutePath: string, vaultPath: string): strin
 }
 
 /** Slugify a human-readable title into the canonical wikilink filename stem. */
-export function slugifyWikilinkTarget(title: string): string {
-  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-  return slug || 'untitled'
-}
+export const slugifyWikilinkTarget = slugifyNoteStem
 
 /** Build the canonical wikilink target for a vault entry. */
 export function canonicalWikilinkTargetForEntry(entry: VaultEntry, vaultPath: string): string {
@@ -79,8 +77,9 @@ function buildResolutionKey(rawTarget: string): ResolutionKey {
   }
 }
 
-function findEntryByPathSuffix(entries: VaultEntry[], pathSuffix: string | null): VaultEntry | undefined {
-  if (!pathSuffix) return undefined
+function findEntryByPathSuffix(entries: VaultEntry[], resolutionKey: ResolutionKey): VaultEntry | undefined {
+  if (!resolutionKey.pathSuffix) return undefined
+  const { pathSuffix } = resolutionKey
   return entries.find(entry => entry.path.toLowerCase().endsWith(pathSuffix))
 }
 
@@ -91,20 +90,20 @@ function findEntryByFilename(entries: VaultEntry[], { exactTarget, lastSegment }
   })
 }
 
-function findEntryByAlias(entries: VaultEntry[], exactTarget: string): VaultEntry | undefined {
-  return entries.find(entry => entry.aliases.some(alias => alias.toLowerCase() === exactTarget))
+function findEntryByAlias(entries: VaultEntry[], resolutionKey: ResolutionKey): VaultEntry | undefined {
+  return entries.find(entry => entry.aliases.some(alias => alias.toLowerCase() === resolutionKey.exactTarget))
 }
 
-function findEntryByTitle(entries: VaultEntry[], exactTarget: string, lastSegment: string): VaultEntry | undefined {
+function findEntryByTitle(entries: VaultEntry[], resolutionKey: ResolutionKey): VaultEntry | undefined {
   return entries.find((entry) => {
     const lowerTitle = entry.title.toLowerCase()
-    return lowerTitle === exactTarget || lowerTitle === lastSegment
+    return lowerTitle === resolutionKey.exactTarget || lowerTitle === resolutionKey.lastSegment
   })
 }
 
-function findEntryByHumanizedTitle(entries: VaultEntry[], humanizedTarget: string | null): VaultEntry | undefined {
-  if (!humanizedTarget) return undefined
-  return entries.find(entry => entry.title.toLowerCase() === humanizedTarget)
+function findEntryByHumanizedTitle(entries: VaultEntry[], resolutionKey: ResolutionKey): VaultEntry | undefined {
+  if (!resolutionKey.humanizedTarget) return undefined
+  return entries.find(entry => entry.title.toLowerCase() === resolutionKey.humanizedTarget)
 }
 
 /**
@@ -120,10 +119,10 @@ function findEntryByHumanizedTitle(entries: VaultEntry[], humanizedTarget: strin
 export function resolveEntry(entries: VaultEntry[], rawTarget: string): VaultEntry | undefined {
   const resolutionKey = buildResolutionKey(rawTarget)
   return (
-    findEntryByPathSuffix(entries, resolutionKey.pathSuffix)
+    findEntryByPathSuffix(entries, resolutionKey)
     ?? findEntryByFilename(entries, resolutionKey)
-    ?? findEntryByAlias(entries, resolutionKey.exactTarget)
-    ?? findEntryByTitle(entries, resolutionKey.exactTarget, resolutionKey.lastSegment)
-    ?? findEntryByHumanizedTitle(entries, resolutionKey.humanizedTarget)
+    ?? findEntryByAlias(entries, resolutionKey)
+    ?? findEntryByTitle(entries, resolutionKey)
+    ?? findEntryByHumanizedTitle(entries, resolutionKey)
   )
 }

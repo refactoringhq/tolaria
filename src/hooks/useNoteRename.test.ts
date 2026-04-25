@@ -58,6 +58,14 @@ describe('buildRenamedEntry', () => {
     expect(renamed.status).toBe('Done')
     expect(renamed.aliases).toEqual(['x'])
   })
+
+  it('derives the filename from the backend path for Unicode titles', () => {
+    const entry = makeEntry({ path: '/vault/old.md', filename: 'old.md', title: 'Old' })
+    const renamed = buildRenamedEntry(entry, '你好', '/vault/你好.md')
+    expect(renamed.path).toBe('/vault/你好.md')
+    expect(renamed.filename).toBe('你好.md')
+    expect(renamed.title).toBe('你好')
+  })
 })
 
 describe('renameToastMessage', () => {

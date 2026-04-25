@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { isTauri, addMockEntry } from '../mock-tauri'
 import type { VaultEntry } from '../types'
+import { slugifyNoteStem as slugify } from '../utils/noteSlug'
 import { resolveEntry } from '../utils/wikilink'
 import { trackEvent } from '../lib/telemetry'
 
@@ -24,15 +25,7 @@ export function buildNewEntry({ path, slug, title, type, status }: NewEntryParam
   }
 }
 
-export function slugify(text: string): string {
-  const result = text
-    .normalize('NFKC')
-    .toLocaleLowerCase()
-    .trim()
-    .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
-    .replace(/(^-|-$)/g, '')
-  return result || 'untitled'
-}
+export { slugify }
 
 /** Convert a filename slug to a human-readable title (hyphens → spaces, title case). */
 function slug_to_title(slug: string): string {
