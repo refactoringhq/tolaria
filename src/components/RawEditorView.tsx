@@ -1,6 +1,8 @@
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react'
 import { trackEvent } from '../lib/telemetry'
 import type { EditorView } from '@codemirror/view'
+import { useNoteWikilinkDrop } from '../hooks/useNoteWikilinkDrop'
+import { insertWikilinkAtCursor } from '../utils/rawEditorInsertions'
 import { MIN_QUERY_LENGTH } from '../utils/wikilinkSuggestions'
 import { buildTypeEntryMap } from '../utils/typeColors'
 import { NoteSearchList } from './NoteSearchList'
@@ -297,30 +299,49 @@ function useRawEditorWikilinkInsertion({
   setAutocomplete: RawEditorSetAutocomplete
   viewRef: React.MutableRefObject<EditorView | null>
 }) {
-  const insertWikilink = useCallback((target: string) => {
-    const view = viewRef.current
-    if (!view) return
-    const cursor = view.state.selection.main.head
+  const applyWikilinkChange = useCallback((view: EditorView, next: { text: string; cursor: number }) => {
     const doc = view.state.doc.toString()
-    const replacement = replaceActiveWikilinkQuery(doc, cursor, target)
-    if (!replacement) return
 
     view.dispatch({
-      changes: { from: 0, to: doc.length, insert: replacement.text },
-      selection: { anchor: replacement.cursor },
+      changes: { from: 0, to: doc.length, insert: next.text },
+      selection: { anchor: next.cursor },
     })
     trackEvent('wikilink_inserted')
     setAutocomplete(null)
 
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = null
-    latestDocRef.current = replacement.text
-    onContentChangeRef.current(pathRef.current, replacement.text)
+    latestDocRef.current = next.text
+    onContentChangeRef.current(pathRef.current, next.text)
 
     view.focus()
-  }, [debounceRef, latestDocRef, onContentChangeRef, pathRef, setAutocomplete, viewRef])
+  }, [debounceRef, latestDocRef, onContentChangeRef, pathRef, setAutocomplete])
 
-  useEffect(() => { insertWikilinkRef.current = insertWikilink }, [insertWikilinkRef, insertWikilink])
+  const insertAutocompleteWikilink = useCallback((target: string) => {
+    const view = viewRef.current
+    if (!view) return
+
+    const cursor = view.state.selection.main.head
+    const doc = view.state.doc.toString()
+    const replacement = replaceActiveWikilinkQuery(doc, cursor, target)
+    if (!replacement) return
+
+    applyWikilinkChange(view, replacement)
+  }, [applyWikilinkChange, viewRef])
+
+  const insertDroppedWikilink = useCallback((target: string) => {
+    const view = viewRef.current
+    if (!view) return
+
+    applyWikilinkChange(
+      view,
+      insertWikilinkAtCursor(view.state.doc.toString(), view.state.selection.main.head, target),
+    )
+  }, [applyWikilinkChange, viewRef])
+
+  useEffect(() => { insertWikilinkRef.current = insertAutocompleteWikilink }, [insertAutocompleteWikilink, insertWikilinkRef])
+
+  return { insertDroppedWikilink }
 }
 
 export function RawEditorView({ content, path, entries, onContentChange, onSave, latestContentRef, vaultPath }: RawEditorViewProps) {
@@ -334,7 +355,7 @@ export function RawEditorView({ content, path, entries, onContentChange, onSave,
     onEscape: autocompleteController.handleEscape,
   })
 
-  useRawEditorWikilinkInsertion({
+  const { insertDroppedWikilink } = useRawEditorWikilinkInsertion({
     debounceRef: pendingChanges.debounceRef,
     insertWikilinkRef: autocompleteController.insertWikilinkRef,
     latestDocRef: pendingChanges.latestDocRef,
@@ -343,6 +364,7 @@ export function RawEditorView({ content, path, entries, onContentChange, onSave,
     setAutocomplete: autocompleteController.setAutocomplete,
     viewRef,
   })
+  useNoteWikilinkDrop({ containerRef, onInsertTarget: insertDroppedWikilink, vaultPath })
 
   const dropdownPosition = getRawEditorDropdownPosition(autocompleteController.autocomplete, DROPDOWN_MAX_HEIGHT, window)
 
