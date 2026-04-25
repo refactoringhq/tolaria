@@ -9,7 +9,7 @@ import {
 export interface CommitDiffRequest {
   requestId: number
   path: string
-  commitHash: string
+  commitHash?: string | null
 }
 
 interface UseDiffModeParams {
@@ -73,6 +73,10 @@ function shouldHandlePendingCommitDiffRequest(
   return !!pendingCommitDiffRequest && pendingCommitDiffRequest.path === activeTabPath
 }
 
+function hasCommitHash(pendingCommitDiffRequest: CommitDiffRequest): pendingCommitDiffRequest is CommitDiffRequest & { commitHash: string } {
+  return typeof pendingCommitDiffRequest.commitHash === 'string' && pendingCommitDiffRequest.commitHash.length > 0
+}
+
 function buildGuardedDiffStateSetters(
   cancelledRef: { current: boolean },
   { setDiffMode, setDiffContent, setDiffLoading, setDiffPath }: DiffStateSetters,
@@ -87,18 +91,27 @@ function buildGuardedDiffStateSetters(
 
 function runPendingCommitDiffRequest(
   pendingCommitDiffRequest: CommitDiffRequest,
-  onLoadDiffAtCommit: (path: string, commitHash: string) => Promise<string>,
+  onLoadDiff: ((path: string) => Promise<string>) | undefined,
+  onLoadDiffAtCommit: ((path: string, commitHash: string) => Promise<string>) | undefined,
   onPendingCommitDiffHandled: ((requestId: number) => void) | undefined,
   diffState: DiffStateSetters,
 ) {
   const cancelledRef = { current: false }
 
-  void loadCommitDiffForPath(
-    pendingCommitDiffRequest.path,
-    pendingCommitDiffRequest.commitHash,
-    onLoadDiffAtCommit,
-    buildGuardedDiffStateSetters(cancelledRef, diffState),
-  ).finally(() => {
+  const loadDiffPromise = hasCommitHash(pendingCommitDiffRequest)
+    ? loadCommitDiffForPath(
+      pendingCommitDiffRequest.path,
+      pendingCommitDiffRequest.commitHash,
+      onLoadDiffAtCommit,
+      buildGuardedDiffStateSetters(cancelledRef, diffState),
+    )
+    : loadDiffForPath(
+      pendingCommitDiffRequest.path,
+      onLoadDiff,
+      buildGuardedDiffStateSetters(cancelledRef, diffState),
+    )
+
+  void loadDiffPromise.finally(() => {
     if (cancelledRef.current) return
     onPendingCommitDiffHandled?.(pendingCommitDiffRequest.requestId)
   })
@@ -110,6 +123,7 @@ function runPendingCommitDiffRequest(
 
 function usePendingCommitDiffRequest({
   activeTabPath,
+  onLoadDiff,
   onLoadDiffAtCommit,
   pendingCommitDiffRequest,
   onPendingCommitDiffHandled,
@@ -120,18 +134,23 @@ function usePendingCommitDiffRequest({
 }: UseDiffModeParams & DiffStateSetters) {
   useEffect(() => {
     if (!shouldHandlePendingCommitDiffRequest(activeTabPath, pendingCommitDiffRequest)) return
-    if (!onLoadDiffAtCommit) {
+    if (hasCommitHash(pendingCommitDiffRequest) && !onLoadDiffAtCommit) {
+      onPendingCommitDiffHandled?.(pendingCommitDiffRequest.requestId)
+      return
+    }
+    if (!hasCommitHash(pendingCommitDiffRequest) && !onLoadDiff) {
       onPendingCommitDiffHandled?.(pendingCommitDiffRequest.requestId)
       return
     }
 
     return runPendingCommitDiffRequest(
       pendingCommitDiffRequest,
+      onLoadDiff,
       onLoadDiffAtCommit,
       onPendingCommitDiffHandled,
       { setDiffMode, setDiffContent, setDiffLoading, setDiffPath },
     )
-  }, [activeTabPath, onLoadDiffAtCommit, onPendingCommitDiffHandled, pendingCommitDiffRequest, setDiffContent, setDiffLoading, setDiffMode, setDiffPath])
+  }, [activeTabPath, onLoadDiff, onLoadDiffAtCommit, onPendingCommitDiffHandled, pendingCommitDiffRequest, setDiffContent, setDiffLoading, setDiffMode, setDiffPath])
 }
 
 export function useDiffMode({
@@ -148,6 +167,7 @@ export function useDiffMode({
 
   usePendingCommitDiffRequest({
     activeTabPath,
+    onLoadDiff,
     onLoadDiffAtCommit,
     pendingCommitDiffRequest,
     onPendingCommitDiffHandled,
