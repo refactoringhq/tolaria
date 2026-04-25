@@ -134,6 +134,7 @@ fn mcp_config_paths_for_home(home: &Path) -> Vec<PathBuf> {
         home.join(".claude.json"),
         home.join(".claude").join("mcp.json"),
         home.join(".cursor").join("mcp.json"),
+        home.join(".config").join("mcp").join("mcp.json"),
     ]
 }
 
@@ -580,7 +581,7 @@ mod tests {
     }
 
     #[test]
-    fn mcp_config_paths_for_home_includes_claude_root_and_legacy_paths() {
+    fn mcp_config_paths_for_home_includes_all_ai_tool_configs() {
         let home = Path::new("/Users/tester");
         let paths = mcp_config_paths_for_home(home);
 
@@ -590,6 +591,7 @@ mod tests {
                 home.join(".claude.json"),
                 home.join(".claude").join("mcp.json"),
                 home.join(".cursor").join("mcp.json"),
+                home.join(".config").join("mcp").join("mcp.json"),
             ]
         );
     }
