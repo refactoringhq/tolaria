@@ -566,6 +566,34 @@ describe('SingleEditorView', () => {
     expect(editor.focus).not.toHaveBeenCalled()
   })
 
+  it('ignores editor-container click handling for BlockNote side-menu actions', () => {
+    const editor = createEditor()
+
+    render(
+      <SingleEditorView
+        editor={editor as never}
+        entries={[makeEntry()]}
+        onNavigateWikilink={vi.fn()}
+      />,
+    )
+
+    const container = screen.getByTestId('blocknote-view').closest('.editor__blocknote-container')
+    expect(container).toBeTruthy()
+
+    const sideMenu = document.createElement('div')
+    sideMenu.className = 'bn-side-menu'
+    const action = document.createElement('button')
+    action.type = 'button'
+    action.textContent = 'Add block'
+    sideMenu.appendChild(action)
+    container?.appendChild(sideMenu)
+
+    fireEvent.click(action)
+
+    expect(editor.setTextCursorPosition).not.toHaveBeenCalled()
+    expect(editor.focus).not.toHaveBeenCalled()
+  })
+
   it('falls back to the nearest editable block when the trailing block has no inline content', () => {
     const editor = createEditor()
     editor.document = [

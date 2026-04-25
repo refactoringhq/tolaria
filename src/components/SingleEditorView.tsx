@@ -48,6 +48,7 @@ const CONTAINER_CLICK_IGNORE_SELECTOR = [
   '[contenteditable="true"]',
   '.bn-formatting-toolbar',
   '.bn-link-toolbar',
+  '.bn-side-menu',
   '.bn-form-popover',
   '[role="menu"]',
   '[role="dialog"]',
