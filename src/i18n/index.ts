@@ -52,7 +52,7 @@ export function initI18n(lng: string): typeof i18next {
   return i18next
 }
 
-export function changeLanguage(lng: string): Promise<void> {
+export function changeLanguage(lng: string) {
   return i18next.changeLanguage(lng)
 }
 
