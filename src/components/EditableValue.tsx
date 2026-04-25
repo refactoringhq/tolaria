@@ -59,6 +59,10 @@ export function UrlValue({
         onChange={(e) => setEditValue(e.target.value)}
         onKeyDown={handleKeyDown}
         onBlur={() => onSave(editValue)}
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
         autoFocus
       />
     )
@@ -119,6 +123,10 @@ export function EditableValue({
         onChange={(e) => setEditValue(e.target.value)}
         onKeyDown={handleKeyDown}
         onBlur={() => onSave(editValue)}
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
         autoFocus
       />
     )
@@ -208,6 +216,10 @@ export function TagPillList({
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={(e) => handleKeyDown(e, 'edit')}
             onBlur={handleSaveEdit}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
             autoFocus
           />
         ) : (
@@ -250,6 +262,10 @@ export function TagPillList({
             else { setIsAddingNew(false); setNewValue('') }
           }}
           placeholder={`${label}...`}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
           autoFocus
         />
       ) : (

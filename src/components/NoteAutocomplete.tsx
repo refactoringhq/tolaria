@@ -131,6 +131,10 @@ export function NoteAutocomplete({ entries, typeEntryMap, value, onChange, onSel
         onChange={handleChange}
         onFocus={() => setOpen(true)}
         onKeyDown={handleKeyDown}
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
         data-testid={testId}
       />
       {open && matches.length > 0 && (

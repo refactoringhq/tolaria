@@ -140,6 +140,10 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
           value={query}
           onChange={e => onChange(e.target.value)}
           onKeyDown={onKeyDown}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
         />
         {loading && (
           <svg

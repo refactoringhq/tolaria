@@ -329,6 +329,10 @@ function InlineRenameInput({ initialValue, onSubmit, onCancel }: {
       aria-label="Section name"
       className="flex-1 rounded border border-primary bg-background text-[13px] font-medium text-foreground outline-none"
       style={{ padding: '1px 4px' }}
+      autoComplete="off"
+      autoCorrect="off"
+      autoCapitalize="off"
+      spellCheck={false}
     />
   )
 }

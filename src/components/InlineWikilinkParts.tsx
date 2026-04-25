@@ -205,6 +205,10 @@ export function InlineWikilinkEditorField({
         aria-disabled={disabled || undefined}
         aria-placeholder={placeholder}
         data-testid={dataTestId}
+        autoCorrect="off"
+        autoComplete="off"
+        autoCapitalize="off"
+        spellCheck={false}
         className={cn(
           'min-h-[34px] w-full rounded-lg border border-border bg-transparent px-[10px] py-[8px] text-[13px] text-foreground outline-none',
           disabled && 'cursor-not-allowed opacity-60',

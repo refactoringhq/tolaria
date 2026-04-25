@@ -63,6 +63,10 @@ export function QuickOpenPalette({ open, entries, onSelect, onClose }: QuickOpen
           placeholder="Search notes..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
         />
         <NoteSearchList
           items={results}

@@ -149,6 +149,7 @@ export function useCodeMirror(
         frontmatterHighlightTheme(),
         frontmatterHighlightPlugin,
         zoomCursorFix(),
+        EditorView.contentAttributes.of({ spellcheck: 'false', autocorrect: 'off', autocomplete: 'off', autocapitalize: 'off' }),
         EditorView.updateListener.of((update) => {
           if (update.docChanged && !externalSyncRef.current) {
             callbacksRef.current.onDocChange(update.state.doc.toString())
