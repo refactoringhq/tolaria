@@ -160,6 +160,8 @@ export function InlineWikilinkInput({
     inputRef,
   })
   const pendingPasteRef = useRef<PendingPasteState | null>(null)
+  const isComposingRef = useRef(false)
+  const pendingCompositionInputRef = useRef(false)
   const activeQuery = useMemo(
     () => selectionRange.start === selectionRange.end
       ? findActiveWikilinkQuery(value, selectionIndex)
@@ -190,6 +192,7 @@ export function InlineWikilinkInput({
   }
   const notifyUnsupportedPaste = () => onUnsupportedPaste?.(UNSUPPORTED_INLINE_PASTE_MESSAGE)
   const recoverUnsupportedMutation = () => {
+    pendingCompositionInputRef.current = false
     pendingPasteRef.current = null
     notifyUnsupportedPaste()
     forceRender((current) => current + 1)
@@ -232,7 +235,7 @@ export function InlineWikilinkInput({
     onChange(nextState.value)
     setSelectionRange(nextState.selection)
   }
-  const handleInput = () => {
+  const syncValueFromEditor = () => {
     const editor = editorRef.current
     if (editor && containsUnsupportedInlineContent(editor)) {
       recoverUnsupportedMutation()
@@ -254,12 +257,34 @@ export function InlineWikilinkInput({
 
     commitValueFromEditor()
   }
+  const flushPendingCompositionInput = () => {
+    if (isComposingRef.current || !pendingCompositionInputRef.current) return
+    pendingCompositionInputRef.current = false
+    syncValueFromEditor()
+  }
+  const handleCompositionStart = () => {
+    isComposingRef.current = true
+  }
+  const handleCompositionEnd = () => {
+    isComposingRef.current = false
+    queueMicrotask(flushPendingCompositionInput)
+  }
+  const handleInput = () => {
+    if (isComposingRef.current) {
+      pendingCompositionInputRef.current = true
+      return
+    }
+
+    pendingCompositionInputRef.current = false
+    syncValueFromEditor()
+  }
   const submitValue = () =>
     submitInlineValue({ onSubmit, submitOnEmpty, value, references })
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) =>
     handleInlineWikilinkKeyDown({
       event,
       disabled,
+      isComposing: isComposingRef.current,
       suggestionsOpen: suggestions.length > 0,
       onCycleSuggestions: cycleSuggestions,
       onSelectSuggestion: () => selectSuggestion(selectedSuggestionIndex),
@@ -278,6 +303,8 @@ export function InlineWikilinkInput({
       dataTestId={dataTestId}
       editorClassName={editorClassName}
       onBeforeInput={handleBeforeInput}
+      onCompositionEnd={handleCompositionEnd}
+      onCompositionStart={handleCompositionStart}
       onInput={handleInput}
       onKeyDown={handleKeyDown}
       onPaste={handlePaste}

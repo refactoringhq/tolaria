@@ -1,7 +1,7 @@
+use super::git_command;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::path::Path;
-use std::process::Command;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct ModifiedFile {
@@ -23,14 +23,34 @@ struct DiffStats {
     binary: bool,
 }
 
-fn status_label(status_code: &str) -> &'static str {
-    match status_code.trim() {
-        "M" | "MM" | "AM" => "modified",
-        "A" => "added",
-        "D" => "deleted",
-        "??" => "untracked",
-        "R" | "RM" => "renamed",
-        _ => "modified",
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FileChangeStatus {
+    Modified,
+    Added,
+    Deleted,
+    Untracked,
+    Renamed,
+}
+
+impl FileChangeStatus {
+    fn from_code(status_code: &str) -> Self {
+        match status_code.trim() {
+            "A" => Self::Added,
+            "D" => Self::Deleted,
+            "??" => Self::Untracked,
+            "R" | "RM" => Self::Renamed,
+            _ => Self::Modified,
+        }
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Self::Added => "added",
+            Self::Deleted => "deleted",
+            Self::Untracked => "untracked",
+            Self::Renamed => "renamed",
+            Self::Modified => "modified",
+        }
     }
 }
 
@@ -68,7 +88,7 @@ fn parse_numstat_line(line: &str) -> Option<(String, DiffStats)> {
 }
 
 fn repo_has_head(vault: &Path) -> Result<bool, String> {
-    let output = Command::new("git")
+    let output = git_command()
         .args(["rev-parse", "--verify", "HEAD"])
         .current_dir(vault)
         .output()
@@ -82,7 +102,7 @@ fn load_diff_stats(vault: &Path) -> Result<HashMap<String, DiffStats>, String> {
         return Ok(HashMap::new());
     }
 
-    let output = Command::new("git")
+    let output = git_command()
         .args(["diff", "--numstat", "--find-renames", "HEAD", "--"])
         .current_dir(vault)
         .output()
@@ -100,7 +120,7 @@ fn load_diff_stats(vault: &Path) -> Result<HashMap<String, DiffStats>, String> {
         .collect::<HashMap<_, _>>())
 }
 
-fn count_worktree_lines(vault: &Path, relative_path: &str) -> DiffStats {
+fn count_worktree_lines(vault: &Path, relative_path: &Path) -> DiffStats {
     let full_path = vault.join(relative_path);
     let added_lines = std::fs::read_to_string(full_path)
         .ok()
@@ -115,19 +135,20 @@ fn count_worktree_lines(vault: &Path, relative_path: &str) -> DiffStats {
 
 fn resolve_diff_stats(
     vault: &Path,
-    relative_path: &str,
-    status: &str,
+    relative_path: &Path,
+    status: FileChangeStatus,
     diff_stats: &HashMap<String, DiffStats>,
 ) -> DiffStats {
-    if status == "untracked" {
+    if status == FileChangeStatus::Untracked {
         return count_worktree_lines(vault, relative_path);
     }
 
-    diff_stats.get(relative_path).copied().unwrap_or_default()
+    let key = relative_path.to_string_lossy();
+    diff_stats.get(key.as_ref()).copied().unwrap_or_default()
 }
 
-fn ensure_path_within_vault(vault: &Path, relative_path: &str, abs: &Path) -> Result<(), String> {
-    for component in Path::new(relative_path).components() {
+fn ensure_path_within_vault(vault: &Path, relative_path: &Path, abs: &Path) -> Result<(), String> {
+    for component in relative_path.components() {
         if matches!(component, std::path::Component::ParentDir) {
             return Err("File path is outside the vault".into());
         }
@@ -151,9 +172,10 @@ fn ensure_path_within_vault(vault: &Path, relative_path: &str, abs: &Path) -> Re
     }
 }
 
-fn load_file_status(vault: &Path, relative_path: &str) -> Result<String, String> {
-    let output = Command::new("git")
-        .args(["status", "--porcelain", "--", relative_path])
+fn load_file_status(vault: &Path, relative_path: &Path) -> Result<String, String> {
+    let output = git_command()
+        .args(["status", "--porcelain", "--"])
+        .arg(relative_path)
         .current_dir(vault)
         .output()
         .map_err(|e| format!("Failed to run git status: {e}"))?;
@@ -166,14 +188,16 @@ fn load_file_status(vault: &Path, relative_path: &str) -> Result<String, String>
         .unwrap_or_default())
 }
 
-fn restore_tracked_file(vault: &Path, relative_path: &str) -> Result<(), String> {
-    let _ = Command::new("git")
-        .args(["reset", "HEAD", "--", relative_path])
+fn restore_tracked_file(vault: &Path, relative_path: &Path) -> Result<(), String> {
+    let _ = git_command()
+        .args(["reset", "HEAD", "--"])
+        .arg(relative_path)
         .current_dir(vault)
         .output();
 
-    let checkout = Command::new("git")
-        .args(["checkout", "--", relative_path])
+    let checkout = git_command()
+        .args(["checkout", "--"])
+        .arg(relative_path)
         .current_dir(vault)
         .output()
         .map_err(|e| format!("Failed to run git checkout: {e}"))?;
@@ -189,7 +213,7 @@ fn restore_tracked_file(vault: &Path, relative_path: &str) -> Result<(), String>
 /// Get list of modified/added/deleted files in the vault (uncommitted changes).
 pub fn get_modified_files(vault_path: &str) -> Result<Vec<ModifiedFile>, String> {
     let vault = Path::new(vault_path);
-    let output = Command::new("git")
+    let output = git_command()
         .args(["status", "--porcelain", "--untracked-files=all"])
         .current_dir(vault)
         .output()
@@ -217,14 +241,14 @@ pub fn get_modified_files(vault_path: &str) -> Result<Vec<ModifiedFile>, String>
                 return None;
             }
 
-            let status = status_label(status_code);
+            let status = FileChangeStatus::from_code(status_code);
             let full_path = vault.join(&relative_path).to_string_lossy().to_string();
-            let stats = resolve_diff_stats(vault, &relative_path, status, &diff_stats);
+            let stats = resolve_diff_stats(vault, Path::new(&relative_path), status, &diff_stats);
 
             Some(ModifiedFile {
                 path: full_path,
                 relative_path,
-                status: status.to_string(),
+                status: status.label().to_string(),
                 added_lines: stats.added_lines,
                 deleted_lines: stats.deleted_lines,
                 binary: stats.binary,
@@ -244,10 +268,11 @@ pub fn get_modified_files(vault_path: &str) -> Result<Vec<ModifiedFile>, String>
 /// returned by [`get_modified_files`]).
 pub fn discard_file_changes(vault_path: &str, relative_path: &str) -> Result<(), String> {
     let vault = Path::new(vault_path);
-    let abs = vault.join(relative_path);
+    let relative = Path::new(relative_path);
+    let abs = vault.join(relative);
 
-    ensure_path_within_vault(vault, relative_path, &abs)?;
-    let status_code = load_file_status(vault, relative_path)?;
+    ensure_path_within_vault(vault, relative, &abs)?;
+    let status_code = load_file_status(vault, relative)?;
 
     match status_code.as_str() {
         "??" => {
@@ -255,7 +280,7 @@ pub fn discard_file_changes(vault_path: &str, relative_path: &str) -> Result<(),
                 .map_err(|e| format!("Failed to delete untracked file: {e}"))?;
         }
         _ => {
-            restore_tracked_file(vault, relative_path)?;
+            restore_tracked_file(vault, relative)?;
         }
     }
 
@@ -264,11 +289,11 @@ pub fn discard_file_changes(vault_path: &str, relative_path: &str) -> Result<(),
 
 #[cfg(test)]
 mod tests {
+    use super::git_command;
     use super::*;
     use crate::git::git_commit;
     use crate::git::tests::setup_git_repo;
     use std::fs;
-    use std::process::Command;
 
     fn write_and_commit_markdown(vault: &Path, vp: &str, relative_path: &str, content: &str) {
         fs::write(vault.join(relative_path), content).unwrap();
@@ -282,12 +307,12 @@ mod tests {
 
         // Create and commit a file
         fs::write(vault.join("note.md"), "# Note\n").unwrap();
-        Command::new("git")
+        git_command()
             .args(["add", "note.md"])
             .current_dir(vault)
             .output()
             .unwrap();
-        Command::new("git")
+        git_command()
             .args(["commit", "-m", "Add note"])
             .current_dir(vault)
             .output()
@@ -327,12 +352,12 @@ mod tests {
 
         // Create initial commit so git is initialized
         fs::write(vault.join("init.md"), "# Init\n").unwrap();
-        Command::new("git")
+        git_command()
             .args(["add", "init.md"])
             .current_dir(vault)
             .output()
             .unwrap();
-        Command::new("git")
+        git_command()
             .args(["commit", "-m", "Initial"])
             .current_dir(vault)
             .output()

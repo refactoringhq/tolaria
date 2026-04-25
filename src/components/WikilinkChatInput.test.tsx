@@ -1,6 +1,12 @@
 import { useState } from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import {
+  createEvent,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import { WikilinkChatInput } from './WikilinkChatInput'
 import { UNSUPPORTED_INLINE_PASTE_MESSAGE } from './InlineWikilinkInput'
 import type { VaultEntry } from '../types'
@@ -41,19 +47,25 @@ function Controlled({
   onUnsupportedPaste,
   disabled = false,
   placeholder,
+  onDraftChange,
 }: {
   onSend?: (text: string, refs: Array<{ title: string; path: string; type: string | null }>) => void
   onUnsupportedPaste?: (message: string) => void
   disabled?: boolean
   placeholder?: string
+  onDraftChange?: (value: string) => void
 }) {
   const [value, setValue] = useState('')
+  const handleChange = (nextValue: string) => {
+    onDraftChange?.(nextValue)
+    setValue(nextValue)
+  }
 
   return (
     <WikilinkChatInput
       entries={entries}
       value={value}
-      onChange={setValue}
+      onChange={handleChange}
       onSend={onSend ?? vi.fn()}
       onUnsupportedPaste={onUnsupportedPaste}
       disabled={disabled}
@@ -90,6 +102,21 @@ function clickFirstSuggestion() {
   const rows = screen.getByTestId('wikilink-menu').querySelectorAll('[class*="cursor-pointer"]')
   expect(rows.length).toBeGreaterThan(0)
   fireEvent.click(rows[0])
+}
+
+function fireComposingKeyDown(editor: HTMLElement, key: string) {
+  const event = createEvent.keyDown(editor, {
+    key,
+    keyCode: 229,
+    which: 229,
+  })
+
+  Object.defineProperty(event, 'isComposing', {
+    configurable: true,
+    value: true,
+  })
+
+  fireEvent(editor, event)
 }
 
 describe('WikilinkChatInput', () => {
@@ -143,6 +170,45 @@ describe('WikilinkChatInput', () => {
 
     expect(screen.getByTestId('inline-wikilink-chip')).toBeInTheDocument()
     expect(onSend).not.toHaveBeenCalled()
+  })
+
+  it('does not hijack Enter while IME composition is active', async () => {
+    const onDraftChange = vi.fn()
+    const onSend = vi.fn()
+    render(<Controlled onDraftChange={onDraftChange} onSend={onSend} />)
+
+    const editor = screen.getByTestId('agent-input')
+    fireEvent.focus(editor)
+    fireEvent.compositionStart(editor)
+    editor.textContent = 'ni'
+    setSelection(editor, 2)
+    fireEvent.input(editor)
+
+    expect(onDraftChange).not.toHaveBeenCalled()
+
+    fireComposingKeyDown(editor, 'Enter')
+    expect(onSend).not.toHaveBeenCalled()
+
+    editor.textContent = '你'
+    setSelection(editor, 1)
+    fireEvent.compositionEnd(editor)
+
+    await waitFor(() => {
+      expect(onDraftChange).toHaveBeenCalledWith('你')
+    })
+    expect(editor.textContent).toContain('你')
+  })
+
+  it('does not select wikilink suggestions while IME composition is active', () => {
+    render(<Controlled />)
+    updateEditorText('[[a')
+
+    const editor = screen.getByTestId('agent-input')
+    fireEvent.compositionStart(editor)
+    fireComposingKeyDown(editor, 'Enter')
+
+    expect(screen.queryByTestId('inline-wikilink-chip')).toBeNull()
+    expect(screen.getByTestId('wikilink-menu').textContent).toContain('Alpha')
   })
 
   it('deletes an inline chip with a single Backspace', () => {

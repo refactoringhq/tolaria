@@ -374,6 +374,11 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Clear cached Windows bundle artifacts
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force -ErrorAction SilentlyContinue "src-tauri/target/x86_64-pc-windows-msvc/release/bundle"
+
       - name: Set version
         shell: pwsh
         run: |
@@ -425,6 +430,12 @@ jobs:
             echo "::error::Windows build produced no installable NSIS or MSI bundle."
             exit 1
           fi
+          for installer in "${installers[@]}"; do
+            if [[ "$(basename "$installer")" != *"${{ needs.version.outputs.version }}"* ]]; then
+              echo "::error::Windows build produced an installer for a different version: $(basename "$installer")"
+              exit 1
+            fi
+          done
           if [ ${#signatures[@]} -eq 0 ]; then
             echo "::error::Windows build produced no updater signature (.sig) artifact."
             exit 1

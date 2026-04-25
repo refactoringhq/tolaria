@@ -1,7 +1,7 @@
+use super::git_command;
 use chrono::DateTime;
 use std::collections::HashMap;
 use std::path::Path;
-use std::process::Command;
 
 /// Git-derived creation and modification timestamps for a file.
 #[derive(Debug, Clone)]
@@ -19,7 +19,7 @@ pub struct GitDates {
 /// Files not yet committed (untracked / only staged) will not appear in the map;
 /// callers should fall back to filesystem metadata for those.
 pub fn get_all_file_dates(vault_path: &Path) -> HashMap<String, GitDates> {
-    let output = match Command::new("git")
+    let output = match git_command()
         .args(["log", "--format=COMMIT %aI", "--name-only"])
         .current_dir(vault_path)
         .output()

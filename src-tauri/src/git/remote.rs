@@ -1,6 +1,6 @@
+use super::git_command;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-use std::process::Command;
 
 use super::conflict::get_conflict_files;
 
@@ -17,7 +17,7 @@ pub struct GitPullResult {
 /// Check whether the vault repo has at least one remote configured.
 pub fn has_remote(vault_path: &str) -> Result<bool, String> {
     let vault = Path::new(vault_path);
-    let output = Command::new("git")
+    let output = git_command()
         .args(["remote"])
         .current_dir(vault)
         .output()
@@ -40,7 +40,7 @@ pub fn git_pull(vault_path: &str) -> Result<GitPullResult, String> {
         });
     }
 
-    let output = Command::new("git")
+    let output = git_command()
         .args(["pull", "--no-rebase"])
         .current_dir(vault)
         .output()
@@ -134,14 +134,14 @@ pub fn git_remote_status(vault_path: &str) -> Result<GitRemoteStatus, String> {
     }
 
     // Fetch latest remote refs (silent, best-effort)
-    let _ = Command::new("git")
+    let _ = git_command()
         .args(["fetch", "--quiet"])
         .current_dir(vault)
         .output();
 
     let branch = current_branch(vault)?;
 
-    let output = Command::new("git")
+    let output = git_command()
         .args(["rev-list", "--left-right", "--count", "HEAD...@{upstream}"])
         .current_dir(vault)
         .output()
@@ -171,7 +171,7 @@ pub fn git_remote_status(vault_path: &str) -> Result<GitRemoteStatus, String> {
 }
 
 fn current_branch(vault: &Path) -> Result<String, String> {
-    let output = Command::new("git")
+    let output = git_command()
         .args(["branch", "--show-current"])
         .current_dir(vault)
         .output()
@@ -189,59 +189,93 @@ pub struct GitPushResult {
 pub fn classify_push_error(stderr: &str) -> GitPushResult {
     let lower = stderr.to_lowercase();
 
-    if lower.contains("non-fast-forward")
-        || lower.contains("[rejected]")
-        || lower.contains("fetch first")
-        || lower.contains("failed to push some refs")
-            && (lower.contains("updates were rejected") || lower.contains("non-fast-forward"))
-    {
-        return GitPushResult {
-            status: "rejected".to_string(),
-            message: "Push rejected: remote has new commits. Pull first, then push.".to_string(),
-        };
+    if is_rejected_push_error(&lower) {
+        return push_error(
+            "rejected",
+            "Push rejected: remote has new commits. Pull first, then push.",
+        );
     }
 
-    if lower.contains("authentication failed")
-        || lower.contains("could not read username")
-        || lower.contains("permission denied")
-        || lower.contains("403")
-        || lower.contains("invalid credentials")
-    {
-        return GitPushResult {
-            status: "auth_error".to_string(),
-            message: "Push failed: authentication error. Check your credentials.".to_string(),
-        };
+    if is_auth_push_error(&lower) {
+        return push_error(
+            "auth_error",
+            "Push failed: authentication error. Check your credentials.",
+        );
     }
 
-    if lower.contains("could not resolve host")
-        || lower.contains("unable to access")
-        || lower.contains("connection refused")
-        || lower.contains("network is unreachable")
-        || lower.contains("timed out")
-    {
-        return GitPushResult {
-            status: "network_error".to_string(),
-            message: "Push failed: network error. Check your connection and try again.".to_string(),
-        };
+    if is_network_push_error(&lower) {
+        return push_error(
+            "network_error",
+            "Push failed: network error. Check your connection and try again.",
+        );
     }
 
-    // Fallback: extract the hint line if present, otherwise use the full stderr
+    push_error(
+        "error",
+        format!("Push failed: {}", push_error_detail(stderr)),
+    )
+}
+
+fn push_error(status: &str, message: impl Into<String>) -> GitPushResult {
+    GitPushResult {
+        status: status.to_string(),
+        message: message.into(),
+    }
+}
+
+fn contains_any(haystack: &str, needles: &[&str]) -> bool {
+    needles.iter().any(|needle| haystack.contains(needle))
+}
+
+fn is_rejected_push_error(lower: &str) -> bool {
+    contains_any(lower, &["non-fast-forward", "[rejected]", "fetch first"])
+        || (lower.contains("failed to push some refs")
+            && contains_any(lower, &["updates were rejected", "non-fast-forward"]))
+}
+
+fn is_auth_push_error(lower: &str) -> bool {
+    contains_any(
+        lower,
+        &[
+            "authentication failed",
+            "could not read username",
+            "permission denied",
+            "403",
+            "invalid credentials",
+        ],
+    )
+}
+
+fn is_network_push_error(lower: &str) -> bool {
+    contains_any(
+        lower,
+        &[
+            "could not resolve host",
+            "unable to access",
+            "connection refused",
+            "network is unreachable",
+            "timed out",
+        ],
+    )
+}
+
+fn push_error_detail(stderr: &str) -> String {
     let hint_line = stderr
         .lines()
-        .find(|l| l.trim_start().starts_with("hint:"))
-        .map(|l| l.trim_start().strip_prefix("hint:").unwrap_or(l).trim())
+        .find(|line| line.trim_start().starts_with("hint:"))
+        .map(|line| {
+            line.trim_start()
+                .strip_prefix("hint:")
+                .unwrap_or(line)
+                .trim()
+        })
         .unwrap_or("")
         .to_string();
 
-    let detail = if hint_line.is_empty() {
+    if hint_line.is_empty() {
         stderr.trim().to_string()
     } else {
         hint_line
-    };
-
-    GitPushResult {
-        status: "error".to_string(),
-        message: format!("Push failed: {detail}"),
     }
 }
 
@@ -249,7 +283,7 @@ pub fn classify_push_error(stderr: &str) -> GitPushResult {
 pub fn git_push(vault_path: &str) -> Result<GitPushResult, String> {
     let vault = Path::new(vault_path);
 
-    let output = Command::new("git")
+    let output = git_command()
         .args(["push"])
         .current_dir(vault)
         .output()
@@ -272,7 +306,6 @@ mod tests {
     use crate::git::git_commit;
     use crate::git::tests::{setup_git_repo, setup_remote_pair};
     use std::fs;
-    use std::process::Command;
 
     #[test]
     fn test_has_remote_returns_false_for_local_repo() {
@@ -289,7 +322,7 @@ mod tests {
         let vault = dir.path();
         let vp = vault.to_str().unwrap();
 
-        Command::new("git")
+        git_command()
             .args(["remote", "add", "origin", "https://example.com/repo.git"])
             .current_dir(vault)
             .output()

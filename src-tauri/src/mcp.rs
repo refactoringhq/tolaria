@@ -17,10 +17,9 @@ pub enum McpStatus {
 
 /// Find the `node` binary path at runtime.
 pub(crate) fn find_node() -> Result<PathBuf, String> {
-    let output = Command::new("which")
-        .arg("node")
+    let output = node_lookup_command()
         .output()
-        .map_err(|e| format!("Failed to run `which node`: {e}"))?;
+        .map_err(|e| format!("Failed to locate node on PATH: {e}"))?;
     if output.status.success() {
         let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
         if !path.is_empty() {
@@ -33,6 +32,16 @@ pub(crate) fn find_node() -> Result<PathBuf, String> {
     }
 
     Err("node not found in PATH or common install locations".into())
+}
+
+fn node_lookup_command() -> Command {
+    #[cfg(windows)]
+    let mut command = crate::hidden_command("where.exe");
+    #[cfg(not(windows))]
+    let mut command = crate::hidden_command("which");
+
+    command.arg("node");
+    command
 }
 
 fn fallback_node_path() -> Option<PathBuf> {
@@ -99,7 +108,7 @@ pub fn spawn_ws_bridge(vault_path: &str) -> Result<Child, String> {
     let server_dir = mcp_server_dir()?;
     let script = server_dir.join("ws-bridge.js");
 
-    let child = Command::new(node)
+    let child = crate::hidden_command(node)
         .arg(&script)
         .env("VAULT_PATH", vault_path)
         .env("WS_PORT", "9710")

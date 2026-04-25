@@ -90,6 +90,22 @@ describe('useMenuEvents', () => {
 
     expect(teardown).toHaveBeenCalledTimes(1)
   })
+
+  it('swallows stale native menu unlisten failures from dev-mode remounts', async () => {
+    isTauriMock.mockReturnValue(true)
+    const teardown = vi.fn(() => {
+      throw new TypeError("undefined is not an object (evaluating 'listeners[eventId].handlerId')")
+    })
+
+    listenMock.mockResolvedValueOnce(teardown)
+
+    const { unmount } = renderHook(() => useMenuEvents(makeHandlers()))
+    await vi.dynamicImportSettled()
+
+    expect(() => unmount()).not.toThrow()
+    await vi.dynamicImportSettled()
+    expect(teardown).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('dispatchMenuEvent', () => {
