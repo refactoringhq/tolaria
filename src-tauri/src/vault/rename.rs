@@ -55,17 +55,25 @@ struct WikilinkUpdateSummary {
     failed_updates: usize,
 }
 
-/// Convert a title to a filename slug (lowercase, hyphens, no special chars).
+/// Convert a title to a filename slug (lowercase, hyphens, Unicode letters/digits preserved).
+///
+/// Falls back to `"untitled"` when the title contains no alphanumeric characters
+/// (matches the frontend `slugify` in `src/hooks/useNoteCreation.ts`).
 pub(super) fn title_to_slug(title: &str) -> String {
-    title
+    let joined = title
         .to_lowercase()
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+        .map(|c| if c.is_alphanumeric() { c } else { '-' })
         .collect::<String>()
         .split('-')
         .filter(|s| !s.is_empty())
         .collect::<Vec<&str>>()
-        .join("-")
+        .join("-");
+    if joined.is_empty() {
+        "untitled".to_string()
+    } else {
+        joined
+    }
 }
 
 /// Build a regex that matches wiki links referencing any of the provided targets.
@@ -639,6 +647,53 @@ mod tests {
         assert_eq!(title_to_slug("Weekly Review"), "weekly-review");
         assert_eq!(title_to_slug("My  Note!  "), "my-note");
         assert_eq!(title_to_slug("Hello World"), "hello-world");
+    }
+
+    #[test]
+    fn test_title_to_slug_preserves_unicode_letters() {
+        // Pure CJK title — must not collapse to an empty stem (would yield ".md").
+        assert_eq!(title_to_slug("你好"), "你好");
+        assert_eq!(title_to_slug("こんにちは"), "こんにちは");
+        // Mixed ASCII + CJK keeps both halves and uses '-' for whitespace/punctuation.
+        assert_eq!(title_to_slug("My Note 你好"), "my-note-你好");
+        assert_eq!(title_to_slug("项目-2025  ✦  Q1"), "项目-2025-q1");
+    }
+
+    #[test]
+    fn test_title_to_slug_falls_back_to_untitled_for_symbol_only_titles() {
+        // No alphanumeric scalars at all → fall back instead of producing an empty stem.
+        assert_eq!(title_to_slug("！？"), "untitled");
+        assert_eq!(title_to_slug("---"), "untitled");
+    }
+
+    #[test]
+    fn test_rename_note_with_cjk_title_writes_unicode_filename() {
+        // Regression: previously `title_to_slug` stripped non-ASCII to '-', so renaming an
+        // untitled note to a Chinese title produced a stem-less ".md" file on disk.
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path();
+        create_test_file(
+            vault,
+            "untitled-note-1700000000.md",
+            "---\ntype: Note\n---\n# Untitled Note\n",
+        );
+
+        let old_path = vault.join("untitled-note-1700000000.md");
+        let result = rename_note(RenameNoteRequest {
+            vault_path: vault.to_str().unwrap(),
+            old_path: old_path.to_str().unwrap(),
+            new_title: "你好",
+            old_title_hint: None,
+        })
+        .unwrap();
+
+        assert!(result.new_path.ends_with("你好.md"), "got {}", result.new_path);
+        assert!(Path::new(&result.new_path).exists());
+        assert!(!old_path.exists());
+        assert!(!vault.join(".md").exists(), "must not produce a stem-less .md file");
+
+        let new_content = fs::read_to_string(&result.new_path).unwrap();
+        assert!(new_content.contains("title: 你好"));
     }
 
     #[test]
