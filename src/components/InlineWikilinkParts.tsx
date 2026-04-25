@@ -206,7 +206,6 @@ export function InlineWikilinkEditorField({
         aria-placeholder={placeholder}
         data-testid={dataTestId}
         autoCorrect="off"
-        autoComplete="off"
         autoCapitalize="off"
         spellCheck={false}
         className={cn(
