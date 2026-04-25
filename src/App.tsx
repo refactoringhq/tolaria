@@ -534,8 +534,8 @@ function App() {
     },
     onToast: (msg) => setToastMessage(msg),
   })
-  const pulseCommitDiffRequestIdRef = useRef(0)
-  const [pulseCommitDiffRequest, setPulseCommitDiffRequest] = useState<CommitDiffRequest | null>(null)
+  const pendingDiffRequestIdRef = useRef(0)
+  const [pendingDiffRequest, setPendingDiffRequest] = useState<CommitDiffRequest | null>(null)
 
   // Note window: auto-open the note from URL params without scanning the whole vault.
   const noteWindowOpenedRef = useRef(false)
@@ -600,17 +600,17 @@ function App() {
     onSelectNote: notes.handleSelectNote,
   })
 
-  const queuePulseCommitDiff = useCallback((path: string, commitHash: string) => {
-    pulseCommitDiffRequestIdRef.current += 1
-    setPulseCommitDiffRequest({
-      requestId: pulseCommitDiffRequestIdRef.current,
+  const queuePendingDiff = useCallback((path: string, commitHash?: string) => {
+    pendingDiffRequestIdRef.current += 1
+    setPendingDiffRequest({
+      requestId: pendingDiffRequestIdRef.current,
       path,
       commitHash,
     })
   }, [])
 
-  const handlePulseCommitDiffHandled = useCallback((requestId: number) => {
-    setPulseCommitDiffRequest((current) =>
+  const handlePendingDiffHandled = useCallback((requestId: number) => {
+    setPendingDiffRequest((current) =>
       current?.requestId === requestId ? null : current,
     )
   }, [])
@@ -621,7 +621,7 @@ function App() {
 
     if (commitHash) {
       const targetPath = entry?.path ?? fullPath
-      queuePulseCommitDiff(targetPath, commitHash)
+      queuePendingDiff(targetPath, commitHash)
       if (entry) {
         void handleSelectNote(entry)
       } else {
@@ -633,7 +633,7 @@ function App() {
     if (entry) {
       void handleSelectNote(entry)
     }
-  }, [entriesByPath, resolvedPath, queuePulseCommitDiff, handleSelectNote, openTabWithContent])
+  }, [entriesByPath, resolvedPath, queuePendingDiff, handleSelectNote, openTabWithContent])
 
   const handleOpenFavorite = useCallback(async (entry: VaultEntry) => {
     await handleReplaceActiveTab(entry)
@@ -812,11 +812,18 @@ function App() {
     }
     notes.openTabWithContent(entry, previewContent)
     if (hasDiff) {
-      setTimeout(() => diffToggleRef.current(), 50)
+      queuePendingDiff(entry.path)
     } else {
       setToastMessage('Content not available (untracked)')
     }
-  }, [vault, notes, setToastMessage])
+  }, [vault, notes, queuePendingDiff, setToastMessage])
+
+  const handleReplaceActiveTabWithQueuedDiff = useCallback((entry: VaultEntry) => {
+    notes.handleReplaceActiveTab(entry)
+    if (effectiveSelection.kind === 'filter' && effectiveSelection.filter === 'changes') {
+      queuePendingDiff(entry.path)
+    }
+  }, [effectiveSelection, notes, queuePendingDiff])
 
   const commitFlow = useCommitFlow({
     savePending: appSave.savePending,
@@ -1444,7 +1451,7 @@ function App() {
                 {effectiveSelection.kind === 'filter' && effectiveSelection.filter === 'pulse' ? (
                   <PulseView vaultPath={resolvedPath} onOpenNote={handlePulseOpenNote} sidebarCollapsed={!sidebarVisible} onExpandSidebar={() => handleSetViewMode('all')} />
                 ) : (
-                  <NoteList entries={vault.entries} selection={effectiveSelection} selectedNote={activeTab?.entry ?? null} noteListFilter={noteListFilter} onNoteListFilterChange={setNoteListFilter} inboxPeriod={inboxPeriod} modifiedFiles={vault.modifiedFiles} modifiedFilesError={vault.modifiedFilesError} getNoteStatus={vault.getNoteStatus} sidebarCollapsed={!sidebarVisible} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={notes.handleReplaceActiveTab} onEnterNeighborhood={handleEnterNeighborhood} onCreateNote={notes.handleCreateNoteImmediate} onBulkOrganize={explicitOrganizationEnabled ? bulkActions.handleBulkOrganize : undefined} onBulkArchive={bulkActions.handleBulkArchive} onBulkDeletePermanently={deleteActions.handleBulkDeletePermanently} onUpdateTypeSort={notes.handleUpdateFrontmatter} onUpdateViewDefinition={handleUpdateViewDefinition} updateEntry={vault.updateEntry} onOpenInNewWindow={handleOpenEntryInNewWindow} onDiscardFile={handleDiscardFile} onAutoTriggerDiff={() => diffToggleRef.current()} onOpenDeletedNote={handleOpenDeletedNote} allNotesNoteListProperties={vaultConfig.allNotes?.noteListProperties ?? null} onUpdateAllNotesNoteListProperties={handleUpdateAllNotesNoteListProperties} inboxNoteListProperties={vaultConfig.inbox?.noteListProperties ?? null} onUpdateInboxNoteListProperties={handleUpdateInboxNoteListProperties} views={vault.views} visibleNotesRef={visibleNotesRef} multiSelectionCommandRef={multiSelectionCommandRef} />
+                  <NoteList entries={vault.entries} selection={effectiveSelection} selectedNote={activeTab?.entry ?? null} noteListFilter={noteListFilter} onNoteListFilterChange={setNoteListFilter} inboxPeriod={inboxPeriod} modifiedFiles={vault.modifiedFiles} modifiedFilesError={vault.modifiedFilesError} getNoteStatus={vault.getNoteStatus} sidebarCollapsed={!sidebarVisible} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={handleReplaceActiveTabWithQueuedDiff} onEnterNeighborhood={handleEnterNeighborhood} onCreateNote={notes.handleCreateNoteImmediate} onBulkOrganize={explicitOrganizationEnabled ? bulkActions.handleBulkOrganize : undefined} onBulkArchive={bulkActions.handleBulkArchive} onBulkDeletePermanently={deleteActions.handleBulkDeletePermanently} onUpdateTypeSort={notes.handleUpdateFrontmatter} onUpdateViewDefinition={handleUpdateViewDefinition} updateEntry={vault.updateEntry} onOpenInNewWindow={handleOpenEntryInNewWindow} onDiscardFile={handleDiscardFile} onOpenDeletedNote={handleOpenDeletedNote} allNotesNoteListProperties={vaultConfig.allNotes?.noteListProperties ?? null} onUpdateAllNotesNoteListProperties={handleUpdateAllNotesNoteListProperties} inboxNoteListProperties={vaultConfig.inbox?.noteListProperties ?? null} onUpdateInboxNoteListProperties={handleUpdateInboxNoteListProperties} views={vault.views} visibleNotesRef={visibleNotesRef} multiSelectionCommandRef={multiSelectionCommandRef} />
                 )}
               </div>
               <ResizeHandle onResize={layout.handleNoteListResize} />
@@ -1458,8 +1465,8 @@ function App() {
               onNavigateWikilink={notes.handleNavigateWikilink}
               onLoadDiff={vault.loadDiff}
               onLoadDiffAtCommit={vault.loadDiffAtCommit}
-              pendingCommitDiffRequest={pulseCommitDiffRequest}
-              onPendingCommitDiffHandled={handlePulseCommitDiffHandled}
+              pendingCommitDiffRequest={pendingDiffRequest}
+              onPendingCommitDiffHandled={handlePendingDiffHandled}
               getNoteStatus={vault.getNoteStatus}
               onCreateNote={notes.handleCreateNoteImmediate}
               inspectorCollapsed={layout.inspectorCollapsed}
