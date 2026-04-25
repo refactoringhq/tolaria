@@ -82,7 +82,7 @@ import { initializeNoteProperties } from './utils/initializeNoteProperties'
 import { filterEntries, filterInboxEntries, type NoteListFilter } from './utils/noteListHelpers'
 import { openNoteInNewWindow } from './utils/openNoteWindow'
 import { refreshPulledVaultState } from './utils/pulledVaultRefresh'
-import { isNoteWindow, getNoteWindowParams, getNoteWindowPathCandidates, findNoteWindowEntry, type NoteWindowParams } from './utils/windowMode'
+import { isNoteWindow, getNoteWindowParams, getNoteWindowPathCandidates, type NoteWindowParams } from './utils/windowMode'
 import { GitRequiredModal } from './components/GitRequiredModal'
 import { RenameDetectedBanner, type DetectedRename } from './components/RenameDetectedBanner'
 import { openNoteListPropertiesPicker } from './components/note-list/noteListPropertiesEvents'
@@ -138,26 +138,26 @@ function shouldPreferOnboardingVaultPath(
     && !vaults.some((vault) => vault.path === onboardingState.vaultPath)
 }
 
-async function resolveNoteWindowEntry(
-  noteWindowParams: NoteWindowParams,
-  entries: VaultEntry[],
-): Promise<VaultEntry | undefined> {
-  const fallbackEntry = () =>
-    findNoteWindowEntry(entries, noteWindowParams)
-
-  if (!isTauri()) {
-    return fallbackEntry()
-  }
-
+async function resolveNoteWindowEntry(noteWindowParams: NoteWindowParams): Promise<VaultEntry | undefined> {
   for (const path of getNoteWindowPathCandidates(noteWindowParams)) {
     try {
-      return await invoke<VaultEntry>('reload_vault_entry', { path })
+      const request = { path, vaultPath: noteWindowParams.vaultPath }
+      const entry = isTauri()
+        ? await invoke<VaultEntry | null>('reload_vault_entry', request)
+        : await mockInvoke<VaultEntry | null>('reload_vault_entry', request)
+      if (entry) return entry
     } catch {
-      // Try the next normalized candidate before falling back to the scanned entries.
+      // Try the next normalized candidate before reporting the note as unavailable.
     }
   }
+}
 
-  return fallbackEntry()
+async function loadNoteWindowContent(path: string, vaultPath: string): Promise<string> {
+  const request = { path, vaultPath }
+  if (!isTauri()) return mockInvoke<string>('get_note_content', request)
+
+  await invoke('sync_vault_asset_scope_for_window', { vaultPath })
+  return invoke<string>('get_note_content', request)
 }
 
 function createPulseDeletedNoteEntry(fullPath: string, relativePath: string): DeletedNoteEntry {
@@ -253,7 +253,11 @@ function App() {
   // called on user interaction, never during render (refs inside the hook
   // guarantee the latest closure is always used).
   const vaultSwitcher = useVaultSwitcher({
-    onSwitch: () => { handleSetSelection(DEFAULT_SELECTION); notes.closeAllTabs() },
+    onSwitch: () => {
+      if (noteWindowParams) return
+      handleSetSelection(DEFAULT_SELECTION)
+      notes.closeAllTabs()
+    },
     onToast: (msg) => setToastMessage(msg),
   })
   const {
@@ -324,7 +328,7 @@ function App() {
     setGitRepoState('ready')
   }, [resolvedPath])
 
-  const vault = useVaultLoader(resolvedPath)
+  const vault = useVaultLoader(noteWindowParams ? '' : resolvedPath)
   const {
     status: vaultAiGuidanceStatus,
     refresh: refreshVaultAiGuidance,
@@ -494,6 +498,10 @@ function App() {
     closeAllTabs,
     openTabWithContent,
   } = notes
+  const noteWindowActionsRef = useRef({ handleSelectNote, openTabWithContent })
+  useEffect(() => {
+    noteWindowActionsRef.current = { handleSelectNote, openTabWithContent }
+  }, [handleSelectNote, openTabWithContent])
   const handlePulledVaultUpdate = useCallback(async (updatedFiles: string[]) => {
     await refreshPulledVaultState({
       activeTabPath: notes.activeTabPath,
@@ -529,30 +537,34 @@ function App() {
   const pulseCommitDiffRequestIdRef = useRef(0)
   const [pulseCommitDiffRequest, setPulseCommitDiffRequest] = useState<CommitDiffRequest | null>(null)
 
-  // Note window: auto-open the note from URL params once vault entries load
+  // Note window: auto-open the note from URL params without scanning the whole vault.
   const noteWindowOpenedRef = useRef(false)
   const noteWindowMissingPathRef = useRef<string | null>(null)
   useEffect(() => {
     if (!noteWindowParams || noteWindowOpenedRef.current) return
-    let cancelled = false
 
-    void resolveNoteWindowEntry(noteWindowParams, vault.entries).then((entry) => {
-      if (cancelled || noteWindowOpenedRef.current) return
+    void resolveNoteWindowEntry(noteWindowParams).then(async (entry) => {
+      if (noteWindowOpenedRef.current) return
       if (entry) {
-        noteWindowOpenedRef.current = true
-        noteWindowMissingPathRef.current = null
-        void handleSelectNote(entry)
+        try {
+          const content = await loadNoteWindowContent(entry.path, noteWindowParams.vaultPath)
+          if (noteWindowOpenedRef.current) return
+          noteWindowOpenedRef.current = true
+          noteWindowMissingPathRef.current = null
+          noteWindowActionsRef.current.openTabWithContent(entry, content)
+        } catch {
+          if (noteWindowOpenedRef.current) return
+          noteWindowOpenedRef.current = true
+          noteWindowMissingPathRef.current = null
+          void noteWindowActionsRef.current.handleSelectNote(entry)
+        }
         return
       }
       if (noteWindowMissingPathRef.current === noteWindowParams.notePath) return
       noteWindowMissingPathRef.current = noteWindowParams.notePath
       setToastMessage(`Could not open "${noteWindowParams.noteTitle}" in this window`)
     })
-
-    return () => {
-      cancelled = true
-    }
-  }, [handleSelectNote, noteWindowParams, setToastMessage, vault.entries])
+  }, [noteWindowParams, setToastMessage])
 
   // Note window: update window title when active note changes
   useEffect(() => {
