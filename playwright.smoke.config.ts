@@ -30,7 +30,7 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
   webServer: {
-    command: `pnpm dev --host 127.0.0.1 --port ${port} --strictPort`,
+    command: `node scripts/playwright-smoke-server.mjs ${port}`,
     url: baseURL,
     reuseExistingServer,
     timeout: 30_000,

@@ -35,7 +35,7 @@ test.describe('responsive note deletion', () => {
     await triggerShortcutCommand(page, APP_COMMAND_IDS.noteDelete)
     await expect(page.getByTestId('confirm-delete-dialog')).toBeVisible({ timeout: 5_000 })
 
-    await page.getByTestId('confirm-delete-btn').focus()
+    await expect(page.getByTestId('confirm-delete-btn')).toBeFocused()
     await page.keyboard.press('Enter')
 
     const progressNotice = page.getByTestId('delete-progress-notice')

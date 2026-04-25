@@ -8,7 +8,10 @@ import {
   waitFor,
 } from '@testing-library/react'
 import { WikilinkChatInput } from './WikilinkChatInput'
-import { UNSUPPORTED_INLINE_PASTE_MESSAGE } from './InlineWikilinkInput'
+import {
+  UNSUPPORTED_INLINE_PASTE_MESSAGE,
+} from './InlineWikilinkInput'
+import { isInsertBeforeInput } from './inlineWikilinkBeforeInput'
 import type { VaultEntry } from '../types'
 
 const makeEntry = (overrides: Partial<VaultEntry> = {}): VaultEntry => ({
@@ -266,6 +269,27 @@ describe('WikilinkChatInput', () => {
     fireEvent.paste(editor, { clipboardData })
 
     expect(onUnsupportedPaste).toHaveBeenCalledWith(UNSUPPORTED_INLINE_PASTE_MESSAGE)
+
+    updateEditorText('still works')
+    expect(editor.textContent).toContain('still works')
+  })
+
+  it('treats missing inputType as a non-insert beforeinput event', () => {
+    expect(() => isInsertBeforeInput({} as InputEvent)).not.toThrow()
+    expect(isInsertBeforeInput({} as InputEvent)).toBe(false)
+    expect(isInsertBeforeInput({ inputType: 'insertFromPaste' } as InputEvent)).toBe(true)
+  })
+
+  it('ignores beforeinput events without inputType instead of crashing', () => {
+    render(<Controlled />)
+
+    const editor = screen.getByTestId('agent-input')
+    const beforeInputEvent = new Event('beforeinput', {
+      bubbles: true,
+      cancelable: true,
+    })
+
+    expect(() => fireEvent(editor, beforeInputEvent)).not.toThrow()
 
     updateEditorText('still works')
     expect(editor.textContent).toContain('still works')

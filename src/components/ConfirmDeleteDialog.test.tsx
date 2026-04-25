@@ -1,81 +1,94 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog'
 
-describe('ConfirmDeleteDialog', () => {
-  const onConfirm = vi.fn()
-  const onCancel = vi.fn()
+const defaultProps = {
+  open: true,
+  title: 'Delete permanently?',
+  message: 'This cannot be undone.',
+}
 
+const onConfirm = vi.fn()
+const onCancel = vi.fn()
+
+function renderDialog(overrides: Partial<React.ComponentProps<typeof ConfirmDeleteDialog>> = {}) {
+  return render(
+    <ConfirmDeleteDialog
+      {...defaultProps}
+      onConfirm={onConfirm}
+      onCancel={onCancel}
+      {...overrides}
+    />,
+  )
+}
+
+describe('ConfirmDeleteDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   it('renders with title and message', () => {
-    render(
-      <ConfirmDeleteDialog
-        open={true}
-        title="Delete permanently?"
-        message="This cannot be undone."
-        onConfirm={onConfirm}
-        onCancel={onCancel}
-      />,
-    )
+    renderDialog()
     expect(screen.getByText('Delete permanently?')).toBeInTheDocument()
     expect(screen.getByText('This cannot be undone.')).toBeInTheDocument()
   })
 
   it('calls onConfirm when delete button clicked', () => {
-    render(
-      <ConfirmDeleteDialog
-        open={true}
-        title="Delete permanently?"
-        message="This cannot be undone."
-        onConfirm={onConfirm}
-        onCancel={onCancel}
-      />,
-    )
+    renderDialog()
     fireEvent.click(screen.getByTestId('confirm-delete-btn'))
     expect(onConfirm).toHaveBeenCalledTimes(1)
   })
 
+  it('focuses the destructive action when the dialog opens', async () => {
+    renderDialog()
+
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-delete-btn')).toHaveFocus()
+    })
+  })
+
+  it('submits the destructive action when Enter is pressed', () => {
+    renderDialog()
+
+    fireEvent.keyDown(screen.getByTestId('confirm-delete-dialog'), { key: 'Enter' })
+
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not submit twice when Enter repeats', () => {
+    renderDialog()
+
+    fireEvent.keyDown(screen.getByTestId('confirm-delete-dialog'), { key: 'Enter' })
+    fireEvent.keyDown(screen.getByTestId('confirm-delete-dialog'), { key: 'Enter', repeat: true })
+
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+  })
+
+  it('treats Enter as the primary confirm shortcut even from the cancel button', () => {
+    renderDialog()
+
+    fireEvent.keyDown(screen.getByText('Cancel'), { key: 'Enter' })
+
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+  })
+
   it('calls onCancel when cancel button clicked', () => {
-    render(
-      <ConfirmDeleteDialog
-        open={true}
-        title="Delete permanently?"
-        message="This cannot be undone."
-        onConfirm={onConfirm}
-        onCancel={onCancel}
-      />,
-    )
+    renderDialog()
     fireEvent.click(screen.getByText('Cancel'))
     expect(onCancel).toHaveBeenCalledTimes(1)
   })
 
   it('does not render when open is false', () => {
-    render(
-      <ConfirmDeleteDialog
-        open={false}
-        title="Delete permanently?"
-        message="This cannot be undone."
-        onConfirm={onConfirm}
-        onCancel={onCancel}
-      />,
-    )
+    renderDialog({ open: false })
     expect(screen.queryByText('Delete permanently?')).not.toBeInTheDocument()
   })
 
   it('uses custom confirm label when provided', () => {
-    render(
-      <ConfirmDeleteDialog
-        open={true}
-        title="Empty Trash?"
-        message="Delete all notes?"
-        confirmLabel="Empty Trash"
-        onConfirm={onConfirm}
-        onCancel={onCancel}
-      />,
-    )
+    renderDialog({
+      title: 'Empty Trash?',
+      message: 'Delete all notes?',
+      confirmLabel: 'Empty Trash',
+    })
     expect(screen.getByText('Empty Trash')).toBeInTheDocument()
   })
 })

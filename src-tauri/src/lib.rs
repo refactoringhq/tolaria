@@ -47,6 +47,45 @@ struct WsBridgeChild(Mutex<Option<Child>>);
 #[cfg(desktop)]
 struct ActiveAssetScopeRoots(Mutex<Vec<PathBuf>>);
 
+#[cfg(any(test, all(desktop, target_os = "linux")))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct StartupEnvOverride {
+    key: &'static str,
+    value: &'static str,
+}
+
+#[cfg(any(test, all(desktop, target_os = "linux")))]
+fn linux_appimage_startup_env_overrides_with<F>(mut get_var: F) -> Vec<StartupEnvOverride>
+where
+    F: FnMut(&str) -> Option<String>,
+{
+    let is_appimage = ["APPIMAGE", "APPDIR"]
+        .into_iter()
+        .any(|key| get_var(key).is_some_and(|value| !value.trim().is_empty()));
+    if !is_appimage {
+        return Vec::new();
+    }
+
+    if get_var("WEBKIT_DISABLE_DMABUF_RENDERER").is_some_and(|value| !value.trim().is_empty()) {
+        return Vec::new();
+    }
+
+    vec![StartupEnvOverride {
+        key: "WEBKIT_DISABLE_DMABUF_RENDERER",
+        value: "1",
+    }]
+}
+
+#[cfg(all(desktop, target_os = "linux"))]
+fn apply_linux_appimage_startup_env_overrides() {
+    for env_override in linux_appimage_startup_env_overrides_with(|key| std::env::var(key).ok()) {
+        std::env::set_var(env_override.key, env_override.value);
+    }
+}
+
+#[cfg(not(all(desktop, target_os = "linux")))]
+fn apply_linux_appimage_startup_env_overrides() {}
+
 #[cfg(desktop)]
 fn log_startup_result(label: &str, result: Result<usize, String>) {
     match result {
@@ -338,6 +377,7 @@ fn handle_run_event(app_handle: &tauri::AppHandle, event: &tauri::RunEvent) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    apply_linux_appimage_startup_env_overrides();
     let builder = tauri::Builder::default();
 
     #[cfg(desktop)]
@@ -357,6 +397,8 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
+    use super::linux_appimage_startup_env_overrides_with;
+    use super::StartupEnvOverride;
     use super::MACOS_WEBVIEW_RESERVED_COMMAND_SHIFT_KEYS;
 
     #[cfg(all(desktop, unix))]
@@ -365,6 +407,40 @@ mod tests {
     #[test]
     fn macos_webview_shortcut_prevention_includes_ai_panel_shortcut() {
         assert_eq!(MACOS_WEBVIEW_RESERVED_COMMAND_SHIFT_KEYS, ["L"]);
+    }
+
+    #[test]
+    fn linux_appimage_startup_env_overrides_are_empty_outside_appimage_launches() {
+        let overrides = linux_appimage_startup_env_overrides_with(|_| None);
+
+        assert!(overrides.is_empty());
+    }
+
+    #[test]
+    fn linux_appimage_startup_env_overrides_disable_dmabuf_for_appimages() {
+        let overrides = linux_appimage_startup_env_overrides_with(|key| match key {
+            "APPIMAGE" => Some("/tmp/Tolaria.AppImage".to_string()),
+            _ => None,
+        });
+
+        assert_eq!(
+            overrides,
+            vec![StartupEnvOverride {
+                key: "WEBKIT_DISABLE_DMABUF_RENDERER",
+                value: "1",
+            }]
+        );
+    }
+
+    #[test]
+    fn linux_appimage_startup_env_overrides_preserve_explicit_user_setting() {
+        let overrides = linux_appimage_startup_env_overrides_with(|key| match key {
+            "APPDIR" => Some("/tmp/.mount_Tolaria".to_string()),
+            "WEBKIT_DISABLE_DMABUF_RENDERER" => Some("0".to_string()),
+            _ => None,
+        });
+
+        assert!(overrides.is_empty());
     }
 
     #[cfg(all(desktop, unix))]

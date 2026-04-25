@@ -186,6 +186,7 @@ Panels are separated by `ResizeHandle` components that support drag-to-resize.
 The main Tauri window derives its minimum width from the visible panes instead of a single fixed floor. `useMainWindowSizeConstraints` treats the editor-only shell as the 480px baseline, adds sidebar / note-list / expanded-inspector allowances on top, and calls the native `update_current_window_min_size` command whenever view mode or inspector visibility changes. That same native command also grows the current window back out when a wider pane combination is restored, while note windows skip this path and keep their dedicated 800×700 initial sizing.
 
 Linux uses custom React-rendered window chrome instead of the native Tauri menu bar. `setup_linux_window_chrome()` drops server-side decorations on the main window, `openNoteInNewWindow()` does the same for detached note windows, and `LinuxTitlebar`/`LinuxMenuButton` route both window controls and menu actions back through the same shared command pipeline that macOS uses for native menu clicks.
+When Tolaria is launched from a Linux AppImage, `run()` also injects `WEBKIT_DISABLE_DMABUF_RENDERER=1` unless the user already set that variable. This keeps the workaround scoped to bundled WebKitGTK launches that are prone to Fedora/Wayland DMA-BUF crashes without changing native package installs.
 
 ## Multi-Window (Note Windows)
 
@@ -496,6 +497,7 @@ sequenceDiagram
     participant MCP as MCP Server
     participant U as User
 
+    T->>T: apply Linux AppImage WebKit env override<br/>(AppImage only)
     T->>T: run_startup_tasks()<br/>(migrate + seed only)
     T->>MCP: spawn_ws_bridge() — ports 9710 + 9711
     T->>A: App mounts

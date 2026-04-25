@@ -65,7 +65,6 @@ test.describe('multi-selection shortcuts', () => {
     await expect(dialog).toBeVisible({ timeout: 5_000 })
     await expect(dialog).toContainText(/Delete \d+ notes permanently\?/)
 
-    await page.keyboard.press('Tab')
     await expect(confirmButton).toBeFocused()
     await page.keyboard.press('Enter')
 

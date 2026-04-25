@@ -35,6 +35,7 @@ import { handleInlineWikilinkKeyDown } from './inlineWikilinkKeydown'
 import { useInlineWikilinkSelection } from './useInlineWikilinkSelection'
 import { useInlineWikilinkSuggestionsState } from './useInlineWikilinkSuggestionsState'
 import { normalizeInlineWikilinkValue } from './inlineWikilinkTokens'
+import { isInsertBeforeInput } from './inlineWikilinkBeforeInput'
 
 interface InlineWikilinkInputProps {
   entries: VaultEntry[]
@@ -212,7 +213,7 @@ export function InlineWikilinkInput({
     if (disabled) return
 
     const nativeEvent = event.nativeEvent as InputEvent
-    if (!nativeEvent.inputType.startsWith('insert')) return
+    if (!isInsertBeforeInput(nativeEvent)) return
 
     const dataTransfer = nativeEvent.dataTransfer
     if (!dataTransfer || !hasUnsupportedClipboardPayload(dataTransfer)) return
