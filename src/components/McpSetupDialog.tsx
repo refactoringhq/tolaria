@@ -73,9 +73,10 @@ export function McpSetupDialog({
             <div>~/.claude.json</div>
             <div>~/.claude/mcp.json</div>
             <div>~/.cursor/mcp.json</div>
+            <div>~/.config/mcp/mcp.json</div>
           </div>
           <p>
-            Claude Code CLI reads <code className="rounded bg-muted px-1 py-0.5 text-xs">~/.claude.json</code>, while Tolaria also refreshes the legacy Claude MCP file for compatibility with older setups. Cancel leaves all files untouched, reconnect is idempotent, and disconnect removes Tolaria&apos;s entry again.
+            Claude Code CLI reads <code className="rounded bg-muted px-1 py-0.5 text-xs">~/.claude.json</code>, Cursor reads <code className="rounded bg-muted px-1 py-0.5 text-xs">~/.cursor/mcp.json</code>, and the generic <code className="rounded bg-muted px-1 py-0.5 text-xs">~/.config/mcp/mcp.json</code> path is picked up by other MCP-compatible tools. Cancel leaves all files untouched, reconnect is idempotent, and disconnect removes Tolaria&apos;s entry again.
           </p>
         </div>
 

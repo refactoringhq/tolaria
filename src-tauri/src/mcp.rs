@@ -134,6 +134,7 @@ fn mcp_config_paths_for_home(home: &Path) -> Vec<PathBuf> {
         home.join(".claude.json"),
         home.join(".claude").join("mcp.json"),
         home.join(".cursor").join("mcp.json"),
+        home.join(".config").join("mcp").join("mcp.json"),
     ]
 }
 
@@ -197,7 +198,7 @@ fn register_mcp_to_configs(entry: &serde_json::Value, config_paths: &[PathBuf]) 
     status.to_string()
 }
 
-/// Register Tolaria as an MCP server in Claude Code and Cursor config files.
+/// Register Tolaria as an MCP server in external AI tool config files.
 pub fn register_mcp(vault_path: &str) -> Result<String, String> {
     let server_dir = mcp_server_dir()?;
     let index_js = server_dir.join("index.js").to_string_lossy().into_owned();
@@ -310,7 +311,7 @@ pub fn remove_mcp() -> String {
 /// Check whether the MCP server is properly installed and registered.
 ///
 /// Returns `Installed` when the Tolaria entry exists for the active vault in
-/// Claude Code or Cursor config and the referenced index.js file is present.
+/// an external AI tool config and the referenced index.js file is present.
 /// Otherwise returns `NotInstalled`.
 pub fn check_mcp_status(vault_path: &str) -> McpStatus {
     let active_vault_path = Path::new(vault_path);
@@ -556,6 +557,7 @@ mod tests {
         let claude_user_cfg = tmp.path().join(".claude.json");
         let claude_cfg = tmp.path().join("claude").join("mcp.json");
         let cursor_cfg = tmp.path().join("cursor").join("mcp.json");
+        let generic_cfg = tmp.path().join(".config").join("mcp").join("mcp.json");
         let entry = build_mcp_entry("/test/index.js", "/vault");
 
         register_mcp_to_configs(
@@ -564,12 +566,14 @@ mod tests {
                 claude_user_cfg.clone(),
                 claude_cfg.clone(),
                 cursor_cfg.clone(),
+                generic_cfg.clone(),
             ],
         );
 
         assert!(claude_user_cfg.exists());
         assert!(claude_cfg.exists());
         assert!(cursor_cfg.exists());
+        assert!(generic_cfg.exists());
 
         let raw = std::fs::read_to_string(&claude_user_cfg).unwrap();
         let config: serde_json::Value = serde_json::from_str(&raw).unwrap();
@@ -580,7 +584,7 @@ mod tests {
     }
 
     #[test]
-    fn mcp_config_paths_for_home_includes_claude_root_and_legacy_paths() {
+    fn mcp_config_paths_for_home_includes_all_supported_config_paths() {
         let home = Path::new("/Users/tester");
         let paths = mcp_config_paths_for_home(home);
 
@@ -590,6 +594,7 @@ mod tests {
                 home.join(".claude.json"),
                 home.join(".claude").join("mcp.json"),
                 home.join(".cursor").join("mcp.json"),
+                home.join(".config").join("mcp").join("mcp.json"),
             ]
         );
     }

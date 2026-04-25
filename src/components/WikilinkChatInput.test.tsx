@@ -233,6 +233,72 @@ describe('WikilinkChatInput', () => {
     expect(screen.getByTestId('wikilink-menu').textContent).toContain('Alpha')
   })
 
+  it('clears IME-injected stray text nodes after composition ends', async () => {
+    const onDraftChange = vi.fn()
+    render(<Controlled onDraftChange={onDraftChange} />)
+    const initialEditor = screen.getByTestId('agent-input') as HTMLDivElement
+    initialEditor.focus()
+
+    fireEvent.compositionStart(initialEditor)
+    initialEditor.appendChild(document.createTextNode('你'))
+    fireEvent.input(initialEditor)
+    fireEvent.compositionEnd(initialEditor)
+
+    await waitFor(() => {
+      expect(onDraftChange).toHaveBeenCalledWith('你')
+    })
+    await waitFor(() => {
+      const editor = screen.getByTestId('agent-input') as HTMLDivElement
+      expect(editor.textContent).toBe('你')
+    })
+  })
+
+  it('does not steal focus back if it was moved elsewhere during composition end', async () => {
+    const onDraftChange = vi.fn()
+    render(
+      <>
+        <Controlled onDraftChange={onDraftChange} />
+        <button data-testid="other-target">Other</button>
+      </>,
+    )
+    const initialEditor = screen.getByTestId('agent-input') as HTMLDivElement
+    const otherTarget = screen.getByTestId('other-target') as HTMLButtonElement
+    initialEditor.focus()
+
+    fireEvent.compositionStart(initialEditor)
+    initialEditor.appendChild(document.createTextNode('你'))
+    fireEvent.input(initialEditor)
+
+    otherTarget.focus()
+    fireEvent.compositionEnd(initialEditor)
+
+    await waitFor(() => {
+      expect(onDraftChange).toHaveBeenCalledWith('你')
+    })
+    expect(document.activeElement).toBe(otherTarget)
+  })
+
+  it('does not reset the DOM selection while IME composition is active', () => {
+    const removeAllRanges = vi.spyOn(Selection.prototype, 'removeAllRanges')
+    render(<Controlled />)
+    const editor = screen.getByTestId('agent-input') as HTMLDivElement
+    editor.focus()
+
+    fireEvent.compositionStart(editor)
+    editor.appendChild(document.createTextNode('ni'))
+    setSelection(editor, 2)
+
+    removeAllRanges.mockClear()
+    fireEvent.keyUp(editor)
+    fireEvent.click(editor)
+    fireEvent.mouseUp(editor)
+
+    expect(removeAllRanges).not.toHaveBeenCalled()
+    expect(editor.textContent).toContain('ni')
+
+    removeAllRanges.mockRestore()
+  })
+
   it('deletes an inline chip with a single Backspace', () => {
     render(<Controlled />)
     updateEditorText('edit my [[alp')
