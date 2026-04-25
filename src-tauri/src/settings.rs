@@ -63,10 +63,7 @@ pub fn normalize_theme_mode(value: Option<&str>) -> Option<String> {
 }
 
 pub fn normalize_language(value: Option<&str>) -> Option<String> {
-    let language_tag = value?
-        .trim()
-        .to_ascii_lowercase()
-        .replace('_', "-");
+    let language_tag = value?.trim().to_ascii_lowercase().replace('_', "-");
 
     let normalized = match language_tag.as_str() {
         "en" | "en-us" | "en-gb" => "en",
