@@ -35,6 +35,43 @@ describe('useDiffMode', () => {
     warn.mockRestore()
   }
 
+  async function expectPendingDiffRequestLoaded(options: {
+    diffContent: string
+    requestId: number
+    commitHash?: string
+  }) {
+    const { diffContent, requestId, commitHash = '' } = options
+    const onPendingCommitDiffHandled = vi.fn()
+
+    if (commitHash) {
+      onLoadDiffAtCommit.mockResolvedValue(diffContent)
+    } else {
+      onLoadDiff.mockResolvedValue(diffContent)
+    }
+
+    const { result } = renderHook(() => useDiffMode({
+      activeTabPath: '/note.md',
+      onLoadDiff,
+      onLoadDiffAtCommit,
+      pendingCommitDiffRequest: { requestId, path: '/note.md', commitHash },
+      onPendingCommitDiffHandled,
+    }))
+
+    await waitFor(() => {
+      if (commitHash) {
+        expect(onLoadDiffAtCommit).toHaveBeenCalledWith('/note.md', commitHash)
+      } else {
+        expect(onLoadDiff).toHaveBeenCalledWith('/note.md')
+        expect(onLoadDiffAtCommit).not.toHaveBeenCalled()
+      }
+    })
+    await waitFor(() => {
+      expect(result.current.diffMode).toBe(true)
+      expect(result.current.diffContent).toBe(diffContent)
+      expect(onPendingCommitDiffHandled).toHaveBeenCalledWith(requestId)
+    })
+  }
+
   it('starts with diff mode off', () => {
     const { result } = renderDiffHook()
     expect(result.current.diffMode).toBe(false)
@@ -121,23 +158,17 @@ describe('useDiffMode', () => {
   })
 
   it('loads a pending commit diff request when the matching tab is active', async () => {
-    onLoadDiffAtCommit.mockResolvedValue('pulse diff')
-    const onPendingCommitDiffHandled = vi.fn()
-
-    const { result } = renderHook(() => useDiffMode({
-      activeTabPath: '/note.md',
-      onLoadDiffAtCommit,
-      pendingCommitDiffRequest: { requestId: 7, path: '/note.md', commitHash: 'abc123' },
-      onPendingCommitDiffHandled,
-    }))
-
-    await waitFor(() => {
-      expect(onLoadDiffAtCommit).toHaveBeenCalledWith('/note.md', 'abc123')
+    await expectPendingDiffRequestLoaded({
+      diffContent: 'pulse diff',
+      requestId: 7,
+      commitHash: 'abc123',
     })
-    await waitFor(() => {
-      expect(result.current.diffMode).toBe(true)
-      expect(result.current.diffContent).toBe('pulse diff')
-      expect(onPendingCommitDiffHandled).toHaveBeenCalledWith(7)
+  })
+
+  it('loads a pending working-tree diff request when the matching tab is active', async () => {
+    await expectPendingDiffRequestLoaded({
+      diffContent: 'working tree diff',
+      requestId: 9,
     })
   })
 
