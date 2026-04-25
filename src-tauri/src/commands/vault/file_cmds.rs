@@ -65,6 +65,16 @@ fn with_image_asset_scope(
     })
 }
 
+#[tauri::command]
+pub fn sync_vault_asset_scope_for_window(
+    app_handle: tauri::AppHandle,
+    vault_path: PathBuf,
+) -> Result<(), String> {
+    with_requested_root_path(vault_path.as_path(), |requested_root| {
+        sync_image_asset_scope(&app_handle, requested_root)
+    })
+}
+
 fn with_writable_note_path<T>(
     path: PathBuf,
     vault_path: Option<PathBuf>,
