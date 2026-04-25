@@ -150,16 +150,26 @@ export function useImageDrop({ containerRef, onImageUrl, vaultPath }: UseImageDr
     void (async () => {
       try {
         const nextUnlisteners = await registerNativeDropListeners((event) => {
-          if (event.payload.type === 'drop') {
-            setIsDragOver(false)
-            insertDroppedImages(
-              event.payload.paths.filter(isImagePath),
-              vaultPathRef.current,
-              onImageUrlRef.current,
-            )
-            return
-          }
           setIsDragOver(false)
+          // Runtime payload in Tauri v2 is { paths, position } without a type field.
+          const paths: string[] = Array.isArray(
+            (event.payload as unknown as { paths?: unknown }).paths,
+          )
+            ? (event.payload as unknown as { paths: string[] }).paths
+            : []
+          if (paths.length === 0) return
+          const pos = (event.payload as unknown as { position?: { x: number; y: number } })
+            .position
+          const container = containerRef.current
+          if (container && pos) {
+            try {
+              const el = document.elementFromPoint(pos.x, pos.y)
+              if (!el || (!container.contains(el) && el !== container)) return
+            } catch {
+              // elementFromPoint unavailable (e.g. JSDOM); skip position check
+            }
+          }
+          insertDroppedImages(paths.filter(isImagePath), vaultPathRef.current, onImageUrlRef.current)
         })
         if (mounted) unlisteners = nextUnlisteners
         else cleanupNativeDropListeners(nextUnlisteners)
