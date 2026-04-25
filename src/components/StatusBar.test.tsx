@@ -21,6 +21,36 @@ const installedAiAgentsStatus = {
   codex: { status: 'installed' as const, version: '0.37.0' },
 }
 
+const DEFAULT_WINDOW_WIDTH = 1280
+
+function setWindowWidth(width: number) {
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    writable: true,
+    value: width,
+  })
+}
+
+function renderDenseStatusBar() {
+  return render(
+    <StatusBar
+      noteCount={100}
+      modifiedCount={5}
+      vaultPath="/Users/luca/Laputa"
+      vaults={vaults}
+      onSwitchVault={vi.fn()}
+      remoteStatus={{ branch: 'main', ahead: 0, behind: 0, hasRemote: false }}
+      onCommitPush={vi.fn()}
+      onClickPulse={vi.fn()}
+      onOpenFeedback={vi.fn()}
+      buildNumber="b281"
+      onCheckForUpdates={vi.fn()}
+      mcpStatus="not_installed"
+      claudeCodeStatus="missing"
+    />
+  )
+}
+
 async function expectTooltip(trigger: HTMLElement, ...parts: string[]) {
   act(() => {
     fireEvent.focus(trigger)
@@ -37,6 +67,7 @@ async function expectTooltip(trigger: HTMLElement, ...parts: string[]) {
 describe('StatusBar', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    setWindowWidth(DEFAULT_WINDOW_WIDTH)
   })
 
   it('does not display the bottom-bar note count readout', () => {
@@ -306,6 +337,37 @@ describe('StatusBar', () => {
     expect(screen.getByTestId('status-modified-count')).toBeInTheDocument()
     expect(screen.getByText('Changes')).toBeInTheDocument()
     expect(screen.getByText('3')).toBeInTheDocument()
+  })
+
+  it('wraps the bottom bar before hiding labels at medium widths', () => {
+    setWindowWidth(980)
+    renderDenseStatusBar()
+
+    expect(screen.getByTestId('status-bar')).toHaveStyle({
+      flexWrap: 'wrap',
+      height: 'auto',
+    })
+    expect(screen.getByText('Commit')).toBeInTheDocument()
+    expect(screen.getByText('History')).toBeInTheDocument()
+    expect(screen.getByText('Contribute')).toBeInTheDocument()
+  })
+
+  it('collapses status labels to icon-first controls at very narrow widths', () => {
+    setWindowWidth(760)
+    renderDenseStatusBar()
+
+    expect(screen.getByTestId('status-bar')).toHaveStyle({
+      flexWrap: 'wrap',
+      height: 'auto',
+    })
+    expect(screen.getByTestId('status-commit-push')).toBeInTheDocument()
+    expect(screen.getByTestId('status-pulse')).toBeInTheDocument()
+    expect(screen.getByTestId('status-feedback')).toBeInTheDocument()
+    expect(screen.queryByText('Commit')).not.toBeInTheDocument()
+    expect(screen.queryByText('History')).not.toBeInTheDocument()
+    expect(screen.queryByText('Contribute')).not.toBeInTheDocument()
+    expect(screen.queryByText('No remote')).not.toBeInTheDocument()
+    expect(screen.queryByText('MCP')).not.toBeInTheDocument()
   })
 
   it('does not show Changes badge when modifiedCount is 0', () => {

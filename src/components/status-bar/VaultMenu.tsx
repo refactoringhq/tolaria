@@ -15,6 +15,7 @@ interface VaultMenuProps {
   onCloneVault?: () => void
   onCloneGettingStarted?: () => void
   onRemoveVault?: (path: string) => void
+  compact?: boolean
 }
 
 interface VaultMenuItemProps {
@@ -40,6 +41,18 @@ interface VaultAction {
   testId: string
   accent?: boolean
   onClick: () => void
+}
+
+function getVaultTriggerClassName(open: boolean, compact: boolean) {
+  if (compact) {
+    return open
+      ? 'h-6 w-6 rounded-sm bg-[var(--hover)] p-0 text-foreground hover:bg-[var(--hover)]'
+      : 'h-6 w-6 rounded-sm p-0 text-muted-foreground hover:bg-[var(--hover)] hover:text-foreground'
+  }
+
+  return open
+    ? 'h-auto gap-1 rounded-sm bg-[var(--hover)] px-1 py-0.5 text-[11px] font-medium text-foreground hover:bg-[var(--hover)]'
+    : 'h-auto gap-1 rounded-sm px-1 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-[var(--hover)] hover:text-foreground'
 }
 
 function buildVaultActions({
@@ -182,11 +195,15 @@ export function VaultMenu({
   onCloneVault,
   onCloneGettingStarted,
   onRemoveVault,
+  compact = false,
 }: VaultMenuProps) {
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const activeVault = vaults.find((vault) => vault.path === vaultPath)
   const canRemove = !!onRemoveVault && vaults.length > 1
+  const triggerClassName = getVaultTriggerClassName(open, compact)
+  const triggerSize = compact ? 'icon-xs' : 'xs'
+  const activeVaultLabel = activeVault?.label ?? 'Vault'
 
   useDismissibleLayer(open, menuRef, () => setOpen(false))
 
@@ -205,16 +222,14 @@ export function VaultMenu({
         <Button
           type="button"
           variant="ghost"
-          size="xs"
-          className={open
-            ? 'h-auto gap-1 rounded-sm bg-[var(--hover)] px-1 py-0.5 text-[11px] font-medium text-foreground hover:bg-[var(--hover)]'
-            : 'h-auto gap-1 rounded-sm px-1 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-[var(--hover)] hover:text-foreground'}
+          size={triggerSize}
+          className={triggerClassName}
           onClick={() => setOpen((value) => !value)}
           aria-label="Switch vault"
           data-testid="status-vault-trigger"
         >
           <FolderOpen size={13} />
-          {activeVault?.label ?? 'Vault'}
+          {compact ? null : <span className="max-w-32 truncate">{activeVaultLabel}</span>}
         </Button>
       </ActionTooltip>
       {open && (

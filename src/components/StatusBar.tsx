@@ -14,6 +14,44 @@ import type { VaultOption } from './status-bar/types'
 
 export type { VaultOption } from './status-bar/types'
 
+const STACKED_STATUS_BAR_MAX_WIDTH = 1040
+const COMPACT_STATUS_BAR_MAX_WIDTH = 820
+
+function getWindowWidth() {
+  return typeof window === 'undefined' ? Number.POSITIVE_INFINITY : window.innerWidth
+}
+
+function getStatusBarLayout(windowWidth: number) {
+  return {
+    compact: windowWidth <= COMPACT_STATUS_BAR_MAX_WIDTH,
+    stacked: windowWidth <= STACKED_STATUS_BAR_MAX_WIDTH,
+  }
+}
+
+function useStatusBarTicker() {
+  const [, setTick] = useState(0)
+
+  useEffect(() => {
+    const id = setInterval(() => setTick((tick) => tick + 1), 30_000)
+    return () => clearInterval(id)
+  }, [])
+}
+
+function useStatusBarLayout() {
+  const [windowWidth, setWindowWidth] = useState(() => getWindowWidth())
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handleResize = () => setWindowWidth(getWindowWidth())
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  return getStatusBarLayout(windowWidth)
+}
+
 interface StatusBarProps {
   noteCount: number
   modifiedCount?: number
@@ -56,7 +94,12 @@ interface StatusBarProps {
   claudeCodeVersion?: string | null
 }
 
-export function StatusBar({
+interface StatusBarFooterProps extends StatusBarProps {
+  compact: boolean
+  stacked: boolean
+}
+
+function StatusBarFooter({
   noteCount,
   modifiedCount = 0,
   vaultPath,
@@ -96,76 +139,89 @@ export function StatusBar({
   onRestoreVaultAiGuidance,
   claudeCodeStatus,
   claudeCodeVersion,
-}: StatusBarProps) {
-  const [, setTick] = useState(0)
+  compact,
+  stacked,
+}: StatusBarFooterProps) {
+  return (
+    <footer
+      data-testid="status-bar"
+      style={{
+        minHeight: 30,
+        height: stacked ? 'auto' : 30,
+        flexShrink: 0,
+        display: 'flex',
+        flexWrap: stacked ? 'wrap' : 'nowrap',
+        alignItems: stacked ? 'flex-start' : 'center',
+        justifyContent: stacked ? 'flex-start' : 'space-between',
+        rowGap: stacked ? 4 : 0,
+        columnGap: 12,
+        background: 'var(--sidebar)',
+        borderTop: '1px solid var(--border)',
+        padding: stacked ? '4px 8px' : '0 8px',
+        fontSize: 11,
+        color: 'var(--muted-foreground)',
+        position: 'relative',
+        zIndex: 10,
+      }}
+    >
+      <StatusBarPrimarySection
+        modifiedCount={modifiedCount}
+        vaultPath={vaultPath}
+        vaults={vaults}
+        onSwitchVault={onSwitchVault}
+        onOpenLocalFolder={onOpenLocalFolder}
+        onCreateEmptyVault={onCreateEmptyVault}
+        onCloneVault={onCloneVault}
+        onCloneGettingStarted={onCloneGettingStarted}
+        onClickPending={onClickPending}
+        onClickPulse={onClickPulse}
+        onCommitPush={onCommitPush}
+        isOffline={isOffline}
+        isGitVault={isGitVault}
+        syncStatus={syncStatus}
+        lastSyncTime={lastSyncTime}
+        conflictCount={conflictCount}
+        remoteStatus={remoteStatus}
+        onTriggerSync={onTriggerSync}
+        onPullAndPush={onPullAndPush}
+        onOpenConflictResolver={onOpenConflictResolver}
+        buildNumber={buildNumber}
+        onCheckForUpdates={onCheckForUpdates}
+        onRemoveVault={onRemoveVault}
+        mcpStatus={mcpStatus}
+        onInstallMcp={onInstallMcp}
+        aiAgentsStatus={aiAgentsStatus}
+        vaultAiGuidanceStatus={vaultAiGuidanceStatus}
+        defaultAiAgent={defaultAiAgent}
+        onSetDefaultAiAgent={onSetDefaultAiAgent}
+        onRestoreVaultAiGuidance={onRestoreVaultAiGuidance}
+        claudeCodeStatus={claudeCodeStatus}
+        claudeCodeVersion={claudeCodeVersion}
+        stacked={stacked}
+        compact={compact}
+      />
+      <StatusBarSecondarySection
+        noteCount={noteCount}
+        zoomLevel={zoomLevel}
+        themeMode={themeMode}
+        onZoomReset={onZoomReset}
+        onToggleThemeMode={onToggleThemeMode}
+        onOpenFeedback={onOpenFeedback}
+        onOpenSettings={onOpenSettings}
+        stacked={stacked}
+        compact={compact}
+      />
+    </footer>
+  )
+}
 
-  useEffect(() => {
-    const id = setInterval(() => setTick((tick) => tick + 1), 30_000)
-    return () => clearInterval(id)
-  }, [])
+export function StatusBar(props: StatusBarProps) {
+  useStatusBarTicker()
+  const { compact, stacked } = useStatusBarLayout()
 
   return (
     <TooltipProvider>
-      <footer
-        style={{
-          height: 30,
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: 'var(--sidebar)',
-          borderTop: '1px solid var(--border)',
-          padding: '0 8px',
-          fontSize: 11,
-          color: 'var(--muted-foreground)',
-          position: 'relative',
-          zIndex: 10,
-        }}
-      >
-        <StatusBarPrimarySection
-          modifiedCount={modifiedCount}
-          vaultPath={vaultPath}
-          vaults={vaults}
-          onSwitchVault={onSwitchVault}
-          onOpenLocalFolder={onOpenLocalFolder}
-          onCreateEmptyVault={onCreateEmptyVault}
-          onCloneVault={onCloneVault}
-          onCloneGettingStarted={onCloneGettingStarted}
-          onClickPending={onClickPending}
-          onClickPulse={onClickPulse}
-          onCommitPush={onCommitPush}
-          isOffline={isOffline}
-          isGitVault={isGitVault}
-          syncStatus={syncStatus}
-          lastSyncTime={lastSyncTime}
-          conflictCount={conflictCount}
-          remoteStatus={remoteStatus}
-          onTriggerSync={onTriggerSync}
-          onPullAndPush={onPullAndPush}
-          onOpenConflictResolver={onOpenConflictResolver}
-          buildNumber={buildNumber}
-          onCheckForUpdates={onCheckForUpdates}
-          onRemoveVault={onRemoveVault}
-          mcpStatus={mcpStatus}
-          onInstallMcp={onInstallMcp}
-          aiAgentsStatus={aiAgentsStatus}
-          vaultAiGuidanceStatus={vaultAiGuidanceStatus}
-          defaultAiAgent={defaultAiAgent}
-          onSetDefaultAiAgent={onSetDefaultAiAgent}
-          onRestoreVaultAiGuidance={onRestoreVaultAiGuidance}
-          claudeCodeStatus={claudeCodeStatus}
-          claudeCodeVersion={claudeCodeVersion}
-        />
-        <StatusBarSecondarySection
-          noteCount={noteCount}
-          zoomLevel={zoomLevel}
-          themeMode={themeMode}
-          onZoomReset={onZoomReset}
-          onToggleThemeMode={onToggleThemeMode}
-          onOpenFeedback={onOpenFeedback}
-          onOpenSettings={onOpenSettings}
-        />
-      </footer>
+      <StatusBarFooter {...props} compact={compact} stacked={stacked} />
     </TooltipProvider>
   )
 }

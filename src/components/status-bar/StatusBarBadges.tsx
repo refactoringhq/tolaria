@@ -132,6 +132,7 @@ function StatusBarAction({
   className,
   style,
   disabled = false,
+  compact = false,
 }: {
   copy: ActionTooltipCopy
   children: ReactNode
@@ -141,6 +142,7 @@ function StatusBarAction({
   className?: string
   style?: CSSProperties
   disabled?: boolean
+  compact?: boolean
 }) {
   return (
     <ActionTooltip copy={copy} side="top">
@@ -150,6 +152,7 @@ function StatusBarAction({
         size="xs"
         className={cn(
           'h-auto gap-1 rounded-sm px-1 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-[var(--hover)] hover:text-foreground',
+          compact && 'h-6 gap-0.5 px-0.5',
           disabled && 'cursor-not-allowed opacity-40 hover:bg-transparent hover:text-muted-foreground',
           className,
         )}
@@ -164,6 +167,11 @@ function StatusBarAction({
       </Button>
     </ActionTooltip>
   )
+}
+
+function StatusBarSeparator({ show = true }: { show?: boolean }) {
+  if (!show) return null
+  return <span style={SEP_STYLE}>|</span>
 }
 
 function RemoteStatusSummary({ remoteStatus }: { remoteStatus: GitRemoteStatus | null }) {
@@ -301,12 +309,20 @@ export function CommitBadge({ info }: { info: LastCommitInfo }) {
   )
 }
 
-export function OfflineBadge({ isOffline }: { isOffline?: boolean }) {
+export function OfflineBadge({
+  isOffline,
+  showSeparator = true,
+  compact = false,
+}: {
+  isOffline?: boolean
+  showSeparator?: boolean
+  compact?: boolean
+}) {
   if (!isOffline) return null
 
   return (
     <>
-      <span style={SEP_STYLE}>|</span>
+      <StatusBarSeparator show={showSeparator} />
       <span
         style={{
           ...ICON_STYLE,
@@ -322,7 +338,7 @@ export function OfflineBadge({ isOffline }: { isOffline?: boolean }) {
         <span aria-hidden="true" style={{ fontSize: 10, lineHeight: 1 }}>
           ●
         </span>
-        Offline
+        {compact ? null : 'Offline'}
       </span>
     </>
   )
@@ -331,24 +347,29 @@ export function OfflineBadge({ isOffline }: { isOffline?: boolean }) {
 export function NoRemoteBadge({
   remoteStatus,
   onAddRemote,
+  showSeparator = true,
+  compact = false,
 }: {
   remoteStatus?: GitRemoteStatus | null
   onAddRemote?: () => void
+  showSeparator?: boolean
+  compact?: boolean
 }) {
   if (!isRemoteMissing(remoteStatus)) return null
 
   if (onAddRemote) {
     return (
       <>
-        <span style={SEP_STYLE}>|</span>
+        <StatusBarSeparator show={showSeparator} />
         <StatusBarAction
           copy={{ label: 'Add a remote to this vault' }}
           onClick={onAddRemote}
           testId="status-no-remote"
+          compact={compact}
         >
           <span style={ICON_STYLE}>
             <GitBranch size={12} />
-            No remote
+            {compact ? null : 'No remote'}
           </span>
         </StatusBarAction>
       </>
@@ -357,7 +378,7 @@ export function NoRemoteBadge({
 
   return (
     <>
-      <span style={SEP_STYLE}>|</span>
+      <StatusBarSeparator show={showSeparator} />
       <span
         style={{
           ...ICON_STYLE,
@@ -371,7 +392,7 @@ export function NoRemoteBadge({
         data-testid="status-no-remote"
       >
         <GitBranch size={12} />
-        No remote
+        {compact ? null : 'No remote'}
       </span>
     </>
   )
@@ -384,6 +405,7 @@ export function SyncBadge({
   onTriggerSync,
   onPullAndPush,
   onOpenConflictResolver,
+  compact = false,
 }: {
   status: SyncStatus
   lastSyncTime: number | null
@@ -391,6 +413,7 @@ export function SyncBadge({
   onTriggerSync?: () => void
   onPullAndPush?: () => void
   onOpenConflictResolver?: () => void
+  compact?: boolean
 }) {
   const [showPopup, setShowPopup] = useState(false)
   const popupRef = useRef<HTMLDivElement>(null)
@@ -415,10 +438,10 @@ export function SyncBadge({
 
   return (
     <div ref={popupRef} style={{ position: 'relative' }}>
-      <StatusBarAction copy={syncBadgeTooltipCopy(status)} onClick={handleClick} testId="status-sync">
+      <StatusBarAction copy={syncBadgeTooltipCopy(status)} onClick={handleClick} testId="status-sync" compact={compact}>
         <span style={ICON_STYLE}>
           <SyncIcon size={13} style={{ color: syncIconColor(status) }} className={isSyncing ? 'animate-spin' : ''} />
-          {formatSyncLabel(status, lastSyncTime)}
+          {compact ? null : formatSyncLabel(status, lastSyncTime)}
         </span>
       </StatusBarAction>
       {showPopup && (
@@ -433,34 +456,55 @@ export function SyncBadge({
   )
 }
 
-export function ConflictBadge({ count, onClick }: { count: number; onClick?: () => void }) {
+export function ConflictBadge({
+  count,
+  onClick,
+  showSeparator = true,
+  compact = false,
+}: {
+  count: number
+  onClick?: () => void
+  showSeparator?: boolean
+  compact?: boolean
+}) {
   if (count <= 0) return null
 
   return (
     <>
-      <span style={SEP_STYLE}>|</span>
+      <StatusBarSeparator show={showSeparator} />
       <StatusBarAction
         copy={{ label: 'Resolve merge conflicts' }}
         onClick={onClick}
         testId="status-conflict-count"
         className="text-[var(--destructive)]"
+        compact={compact}
       >
         <span style={ICON_STYLE}>
           <AlertTriangle size={13} />
-          {count} conflict{count > 1 ? 's' : ''}
+          {compact ? null : `${count} conflict${count > 1 ? 's' : ''}`}
         </span>
       </StatusBarAction>
     </>
   )
 }
 
-export function ChangesBadge({ count, onClick }: { count: number; onClick?: () => void }) {
+export function ChangesBadge({
+  count,
+  onClick,
+  showSeparator = true,
+  compact = false,
+}: {
+  count: number
+  onClick?: () => void
+  showSeparator?: boolean
+  compact?: boolean
+}) {
   if (count <= 0) return null
 
   return (
     <>
-      <span style={SEP_STYLE}>|</span>
-      <StatusBarAction copy={{ label: 'View pending changes' }} onClick={onClick} testId="status-modified-count">
+      <StatusBarSeparator show={showSeparator} />
+      <StatusBarAction copy={{ label: 'View pending changes' }} onClick={onClick} testId="status-modified-count" compact={compact}>
         <span style={ICON_STYLE}>
           <GitDiff size={13} style={{ color: 'var(--accent-orange)' }} />
           <span
@@ -480,7 +524,7 @@ export function ChangesBadge({ count, onClick }: { count: number; onClick?: () =
           >
             {count}
           </span>
-          Changes
+          {compact ? null : 'Changes'}
         </span>
       </StatusBarAction>
     </>
@@ -490,60 +534,86 @@ export function ChangesBadge({ count, onClick }: { count: number; onClick?: () =
 export function CommitButton({
   onClick,
   remoteStatus,
+  showSeparator = true,
+  compact = false,
 }: {
   onClick?: () => void
   remoteStatus?: GitRemoteStatus | null
+  showSeparator?: boolean
+  compact?: boolean
 }) {
   if (!onClick) return null
 
   return (
     <>
-      <span style={SEP_STYLE}>|</span>
-      <StatusBarAction copy={commitButtonTooltipCopy(remoteStatus)} onClick={onClick} testId="status-commit-push">
+      <StatusBarSeparator show={showSeparator} />
+      <StatusBarAction copy={commitButtonTooltipCopy(remoteStatus)} onClick={onClick} testId="status-commit-push" compact={compact}>
         <span style={ICON_STYLE}>
           <GitCommitHorizontal size={13} />
-          Commit
+          {compact ? null : 'Commit'}
         </span>
       </StatusBarAction>
     </>
   )
 }
 
-export function PulseBadge({ onClick, disabled }: { onClick?: () => void; disabled?: boolean }) {
+export function PulseBadge({
+  onClick,
+  disabled,
+  showSeparator = true,
+  compact = false,
+}: {
+  onClick?: () => void
+  disabled?: boolean
+  showSeparator?: boolean
+  compact?: boolean
+}) {
   return (
     <>
-      <span style={SEP_STYLE}>|</span>
+      <StatusBarSeparator show={showSeparator} />
       <StatusBarAction
         copy={{ label: disabled ? 'History is only available for git-enabled vaults' : 'Open change history' }}
         onClick={disabled ? undefined : onClick}
         testId="status-pulse"
         disabled={Boolean(disabled)}
+        compact={compact}
       >
         <span style={ICON_STYLE}>
           <Pulse size={13} />
-          History
+          {compact ? null : 'History'}
         </span>
       </StatusBarAction>
     </>
   )
 }
 
-export function McpBadge({ status, onInstall }: { status: McpStatus; onInstall?: () => void }) {
+export function McpBadge({
+  status,
+  onInstall,
+  showSeparator = true,
+  compact = false,
+}: {
+  status: McpStatus
+  onInstall?: () => void
+  showSeparator?: boolean
+  compact?: boolean
+}) {
   const config = getMcpBadgeConfig(status, onInstall)
   if (!config) return null
 
   return (
     <>
-      <span style={SEP_STYLE}>|</span>
+      <StatusBarSeparator show={showSeparator} />
       <StatusBarAction
         copy={{ label: config.tooltip }}
         onClick={config.onClick}
         testId="status-mcp"
         className="text-[var(--accent-orange)]"
+        compact={compact}
       >
         <span style={ICON_STYLE}>
           <Cpu size={13} />
-          MCP
+          {compact ? null : 'MCP'}
           <AlertTriangle size={10} style={{ marginLeft: 2 }} />
         </span>
       </StatusBarAction>
@@ -551,22 +621,33 @@ export function McpBadge({ status, onInstall }: { status: McpStatus; onInstall?:
   )
 }
 
-export function ClaudeCodeBadge({ status, version }: { status: ClaudeCodeStatus; version?: string | null }) {
+export function ClaudeCodeBadge({
+  status,
+  version,
+  showSeparator = true,
+  compact = false,
+}: {
+  status: ClaudeCodeStatus
+  version?: string | null
+  showSeparator?: boolean
+  compact?: boolean
+}) {
   const config = getClaudeCodeBadgeConfig(status, version)
   if (!config) return null
 
   return (
     <>
-      <span style={SEP_STYLE}>|</span>
+      <StatusBarSeparator show={showSeparator} />
       <StatusBarAction
         copy={{ label: config.tooltip }}
         onClick={config.onActivate}
         testId="status-claude-code"
         className={config.missing ? 'text-[var(--accent-orange)]' : undefined}
+        compact={compact}
       >
         <span style={ICON_STYLE}>
           <Terminal size={13} />
-          {config.label}
+          {compact ? null : config.label}
           {config.missing && <AlertTriangle size={10} style={{ marginLeft: 2 }} />}
         </span>
       </StatusBarAction>
