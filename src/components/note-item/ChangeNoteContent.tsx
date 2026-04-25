@@ -11,11 +11,11 @@ type ChangeStatsEntry = VaultEntry & {
 }
 
 const CHANGE_STATUS_DISPLAY: Record<ChangeStatus, { label: string; color: string; symbol: string }> = {
-  modified: { label: 'Modified', color: 'var(--accent-orange, #f59e0b)', symbol: '·' },
-  added: { label: 'Added', color: 'var(--accent-green, #22c55e)', symbol: '+' },
-  untracked: { label: 'Added', color: 'var(--accent-green, #22c55e)', symbol: '+' },
-  deleted: { label: 'Deleted', color: 'var(--destructive, #ef4444)', symbol: '−' },
-  renamed: { label: 'Renamed', color: 'var(--accent-orange, #f59e0b)', symbol: 'R' },
+  modified: { label: 'Modified', color: 'var(--accent-orange)', symbol: '·' },
+  added: { label: 'Added', color: 'var(--accent-green)', symbol: '+' },
+  untracked: { label: 'Added', color: 'var(--accent-green)', symbol: '+' },
+  deleted: { label: 'Deleted', color: 'var(--destructive)', symbol: '−' },
+  renamed: { label: 'Renamed', color: 'var(--accent-orange)', symbol: 'R' },
 }
 
 function readChangeStats(entry: VaultEntry): Required<Pick<ChangeStatsEntry, '__changeAddedLines' | '__changeDeletedLines' | '__changeBinary'>> {
@@ -72,7 +72,7 @@ function buildChangeStatBadges(
 
   if (shouldShowAddedStat(status, addedLines, deletedLines)) {
     badges.push({
-      className: 'text-[var(--accent-green,#22c55e)]',
+      className: 'text-[var(--accent-green)]',
       testId: 'change-stat-added',
       value: `+${addedLines ?? 0}`,
     })
@@ -80,7 +80,7 @@ function buildChangeStatBadges(
 
   if (shouldShowDeletedStat(status, addedLines, deletedLines)) {
     badges.push({
-      className: 'text-[var(--destructive,#ef4444)]',
+      className: 'text-[var(--destructive)]',
       testId: 'change-stat-deleted',
       value: `-${deletedLines ?? 0}`,
     })

@@ -312,7 +312,7 @@ The folder tree hides only the dedicated `type/` directory, since note types alr
 
 A `vault_health_check` command detects stray files in non-protected subfolders and filename-title mismatches. On vault load, a migration banner offers to flatten stray files to the root via `flatten_vault`.
 
-Command-layer path access is fenced to the active vault before file operations reach the vault backend. `src-tauri/src/commands/vault/boundary.rs` canonicalizes the configured/requested vault root, rejects `..` escapes and absolute paths outside that root, and validates writable targets through the nearest existing ancestor so note reads, saves, deletes, view-file edits, and folder mutations cannot step outside the active vault.
+Command-layer path access is fenced to the active vault before file operations reach the vault backend. `src-tauri/src/commands/vault/boundary.rs` canonicalizes the configured/requested vault root, rejects `..` escapes and absolute paths outside that root, and validates writable targets through the nearest existing ancestor so note reads, saves, deletes, view-file edits, folder mutations, and image attachment writes cannot step outside the active vault. Image attachment commands refresh the runtime asset scope after saving so files created under a previously missing `attachments/` directory can render immediately.
 
 ### Vault Caching
 
@@ -535,10 +535,11 @@ Typed ASCII arrow sequences are normalized consistently in both editor modes:
 
 ## Styling
 
-The app uses a single light theme — the vault-based theming system was removed (see [ADR-0013](adr/0013-remove-theming-system.md)). Styling is defined in two layers:
+The app uses internal light and dark themes owned by Tolaria (see [ADR-0081](adr/0081-internal-light-dark-theme-runtime.md)). The previous vault-authored theming system remains removed; theme mode is an installation-local app preference.
 
-1. **Global CSS variables** (`src/index.css`): App-wide colors via `:root`, bridged to Tailwind v4
+1. **Global CSS variables** (`src/index.css`): Semantic app colors, borders, surfaces, and interaction states via `:root` / `[data-theme]`, bridged to Tailwind v4
 2. **Editor theme** (`src/theme.json`): BlockNote typography, flattened to CSS vars by `useEditorTheme`
+3. **Runtime theme bridge**: Applies `data-theme` and `.dark` for shadcn/ui, while CodeMirror and editor-specific consumers derive any non-CSS-variable values from the same semantic contract
 
 ## Inspector Abstraction
 
@@ -648,11 +649,12 @@ interface Settings {
   analytics_enabled: boolean | null
   anonymous_id: string | null
   release_channel: string | null // null = stable default, "alpha" = every-push prerelease feed
+  theme_mode: 'light' | 'dark' | null
   default_ai_agent: 'claude_code' | 'codex' | null
 }
 ```
 
-Managed by `useSettings` hook and `SettingsPanel` component. `default_ai_agent` is an installation-local preference that selects which supported CLI agent the AI panel, command palette AI mode, and status bar should target by default. The AutoGit fields are also installation-local: `useAutoGit` consumes them to schedule automatic checkpoints, while `useCommitFlow` and the status bar quick action reuse the same checkpoint runner and deterministic automatic commit message generation.
+Managed by `useSettings` hook and `SettingsPanel` component. `theme_mode` is installation-local because it controls device comfort rather than vault structure. `default_ai_agent` is an installation-local preference that selects which supported CLI agent the AI panel, command palette AI mode, and status bar should target by default. The AutoGit fields are also installation-local: `useAutoGit` consumes them to schedule automatic checkpoints, while `useCommitFlow` and the status bar quick action reuse the same checkpoint runner and deterministic automatic commit message generation.
 
 ## Telemetry
 

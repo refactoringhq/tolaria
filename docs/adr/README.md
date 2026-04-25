@@ -68,7 +68,7 @@ proposed → active → superseded
 | [0010](0010-dynamic-wikilink-relationship-detection.md) | Dynamic wikilink relationship detection | active |
 | [0011](0011-mcp-server-for-ai-integration.md) | MCP server for AI tool integration | superseded → [0074](0074-explicit-external-ai-tool-setup-and-least-privilege-desktop-scope.md) |
 | [0012](0012-claude-cli-for-ai-agent.md) | Claude CLI subprocess for AI agent | active |
-| [0013](0013-remove-theming-system.md) | Remove vault-based theming system | active |
+| [0013](0013-remove-theming-system.md) | Remove vault-based theming system | superseded -> [0081](0081-internal-light-dark-theme-runtime.md) |
 | [0014](0014-git-based-vault-cache.md) | Git-based incremental vault cache | active |
 | [0015](0015-auto-save-with-debounce.md) | Auto-save with 500ms debounce | active |
 | [0016](0016-sentry-posthog-telemetry.md) | Sentry + PostHog telemetry with consent | active |
@@ -136,3 +136,4 @@ proposed → active → superseded
 | [0078](0078-scoped-unsigned-fallback-for-app-managed-git-commits.md) | Scoped unsigned fallback for app-managed git commits | active |
 | [0079](0079-linux-window-chrome-and-menu-reuse.md) | Linux window chrome and menu reuse | active |
 | [0080](0080-cross-platform-desktop-release-artifacts-and-portable-vault-names.md) | Cross-platform desktop release artifacts and portable vault names | active |
+| [0081](0081-internal-light-dark-theme-runtime.md) | Internal light and dark theme runtime | active |

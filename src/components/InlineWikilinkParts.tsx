@@ -159,6 +159,8 @@ export function InlineWikilinkEditorField({
   dataTestId,
   editorClassName,
   onBeforeInput,
+  onCompositionEnd,
+  onCompositionStart,
   onInput,
   onKeyDown,
   onPaste,
@@ -173,6 +175,8 @@ export function InlineWikilinkEditorField({
   dataTestId: string
   editorClassName?: string
   onBeforeInput: (event: React.FormEvent<HTMLDivElement>) => void
+  onCompositionEnd: () => void
+  onCompositionStart: () => void
   onInput: () => void
   onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void
   onPaste: (event: React.ClipboardEvent<HTMLDivElement>) => void
@@ -207,6 +211,8 @@ export function InlineWikilinkEditorField({
           editorClassName,
         )}
         onBeforeInput={onBeforeInput}
+        onCompositionEnd={onCompositionEnd}
+        onCompositionStart={onCompositionStart}
         onInput={onInput}
         onKeyDown={onKeyDown}
         onPaste={onPaste}

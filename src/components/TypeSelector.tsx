@@ -132,7 +132,7 @@ function MissingTypeWarning({
             variant="ghost"
             size="icon-xs"
             className={cn(
-              'h-6 w-6 shrink-0 rounded-md border border-amber-300/80 bg-amber-50 p-0 text-amber-700 shadow-none hover:bg-amber-100 hover:text-amber-800',
+              'h-6 w-6 shrink-0 rounded-md border border-[var(--feedback-warning-border)] bg-[var(--feedback-warning-bg)] p-0 text-[var(--feedback-warning-text)] shadow-none hover:brightness-95',
               !canCreateMissingType && 'cursor-default',
             )}
             data-testid="missing-type-warning"

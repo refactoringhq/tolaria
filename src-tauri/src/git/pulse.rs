@@ -1,8 +1,7 @@
 use serde::Serialize;
 use std::path::Path;
-use std::process::Command;
 
-use super::parse_github_repo_path;
+use super::{git_command, parse_github_repo_path};
 
 #[derive(Debug, Serialize, Clone)]
 pub struct PulseFile {
@@ -67,7 +66,7 @@ pub fn get_vault_pulse(
 
     let limit_str = limit.to_string();
     let skip_str = skip.to_string();
-    let output = Command::new("git")
+    let output = git_command()
         .args([
             "log",
             "--name-status",
@@ -99,7 +98,7 @@ pub fn get_vault_pulse(
 
 fn get_github_base_url(vault_path: &str) -> Option<String> {
     let vault = Path::new(vault_path);
-    let output = Command::new("git")
+    let output = git_command()
         .args(["remote", "get-url", "origin"])
         .current_dir(vault)
         .output()
@@ -123,69 +122,90 @@ fn parse_pulse_output(stdout: &str, github_base: &Option<String>) -> Vec<PulseCo
             continue;
         }
 
-        if line.contains('|')
-            && !line.starts_with(|c: char| {
-                c.is_ascii_uppercase() && line.len() > 1 && line.as_bytes().get(1) == Some(&b'\t')
-            })
-        {
-            // Commit header line: hash|short_hash|message|date
-            if let Some(commit) = current.take() {
-                commits.push(commit);
-            }
-            let parts: Vec<&str> = line.splitn(4, '|').collect();
-            if parts.len() == 4 {
-                let hash = parts[0];
-                let date = chrono::DateTime::parse_from_rfc3339(parts[3])
-                    .map(|dt| dt.timestamp())
-                    .unwrap_or(0);
-                let github_url = github_base
-                    .as_ref()
-                    .map(|base| format!("{}/commit/{}", base, hash));
+        if is_commit_header(line) {
+            push_current_commit(&mut commits, &mut current);
+            current = parse_commit_header(line, github_base);
+            continue;
+        }
 
-                current = Some(PulseCommit {
-                    hash: hash.to_string(),
-                    short_hash: parts[1].to_string(),
-                    message: parts[2].to_string(),
-                    date,
-                    github_url,
-                    files: Vec::new(),
-                    added: 0,
-                    modified: 0,
-                    deleted: 0,
-                });
-            }
-        } else if let Some(ref mut commit) = current {
-            // File status line: A\tpath or M\tpath
-            let file_parts: Vec<&str> = line.splitn(2, '\t').collect();
-            if file_parts.len() == 2 {
-                let status = parse_file_status(file_parts[0].trim());
-                let path = file_parts[1].trim();
-                match status {
-                    "added" => commit.added += 1,
-                    "deleted" => commit.deleted += 1,
-                    _ => commit.modified += 1,
-                }
-                commit.files.push(PulseFile {
-                    path: path.to_string(),
-                    status: status.to_string(),
-                    title: title_from_path(path),
-                });
-            }
+        if let Some(ref mut commit) = current {
+            add_file_change(commit, line);
         }
     }
 
-    if let Some(commit) = current {
-        commits.push(commit);
-    }
+    push_current_commit(&mut commits, &mut current);
 
     commits
+}
+
+fn is_git_status_line(line: &str) -> bool {
+    line.starts_with(|c: char| {
+        c.is_ascii_uppercase() && line.len() > 1 && line.as_bytes().get(1) == Some(&b'\t')
+    })
+}
+
+fn is_commit_header(line: &str) -> bool {
+    line.contains('|') && !is_git_status_line(line)
+}
+
+fn push_current_commit(commits: &mut Vec<PulseCommit>, current: &mut Option<PulseCommit>) {
+    if let Some(commit) = current.take() {
+        commits.push(commit);
+    }
+}
+
+fn parse_commit_header(line: &str, github_base: &Option<String>) -> Option<PulseCommit> {
+    let parts: Vec<&str> = line.splitn(4, '|').collect();
+    if parts.len() != 4 {
+        return None;
+    }
+
+    let hash = parts[0];
+    let date = chrono::DateTime::parse_from_rfc3339(parts[3])
+        .map(|dt| dt.timestamp())
+        .unwrap_or(0);
+    let github_url = github_base
+        .as_ref()
+        .map(|base| format!("{}/commit/{}", base, hash));
+
+    Some(PulseCommit {
+        hash: hash.to_string(),
+        short_hash: parts[1].to_string(),
+        message: parts[2].to_string(),
+        date,
+        github_url,
+        files: Vec::new(),
+        added: 0,
+        modified: 0,
+        deleted: 0,
+    })
+}
+
+fn add_file_change(commit: &mut PulseCommit, line: &str) {
+    let file_parts: Vec<&str> = line.splitn(2, '\t').collect();
+    if file_parts.len() != 2 {
+        return;
+    }
+
+    let status = parse_file_status(file_parts[0].trim());
+    let path = file_parts[1].trim();
+    match status {
+        "added" => commit.added += 1,
+        "deleted" => commit.deleted += 1,
+        _ => commit.modified += 1,
+    }
+    commit.files.push(PulseFile {
+        path: path.to_string(),
+        status: status.to_string(),
+        title: title_from_path(path),
+    });
 }
 
 /// Get the last commit's short hash and a GitHub URL (if remote is GitHub).
 pub fn get_last_commit_info(vault_path: &str) -> Result<Option<LastCommitInfo>, String> {
     let vault = Path::new(vault_path);
 
-    let output = Command::new("git")
+    let output = git_command()
         .args(["log", "-1", "--format=%H|%h"])
         .current_dir(vault)
         .output()
@@ -223,23 +243,7 @@ pub fn get_last_commit_info(vault_path: &str) -> Result<Option<LastCommitInfo>, 
 
 /// Try to build a GitHub commit URL from the origin remote URL.
 fn get_github_commit_url(vault_path: &str, full_hash: &str) -> Option<String> {
-    let vault = Path::new(vault_path);
-    let output = Command::new("git")
-        .args(["remote", "get-url", "origin"])
-        .current_dir(vault)
-        .output()
-        .ok()?;
-
-    if !output.status.success() {
-        return None;
-    }
-
-    let url = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    let repo_path = parse_github_repo_path(&url)?;
-    Some(format!(
-        "https://github.com/{}/commit/{}",
-        repo_path, full_hash
-    ))
+    get_github_base_url(vault_path).map(|base| format!("{}/commit/{}", base, full_hash))
 }
 
 #[cfg(test)]

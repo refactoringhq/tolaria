@@ -185,7 +185,7 @@ function FavoriteAction({ favorite, onToggleFavorite }: { favorite: boolean; onT
   return (
     <ToggleIconAction
       active={favorite}
-      activeClassName="text-yellow-500"
+      activeClassName="text-[var(--accent-yellow)]"
       activeLabel="Remove from favorites"
       inactiveLabel="Add to favorites"
       onClick={onToggleFavorite}
@@ -207,7 +207,7 @@ function OrganizedAction({
   return (
     <ToggleIconAction
       active={organized}
-      activeClassName="text-green-600"
+      activeClassName="text-[var(--accent-green)]"
       activeLabel="Set note as not organized"
       inactiveLabel="Set note as organized"
       onClick={onToggleOrganized}

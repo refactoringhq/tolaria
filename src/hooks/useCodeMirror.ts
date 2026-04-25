@@ -8,6 +8,14 @@ import { resolveArrowLigatureInput } from '../utils/arrowLigatures'
 import { zoomCursorFix } from '../extensions/zoomCursorFix'
 
 const FONT_FAMILY = '"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+const RAW_EDITOR_COLORS = {
+  activeLineBackground: 'var(--state-hover-subtle)',
+  background: 'var(--surface-editor)',
+  foreground: 'var(--text-primary)',
+  gutterBackground: 'var(--surface-editor)',
+  gutterBorder: 'var(--border-subtle)',
+  gutterText: 'var(--text-muted)',
+}
 
 export interface CodeMirrorCallbacks {
   onDocChange: (doc: string) => void
@@ -17,19 +25,12 @@ export interface CodeMirrorCallbacks {
 }
 
 function buildBaseTheme() {
-  const bg = '#ffffff'
-  const fg = '#1e1e1e'
-  const gutterBg = '#ffffff'
-  const gutterColor = '#aaa'
-  const activeLineBg = 'rgba(0,100,255,0.06)'
-  const gutterBorder = '#eee'
-
   return EditorView.theme({
     '&': {
       fontSize: '13px',
       fontFamily: FONT_FAMILY,
-      backgroundColor: bg,
-      color: fg,
+      backgroundColor: RAW_EDITOR_COLORS.background,
+      color: RAW_EDITOR_COLORS.foreground,
       flex: '1',
       minHeight: '0',
     },
@@ -41,12 +42,12 @@ function buildBaseTheme() {
     },
     '.cm-content': {
       padding: '0 32px 0 16px',
-      caretColor: fg,
+      caretColor: RAW_EDITOR_COLORS.foreground,
     },
     '.cm-gutters': {
-      backgroundColor: gutterBg,
-      color: gutterColor,
-      borderRight: `1px solid ${gutterBorder}`,
+      backgroundColor: RAW_EDITOR_COLORS.gutterBackground,
+      color: RAW_EDITOR_COLORS.gutterText,
+      borderRight: `1px solid ${RAW_EDITOR_COLORS.gutterBorder}`,
       paddingLeft: '16px',
     },
     '.cm-lineNumbers .cm-gutterElement': {
@@ -55,10 +56,10 @@ function buildBaseTheme() {
       textAlign: 'right',
     },
     '.cm-activeLine': {
-      backgroundColor: activeLineBg,
+      backgroundColor: RAW_EDITOR_COLORS.activeLineBackground,
     },
     '.cm-activeLineGutter': {
-      backgroundColor: activeLineBg,
+      backgroundColor: RAW_EDITOR_COLORS.activeLineBackground,
     },
     '&.cm-focused': { outline: 'none' },
     '.cm-line': { padding: '0' },

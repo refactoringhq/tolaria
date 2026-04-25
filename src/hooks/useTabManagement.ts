@@ -8,6 +8,7 @@ import {
   finishNoteOpenTrace,
   markNoteOpenTrace,
 } from '../utils/noteOpenPerformance'
+import { getNoteWindowParams, isNoteWindow } from '../utils/windowMode'
 
 interface Tab {
   entry: VaultEntry
@@ -82,6 +83,17 @@ function retainResolvedNoteContent(entry: NoteContentCacheEntry, content: string
   rememberNoteContent(entry)
 }
 
+function getNoteContentCommandPayload(path: string): { path: string; vaultPath?: string } {
+  if (!isNoteWindow()) {
+    return { path }
+  }
+
+  const noteWindowParams = getNoteWindowParams()
+  return noteWindowParams
+    ? { path, vaultPath: noteWindowParams.vaultPath }
+    : { path }
+}
+
 function requestNoteContent({ path }: Pick<NoteContentCacheEntry, 'path'>): NoteContentCacheEntry {
   const cacheEntry: NoteContentCacheEntry = {
     path,
@@ -89,9 +101,10 @@ function requestNoteContent({ path }: Pick<NoteContentCacheEntry, 'path'>): Note
     value: null,
     byteSize: 0,
   }
+  const commandPayload = getNoteContentCommandPayload(path)
   const promise = (isTauri()
-    ? invoke<string>('get_note_content', { path })
-    : mockInvoke<string>('get_note_content', { path })
+    ? invoke<string>('get_note_content', commandPayload)
+    : mockInvoke<string>('get_note_content', commandPayload)
   )
     .then((content) => {
       retainResolvedNoteContent(cacheEntry, content)

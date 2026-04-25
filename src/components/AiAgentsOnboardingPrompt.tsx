@@ -19,7 +19,7 @@ interface AiAgentsOnboardingPromptProps {
 function getPromptCopy(statuses: AiAgentsStatus) {
   if (isAiAgentsStatusChecking(statuses)) {
     return {
-      accentClassName: 'bg-slate-100 text-slate-600',
+      accentClassName: 'bg-muted text-muted-foreground',
       description: 'Checking which AI agents are available on this machine.',
       icon: <Loader2 className="size-7 animate-spin" />,
       title: 'Checking AI agents',
@@ -28,7 +28,7 @@ function getPromptCopy(statuses: AiAgentsStatus) {
 
   if (!hasAnyInstalledAiAgent(statuses)) {
     return {
-      accentClassName: 'bg-amber-100 text-amber-700',
+      accentClassName: 'bg-[var(--feedback-warning-bg)] text-[var(--feedback-warning-text)]',
       description: 'Tolaria works best with a local CLI AI agent installed.',
       icon: <Bot className="size-7" />,
       title: 'No AI agents detected',
@@ -36,7 +36,7 @@ function getPromptCopy(statuses: AiAgentsStatus) {
   }
 
   return {
-    accentClassName: 'bg-emerald-100 text-emerald-700',
+    accentClassName: 'bg-[var(--feedback-success-bg)] text-[var(--feedback-success-text)]',
     description: 'Your AI agents are ready to use in Tolaria.',
     icon: <CheckCircle2 className="size-7" />,
     title: 'AI agents ready',
@@ -63,7 +63,7 @@ function AgentStatusList({ statuses }: { statuses: AiAgentsStatus }) {
               </div>
             </div>
             <span
-              className={`rounded-full px-2 py-1 text-[11px] font-medium ${ready ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}
+              className={`rounded-full px-2 py-1 text-[11px] font-medium ${ready ? 'bg-[var(--feedback-success-bg)] text-[var(--feedback-success-text)]' : 'bg-[var(--feedback-warning-bg)] text-[var(--feedback-warning-text)]'}`}
             >
               {ready ? 'Installed' : 'Missing'}
             </span>
@@ -106,11 +106,11 @@ export function AiAgentsOnboardingPrompt({
         <CardContent className="space-y-4">
           {showLegacyClaudeCompatibility ? (
             <div
-              className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-left"
+              className="rounded-lg border border-[var(--feedback-warning-border)] bg-[var(--feedback-warning-bg)] px-4 py-3 text-left"
               data-testid="claude-onboarding-screen"
             >
-              <div className="text-sm font-medium text-amber-900">Claude Code not detected</div>
-              <p className="mt-1 text-xs leading-5 text-amber-800">
+              <div className="text-sm font-medium text-[var(--feedback-warning-text)]">Claude Code not detected</div>
+              <p className="mt-1 text-xs leading-5 text-[var(--feedback-warning-text)]">
                 Install Claude Code or continue without it.
               </p>
             </div>

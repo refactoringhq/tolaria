@@ -63,8 +63,8 @@ tolaria/
 │   ├── App.css                   # App shell layout styles
 │   ├── types.ts                  # Shared TS types (VaultEntry, Settings, etc.)
 │   ├── mock-tauri.ts             # Mock Tauri layer for browser testing
-│   ├── theme.json                # Editor theme configuration
-│   ├── index.css                 # Global CSS variables + Tailwind setup
+│   ├── theme.json                # Editor typography theme configuration
+│   ├── index.css                 # Semantic app theme variables + Tailwind setup
 │   │
 │   ├── components/               # UI components (~98 files)
 │   │   ├── Sidebar.tsx           # Left panel: filters + type groups
@@ -287,14 +287,14 @@ tolaria/
 
 | File | Why it matters |
 |------|---------------|
-| `src/index.css` | All CSS custom properties. The design token source of truth. |
-| `src/theme.json` | Editor-specific theme (fonts, headings, lists, code blocks). |
+| `src/index.css` | Semantic CSS custom properties for app-owned light/dark themes. |
+| `src/theme.json` | Editor-specific typography theme (fonts, headings, lists, code blocks). |
 
 ### Settings & Config
 
 | File | Why it matters |
 |------|---------------|
-| `src/hooks/useSettings.ts` | App settings (telemetry, release channel, auto-sync interval, default AI agent). |
+| `src/hooks/useSettings.ts` | App settings (telemetry, release channel, theme mode, auto-sync interval, default AI agent). |
 | `src/lib/releaseChannel.ts` | Normalizes persisted updater-channel values (`stable` default, optional `alpha`). |
 | `src/lib/appUpdater.ts` | Frontend wrapper for channel-aware updater commands. |
 | `src/hooks/useMainWindowSizeConstraints.ts` | Derives the main-window minimum width from the visible panes and asks Tauri to grow back to fit wider layouts. |
@@ -404,7 +404,7 @@ BASE_URL="http://localhost:5173" npx playwright test tests/smoke/<slug>.spec.ts
 
 ### Modify styling
 
-1. **Global CSS variables**: Edit `src/index.css`
+1. **Global app/theme variables**: Edit `src/index.css`
 2. **Editor typography**: Edit `src/theme.json`
 
 ### Work with the AI agent

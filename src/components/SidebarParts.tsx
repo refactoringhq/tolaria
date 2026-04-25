@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 import { type IconProps } from '@phosphor-icons/react'
 import { SIDEBAR_ITEM_PADDING } from './sidebar/sidebarStyles'
+import { Button } from './ui/button'
 
 const SIDEBAR_COUNT_PILL_STYLE = {
   borderRadius: 9999,
@@ -359,6 +360,19 @@ function getSectionContextMenuHandler(
   return onContextMenu
 }
 
+function resolveInlineRenameHandlers({
+  isRenaming,
+  onRenameCancel,
+  onRenameSubmit,
+}: {
+  isRenaming?: boolean
+  onRenameCancel?: () => void
+  onRenameSubmit?: (value: string) => void
+}): { onRenameCancel: () => void; onRenameSubmit: (value: string) => void } | null {
+  if (!isRenaming || !onRenameSubmit || !onRenameCancel) return null
+  return { onRenameCancel, onRenameSubmit }
+}
+
 function SectionHeaderLabel({
   type,
   label,
@@ -378,13 +392,19 @@ function SectionHeaderLabel({
   onRenameSubmit?: (value: string) => void
   onRenameCancel?: () => void
 }) {
-  if (isRenaming && onRenameSubmit && onRenameCancel) {
+  const inlineRenameHandlers = resolveInlineRenameHandlers({
+    isRenaming,
+    onRenameCancel,
+    onRenameSubmit,
+  })
+
+  if (inlineRenameHandlers) {
     return (
       <InlineRenameInput
         key={`rename-${type}`}
         initialValue={renameInitialValue ?? label}
-        onSubmit={onRenameSubmit}
-        onCancel={onRenameCancel}
+        onSubmit={inlineRenameHandlers.onRenameSubmit}
+        onCancel={inlineRenameHandlers.onRenameCancel}
       />
     )
   }
@@ -406,7 +426,7 @@ function SectionHeaderCountPill({
     <SidebarCountPill
       count={itemCount}
       className={!isActive ? 'text-muted-foreground' : undefined}
-      style={isActive ? { background: sectionColor, color: 'white' } : { background: 'var(--muted)' }}
+      style={isActive ? { background: sectionColor, color: 'var(--text-inverse)' } : { background: 'var(--muted)' }}
     />
   )
 }
@@ -458,9 +478,11 @@ function VisibilityPopoverItem({
   const { sectionColor } = resolveSectionColors(type, customColor)
 
   return (
-    <button
+    <Button
       type="button"
-      className="flex w-full cursor-pointer items-center border-none bg-transparent transition-colors hover:bg-accent"
+      variant="ghost"
+      size="sm"
+      className="h-auto w-full justify-start rounded-none px-3 py-1.5"
       style={{ padding: '6px 12px', gap: 8 }}
       onClick={() => onToggle(type)}
       aria-label={`Toggle ${label}`}
@@ -468,7 +490,7 @@ function VisibilityPopoverItem({
       <Icon size={14} style={{ color: sectionColor }} />
       <span className="flex-1 text-left text-[13px] text-foreground">{label}</span>
       <ToggleSwitch on={isVisible} />
-    </button>
+    </Button>
   )
 }
 
@@ -482,7 +504,7 @@ export function VisibilityPopover({ sections, isSectionVisible, onToggle }: {
   return (
     <div
       className="border border-border bg-popover text-popover-foreground"
-      style={{ position: 'absolute', top: '100%', left: 6, right: 6, zIndex: 50, borderRadius: 8, padding: '8px 0', boxShadow: '0 4px 12px rgba(0,0,0,0.12)' }}
+      style={{ position: 'absolute', top: '100%', left: 6, right: 6, zIndex: 50, borderRadius: 8, padding: '8px 0', boxShadow: '0 4px 12px var(--shadow-dialog)' }}
     >
       <div className="text-[12px] font-semibold text-muted-foreground" style={{ padding: '0 12px 4px' }}>Show in sidebar</div>
       {sections.map((group) => (
@@ -500,7 +522,7 @@ export function VisibilityPopover({ sections, isSectionVisible, onToggle }: {
 function ToggleSwitch({ on }: { on: boolean }) {
   return (
     <div className="flex items-center" style={{ width: 32, height: 18, borderRadius: 9, padding: 2, backgroundColor: on ? 'var(--primary)' : 'var(--muted)', justifyContent: on ? 'flex-end' : 'flex-start', transition: 'background-color 150ms' }}>
-      <div style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: 'white', transition: 'transform 150ms' }} />
+      <div style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: 'var(--background)', transition: 'transform 150ms' }} />
     </div>
   )
 }

@@ -62,8 +62,35 @@ const PLATFORM_ORDER: StablePlatformKey[] = [
 
 const REDIRECT_PAGE_STYLES = `
     :root {
-      color-scheme: light;
+      color-scheme: light dark;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --download-surface-page: #f7f6f3;
+      --download-surface-card: #ffffff;
+      --download-text-primary: #37352f;
+      --download-border-default: #e9e9e7;
+      --download-accent: #155dff;
+      --download-accent-hover: #1248cc;
+      --download-secondary-bg: #eef2ff;
+      --download-secondary-hover-bg: #dbe4ff;
+      --download-secondary-text: #1d4ed8;
+      --download-text-on-accent: #ffffff;
+      --download-shadow-card: rgba(15, 23, 42, 0.08);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --download-surface-page: #1f1e1b;
+        --download-surface-card: #23221f;
+        --download-text-primary: #e6e1d8;
+        --download-border-default: #34322d;
+        --download-accent: #78a4ff;
+        --download-accent-hover: #9bbeff;
+        --download-secondary-bg: #34322d;
+        --download-secondary-hover-bg: #46433b;
+        --download-secondary-text: #e6e1d8;
+        --download-text-on-accent: #151411;
+        --download-shadow-card: rgba(0, 0, 0, 0.35);
+      }
     }
 
     * {
@@ -76,17 +103,17 @@ const REDIRECT_PAGE_STYLES = `
       display: grid;
       place-items: center;
       padding: 24px;
-      background: #f7f6f3;
-      color: #37352f;
+      background: var(--download-surface-page);
+      color: var(--download-text-primary);
     }
 
     main {
       width: min(100%, 520px);
-      background: #ffffff;
-      border: 1px solid #e9e9e7;
+      background: var(--download-surface-card);
+      border: 1px solid var(--download-border-default);
       border-radius: 16px;
       padding: 24px;
-      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+      box-shadow: 0 16px 40px var(--download-shadow-card);
     }
 
     h1 {
@@ -114,25 +141,25 @@ const REDIRECT_PAGE_STYLES = `
       min-height: 44px;
       padding: 0 16px;
       border-radius: 10px;
-      background: #155dff;
-      color: #ffffff;
+      background: var(--download-accent);
+      color: var(--download-text-on-accent);
       text-decoration: none;
       font-weight: 600;
     }
 
     a[data-secondary="true"] {
-      background: #eef2ff;
-      color: #1d4ed8;
+      background: var(--download-secondary-bg);
+      color: var(--download-secondary-text);
     }
 
     a:hover,
     a:focus-visible {
-      background: #1248cc;
+      background: var(--download-accent-hover);
     }
 
     a[data-secondary="true"]:hover,
     a[data-secondary="true"]:focus-visible {
-      background: #dbe4ff;
+      background: var(--download-secondary-hover-bg);
     }
 `
 

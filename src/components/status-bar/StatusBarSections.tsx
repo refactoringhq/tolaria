@@ -1,9 +1,10 @@
-import { Bell, Package, Settings } from 'lucide-react'
+import { Moon, Package, Settings, Sun } from 'lucide-react'
 import { Megaphone } from '@phosphor-icons/react'
 import type { AiAgentId, AiAgentsStatus } from '../../lib/aiAgents'
 import type { VaultAiGuidanceStatus } from '../../lib/vaultAiGuidance'
 import type { ClaudeCodeStatus } from '../../hooks/useClaudeCodeStatus'
 import type { McpStatus } from '../../hooks/useMcpStatus'
+import type { ThemeMode } from '../../lib/themeMode'
 import { useStatusBarAddRemote } from '../../hooks/useStatusBarAddRemote'
 import type { GitRemoteStatus, SyncStatus } from '../../types'
 import { rememberFeedbackDialogOpener } from '../../lib/feedbackDialogOpener'
@@ -22,7 +23,7 @@ import {
   PulseBadge,
   SyncBadge,
 } from './StatusBarBadges'
-import { DISABLED_STYLE, ICON_STYLE, SEP_STYLE } from './styles'
+import { ICON_STYLE, SEP_STYLE } from './styles'
 import type { VaultOption } from './types'
 import { VaultMenu } from './VaultMenu'
 import { formatShortcutDisplay } from '../../hooks/appCommandCatalog'
@@ -33,7 +34,8 @@ const ZOOM_RESET_TOOLTIP = {
   shortcut: formatShortcutDisplay({ display: '⌘0' }),
 } as const
 const FEEDBACK_TOOLTIP = { label: 'Contribute to Tolaria' } as const
-const NOTIFICATIONS_TOOLTIP = { label: 'Notifications are coming soon' } as const
+const LIGHT_MODE_TOOLTIP = { label: 'Switch to light mode' } as const
+const DARK_MODE_TOOLTIP = { label: 'Switch to dark mode' } as const
 const SETTINGS_TOOLTIP = {
   label: 'Open settings',
   shortcut: formatShortcutDisplay({ display: '⌘,' }),
@@ -78,7 +80,9 @@ interface StatusBarPrimarySectionProps {
 interface StatusBarSecondarySectionProps {
   noteCount: number
   zoomLevel: number
+  themeMode?: ThemeMode
   onZoomReset?: () => void
+  onToggleThemeMode?: () => void
   onOpenFeedback?: () => void
   onOpenSettings?: () => void
 }
@@ -205,11 +209,15 @@ export function StatusBarPrimarySection({
 export function StatusBarSecondarySection({
   noteCount,
   zoomLevel,
+  themeMode = 'light',
   onZoomReset,
+  onToggleThemeMode,
   onOpenFeedback,
   onOpenSettings,
 }: StatusBarSecondarySectionProps) {
   void noteCount
+  const ThemeIcon = themeMode === 'dark' ? Sun : Moon
+  const themeTooltip = themeMode === 'dark' ? LIGHT_MODE_TOOLTIP : DARK_MODE_TOOLTIP
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
@@ -247,10 +255,19 @@ export function StatusBarSecondarySection({
           </Button>
         </ActionTooltip>
       )}
-      <ActionTooltip copy={NOTIFICATIONS_TOOLTIP} side="top">
-        <span style={DISABLED_STYLE} aria-label={NOTIFICATIONS_TOOLTIP.label}>
-          <Bell size={14} />
-        </span>
+      <ActionTooltip copy={themeTooltip} side="top">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          className="text-muted-foreground hover:bg-[var(--hover)] hover:text-foreground"
+          onClick={onToggleThemeMode}
+          disabled={!onToggleThemeMode}
+          aria-label={themeTooltip.label}
+          data-testid="status-theme-mode"
+        >
+          <ThemeIcon size={14} />
+        </Button>
       </ActionTooltip>
       <ActionTooltip copy={SETTINGS_TOOLTIP} side="top" align="end">
         <Button

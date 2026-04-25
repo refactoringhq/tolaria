@@ -406,10 +406,11 @@ flowchart TD
 
 ## Styling
 
-The app uses a single light theme with no user-configurable theming (see [ADR-0013](adr/0013-remove-theming-system.md)).
+The app uses internal app-owned light and dark themes (see [ADR-0081](adr/0081-internal-light-dark-theme-runtime.md)). This is not the old vault-authored theming system from ADR-0013: users choose a mode, but themes are owned by the app.
 
-1. **Global CSS variables** (`src/index.css`): App-wide colors, borders, backgrounds. Bridged to Tailwind v4 via `@theme inline`.
-2. **Editor theme** (`src/theme.json`): BlockNote-specific typography. Flattened to CSS vars by `useEditorTheme`.
+1. **Global CSS variables** (`src/index.css`): Semantic app colors, borders, surfaces, and interaction states. Bridged to Tailwind v4 via `@theme inline`.
+2. **Editor theme** (`src/theme.json`): BlockNote-specific typography. Flattened to CSS vars by `useEditorTheme`; editor colors resolve through the same semantic app variables.
+3. **Theme runtime**: Applies `data-theme` and the shadcn-compatible `.dark` class before React consumers render, with a localStorage mirror to avoid startup flash when dark mode is selected.
 
 ## Vault Management
 
@@ -594,7 +595,7 @@ The vault backend (`src-tauri/src/vault/`) is split into focused submodules:
 | `cache.rs` | Git-based incremental vault caching (`scan_vault_cached`), git helpers |
 | `filename_rules.rs` | Cross-platform validation for note filenames, folder names, and custom view filenames |
 | `rename.rs` | `rename_note` / `rename_note_filename` / `move_note_to_folder` — stage crash-safe file moves, update `title` frontmatter when needed, recover unfinished rename transactions, and report backlink rewrite failures |
-| `image.rs` | `save_image` — saves base64-encoded attachments with sanitized filenames |
+| `image.rs` | `save_image` / `copy_image_to_vault` — save editor image attachments with sanitized filenames |
 | `migration.rs` | `flatten_vault`, `vault_health_check`, `migrate_is_a_to_type` |
 | `config_seed.rs` | Maintains vault AI guidance (`AGENTS.md` + `CLAUDE.md` shim), migrates legacy `config/agents.md`, and repairs missing root type scaffolding such as `type.md` and `note.md` |
 | `getting_started.rs` | Clones and normalizes the public Getting Started starter vault |
@@ -712,8 +713,8 @@ The desktop MCP WebSocket bridge is intentionally local-only. `mcp-server/ws-bri
 | `save_vault_config` | Save per-vault UI config |
 | `get_default_vault_path` | Get default vault path |
 | `get_build_number` | Get app build number |
-| `save_image` | Save base64 image to vault |
-| `copy_image_to_vault` | Copy image file to vault |
+| `save_image` | Save base64 image to `attachments/` and refresh the active vault asset scope |
+| `copy_image_to_vault` | Copy image file to `attachments/` and refresh the active vault asset scope |
 | `update_menu_state` | Update native menu checkmarks and enabled/disabled state for selection-dependent actions |
 | `trigger_menu_command` | Emit a native menu command ID for deterministic shortcut QA |
 | `update_current_window_min_size` | Update the active Tauri window's minimum size and optionally grow it to fit restored panes |
@@ -751,14 +752,14 @@ No Redux or global context. State lives in the root `App.tsx` and custom hooks:
 | `frontmatterOps` | — (pure functions) | Frontmatter CRUD: key→VaultEntry mapping, mock/Tauri dispatch |
 | `useTabManagement` | Navigation history, note switching | Note navigation lifecycle |
 | `useVaultSwitcher` | `vaultPath`, `extraVaults` | Vault switching |
-| `useTheme` | Editor theme CSS vars | Editor typography theme |
+| `useTheme` | Editor theme CSS vars and theme-mode bridge | Editor typography and app theme runtime |
 | `useCliAiAgent` | `messages`, `status`, tool actions | Selected AI agent conversation |
 | `useAutoSync` | Sync interval, pull/push state | Git auto-sync |
 | `useAutoGit` | Last activity timestamp, idle/inactive checkpoint triggers | Automatic commit/push checkpoints |
 | `useCommitFlow` | Commit dialog state, shared manual/automatic checkpoint runner | Git commit/push orchestration |
 | `useGitRemoteStatus` | `remoteStatus`, `refreshRemoteStatus()` | On-demand remote detection for commit UI |
 | `useUnifiedSearch` | Query, results, loading state | Keyword search |
-| `useSettings` | App settings (telemetry, release channel, auto-sync interval, AutoGit thresholds, default AI agent) | Persistent settings |
+| `useSettings` | App settings (telemetry, release channel, theme mode, auto-sync interval, AutoGit thresholds, default AI agent) | Persistent settings |
 | `useVaultConfig` | Per-vault UI preferences | Vault-specific config |
 | `appCommandDispatcher` | Canonical shortcut/menu command IDs | Shared execution path for renderer and native menu commands |
 

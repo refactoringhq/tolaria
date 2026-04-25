@@ -72,7 +72,7 @@ describe('useGettingStartedClone', () => {
     })
 
     expect(onSuccess).not.toHaveBeenCalled()
-    expect(onError).toHaveBeenCalledWith('Could not download Getting Started vault. Check your connection and try again.')
+    expect(onError).toHaveBeenCalledWith('Could not download Getting Started vault: git clone failed: fatal: unable to access')
   })
 
   it('surfaces the restart-required message when folder picking is blocked after update install', async () => {

@@ -20,6 +20,10 @@ export interface AiActionCardProps {
 }
 
 const MAX_DETAIL_LENGTH = 800
+const DEFAULT_ACTION_CARD_BACKGROUND = 'var(--accent-blue-bg)'
+const TOOL_BACKGROUND_MAP: Record<string, string> = {
+  open_note: 'var(--accent-blue-light)',
+}
 
 type IconRenderer = (size: number) => ReactNode
 
@@ -66,6 +70,71 @@ function formatInputForDisplay(raw: string): string {
   }
 }
 
+function hasActionDetails(input?: string, output?: string): boolean {
+  return Boolean(input || output)
+}
+
+function resolveDirectOpenPath({
+  hasDetails,
+  onOpenNote,
+  path,
+}: Pick<AiActionCardProps, 'onOpenNote' | 'path'> & {
+  hasDetails: boolean
+}): string | null {
+  if (hasDetails || !path || !onOpenNote) return null
+  return path
+}
+
+function ActionCardHeader({
+  expanded,
+  hasDetails,
+  label,
+  onClick,
+  onKeyDown,
+  renderIcon,
+  status,
+}: {
+  expanded: boolean
+  hasDetails: boolean
+  label: string
+  onClick: () => void
+  onKeyDown: (event: KeyboardEvent) => void
+  renderIcon: IconRenderer
+  status: AiActionStatus
+}) {
+  return (
+    <div
+      className="flex items-center gap-2"
+      style={{ padding: '6px 10px', cursor: 'pointer' }}
+      role="button"
+      tabIndex={0}
+      aria-expanded={expanded}
+      onClick={onClick}
+      onKeyDown={onKeyDown}
+      data-testid="action-card-header"
+    >
+      <span className="shrink-0 text-muted-foreground" style={{ width: 14, display: 'flex' }}>
+        <ActionIcon expanded={expanded} hasDetails={hasDetails} renderIcon={renderIcon} />
+      </span>
+      <span className="flex-1 truncate">{label}</span>
+      <StatusIndicator status={status} />
+    </div>
+  )
+}
+
+function ActionIcon({
+  expanded,
+  hasDetails,
+  renderIcon,
+}: {
+  expanded: boolean
+  hasDetails: boolean
+  renderIcon: IconRenderer
+}) {
+  if (!hasDetails) return <>{renderIcon(14)}</>
+  return expanded ? <CaretDown size={12} /> : <CaretRight size={12} />
+}
+
 function DetailBlock({ label, content, isError }: {
   label: string; content: string; isError?: boolean
 }) {
@@ -100,16 +169,41 @@ function DetailBlock({ label, content, isError }: {
   )
 }
 
-/** Whether this tool is a Tolaria UI-only tool (lighter styling). */
-function isUiOnlyTool(tool: string): boolean {
-  return tool === 'open_note'
+function ActionCardDetails({
+  expanded,
+  hasDetails,
+  input,
+  output,
+  status,
+}: {
+  expanded: boolean
+  hasDetails: boolean
+  input?: string
+  output?: string
+  status: AiActionStatus
+}) {
+  if (!expanded || !hasDetails) return null
+
+  const formattedInput = input ? formatInputForDisplay(input) : undefined
+  return (
+    <div
+      data-testid="action-card-details"
+      style={{ padding: '0 10px 8px 10px' }}
+    >
+      {formattedInput && <DetailBlock label="Input" content={formattedInput} />}
+      {output && (
+        <DetailBlock label="Output" content={output} isError={status === 'error'} />
+      )}
+    </div>
+  )
 }
 
 export function AiActionCard({
   tool, label, path, status, input, output, expanded, onToggle, onOpenNote,
 }: AiActionCardProps) {
   const renderIcon = TOOL_ICON_MAP[tool] ?? DEFAULT_ICON
-  const hasDetails = !!(input || output)
+  const hasDetails = hasActionDetails(input, output)
+  const directOpenPath = resolveDirectOpenPath({ path, onOpenNote, hasDetails })
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -122,14 +216,13 @@ export function AiActionCard({
   }, [onToggle, expanded])
 
   const handleClick = useCallback(() => {
-    if (path && onOpenNote && !hasDetails) {
-      onOpenNote(path)
-    } else {
-      onToggle()
+    if (directOpenPath && onOpenNote) {
+      onOpenNote(directOpenPath)
+      return
     }
-  }, [path, onOpenNote, hasDetails, onToggle])
 
-  const formattedInput = input ? formatInputForDisplay(input) : undefined
+    onToggle()
+  }, [directOpenPath, onOpenNote, onToggle])
 
   return (
     <div
@@ -137,38 +230,25 @@ export function AiActionCard({
       className="rounded"
       style={{
         fontSize: 12,
-        background: isUiOnlyTool(tool) ? 'rgba(74, 158, 255, 0.06)' : 'rgba(74, 158, 255, 0.1)',
+        background: TOOL_BACKGROUND_MAP[tool] ?? DEFAULT_ACTION_CARD_BACKGROUND,
       }}
     >
-      <div
-        className="flex items-center gap-2"
-        style={{ padding: '6px 10px', cursor: 'pointer' }}
-        role="button"
-        tabIndex={0}
-        aria-expanded={expanded}
+      <ActionCardHeader
+        expanded={expanded}
+        hasDetails={hasDetails}
+        label={label}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
-        data-testid="action-card-header"
-      >
-        <span className="shrink-0 text-muted-foreground" style={{ width: 14, display: 'flex' }}>
-          {hasDetails
-            ? (expanded ? <CaretDown size={12} /> : <CaretRight size={12} />)
-            : renderIcon(14)}
-        </span>
-        <span className="flex-1 truncate">{label}</span>
-        <StatusIndicator status={status} />
-      </div>
-      {expanded && hasDetails && (
-        <div
-          data-testid="action-card-details"
-          style={{ padding: '0 10px 8px 10px' }}
-        >
-          {formattedInput && <DetailBlock label="Input" content={formattedInput} />}
-          {output && (
-            <DetailBlock label="Output" content={output} isError={status === 'error'} />
-          )}
-        </div>
-      )}
+        renderIcon={renderIcon}
+        status={status}
+      />
+      <ActionCardDetails
+        expanded={expanded}
+        hasDetails={hasDetails}
+        input={input}
+        output={output}
+        status={status}
+      />
     </div>
   )
 }

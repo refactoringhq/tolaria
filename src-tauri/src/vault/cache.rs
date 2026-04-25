@@ -125,7 +125,7 @@ fn git_head_hash(vault: &Path) -> Option<String> {
 
 /// Run a git command in the given directory and return stdout if successful.
 fn run_git(vault: &Path, args: &[&str]) -> Option<String> {
-    let output = std::process::Command::new("git")
+    let output = crate::hidden_command("git")
         .args(args)
         .current_dir(vault)
         .output()
@@ -510,7 +510,7 @@ fn migrate_legacy_cache(vault: &Path) {
     }
 
     // Remove legacy file from git tracking if present
-    let _ = std::process::Command::new("git")
+    let _ = crate::hidden_command("git")
         .args([
             "rm",
             "--cached",
@@ -727,17 +727,17 @@ mod tests {
     }
 
     fn init_git_repo(vault: &Path) {
-        std::process::Command::new("git")
+        crate::hidden_command("git")
             .args(["init"])
             .current_dir(vault)
             .output()
             .unwrap();
-        std::process::Command::new("git")
+        crate::hidden_command("git")
             .args(["config", "user.email", "test@test.com"])
             .current_dir(vault)
             .output()
             .unwrap();
-        std::process::Command::new("git")
+        crate::hidden_command("git")
             .args(["config", "user.name", "Test"])
             .current_dir(vault)
             .output()
@@ -756,12 +756,12 @@ mod tests {
     }
 
     fn git_add_commit(vault: &Path, msg: &str) {
-        std::process::Command::new("git")
+        crate::hidden_command("git")
             .args(["add", "."])
             .current_dir(vault)
             .output()
             .unwrap();
-        std::process::Command::new("git")
+        crate::hidden_command("git")
             .args(["commit", "-m", msg])
             .current_dir(vault)
             .output()
@@ -1121,7 +1121,7 @@ mod tests {
         // Delete file via filesystem (simulates Finder delete)
         fs::remove_file(vault.join("remove.md")).unwrap();
         // Also stage the deletion so git status is clean for this file
-        std::process::Command::new("git")
+        crate::hidden_command("git")
             .args(["add", "remove.md"])
             .current_dir(vault)
             .output()

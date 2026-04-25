@@ -56,6 +56,10 @@ const DEFAULT_GITIGNORE: &str = "# Tolaria app files (machine-specific, never co
 *.swp\n\
 *.swo\n";
 
+fn git_command() -> Command {
+    crate::hidden_command("git")
+}
+
 /// Ensure a `.gitignore` with sensible defaults exists in the vault directory.
 /// Creates the file if missing; leaves existing `.gitignore` files untouched.
 pub fn ensure_gitignore(path: &str) -> Result<(), String> {
@@ -99,7 +103,7 @@ fn commit_initial_vault_setup(dir: &Path) -> Result<(), String> {
 
 /// Run a git command in the given directory, returning an error on failure.
 fn run_git(dir: &Path, args: &[&str]) -> Result<(), String> {
-    let output = Command::new("git")
+    let output = git_command()
         .args(args)
         .current_dir(dir)
         .output()
@@ -130,7 +134,7 @@ fn ensure_author_config(dir: &Path) -> Result<(), String> {
         ("user.name", "Tolaria"),
         ("user.email", "vault@tolaria.app"),
     ] {
-        let check = Command::new("git")
+        let check = git_command()
             .args(["config", key])
             .current_dir(dir)
             .output()
@@ -174,7 +178,6 @@ fn parse_github_repo_path(url: &str) -> Option<String> {
 mod tests {
     use super::*;
     use std::fs;
-    use std::process::Command;
     use tempfile::TempDir;
 
     fn assert_repo_path(url: &str, expected: Option<&str>) {
@@ -188,19 +191,19 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let path = dir.path();
 
-        Command::new("git")
+        git_command()
             .args(["init", "--initial-branch=main"])
             .current_dir(path)
             .output()
             .unwrap();
 
-        Command::new("git")
+        git_command()
             .args(["config", "user.email", "test@test.com"])
             .current_dir(path)
             .output()
             .unwrap();
 
-        Command::new("git")
+        git_command()
             .args(["config", "user.name", "Test User"])
             .current_dir(path)
             .output()
@@ -214,14 +217,14 @@ mod tests {
         let bare_dir = TempDir::new().unwrap();
         let bare = bare_dir.path();
 
-        Command::new("git")
+        git_command()
             .args(["init", "--bare"])
             .current_dir(bare)
             .output()
             .unwrap();
 
         let clone_a_dir = TempDir::new().unwrap();
-        Command::new("git")
+        git_command()
             .args(["clone", bare.to_str().unwrap(), "."])
             .current_dir(clone_a_dir.path())
             .output()
@@ -230,7 +233,7 @@ mod tests {
             &["config", "user.email", "a@test.com"][..],
             &["config", "user.name", "User A"][..],
         ] {
-            Command::new("git")
+            git_command()
                 .args(*cmd)
                 .current_dir(clone_a_dir.path())
                 .output()
@@ -238,7 +241,7 @@ mod tests {
         }
 
         let clone_b_dir = TempDir::new().unwrap();
-        Command::new("git")
+        git_command()
             .args(["clone", bare.to_str().unwrap(), "."])
             .current_dir(clone_b_dir.path())
             .output()
@@ -247,7 +250,7 @@ mod tests {
             &["config", "user.email", "b@test.com"][..],
             &["config", "user.name", "User B"][..],
         ] {
-            Command::new("git")
+            git_command()
                 .args(*cmd)
                 .current_dir(clone_b_dir.path())
                 .output()
@@ -301,7 +304,7 @@ mod tests {
 
         init_repo(vault.to_str().unwrap()).unwrap();
 
-        let log = Command::new("git")
+        let log = git_command()
             .args(["log", "--oneline"])
             .current_dir(&vault)
             .output()
@@ -317,17 +320,17 @@ mod tests {
         fs::create_dir_all(&vault).unwrap();
         fs::write(vault.join("note.md"), "# Test\n").unwrap();
 
-        Command::new("git")
+        git_command()
             .args(["init"])
             .current_dir(&vault)
             .output()
             .unwrap();
-        Command::new("git")
+        git_command()
             .args(["config", "commit.gpgsign", "true"])
             .current_dir(&vault)
             .output()
             .unwrap();
-        Command::new("git")
+        git_command()
             .args(["config", "gpg.program", "/missing/tolaria-test-gpg"])
             .current_dir(&vault)
             .output()
@@ -335,7 +338,7 @@ mod tests {
 
         init_repo(vault.to_str().unwrap()).unwrap();
 
-        let log = Command::new("git")
+        let log = git_command()
             .args(["log", "--oneline"])
             .current_dir(&vault)
             .output()
@@ -353,7 +356,7 @@ mod tests {
 
         init_repo(vault.to_str().unwrap()).unwrap();
 
-        let status = Command::new("git")
+        let status = git_command()
             .args(["status", "--porcelain"])
             .current_dir(&vault)
             .output()

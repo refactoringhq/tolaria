@@ -13,7 +13,7 @@ const PILLS: { value: NoteListFilter; label: string }[] = [
   { value: 'archived', label: 'Archived' },
 ]
 
-const BOTTOM_GRADIENT = 'linear-gradient(to bottom, transparent 0%, var(--card, #fff) 30%, var(--card, #fff) 100%)'
+const BOTTOM_GRADIENT = 'linear-gradient(to bottom, transparent 0%, var(--card) 30%, var(--card) 100%)'
 
 function FilterPillsInner({ active, counts, onChange, position = 'top' }: FilterPillsProps) {
   const isBottom = position === 'bottom'

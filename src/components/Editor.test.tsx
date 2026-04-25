@@ -62,6 +62,7 @@ vi.mock('@blocknote/react', () => ({
   createReactInlineContentSpec: () => ({ render: () => null }),
   useCreateBlockNote: () => mockEditor,
   FormattingToolbar: ({ children }: PropsWithChildren) => <>{children}</>,
+  LinkToolbar: ({ children }: PropsWithChildren) => <>{children}</>,
   getFormattingToolbarItems: () => [],
   getDefaultReactSlashMenuItems: () => [],
   ComponentsContext: {
@@ -73,6 +74,9 @@ vi.mock('@blocknote/react', () => ({
     </div>
   ),
   FormattingToolbarController: () => null,
+  LinkToolbarController: () => null,
+  EditLinkButton: () => null,
+  DeleteLinkButton: () => null,
   SideMenuController: () => null,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock
   SuggestionMenuController: (props: any) => {
@@ -80,6 +84,25 @@ vi.mock('@blocknote/react', () => ({
     if (props.triggerCharacter === '[[') capturedGetItems = props.getItems
     return null
   },
+  useComponentsContext: () => ({
+    LinkToolbar: {
+      Button: ({
+        children,
+        label,
+        onClick,
+      }: PropsWithChildren<{ label?: string; onClick?: () => void }>) => (
+        <button onClick={onClick} type="button">
+          {label}
+          {children}
+        </button>
+      ),
+    },
+  }),
+  useDictionary: () => ({
+    link_toolbar: {
+      open: { tooltip: 'Open in a new tab' },
+    },
+  }),
 }))
 
 vi.mock('@blocknote/mantine', () => ({

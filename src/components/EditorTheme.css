@@ -67,7 +67,7 @@
   margin-top: var(--headings-h1-margin-top) !important;
   margin-bottom: var(--headings-h1-margin-bottom) !important;
   padding-bottom: 16px !important;
-  border-bottom: 1px solid var(--border-primary, rgba(0,0,0,0.1));
+  border-bottom: 1px solid var(--border-primary);
 }
 .editor__blocknote-container [data-content-type="heading"]:not([data-level]) .bn-inline-content,
 .editor__blocknote-container [data-content-type="heading"][data-level="1"] .bn-inline-content {

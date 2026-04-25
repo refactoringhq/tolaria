@@ -2,10 +2,11 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FeedbackDialog } from './FeedbackDialog'
 import {
-  TOLARIA_CANNY_URL,
   TOLARIA_GITHUB_CONTRIBUTING_URL,
   TOLARIA_GITHUB_DISCUSSIONS_URL,
   TOLARIA_GITHUB_ISSUES_URL,
+  TOLARIA_GITHUB_PULL_REQUESTS_URL,
+  TOLARIA_PRODUCT_BOARD_URL,
 } from '../constants/feedback'
 import { APP_COMMAND_EVENT_NAME, APP_COMMAND_IDS } from '../hooks/appCommandDispatcher'
 import { rememberFeedbackDialogOpener } from '../lib/feedbackDialogOpener'
@@ -33,15 +34,20 @@ describe('FeedbackDialog', () => {
     render(<FeedbackDialog open={true} onClose={vi.fn()} buildNumber="b281" releaseChannel="alpha" />)
     expect(screen.getByTestId('feedback-dialog')).toBeInTheDocument()
     expect(screen.getByText('Contribute to Tolaria')).toBeInTheDocument()
-    expect(screen.getByText('Feature request / improvement idea')).toBeInTheDocument()
-    expect(screen.getByText('Community / discussion')).toBeInTheDocument()
+    expect(screen.getByText('Pick the path that fits what you want to do! Any type of help is appreciated')).toBeInTheDocument()
+    expect(screen.getByText('Feature requests')).toBeInTheDocument()
+    expect(screen.getByText('Discussions')).toBeInTheDocument()
     expect(screen.getByText('Contribute code')).toBeInTheDocument()
     expect(screen.getByText('Report a bug')).toBeInTheDocument()
+    expect(screen.getByText(/Search on the product board first/i)).toBeInTheDocument()
+    expect(screen.getByText(/Use GitHub Discussions for/i)).toBeInTheDocument()
+    expect(screen.getByText(/Attach the sanitized diagnostic bundle please!/i)).toBeInTheDocument()
+    expect(screen.queryByText(/Sanitized and optional/i)).not.toBeInTheDocument()
   })
 
   it('focuses the primary CTA when opened', async () => {
     render(<FeedbackDialog open={true} onClose={vi.fn()} buildNumber="b281" releaseChannel={null} />)
-    const cta = screen.getByRole('button', { name: 'Open Canny' })
+    const cta = screen.getByRole('button', { name: 'Open Product Board' })
     await waitFor(() => expect(cta).toHaveFocus())
   })
 
@@ -49,15 +55,17 @@ describe('FeedbackDialog', () => {
     const onClose = vi.fn()
     render(<FeedbackDialog open={true} onClose={onClose} buildNumber="b281" releaseChannel={null} />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Open Canny' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Open Product Board' }))
     fireEvent.click(screen.getByRole('button', { name: 'Open Discussions' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Open Pull Requests' }))
     fireEvent.click(screen.getByRole('button', { name: 'Open Contributing Guide' }))
     fireEvent.click(screen.getByRole('button', { name: 'Open GitHub Issues' }))
 
-    await waitFor(() => expect(openExternalUrl).toHaveBeenNthCalledWith(1, TOLARIA_CANNY_URL))
+    await waitFor(() => expect(openExternalUrl).toHaveBeenNthCalledWith(1, TOLARIA_PRODUCT_BOARD_URL))
     expect(openExternalUrl).toHaveBeenNthCalledWith(2, TOLARIA_GITHUB_DISCUSSIONS_URL)
-    expect(openExternalUrl).toHaveBeenNthCalledWith(3, TOLARIA_GITHUB_CONTRIBUTING_URL)
-    expect(openExternalUrl).toHaveBeenNthCalledWith(4, TOLARIA_GITHUB_ISSUES_URL)
+    expect(openExternalUrl).toHaveBeenNthCalledWith(3, TOLARIA_GITHUB_PULL_REQUESTS_URL)
+    expect(openExternalUrl).toHaveBeenNthCalledWith(4, TOLARIA_GITHUB_CONTRIBUTING_URL)
+    expect(openExternalUrl).toHaveBeenNthCalledWith(5, TOLARIA_GITHUB_ISSUES_URL)
     expect(onClose).not.toHaveBeenCalled()
     expect(screen.getByTestId('feedback-dialog')).toBeInTheDocument()
   })
@@ -71,7 +79,7 @@ describe('FeedbackDialog', () => {
 
     render(<FeedbackDialog open={true} onClose={vi.fn()} buildNumber="b281" releaseChannel="alpha" />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Copy diagnostics' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Copy sanitized diagnostics' }))
 
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1))
     expect(writeText.mock.calls[0]?.[0]).toContain('Tolaria sanitized diagnostics')
@@ -84,10 +92,10 @@ describe('FeedbackDialog', () => {
     openExternalUrl.mockRejectedValueOnce(new Error('blocked'))
 
     render(<FeedbackDialog open={true} onClose={vi.fn()} buildNumber="b281" releaseChannel={null} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Open Canny' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Open Product Board' }))
 
-    expect(await screen.findByText(/couldn’t open Canny automatically/i)).toBeInTheDocument()
-    expect(screen.getByText(TOLARIA_CANNY_URL)).toBeInTheDocument()
+    expect(await screen.findByText(/couldn’t open Product Board automatically/i)).toBeInTheDocument()
+    expect(screen.getByText(TOLARIA_PRODUCT_BOARD_URL)).toBeInTheDocument()
   })
 
   it('closes when pressing Escape', () => {
@@ -97,7 +105,7 @@ describe('FeedbackDialog', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('closes when clicking Close', () => {
+  it('closes when clicking the top-right Close control', () => {
     const onClose = vi.fn()
     render(<FeedbackDialog open={true} onClose={onClose} buildNumber="b281" releaseChannel={null} />)
     fireEvent.click(screen.getByRole('button', { name: 'Close' }))

@@ -163,7 +163,7 @@ function TitlebarButton({
       aria-label={ariaLabel}
       className={[
         'h-full w-[46px] rounded-none text-foreground/70 hover:text-foreground',
-        close ? 'hover:bg-red-500 hover:text-white' : 'hover:bg-foreground/10',
+        close ? 'hover:bg-destructive hover:text-destructive-foreground' : 'hover:bg-foreground/10',
       ].join(' ')}
       onClick={onClick}
       data-no-drag

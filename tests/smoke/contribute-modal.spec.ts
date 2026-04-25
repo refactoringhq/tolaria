@@ -39,7 +39,7 @@ test.describe('Contribute modal', () => {
 
     await expect(page.getByTestId('feedback-dialog')).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Contribute to Tolaria' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Open Canny' })).toBeFocused()
+    await expect(page.getByRole('button', { name: 'Open Product Board' })).toBeFocused()
 
     await page.keyboard.press('Enter')
     await expect.poll(async () => page.evaluate(() => (window as typeof window & { __tolariaOpenedUrls: string[] }).__tolariaOpenedUrls)).toContain('https://tolaria.canny.io/')
@@ -50,8 +50,13 @@ test.describe('Contribute modal', () => {
     await expect.poll(async () => page.evaluate(() => (window as typeof window & { __tolariaOpenedUrls: string[] }).__tolariaOpenedUrls)).toContain('https://github.com/refactoringhq/tolaria/discussions')
 
     await page.keyboard.press('Tab')
-    await expect(page.getByRole('button', { name: 'Open Contributing Guide' })).toBeFocused()
+    await expect(page.getByRole('button', { name: 'Open Pull Requests' })).toBeFocused()
     await page.keyboard.press('Enter')
+    await expect.poll(async () => page.evaluate(() => (window as typeof window & { __tolariaOpenedUrls: string[] }).__tolariaOpenedUrls)).toContain('https://github.com/refactoringhq/tolaria/pulls')
+
+    await page.keyboard.press('Tab')
+    await expect(page.getByRole('button', { name: 'Open Contributing Guide' })).toBeFocused()
+    await page.keyboard.press('Space')
     await expect.poll(async () => page.evaluate(() => (window as typeof window & { __tolariaOpenedUrls: string[] }).__tolariaOpenedUrls)).toContain('https://github.com/refactoringhq/tolaria/blob/main/CONTRIBUTING.md')
 
     await page.keyboard.press('Tab')
@@ -60,7 +65,7 @@ test.describe('Contribute modal', () => {
     await expect.poll(async () => page.evaluate(() => (window as typeof window & { __tolariaOpenedUrls: string[] }).__tolariaOpenedUrls)).toContain('https://github.com/refactoringhq/tolaria/issues')
 
     await page.keyboard.press('Tab')
-    await expect(page.getByRole('button', { name: 'Copy diagnostics' })).toBeFocused()
+    await expect(page.getByRole('button', { name: 'Copy sanitized diagnostics' })).toBeFocused()
     await page.keyboard.press('Space')
     await expect.poll(async () => page.evaluate(() => (window as typeof window & { __tolariaCopiedBundles: string[] }).__tolariaCopiedBundles.length)).toBe(1)
 

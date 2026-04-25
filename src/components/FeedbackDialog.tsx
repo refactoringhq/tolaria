@@ -14,20 +14,21 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  TOLARIA_CANNY_URL,
   TOLARIA_GITHUB_CONTRIBUTING_URL,
   TOLARIA_GITHUB_DISCUSSIONS_URL,
   TOLARIA_GITHUB_ISSUES_URL,
+  TOLARIA_GITHUB_PULL_REQUESTS_URL,
+  TOLARIA_PRODUCT_BOARD_URL,
 } from '../constants/feedback'
 import {
   buildSanitizedDiagnosticBundle,
   startFeedbackDiagnosticsCapture,
 } from '../lib/feedbackDiagnostics'
+import { cn } from '../lib/utils'
 import { takeFeedbackDialogOpener } from '../lib/feedbackDialogOpener'
 import { useBuildNumber } from '../hooks/useBuildNumber'
 import { APP_COMMAND_EVENT_NAME, APP_COMMAND_IDS } from '../hooks/appCommandDispatcher'
@@ -45,6 +46,7 @@ interface ContributionCardProps {
   description: string
   ctaLabel: string
   icon: typeof Lightbulb
+  tone: ContributionTone
   onAction: () => void
   autoFocus?: boolean
   secondaryAction?: ReactNode
@@ -62,6 +64,14 @@ interface ContributionPath {
   label: string
   url: string
   icon: typeof Lightbulb
+  tone: ContributionTone
+  secondaryLink?: ContributionLink
+}
+
+interface ContributionLink {
+  ctaLabel: string
+  label: string
+  url: string
 }
 
 const EMPTY_DIALOG_OPENER: ReturnType<typeof takeFeedbackDialogOpener> = {
@@ -69,38 +79,94 @@ const EMPTY_DIALOG_OPENER: ReturnType<typeof takeFeedbackDialogOpener> = {
   reopenCommandPalette: false,
 }
 
+type ContributionTone = 'green' | 'yellow' | 'purple' | 'red'
+
+const CONTRIBUTION_TONE_CLASSES: Record<ContributionTone, string> = {
+  green: 'bg-[var(--accent-green-light)] text-[var(--accent-green)]',
+  yellow: 'bg-[var(--accent-yellow-light)] text-[var(--accent-yellow)]',
+  purple: 'bg-[var(--accent-purple-light)] text-[var(--accent-purple)]',
+  red: 'bg-[var(--accent-red-light)] text-[var(--accent-red)]',
+}
+
+const CONTRIBUTION_BUTTON_CLASSES: Record<ContributionTone, string> = {
+  green: 'border-[var(--accent-green)] hover:bg-[var(--accent-green-light)] [&_svg]:text-[var(--accent-green)]',
+  yellow: 'border-[var(--accent-yellow)] hover:bg-[var(--accent-yellow-light)] [&_svg]:text-[var(--accent-yellow)]',
+  purple: 'border-[var(--accent-purple)] hover:bg-[var(--accent-purple-light)] [&_svg]:text-[var(--accent-purple)]',
+  red: 'border-[var(--accent-red)] hover:bg-[var(--accent-red-light)] [&_svg]:text-[var(--accent-red)]',
+}
+
 const CONTRIBUTION_PATHS: ContributionPath[] = [
   {
-    title: 'Feature request / improvement idea',
-    description: 'Search Canny first, upvote an existing idea if it is already there, and only create a new post when it is genuinely new.',
-    ctaLabel: 'Open Canny',
-    label: 'Canny',
-    url: TOLARIA_CANNY_URL,
+    title: 'Feature requests',
+    description: 'Search on the product board first, upvote an existing idea if already there, and only create a new post when genuinely new!',
+    ctaLabel: 'Open Product Board',
+    label: 'Product Board',
+    url: TOLARIA_PRODUCT_BOARD_URL,
     icon: Lightbulb,
+    tone: 'green',
   },
   {
-    title: 'Community / discussion',
-    description: 'Use Discussions for questions, broader conversations, idea sharing, and community context that is not a concrete bug report.',
+    title: 'Discussions',
+    description: 'Use GitHub Discussions for questions, broader conversations, idea sharing, and community context that is not a concrete bug report.',
     ctaLabel: 'Open Discussions',
     label: 'GitHub Discussions',
     url: TOLARIA_GITHUB_DISCUSSIONS_URL,
     icon: MessagesSquare,
+    tone: 'purple',
   },
   {
     title: 'Contribute code',
     description: 'Small, focused pull requests are welcome. Check planned or in-progress work first so you are building in the right place.',
-    ctaLabel: 'Open Contributing Guide',
-    label: 'the contributing guide',
-    url: TOLARIA_GITHUB_CONTRIBUTING_URL,
+    ctaLabel: 'Open Pull Requests',
+    label: 'GitHub Pull Requests',
+    url: TOLARIA_GITHUB_PULL_REQUESTS_URL,
     icon: GitPullRequest,
+    tone: 'yellow',
+    secondaryLink: {
+      ctaLabel: 'Open Contributing Guide',
+      label: 'the contributing guide',
+      url: TOLARIA_GITHUB_CONTRIBUTING_URL,
+    },
   },
 ]
+
+function ContributionLinkButton({
+  label,
+  tone,
+  onAction,
+  autoFocus = false,
+  accented = true,
+}: {
+  label: string
+  tone: ContributionTone
+  onAction: () => void
+  autoFocus?: boolean
+  accented?: boolean
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      className={cn(
+        'w-full justify-between',
+        accented && 'bg-background text-foreground hover:text-foreground',
+        accented && CONTRIBUTION_BUTTON_CLASSES[tone],
+      )}
+      autoFocus={autoFocus}
+      onClick={onAction}
+    >
+      {label}
+      <ArrowUpRight size={14} />
+    </Button>
+  )
+}
 
 function ContributionCard({
   title,
   description,
   ctaLabel,
   icon: Icon,
+  tone,
   onAction,
   autoFocus = false,
   secondaryAction,
@@ -109,7 +175,7 @@ function ContributionCard({
     <Card className="gap-4 border-border/70 py-4 shadow-none">
       <CardHeader className="gap-3 px-4">
         <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-          <span className="rounded-md bg-muted p-2 text-muted-foreground">
+          <span className={cn('rounded-md p-2', CONTRIBUTION_TONE_CLASSES[tone])}>
             <Icon size={16} />
           </span>
           <CardTitle className="text-sm font-semibold">{title}</CardTitle>
@@ -119,10 +185,7 @@ function ContributionCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="px-4">
-        <Button type="button" variant="secondary" className="w-full justify-between" autoFocus={autoFocus} onClick={onAction}>
-          {ctaLabel}
-          <ArrowUpRight size={14} />
-        </Button>
+        <ContributionLinkButton label={ctaLabel} tone={tone} autoFocus={autoFocus} onAction={onAction} />
       </CardContent>
       {secondaryAction ? <CardFooter className="px-4 pt-0">{secondaryAction}</CardFooter> : null}
     </Card>
@@ -133,14 +196,25 @@ function LinkFallbackBanner({ linkFallback }: { linkFallback: LinkFallback | nul
   if (!linkFallback) return null
 
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+    <div
+      className="rounded-lg border px-4 py-3 text-sm"
+      style={{
+        background: 'var(--feedback-warning-bg)',
+        borderColor: 'var(--feedback-warning-border)',
+        color: 'var(--feedback-warning-text)',
+      }}
+    >
       <p className="font-medium">Couldn’t open {linkFallback.label} automatically.</p>
-      <p className="mt-1 text-amber-900">Open this URL manually instead:</p>
-      <p className="mt-2 break-all rounded-md bg-white/80 px-3 py-2 font-mono text-xs">
+      <p className="mt-1">Open this URL manually instead:</p>
+      <p className="mt-2 break-all rounded-md bg-popover px-3 py-2 font-mono text-xs text-foreground">
         {linkFallback.url}
       </p>
     </div>
   )
+}
+
+function getCopyDiagnosticsLabel(copyState: 'idle' | 'copied' | 'failed') {
+  return copyState === 'copied' ? 'Diagnostics copied' : 'Copy sanitized diagnostics'
 }
 
 function BugReportActions({
@@ -161,17 +235,14 @@ function BugReportActions({
         onClick={onCopyDiagnostics}
         disabled={!canCopyDiagnostics}
       >
-        {copyState === 'copied' ? 'Diagnostics copied' : 'Copy diagnostics'}
+        {getCopyDiagnosticsLabel(copyState)}
         {copyState === 'copied' ? <Check size={14} /> : <Copy size={14} />}
       </Button>
-      <p className="text-xs leading-5 text-muted-foreground">
-        Sanitized and optional. Paths and token-like strings are redacted by default.
-      </p>
       {copyState === 'copied' ? (
         <p className="text-xs font-medium text-foreground">Diagnostics copied.</p>
       ) : null}
       {copyState === 'failed' ? (
-        <p className="text-xs font-medium text-amber-700">
+        <p className="text-xs font-medium text-[var(--feedback-warning-text)]">
           Clipboard access is unavailable right now. You can still open GitHub Issues directly.
         </p>
       ) : null}
@@ -266,22 +337,36 @@ function ContributionGrid({
 }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {CONTRIBUTION_PATHS.map((path, index) => (
-        <ContributionCard
-          key={path.title}
-          title={path.title}
-          description={path.description}
-          ctaLabel={path.ctaLabel}
-          icon={path.icon}
-          autoFocus={index === 0}
-          onAction={() => onOpenLink(path.label, path.url)}
-        />
-      ))}
+      {CONTRIBUTION_PATHS.map((path, index) => {
+        const secondaryLink = path.secondaryLink
+
+        return (
+          <ContributionCard
+            key={path.title}
+            title={path.title}
+            description={path.description}
+            ctaLabel={path.ctaLabel}
+            icon={path.icon}
+            tone={path.tone}
+            autoFocus={index === 0}
+            onAction={() => onOpenLink(path.label, path.url)}
+            secondaryAction={secondaryLink ? (
+              <ContributionLinkButton
+                label={secondaryLink.ctaLabel}
+                tone={path.tone}
+                accented={false}
+                onAction={() => onOpenLink(secondaryLink.label, secondaryLink.url)}
+              />
+            ) : undefined}
+          />
+        )
+      })}
       <ContributionCard
         title="Report a bug"
-        description="A strong report explains the steps to reproduce, what you expected, and what actually happened. You can optionally paste a sanitized diagnostic bundle."
+        description="Explain how to reproduce, what you expected, and what actually happened. Check for duplicate bugs first. Attach the sanitized diagnostic bundle please!"
         ctaLabel="Open GitHub Issues"
         icon={Bug}
+        tone="red"
         onAction={() => onOpenLink('GitHub Issues', TOLARIA_GITHUB_ISSUES_URL)}
         secondaryAction={(
           <BugReportActions
@@ -326,15 +411,14 @@ export function FeedbackDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next) handleClose() }}>
-      <DialogContent showCloseButton={false} className="max-h-[85vh] overflow-y-auto sm:max-w-[760px]" data-testid="feedback-dialog">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[760px]" data-testid="feedback-dialog">
         <DialogHeader className="space-y-2">
           <DialogTitle className="flex items-center gap-2">
             <Megaphone size={18} weight="duotone" />
             Contribute to Tolaria
           </DialogTitle>
           <DialogDescription>
-            Pick the path that fits what you want to do. The links stay focused, the diagnostics are sanitized,
-            and you can work through the whole flow with the keyboard.
+            Pick the path that fits what you want to do! Any type of help is appreciated
           </DialogDescription>
         </DialogHeader>
 
@@ -345,12 +429,6 @@ export function FeedbackDialog({
           canCopyDiagnostics={canCopyDiagnostics}
           onCopyDiagnostics={handleCopyDiagnostics}
         />
-
-        <DialogFooter className="sm:justify-between">
-          <Button type="button" variant="outline" onClick={handleClose}>
-            Close
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

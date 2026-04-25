@@ -54,7 +54,7 @@ function syncNativeMenuState(state: MenuStatePayload): void {
 
   import('@tauri-apps/api/core')
     .then(({ invoke }) => invoke('update_menu_state', { state }))
-    .catch(() => {})
+    .catch((err) => console.warn('[menu] Failed to sync native menu state:', err))
 }
 
 function useNativeMenuEventListener(handlersRef: { current: MenuEventHandlers }) {

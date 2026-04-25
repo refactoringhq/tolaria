@@ -58,6 +58,9 @@ describe('buildStableDownloadRedirectPage', () => {
     expect(html).toContain('Download Tolaria for Windows')
     expect(html).toContain('Download Tolaria for macOS')
     expect(html).toContain('window.location.replace')
+    expect(html).toContain('color-scheme: light dark')
+    expect(html).toContain('@media (prefers-color-scheme: dark)')
+    expect(html).toContain('background: var(--download-surface-page)')
   })
 
   it('builds a fallback page when no stable downloads exist yet', () => {

@@ -262,7 +262,7 @@ describe('useOnboarding', () => {
       await result.current.handleCreateVault()
     })
 
-    expect(result.current.error).toBe('Could not download Getting Started vault. Check your connection and try again.')
+    expect(result.current.error).toBe('Could not download Getting Started vault: git clone failed: fatal: unable to access')
     expect(result.current.state.status).toBe('welcome')
   })
 

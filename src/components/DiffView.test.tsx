@@ -19,16 +19,18 @@ describe('DiffView', () => {
 
   it('applies green styling to added lines', () => {
     const diff = '+added line'
-    const { container } = render(<DiffView diff={diff} />)
-    const addedLine = container.querySelector('.text-\\[\\#4caf50\\]')
+    render(<DiffView diff={diff} />)
+    const addedLine = screen.getByText('+added line').closest('div')
     expect(addedLine).toBeInTheDocument()
+    expect(addedLine).toHaveClass('text-[var(--diff-added-text)]')
   })
 
   it('applies red styling to removed lines', () => {
     const diff = '-removed line'
-    const { container } = render(<DiffView diff={diff} />)
-    const removedLine = container.querySelector('.text-\\[\\#f44336\\]')
+    render(<DiffView diff={diff} />)
+    const removedLine = screen.getByText('-removed line').closest('div')
     expect(removedLine).toBeInTheDocument()
+    expect(removedLine).toHaveClass('text-[var(--diff-removed-text)]')
   })
 
   it('applies hunk header styling to @@ lines', () => {

@@ -40,6 +40,31 @@ fn with_requested_root_path<T>(
     with_requested_root(raw_vault_path.as_ref(), action)
 }
 
+fn sync_image_asset_scope(
+    app_handle: &tauri::AppHandle,
+    requested_root: &str,
+) -> Result<(), String> {
+    #[cfg(desktop)]
+    crate::sync_vault_asset_scope(app_handle, Path::new(requested_root))?;
+    #[cfg(not(desktop))]
+    let _ = requested_root;
+    #[cfg(not(desktop))]
+    let _ = app_handle;
+    Ok(())
+}
+
+fn with_image_asset_scope(
+    app_handle: &tauri::AppHandle,
+    vault_path: &Path,
+    action: impl FnOnce(&str) -> Result<String, String>,
+) -> Result<String, String> {
+    with_requested_root_path(vault_path, |requested_root| {
+        let saved_path = action(requested_root)?;
+        sync_image_asset_scope(app_handle, requested_root)?;
+        Ok(saved_path)
+    })
+}
+
 fn with_writable_note_path<T>(
     path: PathBuf,
     vault_path: Option<PathBuf>,
@@ -148,15 +173,24 @@ pub fn sync_note_title(path: PathBuf, vault_path: Option<PathBuf>) -> Result<boo
 }
 
 #[tauri::command]
-pub fn save_image(vault_path: PathBuf, filename: String, data: String) -> Result<String, String> {
-    with_requested_root_path(vault_path.as_path(), |requested_root| {
+pub fn save_image(
+    app_handle: tauri::AppHandle,
+    vault_path: PathBuf,
+    filename: String,
+    data: String,
+) -> Result<String, String> {
+    with_image_asset_scope(&app_handle, vault_path.as_path(), |requested_root| {
         vault::save_image(requested_root, &filename, &data)
     })
 }
 
 #[tauri::command]
-pub fn copy_image_to_vault(vault_path: PathBuf, source_path: PathBuf) -> Result<String, String> {
-    with_requested_root_path(vault_path.as_path(), |requested_root| {
+pub fn copy_image_to_vault(
+    app_handle: tauri::AppHandle,
+    vault_path: PathBuf,
+    source_path: PathBuf,
+) -> Result<String, String> {
+    with_image_asset_scope(&app_handle, vault_path.as_path(), |requested_root| {
         vault::copy_image_to_vault(requested_root, source_path.to_string_lossy().as_ref())
     })
 }

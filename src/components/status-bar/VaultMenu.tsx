@@ -229,7 +229,7 @@ export function VaultMenu({
             borderRadius: 6,
             padding: 4,
             minWidth: 200,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            boxShadow: '0 4px 12px var(--shadow-dialog)',
             zIndex: 1000,
           }}
         >

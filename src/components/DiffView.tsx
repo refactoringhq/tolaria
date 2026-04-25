@@ -7,9 +7,9 @@ interface DiffViewProps {
 const DIFF_HEADER_PREFIXES = ['diff', 'index', '---', '+++', 'new file']
 
 function classifyDiffLine(line: string): string {
-  if (line.startsWith('+') && !line.startsWith('+++')) return 'bg-[rgba(76,175,80,0.12)] text-[#4caf50]'
-  if (line.startsWith('-') && !line.startsWith('---')) return 'bg-[rgba(244,67,54,0.12)] text-[#f44336]'
-  if (line.startsWith('@@')) return 'bg-[rgba(33,150,243,0.08)] text-primary italic'
+  if (line.startsWith('+') && !line.startsWith('+++')) return 'bg-[var(--diff-added-bg)] text-[var(--diff-added-text)]'
+  if (line.startsWith('-') && !line.startsWith('---')) return 'bg-[var(--diff-removed-bg)] text-[var(--diff-removed-text)]'
+  if (line.startsWith('@@')) return 'bg-[var(--diff-hunk-bg)] text-primary italic'
   if (DIFF_HEADER_PREFIXES.some((p) => line.startsWith(p))) return 'bg-muted text-muted-foreground font-semibold'
   return 'text-secondary-foreground'
 }

@@ -152,6 +152,22 @@ describe('mockHandlers additional coverage', () => {
     expect(mockHandlers.repair_vault()).toBe('Vault repaired')
   })
 
+  it('persists theme mode through the mock settings backend', async () => {
+    const { mockHandlers } = await loadHandlers()
+    const settings = mockHandlers.get_settings()
+
+    mockHandlers.save_settings({
+      settings: {
+        ...settings,
+        theme_mode: 'dark',
+      },
+    })
+
+    expect(mockHandlers.get_settings()).toEqual(expect.objectContaining({
+      theme_mode: 'dark',
+    }))
+  })
+
   it('surfaces the simple command handlers for git, conflicts, trash, and telemetry', async () => {
     const { mockHandlers } = await loadHandlers()
 

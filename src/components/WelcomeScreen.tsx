@@ -175,7 +175,7 @@ const OPTION_DESC_STYLE: React.CSSProperties = {
 
 const ERROR_STYLE: React.CSSProperties = {
   fontSize: 13,
-  color: 'var(--destructive, #e03e3e)',
+  color: 'var(--destructive)',
   textAlign: 'center',
   margin: 0,
 }
@@ -286,7 +286,7 @@ function getWelcomeScreenPresentation(
   }
 
   return {
-    heroBackground: 'var(--accent-yellow-light, #FFF3E0)',
+    heroBackground: 'var(--accent-yellow-light)',
     heroIcon: <AlertTriangle size={28} style={{ color: 'var(--accent-orange)' }} />,
     openFolderLabel: 'Choose a different folder',
     subtitle: 'The vault folder could not be found on disk.\nIt may have been moved or deleted.',
@@ -419,7 +419,7 @@ export function WelcomeScreen({
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
           <OptionButton
             icon={<Rocket size={18} style={{ color: 'var(--accent-purple)' }} />}
-            iconBg="var(--accent-purple-light, #F3E8FF)"
+            iconBg="var(--accent-purple-light)"
             label="Get started with a template"
             description={presentation.templateDescription}
             loadingLabel="Downloading template…"
@@ -434,7 +434,7 @@ export function WelcomeScreen({
 
           <OptionButton
             icon={<Plus size={18} style={{ color: 'var(--accent-blue)' }} />}
-            iconBg="var(--accent-blue-light, #EBF4FF)"
+            iconBg="var(--accent-blue-light)"
             label="Create empty vault"
             description="Start fresh in an empty folder with Tolaria defaults"
             loadingLabel="Creating vault…"
@@ -448,7 +448,7 @@ export function WelcomeScreen({
 
           <OptionButton
             icon={<FolderOpen size={18} style={{ color: 'var(--accent-green)' }} />}
-            iconBg="var(--accent-green-light, #E8F5E9)"
+            iconBg="var(--accent-green-light)"
             label={presentation.openFolderLabel}
             description="Point to a folder you already have"
             onClick={onOpenFolder}

@@ -1,7 +1,17 @@
-import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react'
+import { useState, useRef, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { getStatusStyle, SUGGESTED_STATUSES, setStatusColor, getStatusColorKey } from '../utils/statusStyles'
 import { ACCENT_COLORS } from '../utils/typeColors'
+import {
+  getNextHighlightIndex,
+  getPreviousHighlightIndex,
+  isCreateOptionVisible,
+  useAnchoredDropdownPosition,
+  useAutoFocus,
+} from './propertyDropdownUtils'
+
+const PROPERTY_DROPDOWN_WIDTH = 208
+const SELECTED_SWATCH_CHECK_STYLE = { color: 'var(--text-inverse)', fontSize: 8, lineHeight: 1 } as const
 
 export function StatusPill({ status, className }: { status: string; className?: string }) {
   const style = getStatusStyle(status)
@@ -40,7 +50,7 @@ function ColorPickerRow({ status, onColorChange }: { status: string; onColorChan
           data-testid={`color-option-${c.key}`}
         >
           {currentKey === c.key && (
-            <span style={{ color: 'white', fontSize: 8, lineHeight: 1 }}>{'\u2713'}</span>
+            <span style={SELECTED_SWATCH_CHECK_STYLE}>{'\u2713'}</span>
           )}
         </button>
       ))}
@@ -162,6 +172,25 @@ interface KeyboardNavOptions {
   listRef: React.RefObject<HTMLDivElement | null>
 }
 
+interface StatusSelectionOptions {
+  highlightIndex: number
+  allFiltered: string[]
+  showCreateOption: boolean
+  query: string
+}
+
+function getStatusValueToSave({
+  highlightIndex,
+  allFiltered,
+  showCreateOption,
+  query,
+}: StatusSelectionOptions) {
+  const trimmed = query.trim()
+  if (highlightIndex >= 0 && highlightIndex < allFiltered.length) return allFiltered[highlightIndex]
+  if (showCreateOption && highlightIndex === allFiltered.length) return trimmed
+  return trimmed || null
+}
+
 function useStatusKeyboard(opts: KeyboardNavOptions) {
   const { allFiltered, totalOptions, showCreateOption, query, onSave, onCancel, listRef } = opts
   const [highlightIndex, setHighlightIndex] = useState(-1)
@@ -173,29 +202,32 @@ function useStatusKeyboard(opts: KeyboardNavOptions) {
     items[index]?.scrollIntoView({ block: 'nearest' })
   }, [listRef])
 
+  const moveHighlight = useCallback((nextIndex: number) => {
+    setHighlightIndex(nextIndex)
+    scrollIntoView(nextIndex)
+  }, [scrollIntoView])
+
+  const submitHighlightedStatus = useCallback(() => {
+    const value = getStatusValueToSave({ highlightIndex, allFiltered, showCreateOption, query })
+    if (value) onSave(value)
+  }, [highlightIndex, allFiltered, showCreateOption, query, onSave])
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       switch (e.key) {
         case 'ArrowDown': {
           e.preventDefault()
-          const next = highlightIndex < totalOptions - 1 ? highlightIndex + 1 : 0
-          setHighlightIndex(next)
-          scrollIntoView(next)
+          moveHighlight(getNextHighlightIndex(highlightIndex, totalOptions))
           break
         }
         case 'ArrowUp': {
           e.preventDefault()
-          const prev = highlightIndex > 0 ? highlightIndex - 1 : totalOptions - 1
-          setHighlightIndex(prev)
-          scrollIntoView(prev)
+          moveHighlight(getPreviousHighlightIndex(highlightIndex, totalOptions))
           break
         }
         case 'Enter': {
           e.preventDefault()
-          const trimmed = query.trim()
-          if (highlightIndex >= 0 && highlightIndex < allFiltered.length) onSave(allFiltered[highlightIndex])
-          else if (showCreateOption && highlightIndex === allFiltered.length) onSave(trimmed)
-          else if (trimmed) onSave(trimmed)
+          submitHighlightedStatus()
           break
         }
         case 'Escape':
@@ -204,7 +236,7 @@ function useStatusKeyboard(opts: KeyboardNavOptions) {
           break
       }
     },
-    [highlightIndex, totalOptions, allFiltered, showCreateOption, query, onSave, onCancel, scrollIntoView],
+    [highlightIndex, totalOptions, moveHighlight, submitHighlightedStatus, onCancel],
   )
 
   const resetHighlight = useCallback(() => setHighlightIndex(-1), [])
@@ -226,31 +258,15 @@ export function StatusDropdown({
   const [colorEditingStatus, setColorEditingStatus] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
-  const anchorRef = useRef<HTMLDivElement>(null)
+  const anchorRef = useRef<HTMLSpanElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  useLayoutEffect(() => {
-    const node = dropdownRef.current
-    if (!node) return
-    const anchor = anchorRef.current?.parentElement
-    if (!anchor) return
-    const rect = anchor.getBoundingClientRect()
-    const dropW = 208
-    let left = rect.right - dropW
-    if (left < 8) left = 8
-    if (left + dropW > window.innerWidth - 8) left = window.innerWidth - dropW - 8
-    node.style.top = `${rect.bottom + 4}px`
-    node.style.left = `${left}px`
-  }, [])
-
-  useEffect(() => { inputRef.current?.focus() }, [])
+  useAnchoredDropdownPosition({ anchorRef, dropdownRef, width: PROPERTY_DROPDOWN_WIDTH })
+  useAutoFocus(inputRef)
 
   const { suggestedFiltered, vaultFiltered, allFiltered } = useStatusFiltering(query, vaultStatuses)
 
-  const showCreateOption = useMemo(() => {
-    if (!query.trim()) return false
-    return !allFiltered.some(s => s.toLowerCase() === query.trim().toLowerCase())
-  }, [query, allFiltered])
+  const showCreateOption = useMemo(() => isCreateOptionVisible(query, allFiltered), [query, allFiltered])
 
   const totalOptions = allFiltered.length + (showCreateOption ? 1 : 0)
 

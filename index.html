@@ -7,17 +7,48 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        color-scheme: light;
+        background: #FFFFFF;
+        color: #37352F;
+      }
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        background: #1F1E1B;
+        color: #E6E1D8;
+      }
+      body {
+        background: inherit;
+        color: inherit;
+      }
+    </style>
     <title>Tolaria</title>
   </head>
   <body>
     <script>
-      // Apply saved theme before React mounts to prevent flash
-      var t = localStorage.getItem('tolaria-theme');
-      if (t === null) {
-        t = localStorage.getItem('laputa-theme');
-        if (t !== null) localStorage.setItem('tolaria-theme', t);
-      }
-      if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      (function () {
+        var key = 'tolaria-theme';
+        var legacyKey = 'laputa-theme';
+        function normalizeTheme(value) {
+          return value === 'dark' || value === 'light' ? value : null;
+        }
+        function applyTheme(value) {
+          var mode = normalizeTheme(value) || 'light';
+          document.documentElement.setAttribute('data-theme', mode);
+          document.documentElement.classList.toggle('dark', mode === 'dark');
+        }
+        try {
+          var mode = normalizeTheme(localStorage.getItem(key));
+          if (mode === null) {
+            mode = normalizeTheme(localStorage.getItem(legacyKey));
+            if (mode !== null) localStorage.setItem(key, mode);
+          }
+          applyTheme(mode);
+        } catch (err) {
+          applyTheme('light');
+        }
+      })();
     </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

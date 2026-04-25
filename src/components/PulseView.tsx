@@ -60,9 +60,9 @@ const STATUS_ICON = {
 } as const
 
 const STATUS_COLOR = {
-  added: 'var(--accent-green, #16a34a)',
-  modified: 'var(--accent-orange, #ea580c)',
-  deleted: 'var(--destructive, #dc2626)',
+  added: 'var(--accent-green)',
+  modified: 'var(--accent-orange)',
+  deleted: 'var(--destructive)',
 } as const
 
 const PULSE_ROW_FOCUS_CLASS_NAME = 'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/70 focus-visible:ring-inset'

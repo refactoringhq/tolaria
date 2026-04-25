@@ -87,7 +87,7 @@ async function handleChipClick(
     return
   }
 
-  await openExternalUrl(chip.action.url).catch(() => {})
+  await openExternalUrl(chip.action.url).catch((err) => console.warn('[link] Failed to open URL:', err))
 }
 
 export function PropertyChips({

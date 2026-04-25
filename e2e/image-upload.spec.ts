@@ -1,6 +1,11 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import * as path from 'path'
 import * as fs from 'fs'
+import {
+  createFixtureVaultCopy,
+  openFixtureVault,
+  removeFixtureVaultCopy,
+} from '../tests/helpers/fixtureVault'
 
 // Minimal valid PNG: 1x1 red pixel
 const TEST_PNG_BASE64 =
@@ -11,16 +16,28 @@ function createTestPng(filepath: string) {
   fs.writeFileSync(filepath, Buffer.from(TEST_PNG_BASE64, 'base64'))
 }
 
-test('image upload via file picker displays image with data URL', async ({ page }) => {
-  await page.goto('/')
-  await page.waitForTimeout(1000)
+let tempVaultDir: string
 
-  // Open a note
-  await page.locator('[data-testid="type-icon"]').first().click({ timeout: 10000 })
-  await page.waitForTimeout(500)
+async function openImageTestNote(page: Page) {
+  await page.locator('[data-testid="note-list-container"]').getByText('Alpha Project', { exact: true }).click()
 
   const editor = page.locator('.bn-editor')
   await expect(editor).toBeVisible({ timeout: 10000 })
+  return editor
+}
+
+test.beforeEach(async ({ page }, testInfo) => {
+  testInfo.setTimeout(60_000)
+  tempVaultDir = createFixtureVaultCopy()
+  await openFixtureVault(page, tempVaultDir)
+})
+
+test.afterEach(async () => {
+  removeFixtureVaultCopy(tempVaultDir)
+})
+
+test('image upload via file picker displays image with data URL', async ({ page }) => {
+  const editor = await openImageTestNote(page)
   await editor.click()
   await page.waitForTimeout(200)
 
@@ -63,16 +80,37 @@ test('image upload via file picker displays image with data URL', async ({ page 
   if (fs.existsSync(testImagePath)) fs.unlinkSync(testImagePath)
 })
 
+test('image paste into editor inserts image block', async ({ page }) => {
+  const editor = await openImageTestNote(page)
+  await editor.click()
+
+  await page.evaluate((base64) => {
+    const editorElement = document.querySelector('.bn-editor')
+    if (!editorElement) throw new Error('Editor not found')
+
+    const binary = atob(base64)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+
+    const file = new File([bytes], 'pasted-image.png', { type: 'image/png' })
+    const clipboardData = new DataTransfer()
+    clipboardData.items.add(file)
+    editorElement.dispatchEvent(new ClipboardEvent('paste', {
+      clipboardData,
+      bubbles: true,
+      cancelable: true,
+    }))
+  }, TEST_PNG_BASE64)
+
+  const images = page.locator('.bn-editor img')
+  await expect(images.first()).toBeVisible({ timeout: 5000 })
+
+  const src = await images.first().getAttribute('src')
+  expect(src).toMatch(/^data:/)
+})
+
 test('editor has uploadFile configured (no error on image block insert)', async ({ page }) => {
-  await page.goto('/')
-  await page.waitForTimeout(1000)
-
-  // Click first note
-  await page.locator('[data-testid="type-icon"]').first().click({ timeout: 10000 })
-  await page.waitForTimeout(500)
-
-  const editor = page.locator('.bn-editor')
-  await expect(editor).toBeVisible({ timeout: 10000 })
+  const editor = await openImageTestNote(page)
 
   // Capture console errors
   const errors: string[] = []

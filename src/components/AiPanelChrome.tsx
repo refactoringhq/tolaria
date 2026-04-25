@@ -223,7 +223,7 @@ export function AiPanelComposer({
   const placeholder = getComposerPlaceholder(agentLabel, agentReady, legacyCopy, hasContext)
   const sendButtonStyle = {
     background: canSend ? 'var(--primary)' : 'var(--muted)',
-    color: canSend ? 'white' : 'var(--muted-foreground)',
+    color: canSend ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
     borderRadius: 8,
     width: 32,
     height: 34,

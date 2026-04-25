@@ -49,7 +49,7 @@
   "lists": {
     "bulletSymbol": "•",
     "bulletSize": 24,
-    "bulletColor": "#177bfd",
+    "bulletColor": "var(--accent-blue)",
     "indentSize": 24,
     "itemSpacing": 4,
     "paddingLeft": 8,

@@ -1,8 +1,44 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, FileText, Check, Loader2 } from 'lucide-react'
 import type { ConflictFileState } from '../hooks/useConflictResolver'
+import { cn } from '@/lib/utils'
+
+type ConflictResolutionStrategy = 'ours' | 'theirs'
+
+const BINARY_FILE_EXTENSIONS = [
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.ico',
+  '.pdf',
+  '.zip',
+  '.tar',
+  '.gz',
+  '.mp3',
+  '.mp4',
+  '.wav',
+  '.ogg',
+  '.woff',
+  '.woff2',
+  '.ttf',
+  '.otf',
+  '.eot',
+]
+
+const RESOLUTION_LABELS: Record<NonNullable<ConflictFileState['resolution']>, string> = {
+  manual: 'Edited manually',
+  ours: 'Keeping mine',
+  theirs: 'Keeping theirs',
+}
+
+const RESOLUTION_SHORTCUTS: Record<string, ConflictResolutionStrategy | undefined> = {
+  k: 'ours',
+  t: 'theirs',
+}
 
 interface ConflictResolverModalProps {
   open: boolean
@@ -17,8 +53,8 @@ interface ConflictResolverModalProps {
 }
 
 function isBinaryFile(file: string): boolean {
-  const binaryExts = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.pdf', '.zip', '.tar', '.gz', '.mp3', '.mp4', '.wav', '.ogg', '.woff', '.woff2', '.ttf', '.otf', '.eot']
-  return binaryExts.some(ext => file.toLowerCase().endsWith(ext))
+  const normalizedFile = file.toLowerCase()
+  return BINARY_FILE_EXTENSIONS.some(ext => normalizedFile.endsWith(ext))
 }
 
 function fileName(path: string): string {
@@ -27,10 +63,9 @@ function fileName(path: string): string {
 
 function ResolutionLabel({ resolution }: { resolution: ConflictFileState['resolution'] }) {
   if (!resolution) return null
-  const labels = { ours: 'Keeping mine', theirs: 'Keeping theirs', manual: 'Edited manually' }
   return (
-    <span className="flex items-center gap-1 text-xs text-green-600">
-      <Check size={12} />{labels[resolution]}
+    <span className="flex items-center gap-1 text-xs text-[var(--feedback-success-text)]">
+      <Check size={12} />{RESOLUTION_LABELS[resolution]}
     </span>
   )
 }
@@ -62,9 +97,11 @@ function ConflictFileRow({
       role="row"
       tabIndex={0}
       onFocus={onFocus}
-      className={`flex items-center justify-between gap-2 rounded-md border px-3 py-2 transition-colors ${
-        focused ? 'border-ring bg-accent/50' : 'border-border bg-background'
-      } ${resolved ? 'opacity-70' : ''}`}
+      className={cn(
+        'flex items-center justify-between gap-2 rounded-md border px-3 py-2 transition-colors',
+        focused ? 'border-ring bg-accent/50' : 'border-border bg-background',
+        resolved && 'opacity-70',
+      )}
       data-testid={`conflict-file-${state.file}`}
     >
       <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -118,8 +155,214 @@ function ConflictFileRow({
   )
 }
 
+function clampFocusIndex(index: number, fileCount: number): number {
+  if (fileCount === 0) return 0
+  return Math.min(Math.max(index, 0), fileCount - 1)
+}
+
+function useConflictFocus(fileCount: number) {
+  const [focusIdx, setFocusIdx] = useState(0)
+  const focusIdxRef = useRef(0)
+  const visibleFocusIdx = clampFocusIndex(focusIdx, fileCount)
+
+  const syncFocusIdx = useCallback((nextIndex: number) => {
+    const clampedIndex = clampFocusIndex(nextIndex, fileCount)
+    setFocusIdx(clampedIndex)
+    focusIdxRef.current = clampedIndex
+  }, [fileCount])
+
+  const moveFocus = useCallback((offset: number) => {
+    const currentIndex = clampFocusIndex(focusIdxRef.current, fileCount)
+    syncFocusIdx(currentIndex + offset)
+  }, [fileCount, syncFocusIdx])
+
+  return {
+    focusIdx: visibleFocusIdx,
+    focusIdxRef,
+    moveFocus,
+    syncFocusIdx,
+  }
+}
+
+function hasCommandModifier(event: KeyboardEvent): boolean {
+  return event.metaKey || event.ctrlKey
+}
+
+function isNextRowKey(event: KeyboardEvent): boolean {
+  if (event.key === 'ArrowDown') return true
+  return event.key === 'Tab' && !event.shiftKey
+}
+
+function isPreviousRowKey(event: KeyboardEvent): boolean {
+  if (event.key === 'ArrowUp') return true
+  return event.key === 'Tab' && event.shiftKey
+}
+
+function handleNavigationKey(event: KeyboardEvent, moveFocus: (offset: number) => void): boolean {
+  if (isNextRowKey(event)) {
+    event.preventDefault()
+    moveFocus(1)
+    return true
+  }
+
+  if (isPreviousRowKey(event)) {
+    event.preventDefault()
+    moveFocus(-1)
+    return true
+  }
+
+  return false
+}
+
+function handleResolutionShortcut(
+  event: KeyboardEvent,
+  file: ConflictFileState | undefined,
+  onResolveFile: ConflictResolverModalProps['onResolveFile'],
+): boolean {
+  const strategy = RESOLUTION_SHORTCUTS[event.key.toLowerCase()]
+  if (!strategy || !file || file.resolving || hasCommandModifier(event)) return false
+
+  event.preventDefault()
+  onResolveFile(file.file, strategy)
+  return true
+}
+
+function handleOpenShortcut(
+  event: KeyboardEvent,
+  file: ConflictFileState | undefined,
+  onOpenInEditor: ConflictResolverModalProps['onOpenInEditor'],
+): boolean {
+  if (event.key.toLowerCase() !== 'o' || !file || file.resolving || hasCommandModifier(event)) return false
+  if (isBinaryFile(file.file)) return false
+
+  event.preventDefault()
+  onOpenInEditor(file.file)
+  return true
+}
+
+function handleCommitShortcut({
+  allResolved,
+  committing,
+  event,
+  onCommit,
+}: {
+  allResolved: boolean
+  committing: boolean
+  event: KeyboardEvent
+  onCommit: ConflictResolverModalProps['onCommit']
+}): boolean {
+  if (event.key !== 'Enter' || !allResolved || committing) return false
+
+  event.preventDefault()
+  onCommit()
+  return true
+}
+
+function ConflictDialogHeader({ fileCount }: { fileCount: number }) {
+  return (
+    <DialogHeader>
+      <div className="flex items-center gap-2">
+        <AlertTriangle size={18} className="text-[var(--accent-orange)]" />
+        <DialogTitle>Resolve Merge Conflicts</DialogTitle>
+      </div>
+      <DialogDescription>
+        {fileCount} file{fileCount !== 1 ? 's have' : ' has'} merge conflicts. Choose how to resolve each file.
+      </DialogDescription>
+    </DialogHeader>
+  )
+}
+
+function ConflictFileList({
+  fileStates,
+  focusIdx,
+  onFocusRow,
+  onOpenInEditor,
+  onResolveFile,
+}: {
+  fileStates: ConflictFileState[]
+  focusIdx: number
+  onFocusRow: (index: number) => void
+  onOpenInEditor: (file: string) => void
+  onResolveFile: (file: string, strategy: ConflictResolutionStrategy) => void
+}) {
+  return (
+    <div
+      className="flex flex-col gap-2 max-h-[300px] overflow-y-auto"
+      role="grid"
+      data-testid="conflict-file-list"
+    >
+      {fileStates.map((state, index) => (
+        <ConflictFileRow
+          key={state.file}
+          state={state}
+          focused={index === focusIdx}
+          onResolve={(strategy) => onResolveFile(state.file, strategy)}
+          onOpenInEditor={() => onOpenInEditor(state.file)}
+          onFocus={() => onFocusRow(index)}
+        />
+      ))}
+    </div>
+  )
+}
+
+function CommitButtonContent({ committing }: { committing: boolean }) {
+  if (!committing) return 'Commit & continue'
+  return (
+    <>
+      <Loader2 size={14} className="animate-spin mr-1" />Committing…
+    </>
+  )
+}
+
+function ConflictDialogFooter({
+  allResolved,
+  committing,
+  onClose,
+  onCommit,
+}: {
+  allResolved: boolean
+  committing: boolean
+  onClose: () => void
+  onCommit: () => void
+}) {
+  return (
+    <DialogFooter className="flex-row items-center justify-between sm:justify-between">
+      <span className="text-[11px] text-muted-foreground">
+        K = keep mine · T = keep theirs · O = open · Enter = commit
+      </span>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button
+          onClick={onCommit}
+          disabled={!allResolved || committing}
+          data-testid="conflict-commit-btn"
+        >
+          <CommitButtonContent committing={committing} />
+        </Button>
+      </div>
+    </DialogFooter>
+  )
+}
+
 export function ConflictResolverModal({
   open,
+  onClose,
+  ...contentProps
+}: ConflictResolverModalProps) {
+  return (
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose() }}>
+      {open ? (
+        <ConflictResolverDialogContent
+          open={open}
+          onClose={onClose}
+          {...contentProps}
+        />
+      ) : null}
+    </Dialog>
+  )
+}
+
+function ConflictResolverDialogContent({
   fileStates,
   allResolved,
   committing,
@@ -129,118 +372,54 @@ export function ConflictResolverModal({
   onCommit,
   onClose,
 }: ConflictResolverModalProps) {
-  const [focusIdx, setFocusIdx] = useState(0)
-  const focusIdxRef = useRef(0)
-  const listRef = useRef<HTMLDivElement>(null)
+  const {
+    focusIdx,
+    focusIdxRef,
+    moveFocus,
+    syncFocusIdx,
+  } = useConflictFocus(fileStates.length)
 
-  useEffect(() => {
-    if (open) {
-      setFocusIdx(0) // eslint-disable-line react-hooks/set-state-in-effect -- reset on dialog open
-      focusIdxRef.current = 0
-    }
-  }, [open])
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       onClose()
       return
     }
 
-    const idx = focusIdxRef.current
-    const file = fileStates[idx]
+    if (handleNavigationKey(e, moveFocus)) return
 
-    if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
-      e.preventDefault()
-      const next = Math.min(idx + 1, fileStates.length - 1)
-      setFocusIdx(next)
-      focusIdxRef.current = next
-      return
-    }
-    if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
-      e.preventDefault()
-      const prev = Math.max(idx - 1, 0)
-      setFocusIdx(prev)
-      focusIdxRef.current = prev
-      return
-    }
-
-    if ((e.key === 'k' || e.key === 'K') && file && !file.resolving && !e.metaKey && !e.ctrlKey) {
-      e.preventDefault()
-      onResolveFile(file.file, 'ours')
-    } else if ((e.key === 't' || e.key === 'T') && file && !file.resolving && !e.metaKey && !e.ctrlKey) {
-      e.preventDefault()
-      onResolveFile(file.file, 'theirs')
-    } else if ((e.key === 'o' || e.key === 'O') && file && !isBinaryFile(file.file) && !e.metaKey && !e.ctrlKey) {
-      e.preventDefault()
-      onOpenInEditor(file.file)
-    } else if (e.key === 'Enter' && allResolved && !committing) {
-      e.preventDefault()
-      onCommit()
-    }
-  }, [fileStates, allResolved, committing, onResolveFile, onOpenInEditor, onCommit, onClose])
+    const focusedIndex = clampFocusIndex(focusIdxRef.current, fileStates.length)
+    const file = fileStates[focusedIndex]
+    if (handleResolutionShortcut(e, file, onResolveFile)) return
+    if (handleOpenShortcut(e, file, onOpenInEditor)) return
+    handleCommitShortcut({ allResolved, committing, event: e, onCommit })
+  }, [allResolved, committing, fileStates, focusIdxRef, moveFocus, onClose, onCommit, onOpenInEditor, onResolveFile])
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose() }}>
-      <DialogContent
-        showCloseButton={false}
-        className="sm:max-w-[520px]"
-        onKeyDown={handleKeyDown}
-      >
-        <DialogHeader>
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={18} className="text-orange-500" />
-            <DialogTitle>Resolve Merge Conflicts</DialogTitle>
-          </div>
-          <DialogDescription>
-            {fileStates.length} file{fileStates.length !== 1 ? 's have' : ' has'} merge conflicts. Choose how to resolve each file.
-          </DialogDescription>
-        </DialogHeader>
+    <DialogContent
+      showCloseButton={false}
+      className="sm:max-w-[520px]"
+      onKeyDown={handleKeyDown}
+    >
+      <ConflictDialogHeader fileCount={fileStates.length} />
 
-        <div
-          ref={listRef}
-          className="flex flex-col gap-2 max-h-[300px] overflow-y-auto"
-          role="grid"
-          data-testid="conflict-file-list"
-        >
-          {fileStates.map((state, i) => (
-            <ConflictFileRow
-              key={state.file}
-              state={state}
-              focused={i === focusIdx}
-              onResolve={(strategy) => onResolveFile(state.file, strategy)}
-              onOpenInEditor={() => onOpenInEditor(state.file)}
-              onFocus={() => {
-                setFocusIdx(i)
-                focusIdxRef.current = i
-              }}
-            />
-          ))}
-        </div>
+      <ConflictFileList
+        fileStates={fileStates}
+        focusIdx={focusIdx}
+        onFocusRow={syncFocusIdx}
+        onOpenInEditor={onOpenInEditor}
+        onResolveFile={onResolveFile}
+      />
 
-        {error && (
-          <p className="text-xs text-destructive" data-testid="conflict-error">{error}</p>
-        )}
+      {error && (
+        <p className="text-xs text-destructive" data-testid="conflict-error">{error}</p>
+      )}
 
-        <DialogFooter className="flex-row items-center justify-between sm:justify-between">
-          <span className="text-[11px] text-muted-foreground">
-            K = keep mine · T = keep theirs · O = open · Enter = commit
-          </span>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button
-              onClick={onCommit}
-              disabled={!allResolved || committing}
-              data-testid="conflict-commit-btn"
-            >
-              {committing ? (
-                <><Loader2 size={14} className="animate-spin mr-1" />Committing…</>
-              ) : (
-                'Commit & continue'
-              )}
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <ConflictDialogFooter
+        allResolved={allResolved}
+        committing={committing}
+        onClose={onClose}
+        onCommit={onCommit}
+      />
+    </DialogContent>
   )
 }

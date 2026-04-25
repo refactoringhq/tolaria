@@ -5,6 +5,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import './index.css'
 import App from './App.tsx'
 import { LinuxTitlebar } from './components/LinuxTitlebar'
+import { applyStoredThemeMode } from './lib/themeMode'
 import {
   APP_COMMAND_EVENT_NAME,
   isAppCommandId,
@@ -28,6 +29,8 @@ if ('__TAURI__' in window || '__TAURI_INTERNALS__' in window) {
 if (shouldUseLinuxWindowChrome()) {
   document.body.classList.add('linux-chrome')
 }
+
+applyStoredThemeMode(document, window.localStorage)
 
 function dispatchDeterministicShortcutEvent(init: AppCommandShortcutEventInit) {
   const target =

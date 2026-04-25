@@ -496,7 +496,7 @@ pub struct DetectedRename {
 
 /// Detect renamed files by comparing working tree against HEAD using git diff.
 pub fn detect_renames(vault: &Path) -> Result<Vec<DetectedRename>, String> {
-    let output = std::process::Command::new("git")
+    let output = crate::hidden_command("git")
         .args(["diff", "HEAD", "--name-status", "--diff-filter=R", "-M"])
         .current_dir(vault)
         .output()

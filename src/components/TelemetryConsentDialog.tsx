@@ -1,5 +1,6 @@
 import { ShieldCheck } from '@phosphor-icons/react'
 import { OnboardingShell } from './OnboardingShell'
+import { Button } from './ui/button'
 
 interface TelemetryConsentDialogProps {
   onAccept: () => void
@@ -10,8 +11,8 @@ export function TelemetryConsentDialog({ onAccept, onDecline }: TelemetryConsent
   return (
     <OnboardingShell
       className="fixed inset-0 z-50"
-      contentClassName="w-full rounded-lg border border-border bg-background shadow-xl"
-      style={{ background: 'rgba(0,0,0,0.4)' }}
+      contentClassName="w-full rounded-lg border border-border bg-background shadow-[0_18px_55px_var(--shadow-dialog)]"
+      style={{ background: 'var(--shadow-overlay)' }}
       contentStyle={{
         width: 'min(440px, 100%)',
         padding: 32,
@@ -49,23 +50,24 @@ export function TelemetryConsentDialog({ onAccept, onDecline }: TelemetryConsent
         </div>
 
         <div style={{ display: 'flex', gap: 12, width: '100%', marginTop: 4 }}>
-          <button
-            className="border border-border bg-transparent text-foreground rounded cursor-pointer hover:bg-accent"
+          <Button
+            type="button"
+            variant="outline"
             style={{ flex: 1, fontSize: 13, padding: '10px 16px' }}
             onClick={onDecline}
             data-testid="telemetry-decline"
             autoFocus
           >
             No thanks
-          </button>
-          <button
-            className="border-none rounded cursor-pointer"
-            style={{ flex: 1, fontSize: 13, padding: '10px 16px', background: 'var(--primary)', color: 'white', fontWeight: 500 }}
+          </Button>
+          <Button
+            type="button"
+            style={{ flex: 1, fontSize: 13, padding: '10px 16px', fontWeight: 500 }}
             onClick={onAccept}
             data-testid="telemetry-accept"
           >
             Allow anonymous reporting
-          </button>
+          </Button>
         </div>
 
         <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: 0, textAlign: 'center' }}>
