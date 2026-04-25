@@ -1,4 +1,5 @@
 import {
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -16,7 +17,11 @@ import {
   extractInlineWikilinkReferences,
   findActiveWikilinkQuery,
 } from './inlineWikilinkText'
-import { serializeInlineNode } from './inlineWikilinkDom'
+import {
+  readSelectionRange,
+  serializeInlineNode,
+  type InlineSelectionRange,
+} from './inlineWikilinkDom'
 import {
   buildPendingPasteState,
   type PendingPasteState,
@@ -145,6 +150,7 @@ export function InlineWikilinkInput({
     [entries, value],
   )
   const typeEntryMap = useMemo(() => buildTypeEntryMap(entries), [entries])
+  const isComposingRef = useRef(false)
   const {
     editorRef,
     selectionRange,
@@ -158,10 +164,17 @@ export function InlineWikilinkInput({
     value,
     onChange,
     inputRef,
+    isComposingRef,
   })
   const pendingPasteRef = useRef<PendingPasteState | null>(null)
-  const isComposingRef = useRef(false)
   const pendingCompositionInputRef = useRef(false)
+  const pendingFocusAfterRemountRef = useRef<InlineSelectionRange | null>(null)
+  useLayoutEffect(() => {
+    const target = pendingFocusAfterRemountRef.current
+    if (!target) return
+    pendingFocusAfterRemountRef.current = null
+    focusSelectionRange(target)
+  }, [focusSelectionRange, renderVersion])
   const activeQuery = useMemo(
     () => selectionRange.start === selectionRange.end
       ? findActiveWikilinkQuery(value, selectionIndex)
@@ -260,7 +273,27 @@ export function InlineWikilinkInput({
   const flushPendingCompositionInput = () => {
     if (isComposingRef.current || !pendingCompositionInputRef.current) return
     pendingCompositionInputRef.current = false
-    syncValueFromEditor()
+
+    const editor = editorRef.current
+    if (!editor) return
+
+    if (containsUnsupportedInlineContent(editor)) {
+      recoverUnsupportedMutation()
+      return
+    }
+
+    const nextValue = normalizeInlineWikilinkValue(serializeInlineNode(editor))
+    const nextSelection = readSelectionRange(editor)
+    const clampedSelection: InlineSelectionRange = {
+      start: Math.min(nextSelection.start, nextValue.length),
+      end: Math.min(nextSelection.end, nextValue.length),
+    }
+
+    const shouldRestoreFocus = document.activeElement === editor
+    pendingFocusAfterRemountRef.current = shouldRestoreFocus ? clampedSelection : null
+    onChange(nextValue)
+    setSelectionRange(clampedSelection)
+    forceRender((current) => current + 1)
   }
   const handleCompositionStart = () => {
     isComposingRef.current = true
