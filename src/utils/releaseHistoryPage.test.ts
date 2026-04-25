@@ -21,8 +21,8 @@ describe('buildReleaseHistoryPage', () => {
       {
         assets: [
           {
-            browser_download_url: 'https://example.com/Tolaria.app.tar.gz',
-            name: 'Tolaria.app.tar.gz',
+            browser_download_url: 'https://example.com/Tolaria-setup.exe',
+            name: 'Tolaria-setup.exe',
           },
         ],
         body: '**Alpha** notes with [details](https://example.com/details).',
@@ -39,10 +39,13 @@ describe('buildReleaseHistoryPage', () => {
     expect(html).toContain('id="tab-stable"')
     expect(html).toContain('aria-selected="true"')
     expect(html).toContain('data-release-panel="alpha" hidden')
+    expect(html).toContain('color-scheme: light dark')
+    expect(html).toContain('@media (prefers-color-scheme: dark)')
+    expect(html).toContain('background: var(--release-surface-page)')
     expect(html).toContain('<h2>Highlights</h2>')
     expect(html).toContain('<li>Faster startup</li>')
     expect(html).toContain('<strong>Alpha</strong> notes')
-    expect(html).toContain('Tolaria.app.tar.gz')
+    expect(html).toContain('Tolaria-setup.exe')
     expect(html).toContain('View on GitHub')
   })
 

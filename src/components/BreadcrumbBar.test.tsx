@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { BreadcrumbBar } from './BreadcrumbBar'
+import { formatShortcutDisplay } from '../hooks/appCommandCatalog'
 import type { VaultEntry } from '../types'
 
 const dragRegionMouseDown = vi.fn()
@@ -137,7 +138,11 @@ describe('BreadcrumbBar — archive/unarchive', () => {
 describe('BreadcrumbBar — organized shortcut hint', () => {
   it('shows Cmd+E on the organized toggle tooltip', async () => {
     render(<BreadcrumbBar entry={baseEntry} {...defaultProps} onToggleOrganized={vi.fn()} />)
-    await expectTooltip(screen.getByRole('button', { name: 'Set note as organized' }), 'Set note as organized', '⌘E')
+    await expectTooltip(
+      screen.getByRole('button', { name: 'Set note as organized' }),
+      'Set note as organized',
+      formatShortcutDisplay({ display: '⌘E' }),
+    )
   })
 
   it('hides the organized toggle when the workflow is disabled', () => {

@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
+import { formatShortcutDisplay } from '../hooks/appCommandCatalog'
 import type { CommitMode } from '../hooks/useCommitFlow'
 
 type CommitDialogCopy = {
@@ -13,12 +14,14 @@ type CommitDialogCopy = {
 }
 
 function getDialogCopy(commitMode: CommitMode): CommitDialogCopy {
+  const submitShortcut = formatShortcutDisplay({ display: '⌘↵' })
+
   if (commitMode === 'local') {
     return {
       title: 'Commit',
       description: 'This vault has no git remote configured. Tolaria will create a local commit only.',
       actionLabel: 'Commit',
-      shortcutHint: 'Cmd+Enter to commit locally',
+      shortcutHint: `${submitShortcut} to commit locally`,
     }
   }
 
@@ -26,7 +29,7 @@ function getDialogCopy(commitMode: CommitMode): CommitDialogCopy {
     title: 'Commit & Push',
     description: 'Review changed files and enter a commit message before committing and pushing.',
     actionLabel: 'Commit & Push',
-    shortcutHint: 'Cmd+Enter to commit',
+    shortcutHint: `${submitShortcut} to commit`,
   }
 }
 

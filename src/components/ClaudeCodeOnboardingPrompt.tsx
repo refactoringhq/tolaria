@@ -14,7 +14,7 @@ interface ClaudeCodeOnboardingPromptProps {
 function getPromptCopy(status: ClaudeCodeStatus) {
   if (status === 'installed') {
     return {
-      accentClassName: 'bg-emerald-100 text-emerald-700',
+      accentClassName: 'bg-[var(--feedback-success-bg)] text-[var(--feedback-success-text)]',
       description: "Tolaria's AI features are ready to use.",
       icon: <CheckCircle2 className="size-7" />,
       title: 'Claude Code detected',
@@ -23,7 +23,7 @@ function getPromptCopy(status: ClaudeCodeStatus) {
 
   if (status === 'missing') {
     return {
-      accentClassName: 'bg-amber-100 text-amber-700',
+      accentClassName: 'bg-[var(--feedback-warning-bg)] text-[var(--feedback-warning-text)]',
       description: 'Tolaria works best with an AI coding agent installed.',
       icon: <Bot className="size-7" />,
       title: 'Claude Code not detected',
@@ -31,7 +31,7 @@ function getPromptCopy(status: ClaudeCodeStatus) {
   }
 
   return {
-    accentClassName: 'bg-slate-100 text-slate-600',
+    accentClassName: 'bg-muted text-muted-foreground',
     description: 'Checking whether Claude Code is available on this machine.',
     icon: <Loader2 className="size-7 animate-spin" />,
     title: 'Checking for Claude Code',

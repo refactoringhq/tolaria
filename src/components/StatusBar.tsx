@@ -3,6 +3,7 @@ import type { VaultAiGuidanceStatus } from '../lib/vaultAiGuidance'
 import { useEffect, useState } from 'react'
 import type { ClaudeCodeStatus } from '../hooks/useClaudeCodeStatus'
 import type { McpStatus } from '../hooks/useMcpStatus'
+import type { ThemeMode } from '../lib/themeMode'
 import type { GitRemoteStatus, SyncStatus } from '../types'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import {
@@ -37,7 +38,9 @@ interface StatusBarProps {
   onPullAndPush?: () => void
   onOpenConflictResolver?: () => void
   zoomLevel?: number
+  themeMode?: ThemeMode
   onZoomReset?: () => void
+  onToggleThemeMode?: () => void
   onOpenFeedback?: () => void
   buildNumber?: string
   onCheckForUpdates?: () => void
@@ -77,7 +80,9 @@ export function StatusBar({
   onPullAndPush,
   onOpenConflictResolver,
   zoomLevel = 100,
+  themeMode = 'light',
   onZoomReset,
+  onToggleThemeMode,
   onOpenFeedback,
   buildNumber,
   onCheckForUpdates,
@@ -154,7 +159,9 @@ export function StatusBar({
         <StatusBarSecondarySection
           noteCount={noteCount}
           zoomLevel={zoomLevel}
+          themeMode={themeMode}
           onZoomReset={onZoomReset}
+          onToggleThemeMode={onToggleThemeMode}
           onOpenFeedback={onOpenFeedback}
           onOpenSettings={onOpenSettings}
         />

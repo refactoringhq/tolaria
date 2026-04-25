@@ -1,9 +1,9 @@
 /* Wikilink autocomplete — floating menu container (positioned by BlockNote) */
 .wikilink-menu {
-  background: var(--bg-primary, #fff);
-  border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
+  background: var(--popover);
+  border: 1px solid var(--border);
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px var(--shadow-dialog);
   max-height: 320px;
   overflow: hidden;
   min-width: 260px;
@@ -24,7 +24,7 @@
 
 .wikilink-menu__item:hover,
 .wikilink-menu__item--selected {
-  background: hsl(var(--accent));
+  background: var(--accent);
 }
 
 .wikilink-menu__title {

@@ -21,6 +21,13 @@ function resolveUrlTarget(target: HTMLElement) {
   return normalizeUrl(href)
 }
 
+function blurActiveEditable(container: HTMLElement) {
+  const active = document.activeElement
+  if (!(active instanceof HTMLElement) || !container.contains(active)) return
+  const editable = active.isContentEditable ? active : active.closest<HTMLElement>('[contenteditable="true"]')
+  editable?.blur()
+}
+
 function setFollowLinksActive(container: HTMLElement, active: boolean) {
   if (active) container.setAttribute('data-follow-links', '')
   else container.removeAttribute('data-follow-links')
@@ -49,6 +56,7 @@ export function useEditorLinkActivation(
       if (wikilinkTarget) {
         event.preventDefault()
         event.stopPropagation()
+        blurActiveEditable(container)
         onNavigateWikilink(wikilinkTarget)
         return
       }
@@ -58,7 +66,7 @@ export function useEditorLinkActivation(
 
       event.preventDefault()
       event.stopPropagation()
-      openExternalUrl(urlTarget).catch(() => {})
+      openExternalUrl(urlTarget).catch((err) => console.warn('[link] Failed to open URL:', err))
     }
 
     container.addEventListener('click', handleClick, true)

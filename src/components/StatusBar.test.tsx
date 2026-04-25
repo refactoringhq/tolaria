@@ -71,17 +71,50 @@ describe('StatusBar', () => {
     expect(screen.queryByText('main')).not.toBeInTheDocument()
   })
 
-  it('shows Feedback button when callback is provided', () => {
+  it('shows Contribute button when callback is provided', () => {
     render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onOpenFeedback={vi.fn()} />)
     expect(screen.getByTestId('status-feedback')).toBeInTheDocument()
-    expect(screen.getByText('Feedback')).toBeInTheDocument()
+    expect(screen.getByText('Contribute')).toBeInTheDocument()
   })
 
-  it('calls onOpenFeedback when Feedback is clicked', () => {
+  it('calls onOpenFeedback when Contribute is clicked', () => {
     const onOpenFeedback = vi.fn()
     render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onOpenFeedback={onOpenFeedback} />)
     fireEvent.click(screen.getByTestId('status-feedback'))
     expect(onOpenFeedback).toHaveBeenCalledOnce()
+  })
+
+  it('shows a theme toggle instead of the notifications placeholder', () => {
+    render(
+      <StatusBar
+        noteCount={100}
+        vaultPath="/Users/luca/Laputa"
+        vaults={vaults}
+        onSwitchVault={vi.fn()}
+        themeMode="light"
+        onToggleThemeMode={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByTestId('status-theme-mode')).toHaveAccessibleName('Switch to dark mode')
+    expect(screen.queryByLabelText('Notifications are coming soon')).not.toBeInTheDocument()
+  })
+
+  it('calls onToggleThemeMode from the bottom bar', () => {
+    const onToggleThemeMode = vi.fn()
+    render(
+      <StatusBar
+        noteCount={100}
+        vaultPath="/Users/luca/Laputa"
+        vaults={vaults}
+        onSwitchVault={vi.fn()}
+        themeMode="dark"
+        onToggleThemeMode={onToggleThemeMode}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Switch to light mode' }))
+    expect(onToggleThemeMode).toHaveBeenCalledOnce()
   })
 
   it('displays active vault name', () => {

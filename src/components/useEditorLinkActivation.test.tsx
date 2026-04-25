@@ -34,6 +34,14 @@ function appendWikilink(container: HTMLElement, target: string) {
   return wikilink
 }
 
+function appendEditableWikilink(container: HTMLElement, target: string) {
+  const editable = document.createElement('div')
+  editable.setAttribute('contenteditable', 'true')
+  const wikilink = appendWikilink(editable, target)
+  container.appendChild(editable)
+  return { editable, wikilink }
+}
+
 function appendUrl(container: HTMLElement, href: string) {
   const link = document.createElement('a')
   link.setAttribute('href', href)
@@ -59,6 +67,19 @@ describe('useEditorLinkActivation', () => {
 
     fireEvent.click(wikilink, { metaKey: true })
     expect(onNavigateWikilink).toHaveBeenCalledWith('Alpha Project')
+  })
+
+  it('blurs an active editor before navigating a Cmd-clicked wikilink', () => {
+    const { container, onNavigateWikilink } = renderHarness()
+    const { editable, wikilink } = appendEditableWikilink(container, 'Alpha Project')
+
+    editable.focus()
+    expect(document.activeElement).toBe(editable)
+
+    fireEvent.click(wikilink, { metaKey: true })
+
+    expect(onNavigateWikilink).toHaveBeenCalledWith('Alpha Project')
+    expect(document.activeElement).not.toBe(editable)
   })
 
   it('opens URLs only on Cmd+click', () => {

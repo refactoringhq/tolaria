@@ -13,12 +13,33 @@ pub mod telemetry;
 pub mod vault;
 pub mod vault_list;
 
+use std::ffi::OsStr;
+use std::process::Command;
+
 #[cfg(desktop)]
 use std::path::{Path, PathBuf};
 #[cfg(desktop)]
 use std::process::Child;
 #[cfg(desktop)]
 use std::sync::Mutex;
+
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+pub(crate) fn hidden_command(program: impl AsRef<OsStr>) -> Command {
+    let mut command = Command::new(program);
+    suppress_windows_console(&mut command);
+    command
+}
+
+#[cfg(windows)]
+fn suppress_windows_console(command: &mut Command) {
+    use std::os::windows::process::CommandExt;
+    command.creation_flags(CREATE_NO_WINDOW);
+}
+
+#[cfg(not(windows))]
+fn suppress_windows_console(_command: &mut Command) {}
 
 #[cfg(desktop)]
 struct WsBridgeChild(Mutex<Option<Child>>);
@@ -91,11 +112,30 @@ fn setup_desktop_plugins(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
         .plugin(tauri_plugin_updater::Builder::new().build())?;
     app.handle().plugin(tauri_plugin_process::init())?;
     app.handle().plugin(tauri_plugin_opener::init())?;
+    #[cfg(not(target_os = "linux"))]
     menu::setup_menu(app)?;
+    setup_linux_window_chrome(app)?;
     Ok(())
 }
 
+#[cfg(all(desktop, target_os = "linux"))]
+fn setup_linux_window_chrome(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    use tauri::Manager;
+
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.set_decorations(false);
+    }
+    Ok(())
+}
+
+#[cfg(not(all(desktop, target_os = "linux")))]
+fn setup_linux_window_chrome(_app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    Ok(())
+}
+
+#[cfg(any(test, all(desktop, target_os = "macos")))]
 const MACOS_WEBVIEW_RESERVED_COMMAND_KEYS: &[&str] = &["O"];
+#[cfg(any(test, all(desktop, target_os = "macos")))]
 const MACOS_WEBVIEW_RESERVED_COMMAND_SHIFT_KEYS: &[&str] = &["L"];
 
 #[cfg(all(desktop, target_os = "macos"))]

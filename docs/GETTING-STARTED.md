@@ -8,6 +8,27 @@ How to navigate the codebase, run the app, and find what you need.
 - **Rust** 1.77.2+ (for the Tauri backend)
 - **git** CLI (required by the git integration features)
 
+### Linux system dependencies
+
+If you run the desktop app on Linux, install Tauri's WebKit2GTK 4.1 dependencies first:
+
+- Arch / Manjaro:
+  ```bash
+  sudo pacman -S --needed webkit2gtk-4.1 base-devel curl wget file openssl \
+    appmenu-gtk-module libappindicator-gtk3 librsvg
+  ```
+- Debian / Ubuntu (22.04+):
+  ```bash
+  sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file \
+    libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev \
+    libsoup-3.0-dev patchelf
+  ```
+- Fedora 38+:
+  ```bash
+  sudo dnf install webkit2gtk4.1-devel openssl-devel curl wget file \
+    libappindicator-gtk3-devel librsvg2-devel
+  ```
+
 ## Quick Start
 
 ```bash
@@ -42,8 +63,8 @@ tolaria/
 │   ├── App.css                   # App shell layout styles
 │   ├── types.ts                  # Shared TS types (VaultEntry, Settings, etc.)
 │   ├── mock-tauri.ts             # Mock Tauri layer for browser testing
-│   ├── theme.json                # Editor theme configuration
-│   ├── index.css                 # Global CSS variables + Tailwind setup
+│   ├── theme.json                # Editor typography theme configuration
+│   ├── index.css                 # Semantic app theme variables + Tailwind setup
 │   │
 │   ├── components/               # UI components (~98 files)
 │   │   ├── Sidebar.tsx           # Left panel: filters + type groups
@@ -68,6 +89,8 @@ tolaria/
 │   │   ├── CommandPalette.tsx    # Cmd+K command launcher
 │   │   ├── BreadcrumbBar.tsx     # Breadcrumb + word count + actions
 │   │   ├── WelcomeScreen.tsx     # Onboarding screen
+│   │   ├── LinuxTitlebar.tsx     # Linux-only custom window chrome + controls
+│   │   ├── LinuxMenuButton.tsx   # Linux titlebar menu mirroring app commands
 │   │   ├── CloneVaultModal.tsx   # Clone a vault from any git URL
 │   │   ├── AddRemoteModal.tsx    # Connect a local-only vault to a remote later
 │   │   ├── ConflictResolverModal.tsx # Git conflict resolution
@@ -118,6 +141,7 @@ tolaria/
 │   ├── utils/                    # Pure utility functions (~48 files)
 │   │   ├── wikilinks.ts          # Wikilink preprocessing pipeline
 │   │   ├── frontmatter.ts        # TypeScript YAML parser
+│   │   ├── platform.ts           # Runtime platform + Linux chrome gating helpers
 │   │   ├── ai-agent.ts           # Agent stream utilities
 │   │   ├── ai-chat.ts            # Token estimation utilities
 │   │   ├── ai-context.ts         # Context snapshot builder
@@ -263,14 +287,14 @@ tolaria/
 
 | File | Why it matters |
 |------|---------------|
-| `src/index.css` | All CSS custom properties. The design token source of truth. |
-| `src/theme.json` | Editor-specific theme (fonts, headings, lists, code blocks). |
+| `src/index.css` | Semantic CSS custom properties for app-owned light/dark themes. |
+| `src/theme.json` | Editor-specific typography theme (fonts, headings, lists, code blocks). |
 
 ### Settings & Config
 
 | File | Why it matters |
 |------|---------------|
-| `src/hooks/useSettings.ts` | App settings (telemetry, release channel, auto-sync interval, default AI agent). |
+| `src/hooks/useSettings.ts` | App settings (telemetry, release channel, theme mode, auto-sync interval, default AI agent). |
 | `src/lib/releaseChannel.ts` | Normalizes persisted updater-channel values (`stable` default, optional `alpha`). |
 | `src/lib/appUpdater.ts` | Frontend wrapper for channel-aware updater commands. |
 | `src/hooks/useMainWindowSizeConstraints.ts` | Derives the main-window minimum width from the visible panes and asks Tauri to grow back to fit wider layouts. |
@@ -311,7 +335,7 @@ type SidebarSelection =
 
 ### Command Registry
 
-`useCommandRegistry` + `useAppCommands` build a centralized command registry. Commands are registered with labels, shortcuts, and handlers. The `CommandPalette` (Cmd+K) fuzzy-searches this registry. Shortcut combos live in `appCommandCatalog.ts`; real keypresses always flow through `useAppKeyboard`, native menu clicks emit the same command IDs through `useMenuEvents`, and `appCommandDispatcher.ts` suppresses the duplicate native/renderer echo from a single shortcut. On macOS, any browser-reserved chord that WKWebView swallows before that path must also be added to the narrow `tauri-plugin-prevent-default` registration in `src-tauri/src/lib.rs`. The same shortcut manifest also declares the deterministic QA mode for each shortcut-capable command.
+`useCommandRegistry` + `useAppCommands` build a centralized command registry. Commands are registered with labels, shortcuts, and handlers. The `CommandPalette` (Cmd+K) fuzzy-searches this registry. Shortcut combos live in `appCommandCatalog.ts`; real keypresses always flow through `useAppKeyboard`, native menu clicks emit the same command IDs through `useMenuEvents`, and `appCommandDispatcher.ts` suppresses the duplicate native/renderer echo from a single shortcut. On macOS, any browser-reserved chord that WKWebView swallows before that path must also be added to the narrow `tauri-plugin-prevent-default` registration in `src-tauri/src/lib.rs`. On Linux, `LinuxTitlebar.tsx` and `LinuxMenuButton.tsx` reuse the same command IDs through `trigger_menu_command` because the native GTK menu bar is intentionally not mounted. The same shortcut manifest also declares the deterministic QA mode for each shortcut-capable command.
 
 Commands whose availability depends on the current note or Git state must also flow through `update_menu_state` so the native menu stays in sync with the command palette. The deleted-note restore action in Changes view is the reference example: the row opens a deleted diff preview, the command palette exposes "Restore Deleted Note", and the Note menu enables the same action only while that preview is active.
 
@@ -380,7 +404,7 @@ BASE_URL="http://localhost:5173" npx playwright test tests/smoke/<slug>.spec.ts
 
 ### Modify styling
 
-1. **Global CSS variables**: Edit `src/index.css`
+1. **Global app/theme variables**: Edit `src/index.css`
 2. **Editor typography**: Edit `src/theme.json`
 
 ### Work with the AI agent

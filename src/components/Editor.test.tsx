@@ -1,6 +1,7 @@
 import { render as rtlRender, screen, fireEvent, act } from '@testing-library/react'
 import type { ComponentProps, PropsWithChildren, ReactElement } from 'react'
 import { describe, it, expect, vi } from 'vitest'
+import { formatShortcutDisplay } from '../hooks/appCommandCatalog'
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -61,6 +62,7 @@ vi.mock('@blocknote/react', () => ({
   createReactInlineContentSpec: () => ({ render: () => null }),
   useCreateBlockNote: () => mockEditor,
   FormattingToolbar: ({ children }: PropsWithChildren) => <>{children}</>,
+  LinkToolbar: ({ children }: PropsWithChildren) => <>{children}</>,
   getFormattingToolbarItems: () => [],
   getDefaultReactSlashMenuItems: () => [],
   ComponentsContext: {
@@ -72,6 +74,9 @@ vi.mock('@blocknote/react', () => ({
     </div>
   ),
   FormattingToolbarController: () => null,
+  LinkToolbarController: () => null,
+  EditLinkButton: () => null,
+  DeleteLinkButton: () => null,
   SideMenuController: () => null,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock
   SuggestionMenuController: (props: any) => {
@@ -79,6 +84,25 @@ vi.mock('@blocknote/react', () => ({
     if (props.triggerCharacter === '[[') capturedGetItems = props.getItems
     return null
   },
+  useComponentsContext: () => ({
+    LinkToolbar: {
+      Button: ({
+        children,
+        label,
+        onClick,
+      }: PropsWithChildren<{ label?: string; onClick?: () => void }>) => (
+        <button onClick={onClick} type="button">
+          {label}
+          {children}
+        </button>
+      ),
+    },
+  }),
+  useDictionary: () => ({
+    link_toolbar: {
+      open: { tooltip: 'Open in a new tab' },
+    },
+  }),
 }))
 
 vi.mock('@blocknote/mantine', () => ({
@@ -181,9 +205,14 @@ function renderEditor(overrides: Partial<EditorComponentProps> = {}) {
 
 describe('Editor', () => {
   it('shows empty state when no tabs are open', () => {
-    renderEditor()
+    const quickOpenHint = formatShortcutDisplay({ display: '⌘P / ⌘O' })
+    const newNoteHint = formatShortcutDisplay({ display: '⌘N' })
+    const { container } = renderEditor()
     expect(screen.getByText('Select a note to start editing')).toBeInTheDocument()
-    expect(screen.getByText(/Cmd\+P or Cmd\+O to search/)).toBeInTheDocument()
+    const shortcutHint = Array.from(container.querySelectorAll('span.text-xs.text-muted-foreground'))
+      .find((element) => element.textContent === `${quickOpenHint} to search · ${newNoteHint} to create`)
+
+    expect(shortcutHint).toBeInTheDocument()
   })
 
   it('renders an invisible drag region in the empty state', () => {

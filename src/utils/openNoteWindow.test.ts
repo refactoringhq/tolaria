@@ -1,11 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { buildNoteWindowUrl, openNoteInNewWindow } from './openNoteWindow'
 import { isTauri } from '../mock-tauri'
+import { shouldUseLinuxWindowChrome } from './platform'
 
 const webviewWindowCalls = vi.fn()
 
 vi.mock('../mock-tauri', () => ({
   isTauri: vi.fn(),
+}))
+
+vi.mock('./platform', () => ({
+  shouldUseLinuxWindowChrome: vi.fn(),
 }))
 
 vi.mock('@tauri-apps/api/webviewWindow', () => ({
@@ -22,6 +27,7 @@ describe('openNoteWindow', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-14T16:00:00Z'))
     vi.mocked(isTauri).mockReturnValue(false)
+    vi.mocked(shouldUseLinuxWindowChrome).mockReturnValue(false)
   })
 
   it('builds a root-app route that preserves the note window params', () => {
@@ -56,6 +62,21 @@ describe('openNoteWindow', () => {
         resizable: true,
         titleBarStyle: 'overlay',
         hiddenTitle: true,
+        decorations: true,
+      }),
+    )
+  })
+
+  it('drops native decorations when Linux window chrome is active', async () => {
+    vi.mocked(isTauri).mockReturnValue(true)
+    vi.mocked(shouldUseLinuxWindowChrome).mockReturnValue(true)
+
+    await openNoteInNewWindow('/vault/linux.md', '/vault', 'Linux Note')
+
+    expect(webviewWindowCalls).toHaveBeenCalledWith(
+      'note-1776182400000',
+      expect.objectContaining({
+        decorations: false,
       }),
     )
   })

@@ -89,7 +89,7 @@ export function AiPanelView({
       style={{
         outline: 'none',
         borderLeft: isActive
-          ? '2px solid var(--accent-blue, #3b82f6)'
+          ? '2px solid var(--accent-blue)'
           : '1px solid var(--border)',
         animation: isActive ? 'ai-border-pulse 2s ease-in-out infinite' : undefined,
         transition: 'border-color 0.3s ease',

@@ -1,6 +1,5 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 /// Public starter vault cloned when the user chooses Getting Started.
 pub const GETTING_STARTED_REPO_URL: &str =
@@ -578,7 +577,7 @@ fn refresh_cloned_vault_config_files(vault_path: &Path) -> Result<(), String> {
 }
 
 fn vault_has_pending_changes(vault_path: &Path) -> Result<bool, String> {
-    let output = Command::new("git")
+    let output = crate::hidden_command("git")
         .args(["status", "--porcelain"])
         .current_dir(vault_path)
         .output()
@@ -599,7 +598,7 @@ fn ensure_commit_identity(vault_path: &Path) -> Result<(), String> {
         ("user.name", "Tolaria"),
         ("user.email", "vault@tolaria.app"),
     ] {
-        let output = Command::new("git")
+        let output = crate::hidden_command("git")
             .args(["config", key])
             .current_dir(vault_path)
             .output()
@@ -609,7 +608,7 @@ fn ensure_commit_identity(vault_path: &Path) -> Result<(), String> {
             continue;
         }
 
-        let set_output = Command::new("git")
+        let set_output = crate::hidden_command("git")
             .args(["config", key, fallback])
             .current_dir(vault_path)
             .output()

@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
+use super::filename_rules::validate_folder_name;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct FolderRenameResult {
     pub old_path: String,
@@ -13,9 +15,7 @@ fn normalize_folder_name(next_name: &str) -> Result<String, String> {
     if trimmed.is_empty() {
         return Err("Folder name cannot be empty".to_string());
     }
-    if trimmed == "." || trimmed == ".." || trimmed.contains('/') || trimmed.contains('\\') {
-        return Err("Invalid folder name".to_string());
-    }
+    validate_folder_name(trimmed)?;
     Ok(trimmed.to_string())
 }
 
@@ -156,6 +156,16 @@ mod tests {
         make_folder(&dir, "projects");
 
         let error = rename_folder(dir.path(), "projects", "../areas").unwrap_err();
+
+        assert_eq!(error, "Invalid folder name");
+    }
+
+    #[test]
+    fn rename_folder_rejects_windows_invalid_names() {
+        let dir = TempDir::new().unwrap();
+        make_folder(&dir, "projects");
+
+        let error = rename_folder(dir.path(), "projects", "LPT1").unwrap_err();
 
         assert_eq!(error, "Invalid folder name");
     }

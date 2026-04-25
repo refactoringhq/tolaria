@@ -1,4 +1,5 @@
 use crate::commands::expand_tilde;
+use crate::vault::filename_rules::validate_view_filename_stem;
 use crate::vault_list;
 use std::ffi::OsString;
 use std::path::{Component, Path, PathBuf};
@@ -199,7 +200,11 @@ pub(crate) fn validate_view_filename(filename: &str) -> Result<(), String> {
     let path = Path::new(filename);
     let mut components = path.components();
     match (components.next(), components.next()) {
-        (Some(Component::Normal(_)), None) => Ok(()),
+        (Some(Component::Normal(value)), None) => {
+            let stem = value.to_string_lossy();
+            let stem = stem.strip_suffix(".yml").unwrap_or(&stem);
+            validate_view_filename_stem(stem)
+        }
         _ => Err(INVALID_VIEW_FILENAME_ERROR.to_string()),
     }
 }

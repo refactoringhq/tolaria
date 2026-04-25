@@ -1,4 +1,5 @@
 import type { SidebarFilter } from '../types'
+import { isMac } from '../utils/platform'
 import type { ViewMode } from './useViewMode'
 
 export const APP_COMMAND_IDS = {
@@ -204,7 +205,7 @@ export const APP_COMMAND_DEFINITIONS: Record<AppCommandId, AppCommandDefinition>
   [APP_COMMAND_IDS.viewToggleAiChat]: {
     route: { kind: 'handler', handler: 'onToggleAIChat' },
     menuOwned: true,
-    shortcut: { combo: 'command-shift', key: 'l', code: 'KeyL', display: '⌘⇧L' },
+    shortcut: { combo: 'command-or-ctrl-shift', key: 'l', code: 'KeyL', display: '⌘⇧L' },
   },
   [APP_COMMAND_IDS.viewToggleBacklinks]: {
     route: { kind: 'handler', handler: 'onToggleInspector' },
@@ -459,4 +460,24 @@ export function findShortcutCommandIdForEvent(event: ShortcutEventLike): AppComm
     if (commandId) return commandId
   }
   return null
+}
+
+export function formatShortcutDisplay(
+  shortcut: Pick<AppCommandShortcutDefinition, 'display'>,
+): string {
+  if (isMac()) return shortcut.display
+
+  return shortcut.display
+    .replaceAll('⌘⇧', 'Ctrl+Shift+')
+    .replaceAll('⌘', 'Ctrl+')
+    .replaceAll('⌫', 'Backspace')
+    .replaceAll('⌦', 'Delete')
+    .replaceAll('←', 'Left')
+    .replaceAll('→', 'Right')
+    .replaceAll('↵', 'Enter')
+}
+
+export function getAppCommandShortcutDisplay(id: AppCommandId): string | undefined {
+  const shortcut = APP_COMMAND_DEFINITIONS[id].shortcut
+  return shortcut ? formatShortcutDisplay(shortcut) : undefined
 }

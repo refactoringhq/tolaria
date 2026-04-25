@@ -254,7 +254,7 @@ function GitStatusPopup({
         borderRadius: 6,
         padding: 8,
         minWidth: 220,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+        boxShadow: '0 4px 12px var(--shadow-dialog)',
         zIndex: 1000,
         fontSize: 12,
         color: 'var(--foreground)',
@@ -310,8 +310,8 @@ export function OfflineBadge({ isOffline }: { isOffline?: boolean }) {
       <span
         style={{
           ...ICON_STYLE,
-          color: 'var(--destructive, #e03e3e)',
-          background: 'rgba(224, 62, 62, 0.12)',
+          color: 'var(--destructive)',
+          background: 'var(--feedback-error-bg)',
           borderRadius: 999,
           padding: '2px 6px',
           fontWeight: 600,
@@ -443,7 +443,7 @@ export function ConflictBadge({ count, onClick }: { count: number; onClick?: () 
         copy={{ label: 'Resolve merge conflicts' }}
         onClick={onClick}
         testId="status-conflict-count"
-        className="text-[var(--destructive,#e03e3e)]"
+        className="text-[var(--destructive)]"
       >
         <span style={ICON_STYLE}>
           <AlertTriangle size={13} />
@@ -469,7 +469,7 @@ export function ChangesBadge({ count, onClick }: { count: number; onClick?: () =
               alignItems: 'center',
               justifyContent: 'center',
               background: 'var(--accent-orange)',
-              color: '#fff',
+              color: 'var(--text-inverse)',
               borderRadius: 9,
               padding: '0 5px',
               fontSize: 10,

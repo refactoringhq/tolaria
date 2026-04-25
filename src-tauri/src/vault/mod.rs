@@ -2,6 +2,7 @@ mod cache;
 mod config_seed;
 mod entry;
 mod file;
+pub(crate) mod filename_rules;
 mod folders;
 mod frontmatter;
 mod getting_started;
@@ -27,7 +28,8 @@ pub use image::{copy_image_to_vault, save_image};
 pub use migration::migrate_is_a_to_type;
 pub use rename::{
     auto_rename_untitled, detect_renames, move_note_to_folder, rename_note, rename_note_filename,
-    update_wikilinks_for_renames, DetectedRename, RenameResult,
+    update_wikilinks_for_renames, AutoRenameUntitledRequest, DetectedRename,
+    MoveNoteToFolderRequest, RenameNoteFilenameRequest, RenameNoteRequest, RenameResult,
 };
 pub use title_sync::{sync_title_on_open, SyncAction};
 pub use trash::{batch_delete_notes, delete_note};

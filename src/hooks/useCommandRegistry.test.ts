@@ -3,6 +3,7 @@ import { renderHook } from '@testing-library/react'
 import { useCommandRegistry, buildTypeCommands, extractVaultTypes, pluralizeType, groupSortKey } from './useCommandRegistry'
 import type { CommandAction } from './useCommandRegistry'
 import { NEW_AI_CHAT_EVENT, OPEN_AI_CHAT_EVENT } from '../utils/aiPromptBridge'
+import { formatShortcutDisplay } from './appCommandCatalog'
 
 function makeConfig(overrides: Record<string, unknown> = {}) {
   return {
@@ -247,7 +248,9 @@ describe('useCommandRegistry', () => {
   it('shows Cmd+E on toggle organized and removes it from archive note', () => {
     const config = makeConfig()
     const { result } = renderHook(() => useCommandRegistry(config))
-    expect(findCommand(result.current, 'toggle-organized')?.shortcut).toBe('⌘E')
+    expect(findCommand(result.current, 'toggle-organized')?.shortcut).toBe(
+      formatShortcutDisplay({ display: '⌘E' }),
+    )
     expect(findCommand(result.current, 'archive-note')?.shortcut).toBeUndefined()
   })
 
@@ -328,12 +331,13 @@ describe('useCommandRegistry', () => {
     expect(findCommand(result.current, 'open-daily-note')).toBeUndefined()
   })
 
-  it('includes Give Feedback in the Settings group when available', () => {
+  it('includes Contribute in the Settings group when available', () => {
     const onOpenFeedback = vi.fn()
     const config = makeConfig({ onOpenFeedback })
     const { result } = renderHook(() => useCommandRegistry(config))
-    const cmd = findCommand(result.current, 'give-feedback')
+    const cmd = findCommand(result.current, 'open-contribute')
     expect(cmd).toBeDefined()
+    expect(cmd!.label).toBe('Contribute')
     expect(cmd!.group).toBe('Settings')
     expect(cmd!.enabled).toBe(true)
 
@@ -355,7 +359,7 @@ describe('useCommandRegistry', () => {
     expect(newNoteCommands).toHaveLength(1)
     expect(newNoteCommands[0]).toMatchObject({
       id: 'create-note',
-      shortcut: '⌘N',
+      shortcut: formatShortcutDisplay({ display: '⌘N' }),
     })
   })
 

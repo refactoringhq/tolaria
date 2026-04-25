@@ -14,7 +14,7 @@ const PILLS: { value: InboxPeriod; label: string }[] = [
   { value: 'all', label: 'All' },
 ]
 
-const BOTTOM_GRADIENT = 'linear-gradient(to bottom, transparent 0%, var(--card, #fff) 30%, var(--card, #fff) 100%)'
+const BOTTOM_GRADIENT = 'linear-gradient(to bottom, transparent 0%, var(--card) 30%, var(--card) 100%)'
 
 function InboxFilterPillsInner({ active, counts, onChange, position = 'top' }: InboxFilterPillsProps) {
   const isBottom = position === 'bottom'

@@ -16,29 +16,29 @@ const bannerStyle = {
   alignItems: 'center',
   gap: 10,
   padding: '6px 12px',
-  background: '#1a56db',
+  background: 'var(--accent-blue)',
   borderBottom: 'none',
   fontSize: 13,
-  color: '#fff',
+  color: 'var(--text-inverse)',
   flexShrink: 0,
 } satisfies CSSProperties
 
 const iconStyle = {
-  color: '#fff',
+  color: 'var(--text-inverse)',
   flexShrink: 0,
 } satisfies CSSProperties
 
 const primaryActionStyle = {
   marginLeft: 'auto',
   padding: '3px 10px',
-  background: 'var(--primary)',
-  color: '#fff',
+  background: 'var(--text-inverse)',
+  color: 'var(--accent-blue)',
   fontSize: 12,
   fontWeight: 500,
 } satisfies CSSProperties
 
 const dismissButtonStyle = {
-  color: '#fff',
+  color: 'var(--text-inverse)',
   display: 'flex',
   padding: 2,
 } satisfies CSSProperties
@@ -47,18 +47,18 @@ const progressTrackStyle = {
   flex: 1,
   maxWidth: 200,
   height: 4,
-  background: 'rgba(255,255,255,0.3)',
+  background: 'color-mix(in srgb, var(--text-inverse) 30%, transparent)',
   borderRadius: 2,
   overflow: 'hidden',
 } satisfies CSSProperties
 
 const progressTextStyle = {
   fontSize: 11,
-  color: 'rgba(255,255,255,0.85)',
+  color: 'color-mix(in srgb, var(--text-inverse) 85%, transparent)',
 } satisfies CSSProperties
 
 const readyIconStyle = {
-  color: 'var(--accent-green, #0F7B0F)',
+  color: 'var(--accent-green)',
   flexShrink: 0,
 } satisfies CSSProperties
 
@@ -75,7 +75,7 @@ function renderAvailableContent(status: Extract<VisibleUpdateStatus, { state: 'a
         size="xs"
         data-testid="update-release-notes"
         onClick={actions.openReleaseNotes}
-        style={{ color: '#fff', padding: 0, height: 'auto' }}
+        style={{ color: 'var(--text-inverse)', padding: 0, height: 'auto' }}
       >
         Release Notes <ExternalLink size={11} />
       </Button>
@@ -114,7 +114,7 @@ function renderDownloadingContent(status: Extract<VisibleUpdateStatus, { state: 
           style={{
             width: `${Math.round(status.progress * 100)}%`,
             height: '100%',
-            background: 'var(--primary)',
+            background: 'var(--text-inverse)',
             borderRadius: 2,
             transition: 'width 0.2s ease',
           }}
@@ -139,7 +139,8 @@ function renderReadyContent(status: Extract<VisibleUpdateStatus, { state: 'ready
         onClick={restartApp}
         style={{
           ...primaryActionStyle,
-          background: 'var(--accent-green, #0F7B0F)',
+          background: 'var(--accent-green)',
+          color: 'var(--text-inverse)',
         }}
       >
         Restart Now

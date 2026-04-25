@@ -97,7 +97,7 @@ export function CreateNoteDialog({ open, onClose, onCreate, defaultType, customT
                   className={cn(
                     "rounded-full text-xs",
                     type === t
-                      ? "bg-[var(--accent-blue)] text-white"
+                      ? "bg-[var(--accent-blue)] text-primary-foreground"
                       : "border-[var(--accent-blue)] text-[var(--accent-blue)]"
                   )}
                   onClick={() => setType(t)}

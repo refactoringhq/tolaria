@@ -68,9 +68,9 @@
 
 /* AI highlight animation — applied by useAiActivity when MCP calls ui_highlight */
 @keyframes ai-highlight-glow {
-  0% { box-shadow: inset 0 0 0 2px rgba(99, 102, 241, 0.8); }
-  50% { box-shadow: inset 0 0 8px 2px rgba(99, 102, 241, 0.4); }
-  100% { box-shadow: inset 0 0 0 2px rgba(99, 102, 241, 0); }
+  0% { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent-blue) 80%, transparent); }
+  50% { box-shadow: inset 0 0 8px 2px color-mix(in srgb, var(--accent-blue) 40%, transparent); }
+  100% { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent-blue) 0%, transparent); }
 }
 
 .ai-highlight {

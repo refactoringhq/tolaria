@@ -80,7 +80,7 @@ describe('appCommandDispatcher', () => {
   it('finds raw editor and AI shortcuts from the shared catalog', () => {
     expect(findShortcutCommandId('command-or-ctrl', 'o', 'KeyO')).toBe(APP_COMMAND_IDS.fileQuickOpen)
     expect(findShortcutCommandId('command-or-ctrl', '\\')).toBe(APP_COMMAND_IDS.editToggleRawEditor)
-    expect(findShortcutCommandId('command-shift', '¬', 'KeyL')).toBe(APP_COMMAND_IDS.viewToggleAiChat)
+    expect(findShortcutCommandId('command-or-ctrl-shift', '¬', 'KeyL')).toBe(APP_COMMAND_IDS.viewToggleAiChat)
   })
 
   it('gives every shortcut command an explicit deterministic QA strategy', () => {
@@ -189,7 +189,7 @@ describe('appCommandDispatcher', () => {
         metaKey: false,
         shiftKey: true,
       }),
-    ).toBeNull()
+    ).toBe(APP_COMMAND_IDS.viewToggleAiChat)
   })
 
   it('dispatches create note through the shared command path', () => {

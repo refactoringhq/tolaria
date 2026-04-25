@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { formatShortcutDisplay } from '../appCommandCatalog'
 import { buildSettingsCommands } from './settingsCommands'
 
 describe('buildSettingsCommands', () => {
@@ -25,7 +26,7 @@ describe('buildSettingsCommands', () => {
 
     expect(commands.find((item) => item.id === 'open-settings')).toMatchObject({
       label: 'Open Settings',
-      shortcut: '⌘,',
+      shortcut: formatShortcutDisplay({ display: '⌘,' }),
       enabled: true,
     })
   })

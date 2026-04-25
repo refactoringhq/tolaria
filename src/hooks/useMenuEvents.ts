@@ -14,6 +14,8 @@ import {
 
 const NOTE_LIST_SEARCH_MENU_ID = 'edit-toggle-note-list-search'
 
+type NativeUnlisten = () => void | Promise<void>
+
 export interface MenuEventHandlers extends AppCommandHandlers {
   activeTabPath: string | null
   modifiedCount?: number
@@ -54,6 +56,12 @@ function syncNativeMenuState(state: MenuStatePayload): void {
 
   import('@tauri-apps/api/core')
     .then(({ invoke }) => invoke('update_menu_state', { state }))
+    .catch((err) => console.warn('[menu] Failed to sync native menu state:', err))
+}
+
+function cleanupNativeMenuListener(unlisten: NativeUnlisten): void {
+  void Promise.resolve()
+    .then(unlisten)
     .catch(() => {})
 }
 
@@ -62,7 +70,7 @@ function useNativeMenuEventListener(handlersRef: { current: MenuEventHandlers })
     if (!isTauri()) return
 
     let disposed = false
-    let unlisten: (() => void) | null = null
+    let unlisten: NativeUnlisten | null = null
 
     import('@tauri-apps/api/event')
       .then(async ({ listen }) => {
@@ -71,7 +79,7 @@ function useNativeMenuEventListener(handlersRef: { current: MenuEventHandlers })
         })
 
         if (disposed) {
-          teardown()
+          cleanupNativeMenuListener(teardown)
           return
         }
 
@@ -83,7 +91,7 @@ function useNativeMenuEventListener(handlersRef: { current: MenuEventHandlers })
 
     return () => {
       disposed = true
-      unlisten?.()
+      if (unlisten) cleanupNativeMenuListener(unlisten)
     }
   }, [handlersRef])
 }

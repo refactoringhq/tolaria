@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import type { VaultEntry } from '../types'
 
 const state = vi.hoisted(() => ({
+  capturedLinkToolbarProps: null as null | Record<string, unknown>,
   capturedToolbarProps: null as null | Record<string, unknown>,
   capturedSuggestionProps: {} as Record<string, Record<string, unknown>>,
   capturedImageDropArgs: null as null | Record<string, unknown>,
@@ -23,15 +24,18 @@ vi.mock('@blocknote/react', () => ({
     editable?: boolean
     className?: string
     formattingToolbar?: boolean
+    linkToolbar?: boolean
     slashMenu?: boolean
     sideMenu?: boolean
     onChange?: () => void
+    theme?: string
   }) => {
     const {
       children,
       editable,
       className,
       formattingToolbar,
+      linkToolbar,
       slashMenu,
       sideMenu,
       ...restProps
@@ -45,6 +49,7 @@ vi.mock('@blocknote/react', () => ({
       <div
         data-testid="blocknote-view"
         data-editable={editable !== false ? 'true' : 'false'}
+        data-link-toolbar={linkToolbar !== false ? 'true' : 'false'}
         className={className}
         {...restProps}
       >
@@ -52,12 +57,47 @@ vi.mock('@blocknote/react', () => ({
       </div>
     )
   },
+  LinkToolbarController: (props: Record<string, unknown>) => {
+    state.capturedLinkToolbarProps = props
+    return <div data-testid="link-toolbar-controller" />
+  },
+  LinkToolbar: ({ children }: { children?: ReactNode }) => (
+    <div className="bn-link-toolbar">{children}</div>
+  ),
+  EditLinkButton: () => <button type="button">Edit Link</button>,
+  DeleteLinkButton: () => <button type="button">Remove Link</button>,
   SideMenuController: () => <div data-testid="side-menu-controller" />,
   SuggestionMenuController: (props: Record<string, unknown>) => {
     state.capturedSuggestionProps[String(props.triggerCharacter)] = props
     return <div data-testid={`suggestion-${String(props.triggerCharacter)}`} />
   },
+  useComponentsContext: () => ({
+    LinkToolbar: {
+      Button: ({
+        children,
+        icon,
+        label,
+        onClick,
+      }: {
+        children?: ReactNode
+        icon?: ReactNode
+        label?: string
+        onClick?: () => void
+      }) => (
+        <button onClick={onClick} type="button">
+          {icon}
+          {label}
+          {children}
+        </button>
+      ),
+    },
+  }),
   useCreateBlockNote: vi.fn(),
+  useDictionary: () => ({
+    link_toolbar: {
+      open: { tooltip: 'Open in a new tab' },
+    },
+  }),
 }))
 
 vi.mock('@blocknote/mantine', () => ({
@@ -81,6 +121,10 @@ vi.mock('../hooks/useImageDrop', () => ({
     state.capturedImageDropArgs = args
     return state.imageDropState
   },
+}))
+
+vi.mock('../utils/url', () => ({
+  openExternalUrl: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('../utils/typeColors', () => ({
@@ -137,7 +181,10 @@ vi.mock('./useEditorLinkActivation', () => ({
   ),
 }))
 
+import { openExternalUrl } from '../utils/url'
 import { SingleEditorView } from './SingleEditorView'
+
+const mockOpenExternalUrl = vi.mocked(openExternalUrl)
 
 function makeEntry(overrides: Partial<VaultEntry> = {}): VaultEntry {
   return {
@@ -199,12 +246,16 @@ function createEditor() {
 describe('SingleEditorView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    state.capturedLinkToolbarProps = null
     state.capturedToolbarProps = null
     state.capturedSuggestionProps = {}
     state.capturedImageDropArgs = null
     state.capturedBlockNoteOnChange = null
     state.imageDropState.isDragOver = false
     state.wikilinkEntriesRef.current = []
+    mockOpenExternalUrl.mockClear()
+    document.documentElement.removeAttribute('data-theme')
+    document.documentElement.classList.remove('dark')
     delete window.__laputaTest
   })
 
@@ -282,6 +333,15 @@ describe('SingleEditorView', () => {
 
     expect(state.hoverGuardMock).toHaveBeenCalledOnce()
     expect(state.linkActivationMock).toHaveBeenCalledOnce()
+    expect(screen.getByTestId('blocknote-view')).toHaveAttribute('data-link-toolbar', 'false')
+    expect(state.capturedLinkToolbarProps).toEqual(expect.objectContaining({
+      linkToolbar: expect.any(Function),
+      floatingUIOptions: expect.objectContaining({
+        elementProps: expect.objectContaining({
+          onMouseDownCapture: expect.any(Function),
+        }),
+      }),
+    }))
 
     const onMouseDownCapture = (
       (state.capturedToolbarProps?.floatingUIOptions as { elementProps: { onMouseDownCapture: (event: { target: HTMLElement; preventDefault: () => void }) => void } })
@@ -297,6 +357,19 @@ describe('SingleEditorView', () => {
     onMouseDownCapture({ target: normalTarget, preventDefault: normalPreventDefault })
     expect(normalPreventDefault).toHaveBeenCalledOnce()
 
+    const linkToolbarMouseDownCapture = (
+      (state.capturedLinkToolbarProps?.floatingUIOptions as { elementProps: { onMouseDownCapture: (event: { target: HTMLElement; preventDefault: () => void }) => void } })
+    ).elementProps.onMouseDownCapture
+    const linkInput = document.createElement('input')
+    const linkInputPreventDefault = vi.fn()
+    linkToolbarMouseDownCapture({ target: linkInput, preventDefault: linkInputPreventDefault })
+    expect(linkInputPreventDefault).not.toHaveBeenCalled()
+
+    const linkActionTarget = document.createElement('button')
+    const linkActionPreventDefault = vi.fn()
+    linkToolbarMouseDownCapture({ target: linkActionTarget, preventDefault: linkActionPreventDefault })
+    expect(linkActionPreventDefault).toHaveBeenCalledOnce()
+
     const onWikiItemClick = vi.fn()
     const onMentionItemClick = vi.fn()
     ;(state.capturedSuggestionProps['[['].onItemClick as (item: { onItemClick: () => void }) => void)({ onItemClick: onWikiItemClick })
@@ -304,6 +377,22 @@ describe('SingleEditorView', () => {
 
     expect(onWikiItemClick).toHaveBeenCalledOnce()
     expect(onMentionItemClick).toHaveBeenCalledOnce()
+  })
+
+  it('passes the active document theme to BlockNote', () => {
+    document.documentElement.setAttribute('data-theme', 'dark')
+    document.documentElement.classList.add('dark')
+
+    render(
+      <SingleEditorView
+        editor={createEditor() as never}
+        entries={[makeEntry()]}
+        onNavigateWikilink={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByTestId('blocknote-view')).toHaveAttribute('theme', 'dark')
+    expect(screen.getByTestId('blocknote-view')).toHaveAttribute('data-mantine-color-scheme', 'dark')
   })
 
   it('defers rich-editor change propagation until IME composition ends', async () => {
@@ -333,5 +422,103 @@ describe('SingleEditorView', () => {
     })
 
     expect(onChange).toHaveBeenCalledTimes(1)
+  })
+
+  it('routes clicks on the empty title wrapper back into the H1 block', async () => {
+    const editor = createEditor()
+
+    render(
+      <SingleEditorView
+        editor={editor as never}
+        entries={[makeEntry()]}
+        onNavigateWikilink={vi.fn()}
+      />,
+    )
+
+    const container = screen.getByTestId('blocknote-view').closest('.editor__blocknote-container')
+    expect(container).toBeTruthy()
+
+    const titleBlockOuter = document.createElement('div')
+    titleBlockOuter.className = 'bn-block-outer'
+
+    const titleBlock = document.createElement('div')
+    titleBlock.className = 'bn-block'
+
+    const titleHeading = document.createElement('div')
+    titleHeading.setAttribute('data-content-type', 'heading')
+    titleHeading.setAttribute('data-level', '1')
+
+    const inlineHeading = document.createElement('div')
+    inlineHeading.className = 'bn-inline-content'
+    titleHeading.appendChild(inlineHeading)
+    titleBlock.appendChild(titleHeading)
+    titleBlockOuter.appendChild(titleBlock)
+    container?.appendChild(titleBlockOuter)
+
+    fireEvent.click(titleBlockOuter)
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(editor.setTextCursorPosition).toHaveBeenCalledWith('heading-block', 'end')
+    expect(editor.focus).toHaveBeenCalled()
+  })
+
+  it('ignores editor-container click handling for link toolbar interactions', () => {
+    const editor = createEditor()
+
+    render(
+      <SingleEditorView
+        editor={editor as never}
+        entries={[makeEntry()]}
+        onNavigateWikilink={vi.fn()}
+      />,
+    )
+
+    const container = screen.getByTestId('blocknote-view').closest('.editor__blocknote-container')
+    expect(container).toBeTruthy()
+
+    const linkToolbar = document.createElement('div')
+    linkToolbar.className = 'bn-link-toolbar'
+    const linkAction = document.createElement('button')
+    linkAction.type = 'button'
+    linkAction.textContent = 'Open in a new tab'
+    linkToolbar.appendChild(linkAction)
+    container?.appendChild(linkToolbar)
+
+    fireEvent.click(linkAction)
+
+    expect(editor.setTextCursorPosition).not.toHaveBeenCalled()
+    expect(editor.focus).not.toHaveBeenCalled()
+  })
+
+  it('routes the custom link-toolbar open action through openExternalUrl', () => {
+    render(
+      <SingleEditorView
+        editor={createEditor() as never}
+        entries={[makeEntry()]}
+        onNavigateWikilink={vi.fn()}
+      />,
+    )
+
+    const LinkToolbarComponent = state.capturedLinkToolbarProps?.linkToolbar as React.ComponentType<{
+      url: string
+      text: string
+      range: { from: number; to: number }
+      setToolbarOpen?: (open: boolean) => void
+      setToolbarPositionFrozen?: (open: boolean) => void
+    }>
+
+    render(
+      <LinkToolbarComponent
+        url="https://example.com/docs"
+        text="Example"
+        range={{ from: 1, to: 8 }}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open in a new tab' }))
+
+    expect(mockOpenExternalUrl).toHaveBeenCalledWith('https://example.com/docs')
   })
 })

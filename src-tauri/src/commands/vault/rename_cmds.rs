@@ -17,12 +17,12 @@ pub fn rename_note(
         &vault_path,
         &old_path,
         |requested_root, validated_path| {
-            vault::rename_note(
-                requested_root,
-                validated_path,
-                &new_title,
-                old_title.as_deref(),
-            )
+            vault::rename_note(vault::RenameNoteRequest {
+                vault_path: requested_root,
+                old_path: validated_path,
+                new_title: &new_title,
+                old_title_hint: old_title.as_deref(),
+            })
         },
     )
 }
@@ -37,7 +37,11 @@ pub fn rename_note_filename(
         &vault_path,
         &old_path,
         |requested_root, validated_path| {
-            vault::rename_note_filename(requested_root, validated_path, &new_filename_stem)
+            vault::rename_note_filename(vault::RenameNoteFilenameRequest {
+                vault_path: requested_root,
+                old_path: validated_path,
+                new_filename_stem: &new_filename_stem,
+            })
         },
     )
 }
@@ -67,11 +71,11 @@ pub fn move_note_to_folder(
                     if !validated_folder.is_dir() {
                         return Err(format!("Folder does not exist: {}", trimmed_folder_path));
                     }
-                    vault::move_note_to_folder(
-                        requested_root,
-                        validated_path,
-                        validated_folder_path,
-                    )
+                    vault::move_note_to_folder(vault::MoveNoteToFolderRequest {
+                        vault_path: requested_root,
+                        old_path: validated_path,
+                        destination_folder_path: validated_folder_path,
+                    })
                 },
             )
         },
@@ -87,7 +91,10 @@ pub fn auto_rename_untitled(
         &vault_path,
         &note_path,
         |requested_root, validated_path| {
-            vault::auto_rename_untitled(requested_root, validated_path)
+            vault::auto_rename_untitled(vault::AutoRenameUntitledRequest {
+                vault_path: requested_root,
+                note_path: validated_path,
+            })
         },
     )
 }
@@ -95,7 +102,7 @@ pub fn auto_rename_untitled(
 #[tauri::command]
 pub fn detect_renames(vault_path: String) -> Result<Vec<DetectedRename>, String> {
     let vault_path = expand_tilde(&vault_path);
-    vault::detect_renames(&vault_path)
+    vault::detect_renames(Path::new(vault_path.as_ref()))
 }
 
 #[tauri::command]
@@ -104,5 +111,5 @@ pub fn update_wikilinks_for_renames(
     renames: Vec<DetectedRename>,
 ) -> Result<usize, String> {
     let vault_path = expand_tilde(&vault_path);
-    vault::update_wikilinks_for_renames(&vault_path, &renames)
+    vault::update_wikilinks_for_renames(Path::new(vault_path.as_ref()), &renames)
 }

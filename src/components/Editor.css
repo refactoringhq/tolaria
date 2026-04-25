@@ -68,7 +68,7 @@
 
 /* Drag-over state: subtle border highlight */
 .editor__blocknote-container--drag-over {
-  outline: 2px dashed var(--primary, #155DFF);
+  outline: 2px dashed var(--border-focus);
   outline-offset: -2px;
 }
 
@@ -80,18 +80,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(21, 93, 255, 0.06);
+  background: var(--state-drag-target);
   pointer-events: none;
 }
 
 .editor__drop-overlay-label {
   padding: 10px 20px;
   border-radius: 8px;
-  background: var(--background, #fff);
-  color: var(--primary, #155DFF);
+  background: var(--surface-popover);
+  color: var(--primary);
   font-size: 14px;
   font-weight: 500;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px var(--shadow-dialog);
 }
 
 .editor__blocknote-container .bn-container {
@@ -246,7 +246,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  color: var(--text-faint, #999);
+  color: var(--text-faint);
   font-size: 13px;
   opacity: 0;
   transition: opacity 0.15s;
@@ -274,9 +274,9 @@
   flex-direction: column;
   min-width: 140px;
   border-radius: 8px;
-  border: 1px solid var(--border-dialog, var(--border));
+  border: 1px solid var(--border-dialog);
   background: var(--popover);
-  box-shadow: 0 4px 16px var(--shadow-dialog, rgba(0,0,0,0.1));
+  box-shadow: 0 4px 16px var(--shadow-dialog);
   padding: 4px;
 }
 
@@ -297,7 +297,7 @@
 }
 
 .note-icon-menu__item--danger {
-  color: var(--destructive, #ef4444);
+  color: var(--destructive);
 }
 
 /* =============================================

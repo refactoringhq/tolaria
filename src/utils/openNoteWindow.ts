@@ -1,4 +1,5 @@
 import { isTauri } from '../mock-tauri'
+import { shouldUseLinuxWindowChrome } from './platform'
 
 export function buildNoteWindowUrl(notePath: string, vaultPath: string, noteTitle: string): string {
   const params = new URLSearchParams({
@@ -29,5 +30,6 @@ export async function openNoteInNewWindow(notePath: string, vaultPath: string, n
     resizable: true,
     titleBarStyle: 'overlay',
     hiddenTitle: true,
+    decorations: !shouldUseLinuxWindowChrome(),
   })
 }

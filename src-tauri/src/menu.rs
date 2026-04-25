@@ -156,6 +156,11 @@ fn build_app_menu(app: &App) -> MenuResult {
 }
 
 fn build_file_menu(app: &App) -> MenuResult {
+    let quick_open_alias_label = if cfg!(target_os = "macos") {
+        "Quick Open (Cmd+O)"
+    } else {
+        "Quick Open (Ctrl+O)"
+    };
     let new_note = MenuItemBuilder::new("New Note")
         .id(FILE_NEW_NOTE)
         .accelerator("CmdOrCtrl+N")
@@ -167,7 +172,7 @@ fn build_file_menu(app: &App) -> MenuResult {
         .id(FILE_QUICK_OPEN)
         .accelerator("CmdOrCtrl+P")
         .build(app)?;
-    let quick_open_alias = MenuItemBuilder::new("Quick Open (Cmd+O)")
+    let quick_open_alias = MenuItemBuilder::new(quick_open_alias_label)
         .id(FILE_QUICK_OPEN_ALIAS)
         .accelerator("CmdOrCtrl+O")
         .build(app)?;
@@ -320,7 +325,7 @@ fn build_note_menu(app: &App) -> MenuResult {
         .build(app)?;
     let toggle_ai_chat = MenuItemBuilder::new("Toggle AI Panel")
         .id(VIEW_TOGGLE_AI_CHAT)
-        .accelerator("Cmd+Shift+L")
+        .accelerator("CmdOrCtrl+Shift+L")
         .build(app)?;
     let toggle_backlinks = MenuItemBuilder::new("Toggle Backlinks")
         .id(VIEW_TOGGLE_BACKLINKS)

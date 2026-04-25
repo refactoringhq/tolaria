@@ -185,6 +185,8 @@ Panels are separated by `ResizeHandle` components that support drag-to-resize.
 
 The main Tauri window derives its minimum width from the visible panes instead of a single fixed floor. `useMainWindowSizeConstraints` treats the editor-only shell as the 480px baseline, adds sidebar / note-list / expanded-inspector allowances on top, and calls the native `update_current_window_min_size` command whenever view mode or inspector visibility changes. That same native command also grows the current window back out when a wider pane combination is restored, while note windows skip this path and keep their dedicated 800×700 initial sizing.
 
+Linux uses custom React-rendered window chrome instead of the native Tauri menu bar. `setup_linux_window_chrome()` drops server-side decorations on the main window, `openNoteInNewWindow()` does the same for detached note windows, and `LinuxTitlebar`/`LinuxMenuButton` route both window controls and menu actions back through the same shared command pipeline that macOS uses for native menu clicks.
+
 ## Multi-Window (Note Windows)
 
 Notes can be opened in separate Tauri windows for focused editing. Secondary windows show only the editor panel (no sidebar, no note list).
@@ -200,7 +202,7 @@ Notes can be opened in separate Tauri windows for focused editing. Secondary win
 - `main.tsx` checks `isNoteWindow()` at boot to route between `App` (main window) and `NoteWindow` (secondary window)
 - `NoteWindow` (`src/NoteWindow.tsx`) is a minimal shell that loads vault entries, fetches note content, applies the theme, and renders a single `Editor` instance
 - Each window has its own auto-save via `useEditorSaveWithLinks` (same 500ms debounce, same Rust `save_note_content` command), and raw-editor typing also derives frontmatter-backed `VaultEntry` state in the renderer so Inspector and note-list surfaces react immediately without waiting for a full reload
-- Secondary windows are sized 800×700 with overlay title bar
+- Secondary windows are sized 800×700; macOS keeps the overlay title bar, while Linux mounts the shared React titlebar on undecorated windows
 - Capabilities config (`src-tauri/capabilities/default.json`) grants permissions to both `main` and `note-*` window labels
 
 ## AI System
@@ -404,10 +406,11 @@ flowchart TD
 
 ## Styling
 
-The app uses a single light theme with no user-configurable theming (see [ADR-0013](adr/0013-remove-theming-system.md)).
+The app uses internal app-owned light and dark themes (see [ADR-0081](adr/0081-internal-light-dark-theme-runtime.md)). This is not the old vault-authored theming system from ADR-0013: users choose a mode, but themes are owned by the app.
 
-1. **Global CSS variables** (`src/index.css`): App-wide colors, borders, backgrounds. Bridged to Tailwind v4 via `@theme inline`.
-2. **Editor theme** (`src/theme.json`): BlockNote-specific typography. Flattened to CSS vars by `useEditorTheme`.
+1. **Global CSS variables** (`src/index.css`): Semantic app colors, borders, surfaces, and interaction states. Bridged to Tailwind v4 via `@theme inline`.
+2. **Editor theme** (`src/theme.json`): BlockNote-specific typography. Flattened to CSS vars by `useEditorTheme`; editor colors resolve through the same semantic app variables.
+3. **Theme runtime**: Applies `data-theme` and the shadcn-compatible `.dark` class before React consumers render, with a localStorage mirror to avoid startup flash when dark mode is selected.
 
 ## Vault Management
 
@@ -590,8 +593,9 @@ The vault backend (`src-tauri/src/vault/`) is split into focused submodules:
 | `parsing.rs` | Text processing: snippet extraction, markdown stripping, ISO date parsing, `extract_title` (H1 → legacy frontmatter → filename), `slug_to_title` |
 | `title_sync.rs` | Legacy filename → `title` frontmatter sync helper; no longer used by the normal note-open flow |
 | `cache.rs` | Git-based incremental vault caching (`scan_vault_cached`), git helpers |
+| `filename_rules.rs` | Cross-platform validation for note filenames, folder names, and custom view filenames |
 | `rename.rs` | `rename_note` / `rename_note_filename` / `move_note_to_folder` — stage crash-safe file moves, update `title` frontmatter when needed, recover unfinished rename transactions, and report backlink rewrite failures |
-| `image.rs` | `save_image` — saves base64-encoded attachments with sanitized filenames |
+| `image.rs` | `save_image` / `copy_image_to_vault` — save editor image attachments with sanitized filenames |
 | `migration.rs` | `flatten_vault`, `vault_health_check`, `migrate_is_a_to_type` |
 | `config_seed.rs` | Maintains vault AI guidance (`AGENTS.md` + `CLAUDE.md` shim), migrates legacy `config/agents.md`, and repairs missing root type scaffolding such as `type.md` and `note.md` |
 | `getting_started.rs` | Clones and normalizes the public Getting Started starter vault |
@@ -611,7 +615,7 @@ The vault backend (`src-tauri/src/vault/`) is split into focused submodules:
 | `settings.rs` | App settings persistence |
 | `vault_config.rs` | Per-vault UI config |
 | `vault_list.rs` | Vault list persistence |
-| `menu.rs` | Native macOS menu bar |
+| `menu.rs` | Native desktop menu definitions and command IDs (not mounted on Linux) |
 
 ## Tauri IPC Commands
 
@@ -709,8 +713,8 @@ The desktop MCP WebSocket bridge is intentionally local-only. `mcp-server/ws-bri
 | `save_vault_config` | Save per-vault UI config |
 | `get_default_vault_path` | Get default vault path |
 | `get_build_number` | Get app build number |
-| `save_image` | Save base64 image to vault |
-| `copy_image_to_vault` | Copy image file to vault |
+| `save_image` | Save base64 image to `attachments/` and refresh the active vault asset scope |
+| `copy_image_to_vault` | Copy image file to `attachments/` and refresh the active vault asset scope |
 | `update_menu_state` | Update native menu checkmarks and enabled/disabled state for selection-dependent actions |
 | `trigger_menu_command` | Emit a native menu command ID for deterministic shortcut QA |
 | `update_current_window_min_size` | Update the active Tauri window's minimum size and optionally grow it to fit restored panes |
@@ -748,14 +752,14 @@ No Redux or global context. State lives in the root `App.tsx` and custom hooks:
 | `frontmatterOps` | — (pure functions) | Frontmatter CRUD: key→VaultEntry mapping, mock/Tauri dispatch |
 | `useTabManagement` | Navigation history, note switching | Note navigation lifecycle |
 | `useVaultSwitcher` | `vaultPath`, `extraVaults` | Vault switching |
-| `useTheme` | Editor theme CSS vars | Editor typography theme |
+| `useTheme` | Editor theme CSS vars and theme-mode bridge | Editor typography and app theme runtime |
 | `useCliAiAgent` | `messages`, `status`, tool actions | Selected AI agent conversation |
 | `useAutoSync` | Sync interval, pull/push state | Git auto-sync |
 | `useAutoGit` | Last activity timestamp, idle/inactive checkpoint triggers | Automatic commit/push checkpoints |
 | `useCommitFlow` | Commit dialog state, shared manual/automatic checkpoint runner | Git commit/push orchestration |
 | `useGitRemoteStatus` | `remoteStatus`, `refreshRemoteStatus()` | On-demand remote detection for commit UI |
 | `useUnifiedSearch` | Query, results, loading state | Keyword search |
-| `useSettings` | App settings (telemetry, release channel, auto-sync interval, AutoGit thresholds, default AI agent) | Persistent settings |
+| `useSettings` | App settings (telemetry, release channel, theme mode, auto-sync interval, AutoGit thresholds, default AI agent) | Persistent settings |
 | `useVaultConfig` | Per-vault UI preferences | Vault-specific config |
 | `appCommandDispatcher` | Canonical shortcut/menu command IDs | Shared execution path for renderer and native menu commands |
 
@@ -780,9 +784,10 @@ Selection-dependent actions are wired through the command palette and the native
 Shortcut routing is explicit:
 
 - `appCommandCatalog.ts` is the shared shortcut manifest for command IDs, modifier rules, and deterministic QA metadata
+- `formatShortcutDisplay()` derives platform-accurate visible shortcut labels (`⌘` on macOS, `Ctrl` on Windows/Linux) from that same manifest so menus, tooltips, and command-palette copy stay aligned with real accelerators
 - `useAppKeyboard` is the primary execution path for real shortcut keypresses, including Tauri runs
 - macOS browser-reserved chords such as `Cmd+O` and `Cmd+Shift+L` are unblocked at webview init via `tauri-plugin-prevent-default`, then continue through the same renderer-first command path
-- `menu.rs` and `useMenuEvents` emit the same command IDs for native menu clicks and accelerators
+- `menu.rs`, `useMenuEvents`, and Linux's `LinuxMenuButton` emit the same command IDs for native menu clicks, accelerators, and custom titlebar menu actions
 - `appCommandDispatcher.ts` suppresses the paired native-menu/renderer echo from a single shortcut so the command runs once
 - Deterministic QA uses two explicit proof paths from the shared manifest:
   - renderer shortcut-event proof through `window.__laputaTest.triggerShortcutCommand()`
@@ -804,6 +809,9 @@ push to main
   → build job:
       → pnpm install, stamp version, pnpm build, tauri build --target aarch64-apple-darwin --bundles app
       → upload signed .app.tar.gz + .sig updater artifacts
+  → build-windows job:
+      → pnpm install, stamp version, tauri build --target x86_64-pc-windows-msvc --bundles nsis
+      → upload NSIS installer, optional MSI artifacts, and signed Windows updater bundles
   → release job:
       → generate alpha-latest.json
       → publish GitHub prerelease alpha-vYYYY.M.D-alpha.NNNN named Tolaria Alpha YYYY.M.D.N
@@ -823,12 +831,18 @@ push stable-vYYYY.M.D tag
   → build job:
       → pnpm install, stamp version, pnpm build, tauri build --target aarch64-apple-darwin
       → upload signed .app.tar.gz + .sig and .dmg artifacts
+  → build-linux job:
+      → pnpm install, stamp version, tauri build --target x86_64-unknown-linux-gnu --bundles deb,appimage
+      → upload .deb, .AppImage, and signed Linux updater bundles
+  → build-windows job:
+      → pnpm install, stamp version, tauri build --target x86_64-pc-windows-msvc --bundles nsis
+      → upload NSIS installer, optional MSI artifacts, and signed Windows updater bundles
   → release job:
-      → generate stable-latest.json with both updater tarball and current stable DMG URLs
+      → generate stable-latest.json with macOS, Linux, and Windows updater URLs plus platform-specific manual download URLs
       → publish GitHub release Tolaria YYYY.M.D
   → pages job:
       → publish stable/latest.json
-      → publish stable/download/ and download/ as permanent redirect URLs for the latest stable DMG
+      → publish stable/download/ and download/ as permanent redirect URLs for the latest stable platform installer
       → preserve alpha/latest.json
       → deploy to gh-pages
 ```

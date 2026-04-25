@@ -69,13 +69,13 @@ describe('AiActionCard', () => {
   it('uses lighter background for open_note tool', () => {
     render(<AiActionCard {...defaults} tool="open_note" label="Opening note" />)
     const card = screen.getByTestId('ai-action-card')
-    expect(card.style.background).toContain('0.06')
+    expect(card.style.background).toBe('var(--accent-blue-light)')
   })
 
   it('uses standard background for vault tools', () => {
     render(<AiActionCard {...defaults} />)
     const card = screen.getByTestId('ai-action-card')
-    expect(card.style.background).toContain('0.1')
+    expect(card.style.background).toBe('var(--accent-blue-bg)')
   })
 
   // --- Expand / collapse ---

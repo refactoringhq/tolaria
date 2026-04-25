@@ -31,6 +31,47 @@ mod tests {
         Some(vault_path.to_string_lossy().to_string())
     }
 
+    fn assert_note_write_rejects_escape<T: std::fmt::Debug>(
+        action: impl FnOnce(std::path::PathBuf, String, Option<std::path::PathBuf>) -> Result<T, String>,
+    ) {
+        let dir = tempfile::TempDir::new().unwrap();
+        let vault_path = dir.path();
+        let escape_path = vault_path.join("../outside.md");
+
+        let err = action(
+            escape_path,
+            "# Outside\n".to_string(),
+            vault_path_arg(vault_path),
+        )
+        .expect_err("expected traversal write to be rejected");
+
+        assert_eq!(err, ACTIVE_VAULT_PATH_ERROR);
+    }
+
+    fn sample_view_definition() -> ViewDefinition {
+        ViewDefinition {
+            name: "Inbox".to_string(),
+            icon: None,
+            color: None,
+            sort: None,
+            list_properties_display: vec![],
+            filters: crate::vault::FilterGroup::All(vec![]),
+        }
+    }
+
+    fn assert_save_view_cmd_rejects_invalid_filename(filename: &str) {
+        let dir = tempfile::TempDir::new().unwrap();
+
+        let err = save_view_cmd(
+            dir.path().to_string_lossy().to_string(),
+            filename.to_string(),
+            sample_view_definition(),
+        )
+        .expect_err("expected invalid filename to be rejected");
+
+        assert_eq!(err, INVALID_VIEW_FILENAME_ERROR);
+    }
+
     fn temp_note(body: &str) -> (tempfile::TempDir, std::path::PathBuf) {
         let dir = tempfile::TempDir::new().unwrap();
         let note = dir.path().join("note.md");
@@ -125,34 +166,12 @@ mod tests {
 
     #[test]
     fn test_save_note_content_rejects_traversal_outside_active_vault() {
-        let dir = tempfile::TempDir::new().unwrap();
-        let vault_path = dir.path();
-        let escape_path = vault_path.join("../outside.md");
-
-        let err = save_note_content(
-            escape_path,
-            "# Outside\n".to_string(),
-            vault_path_arg(vault_path),
-        )
-        .expect_err("expected traversal write to be rejected");
-
-        assert_eq!(err, ACTIVE_VAULT_PATH_ERROR);
+        assert_note_write_rejects_escape(save_note_content);
     }
 
     #[test]
     fn test_create_note_content_rejects_traversal_outside_active_vault() {
-        let dir = tempfile::TempDir::new().unwrap();
-        let vault_path = dir.path();
-        let escape_path = vault_path.join("../outside.md");
-
-        let err = create_note_content(
-            escape_path,
-            "# Outside\n".to_string(),
-            vault_path_arg(vault_path),
-        )
-        .expect_err("expected traversal create to be rejected");
-
-        assert_eq!(err, ACTIVE_VAULT_PATH_ERROR);
+        assert_note_write_rejects_escape(create_note_content);
     }
 
     #[test]
@@ -166,25 +185,23 @@ mod tests {
     }
 
     #[test]
-    fn test_save_view_cmd_rejects_nested_filename() {
+    fn test_create_vault_folder_rejects_windows_invalid_names() {
         let dir = tempfile::TempDir::new().unwrap();
-        let definition = ViewDefinition {
-            name: "Inbox".to_string(),
-            icon: None,
-            color: None,
-            sort: None,
-            list_properties_display: vec![],
-            filters: crate::vault::FilterGroup::All(vec![]),
-        };
 
-        let err = save_view_cmd(
-            dir.path().to_string_lossy().to_string(),
-            "../escape.yml".to_string(),
-            definition,
-        )
-        .expect_err("expected nested filename to be rejected");
+        let err = create_vault_folder(dir.path().into(), "con".into())
+            .expect_err("expected Windows-invalid folder name to be rejected");
 
-        assert_eq!(err, INVALID_VIEW_FILENAME_ERROR);
+        assert_eq!(err, "Invalid folder name");
+    }
+
+    #[test]
+    fn test_save_view_cmd_rejects_nested_filename() {
+        assert_save_view_cmd_rejects_invalid_filename("../escape.yml");
+    }
+
+    #[test]
+    fn test_save_view_cmd_rejects_windows_invalid_filename() {
+        assert_save_view_cmd_rejects_invalid_filename("con.yml");
     }
 
     #[test]

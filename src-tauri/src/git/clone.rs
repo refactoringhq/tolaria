@@ -1,6 +1,8 @@
 use std::path::Path;
 use std::process::{Command, Output, Stdio};
 
+use super::git_command;
+
 struct CloneRequest<'a> {
     url: &'a str,
     dest: &'a Path,
@@ -92,7 +94,7 @@ fn run_clone(request: &CloneRequest<'_>) -> Result<(), String> {
 }
 
 fn build_clone_command(request: &CloneRequest<'_>, destination: &str) -> Command {
-    let mut command = Command::new("git");
+    let mut command = git_command();
     command
         .args(["clone", "--quiet", request.url, destination])
         .env("GIT_TERMINAL_PROMPT", "0")

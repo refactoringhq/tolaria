@@ -37,12 +37,41 @@ vi.mock('./hooks/appCommandDispatcher', () => ({
   isAppCommandId: (id: string) => id === 'known-command',
   isNativeMenuCommandId: (id: string) => id === 'native-command',
 }))
-vi.mock('./hooks/appCommandCatalog', () => ({
-  getShortcutEventInit: mocks.getShortcutEventInit,
-}))
+vi.mock('./hooks/appCommandCatalog', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./hooks/appCommandCatalog')>()
+  return {
+    ...actual,
+    getShortcutEventInit: mocks.getShortcutEventInit,
+  }
+})
 
 async function importEntrypoint() {
   await import('./main')
+}
+
+function createDragEventWithDataTransfer(
+  type: 'dragover' | 'drop',
+  dataTransfer: Partial<DataTransfer>,
+): DragEvent {
+  const event = new Event(type, { bubbles: true, cancelable: true }) as DragEvent
+  Object.defineProperty(event, 'dataTransfer', {
+    value: dataTransfer,
+  })
+  return event
+}
+
+function createFileDataTransfer(): Partial<DataTransfer> {
+  return {
+    files: { length: 1 } as FileList,
+    items: { length: 0 } as DataTransferItemList,
+    types: ['Files'],
+  }
+}
+
+function dispatchFileDragEvent(target: EventTarget, type: 'dragover' | 'drop'): DragEvent {
+  const event = createDragEventWithDataTransfer(type, createFileDataTransfer())
+  target.dispatchEvent(event)
+  return event
 }
 
 function rootOptions(): ReactRootOptions {
@@ -84,5 +113,49 @@ describe('main entrypoint', () => {
     rootOptions().onRecoverableError?.(error, {})
 
     expect(mocks.sentryHandler).toHaveBeenCalledWith(error, { componentStack: '' })
+  })
+
+  it('prevents browser navigation for file drags and still lets app drop handlers run', async () => {
+    await importEntrypoint()
+
+    const appDropHandler = vi.fn()
+    document.body.addEventListener('drop', appDropHandler, { once: true })
+
+    const dragOverEvent = dispatchFileDragEvent(document.body, 'dragover')
+    const dropEvent = dispatchFileDragEvent(document.body, 'drop')
+
+    expect(dragOverEvent.defaultPrevented).toBe(true)
+    expect(dropEvent.defaultPrevented).toBe(true)
+    expect(appDropHandler).toHaveBeenCalledWith(dropEvent)
+  })
+
+  it('leaves editor file drags to the editor drop handler', async () => {
+    await importEntrypoint()
+
+    const editor = document.createElement('div')
+    editor.className = 'editor__blocknote-container'
+    const editorChild = document.createElement('div')
+    editor.appendChild(editorChild)
+    document.body.appendChild(editor)
+
+    const dragOverEvent = dispatchFileDragEvent(editorChild, 'dragover')
+    const dropEvent = dispatchFileDragEvent(editorChild, 'drop')
+
+    expect(dragOverEvent.defaultPrevented).toBe(false)
+    expect(dropEvent.defaultPrevented).toBe(false)
+  })
+
+  it('does not prevent app-internal drags without file payloads', async () => {
+    await importEntrypoint()
+
+    const dragOverEvent = createDragEventWithDataTransfer('dragover', {
+      files: { length: 0 } as FileList,
+      items: { length: 0 } as DataTransferItemList,
+      types: ['text/plain'],
+    })
+
+    document.body.dispatchEvent(dragOverEvent)
+
+    expect(dragOverEvent.defaultPrevented).toBe(false)
   })
 })

@@ -1,4 +1,6 @@
+import { APP_COMMAND_IDS, getAppCommandShortcutDisplay } from '../appCommandCatalog'
 import type { CommandAction } from './types'
+import { rememberFeedbackDialogOpener } from '../../lib/feedbackDialogOpener'
 
 interface SettingsCommandsConfig {
   mcpStatus?: string
@@ -22,7 +24,7 @@ function buildPrimarySettingsCommands({
   onCheckForUpdates,
 }: Pick<SettingsCommandsConfig, 'onOpenSettings' | 'onOpenFeedback' | 'onCheckForUpdates'>): CommandAction[] {
   return [
-    { id: 'open-settings', label: 'Open Settings', group: 'Settings', shortcut: '⌘,', keywords: ['preferences', 'config'], enabled: true, execute: onOpenSettings },
+    { id: 'open-settings', label: 'Open Settings', group: 'Settings', shortcut: getAppCommandShortcutDisplay(APP_COMMAND_IDS.appSettings), keywords: ['preferences', 'config'], enabled: true, execute: onOpenSettings },
     {
       id: 'open-h1-auto-rename-setting',
       label: 'Open H1 Auto-Rename Setting',
@@ -31,7 +33,17 @@ function buildPrimarySettingsCommands({
       enabled: true,
       execute: onOpenSettings,
     },
-    { id: 'give-feedback', label: 'Give Feedback', group: 'Settings', keywords: ['feedback', 'issue', 'bug', 'github', 'report'], enabled: !!onOpenFeedback, execute: () => onOpenFeedback?.() },
+    {
+      id: 'open-contribute',
+      label: 'Contribute',
+      group: 'Settings',
+      keywords: ['contribute', 'feedback', 'feature', 'canny', 'discussion', 'github', 'bug', 'report'],
+      enabled: !!onOpenFeedback,
+      execute: () => {
+        rememberFeedbackDialogOpener(document.activeElement instanceof HTMLElement ? document.activeElement : null)
+        onOpenFeedback?.()
+      },
+    },
     { id: 'check-updates', label: 'Check for Updates', group: 'Settings', keywords: ['update', 'version', 'upgrade', 'release'], enabled: true, execute: () => onCheckForUpdates?.() },
   ]
 }

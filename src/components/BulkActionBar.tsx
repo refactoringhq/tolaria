@@ -28,8 +28,8 @@ function BulkActionButton({ ariaLabel, children, destructive = false, onClick, t
       variant={destructive ? 'destructive' : 'ghost'}
       className={
         destructive
-          ? 'h-8 w-8 rounded-lg bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/30'
-          : 'h-8 w-8 rounded-lg bg-white/10 text-background hover:bg-white/20 focus-visible:ring-white/35 disabled:bg-white/5 disabled:text-white/35'
+          ? 'h-8 w-8 rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/30'
+          : 'h-8 w-8 rounded-lg bg-background/10 text-background hover:bg-background/20 focus-visible:ring-background/35 disabled:bg-background/5 disabled:text-background/35'
       }
       onClick={onClick}
       disabled={!onClick}
@@ -89,7 +89,7 @@ function BulkActionBarInner({ count, isArchivedView, onOrganize, onArchive, onDe
           type="button"
           size="icon-sm"
           variant="ghost"
-          className="h-8 w-8 rounded-lg text-white/55 hover:bg-white/10 hover:text-background focus-visible:ring-white/30"
+          className="h-8 w-8 rounded-lg text-background/55 hover:bg-background/10 hover:text-background focus-visible:ring-background/30"
           onClick={onClear}
           aria-label="Clear selection"
           title="Clear selection"

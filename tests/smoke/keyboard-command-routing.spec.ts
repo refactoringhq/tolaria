@@ -126,10 +126,10 @@ test.describe('keyboard command routing', () => {
     await dispatchShortcutEvent(page, {
       key: 'l',
       code: 'KeyL',
-      ctrlKey: true,
+      ctrlKey: false,
       metaKey: false,
       shiftKey: true,
-      altKey: false,
+      altKey: true,
       bubbles: true,
       cancelable: true,
     })

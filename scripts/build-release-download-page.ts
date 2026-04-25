@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path'
 
 import {
   buildStableDownloadRedirectPage,
-  resolveStableDmgUrl,
+  resolveStableDownloadTargets,
 } from '../src/utils/releaseDownloadPage'
 
 function getArg(flag: string): string {
@@ -30,8 +30,8 @@ const releasesJsonPath = resolve(getArg('--releases-json'))
 const outputFilePath = resolve(getArg('--output-file'))
 const latestPayload = readLatestReleasePayload(latestJsonPath)
 const releasesPayload = readLatestReleasePayload(releasesJsonPath)
-const dmgUrl = resolveStableDmgUrl(latestPayload, releasesPayload)
-const html = buildStableDownloadRedirectPage(dmgUrl)
+const downloads = resolveStableDownloadTargets(latestPayload, releasesPayload)
+const html = buildStableDownloadRedirectPage(downloads)
 
 mkdirSync(dirname(outputFilePath), { recursive: true })
 writeFileSync(outputFilePath, html)

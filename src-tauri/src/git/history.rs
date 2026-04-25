@@ -1,5 +1,5 @@
+use super::git_command;
 use std::path::Path;
-use std::process::Command;
 
 use super::GitCommit;
 
@@ -16,7 +16,7 @@ pub fn get_file_history(vault_path: &str, file_path: &str) -> Result<Vec<GitComm
         .to_str()
         .ok_or_else(|| "Invalid UTF-8 in path".to_string())?;
 
-    let output = Command::new("git")
+    let output = git_command()
         .args([
             "log",
             "--format=%H|%h|%an|%aI|%s",
@@ -80,7 +80,7 @@ pub fn get_file_diff(vault_path: &str, file_path: &str) -> Result<String, String
         .ok_or_else(|| "Invalid UTF-8 in path".to_string())?;
 
     // First try tracked file diff
-    let output = Command::new("git")
+    let output = git_command()
         .args(["diff", "--", relative_str])
         .current_dir(vault)
         .output()
@@ -90,7 +90,7 @@ pub fn get_file_diff(vault_path: &str, file_path: &str) -> Result<String, String
 
     // If no diff (maybe staged or untracked), try diff --cached
     if stdout.is_empty() {
-        let cached = Command::new("git")
+        let cached = git_command()
             .args(["diff", "--cached", "--", relative_str])
             .current_dir(vault)
             .output()
@@ -102,7 +102,7 @@ pub fn get_file_diff(vault_path: &str, file_path: &str) -> Result<String, String
         }
 
         // Try showing untracked file as all-new
-        let status = Command::new("git")
+        let status = git_command()
             .args(["status", "--porcelain", "--", relative_str])
             .current_dir(vault)
             .output()
@@ -144,7 +144,7 @@ pub fn get_file_diff_at_commit(
         .ok_or_else(|| "Invalid UTF-8 in path".to_string())?;
 
     // Show diff between commit^ and commit for this file
-    let output = Command::new("git")
+    let output = git_command()
         .args([
             "diff",
             &format!("{}^", commit_hash),
@@ -161,7 +161,7 @@ pub fn get_file_diff_at_commit(
     // If diff is empty, it might be the initial commit (no parent).
     // Fall back to showing the full file content as added.
     if stdout.is_empty() {
-        let show = Command::new("git")
+        let show = git_command()
             .args(["show", &format!("{}:{}", commit_hash, relative_str)])
             .current_dir(vault)
             .output()
@@ -184,10 +184,10 @@ pub fn get_file_diff_at_commit(
 
 #[cfg(test)]
 mod tests {
+    use super::git_command;
     use super::*;
     use crate::git::tests::setup_git_repo;
     use std::fs;
-    use std::process::Command;
 
     #[test]
     fn test_get_file_history_with_commits() {
@@ -196,24 +196,24 @@ mod tests {
         let file = vault.join("test.md");
 
         fs::write(&file, "# Initial\n").unwrap();
-        Command::new("git")
+        git_command()
             .args(["add", "test.md"])
             .current_dir(vault)
             .output()
             .unwrap();
-        Command::new("git")
+        git_command()
             .args(["commit", "-m", "Initial commit"])
             .current_dir(vault)
             .output()
             .unwrap();
 
         fs::write(&file, "# Updated\n\nNew content.").unwrap();
-        Command::new("git")
+        git_command()
             .args(["add", "test.md"])
             .current_dir(vault)
             .output()
             .unwrap();
-        Command::new("git")
+        git_command()
             .args(["commit", "-m", "Update test"])
             .current_dir(vault)
             .output()
@@ -248,12 +248,12 @@ mod tests {
         let file = vault.join("diff-test.md");
 
         fs::write(&file, "# Test\n\nOriginal content.").unwrap();
-        Command::new("git")
+        git_command()
             .args(["add", "diff-test.md"])
             .current_dir(vault)
             .output()
             .unwrap();
-        Command::new("git")
+        git_command()
             .args(["commit", "-m", "Add diff-test"])
             .current_dir(vault)
             .output()
@@ -275,31 +275,31 @@ mod tests {
         let file = vault.join("diff-at-commit.md");
 
         fs::write(&file, "# First\n\nOriginal content.").unwrap();
-        Command::new("git")
+        git_command()
             .args(["add", "diff-at-commit.md"])
             .current_dir(vault)
             .output()
             .unwrap();
-        Command::new("git")
+        git_command()
             .args(["commit", "-m", "First commit"])
             .current_dir(vault)
             .output()
             .unwrap();
 
         fs::write(&file, "# First\n\nModified content.").unwrap();
-        Command::new("git")
+        git_command()
             .args(["add", "diff-at-commit.md"])
             .current_dir(vault)
             .output()
             .unwrap();
-        Command::new("git")
+        git_command()
             .args(["commit", "-m", "Second commit"])
             .current_dir(vault)
             .output()
             .unwrap();
 
         // Get hash of second commit
-        let log = Command::new("git")
+        let log = git_command()
             .args(["log", "--format=%H", "-1"])
             .current_dir(vault)
             .output()
@@ -321,18 +321,18 @@ mod tests {
         let file = vault.join("initial.md");
 
         fs::write(&file, "# Initial\n\nHello world.").unwrap();
-        Command::new("git")
+        git_command()
             .args(["add", "initial.md"])
             .current_dir(vault)
             .output()
             .unwrap();
-        Command::new("git")
+        git_command()
             .args(["commit", "-m", "Initial commit"])
             .current_dir(vault)
             .output()
             .unwrap();
 
-        let log = Command::new("git")
+        let log = git_command()
             .args(["log", "--format=%H", "-1"])
             .current_dir(vault)
             .output()

@@ -6,6 +6,7 @@ use std::path::Path;
 use tempfile::NamedTempFile;
 use walkdir::WalkDir;
 
+use super::filename_rules::validate_filename_stem;
 use super::rename_transaction::RenameWorkspace;
 use crate::frontmatter::{update_frontmatter_content, FrontmatterValue};
 
@@ -18,6 +19,34 @@ pub struct RenameResult {
     pub updated_files: usize,
     /// Number of linked-note rewrites that failed and need manual attention
     pub failed_updates: usize,
+}
+
+#[derive(Clone, Copy)]
+pub struct RenameNoteRequest<'a> {
+    pub vault_path: &'a str,
+    pub old_path: &'a str,
+    pub new_title: &'a str,
+    pub old_title_hint: Option<&'a str>,
+}
+
+#[derive(Clone, Copy)]
+pub struct RenameNoteFilenameRequest<'a> {
+    pub vault_path: &'a str,
+    pub old_path: &'a str,
+    pub new_filename_stem: &'a str,
+}
+
+#[derive(Clone, Copy)]
+pub struct MoveNoteToFolderRequest<'a> {
+    pub vault_path: &'a str,
+    pub old_path: &'a str,
+    pub destination_folder_path: &'a str,
+}
+
+#[derive(Clone, Copy)]
+pub struct AutoRenameUntitledRequest<'a> {
+    pub vault_path: &'a str,
+    pub note_path: &'a str,
 }
 
 #[derive(Debug, Default)]
@@ -176,12 +205,13 @@ fn update_note_title_in_content(content: &str, new_title: &str) -> String {
 }
 
 /// Strip vault prefix and .md suffix to get the relative path stem (e.g., "project/weekly-review").
-fn to_path_stem<'a>(abs_path: &'a str, vault_prefix: &str) -> &'a str {
-    abs_path
-        .strip_prefix(vault_prefix)
-        .unwrap_or(abs_path)
+fn to_path_stem(path: &Path, vault_root: &Path) -> String {
+    let relative = path.strip_prefix(vault_root).unwrap_or(path);
+    let normalized = relative.to_string_lossy().replace('\\', "/");
+    normalized
         .strip_suffix(".md")
-        .unwrap_or(abs_path)
+        .unwrap_or(&normalized)
+        .to_string()
 }
 
 pub(crate) fn recover_pending_rename_transactions(vault: &Path) -> Result<(), String> {
@@ -197,8 +227,7 @@ fn persist_staged_note(staged: NamedTempFile, target_path: &Path) -> Result<(), 
 
 fn finalize_rename(vault: &Path, old_targets: &[&str], new_file: &Path) -> RenameResult {
     let new_path = new_file.to_string_lossy().to_string();
-    let vault_prefix = format!("{}/", vault.to_string_lossy());
-    let new_path_stem = to_path_stem(&new_path, &vault_prefix).to_string();
+    let new_path_stem = to_path_stem(new_file, vault);
     let summary = update_wikilinks_in_vault(vault, old_targets, &new_path_stem, new_file);
     RenameResult {
         new_path,
@@ -213,14 +242,8 @@ fn normalize_filename_stem(new_filename_stem: &str) -> Result<String, String> {
     if stem.is_empty() {
         return Err("New filename cannot be empty".to_string());
     }
-    if is_invalid_filename_stem(stem) {
-        return Err("Invalid filename".to_string());
-    }
+    validate_filename_stem(stem)?;
     Ok(stem.to_string())
-}
-
-fn is_invalid_filename_stem(stem: &str) -> bool {
-    stem == "." || stem == ".." || stem.contains('/') || stem.contains('\\')
 }
 
 struct LoadedNote {
@@ -229,9 +252,9 @@ struct LoadedNote {
     title: String,
 }
 
-fn unchanged_result(path: &str) -> RenameResult {
+fn unchanged_result(path: &Path) -> RenameResult {
     RenameResult {
-        new_path: path.to_string(),
+        new_path: path.to_string_lossy().to_string(),
         updated_files: 0,
         failed_updates: 0,
     }
@@ -245,20 +268,19 @@ fn validate_new_title(new_title: &str) -> Result<&str, String> {
     Ok(trimmed)
 }
 
-fn ensure_existing_note(old_file: &Path, old_path: &str) -> Result<(), String> {
+fn ensure_existing_note(old_file: &Path) -> Result<(), String> {
     if old_file.exists() {
         return Ok(());
     }
-    Err(format!("File does not exist: {}", old_path))
+    Err(format!("File does not exist: {}", old_file.display()))
 }
 
 fn load_note_for_title_rename(
     old_file: &Path,
-    old_path: &str,
     old_title_hint: Option<&str>,
 ) -> Result<LoadedNote, String> {
-    let content =
-        fs::read_to_string(old_file).map_err(|e| format!("Failed to read {}: {}", old_path, e))?;
+    let content = fs::read_to_string(old_file)
+        .map_err(|e| format!("Failed to read {}: {}", old_file.display(), e))?;
     let filename = old_file
         .file_name()
         .map(|f| f.to_string_lossy().to_string())
@@ -277,10 +299,9 @@ fn persist_title_only_update(
     workspace: &RenameWorkspace,
     old_file: &Path,
     updated_content: &str,
-    old_path: &str,
 ) -> Result<RenameResult, String> {
     persist_staged_note(workspace.stage_note_content(updated_content)?, old_file)?;
-    Ok(unchanged_result(old_path))
+    Ok(unchanged_result(old_file))
 }
 
 /// Rename a note: update its frontmatter title, rename the file, and update wiki links across the vault.
@@ -288,19 +309,14 @@ fn persist_title_only_update(
 /// When `old_title_hint` is provided it is used instead of extracting the title from
 /// the file's frontmatter/filename.  This is needed when the caller has already saved
 /// updated content to disk before triggering the rename.
-pub fn rename_note(
-    vault_path: &str,
-    old_path: &str,
-    new_title: &str,
-    old_title_hint: Option<&str>,
-) -> Result<RenameResult, String> {
-    let vault = Path::new(vault_path);
-    let old_file = Path::new(old_path);
+pub fn rename_note(request: RenameNoteRequest<'_>) -> Result<RenameResult, String> {
+    let vault = Path::new(request.vault_path);
+    let old_file = Path::new(request.old_path);
 
     recover_pending_rename_transactions(vault)?;
-    ensure_existing_note(old_file, old_path)?;
-    let new_title = validate_new_title(new_title)?;
-    let loaded = load_note_for_title_rename(old_file, old_path, old_title_hint)?;
+    ensure_existing_note(old_file)?;
+    let new_title = validate_new_title(request.new_title)?;
+    let loaded = load_note_for_title_rename(old_file, request.old_title_hint)?;
 
     // Check both title and filename: even if the title in content matches,
     // the filename may still be stale (e.g. "untitled-note.md" after user changed H1).
@@ -309,7 +325,7 @@ pub fn rename_note(
     let filename_matches = loaded.filename == expected_filename;
 
     if title_unchanged && filename_matches {
-        return Ok(unchanged_result(old_path));
+        return Ok(unchanged_result(old_file));
     }
 
     // Update content only if the title actually changed
@@ -321,53 +337,50 @@ pub fn rename_note(
     let workspace = RenameWorkspace::new(vault)?;
 
     if filename_matches {
-        return persist_title_only_update(&workspace, old_file, &updated_content, old_path);
+        return persist_title_only_update(&workspace, old_file, &updated_content);
     }
 
     let parent_dir = old_file
         .parent()
         .ok_or("Cannot determine parent directory")?;
     let committed = workspace
-        .operation(old_path, old_file)
+        .operation(request.old_path, old_file)
         .rename_with_candidates(
             workspace.stage_note_content(&updated_content)?,
             &expected_filename,
             parent_dir,
         )?;
-    let vault_prefix = format!("{}/", vault.to_string_lossy());
-    let old_path_stem = to_path_stem(old_path, &vault_prefix);
-    let old_targets = collect_legacy_wikilink_targets(&loaded.title, old_path_stem);
+    let old_path_stem = to_path_stem(old_file, vault);
+    let old_targets = collect_legacy_wikilink_targets(&loaded.title, &old_path_stem);
     Ok(finalize_rename(vault, &old_targets, committed.new_file()))
 }
 
 /// Rename only the file path stem while preserving title/frontmatter content.
 pub fn rename_note_filename(
-    vault_path: &str,
-    old_path: &str,
-    new_filename_stem: &str,
+    request: RenameNoteFilenameRequest<'_>,
 ) -> Result<RenameResult, String> {
-    let vault = Path::new(vault_path);
-    let old_file = Path::new(old_path);
+    let vault = Path::new(request.vault_path);
+    let old_file = Path::new(request.old_path);
 
     recover_pending_rename_transactions(vault)?;
 
     if !old_file.exists() {
-        return Err(format!("File does not exist: {}", old_path));
+        return Err(format!("File does not exist: {}", old_file.display()));
     }
 
-    let normalized_stem = normalize_filename_stem(new_filename_stem)?;
+    let normalized_stem = normalize_filename_stem(request.new_filename_stem)?;
     let old_filename = old_file
         .file_name()
         .map(|f| f.to_string_lossy().to_string())
         .unwrap_or_default();
-    let content =
-        fs::read_to_string(old_file).map_err(|e| format!("Failed to read {}: {}", old_path, e))?;
+    let content = fs::read_to_string(old_file)
+        .map_err(|e| format!("Failed to read {}: {}", request.old_path, e))?;
     let fm_title = extract_fm_title_value(&content);
     let old_title = super::extract_title(fm_title.as_deref(), &content, &old_filename);
     let new_filename = format!("{}.md", normalized_stem);
 
     if old_filename == new_filename {
-        return Ok(unchanged_result(old_path));
+        return Ok(unchanged_result(old_file));
     }
 
     let parent_dir = old_file
@@ -376,38 +389,33 @@ pub fn rename_note_filename(
     let new_file = parent_dir.join(&new_filename);
     let workspace = RenameWorkspace::new(vault)?;
     let committed = workspace
-        .operation(old_path, old_file)
+        .operation(request.old_path, old_file)
         .rename_exact(workspace.stage_note_content(&content)?, &new_file)?;
 
-    let vault_prefix = format!("{}/", vault.to_string_lossy());
-    let old_path_stem = to_path_stem(old_path, &vault_prefix);
-    let old_targets = collect_legacy_wikilink_targets(&old_title, old_path_stem);
+    let old_path_stem = to_path_stem(old_file, vault);
+    let old_targets = collect_legacy_wikilink_targets(&old_title, &old_path_stem);
     Ok(finalize_rename(vault, &old_targets, committed.new_file()))
 }
 
 /// Move a note into a different folder while preserving its filename and content.
-pub fn move_note_to_folder(
-    vault_path: &str,
-    old_path: &str,
-    destination_folder_path: &str,
-) -> Result<RenameResult, String> {
-    let vault = Path::new(vault_path);
-    let old_file = Path::new(old_path);
-    let destination_dir = Path::new(destination_folder_path);
+pub fn move_note_to_folder(request: MoveNoteToFolderRequest<'_>) -> Result<RenameResult, String> {
+    let vault = Path::new(request.vault_path);
+    let old_file = Path::new(request.old_path);
+    let destination_dir = Path::new(request.destination_folder_path);
 
     recover_pending_rename_transactions(vault)?;
-    ensure_existing_note(old_file, old_path)?;
+    ensure_existing_note(old_file)?;
 
     if !destination_dir.exists() {
         return Err(format!(
             "Folder does not exist: {}",
-            destination_folder_path
+            request.destination_folder_path
         ));
     }
     if !destination_dir.is_dir() {
         return Err(format!(
             "Folder is not a directory: {}",
-            destination_folder_path
+            request.destination_folder_path
         ));
     }
 
@@ -415,24 +423,23 @@ pub fn move_note_to_folder(
         .file_name()
         .map(|f| f.to_string_lossy().to_string())
         .unwrap_or_default();
-    let content =
-        fs::read_to_string(old_file).map_err(|e| format!("Failed to read {}: {}", old_path, e))?;
+    let content = fs::read_to_string(old_file)
+        .map_err(|e| format!("Failed to read {}: {}", request.old_path, e))?;
     let fm_title = extract_fm_title_value(&content);
     let old_title = super::extract_title(fm_title.as_deref(), &content, &old_filename);
     let new_file = destination_dir.join(&old_filename);
 
     if new_file == old_file {
-        return Ok(unchanged_result(old_path));
+        return Ok(unchanged_result(old_file));
     }
 
     let workspace = RenameWorkspace::new(vault)?;
     let committed = workspace
-        .operation(old_path, old_file)
+        .operation(request.old_path, old_file)
         .rename_exact(workspace.stage_note_content(&content)?, &new_file)?;
 
-    let vault_prefix = format!("{}/", vault.to_string_lossy());
-    let old_path_stem = to_path_stem(old_path, &vault_prefix);
-    let old_targets = collect_legacy_wikilink_targets(&old_title, old_path_stem);
+    let old_path_stem = to_path_stem(old_file, vault);
+    let old_targets = collect_legacy_wikilink_targets(&old_title, &old_path_stem);
     Ok(finalize_rename(vault, &old_targets, committed.new_file()))
 }
 
@@ -451,10 +458,9 @@ fn is_untitled_filename(filename: &str) -> bool {
 /// Returns `Some(RenameResult)` if renamed, `None` if conditions not met.
 /// This is a ONE-SHOT rename: only fires for untitled-* files with an H1.
 pub fn auto_rename_untitled(
-    vault_path: &str,
-    note_path: &str,
+    request: AutoRenameUntitledRequest<'_>,
 ) -> Result<Option<RenameResult>, String> {
-    let path = Path::new(note_path);
+    let path = Path::new(request.note_path);
     let filename = path
         .file_name()
         .map(|f| f.to_string_lossy().to_string())
@@ -464,15 +470,20 @@ pub fn auto_rename_untitled(
         return Ok(None);
     }
 
-    let content =
-        fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {}", note_path, e))?;
+    let content = fs::read_to_string(path)
+        .map_err(|e| format!("Failed to read {}: {}", request.note_path, e))?;
 
     let h1_title = match super::parsing::extract_h1_title(&content) {
         Some(t) => t,
         None => return Ok(None),
     };
 
-    let result = rename_note(vault_path, note_path, &h1_title, None)?;
+    let result = rename_note(RenameNoteRequest {
+        vault_path: request.vault_path,
+        old_path: request.note_path,
+        new_title: &h1_title,
+        old_title_hint: None,
+    })?;
     Ok(Some(result))
 }
 
@@ -484,9 +495,8 @@ pub struct DetectedRename {
 }
 
 /// Detect renamed files by comparing working tree against HEAD using git diff.
-pub fn detect_renames(vault_path: &str) -> Result<Vec<DetectedRename>, String> {
-    let vault = Path::new(vault_path);
-    let output = std::process::Command::new("git")
+pub fn detect_renames(vault: &Path) -> Result<Vec<DetectedRename>, String> {
+    let output = crate::hidden_command("git")
         .args(["diff", "HEAD", "--name-status", "--diff-filter=R", "-M"])
         .current_dir(vault)
         .output()
@@ -521,28 +531,21 @@ pub fn detect_renames(vault_path: &str) -> Result<Vec<DetectedRename>, String> {
 /// Update wikilinks across the vault for a list of detected renames.
 /// Returns the total number of files updated.
 pub fn update_wikilinks_for_renames(
-    vault_path: &str,
+    vault: &Path,
     renames: &[DetectedRename],
 ) -> Result<usize, String> {
-    let vault = Path::new(vault_path);
     let mut total_updated = 0;
 
     for rename in renames {
-        let old_stem = rename
-            .old_path
-            .strip_suffix(".md")
-            .unwrap_or(&rename.old_path);
-        let new_stem = rename
-            .new_path
-            .strip_suffix(".md")
-            .unwrap_or(&rename.new_path);
-        let old_filename_stem = old_stem.split('/').next_back().unwrap_or(old_stem);
+        let old_file = vault.join(&rename.old_path);
+        let new_file = vault.join(&rename.new_path);
+        let old_stem = to_path_stem(&old_file, vault);
+        let new_stem = to_path_stem(&new_file, vault);
+        let old_filename_stem = old_stem.split('/').next_back().unwrap_or(&old_stem);
         // Build title from filename stem (kebab-case → Title Case)
         let old_title = super::parsing::slug_to_title(old_filename_stem);
-        // The new file is the exclude target (don't rewrite wikilinks inside the renamed file itself)
-        let new_file = vault.join(&rename.new_path);
-        let old_targets = collect_legacy_wikilink_targets(&old_title, old_stem);
-        let summary = update_wikilinks_in_vault(vault, &old_targets, new_stem, &new_file);
+        let old_targets = collect_legacy_wikilink_targets(&old_title, &old_stem);
+        let summary = update_wikilinks_in_vault(vault, &old_targets, &new_stem, &new_file);
         total_updated += summary.updated_files;
     }
 
@@ -555,13 +558,13 @@ mod tests {
     use std::io::Write;
     use tempfile::TempDir;
 
-    fn create_test_file(dir: &Path, name: &str, content: &str) {
+    fn create_test_file(dir: &Path, name: impl AsRef<Path>, content: impl AsRef<[u8]>) {
         let file_path = dir.join(name);
         if let Some(parent) = file_path.parent() {
             fs::create_dir_all(parent).unwrap();
         }
         let mut file = fs::File::create(file_path).unwrap();
-        file.write_all(content.as_bytes()).unwrap();
+        file.write_all(content.as_ref()).unwrap();
     }
 
     struct RenameTestRequest<'a> {
@@ -577,14 +580,58 @@ mod tests {
     ) -> (std::path::PathBuf, RenameResult) {
         create_test_file(vault, request.path, request.content);
         let old_path = vault.join(request.path);
-        let result = rename_note(
-            vault.to_str().unwrap(),
-            old_path.to_str().unwrap(),
-            request.new_title,
-            request.old_title_hint,
-        )
+        let result = rename_note(RenameNoteRequest {
+            vault_path: vault.to_str().unwrap(),
+            old_path: old_path.to_str().unwrap(),
+            new_title: request.new_title,
+            old_title_hint: request.old_title_hint,
+        })
         .unwrap();
         (old_path, result)
+    }
+
+    fn create_current_note(vault: &Path, relative_path: impl AsRef<Path>) -> std::path::PathBuf {
+        let relative_path = relative_path.as_ref();
+        create_test_file(vault, relative_path, "# Current\n");
+        vault.join(relative_path)
+    }
+
+    fn assert_rename_note_filename_error<P>(
+        new_filename_stem: impl AsRef<str>,
+        existing_destination: Option<P>,
+        expected_error: impl AsRef<str>,
+    ) where
+        P: AsRef<Path>,
+    {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path();
+        let current_path = create_current_note(vault, "note/current.md");
+        if let Some(existing_path) = existing_destination {
+            create_test_file(vault, existing_path.as_ref(), "# Existing\n");
+        }
+
+        let result = rename_note_filename(RenameNoteFilenameRequest {
+            vault_path: vault.to_str().unwrap(),
+            old_path: current_path.to_str().unwrap(),
+            new_filename_stem: new_filename_stem.as_ref(),
+        });
+
+        assert_eq!(result.unwrap_err(), expected_error.as_ref());
+    }
+
+    fn assert_move_note_to_folder_error(expected_error: impl AsRef<str>) {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path();
+        create_test_file(vault, "projects/weekly-review.md", "# Weekly Review\n");
+        create_test_file(vault, "areas/weekly-review.md", "# Existing\n");
+
+        let result = move_note_to_folder(MoveNoteToFolderRequest {
+            vault_path: vault.to_str().unwrap(),
+            old_path: vault.join("projects/weekly-review.md").to_str().unwrap(),
+            destination_folder_path: vault.join("areas").to_str().unwrap(),
+        });
+
+        assert_eq!(result.unwrap_err(), expected_error.as_ref());
     }
 
     #[test]
@@ -605,12 +652,12 @@ mod tests {
         );
 
         let old_path = vault.join("note/weekly-review.md");
-        let result = rename_note(
-            vault.to_str().unwrap(),
-            old_path.to_str().unwrap(),
-            "Sprint Retrospective",
-            None,
-        )
+        let result = rename_note(RenameNoteRequest {
+            vault_path: vault.to_str().unwrap(),
+            old_path: old_path.to_str().unwrap(),
+            new_title: "Sprint Retrospective",
+            old_title_hint: None,
+        })
         .unwrap();
 
         assert!(result.new_path.ends_with("sprint-retrospective.md"));
@@ -644,12 +691,12 @@ mod tests {
         );
 
         let old_path = vault.join("note/weekly-review.md");
-        let result = rename_note(
-            vault.to_str().unwrap(),
-            old_path.to_str().unwrap(),
-            "Sprint Retrospective",
-            None,
-        )
+        let result = rename_note(RenameNoteRequest {
+            vault_path: vault.to_str().unwrap(),
+            old_path: old_path.to_str().unwrap(),
+            new_title: "Sprint Retrospective",
+            old_title_hint: None,
+        })
         .unwrap();
 
         assert_eq!(result.updated_files, 2);
@@ -669,12 +716,12 @@ mod tests {
         create_test_file(vault, "note/test.md", "# Test\n");
 
         let old_path = vault.join("note/test.md");
-        let result = rename_note(
-            vault.to_str().unwrap(),
-            old_path.to_str().unwrap(),
-            "  ",
-            None,
-        );
+        let result = rename_note(RenameNoteRequest {
+            vault_path: vault.to_str().unwrap(),
+            old_path: old_path.to_str().unwrap(),
+            new_title: "  ",
+            old_title_hint: None,
+        });
         assert!(result.is_err());
     }
 
@@ -767,12 +814,12 @@ mod tests {
         );
 
         let old_path = vault.join("note/old.md");
-        let result = rename_note(
-            vault.to_str().unwrap(),
-            old_path.to_str().unwrap(),
-            "New Name",
-            None,
-        )
+        let result = rename_note(RenameNoteRequest {
+            vault_path: vault.to_str().unwrap(),
+            old_path: old_path.to_str().unwrap(),
+            new_title: "New Name",
+            old_title_hint: None,
+        })
         .unwrap();
 
         let content = fs::read_to_string(&result.new_path).unwrap();
@@ -785,21 +832,25 @@ mod tests {
 
     /// Helper: create a note, rename it, assert the rename succeeded and old file is gone.
     /// Returns the content of the renamed file for further assertions.
-    fn rename_test_note(filename: &str, content: &str, new_title: &str) -> String {
+    fn rename_test_note(
+        filename: impl AsRef<Path>,
+        content: impl AsRef<str>,
+        new_title: impl AsRef<str>,
+    ) -> String {
         let dir = TempDir::new().unwrap();
         let vault = dir.path();
-        create_test_file(vault, filename, content);
+        create_test_file(vault, filename.as_ref(), content.as_ref());
 
-        let old_path = vault.join(filename);
-        let result = rename_note(
-            vault.to_str().unwrap(),
-            old_path.to_str().unwrap(),
-            new_title,
-            None,
-        )
+        let old_path = vault.join(filename.as_ref());
+        let result = rename_note(RenameNoteRequest {
+            vault_path: vault.to_str().unwrap(),
+            old_path: old_path.to_str().unwrap(),
+            new_title: new_title.as_ref(),
+            old_title_hint: None,
+        })
         .expect("rename_note should succeed");
 
-        let expected_slug = title_to_slug(new_title);
+        let expected_slug = title_to_slug(new_title.as_ref());
         assert!(
             result.new_path.ends_with(&format!("{}.md", expected_slug)),
             "new path should end with slug: {}",
@@ -869,12 +920,12 @@ mod tests {
         );
 
         let old_path = vault.join("note/untitled-note.md");
-        let result = rename_note(
-            vault.to_str().unwrap(),
-            old_path.to_str().unwrap(),
-            "My New Note",
-            None,
-        )
+        let result = rename_note(RenameNoteRequest {
+            vault_path: vault.to_str().unwrap(),
+            old_path: old_path.to_str().unwrap(),
+            new_title: "My New Note",
+            old_title_hint: None,
+        })
         .unwrap();
 
         // File should be renamed to match the title slug
@@ -910,12 +961,12 @@ mod tests {
         );
 
         let old_path = vault.join("note/untitled-note.md");
-        let result = rename_note(
-            vault.to_str().unwrap(),
-            old_path.to_str().unwrap(),
-            "My Note",
-            None,
-        )
+        let result = rename_note(RenameNoteRequest {
+            vault_path: vault.to_str().unwrap(),
+            old_path: old_path.to_str().unwrap(),
+            new_title: "My Note",
+            old_title_hint: None,
+        })
         .unwrap();
 
         // Should get a suffixed name to avoid collision
@@ -946,11 +997,11 @@ mod tests {
         );
 
         let old_path = vault.join("note/project-kickoff.md");
-        let result = rename_note_filename(
-            vault.to_str().unwrap(),
-            old_path.to_str().unwrap(),
-            "manual-name",
-        )
+        let result = rename_note_filename(RenameNoteFilenameRequest {
+            vault_path: vault.to_str().unwrap(),
+            old_path: old_path.to_str().unwrap(),
+            new_filename_stem: "manual-name",
+        })
         .unwrap();
 
         assert!(result.new_path.ends_with("manual-name.md"));
@@ -968,18 +1019,16 @@ mod tests {
 
     #[test]
     fn test_rename_note_filename_rejects_existing_destination() {
-        let dir = TempDir::new().unwrap();
-        let vault = dir.path();
-        create_test_file(vault, "note/current.md", "# Current\n");
-        create_test_file(vault, "note/manual-name.md", "# Existing\n");
-
-        let result = rename_note_filename(
-            vault.to_str().unwrap(),
-            vault.join("note/current.md").to_str().unwrap(),
+        assert_rename_note_filename_error(
             "manual-name",
+            Some("note/manual-name.md"),
+            "A note with that name already exists",
         );
+    }
 
-        assert_eq!(result.unwrap_err(), "A note with that name already exists");
+    #[test]
+    fn test_rename_note_filename_rejects_windows_invalid_names() {
+        assert_rename_note_filename_error("quarterly:plan", None::<&str>, "Invalid filename");
     }
 
     #[test]
@@ -997,11 +1046,11 @@ mod tests {
             "Reference [[projects/weekly-review]]\n",
         );
 
-        let result = move_note_to_folder(
-            vault.to_str().unwrap(),
-            vault.join("projects/weekly-review.md").to_str().unwrap(),
-            vault.join("areas").to_str().unwrap(),
-        )
+        let result = move_note_to_folder(MoveNoteToFolderRequest {
+            vault_path: vault.to_str().unwrap(),
+            old_path: vault.join("projects/weekly-review.md").to_str().unwrap(),
+            destination_folder_path: vault.join("areas").to_str().unwrap(),
+        })
         .expect("move should succeed");
 
         assert!(result.new_path.ends_with("areas/weekly-review.md"));
@@ -1020,11 +1069,11 @@ mod tests {
         create_test_file(vault, "projects/weekly-review.md", "# Weekly Review\n");
 
         let source = vault.join("projects/weekly-review.md");
-        let result = move_note_to_folder(
-            vault.to_str().unwrap(),
-            source.to_str().unwrap(),
-            vault.join("projects").to_str().unwrap(),
-        )
+        let result = move_note_to_folder(MoveNoteToFolderRequest {
+            vault_path: vault.to_str().unwrap(),
+            old_path: source.to_str().unwrap(),
+            destination_folder_path: vault.join("projects").to_str().unwrap(),
+        })
         .expect("move should noop");
 
         assert_eq!(result.new_path, source.to_string_lossy());
@@ -1034,18 +1083,7 @@ mod tests {
 
     #[test]
     fn test_move_note_to_folder_rejects_existing_destination() {
-        let dir = TempDir::new().unwrap();
-        let vault = dir.path();
-        create_test_file(vault, "projects/weekly-review.md", "# Weekly Review\n");
-        create_test_file(vault, "areas/weekly-review.md", "# Existing\n");
-
-        let result = move_note_to_folder(
-            vault.to_str().unwrap(),
-            vault.join("projects/weekly-review.md").to_str().unwrap(),
-            vault.join("areas").to_str().unwrap(),
-        );
-
-        assert_eq!(result.unwrap_err(), "A note with that name already exists");
+        assert_move_note_to_folder_error("A note with that name already exists");
     }
 
     #[test]
@@ -1073,12 +1111,12 @@ mod tests {
         let old_path = vault.join("note/weekly-review.md");
         // Without old_title_hint, rename_note would see H1 = "Sprint Retrospective" == new_title → noop
         // With old_title_hint = "Weekly Review", it knows to search for [[Weekly Review]] and replace
-        let result = rename_note(
-            vault.to_str().unwrap(),
-            old_path.to_str().unwrap(),
-            "Sprint Retrospective",
-            Some("Weekly Review"),
-        )
+        let result = rename_note(RenameNoteRequest {
+            vault_path: vault.to_str().unwrap(),
+            old_path: old_path.to_str().unwrap(),
+            new_title: "Sprint Retrospective",
+            old_title_hint: Some("Weekly Review"),
+        })
         .unwrap();
 
         assert_eq!(result.updated_files, 2);
@@ -1105,12 +1143,12 @@ mod tests {
         );
 
         let old_path = vault.join("note/old.md");
-        let result = rename_note(
-            vault.to_str().unwrap(),
-            old_path.to_str().unwrap(),
-            "Brand New Title",
-            None,
-        )
+        let result = rename_note(RenameNoteRequest {
+            vault_path: vault.to_str().unwrap(),
+            old_path: old_path.to_str().unwrap(),
+            new_title: "Brand New Title",
+            old_title_hint: None,
+        })
         .unwrap();
 
         let content = fs::read_to_string(&result.new_path).unwrap();

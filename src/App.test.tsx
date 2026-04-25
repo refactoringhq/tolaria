@@ -2,6 +2,7 @@ import { act, render, screen, fireEvent, waitFor, within } from '@testing-librar
 import type { ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { DEFAULT_VAULTS } from './hooks/useVaultSwitcher'
+import { formatShortcutDisplay } from './hooks/appCommandCatalog'
 
 // Provide a localStorage mock that supports all methods (jsdom's may be incomplete)
 const localStorageMock = (() => {
@@ -305,6 +306,7 @@ vi.mock('@blocknote/react', () => ({
       {children}
     </div>
   ),
+  LinkToolbar: ({ children }: { children?: ReactNode }) => <>{children}</>,
   ComponentsContext: {
     Provider: ({ children }: { children?: ReactNode }) => <>{children}</>,
   },
@@ -317,8 +319,30 @@ vi.mock('@blocknote/react', () => ({
     focus: () => {},
     onMount: (cb: () => void) => { cb(); return () => {} },
   }),
+  LinkToolbarController: () => null,
+  EditLinkButton: () => null,
+  DeleteLinkButton: () => null,
   SideMenuController: () => null,
   SuggestionMenuController: () => null,
+  useComponentsContext: () => ({
+    LinkToolbar: {
+      Button: ({
+        children,
+        label,
+        onClick,
+      }: { children?: ReactNode; label?: string; onClick?: () => void }) => (
+        <button onClick={onClick} type="button">
+          {label}
+          {children}
+        </button>
+      ),
+    },
+  }),
+  useDictionary: () => ({
+    link_toolbar: {
+      open: { tooltip: 'Open in a new tab' },
+    },
+  }),
 }))
 
 vi.mock('@blocknote/mantine', () => ({
@@ -368,9 +392,14 @@ describe('App', () => {
   })
 
   it('shows keyboard shortcut hints', async () => {
-    render(<App />)
+    const quickOpenHint = formatShortcutDisplay({ display: '⌘P / ⌘O' })
+    const newNoteHint = formatShortcutDisplay({ display: '⌘N' })
+    const { container } = render(<App />)
     await waitFor(() => {
-      expect(screen.getByText(/Cmd\+P or Cmd\+O to search/)).toBeInTheDocument()
+      const shortcutHint = Array.from(container.querySelectorAll('span.text-xs.text-muted-foreground'))
+        .find((element) => element.textContent === `${quickOpenHint} to search · ${newNoteHint} to create`)
+
+      expect(shortcutHint).toBeInTheDocument()
     })
   })
 

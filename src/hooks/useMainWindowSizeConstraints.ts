@@ -61,7 +61,7 @@ export function useMainWindowSizeConstraints({
     void (async () => {
       if (cancelled) return
       await applyMainWindowSizeConstraints(minWidth)
-    })().catch(() => {})
+    })().catch((err) => console.warn('[window] Size constraints failed:', err))
 
     return () => {
       cancelled = true

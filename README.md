@@ -2,7 +2,7 @@
 
 # 💧 Tolaria
 
-Tolaria is a desktop app for Mac for managing **markdown knowledge bases**. People use it for a variety of use cases:
+Tolaria is a desktop app for Mac and Linux for managing **markdown knowledge bases**. People use it for a variety of use cases:
 
 * Operate second brains and personal knowledge
 * Organize company docs as context for AI
@@ -46,7 +46,30 @@ Tolaria is open source and built with Tauri, React, and TypeScript. If you want 
 - Node.js 20+
 - pnpm 8+
 - Rust stable
-- macOS for development
+- macOS or Linux for development
+
+#### Linux system dependencies
+
+Tauri 2 on Linux requires WebKit2GTK 4.1 and GTK 3:
+
+- Arch / Manjaro:
+  ```bash
+  sudo pacman -S --needed webkit2gtk-4.1 base-devel curl wget file openssl \
+    appmenu-gtk-module libappindicator-gtk3 librsvg
+  ```
+- Debian / Ubuntu (22.04+):
+  ```bash
+  sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file \
+    libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev \
+    libsoup-3.0-dev patchelf
+  ```
+- Fedora 38+:
+  ```bash
+  sudo dnf install webkit2gtk4.1-devel openssl-devel curl wget file \
+    libappindicator-gtk3-devel librsvg2-devel
+  ```
+
+The bundled MCP server still spawns the system `node` binary at runtime on Linux, so install Node from your distro package manager if you want the external AI tooling flow.
 
 ### Quick start
 

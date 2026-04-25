@@ -1,5 +1,5 @@
+use super::git_command;
 use std::path::Path;
-use std::process::Command;
 
 struct CommitFailure {
     stdout: String,
@@ -11,7 +11,7 @@ pub fn git_commit(vault_path: &str, message: &str) -> Result<String, String> {
     let vault = Path::new(vault_path);
 
     // Stage all changes
-    let add = Command::new("git")
+    let add = git_command()
         .args(["add", "-A"])
         .current_dir(vault)
         .output()
@@ -37,7 +37,7 @@ pub fn git_commit(vault_path: &str, message: &str) -> Result<String, String> {
 }
 
 fn run_commit(vault: &Path, message: &str, disable_signing: bool) -> Result<String, CommitFailure> {
-    let mut command = Command::new("git");
+    let mut command = git_command();
     if disable_signing {
         command.args(["-c", "commit.gpgsign=false"]);
     }
@@ -85,10 +85,10 @@ fn is_commit_signing_failure(detail: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use super::git_command;
     use super::*;
     use crate::git::tests::setup_git_repo;
     use std::fs;
-    use std::process::Command;
 
     #[test]
     fn test_git_commit() {
@@ -101,7 +101,7 @@ mod tests {
         assert!(result.is_ok());
 
         // Verify the commit exists
-        let log = Command::new("git")
+        let log = git_command()
             .args(["log", "--oneline", "-1"])
             .current_dir(vault)
             .output()
@@ -135,12 +135,12 @@ mod tests {
         let vault = dir.path();
         let vp = vault.to_str().unwrap();
 
-        Command::new("git")
+        git_command()
             .args(["config", "commit.gpgsign", "true"])
             .current_dir(vault)
             .output()
             .unwrap();
-        Command::new("git")
+        git_command()
             .args(["config", "gpg.program", "/missing/tolaria-test-gpg"])
             .current_dir(vault)
             .output()
@@ -153,14 +153,14 @@ mod tests {
             "commit should retry unsigned when signing helper is missing: {result:?}"
         );
 
-        let log = Command::new("git")
+        let log = git_command()
             .args(["log", "--oneline", "-1"])
             .current_dir(vault)
             .output()
             .unwrap();
         assert!(String::from_utf8_lossy(&log.stdout).contains("Commit with broken signing config"));
 
-        let config = Command::new("git")
+        let config = git_command()
             .args(["config", "commit.gpgsign"])
             .current_dir(vault)
             .output()

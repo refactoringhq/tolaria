@@ -15,8 +15,13 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from 'react'
-import { X } from '@phosphor-icons/react'
+import { Moon, Sun, X } from '@phosphor-icons/react'
 import type { Settings } from '../types'
+import {
+  DEFAULT_THEME_MODE,
+  readStoredThemeMode,
+  type ThemeMode,
+} from '../lib/themeMode'
 import { normalizeReleaseChannel, serializeReleaseChannel, type ReleaseChannel } from '../lib/releaseChannel'
 import { trackEvent } from '../lib/telemetry'
 import { Button } from './ui/button'
@@ -50,6 +55,7 @@ interface SettingsDraft {
   autoAdvanceInboxAfterOrganize: boolean
   defaultAiAgent: AiAgentId
   releaseChannel: ReleaseChannel
+  themeMode: ThemeMode
   initialH1AutoRename: boolean
   crashReporting: boolean
   analytics: boolean
@@ -73,6 +79,8 @@ interface SettingsBodyProps {
   setDefaultAiAgent: (value: AiAgentId) => void
   releaseChannel: ReleaseChannel
   setReleaseChannel: (value: ReleaseChannel) => void
+  themeMode: ThemeMode
+  setThemeMode: (value: ThemeMode) => void
   initialH1AutoRename: boolean
   setInitialH1AutoRename: (value: boolean) => void
   explicitOrganization: boolean
@@ -109,11 +117,18 @@ function createSettingsDraft(
     autoAdvanceInboxAfterOrganize: settings.auto_advance_inbox_after_organize ?? false,
     defaultAiAgent: resolveDefaultAiAgent(settings.default_ai_agent),
     releaseChannel: normalizeReleaseChannel(settings.release_channel),
+    themeMode: resolveSettingsDraftThemeMode(settings.theme_mode),
     initialH1AutoRename: settings.initial_h1_auto_rename_enabled ?? true,
     crashReporting: settings.crash_reporting_enabled ?? false,
     analytics: settings.analytics_enabled ?? false,
     explicitOrganization: explicitOrganizationEnabled,
   }
+}
+
+function resolveSettingsDraftThemeMode(themeMode: Settings['theme_mode']): ThemeMode {
+  if (themeMode) return themeMode
+  if (typeof window === 'undefined') return DEFAULT_THEME_MODE
+  return readStoredThemeMode(window.localStorage) ?? DEFAULT_THEME_MODE
 }
 
 function resolveTelemetryConsent(settings: Settings, draft: SettingsDraft): boolean | null {
@@ -141,6 +156,7 @@ function buildSettingsFromDraft(settings: Settings, draft: SettingsDraft): Setti
     analytics_enabled: draft.analytics,
     anonymous_id: resolveAnonymousId(settings, draft),
     release_channel: serializeReleaseChannel(draft.releaseChannel),
+    theme_mode: draft.themeMode,
     initial_h1_auto_rename_enabled: draft.initialH1AutoRename,
     default_ai_agent: draft.defaultAiAgent,
   }
@@ -251,14 +267,14 @@ function SettingsPanelInner({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.4)' }}
+      style={{ background: 'var(--shadow-overlay)' }}
       onClick={handleBackdropClick}
       onKeyDown={handleKeyDown}
       data-testid="settings-panel"
     >
       <div
         ref={panelRef}
-        className="bg-background border border-border rounded-lg shadow-xl"
+        className="rounded-lg border border-border bg-background shadow-[0_18px_55px_var(--shadow-dialog)]"
         style={{ width: 520, maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
       >
         <SettingsHeader onClose={onClose} />
@@ -279,6 +295,8 @@ function SettingsPanelInner({
           setDefaultAiAgent={(value) => updateDraft('defaultAiAgent', value)}
           releaseChannel={draft.releaseChannel}
           setReleaseChannel={(value) => updateDraft('releaseChannel', value)}
+          themeMode={draft.themeMode}
+          setThemeMode={(value) => updateDraft('themeMode', value)}
           initialH1AutoRename={draft.initialH1AutoRename}
           setInitialH1AutoRename={(value) => updateDraft('initialH1AutoRename', value)}
           explicitOrganization={draft.explicitOrganization}
@@ -331,6 +349,8 @@ function SettingsBody({
   setDefaultAiAgent,
   releaseChannel,
   setReleaseChannel,
+  themeMode,
+  setThemeMode,
   initialH1AutoRename,
   setInitialH1AutoRename,
   explicitOrganization,
@@ -360,6 +380,13 @@ function SettingsBody({
           setAutoGitIdleThresholdSeconds={setAutoGitIdleThresholdSeconds}
           autoGitInactiveThresholdSeconds={autoGitInactiveThresholdSeconds}
           setAutoGitInactiveThresholdSeconds={setAutoGitInactiveThresholdSeconds}
+        />
+      </SettingsSection>
+
+      <SettingsSection>
+        <AppearanceSettingsSection
+          themeMode={themeMode}
+          setThemeMode={setThemeMode}
         />
       </SettingsSection>
 
@@ -435,6 +462,81 @@ function SyncAndUpdatesSection({
         testId="settings-release-channel"
       />
     </>
+  )
+}
+
+function AppearanceSettingsSection({
+  themeMode,
+  setThemeMode,
+}: Pick<SettingsBodyProps, 'themeMode' | 'setThemeMode'>) {
+  return (
+    <>
+      <SectionHeading
+        title="Appearance"
+        description="Choose the app color mode used for Tolaria chrome, editor surfaces, menus, and dialogs."
+      />
+
+      <ThemeModeControl value={themeMode} onChange={setThemeMode} />
+    </>
+  )
+}
+
+function ThemeModeControl({
+  value,
+  onChange,
+}: {
+  value: ThemeMode
+  onChange: (value: ThemeMode) => void
+}) {
+  return (
+    <div
+      className="inline-flex w-full rounded-md border border-border bg-muted p-1"
+      role="radiogroup"
+      aria-label="Theme"
+      data-testid="settings-theme-mode"
+    >
+      <ThemeModeButton label="Light" selected={value === 'light'} value="light" onSelect={onChange}>
+        <Sun size={14} />
+      </ThemeModeButton>
+      <ThemeModeButton label="Dark" selected={value === 'dark'} value="dark" onSelect={onChange}>
+        <Moon size={14} />
+      </ThemeModeButton>
+    </div>
+  )
+}
+
+function ThemeModeButton({
+  children,
+  label,
+  selected,
+  value,
+  onSelect,
+}: {
+  children: ReactNode
+  label: string
+  selected: boolean
+  value: ThemeMode
+  onSelect: (value: ThemeMode) => void
+}) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      role="radio"
+      aria-checked={selected}
+      aria-label={label}
+      data-testid={`settings-theme-${value}`}
+      className={
+        selected
+          ? 'h-7 flex-1 border border-border bg-background text-foreground shadow-xs hover:bg-background'
+          : 'h-7 flex-1 text-muted-foreground hover:text-foreground'
+      }
+      onClick={() => onSelect(value)}
+    >
+      {children}
+      {label}
+    </Button>
   )
 }
 

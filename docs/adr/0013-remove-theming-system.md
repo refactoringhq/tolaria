@@ -2,8 +2,9 @@
 type: ADR
 id: "0013"
 title: "Remove vault-based theming system"
-status: active
+status: superseded
 date: 2026-03-23
+superseded_by: "0081"
 ---
 
 ## Context

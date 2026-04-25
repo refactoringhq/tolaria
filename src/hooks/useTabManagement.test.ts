@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { invoke } from '@tauri-apps/api/core'
+import { isTauri, mockInvoke } from '../mock-tauri'
 import type { VaultEntry } from '../types'
-import { useTabManagement, prefetchNoteContent, cacheNoteContent, clearPrefetchCache } from './useTabManagement'
+import {
+  useTabManagement,
+  prefetchNoteContent,
+  cacheNoteContent,
+  clearPrefetchCache,
+  NOTE_CONTENT_CACHE_MAX_BYTES,
+  NOTE_CONTENT_ENTRY_MAX_BYTES,
+} from './useTabManagement'
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }))
 vi.mock('../mock-tauri', () => ({
-  isTauri: () => false,
+  isTauri: vi.fn(() => false),
   mockInvoke: vi.fn().mockResolvedValue('# Mock content'),
 }))
 
@@ -48,7 +57,6 @@ async function replaceActiveNote(result: HookState, overrides: Partial<VaultEntr
 }
 
 async function prefetchResolvedContent(path: string, content: string) {
-  const { mockInvoke } = await import('../mock-tauri')
   vi.mocked(mockInvoke).mockResolvedValue(content)
   prefetchNoteContent(path)
   await vi.waitFor(() => expect(vi.mocked(mockInvoke)).toHaveBeenCalledTimes(1))
@@ -69,10 +77,35 @@ function createDeferred<T>() {
   return { promise, resolve }
 }
 
+function makeAsciiContent(byteCount: number): string {
+  return 'x'.repeat(byteCount)
+}
+
+function seedCacheBeyondByteLimit() {
+  const cachedContent = makeAsciiContent(Math.floor(NOTE_CONTENT_ENTRY_MAX_BYTES * 0.9))
+  const cachedPaths = Array.from(
+    { length: Math.floor(NOTE_CONTENT_CACHE_MAX_BYTES / cachedContent.length) + 2 },
+    (_, index) => `/vault/note/cached-${index + 1}.md`,
+  )
+
+  for (const path of cachedPaths) {
+    cacheNoteContent(path, cachedContent)
+  }
+
+  return {
+    cachedContent,
+    oldestPath: cachedPaths[0],
+    newestPath: cachedPaths[cachedPaths.length - 1],
+  }
+}
+
 describe('useTabManagement (single-note model)', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
     clearPrefetchCache()
+    vi.mocked(isTauri).mockReturnValue(false)
+    vi.mocked(mockInvoke).mockResolvedValue('# Mock content')
+    window.history.replaceState({}, '', '/')
   })
 
   it('starts with no note and null active path', () => {
@@ -89,8 +122,6 @@ describe('useTabManagement (single-note model)', () => {
     })
 
     it('switches the active path immediately while the next note is still loading', async () => {
-      const { mockInvoke } = await import('../mock-tauri')
-
       let resolveContent: (value: string) => void
       vi.mocked(mockInvoke).mockImplementationOnce(
         () => new Promise<string>((resolve) => { resolveContent = resolve }),
@@ -131,7 +162,6 @@ describe('useTabManagement (single-note model)', () => {
     })
 
     it('handles load content failure gracefully', async () => {
-      const { mockInvoke } = await import('../mock-tauri')
       vi.mocked(mockInvoke).mockRejectedValueOnce(new Error('fail'))
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
@@ -144,7 +174,6 @@ describe('useTabManagement (single-note model)', () => {
     })
 
     it('clears the active note when the file is missing on disk', async () => {
-      const { mockInvoke } = await import('../mock-tauri')
       vi.mocked(mockInvoke).mockRejectedValueOnce(new Error('File does not exist: /vault/note/missing.md'))
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const onMissingNotePath = vi.fn()
@@ -162,7 +191,6 @@ describe('useTabManagement (single-note model)', () => {
     })
 
     it('returns to the empty state when note content is not valid UTF-8 text', async () => {
-      const { mockInvoke } = await import('../mock-tauri')
       vi.mocked(mockInvoke).mockRejectedValueOnce(new Error('File is not valid UTF-8 text: /vault/note/bad.csv'))
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const onUnreadableNoteContent = vi.fn()
@@ -185,7 +213,6 @@ describe('useTabManagement (single-note model)', () => {
     })
 
     it('returns to the empty state when no active vault is selected', async () => {
-      const { mockInvoke } = await import('../mock-tauri')
       vi.mocked(mockInvoke).mockRejectedValueOnce(new Error('No active vault selected'))
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
@@ -195,6 +222,25 @@ describe('useTabManagement (single-note model)', () => {
       expect(result.current.tabs).toEqual([])
       expect(result.current.activeTabPath).toBeNull()
       warnSpy.mockRestore()
+    })
+
+    it('uses the note-window vault path when Tauri reloads the selected note', async () => {
+      vi.mocked(isTauri).mockReturnValue(true)
+      vi.mocked(invoke).mockResolvedValue('# Window content')
+      window.history.replaceState(
+        {},
+        '',
+        '/?window=note&path=%2Fvault%2Fnote%2Ftest.md&vault=%2Fvault&title=Test+Note',
+      )
+
+      const { result } = renderHook(() => useTabManagement())
+      await selectNote(result, { path: '/vault/note/test.md', title: 'Test Note' })
+
+      expect(vi.mocked(invoke)).toHaveBeenCalledWith('get_note_content', {
+        path: '/vault/note/test.md',
+        vaultPath: '/vault',
+      })
+      expect(result.current.tabs[0].content).toBe('# Window content')
     })
   })
 
@@ -207,7 +253,6 @@ describe('useTabManagement (single-note model)', () => {
     })
 
     it('treats /tmp and /private/tmp aliases as the same active note', async () => {
-      const { mockInvoke } = await import('../mock-tauri')
       vi.mocked(mockInvoke)
         .mockResolvedValueOnce('# Stale before pull')
         .mockResolvedValueOnce('# Fresh after pull')
@@ -229,7 +274,6 @@ describe('useTabManagement (single-note model)', () => {
     })
 
     it('reloads content when replacing with the same entry', async () => {
-      const { mockInvoke } = await import('../mock-tauri')
       vi.mocked(mockInvoke)
         .mockResolvedValueOnce('# Stale before pull')
         .mockResolvedValueOnce('# Fresh after pull')
@@ -248,7 +292,6 @@ describe('useTabManagement (single-note model)', () => {
     })
 
     it('clears the active note when a forced reload hits a missing file path', async () => {
-      const { mockInvoke } = await import('../mock-tauri')
       vi.mocked(mockInvoke)
         .mockResolvedValueOnce('# Existing content')
         .mockRejectedValueOnce(new Error('File does not exist: /vault/a.md'))
@@ -354,7 +397,6 @@ describe('useTabManagement (single-note model)', () => {
     })
 
     it('deduplicates concurrent prefetch requests for same path', async () => {
-      const { mockInvoke } = await import('../mock-tauri')
       vi.mocked(mockInvoke).mockResolvedValue('# Content')
 
       prefetchNoteContent('/vault/note/dup.md')
@@ -365,7 +407,6 @@ describe('useTabManagement (single-note model)', () => {
     })
 
     it('swallows no-active-vault prefetch failures and lets a later open recover', async () => {
-      const { mockInvoke } = await import('../mock-tauri')
       vi.mocked(mockInvoke)
         .mockRejectedValueOnce(new Error('No active vault selected'))
         .mockResolvedValueOnce('# Recovered content')
@@ -396,7 +437,6 @@ describe('useTabManagement (single-note model)', () => {
     })
 
     it('activates a warmed note immediately while reusing the cached content', async () => {
-      const { mockInvoke } = await import('../mock-tauri')
       const deferred = createDeferred<string>()
       vi.mocked(mockInvoke).mockImplementationOnce(() => deferred.promise)
       cacheNoteContent('/vault/note/warm.md', '# Warm content')
@@ -418,8 +458,74 @@ describe('useTabManagement (single-note model)', () => {
       })
     })
 
+    it('does not retain oversized notes in the prefetch cache', async () => {
+      const largeContent = makeAsciiContent(NOTE_CONTENT_ENTRY_MAX_BYTES + 1)
+      const mockInvoke = await prefetchResolvedContent('/vault/note/oversized.md', largeContent)
+      const deferred = createDeferred<string>()
+      vi.mocked(mockInvoke).mockImplementationOnce(() => deferred.promise)
+
+      const { result } = renderHook(() => useTabManagement())
+
+      act(() => {
+        void result.current.handleSelectNote(makeEntry({ path: '/vault/note/oversized.md', title: 'Oversized' }))
+      })
+
+      expect(result.current.activeTabPath).toBe('/vault/note/oversized.md')
+      expect(result.current.tabs).toEqual([])
+      expect(vi.mocked(mockInvoke)).toHaveBeenCalledTimes(2)
+
+      await act(async () => {
+        deferred.resolve(largeContent)
+        await Promise.resolve()
+      })
+
+      expect(result.current.tabs[0].content).toBe(largeContent)
+    })
+
+    it('evicts the oldest cached notes when retained bytes exceed the cache budget', async () => {
+      const { cachedContent, oldestPath } = seedCacheBeyondByteLimit()
+      const deferred = createDeferred<string>()
+      vi.mocked(mockInvoke).mockImplementationOnce(() => deferred.promise)
+
+      const { result } = renderHook(() => useTabManagement())
+
+      act(() => {
+        void result.current.handleSelectNote(makeEntry({ path: oldestPath, title: 'Oldest cached note' }))
+      })
+
+      expect(result.current.activeTabPath).toBe(oldestPath)
+      expect(result.current.tabs).toEqual([])
+
+      await act(async () => {
+        deferred.resolve(cachedContent)
+        await Promise.resolve()
+      })
+
+      expect(result.current.tabs[0].content).toBe(cachedContent)
+    })
+
+    it('keeps the newest cached notes warm when trimming to the byte budget', async () => {
+      const { cachedContent, newestPath } = seedCacheBeyondByteLimit()
+      const deferred = createDeferred<string>()
+      vi.mocked(mockInvoke).mockImplementationOnce(() => deferred.promise)
+
+      const { result } = renderHook(() => useTabManagement())
+
+      act(() => {
+        void result.current.handleSelectNote(makeEntry({ path: newestPath, title: 'Newest cached note' }))
+      })
+
+      expect(result.current.activeTabPath).toBe(newestPath)
+      expect(result.current.tabs).toHaveLength(1)
+      expect(result.current.tabs[0].content).toBe(cachedContent)
+
+      await act(async () => {
+        deferred.resolve(cachedContent)
+        await Promise.resolve()
+      })
+    })
+
     it('reuses cached content when reopening a recently loaded note', async () => {
-      const { mockInvoke } = await import('../mock-tauri')
       vi.mocked(mockInvoke)
         .mockResolvedValueOnce('# A content')
         .mockResolvedValueOnce('# B content')
@@ -436,7 +542,6 @@ describe('useTabManagement (single-note model)', () => {
     })
 
     it('falls back instead of reopening cached content when the note file disappeared', async () => {
-      const { mockInvoke } = await import('../mock-tauri')
       vi.mocked(mockInvoke)
         .mockResolvedValueOnce('# Other note')
         .mockRejectedValueOnce(new Error('File does not exist: /vault/note/missing-cached.md'))
@@ -458,8 +563,6 @@ describe('useTabManagement (single-note model)', () => {
     })
 
     it('deduplicates a late prefetch after note opening already started', async () => {
-      const { mockInvoke } = await import('../mock-tauri')
-
       let resolveContent!: (value: string) => void
       vi.mocked(mockInvoke).mockImplementationOnce(
         () => new Promise<string>((resolve) => { resolveContent = resolve }),
@@ -486,8 +589,6 @@ describe('useTabManagement (single-note model)', () => {
 
   describe('rapid switching safety', () => {
     it('only activates the last note when switching rapidly', async () => {
-      const { mockInvoke } = await import('../mock-tauri')
-
       let resolveA: (v: string) => void
       let resolveB: (v: string) => void
       vi.mocked(mockInvoke)
