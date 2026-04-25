@@ -650,11 +650,39 @@ interface Settings {
   anonymous_id: string | null
   release_channel: string | null // null = stable default, "alpha" = every-push prerelease feed
   theme_mode: 'light' | 'dark' | null
+  language: 'en' | 'zh-CN' | 'ja' | null
   default_ai_agent: 'claude_code' | 'codex' | null
 }
 ```
 
 Managed by `useSettings` hook and `SettingsPanel` component. `theme_mode` is installation-local because it controls device comfort rather than vault structure. `default_ai_agent` is an installation-local preference that selects which supported CLI agent the AI panel, command palette AI mode, and status bar should target by default. The AutoGit fields are also installation-local: `useAutoGit` consumes them to schedule automatic checkpoints, while `useCommitFlow` and the status bar quick action reuse the same checkpoint runner and deterministic automatic commit message generation.
+
+### Language (`language`)
+
+An installation-local preference (`'en' | 'zh-CN' | 'ja' | null`). `null` means English (default). Set via the Language selector in SettingsPanel → Appearance. Persisted in Rust `settings.json` and cached in `localStorage['tolaria-language']`.
+
+## Internationalization (i18n)
+
+Tolaria uses **react-i18next** with a **key-as-value** translation strategy. English UI strings serve as the i18n key, so missing translations fall back to English. See [ADR-0082](adr/0082-i18n-internationalization.md).
+
+### Core Abstractions
+
+| Module | Export | Purpose |
+|--------|--------|---------|
+| `src/i18n/index.ts` | `initI18n(lng)`, `changeLanguage(lng)` | i18next bootstrap and runtime language switch |
+| `src/i18n/settings.ts` | `normalizeLanguage()`, `detectLanguage()`, `writeLanguageToStorage()`, `isValidLanguage()`, `SUPPORTED_LANGUAGES`, `SupportedLanguage` | Language detection, normalization, and persistence |
+
+### Hook Usage
+
+```typescript
+import { useTranslation } from 'react-i18next'
+const { t } = useTranslation('settings')
+t('Save') // → "保存" (zh-CN), "保存" (ja), "Save" (en fallback)
+```
+
+### Translation Files
+
+7 namespaces × 3 languages = 21 JSON files in `src/i18n/locales/{en,zh-CN,ja}/`. Each namespace file maps English keys to translated values.
 
 ## Telemetry
 

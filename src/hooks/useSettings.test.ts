@@ -16,6 +16,7 @@ const defaultSettings: Settings = {
   release_channel: null,
   theme_mode: null,
   default_ai_agent: null,
+  language: null,
 }
 
 const savedSettings: Settings = {
@@ -31,6 +32,7 @@ const savedSettings: Settings = {
   release_channel: null,
   theme_mode: null,
   default_ai_agent: null,
+  language: null,
 }
 
 let mockSettingsStore: Settings = { ...defaultSettings }

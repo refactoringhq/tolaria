@@ -1,6 +1,25 @@
 import '@testing-library/jest-dom/vitest'
 import { afterEach, vi } from 'vitest'
 import { createElement, type ReactNode, type ComponentType } from 'react'
+import i18next from 'i18next'
+import { initReactI18next } from 'react-i18next'
+import common from '../i18n/locales/en/common.json'
+import sidebar from '../i18n/locales/en/sidebar.json'
+import settings from '../i18n/locales/en/settings.json'
+import editor from '../i18n/locales/en/editor.json'
+import dialogs from '../i18n/locales/en/dialogs.json'
+import statusBar from '../i18n/locales/en/statusBar.json'
+import commands from '../i18n/locales/en/commands.json'
+
+// Initialize i18next for tests — use English as default
+i18next.use(initReactI18next).init({
+  lng: 'en',
+  fallbackLng: 'en',
+  resources: {
+    en: { common, sidebar, settings, editor, dialogs, statusBar, commands },
+  },
+  interpolation: { escapeValue: false },
+})
 
 // Stub fetch to prevent jsdom@28 + Node 22 undici incompatibility.
 // jsdom's JSDOMDispatcher passes an onError handler that Node 22's bundled

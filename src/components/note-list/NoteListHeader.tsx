@@ -1,4 +1,5 @@
 import { MagnifyingGlass, Plus } from '@phosphor-icons/react'
+import { useTranslation } from 'react-i18next'
 import { Loader2 } from 'lucide-react'
 import type { VaultEntry } from '../../types'
 import type { SortOption, SortDirection } from '../../utils/noteListHelpers'
@@ -31,6 +32,7 @@ export function NoteListHeader({ title, typeDocument, isEntityView, listSort, li
   onSearchKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void
 }) {
   const { onMouseDown: onDragMouseDown } = useDragRegion()
+  const { t } = useTranslation('sidebar')
   return (
     <>
       <div className="flex h-[52px] shrink-0 items-center justify-between border-b border-border px-4" onMouseDown={onDragMouseDown} style={{ cursor: 'default', paddingLeft: sidebarCollapsed ? 80 : undefined }}>
@@ -44,11 +46,11 @@ export function NoteListHeader({ title, typeDocument, isEntityView, listSort, li
         </h3>
         <div className="ml-3 flex shrink-0 items-center justify-end gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           {!isEntityView && <SortDropdown groupLabel="__list__" current={listSort} direction={listDirection} customProperties={customProperties} onChange={onSortChange} />}
-          <Button type="button" variant="ghost" size="icon-xs" className={NOTE_LIST_ACTION_BUTTON_CLASSNAME} onClick={onToggleSearch} title="Search notes" aria-label="Search notes">
+          <Button type="button" variant="ghost" size="icon-xs" className={NOTE_LIST_ACTION_BUTTON_CLASSNAME} onClick={onToggleSearch} title={t('Search notes')} aria-label={t('Search notes')}>
             <MagnifyingGlass size={16} />
           </Button>
           {propertyPicker && <ListPropertiesPopover {...propertyPicker} triggerClassName={NOTE_LIST_ACTION_BUTTON_CLASSNAME} />}
-          <Button type="button" variant="ghost" size="icon-xs" className={NOTE_LIST_ACTION_BUTTON_CLASSNAME} onClick={onCreateNote} title="Create new note" aria-label="Create new note">
+          <Button type="button" variant="ghost" size="icon-xs" className={NOTE_LIST_ACTION_BUTTON_CLASSNAME} onClick={onCreateNote} title={t('Create new note')} aria-label={t('Create new note')}>
             <Plus size={16} />
           </Button>
         </div>
@@ -58,7 +60,7 @@ export function NoteListHeader({ title, typeDocument, isEntityView, listSort, li
           <div className="relative flex-1" aria-live="polite">
             <Input
               ref={searchInputRef}
-              placeholder="Search notes..."
+              placeholder={t('Search notes...')}
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
               onKeyDown={onSearchKeyDown}

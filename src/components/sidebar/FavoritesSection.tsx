@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { VaultEntry, SidebarSelection } from '../../types'
 import {
   DndContext, PointerSensor, closestCenter, type DragEndEvent, useSensor, useSensors,
@@ -130,11 +131,13 @@ export function FavoritesSection({
     onSelect({ kind: 'filter', filter: 'favorites' })
   }, [onSelect, onSelectNote])
 
+  const { t } = useTranslation('sidebar')
+
   if (favorites.length === 0) return null
 
   return (
     <div style={{ padding: '0 6px' }}>
-      <SidebarGroupHeader label="FAVORITES" collapsed={collapsed} onToggle={onToggle} count={favorites.length} />
+      <SidebarGroupHeader label={t('FAVORITES')} collapsed={collapsed} onToggle={onToggle} count={favorites.length} />
       {!collapsed && (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={favoriteIds} strategy={verticalListSortingStrategy}>

@@ -93,6 +93,7 @@ export interface Settings {
   theme_mode?: ThemeMode | null
   initial_h1_auto_rename_enabled?: boolean | null
   default_ai_agent?: AiAgentId | null
+  language?: string | null
 }
 
 export interface GitPullResult {

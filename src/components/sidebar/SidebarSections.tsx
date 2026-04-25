@@ -1,6 +1,7 @@
 import {
   type Dispatch, type Ref, type RefObject, type SetStateAction,
 } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { VaultEntry, SidebarSelection, ViewFile } from '../../types'
 import {
   DndContext, closestCenter, useSensors, type DragEndEvent,
@@ -60,9 +61,10 @@ export function ViewsSection({
   onDeleteView?: (filename: string) => void
   entries: VaultEntry[]
 }) {
+  const { t } = useTranslation('sidebar')
   return (
     <div className="border-b border-border" style={{ padding: '0 6px' }}>
-      <SidebarGroupHeader label="VIEWS" collapsed={collapsed} onToggle={onToggle}>
+      <SidebarGroupHeader label={t('VIEWS')} collapsed={collapsed} onToggle={onToggle}>
         {onCreateView && (
           <Plus
             size={12}
@@ -170,17 +172,18 @@ export function TypesSection({
   onCreateNewType?: () => void
   customizeRef: RefObject<HTMLDivElement | null>
 }) {
+  const { t } = useTranslation('sidebar')
   return (
     <div className="border-b border-border">
       <div ref={customizeRef} style={{ position: 'relative', padding: '0 6px' }}>
-        <SidebarGroupHeader label="TYPES" collapsed={collapsed} onToggle={onToggle}>
+        <SidebarGroupHeader label={t('TYPES')} collapsed={collapsed} onToggle={onToggle}>
           <div className="flex items-center gap-1.5">
             <Button
               type="button"
               variant="ghost"
               size="icon-xs"
-              title="Customize sections"
-              aria-label="Customize sections"
+              title={t('Customize sections')}
+              aria-label={t('Customize sections')}
               className="h-auto w-auto min-w-0 rounded-none p-0 text-muted-foreground hover:bg-transparent hover:text-foreground"
               onClick={(event) => { event.stopPropagation(); setShowCustomize((value) => !value) }}
             >
@@ -193,8 +196,8 @@ export function TypesSection({
                 size="icon-xs"
                 className="h-auto w-auto min-w-0 rounded-none p-0 text-muted-foreground hover:bg-transparent hover:text-foreground"
                 data-testid="create-type-btn"
-                title="Create new type"
-                aria-label="Create new type"
+                title={t('Create new type')}
+                aria-label={t('Create new type')}
                 onClick={(event) => { event.stopPropagation(); onCreateNewType() }}
               >
                 <Plus size={12} className="text-muted-foreground hover:text-foreground" />
@@ -225,6 +228,7 @@ export function TypesSection({
 
 export function SidebarTitleBar({ onCollapse }: { onCollapse?: () => void }) {
   const { onMouseDown } = useDragRegion()
+  const { t } = useTranslation('sidebar')
 
   return (
     <div
@@ -237,8 +241,8 @@ export function SidebarTitleBar({ onCollapse }: { onCollapse?: () => void }) {
           className="flex shrink-0 cursor-pointer items-center justify-center rounded border-none bg-transparent p-0 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           style={{ width: 24, height: 24 }}
           onClick={onCollapse}
-          aria-label="Collapse sidebar"
-          title="Collapse sidebar"
+          aria-label={t('Collapse sidebar')}
+          title={t('Collapse sidebar')}
         >
           <CaretLeft size={14} weight="bold" />
         </button>
@@ -260,6 +264,7 @@ export function ContextMenuOverlay({
   onOpenCustomize: (type: string) => void
   onStartRename: (type: string) => void
 }) {
+  const { t } = useTranslation('sidebar')
   if (!pos || !type) return null
 
   const buttonClass = 'flex w-full items-center gap-2 rounded-sm border-none bg-transparent px-2 py-1.5 text-left text-sm cursor-default transition-colors hover:bg-accent hover:text-accent-foreground'
@@ -271,10 +276,10 @@ export function ContextMenuOverlay({
       style={{ left: pos.x, top: pos.y, minWidth: 180 }}
     >
       <button className={buttonClass} onClick={() => onStartRename(type)}>
-        Rename section…
+        {t('Rename section...')}
       </button>
       <button className={buttonClass} onClick={() => onOpenCustomize(type)}>
-        Customize icon &amp; color…
+        {t('Customize icon & color...')}
       </button>
     </div>
   )

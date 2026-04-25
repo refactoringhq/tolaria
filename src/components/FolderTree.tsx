@@ -2,6 +2,7 @@ import {
   memo,
   useCallback,
 } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Plus,
 } from '@phosphor-icons/react'
@@ -79,11 +80,13 @@ export const FolderTree = memo(function FolderTree({
     return created
   }, [closeCreateForm, onCreateFolder])
 
+  const { t } = useTranslation('sidebar')
+
   if (folders.length === 0 && !isCreating) return null
 
   return (
     <div className="border-b border-border" style={{ padding: '0 6px' }}>
-      <SidebarGroupHeader label="FOLDERS" collapsed={sectionCollapsed} onToggle={handleToggleSection}>
+      <SidebarGroupHeader label={t('FOLDERS')} collapsed={sectionCollapsed} onToggle={handleToggleSection}>
         {onCreateFolder && (
           <Button
             type="button"
@@ -91,8 +94,8 @@ export const FolderTree = memo(function FolderTree({
             size="icon-xs"
             className="h-auto w-auto min-w-0 rounded-none p-0 text-muted-foreground hover:bg-transparent hover:text-foreground"
             data-testid="create-folder-btn"
-            title="Create folder"
-            aria-label="Create folder"
+            title={t('Create folder')}
+            aria-label={t('Create folder')}
             onClick={(event) => {
               event.stopPropagation()
               closeContextMenu()
@@ -125,9 +128,9 @@ export const FolderTree = memo(function FolderTree({
           {isCreating && (
             <div style={{ paddingLeft: 8 }}>
               <FolderNameInput
-                ariaLabel="New folder name"
+                ariaLabel={t('New folder name')}
                 initialValue=""
-                placeholder="Folder name"
+                placeholder={t('Folder name')}
                 submitOnBlur={true}
                 testId="new-folder-input"
                 onCancel={closeCreateForm}

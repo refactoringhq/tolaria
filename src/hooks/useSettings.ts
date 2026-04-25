@@ -23,6 +23,7 @@ const EMPTY_SETTINGS: Settings = {
   release_channel: null,
   theme_mode: null,
   default_ai_agent: null,
+  language: null,
 }
 
 function normalizeSettings(settings: Settings): Settings {
@@ -33,6 +34,7 @@ function normalizeSettings(settings: Settings): Settings {
     ),
     theme_mode: normalizeThemeMode(settings.theme_mode),
     default_ai_agent: normalizeStoredAiAgent(settings.default_ai_agent),
+    language: settings.language,
   }
 }
 

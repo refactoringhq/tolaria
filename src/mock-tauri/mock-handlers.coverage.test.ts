@@ -169,6 +169,7 @@ describe('mockHandlers coverage', () => {
       release_channel: 'alpha',
       theme_mode: null,
       default_ai_agent: 'codex',
+      language: null,
     })
 
     const list = {
