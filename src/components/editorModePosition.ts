@@ -1,8 +1,10 @@
 import { compactMarkdown } from '../utils/compact-markdown'
 import { restoreWikilinksInBlocks, splitFrontmatter } from '../utils/wikilinks'
+import { findNearestTextCursorBlockById } from './blockNoteCursorTarget'
 
 interface BlockLike {
   id: string
+  content?: unknown
 }
 
 interface BlockSelectionLike {
@@ -234,9 +236,19 @@ function buildBlockNoteRestoreState(
   const headIndex = findNearestBlockIndex({ ranges, targetLine: headLine })
   const startIndex = Math.min(anchorIndex, headIndex)
   const endIndex = Math.max(anchorIndex, headIndex)
+  const startBlockId = findNearestTextCursorBlockById(
+    editor.document,
+    editor.document[startIndex].id,
+  )?.id
+  const endBlockId = findNearestTextCursorBlockById(
+    editor.document,
+    editor.document[endIndex].id,
+  )?.id
+  if (!startBlockId || !endBlockId) return null
+
   return {
-    startBlockId: editor.document[startIndex].id,
-    endBlockId: editor.document[endIndex].id,
+    startBlockId,
+    endBlockId,
   }
 }
 
@@ -337,10 +349,14 @@ export function restoreBlockNoteView(
   const state = buildBlockNoteRestoreState(editor, snapshot)
   if (!state) return false
 
-  if (state.startBlockId === state.endBlockId) {
-    editor.setTextCursorPosition(state.endBlockId, 'end')
-  } else {
-    editor.setSelection(state.startBlockId, state.endBlockId)
+  try {
+    if (state.startBlockId === state.endBlockId) {
+      editor.setTextCursorPosition(state.endBlockId, 'end')
+    } else {
+      editor.setSelection(state.startBlockId, state.endBlockId)
+    }
+  } catch {
+    return false
   }
   editor.focus()
   documentObject

@@ -12,13 +12,14 @@ import {
 interface MockBlock {
   id: string
   markdown: string
+  content?: unknown
 }
 
 const content = '---\ntitle: Demo\n---\n# Title\n\nParagraph one\n\n## Tail'
 const blocks: MockBlock[] = [
-  { id: 'title', markdown: '# Title' },
-  { id: 'details', markdown: 'Paragraph one' },
-  { id: 'tail', markdown: '## Tail' },
+  { id: 'title', markdown: '# Title', content: [] },
+  { id: 'details', markdown: 'Paragraph one', content: [] },
+  { id: 'tail', markdown: '## Tail', content: [] },
 ]
 
 function makeEditor(blocks: MockBlock[]): BlockNotePositionEditor {
@@ -151,6 +152,38 @@ describe('editorModePosition', () => {
 
     expect(restored).toBe(true)
     expect(editor.setSelection).toHaveBeenCalledWith('title', 'tail')
+    expect(editor.focus).toHaveBeenCalled()
+  })
+
+  it('falls back to the nearest content block when raw restore lands on media', () => {
+    const contentWithMedia = '---\ntitle: Demo\n---\n# Title\n\n![media](media.png)\n\nParagraph tail'
+    const mediaBlocks: MockBlock[] = [
+      { id: 'title', markdown: '# Title', content: [] },
+      { id: 'image', markdown: '![media](media.png)' },
+      { id: 'tail', markdown: 'Paragraph tail', content: [] },
+    ]
+    const editor = makeEditor(mediaBlocks)
+    const view: CodeMirrorViewLike = {
+      state: {
+        doc: { toString: () => contentWithMedia },
+        selection: {
+          main: {
+            anchor: contentWithMedia.indexOf('![media]') + 3,
+            head: contentWithMedia.indexOf('![media]') + 3,
+          },
+        },
+      },
+      scrollDOM: { scrollTop: 48 },
+      dispatch: vi.fn(),
+      focus: vi.fn(),
+    }
+
+    installRawView(view)
+    const snapshot = captureRawEditorPositionSnapshot(document)
+    const restored = restoreBlockNoteView(editor, snapshot!, document)
+
+    expect(restored).toBe(true)
+    expect(editor.setTextCursorPosition).toHaveBeenCalledWith('tail', 'end')
     expect(editor.focus).toHaveBeenCalled()
   })
 })

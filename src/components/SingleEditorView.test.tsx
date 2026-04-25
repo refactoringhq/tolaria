@@ -492,6 +492,34 @@ describe('SingleEditorView', () => {
     expect(editor.focus).not.toHaveBeenCalled()
   })
 
+  it('falls back to the nearest editable block when the trailing block has no inline content', () => {
+    const editor = createEditor()
+    editor.document = [
+      { id: 'paragraph-block', type: 'paragraph', content: [], children: [] },
+      { id: 'image-block', type: 'image', children: [] },
+    ]
+    editor.setTextCursorPosition = vi.fn((blockId: string) => {
+      if (blockId === 'image-block') {
+        throw new Error('Attempting to set selection anchor in block without content (id image-block)')
+      }
+    })
+
+    render(
+      <SingleEditorView
+        editor={editor as never}
+        entries={[makeEntry()]}
+        onNavigateWikilink={vi.fn()}
+      />,
+    )
+
+    const container = screen.getByTestId('blocknote-view').closest('.editor__blocknote-container')
+    expect(container).toBeTruthy()
+
+    expect(() => fireEvent.click(container!)).not.toThrow()
+    expect(editor.setTextCursorPosition).toHaveBeenCalledWith('paragraph-block', 'end')
+    expect(editor.focus).toHaveBeenCalled()
+  })
+
   it('routes the custom link-toolbar open action through openExternalUrl', () => {
     render(
       <SingleEditorView

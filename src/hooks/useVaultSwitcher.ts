@@ -408,6 +408,7 @@ function useLoadPersistedVaultState(
   onSwitchRef: MutableRefObject<() => void>,
 ) {
   const {
+    lastPersistedSnapshotRef,
     setDefaultAvailable,
     setDefaultPath,
     setExtraVaults,
@@ -424,7 +425,7 @@ function useLoadPersistedVaultState(
       .then(({ activeVault, defaultAvailable, hiddenDefaults: hidden, persistedSnapshot, resolvedDefaultPath, vaults }) => {
         if (cancelled) return
 
-        store.lastPersistedSnapshotRef.current = persistedSnapshot
+        lastPersistedSnapshotRef.current = persistedSnapshot
         setExtraVaults(vaults)
         setHiddenDefaults(hidden)
         applyResolvedDefaultPath({
@@ -448,7 +449,7 @@ function useLoadPersistedVaultState(
       })
 
     return () => { cancelled = true }
-  }, [onSwitchRef, setDefaultAvailable, setDefaultPath, setExtraVaults, setHiddenDefaults, setLoaded, setSelectedVaultPath, setVaultPath])
+  }, [lastPersistedSnapshotRef, onSwitchRef, setDefaultAvailable, setDefaultPath, setExtraVaults, setHiddenDefaults, setLoaded, setSelectedVaultPath, setVaultPath])
 }
 
 function usePersistedVaultStorage(store: PersistedVaultStore) {

@@ -550,28 +550,21 @@ export function useNoteCreation(config: NoteCreationConfig, tabDeps: CreationTab
     }
   }, [openTabWithContent, addEntry, addPendingSave, removePendingSave, config.onNewNotePersisted, removeEntry])
 
-  const creationDeps = {
-    entries,
-    vaultPath,
-    setToastMessage,
-    persistResolvedEntry,
-  }
-
   const handleCreateNote = useCallback((title: string, type: string): Promise<boolean> =>
-    createNamedNote({ ...creationDeps, title, type, creationPath: 'plus_button' }),
-  [creationDeps])
+    createNamedNote({ entries, vaultPath, setToastMessage, persistResolvedEntry, title, type, creationPath: 'plus_button' }),
+  [entries, vaultPath, setToastMessage, persistResolvedEntry])
 
   const handleCreateType = useCallback((typeName: string): Promise<boolean> =>
-    createTypeFromName({ ...creationDeps, typeName }),
-  [creationDeps])
+    createTypeFromName({ entries, vaultPath, setToastMessage, persistResolvedEntry, typeName }),
+  [entries, vaultPath, setToastMessage, persistResolvedEntry])
 
   const createTypeEntrySilent = useCallback((typeName: string): Promise<VaultEntry> =>
-    createTypeSilently({ ...creationDeps, typeName }),
-  [creationDeps])
+    createTypeSilently({ entries, vaultPath, setToastMessage, persistResolvedEntry, typeName }),
+  [entries, vaultPath, setToastMessage, persistResolvedEntry])
 
   const handleCreateNoteForRelationship = useCallback((title: string): Promise<boolean> =>
-    createNamedNote({ ...creationDeps, title, type: 'Note' }),
-  [creationDeps])
+    createNamedNote({ entries, vaultPath, setToastMessage, persistResolvedEntry, title, type: 'Note' }),
+  [entries, vaultPath, setToastMessage, persistResolvedEntry])
 
   const handleCreateNoteImmediate = useImmediateCreateQueue({
     entries,

@@ -14,13 +14,14 @@ import { useEditorModePositionSync } from './useEditorModePositionSync'
 interface MockBlock {
   id: string
   markdown: string
+  content?: unknown
 }
 
 const content = '---\ntitle: Demo\n---\n# Title\n\nParagraph one\n\n## Tail'
 const blocks: MockBlock[] = [
-  { id: 'title', markdown: '# Title' },
-  { id: 'details', markdown: 'Paragraph one' },
-  { id: 'tail', markdown: '## Tail' },
+  { id: 'title', markdown: '# Title', content: [] },
+  { id: 'details', markdown: 'Paragraph one', content: [] },
+  { id: 'tail', markdown: '## Tail', content: [] },
 ]
 
 function makeEditor(): BlockNotePositionEditor {
@@ -114,7 +115,7 @@ describe('useEditorModePositionSync', () => {
     expect(focus).toHaveBeenCalled()
   })
 
-  it('restores the BlockNote cursor after toggling back from raw mode', () => {
+  it('restores the BlockNote cursor after toggling back from raw mode', async () => {
     const editor = makeEditor()
     const paragraphOffset = content.indexOf('Paragraph one') + 5
     const pendingRawRestoreRef = { current: null as CodeMirrorRestoreState | null }
@@ -149,6 +150,9 @@ describe('useEditorModePositionSync', () => {
       result.current.pendingRichRestoreRef.current = captureRawEditorPositionSnapshot(document)
     })
     rerender({ rawMode: false })
+    await act(async () => {
+      await Promise.resolve()
+    })
     act(() => {
       window.dispatchEvent(new CustomEvent('laputa:editor-tab-swapped', {
         detail: { path: 'note.md' },

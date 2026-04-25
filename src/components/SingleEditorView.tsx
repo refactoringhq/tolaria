@@ -36,6 +36,7 @@ import {
 } from './tolariaEditorFormatting'
 import { TolariaSideMenu } from './tolariaBlockNoteSideMenu'
 import { useEditorLinkActivation } from './useEditorLinkActivation'
+import { findNearestTextCursorBlock } from './blockNoteCursorTarget'
 
 const TEST_TABLE_MARKDOWN = `| Head 1 | Head 2 | Head 3 |
 | --- | --- | --- |
@@ -241,7 +242,11 @@ function queueTitleHeadingCursorRepair(
     const firstBlock = editor.document[0]
     if (firstBlock?.type !== 'heading') return
 
-    editor.setTextCursorPosition(firstBlock.id, 'end')
+    try {
+      editor.setTextCursorPosition(firstBlock.id, 'end')
+    } catch {
+      return
+    }
     editor.focus()
   })
 
@@ -261,7 +266,14 @@ function useEditorContainerClickHandler(options: {
     if (shouldIgnoreContainerClick(target)) return
     const blocks = editor.document
     if (blocks.length > 0) {
-      editor.setTextCursorPosition(blocks[blocks.length - 1].id, 'end')
+      const targetBlock = findNearestTextCursorBlock(blocks, blocks.length - 1)
+      if (targetBlock) {
+        try {
+          editor.setTextCursorPosition(targetBlock.id, 'end')
+        } catch {
+          // Ignore transient BlockNote selection errors and at least restore focus.
+        }
+      }
     }
     editor.focus()
   }, [editor, editable])
