@@ -1,6 +1,28 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import type { VaultEntry } from '../types'
-import { isNoteWindow, getNoteWindowParams, findNoteWindowEntry, getNoteWindowPathCandidates } from './windowMode'
+import {
+  isNoteWindow,
+  getNoteWindowParams,
+  findNoteWindowEntry,
+  getNoteWindowPathCandidates,
+  rememberNoteWindowParams,
+} from './windowMode'
+
+type WindowWithTauriInternals = Window & {
+  __TAURI_INTERNALS__?: { metadata?: { currentWindow?: { label?: string } } }
+}
+
+const localStorageMock = (() => {
+  let store: Record<string, string> = {}
+  return {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => { store[key] = value },
+    removeItem: (key: string) => { delete store[key] },
+    clear: () => { store = {} },
+  }
+})()
+
+Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true })
 
 function makeEntry(path: string, title = 'Test Note'): VaultEntry {
   return {
@@ -43,6 +65,8 @@ describe('windowMode', () => {
 
   beforeEach(() => {
     originalSearch = window.location.search
+    localStorage.clear()
+    delete (window as WindowWithTauriInternals).__TAURI_INTERNALS__
   })
 
   afterEach(() => {
@@ -50,6 +74,7 @@ describe('windowMode', () => {
       writable: true,
       value: { ...window.location, search: originalSearch },
     })
+    delete (window as WindowWithTauriInternals).__TAURI_INTERNALS__
   })
 
   function setSearch(search: string) {
@@ -57,6 +82,12 @@ describe('windowMode', () => {
       writable: true,
       value: { ...window.location, search },
     })
+  }
+
+  function setCurrentWindowLabel(label: string) {
+    (window as WindowWithTauriInternals).__TAURI_INTERNALS__ = {
+      metadata: { currentWindow: { label } },
+    }
   }
 
   describe('isNoteWindow', () => {
@@ -73,6 +104,18 @@ describe('windowMode', () => {
     it('returns false for other window values', () => {
       setSearch('?window=main')
       expect(isNoteWindow()).toBe(false)
+    })
+
+    it('returns true when params are stored for the current Tauri window', () => {
+      setSearch('')
+      setCurrentWindowLabel('note-1')
+      rememberNoteWindowParams('note-1', {
+        notePath: '/vault/test.md',
+        vaultPath: '/vault',
+        noteTitle: 'Stored Note',
+      })
+
+      expect(isNoteWindow()).toBe(true)
     })
   })
 
@@ -105,6 +148,37 @@ describe('windowMode', () => {
       setSearch('?window=note&path=/test.md&vault=/vault')
       const params = getNoteWindowParams()
       expect(params?.noteTitle).toBe('Untitled')
+    })
+
+    it('recovers params from storage when a Tauri note window loses its query params', () => {
+      setSearch('')
+      setCurrentWindowLabel('note-2')
+      rememberNoteWindowParams('note-2', {
+        notePath: '/vault/stored.md',
+        vaultPath: '/vault',
+        noteTitle: 'Stored Note',
+      })
+
+      expect(getNoteWindowParams()).toEqual({
+        notePath: '/vault/stored.md',
+        vaultPath: '/vault',
+        noteTitle: 'Stored Note',
+      })
+    })
+
+    it('recovers params by query window label when the note route is incomplete', () => {
+      setSearch('?window=note&windowLabel=note-3')
+      rememberNoteWindowParams('note-3', {
+        notePath: '/vault/fallback.md',
+        vaultPath: '/vault',
+        noteTitle: 'Fallback Note',
+      })
+
+      expect(getNoteWindowParams()).toEqual({
+        notePath: '/vault/fallback.md',
+        vaultPath: '/vault',
+        noteTitle: 'Fallback Note',
+      })
     })
   })
 

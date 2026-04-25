@@ -1,13 +1,18 @@
 import { isTauri } from '../mock-tauri'
 import { shouldUseLinuxWindowChrome } from './platform'
+import { rememberNoteWindowParams } from './windowMode'
 
-export function buildNoteWindowUrl(notePath: string, vaultPath: string, noteTitle: string): string {
+export function buildNoteWindowUrl(notePath: string, vaultPath: string, noteTitle: string, windowLabel?: string): string {
   const params = new URLSearchParams({
     window: 'note',
     path: notePath,
     vault: vaultPath,
     title: noteTitle,
   })
+
+  if (windowLabel) {
+    params.set('windowLabel', windowLabel)
+  }
 
   return `/?${params.toString()}`
 }
@@ -21,9 +26,10 @@ export async function openNoteInNewWindow(notePath: string, vaultPath: string, n
 
   const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow')
   const label = `note-${Date.now()}`
+  rememberNoteWindowParams(label, { notePath, vaultPath, noteTitle })
 
   new WebviewWindow(label, {
-    url: buildNoteWindowUrl(notePath, vaultPath, noteTitle),
+    url: buildNoteWindowUrl(notePath, vaultPath, noteTitle, label),
     title: noteTitle,
     width: 800,
     height: 700,

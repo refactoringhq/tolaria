@@ -4,6 +4,17 @@ import { isTauri } from '../mock-tauri'
 import { shouldUseLinuxWindowChrome } from './platform'
 
 const webviewWindowCalls = vi.fn()
+const localStorageMock = (() => {
+  let store: Record<string, string> = {}
+  return {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => { store[key] = value },
+    removeItem: (key: string) => { delete store[key] },
+    clear: () => { store = {} },
+  }
+})()
+
+Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true })
 
 vi.mock('../mock-tauri', () => ({
   isTauri: vi.fn(),
@@ -28,6 +39,7 @@ describe('openNoteWindow', () => {
     vi.setSystemTime(new Date('2026-04-14T16:00:00Z'))
     vi.mocked(isTauri).mockReturnValue(false)
     vi.mocked(shouldUseLinuxWindowChrome).mockReturnValue(false)
+    localStorage.clear()
   })
 
   it('builds a root-app route that preserves the note window params', () => {
@@ -55,7 +67,7 @@ describe('openNoteWindow', () => {
     expect(webviewWindowCalls).toHaveBeenCalledWith(
       'note-1776182400000',
       expect.objectContaining({
-        url: '/?window=note&path=%2Fvault%2FFolder%2FMy+Note.md&vault=%2FUsers%2Fluca%2FLaputa+Vault&title=AI+%2F+ML',
+        url: '/?window=note&path=%2Fvault%2FFolder%2FMy+Note.md&vault=%2FUsers%2Fluca%2FLaputa+Vault&title=AI+%2F+ML&windowLabel=note-1776182400000',
         title: 'AI / ML',
         width: 800,
         height: 700,
@@ -65,6 +77,11 @@ describe('openNoteWindow', () => {
         decorations: true,
       }),
     )
+    expect(JSON.parse(localStorage.getItem('tolaria:note-window:note-1776182400000') ?? '{}')).toEqual({
+      notePath: '/vault/Folder/My Note.md',
+      vaultPath: '/Users/luca/Laputa Vault',
+      noteTitle: 'AI / ML',
+    })
   })
 
   it('drops native decorations when Linux window chrome is active', async () => {

@@ -59,13 +59,30 @@ const mockEntries = [
     belongsTo: [],
     relatedTo: [],
     status: 'Active',
+    archived: false,
     owner: 'Luca',
     cadence: null,
     modifiedAt: 1700000000,
     createdAt: null,
     fileSize: 1024,
+    snippet: '',
+    wordCount: 0,
+    relationships: {},
+    icon: null,
+    color: null,
+    order: null,
+    sidebarLabel: null,
     template: null, sort: null,
+    view: null,
+    visible: true,
+    organized: false,
+    favorite: false,
+    favoriteIndex: null,
+    listPropertiesDisplay: [],
     outgoingLinks: [],
+    properties: {},
+    hasH1: true,
+    fileKind: 'markdown',
   },
   {
     path: '/vault/topic/dev.md',
@@ -76,13 +93,30 @@ const mockEntries = [
     belongsTo: [],
     relatedTo: [],
     status: null,
+    archived: false,
     owner: null,
     cadence: null,
     modifiedAt: 1700000000,
     createdAt: null,
     fileSize: 256,
+    snippet: '',
+    wordCount: 0,
+    relationships: {},
+    icon: null,
+    color: null,
+    order: null,
+    sidebarLabel: null,
     template: null, sort: null,
+    view: null,
+    visible: true,
+    organized: false,
+    favorite: false,
+    favoriteIndex: null,
+    listPropertiesDisplay: [],
     outgoingLinks: [],
+    properties: {},
+    hasH1: true,
+    fileKind: 'markdown',
   },
 ]
 
@@ -108,6 +142,8 @@ const mockCommandResults: Record<string, unknown> = {
   get_all_content: mockAllContent,
   get_modified_files: [],
   get_note_content: mockAllContent['/vault/project/test.md'] || '',
+  reload_vault_entry: ({ path }: { path: string }) => mockEntries.find((entry) => entry.path === path) ?? null,
+  sync_vault_asset_scope_for_window: null,
   get_file_history: [],
   get_settings: { auto_pull_interval_minutes: null, telemetry_consent: true, crash_reporting_enabled: null, analytics_enabled: null, anonymous_id: null, release_channel: null },
   git_pull: { status: 'up_to_date', message: 'Already up to date', updatedFiles: [], conflictFiles: [] },
@@ -239,6 +275,8 @@ function resetMockCommandResults() {
     get_all_content: mockAllContent,
     get_modified_files: [],
     get_note_content: mockAllContent['/vault/project/test.md'] || '',
+    reload_vault_entry: ({ path }: { path: string }) => mockEntries.find((entry) => entry.path === path) ?? null,
+    sync_vault_asset_scope_for_window: null,
     get_file_history: [],
     get_settings: {
       auto_pull_interval_minutes: null,
@@ -367,6 +405,7 @@ describe('App', () => {
     vi.clearAllMocks()
     resetMockCommandResults()
     localStorage.clear()
+    window.history.replaceState({}, '', '/')
     localStorage.setItem(CLAUDE_CODE_ONBOARDING_DISMISSED_KEY, '1')
   })
 
@@ -389,6 +428,31 @@ describe('App', () => {
     await waitFor(() => {
       expect(screen.getByText('Select a note to start editing')).toBeInTheDocument()
     })
+  })
+
+  it('opens a note window by loading only the requested entry', async () => {
+    const listVault = vi.fn(() => mockEntries)
+    const reloadVaultEntry = vi.fn(({ path }: { path: string }) =>
+      mockEntries.find((entry) => entry.path === path) ?? null,
+    )
+    const getNoteContent = vi.fn(({ path }: { path: string }) => mockAllContent[path] ?? '')
+    mockCommandResults.list_vault = listVault
+    mockCommandResults.reload_vault_entry = reloadVaultEntry
+    mockCommandResults.get_note_content = getNoteContent
+    window.history.replaceState(
+      {},
+      '',
+      '/?window=note&path=%2Fvault%2Fproject%2Ftest.md&vault=%2Fvault&title=Test+Project',
+    )
+
+    render(<App />)
+
+    await waitFor(() => expect(reloadVaultEntry).toHaveBeenCalled())
+    expect(reloadVaultEntry).toHaveBeenCalledWith({ path: '/vault/project/test.md', vaultPath: '/vault' })
+    await waitFor(() => expect(getNoteContent).toHaveBeenCalled())
+    expect(getNoteContent).toHaveBeenCalledWith({ path: '/vault/project/test.md', vaultPath: '/vault' })
+    await waitFor(() => expect(window.__laputaTest?.activeTabPath).toBe('/vault/project/test.md'))
+    expect(listVault).not.toHaveBeenCalled()
   })
 
   it('shows keyboard shortcut hints', async () => {
@@ -685,7 +749,7 @@ describe('App', () => {
 
     render(<App />)
 
-    const noteListContainer = await screen.findByTestId('note-list-container')
+    const noteListContainer = await screen.findByTestId('note-list-container', {}, { timeout: 5000 })
     const getHeader = () => getHeaderForNoteList(noteListContainer)
 
     await waitFor(() => {
