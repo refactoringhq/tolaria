@@ -20,7 +20,9 @@ import { ExternalLink } from 'lucide-react'
 import { useDocumentThemeMode } from '../hooks/useDocumentThemeMode'
 import { useEditorTheme } from '../hooks/useTheme'
 import { useImageDrop } from '../hooks/useImageDrop'
+import { useImageLightbox } from '../hooks/useImageLightbox'
 import { useNoteWikilinkDrop } from '../hooks/useNoteWikilinkDrop'
+import { ImageLightbox } from './ImageLightbox'
 import { buildTypeEntryMap } from '../utils/typeColors'
 import { preFilterWikilinks, deduplicateByPath, MIN_QUERY_LENGTH } from '../utils/wikilinkSuggestions'
 import { filterPersonMentions, PERSON_MENTION_MIN_QUERY } from '../utils/personMentionSuggestions'
@@ -430,6 +432,7 @@ export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange
   const handleEditorChange = useCompositionAwareEditorChange({ containerRef, onChange })
   const onImageUrl = useInsertImageCallback(editor)
   const { isDragOver } = useImageDrop({ containerRef, onImageUrl, vaultPath })
+  const lightbox = useImageLightbox({ containerRef })
   useBlockNoteSideMenuHoverGuard(containerRef)
   useEditorLinkActivation(containerRef, onNavigateWikilink)
 
@@ -512,6 +515,7 @@ export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange
           onItemClick={(item: WikilinkSuggestionItem) => item.onItemClick()}
         />
       </SharedContextBlockNoteView>
+      <ImageLightbox src={lightbox.src} onClose={lightbox.close} />
     </div>
   )
 }
