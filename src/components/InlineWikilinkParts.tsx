@@ -165,6 +165,8 @@ export function InlineWikilinkEditorField({
   onKeyDown,
   onDrop,
   onPaste,
+  onDrop,
+  onDragOver,
   onSelectionChange,
   segments,
   typeEntryMap,
@@ -182,6 +184,8 @@ export function InlineWikilinkEditorField({
   onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void
   onDrop: (event: React.DragEvent<HTMLDivElement>) => void
   onPaste: (event: React.ClipboardEvent<HTMLDivElement>) => void
+  onDrop?: (event: React.DragEvent<HTMLDivElement>) => void
+  onDragOver?: (event: React.DragEvent<HTMLDivElement>) => void
   onSelectionChange: () => void
   segments: InlineWikilinkSegment[]
   typeEntryMap: Record<string, VaultEntry>
@@ -219,6 +223,8 @@ export function InlineWikilinkEditorField({
         onKeyDown={onKeyDown}
         onDrop={onDrop}
         onPaste={onPaste}
+        onDrop={onDrop}
+        onDragOver={onDragOver}
         onClick={onSelectionChange}
         onKeyUp={onSelectionChange}
         onMouseUp={onSelectionChange}

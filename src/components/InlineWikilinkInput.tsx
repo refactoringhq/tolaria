@@ -1,9 +1,13 @@
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
   type ReactNode,
 } from 'react'
+import type { UnlistenFn } from '@tauri-apps/api/event'
+import type { DragDropEvent as TauriDragDropPayload } from '@tauri-apps/api/webview'
+import { isTauri } from '../mock-tauri'
 import type { VaultEntry } from '../types'
 import type { NoteReference } from '../utils/ai-context'
 import { buildTypeEntryMap } from '../utils/typeColors'
@@ -324,6 +328,55 @@ export function InlineWikilinkInput({
   }
   const submitValue = () =>
     submitInlineValue({ onSubmit, submitOnEmpty, value, references })
+  const insertTextRef = useRef(insertText)
+  insertTextRef.current = insertText
+
+  useEffect(() => {
+    if (!isTauri()) return
+
+    let unlisten: UnlistenFn | null = null
+    let mounted = true
+
+    void (async () => {
+      try {
+        const { getCurrentWebview } = await import('@tauri-apps/api/webview')
+        // The runtime payload in Tauri v2 is { paths, position } without a type
+        // discriminant, so we don't check event.payload.type here.
+        const fn = await getCurrentWebview().listen<TauriDragDropPayload>(
+          'tauri://drag-drop',
+          (event) => {
+            const paths: string[] = Array.isArray(
+              (event.payload as unknown as { paths?: unknown }).paths,
+            )
+              ? (event.payload as unknown as { paths: string[] }).paths
+              : []
+            if (paths.length === 0) return
+
+            const pos = (event.payload as unknown as { position?: { x: number; y: number } })
+              .position
+            if (pos) {
+              const input = editorRef.current
+              if (!input) return
+              const el = document.elementFromPoint(pos.x, pos.y)
+              if (!el || (!input.contains(el) && el !== input)) return
+            }
+
+            insertTextRef.current(paths.join('\n'))
+          },
+        )
+        if (mounted) unlisten = fn
+        else void Promise.resolve().then(fn).catch(() => {})
+      } catch {
+        // Tauri webview API unavailable
+      }
+    })()
+
+    return () => {
+      mounted = false
+      if (unlisten) void Promise.resolve().then(unlisten).catch(() => {})
+      unlisten = null
+    }
+  }, [])
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) =>
     handleInlineWikilinkKeyDown({
       event,
