@@ -163,6 +163,7 @@ export function InlineWikilinkEditorField({
   onCompositionStart,
   onInput,
   onKeyDown,
+  onDrop,
   onPaste,
   onDrop,
   onDragOver,
@@ -181,6 +182,7 @@ export function InlineWikilinkEditorField({
   onCompositionStart: () => void
   onInput: () => void
   onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void
+  onDrop: (event: React.DragEvent<HTMLDivElement>) => void
   onPaste: (event: React.ClipboardEvent<HTMLDivElement>) => void
   onDrop?: (event: React.DragEvent<HTMLDivElement>) => void
   onDragOver?: (event: React.DragEvent<HTMLDivElement>) => void
@@ -219,6 +221,7 @@ export function InlineWikilinkEditorField({
         onCompositionStart={onCompositionStart}
         onInput={onInput}
         onKeyDown={onKeyDown}
+        onDrop={onDrop}
         onPaste={onPaste}
         onDrop={onDrop}
         onDragOver={onDragOver}

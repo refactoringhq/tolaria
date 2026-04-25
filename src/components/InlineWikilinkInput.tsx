@@ -20,7 +20,11 @@ import {
   extractInlineWikilinkReferences,
   findActiveWikilinkQuery,
 } from './inlineWikilinkText'
-import { serializeInlineNode } from './inlineWikilinkDom'
+import { extractDroppedPathText } from './inlineWikilinkDropText'
+import {
+  readSelectionRange,
+  serializeInlineNode,
+} from './inlineWikilinkDom'
 import {
   buildPendingPasteState,
   type PendingPasteState,
@@ -167,6 +171,7 @@ export function InlineWikilinkInput({
   const pendingPasteRef = useRef<PendingPasteState | null>(null)
   const isComposingRef = useRef(false)
   const pendingCompositionInputRef = useRef(false)
+  const handledFileDropRef = useRef(false)
   const activeQuery = useMemo(
     () => selectionRange.start === selectionRange.end
       ? findActiveWikilinkQuery(value, selectionIndex)
@@ -195,6 +200,14 @@ export function InlineWikilinkInput({
     onChange(nextState.value)
     setSelectionRange(nextState.selection)
   }
+  const insertTransferText = (text: string) => {
+    const currentSelectionRange = editorRef.current
+      ? readSelectionRange(editorRef.current)
+      : selectionRange
+    const nextState = replaceInlineSelection(value, currentSelectionRange, text)
+    onChange(nextState.value)
+    setSelectionRange(nextState.selection)
+  }
   const notifyUnsupportedPaste = () => onUnsupportedPaste?.(UNSUPPORTED_INLINE_PASTE_MESSAGE)
   const recoverUnsupportedMutation = () => {
     pendingCompositionInputRef.current = false
@@ -218,8 +231,38 @@ export function InlineWikilinkInput({
     const dataTransfer = nativeEvent.dataTransfer
     if (!dataTransfer || !hasUnsupportedClipboardPayload(dataTransfer)) return
 
+    if (nativeEvent.inputType === 'insertFromDrop' && handledFileDropRef.current) {
+      handledFileDropRef.current = false
+      event.preventDefault()
+      return
+    }
+
+    if (nativeEvent.inputType === 'insertFromDrop') {
+      const droppedPathText = extractDroppedPathText(dataTransfer)
+      if (droppedPathText) {
+        event.preventDefault()
+        insertTransferText(droppedPathText)
+        return
+      }
+    }
+
     event.preventDefault()
     notifyUnsupportedPaste()
+  }
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    if (disabled) return
+    if (!hasUnsupportedClipboardPayload(event.dataTransfer)) return
+
+    handledFileDropRef.current = true
+    const droppedPathText = extractDroppedPathText(event.dataTransfer)
+    event.preventDefault()
+
+    if (!droppedPathText) {
+      notifyUnsupportedPaste()
+      return
+    }
+
+    insertTransferText(droppedPathText)
   }
   const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
     if (disabled) return
@@ -361,6 +404,7 @@ export function InlineWikilinkInput({
       onCompositionStart={handleCompositionStart}
       onInput={handleInput}
       onKeyDown={handleKeyDown}
+      onDrop={handleDrop}
       onPaste={handlePaste}
       onSelectionChange={syncSelectionRange}
       segments={segments}
