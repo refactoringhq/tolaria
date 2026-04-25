@@ -113,6 +113,7 @@ let mockSettings: Settings = {
   release_channel: null,
   theme_mode: null,
   default_ai_agent: 'claude_code',
+  language: null,
 }
 
 const DEFAULT_MOCK_VAULT_PATH = '/Users/mock/demo-vault-v2'
@@ -419,6 +420,7 @@ export const mockHandlers: Record<string, (args: any) => any> = {
       release_channel: s.release_channel,
       theme_mode: s.theme_mode ?? null,
       default_ai_agent: s.default_ai_agent ?? null,
+      language: s.language ?? null,
     }
     return null
   },

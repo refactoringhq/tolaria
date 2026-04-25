@@ -796,6 +796,50 @@ Shortcut routing is explicit:
   - native menu-command proof through `trigger_menu_command`
 - The browser harness is only a deterministic desktop command bridge; exact native accelerator delivery still requires real Tauri QA for commands flagged as manual-native-critical
 
+## Internationalization (i18n)
+
+Tolaria supports English, Chinese (zh-CN), and Japanese (ja) via **react-i18next**. See [ADR-0082](adr/0082-i18n-internationalization.md).
+
+### Translation Key Strategy: Key-as-Value
+
+English UI strings are the i18n keys. Missing translations in zh-CN/ja fall back to the English key — unconverted components show English with zero regression.
+
+### Language Detection (3-Layer)
+
+1. Rust `settings.json` `language` field (user's explicit choice)
+2. `localStorage['tolaria-language']` (fast cache)
+3. `navigator.language` system detection → normalize to supported language
+4. Default: `'en'`
+
+### Namespaces (7)
+
+```
+src/i18n/locales/{en,zh-CN,ja}/
+├── common.json      # Buttons, labels, toasts
+├── sidebar.json     # Sidebar sections, folder tree
+├── settings.json    # Settings panel
+├── editor.json      # Editor toolbar, properties, AI
+├── dialogs.json     # Commit, create type, clone, conflicts
+├── statusBar.json   # Git sync, vault switcher, AI indicators
+└── commands.json    # Command palette
+```
+
+### Language Switcher
+
+A `<Select>` component in SettingsPanel → Appearance section. Switching calls `changeLanguage()` immediately — no page reload. The setting persists to Rust `settings.json` and `localStorage`.
+
+### Core Modules
+
+| Module | Purpose |
+|--------|---------|
+| `src/i18n/index.ts` | i18next initialization, `changeLanguage()`, resource imports |
+| `src/i18n/settings.ts` | Language detection, normalization, persistence helpers |
+| `src/i18n/__tests__/i18n.test.ts` | Unit tests for detection/normalization |
+
+### Test Setup
+
+`src/test/setup.ts` initializes i18next with English defaults so `useTranslation()` works in all Vitest tests without per-test provider wrapping.
+
 ## Auto-Release & In-App Updates
 
 ### Release Pipeline

@@ -74,7 +74,7 @@ describe('StatusBar', () => {
   it('shows Contribute button when callback is provided', () => {
     render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onOpenFeedback={vi.fn()} />)
     expect(screen.getByTestId('status-feedback')).toBeInTheDocument()
-    expect(screen.getByText('Contribute')).toBeInTheDocument()
+    expect(screen.getByText('Contribute to Tolaria')).toBeInTheDocument()
   })
 
   it('calls onOpenFeedback when Contribute is clicked', () => {

@@ -1,11 +1,14 @@
 import { StrictMode } from 'react'
 import * as Sentry from '@sentry/react'
 import { createRoot } from 'react-dom/client'
+import { I18nextProvider } from 'react-i18next'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import './index.css'
 import App from './App.tsx'
 import { LinuxTitlebar } from './components/LinuxTitlebar'
 import { applyStoredThemeMode } from './lib/themeMode'
+import { initI18n } from './i18n'
+import { detectLanguage, writeLanguageToStorage } from './i18n/settings'
 import {
   APP_COMMAND_EVENT_NAME,
   isAppCommandId,
@@ -115,15 +118,21 @@ function captureReactRootError(
   sentryReactErrorHandler(error, { componentStack: errorInfo.componentStack ?? '' })
 }
 
+const initialLanguage = detectLanguage(null, window.localStorage, navigator.language)
+writeLanguageToStorage(window.localStorage, initialLanguage)
+const i18n = initI18n(initialLanguage)
+
 createRoot(document.getElementById('root')!, {
   onCaughtError: captureReactRootError,
   onUncaughtError: captureReactRootError,
   onRecoverableError: captureReactRootError,
 }).render(
   <StrictMode>
-    <TooltipProvider>
-      <LinuxTitlebar />
-      <App />
-    </TooltipProvider>
+    <I18nextProvider i18n={i18n}>
+      <TooltipProvider>
+        <LinuxTitlebar />
+        <App />
+      </TooltipProvider>
+    </I18nextProvider>
   </StrictMode>,
 )

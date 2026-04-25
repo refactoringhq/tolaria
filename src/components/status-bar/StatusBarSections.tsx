@@ -1,5 +1,6 @@
 import { Moon, Package, Settings, Sun } from 'lucide-react'
 import { Megaphone } from '@phosphor-icons/react'
+import { useTranslation } from 'react-i18next'
 import type { AiAgentId, AiAgentsStatus } from '../../lib/aiAgents'
 import type { VaultAiGuidanceStatus } from '../../lib/vaultAiGuidance'
 import type { ClaudeCodeStatus } from '../../hooks/useClaudeCodeStatus'
@@ -27,19 +28,6 @@ import { ICON_STYLE, SEP_STYLE } from './styles'
 import type { VaultOption } from './types'
 import { VaultMenu } from './VaultMenu'
 import { formatShortcutDisplay } from '../../hooks/appCommandCatalog'
-
-const UPDATE_TOOLTIP = { label: 'Check for updates' } as const
-const ZOOM_RESET_TOOLTIP = {
-  label: 'Reset the zoom level',
-  shortcut: formatShortcutDisplay({ display: '⌘0' }),
-} as const
-const FEEDBACK_TOOLTIP = { label: 'Contribute to Tolaria' } as const
-const LIGHT_MODE_TOOLTIP = { label: 'Switch to light mode' } as const
-const DARK_MODE_TOOLTIP = { label: 'Switch to dark mode' } as const
-const SETTINGS_TOOLTIP = {
-  label: 'Open settings',
-  shortcut: formatShortcutDisplay({ display: '⌘,' }),
-} as const
 
 interface StatusBarPrimarySectionProps {
   modifiedCount: number
@@ -122,6 +110,7 @@ export function StatusBarPrimarySection({
   claudeCodeStatus,
   claudeCodeVersion,
 }: StatusBarPrimarySectionProps) {
+  const { t } = useTranslation('statusBar')
   const {
     openAddRemote,
     closeAddRemote,
@@ -134,6 +123,8 @@ export function StatusBarPrimarySection({
     remoteStatus,
     onAddRemote,
   })
+
+  const updateTooltip = { label: t('Check for updates') } as const
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
@@ -148,14 +139,14 @@ export function StatusBarPrimarySection({
         onRemoveVault={onRemoveVault}
       />
       <span style={SEP_STYLE}>|</span>
-      <ActionTooltip copy={UPDATE_TOOLTIP} side="top">
+      <ActionTooltip copy={updateTooltip} side="top">
         <Button
           type="button"
           variant="ghost"
           size="xs"
           className="h-auto gap-1 rounded-sm px-1 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-[var(--hover)] hover:text-foreground"
           onClick={onCheckForUpdates}
-          aria-label={UPDATE_TOOLTIP.label}
+          aria-label={updateTooltip.label}
           aria-disabled={onCheckForUpdates ? undefined : true}
           data-testid="status-build-number"
         >
@@ -215,21 +206,33 @@ export function StatusBarSecondarySection({
   onOpenFeedback,
   onOpenSettings,
 }: StatusBarSecondarySectionProps) {
+  const { t } = useTranslation('statusBar')
   void noteCount
   const ThemeIcon = themeMode === 'dark' ? Sun : Moon
-  const themeTooltip = themeMode === 'dark' ? LIGHT_MODE_TOOLTIP : DARK_MODE_TOOLTIP
+  const themeTooltip = themeMode === 'dark'
+    ? { label: t('Switch to light mode') } as const
+    : { label: t('Switch to dark mode') } as const
+  const zoomResetTooltip = {
+    label: t('Reset the zoom level'),
+    shortcut: formatShortcutDisplay({ display: '⌘0' }),
+  } as const
+  const settingsTooltip = {
+    label: t('Open settings'),
+    shortcut: formatShortcutDisplay({ display: '⌘,' }),
+  } as const
+  const feedbackTooltip = { label: t('Contribute to Tolaria') } as const
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
       {zoomLevel === 100 ? null : (
-        <ActionTooltip copy={ZOOM_RESET_TOOLTIP} side="top">
+        <ActionTooltip copy={zoomResetTooltip} side="top">
           <Button
             type="button"
             variant="ghost"
             size="xs"
             className="h-auto rounded-sm px-1 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-[var(--hover)] hover:text-foreground"
             onClick={onZoomReset}
-            aria-label={ZOOM_RESET_TOOLTIP.label}
+            aria-label={zoomResetTooltip.label}
             data-testid="status-zoom"
           >
             <span style={ICON_STYLE}>{zoomLevel}%</span>
@@ -237,7 +240,7 @@ export function StatusBarSecondarySection({
         </ActionTooltip>
       )}
       {onOpenFeedback && (
-        <ActionTooltip copy={FEEDBACK_TOOLTIP} side="top">
+        <ActionTooltip copy={feedbackTooltip} side="top">
           <Button
             type="button"
             variant="ghost"
@@ -247,11 +250,11 @@ export function StatusBarSecondarySection({
               rememberFeedbackDialogOpener(event.currentTarget)
               onOpenFeedback()
             }}
-            aria-label={FEEDBACK_TOOLTIP.label}
+            aria-label={feedbackTooltip.label}
             data-testid="status-feedback"
           >
             <Megaphone size={14} />
-            Contribute
+            {t('Contribute to Tolaria')}
           </Button>
         </ActionTooltip>
       )}
@@ -269,14 +272,14 @@ export function StatusBarSecondarySection({
           <ThemeIcon size={14} />
         </Button>
       </ActionTooltip>
-      <ActionTooltip copy={SETTINGS_TOOLTIP} side="top" align="end">
+      <ActionTooltip copy={settingsTooltip} side="top" align="end">
         <Button
           type="button"
           variant="ghost"
           size="icon-xs"
           className="text-muted-foreground hover:bg-[var(--hover)] hover:text-foreground"
           onClick={onOpenSettings}
-          aria-label={SETTINGS_TOOLTIP.label}
+          aria-label={settingsTooltip.label}
           data-testid="status-settings"
         >
           <Settings size={14} />

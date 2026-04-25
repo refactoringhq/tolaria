@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { VaultEntry, ViewFile } from '../../types'
 import { evaluateView } from '../../utils/viewFilters'
 import { Funnel, PencilSimple, Trash } from '@phosphor-icons/react'
@@ -23,6 +24,7 @@ export function SidebarViewItem({
   onDeleteView,
   entries,
 }: SidebarViewItemProps) {
+  const { t } = useTranslation('sidebar')
   const count = useMemo(() => evaluateView(view.definition, entries).length, [view.definition, entries])
   const showCount = count > 0
   const icon = view.definition.icon
@@ -52,7 +54,7 @@ export function SidebarViewItem({
           <button
             className="rounded p-0.5 text-muted-foreground hover:text-foreground"
             onClick={(event) => { event.stopPropagation(); onEditView(view.filename) }}
-            title="Edit view"
+            title={t('Edit view')}
           >
             <PencilSimple size={12} />
           </button>
@@ -61,7 +63,7 @@ export function SidebarViewItem({
           <button
             className="rounded p-0.5 text-muted-foreground hover:text-destructive"
             onClick={(event) => { event.stopPropagation(); onDeleteView(view.filename) }}
-            title="Delete view"
+            title={t('Delete view')}
           >
             <Trash size={12} />
           </button>

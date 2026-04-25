@@ -1,4 +1,5 @@
 import { Archive, FileText, Tray } from '@phosphor-icons/react'
+import { useTranslation } from 'react-i18next'
 import type { SidebarSelection } from '../../types'
 import { isSelectionActive, NavItem } from '../SidebarParts'
 
@@ -19,12 +20,13 @@ export function SidebarTopNav({
   activeCount,
   archivedCount,
 }: SidebarTopNavProps) {
+  const { t } = useTranslation('sidebar')
   return (
     <div className="border-b border-border" data-testid="sidebar-top-nav" style={{ padding: '4px 6px' }}>
       {showInbox && (
         <NavItem
           icon={Tray}
-          label="Inbox"
+          label={t('Inbox')}
           count={inboxCount}
           isActive={isSelectionActive(selection, { kind: 'filter', filter: 'inbox' })}
           badgeClassName="text-muted-foreground"
@@ -35,7 +37,7 @@ export function SidebarTopNav({
       )}
       <NavItem
         icon={FileText}
-        label="All Notes"
+        label={t('All Notes')}
         count={activeCount}
         isActive={isSelectionActive(selection, { kind: 'filter', filter: 'all' })}
         badgeClassName="text-muted-foreground"
@@ -45,7 +47,7 @@ export function SidebarTopNav({
       />
       <NavItem
         icon={Archive}
-        label="Archive"
+        label={t('Archive')}
         count={archivedCount}
         isActive={isSelectionActive(selection, { kind: 'filter', filter: 'archived' })}
         badgeClassName="text-muted-foreground"

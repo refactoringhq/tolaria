@@ -1,4 +1,5 @@
 import type { RefObject } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PencilSimple, Trash } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 
@@ -21,6 +22,7 @@ export function FolderContextMenu({
   onDelete,
   onRename,
 }: FolderContextMenuProps) {
+  const { t } = useTranslation('sidebar')
   if (!menu) return null
 
   return (
@@ -37,7 +39,7 @@ export function FolderContextMenu({
         onClick={() => onRename(menu.path)}
       >
         <PencilSimple size={14} />
-        Rename folder…
+        {t('Rename folder...')}
       </Button>
       <Button
         type="button"
@@ -47,7 +49,7 @@ export function FolderContextMenu({
         data-testid="delete-folder-menu-item"
       >
         <Trash size={14} />
-        Delete folder…
+        {t('Delete folder...')}
       </Button>
     </div>
   )

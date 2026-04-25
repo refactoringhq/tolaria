@@ -20,6 +20,7 @@ pub struct Settings {
     pub theme_mode: Option<String>,
     pub initial_h1_auto_rename_enabled: Option<bool>,
     pub default_ai_agent: Option<String>,
+    pub language: Option<String>,
 }
 
 fn normalize_optional_string(value: Option<String>) -> Option<String> {
@@ -61,6 +62,19 @@ pub fn normalize_theme_mode(value: Option<&str>) -> Option<String> {
     }
 }
 
+pub fn normalize_language(value: Option<&str>) -> Option<String> {
+    let language_tag = value?.trim().to_ascii_lowercase().replace('_', "-");
+
+    let normalized = match language_tag.as_str() {
+        "en" | "en-us" | "en-gb" => "en",
+        "ja" | "ja-jp" => "ja",
+        "zh" | "zh-cn" | "zh-hans" | "zh-hans-cn" => "zh-CN",
+        _ => return None,
+    };
+
+    Some(normalized.to_string())
+}
+
 fn normalize_settings(settings: Settings) -> Settings {
     Settings {
         auto_pull_interval_minutes: settings.auto_pull_interval_minutes,
@@ -80,6 +94,7 @@ fn normalize_settings(settings: Settings) -> Settings {
         theme_mode: normalize_theme_mode(settings.theme_mode.as_deref()),
         initial_h1_auto_rename_enabled: settings.initial_h1_auto_rename_enabled,
         default_ai_agent: normalize_default_ai_agent(settings.default_ai_agent.as_deref()),
+        language: normalize_language(settings.language.as_deref()),
     }
 }
 
@@ -221,12 +236,12 @@ mod tests {
             theme_mode: Some("dark".to_string()),
             initial_h1_auto_rename_enabled: Some(false),
             default_ai_agent: Some("codex".to_string()),
+            language: Some("zh-CN".to_string()),
         };
         let json = serde_json::to_string(&settings).unwrap();
         let parsed: Settings = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed, settings);
     }
-
     #[test]
     fn test_get_settings_returns_default_for_missing_file() {
         let dir = tempfile::TempDir::new().unwrap();
@@ -320,6 +335,84 @@ mod tests {
             ..Default::default()
         });
         assert!(loaded.theme_mode.is_none());
+    }
+
+    #[test]
+    fn test_language_roundtrip() {
+        let loaded = save_and_reload(Settings {
+            language: Some("zh-CN".to_string()),
+            ..Default::default()
+        });
+        assert_eq!(loaded.language.as_deref(), Some("zh-CN"));
+
+        let loaded = save_and_reload(Settings {
+            language: Some("ja".to_string()),
+            ..Default::default()
+        });
+        assert_eq!(loaded.language.as_deref(), Some("ja"));
+
+        let loaded = save_and_reload(Settings {
+            language: Some("en".to_string()),
+            ..Default::default()
+        });
+        assert_eq!(loaded.language.as_deref(), Some("en"));
+    }
+
+    #[test]
+    fn test_language_normalize_lowercase() {
+        let loaded = save_and_reload(Settings {
+            language: Some("zh-cn".to_string()),
+            ..Default::default()
+        });
+        assert_eq!(loaded.language.as_deref(), Some("zh-CN"));
+    }
+
+    #[test]
+    fn test_language_normalize_aliases() {
+        let loaded = save_and_reload(Settings {
+            language: Some("zh_Hans_CN".to_string()),
+            ..Default::default()
+        });
+        assert_eq!(loaded.language.as_deref(), Some("zh-CN"));
+
+        let loaded = save_and_reload(Settings {
+            language: Some("ja-JP".to_string()),
+            ..Default::default()
+        });
+        assert_eq!(loaded.language.as_deref(), Some("ja"));
+
+        let loaded = save_and_reload(Settings {
+            language: Some("en-US".to_string()),
+            ..Default::default()
+        });
+        assert_eq!(loaded.language.as_deref(), Some("en"));
+    }
+
+    #[test]
+    fn test_language_trims_whitespace() {
+        let loaded = save_and_reload(Settings {
+            language: Some("  ja  ".to_string()),
+            ..Default::default()
+        });
+        assert_eq!(loaded.language.as_deref(), Some("ja"));
+    }
+
+    #[test]
+    fn test_invalid_language_is_filtered() {
+        let loaded = save_and_reload(Settings {
+            language: Some("fr".to_string()),
+            ..Default::default()
+        });
+        assert!(loaded.language.is_none());
+    }
+
+    #[test]
+    fn test_empty_language_is_filtered() {
+        let loaded = save_and_reload(Settings {
+            language: Some("".to_string()),
+            ..Default::default()
+        });
+        assert!(loaded.language.is_none());
     }
 
     #[test]

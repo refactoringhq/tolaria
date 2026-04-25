@@ -102,7 +102,7 @@ describe('FeedbackDialog', () => {
     render(<FeedbackDialog open={true} onClose={vi.fn()} buildNumber="b281" releaseChannel={null} />)
     fireEvent.click(screen.getByRole('button', { name: 'Open Product Board' }))
 
-    expect(await screen.findByText(/couldn’t open Product Board automatically/i)).toBeInTheDocument()
+    expect(await screen.findByText(/couldn't open Product Board automatically/i)).toBeInTheDocument()
     expect(screen.getByText(TOLARIA_PRODUCT_BOARD_URL)).toBeInTheDocument()
   })
 

@@ -1,4 +1,5 @@
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   CaretDown,
   CaretRight,
@@ -37,8 +38,9 @@ export function FolderItemRow({
   onStartRenameFolder,
   onToggle,
 }: FolderItemRowProps) {
+  const { t } = useTranslation('sidebar')
   const hasChildren = node.children.length > 0
-  const expandLabel = isExpanded ? `Collapse ${node.name}` : `Expand ${node.name}`
+  const expandLabel = isExpanded ? t('Collapse {{name}}', { name: node.name }) : t('Expand {{name}}', { name: node.name })
   const hasActions = !!onStartRenameFolder || !!onDeleteFolder
   const { handleRenameDoubleClick, handleSelectClick } = useFolderRowInteractions({
     hasChildren,
@@ -81,9 +83,9 @@ export function FolderItemRow({
         <div className="pointer-events-none absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
           {onStartRenameFolder && (
             <FolderActionButton
-              ariaLabel={`Rename ${node.name}`}
+              ariaLabel={t('Rename {{name}}', { name: node.name })}
               testId={`rename-folder-btn:${node.path}`}
-              title="Rename folder"
+              title={t('Rename folder')}
               onClick={() => {
                 onSelect()
                 onStartRenameFolder(node.path)
@@ -94,9 +96,9 @@ export function FolderItemRow({
           )}
           {onDeleteFolder && (
             <FolderActionButton
-              ariaLabel={`Delete ${node.name}`}
+              ariaLabel={t('Delete {{name}}', { name: node.name })}
               testId={`delete-folder-btn:${node.path}`}
-              title="Delete folder"
+              title={t('Delete folder')}
               destructive
               onClick={() => {
                 onSelect()

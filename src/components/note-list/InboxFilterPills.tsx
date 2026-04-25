@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { InboxPeriod } from '../../types'
 
 interface InboxFilterPillsProps {
@@ -8,15 +9,15 @@ interface InboxFilterPillsProps {
   position?: 'top' | 'bottom'
 }
 
-const PILLS: { value: InboxPeriod; label: string }[] = [
-  { value: 'week', label: 'Week' },
-  { value: 'month', label: 'Month' },
-  { value: 'all', label: 'All' },
-]
-
 const BOTTOM_GRADIENT = 'linear-gradient(to bottom, transparent 0%, var(--card) 30%, var(--card) 100%)'
 
 function InboxFilterPillsInner({ active, counts, onChange, position = 'top' }: InboxFilterPillsProps) {
+  const { t } = useTranslation('sidebar')
+  const PILLS: { value: InboxPeriod; label: string }[] = [
+    { value: 'week', label: t('Week') },
+    { value: 'month', label: t('Month') },
+    { value: 'all', label: t('All') },
+  ]
   const isBottom = position === 'bottom'
   return (
     <div

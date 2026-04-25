@@ -833,21 +833,21 @@ describe('Sidebar', () => {
       render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
       const projectHeader = screen.getByText('Projects').closest('div')!
       fireEvent.contextMenu(projectHeader)
-      expect(screen.getByText('Rename section…')).toBeInTheDocument()
+      expect(screen.getByText('Rename section...')).toBeInTheDocument()
     })
 
     it('shows Customize icon option in context menu on right-click', () => {
       render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
       const projectHeader = screen.getByText('Projects').closest('div')!
       fireEvent.contextMenu(projectHeader)
-      expect(screen.getByText('Customize icon & color…')).toBeInTheDocument()
+      expect(screen.getByText('Customize icon & color...')).toBeInTheDocument()
     })
 
     it('shows inline input when Rename section is clicked', () => {
       render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
       const projectHeader = screen.getByText('Projects').closest('div')!
       fireEvent.contextMenu(projectHeader)
-      fireEvent.click(screen.getByText('Rename section…'))
+      fireEvent.click(screen.getByText('Rename section...'))
       expect(screen.getByRole('textbox', { name: 'Section name' })).toBeInTheDocument()
     })
 
@@ -855,7 +855,7 @@ describe('Sidebar', () => {
       render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} />)
       const projectHeader = screen.getByText('Projects').closest('div')!
       fireEvent.contextMenu(projectHeader)
-      fireEvent.click(screen.getByText('Rename section…'))
+      fireEvent.click(screen.getByText('Rename section...'))
       const input = screen.getByRole('textbox', { name: 'Section name' }) as HTMLInputElement
       expect(input.value).toBe('Projects')
     })
@@ -865,7 +865,7 @@ describe('Sidebar', () => {
       render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} onRenameSection={onRenameSection} />)
       const projectHeader = screen.getByText('Projects').closest('div')!
       fireEvent.contextMenu(projectHeader)
-      fireEvent.click(screen.getByText('Rename section…'))
+      fireEvent.click(screen.getByText('Rename section...'))
       const input = screen.getByRole('textbox', { name: 'Section name' })
       fireEvent.change(input, { target: { value: 'My Projects' } })
       fireEvent.keyDown(input, { key: 'Enter' })
@@ -877,7 +877,7 @@ describe('Sidebar', () => {
       render(<Sidebar entries={mockEntries} selection={defaultSelection} onSelect={() => {}} onRenameSection={onRenameSection} />)
       const projectHeader = screen.getByText('Projects').closest('div')!
       fireEvent.contextMenu(projectHeader)
-      fireEvent.click(screen.getByText('Rename section…'))
+      fireEvent.click(screen.getByText('Rename section...'))
       const input = screen.getByRole('textbox', { name: 'Section name' })
       fireEvent.keyDown(input, { key: 'Escape' })
       expect(onRenameSection).not.toHaveBeenCalled()

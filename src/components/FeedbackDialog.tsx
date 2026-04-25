@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Megaphone } from '@phosphor-icons/react'
 import { ArrowUpRight, Bug, Check, Copy, GitPullRequest, Lightbulb, MessagesSquare, Newspaper } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -206,6 +207,8 @@ function ContributionCard({
 }
 
 function LinkFallbackBanner({ linkFallback }: { linkFallback: LinkFallback | null }) {
+  const { t } = useTranslation('dialogs')
+
   if (!linkFallback) return null
 
   return (
@@ -217,8 +220,8 @@ function LinkFallbackBanner({ linkFallback }: { linkFallback: LinkFallback | nul
         color: 'var(--feedback-warning-text)',
       }}
     >
-      <p className="font-medium">Couldn’t open {linkFallback.label} automatically.</p>
-      <p className="mt-1">Open this URL manually instead:</p>
+      <p className="font-medium">{t("Couldn't open {{label}} automatically.", { label: linkFallback.label })}</p>
+      <p className="mt-1">{t('Open this URL manually instead:')}</p>
       <p className="mt-2 break-all rounded-md bg-popover px-3 py-2 font-mono text-xs text-foreground">
         {linkFallback.url}
       </p>
@@ -226,8 +229,8 @@ function LinkFallbackBanner({ linkFallback }: { linkFallback: LinkFallback | nul
   )
 }
 
-function getCopyDiagnosticsLabel(copyState: 'idle' | 'copied' | 'failed') {
-  return copyState === 'copied' ? 'Diagnostics copied' : 'Copy sanitized diagnostics'
+function getCopyDiagnosticsLabel(t: ReturnType<typeof useTranslation<'dialogs'>>['t'], copyState: 'idle' | 'copied' | 'failed') {
+  return copyState === 'copied' ? t('Diagnostics copied') : t('Copy sanitized diagnostics')
 }
 
 function BugReportActions({
@@ -239,6 +242,7 @@ function BugReportActions({
   canCopyDiagnostics: boolean
   onCopyDiagnostics: () => void
 }) {
+  const { t } = useTranslation('dialogs')
   return (
     <div className="flex w-full flex-col gap-2">
       <Button
@@ -248,15 +252,15 @@ function BugReportActions({
         onClick={onCopyDiagnostics}
         disabled={!canCopyDiagnostics}
       >
-        {getCopyDiagnosticsLabel(copyState)}
+        {getCopyDiagnosticsLabel(t, copyState)}
         {copyState === 'copied' ? <Check size={14} /> : <Copy size={14} />}
       </Button>
       {copyState === 'copied' ? (
-        <p className="text-xs font-medium text-foreground">Diagnostics copied.</p>
+        <p className="text-xs font-medium text-foreground">{t('Diagnostics copied.')}</p>
       ) : null}
       {copyState === 'failed' ? (
         <p className="text-xs font-medium text-[var(--feedback-warning-text)]">
-          Clipboard access is unavailable right now. You can still open GitHub Issues directly.
+          {t('Clipboard access is unavailable right now. You can still open GitHub Issues directly.')}
         </p>
       ) : null}
     </div>

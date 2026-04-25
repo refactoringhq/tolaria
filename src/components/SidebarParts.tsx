@@ -1,4 +1,5 @@
 import { type ComponentType, useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { SidebarSelection } from '../types'
 import { cn } from '@/lib/utils'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
@@ -158,8 +159,9 @@ function DisabledNavItem({
   disabledTooltip?: string
   padding: ReturnType<typeof getNavItemPadding>
 }) {
+  const { t } = useTranslation('sidebar')
   return (
-    <div className="flex select-none items-center gap-2 rounded text-foreground" style={{ padding, borderRadius: 4, opacity: 0.4, cursor: 'not-allowed' }} title={disabledTooltip ?? "Coming soon"}>
+    <div className="flex select-none items-center gap-2 rounded text-foreground" style={{ padding, borderRadius: 4, opacity: 0.4, cursor: 'not-allowed' }} title={disabledTooltip ?? t('Coming soon')}>
       <SidebarNavIcon Icon={Icon} emoji={emoji} iconSize={getNavItemIconSize(compact)} />
       <NavItemLabel label={label} compact={compact} />
     </div>
@@ -308,6 +310,7 @@ function InlineRenameInput({ initialValue, onSubmit, onCancel }: {
   onSubmit: (value: string) => void
   onCancel: () => void
 }) {
+  const { t } = useTranslation('sidebar')
   const [value, setValue] = useState(initialValue)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -326,7 +329,7 @@ function InlineRenameInput({ initialValue, onSubmit, onCancel }: {
       onKeyDown={handleKeyDown}
       onBlur={() => onSubmit(value.trim())}
       onClick={(e) => e.stopPropagation()}
-      aria-label="Section name"
+      aria-label={t('Section name')}
       className="flex-1 rounded border border-primary bg-background text-[13px] font-medium text-foreground outline-none"
       style={{ padding: '1px 4px' }}
     />
@@ -474,6 +477,7 @@ function VisibilityPopoverItem({
   isVisible: boolean
   onToggle: (type: string) => void
 }) {
+  const { t } = useTranslation('sidebar')
   const { label, type, Icon, customColor } = group
   const { sectionColor } = resolveSectionColors(type, customColor)
 
@@ -485,7 +489,7 @@ function VisibilityPopoverItem({
       className="h-auto w-full justify-start rounded-none px-3 py-1.5"
       style={{ padding: '6px 12px', gap: 8 }}
       onClick={() => onToggle(type)}
-      aria-label={`Toggle ${label}`}
+      aria-label={t('Toggle {{label}}', { label })}
     >
       <Icon size={14} style={{ color: sectionColor }} />
       <span className="flex-1 text-left text-[13px] text-foreground">{label}</span>
@@ -501,12 +505,13 @@ export function VisibilityPopover({ sections, isSectionVisible, onToggle }: {
   isSectionVisible: (type: string) => boolean
   onToggle: (type: string) => void
 }) {
+  const { t } = useTranslation('sidebar')
   return (
     <div
       className="border border-border bg-popover text-popover-foreground"
       style={{ position: 'absolute', top: '100%', left: 6, right: 6, zIndex: 50, borderRadius: 8, padding: '8px 0', boxShadow: '0 4px 12px var(--shadow-dialog)' }}
     >
-      <div className="text-[12px] font-semibold text-muted-foreground" style={{ padding: '0 12px 4px' }}>Show in sidebar</div>
+      <div className="text-[12px] font-semibold text-muted-foreground" style={{ padding: '0 12px 4px' }}>{t('Show in sidebar')}</div>
       {sections.map((group) => (
         <VisibilityPopoverItem
           key={group.type}

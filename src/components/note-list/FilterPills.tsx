@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { NoteListFilter } from '../../utils/noteListHelpers'
 
 interface FilterPillsProps {
@@ -8,14 +9,14 @@ interface FilterPillsProps {
   position?: 'top' | 'bottom'
 }
 
-const PILLS: { value: NoteListFilter; label: string }[] = [
-  { value: 'open', label: 'Open' },
-  { value: 'archived', label: 'Archived' },
-]
-
 const BOTTOM_GRADIENT = 'linear-gradient(to bottom, transparent 0%, var(--card) 30%, var(--card) 100%)'
 
 function FilterPillsInner({ active, counts, onChange, position = 'top' }: FilterPillsProps) {
+  const { t } = useTranslation('sidebar')
+  const PILLS: { value: NoteListFilter; label: string }[] = [
+    { value: 'open', label: t('Open') },
+    { value: 'archived', label: t('Archived') },
+  ]
   const isBottom = position === 'bottom'
   return (
     <div
