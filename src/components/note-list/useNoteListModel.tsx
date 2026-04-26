@@ -441,8 +441,8 @@ export interface NoteListProps {
   views?: ViewFile[]
   visibleNotesRef?: React.MutableRefObject<VaultEntry[]>
   locale?: AppLocale
-  vaultPath: string | null
-  setToastMessage: (message: string | null) => void
+  vaultPath?: string | null
+  setToastMessage?: (message: string | null) => void
 }
 
 function buildNoteListLayoutModel(params: {
@@ -597,8 +597,8 @@ export function useNoteListModel({
     onCreateNote,
     onBulkArchive,
     onBulkDeletePermanently,
-    vaultPath,
-    setToastMessage,
+    vaultPath: vaultPath ?? null,
+    setToastMessage: setToastMessage ?? (() => undefined),
   })
   const renderItem = useRenderItem({
     entries,
