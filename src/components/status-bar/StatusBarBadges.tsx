@@ -309,6 +309,36 @@ export function CommitBadge({ info }: { info: LastCommitInfo }) {
   )
 }
 
+export function VaultReloadingBadge({
+  isReloading,
+  showSeparator = true,
+  compact = false,
+}: {
+  isReloading?: boolean
+  showSeparator?: boolean
+  compact?: boolean
+}) {
+  if (!isReloading) return null
+
+  return (
+    <>
+      <StatusBarSeparator show={showSeparator} />
+      <span
+        style={{
+          ...ICON_STYLE,
+          color: 'var(--accent-blue)',
+          fontWeight: 500,
+        }}
+        title="Reloading vault from disk"
+        data-testid="status-vault-reloading"
+      >
+        <Loader2 size={12} className="animate-spin" />
+        {compact ? null : 'Reloading vault…'}
+      </span>
+    </>
+  )
+}
+
 export function OfflineBadge({
   isOffline,
   showSeparator = true,

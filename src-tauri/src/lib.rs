@@ -12,6 +12,8 @@ pub mod settings;
 pub mod telemetry;
 pub mod vault;
 pub mod vault_list;
+#[cfg(desktop)]
+pub mod vault_watcher;
 
 use std::ffi::OsStr;
 use std::process::Command;
@@ -352,7 +354,9 @@ macro_rules! app_invoke_handler {
             commands::reinit_telemetry,
             commands::list_views,
             commands::save_view_cmd,
-            commands::delete_view_cmd
+            commands::delete_view_cmd,
+            vault_watcher::start_vault_watcher,
+            vault_watcher::stop_vault_watcher
         ]
     };
 }
@@ -383,7 +387,8 @@ pub fn run() {
     #[cfg(desktop)]
     let builder = builder
         .manage(WsBridgeChild(Mutex::new(None)))
-        .manage(ActiveAssetScopeRoots(Mutex::new(Vec::new())));
+        .manage(ActiveAssetScopeRoots(Mutex::new(Vec::new())))
+        .manage(vault_watcher::VaultWatcherState::new());
 
     with_invoke_handler(builder)
         .setup(setup_app)
