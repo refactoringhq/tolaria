@@ -97,9 +97,15 @@ export function KanbanAgentPanel({
     }
   }, [agent, allEntries, entry, noteContent, sendMessage])
 
-  const handleStop = useCallback(() => {
-    console.log('[kanban-agent] clear conversation', { path: entry.path })
+  const handleStop = useCallback(async () => {
+    console.log('[kanban-agent] stop requested', { path: entry.path })
     clearConversation()
+    try {
+      const killed = await invoke<boolean>('kill_active_agent')
+      console.log('[kanban-agent] kill_active_agent', { killed })
+    } catch (err) {
+      console.warn('[kanban-agent] kill_active_agent failed', err)
+    }
   }, [clearConversation, entry.path])
 
   const isRunning = status === 'thinking' || status === 'tool-executing' || isBuildingContext
