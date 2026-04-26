@@ -268,10 +268,13 @@ export function useVaultLoader(vaultPath: string) {
     [vaultPath, isCurrentVaultPath],
   )
 
+  const [isReloading, setIsReloading] = useState(false)
+
   const reloadVault = useCallback(
     () => {
       const path = vaultPath
       clearPrefetchCache()
+      setIsReloading(true)
       return tauriCall<VaultEntry[]>('reload_vault', { path })
         .then((entries) => {
           if (!isCurrentVaultPath(path)) return [] as VaultEntry[]
@@ -280,6 +283,9 @@ export function useVaultLoader(vaultPath: string) {
           return entries
         })
         .catch((err) => { console.warn('Vault reload failed:', err); return [] as VaultEntry[] })
+        .finally(() => {
+          if (isCurrentVaultPath(path)) setIsReloading(false)
+        })
     },
     [vaultPath, loadModifiedFiles, isCurrentVaultPath],
   )
@@ -301,6 +307,7 @@ export function useVaultLoader(vaultPath: string) {
     addEntry, updateEntry, removeEntry, removeEntries, replaceEntry,
     loadModifiedFiles, loadGitHistory, loadDiff, loadDiffAtCommit,
     getNoteStatus, commitAndPush, reloadVault, reloadFolders, reloadViews,
+    isReloading,
     addPendingSave: pendingSave.addPendingSave,
     removePendingSave: pendingSave.removePendingSave,
     unsavedPaths: unsaved.unsavedPaths,

@@ -22,6 +22,7 @@ import {
   OfflineBadge,
   PulseBadge,
   SyncBadge,
+  VaultReloadingBadge,
 } from './StatusBarBadges'
 import { ICON_STYLE, SEP_STYLE } from './styles'
 import type { VaultOption } from './types'
@@ -77,6 +78,7 @@ interface StatusBarPrimarySectionProps {
   claudeCodeVersion?: string | null
   stacked?: boolean
   compact?: boolean
+  isVaultReloading?: boolean
 }
 
 interface StatusBarSecondarySectionProps {
@@ -188,6 +190,7 @@ function StatusBarPrimaryBadges({
   claudeCodeVersion,
   isOffline,
   compact,
+  isVaultReloading,
 }: {
   modifiedCount: number
   visibleRemoteStatus: GitRemoteStatus | null
@@ -213,9 +216,11 @@ function StatusBarPrimaryBadges({
   claudeCodeVersion?: string | null
   isOffline: boolean
   compact: boolean
+  isVaultReloading?: boolean
 }) {
   return (
     <>
+      <VaultReloadingBadge isReloading={isVaultReloading} showSeparator={!compact} compact={compact} />
       <OfflineBadge isOffline={isOffline} showSeparator={!compact} compact={compact} />
       <NoRemoteBadge remoteStatus={visibleRemoteStatus} onAddRemote={onAddRemote} showSeparator={!compact} compact={compact} />
       <ChangesBadge count={modifiedCount} onClick={onClickPending} showSeparator={!compact} compact={compact} />
@@ -314,6 +319,7 @@ export function StatusBarPrimarySection({
   claudeCodeVersion,
   stacked = false,
   compact = false,
+  isVaultReloading = false,
 }: StatusBarPrimarySectionProps) {
   const {
     openAddRemote,
@@ -382,6 +388,7 @@ export function StatusBarPrimarySection({
         claudeCodeVersion={claudeCodeVersion}
         isOffline={isOffline}
         compact={compact}
+        isVaultReloading={isVaultReloading}
       />
       <AddRemoteModal
         open={showAddRemote}

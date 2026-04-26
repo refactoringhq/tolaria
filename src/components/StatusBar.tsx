@@ -94,6 +94,7 @@ interface StatusBarProps {
   onRestoreVaultAiGuidance?: () => void
   claudeCodeStatus?: ClaudeCodeStatus
   claudeCodeVersion?: string | null
+  isVaultReloading?: boolean
 }
 
 interface StatusBarFooterProps extends StatusBarProps {
@@ -141,6 +142,7 @@ function StatusBarFooter({
   onRestoreVaultAiGuidance,
   claudeCodeStatus,
   claudeCodeVersion,
+  isVaultReloading = false,
   compact,
   stacked,
 }: StatusBarFooterProps) {
@@ -199,6 +201,7 @@ function StatusBarFooter({
         onRestoreVaultAiGuidance={onRestoreVaultAiGuidance}
         claudeCodeStatus={claudeCodeStatus}
         claudeCodeVersion={claudeCodeVersion}
+        isVaultReloading={isVaultReloading}
         stacked={stacked}
         compact={compact}
       />
