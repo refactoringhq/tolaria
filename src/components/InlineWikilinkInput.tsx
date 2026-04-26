@@ -17,7 +17,7 @@ import {
   extractInlineWikilinkReferences,
   findActiveWikilinkQuery,
 } from './inlineWikilinkText'
-import { extractDroppedPathText } from './inlineWikilinkDropText'
+import { extractDroppedPathText, formatDroppedPathList } from './inlineWikilinkDropText'
 import {
   readSelectionRange,
   serializeInlineNode,
@@ -38,6 +38,7 @@ import { useInlineWikilinkSelection } from './useInlineWikilinkSelection'
 import { useInlineWikilinkSuggestionsState } from './useInlineWikilinkSuggestionsState'
 import { normalizeInlineWikilinkValue } from './inlineWikilinkTokens'
 import { isInsertBeforeInput } from './inlineWikilinkBeforeInput'
+import { useNativePathDrop } from './useNativePathDrop'
 
 interface InlineWikilinkInputProps {
   entries: VaultEntry[]
@@ -201,14 +202,30 @@ export function InlineWikilinkInput({
     onSelectionIndexChange: (nextSelectionIndex) => setSelectionRange(collapseSelectionRange(nextSelectionIndex)),
     focusSelectionAt: (nextSelectionIndex) => focusSelectionRange(collapseSelectionRange(nextSelectionIndex)),
   })
-  const insertTransferText = (text: string) => {
-    const currentSelectionRange = editorRef.current
-      ? readSelectionRange(editorRef.current)
+  const insertTransferText = (text: string, focusAfterInsert = false) => {
+    const editor = editorRef.current
+    const currentSelectionRange = editor && !focusAfterInsert
+      ? readSelectionRange(editor)
       : selectionRange
     const nextState = replaceInlineSelection(value, currentSelectionRange, text)
+    const shouldRestoreFocus = focusAfterInsert || document.activeElement === editor
+
     onChange(nextState.value)
     setSelectionRange(nextState.selection)
+    pendingFocusAfterRemountRef.current = shouldRestoreFocus ? nextState.selection : null
+    forceRender((current) => current + 1)
   }
+  const insertNativePathDrop = (paths: string[]) => {
+    const droppedPathText = formatDroppedPathList(paths)
+    if (!droppedPathText) return
+
+    insertTransferText(droppedPathText, true)
+  }
+  useNativePathDrop({
+    targetRef: editorRef,
+    disabled,
+    onPathDrop: insertNativePathDrop,
+  })
   const notifyUnsupportedPaste = () => onUnsupportedPaste?.(UNSUPPORTED_INLINE_PASTE_MESSAGE)
   const recoverUnsupportedMutation = () => {
     pendingCompositionInputRef.current = false

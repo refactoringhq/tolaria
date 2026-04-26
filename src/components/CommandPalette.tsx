@@ -8,8 +8,10 @@ import type { CommandAction, CommandGroup } from '../hooks/useCommandRegistry'
 import { groupSortKey } from '../hooks/useCommandRegistry'
 import { rememberFeedbackDialogOpener } from '../lib/feedbackDialogOpener'
 import { createTranslator, type AppLocale } from '../lib/i18n'
+import { formatDroppedPathList } from './inlineWikilinkDropText'
 import { CommandPaletteAiMode } from './CommandPaletteAiMode'
 import { Input } from './ui/input'
+import { useNativePathDrop } from './useNativePathDrop'
 
 interface CommandPaletteProps {
   open: boolean
@@ -117,6 +119,15 @@ function rememberCommandOpener(
   rememberFeedbackDialogOpener(target instanceof HTMLElement ? target : null)
 }
 
+function inputSelectionRange(input: HTMLInputElement, fallbackIndex: number) {
+  const start = input.selectionStart ?? fallbackIndex
+  const end = input.selectionEnd ?? start
+  return {
+    start: Math.max(0, start),
+    end: Math.max(start, end),
+  }
+}
+
 function CommandPaletteInput({
   inputRef,
   query,
@@ -128,6 +139,27 @@ function CommandPaletteInput({
   onChange: (value: string) => void
   placeholder: string
 }) {
+  const insertNativePathDrop = (paths: string[]) => {
+    const droppedPathText = formatDroppedPathList(paths)
+    const input = inputRef.current
+    if (!droppedPathText || !input) return
+
+    const { start, end } = inputSelectionRange(input, query.length)
+    const nextValue = `${query.slice(0, start)}${droppedPathText}${query.slice(end)}`
+    const nextCursor = start + droppedPathText.length
+
+    onChange(nextValue)
+    window.requestAnimationFrame(() => {
+      input.focus()
+      input.setSelectionRange(nextCursor, nextCursor)
+    })
+  }
+
+  useNativePathDrop({
+    targetRef: inputRef,
+    onPathDrop: insertNativePathDrop,
+  })
+
   return (
     <Input
       ref={inputRef}

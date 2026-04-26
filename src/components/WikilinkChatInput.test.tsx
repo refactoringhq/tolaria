@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
+  act,
   createEvent,
   fireEvent,
   render,
@@ -14,6 +15,32 @@ import {
 } from './InlineWikilinkInput'
 import { isInsertBeforeInput } from './inlineWikilinkBeforeInput'
 import type { VaultEntry } from '../types'
+
+type NativeDropPayload = {
+  type: string
+  paths: string[]
+  position: { x: number; y: number }
+}
+type NativeDropHandler = (event: { payload: NativeDropPayload }) => void
+const nativeDropState = vi.hoisted(() => ({
+  tauriMode: false,
+  handlers: {} as Record<string, NativeDropHandler | undefined>,
+}))
+
+vi.mock('../mock-tauri', () => ({
+  isTauri: () => nativeDropState.tauriMode,
+}))
+
+vi.mock('@tauri-apps/api/window', () => ({
+  getCurrentWindow: () => ({
+    onDragDropEvent: vi.fn((handler: NativeDropHandler) => {
+      nativeDropState.handlers['native-drag-drop'] = handler
+      return Promise.resolve(() => {
+        delete nativeDropState.handlers['native-drag-drop']
+      })
+    }),
+  }),
+}))
 
 const makeEntry = (overrides: Partial<VaultEntry> = {}): VaultEntry => ({
   path: '/vault/note/test.md',
@@ -96,6 +123,7 @@ function setSelection(editor: HTMLElement, offset: number) {
 
 function updateEditorText(text: string) {
   const editor = screen.getByTestId('agent-input')
+  editor.focus()
   fireEvent.focus(editor)
   editor.textContent = text
   setSelection(editor, text.length)
@@ -141,7 +169,52 @@ function createFileLikeDataTransfer({
   }
 }
 
+function resetNativeDropState() {
+  nativeDropState.tauriMode = false
+  for (const eventName of Object.keys(nativeDropState.handlers)) {
+    delete nativeDropState.handlers[eventName]
+  }
+}
+
+function mockElementRect(element: HTMLElement) {
+  Object.defineProperty(element, 'getBoundingClientRect', {
+    configurable: true,
+    value: () => ({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 400,
+      bottom: 48,
+      width: 400,
+      height: 48,
+      toJSON: () => ({}),
+    }),
+  })
+}
+
+function emitNativePathDrop(paths: string[], position = { x: 20, y: 20 }) {
+  const handler = nativeDropState.handlers['native-drag-drop']
+  if (!handler) throw new Error('No native drop handler registered')
+  handler({
+    payload: {
+      type: 'drop',
+      paths,
+      position,
+    },
+  })
+}
+
+async function waitForNativePathDropListener() {
+  await waitFor(() => {
+    expect(nativeDropState.handlers['native-drag-drop']).toBeDefined()
+  })
+}
+
 describe('WikilinkChatInput', () => {
+  beforeEach(resetNativeDropState)
+  afterEach(resetNativeDropState)
+
   it('renders the placeholder overlay for an empty draft', () => {
     render(<Controlled placeholder="Ask something..." />)
     expect(screen.getByText('Ask something...')).toBeInTheDocument()
@@ -399,6 +472,50 @@ describe('WikilinkChatInput', () => {
         uriList: 'file:///Users/test/My%20Folder',
       }) as DataTransfer,
     )).toBe('"/Users/test/My Folder"')
+  })
+
+  it('inserts Tauri native folder drops into the AI composer', async () => {
+    nativeDropState.tauriMode = true
+    const onDraftChange = vi.fn()
+    render(<Controlled onDraftChange={onDraftChange} />)
+
+    const editor = screen.getByTestId('agent-input') as HTMLDivElement
+    mockElementRect(editor)
+    await waitForNativePathDropListener()
+    updateEditorText('Open ')
+    editor.focus()
+    onDraftChange.mockClear()
+
+    act(() => {
+      emitNativePathDrop(['/Users/test/My Folder'])
+    })
+
+    await waitFor(() => {
+      expect(onDraftChange).toHaveBeenCalledWith('Open "/Users/test/My Folder"')
+    })
+    await waitFor(() => {
+      expect(screen.getByTestId('agent-input').textContent).toContain('/Users/test/My Folder')
+    })
+  })
+
+  it('accepts Tauri native folder drops for the focused AI composer even when native coordinates miss', async () => {
+    nativeDropState.tauriMode = true
+    const onDraftChange = vi.fn()
+    render(<Controlled onDraftChange={onDraftChange} />)
+
+    const editor = screen.getByTestId('agent-input') as HTMLDivElement
+    mockElementRect(editor)
+    await waitForNativePathDropListener()
+    updateEditorText('Open ')
+    onDraftChange.mockClear()
+
+    act(() => {
+      emitNativePathDrop(['/Users/test/Projects'], { x: 900, y: 900 })
+    })
+
+    await waitFor(() => {
+      expect(onDraftChange).toHaveBeenCalledWith('Open /Users/test/Projects')
+    })
   })
 
   it('treats missing inputType as a non-insert beforeinput event', () => {
