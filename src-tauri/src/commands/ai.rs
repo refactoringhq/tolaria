@@ -150,6 +150,21 @@ pub async fn stream_ai_agent(
     Err("CLI AI agents are not available on mobile".into())
 }
 
+/// Kill the Claude subprocess currently streaming for the kanban agent panel
+/// (or any other single-shot caller). No-op if nothing is running. Returns
+/// `true` when a process was targeted, `false` otherwise.
+#[cfg(desktop)]
+#[tauri::command]
+pub fn kill_active_agent() -> Result<bool, String> {
+    Ok(crate::claude_cli::kill_active_agent_subprocess())
+}
+
+#[cfg(mobile)]
+#[tauri::command]
+pub fn kill_active_agent() -> Result<bool, String> {
+    Ok(false)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

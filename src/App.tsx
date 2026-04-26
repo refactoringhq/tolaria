@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { NoteList } from './components/NoteList'
+import { CaretDoubleRight } from '@phosphor-icons/react'
+import { KanbanBoard } from './components/kanban/KanbanBoard'
+import { KanbanAgentPanel } from './components/kanban/KanbanAgentPanel'
+import { evaluateView } from './utils/viewFilters'
+import { isKanbanEligibleEntry } from './utils/kanbanEntries'
 import type { DeletedNoteEntry } from './components/note-list/noteListUtils'
 import { Editor } from './components/Editor'
 import { ResizeHandle } from './components/ResizeHandle'
@@ -1276,6 +1281,58 @@ function App() {
     () => vault.modifiedFiles.some((file) => file.path === notes.activeTabPath),
     [notes.activeTabPath, vault.modifiedFiles],
   )
+  const activeKanbanView = useMemo(() => {
+    if (effectiveSelection.kind !== 'view') return null
+    const view = vault.views.find((candidate) => candidate.filename === effectiveSelection.filename)
+    return view?.definition.kind === 'kanban' ? view : null
+  }, [effectiveSelection, vault.views])
+  const kanbanRawMatches = useMemo(
+    () => (activeKanbanView ? evaluateView(activeKanbanView.definition, vault.entries) : []),
+    [activeKanbanView, vault.entries],
+  )
+  const kanbanBoardEntries = useMemo(
+    () => kanbanRawMatches.filter(isKanbanEligibleEntry),
+    [kanbanRawMatches],
+  )
+  const kanbanEmptyMessage = useMemo(() => {
+    if (!activeKanbanView) return undefined
+    const boardName = activeKanbanView.definition.name
+    if (kanbanRawMatches.length === 0) {
+      return `No notes match the "${boardName}" board. Try editing the filter (sidebar > right-click on the board).`
+    }
+    if (kanbanBoardEntries.length === 0) {
+      return `The "${boardName}" filter matches ${kanbanRawMatches.length} item(s), but they are all view configs or binaries (excluded from kanban). Edit the filter to target real notes (e.g. status is_not_empty).`
+    }
+    return undefined
+  }, [activeKanbanView, kanbanRawMatches, kanbanBoardEntries])
+  const handleKanbanUpdateStatus = useCallback(
+    async (notePath: string, newStatus: string) => {
+      console.log('[kanban] drag drop -> update status', { notePath, newStatus })
+      vault.updateEntry(notePath, { status: newStatus })
+      try {
+        await notes.handleUpdateFrontmatter(notePath, 'status', newStatus, { silent: true })
+        console.log('[kanban] frontmatter persisted', { notePath, newStatus })
+      } catch (err) {
+        console.error('[kanban] frontmatter update failed', { notePath, newStatus, err })
+        setToastMessage(`Kanban: failed to update status (${err})`)
+        throw err
+      }
+    },
+    [notes, vault, setToastMessage],
+  )
+  const [kanbanSplitDismissed, setKanbanSplitDismissed] = useState(false)
+  const isKanbanCardActive = useMemo(() => {
+    if (kanbanSplitDismissed) return false
+    if (!activeKanbanView || !notes.activeTabPath) return false
+    return kanbanBoardEntries.some((entry) => entry.path === notes.activeTabPath)
+  }, [kanbanSplitDismissed, activeKanbanView, notes.activeTabPath, kanbanBoardEntries])
+  const handleKanbanSelectNote = useCallback((entry: VaultEntry) => {
+    setKanbanSplitDismissed(false)
+    notes.handleSelectNote(entry)
+  }, [notes])
+  const handleKanbanCloseSplit = useCallback(() => {
+    setKanbanSplitDismissed(true)
+  }, [])
   const toggleDiffCommand = useCallback(() => diffToggleRef.current(), [])
   const toggleRawEditorCommand = useMemo(
     () => canToggleRichEditor ? () => rawToggleRef.current() : undefined,
@@ -1505,12 +1562,39 @@ function App() {
           {sidebarVisible && (
             <>
               <div className="app__sidebar" style={{ width: layout.sidebarWidth }}>
-                <Sidebar entries={vault.entries} folders={vault.folders} views={vault.views} selection={effectiveSelection} onSelect={handleSetSelection} onSelectNote={notes.handleSelectNote} onSelectFavorite={handleOpenFavorite} onReorderFavorites={entryActions.handleReorderFavorites} onCreateType={notes.handleCreateNoteImmediate} onCreateNewType={dialogs.openCreateType} onCustomizeType={entryActions.handleCustomizeType} onUpdateTypeTemplate={entryActions.handleUpdateTypeTemplate} onReorderSections={entryActions.handleReorderSections} onRenameSection={entryActions.handleRenameSection} onToggleTypeVisibility={entryActions.handleToggleTypeVisibility} onCreateFolder={handleCreateFolder} onRenameFolder={folderActions.renameFolder} onDeleteFolder={folderActions.requestDeleteFolder} renamingFolderPath={folderActions.renamingFolderPath} onStartRenameFolder={folderActions.startFolderRename} onCancelRenameFolder={folderActions.cancelFolderRename} onCreateView={dialogs.openCreateView} onEditView={handleEditView} onDeleteView={handleDeleteView} showInbox={explicitOrganizationEnabled} inboxCount={inboxCount} />
+                <Sidebar entries={vault.entries} folders={vault.folders} views={vault.views} selection={effectiveSelection} onSelect={handleSetSelection} onSelectNote={notes.handleSelectNote} onSelectFavorite={handleOpenFavorite} onReorderFavorites={entryActions.handleReorderFavorites} onCreateType={notes.handleCreateNoteImmediate} onCreateNewType={dialogs.openCreateType} onCustomizeType={entryActions.handleCustomizeType} onUpdateTypeTemplate={entryActions.handleUpdateTypeTemplate} onReorderSections={entryActions.handleReorderSections} onRenameSection={entryActions.handleRenameSection} onToggleTypeVisibility={entryActions.handleToggleTypeVisibility} onCreateFolder={handleCreateFolder} onRenameFolder={folderActions.renameFolder} onDeleteFolder={folderActions.requestDeleteFolder} renamingFolderPath={folderActions.renamingFolderPath} onStartRenameFolder={folderActions.startFolderRename} onCancelRenameFolder={folderActions.cancelFolderRename} onCreateView={dialogs.openCreateView} onCreateBoard={dialogs.openCreateBoard} onEditView={handleEditView} onDeleteView={handleDeleteView} showInbox={explicitOrganizationEnabled} inboxCount={inboxCount} />
               </div>
               <ResizeHandle onResize={layout.handleSidebarResize} />
             </>
           )}
-          {noteListVisible && (
+          {activeKanbanView && (
+            <div
+              className={isKanbanCardActive ? 'relative flex flex-[3] flex-col overflow-hidden border-r border-border' : 'flex flex-1 flex-col overflow-hidden'}
+              style={isKanbanCardActive ? { minWidth: 480 } : undefined}
+            >
+              <KanbanBoard
+                entries={kanbanBoardEntries}
+                selectedNotePath={activeTab?.entry?.path ?? null}
+                onSelectNote={handleKanbanSelectNote}
+                onUpdateStatus={handleKanbanUpdateStatus}
+                emptyMessage={kanbanEmptyMessage}
+              />
+              {isKanbanCardActive && (
+                <button
+                  type="button"
+                  onClick={handleKanbanCloseSplit}
+                  className="absolute z-50 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-l-md border border-r-0 border-border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
+                  style={{ top: '50%', right: 0 }}
+                  aria-label="Close note panel and return to full board"
+                  title="Return to full board"
+                  data-testid="kanban-close-split"
+                >
+                  <CaretDoubleRight size={14} />
+                </button>
+              )}
+            </div>
+          )}
+          {!activeKanbanView && noteListVisible && (
             <>
               <div className={`app__note-list${aiActivity.highlightElement === 'notelist' ? ' ai-highlight' : ''}`} style={{ width: layout.noteListWidth }}>
                 {effectiveSelection.kind === 'filter' && effectiveSelection.filter === 'pulse' ? (
@@ -1522,7 +1606,9 @@ function App() {
               <ResizeHandle onResize={layout.handleNoteListResize} />
             </>
           )}
-          <div className={`app__editor${aiActivity.highlightElement === 'editor' || aiActivity.highlightElement === 'tab' ? ' ai-highlight' : ''}`}>
+          {(!activeKanbanView || isKanbanCardActive) && (
+          <div className={`app__editor${aiActivity.highlightElement === 'editor' || aiActivity.highlightElement === 'tab' ? ' ai-highlight' : ''}`} style={isKanbanCardActive ? { flex: '2 1 0', minWidth: 360, display: 'flex', flexDirection: 'column' } : undefined}>
+            <div style={isKanbanCardActive ? { flex: '7 1 0', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' } : undefined}>
             <Editor
               tabs={notes.tabs}
               activeTabPath={notes.activeTabPath}
@@ -1580,7 +1666,23 @@ function App() {
               onKeepTheirs={conflictFlow.handleKeepTheirs}
               flushPendingRawContentRef={flushPendingRawContentRef}
             />
+            </div>
+            {isKanbanCardActive && activeTab && (
+              <div style={{ flex: '3 1 0', minHeight: 200, maxHeight: 480, display: 'flex', flexDirection: 'column' }}>
+                <KanbanAgentPanel
+                  entry={activeTab.entry}
+                  noteContent={activeTab.content ?? null}
+                  allEntries={vault.entries}
+                  vaultPath={resolvedPath}
+                  agent={aiAgentPreferences.defaultAiAgent}
+                  agentReady={aiAgentPreferences.defaultAiAgentReady}
+                  agentLabel={aiAgentPreferences.defaultAiAgentLabel}
+                  onUpdateStatus={handleKanbanUpdateStatus}
+                />
+              </div>
+            )}
           </div>
+          )}
         </div>
         <UpdateBanner status={updateStatus} actions={updateActions} />
         <RenameDetectedBanner renames={detectedRenames} onUpdate={handleUpdateWikilinks} onDismiss={handleDismissRenames} />
@@ -1609,7 +1711,7 @@ function App() {
           onSelectType={noteRetargetingUi.selectType}
           onSelectFolder={noteRetargetingUi.selectFolder}
         />
-        <CreateViewDialog open={dialogs.showCreateViewDialog} onClose={dialogs.closeCreateView} onCreate={handleCreateOrUpdateView} availableFields={availableFields} editingView={dialogs.editingView?.definition ?? null} />
+        <CreateViewDialog open={dialogs.showCreateViewDialog} onClose={dialogs.closeCreateView} onCreate={handleCreateOrUpdateView} availableFields={availableFields} editingView={dialogs.editingView?.definition ?? null} defaultKind={dialogs.createViewDefaultKind} />
         <CommitDialog
           open={commitFlow.showCommitDialog}
           modifiedCount={vault.modifiedFiles.length}

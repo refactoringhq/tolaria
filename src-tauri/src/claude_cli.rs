@@ -3,6 +3,40 @@ use std::collections::HashMap;
 use std::io::BufRead;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Stdio};
+use std::sync::{LazyLock, Mutex};
+
+/// PID of the Claude subprocess currently streaming for the kanban agent panel
+/// (or any other single-shot caller). Set right after spawn, cleared at exit.
+/// Used by `kill_active_agent` to terminate a running agent on user request.
+static ACTIVE_AGENT_PID: LazyLock<Mutex<Option<u32>>> = LazyLock::new(|| Mutex::new(None));
+
+fn set_active_agent_pid(pid: u32) {
+    if let Ok(mut guard) = ACTIVE_AGENT_PID.lock() {
+        *guard = Some(pid);
+    }
+}
+
+fn clear_active_agent_pid_if(pid: u32) {
+    if let Ok(mut guard) = ACTIVE_AGENT_PID.lock() {
+        if guard.as_ref() == Some(&pid) {
+            *guard = None;
+        }
+    }
+}
+
+/// Try to terminate the currently active Claude subprocess (if any).
+/// Sends SIGTERM via the system `kill` command for portability.
+/// Returns true if a process was targeted, false if nothing was running.
+pub fn kill_active_agent_subprocess() -> bool {
+    let pid_opt = match ACTIVE_AGENT_PID.lock() {
+        Ok(mut guard) => guard.take(),
+        Err(_) => return false,
+    };
+    let Some(pid) = pid_opt else { return false; };
+    log::info!("Killing active Claude agent subprocess pid={pid}");
+    let _ = Command::new("kill").arg("-TERM").arg(pid.to_string()).status();
+    true
+}
 
 /// Status returned by `check_claude_cli`.
 #[derive(Debug, Serialize, Clone)]
@@ -334,6 +368,8 @@ where
     let mut child = cmd
         .spawn()
         .map_err(|e| format!("Failed to spawn claude: {e}"))?;
+    let child_pid = child.id();
+    set_active_agent_pid(child_pid);
 
     let stdout = child.stdout.take().ok_or("No stdout handle")?;
     let reader = std::io::BufReader::new(stdout);
@@ -375,6 +411,7 @@ where
         .unwrap_or_default();
 
     let status = child.wait().map_err(|e| format!("Wait failed: {e}"))?;
+    clear_active_agent_pid_if(child_pid);
 
     if !status.success() && state.session_id.is_empty() {
         emit(ClaudeStreamEvent::Error {

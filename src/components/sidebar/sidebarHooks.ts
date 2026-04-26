@@ -5,7 +5,7 @@ import { buildTypeEntryMap } from '../../utils/typeColors'
 import { countAllNotesByFilter } from '../../utils/noteListHelpers'
 import { buildDynamicSections, sortSections } from '../../utils/sidebarSections'
 
-export type SidebarGroupKey = 'favorites' | 'views' | 'sections' | 'folders'
+export type SidebarGroupKey = 'favorites' | 'views' | 'boards' | 'sections' | 'folders'
 
 export function useOutsideClick(ref: RefObject<HTMLElement | null>, isOpen: boolean, onClose: () => void) {
   useEffect(() => {
@@ -32,14 +32,18 @@ export function useSidebarSections(entries: VaultEntry[]) {
   return { typeEntryMap, allSectionGroups, visibleSections, sectionIds }
 }
 
+const DEFAULT_COLLAPSED_STATE: Record<SidebarGroupKey, boolean> = {
+  favorites: false, views: false, boards: false, sections: false, folders: false,
+}
+
 function loadCollapsedState(): Record<SidebarGroupKey, boolean> {
   try {
     const raw = getAppStorageItem('sidebarCollapsed')
-    if (raw) return JSON.parse(raw)
+    if (raw) return { ...DEFAULT_COLLAPSED_STATE, ...JSON.parse(raw) }
   } catch {
     // Ignore localStorage failures and fall back to defaults.
   }
-  return { favorites: false, views: false, sections: false, folders: false }
+  return { ...DEFAULT_COLLAPSED_STATE }
 }
 
 export function useSidebarCollapsed() {

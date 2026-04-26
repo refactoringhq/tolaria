@@ -318,6 +318,7 @@ macro_rules! app_invoke_handler {
             commands::stream_claude_chat,
             commands::stream_claude_agent,
             commands::stream_ai_agent,
+            commands::kill_active_agent,
             commands::reload_vault,
             commands::reload_vault_entry,
             commands::sync_vault_asset_scope_for_window,
