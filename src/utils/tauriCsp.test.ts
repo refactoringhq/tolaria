@@ -1,11 +1,14 @@
 import { readFileSync } from 'node:fs'
+import { RUNTIME_STYLE_NONCE_SOURCE } from '../lib/runtimeStyleNonce'
 
 describe('Tauri Content Security Policy', () => {
-  it('keeps broad inline styles available when runtime libraries inject style tags', () => {
+  it('allows nonce-tagged runtime style elements and React style attributes', () => {
     const config = JSON.parse(readFileSync(`${process.cwd()}/src-tauri/tauri.conf.json`, 'utf8'))
-    const styleSrc = config.app.security.csp['style-src'] as string
+    const csp = config.app.security.csp as Record<string, string>
 
-    expect(styleSrc).toContain("'unsafe-inline'")
-    expect(styleSrc).not.toMatch(/'nonce-|sha(256|384|512)-/)
+    expect(csp['style-src']).toContain("'unsafe-inline'")
+    expect(csp['style-src-elem']).toContain(RUNTIME_STYLE_NONCE_SOURCE)
+    expect(csp['style-src-elem']).toContain('https://fonts.googleapis.com')
+    expect(csp['style-src-attr']).toBe("'unsafe-inline'")
   })
 })
