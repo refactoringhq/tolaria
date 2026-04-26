@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { NoteList } from './components/NoteList'
+import { CaretDoubleRight } from '@phosphor-icons/react'
 import { KanbanBoard } from './components/kanban/KanbanBoard'
 import { evaluateView } from './utils/viewFilters'
 import { isKanbanEligibleEntry } from './utils/kanbanEntries'
@@ -1284,10 +1285,19 @@ function App() {
     },
     [notes, vault, setToastMessage],
   )
+  const [kanbanSplitDismissed, setKanbanSplitDismissed] = useState(false)
   const isKanbanCardActive = useMemo(() => {
+    if (kanbanSplitDismissed) return false
     if (!activeKanbanView || !notes.activeTabPath) return false
     return kanbanBoardEntries.some((entry) => entry.path === notes.activeTabPath)
-  }, [activeKanbanView, notes.activeTabPath, kanbanBoardEntries])
+  }, [kanbanSplitDismissed, activeKanbanView, notes.activeTabPath, kanbanBoardEntries])
+  const handleKanbanSelectNote = useCallback((entry: VaultEntry) => {
+    setKanbanSplitDismissed(false)
+    notes.handleSelectNote(entry)
+  }, [notes])
+  const handleKanbanCloseSplit = useCallback(() => {
+    setKanbanSplitDismissed(true)
+  }, [])
   const toggleDiffCommand = useCallback(() => diffToggleRef.current(), [])
   const toggleRawEditorCommand = useMemo(
     () => canToggleRichEditor ? () => rawToggleRef.current() : undefined,
@@ -1533,7 +1543,7 @@ function App() {
               <KanbanBoard
                 entries={kanbanBoardEntries}
                 selectedNotePath={activeTab?.entry?.path ?? null}
-                onSelectNote={(entry) => notes.handleSelectNote(entry)}
+                onSelectNote={handleKanbanSelectNote}
                 onUpdateStatus={handleKanbanUpdateStatus}
                 emptyMessage={kanbanEmptyMessage}
               />
@@ -1552,7 +1562,20 @@ function App() {
             </>
           )}
           {(!activeKanbanView || isKanbanCardActive) && (
-          <div className={`app__editor${aiActivity.highlightElement === 'editor' || aiActivity.highlightElement === 'tab' ? ' ai-highlight' : ''}`} style={isKanbanCardActive ? { flex: '2 1 0', minWidth: 360 } : undefined}>
+          <div className={`app__editor${aiActivity.highlightElement === 'editor' || aiActivity.highlightElement === 'tab' ? ' ai-highlight' : ''}`} style={isKanbanCardActive ? { flex: '2 1 0', minWidth: 360, position: 'relative' } : undefined}>
+            {isKanbanCardActive && (
+              <button
+                type="button"
+                onClick={handleKanbanCloseSplit}
+                className="absolute z-50 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                style={{ top: 12, left: 8 }}
+                aria-label="Close note panel and return to full board"
+                title="Return to full board"
+                data-testid="kanban-close-split"
+              >
+                <CaretDoubleRight size={16} />
+              </button>
+            )}
             <Editor
               tabs={notes.tabs}
               activeTabPath={notes.activeTabPath}
