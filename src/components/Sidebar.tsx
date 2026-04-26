@@ -23,6 +23,7 @@ import {
 } from './sidebar/SidebarSections'
 import { useSidebarTypeInteractions } from './sidebar/useSidebarTypeInteractions'
 import type { AppLocale } from '../lib/i18n'
+import type { FolderFileActions } from '../hooks/useFileActions'
 
 interface SidebarProps {
   entries: VaultEntry[]
@@ -46,6 +47,7 @@ interface SidebarProps {
   onCreateFolder?: (name: string) => Promise<boolean> | boolean
   onRenameFolder?: (folderPath: string, nextName: string) => Promise<boolean> | boolean
   onDeleteFolder?: (folderPath: string) => void
+  folderFileActions?: FolderFileActions
   renamingFolderPath?: string | null
   onStartRenameFolder?: (folderPath: string) => void
   onCancelRenameFolder?: () => void
@@ -70,6 +72,7 @@ interface SidebarNavigationProps extends Pick<
   | 'onCreateFolder'
   | 'onRenameFolder'
   | 'onDeleteFolder'
+  | 'folderFileActions'
   | 'renamingFolderPath'
   | 'onStartRenameFolder'
   | 'onCancelRenameFolder'
@@ -107,6 +110,7 @@ function SidebarNavigation({
   onCreateFolder,
   onRenameFolder,
   onDeleteFolder,
+  folderFileActions,
   renamingFolderPath,
   onStartRenameFolder,
   onCancelRenameFolder,
@@ -194,6 +198,7 @@ function SidebarNavigation({
         onCreateFolder={onCreateFolder}
         onRenameFolder={onRenameFolder}
         onDeleteFolder={onDeleteFolder}
+        folderFileActions={folderFileActions}
         renamingFolderPath={renamingFolderPath}
         onStartRenameFolder={onStartRenameFolder}
         onCancelRenameFolder={onCancelRenameFolder}
@@ -202,6 +207,13 @@ function SidebarNavigation({
         onToggle={() => toggleGroup('folders')}
       />
     </nav>
+  )
+}
+
+function useSidebarDndSensors() {
+  return useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 }
 
@@ -224,6 +236,7 @@ export const Sidebar = memo(function Sidebar({
   onCreateFolder,
   onRenameFolder,
   onDeleteFolder,
+  folderFileActions,
   renamingFolderPath,
   onStartRenameFolder,
   onCancelRenameFolder,
@@ -247,10 +260,7 @@ export const Sidebar = memo(function Sidebar({
   const isSectionVisible = useCallback((type: string) => typeEntryMap[type]?.visible !== false, [typeEntryMap])
   const toggleVisibility = useCallback((type: string) => onToggleTypeVisibility?.(type), [onToggleTypeVisibility])
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  )
+  const sensors = useSidebarDndSensors()
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event
@@ -288,6 +298,7 @@ export const Sidebar = memo(function Sidebar({
         onCreateFolder={onCreateFolder}
         onRenameFolder={onRenameFolder}
         onDeleteFolder={onDeleteFolder}
+        folderFileActions={folderFileActions}
         renamingFolderPath={renamingFolderPath}
         onStartRenameFolder={onStartRenameFolder}
         onCancelRenameFolder={onCancelRenameFolder}

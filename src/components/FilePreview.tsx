@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState, type KeyboardEvent } from 'react'
 import { convertFileSrc } from '@tauri-apps/api/core'
-import { ArrowSquareOut, FileDashed, ImageSquare, WarningCircle } from '@phosphor-icons/react'
+import { ArrowSquareOut, ClipboardText, FileDashed, FolderOpen, ImageSquare, WarningCircle } from '@phosphor-icons/react'
 import type { VaultEntry } from '../types'
 import { isImagePreviewEntry, previewFileTypeLabel } from '../utils/filePreview'
 import { focusNoteListContainer } from '../utils/neighborhoodHistory'
@@ -9,6 +9,9 @@ import { Button } from './ui/button'
 
 interface FilePreviewProps {
   entry: VaultEntry
+  onCopyFilePath?: (path: string) => void
+  onOpenExternalFile?: (path: string) => void
+  onRevealFile?: (path: string) => void
 }
 
 interface FilePreviewFallbackProps {
@@ -44,11 +47,15 @@ function FilePreviewHeader({
   isImage,
   fileTypeLabel,
   onOpenExternal,
+  onRevealFile,
+  onCopyFilePath,
 }: {
   entry: VaultEntry
   isImage: boolean
   fileTypeLabel: string
   onOpenExternal: () => void
+  onRevealFile?: () => void
+  onCopyFilePath?: () => void
 }) {
   const HeaderIcon = isImage ? ImageSquare : FileDashed
 
@@ -64,10 +71,24 @@ function FilePreviewHeader({
           <p className="m-0 text-[11px] text-muted-foreground">{fileTypeLabel}</p>
         </div>
       </div>
-      <Button type="button" variant="ghost" size="sm" onClick={onOpenExternal}>
-        <ArrowSquareOut size={15} />
-        Open
-      </Button>
+      <div className="flex items-center gap-1">
+        {onRevealFile && (
+          <Button type="button" variant="ghost" size="sm" onClick={onRevealFile}>
+            <FolderOpen size={15} />
+            Reveal
+          </Button>
+        )}
+        {onCopyFilePath && (
+          <Button type="button" variant="ghost" size="sm" onClick={onCopyFilePath}>
+            <ClipboardText size={15} />
+            Copy path
+          </Button>
+        )}
+        <Button type="button" variant="ghost" size="sm" onClick={onOpenExternal}>
+          <ArrowSquareOut size={15} />
+          Open
+        </Button>
+      </div>
     </div>
   )
 }
@@ -131,7 +152,12 @@ function FilePreviewBody({
   )
 }
 
-export function FilePreview({ entry }: FilePreviewProps) {
+export function FilePreview({
+  entry,
+  onCopyFilePath,
+  onOpenExternalFile,
+  onRevealFile,
+}: FilePreviewProps) {
   const [imageFailed, setImageFailed] = useState(false)
   const isImage = isImagePreviewEntry(entry)
   const imageSrc = useMemo(() => (isImage ? convertFileSrc(entry.path) : null), [entry.path, isImage])
@@ -139,10 +165,23 @@ export function FilePreview({ entry }: FilePreviewProps) {
   const handleImageError = useCallback(() => setImageFailed(true), [])
 
   const handleOpenExternal = useCallback(() => {
+    if (onOpenExternalFile) {
+      onOpenExternalFile(entry.path)
+      return
+    }
+
     void openLocalFile(entry.path).catch((error) => {
       console.warn('Failed to open file with default app:', error)
     })
-  }, [entry.path])
+  }, [entry.path, onOpenExternalFile])
+
+  const handleRevealFile = useCallback(() => {
+    onRevealFile?.(entry.path)
+  }, [entry.path, onRevealFile])
+
+  const handleCopyFilePath = useCallback(() => {
+    onCopyFilePath?.(entry.path)
+  }, [entry.path, onCopyFilePath])
 
   const handleKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'Escape') return
@@ -164,6 +203,8 @@ export function FilePreview({ entry }: FilePreviewProps) {
         isImage={isImage}
         fileTypeLabel={fileTypeLabel}
         onOpenExternal={handleOpenExternal}
+        onRevealFile={onRevealFile ? handleRevealFile : undefined}
+        onCopyFilePath={onCopyFilePath ? handleCopyFilePath : undefined}
       />
       <div className="min-h-0 flex-1 overflow-auto bg-background">
         <FilePreviewBody

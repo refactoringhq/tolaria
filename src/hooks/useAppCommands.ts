@@ -96,6 +96,11 @@ interface AppCommandsConfig {
   noteListFilter?: NoteListFilter
   onSetNoteListFilter?: (filter: NoteListFilter) => void
   onOpenInNewWindow?: () => void
+  onRevealActiveFile?: (path: string) => void
+  onCopyActiveFilePath?: (path: string) => void
+  onOpenActiveFileExternal?: (path: string) => void
+  onRevealSelectedFolder?: () => void
+  onCopySelectedFolderPath?: () => void
   onToggleFavorite?: (path: string) => void
   onToggleOrganized?: (path: string) => void
   onCustomizeNoteListColumns?: () => void
@@ -116,6 +121,8 @@ type CommandRegistrySelectionState = Pick<
   | 'onSelect'
   | 'onRenameFolder'
   | 'onDeleteFolder'
+  | 'onRevealSelectedFolder'
+  | 'onCopySelectedFolderPath'
   | 'showInbox'
   | 'onGoBack'
   | 'onGoForward'
@@ -169,6 +176,9 @@ type CommandRegistryVaultActions = Pick<
   | 'onReloadVault'
   | 'onRepairVault'
   | 'onOpenInNewWindow'
+  | 'onRevealActiveFile'
+  | 'onCopyActiveFilePath'
+  | 'onOpenActiveFileExternal'
   | 'onRestoreDeletedNote'
   | 'canRestoreDeletedNote'
 >
@@ -363,6 +373,8 @@ function createCommandRegistrySelectionConfig(
     onSelect: config.onSelect,
     onRenameFolder: config.onRenameFolder,
     onDeleteFolder: config.onDeleteFolder,
+    onRevealSelectedFolder: config.onRevealSelectedFolder,
+    onCopySelectedFolderPath: config.onCopySelectedFolderPath,
     showInbox: config.showInbox,
     onGoBack: config.onGoBack,
     onGoForward: config.onGoForward,
@@ -424,6 +436,9 @@ function createCommandRegistryVaultConfig(
     onReloadVault: config.onReloadVault,
     onRepairVault: config.onRepairVault,
     onOpenInNewWindow: config.onOpenInNewWindow,
+    onRevealActiveFile: config.onRevealActiveFile,
+    onCopyActiveFilePath: config.onCopyActiveFilePath,
+    onOpenActiveFileExternal: config.onOpenActiveFileExternal,
     onRestoreDeletedNote: config.onRestoreDeletedNote,
     canRestoreDeletedNote: config.canRestoreDeletedNote,
   }

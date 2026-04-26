@@ -56,3 +56,20 @@ export async function openLocalFile(absolutePath: string): Promise<void> {
     await openPath(absolutePath)
   }
 }
+
+/** Reveal a local file or folder in the system file manager. */
+export async function revealLocalPath(absolutePath: string): Promise<void> {
+  if (isTauri()) {
+    const { revealItemInDir } = await import('@tauri-apps/plugin-opener')
+    await revealItemInDir(absolutePath)
+  }
+}
+
+/** Copy a local file or folder path to the system clipboard. */
+export async function copyLocalPath(absolutePath: string): Promise<void> {
+  if (!navigator.clipboard?.writeText) {
+    throw new Error('Clipboard API is unavailable')
+  }
+
+  await navigator.clipboard.writeText(absolutePath)
+}

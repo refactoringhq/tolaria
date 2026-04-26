@@ -1,21 +1,19 @@
-import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type RefObject } from 'react'
 import type { FolderNode } from '../../types'
+import type { FolderFileActions } from '../../hooks/useFileActions'
 import type { FolderContextMenuState } from './FolderContextMenu'
 
 interface UseFolderContextMenuInput {
   onDeleteFolder?: (folderPath: string) => void
+  folderFileActions?: FolderFileActions
   onStartRenameFolder?: (folderPath: string) => void
 }
 
-export function useFolderContextMenu({
-  onDeleteFolder,
-  onStartRenameFolder,
-}: UseFolderContextMenuInput) {
-  const [contextMenu, setContextMenu] = useState<FolderContextMenuState | null>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
-
-  const closeContextMenu = useCallback(() => setContextMenu(null), [])
-
+function useContextMenuDismiss(
+  contextMenu: FolderContextMenuState | null,
+  menuRef: RefObject<HTMLDivElement | null>,
+  closeContextMenu: () => void,
+) {
   useEffect(() => {
     if (!contextMenu) return
 
@@ -32,7 +30,19 @@ export function useFolderContextMenu({
       document.removeEventListener('mousedown', handleOutsideClick)
       document.removeEventListener('keydown', handleEscape)
     }
-  }, [closeContextMenu, contextMenu])
+  }, [closeContextMenu, contextMenu, menuRef])
+}
+
+export function useFolderContextMenu({
+  onDeleteFolder,
+  folderFileActions,
+  onStartRenameFolder,
+}: UseFolderContextMenuInput) {
+  const [contextMenu, setContextMenu] = useState<FolderContextMenuState | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  const closeContextMenu = useCallback(() => setContextMenu(null), [])
+  useContextMenuDismiss(contextMenu, menuRef, closeContextMenu)
 
   const handleOpenMenu = useCallback((node: FolderNode, event: ReactMouseEvent<HTMLDivElement>) => {
     event.preventDefault()
@@ -54,11 +64,23 @@ export function useFolderContextMenu({
     onDeleteFolder?.(folderPath)
   }, [closeContextMenu, onDeleteFolder])
 
+  const handleRevealFromMenu = useCallback((folderPath: string) => {
+    closeContextMenu()
+    folderFileActions?.revealFolder(folderPath)
+  }, [closeContextMenu, folderFileActions])
+
+  const handleCopyPathFromMenu = useCallback((folderPath: string) => {
+    closeContextMenu()
+    folderFileActions?.copyFolderPath(folderPath)
+  }, [closeContextMenu, folderFileActions])
+
   return {
     closeContextMenu,
     contextMenu,
+    handleCopyPathFromMenu,
     handleDeleteFromMenu,
     handleOpenMenu,
+    handleRevealFromMenu,
     handleRenameFromMenu,
     menuRef,
   }

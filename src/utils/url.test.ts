@@ -1,5 +1,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { normalizeExternalUrl, openExternalUrl } from './url'
+import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener'
+import {
+  copyLocalPath,
+  normalizeExternalUrl,
+  openExternalUrl,
+  openLocalFile,
+  revealLocalPath,
+} from './url'
+
+const originalClipboard = navigator.clipboard
+
+function setClipboard(writeText: (value: string) => Promise<void>) {
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText },
+  })
+}
 
 describe('normalizeExternalUrl', () => {
   it('keeps valid http URLs and normalizes bare domains', () => {
@@ -16,6 +32,7 @@ describe('normalizeExternalUrl', () => {
 
 describe('openExternalUrl', () => {
   afterEach(() => {
+    vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
 
@@ -25,5 +42,41 @@ describe('openExternalUrl', () => {
     await openExternalUrl('https://exa mple.com')
 
     expect(open).not.toHaveBeenCalled()
+  })
+})
+
+describe('local file actions', () => {
+  afterEach(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: originalClipboard,
+    })
+    vi.unstubAllGlobals()
+    vi.clearAllMocks()
+  })
+
+  it('opens local paths through the Tauri opener plugin', async () => {
+    vi.stubGlobal('isTauri', true)
+
+    await openLocalFile('/vault/attachments/report.pdf')
+
+    expect(openPath).toHaveBeenCalledWith('/vault/attachments/report.pdf')
+  })
+
+  it('reveals local paths through the Tauri opener plugin', async () => {
+    vi.stubGlobal('isTauri', true)
+
+    await revealLocalPath('/vault/notes/project.md')
+
+    expect(revealItemInDir).toHaveBeenCalledWith('/vault/notes/project.md')
+  })
+
+  it('copies local paths to the clipboard', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    setClipboard(writeText)
+
+    await copyLocalPath('/vault/Folder With Spaces/项目.md')
+
+    expect(writeText).toHaveBeenCalledWith('/vault/Folder With Spaces/项目.md')
   })
 })

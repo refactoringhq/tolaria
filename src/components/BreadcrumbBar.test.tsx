@@ -135,6 +135,26 @@ describe('BreadcrumbBar — archive/unarchive', () => {
   })
 })
 
+describe('BreadcrumbBar — file actions', () => {
+  it('reveals the current file from the breadcrumb toolbar', () => {
+    const onRevealFile = vi.fn()
+    render(<BreadcrumbBar entry={baseEntry} {...defaultProps} onRevealFile={onRevealFile} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reveal in Finder' }))
+
+    expect(onRevealFile).toHaveBeenCalledWith('/vault/note/test.md')
+  })
+
+  it('copies the current file path from the breadcrumb toolbar', () => {
+    const onCopyFilePath = vi.fn()
+    render(<BreadcrumbBar entry={baseEntry} {...defaultProps} onCopyFilePath={onCopyFilePath} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy file path' }))
+
+    expect(onCopyFilePath).toHaveBeenCalledWith('/vault/note/test.md')
+  })
+})
+
 describe('BreadcrumbBar — organized shortcut hint', () => {
   it('shows Cmd+E on the organized toggle tooltip', async () => {
     render(<BreadcrumbBar entry={baseEntry} {...defaultProps} onToggleOrganized={vi.fn()} />)

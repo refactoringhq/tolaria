@@ -69,6 +69,9 @@ interface EditorProps {
   noteListFilter?: { type: string | null; query: string }
   onToggleFavorite?: (path: string) => void
   onToggleOrganized?: (path: string) => void
+  onRevealFile?: (path: string) => void
+  onCopyFilePath?: (path: string) => void
+  onOpenExternalFile?: (path: string) => void
   onDeleteNote?: (path: string) => void
   onArchiveNote?: (path: string) => void
   onUnarchiveNote?: (path: string) => void
@@ -299,6 +302,9 @@ function EditorLayout({
   handleEditorChange,
   onToggleFavorite,
   onToggleOrganized,
+  onRevealFile,
+  onCopyFilePath,
+  onOpenExternalFile,
   onDeleteNote,
   onArchiveNote,
   onUnarchiveNote,
@@ -356,6 +362,9 @@ function EditorLayout({
   handleEditorChange: () => void
   onToggleFavorite?: (path: string) => void
   onToggleOrganized?: (path: string) => void
+  onRevealFile?: (path: string) => void
+  onCopyFilePath?: (path: string) => void
+  onOpenExternalFile?: (path: string) => void
   onDeleteNote?: (path: string) => void
   onArchiveNote?: (path: string) => void
   onUnarchiveNote?: (path: string) => void
@@ -398,7 +407,14 @@ function EditorLayout({
         {tabs.length === 0
           ? <EditorEmptyState locale={locale} />
           : activeBinaryTab
-            ? <FilePreview entry={activeBinaryTab.entry} />
+            ? (
+                <FilePreview
+                  entry={activeBinaryTab.entry}
+                  onCopyFilePath={onCopyFilePath}
+                  onOpenExternalFile={onOpenExternalFile}
+                  onRevealFile={onRevealFile}
+                />
+              )
             : <EditorContent
               activeTab={activeTab}
               isLoadingNewTab={isLoadingNewTab}
@@ -422,6 +438,8 @@ function EditorLayout({
               onEditorChange={handleEditorChange}
               onToggleFavorite={onToggleFavorite}
               onToggleOrganized={onToggleOrganized}
+              onRevealFile={onRevealFile}
+              onCopyFilePath={onCopyFilePath}
               onDeleteNote={onDeleteNote}
               onArchiveNote={onArchiveNote}
               onUnarchiveNote={onUnarchiveNote}
@@ -486,7 +504,8 @@ export const Editor = memo(function Editor(props: EditorProps) {
     onUpdateFrontmatter, onDeleteProperty, onAddProperty, onCreateMissingType, onCreateAndOpenNote, onInitializeProperties,
     showAIChat, onToggleAIChat,
     vaultPath, noteList, noteListFilter,
-    onToggleFavorite, onToggleOrganized, onDeleteNote, onArchiveNote, onUnarchiveNote,
+    onToggleFavorite, onToggleOrganized, onRevealFile, onCopyFilePath, onOpenExternalFile,
+    onDeleteNote, onArchiveNote, onUnarchiveNote,
     onContentChange, onSave, onRenameFilename,
     noteLayout, onToggleNoteLayout,
     onFileCreated, onFileModified, onVaultChanged,
@@ -543,6 +562,9 @@ export const Editor = memo(function Editor(props: EditorProps) {
       handleEditorChange={handleEditorChange}
       onToggleFavorite={onToggleFavorite}
       onToggleOrganized={onToggleOrganized}
+      onRevealFile={onRevealFile}
+      onCopyFilePath={onCopyFilePath}
+      onOpenExternalFile={onOpenExternalFile}
       onDeleteNote={onDeleteNote}
       onArchiveNote={onArchiveNote}
       onUnarchiveNote={onUnarchiveNote}
