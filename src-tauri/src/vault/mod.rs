@@ -35,7 +35,7 @@ pub use title_sync::{sync_title_on_open, SyncAction};
 pub use trash::{batch_delete_notes, delete_note};
 pub use views::{
     delete_view, evaluate_view, save_view, scan_views, FilterCondition, FilterGroup, FilterNode,
-    FilterOp, ViewDefinition, ViewFile,
+    FilterOp, ViewDefinition, ViewFile, ViewKind,
 };
 
 use file::read_file_metadata;

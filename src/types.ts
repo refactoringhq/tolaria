@@ -210,6 +210,8 @@ export interface FilterCondition {
 export type FilterGroup = { all: FilterNode[] } | { any: FilterNode[] }
 export type FilterNode = FilterCondition | FilterGroup
 
+export type ViewKind = 'list' | 'kanban'
+
 export interface ViewDefinition {
   name: string
   icon: string | null
@@ -217,6 +219,8 @@ export interface ViewDefinition {
   sort: string | null
   listPropertiesDisplay?: string[]
   filters: FilterGroup
+  /** UI rendering mode. Absent or 'list' = the classic note list. 'kanban' = a board grouped by status. */
+  kind?: ViewKind
 }
 
 export interface ViewFile {

@@ -12,6 +12,7 @@ import {
   useSidebarSections,
 } from './sidebar/sidebarHooks'
 import {
+  BoardsSection,
   ContextMenuOverlay,
   CustomizeOverlay,
   FavoritesSection,
@@ -39,6 +40,7 @@ interface SidebarProps {
   onReorderFavorites?: (orderedPaths: string[]) => void
   views?: ViewFile[]
   onCreateView?: () => void
+  onCreateBoard?: () => void
   onEditView?: (filename: string) => void
   onDeleteView?: (filename: string) => void
   folders?: FolderNode[]
@@ -66,6 +68,7 @@ export const Sidebar = memo(function Sidebar({
   onReorderFavorites,
   views = [],
   onCreateView,
+  onCreateBoard,
   onEditView,
   onDeleteView,
   folders = [],
@@ -118,7 +121,10 @@ export const Sidebar = memo(function Sidebar({
   }
 
   const hasFavorites = entries.some((entry) => entry.favorite && !entry.archived)
-  const hasViews = views.length > 0 || !!onCreateView
+  const listViews = views.filter((view) => (view.definition.kind ?? 'list') === 'list')
+  const boardViews = views.filter((view) => view.definition.kind === 'kanban')
+  const hasViews = listViews.length > 0 || !!onCreateView
+  const hasBoards = boardViews.length > 0 || !!onCreateBoard
 
   return (
     <aside className="flex h-full flex-col overflow-hidden border-r border-[var(--sidebar-border)] bg-sidebar text-sidebar-foreground">
@@ -153,6 +159,19 @@ export const Sidebar = memo(function Sidebar({
             collapsed={groupCollapsed.views}
             onToggle={() => toggleGroup('views')}
             onCreateView={onCreateView}
+            onEditView={onEditView}
+            onDeleteView={onDeleteView}
+            entries={entries}
+          />
+        )}
+        {hasBoards && (
+          <BoardsSection
+            views={views}
+            selection={selection}
+            onSelect={onSelect}
+            collapsed={groupCollapsed.boards}
+            onToggle={() => toggleGroup('boards')}
+            onCreateBoard={onCreateBoard}
             onEditView={onEditView}
             onDeleteView={onDeleteView}
             entries={entries}
