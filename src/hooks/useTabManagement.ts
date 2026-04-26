@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { isTauri, mockInvoke } from '../mock-tauri'
 import type { VaultEntry } from '../types'
+import { isImagePath } from '../utils/fileKind'
 import {
   beginNoteOpenTrace,
   failNoteOpenTrace,
@@ -457,12 +458,20 @@ async function navigateToEntry(options: {
     onUnreadableNoteContent,
   } = options
 
-  if (entry.fileKind === 'binary') {
+  if (entry.fileKind === 'binary' && !isImagePath(entry.path)) {
     failNoteOpenTrace(entry.path, 'binary-entry')
     return
   }
   if (!forceReload && isAlreadyViewingPath(tabsRef, activeTabPathRef, entry.path)) {
     syncActiveTabPath(activeTabPathRef, setActiveTabPath, entry.path)
+    finishNoteOpenTrace(entry.path)
+    return
+  }
+
+  // Image files need no text content — skip disk read and display directly.
+  if (isImagePath(entry.path)) {
+    syncActiveTabPath(activeTabPathRef, setActiveTabPath, entry.path)
+    setSingleTab(tabsRef, setTabs, { entry, content: '' })
     finishNoteOpenTrace(entry.path)
     return
   }

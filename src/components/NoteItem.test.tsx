@@ -19,11 +19,11 @@ describe('NoteItem', () => {
     openExternalUrl.mockClear()
   })
 
-  it('renders binary files as non-clickable muted rows', () => {
+  it('renders non-image binary files as non-clickable muted rows', () => {
     const binaryEntry = makeEntry({
-      path: '/vault/photo.png',
-      filename: 'photo.png',
-      title: 'photo.png',
+      path: '/vault/data.bin',
+      filename: 'data.bin',
+      title: 'data.bin',
       fileKind: 'binary',
     })
     const onClickNote = vi.fn()
@@ -36,6 +36,22 @@ describe('NoteItem', () => {
 
     fireEvent.click(item)
     expect(onClickNote).not.toHaveBeenCalled()
+  })
+
+  it('renders image files as clickable rows', () => {
+    const imageEntry = makeEntry({
+      path: '/vault/photo.png',
+      filename: 'photo.png',
+      title: 'photo.png',
+      fileKind: 'binary',
+    })
+    const onClickNote = vi.fn()
+
+    render(<NoteItem entry={imageEntry} isSelected={false} typeEntryMap={{}} onClickNote={onClickNote} />)
+
+    const item = screen.getByText('photo.png').closest('div')!
+    fireEvent.click(item)
+    expect(onClickNote).toHaveBeenCalled()
   })
 
   it('renders text files as clickable rows', () => {

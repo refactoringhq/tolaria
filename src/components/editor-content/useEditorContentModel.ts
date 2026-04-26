@@ -5,6 +5,7 @@ import type { AppLocale } from '../../lib/i18n'
 import type { NoteLayout, NoteStatus, VaultEntry } from '../../types'
 import { useEditorTheme } from '../../hooks/useTheme'
 import { deriveEditorContentState } from './editorContentState'
+import { isImagePath } from '../../utils/fileKind'
 
 export interface Tab {
   entry: VaultEntry
@@ -72,7 +73,8 @@ export function useEditorContentModel(props: EditorContentProps) {
     rawMode,
     activeStatus: props.activeStatus,
   })
-  const showEditor = !diffMode && showContentEditor
+  const isImageFile = activeTab ? isImagePath(activeTab.entry.path) : false
+  const showEditor = !diffMode && showContentEditor && !isImageFile
 
   const breadcrumbBarRef = useRef<HTMLDivElement | null>(null)
 
@@ -83,6 +85,7 @@ export function useEditorContentModel(props: EditorContentProps) {
     isDeletedPreview,
     effectiveRawMode,
     forceRawMode: isNonMarkdownText || isDeletedPreview,
+    isImageFile,
     showEditor,
     path,
     breadcrumbBarRef,

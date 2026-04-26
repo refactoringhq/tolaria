@@ -4,8 +4,9 @@ import { cn } from '@/lib/utils'
 import {
   Wrench, Flask, Target, ArrowsClockwise,
   Users, CalendarBlank, Tag, FileText, StackSimple,
-  File, FileDashed,
+  File, FileDashed, Image,
 } from '@phosphor-icons/react'
+import { isImagePath } from '../utils/fileKind'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 import { resolveIcon } from '../utils/iconRegistry'
 import { relativeDate, getDisplayDate } from '../utils/noteListHelpers'
@@ -190,7 +191,7 @@ function InteractiveNoteDetails({
 }
 
 function resolveNoteTypeIcon(entry: VaultEntry, customIcon?: string | null): ComponentType<SVGAttributes<SVGSVGElement>> {
-  if (entry.fileKind && entry.fileKind !== 'markdown') return getFileKindIcon(entry.fileKind)
+  if (entry.fileKind && entry.fileKind !== 'markdown') return getFileKindIcon(entry.path, entry.fileKind)
   return getTypeIcon(entry.isA, customIcon)
 }
 
@@ -287,9 +288,9 @@ function noteItemStyle(isSelected: boolean, isMultiSelected: boolean, typeColor:
   return base
 }
 
-function getFileKindIcon(fileKind: string | undefined): ComponentType<SVGAttributes<SVGSVGElement>> {
+function getFileKindIcon(path: string, fileKind: string | undefined): ComponentType<SVGAttributes<SVGSVGElement>> {
   if (fileKind === 'text') return File
-  if (fileKind === 'binary') return FileDashed
+  if (fileKind === 'binary') return isImagePath(path) ? Image : FileDashed
   return FileText
 }
 
@@ -439,7 +440,7 @@ function NoteItemContent({
 }
 
 export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlighted = false, noteStatus = 'clean', changeStatus, typeEntryMap, allEntries, displayPropsOverride, onClickNote, onPrefetch, onContextMenu }: NoteItemProps) {
-  const isBinary = entry.fileKind === 'binary'
+  const isBinary = entry.fileKind === 'binary' && !isImagePath(entry.path)
   const te = typeEntryMap[entry.isA ?? '']
   const displayProps = resolveDisplayProps(entry, typeEntryMap, displayPropsOverride)
   const typeColor = isBinary ? 'var(--muted-foreground)' : getTypeColor(entry.isA ?? 'Note', te?.color)
