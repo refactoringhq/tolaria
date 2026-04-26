@@ -1537,7 +1537,7 @@ function App() {
           )}
           {activeKanbanView && (
             <div
-              className={isKanbanCardActive ? 'flex flex-[3] flex-col overflow-hidden border-r border-border' : 'flex flex-1 flex-col overflow-hidden'}
+              className={isKanbanCardActive ? 'relative flex flex-[3] flex-col overflow-hidden border-r border-border' : 'flex flex-1 flex-col overflow-hidden'}
               style={isKanbanCardActive ? { minWidth: 480 } : undefined}
             >
               <KanbanBoard
@@ -1547,6 +1547,19 @@ function App() {
                 onUpdateStatus={handleKanbanUpdateStatus}
                 emptyMessage={kanbanEmptyMessage}
               />
+              {isKanbanCardActive && (
+                <button
+                  type="button"
+                  onClick={handleKanbanCloseSplit}
+                  className="absolute z-50 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-l-md border border-r-0 border-border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
+                  style={{ top: '50%', right: 0 }}
+                  aria-label="Close note panel and return to full board"
+                  title="Return to full board"
+                  data-testid="kanban-close-split"
+                >
+                  <CaretDoubleRight size={14} />
+                </button>
+              )}
             </div>
           )}
           {!activeKanbanView && noteListVisible && (
@@ -1562,20 +1575,7 @@ function App() {
             </>
           )}
           {(!activeKanbanView || isKanbanCardActive) && (
-          <div className={`app__editor${aiActivity.highlightElement === 'editor' || aiActivity.highlightElement === 'tab' ? ' ai-highlight' : ''}`} style={isKanbanCardActive ? { flex: '2 1 0', minWidth: 360, position: 'relative' } : undefined}>
-            {isKanbanCardActive && (
-              <button
-                type="button"
-                onClick={handleKanbanCloseSplit}
-                className="absolute z-50 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                style={{ top: 12, left: 8 }}
-                aria-label="Close note panel and return to full board"
-                title="Return to full board"
-                data-testid="kanban-close-split"
-              >
-                <CaretDoubleRight size={16} />
-              </button>
-            )}
+          <div className={`app__editor${aiActivity.highlightElement === 'editor' || aiActivity.highlightElement === 'tab' ? ' ai-highlight' : ''}`} style={isKanbanCardActive ? { flex: '2 1 0', minWidth: 360 } : undefined}>
             <Editor
               tabs={notes.tabs}
               activeTabPath={notes.activeTabPath}
