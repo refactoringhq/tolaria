@@ -249,6 +249,10 @@ function SettingsPanelInner({
   const t = createTranslator(draftLocale)
 
   useEffect(() => {
+    setDraft(createSettingsDraft(settings, explicitOrganizationEnabled))
+  }, [explicitOrganizationEnabled, settings])
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       const focusTarget = panelRef.current?.querySelector<HTMLElement>('[data-settings-autofocus="true"]')
       focusTarget?.focus()

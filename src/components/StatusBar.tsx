@@ -15,16 +15,18 @@ import type { VaultOption } from './status-bar/types'
 export type { VaultOption } from './status-bar/types'
 
 const STACKED_STATUS_BAR_MAX_WIDTH = 1040
-const COMPACT_STATUS_BAR_MAX_WIDTH = 820
+const COMPACT_STATUS_BAR_MAX_WIDTH = 900
 
 function getWindowWidth() {
   return typeof window === 'undefined' ? Number.POSITIVE_INFINITY : window.innerWidth
 }
 
 function getStatusBarLayout(windowWidth: number) {
+  const compact = windowWidth <= COMPACT_STATUS_BAR_MAX_WIDTH
+
   return {
-    compact: windowWidth <= COMPACT_STATUS_BAR_MAX_WIDTH,
-    stacked: windowWidth <= STACKED_STATUS_BAR_MAX_WIDTH,
+    compact,
+    stacked: !compact && windowWidth <= STACKED_STATUS_BAR_MAX_WIDTH,
   }
 }
 
@@ -154,7 +156,7 @@ function StatusBarFooter({
         alignItems: stacked ? 'flex-start' : 'center',
         justifyContent: stacked ? 'flex-start' : 'space-between',
         rowGap: stacked ? 4 : 0,
-        columnGap: 12,
+        columnGap: compact ? 8 : 12,
         background: 'var(--sidebar)',
         borderTop: '1px solid var(--border)',
         padding: stacked ? '4px 8px' : '0 8px',

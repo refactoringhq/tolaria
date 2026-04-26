@@ -353,21 +353,42 @@ describe('StatusBar', () => {
   })
 
   it('collapses status labels to icon-first controls at very narrow widths', () => {
-    setWindowWidth(760)
+    setWindowWidth(880)
     renderDenseStatusBar()
 
     expect(screen.getByTestId('status-bar')).toHaveStyle({
-      flexWrap: 'wrap',
-      height: 'auto',
+      flexWrap: 'nowrap',
+      height: '30px',
     })
     expect(screen.getByTestId('status-commit-push')).toBeInTheDocument()
     expect(screen.getByTestId('status-pulse')).toBeInTheDocument()
     expect(screen.getByTestId('status-feedback')).toBeInTheDocument()
+    expect(screen.getByTestId('status-build-number')).toBeInTheDocument()
+    expect(screen.getByTestId('status-claude-code')).toBeInTheDocument()
     expect(screen.queryByText('Commit')).not.toBeInTheDocument()
     expect(screen.queryByText('History')).not.toBeInTheDocument()
     expect(screen.queryByText('Contribute')).not.toBeInTheDocument()
     expect(screen.queryByText('No remote')).not.toBeInTheDocument()
     expect(screen.queryByText('MCP')).not.toBeInTheDocument()
+    expect(screen.queryByText('b281')).not.toBeInTheDocument()
+    expect(screen.queryByText('Claude Code missing')).not.toBeInTheDocument()
+  })
+
+  it('hides the active AI agent label in compact status layout', () => {
+    setWindowWidth(880)
+    render(
+      <StatusBar
+        noteCount={100}
+        vaultPath="/Users/luca/Laputa"
+        vaults={vaults}
+        onSwitchVault={vi.fn()}
+        aiAgentsStatus={installedAiAgentsStatus}
+        defaultAiAgent="claude_code"
+      />
+    )
+
+    expect(screen.getByTestId('status-ai-agents')).toBeInTheDocument()
+    expect(screen.queryByText('Claude')).not.toBeInTheDocument()
   })
 
   it('does not show Changes badge when modifiedCount is 0', () => {

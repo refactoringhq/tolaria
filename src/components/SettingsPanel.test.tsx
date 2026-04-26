@@ -70,6 +70,24 @@ describe('SettingsPanel', () => {
     expect(screen.getByText('Sync & Updates')).toBeInTheDocument()
   })
 
+  it('updates the draft language when stored settings finish loading', () => {
+    const { rerender } = render(
+      <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
+    )
+
+    rerender(
+      <SettingsPanel
+        open={true}
+        settings={{ ...emptySettings, ui_language: 'zh-Hans' }}
+        onSave={onSave}
+        onClose={onClose}
+      />
+    )
+
+    expect(screen.getByText('设置')).toBeInTheDocument()
+    expect(screen.queryByText('Settings')).not.toBeInTheDocument()
+  })
+
   it('calls onSave with stable defaults on save', () => {
     render(
       <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />

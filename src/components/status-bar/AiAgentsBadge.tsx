@@ -38,6 +38,7 @@ interface AiAgentsBadgeProps {
   defaultAgent: AiAgentId
   onSetDefaultAgent?: (agent: AiAgentId) => void
   onRestoreGuidance?: () => void
+  compact?: boolean
 }
 
 function badgeTooltip(
@@ -93,6 +94,48 @@ function canSwitchAgents(
   defaultAgent: AiAgentId,
 ): boolean {
   return installedAgents.some((definition) => definition.id !== defaultAgent)
+}
+
+function hasAiAgentWarning(
+  statuses: AiAgentsStatus,
+  defaultAgent: AiAgentId,
+  guidanceStatus?: VaultAiGuidanceStatus,
+): boolean {
+  return !hasAnyInstalledAiAgent(statuses)
+    || !isAiAgentInstalled(statuses, defaultAgent)
+    || !!(guidanceStatus && vaultAiGuidanceNeedsRestore(guidanceStatus))
+}
+
+function canShowSwitcherCue(statuses: AiAgentsStatus, defaultAgent: AiAgentId): boolean {
+  return canSwitchAgents(installedAgentDefinitions(statuses), defaultAgent)
+}
+
+function triggerButtonClassName(compact: boolean): string {
+  return compact
+    ? 'h-6 w-6 rounded-sm p-0 text-[11px] font-medium'
+    : 'h-6 px-2 text-[11px] font-medium'
+}
+
+function CompactSeparator({ compact }: { compact: boolean }) {
+  if (compact) return null
+  return <span style={SEP_STYLE}>|</span>
+}
+
+function TriggerLabel({ compact, defaultAgent }: { compact: boolean; defaultAgent: AiAgentId }) {
+  if (compact) return null
+  return triggerLabel(defaultAgent)
+}
+
+function TriggerStateIcon({
+  showWarning,
+  showSwitcherCue,
+}: {
+  showWarning: boolean
+  showSwitcherCue: boolean
+}) {
+  if (showWarning) return <AlertTriangle size={10} style={{ marginLeft: 2 }} />
+  if (showSwitcherCue) return <ChevronsUpDown size={10} style={{ marginLeft: 2 }} />
+  return null
 }
 
 function GuidanceMenuSection({
@@ -184,19 +227,17 @@ export function AiAgentsBadge({
   defaultAgent,
   onSetDefaultAgent,
   onRestoreGuidance,
+  compact = false,
 }: AiAgentsBadgeProps) {
-  const hasInstalledAgent = hasAnyInstalledAiAgent(statuses)
   const selectedAgentReady = isAiAgentInstalled(statuses, defaultAgent)
-  const showWarning = !hasInstalledAgent
-    || !selectedAgentReady
-    || !!(guidanceStatus && vaultAiGuidanceNeedsRestore(guidanceStatus))
-  const showSwitcherCue = canSwitchAgents(installedAgentDefinitions(statuses), defaultAgent)
+  const showWarning = hasAiAgentWarning(statuses, defaultAgent, guidanceStatus)
+  const showSwitcherCue = !showWarning && canShowSwitcherCue(statuses, defaultAgent)
 
   if (isAiAgentsStatusChecking(statuses)) return null
 
   return (
     <>
-      <span style={SEP_STYLE}>|</span>
+      <CompactSeparator compact={compact} />
       <DropdownMenu>
         <ActionTooltip copy={{ label: badgeTooltip(statuses, defaultAgent, guidanceStatus) }} side="top">
           <DropdownMenuTrigger asChild={true}>
@@ -204,15 +245,14 @@ export function AiAgentsBadge({
               type="button"
               variant="ghost"
               size="xs"
-              className="h-6 px-2 text-[11px] font-medium"
+              className={triggerButtonClassName(compact)}
               aria-label="Open AI agent options"
               data-testid="status-ai-agents"
             >
               <span style={{ ...ICON_STYLE, color: showWarning ? 'var(--accent-orange)' : 'var(--muted-foreground)' }}>
                 <Sparkle size={13} weight="fill" />
-                {triggerLabel(defaultAgent)}
-                {showWarning && <AlertTriangle size={10} style={{ marginLeft: 2 }} />}
-                {!showWarning && showSwitcherCue && <ChevronsUpDown size={10} style={{ marginLeft: 2 }} />}
+                <TriggerLabel compact={compact} defaultAgent={defaultAgent} />
+                <TriggerStateIcon showWarning={showWarning} showSwitcherCue={showSwitcherCue} />
               </span>
             </Button>
           </DropdownMenuTrigger>

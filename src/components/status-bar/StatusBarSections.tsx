@@ -118,7 +118,7 @@ function BuildNumberButton({
       >
         <span style={ICON_STYLE}>
           <Package size={13} />
-          {buildNumber ?? 'b?'}
+          {compact ? null : buildNumber ?? 'b?'}
         </span>
       </Button>
     </ActionTooltip>
@@ -153,6 +153,7 @@ function StatusBarAiBadge({
         defaultAgent={defaultAiAgent}
         onSetDefaultAgent={onSetDefaultAiAgent}
         onRestoreGuidance={onRestoreVaultAiGuidance}
+        compact={compact}
       />
     )
   }
