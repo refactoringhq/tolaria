@@ -62,6 +62,10 @@ export function EmojiPicker({ onSelect, onClose }: EmojiPickerProps) {
           placeholder="Search emoji by name..."
           value={search}
           onChange={e => setSearch(e.target.value)}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
           data-testid="emoji-picker-search"
         />
       </div>

@@ -434,6 +434,15 @@ export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange
     _wikilinkEntriesRef.current = entries
   }, [entries])
 
+  useEffect(() => {
+    const el = containerRef.current?.querySelector<HTMLElement>('[contenteditable]')
+    if (!el) return
+    el.setAttribute('spellcheck', 'false')
+    el.setAttribute('autocorrect', 'off')
+    el.setAttribute('autocomplete', 'off')
+    el.setAttribute('autocapitalize', 'off')
+  }, [])
+
   useSeedBlockNoteTableBridge(editor)
 
   const typeEntryMap = useMemo(() => buildTypeEntryMap(entries), [entries])

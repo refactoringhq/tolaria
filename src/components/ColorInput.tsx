@@ -91,6 +91,10 @@ export function ColorEditableValue({ value, isEditing, onStartEdit, onSave, onCa
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={() => onSave(editValue)}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
           autoFocus
           data-testid="color-text-input"
         />

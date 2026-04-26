@@ -136,6 +136,10 @@ function CommandPaletteInput({
       autoCapitalize="off"
       autoComplete="off"
       onChange={(event) => onChange(event.target.value)}
+      autoComplete="off"
+      autoCorrect="off"
+      autoCapitalize="off"
+      spellCheck={false}
     />
   )
 }
