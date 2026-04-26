@@ -1284,6 +1284,10 @@ function App() {
     },
     [notes, vault, setToastMessage],
   )
+  const isKanbanCardActive = useMemo(() => {
+    if (!activeKanbanView || !notes.activeTabPath) return false
+    return kanbanBoardEntries.some((entry) => entry.path === notes.activeTabPath)
+  }, [activeKanbanView, notes.activeTabPath, kanbanBoardEntries])
   const toggleDiffCommand = useCallback(() => diffToggleRef.current(), [])
   const toggleRawEditorCommand = useMemo(
     () => canToggleRichEditor ? () => rawToggleRef.current() : undefined,
@@ -1522,7 +1526,10 @@ function App() {
             </>
           )}
           {activeKanbanView && (
-            <div className="flex flex-1 flex-col overflow-hidden">
+            <div
+              className={isKanbanCardActive ? 'flex flex-[3] flex-col overflow-hidden border-r border-border' : 'flex flex-1 flex-col overflow-hidden'}
+              style={isKanbanCardActive ? { minWidth: 480 } : undefined}
+            >
               <KanbanBoard
                 entries={kanbanBoardEntries}
                 selectedNotePath={activeTab?.entry?.path ?? null}
@@ -1544,8 +1551,8 @@ function App() {
               <ResizeHandle onResize={layout.handleNoteListResize} />
             </>
           )}
-          {!activeKanbanView && (
-          <div className={`app__editor${aiActivity.highlightElement === 'editor' || aiActivity.highlightElement === 'tab' ? ' ai-highlight' : ''}`}>
+          {(!activeKanbanView || isKanbanCardActive) && (
+          <div className={`app__editor${aiActivity.highlightElement === 'editor' || aiActivity.highlightElement === 'tab' ? ' ai-highlight' : ''}`} style={isKanbanCardActive ? { flex: '2 1 0', minWidth: 360 } : undefined}>
             <Editor
               tabs={notes.tabs}
               activeTabPath={notes.activeTabPath}
