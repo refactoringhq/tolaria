@@ -3,10 +3,6 @@ import { describe, expect, it, vi } from 'vitest'
 import type { VaultEntry } from '../../types'
 import { KanbanBoard } from './KanbanBoard'
 
-vi.mock('../../hooks/frontmatterOps', () => ({
-  runFrontmatterAndApply: vi.fn().mockResolvedValue('content'),
-}))
-
 function makeEntry(overrides: Partial<VaultEntry> = {}): VaultEntry {
   return {
     path: 'notes/foo.md',
@@ -49,10 +45,7 @@ function renderBoard(entries: VaultEntry[], extra: Partial<Parameters<typeof Kan
       entries={entries}
       selectedNotePath={null}
       onSelectNote={vi.fn()}
-      updateTab={vi.fn()}
-      updateEntry={vi.fn()}
-      setToastMessage={vi.fn()}
-      getEntry={vi.fn()}
+      onUpdateStatus={vi.fn().mockResolvedValue(undefined)}
       {...extra}
     />,
   )

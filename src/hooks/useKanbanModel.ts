@@ -8,19 +8,13 @@ import {
   statusKeyOf,
   type KanbanStatusDef,
 } from '../utils/kanbanStatuses'
-import { runFrontmatterAndApply } from './frontmatterOps'
 
 export interface KanbanColumn {
   status: KanbanStatusDef
   cards: VaultEntry[]
 }
 
-export interface UseKanbanModelDeps {
-  updateTab: (path: string, content: string) => void
-  updateEntry: (path: string, patch: Partial<VaultEntry>) => void
-  setToastMessage: (message: string | null) => void
-  getEntry?: (path: string) => VaultEntry | undefined
-}
+export type UpdateStatusFn = (notePath: string, newStatus: string) => Promise<unknown> | void
 
 function compareEntriesByModifiedDesc(a: VaultEntry, b: VaultEntry): number {
   return (b.modifiedAt ?? 0) - (a.modifiedAt ?? 0)
@@ -47,7 +41,7 @@ export function groupByStatus(entries: VaultEntry[]): KanbanColumn[] {
   }))
 }
 
-export function useKanbanModel(entries: VaultEntry[], deps: UseKanbanModelDeps) {
+export function useKanbanModel(entries: VaultEntry[], onUpdateStatus: UpdateStatusFn) {
   const columns = useMemo<KanbanColumn[]>(() => groupByStatus(entries), [entries])
 
   const handleDragEnd = useCallback(
@@ -59,22 +53,9 @@ export function useKanbanModel(entries: VaultEntry[], deps: UseKanbanModelDeps) 
       if (!entry) return
       const currentStatus = statusKeyOf(entry.status)
       if (currentStatus === targetStatus) return
-
-      await runFrontmatterAndApply(
-        'update',
-        notePath,
-        'status',
-        targetStatus,
-        {
-          updateTab: deps.updateTab,
-          updateEntry: deps.updateEntry,
-          toast: deps.setToastMessage,
-          getEntry: deps.getEntry,
-        },
-        { silent: true },
-      )
+      await onUpdateStatus(notePath, targetStatus)
     },
-    [entries, deps],
+    [entries, onUpdateStatus],
   )
 
   return { columns, handleDragEnd }

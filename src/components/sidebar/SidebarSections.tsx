@@ -39,6 +39,63 @@ export interface SidebarSectionProps {
   onRenameCancel: () => void
 }
 
+interface ViewListSectionProps {
+  label: string
+  views: ViewFile[]
+  selection: SidebarSelection
+  onSelect: (selection: SidebarSelection) => void
+  collapsed: boolean
+  onToggle: () => void
+  onCreate?: () => void
+  onEditView?: (filename: string) => void
+  onDeleteView?: (filename: string) => void
+  entries: VaultEntry[]
+  testId?: string
+}
+
+function ViewListSection({
+  label,
+  views,
+  selection,
+  onSelect,
+  collapsed,
+  onToggle,
+  onCreate,
+  onEditView,
+  onDeleteView,
+  entries,
+  testId,
+}: ViewListSectionProps) {
+  return (
+    <div className="border-b border-border" style={{ padding: '0 6px' }} data-testid={testId}>
+      <SidebarGroupHeader label={label} collapsed={collapsed} onToggle={onToggle}>
+        {onCreate && (
+          <Plus
+            size={12}
+            className="text-muted-foreground hover:text-foreground"
+            onClick={(event) => { event.stopPropagation(); onCreate() }}
+          />
+        )}
+      </SidebarGroupHeader>
+      {!collapsed && (
+        <div style={{ paddingBottom: 4 }}>
+          {views.map((view) => (
+            <SidebarViewItem
+              key={view.filename}
+              view={view}
+              isActive={isSelectionActive(selection, { kind: 'view', filename: view.filename })}
+              onSelect={() => onSelect({ kind: 'view', filename: view.filename })}
+              onEditView={onEditView}
+              onDeleteView={onDeleteView}
+              entries={entries}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function ViewsSection({
   views,
   selection,
@@ -60,33 +117,60 @@ export function ViewsSection({
   onDeleteView?: (filename: string) => void
   entries: VaultEntry[]
 }) {
+  const listViews = views.filter((view) => (view.definition.kind ?? 'list') === 'list')
   return (
-    <div className="border-b border-border" style={{ padding: '0 6px' }}>
-      <SidebarGroupHeader label="VIEWS" collapsed={collapsed} onToggle={onToggle}>
-        {onCreateView && (
-          <Plus
-            size={12}
-            className="text-muted-foreground hover:text-foreground"
-            onClick={(event) => { event.stopPropagation(); onCreateView() }}
-          />
-        )}
-      </SidebarGroupHeader>
-      {!collapsed && (
-        <div style={{ paddingBottom: 4 }}>
-          {views.map((view) => (
-            <SidebarViewItem
-              key={view.filename}
-              view={view}
-              isActive={isSelectionActive(selection, { kind: 'view', filename: view.filename })}
-              onSelect={() => onSelect({ kind: 'view', filename: view.filename })}
-              onEditView={onEditView}
-              onDeleteView={onDeleteView}
-              entries={entries}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+    <ViewListSection
+      label="VIEWS"
+      views={listViews}
+      selection={selection}
+      onSelect={onSelect}
+      collapsed={collapsed}
+      onToggle={onToggle}
+      onCreate={onCreateView}
+      onEditView={onEditView}
+      onDeleteView={onDeleteView}
+      entries={entries}
+      testId="sidebar-views-section"
+    />
+  )
+}
+
+export function BoardsSection({
+  views,
+  selection,
+  onSelect,
+  collapsed,
+  onToggle,
+  onCreateBoard,
+  onEditView,
+  onDeleteView,
+  entries,
+}: {
+  views: ViewFile[]
+  selection: SidebarSelection
+  onSelect: (selection: SidebarSelection) => void
+  collapsed: boolean
+  onToggle: () => void
+  onCreateBoard?: () => void
+  onEditView?: (filename: string) => void
+  onDeleteView?: (filename: string) => void
+  entries: VaultEntry[]
+}) {
+  const boardViews = views.filter((view) => view.definition.kind === 'kanban')
+  return (
+    <ViewListSection
+      label="BOARDS"
+      views={boardViews}
+      selection={selection}
+      onSelect={onSelect}
+      collapsed={collapsed}
+      onToggle={onToggle}
+      onCreate={onCreateBoard}
+      onEditView={onEditView}
+      onDeleteView={onDeleteView}
+      entries={entries}
+      testId="sidebar-boards-section"
+    />
   )
 }
 

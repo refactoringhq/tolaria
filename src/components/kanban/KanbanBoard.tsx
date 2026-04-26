@@ -8,13 +8,14 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import type { VaultEntry } from '../../types'
-import { useKanbanModel, type UseKanbanModelDeps } from '../../hooks/useKanbanModel'
+import { useKanbanModel, type UpdateStatusFn } from '../../hooks/useKanbanModel'
 import { KanbanColumn } from './KanbanColumn'
 
-interface KanbanBoardProps extends UseKanbanModelDeps {
+interface KanbanBoardProps {
   entries: VaultEntry[]
   selectedNotePath: string | null
   onSelectNote: (entry: VaultEntry, event: ReactMouseEvent) => void
+  onUpdateStatus: UpdateStatusFn
   emptyMessage?: string
 }
 
@@ -22,10 +23,10 @@ export function KanbanBoard({
   entries,
   selectedNotePath,
   onSelectNote,
+  onUpdateStatus,
   emptyMessage,
-  ...modelDeps
 }: KanbanBoardProps) {
-  const { columns, handleDragEnd } = useKanbanModel(entries, modelDeps)
+  const { columns, handleDragEnd } = useKanbanModel(entries, onUpdateStatus)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor),

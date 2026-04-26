@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FilterBuilder } from './FilterBuilder'
 import { EmojiPicker } from './EmojiPicker'
-import type { FilterGroup, ViewDefinition } from '../types'
+import type { FilterGroup, ViewDefinition, ViewKind } from '../types'
 
 interface CreateViewDialogProps {
   open: boolean
@@ -13,6 +13,8 @@ interface CreateViewDialogProps {
   availableFields: string[]
   /** When provided, the dialog operates in edit mode with pre-populated fields. */
   editingView?: ViewDefinition | null
+  /** Defaults the view kind for new views (board section opens with 'kanban'). */
+  defaultKind?: ViewKind
 }
 
 interface CreateViewDialogFormProps {
@@ -20,6 +22,7 @@ interface CreateViewDialogFormProps {
   initialName: string
   initialIcon: string
   initialFilters: FilterGroup
+  initialKind: ViewKind
   isEditing: boolean
   onClose: () => void
   onCreate: (definition: ViewDefinition) => void
@@ -30,6 +33,7 @@ function CreateViewDialogForm({
   initialName,
   initialIcon,
   initialFilters,
+  initialKind,
   isEditing,
   onClose,
   onCreate,
@@ -55,6 +59,7 @@ function CreateViewDialogForm({
       color: null,
       sort: null,
       filters,
+      ...(initialKind !== 'list' ? { kind: initialKind } : {}),
     }
     onCreate(definition)
     onClose()
@@ -114,16 +119,19 @@ function CreateViewDialogForm({
   )
 }
 
-export function CreateViewDialog({ open, onClose, onCreate, availableFields, editingView }: CreateViewDialogProps) {
+export function CreateViewDialog({ open, onClose, onCreate, availableFields, editingView, defaultKind = 'list' }: CreateViewDialogProps) {
   const isEditing = !!editingView
   const initialFilters = editingView?.filters ?? { all: [{ field: availableFields[0] ?? 'type', op: 'equals', value: '' }] }
-  const formKey = editingView ? `edit:${editingView.name}` : `create:${availableFields[0] ?? 'type'}`
+  const initialKind: ViewKind = editingView?.kind ?? defaultKind
+  const formKey = editingView ? `edit:${editingView.name}` : `create:${initialKind}:${availableFields[0] ?? 'type'}`
+  const isBoard = initialKind === 'kanban'
+  const titleLabel = isEditing ? (isBoard ? 'Edit Board' : 'Edit View') : (isBoard ? 'Create Board' : 'Create View')
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose() }}>
       <DialogContent showCloseButton={false} className="flex max-h-[80vh] flex-col sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit View' : 'Create View'}</DialogTitle>
+          <DialogTitle>{titleLabel}</DialogTitle>
           <DialogDescription className="sr-only">
             {isEditing ? 'Update the name, icon, and filters for this saved view.' : 'Create a saved view by choosing a name, icon, and filter rules.'}
           </DialogDescription>
@@ -135,6 +143,7 @@ export function CreateViewDialog({ open, onClose, onCreate, availableFields, edi
             initialName={editingView?.name ?? ''}
             initialIcon={editingView?.icon ?? ''}
             initialFilters={initialFilters}
+            initialKind={initialKind}
             isEditing={isEditing}
             onClose={onClose}
             onCreate={onCreate}

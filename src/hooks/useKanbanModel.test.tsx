@@ -1,12 +1,7 @@
 import { renderHook, act } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { VaultEntry } from '../types'
 import { groupByStatus, useKanbanModel } from './useKanbanModel'
-
-const runFrontmatterAndApply = vi.hoisted(() => vi.fn().mockResolvedValue('content'))
-vi.mock('./frontmatterOps', () => ({
-  runFrontmatterAndApply: runFrontmatterAndApply,
-}))
 
 function makeEntry(overrides: Partial<VaultEntry> = {}): VaultEntry {
   return {
@@ -104,64 +99,49 @@ describe('groupByStatus', () => {
 })
 
 describe('useKanbanModel', () => {
-  beforeEach(() => {
-    runFrontmatterAndApply.mockClear()
-  })
-
   it('exposes a memoised columns list', () => {
     const entries = [makeEntry({ path: 'a.md', status: 'doing' })]
-    const { result } = renderHook(() => useKanbanModel(entries, makeDeps()))
+    const { result } = renderHook(() => useKanbanModel(entries, vi.fn()))
     expect(result.current.columns.find((column) => column.status.key === 'doing')?.cards).toHaveLength(1)
   })
 
-  it('writes the new status when a card is dropped on a different column', async () => {
+  it('calls onUpdateStatus with the new column when a card is dropped on a different column', async () => {
     const entries = [makeEntry({ path: 'a.md', status: 'doing' })]
-    const deps = makeDeps()
-    const { result } = renderHook(() => useKanbanModel(entries, deps))
+    const onUpdateStatus = vi.fn().mockResolvedValue(undefined)
+    const { result } = renderHook(() => useKanbanModel(entries, onUpdateStatus))
     await act(async () => {
       await result.current.handleDragEnd({ active: { id: 'a.md' }, over: { id: 'done' } } as never)
     })
-    expect(runFrontmatterAndApply).toHaveBeenCalledTimes(1)
-    expect(runFrontmatterAndApply.mock.calls[0]?.slice(0, 4)).toEqual([
-      'update',
-      'a.md',
-      'status',
-      'done',
-    ])
+    expect(onUpdateStatus).toHaveBeenCalledTimes(1)
+    expect(onUpdateStatus).toHaveBeenCalledWith('a.md', 'done')
   })
 
-  it('skips the write when dropped on the same column', async () => {
+  it('skips the call when dropped on the same column', async () => {
     const entries = [makeEntry({ path: 'a.md', status: 'doing' })]
-    const { result } = renderHook(() => useKanbanModel(entries, makeDeps()))
+    const onUpdateStatus = vi.fn()
+    const { result } = renderHook(() => useKanbanModel(entries, onUpdateStatus))
     await act(async () => {
       await result.current.handleDragEnd({ active: { id: 'a.md' }, over: { id: 'doing' } } as never)
     })
-    expect(runFrontmatterAndApply).not.toHaveBeenCalled()
+    expect(onUpdateStatus).not.toHaveBeenCalled()
   })
 
-  it('skips the write when dropped outside any column', async () => {
+  it('skips the call when dropped outside any column', async () => {
     const entries = [makeEntry({ path: 'a.md', status: 'doing' })]
-    const { result } = renderHook(() => useKanbanModel(entries, makeDeps()))
+    const onUpdateStatus = vi.fn()
+    const { result } = renderHook(() => useKanbanModel(entries, onUpdateStatus))
     await act(async () => {
       await result.current.handleDragEnd({ active: { id: 'a.md' }, over: null } as never)
     })
-    expect(runFrontmatterAndApply).not.toHaveBeenCalled()
+    expect(onUpdateStatus).not.toHaveBeenCalled()
   })
 
-  it('skips the write when the dragged note is unknown', async () => {
-    const { result } = renderHook(() => useKanbanModel([], makeDeps()))
+  it('skips the call when the dragged note is unknown', async () => {
+    const onUpdateStatus = vi.fn()
+    const { result } = renderHook(() => useKanbanModel([], onUpdateStatus))
     await act(async () => {
       await result.current.handleDragEnd({ active: { id: 'ghost.md' }, over: { id: 'done' } } as never)
     })
-    expect(runFrontmatterAndApply).not.toHaveBeenCalled()
+    expect(onUpdateStatus).not.toHaveBeenCalled()
   })
 })
-
-function makeDeps() {
-  return {
-    updateTab: vi.fn(),
-    updateEntry: vi.fn(),
-    setToastMessage: vi.fn(),
-    getEntry: vi.fn(),
-  }
-}
