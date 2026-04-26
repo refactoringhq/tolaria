@@ -82,9 +82,13 @@ export function KanbanAgentPanel({
         allEntries,
         getContent: fetchNoteContent,
       })
+      // Keep the system prompt override for follow-up messages in the same conversation,
+      // but ALSO inline the context in the first user message so the agent sees it on the
+      // initial round (useState updates don't propagate before the awaited sendMessage call).
       setContextPrompt(prompt)
       console.log('[kanban-agent] running on card', { path: entry.path, agent, contextLength: prompt.length })
-      await sendMessage('Complete the task described above. Make the necessary changes to the vault and summarise.')
+      const inlineMessage = `${prompt}\n\n---\n\nComplete the task described above. Make the necessary changes to the vault and summarise what you did.`
+      await sendMessage(inlineMessage)
     } catch (err) {
       console.error('[kanban-agent] failed to start run', err)
       setContextError(`Failed to start agent: ${err}`)
