@@ -8,6 +8,19 @@ use std::path::Path;
 
 use super::VaultEntry;
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ViewKind {
+    List,
+    Kanban,
+}
+
+impl Default for ViewKind {
+    fn default() -> Self {
+        ViewKind::List
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ViewDefinition {
     pub name: String,
@@ -24,6 +37,12 @@ pub struct ViewDefinition {
     )]
     pub list_properties_display: Vec<String>,
     pub filters: FilterGroup,
+    #[serde(default, skip_serializing_if = "is_default_view_kind")]
+    pub kind: ViewKind,
+}
+
+fn is_default_view_kind(kind: &ViewKind) -> bool {
+    *kind == ViewKind::default()
 }
 
 #[derive(Debug, Clone)]
@@ -694,7 +713,47 @@ mod tests {
                 value: Some(serde_yaml::Value::String("Project".to_string())),
                 regex: false,
             })]),
+            kind: ViewKind::default(),
         }
+    }
+
+    #[test]
+    fn view_kind_defaults_to_list_when_absent() {
+        let yaml = "name: Backlog\nfilters:\n  all: []\n";
+        let view: ViewDefinition = serde_yaml::from_str(yaml).unwrap();
+        assert_eq!(view.kind, ViewKind::List);
+    }
+
+    #[test]
+    fn view_kind_kanban_round_trips() {
+        let original = ViewDefinition {
+            name: "Sprint 1".to_string(),
+            icon: None,
+            color: None,
+            sort: None,
+            list_properties_display: Vec::new(),
+            filters: FilterGroup::All(vec![]),
+            kind: ViewKind::Kanban,
+        };
+        let yaml = serde_yaml::to_string(&original).unwrap();
+        assert!(yaml.contains("kind: kanban"), "expected kanban kind to serialize, got:\n{yaml}");
+        let parsed: ViewDefinition = serde_yaml::from_str(&yaml).unwrap();
+        assert_eq!(parsed.kind, ViewKind::Kanban);
+    }
+
+    #[test]
+    fn view_kind_list_is_skipped_in_serialization() {
+        let view = ViewDefinition {
+            name: "Inbox".to_string(),
+            icon: None,
+            color: None,
+            sort: None,
+            list_properties_display: Vec::new(),
+            filters: FilterGroup::All(vec![]),
+            kind: ViewKind::List,
+        };
+        let yaml = serde_yaml::to_string(&view).unwrap();
+        assert!(!yaml.contains("kind:"), "default 'list' kind should not appear in YAML, got:\n{yaml}");
     }
 
     #[test]
