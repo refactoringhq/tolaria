@@ -29,6 +29,7 @@ import { useAiAgentsStatus } from './hooks/useAiAgentsStatus'
 import { useVaultAiGuidanceStatus } from './hooks/useVaultAiGuidanceStatus'
 import { useAutoGit } from './hooks/useAutoGit'
 import { useVaultLoader } from './hooks/useVaultLoader'
+import { useVaultWatcher } from './hooks/useVaultWatcher'
 import { useAiAgentPreferences } from './hooks/useAiAgentPreferences'
 import { useSettings } from './hooks/useSettings'
 import { useDocumentThemeMode } from './hooks/useDocumentThemeMode'
@@ -338,6 +339,7 @@ function App() {
   }, [resolvedPath])
 
   const vault = useVaultLoader(noteWindowParams ? '' : resolvedPath)
+  useVaultWatcher(noteWindowParams ? '' : resolvedPath, vault.reloadVault)
   const {
     status: vaultAiGuidanceStatus,
     refresh: refreshVaultAiGuidance,
