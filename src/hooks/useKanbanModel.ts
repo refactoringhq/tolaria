@@ -48,11 +48,21 @@ export function useKanbanModel(entries: VaultEntry[], onUpdateStatus: UpdateStat
     async (event: DragEndEvent) => {
       const notePath = String(event.active.id)
       const targetStatus = event.over ? String(event.over.id) : null
-      if (!targetStatus) return
+      if (!targetStatus) {
+        console.log('[kanban] drag dropped outside any column', { notePath })
+        return
+      }
       const entry = entries.find((candidate) => candidate.path === notePath)
-      if (!entry) return
+      if (!entry) {
+        console.warn('[kanban] dragged entry not found in current entries', { notePath, targetStatus })
+        return
+      }
       const currentStatus = statusKeyOf(entry.status)
-      if (currentStatus === targetStatus) return
+      if (currentStatus === targetStatus) {
+        console.log('[kanban] drop on same column, no-op', { notePath, status: currentStatus })
+        return
+      }
+      console.log('[kanban] drag end -> status change', { notePath, from: currentStatus, to: targetStatus })
       await onUpdateStatus(notePath, targetStatus)
     },
     [entries, onUpdateStatus],

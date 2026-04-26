@@ -3,6 +3,7 @@ import { Sidebar } from './components/Sidebar'
 import { NoteList } from './components/NoteList'
 import { KanbanBoard } from './components/kanban/KanbanBoard'
 import { evaluateView } from './utils/viewFilters'
+import { isKanbanEligibleEntry } from './utils/kanbanEntries'
 import type { DeletedNoteEntry } from './components/note-list/noteListUtils'
 import { Editor } from './components/Editor'
 import { ResizeHandle } from './components/ResizeHandle'
@@ -1250,15 +1251,23 @@ function App() {
     return view?.definition.kind === 'kanban' ? view : null
   }, [effectiveSelection, vault.views])
   const kanbanBoardEntries = useMemo(
-    () => (activeKanbanView ? evaluateView(activeKanbanView.definition, vault.entries) : []),
+    () => (activeKanbanView ? evaluateView(activeKanbanView.definition, vault.entries).filter(isKanbanEligibleEntry) : []),
     [activeKanbanView, vault.entries],
   )
   const handleKanbanUpdateStatus = useCallback(
-    (notePath: string, newStatus: string) => {
+    async (notePath: string, newStatus: string) => {
+      console.log('[kanban] drag drop -> update status', { notePath, newStatus })
       vault.updateEntry(notePath, { status: newStatus })
-      return notes.handleUpdateFrontmatter(notePath, 'status', newStatus, { silent: true })
+      try {
+        await notes.handleUpdateFrontmatter(notePath, 'status', newStatus, { silent: true })
+        console.log('[kanban] frontmatter persisted', { notePath, newStatus })
+      } catch (err) {
+        console.error('[kanban] frontmatter update failed', { notePath, newStatus, err })
+        setToastMessage(`Kanban: failed to update status (${err})`)
+        throw err
+      }
     },
-    [notes, vault],
+    [notes, vault, setToastMessage],
   )
   const toggleDiffCommand = useCallback(() => diffToggleRef.current(), [])
   const toggleRawEditorCommand = useMemo(
