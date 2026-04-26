@@ -29,6 +29,7 @@ import {
   useVisibleNotesSync,
 } from './noteListHooks'
 import { useChangesContextMenu } from './NoteListChangesMenu'
+import { useNoteContextMenu } from './useNoteContextMenu'
 import { addNoteListSearchToggleListener, dispatchNoteListSearchAvailability } from '../../utils/noteListSearchEvents'
 
 type EntitySelection = Extract<SidebarSelection, { kind: 'entity' }>
@@ -244,6 +245,8 @@ interface UseNoteListInteractionStateParams {
   onCreateNote: (type?: string) => void
   onBulkArchive?: (paths: string[]) => void
   onBulkDeletePermanently?: (paths: string[]) => void
+  vaultPath: string | null
+  setToastMessage: (message: string | null) => void
 }
 
 function useNoteListInteractionState({
@@ -267,8 +270,11 @@ function useNoteListInteractionState({
   onCreateNote,
   onBulkArchive,
   onBulkDeletePermanently,
+  vaultPath,
+  setToastMessage,
 }: UseNoteListInteractionStateParams) {
   const changesContextMenu = useChangesContextMenu({ isChangesView, onDiscardFile, modifiedFiles })
+  const noteContextMenu = useNoteContextMenu({ vaultPath, setToastMessage })
   const {
     collapsedGroups,
     handleClickNote,
@@ -314,6 +320,7 @@ function useNoteListInteractionState({
     handleCreateNote,
     handleListKeyDown,
     multiSelect,
+    noteContextMenu,
     noteListKeyboard,
     toggleGroup,
   }
@@ -329,7 +336,8 @@ interface UseRenderItemParams {
   resolvedGetNoteStatus: (path: string) => NoteStatus
   getChangeStatus: (path: string) => ModifiedFile['status'] | undefined
   handleClickNote: (entry: VaultEntry, event: React.MouseEvent) => void
-  noteContextMenu?: ((entry: VaultEntry, event: React.MouseEvent) => void) | undefined
+  changesMenuHandler?: ((entry: VaultEntry, event: React.MouseEvent) => void) | undefined
+  pathMenuHandler: (entry: VaultEntry, event: React.MouseEvent) => void
   multiSelect: MultiSelectState
   noteListKeyboard: { highlightedPath: string | null }
 }
@@ -344,11 +352,14 @@ function useRenderItem({
   resolvedGetNoteStatus,
   getChangeStatus,
   handleClickNote,
-  noteContextMenu,
+  changesMenuHandler,
+  pathMenuHandler,
   multiSelect,
   noteListKeyboard,
 }: UseRenderItemParams) {
-  const contextMenuHandler = isChangesView && onDiscardFile ? noteContextMenu : undefined
+  const contextMenuHandler = isChangesView && onDiscardFile && changesMenuHandler
+    ? changesMenuHandler
+    : pathMenuHandler
 
   return useCallback((entry: VaultEntry, options?: { forceSelected?: boolean }) => (
     isDeletedNoteEntry(entry) ? (
@@ -430,6 +441,8 @@ export interface NoteListProps {
   views?: ViewFile[]
   visibleNotesRef?: React.MutableRefObject<VaultEntry[]>
   locale?: AppLocale
+  vaultPath?: string | null
+  setToastMessage?: (message: string | null) => void
 }
 
 function buildNoteListLayoutModel(params: {
@@ -502,6 +515,7 @@ function buildNoteListLayoutModel(params: {
     handleBulkDeletePermanently: params.interaction.handleBulkDeletePermanently,
     handleBulkUnarchive: params.interaction.handleBulkUnarchive,
     contextMenuNode: params.interaction.changesContextMenu.contextMenuNode,
+    noteContextMenuNode: params.interaction.noteContextMenu.contextMenuNode,
     dialogNode: params.interaction.changesContextMenu.dialogNode,
   }
 }
@@ -536,6 +550,8 @@ export function useNoteListModel({
   views,
   visibleNotesRef,
   locale = 'en',
+  vaultPath,
+  setToastMessage,
 }: NoteListProps) {
   const selectedNotePath = selectedNote?.path ?? null
   const { modifiedPathSet, modifiedSuffixes, resolvedGetNoteStatus } = useModifiedFilesState(modifiedFiles, getNoteStatus)
@@ -581,6 +597,8 @@ export function useNoteListModel({
     onCreateNote,
     onBulkArchive,
     onBulkDeletePermanently,
+    vaultPath: vaultPath ?? null,
+    setToastMessage: setToastMessage ?? (() => undefined),
   })
   const renderItem = useRenderItem({
     entries,
@@ -592,7 +610,8 @@ export function useNoteListModel({
     resolvedGetNoteStatus,
     getChangeStatus: interaction.getChangeStatus,
     handleClickNote: interaction.handleClickNote,
-    noteContextMenu: interaction.changesContextMenu.handleNoteContextMenu,
+    changesMenuHandler: interaction.changesContextMenu.handleNoteContextMenu,
+    pathMenuHandler: interaction.noteContextMenu.handleNoteContextMenu,
     multiSelect: interaction.multiSelect,
     noteListKeyboard: interaction.noteListKeyboard,
   })
