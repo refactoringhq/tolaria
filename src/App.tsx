@@ -3,6 +3,7 @@ import { Sidebar } from './components/Sidebar'
 import { NoteList } from './components/NoteList'
 import { CaretDoubleRight } from '@phosphor-icons/react'
 import { KanbanBoard } from './components/kanban/KanbanBoard'
+import { KanbanAgentPanel } from './components/kanban/KanbanAgentPanel'
 import { evaluateView } from './utils/viewFilters'
 import { isKanbanEligibleEntry } from './utils/kanbanEntries'
 import type { DeletedNoteEntry } from './components/note-list/noteListUtils'
@@ -1575,7 +1576,8 @@ function App() {
             </>
           )}
           {(!activeKanbanView || isKanbanCardActive) && (
-          <div className={`app__editor${aiActivity.highlightElement === 'editor' || aiActivity.highlightElement === 'tab' ? ' ai-highlight' : ''}`} style={isKanbanCardActive ? { flex: '2 1 0', minWidth: 360 } : undefined}>
+          <div className={`app__editor${aiActivity.highlightElement === 'editor' || aiActivity.highlightElement === 'tab' ? ' ai-highlight' : ''}`} style={isKanbanCardActive ? { flex: '2 1 0', minWidth: 360, display: 'flex', flexDirection: 'column' } : undefined}>
+            <div style={isKanbanCardActive ? { flex: '7 1 0', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' } : undefined}>
             <Editor
               tabs={notes.tabs}
               activeTabPath={notes.activeTabPath}
@@ -1633,6 +1635,20 @@ function App() {
               onKeepTheirs={conflictFlow.handleKeepTheirs}
               flushPendingRawContentRef={flushPendingRawContentRef}
             />
+            </div>
+            {isKanbanCardActive && activeTab && (
+              <div style={{ flex: '3 1 0', minHeight: 200, maxHeight: 480, display: 'flex', flexDirection: 'column' }}>
+                <KanbanAgentPanel
+                  entry={activeTab.entry}
+                  noteContent={activeTab.content ?? null}
+                  allEntries={vault.entries}
+                  vaultPath={resolvedPath}
+                  agent={aiAgentPreferences.defaultAiAgent}
+                  agentReady={aiAgentPreferences.defaultAiAgentReady}
+                  agentLabel={aiAgentPreferences.defaultAiAgentLabel}
+                />
+              </div>
+            )}
           </div>
           )}
         </div>
