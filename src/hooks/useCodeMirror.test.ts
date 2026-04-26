@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { EditorView } from '@codemirror/view'
+import { RUNTIME_STYLE_NONCE } from '../lib/runtimeStyleNonce'
 import { useCodeMirror, type CodeMirrorCallbacks } from './useCodeMirror'
 
 const noop = () => {}
@@ -29,6 +31,15 @@ describe('useCodeMirror', () => {
     )
     expect(result.current.current).not.toBeNull()
     expect(container.querySelector('.cm-editor')).toBeInTheDocument()
+  })
+
+  it('tags generated CodeMirror style elements with the runtime CSP nonce', () => {
+    const ref = { current: container }
+    const { result } = renderHook(() =>
+      useCodeMirror(ref, 'hello world', noopCallbacks),
+    )
+
+    expect(result.current.current?.state.facet(EditorView.cspNonce)).toBe(RUNTIME_STYLE_NONCE)
   })
 
   it('calls requestMeasure when laputa-zoom-change event fires', () => {

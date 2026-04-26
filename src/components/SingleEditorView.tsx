@@ -27,6 +27,7 @@ import { filterPersonMentions, PERSON_MENTION_MIN_QUERY } from '../utils/personM
 import { attachClickHandlers, enrichSuggestionItems } from '../utils/suggestionEnrichment'
 import { openExternalUrl } from '../utils/url'
 import { observeNativeTextAssistanceDisabled } from '../lib/nativeTextAssistance'
+import { getRuntimeStyleNonce } from '../lib/runtimeStyleNonce'
 import { WikilinkSuggestionMenu, type WikilinkSuggestionItem } from './WikilinkSuggestionMenu'
 import type { VaultEntry } from '../types'
 import { _wikilinkEntriesRef } from './editorSchema'
@@ -91,6 +92,7 @@ function SharedContextBlockNoteView(props: React.ComponentProps<typeof BlockNote
     <MantineProvider
       // BlockNote scopes Mantine defaults under `.bn-mantine` instead of `:root`.
       withCssVariables={false}
+      getStyleNonce={getRuntimeStyleNonce}
       getRootElement={() => undefined}
     >
       {view}

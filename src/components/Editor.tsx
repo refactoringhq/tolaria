@@ -5,6 +5,7 @@ import '@blocknote/mantine/style.css'
 import 'katex/dist/katex.min.css'
 import { uploadImageFile } from '../hooks/useImageDrop'
 import { DEFAULT_AI_AGENT, type AiAgentId } from '../lib/aiAgents'
+import { RUNTIME_STYLE_NONCE } from '../lib/runtimeStyleNonce'
 import type { VaultEntry, GitCommit, NoteLayout, NoteStatus } from '../types'
 import type { NoteListItem } from '../utils/ai-context'
 import type { FrontmatterValue } from './Inspector'
@@ -177,6 +178,7 @@ function useEditorSetup({
   const editor = useCreateBlockNote({
     schema,
     uploadFile: (file: File) => uploadImageFile(file, vaultPathRef.current),
+    _tiptapOptions: { injectNonce: RUNTIME_STYLE_NONCE },
     extensions: [createArrowLigaturesExtension()],
   })
   useFilenameAutolinkGuard(editor)
