@@ -761,6 +761,8 @@ No Redux or global context. State lives in the root `App.tsx` and custom hooks:
 | `useNoteCreation` | — | Note/type creation with optimistic persistence |
 | `useNoteRename` | — | Note renaming and folder moves with wikilink update |
 | `useNoteRetargeting` | — | Shared note retargeting logic for drag/drop and command-palette actions |
+| `useTauriDragDropEvent` | — | Shared native window drag/drop event subscription and cleanup |
+| `useNativePathDrop` | — | Tauri-native file/folder path drops for AI and command text inputs |
 | `frontmatterOps` | — (pure functions) | Frontmatter CRUD: key→VaultEntry mapping, mock/Tauri dispatch |
 | `useTabManagement` | Navigation history, note switching | Note navigation lifecycle |
 | `useVaultSwitcher` | `vaultPath`, `extraVaults` | Vault switching |
