@@ -1250,10 +1250,25 @@ function App() {
     const view = vault.views.find((candidate) => candidate.filename === effectiveSelection.filename)
     return view?.definition.kind === 'kanban' ? view : null
   }, [effectiveSelection, vault.views])
-  const kanbanBoardEntries = useMemo(
-    () => (activeKanbanView ? evaluateView(activeKanbanView.definition, vault.entries).filter(isKanbanEligibleEntry) : []),
+  const kanbanRawMatches = useMemo(
+    () => (activeKanbanView ? evaluateView(activeKanbanView.definition, vault.entries) : []),
     [activeKanbanView, vault.entries],
   )
+  const kanbanBoardEntries = useMemo(
+    () => kanbanRawMatches.filter(isKanbanEligibleEntry),
+    [kanbanRawMatches],
+  )
+  const kanbanEmptyMessage = useMemo(() => {
+    if (!activeKanbanView) return undefined
+    const boardName = activeKanbanView.definition.name
+    if (kanbanRawMatches.length === 0) {
+      return `No notes match the "${boardName}" board. Try editing the filter (sidebar > right-click on the board).`
+    }
+    if (kanbanBoardEntries.length === 0) {
+      return `The "${boardName}" filter matches ${kanbanRawMatches.length} item(s), but they are all view configs or binaries (excluded from kanban). Edit the filter to target real notes (e.g. status is_not_empty).`
+    }
+    return undefined
+  }, [activeKanbanView, kanbanRawMatches, kanbanBoardEntries])
   const handleKanbanUpdateStatus = useCallback(
     async (notePath: string, newStatus: string) => {
       console.log('[kanban] drag drop -> update status', { notePath, newStatus })
@@ -1513,7 +1528,7 @@ function App() {
                 selectedNotePath={activeTab?.entry?.path ?? null}
                 onSelectNote={(entry) => notes.handleSelectNote(entry)}
                 onUpdateStatus={handleKanbanUpdateStatus}
-                emptyMessage={`No notes match the "${activeKanbanView.definition.name}" board.`}
+                emptyMessage={kanbanEmptyMessage}
               />
             </div>
           )}

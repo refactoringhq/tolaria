@@ -119,10 +119,17 @@ function CreateViewDialogForm({
   )
 }
 
+function defaultFiltersForKind(kind: ViewKind, availableFields: string[]): FilterGroup {
+  if (kind === 'kanban') {
+    return { all: [{ field: 'status', op: 'is_not_empty' }] }
+  }
+  return { all: [{ field: availableFields[0] ?? 'type', op: 'equals', value: '' }] }
+}
+
 export function CreateViewDialog({ open, onClose, onCreate, availableFields, editingView, defaultKind = 'list' }: CreateViewDialogProps) {
   const isEditing = !!editingView
-  const initialFilters = editingView?.filters ?? { all: [{ field: availableFields[0] ?? 'type', op: 'equals', value: '' }] }
   const initialKind: ViewKind = editingView?.kind ?? defaultKind
+  const initialFilters = editingView?.filters ?? defaultFiltersForKind(initialKind, availableFields)
   const formKey = editingView ? `edit:${editingView.name}` : `create:${initialKind}:${availableFields[0] ?? 'type'}`
   const isBoard = initialKind === 'kanban'
   const titleLabel = isEditing ? (isBoard ? 'Edit Board' : 'Edit View') : (isBoard ? 'Create Board' : 'Create View')
