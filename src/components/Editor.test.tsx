@@ -1,7 +1,8 @@
 import { render as rtlRender, screen, fireEvent, act } from '@testing-library/react'
 import type { ComponentProps, PropsWithChildren, ReactElement } from 'react'
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { formatShortcutDisplay } from '../hooks/appCommandCatalog'
+import { RUNTIME_STYLE_NONCE } from '../lib/runtimeStyleNonce'
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -34,6 +35,9 @@ const mockEditor = vi.hoisted(() => ({
   focus: vi.fn(),
   setTextCursorPosition: vi.fn(),
 }))
+const blockNoteCreation = vi.hoisted(() => ({
+  options: [] as unknown[],
+}))
 
 // Mock BlockNote components
 vi.mock('@blocknote/core', () => ({
@@ -61,7 +65,10 @@ let capturedGetItems: ((query: string) => Promise<any[]>) | null = null
 vi.mock('@blocknote/react', () => ({
   createReactBlockSpec: () => () => ({}),
   createReactInlineContentSpec: () => ({ render: () => null }),
-  useCreateBlockNote: () => mockEditor,
+  useCreateBlockNote: (options: unknown) => {
+    blockNoteCreation.options.push(options)
+    return mockEditor
+  },
   FormattingToolbar: ({ children }: PropsWithChildren) => <>{children}</>,
   LinkToolbar: ({ children }: PropsWithChildren) => <>{children}</>,
   getFormattingToolbarItems: () => [],
@@ -210,6 +217,10 @@ function renderEditor(overrides: Partial<EditorComponentProps> = {}) {
 }
 
 describe('Editor', () => {
+  beforeEach(() => {
+    blockNoteCreation.options = []
+  })
+
   it('shows empty state when no tabs are open', () => {
     const quickOpenHint = formatShortcutDisplay({ display: '⌘P / ⌘O' })
     const newNoteHint = formatShortcutDisplay({ display: '⌘N' })
@@ -242,6 +253,19 @@ describe('Editor', () => {
     })
 
     expect(screen.getByTestId('blocknote-view')).toBeInTheDocument()
+  })
+
+  it('passes the runtime CSP style nonce into BlockNote and TipTap', () => {
+    renderEditor({
+      tabs: [mockTab],
+      activeTabPath: mockEntry.path,
+    })
+
+    expect(blockNoteCreation.options.at(-1)).toMatchObject({
+      _tiptapOptions: {
+        injectNonce: RUNTIME_STYLE_NONCE,
+      },
+    })
   })
 
   it('disables native text assistance on the rich editor editable surface', () => {

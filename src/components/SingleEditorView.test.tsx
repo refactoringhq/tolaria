@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import type { VaultEntry } from '../types'
+import { RUNTIME_STYLE_NONCE } from '../lib/runtimeStyleNonce'
 
 const NOTE_DRAG_MIME = 'application/x-laputa-note-path'
 
@@ -11,6 +12,7 @@ const state = vi.hoisted(() => ({
   capturedSuggestionProps: {} as Record<string, Record<string, unknown>>,
   capturedImageDropArgs: null as null | Record<string, unknown>,
   capturedBlockNoteOnChange: null as null | (() => void),
+  capturedMantineGetStyleNonce: null as null | (() => string),
   hoverGuardMock: vi.fn(),
   imageDropState: { isDragOver: false },
   linkActivationMock: vi.fn(),
@@ -110,7 +112,16 @@ vi.mock('@mantine/core', async () => {
   const React = await vi.importActual<typeof import('react')>('react')
   return {
     MantineContext: React.createContext(null),
-    MantineProvider: ({ children }: { children?: ReactNode }) => <>{children}</>,
+    MantineProvider: ({
+      children,
+      getStyleNonce,
+    }: {
+      children?: ReactNode
+      getStyleNonce?: () => string
+    }) => {
+      state.capturedMantineGetStyleNonce = getStyleNonce ?? null
+      return <>{children}</>
+    },
   }
 })
 
@@ -277,6 +288,7 @@ describe('SingleEditorView', () => {
     state.capturedSuggestionProps = {}
     state.capturedImageDropArgs = null
     state.capturedBlockNoteOnChange = null
+    state.capturedMantineGetStyleNonce = null
     state.imageDropState.isDragOver = false
     state.wikilinkEntriesRef.current = []
     mockOpenExternalUrl.mockClear()
@@ -467,6 +479,18 @@ describe('SingleEditorView', () => {
 
     expect(screen.getByTestId('blocknote-view')).toHaveAttribute('theme', 'dark')
     expect(screen.getByTestId('blocknote-view')).toHaveAttribute('data-mantine-color-scheme', 'dark')
+  })
+
+  it('passes the runtime CSP style nonce to Mantine fallback style tags', () => {
+    render(
+      <SingleEditorView
+        editor={createEditor() as never}
+        entries={[makeEntry()]}
+        onNavigateWikilink={vi.fn()}
+      />,
+    )
+
+    expect(state.capturedMantineGetStyleNonce?.()).toBe(RUNTIME_STYLE_NONCE)
   })
 
   it('defers rich-editor change propagation until IME composition ends', async () => {
