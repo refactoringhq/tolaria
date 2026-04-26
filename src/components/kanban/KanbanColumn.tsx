@@ -9,17 +9,18 @@ interface KanbanColumnProps {
   status: KanbanStatusDef
   cards: VaultEntry[]
   selectedNotePath: string | null
+  activeDragId?: string | null
   onClickNote: (entry: VaultEntry, event: ReactMouseEvent) => void
 }
 
-export function KanbanColumn({ status, cards, selectedNotePath, onClickNote }: KanbanColumnProps) {
+export function KanbanColumn({ status, cards, selectedNotePath, activeDragId = null, onClickNote }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status.key })
 
   return (
     <section
       ref={setNodeRef}
       className={cn(
-        'flex h-full min-w-[260px] max-w-[320px] flex-1 flex-col overflow-hidden rounded-lg border bg-muted/20 transition-colors',
+        'flex h-full min-w-[220px] max-w-[320px] flex-1 basis-[260px] flex-col overflow-hidden rounded-lg border bg-muted/20 transition-colors',
         isOver && 'border-foreground/40 bg-muted/40',
       )}
       data-testid={`kanban-column-${status.key}`}
@@ -51,6 +52,7 @@ export function KanbanColumn({ status, cards, selectedNotePath, onClickNote }: K
               key={entry.path}
               entry={entry}
               isSelected={selectedNotePath === entry.path}
+              isPlaceholder={activeDragId === entry.path}
               onClickNote={onClickNote}
             />
           ))

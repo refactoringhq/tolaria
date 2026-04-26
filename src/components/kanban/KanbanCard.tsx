@@ -1,6 +1,5 @@
 import { type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react'
 import { useDraggable } from '@dnd-kit/core'
-import { CSS } from '@dnd-kit/utilities'
 import type { VaultEntry } from '../../types'
 import { NoteTitleIcon } from '../NoteTitleIcon'
 import { cn } from '@/lib/utils'
@@ -8,29 +7,41 @@ import { cn } from '@/lib/utils'
 interface KanbanCardProps {
   entry: VaultEntry
   isSelected?: boolean
+  isPlaceholder?: boolean
+  dragOverlay?: boolean
   onClickNote: (entry: VaultEntry, event: ReactMouseEvent) => void
 }
 
-const CARD_BASE_CLASS = 'flex select-none flex-col gap-1.5 rounded-md border bg-background p-3 text-sm shadow-sm transition-colors hover:border-foreground/30 hover:bg-muted/40'
+const CARD_BASE_CLASS = 'flex flex-col gap-1.5 rounded-md border bg-background p-3 text-sm shadow-sm transition-colors hover:border-foreground/30 hover:bg-muted/40'
 
-export function KanbanCard({ entry, isSelected = false, onClickNote }: KanbanCardProps) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: entry.path })
+export function KanbanCard({ entry, isSelected = false, isPlaceholder = false, dragOverlay = false, onClickNote }: KanbanCardProps) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: entry.path,
+    disabled: dragOverlay,
+  })
 
-  const style: CSSProperties = {
-    transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.5 : 1,
-    cursor: isDragging ? 'grabbing' : 'grab',
-  }
+  const placeholderStyle: CSSProperties = isPlaceholder || isDragging
+    ? { opacity: 0, pointerEvents: 'none' }
+    : {}
+
+  const overlayStyle: CSSProperties = dragOverlay
+    ? { cursor: 'grabbing', boxShadow: '0 12px 32px -8px rgba(0,0,0,0.35)', transform: 'rotate(1.5deg)' }
+    : {}
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      className={cn(CARD_BASE_CLASS, isSelected && 'border-foreground/40 bg-muted/40')}
-      {...listeners}
-      {...attributes}
+      ref={dragOverlay ? undefined : setNodeRef}
+      style={{ ...placeholderStyle, ...overlayStyle }}
+      className={cn(
+        CARD_BASE_CLASS,
+        'select-none',
+        isSelected && 'border-foreground/40 bg-muted/40',
+        !dragOverlay && 'cursor-grab active:cursor-grabbing',
+      )}
+      {...(dragOverlay ? {} : listeners)}
+      {...(dragOverlay ? {} : attributes)}
       onClick={(event) => {
-        if (isDragging) return
+        if (dragOverlay) return
         onClickNote(entry, event)
       }}
       data-testid={`kanban-card-${entry.path}`}

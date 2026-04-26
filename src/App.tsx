@@ -1244,6 +1244,22 @@ function App() {
     () => vault.modifiedFiles.some((file) => file.path === notes.activeTabPath),
     [notes.activeTabPath, vault.modifiedFiles],
   )
+  const activeKanbanView = useMemo(() => {
+    if (effectiveSelection.kind !== 'view') return null
+    const view = vault.views.find((candidate) => candidate.filename === effectiveSelection.filename)
+    return view?.definition.kind === 'kanban' ? view : null
+  }, [effectiveSelection, vault.views])
+  const kanbanBoardEntries = useMemo(
+    () => (activeKanbanView ? evaluateView(activeKanbanView.definition, vault.entries) : []),
+    [activeKanbanView, vault.entries],
+  )
+  const handleKanbanUpdateStatus = useCallback(
+    (notePath: string, newStatus: string) => {
+      vault.updateEntry(notePath, { status: newStatus })
+      return notes.handleUpdateFrontmatter(notePath, 'status', newStatus, { silent: true })
+    },
+    [notes, vault],
+  )
   const toggleDiffCommand = useCallback(() => diffToggleRef.current(), [])
   const toggleRawEditorCommand = useMemo(
     () => canToggleRichEditor ? () => rawToggleRef.current() : undefined,
@@ -1481,24 +1497,18 @@ function App() {
               <ResizeHandle onResize={layout.handleSidebarResize} />
             </>
           )}
-          {(() => {
-            if (effectiveSelection.kind !== 'view') return null
-            const activeView = vault.views.find((view) => view.filename === effectiveSelection.filename)
-            if (activeView?.definition.kind !== 'kanban') return null
-            const boardEntries = evaluateView(activeView.definition, vault.entries)
-            return (
-              <div className="flex flex-1 flex-col overflow-hidden">
-                <KanbanBoard
-                  entries={boardEntries}
-                  selectedNotePath={activeTab?.entry?.path ?? null}
-                  onSelectNote={(entry) => notes.handleSelectNote(entry)}
-                  onUpdateStatus={(notePath, newStatus) => notes.handleUpdateFrontmatter(notePath, 'status', newStatus, { silent: true })}
-                  emptyMessage={`No notes match the "${activeView.definition.name}" board.`}
-                />
-              </div>
-            )
-          })()}
-          {noteListVisible && !(effectiveSelection.kind === 'view' && vault.views.find((view) => view.filename === effectiveSelection.filename)?.definition.kind === 'kanban') && (
+          {activeKanbanView && (
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <KanbanBoard
+                entries={kanbanBoardEntries}
+                selectedNotePath={activeTab?.entry?.path ?? null}
+                onSelectNote={(entry) => notes.handleSelectNote(entry)}
+                onUpdateStatus={handleKanbanUpdateStatus}
+                emptyMessage={`No notes match the "${activeKanbanView.definition.name}" board.`}
+              />
+            </div>
+          )}
+          {!activeKanbanView && noteListVisible && (
             <>
               <div className={`app__note-list${aiActivity.highlightElement === 'notelist' ? ' ai-highlight' : ''}`} style={{ width: layout.noteListWidth }}>
                 {effectiveSelection.kind === 'filter' && effectiveSelection.filter === 'pulse' ? (
@@ -1510,6 +1520,7 @@ function App() {
               <ResizeHandle onResize={layout.handleNoteListResize} />
             </>
           )}
+          {!activeKanbanView && (
           <div className={`app__editor${aiActivity.highlightElement === 'editor' || aiActivity.highlightElement === 'tab' ? ' ai-highlight' : ''}`}>
             <Editor
               tabs={notes.tabs}
@@ -1569,6 +1580,7 @@ function App() {
               flushPendingRawContentRef={flushPendingRawContentRef}
             />
           </div>
+          )}
         </div>
         <UpdateBanner status={updateStatus} actions={updateActions} />
         <RenameDetectedBanner renames={detectedRenames} onUpdate={handleUpdateWikilinks} onDismiss={handleDismissRenames} />
