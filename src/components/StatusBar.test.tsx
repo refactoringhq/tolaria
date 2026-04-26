@@ -339,17 +339,20 @@ describe('StatusBar', () => {
     expect(screen.getByText('3')).toBeInTheDocument()
   })
 
-  it('wraps the bottom bar before hiding labels at medium widths', () => {
+  it('keeps the bottom bar compact and unwrapped at medium widths', () => {
     setWindowWidth(980)
     renderDenseStatusBar()
 
     expect(screen.getByTestId('status-bar')).toHaveStyle({
-      flexWrap: 'wrap',
-      height: 'auto',
+      flexWrap: 'nowrap',
+      height: '30px',
     })
-    expect(screen.getByText('Commit')).toBeInTheDocument()
-    expect(screen.getByText('History')).toBeInTheDocument()
-    expect(screen.getByText('Contribute')).toBeInTheDocument()
+    expect(screen.getByTestId('status-commit-push')).toBeInTheDocument()
+    expect(screen.getByTestId('status-pulse')).toBeInTheDocument()
+    expect(screen.getByTestId('status-feedback')).toBeInTheDocument()
+    expect(screen.queryByText('Commit')).not.toBeInTheDocument()
+    expect(screen.queryByText('History')).not.toBeInTheDocument()
+    expect(screen.queryByText('Contribute')).not.toBeInTheDocument()
   })
 
   it('collapses status labels to icon-first controls at very narrow widths', () => {
