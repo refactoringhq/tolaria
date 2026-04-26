@@ -326,6 +326,34 @@ describe('WikilinkChatInput', () => {
     })
   })
 
+  it('does not duplicate syllables across consecutive IME compositions', async () => {
+    const onDraftChange = vi.fn()
+    render(<Controlled onDraftChange={onDraftChange} />)
+
+    const firstEditor = screen.getByTestId('agent-input') as HTMLDivElement
+    firstEditor.focus()
+    fireEvent.compositionStart(firstEditor)
+    firstEditor.appendChild(document.createTextNode('안'))
+    fireEvent.input(firstEditor)
+    fireEvent.compositionEnd(firstEditor)
+
+    await waitFor(() => {
+      expect(onDraftChange).toHaveBeenLastCalledWith('안')
+    })
+
+    const secondEditor = screen.getByTestId('agent-input') as HTMLDivElement
+    secondEditor.focus()
+    fireEvent.compositionStart(secondEditor)
+    secondEditor.appendChild(document.createTextNode('녕'))
+    fireEvent.input(secondEditor)
+    fireEvent.compositionEnd(secondEditor)
+
+    await waitFor(() => {
+      expect(onDraftChange).toHaveBeenLastCalledWith('안녕')
+    })
+    expect(screen.getByTestId('agent-input').textContent).toBe('안녕')
+  })
+
   it('does not steal focus back if it was moved elsewhere during composition end', async () => {
     const onDraftChange = vi.fn()
     render(
