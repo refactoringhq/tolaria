@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { ViewDefinition } from '../types'
+import type { ViewDefinition, ViewKind } from '../types'
 
 export function useDialogs() {
   const [showCreateTypeDialog, setShowCreateTypeDialog] = useState(false)
@@ -12,6 +12,7 @@ export function useDialogs() {
   const [showConflictResolver, setShowConflictResolver] = useState(false)
   const [showCreateViewDialog, setShowCreateViewDialog] = useState(false)
   const [editingView, setEditingView] = useState<{ filename: string; definition: ViewDefinition } | null>(null)
+  const [createViewDefaultKind, setCreateViewDefaultKind] = useState<ViewKind>('list')
 
   const openCreateType = useCallback(() => setShowCreateTypeDialog(true), [])
   const closeCreateType = useCallback(() => setShowCreateTypeDialog(false), [])
@@ -28,8 +29,9 @@ export function useDialogs() {
   const closeSearch = useCallback(() => setShowSearch(false), [])
   const openConflictResolver = useCallback(() => setShowConflictResolver(true), [])
   const closeConflictResolver = useCallback(() => setShowConflictResolver(false), [])
-  const openCreateView = useCallback(() => { setEditingView(null); setShowCreateViewDialog(true) }, [])
-  const closeCreateView = useCallback(() => { setShowCreateViewDialog(false); setEditingView(null) }, [])
+  const openCreateView = useCallback(() => { setEditingView(null); setCreateViewDefaultKind('list'); setShowCreateViewDialog(true) }, [])
+  const openCreateBoard = useCallback(() => { setEditingView(null); setCreateViewDefaultKind('kanban'); setShowCreateViewDialog(true) }, [])
+  const closeCreateView = useCallback(() => { setShowCreateViewDialog(false); setEditingView(null); setCreateViewDefaultKind('list') }, [])
   const openEditView = useCallback((filename: string, definition: ViewDefinition) => {
     setEditingView({ filename, definition })
     setShowCreateViewDialog(true)
@@ -44,6 +46,6 @@ export function useDialogs() {
     showCloneVault, openCloneVault, closeCloneVault,
     showSearch, openSearch, closeSearch,
     showConflictResolver, openConflictResolver, closeConflictResolver,
-    showCreateViewDialog, openCreateView, closeCreateView, editingView, openEditView,
+    showCreateViewDialog, openCreateView, openCreateBoard, closeCreateView, editingView, openEditView, createViewDefaultKind,
   }
 }
