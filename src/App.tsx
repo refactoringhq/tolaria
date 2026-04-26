@@ -1145,6 +1145,12 @@ function App() {
     }
   }, [refreshVaultAiGuidance, resolvedPath, vault, setToastMessage])
 
+  const handleReloadVault = useCallback(async () => {
+    const entries = await vault.reloadVault()
+    setToastMessage(`Vault reloaded (${entries.length} ${entries.length === 1 ? 'entry' : 'entries'})`)
+    return entries
+  }, [vault, setToastMessage])
+
   const restoreVaultAiGuidance = useCallback(async (successToast: string | null = 'Tolaria AI guidance restored') => {
     if (!resolvedPath) return
     try {
@@ -1356,7 +1362,7 @@ function App() {
     onSetDefaultAiAgent: aiAgentPreferences.setDefaultAiAgent,
     onCycleDefaultAiAgent: aiAgentPreferences.cycleDefaultAiAgent,
     selectedAiAgentLabel: aiAgentPreferences.defaultAiAgentLabel,
-    onReloadVault: vault.reloadVault,
+    onReloadVault: handleReloadVault,
     onRepairVault: handleRepairVault,
     onSetNoteIcon: handleSetNoteIconCommand,
     onRemoveNoteIcon: handleRemoveNoteIconCommand,
