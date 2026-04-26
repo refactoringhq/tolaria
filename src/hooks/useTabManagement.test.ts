@@ -212,6 +212,20 @@ describe('useTabManagement (single-note model)', () => {
       warnSpy.mockRestore()
     })
 
+    it('opens binary image files without trying to load them as text notes', async () => {
+      const { result } = renderHook(() => useTabManagement())
+      await selectNote(result, {
+        path: '/vault/assets/photo.png',
+        filename: 'photo.png',
+        title: 'photo.png',
+        fileKind: 'binary',
+      })
+
+      expectSingleActiveTab(result, '/vault/assets/photo.png')
+      expect(result.current.tabs[0].content).toBe('')
+      expect(vi.mocked(mockInvoke)).not.toHaveBeenCalled()
+    })
+
     it('returns to the empty state when no active vault is selected', async () => {
       vi.mocked(mockInvoke).mockRejectedValueOnce(new Error('No active vault selected'))
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})

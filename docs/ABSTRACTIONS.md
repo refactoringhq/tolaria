@@ -143,8 +143,21 @@ interface VaultEntry {
   trashed: boolean          // Kept for backward compatibility (Trash system removed — delete is permanent)
   trashedAt: number | null  // Kept for backward compatibility (Trash system removed)
   properties: Record<string, string>  // Scalar frontmatter fields (custom properties)
+  fileKind?: 'markdown' | 'text' | 'binary'  // Controls editor/raw/preview behavior
 }
 ```
+
+### File kinds and binary previews
+
+`VaultEntry.fileKind` comes from the Rust vault scanner and intentionally stays coarse-grained:
+
+| `fileKind` | Source files | UI behavior |
+|---|---|---|
+| `markdown` or absent | `.md`, `.markdown` | Full Tolaria note model: frontmatter, BlockNote, raw editor, relationships, title sync |
+| `text` | UTF-8 editable formats such as `.yml`, `.json`, `.ts`, `.py`, `.sh` | Opens through the raw editor without Markdown note semantics |
+| `binary` | Images, PDFs, archives, other non-text files | Stays a normal vault file; previewable images open in `FilePreview`, unsupported or broken binaries show an explicit fallback |
+
+Image previewability is inferred in the renderer from the filename extension (`src/utils/filePreview.ts`) rather than stored as a new persisted kind. This keeps the filesystem as source of truth and avoids converting assets into proprietary objects.
 
 ### Entity Types (isA / type)
 

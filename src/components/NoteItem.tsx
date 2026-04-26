@@ -4,11 +4,12 @@ import { cn } from '@/lib/utils'
 import {
   Wrench, Flask, Target, ArrowsClockwise,
   Users, CalendarBlank, Tag, FileText, StackSimple,
-  File, FileDashed,
+  File, FileDashed, ImageSquare,
 } from '@phosphor-icons/react'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 import { resolveIcon } from '../utils/iconRegistry'
 import { relativeDate, getDisplayDate } from '../utils/noteListHelpers'
+import { isImagePreviewEntry } from '../utils/filePreview'
 import { NoteTitleIcon } from './NoteTitleIcon'
 import { PropertyChips } from './note-item/PropertyChips'
 import { ChangeNoteContent } from './note-item/ChangeNoteContent'
@@ -61,7 +62,7 @@ function StateBadge({ archived }: { archived: boolean }) {
 }
 
 type NoteItemVisualState = {
-  isBinary: boolean
+  isUnavailableBinary: boolean
   isSelected: boolean
   isMultiSelected: boolean
   isHighlighted: boolean
@@ -89,8 +90,8 @@ const NOTE_ITEM_ROW_CLASS_NAMES: Record<NoteItemRowState, string> = {
   default: 'cursor-pointer hover:bg-muted',
 }
 
-function resolveNoteItemRowState({ isBinary, isSelected, isMultiSelected, isHighlighted }: NoteItemVisualState): NoteItemRowState {
-  if (isBinary) return 'binary'
+function resolveNoteItemRowState({ isUnavailableBinary, isSelected, isMultiSelected, isHighlighted }: NoteItemVisualState): NoteItemRowState {
+  if (isUnavailableBinary) return 'binary'
   if (isMultiSelected) return 'multiSelected'
   if (isSelected) return 'selected'
   if (isHighlighted) return 'highlighted'
@@ -104,11 +105,22 @@ function noteItemClassName(state: NoteItemVisualState) {
 function NoteTypeIndicator({
   TypeIcon,
   typeColor,
+  filePreviewKind,
 }: {
   TypeIcon: ComponentType<SVGAttributes<SVGSVGElement>>
   typeColor: string
+  filePreviewKind?: 'image'
 }) {
-  return <TypeIcon width={14} height={14} className="absolute right-3 top-2.5" style={{ color: typeColor }} data-testid="type-icon" />
+  return (
+    <TypeIcon
+      width={14}
+      height={14}
+      className="absolute right-3 top-2.5"
+      style={{ color: typeColor }}
+      data-testid="type-icon"
+      data-file-preview-kind={filePreviewKind}
+    />
+  )
 }
 
 function NoteSnippet({ snippet }: { snippet?: string | null }) {
@@ -190,6 +202,7 @@ function InteractiveNoteDetails({
 }
 
 function resolveNoteTypeIcon(entry: VaultEntry, customIcon?: string | null): ComponentType<SVGAttributes<SVGSVGElement>> {
+  if (isImagePreviewEntry(entry)) return ImageSquare
   if (entry.fileKind && entry.fileKind !== 'markdown') return getFileKindIcon(entry.fileKind)
   return getTypeIcon(entry.isA, customIcon)
 }
@@ -197,6 +210,7 @@ function resolveNoteTypeIcon(entry: VaultEntry, customIcon?: string | null): Com
 function StandardNoteContent({
   entry,
   isBinary,
+  isUnavailableBinary,
   noteStatus,
   isSelected,
   typeColor,
@@ -207,6 +221,7 @@ function StandardNoteContent({
 }: {
   entry: VaultEntry
   isBinary: boolean
+  isUnavailableBinary: boolean
   noteStatus: NoteStatus
   isSelected: boolean
   typeColor: string
@@ -217,15 +232,16 @@ function StandardNoteContent({
 }) {
   const te = typeEntryMap[entry.isA ?? '']
   const TypeIcon = resolveNoteTypeIcon(entry, te?.icon)
+  const filePreviewKind = isImagePreviewEntry(entry) ? 'image' : undefined
 
   return (
     <>
-      <NoteTypeIndicator TypeIcon={TypeIcon} typeColor={typeColor} />
+      <NoteTypeIndicator TypeIcon={TypeIcon} typeColor={typeColor} filePreviewKind={filePreviewKind} />
       <div className="space-y-2" data-testid="note-content-stack">
         {isBinary ? (
           <NoteTitleRow
             entry={entry}
-            isBinary={true}
+            isBinary={isUnavailableBinary}
             isSelected={isSelected}
             noteStatus={noteStatus}
           />
@@ -316,10 +332,10 @@ type NoteItemProps = {
 
 function createNoteItemClickHandler(
   entry: VaultEntry,
-  isBinary: boolean,
+  isUnavailableBinary: boolean,
   onClickNote: NoteItemProps['onClickNote'],
 ) {
-  if (isBinary) {
+  if (isUnavailableBinary) {
     return (event: ReactMouseEvent) => {
       event.preventDefault()
       event.stopPropagation()
@@ -328,9 +344,46 @@ function createNoteItemClickHandler(
   return (event: ReactMouseEvent) => onClickNote(entry, event)
 }
 
+function resolveNoteItemSurfaceStyle({
+  isUnavailableBinary,
+  isSelected,
+  isMultiSelected,
+  typeColor,
+  typeLightColor,
+}: Pick<NoteItemVisualState, 'isUnavailableBinary' | 'isSelected' | 'isMultiSelected'> & {
+  typeColor: string
+  typeLightColor: string
+}) {
+  if (isUnavailableBinary) return BINARY_NOTE_STYLE
+  return noteItemStyle(isSelected, isMultiSelected, typeColor, typeLightColor)
+}
+
+function resolveNoteItemTestId({
+  isMultiSelected,
+  isImagePreview,
+  isUnavailableBinary,
+}: Pick<NoteItemVisualState, 'isMultiSelected' | 'isUnavailableBinary'> & {
+  isImagePreview: boolean
+}) {
+  if (isMultiSelected) return 'multi-selected-item'
+  if (isImagePreview) return 'image-file-item'
+  return isUnavailableBinary ? 'binary-file-item' : undefined
+}
+
+function resolveNoteItemTitle({
+  isImagePreview,
+  isUnavailableBinary,
+}: Pick<NoteItemVisualState, 'isUnavailableBinary'> & {
+  isImagePreview: boolean
+}) {
+  if (isImagePreview) return 'Open image preview'
+  return isUnavailableBinary ? 'Cannot open this file type' : undefined
+}
+
 function resolveNoteItemSurfaceProps({
   entry,
-  isBinary,
+  isUnavailableBinary,
+  isImagePreview,
   isSelected,
   isMultiSelected,
   isHighlighted,
@@ -341,6 +394,7 @@ function resolveNoteItemSurfaceProps({
   typeLightColor,
 }: NoteItemVisualState & {
   entry: VaultEntry
+  isImagePreview: boolean
   onClickNote: NoteItemProps['onClickNote']
   onPrefetch?: NoteItemProps['onPrefetch']
   onContextMenu?: NoteItemProps['onContextMenu']
@@ -348,13 +402,13 @@ function resolveNoteItemSurfaceProps({
   typeLightColor: string
 }): NoteItemSurfaceProps {
   return {
-    className: noteItemClassName({ isBinary, isSelected, isMultiSelected, isHighlighted }),
-    style: isBinary ? BINARY_NOTE_STYLE : noteItemStyle(isSelected, isMultiSelected, typeColor, typeLightColor),
-    onClick: createNoteItemClickHandler(entry, isBinary, onClickNote),
+    className: noteItemClassName({ isUnavailableBinary, isSelected, isMultiSelected, isHighlighted }),
+    style: resolveNoteItemSurfaceStyle({ isUnavailableBinary, isSelected, isMultiSelected, typeColor, typeLightColor }),
+    onClick: createNoteItemClickHandler(entry, isUnavailableBinary, onClickNote),
     onContextMenu: onContextMenu ? (event) => onContextMenu(entry, event) : undefined,
-    onMouseEnter: !isBinary && onPrefetch ? () => onPrefetch(entry.path) : undefined,
-    testId: isMultiSelected ? 'multi-selected-item' : isBinary ? 'binary-file-item' : undefined,
-    title: isBinary ? 'Cannot open this file type' : undefined,
+    onMouseEnter: entry.fileKind !== 'binary' && onPrefetch ? () => onPrefetch(entry.path) : undefined,
+    testId: resolveNoteItemTestId({ isMultiSelected, isImagePreview, isUnavailableBinary }),
+    title: resolveNoteItemTitle({ isImagePreview, isUnavailableBinary }),
   }
 }
 
@@ -392,6 +446,7 @@ function NoteItemRow({
 function NoteItemContent({
   entry,
   isBinary,
+  isUnavailableBinary,
   isSelected,
   noteStatus,
   changeStatus,
@@ -403,6 +458,7 @@ function NoteItemContent({
 }: {
   entry: VaultEntry
   isBinary: boolean
+  isUnavailableBinary: boolean
   isSelected: boolean
   noteStatus: NoteStatus
   changeStatus?: NoteItemProps['changeStatus']
@@ -427,6 +483,7 @@ function NoteItemContent({
     <StandardNoteContent
       entry={entry}
       isBinary={isBinary}
+      isUnavailableBinary={isUnavailableBinary}
       noteStatus={noteStatus}
       isSelected={isSelected}
       typeColor={typeColor}
@@ -440,13 +497,16 @@ function NoteItemContent({
 
 export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlighted = false, noteStatus = 'clean', changeStatus, typeEntryMap, allEntries, displayPropsOverride, onClickNote, onPrefetch, onContextMenu }: NoteItemProps) {
   const isBinary = entry.fileKind === 'binary'
+  const isImagePreview = isImagePreviewEntry(entry)
+  const isUnavailableBinary = isBinary && !isImagePreview
   const te = typeEntryMap[entry.isA ?? '']
   const displayProps = resolveDisplayProps(entry, typeEntryMap, displayPropsOverride)
-  const typeColor = isBinary ? 'var(--muted-foreground)' : getTypeColor(entry.isA ?? 'Note', te?.color)
+  const typeColor = isImagePreview ? 'var(--accent-blue)' : isBinary ? 'var(--muted-foreground)' : getTypeColor(entry.isA ?? 'Note', te?.color)
   const typeLightColor = getTypeLightColor(entry.isA ?? 'Note', te?.color)
   const surfaceProps = resolveNoteItemSurfaceProps({
     entry,
-    isBinary,
+    isUnavailableBinary,
+    isImagePreview,
     isSelected,
     isMultiSelected,
     isHighlighted,
@@ -467,6 +527,7 @@ export function NoteItem({ entry, isSelected, isMultiSelected = false, isHighlig
       <NoteItemContent
         entry={entry}
         isBinary={isBinary}
+        isUnavailableBinary={isUnavailableBinary}
         isSelected={isSelected}
         noteStatus={noteStatus}
         changeStatus={changeStatus}

@@ -17,6 +17,7 @@ import { useDragRegion } from '../hooks/useDragRegion'
 import { formatShortcutDisplay } from '../hooks/appCommandCatalog'
 import { EditorRightPanel } from './EditorRightPanel'
 import { EditorContent } from './EditorContent'
+import { FilePreview } from './FilePreview'
 import { schema } from './editorSchema'
 import {
   applyPendingRawExitContent,
@@ -389,12 +390,16 @@ function EditorLayout({
   onUnsupportedAiPaste?: (message: string) => void
   locale?: AppLocale
 }) {
+  const activeBinaryTab = activeTab?.entry.fileKind === 'binary' ? activeTab : null
+
   return (
     <div className="editor flex flex-col min-h-0 overflow-hidden bg-background text-foreground">
       <div className="flex flex-1 min-h-0">
         {tabs.length === 0
           ? <EditorEmptyState locale={locale} />
-          : <EditorContent
+          : activeBinaryTab
+            ? <FilePreview entry={activeBinaryTab.entry} />
+            : <EditorContent
               activeTab={activeTab}
               isLoadingNewTab={isLoadingNewTab}
               entries={entries}

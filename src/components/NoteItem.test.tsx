@@ -19,11 +19,11 @@ describe('NoteItem', () => {
     openExternalUrl.mockClear()
   })
 
-  it('renders binary files as non-clickable muted rows', () => {
+  it('renders unsupported binary files as non-clickable muted rows', () => {
     const binaryEntry = makeEntry({
-      path: '/vault/photo.png',
-      filename: 'photo.png',
-      title: 'photo.png',
+      path: '/vault/archive.zip',
+      filename: 'archive.zip',
+      title: 'archive.zip',
       fileKind: 'binary',
     })
     const onClickNote = vi.fn()
@@ -36,6 +36,26 @@ describe('NoteItem', () => {
 
     fireEvent.click(item)
     expect(onClickNote).not.toHaveBeenCalled()
+  })
+
+  it('renders image files as clickable rows with an image file indicator', () => {
+    const imageEntry = makeEntry({
+      path: '/vault/photo.png',
+      filename: 'photo.png',
+      title: 'photo.png',
+      fileKind: 'binary',
+    })
+    const onClickNote = vi.fn()
+
+    render(<NoteItem entry={imageEntry} isSelected={false} typeEntryMap={{}} onClickNote={onClickNote} />)
+
+    const item = screen.getByTestId('image-file-item')
+    expect(item.className).not.toContain('opacity-50')
+    expect(item).toHaveAttribute('title', 'Open image preview')
+
+    fireEvent.click(item)
+    expect(onClickNote).toHaveBeenCalledWith(imageEntry, expect.any(Object))
+    expect(screen.getByTestId('type-icon')).toHaveAttribute('data-file-preview-kind', 'image')
   })
 
   it('renders text files as clickable rows', () => {

@@ -18,6 +18,11 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 })
 
+vi.mock('@tauri-apps/api/core', () => ({
+  convertFileSrc: vi.fn((path: string) => `asset://localhost/${encodeURIComponent(path)}`),
+  invoke: vi.fn(),
+}))
+
 // Hoisted mock editor — available before vi.mock factory runs.
 // Tests can reconfigure spies (e.g. mockTryParse.mockResolvedValue) before rendering.
 const mockEditor = vi.hoisted(() => ({
@@ -253,6 +258,98 @@ describe('Editor', () => {
     })
 
     expect(screen.getByTestId('blocknote-view')).toBeInTheDocument()
+  })
+
+  it('renders an in-app image preview for binary image tabs', () => {
+    const imageEntry: VaultEntry = {
+      ...mockEntry,
+      path: '/vault/assets/photo.png',
+      filename: 'photo.png',
+      title: 'photo.png',
+      fileKind: 'binary',
+    }
+
+    renderEditor({
+      tabs: [{ entry: imageEntry, content: '' }],
+      activeTabPath: imageEntry.path,
+      entries: [imageEntry],
+    })
+
+    const preview = screen.getByTestId('file-preview')
+    expect(preview).toHaveAttribute('tabindex', '0')
+    expect(screen.getByRole('img', { name: 'photo.png' })).toHaveAttribute(
+      'src',
+      'asset://localhost/%2Fvault%2Fassets%2Fphoto.png',
+    )
+    expect(screen.queryByTestId('blocknote-view')).not.toBeInTheDocument()
+  })
+
+  it('shows a graceful fallback when an image preview fails to render', () => {
+    const imageEntry: VaultEntry = {
+      ...mockEntry,
+      path: '/vault/assets/broken.png',
+      filename: 'broken.png',
+      title: 'broken.png',
+      fileKind: 'binary',
+    }
+
+    renderEditor({
+      tabs: [{ entry: imageEntry, content: '' }],
+      activeTabPath: imageEntry.path,
+      entries: [imageEntry],
+    })
+
+    fireEvent.error(screen.getByRole('img', { name: 'broken.png' }))
+
+    expect(screen.getByTestId('file-preview-fallback')).toHaveTextContent('Image preview failed')
+    expect(screen.getByRole('button', { name: 'Open in default app' })).toBeInTheDocument()
+  })
+
+  it('shows an explicit unsupported-file fallback for non-image binary tabs', () => {
+    const binaryEntry: VaultEntry = {
+      ...mockEntry,
+      path: '/vault/assets/archive.zip',
+      filename: 'archive.zip',
+      title: 'archive.zip',
+      fileKind: 'binary',
+    }
+
+    renderEditor({
+      tabs: [{ entry: binaryEntry, content: '' }],
+      activeTabPath: binaryEntry.path,
+      entries: [binaryEntry],
+    })
+
+    expect(screen.getByTestId('file-preview-fallback')).toHaveTextContent('Preview unavailable')
+    expect(screen.getByText('ZIP file')).toBeInTheDocument()
+  })
+
+  it('moves focus back to the note list when Escape is pressed on the file preview', () => {
+    const imageEntry: VaultEntry = {
+      ...mockEntry,
+      path: '/vault/assets/photo.png',
+      filename: 'photo.png',
+      title: 'photo.png',
+      fileKind: 'binary',
+    }
+
+    render(
+      <>
+        <div data-testid="note-list-container" tabIndex={0} />
+        <Editor
+          {...defaultProps}
+          tabs={[{ entry: imageEntry, content: '' }]}
+          activeTabPath={imageEntry.path}
+          entries={[imageEntry]}
+        />
+      </>,
+    )
+
+    const preview = screen.getByTestId('file-preview')
+    preview.focus()
+    fireEvent.keyDown(preview, { key: 'Escape' })
+
+    expect(screen.getByTestId('note-list-container')).toHaveFocus()
   })
 
   it('passes the runtime CSP style nonce into BlockNote and TipTap', () => {

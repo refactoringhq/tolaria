@@ -167,6 +167,18 @@ interface TabManagementOptions {
   onUnreadableNoteContent?: (entry: VaultEntry, error: unknown) => void | Promise<void>
 }
 
+interface NavigateToEntryOptions {
+  entry: VaultEntry
+  forceReload?: boolean
+  navSeqRef: React.MutableRefObject<number>
+  tabsRef: React.MutableRefObject<Tab[]>
+  activeTabPathRef: React.MutableRefObject<string | null>
+  setTabs: React.Dispatch<React.SetStateAction<Tab[]>>
+  setActiveTabPath: React.Dispatch<React.SetStateAction<string | null>>
+  onMissingNotePath?: (entry: VaultEntry, error: unknown) => void | Promise<void>
+  onUnreadableNoteContent?: (entry: VaultEntry, error: unknown) => void | Promise<void>
+}
+
 function syncActiveTabPath(
   activeTabPathRef: React.MutableRefObject<string | null>,
   setActiveTabPath: React.Dispatch<React.SetStateAction<string | null>>,
@@ -240,6 +252,29 @@ function startEntryNavigation(options: {
   }
 
   return { seq, cachedContent }
+}
+
+function openBinaryEntry(options: {
+  entry: VaultEntry
+  navSeqRef: React.MutableRefObject<number>
+  tabsRef: React.MutableRefObject<Tab[]>
+  activeTabPathRef: React.MutableRefObject<string | null>
+  setTabs: React.Dispatch<React.SetStateAction<Tab[]>>
+  setActiveTabPath: React.Dispatch<React.SetStateAction<string | null>>
+}) {
+  const {
+    entry,
+    navSeqRef,
+    tabsRef,
+    activeTabPathRef,
+    setTabs,
+    setActiveTabPath,
+  } = options
+
+  navSeqRef.current += 1
+  syncActiveTabPath(activeTabPathRef, setActiveTabPath, entry.path)
+  setSingleTab(tabsRef, setTabs, { entry, content: '' })
+  finishNoteOpenTrace(entry.path)
 }
 
 function isMissingNotePathError(error: unknown): boolean {
@@ -434,20 +469,22 @@ function handleEntryLoadFailure(options: {
   failNoteOpenTrace(entry.path, 'load-failed')
 }
 
-async function navigateToEntry(options: {
-  entry: VaultEntry
-  forceReload?: boolean
-  navSeqRef: React.MutableRefObject<number>
-  tabsRef: React.MutableRefObject<Tab[]>
-  activeTabPathRef: React.MutableRefObject<string | null>
-  setTabs: React.Dispatch<React.SetStateAction<Tab[]>>
-  setActiveTabPath: React.Dispatch<React.SetStateAction<string | null>>
-  onMissingNotePath?: (entry: VaultEntry, error: unknown) => void | Promise<void>
-  onUnreadableNoteContent?: (entry: VaultEntry, error: unknown) => void | Promise<void>
-}) {
+function reopenAlreadyViewingEntry({
+  entry,
+  tabsRef,
+  activeTabPathRef,
+  setActiveTabPath,
+}: Pick<NavigateToEntryOptions, 'entry' | 'tabsRef' | 'activeTabPathRef' | 'setActiveTabPath'>): boolean {
+  if (!isAlreadyViewingPath(tabsRef, activeTabPathRef, entry.path)) return false
+  syncActiveTabPath(activeTabPathRef, setActiveTabPath, entry.path)
+  finishNoteOpenTrace(entry.path)
+  return true
+}
+
+async function loadTextEntry(options: Required<Pick<NavigateToEntryOptions, 'forceReload'>> & NavigateToEntryOptions) {
   const {
     entry,
-    forceReload = false,
+    forceReload,
     navSeqRef,
     tabsRef,
     activeTabPathRef,
@@ -456,16 +493,6 @@ async function navigateToEntry(options: {
     onMissingNotePath,
     onUnreadableNoteContent,
   } = options
-
-  if (entry.fileKind === 'binary') {
-    failNoteOpenTrace(entry.path, 'binary-entry')
-    return
-  }
-  if (!forceReload && isAlreadyViewingPath(tabsRef, activeTabPathRef, entry.path)) {
-    syncActiveTabPath(activeTabPathRef, setActiveTabPath, entry.path)
-    finishNoteOpenTrace(entry.path)
-    return
-  }
 
   const { seq, cachedContent } = startEntryNavigation({
     entry,
@@ -507,6 +534,19 @@ async function navigateToEntry(options: {
       onUnreadableNoteContent,
     })
   }
+}
+
+async function navigateToEntry(options: NavigateToEntryOptions) {
+  const forceReload = options.forceReload ?? false
+
+  if (options.entry.fileKind === 'binary') {
+    openBinaryEntry(options)
+    return
+  }
+
+  if (!forceReload && reopenAlreadyViewingEntry(options)) return
+
+  await loadTextEntry({ ...options, forceReload })
 }
 
 export function useTabManagement(options: TabManagementOptions = {}) {
