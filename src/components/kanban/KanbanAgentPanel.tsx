@@ -15,6 +15,8 @@ interface KanbanAgentPanelProps {
   agent: AiAgentId
   agentReady: boolean
   agentLabel: string
+  /** Optional callback to move the card to a new status. Used by the "Move to Review" CTA after a successful run. */
+  onUpdateStatus?: (notePath: string, newStatus: string) => Promise<unknown> | void
 }
 
 const STATUS_LABEL: Record<AgentStatus, string> = {
@@ -51,13 +53,16 @@ export function KanbanAgentPanel({
   agent,
   agentReady,
   agentLabel,
+  onUpdateStatus,
 }: KanbanAgentPanelProps) {
   const [contextPrompt, setContextPrompt] = useState<string | undefined>(undefined)
   const [contextError, setContextError] = useState<string | null>(null)
   const [isBuildingContext, setIsBuildingContext] = useState(false)
+  const [reviewSuggestionDismissed, setReviewSuggestionDismissed] = useState(false)
   const cardPathRef = useRef(entry.path)
 
   useEffect(() => { cardPathRef.current = entry.path }, [entry.path])
+  useEffect(() => { setReviewSuggestionDismissed(false) }, [entry.path])
 
   const { messages, status, sendMessage, clearConversation } = useCliAiAgent(
     vaultPath,
@@ -95,6 +100,24 @@ export function KanbanAgentPanel({
 
   const isRunning = status === 'thinking' || status === 'tool-executing' || isBuildingContext
   const canRun = !isRunning && agentReady && !!noteContent
+  const showReviewSuggestion =
+    status === 'done'
+    && !isRunning
+    && !!onUpdateStatus
+    && !reviewSuggestionDismissed
+    && (entry.status ?? 'backlog') !== 'review'
+    && (entry.status ?? 'backlog') !== 'done'
+
+  const handleMoveToReview = useCallback(async () => {
+    if (!onUpdateStatus) return
+    console.log('[kanban-agent] move to review after run', { path: entry.path })
+    setReviewSuggestionDismissed(true)
+    try {
+      await onUpdateStatus(entry.path, 'review')
+    } catch (err) {
+      console.error('[kanban-agent] move to review failed', err)
+    }
+  }, [entry.path, onUpdateStatus])
 
   const renderedMessages = messages
 
@@ -143,6 +166,35 @@ export function KanbanAgentPanel({
       </header>
       {contextError ? (
         <p className="text-xs text-destructive" data-testid="kanban-agent-error">{contextError}</p>
+      ) : null}
+      {showReviewSuggestion ? (
+        <div
+          className="flex items-center justify-between gap-2 rounded-md border border-[var(--accent-green)]/40 bg-[var(--accent-green)]/10 px-2 py-1.5 text-xs"
+          data-testid="kanban-agent-review-suggestion"
+        >
+          <span className="text-foreground">Run finished. Move card to Review?</span>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              size="xs"
+              variant="ghost"
+              onClick={() => setReviewSuggestionDismissed(true)}
+              className="h-6 text-[11px] text-muted-foreground hover:text-foreground"
+              data-testid="kanban-agent-review-dismiss"
+            >
+              Dismiss
+            </Button>
+            <Button
+              type="button"
+              size="xs"
+              onClick={handleMoveToReview}
+              className="h-6 text-[11px]"
+              data-testid="kanban-agent-review-confirm"
+            >
+              Move to Review
+            </Button>
+          </div>
+        </div>
       ) : null}
       <div className="min-h-0 flex-1 overflow-y-auto rounded-md border bg-background p-3 text-xs leading-relaxed">
         {renderedMessages.length === 0 ? (

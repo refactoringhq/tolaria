@@ -1646,6 +1646,7 @@ function App() {
                   agent={aiAgentPreferences.defaultAiAgent}
                   agentReady={aiAgentPreferences.defaultAiAgentReady}
                   agentLabel={aiAgentPreferences.defaultAiAgentLabel}
+                  onUpdateStatus={handleKanbanUpdateStatus}
                 />
               </div>
             )}
