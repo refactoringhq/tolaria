@@ -27,15 +27,28 @@ function getSelectionSyncEditor(
   return editor
 }
 
-function getActiveSelectionEditor(
-  editor: HTMLDivElement | null,
-  isComposingRef?: React.RefObject<boolean>,
-) {
-  if (!editor) return null
-  if (document.activeElement !== editor) return null
-  if (isComposingRef?.current === true) return null
+function removeImeLeftoverTextNodes(editor: HTMLDivElement) {
+  // IME composition (Korean/Japanese/Chinese) inserts plain text nodes
+  // directly inside the contentEditable div, outside of React's reconciliation
+  // tree. After we commit the composed value, those orphan nodes survive the
+  // React re-render and accumulate as siblings on the next composition,
+  // producing per-syllable duplication (e.g. typing 안녕 → "안안녕녕").
+  //
+  // We only strip text nodes that sit alongside React-rendered element
+  // children (spans/chips). When the editor holds only text — for example,
+  // right after a manual `editor.textContent = ...` write before React has
+  // had a chance to mount its span — we leave it alone so we don't blank
+  // the field.
+  const hasElementChildren = Array.from(editor.childNodes).some(
+    (child) => child.nodeType === Node.ELEMENT_NODE,
+  )
+  if (!hasElementChildren) return
 
-  return editor
+  for (const child of Array.from(editor.childNodes)) {
+    if (child.nodeType !== Node.TEXT_NODE) continue
+    if (child.textContent === '​') continue
+    editor.removeChild(child)
+  }
 }
 
 export function useInlineWikilinkSelection({
@@ -84,8 +97,11 @@ export function useInlineWikilinkSelection({
   }, [onChange])
 
   useLayoutEffect(() => {
-    const editor = getActiveSelectionEditor(editorRef.current, isComposingRef)
+    const editor = editorRef.current
     if (!editor) return
+    if (isComposingRef?.current === true) return
+    removeImeLeftoverTextNodes(editor)
+    if (document.activeElement !== editor) return
     applySelectionRange(editor, selectionRange)
   }, [isComposingRef, selectionRange, value])
 

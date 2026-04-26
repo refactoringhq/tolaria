@@ -291,7 +291,7 @@ describe('WikilinkChatInput', () => {
     await waitFor(() => {
       expect(onDraftChange).toHaveBeenCalledWith('你')
     })
-    expect(editor.textContent).toContain('你')
+    expect(screen.getByTestId('agent-input').textContent).toContain('你')
   })
 
   it('does not select wikilink suggestions while IME composition is active', () => {
