@@ -102,6 +102,7 @@ function isSaveShortcut(event: ReactKeyboardEvent): boolean {
 function createSettingsDraft(
   settings: Settings,
   explicitOrganizationEnabled: boolean,
+  aiAgentsStatus: AiAgentsStatus,
 ): SettingsDraft {
   return {
     pullInterval: settings.auto_pull_interval_minutes ?? 5,
@@ -115,7 +116,7 @@ function createSettingsDraft(
       DEFAULT_AUTOGIT_INACTIVE_THRESHOLD_SECONDS,
     ),
     autoAdvanceInboxAfterOrganize: settings.auto_advance_inbox_after_organize ?? false,
-    defaultAiAgent: resolveDefaultAiAgent(settings.default_ai_agent),
+    defaultAiAgent: resolveDefaultAiAgent(settings.default_ai_agent, aiAgentsStatus),
     releaseChannel: normalizeReleaseChannel(settings.release_channel),
     themeMode: resolveSettingsDraftThemeMode(settings.theme_mode),
     initialH1AutoRename: settings.initial_h1_auto_rename_enabled ?? true,
@@ -216,7 +217,9 @@ function SettingsPanelInner({
   onSaveExplicitOrganization,
   onClose,
 }: SettingsPanelInnerProps) {
-  const [draft, setDraft] = useState(() => createSettingsDraft(settings, explicitOrganizationEnabled))
+  const [draft, setDraft] = useState(() =>
+    createSettingsDraft(settings, explicitOrganizationEnabled, aiAgentsStatus),
+  )
   const panelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -626,7 +629,9 @@ function buildDefaultAiAgentOptions(aiAgentsStatus: AiAgentsStatus): Array<{ val
     const status = aiAgentsStatus[definition.id]
     const suffix = status.status === 'installed'
       ? ` (installed${status.version ? ` ${status.version}` : ''})`
-      : ' (missing)'
+      : status.status === 'checking'
+        ? ' (checking…)'
+        : ' (missing)'
     return {
       value: definition.id,
       label: `${definition.label}${suffix}`,
