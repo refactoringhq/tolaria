@@ -461,7 +461,7 @@ export function StatusBarSecondarySection({
         </ActionTooltip>
       )}
       {onOpenFeedback && <FeedbackButton compact={compact} locale={locale} onOpenFeedback={onOpenFeedback} />}
-      <ActionTooltip copy={themeTooltip} side="top">
+      <ActionTooltip copy={themeTooltip} side="top" align="end" contentTestId="status-theme-mode-tooltip">
         <Button
           type="button"
           variant="ghost"

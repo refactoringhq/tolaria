@@ -131,6 +131,27 @@ describe('StatusBar', () => {
     expect(screen.queryByLabelText('Notifications are coming soon')).not.toBeInTheDocument()
   })
 
+  it('end-aligns the theme tooltip to keep it inside the right window edge', async () => {
+    render(
+      <StatusBar
+        noteCount={100}
+        vaultPath="/Users/luca/Laputa"
+        vaults={vaults}
+        onSwitchVault={vi.fn()}
+        themeMode="light"
+        onToggleThemeMode={vi.fn()}
+        onOpenSettings={vi.fn()}
+      />,
+    )
+
+    act(() => {
+      fireEvent.focus(screen.getByTestId('status-theme-mode'))
+    })
+    const tooltip = await screen.findByTestId('status-theme-mode-tooltip')
+    expect(tooltip).toHaveAttribute('data-align', 'end')
+    expect(tooltip).toHaveTextContent('Switch to dark mode')
+  })
+
   it('calls onToggleThemeMode from the bottom bar', () => {
     const onToggleThemeMode = vi.fn()
     render(
