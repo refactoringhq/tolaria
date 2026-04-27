@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { isTauri, addMockEntry } from '../mock-tauri'
+import { isTauri, addMockEntry, mockInvoke } from '../mock-tauri'
 import type { VaultEntry } from '../types'
 import { slugifyNoteStem as slugify } from '../utils/noteSlug'
 import { resolveEntry } from '../utils/wikilink'
@@ -127,7 +127,7 @@ export interface NewTypeParams {
 export function resolveNewType({ typeName, vaultPath }: NewTypeParams): { entry: VaultEntry; content: string } {
   const slug = slugify(typeName)
   const entry = buildNewEntry({ path: `${vaultPath}/${slug}.md`, slug, title: typeName, type: 'Type', status: null })
-  return { entry, content: `---\ntype: Type\n---\n` }
+  return { entry, content: `---\ntype: Type\n---\n\n# ${typeName}\n` }
 }
 
 type ResolvedEntry = { entry: VaultEntry; content: string }
@@ -226,7 +226,7 @@ function createPersistFailureMessage(entry: VaultEntry, error: unknown): string 
 
 /** Persist a newly created note to disk. Returns a Promise for error handling. */
 export function persistNewNote(path: string, content: string): Promise<void> {
-  if (!isTauri()) return Promise.resolve()
+  if (!isTauri()) return mockInvoke<void>('save_note_content', { path, content }).then(() => {})
   return invoke<void>('create_note_content', { path, content }).then(() => {})
 }
 
@@ -515,6 +515,7 @@ export interface NoteCreationConfig {
   unsavedPaths?: Set<string>
   markContentPending?: (path: string, content: string) => void
   onNewNotePersisted?: () => void
+  onTypeStateChanged?: () => void | Promise<void>
 }
 
 interface CreationTabDeps {
@@ -522,7 +523,17 @@ interface CreationTabDeps {
 }
 
 export function useNoteCreation(config: NoteCreationConfig, tabDeps: CreationTabDeps) {
-  const { addEntry, removeEntry, entries, setToastMessage, addPendingSave, removePendingSave, vaultPath } = config
+  const {
+    addEntry,
+    removeEntry,
+    entries,
+    setToastMessage,
+    addPendingSave,
+    removePendingSave,
+    vaultPath,
+    onNewNotePersisted,
+    onTypeStateChanged,
+  } = config
   const { openTabWithContent } = tabDeps
 
   const persistResolvedEntry = useCallback(async (
@@ -535,13 +546,16 @@ export function useNoteCreation(config: NoteCreationConfig, tabDeps: CreationTab
       await persistOptimistic(resolved.entry.path, resolved.content, {
         onStart: addPendingSave,
         onEnd: removePendingSave,
-        onPersisted: config.onNewNotePersisted,
+        onPersisted: onNewNotePersisted,
       })
+      if (resolved.entry.isA === 'Type') {
+        await onTypeStateChanged?.()
+      }
     } catch (error) {
       removeEntry(resolved.entry.path)
       throw error
     }
-  }, [openTabWithContent, addEntry, addPendingSave, removePendingSave, config.onNewNotePersisted, removeEntry])
+  }, [openTabWithContent, addEntry, addPendingSave, removePendingSave, onNewNotePersisted, onTypeStateChanged, removeEntry])
 
   const handleCreateNote = useCallback((title: string, type: string): Promise<boolean> =>
     createNamedNote({ entries, vaultPath, setToastMessage, persistResolvedEntry, title, type, creationPath: 'plus_button' }),
