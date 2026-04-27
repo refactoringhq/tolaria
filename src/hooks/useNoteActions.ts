@@ -34,6 +34,8 @@ export interface NoteActionsConfig {
   onFrontmatterContentChanged?: (path: string, content: string) => void
   /** Called after a frontmatter mutation is fully persisted, including follow-up renames. */
   onFrontmatterPersisted?: () => void
+  /** Called after type files or type assignments change, so derived type surfaces can reload. */
+  onTypeStateChanged?: () => void | Promise<void>
 }
 
 function isTitleKey(key: string): boolean {
@@ -92,6 +94,18 @@ async function renameAfterTitleChange({ path, newTitle, deps }: RenameAfterTitle
 
 function shouldRenameOnTitleUpdate(key: string, value: FrontmatterValue): value is string {
   return isTitleKey(key) && typeof value === 'string' && value !== ''
+}
+
+function isTypeFieldKey(key: string): boolean {
+  const normalized = key.trim().toLowerCase().replace(/\s+/g, '_')
+  return normalized === 'type' || normalized === 'is_a'
+}
+
+async function notifyFrontmatterPersisted(config: NoteActionsConfig, key: string): Promise<void> {
+  config.onFrontmatterPersisted?.()
+  if (isTypeFieldKey(key)) {
+    await config.onTypeStateChanged?.()
+  }
 }
 
 interface NavigateWikilinkParams {
@@ -192,7 +206,7 @@ async function updateFrontmatterAndMaybeRename({
   if (!applyFrontmatterCallbacks({ config, path, newContent })) return
 
   await maybeRenameAfterFrontmatterUpdate({ path, key, value, deps })
-  config.onFrontmatterPersisted?.()
+  await notifyFrontmatterPersisted(config, key)
 }
 
 function buildTabManagementOptions(
@@ -280,7 +294,7 @@ function useFrontmatterActionHandlers({
 
     const newContent = await runFrontmatterOp('delete', path, key, undefined, options)
     if (!applyFrontmatterCallbacks({ config, path, newContent })) return
-    config.onFrontmatterPersisted?.()
+    await notifyFrontmatterPersisted(config, key)
   }, [config, runFrontmatterOp])
 
   const handleAddProperty = useCallback(async (path: string, key: string, value: FrontmatterValue) => {
@@ -289,7 +303,7 @@ function useFrontmatterActionHandlers({
 
     const newContent = await runFrontmatterOp('update', path, key, value)
     if (!applyFrontmatterCallbacks({ config, path, newContent })) return
-    config.onFrontmatterPersisted?.()
+    await notifyFrontmatterPersisted(config, key)
   }, [config, runFrontmatterOp])
 
   return {

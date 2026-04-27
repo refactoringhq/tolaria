@@ -552,6 +552,7 @@ function App() {
     unsavedPaths: vault.unsavedPaths,
     markContentPending: (path, content) => appSave.contentChangeRef.current(path, content),
     onNewNotePersisted: vault.loadModifiedFiles,
+    onTypeStateChanged: async () => { await vault.reloadVault() },
     replaceEntry: vault.replaceEntry,
     onFrontmatterPersisted: vault.loadModifiedFiles,
     onPathRenamed: (oldPath, newPath) => appSave.trackRenamedPath(oldPath, newPath),
