@@ -1,15 +1,8 @@
 import { APP_COMMAND_IDS, getAppCommandShortcutDisplay } from '../appCommandCatalog'
 import type { CommandAction } from './types'
 import type { ViewMode } from '../useViewMode'
-import type { NoteLayout } from '../../types'
+import type { NoteWidthMode } from '../../types'
 import { requestNewAiChat } from '../../utils/aiPromptBridge'
-
-const NOTE_LAYOUT_COMMAND_LABELS: Record<NoteLayout, string> = {
-  centered: 'Use Left-Aligned Note Layout',
-  left: 'Use Centered Note Layout',
-}
-
-const noop = () => {}
 
 interface ViewCommandsConfig {
   hasActiveNote: boolean
@@ -18,8 +11,9 @@ interface ViewCommandsConfig {
   onToggleInspector: () => void
   onToggleDiff?: () => void
   onToggleRawEditor?: () => void
-  noteLayout?: NoteLayout
-  onToggleNoteLayout?: () => void
+  noteWidth?: NoteWidthMode
+  onSetNoteWidth?: (width: NoteWidthMode) => void
+  onSetDefaultNoteWidth?: (width: NoteWidthMode) => void
   onToggleAIChat?: () => void
   zoomLevel: number
   onZoomIn: () => void
@@ -30,21 +24,35 @@ interface ViewCommandsConfig {
   noteListColumnsLabel: string
 }
 
-function buildNoteLayoutCommand(noteLayout: NoteLayout, onToggleNoteLayout?: () => void): CommandAction {
-  return {
-    id: 'toggle-note-layout',
-    label: NOTE_LAYOUT_COMMAND_LABELS[noteLayout],
-    group: 'View',
-    keywords: ['layout', 'note', 'column', 'wide', 'left', 'centered', 'reading'],
-    enabled: Boolean(onToggleNoteLayout),
-    execute: onToggleNoteLayout ?? noop,
-  }
+function buildNoteWidthCommands(
+  noteWidth: NoteWidthMode,
+  onSetNoteWidth?: (width: NoteWidthMode) => void,
+  onSetDefaultNoteWidth?: (width: NoteWidthMode) => void,
+): CommandAction[] {
+  const noteModeCommands = (['normal', 'wide'] as const).map((width) => ({
+    id: `set-note-width-${width}`,
+    label: `Set Note Width: ${width === 'wide' ? 'Wide' : 'Normal'}`,
+    group: 'View' as const,
+    keywords: ['layout', 'note', 'width', 'wide', 'normal', 'reading'],
+    enabled: Boolean(onSetNoteWidth) && noteWidth !== width,
+    execute: () => onSetNoteWidth?.(width),
+  }))
+  const defaultModeCommands = (['normal', 'wide'] as const).map((width) => ({
+    id: `set-default-note-width-${width}`,
+    label: `Set Default Note Width: ${width === 'wide' ? 'Wide' : 'Normal'}`,
+    group: 'View' as const,
+    keywords: ['layout', 'default', 'preference', 'width', 'wide', 'normal', 'reading'],
+    enabled: Boolean(onSetDefaultNoteWidth),
+    execute: () => onSetDefaultNoteWidth?.(width),
+  }))
+
+  return [...noteModeCommands, ...defaultModeCommands]
 }
 
 export function buildViewCommands(config: ViewCommandsConfig): CommandAction[] {
   const {
     hasActiveNote, activeNoteModified,
-    onSetViewMode, onToggleInspector, onToggleDiff, onToggleRawEditor, noteLayout = 'centered', onToggleNoteLayout, onToggleAIChat,
+    onSetViewMode, onToggleInspector, onToggleDiff, onToggleRawEditor, noteWidth = 'normal', onSetNoteWidth, onSetDefaultNoteWidth, onToggleAIChat,
     zoomLevel, onZoomIn, onZoomOut, onZoomReset,
     onCustomizeNoteListColumns, canCustomizeNoteListColumns, noteListColumnsLabel,
   } = config
@@ -56,7 +64,7 @@ export function buildViewCommands(config: ViewCommandsConfig): CommandAction[] {
     { id: 'toggle-inspector', label: 'Toggle Properties Panel', group: 'View', shortcut: getAppCommandShortcutDisplay(APP_COMMAND_IDS.viewToggleProperties), keywords: ['properties', 'inspector', 'panel', 'right', 'sidebar'], enabled: true, execute: onToggleInspector },
     { id: 'toggle-diff', label: 'Toggle Diff Mode', group: 'View', keywords: ['diff', 'changes', 'git', 'compare', 'version'], enabled: hasActiveNote && activeNoteModified, execute: () => onToggleDiff?.() },
     { id: 'toggle-raw-editor', label: 'Toggle Raw Editor', group: 'View', keywords: ['raw', 'source', 'markdown', 'frontmatter', 'code', 'textarea'], enabled: hasActiveNote && !!onToggleRawEditor, execute: () => onToggleRawEditor?.() },
-    buildNoteLayoutCommand(noteLayout, onToggleNoteLayout),
+    ...buildNoteWidthCommands(noteWidth, onSetNoteWidth, onSetDefaultNoteWidth),
     { id: 'toggle-ai-panel', label: 'Toggle AI Panel', group: 'View', shortcut: getAppCommandShortcutDisplay(APP_COMMAND_IDS.viewToggleAiChat), keywords: ['ai', 'agent', 'chat', 'assistant', 'contextual'], enabled: true, execute: () => onToggleAIChat?.() },
     { id: 'new-ai-chat', label: 'New AI chat', group: 'View', keywords: ['ai', 'agent', 'chat', 'assistant', 'new', 'fresh', 'conversation', 'reset'], enabled: true, execute: requestNewAiChat },
     { id: 'toggle-backlinks', label: 'Toggle Backlinks', group: 'View', keywords: ['backlinks', 'references', 'links', 'mentions', 'incoming'], enabled: hasActiveNote, execute: onToggleInspector },

@@ -39,7 +39,6 @@ import { planNewTypeCreation } from './hooks/useNoteCreation'
 import { useCommitFlow } from './hooks/useCommitFlow'
 import { useGitRemoteStatus } from './hooks/useGitRemoteStatus'
 import { useViewMode, type ViewMode } from './hooks/useViewMode'
-import { useNoteLayout } from './hooks/useNoteLayout'
 import { useEntryActions } from './hooks/useEntryActions'
 import { useAppCommands } from './hooks/useAppCommands'
 import { triggerCommitEntryAction } from './utils/commitEntryAction'
@@ -79,7 +78,7 @@ import { DeleteProgressNotice } from './components/DeleteProgressNotice'
 import { UpdateBanner } from './components/UpdateBanner'
 import { invoke } from '@tauri-apps/api/core'
 import { isTauri, mockInvoke } from './mock-tauri'
-import type { SidebarSelection, InboxPeriod, VaultEntry, ViewDefinition } from './types'
+import type { SidebarSelection, InboxPeriod, VaultEntry, ViewDefinition, NoteWidthMode } from './types'
 import type { NoteListItem } from './utils/ai-context'
 import { initializeNoteProperties } from './utils/initializeNoteProperties'
 import { filterEntries, filterInboxEntries, type NoteListFilter } from './utils/noteListHelpers'
@@ -115,6 +114,7 @@ import {
   shouldProcessNeighborhoodEscape,
 } from './utils/neighborhoodHistory'
 import { OPEN_AI_CHAT_EVENT } from './utils/aiPromptBridge'
+import { resolveNoteWidthMode, toggleNoteWidthMode } from './utils/noteWidth'
 import {
   INBOX_SELECTION,
   isExplicitOrganizationEnabled,
@@ -1115,7 +1115,6 @@ function App() {
   const diffToggleRef = useRef<() => void>(() => {})
 
   const { setViewMode, sidebarVisible, noteListVisible } = useViewMode(noteWindowParams ? 'editor-only' : undefined)
-  const { noteLayout, toggleNoteLayout } = useNoteLayout()
   const zoom = useZoom()
   const buildNumber = useBuildNumber()
 
@@ -1344,6 +1343,18 @@ function App() {
     () => activeDeletedFile ? () => { void handleDiscardFile(activeDeletedFile.relativePath) } : undefined,
     [activeDeletedFile, handleDiscardFile],
   )
+  const activeTab = notes.tabs.find((t) => t.entry.path === notes.activeTabPath) ?? null
+  const noteWidth = resolveNoteWidthMode(activeTab?.entry.noteWidth, settings.note_width_mode)
+  const handleSetDefaultNoteWidth = useCallback((width: NoteWidthMode) => {
+    void saveSettings({ ...settings, note_width_mode: width })
+  }, [saveSettings, settings])
+  const handleSetActiveNoteWidth = useCallback((width: NoteWidthMode) => {
+    if (!notes.activeTabPath) return
+    void notes.handleUpdateFrontmatter(notes.activeTabPath, '_width', width)
+  }, [notes])
+  const handleToggleNoteWidth = useCallback(() => {
+    handleSetActiveNoteWidth(toggleNoteWidthMode(noteWidth))
+  }, [handleSetActiveNoteWidth, noteWidth])
 
   const commands = useAppCommands({
     activeTabPath: notes.activeTabPath, activeTabPathRef: notes.activeTabPathRef,
@@ -1371,8 +1382,9 @@ function App() {
     onToggleInspector: handleToggleInspector,
     onToggleDiff: toggleDiffCommand,
     onToggleRawEditor: toggleRawEditorCommand,
-    noteLayout,
-    onToggleNoteLayout: toggleNoteLayout,
+    noteWidth,
+    onSetNoteWidth: !activeDeletedFile && notes.activeTabPath ? handleSetActiveNoteWidth : undefined,
+    onSetDefaultNoteWidth: handleSetDefaultNoteWidth,
     onZoomIn: zoom.zoomIn, onZoomOut: zoom.zoomOut, onZoomReset: zoom.zoomReset,
     zoomLevel: zoom.zoomLevel,
     onSelect: handleSetSelection,
@@ -1430,8 +1442,6 @@ function App() {
     onRestoreDeletedNote: restoreDeletedNoteCommand,
     canRestoreDeletedNote: !!activeDeletedFile,
   })
-
-  const activeTab = notes.tabs.find((t) => t.entry.path === notes.activeTabPath) ?? null
 
   const inboxCount = useMemo(() => filterInboxEntries(vault.entries, inboxPeriod).length, [vault.entries, inboxPeriod])
 
@@ -1585,8 +1595,8 @@ function App() {
               onContentChange={handleTrackedContentChange}
               onSave={handleTrackedSave}
               onRenameFilename={activeDeletedFile ? undefined : appSave.handleFilenameRename}
-              noteLayout={noteLayout}
-              onToggleNoteLayout={toggleNoteLayout}
+              noteWidth={noteWidth}
+              onToggleNoteWidth={activeDeletedFile ? undefined : handleToggleNoteWidth}
               rawToggleRef={rawToggleRef}
               diffToggleRef={diffToggleRef}
               canGoBack={canGoBack}

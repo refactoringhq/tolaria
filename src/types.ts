@@ -45,6 +45,8 @@ export interface VaultEntry {
   favoriteIndex: number | null
   /** Properties to display as chips in the note list for this Type's notes. */
   listPropertiesDisplay: string[]
+  /** Per-note content width override stored in `_width` frontmatter. */
+  noteWidth?: NoteWidthMode | null
   /** All wikilink targets found in the note content. Extracted from [[target]] patterns. */
   outgoingLinks: string[]
   /** Custom scalar frontmatter properties (non-relationship, non-structural). */
@@ -95,6 +97,7 @@ export interface Settings {
   ui_language?: AppLocale | null
   initial_h1_auto_rename_enabled?: boolean | null
   default_ai_agent?: AiAgentId | null
+  note_width_mode?: NoteWidthMode | null
 }
 
 export interface GitPullResult {
@@ -151,8 +154,10 @@ export interface AllNotesConfig {
   noteListProperties: string[] | null
 }
 
-/** Vault-scoped UI configuration stored locally per vault path. */
+/** Legacy vault-scoped note layout value retained for persisted config compatibility. */
 export type NoteLayout = 'centered' | 'left'
+
+export type NoteWidthMode = 'normal' | 'wide'
 
 /** Vault-scoped UI configuration stored locally per vault path. */
 export interface VaultConfig {

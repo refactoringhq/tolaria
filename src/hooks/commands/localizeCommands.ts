@@ -92,7 +92,10 @@ function localizeColumnsCommand(command: CommandAction, t: Translate): string {
 }
 
 const VIEW_STATE_LABELERS: Partial<Record<string, CommandLabeler>> = {
-  'toggle-note-layout': (command, t) => t(command.label === 'Use Left-Aligned Note Layout' ? 'command.view.leftLayout' : 'command.view.centerLayout'),
+  'set-note-width-normal': (_command, t) => t('command.view.setNoteWidthNormal'),
+  'set-note-width-wide': (_command, t) => t('command.view.setNoteWidthWide'),
+  'set-default-note-width-normal': (_command, t) => t('command.view.setDefaultNoteWidthNormal'),
+  'set-default-note-width-wide': (_command, t) => t('command.view.setDefaultNoteWidthWide'),
   'zoom-in': (command, t) => t('command.view.zoomIn', { zoom: parenthesizedSuffix(command.label)?.replace('%', '') ?? '' }),
   'zoom-out': (command, t) => t('command.view.zoomOut', { zoom: parenthesizedSuffix(command.label)?.replace('%', '') ?? '' }),
   'customize-note-list-columns': localizeColumnsCommand,

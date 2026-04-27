@@ -40,6 +40,8 @@ pub(crate) struct Frontmatter {
     pub sort: Option<StringOrList>,
     #[serde(default)]
     pub view: Option<StringOrList>,
+    #[serde(rename = "_width", default)]
+    pub width: Option<StringOrList>,
     #[serde(default)]
     pub visible: Option<bool>,
     #[serde(
@@ -203,6 +205,7 @@ fn parse_frontmatter(data: &HashMap<String, serde_json::Value>) -> Frontmatter {
         "_sort",
         "sort",
         "view",
+        "_width",
         "visible",
         "notion_id",
         "Status",
