@@ -1,33 +1,34 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { existsSync, statSync } from 'node:fs'
 
-import { buildReleaseHistoryPage } from '../src/utils/releaseHistoryPage'
-
-function getArg(flag: string): string {
-  const index = process.argv.indexOf(flag)
-  const value = index >= 0 ? process.argv[index + 1] : null
-
-  if (!value) {
-    throw new Error(`Missing required argument: ${flag}`)
-  }
-
-  return value
+// Validate file existence before reading
+if (!existsSync(releasesJsonPath)) {
+  throw new Error(`Releases JSON file not found: ${releasesJsonPath}`)
 }
 
-function readReleasePayload(filePath: string): unknown {
-  try {
-    return JSON.parse(readFileSync(filePath, 'utf8'))
-  } catch {
-    return []
-  }
+// Ensure file is not empty
+if (existsSync(releasesJsonPath) && statSync(releasesJsonPath).size === 0) {
+  console.warn('Warning: Releases JSON file is empty, proceeding with empty array.')
 }
 
-const releasesJsonPath = resolve(getArg('--releases-json'))
-const outputFilePath = resolve(getArg('--output-file'))
-const releasesPayload = readReleasePayload(releasesJsonPath)
-const html = buildReleaseHistoryPage(releasesPayload)
+// Validate payload structure
+if (!Array.isArray(releasesPayload)) {
+  console.warn('Invalid payload format: expected an array. Falling back to empty list.')
+}
 
-mkdirSync(dirname(outputFilePath), { recursive: true })
-writeFileSync(outputFilePath, html)
+// Add timestamp comment to HTML
+const timestamp = new Date().toISOString()
+const htmlWithMeta = `<!-- Generated at ${timestamp} -->\n${html}`
 
-console.log(`Release history page written to ${outputFilePath}`)
+// Write using modified HTML
+writeFileSync(outputFilePath, htmlWithMeta)
+
+// Log file size after write
+const fileSizeKB = (statSync(outputFilePath).size / 1024).toFixed(2)
+console.log(`Output file size: ${fileSizeKB} KB`)
+
+// Optional: debug flag support
+const isDebug = process.argv.includes('--debug')
+if (isDebug) {
+  console.log('Debug Info:')
+  console.log({ releasesJsonPath, outputFilePath, count: Array.isArray(releasesPayload) ? releasesPayload.length : 0 })
+}
