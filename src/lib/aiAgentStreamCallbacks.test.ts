@@ -152,6 +152,52 @@ describe('aiAgentStreamCallbacks', () => {
     ])
   })
 
+  it('keeps the error message when the backend sends Done after Error', () => {
+    const messages = createMessageStore([
+      {
+        id: 'msg-1',
+        userMessage: 'Question',
+        actions: [{
+          tool: 'Bash',
+          toolId: 'tool-1',
+          label: 'Ran shell command',
+          status: 'pending',
+        }],
+        isStreaming: true,
+      },
+    ])
+    const status = createStatusStore('thinking')
+
+    const callbacks = createStreamCallbacks({
+      messageId: 'msg-1',
+      vaultPath: '/vault',
+      setMessages: messages.setMessages,
+      setStatus: status.setStatus,
+      abortRef: { current: { aborted: false } },
+      responseAccRef: { current: '' },
+      toolInputMapRef: { current: new Map() },
+      fileCallbacksRef: { current: undefined },
+    })
+
+    callbacks.onError('Credit balance is too low')
+    callbacks.onDone()
+
+    expect(status.getStatus()).toBe('error')
+    expect(messages.getMessages()[0]).toEqual({
+      id: 'msg-1',
+      userMessage: 'Question',
+      actions: [{
+        tool: 'Bash',
+        toolId: 'tool-1',
+        label: 'Ran shell command',
+        status: 'error',
+      }],
+      isStreaming: false,
+      reasoningDone: true,
+      response: 'Error: Credit balance is too low',
+    })
+  })
+
   it('finishes with a readable empty state when Claude exits without assistant text', () => {
     const messages = createMessageStore([
       {

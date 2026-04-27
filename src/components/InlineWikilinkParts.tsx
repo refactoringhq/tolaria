@@ -189,10 +189,10 @@ export function InlineWikilinkEditorField({
   const needsTrailingCaretAnchor = segments[segments.length - 1]?.kind === 'chip'
 
   return (
-    <div className="relative">
+    <div className="relative group">
       {value.length === 0 && placeholder && (
         <div
-          className="pointer-events-none absolute inset-0 flex items-center text-muted-foreground"
+          className="pointer-events-none absolute inset-0 flex items-center text-muted-foreground group-focus-within:hidden"
           style={{ padding: '8px 10px', fontSize: 13 }}
         >
           {placeholder}

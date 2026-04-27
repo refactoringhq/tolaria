@@ -221,6 +221,13 @@ describe('WikilinkChatInput', () => {
     expect(screen.getByTestId('agent-input')).toHaveAttribute('aria-placeholder', 'Ask something...')
   })
 
+  it('hides the placeholder overlay via group-focus-within when the editor is focused', () => {
+    render(<Controlled placeholder="Ask something..." />)
+    const overlay = screen.getByText('Ask something...')
+    expect(overlay).toHaveClass('group-focus-within:hidden')
+    expect(overlay.parentElement).toHaveClass('group')
+  })
+
   it('calls onChange when the draft changes', () => {
     const onChange = vi.fn()
     render(

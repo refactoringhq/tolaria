@@ -246,13 +246,18 @@ fn build_chat_args(req: &ChatStreamRequest) -> Vec<String> {
 }
 
 /// Spawn `claude -p` with full tool access and MCP vault tools for an agent task.
-pub fn run_agent_stream<F>(req: AgentStreamRequest, mut emit: F) -> Result<String, String>
+pub fn run_agent_stream<F>(mut req: AgentStreamRequest, mut emit: F) -> Result<String, String>
 where
     F: FnMut(ClaudeStreamEvent),
 {
+    normalize_agent_request(&mut req);
     let bin = find_claude_binary()?;
     let args = build_agent_args(&req)?;
     run_claude_subprocess(&bin, &args, Some(&req.vault_path), &mut emit)
+}
+
+fn normalize_agent_request(req: &mut AgentStreamRequest) {
+    req.vault_path = crate::commands::expand_tilde(&req.vault_path).into_owned();
 }
 
 /// Build CLI arguments for an agent stream request.
@@ -460,10 +465,16 @@ where
                 state.session_id = sid.clone();
             }
             let text = json["result"].as_str().unwrap_or("").to_string();
-            emit(ClaudeStreamEvent::Result {
-                text,
-                session_id: sid,
-            });
+            if json["is_error"].as_bool() == Some(true) {
+                emit(ClaudeStreamEvent::Error {
+                    message: format_claude_result_error(json, &text),
+                });
+            } else {
+                emit(ClaudeStreamEvent::Result {
+                    text,
+                    session_id: sid,
+                });
+            }
         }
 
         // --- Complete assistant message (fallback for text when no partials) ---
@@ -487,6 +498,25 @@ where
         }
 
         _ => {} // ignore other event types
+    }
+}
+
+fn format_claude_result_error(json: &serde_json::Value, result_text: &str) -> String {
+    let trimmed = result_text.trim();
+    if !trimmed.is_empty() {
+        return trimmed.to_string();
+    }
+
+    if let Some(error) = json["error"]
+        .as_str()
+        .filter(|error| !error.trim().is_empty())
+    {
+        return error.trim().to_string();
+    }
+
+    match json["api_error_status"].as_i64() {
+        Some(status) => format!("Claude CLI API request failed with status {status}"),
+        None => "Claude CLI request failed".into(),
     }
 }
 
@@ -707,6 +737,35 @@ mod tests {
         assert_eq!(sid, "sess-456");
         assert!(
             matches!(&events[0], ClaudeStreamEvent::Result { text, session_id } if text == "All done!" && session_id == "sess-456")
+        );
+    }
+
+    #[test]
+    fn dispatch_event_handles_error_result() {
+        let (sid, events) = run_dispatch(serde_json::json!({
+            "type": "result",
+            "subtype": "success",
+            "is_error": true,
+            "api_error_status": 400,
+            "result": "Credit balance is too low",
+            "session_id": "sess-err"
+        }));
+        assert_eq!(sid, "sess-err");
+        assert!(
+            matches!(&events[0], ClaudeStreamEvent::Error { message } if message == "Credit balance is too low")
+        );
+    }
+
+    #[test]
+    fn dispatch_event_error_result_falls_back_to_status() {
+        let (_, events) = run_dispatch(serde_json::json!({
+            "type": "result",
+            "is_error": true,
+            "api_error_status": 429,
+            "result": ""
+        }));
+        assert!(
+            matches!(&events[0], ClaudeStreamEvent::Error { message } if message.contains("429"))
         );
     }
 
@@ -1204,6 +1263,32 @@ mod tests {
         let result = run_claude_subprocess(&fake_bin, &[], None, &mut |e| events.push(e));
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Failed to spawn"));
+    }
+
+    #[test]
+    fn normalize_agent_request_expands_tilde_vault_path() {
+        let home = dirs::home_dir().expect("home dir available in test env");
+        let mut req = AgentStreamRequest {
+            message: "ignored".into(),
+            system_prompt: None,
+            vault_path: "~/Documents/vault".into(),
+        };
+        normalize_agent_request(&mut req);
+        assert_eq!(
+            req.vault_path,
+            home.join("Documents").join("vault").to_string_lossy(),
+        );
+    }
+
+    #[test]
+    fn normalize_agent_request_leaves_absolute_paths_intact() {
+        let mut req = AgentStreamRequest {
+            message: "ignored".into(),
+            system_prompt: None,
+            vault_path: "/var/data/vault".into(),
+        };
+        normalize_agent_request(&mut req);
+        assert_eq!(req.vault_path, "/var/data/vault");
     }
 
     #[cfg(unix)]

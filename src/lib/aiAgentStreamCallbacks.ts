@@ -37,6 +37,7 @@ export function createStreamCallbacks(context: StreamMutationContext) {
     toolInputMapRef,
     fileCallbacksRef,
   } = context
+  let hasErrored = false
 
   return {
     onThinking: (chunk: string) => {
@@ -83,6 +84,8 @@ export function createStreamCallbacks(context: StreamMutationContext) {
 
     onError: (error: string) => {
       if (abortRef.current.aborted) return
+      if (hasErrored) return
+      hasErrored = true
 
       setStatus('error')
       const partial = responseAccRef.current
@@ -99,6 +102,7 @@ export function createStreamCallbacks(context: StreamMutationContext) {
 
     onDone: () => {
       if (abortRef.current.aborted) return
+      if (hasErrored) return
 
       setStatus('done')
       const finalResponse = finalResponseText(responseAccRef.current)
