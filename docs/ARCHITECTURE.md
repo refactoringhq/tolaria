@@ -98,7 +98,7 @@ flowchart LR
 | Build | Vite | 7.3.1 |
 | Backend language | Rust (edition 2021) | 1.77.2 |
 | Frontmatter parsing | gray_matter | 0.2 |
-| AI (agent panel) | CLI agent adapters (Claude Code + Codex) | - |
+| AI (agent panel) | CLI agent adapters (Claude Code + Codex + Kiro) | - |
 | Search | Keyword (walkdir-based file scan) | - |
 | Localization | App-owned dictionary (`src/lib/i18n.ts`) | English fallback + `zh-Hans` |
 | MCP | @modelcontextprotocol/sdk | 1.0 |
@@ -218,7 +218,7 @@ Full agent mode — spawns the selected local CLI agent as a subprocess with too
 
 1. **Frontend** (`AiPanel` + `useCliAiAgent` + `aiAgents.ts`) — streaming UI with reasoning blocks, tool action cards, response display, onboarding, and default-agent selection
 2. **Backend** (`ai_agents.rs`) — normalizes agent availability and streaming, dispatching to per-agent adapters
-3. **Agent adapters** — Claude Code still uses `claude_cli.rs`; Codex runs through `codex exec --json` with the CLI's normal approval / sandbox defaults
+3. **Agent adapters** — Claude Code still uses `claude_cli.rs`; Codex runs through `codex exec --json` with the CLI's normal approval / sandbox defaults; Kiro runs through `kiro-cli chat --no-interactive --trust-all-tools` with ANSI stripping
 4. **MCP Integration** — Claude receives the generated MCP config file path, while Codex receives the same Tolaria MCP server via transient `-c mcp_servers.tolaria.*` config overrides
 
 CLI-agent availability intentionally does not depend only on the desktop app's inherited `PATH`. The detectors check the current process path, the user's login shell, and supported local/toolchain install locations such as native `~/.local/bin`, local `~/.claude/local`, Mise/asdf shims, npm-global, Homebrew, Windows `%APPDATA%\npm`/pnpm/Scoop shims, Windows `.exe` launchers, and the macOS Codex app resource path so first-run onboarding works on fresh macOS and Windows installs.
@@ -236,7 +236,7 @@ sequenceDiagram
     U->>FE: sendMessage(text, references)
     FE->>FE: buildContextSnapshot(activeNote, linkedNotes, openTabs)
     FE->>R: invoke('stream_ai_agent', {agent, message, systemPrompt, vaultPath})
-    R->>R: pick adapter for claude_code or codex
+    R->>R: pick adapter for claude_code, codex, or kiro
     R->>C: spawn agent with MCP-enabled config
 
     loop Normalized stream
@@ -282,7 +282,7 @@ Token budget: 60% of 180k context limit (~108k tokens max). Active note gets pri
 
 ### Authentication
 
-Each CLI agent authenticates itself outside Tolaria. Claude Code uses its existing CLI login; Codex surfaces a friendly prompt to run `codex login` when needed. Tolaria does not store model-provider API keys in app settings.
+Each CLI agent authenticates itself outside Tolaria. Claude Code uses its existing CLI login; Codex surfaces a friendly prompt to run `codex login` when needed; Kiro uses `kiro-cli login`. Tolaria does not store model-provider API keys in app settings.
 
 ## MCP Server
 
@@ -463,7 +463,7 @@ When an opened folder is not yet a git repo, Tolaria shows a dismissible Git set
 
 When the user enables Git later, `init_git_repo` runs `git init`, ensures Tolaria's default `.gitignore`, stages the vault, and writes the initial `Initial vault setup` commit. That app-managed setup commit explicitly disables commit signing for the single command so inherited global or local `commit.gpgsign` preferences cannot strand onboarding when GPG is missing or misconfigured. Later `git_commit` calls honor the user's signing configuration first, then retry the same app-managed commit once with `commit.gpgsign=false` only when Git reports a signing-helper failure, so working GPG/SSH signing setups continue to sign while broken GPG setups do not create repeated opaque commit failures.
 
-Once a vault is ready, `useAiAgentsOnboarding` can show a one-time `AiAgentsOnboardingPrompt`. That prompt reads `useAiAgentsStatus` so first launch surfaces whether Claude Code and Codex are installed, offers per-agent install links when they are missing, and stores local dismissal so the prompt does not repeat on every launch.
+Once a vault is ready, `useAiAgentsOnboarding` can show a one-time `AiAgentsOnboardingPrompt`. That prompt reads `useAiAgentsStatus` so first launch surfaces whether Claude Code, Codex, and Kiro are installed, offers per-agent install links when they are missing, and stores local dismissal so the prompt does not repeat on every launch.
 
 `useGettingStartedClone` reuses the same parent-folder semantics for the status-bar / command-palette clone action, and `Toast` is rendered through the AI-agents onboarding gate so the resolved destination path stays visible right after a successful clone.
 

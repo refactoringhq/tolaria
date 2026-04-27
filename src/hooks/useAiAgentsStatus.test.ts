@@ -24,6 +24,7 @@ describe('useAiAgentsStatus', () => {
         return Promise.resolve({
           claude_code: { installed: true, version: '1.0.20' },
           codex: { installed: false, version: null },
+          kiro: { installed: false, version: null },
         })
       }
       return Promise.resolve(null)
@@ -33,10 +34,12 @@ describe('useAiAgentsStatus', () => {
 
     expect(result.current.claude_code.status).toBe('checking')
     expect(result.current.codex.status).toBe('checking')
+    expect(result.current.kiro.status).toBe('checking')
 
     await waitFor(() => {
       expect(result.current.claude_code).toEqual({ status: 'installed', version: '1.0.20' })
       expect(result.current.codex).toEqual({ status: 'missing', version: null })
+      expect(result.current.kiro).toEqual({ status: 'missing', version: null })
     })
   })
 
@@ -48,6 +51,7 @@ describe('useAiAgentsStatus', () => {
     await waitFor(() => {
       expect(result.current.claude_code.status).toBe('missing')
       expect(result.current.codex.status).toBe('missing')
+      expect(result.current.kiro.status).toBe('missing')
     })
   })
 })

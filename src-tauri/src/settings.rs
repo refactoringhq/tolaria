@@ -50,7 +50,7 @@ pub fn effective_release_channel(value: Option<&str>) -> &'static str {
 
 pub fn normalize_default_ai_agent(value: Option<&str>) -> Option<String> {
     match value.map(|candidate| candidate.trim().to_ascii_lowercase()) {
-        Some(agent) if agent == "claude_code" || agent == "codex" => Some(agent),
+        Some(agent) if agent == "claude_code" || agent == "codex" || agent == "kiro" => Some(agent),
         _ => None,
     }
 }
@@ -346,6 +346,15 @@ mod tests {
             ..Default::default()
         });
         assert!(loaded.default_ai_agent.is_none());
+    }
+
+    #[test]
+    fn test_kiro_is_valid_default_ai_agent() {
+        let loaded = save_and_reload(Settings {
+            default_ai_agent: Some("kiro".to_string()),
+            ..Default::default()
+        });
+        assert_eq!(loaded.default_ai_agent.as_deref(), Some("kiro"));
     }
 
     #[test]

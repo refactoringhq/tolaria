@@ -1,3 +1,4 @@
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::io::BufRead;
 use std::path::{Path, PathBuf};
@@ -8,6 +9,7 @@ use std::process::{Command, Stdio};
 pub enum AiAgentId {
     ClaudeCode,
     Codex,
+    Kiro,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -20,6 +22,7 @@ pub struct AiAgentAvailability {
 pub struct AiAgentsStatus {
     pub claude_code: AiAgentAvailability,
     pub codex: AiAgentAvailability,
+    pub kiro: AiAgentAvailability,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -63,6 +66,7 @@ pub fn get_ai_agents_status() -> AiAgentsStatus {
     AiAgentsStatus {
         claude_code: availability_from_claude(),
         codex: availability_from_codex(),
+        kiro: availability_from_kiro(),
     }
 }
 
@@ -84,6 +88,7 @@ where
             })
         }
         AiAgentId::Codex => run_codex_agent_stream(request, emit),
+        AiAgentId::Kiro => run_kiro_agent_stream(request, emit),
     }
 }
 
@@ -122,11 +127,11 @@ fn version_for_binary(binary: &PathBuf) -> Option<String> {
 }
 
 fn find_codex_binary() -> Result<PathBuf, String> {
-    if let Some(binary) = find_codex_binary_on_path() {
+    if let Some(binary) = find_binary_on_path("codex") {
         return Ok(binary);
     }
 
-    if let Some(binary) = find_codex_binary_in_user_shell() {
+    if let Some(binary) = find_binary_in_user_shell("codex") {
         return Ok(binary);
     }
 
@@ -135,21 +140,6 @@ fn find_codex_binary() -> Result<PathBuf, String> {
     }
 
     Err("Codex CLI not found. Install it: https://developers.openai.com/codex/cli".into())
-}
-
-fn find_codex_binary_on_path() -> Option<PathBuf> {
-    Command::new("which")
-        .arg("codex")
-        .output()
-        .ok()
-        .and_then(|output| path_from_successful_output(&output))
-}
-
-fn find_codex_binary_in_user_shell() -> Option<PathBuf> {
-    user_shell_candidates()
-        .into_iter()
-        .filter(|shell| shell.exists())
-        .find_map(|shell| command_path_from_shell(&shell, "codex"))
 }
 
 fn user_shell_candidates() -> Vec<PathBuf> {
@@ -215,6 +205,212 @@ fn codex_binary_candidates_for_home(home: &Path) -> Vec<PathBuf> {
 
 fn find_existing_binary(candidates: Vec<PathBuf>) -> Option<PathBuf> {
     candidates.into_iter().find(|candidate| candidate.exists())
+}
+
+fn availability_from_kiro() -> AiAgentAvailability {
+    let binary = match find_kiro_binary() {
+        Ok(binary) => binary,
+        Err(_) => {
+            return AiAgentAvailability {
+                installed: false,
+                version: None,
+            }
+        }
+    };
+
+    AiAgentAvailability {
+        installed: true,
+        version: version_for_binary(&binary),
+    }
+}
+
+fn find_kiro_binary() -> Result<PathBuf, String> {
+    if let Some(binary) = find_binary_on_path("kiro-cli") {
+        return Ok(binary);
+    }
+
+    if let Some(binary) = find_binary_in_user_shell("kiro-cli") {
+        return Ok(binary);
+    }
+
+    if let Some(binary) = find_existing_binary(kiro_binary_candidates()) {
+        return Ok(binary);
+    }
+
+    Err("Kiro CLI not found. Install it: https://kiro.dev/docs/cli".into())
+}
+
+fn find_binary_on_path(name: &str) -> Option<PathBuf> {
+    Command::new("which")
+        .arg(name)
+        .output()
+        .ok()
+        .and_then(|output| path_from_successful_output(&output))
+}
+
+fn find_binary_in_user_shell(name: &str) -> Option<PathBuf> {
+    user_shell_candidates()
+        .into_iter()
+        .filter(|shell| shell.exists())
+        .find_map(|shell| command_path_from_shell(&shell, name))
+}
+
+fn kiro_binary_candidates() -> Vec<PathBuf> {
+    dirs::home_dir()
+        .map(|home| kiro_binary_candidates_for_home(&home))
+        .unwrap_or_default()
+}
+
+fn kiro_binary_candidates_for_home(home: &Path) -> Vec<PathBuf> {
+    vec![
+        home.join(".local/bin/kiro-cli"),
+        home.join(".kiro/bin/kiro-cli"),
+        home.join(".local/share/mise/shims/kiro-cli"),
+        home.join(".asdf/shims/kiro-cli"),
+        home.join(".npm-global/bin/kiro-cli"),
+        home.join(".npm/bin/kiro-cli"),
+        home.join(".bun/bin/kiro-cli"),
+        PathBuf::from("/usr/local/bin/kiro-cli"),
+        PathBuf::from("/opt/homebrew/bin/kiro-cli"),
+    ]
+}
+
+fn run_kiro_agent_stream<F>(request: AiAgentStreamRequest, mut emit: F) -> Result<String, String>
+where
+    F: FnMut(AiAgentStreamEvent),
+{
+    let binary = find_kiro_binary()?;
+    ensure_kiro_mcp_config(&request.vault_path)?;
+    let prompt = build_kiro_prompt(&request);
+
+    let mut command = Command::new(binary);
+    command
+        .arg("chat")
+        .arg("--no-interactive")
+        .arg("--trust-all-tools")
+        .arg(prompt)
+        .current_dir(&request.vault_path)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+
+    let mut child = command
+        .spawn()
+        .map_err(|error| format!("Failed to spawn kiro-cli: {error}"))?;
+
+    let session_id = format!("kiro-{}", std::process::id());
+    emit(AiAgentStreamEvent::Init {
+        session_id: session_id.clone(),
+    });
+
+    let stdout = child.stdout.take().ok_or("No stdout handle")?;
+    let reader = std::io::BufReader::new(stdout);
+
+    for line in reader.lines() {
+        let line = match line {
+            Ok(line) => line,
+            Err(error) => {
+                emit(AiAgentStreamEvent::Error {
+                    message: format!("Read error: {error}"),
+                });
+                break;
+            }
+        };
+
+        if !line.is_empty() {
+            let clean = strip_ansi_codes(&line);
+            if !clean.is_empty() {
+                emit(AiAgentStreamEvent::TextDelta {
+                    text: format!("{clean}\n"),
+                });
+            }
+        }
+    }
+
+    let stderr_output = child
+        .stderr
+        .take()
+        .and_then(|stderr| std::io::read_to_string(stderr).ok())
+        .unwrap_or_default();
+
+    let status = child
+        .wait()
+        .map_err(|error| format!("Wait failed: {error}"))?;
+    if !status.success() {
+        emit(AiAgentStreamEvent::Error {
+            message: format_kiro_error(stderr_output, status.to_string()),
+        });
+    }
+
+    emit(AiAgentStreamEvent::Done);
+
+    Ok(session_id)
+}
+
+fn ensure_kiro_mcp_config(vault_path: &str) -> Result<(), String> {
+    let mcp_server = crate::mcp::mcp_server_dir()?.join("index.js");
+    let mcp_server_path = mcp_server
+        .to_str()
+        .ok_or("Invalid MCP server path")?;
+    write_kiro_mcp_json(vault_path, mcp_server_path)
+}
+
+fn write_kiro_mcp_json(vault_path: &str, mcp_server_path: &str) -> Result<(), String> {
+    let config = serde_json::json!({
+        "mcpServers": {
+            "tolaria": {
+                "command": "node",
+                "args": [mcp_server_path],
+                "env": { "VAULT_PATH": vault_path },
+                "disabled": false
+            }
+        }
+    });
+
+    let config_dir = Path::new(vault_path).join(".kiro").join("settings");
+    std::fs::create_dir_all(&config_dir)
+        .map_err(|e| format!("Failed to create .kiro/settings: {e}"))?;
+
+    let config_path = config_dir.join("mcp.json");
+    std::fs::write(&config_path, serde_json::to_string_pretty(&config).unwrap())
+        .map_err(|e| format!("Failed to write mcp.json: {e}"))?;
+
+    Ok(())
+}
+
+fn strip_ansi_codes(input: &str) -> String {
+    let re = Regex::new(r"\x1b\[[0-9;]*m").unwrap();
+    re.replace_all(input, "").to_string()
+}
+
+fn build_kiro_prompt(request: &AiAgentStreamRequest) -> String {
+    match request
+        .system_prompt
+        .as_ref()
+        .map(|prompt| prompt.trim())
+        .filter(|prompt| !prompt.is_empty())
+    {
+        Some(system_prompt) => format!(
+            "System instructions:\n{system_prompt}\n\nUser request:\n{}",
+            request.message
+        ),
+        None => request.message.clone(),
+    }
+}
+
+fn format_kiro_error(stderr_output: String, status: String) -> String {
+    let lower = stderr_output.to_ascii_lowercase();
+    if ["auth", "login", "sign in"]
+        .iter()
+        .any(|pattern| lower.contains(pattern))
+    {
+        return "Kiro CLI is not authenticated. Run `kiro-cli login` in your terminal.".into();
+    }
+
+    if stderr_output.trim().is_empty() {
+        format!("kiro-cli exited with status {status}")
+    } else {
+        stderr_output.lines().take(3).collect::<Vec<_>>().join("\n")
+    }
 }
 
 fn run_codex_agent_stream<F>(request: AiAgentStreamRequest, mut emit: F) -> Result<String, String>
@@ -443,6 +639,7 @@ mod tests {
         let status = get_ai_agents_status();
         assert!(matches!(status.claude_code.installed, true | false));
         assert!(matches!(status.codex.installed, true | false));
+        assert!(matches!(status.kiro.installed, true | false));
     }
 
     #[test]
@@ -591,5 +788,103 @@ mod tests {
         let mapped = map_claude_event(crate::claude_cli::ClaudeStreamEvent::Done);
 
         assert!(matches!(mapped, Some(AiAgentStreamEvent::Done)));
+    }
+
+    #[test]
+    fn build_kiro_prompt_keeps_system_prompt_first() {
+        let prompt = build_kiro_prompt(&AiAgentStreamRequest {
+            agent: AiAgentId::Kiro,
+            message: "Rename the note".into(),
+            system_prompt: Some("Be concise".into()),
+            vault_path: "/tmp/vault".into(),
+        });
+
+        assert!(prompt.starts_with("System instructions:\nBe concise"));
+        assert!(prompt.contains("User request:\nRename the note"));
+    }
+
+    #[test]
+    fn strip_ansi_codes_removes_terminal_colors() {
+        assert_eq!(
+            strip_ansi_codes("\x1b[38;5;141m>  \x1b[0mHello! \x1b[0m"),
+            ">  Hello! "
+        );
+        assert_eq!(strip_ansi_codes("plain text"), "plain text");
+    }
+
+    #[test]
+    fn kiro_binary_candidates_include_supported_installs() {
+        let home = PathBuf::from("/Users/alex");
+        let candidates = kiro_binary_candidates_for_home(&home);
+        let expected = [
+            home.join(".local/bin/kiro-cli"),
+            home.join(".kiro/bin/kiro-cli"),
+            PathBuf::from("/opt/homebrew/bin/kiro-cli"),
+        ];
+
+        for candidate in expected {
+            assert!(
+                candidates.contains(&candidate),
+                "missing {}",
+                candidate.display()
+            );
+        }
+    }
+
+    #[test]
+    fn write_kiro_mcp_json_creates_config_with_tolaria_server() {
+        let dir = tempfile::tempdir().unwrap();
+        let vault_path = dir.path().to_str().unwrap();
+
+        write_kiro_mcp_json(vault_path, "/opt/mcp/index.js").unwrap();
+
+        let config_path = dir.path().join(".kiro/settings/mcp.json");
+        assert!(config_path.exists());
+
+        let content: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&config_path).unwrap()).unwrap();
+        assert_eq!(content["mcpServers"]["tolaria"]["command"], "node");
+        assert_eq!(content["mcpServers"]["tolaria"]["args"][0], "/opt/mcp/index.js");
+        assert_eq!(content["mcpServers"]["tolaria"]["env"]["VAULT_PATH"], vault_path);
+    }
+
+    #[test]
+    fn write_kiro_mcp_json_overwrites_existing_config() {
+        let dir = tempfile::tempdir().unwrap();
+        let vault_path = dir.path().to_str().unwrap();
+
+        write_kiro_mcp_json(vault_path, "/old/index.js").unwrap();
+        write_kiro_mcp_json(vault_path, "/new/index.js").unwrap();
+
+        let content: serde_json::Value = serde_json::from_str(
+            &std::fs::read_to_string(dir.path().join(".kiro/settings/mcp.json")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(content["mcpServers"]["tolaria"]["args"][0], "/new/index.js");
+    }
+
+    #[test]
+    fn format_kiro_error_detects_auth_errors() {
+        let result = format_kiro_error("Error: auth token expired".into(), "1".into());
+        assert!(result.contains("kiro-cli login"));
+    }
+
+    #[test]
+    fn format_kiro_error_detects_login_errors() {
+        let result = format_kiro_error("Please login first".into(), "1".into());
+        assert!(result.contains("kiro-cli login"));
+    }
+
+    #[test]
+    fn format_kiro_error_returns_status_for_empty_stderr() {
+        let result = format_kiro_error("".into(), "exit code: 1".into());
+        assert_eq!(result, "kiro-cli exited with status exit code: 1");
+    }
+
+    #[test]
+    fn format_kiro_error_truncates_long_stderr_to_three_lines() {
+        let stderr = "line1\nline2\nline3\nline4\nline5".into();
+        let result = format_kiro_error(stderr, "1".into());
+        assert_eq!(result, "line1\nline2\nline3");
     }
 }
