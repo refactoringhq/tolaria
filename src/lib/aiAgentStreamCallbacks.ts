@@ -22,8 +22,10 @@ export interface StreamMutationContext {
 
 const EMPTY_CLAUDE_RESPONSE = 'Claude Code finished without returning a reply.'
 
-function finalResponseText(response: string): string {
-  return response.trim() ? response : EMPTY_CLAUDE_RESPONSE
+function finalResponseText(response: string, hasToolActions: boolean): string {
+  if (response.trim()) return response
+  if (hasToolActions) return ''
+  return EMPTY_CLAUDE_RESPONSE
 }
 
 export function createStreamCallbacks(context: StreamMutationContext) {
@@ -101,16 +103,19 @@ export function createStreamCallbacks(context: StreamMutationContext) {
       if (abortRef.current.aborted) return
 
       setStatus('done')
-      const finalResponse = finalResponseText(responseAccRef.current)
-      updateMessage(setMessages, messageId, (message) => ({
-        ...message,
-        isStreaming: false,
-        reasoningDone: true,
-        response: finalResponse,
-        actions: message.actions.map((action) => (
-          action.status === 'pending' ? { ...action, status: 'done' as const } : action
-        )),
-      }))
+      updateMessage(setMessages, messageId, (message) => {
+        // onError already finalized the message — don't overwrite with fallback text
+        if (!message.isStreaming) return message
+        return {
+          ...message,
+          isStreaming: false,
+          reasoningDone: true,
+          response: finalResponseText(responseAccRef.current, message.actions.length > 0),
+          actions: message.actions.map((action) => (
+            action.status === 'pending' ? { ...action, status: 'done' as const } : action
+          )),
+        }
+      })
       fileCallbacksRef.current?.onVaultChanged?.()
     },
   }

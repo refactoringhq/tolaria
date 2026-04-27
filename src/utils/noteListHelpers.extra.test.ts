@@ -71,9 +71,10 @@ describe('noteListHelpers extra coverage', () => {
       outgoingLinks: [],
     })
 
-    expect(formatSubtitle(modifiedEntry)).toBe('1h ago · 1,200 words · 2 links')
+    const wordCount = (1200).toLocaleString()
+    expect(formatSubtitle(modifiedEntry)).toBe(`1h ago · ${wordCount} words · 2 links`)
     expect(formatSubtitle(emptyEntry)).toBe('Empty')
-    expect(formatSearchSubtitle(modifiedEntry)).toBe('1h ago · Created 2d ago · 1,200 words · 2 links')
+    expect(formatSearchSubtitle(modifiedEntry)).toBe(`1h ago · Created 2d ago · ${wordCount} words · 2 links`)
   })
 
   it('extracts sortable properties and labels custom property sort keys', () => {

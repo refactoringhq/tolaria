@@ -189,6 +189,39 @@ describe('aiAgentStreamCallbacks', () => {
     ])
   })
 
+  it('leaves response empty when Claude used tools but wrote no text', () => {
+    const messages = createMessageStore([
+      {
+        id: 'msg-1',
+        userMessage: 'Create a note',
+        actions: [{
+          tool: 'Write',
+          toolId: 'tool-1',
+          label: 'Wrote file',
+          status: 'pending',
+        }],
+        isStreaming: true,
+      },
+    ])
+    const status = createStatusStore('tool-executing')
+
+    const callbacks = createStreamCallbacks({
+      messageId: 'msg-1',
+      vaultPath: '/vault',
+      setMessages: messages.setMessages,
+      setStatus: status.setStatus,
+      abortRef: { current: { aborted: false } },
+      responseAccRef: { current: '' },
+      toolInputMapRef: { current: new Map() },
+      fileCallbacksRef: { current: undefined },
+    })
+
+    callbacks.onDone()
+
+    expect(status.getStatus()).toBe('done')
+    expect(messages.getMessages()[0].response).toBe('')
+  })
+
   it('ignores stream events after the request has been aborted', () => {
     const messages = createMessageStore([
       {

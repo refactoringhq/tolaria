@@ -71,6 +71,7 @@ export function useAiActivity(callbacks?: AiActivityCallbacks): AiActivity {
       if (!mounted) return
       try {
         ws = new WebSocket(WS_UI_URL)
+        ws.onopen = () => { if (!mounted) ws?.close() }
         ws.onmessage = handleMessage
         ws.onclose = () => {
           if (mounted) reconnectTimer = setTimeout(connect, RECONNECT_DELAY_MS)
@@ -85,7 +86,7 @@ export function useAiActivity(callbacks?: AiActivityCallbacks): AiActivity {
 
     return () => {
       mounted = false
-      ws?.close()
+      if (ws?.readyState === WebSocket.OPEN) ws.close()
       if (timerRef.current) clearTimeout(timerRef.current)
       if (reconnectTimer) clearTimeout(reconnectTimer)
     }

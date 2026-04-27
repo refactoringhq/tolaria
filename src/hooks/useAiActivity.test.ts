@@ -5,10 +5,13 @@ import { useAiActivity } from './useAiActivity'
 let lastWsInstance: MockWebSocket | null = null
 
 class MockWebSocket {
+  static OPEN = 1
+  onopen: (() => void) | null = null
   onmessage: ((event: MessageEvent) => void) | null = null
   onerror: (() => void) | null = null
   onclose: (() => void) | null = null
   close = vi.fn()
+  readyState = MockWebSocket.OPEN
   url: string
 
   constructor(url: string) {
@@ -99,9 +102,26 @@ describe('useAiActivity', () => {
     expect(result.current.highlightElement).toBeNull()
   })
 
-  it('closes WebSocket on unmount', () => {
+  it('closes WebSocket on unmount when already open', () => {
     const { unmount } = renderHook(() => useAiActivity())
+    lastWsInstance!.readyState = MockWebSocket.OPEN
     unmount()
+    expect(lastWsInstance!.close).toHaveBeenCalled()
+  })
+
+  it('does not close WebSocket on unmount when still connecting', () => {
+    const { unmount } = renderHook(() => useAiActivity())
+    lastWsInstance!.readyState = 0 // CONNECTING
+    unmount()
+    expect(lastWsInstance!.close).not.toHaveBeenCalled()
+  })
+
+  it('closes WebSocket via onopen if mounted is false by the time connection opens', () => {
+    const { unmount } = renderHook(() => useAiActivity())
+    lastWsInstance!.readyState = 0 // CONNECTING
+    unmount()
+    lastWsInstance!.readyState = MockWebSocket.OPEN
+    lastWsInstance!.onopen?.()
     expect(lastWsInstance!.close).toHaveBeenCalled()
   })
 

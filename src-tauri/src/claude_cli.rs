@@ -310,6 +310,9 @@ struct StreamState {
     tool_inputs: HashMap<String, String>,
     /// The tool_use id of the block currently being streamed.
     current_tool_id: Option<String>,
+    /// Whether any TextDelta has been emitted — used to decide if the
+    /// final `result` text should be surfaced as a fallback.
+    text_was_emitted: bool,
 }
 
 /// Core subprocess runner shared by chat and agent modes.
@@ -329,7 +332,7 @@ where
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
     if let Some(dir) = cwd {
-        cmd.current_dir(dir);
+        cmd.current_dir(crate::commands::expand_tilde(dir).as_ref());
     }
     let mut child = cmd
         .spawn()
@@ -342,6 +345,7 @@ where
         session_id: String::new(),
         tool_inputs: HashMap::new(),
         current_tool_id: None,
+        text_was_emitted: false,
     };
 
     for line in reader.lines() {
@@ -460,6 +464,11 @@ where
                 state.session_id = sid.clone();
             }
             let text = json["result"].as_str().unwrap_or("").to_string();
+            // If no TextDelta was streamed, surface the result text directly so
+            // the frontend doesn't show an empty response for short replies.
+            if !text.is_empty() && !state.text_was_emitted {
+                emit(ClaudeStreamEvent::TextDelta { text: text.clone() });
+            }
             emit(ClaudeStreamEvent::Result {
                 text,
                 session_id: sid,
@@ -504,6 +513,7 @@ where
             match delta["type"].as_str() {
                 Some("text_delta") => {
                     if let Some(text) = delta["text"].as_str() {
+                        state.text_was_emitted = true;
                         emit(ClaudeStreamEvent::TextDelta {
                             text: text.to_string(),
                         });
@@ -619,6 +629,7 @@ mod tests {
             session_id: String::new(),
             tool_inputs: HashMap::new(),
             current_tool_id: None,
+            text_was_emitted: false,
         }
     }
 
@@ -705,9 +716,44 @@ mod tests {
             "type": "result", "subtype": "success", "result": "All done!", "session_id": "sess-456"
         }));
         assert_eq!(sid, "sess-456");
+        // When no TextDelta was emitted, result text is surfaced as a TextDelta first.
+        assert!(matches!(&events[0], ClaudeStreamEvent::TextDelta { text } if text == "All done!"));
         assert!(
-            matches!(&events[0], ClaudeStreamEvent::Result { text, session_id } if text == "All done!" && session_id == "sess-456")
+            matches!(&events[1], ClaudeStreamEvent::Result { text, session_id } if text == "All done!" && session_id == "sess-456")
         );
+    }
+
+    #[test]
+    fn dispatch_event_result_does_not_duplicate_when_text_already_streamed() {
+        let (_, events) = run_dispatch_sequence(vec![
+            serde_json::json!({
+                "type": "stream_event",
+                "event": { "type": "content_block_delta", "index": 0,
+                    "delta": { "type": "text_delta", "text": "Hello" } }
+            }),
+            serde_json::json!({
+                "type": "result", "result": "Hello", "session_id": "s1"
+            }),
+        ]);
+        let text_deltas: Vec<_> = events
+            .iter()
+            .filter(|e| matches!(e, ClaudeStreamEvent::TextDelta { .. }))
+            .collect();
+        assert_eq!(
+            text_deltas.len(),
+            1,
+            "should not duplicate text when already streamed"
+        );
+    }
+
+    #[test]
+    fn dispatch_event_result_with_empty_text_emits_no_text_delta() {
+        let (_, events) = run_dispatch(serde_json::json!({
+            "type": "result", "result": "", "session_id": "s1"
+        }));
+        assert!(!events
+            .iter()
+            .any(|e| matches!(e, ClaudeStreamEvent::TextDelta { .. })));
     }
 
     #[test]
@@ -717,8 +763,10 @@ mod tests {
             "prev-session",
         );
         assert_eq!(sid, "prev-session");
+        // TextDelta fallback comes first, then Result
+        assert!(matches!(&events[0], ClaudeStreamEvent::TextDelta { text } if text == "text here"));
         assert!(
-            matches!(&events[0], ClaudeStreamEvent::Result { text, .. } if text == "text here")
+            matches!(&events[1], ClaudeStreamEvent::Result { text, .. } if text == "text here")
         );
     }
 
@@ -948,8 +996,9 @@ mod tests {
             "echo '{\"type\":\"result\",\"result\":\"ok\",\"session_id\":\"s2\"}'\n",
         ));
         assert_eq!(result.unwrap(), "s2");
-        assert!(matches!(&events[0], ClaudeStreamEvent::Result { text, .. } if text == "ok"));
-        assert!(matches!(&events[1], ClaudeStreamEvent::Done));
+        assert!(matches!(&events[0], ClaudeStreamEvent::TextDelta { text } if text == "ok"));
+        assert!(matches!(&events[1], ClaudeStreamEvent::Result { text, .. } if text == "ok"));
+        assert!(matches!(&events[2], ClaudeStreamEvent::Done));
     }
 
     #[cfg(unix)]

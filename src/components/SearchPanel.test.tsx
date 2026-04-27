@@ -302,7 +302,7 @@ describe('SearchPanel', () => {
     fireEvent.change(screen.getByPlaceholderText('Search in all notes...'), { target: { value: 'api' } })
 
     await waitFor(() => {
-      expect(screen.getByText(/1,247 words/)).toBeInTheDocument()
+      expect(screen.getByText(/1.247 words/)).toBeInTheDocument()
       expect(screen.getByText(/3 links/)).toBeInTheDocument()
     })
   })
@@ -325,7 +325,7 @@ describe('SearchPanel', () => {
     fireEvent.change(screen.getByPlaceholderText('Search in all notes...'), { target: { value: 'api' } })
 
     await waitFor(() => {
-      expect(screen.getByText(/1,247 words/)).toBeInTheDocument()
+      expect(screen.getByText(/1.247 words/)).toBeInTheDocument()
       expect(screen.queryByText(/links/)).not.toBeInTheDocument()
     })
   })
