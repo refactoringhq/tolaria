@@ -34,6 +34,7 @@ import { useAiAgentPreferences } from './hooks/useAiAgentPreferences'
 import { useSettings } from './hooks/useSettings'
 import { useDocumentThemeMode } from './hooks/useDocumentThemeMode'
 import { useThemeMode } from './hooks/useThemeMode'
+import type { ThemeMode } from './lib/themeMode'
 import { useNoteActions } from './hooks/useNoteActions'
 import { planNewTypeCreation } from './hooks/useNoteCreation'
 import { useCommitFlow } from './hooks/useCommitFlow'
@@ -432,6 +433,9 @@ function App() {
     const theme_mode = documentThemeMode === 'dark' ? 'light' : 'dark'
     void saveSettings({ ...settings, theme_mode })
   }, [documentThemeMode, saveSettings, settings])
+  const handleSetThemeMode = useCallback((theme_mode: ThemeMode) => {
+    void saveSettings({ ...settings, theme_mode })
+  }, [saveSettings, settings])
   const handleSetUiLanguage = useCallback((uiLanguage: UiLanguagePreference) => {
     void saveSettings({ ...settings, ui_language: serializeUiLanguagePreference(uiLanguage) })
   }, [saveSettings, settings])
@@ -1410,6 +1414,7 @@ function App() {
     systemLocale,
     selectedUiLanguage,
     onSetUiLanguage: handleSetUiLanguage,
+    onSetThemeMode: settingsLoaded ? handleSetThemeMode : undefined,
     mcpStatus,
     onInstallMcp: openMcpSetupDialog,
     onOpenAiAgents: dialogs.openSettings,
@@ -1545,7 +1550,7 @@ function App() {
                 {effectiveSelection.kind === 'filter' && effectiveSelection.filter === 'pulse' ? (
                   <PulseView vaultPath={resolvedPath} onOpenNote={handlePulseOpenNote} sidebarCollapsed={!sidebarVisible} onExpandSidebar={() => handleSetViewMode('all')} locale={appLocale} />
                 ) : (
-                  <NoteList entries={vault.entries} selection={effectiveSelection} selectedNote={activeTab?.entry ?? null} noteListFilter={noteListFilter} onNoteListFilterChange={setNoteListFilter} inboxPeriod={inboxPeriod} modifiedFiles={vault.modifiedFiles} modifiedFilesError={vault.modifiedFilesError} getNoteStatus={vault.getNoteStatus} sidebarCollapsed={!sidebarVisible} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={handleReplaceActiveTabWithQueuedDiff} onEnterNeighborhood={handleEnterNeighborhood} onCreateNote={notes.handleCreateNoteImmediate} onBulkOrganize={explicitOrganizationEnabled ? bulkActions.handleBulkOrganize : undefined} onBulkArchive={bulkActions.handleBulkArchive} onBulkDeletePermanently={deleteActions.handleBulkDeletePermanently} onUpdateTypeSort={notes.handleUpdateFrontmatter} onUpdateViewDefinition={handleUpdateViewDefinition} updateEntry={vault.updateEntry} onOpenInNewWindow={handleOpenEntryInNewWindow} onDiscardFile={handleDiscardFile} onOpenDeletedNote={handleOpenDeletedNote} allNotesNoteListProperties={vaultConfig.allNotes?.noteListProperties ?? null} onUpdateAllNotesNoteListProperties={handleUpdateAllNotesNoteListProperties} inboxNoteListProperties={vaultConfig.inbox?.noteListProperties ?? null} onUpdateInboxNoteListProperties={handleUpdateInboxNoteListProperties} views={vault.views} visibleNotesRef={visibleNotesRef} multiSelectionCommandRef={multiSelectionCommandRef} locale={appLocale} />
+                  <NoteList entries={vault.entries} selection={effectiveSelection} selectedNote={activeTab?.entry ?? null} noteListFilter={noteListFilter} onNoteListFilterChange={setNoteListFilter} inboxPeriod={inboxPeriod} modifiedFiles={vault.modifiedFiles} modifiedFilesError={vault.modifiedFilesError} getNoteStatus={vault.getNoteStatus} sidebarCollapsed={!sidebarVisible} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={handleReplaceActiveTabWithQueuedDiff} onEnterNeighborhood={handleEnterNeighborhood} onCreateNote={notes.handleCreateNoteImmediate} onBulkOrganize={explicitOrganizationEnabled ? bulkActions.handleBulkOrganize : undefined} onBulkArchive={bulkActions.handleBulkArchive} onBulkDeletePermanently={deleteActions.handleBulkDeletePermanently} onUpdateTypeSort={notes.handleUpdateFrontmatter} onUpdateViewDefinition={handleUpdateViewDefinition} updateEntry={vault.updateEntry} canChangeNoteType={noteRetargetingUi.canChangeNoteType} canMoveNoteToFolder={noteRetargetingUi.canMoveNoteToFolder} onArchiveNote={entryActions.handleArchiveNote} onChangeNoteType={noteRetargetingUi.openChangeNoteTypeDialogForEntry} onCopyFilePath={fileActions.copyFilePath} onDeleteNote={deleteActions.handleDeleteNote} onMoveNoteToFolder={noteRetargetingUi.openMoveNoteToFolderDialogForEntry} onOpenExternalFile={fileActions.openExternalFile} onOpenInNewWindow={handleOpenEntryInNewWindow} onRevealFile={fileActions.revealFile} onToggleFavorite={entryActions.handleToggleFavorite} onToggleOrganized={explicitOrganizationEnabled ? toggleOrganizedCommand : undefined} onUnarchiveNote={entryActions.handleUnarchiveNote} onDiscardFile={handleDiscardFile} onOpenDeletedNote={handleOpenDeletedNote} allNotesNoteListProperties={vaultConfig.allNotes?.noteListProperties ?? null} onUpdateAllNotesNoteListProperties={handleUpdateAllNotesNoteListProperties} inboxNoteListProperties={vaultConfig.inbox?.noteListProperties ?? null} onUpdateInboxNoteListProperties={handleUpdateInboxNoteListProperties} views={vault.views} visibleNotesRef={visibleNotesRef} multiSelectionCommandRef={multiSelectionCommandRef} locale={appLocale} />
                 )}
               </div>
               <ResizeHandle onResize={layout.handleNoteListResize} />

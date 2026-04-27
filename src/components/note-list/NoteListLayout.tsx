@@ -265,6 +265,7 @@ function NoteListFooter({
   handleBulkDeletePermanently,
   handleBulkUnarchive,
   contextMenuNode,
+  noteContextMenuNode,
   dialogNode,
 }: Pick<
   NoteListLayoutProps,
@@ -275,6 +276,7 @@ function NoteListFooter({
   | 'handleBulkDeletePermanently'
   | 'handleBulkUnarchive'
   | 'contextMenuNode'
+  | 'noteContextMenuNode'
   | 'dialogNode'
 >) {
   return (
@@ -287,7 +289,7 @@ function NoteListFooter({
         handleBulkDeletePermanently={handleBulkDeletePermanently}
         handleBulkUnarchive={handleBulkUnarchive}
       />
-      {contextMenuNode}{dialogNode}
+      {contextMenuNode}{noteContextMenuNode}{dialogNode}
     </>
   )
 }

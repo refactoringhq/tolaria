@@ -368,6 +368,31 @@ describe('useCommandRegistry', () => {
     expect(findCommand(result.current, 'set-note-width-normal')?.enabled).toBe(true)
   })
 
+  it('exposes command palette actions for light and dark mode', () => {
+    const onSetThemeMode = vi.fn()
+    const config = makeConfig({ onSetThemeMode })
+    const { result } = renderHook(() => useCommandRegistry(config))
+    const lightMode = findCommand(result.current, 'use-light-mode')
+    const darkMode = findCommand(result.current, 'use-dark-mode')
+
+    expect(lightMode).toMatchObject({
+      label: 'Use Light Mode',
+      enabled: true,
+      group: 'Settings',
+    })
+    expect(darkMode).toMatchObject({
+      label: 'Use Dark Mode',
+      enabled: true,
+      group: 'Settings',
+    })
+
+    lightMode?.execute()
+    darkMode?.execute()
+
+    expect(onSetThemeMode).toHaveBeenNthCalledWith(1, 'light')
+    expect(onSetThemeMode).toHaveBeenNthCalledWith(2, 'dark')
+  })
+
   it('exposes default note width commands backed by settings', () => {
     const onSetDefaultNoteWidth = vi.fn()
     const config = makeConfig({ onSetDefaultNoteWidth })
