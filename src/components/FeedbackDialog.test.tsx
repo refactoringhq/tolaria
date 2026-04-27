@@ -93,7 +93,7 @@ describe('FeedbackDialog', () => {
     expect(writeText.mock.calls[0]?.[0]).toContain('Tolaria sanitized diagnostics')
     expect(writeText.mock.calls[0]?.[0]).toContain('Build: b281')
     expect(writeText.mock.calls[0]?.[0]).toContain('Release channel: alpha')
-    expect(screen.getByText('Diagnostics copied.')).toBeInTheDocument()
+    expect(await screen.findByText('Diagnostics copied.')).toBeInTheDocument()
   })
 
   it('shows a fallback message when a contribution link cannot be opened', async () => {

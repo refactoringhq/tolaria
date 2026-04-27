@@ -112,6 +112,10 @@ jobs:
         run: |
           HOTSPOT_THRESHOLD=$(grep '^HOTSPOT_THRESHOLD=' .codescene-thresholds | cut -d= -f2)
           AVERAGE_THRESHOLD=$(grep '^AVERAGE_THRESHOLD=' .codescene-thresholds | cut -d= -f2)
+          if [ -z "$CODESCENE_PAT" ] || [ -z "$CODESCENE_PROJECT_ID" ]; then
+            echo "CodeScene secrets unavailable; skipping code health gates."
+            exit 0
+          fi
           API_RESPONSE=$(curl -sf \
             -H "Authorization: Bearer $CODESCENE_PAT" \
             -H "Accept: application/json" \
