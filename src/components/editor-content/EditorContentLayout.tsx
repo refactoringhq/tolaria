@@ -26,6 +26,8 @@ type BreadcrumbActions = Pick<
   | 'showDiffToggle'
   | 'onToggleFavorite'
   | 'onToggleOrganized'
+  | 'onRevealFile'
+  | 'onCopyFilePath'
   | 'onDeleteNote'
   | 'onArchiveNote'
   | 'onUnarchiveNote'
@@ -135,6 +137,8 @@ function ActiveTabBreadcrumb({
       onToggleInspector={actions.onToggleInspector}
       onToggleFavorite={bindPath(actions.onToggleFavorite, path)}
       onToggleOrganized={bindPath(actions.onToggleOrganized, path)}
+      onRevealFile={actions.onRevealFile}
+      onCopyFilePath={actions.onCopyFilePath}
       onDelete={bindPath(actions.onDeleteNote, path)}
       onArchive={bindPath(actions.onArchiveNote, path)}
       onUnarchive={bindPath(actions.onUnarchiveNote, path)}
@@ -282,6 +286,8 @@ export function EditorContentLayout(model: EditorContentModel) {
           showDiffToggle: model.showDiffToggle,
           onToggleFavorite: model.onToggleFavorite,
           onToggleOrganized: model.onToggleOrganized,
+          onRevealFile: model.onRevealFile,
+          onCopyFilePath: model.onCopyFilePath,
           onDeleteNote: model.onDeleteNote,
           onArchiveNote: model.onArchiveNote,
           onUnarchiveNote: model.onUnarchiveNote,

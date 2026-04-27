@@ -1,5 +1,5 @@
 use std::fs;
-use std::io::{ErrorKind, Write};
+use std::io::{Error, ErrorKind, Write};
 use std::path::Path;
 use std::time::UNIX_EPOCH;
 
@@ -23,6 +23,49 @@ pub(crate) fn read_file_metadata(path: &Path) -> Result<(Option<u64>, Option<u64
 
 fn invalid_utf8_text_error(path: &Path) -> String {
     format!("File is not valid UTF-8 text: {}", path.display())
+}
+
+fn is_invalid_platform_path_error(error: &Error) -> bool {
+    error.kind() == ErrorKind::InvalidInput || error.raw_os_error() == Some(123)
+}
+
+#[derive(Clone, Copy)]
+enum NoteIoOperation {
+    Save,
+    Create,
+}
+
+#[derive(Clone, Copy)]
+struct NotePathDisplay<'a> {
+    value: &'a str,
+}
+
+impl<'a> NotePathDisplay<'a> {
+    fn new(value: &'a str) -> Self {
+        Self { value }
+    }
+}
+
+impl NoteIoOperation {
+    fn verb(self) -> &'static str {
+        match self {
+            Self::Save => "save",
+            Self::Create => "create",
+        }
+    }
+}
+
+fn note_io_error(operation: NoteIoOperation, path: NotePathDisplay<'_>, error: &Error) -> String {
+    let verb = operation.verb();
+    if is_invalid_platform_path_error(error) {
+        let path = path.value;
+        format!(
+            "Failed to {verb} note: the path is invalid on this platform. Rename the note or move it to a valid folder, then try again. Path: {path}"
+        )
+    } else {
+        let path = path.value;
+        format!("Failed to {verb} {path}: {error}")
+    }
 }
 
 /// Read the content of a single note file.
@@ -62,12 +105,14 @@ pub fn save_note_content(path: &str, content: &str) -> Result<(), String> {
     let file_path = Path::new(path);
     if let Some(parent) = file_path.parent() {
         if !parent.exists() {
-            fs::create_dir_all(parent)
-                .map_err(|e| format!("Failed to create directory {}: {}", parent.display(), e))?;
+            fs::create_dir_all(parent).map_err(|e| {
+                note_io_error(NoteIoOperation::Save, NotePathDisplay::new(path), &e)
+            })?;
         }
     }
     validate_save_path(file_path, path)?;
-    fs::write(file_path, content).map_err(|e| format!("Failed to save {}: {}", path, e))
+    fs::write(file_path, content)
+        .map_err(|e| note_io_error(NoteIoOperation::Save, NotePathDisplay::new(path), &e))
 }
 
 /// Create a new note file without overwriting any existing file.
@@ -75,8 +120,9 @@ pub fn create_note_content(path: &str, content: &str) -> Result<(), String> {
     let file_path = Path::new(path);
     if let Some(parent) = file_path.parent() {
         if !parent.exists() {
-            fs::create_dir_all(parent)
-                .map_err(|e| format!("Failed to create directory {}: {}", parent.display(), e))?;
+            fs::create_dir_all(parent).map_err(|e| {
+                note_io_error(NoteIoOperation::Create, NotePathDisplay::new(path), &e)
+            })?;
         }
     }
     validate_save_path(file_path, path)?;
@@ -86,8 +132,27 @@ pub fn create_note_content(path: &str, content: &str) -> Result<(), String> {
         .open(file_path)
         .map_err(|e| match e.kind() {
             ErrorKind::AlreadyExists => format!("File already exists: {}", path),
-            _ => format!("Failed to create {}: {}", path, e),
+            _ => note_io_error(NoteIoOperation::Create, NotePathDisplay::new(path), &e),
         })?;
     file.write_all(content.as_bytes())
-        .map_err(|e| format!("Failed to save {}: {}", path, e))
+        .map_err(|e| note_io_error(NoteIoOperation::Save, NotePathDisplay::new(path), &e))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn formats_windows_invalid_path_syntax_as_recoverable_save_error() {
+        let path = r"C:\Users\@raflymln\notes\untitled-note-1777236475.md";
+        let message = note_io_error(
+            NoteIoOperation::Save,
+            NotePathDisplay::new(path),
+            &Error::from_raw_os_error(123),
+        );
+
+        assert!(message.contains("path is invalid on this platform"));
+        assert!(message.contains("Rename the note or move it to a valid folder"));
+        assert!(!message.contains("os error 123"));
+    }
 }

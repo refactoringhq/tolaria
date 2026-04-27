@@ -223,4 +223,29 @@ describe('FolderTree', () => {
     fireEvent.click(screen.getByTestId('delete-folder-menu-item'))
     expect(onDeleteFolder).toHaveBeenCalledWith('projects')
   })
+
+  it('opens folder file actions from the context menu', () => {
+    const onRevealFolder = vi.fn()
+    const onCopyFolderPath = vi.fn()
+    render(
+      <FolderTree
+        folders={mockFolders}
+        selection={defaultSelection}
+        onSelect={vi.fn()}
+        folderFileActions={{
+          copyFolderPath: onCopyFolderPath,
+          revealFolder: onRevealFolder,
+        }}
+        onStartRenameFolder={vi.fn()}
+      />,
+    )
+
+    fireEvent.contextMenu(screen.getByText('projects'))
+    fireEvent.click(screen.getByTestId('reveal-folder-menu-item'))
+    expect(onRevealFolder).toHaveBeenCalledWith('projects')
+
+    fireEvent.contextMenu(screen.getByText('projects'))
+    fireEvent.click(screen.getByTestId('copy-folder-path-menu-item'))
+    expect(onCopyFolderPath).toHaveBeenCalledWith('projects')
+  })
 })

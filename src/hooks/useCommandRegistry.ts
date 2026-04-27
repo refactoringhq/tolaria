@@ -50,6 +50,9 @@ interface CommandRegistryConfig {
   onMoveNoteToFolder?: () => void
   canMoveNoteToFolder?: boolean
   onOpenInNewWindow?: () => void
+  onRevealActiveFile?: (path: string) => void
+  onCopyActiveFilePath?: (path: string) => void
+  onOpenActiveFileExternal?: (path: string) => void
   onToggleFavorite?: (path: string) => void
   onToggleOrganized?: (path: string) => void
   onCustomizeNoteListColumns?: () => void
@@ -92,6 +95,8 @@ interface CommandRegistryConfig {
   onSelect: (sel: SidebarSelection) => void
   onRenameFolder?: () => void
   onDeleteFolder?: () => void
+  onRevealSelectedFolder?: () => void
+  onCopySelectedFolderPath?: () => void
   showInbox?: boolean
   onGoBack?: () => void
   onGoForward?: () => void
@@ -114,7 +119,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
     onCommitPush, onPull, onResolveConflicts, onSetViewMode, onToggleInspector, onToggleDiff, onToggleRawEditor, noteLayout, onToggleNoteLayout, onToggleAIChat, onOpenVault, onCreateEmptyVault,
     activeNoteModified,
     onZoomIn, onZoomOut, onZoomReset, zoomLevel,
-    onSelect, onRenameFolder, onDeleteFolder,
+    onSelect, onRenameFolder, onDeleteFolder, onRevealSelectedFolder, onCopySelectedFolderPath,
     showInbox,
     onGoBack, onGoForward, canGoBack, canGoForward,
     onCheckForUpdates, onCreateType,
@@ -124,7 +129,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
     onReloadVault, onRepairVault,
     locale, systemLocale, selectedUiLanguage, onSetUiLanguage,
     onSetNoteIcon, onRemoveNoteIcon, activeNoteHasIcon, onChangeNoteType, onMoveNoteToFolder, canMoveNoteToFolder,
-    onOpenInNewWindow, onToggleFavorite, onToggleOrganized,
+    onOpenInNewWindow, onRevealActiveFile, onCopyActiveFilePath, onOpenActiveFileExternal, onToggleFavorite, onToggleOrganized,
     onCustomizeNoteListColumns, canCustomizeNoteListColumns,
     onRestoreDeletedNote, canRestoreDeletedNote,
     selection, noteListFilter, onSetNoteListFilter,
@@ -154,6 +159,8 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
     selection,
     onRenameFolder,
     onDeleteFolder,
+    onRevealSelectedFolder,
+    onCopySelectedFolderPath,
     showInbox,
     onGoBack,
     onGoForward,
@@ -161,22 +168,27 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
     canGoForward,
   }), [
     onQuickOpen, onSelect, selection, onRenameFolder, onDeleteFolder,
-    showInbox, onGoBack, onGoForward, canGoBack, canGoForward,
+    onRevealSelectedFolder, onCopySelectedFolderPath, showInbox,
+    onGoBack, onGoForward, canGoBack, canGoForward,
   ])
 
   const noteCommands = useMemo(() => buildNoteCommands({
-    hasActiveNote, activeTabPath, isArchived,
+    hasActiveNote, activeTabPath, activeFileKind: activeEntry?.fileKind ?? 'markdown', isArchived,
     onCreateNote, onCreateType, onSave,
     onDeleteNote, onArchiveNote, onUnarchiveNote,
     onChangeNoteType, onMoveNoteToFolder, canMoveNoteToFolder,
-    onSetNoteIcon, onRemoveNoteIcon, activeNoteHasIcon, onOpenInNewWindow, onToggleFavorite, isFavorite,
+    onSetNoteIcon, onRemoveNoteIcon, activeNoteHasIcon, onOpenInNewWindow,
+    onRevealActiveFile, onCopyActiveFilePath, onOpenActiveFileExternal,
+    onToggleFavorite, isFavorite,
     onToggleOrganized, isOrganized: activeEntry?.organized ?? false,
     onRestoreDeletedNote, canRestoreDeletedNote,
   }), [
-    hasActiveNote, activeTabPath, isArchived,
+    hasActiveNote, activeTabPath, activeEntry?.fileKind, isArchived,
     onCreateNote, onCreateType, onSave, onDeleteNote, onArchiveNote, onUnarchiveNote,
     onChangeNoteType, onMoveNoteToFolder, canMoveNoteToFolder,
-    onSetNoteIcon, onRemoveNoteIcon, activeNoteHasIcon, onOpenInNewWindow, onToggleFavorite, isFavorite,
+    onSetNoteIcon, onRemoveNoteIcon, activeNoteHasIcon, onOpenInNewWindow,
+    onRevealActiveFile, onCopyActiveFilePath, onOpenActiveFileExternal,
+    onToggleFavorite, isFavorite,
     onToggleOrganized, activeEntry?.organized, onRestoreDeletedNote, canRestoreDeletedNote,
   ])
 

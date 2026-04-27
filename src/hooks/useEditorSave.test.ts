@@ -84,6 +84,42 @@ describe('useEditorSave', () => {
     consoleSpy.mockRestore()
   })
 
+  it('keeps failed Windows path saves pending with a recoverable error toast', async () => {
+    const path = 'C:\\Users\\@raflymln\\notes\\untitled-note-1777236475.md'
+    mockInvokeFn.mockRejectedValueOnce(
+      new Error(`Failed to save ${path}: The filename, directory name, or volume label syntax is incorrect. (os error 123)`),
+    )
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { result } = renderSaveHook()
+
+    act(() => {
+      result.current.handleContentChange(path, '# Draft\n\nUnsaved body')
+    })
+
+    let saved = true
+    await act(async () => {
+      saved = await result.current.handleSave()
+    })
+
+    expect(saved).toBe(false)
+    expect(setToastMessage).toHaveBeenCalledWith(
+      'Save failed: The note path is invalid on this platform. Rename the note or move it to a valid folder, then try again.',
+    )
+    expect(updateVaultContent).not.toHaveBeenCalled()
+
+    await act(async () => {
+      saved = await result.current.handleSave()
+    })
+
+    expect(saved).toBe(true)
+    expect(mockInvokeFn).toHaveBeenLastCalledWith('save_note_content', {
+      path,
+      content: '# Draft\n\nUnsaved body',
+    })
+    expect(updateVaultContent).toHaveBeenCalledWith(path, '# Draft\n\nUnsaved body')
+    consoleSpy.mockRestore()
+  })
+
   it('savePendingForPath saves content only for the matching path', async () => {
     const { result } = renderSaveHook()
 
@@ -318,6 +354,32 @@ describe('useEditorSave', () => {
       await act(async () => { vi.advanceTimersByTime(500) })
 
       expect(setToastMessage).not.toHaveBeenCalled()
+    })
+
+    it('auto-save reports invalid path failures and leaves content retryable', async () => {
+      const path = 'C:\\Users\\@raflymln\\notes\\untitled-note-1777236475.md'
+      mockInvokeFn.mockRejectedValueOnce(new Error('The filename, directory name, or volume label syntax is incorrect. (os error 123)'))
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const { result } = renderHook(() =>
+        useEditorSave({ updateVaultContent, setTabs, setToastMessage })
+      )
+
+      act(() => { result.current.handleContentChange(path, 'draft from auto-save') })
+      await act(async () => { await vi.advanceTimersByTimeAsync(500) })
+
+      expect(setToastMessage).toHaveBeenCalledWith(
+        'Save failed: The note path is invalid on this platform. Rename the note or move it to a valid folder, then try again.',
+      )
+      expect(updateVaultContent).not.toHaveBeenCalled()
+
+      await act(async () => { await result.current.handleSave() })
+
+      expect(mockInvokeFn).toHaveBeenLastCalledWith('save_note_content', {
+        path,
+        content: 'draft from auto-save',
+      })
+      expect(updateVaultContent).toHaveBeenCalledWith(path, 'draft from auto-save')
+      consoleSpy.mockRestore()
     })
 
     it('Cmd+S cancels pending auto-save and saves immediately', async () => {

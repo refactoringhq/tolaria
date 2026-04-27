@@ -34,6 +34,8 @@ export interface EditorContentProps {
   onEditorChange?: () => void
   onToggleFavorite?: (path: string) => void
   onToggleOrganized?: (path: string) => void
+  onRevealFile?: (path: string) => void
+  onCopyFilePath?: (path: string) => void
   onDeleteNote?: (path: string) => void
   onArchiveNote?: (path: string) => void
   onUnarchiveNote?: (path: string) => void

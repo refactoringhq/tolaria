@@ -267,6 +267,28 @@ mod tests {
     }
 
     #[test]
+    fn note_content_commands_accept_windows_sensitive_valid_segments() {
+        let dir = TempDir::new().unwrap();
+        let root = vault_root(&dir);
+        let note = root
+            .join("@raflymln")
+            .join("notes with spaces")
+            .join("résumé note.md");
+
+        save_note_content(
+            note.clone(),
+            "# Windows-Sensitive Path\n\nBody\n".to_string(),
+            Some(root.clone()),
+        )
+        .unwrap();
+
+        assert_eq!(
+            get_note_content(note, Some(root)).unwrap(),
+            "# Windows-Sensitive Path\n\nBody\n"
+        );
+    }
+
+    #[test]
     fn folder_and_listing_commands_use_expanded_vault_root() {
         let dir = TempDir::new().unwrap();
         let root = vault_root(&dir);

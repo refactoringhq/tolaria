@@ -4,6 +4,7 @@ import type { CommandAction } from './types'
 interface NoteCommandsConfig {
   hasActiveNote: boolean
   activeTabPath: string | null
+  activeFileKind?: 'markdown' | 'text' | 'binary'
   isArchived: boolean
   activeNoteHasIcon?: boolean
   onCreateNote: () => void
@@ -18,6 +19,9 @@ interface NoteCommandsConfig {
   onSetNoteIcon?: () => void
   onRemoveNoteIcon?: () => void
   onOpenInNewWindow?: () => void
+  onRevealActiveFile?: (path: string) => void
+  onCopyActiveFilePath?: (path: string) => void
+  onOpenActiveFileExternal?: (path: string) => void
   onToggleFavorite?: (path: string) => void
   isFavorite?: boolean
   onToggleOrganized?: (path: string) => void
@@ -138,6 +142,7 @@ function buildPinnedNoteCommands(config: NoteCommandsConfig): CommandAction[] {
 function buildOptionalNoteCommands(config: NoteCommandsConfig): CommandAction[] {
   return [
     ...buildRecoveryCommands(config),
+    ...buildFileActionCommands(config),
     ...buildRetargetingCommands(config),
     ...buildPresentationCommands(config),
   ]
@@ -177,6 +182,38 @@ function buildRetargetingCommands(config: NoteCommandsConfig): CommandAction[] {
       keywords: ['folder', 'move', 'retarget', 'organize'],
       enabled: config.hasActiveNote && !!config.onMoveNoteToFolder && !!config.canMoveNoteToFolder,
       execute: () => config.onMoveNoteToFolder?.(),
+    }),
+  ]
+}
+
+function buildFileActionCommands(config: NoteCommandsConfig): CommandAction[] {
+  const activeFileKind = config.activeFileKind ?? 'markdown'
+  const hasNonMarkdownActiveFile = config.hasActiveNote && activeFileKind !== 'markdown'
+
+  return [
+    createNoteCommand({
+      id: 'reveal-active-file',
+      label: 'Reveal in Finder',
+      keywords: ['file', 'folder', 'finder', 'reveal', 'show', 'filesystem'],
+      enabled: config.hasActiveNote && !!config.onRevealActiveFile,
+      path: config.activeTabPath,
+      run: (path) => config.onRevealActiveFile?.(path),
+    }),
+    createNoteCommand({
+      id: 'copy-active-file-path',
+      label: 'Copy File Path',
+      keywords: ['file', 'path', 'copy', 'clipboard', 'filesystem'],
+      enabled: config.hasActiveNote && !!config.onCopyActiveFilePath,
+      path: config.activeTabPath,
+      run: (path) => config.onCopyActiveFilePath?.(path),
+    }),
+    createNoteCommand({
+      id: 'open-active-file-external',
+      label: 'Open in Default App',
+      keywords: ['file', 'open', 'external', 'default', 'attachment'],
+      enabled: hasNonMarkdownActiveFile && !!config.onOpenActiveFileExternal,
+      path: config.activeTabPath,
+      run: (path) => config.onOpenActiveFileExternal?.(path),
     }),
   ]
 }

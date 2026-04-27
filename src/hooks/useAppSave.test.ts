@@ -169,6 +169,35 @@ describe('useAppSave', () => {
     // Should complete without error
   })
 
+  it('handles Windows invalid path save failures without clearing unsaved content', async () => {
+    vi.mocked(isTauri).mockReturnValue(true)
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const path = 'C:\\Users\\@raflymln\\notes\\untitled-note-1777236475.md'
+    const entry = makeEntry(path, 'Untitled Note 1777236475', 'untitled-note-1777236475.md')
+    vi.mocked(invoke).mockRejectedValueOnce(
+      new Error('The filename, directory name, or volume label syntax is incorrect. (os error 123)'),
+    )
+
+    const { result } = renderSave({
+      tabs: [{ entry, content: '# Draft\n\nBody' }],
+      activeTabPath: path,
+      unsavedPaths: new Set([path]),
+    })
+
+    let saved = true
+    await act(async () => {
+      saved = await result.current.handleSave()
+    })
+
+    expect(saved).toBe(false)
+    expect(deps.setToastMessage).toHaveBeenCalledWith(
+      'Save failed: The note path is invalid on this platform. Rename the note or move it to a valid folder, then try again.',
+    )
+    expect(deps.clearUnsaved).not.toHaveBeenCalled()
+    expect(vi.mocked(invoke)).not.toHaveBeenCalledWith('auto_rename_untitled', expect.anything())
+    consoleSpy.mockRestore()
+  })
+
   it('handleContentChange is a function', () => {
     const { result } = renderSave()
     expect(typeof result.current.handleContentChange).toBe('function')

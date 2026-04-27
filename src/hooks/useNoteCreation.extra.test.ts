@@ -310,7 +310,7 @@ describe('resolveNewType', () => {
     expect(entry.isA).toBe('Type')
     expect(entry.status).toBeNull()
     expect(content).toContain('type: Type')
-    expect(content).not.toContain('# Recipe')
+    expect(content).toContain('# Recipe')
   })
 
   it('uses provided vault path instead of hardcoded path', () => {

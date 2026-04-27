@@ -15,6 +15,8 @@ import {
   Trash,
   Archive,
   ArrowUUpLeft,
+  ClipboardText,
+  FolderOpen,
   Star,
   CheckCircle,
   ArrowsClockwise,
@@ -42,6 +44,8 @@ interface BreadcrumbBarProps {
   onToggleInspector?: () => void
   onToggleFavorite?: () => void
   onToggleOrganized?: () => void
+  onRevealFile?: (path: string) => void
+  onCopyFilePath?: (path: string) => void
   onDelete?: () => void
   onArchive?: () => void
   onUnarchive?: () => void
@@ -375,6 +379,38 @@ function DeleteAction({ locale = 'en', onDelete }: Pick<BreadcrumbBarProps, 'loc
   )
 }
 
+function FilePathActions({
+  entry,
+  locale = 'en',
+  onRevealFile,
+  onCopyFilePath,
+}: Pick<BreadcrumbBarProps, 'entry' | 'locale' | 'onRevealFile' | 'onCopyFilePath'>) {
+  return (
+    <>
+      {onRevealFile && (
+        <IconActionButton
+          copy={{ label: translate(locale, 'editor.toolbar.revealFile') }}
+          onClick={() => onRevealFile(entry.path)}
+          className="hover:text-foreground"
+          testId="breadcrumb-reveal-file"
+        >
+          <FolderOpen size={16} className={BREADCRUMB_ICON_CLASS} />
+        </IconActionButton>
+      )}
+      {onCopyFilePath && (
+        <IconActionButton
+          copy={{ label: translate(locale, 'editor.toolbar.copyFilePath') }}
+          onClick={() => onCopyFilePath(entry.path)}
+          className="hover:text-foreground"
+          testId="breadcrumb-copy-file-path"
+        >
+          <ClipboardText size={16} className={BREADCRUMB_ICON_CLASS} />
+        </IconActionButton>
+      )}
+    </>
+  )
+}
+
 function InspectorAction({
   inspectorCollapsed,
   locale = 'en',
@@ -596,6 +632,8 @@ function BreadcrumbActions({
   onToggleInspector,
   onToggleFavorite,
   onToggleOrganized,
+  onRevealFile,
+  onCopyFilePath,
   onDelete,
   onArchive,
   onUnarchive,
@@ -615,6 +653,7 @@ function BreadcrumbActions({
       {!forceRawMode && <RawToggleButton rawMode={rawMode} locale={locale} onToggleRaw={onToggleRaw} />}
       <NoteLayoutAction noteLayout={noteLayout} locale={locale} onToggleNoteLayout={onToggleNoteLayout} />
       <AIChatAction showAIChat={showAIChat} locale={locale} onToggleAIChat={onToggleAIChat} />
+      <FilePathActions entry={entry} locale={locale} onRevealFile={onRevealFile} onCopyFilePath={onCopyFilePath} />
       <ArchiveAction archived={entry.archived} locale={locale} onArchive={onArchive} onUnarchive={onUnarchive} />
       <DeleteAction locale={locale} onDelete={onDelete} />
       <InspectorAction inspectorCollapsed={inspectorCollapsed} locale={locale} onToggleInspector={onToggleInspector} />

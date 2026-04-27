@@ -14,6 +14,7 @@ import { useFolderContextMenu } from './folder-tree/useFolderContextMenu'
 import { useFolderTreeDisclosure } from './folder-tree/useFolderTreeDisclosure'
 import { SidebarGroupHeader } from './sidebar/SidebarGroupHeader'
 import { translate, type AppLocale } from '../lib/i18n'
+import type { FolderFileActions } from '../hooks/useFileActions'
 
 interface FolderTreeProps {
   folders: FolderNode[]
@@ -22,6 +23,7 @@ interface FolderTreeProps {
   onCreateFolder?: (name: string) => Promise<boolean> | boolean
   onRenameFolder?: (folderPath: string, nextName: string) => Promise<boolean> | boolean
   onDeleteFolder?: (folderPath: string) => void
+  folderFileActions?: FolderFileActions
   renamingFolderPath?: string | null
   onStartRenameFolder?: (folderPath: string) => void
   onCancelRenameFolder?: () => void
@@ -37,6 +39,7 @@ export const FolderTree = memo(function FolderTree({
   onCreateFolder,
   onRenameFolder,
   onDeleteFolder,
+  folderFileActions,
   renamingFolderPath,
   onStartRenameFolder,
   onCancelRenameFolder,
@@ -61,12 +64,15 @@ export const FolderTree = memo(function FolderTree({
   const {
     closeContextMenu,
     contextMenu,
+    handleCopyPathFromMenu,
     handleDeleteFromMenu,
     handleOpenMenu,
+    handleRevealFromMenu,
     handleRenameFromMenu,
     menuRef,
   } = useFolderContextMenu({
     onDeleteFolder,
+    folderFileActions,
     onStartRenameFolder,
   })
 
@@ -82,28 +88,18 @@ export const FolderTree = memo(function FolderTree({
     return created
   }, [closeCreateForm, onCreateFolder])
 
+  const handleCreateFolderClick = useCallback(() => {
+    closeContextMenu()
+    openCreateForm()
+  }, [closeContextMenu, openCreateForm])
+
   if (folders.length === 0 && !isCreating) return null
 
   return (
     <div className="border-b border-border" style={{ padding: '0 6px' }}>
       <SidebarGroupHeader label={translate(locale, 'sidebar.group.folders')} collapsed={sectionCollapsed} onToggle={handleToggleSection}>
         {onCreateFolder && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            className="h-auto w-auto min-w-0 rounded-none p-0 text-muted-foreground hover:bg-transparent hover:text-foreground"
-            data-testid="create-folder-btn"
-            title={translate(locale, 'sidebar.action.createFolder')}
-            aria-label={translate(locale, 'sidebar.action.createFolder')}
-            onClick={(event) => {
-              event.stopPropagation()
-              closeContextMenu()
-              openCreateForm()
-            }}
-          >
-            <Plus size={12} className="text-muted-foreground hover:text-foreground" />
-          </Button>
+          <CreateFolderButton locale={locale} onCreate={handleCreateFolderClick} />
         )}
       </SidebarGroupHeader>
       {!sectionCollapsed && (
@@ -145,9 +141,37 @@ export const FolderTree = memo(function FolderTree({
         menu={contextMenu}
         menuRef={menuRef}
         onDelete={handleDeleteFromMenu}
+        onReveal={handleRevealFromMenu}
+        onCopyPath={handleCopyPathFromMenu}
         onRename={handleRenameFromMenu}
         locale={locale}
       />
     </div>
   )
 })
+
+function CreateFolderButton({
+  locale,
+  onCreate,
+}: {
+  locale: AppLocale
+  onCreate: () => void
+}) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-xs"
+      className="h-auto w-auto min-w-0 rounded-none p-0 text-muted-foreground hover:bg-transparent hover:text-foreground"
+      data-testid="create-folder-btn"
+      title={translate(locale, 'sidebar.action.createFolder')}
+      aria-label={translate(locale, 'sidebar.action.createFolder')}
+      onClick={(event) => {
+        event.stopPropagation()
+        onCreate()
+      }}
+    >
+      <Plus size={12} className="text-muted-foreground hover:text-foreground" />
+    </Button>
+  )
+}

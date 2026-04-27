@@ -281,6 +281,62 @@ describe('useCommandRegistry', () => {
     expect(findCommand(result.current, 'archive-note')?.shortcut).toBeUndefined()
   })
 
+  it('exposes active file actions when a note is selected', () => {
+    const onRevealActiveFile = vi.fn()
+    const onCopyActiveFilePath = vi.fn()
+    const config = makeConfig({
+      activeTabPath: '/vault/current.md',
+      entries: [{ path: '/vault/current.md', title: 'Current', fileKind: 'markdown' }],
+      onRevealActiveFile,
+      onCopyActiveFilePath,
+    })
+    const { result } = renderHook(() => useCommandRegistry(config))
+
+    expect(findCommand(result.current, 'reveal-active-file')).toMatchObject({
+      enabled: true,
+      group: 'Note',
+      label: 'Reveal in Finder',
+    })
+    expect(findCommand(result.current, 'copy-active-file-path')).toMatchObject({
+      enabled: true,
+      group: 'Note',
+      label: 'Copy File Path',
+    })
+
+    findCommand(result.current, 'reveal-active-file')!.execute()
+    findCommand(result.current, 'copy-active-file-path')!.execute()
+
+    expect(onRevealActiveFile).toHaveBeenCalledWith('/vault/current.md')
+    expect(onCopyActiveFilePath).toHaveBeenCalledWith('/vault/current.md')
+  })
+
+  it('only enables external open for non-markdown active files', () => {
+    const onOpenActiveFileExternal = vi.fn()
+    const { result, rerender } = renderHook(
+      (props) => useCommandRegistry(props),
+      {
+        initialProps: makeConfig({
+          activeTabPath: '/vault/current.md',
+          entries: [{ path: '/vault/current.md', title: 'Current', fileKind: 'markdown' }],
+          onOpenActiveFileExternal,
+        }),
+      },
+    )
+
+    expect(findCommand(result.current, 'open-active-file-external')?.enabled).toBe(false)
+
+    rerender(makeConfig({
+      activeTabPath: '/vault/Attachments/photo.png',
+      entries: [{ path: '/vault/Attachments/photo.png', title: 'photo.png', fileKind: 'binary' }],
+      onOpenActiveFileExternal,
+    }))
+
+    const command = findCommand(result.current, 'open-active-file-external')!
+    expect(command.enabled).toBe(true)
+    command.execute()
+    expect(onOpenActiveFileExternal).toHaveBeenCalledWith('/vault/Attachments/photo.png')
+  })
+
   it('disables Toggle Raw Editor when the active file cannot switch to rich mode', () => {
     const config = makeConfig({ onToggleRawEditor: undefined })
     const { result } = renderHook(() => useCommandRegistry(config))
@@ -339,9 +395,13 @@ describe('useCommandRegistry', () => {
       selection: { kind: 'folder', path: 'projects' },
       onRenameFolder: vi.fn(),
       onDeleteFolder: vi.fn(),
+      onRevealSelectedFolder: vi.fn(),
+      onCopySelectedFolderPath: vi.fn(),
     })
     const { result } = renderHook(() => useCommandRegistry(config))
 
+    expect(findCommand(result.current, 'reveal-selected-folder')?.enabled).toBe(true)
+    expect(findCommand(result.current, 'copy-selected-folder-path')?.enabled).toBe(true)
     expect(findCommand(result.current, 'rename-folder')?.enabled).toBe(true)
     expect(findCommand(result.current, 'delete-folder')?.enabled).toBe(true)
   })
@@ -351,9 +411,13 @@ describe('useCommandRegistry', () => {
       selection: { kind: 'filter', filter: 'all' },
       onRenameFolder: vi.fn(),
       onDeleteFolder: vi.fn(),
+      onRevealSelectedFolder: vi.fn(),
+      onCopySelectedFolderPath: vi.fn(),
     })
     const { result } = renderHook(() => useCommandRegistry(config))
 
+    expect(findCommand(result.current, 'reveal-selected-folder')?.enabled).toBe(false)
+    expect(findCommand(result.current, 'copy-selected-folder-path')?.enabled).toBe(false)
     expect(findCommand(result.current, 'rename-folder')?.enabled).toBe(false)
     expect(findCommand(result.current, 'delete-folder')?.enabled).toBe(false)
   })
@@ -361,16 +425,24 @@ describe('useCommandRegistry', () => {
   it('executes folder command callbacks', () => {
     const onRenameFolder = vi.fn()
     const onDeleteFolder = vi.fn()
+    const onRevealSelectedFolder = vi.fn()
+    const onCopySelectedFolderPath = vi.fn()
     const config = makeConfig({
       selection: { kind: 'folder', path: 'projects' },
       onRenameFolder,
       onDeleteFolder,
+      onRevealSelectedFolder,
+      onCopySelectedFolderPath,
     })
     const { result } = renderHook(() => useCommandRegistry(config))
 
+    findCommand(result.current, 'reveal-selected-folder')!.execute()
+    findCommand(result.current, 'copy-selected-folder-path')!.execute()
     findCommand(result.current, 'rename-folder')!.execute()
     findCommand(result.current, 'delete-folder')!.execute()
 
+    expect(onRevealSelectedFolder).toHaveBeenCalledTimes(1)
+    expect(onCopySelectedFolderPath).toHaveBeenCalledTimes(1)
     expect(onRenameFolder).toHaveBeenCalledTimes(1)
     expect(onDeleteFolder).toHaveBeenCalledTimes(1)
   })

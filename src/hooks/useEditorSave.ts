@@ -28,10 +28,29 @@ interface EditorSaveConfig {
 const noop = () => {}
 
 const AUTO_SAVE_DEBOUNCE_MS = 500
+const INVALID_PATH_SAVE_MESSAGE = 'Save failed: The note path is invalid on this platform. Rename the note or move it to a valid folder, then try again.'
 
 interface PendingContent {
   path: string
   content: string
+}
+
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  return String(error)
+}
+
+function isInvalidPathSaveError(message: string): boolean {
+  const normalized = message.toLowerCase()
+  return normalized.includes('os error 123')
+    || normalized.includes('filename, directory name, or volume label syntax is incorrect')
+    || normalized.includes('path is invalid on this platform')
+}
+
+function formatSaveFailureMessage(error: unknown): string {
+  const message = errorMessage(error)
+  if (isInvalidPathSaveError(message)) return INVALID_PATH_SAVE_MESSAGE
+  return `Save failed: ${message}`
 }
 
 function resolveBufferedPath(path: string, resolvePath?: EditorSaveConfig['resolvePath']): string {
@@ -91,10 +110,12 @@ function scheduleAutoSave({
   autoSaveTimerRef,
   flushPending,
   onAfterSaveRef,
+  setToastMessage,
 }: {
   autoSaveTimerRef: MutableRefObject<ReturnType<typeof setTimeout> | null>
   flushPending: () => Promise<boolean>
   onAfterSaveRef: MutableRefObject<() => void>
+  setToastMessage: EditorSaveConfig['setToastMessage']
 }): void {
   autoSaveTimerRef.current = setTimeout(async () => {
     autoSaveTimerRef.current = null
@@ -103,6 +124,7 @@ function scheduleAutoSave({
       if (saved) onAfterSaveRef.current()
     } catch (err) {
       console.error('Auto-save failed:', err)
+      setToastMessage(formatSaveFailureMessage(err))
     }
   }, AUTO_SAVE_DEBOUNCE_MS)
 }
@@ -198,7 +220,7 @@ function useImmediateSaveCommands({
   resolvePath?: EditorSaveConfig['resolvePath']
   resolvePathBeforeSave?: EditorSaveConfig['resolvePathBeforeSave']
 }) {
-  const handleSave = useCallback(async (unsavedFallback?: { path: string; content: string }) => {
+  const handleSave = useCallback(async (unsavedFallback?: { path: string; content: string }): Promise<boolean> => {
     cancelAutoSave()
     try {
       const saved = await flushPending()
@@ -211,9 +233,11 @@ function useImmediateSaveCommands({
       })
       setToastMessage(saved || savedFallback ? 'Saved' : 'Nothing to save')
       onAfterSave()
+      return true
     } catch (err) {
       console.error('Save failed:', err)
-      setToastMessage(`Save failed: ${err}`)
+      setToastMessage(formatSaveFailureMessage(err))
+      return false
     }
   }, [cancelAutoSave, flushPending, onAfterSave, onNotePersisted, resolvePath, resolvePathBeforeSave, saveNote, setToastMessage])
 
@@ -231,6 +255,7 @@ function useContentChangeCommand({
   pendingContentRef,
   autoSaveTimerRef,
   setTabs,
+  setToastMessage,
   cancelAutoSave,
   flushPending,
   onAfterSaveRef,
@@ -238,6 +263,7 @@ function useContentChangeCommand({
   pendingContentRef: MutableRefObject<PendingContent | null>
   autoSaveTimerRef: MutableRefObject<ReturnType<typeof setTimeout> | null>
   setTabs: EditorSaveConfig['setTabs']
+  setToastMessage: EditorSaveConfig['setToastMessage']
   cancelAutoSave: () => void
   flushPending: () => Promise<boolean>
   onAfterSaveRef: MutableRefObject<() => void>
@@ -246,8 +272,8 @@ function useContentChangeCommand({
     pendingContentRef.current = { path, content }
     applyTabContent(setTabs, path, content)
     cancelAutoSave()
-    scheduleAutoSave({ autoSaveTimerRef, flushPending, onAfterSaveRef })
-  }, [autoSaveTimerRef, cancelAutoSave, flushPending, onAfterSaveRef, pendingContentRef, setTabs])
+    scheduleAutoSave({ autoSaveTimerRef, flushPending, onAfterSaveRef, setToastMessage })
+  }, [autoSaveTimerRef, cancelAutoSave, flushPending, onAfterSaveRef, pendingContentRef, setTabs, setToastMessage])
 }
 
 function useEditorSaveCommands({
@@ -295,6 +321,7 @@ function useEditorSaveCommands({
     pendingContentRef,
     autoSaveTimerRef,
     setTabs,
+    setToastMessage,
     cancelAutoSave,
     flushPending: () => flushPending(),
     onAfterSaveRef,

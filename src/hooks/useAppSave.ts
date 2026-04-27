@@ -565,7 +565,7 @@ function useHandleSaveAction({
   flushPendingUntitledRename,
   resolveCurrentPath,
 }: {
-  handleSaveRaw: (unsavedFallback?: { path: string; content: string }) => Promise<void>
+  handleSaveRaw: (unsavedFallback?: { path: string; content: string }) => Promise<boolean>
   tabs: TabState[]
   activeTabPath: string | null
   unsavedPaths: Set<string>
@@ -574,12 +574,14 @@ function useHandleSaveAction({
 }) {
   return useCallback(async () => {
     const resolvedActiveTabPath = activeTabPath ? resolveCurrentPath(activeTabPath) : null
-    await handleSaveRaw(findUnsavedFallback({
+    const saveCompleted = await handleSaveRaw(findUnsavedFallback({
       tabs,
       activeTabPath: resolvedActiveTabPath,
       unsavedPaths,
     }))
+    if (!saveCompleted) return false
     await flushPendingUntitledRename(resolvedActiveTabPath ?? undefined)
+    return true
   }, [handleSaveRaw, tabs, activeTabPath, unsavedPaths, flushPendingUntitledRename, resolveCurrentPath])
 }
 
@@ -696,7 +698,7 @@ function useAppSaveHandlers({
   resolvedPath: string
   replaceRenamedEntry: (oldPath: string, newEntry: Partial<VaultEntry> & { path: string }, newContent: string) => void
   loadModifiedFiles: AppSaveDeps['loadModifiedFiles']
-  handleSaveRaw: (unsavedFallback?: { path: string; content: string }) => Promise<void>
+  handleSaveRaw: (unsavedFallback?: { path: string; content: string }) => Promise<boolean>
   tabs: TabState[]
   unsavedPaths: Set<string>
 }) {
