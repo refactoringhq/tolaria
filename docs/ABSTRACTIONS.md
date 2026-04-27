@@ -701,7 +701,7 @@ interface Settings {
   release_channel: string | null // null = stable default, "alpha" = every-push prerelease feed
   theme_mode: 'light' | 'dark' | null
   ui_language: 'en' | 'zh-Hans' | null
-  default_ai_agent: 'claude_code' | 'codex' | null
+  default_ai_agent: 'claude_code' | 'codex' | 'kiro' | null
 }
 ```
 
