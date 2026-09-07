@@ -83,11 +83,24 @@ function handleRawEditorFindKeyDown(
   moveMatch(event.shiftKey ? -1 : 1)
 }
 
-function selectActiveEditorFindMatch(selection: ActiveEditorFindMatchSelection): void {
-  const { activeMatch, open, viewRef } = selection
-  const view = viewRef.current
-  if (!open || !view || !activeMatch) return
-  selectMatch(view, activeMatch, false)
+function useRequestedEditorFindMatchSelection(
+  selection: ActiveEditorFindMatchSelection & { requestId: number },
+): void {
+  const { activeMatch, open, requestId, viewRef } = selection
+  const handledRequestRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (!open) {
+      handledRequestRef.current = null
+      return
+    }
+    if (handledRequestRef.current === requestId) return
+
+    handledRequestRef.current = requestId
+    const view = viewRef.current
+    if (!view || !activeMatch) return
+    selectMatch(view, activeMatch, false)
+  }, [activeMatch, open, requestId, viewRef])
 }
 
 function replaceCurrentEditorFindMatch({
@@ -140,6 +153,53 @@ function replaceAllEditorFindMatches({
   return true
 }
 
+function useEditorFindNavigation(
+  matchCount: number,
+  setActiveIndex: React.Dispatch<React.SetStateAction<number>>,
+  requestSelection: () => void,
+): { moveMatch: (direction: 1 | -1) => void; moveNext: () => void; movePrevious: () => void } {
+  const moveMatch = useCallback((direction: 1 | -1) => {
+    setActiveIndex((current) => nextEditorFindIndex(current, matchCount, direction))
+    requestSelection()
+  }, [matchCount, requestSelection, setActiveIndex])
+  const movePrevious = useCallback(() => moveMatch(-1), [moveMatch])
+  const moveNext = useCallback(() => moveMatch(1), [moveMatch])
+  return { moveMatch, moveNext, movePrevious }
+}
+
+function useEditorFindOptionToggle(
+  setOption: React.Dispatch<React.SetStateAction<boolean>>,
+  requestSelection: () => void,
+): () => void {
+  return useCallback(() => {
+    setOption((value) => !value)
+    requestSelection()
+  }, [requestSelection, setOption])
+}
+
+function useEditorFindState({
+  activeIndex,
+  doc,
+  locale,
+  options,
+  query,
+}: {
+  activeIndex: number
+  doc: string
+  locale: AppLocale
+  options: EditorFindOptions
+  query: string
+}) {
+  const result = useMemo(() => findEditorMatches(doc, query, options), [doc, options, query])
+  const currentIndex = clampEditorFindIndex(activeIndex, result.matches.length)
+  return {
+    activeMatch: result.matches.at(currentIndex),
+    hasMatches: result.matches.length > 0 && !result.error,
+    matches: result.matches,
+    status: matchStatusText(locale, result.error, currentIndex, result.matches.length),
+  }
+}
+
 function useRawEditorFindController(
   functionOptions: Omit<RawEditorFindBarProps, 'replaceOpen'>,
 ): RawEditorFindController {
@@ -150,37 +210,27 @@ function useRawEditorFindController(
   const [regex, setRegex] = useState(false)
   const [caseSensitive, setCaseSensitive] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [selectionRequestId, setSelectionRequestId] = useState(0)
   const options = useMemo<EditorFindOptions>(() => ({ caseSensitive, regex }), [caseSensitive, regex])
-  const result = useMemo(() => findEditorMatches(doc, query, options), [doc, options, query])
-  const clampedActiveIndex = clampEditorFindIndex(activeIndex, result.matches.length)
-  const activeMatch = result.matches.at(clampedActiveIndex)
-  const status = matchStatusText(locale, result.error, clampedActiveIndex, result.matches.length)
-  const hasMatches = result.matches.length > 0 && !result.error
+  const { activeMatch, hasMatches, matches, status } = useEditorFindState({ activeIndex, doc, locale, options, query })
 
   useRequestFocus({ inputRef, onReplaceOpenChange, open, path, request })
 
-  useEffect(() => {
-    selectActiveEditorFindMatch({ activeMatch, open, viewRef })
-  }, [activeMatch, open, viewRef])
+  useRequestedEditorFindMatchSelection({ activeMatch, open, requestId: selectionRequestId, viewRef })
 
-  const moveMatch = useCallback(
-    (direction: 1 | -1) => {
-    setActiveIndex((current) => nextEditorFindIndex(current, result.matches.length, direction))
-    },
-    [result.matches.length],
-  )
-  const movePrevious = useCallback(() => moveMatch(-1), [moveMatch])
-  const moveNext = useCallback(() => moveMatch(1), [moveMatch])
+  const requestSelection = useCallback(() => setSelectionRequestId((current) => current + 1), [])
+  const { moveMatch, moveNext, movePrevious } = useEditorFindNavigation(matches.length, setActiveIndex, requestSelection)
   const handleFindChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(event.target.value)
     setActiveIndex(0)
-  }, [])
+    requestSelection()
+  }, [requestSelection])
 
   const close = useCallback(() => closeRawEditorFind(onClose, viewRef), [onClose, viewRef])
 
   const handleFindKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>) => {
-    handleRawEditorFindKeyDown(event, close, moveMatch)
+      handleRawEditorFindKeyDown(event, close, moveMatch)
     },
     [close, moveMatch],
   )
@@ -198,7 +248,7 @@ function useRawEditorFindController(
   const replaceAll = useCallback(() => {
     if (
       replaceAllEditorFindMatches({
-      matches: result.matches,
+      matches,
       options,
       query,
       replacement,
@@ -207,7 +257,9 @@ function useRawEditorFindController(
     ) {
       setActiveIndex(0)
     }
-  }, [options, query, replacement, result.matches, viewRef])
+  }, [matches, options, query, replacement, viewRef])
+  const toggleCaseSensitive = useEditorFindOptionToggle(setCaseSensitive, requestSelection)
+  const toggleRegex = useEditorFindOptionToggle(setRegex, requestSelection)
 
   return {
     caseSensitive,
@@ -225,30 +277,93 @@ function useRawEditorFindController(
     replacement,
     setReplacement,
     status,
-    toggleCaseSensitive: () => setCaseSensitive((value) => !value),
-    toggleRegex: () => setRegex((value) => !value),
+    toggleCaseSensitive,
+    toggleRegex,
   }
 }
 
+function FindNavigationControls({
+  hasMatches,
+  locale,
+  moveNext,
+  movePrevious,
+}: Pick<FindControlsProps, 'hasMatches' | 'locale' | 'moveNext' | 'movePrevious'>) {
+  return (
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-xs"
+        aria-label={translate(locale, 'editor.find.previousMatch')}
+        title={translate(locale, 'editor.find.previousMatch')}
+        disabled={!hasMatches}
+        onClick={movePrevious}
+      >
+        <ChevronUp />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-xs"
+        aria-label={translate(locale, 'editor.find.nextMatch')}
+        title={translate(locale, 'editor.find.nextMatch')}
+        disabled={!hasMatches}
+        onClick={moveNext}
+      >
+        <ChevronDown />
+      </Button>
+    </>
+  )
+}
+
+function FindModeControls({
+  caseSensitive,
+  close,
+  locale,
+  regex,
+  toggleCaseSensitive,
+  toggleRegex,
+}: Pick<FindControlsProps, 'caseSensitive' | 'close' | 'locale' | 'regex' | 'toggleCaseSensitive' | 'toggleRegex'>) {
+  return (
+    <>
+      <Button
+        type="button"
+        variant={regex ? 'secondary' : 'ghost'}
+        size="xs"
+        aria-label={translate(locale, 'editor.find.regex')}
+        aria-pressed={regex}
+        title={translate(locale, 'editor.find.regex')}
+        onClick={toggleRegex}
+      >
+        .*
+      </Button>
+      <Button
+        type="button"
+        variant={caseSensitive ? 'secondary' : 'ghost'}
+        size="xs"
+        aria-label={translate(locale, 'editor.find.matchCase')}
+        aria-pressed={caseSensitive}
+        title={translate(locale, 'editor.find.matchCase')}
+        onClick={toggleCaseSensitive}
+      >
+        Aa
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-xs"
+        aria-label={translate(locale, 'editor.find.close')}
+        title={translate(locale, 'editor.find.close')}
+        onClick={close}
+      >
+        <X />
+      </Button>
+    </>
+  )
+}
+
 function FindControls(options: FindControlsProps) {
-  const {
-    caseSensitive,
-    close,
-    findInputRef,
-    handleFindChange,
-    handleFindKeyDown,
-    hasMatches,
-    locale,
-    moveNext,
-    movePrevious,
-    onReplaceOpenChange,
-    query,
-    regex,
-    replaceOpen,
-    status,
-    toggleCaseSensitive,
-    toggleRegex,
-  } = options
+  const { findInputRef, handleFindChange, handleFindKeyDown, locale, onReplaceOpenChange, query, replaceOpen, status } = options
   return (
     <div className="flex min-w-0 items-center gap-1.5">
       <Button
@@ -283,60 +398,8 @@ function FindControls(options: FindControlsProps) {
       >
         {status}
       </span>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-xs"
-        aria-label={translate(locale, 'editor.find.previousMatch')}
-        title={translate(locale, 'editor.find.previousMatch')}
-        disabled={!hasMatches}
-        onClick={movePrevious}
-      >
-        <ChevronUp />
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-xs"
-        aria-label={translate(locale, 'editor.find.nextMatch')}
-        title={translate(locale, 'editor.find.nextMatch')}
-        disabled={!hasMatches}
-        onClick={moveNext}
-      >
-        <ChevronDown />
-      </Button>
-      <Button
-        type="button"
-        variant={regex ? 'secondary' : 'ghost'}
-        size="xs"
-        aria-label={translate(locale, 'editor.find.regex')}
-        aria-pressed={regex}
-        title={translate(locale, 'editor.find.regex')}
-        onClick={toggleRegex}
-      >
-        .*
-      </Button>
-      <Button
-        type="button"
-        variant={caseSensitive ? 'secondary' : 'ghost'}
-        size="xs"
-        aria-label={translate(locale, 'editor.find.matchCase')}
-        aria-pressed={caseSensitive}
-        title={translate(locale, 'editor.find.matchCase')}
-        onClick={toggleCaseSensitive}
-      >
-        Aa
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-xs"
-        aria-label={translate(locale, 'editor.find.close')}
-        title={translate(locale, 'editor.find.close')}
-        onClick={close}
-      >
-        <X />
-      </Button>
+      <FindNavigationControls {...options} />
+      <FindModeControls {...options} />
     </div>
   )
 }
@@ -370,29 +433,35 @@ function ReplaceControls({
   )
 }
 
+function RawEditorFindBarContent({
+  controller,
+  locale,
+  onReplaceOpenChange,
+  replaceOpen,
+}: {
+  controller: RawEditorFindController
+  locale: AppLocale
+  onReplaceOpenChange: (open: boolean) => void
+  replaceOpen: boolean
+}) {
+  return (
+    <>
+      <FindControls
+        {...controller}
+        locale={locale}
+        onReplaceOpenChange={onReplaceOpenChange}
+        replaceOpen={replaceOpen}
+      />
+      {replaceOpen && <ReplaceControls {...controller} locale={locale} />}
+    </>
+  )
+}
+
 export function RawEditorFindBar(props: RawEditorFindBarProps) {
   const { locale = 'en', onReplaceOpenChange, open, replaceOpen } = props
   const barRef = useRef<HTMLDivElement>(null)
   const controller = useRawEditorFindController(props)
-  const {
-    caseSensitive,
-    close,
-    findInputRef,
-    handleFindChange,
-    handleFindKeyDown,
-    hasMatches,
-    moveNext,
-    movePrevious,
-    query,
-    regex,
-    replaceAll,
-    replaceCurrent,
-    replacement,
-    setReplacement,
-    status,
-    toggleCaseSensitive,
-    toggleRegex,
-  } = controller
+  const { close } = controller
 
   useEffect(() => {
     if (!open) return
@@ -421,34 +490,12 @@ export function RawEditorFindBar(props: RawEditorFindBarProps) {
         borderColor: 'var(--border-subtle)',
       }}
     >
-      <FindControls
-        caseSensitive={caseSensitive}
-        close={close}
-        findInputRef={findInputRef}
-        handleFindChange={handleFindChange}
-        handleFindKeyDown={handleFindKeyDown}
-        hasMatches={hasMatches}
+      <RawEditorFindBarContent
+        controller={controller}
         locale={locale}
-        moveNext={moveNext}
-        movePrevious={movePrevious}
         onReplaceOpenChange={onReplaceOpenChange}
-        query={query}
-        regex={regex}
         replaceOpen={replaceOpen}
-        status={status}
-        toggleCaseSensitive={toggleCaseSensitive}
-        toggleRegex={toggleRegex}
       />
-      {replaceOpen && (
-        <ReplaceControls
-          hasMatches={hasMatches}
-          locale={locale}
-          replaceAll={replaceAll}
-          replaceCurrent={replaceCurrent}
-          replacement={replacement}
-          setReplacement={setReplacement}
-        />
-      )}
     </div>
   )
 }
