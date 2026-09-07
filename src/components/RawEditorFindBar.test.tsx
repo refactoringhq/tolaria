@@ -21,8 +21,14 @@ function renderFindBar(overrides: Partial<React.ComponentProps<typeof RawEditorF
     ...overrides,
   }
 
-  render(<RawEditorFindBar {...props} />)
-  return { props, view }
+  const rendered = render(<RawEditorFindBar {...props} />)
+  return {
+    props,
+    rerender: (nextOverrides: Partial<React.ComponentProps<typeof RawEditorFindBar>>) => {
+      rendered.rerender(<RawEditorFindBar {...props} {...nextOverrides} />)
+    },
+    view,
+  }
 }
 
 describe('RawEditorFindBar', () => {
@@ -84,6 +90,36 @@ describe('RawEditorFindBar', () => {
     }))
     expect(view.focus).toHaveBeenCalled()
     expect(onReplaceOpenChange).toHaveBeenCalledWith(true)
+  })
+
+  it('keeps the editor selection in place when document edits change the matches', async () => {
+    const { rerender, view } = renderFindBar()
+
+    fireEvent.change(screen.getByTestId('raw-editor-find-input'), {
+      target: { value: 'Alpha' },
+    })
+
+    await waitFor(() => {
+      expect(view.dispatch).toHaveBeenLastCalledWith(expect.objectContaining({
+        selection: { anchor: 0, head: 5 },
+      }))
+    })
+
+    vi.mocked(view.dispatch).mockClear()
+    rerender({ doc: 'Xlpha beta Alpha' })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('raw-editor-find-count')).toHaveTextContent('1 / 1')
+    })
+    expect(view.dispatch).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next match' }))
+
+    await waitFor(() => {
+      expect(view.dispatch).toHaveBeenLastCalledWith(expect.objectContaining({
+        selection: { anchor: 11, head: 16 },
+      }))
+    })
   })
 
   it('closes on Escape', () => {
