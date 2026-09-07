@@ -63,6 +63,22 @@ fn test_extract_h1_title_preserves_plain_square_brackets() {
 }
 
 #[test]
+fn test_extract_h1_title_preserves_identifier_underscores() {
+    assert_eq!(
+        extract_h1_title("# Test_V1.0.0_Beta\n\nBody."),
+        Some("Test_V1.0.0_Beta".to_string())
+    );
+}
+
+#[test]
+fn test_extract_h1_title_unescapes_legacy_identifier_underscores() {
+    assert_eq!(
+        extract_h1_title("# Test\\_V1.0.0\\_Beta\n\nBody."),
+        Some("Test_V1.0.0_Beta".to_string())
+    );
+}
+
+#[test]
 fn test_extract_h1_title_none_when_no_h1() {
     assert_eq!(extract_h1_title("Just body text."), None);
 }
@@ -395,6 +411,16 @@ fn test_strip_markdown_chars_emphasis() {
     assert_eq!(
         strip_markdown_chars(text("**bold** and *italic*")),
         "bold and italic"
+    );
+}
+
+#[test]
+fn test_strip_markdown_chars_preserves_literal_underscores() {
+    assert_eq!(
+        strip_markdown_chars(text(
+            "my_variable_name, _formatted_, and legacy\\_identifier"
+        )),
+        "my_variable_name, formatted, and legacy_identifier"
     );
 }
 

@@ -194,11 +194,14 @@ function stripStrikethroughMarkdown({ text }: { text: string }): string {
 }
 
 function stripInlineMarkdown({ text }: { text: string }): string {
-  return stripStrikethroughMarkdown({ text })
+  const withoutLinks = stripStrikethroughMarkdown({ text })
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
     .replace(/\[\[[^|\]]+\|([^\]]+)\]\]/g, '$1')
     .replace(/\[\[([^\]]+)\]\]/g, '$1')
-    .replace(/[*_`]/g, '')
+  return withoutLinks
+    .replace(/(?<!\\)(?<![\p{L}\p{N}])_|(?<!\\)_(?![\p{L}\p{N}])/gu, '')
+    .replace(/(?<!\\)[*`]/gu, '')
+    .replace(/\\([*_`])/gu, '$1')
     .trim()
 }
 

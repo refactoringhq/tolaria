@@ -39,6 +39,18 @@ describe('TableOfContentsPanel', () => {
     expect(toc.children.map((item) => item.title)).toEqual(['Tolaria + Refactoring', 'Principles'])
   })
 
+  it('preserves literal underscores and repairs legacy escapes in markdown headings', () => {
+    const toc = buildTableOfContentsFromMarkdown(
+      'Test_V1.0.0_Beta',
+      '# Test\\_V1.0.0\\_Beta\n\n## my_variable_name\n\n## _Formatted_ Test\\_Beta',
+    )
+
+    expect(toc.children.map((item) => item.title)).toEqual([
+      'my_variable_name',
+      'Formatted Test_Beta',
+    ])
+  })
+
   it('ignores markdown headings inside fenced and inline code areas', () => {
     const toc = buildTableOfContentsFromMarkdown(
       'Markdown Outline',

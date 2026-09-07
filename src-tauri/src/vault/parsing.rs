@@ -286,7 +286,19 @@ fn skip_until(chars: &mut impl Iterator<Item = char>, delimiter: char) {
 
 /// Check if a char is markdown formatting that should be stripped.
 fn is_markdown_formatting(ch: char) -> bool {
-    matches!(ch, '*' | '_' | '`' | '~')
+    matches!(ch, '*' | '`' | '~')
+}
+
+fn is_escaped_markdown_formatting(ch: char) -> bool {
+    ch == '_' || is_markdown_formatting(ch)
+}
+
+fn is_identifier_underscore(result: &str, next: Option<&char>) -> bool {
+    result
+        .chars()
+        .next_back()
+        .is_some_and(char::is_alphanumeric)
+        && next.is_some_and(|character| character.is_alphanumeric())
 }
 
 fn strip_markdown_chars(s: TextSlice<'_>) -> String {
@@ -295,12 +307,20 @@ fn strip_markdown_chars(s: TextSlice<'_>) -> String {
     let mut chars = value.chars().peekable();
     while let Some(ch) = chars.next() {
         match ch {
+            '\\' if chars
+                .peek()
+                .is_some_and(|character| is_escaped_markdown_formatting(*character)) =>
+            {
+                result.push(chars.next().expect("peeked escaped character must exist"));
+            }
             '[' if chars.peek() == Some(&'[') => {
                 process_wikilink(&mut chars, &mut result);
             }
             '[' => {
                 process_markdown_link(&mut chars, &mut result);
             }
+            '_' if is_identifier_underscore(&result, chars.peek()) => result.push(ch),
+            '_' => {}
             c if is_markdown_formatting(c) => {}
             _ => result.push(ch),
         }
