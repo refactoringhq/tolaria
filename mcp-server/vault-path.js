@@ -1,10 +1,12 @@
 import { existsSync, readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import os from "node:os";
 import nodePath from "node:path";
 
-const appConfigPolicy = JSON.parse(
-	readFileSync(new URL("./app-config-policy.json", import.meta.url), "utf-8"),
-);
+const appConfigPolicy =
+	typeof require === "function"
+		? require("./app-config-policy.json")
+		: createRequire(import.meta.url)("./app-config-policy.json");
 
 const APP_CONFIG_DIR = appConfigPolicy.current_namespace;
 const APP_CONFIG_FILES = Object.freeze(appConfigPolicy.files);
