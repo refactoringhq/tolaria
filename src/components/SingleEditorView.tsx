@@ -1,20 +1,8 @@
-import { ArrowSquareOut as ExternalLink, Copy } from '@phosphor-icons/react'
-import { Component, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Component, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react'
 import {
-  GridSuggestionMenuController,
   BlockNoteViewRaw,
   ComponentsContext,
-  DeleteLinkButton,
-  EditLinkButton,
-  LinkToolbar,
-  LinkToolbarController,
-  SideMenuController,
-  SuggestionMenuController,
-  useComponentsContext,
   type useCreateBlockNote,
-  useDictionary,
-  type LinkToolbarProps,
-  type SideMenuProps,
 } from '@blocknote/react'
 import { components } from '@blocknote/mantine'
 import { MantineContext, MantineProvider } from '@mantine/core'
@@ -23,27 +11,18 @@ import { useDocumentThemeMode } from '../hooks/useDocumentThemeMode'
 import { useEditorTheme } from '../hooks/useTheme'
 import { useImageDrop, type ImageImportError } from '../hooks/useImageDrop'
 import { useImageLightbox } from '../hooks/useImageLightbox'
-import { createTranslator, type AppLocale } from '../lib/i18n'
-import { writeClipboardText } from '../utils/clipboardText'
+import type { AppLocale } from '../lib/i18n'
 import { buildTypeEntryMap } from '../utils/typeColors'
 import { workspacePathForEntry } from '../utils/workspaces'
 import { observeNativeTextAssistanceDisabled } from '../lib/nativeTextAssistance'
 import { getRuntimeStyleNonce } from '../lib/runtimeStyleNonce'
-import { WikilinkSuggestionMenu, type WikilinkSuggestionItem } from './WikilinkSuggestionMenu'
 import type { VaultEntry } from '../types'
 import { _wikilinkEntriesRef } from './editorSchema'
-import { openEditorAttachmentOrUrl } from './editorAttachmentActions'
 import { insertImageBlockAfterCursor } from './editorImageInsertion'
 import { useBlockNoteSideMenuHoverGuard } from './blockNoteSideMenuHoverGuard'
-import { TolariaSlashMenu } from './TolariaSlashMenu'
-import { TolariaFormattingToolbar, TolariaFormattingToolbarController } from './tolariaEditorFormatting'
-import { TolariaCollapsedHeadingsController, TolariaSideMenu } from './tolariaBlockNoteSideMenu'
 import { useEditorLinkActivation } from './useEditorLinkActivation'
 import { ImageLightbox } from './ImageLightbox'
-import { TolariaFilePanelController } from './TolariaFilePanel'
 import { refreshCodeBlockSyntaxHighlighting } from './editorCodeBlockHighlightRefresh'
-import { ActionTooltip } from './ui/action-tooltip'
-import { Button } from './ui/button'
 import { VaultExpressionProvider } from './VaultExpressionContext'
 import { subscribeRichEditorExternalChange } from './editorExternalChangeEvents'
 import {
@@ -60,16 +39,6 @@ import {
 import { repairEditorDocumentForRenderRecovery } from './blockNoteRenderRecoveryDocument'
 import { useEditorPasteHandler } from './titleHeadingInteractions'
 import {
-  CODE_BLOCK_SELECTOR,
-  codeBlockText,
-  richEditorClipboardPayload,
-  selectedCodeBlockText,
-  selectedEditorDomHtml,
-  selectedEditorPlainText,
-  selectedEditorRange,
-  writeRichEditorClipboardPayload,
-} from './editorRichCopy'
-import {
   buildBaseSuggestionItems,
   type SuggestionAction,
   useInsertWikilink,
@@ -79,12 +48,13 @@ import {
   useEditorContainerClickHandler,
   useEditorWhitespaceMouseSelection,
 } from './singleEditorPointerInteractions'
+import { useCompositionAwareEditorChange } from './useCompositionAwareEditorChange'
+import { useSeedBlockNoteTableBridge } from './useSeedBlockNoteTableBridge'
+import { EditorInteractionControllers } from './EditorInteractionControllers'
+import { handleEditorCopy } from './editorCopyHandlers'
+import { CodeBlockCopyButton } from './codeBlockCopyControls'
+import { useCodeBlockCopyTarget } from './useCodeBlockCopyTarget'
 
-const TEST_TABLE_MARKDOWN = `| Head 1 | Head 2 | Head 3 |
-| --- | --- | --- |
-| A | B | C |
-| D | E | F |
-`
 const TOOLBAR_MOUSE_DOWN_ALLOW_SELECTOR = [
   '[role="menu"]',
   '[role="dialog"]',
@@ -95,10 +65,6 @@ const TOOLBAR_MOUSE_DOWN_ALLOW_SELECTOR = [
 ].join(', ')
 const MAX_BLOCKNOTE_RENDER_RECOVERY_RETRIES = 1
 
-type TestTableBlock = {
-  type?: string
-  content?: { type?: string; columnWidths?: Array<number | null> }
-}
 type BlockNoteRenderRecoveryState = {
   error: unknown
   recoveryKey: number
@@ -222,394 +188,6 @@ function handleToolbarMouseDownCapture(event: Pick<React.MouseEvent<HTMLElement>
   }
 
   event.preventDefault()
-}
-
-function useRequiredComponentsContext() {
-  const components = useComponentsContext()
-  if (!components) throw new Error('BlockNote components context is unavailable')
-  return components
-}
-
-function TolariaOpenLinkButton({ url, vaultPath }: Pick<LinkToolbarProps, 'url'> & { vaultPath?: string }) {
-  const Components = useRequiredComponentsContext()
-  const dict = useDictionary()
-  const handleOpen = useCallback(() => {
-    openEditorAttachmentOrUrl({ url, vaultPath, source: 'link' })
-  }, [url, vaultPath])
-
-  return (
-    <Components.LinkToolbar.Button
-      className="bn-button"
-      label={dict.link_toolbar.open.tooltip}
-      mainTooltip={dict.link_toolbar.open.tooltip}
-      isSelected={false}
-      onClick={handleOpen}
-      icon={<ExternalLink size={16} />}
-    />
-  )
-}
-
-function TolariaLinkToolbar({ vaultPath, ...props }: LinkToolbarProps & { vaultPath?: string }) {
-  return (
-    <LinkToolbar {...props}>
-      <EditLinkButton
-        url={props.url}
-        text={props.text}
-        range={props.range}
-        setToolbarOpen={props.setToolbarOpen}
-        setToolbarPositionFrozen={props.setToolbarPositionFrozen}
-      />
-      <TolariaOpenLinkButton url={props.url} vaultPath={vaultPath} />
-      <DeleteLinkButton range={props.range} setToolbarOpen={props.setToolbarOpen} />
-    </LinkToolbar>
-  )
-}
-
-function applySeededColumnWidths(parsedBlocks: Array<TestTableBlock>, columnWidths?: Array<number | null>) {
-  if (!columnWidths) return
-
-  const tableBlock = parsedBlocks[0]
-  if (tableBlock?.type !== 'table') return
-
-  const tableContent = tableBlock.content
-  if (tableContent?.type !== 'tableContent') return
-
-  tableContent.columnWidths = [...columnWidths]
-}
-
-async function seedEditorWithTestTable(
-  editor: ReturnType<typeof useCreateBlockNote>,
-  columnWidths?: Array<number | null>,
-) {
-  const parsedBlocks = (await Promise.resolve(
-    editor.tryParseMarkdownToBlocks(TEST_TABLE_MARKDOWN),
-  )) as Array<TestTableBlock>
-
-  applySeededColumnWidths(parsedBlocks, columnWidths)
-
-  const tableMarkup = editor.blocksToHTMLLossy([
-    ...parsedBlocks,
-    { type: 'paragraph', content: [], children: [] },
-  ] as typeof editor.document)
-  editor._tiptapEditor.commands.setContent(tableMarkup)
-  editor.focus()
-}
-
-function useSeedBlockNoteTableBridge(editor: ReturnType<typeof useCreateBlockNote>) {
-  useEffect(() => {
-    const seedBlockNoteTable = (columnWidths?: Array<number | null>) => seedEditorWithTestTable(editor, columnWidths)
-
-    window.__laputaTest = {
-      ...window.__laputaTest,
-      seedBlockNoteTable,
-    }
-
-    return () => {
-      if (window.__laputaTest?.seedBlockNoteTable === seedBlockNoteTable) {
-        delete window.__laputaTest.seedBlockNoteTable
-      }
-    }
-  }, [editor])
-}
-
-const CODE_BLOCK_COPY_RESET_MS = 1200
-
-type CodeBlockCopyTarget = {
-  codeBlock: HTMLElement
-  left: number
-  top: number
-}
-
-function codeBlockCopyTarget(codeBlock: HTMLElement, container: HTMLElement): CodeBlockCopyTarget {
-  const codeBlockRect = codeBlock.getBoundingClientRect()
-  const containerRect = container.getBoundingClientRect()
-
-  return {
-    codeBlock,
-    left: codeBlockRect.right - containerRect.left + container.scrollLeft - 30,
-    top: codeBlockRect.top - containerRect.top + container.scrollTop + 6,
-  }
-}
-
-function sameCopyTarget(left: CodeBlockCopyTarget | null, right: CodeBlockCopyTarget): boolean {
-  return Boolean(left && left.codeBlock === right.codeBlock && left.left === right.left && left.top === right.top)
-}
-
-function stopCopyButtonEvent(event: React.MouseEvent<HTMLButtonElement>): void {
-  event.preventDefault()
-  event.stopPropagation()
-}
-
-function reportCopyFailure(error: unknown): void {
-  console.warn('[editor] Failed to copy code block:', error)
-}
-
-function useCodeBlockCopyTarget(containerRef: React.RefObject<HTMLDivElement | null>) {
-  const [copyTarget, setCopyTarget] = useState<CodeBlockCopyTarget | null>(null)
-
-  const showCopyTarget = useCallback(
-    (codeBlock: HTMLElement) => {
-    const container = containerRef.current
-      if (!container?.contains(codeBlock)) return
-
-    const nextTarget = codeBlockCopyTarget(codeBlock, container)
-      setCopyTarget((previous) => (sameCopyTarget(previous, nextTarget) ? previous : nextTarget))
-    },
-    [containerRef],
-  )
-
-  const updateFromEventTarget = useCallback(
-    (target: EventTarget | null) => {
-    const container = containerRef.current
-    if (!(target instanceof HTMLElement) || !container) return
-    if (target.closest('[data-editor-code-copy]')) return
-
-    const codeBlock = target.closest<HTMLElement>(CODE_BLOCK_SELECTOR)
-    if (codeBlock && container.contains(codeBlock)) {
-      showCopyTarget(codeBlock)
-      return
-    }
-
-    setCopyTarget(null)
-    },
-    [containerRef, showCopyTarget],
-  )
-
-  const handleMouseMove = useCallback(
-    (event: React.MouseEvent<HTMLDivElement>) => {
-    updateFromEventTarget(event.target)
-    },
-    [updateFromEventTarget],
-  )
-
-  const handleFocus = useCallback(
-    (event: React.FocusEvent<HTMLDivElement>) => {
-    updateFromEventTarget(event.target)
-    },
-    [updateFromEventTarget],
-  )
-
-  const clearCopyTarget = useCallback(() => setCopyTarget(null), [])
-
-  return { clearCopyTarget, copyTarget, handleFocus, handleMouseMove }
-}
-
-function CodeBlockCopyButton({ copyTarget, locale }: { copyTarget: CodeBlockCopyTarget; locale: AppLocale }) {
-  const [active, setActive] = useState(false)
-  const resetTimerRef = useRef<number | null>(null)
-  const t = useMemo(() => createTranslator(locale), [locale])
-  const label = t('editor.codeBlock.copy')
-
-  useEffect(() => () => {
-    if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current)
-  }, [])
-
-  const handleCopy = useCallback(
-    (event: React.MouseEvent<HTMLButtonElement>) => {
-    stopCopyButtonEvent(event)
-
-    void writeClipboardText(codeBlockText(copyTarget.codeBlock))
-      .then(() => {
-        trackEvent('code_block_copied')
-        setActive(true)
-        if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current)
-        resetTimerRef.current = window.setTimeout(() => {
-          setActive(false)
-          resetTimerRef.current = null
-        }, CODE_BLOCK_COPY_RESET_MS)
-      })
-      .catch(reportCopyFailure)
-    },
-    [copyTarget],
-  )
-
-  const stopEditorMouseDown = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
-  }, [])
-
-  return (
-    <div
-      className="editor__code-block-copy"
-      contentEditable={false}
-      data-editor-code-copy
-      style={{ left: copyTarget.left, top: copyTarget.top }}
-    >
-      <ActionTooltip copy={{ label }} side="left" align="center">
-        <Button
-          aria-label={label}
-          className="border-transparent bg-transparent text-muted-foreground shadow-none hover:bg-transparent hover:text-foreground focus-visible:bg-transparent focus-visible:text-foreground"
-          data-editor-code-copy-button
-          onBlur={() => setActive(false)}
-          onClick={handleCopy}
-          onFocus={() => setActive(true)}
-          onMouseDown={stopEditorMouseDown}
-          onMouseEnter={() => setActive(true)}
-          onMouseLeave={() => setActive(false)}
-          size="icon-xs"
-          type="button"
-          variant="ghost"
-        >
-          <Copy aria-hidden="true" className="size-6" weight={active ? 'fill' : 'regular'} />
-        </Button>
-      </ActionTooltip>
-    </div>
-  )
-}
-
-function useCompositionAwareEditorChange(options: {
-  containerRef: React.RefObject<HTMLDivElement | null>
-  onChange?: () => void
-}) {
-  const { containerRef, onChange } = options
-  const onChangeRef = useRef(onChange)
-  const composingRef = useRef(false)
-  const pendingChangeRef = useRef(false)
-
-  useEffect(() => {
-    onChangeRef.current = onChange
-  }, [onChange])
-
-  useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
-
-    const flushPendingChange = () => {
-      if (composingRef.current || !pendingChangeRef.current) return
-      pendingChangeRef.current = false
-      onChangeRef.current?.()
-    }
-
-    const handleCompositionStart = () => {
-      composingRef.current = true
-    }
-
-    const handleCompositionEnd = () => {
-      composingRef.current = false
-      queueMicrotask(flushPendingChange)
-    }
-
-    container.addEventListener('compositionstart', handleCompositionStart, true)
-    container.addEventListener('compositionend', handleCompositionEnd, true)
-    return () => {
-      container.removeEventListener('compositionstart', handleCompositionStart, true)
-      container.removeEventListener('compositionend', handleCompositionEnd, true)
-    }
-  }, [containerRef])
-
-  return useCallback(() => {
-    if (composingRef.current) {
-      pendingChangeRef.current = true
-      return
-    }
-
-    pendingChangeRef.current = false
-    onChangeRef.current?.()
-  }, [])
-}
-
-function handleCodeBlockCopy(event: React.ClipboardEvent<HTMLDivElement>): boolean {
-  const codeText = selectedCodeBlockText({
-    selection: window.getSelection(),
-    container: event.currentTarget,
-  })
-  if (codeText === null) return false
-
-  event.clipboardData.setData('text/plain', codeText)
-  event.preventDefault()
-  return true
-}
-
-function handleSelectedEditorCopy(
-  event: React.ClipboardEvent<HTMLDivElement>,
-  editor: ReturnType<typeof useCreateBlockNote>,
-) {
-  const selection = window.getSelection()
-  const range = selectedEditorRange(selection, event.currentTarget)
-  if (!selection || !range) return
-
-  const plainText = selectedEditorPlainText(selection, range)
-  if (plainText === null) return
-
-  event.clipboardData.setData('text/plain', plainText)
-
-  const richPayload = richEditorClipboardPayload(editor)
-  if (richPayload) {
-    writeRichEditorClipboardPayload(event.clipboardData, richPayload)
-  } else {
-    const markup = selectedEditorDomHtml(range)
-    if (markup.length > 0) {
-      event.clipboardData.setData('text/html', markup)
-    }
-  }
-
-  event.preventDefault()
-}
-
-function handleEditorCopy(event: React.ClipboardEvent<HTMLDivElement>, editor: ReturnType<typeof useCreateBlockNote>) {
-  if (handleCodeBlockCopy(event)) return
-
-  handleSelectedEditorCopy(event, editor)
-}
-
-type EditorInteractionControllersProps = ReturnType<typeof useSuggestionMenuItems> & {
-  locale: AppLocale
-  runEditorAction: (action: SuggestionAction) => void
-  vaultPath?: string
-}
-
-function EditorInteractionControllers({
-  getAtWikilinkItems,
-  getEmojiItems,
-  getSlashMenuItems,
-  getWikilinkItems,
-  locale,
-  runEditorAction,
-  vaultPath,
-}: EditorInteractionControllersProps) {
-  const sideMenu = useCallback((props: SideMenuProps) => <TolariaSideMenu {...props} locale={locale} />, [locale])
-
-  return (
-    <>
-      <TolariaCollapsedHeadingsController />
-      <SideMenuController sideMenu={sideMenu} />
-      <TolariaFormattingToolbarController
-        formattingToolbar={(props) => <TolariaFormattingToolbar {...props} locale={locale} vaultPath={vaultPath} />}
-        floatingUIOptions={{
-          elementProps: {
-            onMouseDownCapture: handleToolbarMouseDownCapture,
-          },
-        }}
-      />
-      <LinkToolbarController
-        linkToolbar={(props) => <TolariaLinkToolbar {...props} vaultPath={vaultPath} />}
-        floatingUIOptions={{
-          elementProps: {
-            onMouseDownCapture: handleToolbarMouseDownCapture,
-          },
-        }}
-      />
-      <TolariaFilePanelController />
-      <SuggestionMenuController
-        triggerCharacter="/"
-        getItems={getSlashMenuItems}
-        suggestionMenuComponent={TolariaSlashMenu}
-      />
-      <GridSuggestionMenuController triggerCharacter=":" columns={10} minQueryLength={1} getItems={getEmojiItems} />
-      <SuggestionMenuController
-        triggerCharacter="[["
-        getItems={getWikilinkItems}
-        suggestionMenuComponent={WikilinkSuggestionMenu}
-        onItemClick={(item: WikilinkSuggestionItem) => runEditorAction(item.onItemClick)}
-      />
-      <SuggestionMenuController
-        triggerCharacter="@"
-        getItems={getAtWikilinkItems}
-        suggestionMenuComponent={WikilinkSuggestionMenu}
-        onItemClick={(item: WikilinkSuggestionItem) => runEditorAction(item.onItemClick)}
-      />
-    </>
-  )
 }
 
 /** Insert an image block after the current cursor position. */
@@ -860,6 +438,7 @@ export function SingleEditorView(options: {
               <EditorInteractionControllers
                 {...suggestionMenuItems}
                 locale={locale}
+                onToolbarMouseDown={handleToolbarMouseDownCapture}
                 runEditorAction={runEditorAction}
                 vaultPath={vaultPath}
               />
