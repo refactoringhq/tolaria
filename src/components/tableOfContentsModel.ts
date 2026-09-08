@@ -44,6 +44,14 @@ interface MarkdownCodeFence {
   size: number
 }
 
+const inlineMarkdownPatterns = [
+  /~~(\S[^~]*\S|\S)~~/gu,
+  /\[([^\]]+)\]\([^)]+\)/gu,
+  /\[\[[^|\]]+\|([^\]]+)\]\]/gu,
+  /\[\[([^\]]+)\]\]/gu,
+  /\[\[([^\]]*)$/gu,
+]
+
 export interface TocItem {
   blockId?: string
   children: TocItem[]
@@ -168,36 +176,11 @@ function stripFrontmatter({ markdown }: { markdown: string }): string {
   return afterDelimiter === -1 ? '' : markdown.slice(afterDelimiter + 1)
 }
 
-function stripStrikethroughMarkdown({ text }: { text: string }): string {
-  let result = ''
-  let searchStart = 0
-
-  while (searchStart < text.length) {
-    const opening = text.indexOf('~~', searchStart)
-    if (opening === -1) return result + text.slice(searchStart)
-
-    const contentStart = opening + 2
-    const closing = text.indexOf('~~', contentStart)
-    if (closing === -1) return result + text.slice(searchStart)
-
-    const content = text.slice(contentStart, closing)
-    if (content && content.trim() === content) {
-      result += text.slice(searchStart, opening) + content
-      searchStart = closing + 2
-    } else {
-      result += text.slice(searchStart, contentStart)
-      searchStart = contentStart
-    }
-  }
-
-  return result
-}
-
 function stripInlineMarkdown({ text }: { text: string }): string {
-  const withoutLinks = stripStrikethroughMarkdown({ text })
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/\[\[[^|\]]+\|([^\]]+)\]\]/g, '$1')
-    .replace(/\[\[([^\]]+)\]\]/g, '$1')
+  const withoutLinks = inlineMarkdownPatterns.reduce(
+    (result, pattern) => result.replace(pattern, '$1'),
+    text,
+  )
   return withoutLinks
     .replace(/(?<!\\)(?<![\p{L}\p{N}])_|(?<!\\)_(?![\p{L}\p{N}])/gu, '')
     .replace(/(?<!\\)[*`]/gu, '')

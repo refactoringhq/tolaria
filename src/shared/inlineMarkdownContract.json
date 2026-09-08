@@ -1,0 +1,64 @@
+{
+  "fixtures": [
+    {
+      "name": "identifier underscores",
+      "input": "my_variable_name",
+      "expected": "my_variable_name"
+    },
+    {
+      "name": "emphasis underscores",
+      "input": "_formatted_ text",
+      "expected": "formatted text"
+    },
+    {
+      "name": "legacy escaped formatting",
+      "input": "legacy\\_identifier and \\*literal\\*",
+      "expected": "legacy_identifier and *literal*"
+    },
+    {
+      "name": "wikilink target",
+      "input": "See [[project_alpha]]",
+      "expected": "See project_alpha"
+    },
+    {
+      "name": "formatted wikilink alias",
+      "input": "See [[projects/alpha|**Alpha** project]]",
+      "expected": "See Alpha project"
+    },
+    {
+      "name": "formatted markdown link label",
+      "input": "Read [the _guide_](https://example.com/guide)",
+      "expected": "Read the guide"
+    },
+    {
+      "name": "inline code",
+      "input": "Use `cargo_test`",
+      "expected": "Use cargo_test"
+    },
+    {
+      "name": "strikethrough",
+      "input": "Keep ~~obsolete~~ history",
+      "expected": "Keep obsolete history"
+    },
+    {
+      "name": "whitespace-padded tildes",
+      "input": "Keep ~~ not formatting ~~ literal",
+      "expected": "Keep ~~ not formatting ~~ literal"
+    },
+    {
+      "name": "literal tildes",
+      "input": "Note~2~beta",
+      "expected": "Note~2~beta"
+    },
+    {
+      "name": "plain square brackets",
+      "input": "[26Q2] roadmap",
+      "expected": "[26Q2] roadmap"
+    },
+    {
+      "name": "unclosed wikilink",
+      "input": "See [[broken link",
+      "expected": "See broken link"
+    }
+  ]
+}

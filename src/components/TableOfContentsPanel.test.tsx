@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import inlineMarkdownContract from '../shared/inlineMarkdownContract.json'
 import type { VaultEntry } from '../types'
 import { TableOfContentsPanel } from './TableOfContentsPanel'
 import { buildTableOfContents, buildTableOfContentsFromMarkdown } from './tableOfContentsModel'
@@ -20,6 +21,13 @@ const blocks = [
 ]
 
 describe('TableOfContentsPanel', () => {
+  it.each(inlineMarkdownContract.fixtures)('matches the shared inline-markdown contract: $name', ({ input, expected }) => {
+    const toc = buildTableOfContentsFromMarkdown('Contract', `# Contract\n\n## ${input}`)
+
+    expect(toc.children).toHaveLength(1)
+    expect(toc.children[0].title).toBe(expected)
+  })
+
   it('builds a title-rooted H1/H2/H3 hierarchy', () => {
     const toc = buildTableOfContents(entry.title, blocks)
 

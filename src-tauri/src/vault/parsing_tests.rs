@@ -4,6 +4,18 @@ fn text(value: &str) -> TextSlice<'_> {
     TextSlice(value)
 }
 
+#[derive(serde::Deserialize)]
+struct InlineMarkdownFixture {
+    name: String,
+    input: String,
+    expected: String,
+}
+
+#[derive(serde::Deserialize)]
+struct InlineMarkdownFixtureContract {
+    fixtures: Vec<InlineMarkdownFixture>,
+}
+
 // --- slug_to_title tests ---
 
 #[test]
@@ -402,76 +414,25 @@ fn test_count_body_words_with_dashes_in_frontmatter_value() {
 // --- strip_markdown_chars tests ---
 
 #[test]
+fn test_strip_markdown_chars_matches_shared_contract() {
+    let contract: InlineMarkdownFixtureContract = serde_json::from_str(include_str!(
+        "../../../src/shared/inlineMarkdownContract.json"
+    ))
+    .expect("shared inline-markdown contract must be valid JSON");
+
+    for fixture in contract.fixtures {
+        assert_eq!(
+            strip_markdown_chars(text(&fixture.input)),
+            fixture.expected,
+            "fixture: {}",
+            fixture.name
+        );
+    }
+}
+
+#[test]
 fn test_strip_markdown_chars_plain_text() {
     assert_eq!(strip_markdown_chars(text("hello world")), "hello world");
-}
-
-#[test]
-fn test_strip_markdown_chars_emphasis() {
-    assert_eq!(
-        strip_markdown_chars(text("**bold** and *italic*")),
-        "bold and italic"
-    );
-}
-
-#[test]
-fn test_strip_markdown_chars_preserves_literal_underscores() {
-    assert_eq!(
-        strip_markdown_chars(text(
-            "my_variable_name, _formatted_, and legacy\\_identifier"
-        )),
-        "my_variable_name, formatted, and legacy_identifier"
-    );
-}
-
-#[test]
-fn test_strip_markdown_chars_backticks() {
-    assert_eq!(
-        strip_markdown_chars(text("use `code` here")),
-        "use code here"
-    );
-}
-
-#[test]
-fn test_strip_markdown_chars_strikethrough() {
-    assert_eq!(strip_markdown_chars(text("~~deleted~~")), "deleted");
-}
-
-#[test]
-fn test_strip_markdown_chars_link_with_url() {
-    assert_eq!(
-        strip_markdown_chars(text("[click here](https://example.com)")),
-        "click here"
-    );
-}
-
-#[test]
-fn test_strip_markdown_chars_wikilink() {
-    assert_eq!(strip_markdown_chars(text("see [[my note]]")), "see my note");
-}
-
-#[test]
-fn test_strip_markdown_chars_wikilink_alias() {
-    assert_eq!(
-        strip_markdown_chars(text("visit [[project/alpha|Alpha Project]]")),
-        "visit Alpha Project"
-    );
-}
-
-#[test]
-fn test_strip_markdown_chars_wikilink_unclosed() {
-    assert_eq!(
-        strip_markdown_chars(text("see [[broken link")),
-        "see broken link"
-    );
-}
-
-#[test]
-fn test_strip_markdown_chars_bracket_without_url() {
-    assert_eq!(
-        strip_markdown_chars(text("[just brackets]")),
-        "[just brackets]"
-    );
 }
 
 #[test]

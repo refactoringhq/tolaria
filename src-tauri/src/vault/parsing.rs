@@ -32,6 +32,20 @@ fn compile_word_count_pattern(source: &str) -> Regex {
     Regex::new(source).expect("shared word-count pattern must be a valid Rust regex")
 }
 
+fn inline_markdown_patterns() -> &'static [Regex; 5] {
+    static PATTERNS: OnceLock<[Regex; 5]> = OnceLock::new();
+    PATTERNS.get_or_init(|| {
+        [
+            r"~~(\S[^~]*\S|\S)~~",
+            r"\[([^\]]+)\]\([^)]+\)",
+            r"\[\[[^|\]]+\|([^\]]+)\]\]",
+            r"\[\[([^\]]+)\]\]",
+            r"\[\[([^\]]*)$",
+        ]
+        .map(|source| Regex::new(source).expect("inline-markdown pattern must be valid"))
+    })
+}
+
 fn word_count_patterns() -> &'static WordCountPatterns {
     static PATTERNS: OnceLock<WordCountPatterns> = OnceLock::new();
     PATTERNS.get_or_init(|| {
@@ -263,30 +277,9 @@ fn without_h1_line(s: TextSlice<'_>) -> Option<&str> {
     None
 }
 
-/// Collect chars until a delimiter, returning the collected string.
-fn collect_until(chars: &mut impl Iterator<Item = char>, delimiter: char) -> String {
-    let mut buf = String::new();
-    for c in chars.by_ref() {
-        if c == delimiter {
-            break;
-        }
-        buf.push(c);
-    }
-    buf
-}
-
-/// Skip all chars until a delimiter (consuming the delimiter).
-fn skip_until(chars: &mut impl Iterator<Item = char>, delimiter: char) {
-    for c in chars.by_ref() {
-        if c == delimiter {
-            break;
-        }
-    }
-}
-
 /// Check if a char is markdown formatting that should be stripped.
 fn is_markdown_formatting(ch: char) -> bool {
-    matches!(ch, '*' | '`' | '~')
+    matches!(ch, '*' | '`')
 }
 
 fn is_escaped_markdown_formatting(ch: char) -> bool {
@@ -302,7 +295,7 @@ fn is_identifier_underscore(result: &str, next: Option<&char>) -> bool {
 }
 
 fn strip_markdown_chars(s: TextSlice<'_>) -> String {
-    let value = s.as_str();
+    let value = strip_shared_inline_patterns(s);
     let mut result = String::with_capacity(value.len());
     let mut chars = value.chars().peekable();
     while let Some(ch) = chars.next() {
@@ -313,12 +306,6 @@ fn strip_markdown_chars(s: TextSlice<'_>) -> String {
             {
                 result.push(chars.next().expect("peeked escaped character must exist"));
             }
-            '[' if chars.peek() == Some(&'[') => {
-                process_wikilink(&mut chars, &mut result);
-            }
-            '[' => {
-                process_markdown_link(&mut chars, &mut result);
-            }
             '_' if is_identifier_underscore(&result, chars.peek()) => result.push(ch),
             '_' => {}
             c if is_markdown_formatting(c) => {}
@@ -328,54 +315,12 @@ fn strip_markdown_chars(s: TextSlice<'_>) -> String {
     result
 }
 
-/// Process a wikilink `[[...]]` or `[[...|display]]`, extracting the display text.
-fn process_wikilink(
-    chars: &mut std::iter::Peekable<impl Iterator<Item = char>>,
-    result: &mut String,
-) {
-    chars.next(); // consume second '['
-    let inner = collect_wikilink_inner(chars);
-    let display_text = extract_wikilink_display(&inner);
-    result.push_str(display_text);
-}
-
-/// Extract display text from wikilink inner content.
-/// Returns the part after '|' if present, otherwise the whole inner text.
-fn extract_wikilink_display(inner: &str) -> &str {
-    inner.find('|').map_or(inner, |idx| &inner[idx + 1..])
-}
-
-/// Process bracketed text.
-/// Real markdown links `[text](url)` are unwrapped to `text`.
-/// Plain bracketed text `[text]` is preserved verbatim.
-fn process_markdown_link(
-    chars: &mut std::iter::Peekable<impl Iterator<Item = char>>,
-    result: &mut String,
-) {
-    let inner = collect_until(chars, ']');
-    if chars.peek() == Some(&'(') {
-        chars.next();
-        skip_until(chars, ')');
-        result.push_str(&inner);
-        return;
-    }
-
-    result.push('[');
-    result.push_str(&inner);
-    result.push(']');
-}
-
-/// Collect chars inside a wikilink until `]]`, consuming both closing brackets.
-fn collect_wikilink_inner(chars: &mut std::iter::Peekable<impl Iterator<Item = char>>) -> String {
-    let mut buf = String::new();
-    while let Some(c) = chars.next() {
-        if c == ']' && chars.peek() == Some(&']') {
-            chars.next();
-            break;
-        }
-        buf.push(c);
-    }
-    buf
+fn strip_shared_inline_patterns(s: TextSlice<'_>) -> String {
+    inline_markdown_patterns()
+        .iter()
+        .fold(s.as_str().to_string(), |text, pattern| {
+            pattern.replace_all(&text, "$1").into_owned()
+        })
 }
 
 /// Check if a string contains a wikilink pattern `[[...]]`.
