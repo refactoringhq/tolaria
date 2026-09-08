@@ -6,6 +6,11 @@
       "expected": "my_variable_name"
     },
     {
+      "name": "versioned identifier underscores",
+      "input": "Test_V1.0.0_Beta",
+      "expected": "Test_V1.0.0_Beta"
+    },
+    {
       "name": "emphasis underscores",
       "input": "_formatted_ text",
       "expected": "formatted text"

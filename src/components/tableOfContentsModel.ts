@@ -1,3 +1,5 @@
+import { stripInlineMarkdown } from '../utils/inlineMarkdown'
+
 type TocLevel = 1 | 2 | 3
 
 interface TocInlineText {
@@ -43,14 +45,6 @@ interface MarkdownCodeFence {
   marker: string
   size: number
 }
-
-const inlineMarkdownPatterns = [
-  /~~(\S[^~]*\S|\S)~~/gu,
-  /\[([^\]]+)\]\([^)]+\)/gu,
-  /\[\[[^|\]]+\|([^\]]+)\]\]/gu,
-  /\[\[([^\]]+)\]\]/gu,
-  /\[\[([^\]]*)$/gu,
-]
 
 export interface TocItem {
   blockId?: string
@@ -174,18 +168,6 @@ function stripFrontmatter({ markdown }: { markdown: string }): string {
   if (delimiter === -1) return markdown
   const afterDelimiter = markdown.indexOf('\n', delimiter + 4)
   return afterDelimiter === -1 ? '' : markdown.slice(afterDelimiter + 1)
-}
-
-function stripInlineMarkdown({ text }: { text: string }): string {
-  const withoutLinks = inlineMarkdownPatterns.reduce(
-    (result, pattern) => result.replace(pattern, '$1'),
-    text,
-  )
-  return withoutLinks
-    .replace(/(?<!\\)(?<![\p{L}\p{N}])_|(?<!\\)_(?![\p{L}\p{N}])/gu, '')
-    .replace(/(?<!\\)[*`]/gu, '')
-    .replace(/\\([*_`])/gu, '$1')
-    .trim()
 }
 
 function codeFenceForLine(line: string): MarkdownCodeFence | null {
@@ -321,6 +303,6 @@ function parseMarkdownHeading(line: string): MarkdownHeading | null {
   const marker = match.at(1)
   const headingText = match.at(2)
   if (!marker || !headingText) return null
-  const title = stripInlineMarkdown({ text: headingText })
+  const title = stripInlineMarkdown(headingText)
   return title.length > 0 ? { level: marker.length as TocLevel, title } : null
 }
