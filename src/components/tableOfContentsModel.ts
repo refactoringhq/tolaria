@@ -1,4 +1,6 @@
 import { stripInlineMarkdown } from '../utils/inlineMarkdown'
+import { advanceMarkdownFence, type MarkdownFence } from '../utils/markdownFences'
+import { splitFrontmatter } from '../utils/wikilinks'
 
 type TocLevel = 1 | 2 | 3
 
@@ -39,11 +41,6 @@ interface HeadingBlockMatch {
   blocks: unknown[]
   entryTitle: string
   headings: MarkdownHeading[]
-}
-
-interface MarkdownCodeFence {
-  marker: string
-  size: number
 }
 
 export interface TocItem {
@@ -162,33 +159,17 @@ export function buildTableOfContents(entryTitle: string, blocks: unknown[]): Toc
   return root
 }
 
-function stripFrontmatter({ markdown }: { markdown: string }): string {
-  if (!markdown.startsWith('---')) return markdown
-  const delimiter = markdown.indexOf('\n---', 3)
-  if (delimiter === -1) return markdown
-  const afterDelimiter = markdown.indexOf('\n', delimiter + 4)
-  return afterDelimiter === -1 ? '' : markdown.slice(afterDelimiter + 1)
-}
-
-function codeFenceForLine(line: string): MarkdownCodeFence | null {
-  const match = line.match(/^ {0,3}(`{3,}|~{3,})/)
-  const fence = match?.at(1)
-  if (!fence) return null
-  return { marker: fence.charAt(0), size: fence.length }
-}
-
 function parseMarkdownHeadings({ markdown }: { markdown: string }): MarkdownHeading[] {
   const headings: MarkdownHeading[] = []
-  let codeFence: MarkdownCodeFence | null = null
+  let codeFence: MarkdownFence | null = null
+  const [, body] = splitFrontmatter(markdown)
 
-  stripFrontmatter({ markdown }).split('\n').forEach((line) => {
-    if (codeFence) {
-      if (closesCodeFence(line, codeFence)) codeFence = null
+  body.split(/\r?\n/u).forEach((line) => {
+    const nextFence = advanceMarkdownFence(line, codeFence)
+    if (codeFence || nextFence) {
+      codeFence = nextFence
       return
     }
-
-    codeFence = codeFenceForLine(line)
-    if (codeFence) return
 
     const heading = parseMarkdownHeading(line)
     if (heading) headings.push(heading)
@@ -287,14 +268,6 @@ export function buildTableOfContentsFromMarkdown(entryTitle: string, markdown: s
 
 export function buildTableOfContentsFromMarkdownOnly(entryTitle: string, markdown: string): TocItem {
   return buildTableOfContentsFromMarkdown(entryTitle, markdown)
-}
-
-function closesCodeFence(line: string, codeFence: MarkdownCodeFence): boolean {
-  const match = line.match(/^ {0,3}(`{3,}|~{3,})\s*$/)
-  const fence = match?.at(1)
-  return fence !== undefined
-    && fence.charAt(0) === codeFence.marker
-    && fence.length >= codeFence.size
 }
 
 function parseMarkdownHeading(line: string): MarkdownHeading | null {

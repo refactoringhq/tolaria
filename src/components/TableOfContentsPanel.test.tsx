@@ -47,6 +47,23 @@ describe('TableOfContentsPanel', () => {
     expect(toc.children.map((item) => item.title)).toEqual(['Tolaria + Refactoring', 'Principles'])
   })
 
+  it('ignores heading-like frontmatter until an exact closing delimiter', () => {
+    const toc = buildTableOfContentsFromMarkdown(
+      'Frontmatter Outline',
+      [
+        '---',
+        'title: Frontmatter Outline',
+        '---suffix: not a delimiter',
+        '# Hidden frontmatter heading',
+        '---',
+        '# Frontmatter Outline',
+        '## Visible section',
+      ].join('\n'),
+    )
+
+    expect(toc.children.map((item) => item.title)).toEqual(['Visible section'])
+  })
+
   it('preserves literal underscores and repairs legacy escapes in markdown headings', () => {
     const toc = buildTableOfContentsFromMarkdown(
       'Test_V1.0.0_Beta',
