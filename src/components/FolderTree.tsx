@@ -11,17 +11,18 @@ import { useFolderTreeDisclosure } from './folder-tree/useFolderTreeDisclosure'
 import { SidebarGroupHeader } from './sidebar/SidebarGroupHeader'
 import { translate, type AppLocale } from '../lib/i18n'
 import type { FolderFileActions } from '../hooks/useFileActions'
+import type { FolderRenameTarget } from '../hooks/folder-actions/useFolderRename'
 
 interface FolderTreeProps {
   folders: FolderNode[]
   selection: SidebarSelection
   onSelect: (selection: SidebarSelection) => void
   onCreateFolder?: (name: string, parent?: FolderCreationParent) => Promise<boolean> | boolean
-  onRenameFolder?: (folderPath: string, nextName: string) => Promise<boolean> | boolean
-  onDeleteFolder?: (folderPath: string) => void
+  onRenameFolder?: (folderPath: string, nextName: string, rootPath?: string) => Promise<boolean> | boolean
+  onDeleteFolder?: (folderPath: string, rootPath?: string) => void
   folderFileActions?: FolderFileActions
-  renamingFolderPath?: string | null
-  onStartRenameFolder?: (folderPath: string) => void
+  renamingFolderPath?: FolderRenameTarget | string | null
+  onStartRenameFolder?: (folderPath: string, rootPath?: string) => void
   onCancelRenameFolder?: () => void
   onCanDropNote?: (notePath: string, folderPath: string) => boolean
   onMoveNoteToFolder?: (notePath: string, folderPath: string) => Promise<unknown> | unknown

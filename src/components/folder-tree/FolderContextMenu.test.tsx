@@ -1,5 +1,5 @@
 import { createRef } from 'react'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { FolderContextMenu, type FolderContextMenuState } from './FolderContextMenu'
 
@@ -46,5 +46,22 @@ describe('FolderContextMenu', () => {
       minWidth: 'min(11.25rem, calc(100vw - 16px))',
       overflowY: 'auto',
     })
+  })
+
+  it('passes the mounted folder rootPath to delete', () => {
+    const onDelete = vi.fn()
+    render(
+      <FolderContextMenu
+        menu={{ path: 'projects', rootPath: '/Users/luca/Team', x: 40, y: 64 }}
+        menuRef={createRef<HTMLDivElement>()}
+        onCopyPath={vi.fn()}
+        onDelete={onDelete}
+        onRename={vi.fn()}
+        onReveal={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByTestId('delete-folder-menu-item'))
+    expect(onDelete).toHaveBeenCalledWith('projects', '/Users/luca/Team')
   })
 })
