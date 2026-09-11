@@ -12,9 +12,8 @@ async function createUntitledNote(page: Page): Promise<void> {
 }
 
 async function clearEditorSelection(page: Page): Promise<void> {
+  await page.getByTestId('breadcrumb-filename-trigger').focus()
   await page.evaluate(() => {
-    const active = document.activeElement as HTMLElement | null
-    active?.blur()
     window.getSelection()?.removeAllRanges()
   })
 }
@@ -38,8 +37,7 @@ async function clickTitleWrapperPadding(page: Page): Promise<void> {
 async function activeSelectionBlockType(page: Page): Promise<string | null> {
   return page.evaluate(() => {
     const selection = window.getSelection()
-    const anchorNode = selection?.anchorNode ?? null
-    const anchorElement = anchorNode instanceof Element ? anchorNode : anchorNode?.parentElement ?? null
+    const anchorElement = selection?.anchorNode?.parentElement
     return anchorElement?.closest('.bn-block-content')?.getAttribute('data-content-type') ?? null
   })
 }
