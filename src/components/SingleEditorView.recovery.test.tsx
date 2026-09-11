@@ -46,4 +46,33 @@ describe('SingleEditorView render recovery', () => {
     expect(screen.getByTestId('vault-shell')).toBeInTheDocument()
     expect(screen.queryByTestId('blocknote-view')).not.toBeInTheDocument()
   })
+
+  it('contains a persistent render-time invalid array length without unmounting the vault shell', async () => {
+    const error = new RangeError('Invalid array length')
+    const caughtRecoveryMarks: boolean[] = []
+    state.blockNoteViewError = error
+
+    render(
+      <>
+        <div data-testid="vault-shell">Vault remains usable</div>
+        <SingleEditorView
+          editor={createEditor() as never}
+          entries={[makeEntry()]}
+          onNavigateWikilink={vi.fn()}
+        />
+      </>,
+      {
+        onCaughtError: (caughtError) => {
+          caughtRecoveryMarks.push(isRecoveredBlockNoteRenderError(caughtError, ''))
+        },
+        wrapper: TooltipProvider,
+      },
+    )
+
+    await waitFor(() => expect(caughtRecoveryMarks).toHaveLength(2))
+
+    expect(caughtRecoveryMarks).toEqual([true, true])
+    expect(screen.getByTestId('vault-shell')).toBeInTheDocument()
+    expect(screen.queryByTestId('blocknote-view')).not.toBeInTheDocument()
+  })
 })

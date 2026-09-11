@@ -111,6 +111,14 @@ describe('richEditorRecoveryClassifier', () => {
     expect(classifyRichEditorRecoveryError(error, 'transform')).toBeNull()
   })
 
+  it('contains invalid array lengths on the render surface without masking transform failures', () => {
+    const error = new RangeError('Invalid array length')
+
+    expect(classifyRichEditorRecoveryError(error, 'render')).toBe('invalid_array_length')
+    expect(classifyRichEditorRecoveryError(error, 'transform')).toBeNull()
+    expect(richEditorRecoveryErrorNeedsDocumentRepair(error)).toBe(false)
+  })
+
   it('keeps transform-only recovery reasons off the render surface', () => {
     const error = transformError()
 
