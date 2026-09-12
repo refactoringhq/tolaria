@@ -1,5 +1,6 @@
 import DOMPurify from 'dompurify'
 import { normalizeNotePathSeparators } from './notePathIdentity'
+import { appendStaticPreviewCss } from './staticPreviewCss'
 import { isPathInsideVaultRoot } from './vaultPathContainment'
 
 type ConvertFileSrc = (path: string) => string
@@ -222,5 +223,6 @@ export function htmlFilePreviewSrcDoc(options: HtmlFilePreviewOptions): string {
   const documentObject = new DOMParser().parseFromString(sanitized, 'text/html')
   applyPreviewResourcePolicy(documentObject, options)
   installPreviewMetadata(documentObject)
+  appendStaticPreviewCss(documentObject)
   return `<!doctype html>${documentObject.documentElement.outerHTML}`
 }

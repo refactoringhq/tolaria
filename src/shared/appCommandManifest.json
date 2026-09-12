@@ -135,6 +135,11 @@
         "requiresManualNativeAcceleratorQa": true
       }
     },
+    "editCopyFullNote": {
+      "id": "edit-copy-full-note",
+      "route": { "kind": "handler", "handler": "onCopyFullNote" },
+      "menuOwned": true
+    },
     "editToggleRawEditor": {
       "id": "edit-toggle-raw-editor",
       "route": { "kind": "handler", "handler": "onToggleRawEditor" },
@@ -475,6 +480,7 @@
         { "kind": "command", "command": "editRedo", "label": "Redo" },
         { "kind": "separator" },
         { "kind": "command", "command": "editPastePlainText", "label": "Paste without Formatting" },
+        { "kind": "command", "command": "editCopyFullNote", "label": "Copy Full Note" },
         { "kind": "separator" },
         { "kind": "command", "command": "editFindInNote", "label": "Find in Note", "enabled": false },
         { "kind": "command", "command": "editReplaceInNote", "label": "Replace in Note", "enabled": false },

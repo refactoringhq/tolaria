@@ -48,6 +48,7 @@ export interface AppCommandHandlers {
   onRedo?: () => void
   onReplaceInNote?: () => void
   onPastePlainText: () => void
+  onCopyFullNote?: () => void
   onSearch: () => void
   onToggleRawEditor?: () => void
   onToggleDiff?: () => void
@@ -88,6 +89,7 @@ type SimpleHandlerKey = keyof Pick<
   | 'onRedo'
   | 'onReplaceInNote'
   | 'onPastePlainText'
+  | 'onCopyFullNote'
   | 'onSearch'
   | 'onToggleRawEditor'
   | 'onToggleDiff'
@@ -136,6 +138,7 @@ const SIMPLE_HANDLER_EXECUTORS: readonly [SimpleHandlerKey, SimpleHandlerExecuto
   ['onRedo', (handlers) => handlers.onRedo?.()],
   ['onReplaceInNote', (handlers) => handlers.onReplaceInNote?.()],
   ['onPastePlainText', (handlers) => handlers.onPastePlainText()],
+  ['onCopyFullNote', (handlers) => handlers.onCopyFullNote?.()],
   ['onSearch', (handlers) => handlers.onSearch()],
   ['onToggleRawEditor', (handlers) => handlers.onToggleRawEditor?.()],
   ['onToggleDiff', (handlers) => handlers.onToggleDiff?.()],

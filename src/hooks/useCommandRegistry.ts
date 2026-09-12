@@ -80,6 +80,7 @@ interface CommandRegistryConfig {
   undoLabel?: string | null
   redoLabel?: string | null
   onPastePlainText: () => void
+  onCopyFullNote: () => void
   onOpenSettings: () => void
   onOpenFeedback?: () => void
   onOpenVault?: () => void
@@ -154,7 +155,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
   const {
     activeTabPath, entries, modifiedCount,
     onQuickOpen, onCreateNote, onCreateNoteOfType, onSave, onUndo, onRedo, canUndo, canRedo, undoLabel, redoLabel,
-    onPastePlainText, onOpenSettings, onOpenFeedback,
+    onPastePlainText, onCopyFullNote, onOpenSettings, onOpenFeedback,
     onDeleteNote, onArchiveNote, onUnarchiveNote,
     onCommitPush, onGenerateCommitMessage, onPull, onResolveConflicts, onSetViewMode, onToggleInspector, onToggleDiff, onToggleRawEditor, onFindInNote, onReplaceInNote,
     noteWidth, defaultNoteWidth, onSetNoteWidth, onSetDefaultNoteWidth, onToggleAIChat, onToggleTableOfContents, onOpenVault, onCreateEmptyVault,
@@ -220,7 +221,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
     hasActiveNote, activeTabPath, activeFileKind: activeEntry?.fileKind ?? 'markdown', isArchived, locale,
     currentFolderCreateOptions: folderCreateOptions, onCreateNote, onCreateType, onSave,
     onUndo, onRedo, canUndo, canRedo, undoLabel, redoLabel,
-    onFindInNote, onReplaceInNote, onPastePlainText,
+    onFindInNote, onReplaceInNote, onPastePlainText, onCopyFullNote,
     onDeleteNote, onArchiveNote, onUnarchiveNote,
     onChangeNoteType, onMoveNoteToFolder, canMoveNoteToFolder,
     onTurnCurrentBlockInto,
@@ -233,7 +234,7 @@ export function useCommandRegistry(config: CommandRegistryConfig): import('./com
   }), [
     hasActiveNote, activeTabPath, activeEntry?.fileKind, isArchived, locale,
     folderCreateOptions, onCreateNote, onCreateType, onSave, onUndo, onRedo, canUndo, canRedo, undoLabel, redoLabel,
-    onFindInNote, onReplaceInNote, onPastePlainText, onDeleteNote, onArchiveNote, onUnarchiveNote,
+    onFindInNote, onReplaceInNote, onPastePlainText, onCopyFullNote, onDeleteNote, onArchiveNote, onUnarchiveNote,
     onChangeNoteType, onMoveNoteToFolder, canMoveNoteToFolder, onTurnCurrentBlockInto,
     onSetNoteIcon, onRemoveNoteIcon, activeNoteHasIcon, onOpenInNewWindow,
     onRevealActiveFile, onCopyActiveFilePath, onOpenActiveFileExternal,

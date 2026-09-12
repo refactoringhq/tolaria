@@ -1,5 +1,4 @@
 import fs from 'fs'
-import path from 'path'
 import { expect, test, type Page } from '@playwright/test'
 import { APP_COMMAND_IDS } from '../../src/hooks/appCommandCatalog'
 import {
@@ -21,14 +20,41 @@ const HTML_CONTENT = `<!doctype html>
   </body>
 </html>`
 
-let tempVaultDir: string
-let htmlPath: string
+const DECK_FILENAME = 'deck-static-test.html'
+const DECK_CONTENT = `<!doctype html>
+<html>
+  <head><style>
+    html,body{height:100%;overflow:hidden}
+    .slide{position:absolute;inset:0;opacity:0;visibility:hidden;transform:translateY(16px);pointer-events:none}
+    .slide.active{opacity:1;visibility:visible;transform:none;pointer-events:auto}
+  </style></head>
+  <body>
+    <section class="slide active"><h2>Slide one visible</h2></section>
+    <section class="slide"><h2>Slide two revealed</h2></section>
+    <div class="mermaid-box"><pre class="mermaid">flowchart TD
+    A[Start] --> B[End]</pre></div>
+    <script>document.body.dataset.jsRan = 'yes'</script>
+  </body>
+</html>`
 
-function buildHtmlEntry(filePath: string) {
+let tempVaultDir: string
+
+async function setupVaultWithHtmlFiles(page: Page, files: Array<{ filename: string; content: string }>): Promise<void> {
+  tempVaultDir = createFixtureVaultCopy()
+  for (const file of files) {
+    // file.filename is a compile-time constant in this spec, never user input.
+    const filePath = `${tempVaultDir}/${file.filename}`
+    fs.writeFileSync(filePath, file.content)
+    await includeHtmlEntry(page, filePath, file.filename, file.content)
+  }
+  await openFixtureVaultDesktopHarness(page, tempVaultDir)
+}
+
+function buildHtmlEntry(filePath: string, filename: string = HTML_FILENAME, content: string = HTML_CONTENT) {
   return {
     path: filePath,
-    filename: HTML_FILENAME,
-    title: HTML_FILENAME,
+    filename,
+    title: filename,
     isA: null,
     aliases: [],
     belongsTo: [],
@@ -37,7 +63,7 @@ function buildHtmlEntry(filePath: string) {
     archived: false,
     modifiedAt: Date.now(),
     createdAt: null,
-    fileSize: Buffer.byteLength(HTML_CONTENT),
+    fileSize: Buffer.byteLength(content),
     snippet: '',
     wordCount: 0,
     relationships: {},
@@ -60,8 +86,8 @@ function buildHtmlEntry(filePath: string) {
   }
 }
 
-async function includeHtmlEntry(page: Page, filePath: string): Promise<void> {
-  const htmlEntry = buildHtmlEntry(filePath)
+async function includeHtmlEntry(page: Page, filePath: string, filename: string = HTML_FILENAME, content: string = HTML_CONTENT): Promise<void> {
+  const htmlEntry = buildHtmlEntry(filePath, filename, content)
   await page.route('**/api/vault/list*', async (route) => {
     const response = await route.fetch()
     const entries = await response.json()
@@ -72,19 +98,12 @@ async function includeHtmlEntry(page: Page, filePath: string): Promise<void> {
   })
 }
 
-test.beforeEach(async ({ page }) => {
-  tempVaultDir = createFixtureVaultCopy()
-  htmlPath = path.join(tempVaultDir, HTML_FILENAME)
-  fs.writeFileSync(htmlPath, HTML_CONTENT)
-  await includeHtmlEntry(page, htmlPath)
-  await openFixtureVaultDesktopHarness(page, tempVaultDir)
-})
-
 test.afterEach(() => {
   removeFixtureVaultCopy(tempVaultDir)
 })
 
 test('previews standalone HTML and exposes source through the breadcrumb and keyboard', async ({ page }) => {
+  await setupVaultWithHtmlFiles(page, [{ filename: HTML_FILENAME, content: HTML_CONTENT }])
   await triggerShortcutCommand(page, APP_COMMAND_IDS.fileQuickOpen)
   const quickOpenInput = page.locator('input[placeholder="Search notes..."]')
   await expect(quickOpenInput).toBeVisible({ timeout: 5_000 })
@@ -127,4 +146,25 @@ test('previews standalone HTML and exposes source through the breadcrumb and key
 
   await page.keyboard.press(process.platform === 'darwin' ? 'Meta+Backslash' : 'Control+Backslash')
   await expect(page.getByTestId('raw-editor-codemirror')).toBeVisible({ timeout: 5_000 })
+})
+
+test('reveals script-gated slides and renders mermaid diagrams without executing scripts', async ({ page }) => {
+  await setupVaultWithHtmlFiles(page, [
+    { filename: HTML_FILENAME, content: HTML_CONTENT },
+    { filename: DECK_FILENAME, content: DECK_CONTENT },
+  ])
+  await triggerShortcutCommand(page, APP_COMMAND_IDS.fileQuickOpen)
+  const quickOpenInput = page.locator('input[placeholder="Search notes..."]')
+  await expect(quickOpenInput).toBeVisible({ timeout: 5_000 })
+  await quickOpenInput.fill(DECK_FILENAME)
+  await page.keyboard.press('Enter')
+
+  const previewFrame = page.frameLocator('[data-testid="html-file-preview"]')
+  await expect(previewFrame.getByRole('heading', { name: 'Slide one visible' })).toBeVisible({ timeout: 10_000 })
+
+  await expect(previewFrame.locator('style[data-tolaria-static-preview]')).toHaveCount(1)
+  await expect(previewFrame.getByRole('heading', { name: 'Slide two revealed' })).toBeVisible()
+  await expect(previewFrame.locator('div[data-tolaria-mermaid-rendered] svg')).toHaveCount(1)
+  await expect(previewFrame.locator('script')).toHaveCount(0)
+  await expect(previewFrame.locator('body')).not.toHaveAttribute('data-js-ran', 'yes')
 })
