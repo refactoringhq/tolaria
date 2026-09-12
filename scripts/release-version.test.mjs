@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { describe, it } from 'node:test'
 import { computeAlphaRelease, computeStableRelease, formatReleaseEnv } from './release-version.mjs'
 
@@ -45,6 +46,16 @@ const alphaReleaseCases = [
     },
   },
 ]
+
+describe('release build configuration', () => {
+  it('keeps Tauri devtools out of release builds', () => {
+    const cargoManifest = readFileSync('src-tauri/Cargo.toml', 'utf8')
+    const tauriDependency = cargoManifest.split('\n').find((line) => line.startsWith('tauri = '))
+
+    assert.ok(tauriDependency, 'Tauri dependency declaration must remain present')
+    assert.doesNotMatch(tauriDependency, /"devtools"/)
+  })
+})
 
 describe('release version computation', () => {
   it('formats the shared release result for GitHub Actions outputs', () => {
