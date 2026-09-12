@@ -21,7 +21,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
 log = "0.4"
 notify = "6.1"
-tauri = { version = "2.11.5", features = ["macos-private-api", "protocol-asset", "devtools", "image-png"] }
+tauri = { version = "2.11.5", features = ["macos-private-api", "protocol-asset", "image-png"] }
 tauri-plugin-log = "2"
 gray_matter = "0.2"
 walkdir = "2"
