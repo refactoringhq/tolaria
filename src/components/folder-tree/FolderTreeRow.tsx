@@ -1,5 +1,6 @@
 import { memo, useCallback, type MouseEvent as ReactMouseEvent } from 'react'
 import type { FolderCreationParent, FolderNode, SidebarSelection } from '../../types'
+import type { FolderRenameTarget } from '../../hooks/folder-actions/useFolderRename'
 import { FolderNameInput } from './FolderNameInput'
 import { FolderItemRow } from './FolderItemRow'
 import { FOLDER_ROW_CONTENT_INSET, getFolderConnectorLeft, getFolderDepthIndent } from './folderTreeLayout'
@@ -14,17 +15,17 @@ interface FolderTreeRowProps {
   isCreating?: boolean
   onCancelCreateFolder?: () => void
   onCreateFolderSubmit?: (value: string) => Promise<boolean>
-  onDeleteFolder?: (folderPath: string) => void
+  onDeleteFolder?: (folderPath: string, rootPath?: string) => void
   onOpenMenu: (node: FolderNode, event: ReactMouseEvent<HTMLElement>) => void
-  onRenameFolder?: (folderPath: string, nextName: string) => Promise<boolean> | boolean
+  onRenameFolder?: (folderPath: string, nextName: string, rootPath?: string) => Promise<boolean> | boolean
   onSelect: (selection: SidebarSelection) => void
-  onStartRenameFolder?: (folderPath: string) => void
+  onStartRenameFolder?: (folderPath: string, rootPath?: string) => void
   onToggle: (path: string) => void
   onCancelRenameFolder?: () => void
   onCanDropNote?: (notePath: string, folderPath: string) => boolean
   onMoveNoteToFolder?: (notePath: string, folderPath: string) => Promise<unknown> | unknown
   locale?: AppLocale
-  renamingFolderPath?: string | null
+  renamingFolderPath?: FolderRenameTarget | string | null
   rootPath?: string
   selection: SidebarSelection
 }
@@ -42,7 +43,7 @@ function FolderRenameRow({
   node: FolderNode
   locale: AppLocale
   onCancelRenameFolder: () => void
-  onRenameFolder: (folderPath: string, nextName: string) => Promise<boolean> | boolean
+  onRenameFolder: (folderPath: string, nextName: string, rootPath?: string) => Promise<boolean> | boolean
 }) {
   return (
     <div style={{ paddingLeft: depthIndent }}>
@@ -55,7 +56,7 @@ function FolderRenameRow({
         submitOnBlur={true}
         testId="rename-folder-input"
         onCancel={onCancelRenameFolder}
-        onSubmit={(nextName) => onRenameFolder(node.path, nextName)}
+        onSubmit={(nextName) => onRenameFolder(node.path, nextName, node.rootPath)}
       />
     </div>
   )
@@ -243,7 +244,7 @@ export const FolderTreeRow = memo(function FolderTreeRow(options: FolderTreeRowP
     rootPath,
     selection,
   } = options
-  const { nodeKey, nodeRootPath, isExpanded, isSelected, canUseDefaultFolderActions, canMutateFolder, isRenaming } = resolveFolderTreeRowState(options)
+  const { nodeKey, nodeRootPath, isExpanded, isSelected, canMutateFolder, isRenaming } = resolveFolderTreeRowState(options)
   const depthIndent = getFolderDepthIndent(depth)
   const contentInset = FOLDER_ROW_CONTENT_INSET
   const selectFolder = useCallback(() => {
@@ -251,7 +252,6 @@ export const FolderTreeRow = memo(function FolderTreeRow(options: FolderTreeRowP
   }, [node.path, nodeRootPath, onSelect])
   const row = (
     <FolderItemRow
-      canOpenMenu={canUseDefaultFolderActions}
       contentInset={contentInset}
       depthIndent={depthIndent}
       isExpanded={isExpanded}
@@ -317,19 +317,30 @@ export const FolderTreeRow = memo(function FolderTreeRow(options: FolderTreeRowP
   )
 })
 
+function folderRenameMatches(
+  renamingFolderPath: FolderRenameTarget | string | null | undefined,
+  node: FolderNode,
+  defaultRootPath?: string,
+): boolean {
+  if (!renamingFolderPath) return false
+  const renaming = typeof renamingFolderPath === 'string' ? { path: renamingFolderPath } : renamingFolderPath
+  if (renaming.path !== node.path) return false
+  const nodeRootPath = node.rootPath ?? defaultRootPath
+  const renamingRootPath = renaming.rootPath ?? defaultRootPath
+  return nodeRootPath === renamingRootPath
+}
+
 function resolveFolderTreeRowState(options: Pick<FolderTreeRowProps, 'expanded' | 'node' | 'renamingFolderPath' | 'rootPath' | 'selection'>) {
   const { expanded, node, renamingFolderPath, rootPath, selection } = options
   const nodeRootPath = node.rootPath ?? rootPath
   const nodeKey = folderNodeKey({ path: node.path, rootPath: nodeRootPath })
-  const canUseDefaultFolderActions = !nodeRootPath || nodeRootPath === rootPath
-  const canMutateFolder = node.path.length > 0 && canUseDefaultFolderActions
+  const canMutateFolder = node.path.length > 0
   return {
     nodeKey,
     nodeRootPath,
     isExpanded: (Reflect.get(expanded, nodeKey) as boolean | undefined) ?? false,
     isSelected: folderSelectionMatches(selection, { ...node, rootPath: nodeRootPath }, rootPath),
-    canUseDefaultFolderActions,
     canMutateFolder,
-    isRenaming: canMutateFolder && renamingFolderPath === node.path,
+    isRenaming: canMutateFolder && folderRenameMatches(renamingFolderPath, { ...node, rootPath: nodeRootPath }, rootPath),
   }
 }
