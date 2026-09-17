@@ -37,6 +37,7 @@ interface AppCommandsConfig {
   redoLabel?: string | null
   onReplaceInNote?: () => void
   onPastePlainText: () => void
+  onCopyFullNote: () => void
   onCreateNote: (type?: string, options?: ImmediateCreateOptions) => void
   onCreateNoteOfType: (type: string) => void
   onSave: () => void
@@ -178,6 +179,7 @@ type CommandRegistryCoreActions = Pick<
   | 'onFindInNote'
   | 'onReplaceInNote'
   | 'onPastePlainText'
+  | 'onCopyFullNote'
   | 'onTurnCurrentBlockInto'
   | 'onOpenSettings'
   | 'onOpenFeedback'
@@ -287,6 +289,7 @@ function createKeyboardActions(
     onFindInNote: config.onFindInNote,
     onReplaceInNote: config.onReplaceInNote,
     onPastePlainText: config.onPastePlainText,
+    onCopyFullNote: config.onCopyFullNote,
     onCreateNote: config.onCreateNote,
     onSave: config.onSave,
     onUndo: config.onUndo,
@@ -347,6 +350,7 @@ function createMenuEventActionHandlers(
   | 'onRedo'
   | 'onReplaceInNote'
   | 'onPastePlainText'
+  | 'onCopyFullNote'
   | 'onSearch'
   | 'onToggleRawEditor'
   | 'onToggleDiff'
@@ -377,6 +381,7 @@ function createMenuEventActionHandlers(
     onRedo: config.onRedo,
     onReplaceInNote: config.onReplaceInNote,
     onPastePlainText: config.onPastePlainText,
+    onCopyFullNote: config.onCopyFullNote,
     onSearch: config.onSearch,
     onToggleRawEditor: config.onToggleRawEditor,
     onToggleDiff: config.onToggleDiff,
@@ -510,6 +515,7 @@ function createCommandRegistryCoreConfig(
     onFindInNote: config.onFindInNote,
     onReplaceInNote: config.onReplaceInNote,
     onPastePlainText: config.onPastePlainText,
+    onCopyFullNote: config.onCopyFullNote,
     onTurnCurrentBlockInto: config.onTurnCurrentBlockInto,
     noteWidth: config.noteWidth,
     defaultNoteWidth: config.defaultNoteWidth,

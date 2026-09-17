@@ -1243,6 +1243,7 @@ function MainApp({ noteWindowParams }: { noteWindowParams: NoteWindowParams | nu
 
   const {
     buildNumber,
+    copyFullNoteRef,
     diffToggleRef,
     findInNoteRef,
     handleCollapseSidebar,
@@ -1401,6 +1402,9 @@ function MainApp({ noteWindowParams }: { noteWindowParams: NoteWindowParams | nu
       console.warn('[paste] Failed to paste plain text:', error)
     })
   }, [])
+  const copyFullNoteCommand = useCallback(() => {
+    copyFullNoteRef.current?.()
+  }, [copyFullNoteRef])
   const removeActiveVaultCommand = useCallback(() => {
     vaultSwitcher.removeVault(vaultSwitcher.vaultPath)
   }, [vaultSwitcher])
@@ -1554,6 +1558,7 @@ function MainApp({ noteWindowParams }: { noteWindowParams: NoteWindowParams | nu
     onReplaceInNote: activeDeletedFile ? undefined : replaceInNoteCommand,
     onTurnCurrentBlockInto: activeDeletedFile ? undefined : turnCurrentBlockIntoCommand,
     onPastePlainText: pastePlainTextCommand,
+    onCopyFullNote: copyFullNoteCommand,
     onCreateNote: notes.handleCreateNoteImmediate,
     onCreateNoteOfType: notes.handleCreateNoteImmediate,
     onSave: appSave.handleSave,
@@ -1827,6 +1832,7 @@ function MainApp({ noteWindowParams }: { noteWindowParams: NoteWindowParams | nu
               pdfExportRef={pdfExportRef}
               turnCurrentBlockIntoRef={turnCurrentBlockIntoRef}
               findInNoteRef={findInNoteRef}
+              copyFullNoteRef={copyFullNoteRef}
               diffToggleRef={diffToggleRef}
               canGoBack={canGoBack}
               canGoForward={canGoForward}

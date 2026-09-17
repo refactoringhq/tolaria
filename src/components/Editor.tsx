@@ -56,6 +56,7 @@ import { installRichEditorDispatchPerformanceProbe } from './richEditorDispatchP
 import { RICH_EDITOR_BLOCKNOTE_PERFORMANCE_OPTIONS } from './richEditorBlockNoteOptions'
 import { markStartupPhase } from '../lib/startupPerformance'
 import { useTurnCurrentBlockIntoCommand } from './useTurnCurrentBlockIntoCommand'
+import { useCopyFullNoteCommand } from './useCopyFullNoteCommand'
 import './Editor.css'
 import './EditorTheme.css'
 
@@ -138,6 +139,8 @@ export interface EditorProps {
   rawToggleRef?: React.MutableRefObject<() => void>
   /** Mutable ref that Editor registers editor find commands into, for shortcuts and menus. */
   findInNoteRef?: React.MutableRefObject<((options?: { replace?: boolean }) => void) | null>
+  /** Mutable ref that Editor registers the copy-full-note command into, for command palette and native menu access. */
+  copyFullNoteRef?: React.MutableRefObject<(() => void) | null>
   /** Mutable ref that Editor registers its diff-mode toggle into, for command palette access. */
   diffToggleRef?: React.MutableRefObject<() => void>
   /** Mutable ref that Editor registers its table-of-contents toggle into, for app shortcuts and menus. */
@@ -829,6 +832,12 @@ export const Editor = memo(function Editor(props: EditorProps) {
     editor: runtime.editor,
     rawMode: runtime.rawMode,
     turnCurrentBlockIntoRef: props.turnCurrentBlockIntoRef,
+  })
+  useCopyFullNoteCommand({
+    activeTab: runtime.activeTab,
+    copyFullNoteRef: props.copyFullNoteRef,
+    editor: runtime.editor,
+    rawMode: runtime.rawMode,
   })
   const handleExportPdf = useEditorPdfExport({
     activeTab: runtime.activeTab,

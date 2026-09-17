@@ -62,4 +62,25 @@ describe('htmlFilePreviewSrcDoc', () => {
 
     expect(srcDoc).not.toContain('secret.png')
   })
+
+  it('appends a static reveal layer for script-driven slide decks', () => {
+    const srcDoc = htmlFilePreviewSrcDoc({
+      content: `<style>
+        .slide{position:absolute;inset:0;opacity:0;visibility:hidden;transform:translateY(16px);pointer-events:none}
+        html,body{height:100%;overflow:hidden}
+      </style>
+      <section class="slide"><h2>Deck content</h2></section>`,
+      filePath: '/vault/decks/talk.html',
+      vaultPath: '/vault',
+      convertFileSrc,
+    })
+
+    expect(srcDoc).toContain('data-tolaria-static-preview')
+    expect(srcDoc).toContain('.slide{opacity:1 !important')
+    expect(srcDoc).toContain('visibility:visible !important')
+    expect(srcDoc).toContain('position:static !important')
+    expect(srcDoc).toContain('overflow:auto !important')
+    expect(srcDoc).toContain('height:auto !important')
+    expect(srcDoc).toContain('Deck content')
+  })
 })

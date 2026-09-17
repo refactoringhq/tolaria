@@ -1,7 +1,8 @@
 import { convertFileSrc } from '@tauri-apps/api/core'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { trackEvent } from '../lib/telemetry'
 import { htmlFilePreviewSrcDoc } from '../utils/htmlFilePreview'
+import { renderMermaidHtml } from '../utils/htmlMermaidPreview'
 import { focusNoteListContainer } from '../utils/neighborhoodHistory'
 import { Button } from './ui/button'
 
@@ -18,15 +19,31 @@ function releaseFrameFocus(frame: HTMLIFrameElement | null, focusTarget: HTMLBut
   focusTarget?.focus()
 }
 
+function scheduleMermaidHtmlRender(sourceHtml: string, onRenderedHtml: (docHtml: string) => void): () => void {
+  let active = true
+  renderMermaidHtml(sourceHtml)
+    .then((docHtml) => {
+      if (active) onRenderedHtml(docHtml)
+    })
+    .catch(() => {})
+  return () => { active = false }
+}
+
 export function HtmlFilePreview({ content, path, title, vaultPath }: HtmlFilePreviewProps) {
   const focusTargetRef = useRef<HTMLButtonElement | null>(null)
   const frameRef = useRef<HTMLIFrameElement | null>(null)
-  const srcDoc = useMemo(() => htmlFilePreviewSrcDoc({
+  const baseHtmlDoc = useMemo(() => htmlFilePreviewSrcDoc({
     content,
     convertFileSrc,
     filePath: path,
     vaultPath,
   }), [content, path, vaultPath])
+  const [renderedState, setRenderedState] = useState<{ baseHtmlDoc: string; docHtml: string } | null>(null)
+  const srcDocHtml = renderedState?.baseHtmlDoc === baseHtmlDoc ? renderedState.docHtml : baseHtmlDoc
+
+  useEffect(() => scheduleMermaidHtmlRender(baseHtmlDoc, (docHtml) => {
+    setRenderedState({ baseHtmlDoc: baseHtmlDoc, docHtml })
+  }), [baseHtmlDoc])
 
   useEffect(() => {
     trackEvent('html_file_preview_opened')
@@ -63,7 +80,7 @@ export function HtmlFilePreview({ content, path, title, vaultPath }: HtmlFilePre
         data-testid="html-file-preview"
         referrerPolicy="no-referrer"
         sandbox="allow-popups allow-popups-to-escape-sandbox"
-        srcDoc={srcDoc}
+        srcDoc={srcDocHtml}
         tabIndex={-1}
         title={title}
       />

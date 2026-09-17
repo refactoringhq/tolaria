@@ -53,29 +53,30 @@ export function writeRichEditorClipboardPayload(
   clipboardData: ClipboardWriter,
   payload: RichEditorClipboardPayload,
 ) {
-  const wikilinkPlainText = plainTextForWikilinkMarkdown(payload.markdown)
-  if (wikilinkPlainText !== null) {
-    clipboardData.setData('text/plain', wikilinkPlainText)
+  clipboardData.setData('blocknote/html', payload.blocknoteHtml)
+  clipboardData.setData('text/html', htmlWithWikilinkLiterals(payload.html))
+  if (MARKDOWN_WIKILINK_RE.test(payload.markdown)) {
     clipboardData.setData('text/markdown', payload.markdown)
-    clipboardData.setData('text/html', plainTextMarkup(wikilinkPlainText))
-    return
   }
-
-  clipboardData.setData('blocknote/html', clipboardPayloadMarkup(payload, 'blocknoteHtml'))
-  clipboardData.setData('text/html', clipboardPayloadMarkup(payload, 'html'))
 }
 
-function clipboardPayloadMarkup(
-  payload: RichEditorClipboardPayload,
-  field: 'blocknoteHtml' | 'html',
-): string {
-  return Reflect.get(payload, field) as string
+function wikilinkLiteralText(element: Element): string | null {
+  const target = element.getAttribute('data-target') ?? element.getAttribute('data-wikilink-target')
+  return target ? `[[${target}]]` : null
 }
 
-function plainTextForWikilinkMarkdown(markdown: string): string | null {
-  if (!MARKDOWN_WIKILINK_RE.test(markdown)) return null
+export function htmlWithWikilinkLiterals(markup: string): string {
+  if (markup.length === 0) return markup
 
-  return withoutSyntheticTerminalNewline(markdown)
+  const parsed = new DOMParser().parseFromString(markup, 'text/html')
+  const wikilinks = parsed.body.querySelectorAll<HTMLElement>(CLIPBOARD_WIKILINK_SELECTOR)
+  if (wikilinks.length === 0) return markup
+
+  for (const element of Array.from(wikilinks)) {
+    const literal = wikilinkLiteralText(element)
+    if (literal !== null) element.replaceWith(document.createTextNode(literal))
+  }
+  return parsed.body.innerHTML
 }
 
 function withoutSyntheticTerminalNewline(text: string): string {
@@ -92,7 +93,7 @@ function plainTextMarkup(text: string): string {
   return Reflect.get(paragraph, 'outerHTML') as string
 }
 
-function restoreWikilinkMarkdownFromMarkup(
+export function restoreWikilinkMarkdownFromMarkup(
   markdown: string,
   externalMarkup: string,
   blocknoteMarkup: string,
@@ -127,9 +128,17 @@ function clipboardWikilinksFromMarkup(markup: string): ClipboardWikilink[] | nul
 }
 
 function clipboardWikilinksFromContainer(container: ParentNode): ClipboardWikilink[] | null {
+  const seenPairs = new Set<string>()
   const wikilinks = Array.from(container.querySelectorAll<HTMLElement>(CLIPBOARD_WIKILINK_SELECTOR))
     .map(clipboardWikilinkFromElement)
-    .filter((wikilink): wikilink is ClipboardWikilink => wikilink !== null)
+    .filter((wikilink): wikilink is ClipboardWikilink => {
+      if (wikilink === null) return false
+      // Nested wikilink spans (wrapper + inner) yield the same pair twice.
+      const pairKey = `${wikilink.label}\u0000${wikilink.target}`
+      if (seenPairs.has(pairKey)) return false
+      seenPairs.add(pairKey)
+      return true
+    })
 
   return wikilinks.length > 0 ? wikilinks : null
 }

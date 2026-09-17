@@ -50,6 +50,7 @@ type SimpleHandlerKey =
   | 'onRedo'
   | 'onReplaceInNote'
   | 'onPastePlainText'
+  | 'onCopyFullNote'
   | 'onSearch'
   | 'onToggleRawEditor'
   | 'onToggleDiff'
@@ -190,6 +191,7 @@ const MENU_LABEL_KEYS = {
   Undo: 'command.note.undo',
   Redo: 'command.note.redo',
   'Paste without Formatting': 'menu.edit.pasteWithoutFormatting',
+  'Copy Full Note': 'menu.edit.copyFullNote',
   'Find in Note': 'command.note.findInNote',
   'Replace in Note': 'command.note.replaceInNote',
   'Find in Vault': 'menu.edit.findInVault',
