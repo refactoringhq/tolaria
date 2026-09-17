@@ -117,7 +117,7 @@ function sheetTextInputTargetForRefs(
 ): TrackedSheetTextInput | null {
   if (!input) return null
   const existing = refs.textInputTargetRef.current
-  if (existing && !existing.dirty) return existing
+  if (existing && !existing.dirty) return committedInputTarget(input, refs.committedTextInputRef.current)
 
   return (
     committedInputTarget(input, refs.committedTextInputRef.current) ??
@@ -138,13 +138,6 @@ function commitTrackedTextInput(
     value: input.value,
   }
   refs.textInputTargetRef.current = { ...tracked, dirty: false }
-}
-
-function releaseTrackedTextInput(
-  input: HTMLInputElement | HTMLTextAreaElement | null,
-  textInputTargetRef: MutableRefObject<TrackedSheetTextInput | null>,
-): void {
-  if (!input || textInputTargetRef.current?.input === input) textInputTargetRef.current = null
 }
 
 function useSheetTextInputTargetTracker(workbookRef: MutableRefObject<SheetWorkbookState | null>) {
@@ -181,7 +174,7 @@ function useSheetTextInputTargetTracker(workbookRef: MutableRefObject<SheetWorkb
   }, [])
 
   const releaseSheetTextInputTarget = useCallback((input: HTMLInputElement | HTMLTextAreaElement | null) => {
-    releaseTrackedTextInput(input, textInputTargetRef)
+    if (!input || textInputTargetRef.current?.input === input) textInputTargetRef.current = null
   }, [])
 
   return {
