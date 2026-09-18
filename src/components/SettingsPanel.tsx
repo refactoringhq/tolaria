@@ -15,7 +15,7 @@ import {
   resolveAiTarget,
   type AiModelProvider,
 } from '../lib/aiTargets'
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { GitProviderId, Settings } from '../types'
 import {
   APP_LOCALES,
@@ -310,12 +310,14 @@ function applyThemeModeSelection(value: ThemeMode): void {
 
 export function SettingsPanel(options: SettingsPanelProps) {
   const { open, settings, aiAgentsStatus = createMissingAiAgentsStatus(), initialSectionId = null, locale = 'en', systemLocale = locale, onSave, onCopyMcpConfig, vaults = [], defaultWorkspacePath = null, onRemoveVault, onReorderVaults, onSetDefaultWorkspace, onUpdateWorkspaceIdentity, isGitVault = true, vaultPath = '', explicitOrganizationEnabled = true, onSaveExplicitOrganization, onClose } = options
+  const initialDraft = useMemo(
+    () => createSettingsDraft(settings, explicitOrganizationEnabled),
+    [explicitOrganizationEnabled, settings],
+  )
   if (!open) return null
-  const initialDraft = createSettingsDraft(settings, explicitOrganizationEnabled)
 
   return (
     <SettingsPanelInner
-      key={JSON.stringify(initialDraft)}
       settings={settings}
       aiAgentsStatus={aiAgentsStatus}
       initialDraft={initialDraft}
@@ -358,6 +360,10 @@ type SettingsPanelInnerProps = Omit<
 function useSettingsDraftActions(options: Pick<SettingsPanelInnerProps, 'initialDraft' | 'onClose' | 'onSave' | 'onSaveExplicitOrganization' | 'settings'>) {
   const { initialDraft, onClose, onSave, onSaveExplicitOrganization, settings } = options
   const [draft, setDraft] = useState(initialDraft)
+  const initialDraftKey = JSON.stringify(initialDraft)
+  useEffect(() => {
+    startTransition(() => setDraft(initialDraft))
+  }, [initialDraft, initialDraftKey])
   const updateDraft = useCallback(<Key extends keyof SettingsDraft>(key: Key, value: SettingsDraft[Key]) => {
     setDraft((current) => ({ ...current, [key]: value }))
   }, [])

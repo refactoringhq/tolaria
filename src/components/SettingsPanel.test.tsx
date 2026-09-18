@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { useState } from 'react'
 import { SettingsPanel } from './SettingsPanel'
 import type { Settings } from '../types'
 import { THEME_MODE_STORAGE_KEY } from '../lib/themeMode'
@@ -473,6 +474,31 @@ describe('SettingsPanel', () => {
       expect.any(String),
       expect.objectContaining({ path: expect.any(String) }),
     )
+  })
+
+  it('preserves the settings scroll position when an immediate toggle updates saved settings', () => {
+    function ControlledSettingsPanel() {
+      const [settings, setSettings] = useState(emptySettings)
+      return (
+        <SettingsPanel
+          open={true}
+          settings={settings}
+          onSave={setSettings}
+          onClose={onClose}
+        />
+      )
+    }
+
+    render(<ControlledSettingsPanel />)
+
+    const scrollContainer = screen.getByTestId('settings-panel').querySelector('.overflow-auto')
+    expect(scrollContainer).not.toBeNull()
+    scrollContainer!.scrollTop = 240
+
+    fireEvent.click(within(screen.getByTestId('settings-all-notes-show-images')).getByRole('switch'))
+
+    expect(screen.getByTestId('settings-panel').querySelector('.overflow-auto')).toBe(scrollContainer)
+    expect(scrollContainer).toHaveProperty('scrollTop', 240)
   })
 
   it('defaults the color mode control to light', () => {
