@@ -47,6 +47,27 @@ describe('SingleEditorView render recovery', () => {
     expect(screen.queryByTestId('blocknote-view')).not.toBeInTheDocument()
   })
 
+  it('requests one raw-editor fallback after persistent update-loop recovery is exhausted', async () => {
+    const error = new Error('Minified React error #185; visit https://react.dev/errors/185')
+    const onRecoveryFallback = vi.fn()
+    state.blockNoteViewError = error
+
+    render(
+      <SingleEditorView
+        editor={createEditor() as never}
+        entries={[makeEntry()]}
+        onNavigateWikilink={vi.fn()}
+        onRecoveryFallback={onRecoveryFallback}
+      />,
+      { wrapper: TooltipProvider },
+    )
+
+    await waitFor(() => {
+      expect(onRecoveryFallback).toHaveBeenCalledOnce()
+    })
+    expect(onRecoveryFallback).toHaveBeenCalledWith('react_update_depth_exceeded')
+  })
+
   it('contains a persistent render-time invalid array length without unmounting the vault shell', async () => {
     const error = new RangeError('Invalid array length')
     const caughtRecoveryMarks: boolean[] = []

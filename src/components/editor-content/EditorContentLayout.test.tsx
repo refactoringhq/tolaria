@@ -1,5 +1,5 @@
 import { createRef } from 'react'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { EditorContentLayout } from './EditorContentLayout'
 
@@ -47,23 +47,33 @@ vi.mock('../SheetEditor', () => ({
 }))
 
 vi.mock('../SingleEditorView', () => ({
-  SingleEditorView: () => <div data-testid="single-editor-view" />,
+  SingleEditorView: ({ onRecoveryFallback }: { onRecoveryFallback?: (reason: string) => void }) => (
+    <button
+      data-testid="single-editor-view"
+      onClick={() => onRecoveryFallback?.('react_update_depth_exceeded')}
+      type="button"
+    />
+  ),
 }))
 
 vi.mock('../DiffView', () => ({
   DiffView: () => <div data-testid="diff-view" />,
 }))
 
+function createActiveTab() {
+  return {
+    entry: {
+      path: '/vault/project/demo.md',
+      filename: 'demo.md',
+      title: 'Demo Note',
+    },
+    content: 'Body',
+  }
+}
+
 function createModel(overrides: Record<string, unknown> = {}) {
   return {
-    activeTab: {
-      entry: {
-        path: '/vault/project/demo.md',
-        filename: 'demo.md',
-        title: 'Demo Note',
-      },
-      content: 'Body',
-    },
+    activeTab: createActiveTab(),
     isLoadingNewTab: false,
     entries: [],
     editor: {},
@@ -115,6 +125,15 @@ describe('EditorContentLayout', () => {
     expect(container.querySelector('.title-section')).toBeNull()
     expect(screen.queryByTestId('title-field-input')).not.toBeInTheDocument()
     expect(screen.getByTestId('single-editor-view')).toBeInTheDocument()
+  })
+
+  it('switches to raw mode when rich-editor recovery is exhausted', () => {
+    const onToggleRaw = vi.fn()
+    render(<EditorContentLayout {...createModel({ onToggleRaw })} />)
+
+    fireEvent.click(screen.getByTestId('single-editor-view'))
+
+    expect(onToggleRaw).toHaveBeenCalledOnce()
   })
 
   it('does not show stale editor chrome while switching tabs', () => {
