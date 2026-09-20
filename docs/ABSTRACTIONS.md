@@ -481,7 +481,7 @@ The renderer keeps app shortcuts platform-exact where they overlap with native d
 5. Sorts by `modified_at` descending
 6. Skips unparseable files with a warning log
 
-All Notes starts from Markdown notes and excludes Markdown files under `attachments/`. `src/utils/allNotesFileVisibility.ts` resolves the installation-local PDF, image, and unsupported-file toggles from app settings; `noteListHelpers` applies that policy only to All Notes filtering and counts. Folder/root browsing continues to show files from the selected folder independently of those All Notes toggles.
+All Notes and Inbox share the same Markdown-note eligibility rule: Markdown files under `attachments/`, at any nesting depth, remain asset content rather than notes. `src/utils/allNotesFileVisibility.ts` resolves the installation-local PDF, image, and unsupported-file toggles from app settings; `noteListHelpers` applies those optional file-category settings only to All Notes filtering and counts. Folder/root browsing continues to show files from the selected folder independently of the built-in note collections.
 
 The folder tree hides the legacy `type/` directory, since those type documents already appear through the Types sidebar section. Default vault folders such as `attachments/` and `views/` remain visible alongside user-created folders under the synthetic vault-root row.
 

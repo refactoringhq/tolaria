@@ -189,13 +189,19 @@ function comparePropertyValues(a: unknown, b: unknown): number {
   return sa.localeCompare(sb)
 }
 
+function compareNullishValues(a: unknown, b: unknown): number | null {
+  if (a == null && b == null) return 0
+  if (a == null) return 1
+  if (b == null) return -1
+  return null
+}
+
 function makePropertyComparator(key: string, flip: number): (a: VaultEntry, b: VaultEntry) => number {
   return (a, b) => {
     const va = Reflect.get(a.properties, key) ?? null
     const vb = Reflect.get(b.properties, key) ?? null
-    if (va == null && vb == null) return 0
-    if (va == null) return 1
-    if (vb == null) return -1
+    const nullishComparison = compareNullishValues(va, vb)
+    if (nullishComparison !== null) return nullishComparison
     return flip * comparePropertyValues(va, vb)
   }
 }
@@ -463,11 +469,15 @@ function normalizeFolderPath(path: string): string {
   return path.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '')
 }
 
+function isVisibleMarkdownNote(entry: VaultEntry): boolean {
+  return isMarkdown(entry) && !isInFolder(entry.path, ATTACHMENTS_FOLDER)
+}
+
 export function isAllNotesEntry(
   entry: VaultEntry,
   allNotesFileVisibility: AllNotesFileVisibility = DEFAULT_ALL_NOTES_FILE_VISIBILITY,
 ): boolean {
-  if (isMarkdown(entry)) return !isInFolder(entry.path, ATTACHMENTS_FOLDER)
+  if (isMarkdown(entry)) return isVisibleMarkdownNote(entry)
   return isOptionalAllNotesFileVisible(entry, allNotesFileVisibility)
 }
 
@@ -602,7 +612,7 @@ export function countAllNotesByFilter(
 
 /** Check if entry belongs in the Inbox (markdown only, not organized, not archived, not a Type). */
 export function isInboxEntry(entry: VaultEntry): boolean {
-  if (!isMarkdown(entry)) return false
+  if (!isVisibleMarkdownNote(entry)) return false
   if (entry.archived) return false
   if (entry.isA === 'Type') return false
   return !entry.organized
