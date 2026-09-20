@@ -23,7 +23,10 @@ const BUILT_IN_FIELD_READERS = new Map<string, BuiltInFieldReader>([
 
 /** Evaluate a view's filters against a list of entries, returning only matches. */
 export function evaluateView(definition: ViewDefinition, entries: VaultEntry[]): VaultEntry[] {
-  return entries.filter((e) => !e.archived && evaluateGroup(definition.filters, e))
+  const evaluatesArchivedField = groupReferencesField(definition.filters, 'archived')
+  return entries.filter((entry) =>
+    (evaluatesArchivedField || !entry.archived) && evaluateGroup(definition.filters, entry),
+  )
 }
 
 function evaluateGroup(group: FilterGroup, entry: VaultEntry): boolean {
@@ -34,6 +37,15 @@ function evaluateGroup(group: FilterGroup, entry: VaultEntry): boolean {
 
 function isFilterGroup(node: FilterNode): node is FilterGroup {
   return 'all' in node || 'any' in node
+}
+
+function groupReferencesField(group: FilterGroup, field: string): boolean {
+  const nodes = 'all' in group ? group.all : group.any
+  return nodes.some((node) =>
+    isFilterGroup(node)
+      ? groupReferencesField(node, field)
+      : node.field.toLowerCase() === field,
+  )
 }
 
 function evaluateNode(node: FilterNode, entry: VaultEntry): boolean {

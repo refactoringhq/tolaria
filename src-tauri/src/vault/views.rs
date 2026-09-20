@@ -255,10 +255,14 @@ pub fn delete_view(vault_path: &Path, filename: &str) -> Result<(), String> {
 
 /// Evaluate a view definition against vault entries, returning indices of matching entries.
 pub fn evaluate_view(definition: &ViewDefinition, entries: &[VaultEntry]) -> Vec<usize> {
+    let evaluates_archived_field = group_references_field(&definition.filters, "archived");
     entries
         .iter()
         .enumerate()
-        .filter(|(_, entry)| evaluate_group(&definition.filters, entry))
+        .filter(|(_, entry)| {
+            (evaluates_archived_field || !entry.archived)
+                && evaluate_group(&definition.filters, entry)
+        })
         .map(|(i, _)| i)
         .collect()
 }
@@ -275,6 +279,16 @@ fn evaluate_node(node: &FilterNode, entry: &VaultEntry) -> bool {
         FilterNode::Condition(cond) => evaluate_condition(cond, entry),
         FilterNode::Group(group) => evaluate_group(group, entry),
     }
+}
+
+fn group_references_field(group: &FilterGroup, field: &str) -> bool {
+    let nodes = match group {
+        FilterGroup::All(nodes) | FilterGroup::Any(nodes) => nodes,
+    };
+    nodes.iter().any(|node| match node {
+        FilterNode::Condition(condition) => condition.field == field,
+        FilterNode::Group(nested) => group_references_field(nested, field),
+    })
 }
 
 fn build_regex(pattern: &str) -> Option<regex::Regex> {

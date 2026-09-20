@@ -112,6 +112,21 @@ describe('evaluateView', () => {
     expectFilterTitles({ field: 'type', op: 'equals', value: 'Note' }, entries, ['Active'], 'All')
   })
 
+  it('includes archived entries when a nested filter explicitly requests them', () => {
+    const view = makeView({
+      all: [
+        { field: 'type', op: 'equals', value: 'Note' },
+        { any: [{ field: 'archived', op: 'equals', value: true }] },
+      ],
+    })
+    const entries = [
+      makeEntry({ isA: 'Note', title: 'Active' }),
+      makeEntry({ isA: 'Note', title: 'Archived', archived: true }),
+    ]
+
+    expect(titlesFor(view, entries)).toEqual(['Archived'])
+  })
+
   it('filters by property field', () => {
     const entries = [
       makeEntry({ title: 'Match', properties: { Owner: 'Luca' } }),
