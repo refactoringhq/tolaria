@@ -1,8 +1,51 @@
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import type { VaultEntry } from '../../types'
 import type { FrontmatterOpOptions } from '../../hooks/frontmatterOps'
+import { isUntitledPath } from '../../hooks/editorTabContent'
+import { notePathsMatch } from '../../utils/notePathIdentity'
 
 type FrontmatterValue = string | number | boolean | string[] | null
+type ReplayMutation = (entry: VaultEntry) => Promise<unknown>
+
+const PATH_CHANGE_REPLAY_WINDOW_MS = 5_000
+
+interface PendingPathChangeReplay {
+  createdAt: number | null
+  path: string
+  replay: ReplayMutation
+  title: string
+  timeout: ReturnType<typeof setTimeout>
+}
+
+let pendingPathChangeReplay: PendingPathChangeReplay | null = null
+
+function clearPendingPathChangeReplay(): void {
+  const pending = pendingPathChangeReplay
+  pendingPathChangeReplay = null
+  if (pending) clearTimeout(pending.timeout)
+}
+
+function schedulePathChangeReplay(entry: VaultEntry, replay: ReplayMutation): void {
+  clearPendingPathChangeReplay()
+  const timeout = setTimeout(() => {
+    if (pendingPathChangeReplay?.replay === replay) pendingPathChangeReplay = null
+  }, PATH_CHANGE_REPLAY_WINDOW_MS)
+  pendingPathChangeReplay = {
+    createdAt: entry.createdAt,
+    path: entry.path,
+    replay,
+    title: entry.title,
+    timeout,
+  }
+}
+
+function replayMatchesEntry(pending: PendingPathChangeReplay, entry: VaultEntry): boolean {
+  const creationTimeMatches = pending.createdAt !== null
+    && entry.createdAt !== null
+    && pending.createdAt === entry.createdAt
+  return pending.title === entry.title
+    && (creationTimeMatches || isUntitledPath(pending.path))
+}
 
 interface InspectorPropertyActionsConfig {
   entry: VaultEntry | null
@@ -19,27 +62,39 @@ function activeEntryOptions(entry: VaultEntry): FrontmatterOpOptions {
 function bindUpdateAction(
   entry: VaultEntry | null,
   action: InspectorPropertyActionsConfig['onUpdateFrontmatter'],
+  scheduleReplay: (entry: VaultEntry, replay: ReplayMutation) => void,
   options: (entry: VaultEntry) => FrontmatterOpOptions | undefined = activeEntryOptions,
 ) {
   if (!entry || !action) return undefined
-  return (key: string, value: FrontmatterValue) => action(entry.path, key, value, options(entry))
+  return (key: string, value: FrontmatterValue) => {
+    scheduleReplay(entry, (nextEntry) => action(nextEntry.path, key, value, options(nextEntry)))
+    return action(entry.path, key, value, options(entry))
+  }
 }
 
 function bindDeleteAction(
   entry: VaultEntry | null,
   action: InspectorPropertyActionsConfig['onDeleteProperty'],
+  scheduleReplay: (entry: VaultEntry, replay: ReplayMutation) => void,
 ) {
   if (!entry || !action) return undefined
-  return (key: string) => action(entry.path, key, activeEntryOptions(entry))
+  return (key: string) => {
+    scheduleReplay(entry, (nextEntry) => action(nextEntry.path, key, activeEntryOptions(nextEntry)))
+    return action(entry.path, key, activeEntryOptions(entry))
+  }
 }
 
 function bindAddAction(
   entry: VaultEntry | null,
   action: InspectorPropertyActionsConfig['onAddProperty'],
+  scheduleReplay: (entry: VaultEntry, replay: ReplayMutation) => void,
   options: (entry: VaultEntry) => FrontmatterOpOptions | undefined = activeEntryOptions,
 ) {
   if (!entry || !action) return undefined
-  return (key: string, value: FrontmatterValue) => action(entry.path, key, value, options(entry))
+  return (key: string, value: FrontmatterValue) => {
+    scheduleReplay(entry, (nextEntry) => action(nextEntry.path, key, value, options(nextEntry)))
+    return action(entry.path, key, value, options(entry))
+  }
 }
 
 function bindMissingTypeAction(
@@ -51,6 +106,29 @@ function bindMissingTypeAction(
   return (nextTypeName: string) => action(entry.path, missingType, nextTypeName)
 }
 
+function usePathChangeMutationReplay(entry: VaultEntry | null) {
+  useEffect(() => {
+    const pending = pendingPathChangeReplay
+    if (
+      !entry
+      || !pending
+      || !replayMatchesEntry(pending, entry)
+      || notePathsMatch(entry.path, pending.path)
+    ) return
+    clearPendingPathChangeReplay()
+    setTimeout(() => {
+      void pending.replay(entry).catch((error) => {
+        console.error('Failed to replay property mutation after note rename:', error)
+      })
+    }, 0)
+  }, [entry])
+
+  return useCallback(
+    (currentEntry: VaultEntry, replay: ReplayMutation) => schedulePathChangeReplay(currentEntry, replay),
+    [],
+  )
+}
+
 export function useInspectorPropertyActions({
   entry,
   onUpdateFrontmatter,
@@ -58,25 +136,26 @@ export function useInspectorPropertyActions({
   onAddProperty,
   onCreateMissingType,
 }: InspectorPropertyActionsConfig) {
+  const schedulePathChangeReplay = usePathChangeMutationReplay(entry)
   const handleUpdateProperty = useMemo(
-    () => bindUpdateAction(entry, onUpdateFrontmatter),
-    [entry, onUpdateFrontmatter],
+    () => bindUpdateAction(entry, onUpdateFrontmatter, schedulePathChangeReplay),
+    [entry, onUpdateFrontmatter, schedulePathChangeReplay],
   )
   const handleUpdatePropertyAfterCreate = useMemo(
-    () => bindUpdateAction(entry, onUpdateFrontmatter, () => undefined),
-    [entry, onUpdateFrontmatter],
+    () => bindUpdateAction(entry, onUpdateFrontmatter, schedulePathChangeReplay, () => undefined),
+    [entry, onUpdateFrontmatter, schedulePathChangeReplay],
   )
   const handleDeleteProperty = useMemo(
-    () => bindDeleteAction(entry, onDeleteProperty),
-    [entry, onDeleteProperty],
+    () => bindDeleteAction(entry, onDeleteProperty, schedulePathChangeReplay),
+    [entry, onDeleteProperty, schedulePathChangeReplay],
   )
   const handleAddProperty = useMemo(
-    () => bindAddAction(entry, onAddProperty),
-    [entry, onAddProperty],
+    () => bindAddAction(entry, onAddProperty, schedulePathChangeReplay),
+    [entry, onAddProperty, schedulePathChangeReplay],
   )
   const handleAddPropertyAfterCreate = useMemo(
-    () => bindAddAction(entry, onAddProperty, () => undefined),
-    [entry, onAddProperty],
+    () => bindAddAction(entry, onAddProperty, schedulePathChangeReplay, () => undefined),
+    [entry, onAddProperty, schedulePathChangeReplay],
   )
   const handleCreateMissingType = useMemo(
     () => bindMissingTypeAction(entry, onCreateMissingType),
