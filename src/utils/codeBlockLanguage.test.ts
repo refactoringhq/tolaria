@@ -43,6 +43,12 @@ describe('code block language inference', () => {
         content: [{ type: 'text', text: 'MsgBox "Hello"' }],
         children: [],
       },
+      ...['sh', 'shell', 'shellscript', 'zsh'].map((language) => ({
+        type: 'codeBlock',
+        props: { language },
+        content: [{ type: 'text', text: 'echo "$HOME"' }],
+        children: [],
+      })),
     ])
 
     expect(blocks[0]).toMatchObject({
@@ -51,6 +57,12 @@ describe('code block language inference', () => {
     expect(blocks[1]).toMatchObject({
       props: { language: 'vbscript' },
     })
+    expect(blocks.slice(2)).toEqual(expect.arrayContaining([
+      expect.objectContaining({ props: { language: 'bash' } }),
+    ]))
+    expect(blocks.slice(2).every((block) => (
+      (block as { props?: { language?: string } }).props?.language === 'bash'
+    ))).toBe(true)
   })
 
   it('leaves unsupported explicit code block languages unchanged', () => {

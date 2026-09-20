@@ -14,6 +14,7 @@ export const GO_CODE_BLOCK_LANGUAGE = {
 } as const satisfies CodeBlockLanguageCatalogEntry
 
 export const EXTRA_CODE_BLOCK_LANGUAGES = [
+  { id: 'bash', name: 'Bash', aliases: ['bash', 'sh', 'shell', 'shellscript', 'zsh'] },
   { id: 'powershell', name: 'PowerShell', aliases: ['powershell', 'ps', 'ps1'] },
   { id: 'vbscript', name: 'VBScript', aliases: ['vbscript', 'vbs', 'vb', 'vba', 'visual-basic', 'visualbasic'] },
   { id: 'dart', name: 'Dart', aliases: ['dart'] },

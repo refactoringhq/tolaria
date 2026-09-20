@@ -62,6 +62,10 @@ type TolariaNamedLanguageRegistration = Record<string, unknown> & {
 
 const GO_LANGUAGE = codeBlockLanguageOptions([GO_CODE_BLOCK_LANGUAGE]).go
 const EXTRA_SUPPORTED_LANGUAGES = codeBlockLanguageOptions(EXTRA_CODE_BLOCK_LANGUAGES)
+const DEFAULT_SUPPORTED_LANGUAGES = Object.fromEntries(
+  Object.entries(codeBlockOptions.supportedLanguages ?? {})
+    .filter(([language]) => language !== 'shellscript'),
+)
 
 function currentCodeBlockTheme() {
   if (typeof document === 'undefined') return LIGHT_CODE_THEME
@@ -181,7 +185,7 @@ export function createTolariaCodeBlockOptions(): Partial<CodeBlockOptions> {
     createHighlighter: createTolariaCodeHighlighter,
     defaultLanguage: 'text',
     supportedLanguages: {
-      ...codeBlockOptions.supportedLanguages,
+      ...DEFAULT_SUPPORTED_LANGUAGES,
       go: GO_LANGUAGE,
       ...EXTRA_SUPPORTED_LANGUAGES,
     },

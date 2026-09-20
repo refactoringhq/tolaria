@@ -65,6 +65,7 @@ describe('CodeBlockLanguageControls', () => {
     await waitFor(() => expect(trigger).toBeEnabled())
 
     fireEvent.click(trigger)
+    expect(await screen.findByRole('option', { name: 'Bash' })).toBeVisible()
     fireEvent.click(await screen.findByRole('option', { name: 'C++' }))
 
     expect(editor.updateBlock).toHaveBeenCalledWith('code-block-1', {
