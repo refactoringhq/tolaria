@@ -33,6 +33,11 @@ function codeBlockDom() {
 describe('CodeBlockLanguageControls', () => {
   it('replaces a stale disabled native picker with a live shadcn language control', async () => {
     const { editorElement, nativeControl } = codeBlockDom()
+    const controlRect = vi.spyOn(nativeControl, 'getBoundingClientRect').mockReturnValue({
+      height: 28,
+      left: 12,
+      top: 24,
+    } as DOMRect)
     editorElement.remove()
     const editor = {
       domElement: editorElement.parentElement,
@@ -54,9 +59,26 @@ describe('CodeBlockLanguageControls', () => {
       if (!control || control.tagName !== 'BUTTON') throw new Error('Language trigger was unavailable')
       return control
     })
-    expect(trigger.closest('[data-code-block-id]')).toHaveAttribute('data-code-block-id', 'code-block-1')
+    const overlay = trigger.closest('[data-code-block-id]')
+    expect(overlay).toHaveAttribute('data-code-block-id', 'code-block-1')
+    expect(overlay?.parentElement).toBe(document.body)
+    expect(overlay).toHaveStyle({ left: '12px', minHeight: '28px', top: '24px' })
     expect(trigger).toBeDisabled()
     expect(nativeControl).toBeDisabled()
+
+    const scrollFrames: FrameRequestCallback[] = []
+    const frame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      scrollFrames.push(callback)
+      return scrollFrames.length
+    })
+    controlRect.mockReturnValue({ height: 28, left: 36, top: 8 } as DOMRect)
+    editor.getBlock.mockClear()
+    fireEvent.scroll(editorElement)
+    expect(scrollFrames).toHaveLength(1)
+    act(() => scrollFrames.shift()?.(0))
+    expect(editor.getBlock).not.toHaveBeenCalled()
+    expect(overlay).toHaveStyle({ left: '36px', minHeight: '28px', top: '8px' })
+    frame.mockRestore()
 
     await act(async () => {
       editor.isEditable = true

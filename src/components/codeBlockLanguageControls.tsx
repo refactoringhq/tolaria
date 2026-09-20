@@ -24,7 +24,7 @@ type CodeBlockLanguageTarget = {
   top: number
 }
 
-type LanguageSelectControl = Element & { value: string }
+type LanguageSelectControl = HTMLSelectElement
 
 const NATIVE_LANGUAGE_CONTROL_SELECTOR =
   '.bn-block-content[data-content-type="codeBlock"] > div > select'
@@ -81,6 +81,23 @@ function sameTargets(current: CodeBlockLanguageTarget[], next: CodeBlockLanguage
   return JSON.stringify(current) === JSON.stringify(next)
 }
 
+function languageOverlayId(blockId: string): string {
+  return `tolaria-code-language-${blockId}`
+}
+
+function repositionCodeBlockLanguageOverlays(): void {
+  document.querySelectorAll<LanguageSelectControl>(NATIVE_LANGUAGE_CONTROL_SELECTOR)
+    .forEach((nativeControl) => {
+      const blockId = nativeControl.closest(BLOCK_CONTAINER_SELECTOR)?.getAttribute('data-id')
+      const overlay = blockId ? document.getElementById(languageOverlayId(blockId)) : null
+      if (!overlay) return
+      const rect = nativeControl.getBoundingClientRect()
+      overlay.style.left = `${rect.left}px`
+      overlay.style.minHeight = `${rect.height}px`
+      overlay.style.top = `${rect.top}px`
+    })
+}
+
 function addedNodeTouchesEditor(node: Node): boolean {
   if (node.nodeType !== ELEMENT_NODE) return false
   const element = node as Element
@@ -98,12 +115,20 @@ function useCodeBlockLanguageTargets(editor: CodeBlockLanguageEditor) {
 
   useEffect(() => {
     let refreshFrame: number | null = null
+    let repositionFrame: number | null = null
     const refresh = () => {
       if (refreshFrame !== null) return
       refreshFrame = requestAnimationFrame(() => {
         refreshFrame = null
         const nextTargets = codeBlockLanguageTargets(editor)
         setTargets((current) => sameTargets(current, nextTargets) ? current : nextTargets)
+      })
+    }
+    const reposition = () => {
+      if (repositionFrame !== null) return
+      repositionFrame = requestAnimationFrame(() => {
+        repositionFrame = null
+        repositionCodeBlockLanguageOverlays()
       })
     }
     const observer = new MutationObserver((mutations) => {
@@ -117,15 +142,16 @@ function useCodeBlockLanguageTargets(editor: CodeBlockLanguageEditor) {
     })
     const unsubscribe = editor.onChange?.(refresh) ?? (() => {})
     window.addEventListener('resize', refresh)
-    document.addEventListener('scroll', refresh, true)
+    document.addEventListener('scroll', reposition, true)
     refresh()
 
     return () => {
       if (refreshFrame !== null) cancelAnimationFrame(refreshFrame)
+      if (repositionFrame !== null) cancelAnimationFrame(repositionFrame)
       observer.disconnect()
       unsubscribe()
       window.removeEventListener('resize', refresh)
-      document.removeEventListener('scroll', refresh, true)
+      document.removeEventListener('scroll', reposition, true)
     }
   }, [editor])
 
@@ -187,6 +213,7 @@ export function CodeBlockLanguageControls({ editor }: { editor: CodeBlockLanguag
 
   return targets.map((target) => createPortal(
     <div
+      id={languageOverlayId(target.blockId)}
       className="editor__code-block-language-overlay"
       data-code-block-id={target.blockId}
       style={{ left: target.left, minHeight: target.height, top: target.top }}
