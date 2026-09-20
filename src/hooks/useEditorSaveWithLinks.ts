@@ -1,7 +1,8 @@
 import { startTransition, useCallback, useEffect, useRef, type MutableRefObject } from 'react'
+import { flushSync } from 'react-dom'
 import { useEditorSave } from './useEditorSave'
 import { extractOutgoingLinks, extractSnippet, countWords, splitFrontmatter } from '../utils/wikilinks'
-import { deriveRawEditorEntryState } from './rawEditorEntryState'
+import { deriveLiveTypeTemplatePatch, deriveRawEditorEntryState } from './rawEditorEntryState'
 import { deriveDisplayTitleState } from '../utils/noteTitle'
 import { detectFrontmatterState } from '../utils/frontmatter'
 import { notePathFilename } from '../utils/notePathIdentity'
@@ -239,9 +240,13 @@ export function useEditorSaveWithLinks(config: {
   const editor = useEditorSave({ ...config, updateVaultContent: saveContent })
   const { handleContentChange: rawOnChange } = editor
   const handleContentChange = useCallback((path: string, content: string) => {
+    const typeTemplatePatch = deriveLiveTypeTemplatePatch(content)
+    if (typeTemplatePatch) {
+      flushSync(() => updateEntry(path, typeTemplatePatch))
+    }
     rawOnChange(path, content)
     scheduleMetadataSync(path, content, false)
-  }, [rawOnChange, scheduleMetadataSync])
+  }, [rawOnChange, scheduleMetadataSync, updateEntry])
 
   useEffect(() => () => {
     pendingMetadataSyncRef.current = null

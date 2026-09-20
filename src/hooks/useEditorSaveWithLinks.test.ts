@@ -274,6 +274,72 @@ describe('useEditorSaveWithLinks', () => {
     })
   })
 
+  describe('Type body template metadata', () => {
+    it('publishes an edited Type body template before deferred metadata settles', () => {
+      const { result } = renderHookWithLinks()
+
+      act(() => {
+        result.current.handleContentChange(
+          '/project.md',
+          '---\ntype: Type\n---\n# Project\n\n## Immediate template\n',
+        )
+      })
+
+      expect(updateEntry).toHaveBeenCalledWith('/project.md', {
+        template: '## Immediate template',
+      })
+    })
+
+    it('keeps a Type note body template live after editing the note', () => {
+      const { result } = renderHookWithLinks()
+
+      act(() => {
+        result.current.handleContentChange(
+          '/project.md',
+          '---\ntype: Type\n---\n# Project\n\n## Overview\n\n- [ ] First step\n',
+        )
+      })
+      flushDeferredMetadata()
+
+      expect(updateEntry).toHaveBeenCalledWith('/project.md', expect.objectContaining({
+        isA: 'Type',
+        template: '## Overview\n\n- [ ] First step',
+      }))
+    })
+
+    it('keeps an explicit Type template ahead of a template-shaped body', () => {
+      const { result } = renderHookWithLinks()
+
+      act(() => {
+        result.current.handleContentChange(
+          '/project.md',
+          '---\ntype: Type\ntemplate: Explicit template\n---\n# Project\n\n## Body template\n',
+        )
+      })
+      flushDeferredMetadata()
+
+      expect(updateEntry).toHaveBeenCalledWith('/project.md', expect.objectContaining({
+        template: 'Explicit template',
+      }))
+    })
+
+    it('does not turn descriptive Type documentation into a note template', () => {
+      const { result } = renderHookWithLinks()
+
+      act(() => {
+        result.current.handleContentChange(
+          '/project.md',
+          '---\ntype: Type\n---\n# Project\n\nProjects describe coordinated work.\n',
+        )
+      })
+      flushDeferredMetadata()
+
+      expect(updateEntry).toHaveBeenCalledWith('/project.md', expect.objectContaining({
+        template: null,
+      }))
+    })
+  })
+
   it('syncs custom relationships and properties from raw frontmatter immediately', () => {
     const { result } = renderHookWithLinks()
 

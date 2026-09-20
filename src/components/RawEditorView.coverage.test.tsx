@@ -217,6 +217,21 @@ describe('RawEditorView additional coverage', () => {
     expect(onContentChange).toHaveBeenCalledWith('/vault/raw-note.md', 'draft 4')
   })
 
+  it('flushes a pending edit before a raw-editor focus change can trigger another action', () => {
+    vi.useFakeTimers()
+    const onContentChange = vi.fn()
+    renderView({ onContentChange })
+
+    act(() => {
+      latestCallbacks?.onDocChange('type template draft')
+    })
+    expect(onContentChange).not.toHaveBeenCalled()
+
+    fireEvent.focusOut(screen.getByTestId('raw-editor-codemirror'))
+
+    expect(onContentChange).toHaveBeenCalledWith('/vault/raw-note.md', 'type template draft')
+  })
+
   it('renders YAML errors from the parser result', () => {
     detectYamlErrorMock.mockReturnValue('Missing closing delimiter')
 

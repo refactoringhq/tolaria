@@ -1,6 +1,32 @@
 import type { VaultEntry, VaultPropertyValue } from '../types'
 import { parseFrontmatter } from '../utils/frontmatter'
+import { splitFrontmatter } from '../utils/wikilinks'
 import { frontmatterToEntryPatch, type PropertiesPatch } from './frontmatterOps'
+
+const TYPE_DOCUMENT_FRONTMATTER = /(?:^|\n)\s*(?:type|is_a|is a)\s*:\s*["']?Type["']?\s*(?:\n|$)/i
+
+function isTemplateField(line: string): boolean {
+  const trimmed = line.trim()
+  if (!trimmed.endsWith(':')) return false
+  const label = trimmed.slice(0, -1).trim()
+  return label.length > 0 && !label.startsWith('-')
+}
+
+function isStructuredTemplateLine(line: string): boolean {
+  const trimmed = line.trimStart()
+  return trimmed.startsWith('## ') || trimmed.startsWith('- [ ] ') || isTemplateField(trimmed)
+}
+
+function bodyTemplate(content: string): string | null {
+  const [, body] = splitFrontmatter(content)
+  const trimmedBody = body.trimStart()
+  const lineBreak = trimmedBody.indexOf('\n')
+  const firstLine = (lineBreak === -1 ? trimmedBody : trimmedBody.slice(0, lineBreak)).replace(/\r$/, '')
+  if (!firstLine.startsWith('# ') || firstLine.slice(2).trim().length === 0) return null
+
+  const template = (lineBreak === -1 ? '' : trimmedBody.slice(lineBreak + 1)).trim()
+  return template.split('\n').some(isStructuredTemplateLine) ? template : null
+}
 
 function createRawEditorEntryState(): Partial<VaultEntry> {
   return {
@@ -58,5 +84,16 @@ export function deriveRawEditorEntryState(content: string): Partial<VaultEntry> 
 
   derived.properties = properties
   derived.relationships = relationships
+  if (derived.isA === 'Type' && derived.template === null) {
+    derived.template = bodyTemplate(content)
+  }
   return derived
+}
+
+export function deriveLiveTypeTemplatePatch(content: string): Pick<VaultEntry, 'template'> | null {
+  const [frontmatter] = splitFrontmatter(content)
+  if (!TYPE_DOCUMENT_FRONTMATTER.test(frontmatter)) return null
+
+  const state = deriveRawEditorEntryState(content)
+  return state.isA === 'Type' ? { template: state.template ?? null } : null
 }

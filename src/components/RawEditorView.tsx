@@ -145,6 +145,7 @@ function RawEditorAutocompleteDropdown({
 }
 
 type RawEditorPendingChanges = PendingChangeRefs & {
+  flush: () => void
   handleDocChange: (doc: string) => void
   handleSave: () => void
   yamlError: string | null
@@ -188,29 +189,25 @@ function useRawEditorPendingChanges({
     [onContentChangeRef, pathRef],
   )
 
-  const handleSave = useCallback(() => {
+  const flush = useCallback(() => {
     flushPendingRawEditorChange({
       debounceRef,
       latestDocRef,
       onContentChangeRef,
       pathRef,
     })
-    onSaveRef.current()
-  }, [onContentChangeRef, onSaveRef, pathRef])
-
-  useEffect(() => {
-    return () => {
-      flushPendingRawEditorChange({
-        debounceRef,
-        latestDocRef,
-        onContentChangeRef,
-        pathRef,
-      })
-    }
   }, [onContentChangeRef, pathRef])
+
+  const handleSave = useCallback(() => {
+    flush()
+    onSaveRef.current()
+  }, [flush, onSaveRef])
+
+  useEffect(() => flush, [flush])
 
   return {
     debounceRef,
+    flush,
     handleDocChange,
     handleSave,
     latestDocRef,
@@ -537,20 +534,27 @@ function useRawEditorDomEvents(
   rootRef: React.RefObject<HTMLDivElement | null>,
   activatePlainTextPaste: () => void,
   handleAutocompleteKey: (event: KeyboardEvent) => void,
+  flushPendingChange: () => void,
 ): void {
   useEffect(() => {
     const root = rootRef.current
     if (!root) return
     const handleKeyDown = (event: KeyboardEvent) => handleAutocompleteKey(event)
+    const handleFocusOut = (event: FocusEvent) => {
+      if (event.relatedTarget instanceof Node && root.contains(event.relatedTarget)) return
+      flushPendingChange()
+    }
     root.addEventListener('focusin', activatePlainTextPaste)
+    root.addEventListener('focusout', handleFocusOut)
     root.addEventListener('mousedown', activatePlainTextPaste, { capture: true })
     root.addEventListener('keydown', handleKeyDown)
     return () => {
       root.removeEventListener('focusin', activatePlainTextPaste)
+      root.removeEventListener('focusout', handleFocusOut)
       root.removeEventListener('mousedown', activatePlainTextPaste, { capture: true })
       root.removeEventListener('keydown', handleKeyDown)
     }
-  }, [activatePlainTextPaste, handleAutocompleteKey, rootRef])
+  }, [activatePlainTextPaste, flushPendingChange, handleAutocompleteKey, rootRef])
 }
 
 function useRawEditorContentSync(options: {
@@ -604,8 +608,44 @@ function RawEditorSurface(options: RawEditorSurfaceProps) {
   )
 }
 
-export function RawEditorView(options: RawEditorViewProps) {
-  const { content, entries, findRequest, latestContentRef, locale = 'en', onContentChange, onImageImportResult, onSave, path, sourceEntry, vaultPath } = options
+function useRawEditorViewRef(options: {
+  autocompleteController: ReturnType<typeof useRawEditorAutocompleteController>
+  containerRef: React.RefObject<HTMLDivElement | null>
+  content: string
+  findOpen: boolean
+  path: string
+  pendingChanges: ReturnType<typeof useRawEditorPendingChanges>
+  setFindOpen: React.Dispatch<React.SetStateAction<boolean>>
+  setRawDoc: React.Dispatch<React.SetStateAction<string>>
+}) {
+  const { autocompleteController, containerRef, content, findOpen, path, pendingChanges, setFindOpen, setRawDoc } = options
+  const handleDocChange = useCallback((doc: string) => {
+    setRawDoc(doc)
+    pendingChanges.handleDocChange(doc)
+  }, [pendingChanges, setRawDoc])
+  const handleEscape = useCallback(() => {
+    if (autocompleteController.handleEscape()) return true
+    if (!findOpen) return false
+
+    setFindOpen(false)
+    return true
+  }, [autocompleteController, findOpen, setFindOpen])
+
+  return useCodeMirror(
+    containerRef,
+    content,
+    {
+      onDocChange: handleDocChange,
+      onCursorActivity: autocompleteController.handleCursorActivity,
+      onSave: pendingChanges.handleSave,
+      onEscape: handleEscape,
+    },
+    path,
+  )
+}
+
+function useRawEditorState(options: RawEditorViewProps) {
+  const { content, entries, findRequest, latestContentRef, locale = 'en', onContentChange, onSave, path, sourceEntry, vaultPath } = options
   const rootRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [rawDoc, setRawDoc] = useState(content)
@@ -619,40 +659,60 @@ export function RawEditorView(options: RawEditorViewProps) {
     onSave,
     path,
   })
-  const {
-    autocomplete,
-    handleAutocompleteKey,
-    handleCursorActivity,
-    handleEscape: handleAutocompleteEscape,
-    handleItemHover,
-    insertWikilinkRef,
-    setAutocomplete,
-  } = useRawEditorAutocompleteController({ entries, sourceEntry, vaultPath })
-  const handleDocChange = useCallback(
-    (doc: string) => {
-    setRawDoc(doc)
-    pendingChanges.handleDocChange(doc)
-    },
-    [pendingChanges],
-  )
-  const handleEscape = useCallback(() => {
-    if (handleAutocompleteEscape()) return true
-    if (!findOpen) return false
-
-    setFindOpen(false)
-    return true
-  }, [findOpen, handleAutocompleteEscape])
-  const viewRef = useCodeMirror(
+  const autocompleteController = useRawEditorAutocompleteController({ entries, sourceEntry, vaultPath })
+  const viewRef = useRawEditorViewRef({
+    autocompleteController,
     containerRef,
     content,
-    {
-    onDocChange: handleDocChange,
-    onCursorActivity: handleCursorActivity,
-    onSave: pendingChanges.handleSave,
-    onEscape: handleEscape,
-    },
+    findOpen,
     path,
-  )
+    pendingChanges,
+    setFindOpen,
+    setRawDoc,
+  })
+
+  return {
+    autocomplete: autocompleteController.autocomplete,
+    containerRef,
+    findOpen,
+    findRequest,
+    handleAutocompleteKey: autocompleteController.handleAutocompleteKey,
+    handleItemHover: autocompleteController.handleItemHover,
+    insertWikilinkRef: autocompleteController.insertWikilinkRef,
+    locale,
+    path,
+    pendingChanges,
+    rawDoc,
+    replaceOpen,
+    rootRef,
+    setAutocomplete: autocompleteController.setAutocomplete,
+    setFindOpen,
+    setRawDoc,
+    setReplaceOpen,
+    showFrontmatterWarning,
+    vaultPath,
+    viewRef,
+  }
+}
+
+function useRawEditorEffects(
+  options: RawEditorViewProps,
+  state: ReturnType<typeof useRawEditorState>,
+) {
+  const { content, findRequest, onImageImportResult, path } = options
+  const {
+    containerRef,
+    handleAutocompleteKey,
+    insertWikilinkRef,
+    pendingChanges,
+    rootRef,
+    setAutocomplete,
+    setFindOpen,
+    setRawDoc,
+    setReplaceOpen,
+    vaultPath,
+    viewRef,
+  } = state
   const handleRemoteImagePaste = useRawEditorRemoteImagePaste({
     onImageImportResult,
     vaultPath,
@@ -663,7 +723,7 @@ export function RawEditorView(options: RawEditorViewProps) {
     setAutocomplete,
     viewRef,
   })
-  useRawEditorDomEvents(rootRef, activatePlainTextPaste, handleAutocompleteKey)
+  useRawEditorDomEvents(rootRef, activatePlainTextPaste, handleAutocompleteKey, pendingChanges.flush)
 
   useRawEditorWikilinkInsertion({
     debounceRef: pendingChanges.debounceRef,
@@ -676,24 +736,31 @@ export function RawEditorView(options: RawEditorViewProps) {
   })
 
   useRawEditorContentSync({ content, findRequest, path, setAutocomplete, setFindOpen, setRawDoc, setReplaceOpen })
+  return { handleRemoteImagePaste }
+}
+
+export function RawEditorView(options: RawEditorViewProps) {
+  const state = useRawEditorState(options)
+  const { handleRemoteImagePaste } = useRawEditorEffects(options, state)
+
   return (
     <RawEditorSurface
-      autocomplete={autocomplete}
-      containerRef={containerRef}
-      findOpen={findOpen}
-      findRequest={findRequest}
-      handleItemHover={handleItemHover}
+      autocomplete={state.autocomplete}
+      containerRef={state.containerRef}
+      findOpen={state.findOpen}
+      findRequest={state.findRequest}
+      handleItemHover={state.handleItemHover}
       handleRemoteImagePaste={handleRemoteImagePaste}
-      locale={locale}
-      path={path}
-      pendingChanges={pendingChanges}
-      rawDoc={rawDoc}
-      replaceOpen={replaceOpen}
-      rootRef={rootRef}
-      setFindOpen={setFindOpen}
-      setReplaceOpen={setReplaceOpen}
-      showFrontmatterWarning={showFrontmatterWarning}
-      viewRef={viewRef}
+      locale={state.locale}
+      path={state.path}
+      pendingChanges={state.pendingChanges}
+      rawDoc={state.rawDoc}
+      replaceOpen={state.replaceOpen}
+      rootRef={state.rootRef}
+      setFindOpen={state.setFindOpen}
+      setReplaceOpen={state.setReplaceOpen}
+      showFrontmatterWarning={state.showFrontmatterWarning}
+      viewRef={state.viewRef}
     />
   )
 }
