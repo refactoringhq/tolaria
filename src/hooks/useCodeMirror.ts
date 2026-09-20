@@ -13,6 +13,7 @@ import {
 import { EditorSelection, EditorState, Prec, type SelectionRange } from '@codemirror/state'
 import { defaultKeymap, history, historyKeymap, insertTab } from '@codemirror/commands'
 import { rawEditorLanguageExtensionsForPath } from '../extensions/rawEditorLanguage'
+import { editorFindHighlightExtension } from '../extensions/editorFindHighlight'
 import { RUNTIME_STYLE_NONCE } from '../lib/runtimeStyleNonce'
 import { resolveArrowLigatureInput } from '../utils/arrowLigatures'
 import { zoomCursorFix } from '../extensions/zoomCursorFix'
@@ -364,6 +365,7 @@ export function useCodeMirror(
         buildRawEditorKeymap(),
         buildSaveKeymap(callbacksRef),
         buildBaseTheme(),
+        editorFindHighlightExtension,
         EditorView.cspNonce.of(RUNTIME_STYLE_NONCE),
         EditorView.contentAttributes.of(rawEditorTextInputAttributes),
         rawEditorLanguageExtensionsForPath(sourcePath),

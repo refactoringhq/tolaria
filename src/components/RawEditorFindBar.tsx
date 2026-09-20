@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { EditorView } from '@codemirror/view'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { setEditorFindHighlight } from '../extensions/editorFindHighlight'
 import { cn } from '@/lib/utils'
 import { translate, type AppLocale } from '../lib/i18n'
 import type { FindControlsProps, ReplaceControlsProps } from './rawEditorFindControlTypes'
@@ -63,6 +64,7 @@ function useRequestFocus({
 }
 
 function closeRawEditorFind(onClose: () => void, viewRef: React.MutableRefObject<EditorView | null>): void {
+  viewRef.current?.dispatch({ effects: setEditorFindHighlight.of(null) })
   onClose()
   requestAnimationFrame(() => viewRef.current?.focus())
 }
@@ -88,6 +90,17 @@ function useRequestedEditorFindMatchSelection(
 ): void {
   const { activeMatch, open, requestId, viewRef } = selection
   const handledRequestRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    const view = viewRef.current
+    if (!view) return
+    const highlight = open && activeMatch ? activeMatch : null
+    view.dispatch({ effects: setEditorFindHighlight.of(highlight) })
+  }, [activeMatch, open, viewRef])
+
+  useEffect(() => () => {
+    viewRef.current?.dispatch({ effects: setEditorFindHighlight.of(null) })
+  }, [viewRef])
 
   useEffect(() => {
     if (!open) {
