@@ -154,6 +154,46 @@ describe('streamAiAgent', () => {
     expect(unlistenMock).toHaveBeenCalledTimes(1)
   })
 
+  it('aborts a native process after a streamed terminal error', async () => {
+    isTauriState.value = true
+    const unlistenMock = vi.fn()
+    let eventHandler: ((event: { payload: unknown }) => void) | undefined
+    let finishStream: ((value: string) => void) | undefined
+
+    listenMock.mockImplementation(async (_eventName: string, handler: typeof eventHandler) => {
+      eventHandler = handler
+      return unlistenMock
+    })
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'abort_ai_agent_stream') {
+        finishStream?.('session-auth-error')
+        return true
+      }
+      return new Promise<string>((resolve) => { finishStream = resolve })
+    })
+
+    const callbacks = createCallbacks()
+    const promise = streamAiAgent({
+      agent: 'claude_code',
+      message: 'Explain this',
+      vaultPath: '/vault',
+      callbacks,
+    })
+    await vi.waitFor(() => {
+      expect(finishStream).toBeDefined()
+    })
+
+    eventHandler?.({ payload: { kind: 'Error', message: 'Claude CLI is not authenticated.' } })
+    await promise
+
+    expect(invokeMock).toHaveBeenCalledWith('abort_ai_agent_stream', {
+      eventName: expect.stringMatching(STREAM_EVENT_NAME_PATTERN),
+    })
+    expect(callbacks.onError).toHaveBeenCalledWith('Claude CLI is not authenticated.')
+    expect(callbacks.onDone).toHaveBeenCalledTimes(1)
+    expect(unlistenMock).toHaveBeenCalledTimes(1)
+  })
+
   it('swallows stale native listener cleanup failures after a stream finishes', async () => {
     isTauriState.value = true
     const unlistenMock = vi.fn(() => {

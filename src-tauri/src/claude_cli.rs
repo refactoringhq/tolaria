@@ -315,6 +315,7 @@ where
 }
 
 /// Mutable state accumulated across the JSON stream for a single subprocess.
+#[derive(Default)]
 struct StreamState {
     session_id: String,
     /// Accumulates `input_json_delta` chunks keyed by tool_use id.
@@ -397,12 +398,7 @@ where
         .enumerate();
 
     for (index, attempt_args) in attempts {
-        let mut state = StreamState {
-            session_id: String::new(),
-            tool_inputs: HashMap::new(),
-            current_tool_id: None,
-            emitted_text: false,
-        };
+        let mut state = StreamState::default();
 
         let cmd = build_claude_command(ClaudeCommandRequest {
             bin: request.bin,
@@ -533,15 +529,7 @@ where
     let msg_type = json["type"].as_str().unwrap_or("");
 
     match msg_type {
-        // --- System init → capture session_id ---
-        "system" if json["subtype"].as_str() == Some("init") => {
-            if let Some(sid) = json["session_id"].as_str() {
-                state.session_id = sid.to_string();
-                emit(ClaudeStreamEvent::Init {
-                    session_id: sid.to_string(),
-                });
-            }
-        }
+        "system" => dispatch_system_event(json, state, emit),
 
         // --- Streaming partial events (text deltas, tool_use starts) ---
         "stream_event" => {
@@ -605,6 +593,40 @@ where
 
         _ => {} // ignore other event types
     }
+}
+
+fn dispatch_system_event<F>(json: &serde_json::Value, state: &mut StreamState, emit: &mut F)
+where
+    F: FnMut(ClaudeStreamEvent),
+{
+    match json["subtype"].as_str() {
+        Some("init") => {
+            if let Some(sid) = json["session_id"].as_str() {
+                state.session_id = sid.to_string();
+                emit(ClaudeStreamEvent::Init {
+                    session_id: sid.to_string(),
+                });
+            }
+        }
+        Some("api_retry") if is_authentication_retry(json) => {
+            emit(ClaudeStreamEvent::Error {
+                message:
+                    "Claude CLI is not authenticated. Run `claude auth login` in your terminal."
+                        .into(),
+            });
+        }
+        _ => {}
+    }
+}
+
+fn is_authentication_retry(json: &serde_json::Value) -> bool {
+    let status = json["error_status"].as_u64();
+    let error = json["error"].as_str().unwrap_or("").to_ascii_lowercase();
+
+    matches!(status, Some(401 | 403))
+        || ["authentication", "unauthorized", "forbidden"]
+            .iter()
+            .any(|pattern| error.contains(pattern))
 }
 
 /// Handle a `stream_event` (partial assistant message).
@@ -887,12 +909,7 @@ mod tests {
     }
 
     fn new_state() -> StreamState {
-        StreamState {
-            session_id: String::new(),
-            tool_inputs: HashMap::new(),
-            current_tool_id: None,
-            emitted_text: false,
-        }
+        StreamState::default()
     }
 
     /// Run dispatch_event on the given JSON and return (session_id, events).
@@ -945,6 +962,22 @@ mod tests {
     fn dispatch_event_system_without_init_subtype_is_ignored() {
         let (_, events) = run_dispatch(serde_json::json!({ "type": "system", "subtype": "other" }));
         assert!(events.is_empty());
+    }
+
+    #[test]
+    fn dispatch_event_surfaces_authentication_retry_as_actionable_error() {
+        let (_, events) = run_dispatch(serde_json::json!({
+            "type": "system",
+            "subtype": "api_retry",
+            "error_status": 401,
+            "error": "authentication_failed"
+        }));
+
+        assert!(matches!(
+            events.as_slice(),
+            [ClaudeStreamEvent::Error { message }]
+                if message.contains("not authenticated") && message.contains("claude auth login")
+        ));
     }
 
     #[test]

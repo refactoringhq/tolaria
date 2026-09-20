@@ -38,20 +38,28 @@ export interface StreamAiAgentRequest {
 }
 
 const CONVERSATION_HISTORY_OPEN_MARKER = ['<', 'conversation_history', '>'].join('')
+const USER_HISTORY_LINE_RE = /\[user\]: .+/g
 
 function mockAgentResponse(agent: AiAgentId, message: string): string {
   const agentLabel = getAiAgentDefinition(agent).label
   if (message.indexOf(CONVERSATION_HISTORY_OPEN_MARKER) >= 0) {
-    const allUserLines = message.match(/\[user\]: .+/g) ?? []
-    const turnCount = allUserLines.length
-    const lastLine = allUserLines.at(-1) ?? ''
-    const lastUserMsg = lastLine.replace('[user]: ', '')
-    return `[mock-${agentLabel.toLowerCase()} turns=${turnCount}] You asked: "${lastUserMsg}" — This note is related to [[Build Laputa App]] and [[Matteo Cellini]].`
+    return mockConversationResponse(agentLabel, message)
   }
   return `[mock-${agentLabel.toLowerCase()}] You said: "${message}" — This note is related to [[Build Laputa App]] and [[Matteo Cellini]].`
 }
 
-function handleStreamEvent(data: AiAgentStreamEvent, callbacks: AgentStreamCallbacks): void {
+function mockConversationResponse(agentLabel: string, message: string): string {
+  const allUserLines = message.match(USER_HISTORY_LINE_RE) ?? []
+  const lastLine = allUserLines.at(-1) ?? ''
+  const lastUserMsg = lastLine.replace('[user]: ', '')
+  return `[mock-${agentLabel.toLowerCase()} turns=${allUserLines.length}] You asked: "${lastUserMsg}" — This note is related to [[Build Laputa App]] and [[Matteo Cellini]].`
+}
+
+function handleStreamEvent(
+  data: AiAgentStreamEvent,
+  callbacks: AgentStreamCallbacks,
+  abortNativeStream: () => void,
+): void {
   switch (data.kind) {
     case 'TextDelta':
       callbacks.onText(data.text)
@@ -66,6 +74,7 @@ function handleStreamEvent(data: AiAgentStreamEvent, callbacks: AgentStreamCallb
       callbacks.onToolDone(data.tool_id, data.output)
       return
     case 'Error':
+      abortNativeStream()
       callbacks.onError(data.message)
       return
     case 'Done':
@@ -138,7 +147,7 @@ async function streamNativeAiAgent(request: StreamAiAgentRequest): Promise<void>
       return
     }
 
-    handleStreamEvent(event.payload, request.callbacks)
+    handleStreamEvent(event.payload, request.callbacks, abortNativeStream)
   })
   const removeAbortListener = addAbortListener(request.signal, abortNativeStream)
   if (request.signal?.aborted) {
