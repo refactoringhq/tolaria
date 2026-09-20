@@ -54,6 +54,7 @@ import { EditorInteractionControllers } from './EditorInteractionControllers'
 import { handleEditorCopy } from './editorCopyHandlers'
 import { CodeBlockCopyButton } from './codeBlockCopyControls'
 import { useCodeBlockCopyTarget } from './useCodeBlockCopyTarget'
+import { observeRichEditorAccessibility } from './richEditorAccessibility'
 
 const TOOLBAR_MOUSE_DOWN_ALLOW_SELECTOR = [
   '[role="menu"]',
@@ -340,7 +341,12 @@ export function SingleEditorView(options: {
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
-    return observeNativeTextAssistanceDisabled(container)
+    const stopNativeTextAssistanceObserver = observeNativeTextAssistanceDisabled(container)
+    const stopAccessibilityObserver = observeRichEditorAccessibility(container)
+    return () => {
+      stopNativeTextAssistanceObserver()
+      stopAccessibilityObserver()
+    }
   }, [])
 
   useSeedBlockNoteTableBridge(editor)
