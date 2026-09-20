@@ -224,6 +224,16 @@ function bindPath(cb: ((path: string) => void) | undefined, path: string) {
   return cb ? () => cb(path) : undefined
 }
 
+type ActiveTabBreadcrumbProps = {
+  activeTab: NonNullable<EditorContentModel['activeTab']>
+  barRef: React.RefObject<HTMLDivElement | null>
+  wordCount: number
+  path: string
+  actions: BreadcrumbActions
+  locale?: AppLocale
+  loadingTitle?: boolean
+}
+
 function ActiveTabBreadcrumb({
   activeTab,
   barRef,
@@ -232,15 +242,7 @@ function ActiveTabBreadcrumb({
   actions,
   locale,
   loadingTitle,
-}: {
-  activeTab: NonNullable<EditorContentModel['activeTab']>
-  barRef: React.RefObject<HTMLDivElement | null>
-  wordCount: number
-  path: string
-  actions: BreadcrumbActions
-  locale?: AppLocale
-  loadingTitle?: boolean
-}) {
+}: ActiveTabBreadcrumbProps) {
   return (
     <BreadcrumbBar
       entry={activeTab.entry}
