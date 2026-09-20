@@ -85,13 +85,16 @@ function collectVaultStatuses(entries: VaultEntry[] | undefined): string[] {
   return Array.from(seen).sort((a, b) => a.localeCompare(b))
 }
 
-function collectAllVaultTags(entries: VaultEntry[] | undefined): Record<string, string[]> {
+function collectAllVaultTags(
+  entries: VaultEntry[] | undefined,
+  displayOverrides: Record<string, PropertyDisplayMode>,
+): Record<string, string[]> {
   if (!entries) return {}
   const tagsByKey = new Map<string, Set<string>>()
   for (const entry of entries) {
     if (!entry.properties) continue
     for (const [key, value] of Object.entries(entry.properties)) {
-      addTagValues(tagsByKey, key, value)
+      addTagValues(tagsByKey, key, value, displayOverrides)
     }
   }
   return toSortedTagRecord(tagsByKey)
@@ -167,8 +170,18 @@ function buildTypeDerivedPropertyEntries({
   return result
 }
 
-function addTagValues(tagsByKey: Map<string, Set<string>>, key: string, value: unknown) {
-  if (!Array.isArray(value)) return
+function addTagValues(
+  tagsByKey: Map<string, Set<string>>,
+  key: string,
+  value: VaultPropertyValue,
+  displayOverrides: Record<string, PropertyDisplayMode>,
+) {
+  const values = Array.isArray(value)
+    ? value
+    : getEffectiveDisplayMode(key, value, displayOverrides) === 'tags' && value !== null
+      ? [value]
+      : []
+  if (values.length === 0) return
 
   let set = tagsByKey.get(key)
   if (!set) {
@@ -176,7 +189,7 @@ function addTagValues(tagsByKey: Map<string, Set<string>>, key: string, value: u
     tagsByKey.set(key, set)
   }
 
-  for (const tag of value) {
+  for (const tag of values) {
     set.add(String(tag))
   }
 }
@@ -258,7 +271,10 @@ export function usePropertyPanelState(deps: PropertyPanelDeps) {
 
   const { availableTypes, customColorKey, typeColorKeys, typeIconKeys } = useMemo(() => deriveTypeInfo(entries, entryIsA), [entries, entryIsA])
   const vaultStatuses = useMemo(() => collectVaultStatuses(entries), [entries])
-  const vaultTagsByKey = useMemo(() => collectAllVaultTags(entries), [entries])
+  const vaultTagsByKey = useMemo(
+    () => collectAllVaultTags(entries, displayOverrides),
+    [displayOverrides, entries],
+  )
   const propertyEntries = useMemo(() => buildVisiblePropertyEntries(frontmatter), [frontmatter])
   const typeDerivedPropertyEntries = useMemo(
     () => buildTypeDerivedPropertyEntries({ entries, entryIsA, frontmatter }),

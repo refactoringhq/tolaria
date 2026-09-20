@@ -123,6 +123,40 @@ describe('usePropertyPanelState', () => {
     ])
   })
 
+  it('collects scalar vault values for every custom tags field', () => {
+    initDisplayModeOverrides({ Relationship: 'tags', Interests: 'tags' })
+    const entries = [
+      makeEntry({
+        title: 'Ada',
+        properties: {
+          Relationship: 'Friend',
+          Interests: 'Reading',
+          Department: 'Research',
+        },
+      }),
+      makeEntry({
+        title: 'Grace',
+        properties: {
+          Relationship: ['Colleague'],
+          Interests: ['Compilers'],
+        },
+      }),
+    ]
+
+    const { result } = renderHook(() =>
+      usePropertyPanelState({
+        entries,
+        entryIsA: 'People',
+        frontmatter: {},
+      }),
+    )
+
+    expect(result.current.vaultTagsByKey).toEqual({
+      Interests: ['Compilers', 'Reading'],
+      Relationship: ['Colleague', 'Friend'],
+    })
+  })
+
   it('derives missing instance property placeholders from its type entry', () => {
     const entries = [
       makeEntry({
