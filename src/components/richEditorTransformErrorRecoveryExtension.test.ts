@@ -1,4 +1,6 @@
 import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest'
+import { Schema } from '@tiptap/pm/model'
+import { EditorState, type Transaction } from '@tiptap/pm/state'
 import {
   createRichEditorTransformErrorRecoveryExtension,
   installRichEditorTransformErrorRecovery,
@@ -79,6 +81,47 @@ function createViewWithSomeProp(handleKeyDown: () => boolean) {
       someProp,
     },
   }
+}
+
+function createMalformedNestedListView() {
+  const schema = new Schema({
+    nodes: {
+      doc: { content: 'blockGroup' },
+      blockGroup: { content: 'blockContainer+' },
+      blockContainer: { content: 'blockContent blockGroup?', group: 'bnBlock' },
+      paragraph: { content: 'text*', group: 'blockContent' },
+      bulletListItem: { content: 'text*', group: 'blockContent' },
+      text: { group: 'inline' },
+    },
+  })
+  const nestedItem = schema.node(
+    'blockContainer',
+    { id: 'nested' },
+    schema.node('bulletListItem', null, schema.text('Nested')),
+  )
+  const malformedParent = schema.nodes.blockContainer.create(
+    { id: 'parent' },
+    schema.node('blockGroup', null, nestedItem),
+  )
+  const doc = schema.node('doc', null, schema.node('blockGroup', null, malformedParent))
+  let state = EditorState.create({ doc })
+  const missingContentError = new Error(
+    `blockContainer node does not contain a blockContent node in its children: ${malformedParent}`,
+  )
+  let shouldThrow = true
+  const dispatch = vi.fn((transaction: Transaction) => {
+    if (shouldThrow) {
+      shouldThrow = false
+      throw missingContentError
+    }
+    state = state.apply(transaction)
+  })
+  const view = {
+    dispatch,
+    get state() { return state },
+  }
+
+  return { missingContentError, view }
 }
 
 function expectDocumentRepairRecovery(error: Error, reason: string) {
@@ -213,6 +256,36 @@ describe('installRichEditorTransformErrorRecovery', () => {
       transformError('Cannot join blockGroup onto blockContainer'),
       'invalid_block_join',
     )
+  })
+
+  it('repairs nested list containers that lost their required content node', () => {
+    const { missingContentError, view } = createMalformedNestedListView()
+    const editor = {
+      get document(): unknown[] { throw missingContentError },
+      replaceBlocks: vi.fn(),
+      _tiptapEditor: { view },
+      prosemirrorView: view,
+    }
+    const extension = createRichEditorTransformErrorRecoveryExtension()({ editor: editor as never })
+    const controller = new AbortController()
+
+    extension.mount?.({
+      dom: document.createElement('div'),
+      root: document,
+      signal: controller.signal,
+    })
+
+    expect(() => view.dispatch(view.state.tr)).not.toThrow()
+
+    const repairedParent = view.state.doc.child(0).child(0)
+    expect(repairedParent.child(0).type.name).toBe('paragraph')
+    expect(repairedParent.child(1).type.name).toBe('blockGroup')
+    expect(repairedParent.child(1).textContent).toBe('Nested')
+    expect(trackEvent).toHaveBeenCalledWith('rich_editor_transform_error_recovered', {
+      reason: 'block_content_missing',
+    })
+
+    controller.abort()
   })
 
   it('repairs invalid table-cell joins while editing table contents', () => {

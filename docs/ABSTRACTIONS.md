@@ -657,6 +657,8 @@ External vault mutations are any disk writes Tolaria did not just perform throug
 
 The editor uses [BlockNote](https://www.blocknotejs.org/) for rich text editing, with CodeMirror 6 available as a raw editing alternative.
 
+`createRichEditorTransformErrorRecoveryExtension()` contains failures from transient invalid BlockNote transactions before they escape the editor. When nested-list editing produces a `blockContainer` with a child `blockGroup` but no required `blockContent`, the recovery rebuilds that ProseMirror container with an empty paragraph content node while preserving the nested children. This raw-document fallback is used only when BlockNote's higher-level document API cannot deserialize the malformed container.
+
 ### Custom Wikilink Inline Content
 
 Defined in `src/components/editorSchema.tsx`:

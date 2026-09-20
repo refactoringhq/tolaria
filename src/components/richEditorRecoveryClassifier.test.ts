@@ -170,4 +170,13 @@ describe('richEditorRecoveryClassifier', () => {
     expect(classifyRichEditorRecoveryError(invalidContentError, 'transform')).toBe('transform_error')
     expect(richEditorRecoveryErrorNeedsDocumentRepair(invalidContentError)).toBe(true)
   })
+
+  it('classifies BlockNote containers that lost their required content node', () => {
+    const error = new Error(
+      'blockContainer node does not contain a blockContent node in its children: blockContainer(blockGroup(blockContainer(bulletListItem("Nested"))))',
+    )
+
+    expect(classifyRichEditorRecoveryError(error, 'transform')).toBe('block_content_missing')
+    expect(richEditorRecoveryErrorNeedsDocumentRepair(error)).toBe(true)
+  })
 })

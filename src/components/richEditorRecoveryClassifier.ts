@@ -1,5 +1,6 @@
 const BLOCKNOTE_MISSING_ID_ERROR = "Block doesn't have id"
 const BLOCKNOTE_BLOCK_TYPE_MISMATCH_ERROR = 'Block type does not match'
+const BLOCKNOTE_MISSING_BLOCK_CONTENT_ERROR = 'blockContainer node does not contain a blockContent node in its children:'
 const BLOCKNOTE_EMPTY_FRAGMENT_INDEX_ERROR = /^Index \d+ out of range for <>$/
 const BLOCKNOTE_TABLE_INDEX_ERROR = /^Index \d+ out of range for <table(?:Row)?\(/
 const BLOCKNOTE_PARAGRAPH_INDEX_ERROR = /^Index \d+ out of range for <paragraph\(/
@@ -35,6 +36,7 @@ type BlockNoteRenderOnlyRecoveryReason =
   | 'invalid_array_length'
   | 'react_update_depth_exceeded'
 type RichEditorTransformOnlyRecoveryReason =
+  | 'block_content_missing'
   | 'dom_index_size'
   | 'invalid_block_join'
   | 'invalid_insertion_depth'
@@ -90,6 +92,10 @@ function isMismatchedTransactionError(error: unknown): boolean {
 
 function isInvalidContentTransactionError(error: unknown): boolean {
   return error instanceof RangeError && error.message.startsWith('Invalid content for node ')
+}
+
+function isMissingBlockContentError(error: unknown): boolean {
+  return messageIncludes(error, BLOCKNOTE_MISSING_BLOCK_CONTENT_ERROR)
 }
 
 function isReactUpdateDepthExceededError(error: unknown): boolean {
@@ -225,6 +231,12 @@ const RECOVERY_ERROR_MATCHERS: RecoveryErrorMatcher[] = [
   {
     matches: isMismatchedTransactionError,
     reason: 'mismatched_transaction',
+    surfaces: ['transform'],
+  },
+  {
+    matches: isMissingBlockContentError,
+    reason: 'block_content_missing',
+    repairsDocument: true,
     surfaces: ['transform'],
   },
   {

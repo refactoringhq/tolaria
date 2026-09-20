@@ -155,6 +155,7 @@ function collectEditorCrashSignals(page: Page) {
 function expectNoBlockContainerCrash(messages: string[]) {
   expect(messages.filter((message) => (
     message.includes('Invalid content for node blockContainer') ||
+    message.includes('blockContainer node does not contain a blockContent node') ||
     message.includes('RangeError')
   ))).toEqual([])
 }
