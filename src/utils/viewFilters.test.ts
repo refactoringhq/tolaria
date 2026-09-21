@@ -1,6 +1,7 @@
 import { afterEach, describe, it, expect, vi } from 'vitest'
 import { evaluateView } from './viewFilters'
 import type { FilterNode, VaultEntry, ViewDefinition } from '../types'
+import archivedFilterContract from '../shared/viewFilterArchivedContract.json'
 
 const NOW = Math.floor(Date.now() / 1000)
 
@@ -43,6 +44,15 @@ const MONDAY_RELATIONSHIP_ENTRIES = [
   makeEntry({ title: 'Match', relationships: { 'belongs to': ['[[monday-112|Monday #112]]'] } }),
   makeEntry({ title: 'No match', relationships: { 'belongs to': ['[[tuesday-200|Tuesday]]'] } }),
 ]
+
+type ArchivedFilterFixture = {
+  name: string
+  filters: ViewDefinition['filters']
+  entries: Array<Pick<VaultEntry, 'title' | 'isA' | 'archived'>>
+  expectedTitles: string[]
+}
+
+const ARCHIVED_FILTER_FIXTURES = archivedFilterContract.fixtures as ArchivedFilterFixture[]
 
 describe('evaluateView', () => {
   afterEach(() => {
@@ -104,27 +114,10 @@ describe('evaluateView', () => {
     expectFilterTitles({ field: 'status', op: 'is_not_empty' }, entries, ['Has'], 'Has Status')
   })
 
-  it('excludes archived entries', () => {
-    const entries = [
-      makeEntry({ isA: 'Note', title: 'Active' }),
-      makeEntry({ isA: 'Note', title: 'Archived', archived: true }),
-    ]
-    expectFilterTitles({ field: 'type', op: 'equals', value: 'Note' }, entries, ['Active'], 'All')
-  })
+  it.each(ARCHIVED_FILTER_FIXTURES)('matches the shared archived-filter contract: $name', (fixture) => {
+    const entries = fixture.entries.map((entry) => makeEntry(entry))
 
-  it('includes archived entries when a nested filter explicitly requests them', () => {
-    const view = makeView({
-      all: [
-        { field: 'type', op: 'equals', value: 'Note' },
-        { any: [{ field: 'archived', op: 'equals', value: true }] },
-      ],
-    })
-    const entries = [
-      makeEntry({ isA: 'Note', title: 'Active' }),
-      makeEntry({ isA: 'Note', title: 'Archived', archived: true }),
-    ]
-
-    expect(titlesFor(view, entries)).toEqual(['Archived'])
+    expect(titlesFor(makeView(fixture.filters, fixture.name), entries)).toEqual(fixture.expectedTitles)
   })
 
   it('filters by property field', () => {

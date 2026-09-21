@@ -79,36 +79,6 @@ filters:
     }
 
     #[test]
-    fn test_evaluate_archived_entry_policy() {
-        let active = make_entry(|e| e.is_a = Some("Project".to_string()));
-        let archived = make_entry(|e| {
-            e.is_a = Some("Project".to_string());
-            e.archived = true;
-        });
-        let entries = [active, archived];
-
-        assert_eq!(
-            evaluate_view(&make_project_view("Projects"), &entries),
-            vec![0]
-        );
-        let yaml = r#"
-name: Archived Projects
-filters:
-  all:
-    - field: type
-      op: equals
-      value: Project
-    - any:
-        - field: archived
-          op: equals
-          value: true
-"#;
-        let def: ViewDefinition = serde_yaml::from_str(yaml).unwrap();
-
-        assert_eq!(evaluate_view(&def, &entries), vec![1]);
-    }
-
-    #[test]
     fn test_evaluate_contains_relationship() {
         let yaml = r#"
 name: Related to Target

@@ -1,0 +1,68 @@
+{
+  "policy": "Archived entries are hidden unless any nested condition references the archived field.",
+  "fixtures": [
+    {
+      "name": "hide archived entries by default",
+      "filters": {
+        "all": [
+          {
+            "field": "type",
+            "op": "equals",
+            "value": "Project"
+          }
+        ]
+      },
+      "entries": [
+        {
+          "title": "Active project",
+          "isA": "Project",
+          "archived": false
+        },
+        {
+          "title": "Archived project",
+          "isA": "Project",
+          "archived": true
+        }
+      ],
+      "expectedTitles": [
+        "Active project"
+      ]
+    },
+    {
+      "name": "admit archived entries for a nested archived condition",
+      "filters": {
+        "all": [
+          {
+            "field": "type",
+            "op": "equals",
+            "value": "Project"
+          },
+          {
+            "any": [
+              {
+                "field": "archived",
+                "op": "equals",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "entries": [
+        {
+          "title": "Active project",
+          "isA": "Project",
+          "archived": false
+        },
+        {
+          "title": "Archived project",
+          "isA": "Project",
+          "archived": true
+        }
+      ],
+      "expectedTitles": [
+        "Archived project"
+      ]
+    }
+  ]
+}

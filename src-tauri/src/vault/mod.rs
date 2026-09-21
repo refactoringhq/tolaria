@@ -18,6 +18,8 @@ mod rename_transaction;
 mod title_sync;
 mod trash;
 mod type_templates;
+#[cfg(test)]
+mod view_archived_contract_tests;
 mod view_date_filters;
 mod view_migration;
 mod view_relationships;
