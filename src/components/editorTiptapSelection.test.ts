@@ -64,6 +64,18 @@ describe('editor Tiptap selection helpers', () => {
     expect(posAtCoords).not.toHaveBeenCalled()
   })
 
+  it('returns null when the Tiptap view proxy is not mounted', () => {
+    const bridge = makeBridge()
+    Object.defineProperty(bridge, 'view', {
+      get: () => {
+        throw new Error("[tiptap error]: The editor view is not available. Cannot access view['dom'].")
+      },
+    })
+
+    expect(() => textPositionAtEditorPoint(bridge, { clientX: 260, clientY: 120 })).not.toThrow()
+    expect(textPositionAtEditorPoint(bridge, { clientX: 260, clientY: 120 })).toBeNull()
+  })
+
   it('returns null when coordinate lookup throws from a stale ProseMirror doc view', () => {
     const bridge = makeBridge({
       view: {

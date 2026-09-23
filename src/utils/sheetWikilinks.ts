@@ -5,11 +5,13 @@ import { resolveEntry, wikilinkDisplay, wikilinkTarget } from './wikilink'
 
 const SHEET_WIKILINK_PATTERN = /\[\[([^\]\n]+?)\]\]/g
 
-function wikilinkRef(rawTarget: string): string {
+type RawWikilinkTarget = string
+
+function wikilinkRef(rawTarget: RawWikilinkTarget): string {
   return `[[${rawTarget}]]`
 }
 
-function displayTitleForTarget(rawTarget: string, entry: VaultEntry | undefined): string {
+function displayTitleForTarget(rawTarget: RawWikilinkTarget, entry: VaultEntry | undefined): string {
   const pipeIndex = rawTarget.indexOf('|')
   if (pipeIndex >= 0) return rawTarget.slice(pipeIndex + 1)
   return entry?.title ?? wikilinkDisplay(wikilinkRef(rawTarget))
@@ -22,7 +24,7 @@ function displayIconForEntry(entry: VaultEntry | undefined): string {
 
 function resolveTargetEntry(
   entries: VaultEntry[],
-  rawTarget: string,
+  rawTarget: RawWikilinkTarget,
   sourceEntry?: VaultEntry | null,
 ): VaultEntry | undefined {
   return resolveEntry(entries, wikilinkTarget(wikilinkRef(rawTarget)), sourceEntry ?? undefined)
@@ -45,7 +47,7 @@ export function sheetWikilinkDisplayValue(
   })
 }
 
-export function firstSheetWikilinkTarget(value: string): string | null {
+export function firstSheetWikilinkTarget(value: string): RawWikilinkTarget | null {
   SHEET_WIKILINK_PATTERN.lastIndex = 0
   return SHEET_WIKILINK_PATTERN.exec(value)?.[1] ?? null
 }

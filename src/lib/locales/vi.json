@@ -452,6 +452,7 @@
   "ai.panel.send": "Send message",
   "ai.panel.stop": "Dừng phản hồi",
   "ai.panel.stoppedResponse": "Đã dừng.",
+  "ai.error.claude.notAuthenticated": "Claude CLI chưa được xác thực. Chạy lệnh 'claude auth login' trong terminal của bạn.",
   "ai.error.claude.tooManyRedirects": "Claude Code không thể kết nối với nhà cung cấp vì yêu cầu API đã bị chuyển hướng quá nhiều lần. Trong Terminal, hãy chạy 'claude auth status', sau đó chạy 'claude auth login' nếu cần. Nếu bạn sử dụng nhà cung cấp hoặc proxy tùy chỉnh, hãy kiểm tra ANTHROPIC_BASE_URL, HTTPS_PROXY, HTTP_PROXY và cài đặt SSO/proxy của công ty, sau đó khởi động lại Tolaria.",
   "ai.error.pi.emptyOutput": "Pi CLI đã thoát mà không có đầu ra từ tác tử. Tolaria mong đợi các sự kiện luồng JSON từ 'pi --mode json'; hãy chạy Pi trong terminal để kiểm tra thiết lập.",
   "ai.error.pi.emptyOutputWithDiagnostic": "Pi CLI đã thoát mà không có đầu ra từ tác tử. Tolaria mong đợi các sự kiện luồng JSON từ 'pi --mode json', nhưng Pi chỉ ghi:\n{diagnostic_output}",

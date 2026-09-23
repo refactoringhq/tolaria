@@ -104,10 +104,17 @@ export function textPositionAtEditorPoint(
   tiptapEditor: TiptapSelectionBridge,
   point: EditorClientPoint,
 ): number | null {
-  const view = tiptapEditor.view
-  if (!isCoordinateView(view)) return null
+  let view: TiptapCoordinateView
+  let editorRect: DOMRect
+  try {
+    const candidate = tiptapEditor.view
+    if (!isCoordinateView(candidate)) return null
+    view = candidate
+    editorRect = view.dom.getBoundingClientRect()
+  } catch {
+    return null
+  }
 
-  const editorRect = view.dom.getBoundingClientRect()
   let position: unknown
   try {
     position = view.posAtCoords(clampedEditorCoords(point, editorRect))?.pos

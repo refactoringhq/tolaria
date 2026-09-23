@@ -253,8 +253,8 @@ async function deleteExistingView(context: DeleteViewContext): Promise<void> {
   setToastMessage('View deleted')
 }
 
-function availableViewFields(visibleEntries: VaultEntry[]): string[] {
-  const builtIn = ['type', 'status', 'title', 'favorite', 'body']
+export function availableViewFields(visibleEntries: VaultEntry[]): string[] {
+  const builtIn = ['type', 'status', 'title', 'archived', 'favorite', 'body']
   if (visibleEntries.length === 0) return builtIn
   const customFields = new Set<string>()
   for (const entry of visibleEntries) {

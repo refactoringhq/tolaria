@@ -452,6 +452,7 @@
   "ai.panel.send": "메시지 보내기",
   "ai.panel.stop": "응답 중지",
   "ai.panel.stoppedResponse": "중지됨.",
+  "ai.error.claude.notAuthenticated": "Claude CLI가 인증되지 않았습니다. 터미널에서 'claude auth login'을 실행하세요.",
   "ai.error.claude.tooManyRedirects": "API 요청이 너무 많이 리디렉션되어 Claude Code가 제공업체에 연결할 수 없었습니다. 터미널에서 'claude auth status'를 실행한 다음 필요한 경우 'claude auth login'을 실행하세요. 사용자 지정 공급자 또는 프록시를 사용하는 경우 ANTHROPIC_BASE_URL, HTTPS_PROXY, HTTP_PROXY 및 기업 SSO/프록시 설정을 확인한 다음 Tolaria를 다시 시작하세요.",
   "ai.error.pi.emptyOutput": "Pi CLI가 에이전트 출력 없이 종료되었습니다. Tolaria는 'pi --mode json'에서 JSON 스트림 이벤트를 예상했습니다. 터미널에서 Pi를 실행하여 설정을 검사하세요.",
   "ai.error.pi.emptyOutputWithDiagnostic": "Pi CLI가 에이전트 출력 없이 종료되었습니다. Tolaria는 'pi --mode json'에서 JSON 스트림 이벤트를 예상했지만, Pi는 다음만 작성했습니다.\n{diagnostic_output}",

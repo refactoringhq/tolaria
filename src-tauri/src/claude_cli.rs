@@ -31,6 +31,7 @@ const CLAUDE_PROVIDER_ENV_KEYS: &[EnvName<'static>] = &[
     EnvName::trusted("NODE_EXTRA_CA_CERTS"),
 ];
 const LOCALIZED_ERROR_PREFIX: &str = "tolaria:i18n-error:";
+const CLAUDE_NOT_AUTHENTICATED_KEY: &str = "ai.error.claude.notAuthenticated";
 const CLAUDE_TOO_MANY_REDIRECTS_KEY: &str = "ai.error.claude.tooManyRedirects";
 
 /// Status returned by `check_claude_cli`.
@@ -468,7 +469,7 @@ fn format_failed_claude_exit(failure: ClaudeFailure<'_>) -> String {
     }
 
     if is_claude_auth_error(failure.stderr) {
-        return "Claude CLI is not authenticated. Run `claude auth login` in your terminal.".into();
+        return localized_error(CLAUDE_NOT_AUTHENTICATED_KEY);
     }
 
     if failure.stderr.is_empty() {
@@ -537,61 +538,74 @@ where
         }
 
         // --- Tool progress (agent mode) ---
-        "tool_progress" => {
-            if let (Some(name), Some(id)) =
-                (json["tool_name"].as_str(), json["tool_use_id"].as_str())
-            {
-                emit(ClaudeStreamEvent::ToolStart {
-                    tool_name: name.to_string(),
-                    tool_id: id.to_string(),
-                    input: None,
-                });
-            }
-        }
+        "tool_progress" => dispatch_tool_progress_event(json, emit),
 
         // --- Tool result (agent mode) ---
-        "tool_result" => {
-            if let Some(id) = json["tool_use_id"].as_str() {
-                let output = extract_tool_result_text(json);
-                emit(ClaudeStreamEvent::ToolDone {
-                    tool_id: id.to_string(),
-                    output,
-                });
-            }
-        }
+        "tool_result" => dispatch_tool_result_event(json, emit),
 
         // --- Final result ---
-        "result" => {
-            let sid = json["session_id"].as_str().unwrap_or("").to_string();
-            if !sid.is_empty() {
-                state.session_id = sid.clone();
-            }
-            let text = if state.emitted_text {
-                String::new()
-            } else {
-                let text = json["result"].as_str().unwrap_or("").to_string();
-                if !text.is_empty() {
-                    state.emitted_text = true;
-                }
-                text
-            };
-            emit(ClaudeStreamEvent::Result {
-                text,
-                session_id: sid,
-            });
-        }
+        "result" => dispatch_result_event(json, state, emit),
 
         // --- Complete assistant message (fallback for text when no partials) ---
-        "assistant" => {
-            if let Some(content) = json["message"]["content"].as_array() {
-                let emit_text = !state.emitted_text;
-                for block in content {
-                    dispatch_assistant_content_block(block, emit_text, state, emit);
-                }
-            }
-        }
+        "assistant" => dispatch_assistant_event(json, state, emit),
 
         _ => {} // ignore other event types
+    }
+}
+
+fn dispatch_tool_progress_event<F>(json: &serde_json::Value, emit: &mut F)
+where
+    F: FnMut(ClaudeStreamEvent),
+{
+    if let (Some(name), Some(id)) = (json["tool_name"].as_str(), json["tool_use_id"].as_str()) {
+        emit(ClaudeStreamEvent::ToolStart {
+            tool_name: name.to_string(),
+            tool_id: id.to_string(),
+            input: None,
+        });
+    }
+}
+
+fn dispatch_tool_result_event<F>(json: &serde_json::Value, emit: &mut F)
+where
+    F: FnMut(ClaudeStreamEvent),
+{
+    if let Some(id) = json["tool_use_id"].as_str() {
+        emit(ClaudeStreamEvent::ToolDone {
+            tool_id: id.to_string(),
+            output: extract_tool_result_text(json),
+        });
+    }
+}
+
+fn dispatch_result_event<F>(json: &serde_json::Value, state: &mut StreamState, emit: &mut F)
+where
+    F: FnMut(ClaudeStreamEvent),
+{
+    let session_id = json["session_id"].as_str().unwrap_or("").to_string();
+    if !session_id.is_empty() {
+        state.session_id = session_id.clone();
+    }
+
+    let text = if state.emitted_text {
+        String::new()
+    } else {
+        let text = json["result"].as_str().unwrap_or("").to_string();
+        state.emitted_text = !text.is_empty();
+        text
+    };
+    emit(ClaudeStreamEvent::Result { text, session_id });
+}
+
+fn dispatch_assistant_event<F>(json: &serde_json::Value, state: &mut StreamState, emit: &mut F)
+where
+    F: FnMut(ClaudeStreamEvent),
+{
+    if let Some(content) = json["message"]["content"].as_array() {
+        let emit_text = !state.emitted_text;
+        for block in content {
+            dispatch_assistant_content_block(block, emit_text, state, emit);
+        }
     }
 }
 
@@ -610,9 +624,7 @@ where
         }
         Some("api_retry") if is_authentication_retry(json) => {
             emit(ClaudeStreamEvent::Error {
-                message:
-                    "Claude CLI is not authenticated. Run `claude auth login` in your terminal."
-                        .into(),
+                message: localized_error(CLAUDE_NOT_AUTHENTICATED_KEY),
             });
         }
         _ => {}
@@ -976,7 +988,8 @@ mod tests {
         assert!(matches!(
             events.as_slice(),
             [ClaudeStreamEvent::Error { message }]
-                if message.contains("not authenticated") && message.contains("claude auth login")
+                if message.starts_with("tolaria:i18n-error:")
+                    && message.contains(r#""key":"ai.error.claude.notAuthenticated""#)
         ));
     }
 
@@ -1540,7 +1553,12 @@ mod tests {
         let (_, events) = run_mock_script(MockClaudeScript(
             "#!/bin/sh\necho 'not logged in' >&2\nexit 1\n",
         ));
-        assert!(events.iter().any(|e| matches!(e, ClaudeStreamEvent::Error { message } if message.contains("not authenticated"))));
+        assert!(events.iter().any(|e| matches!(
+            e,
+            ClaudeStreamEvent::Error { message }
+                if message.starts_with("tolaria:i18n-error:")
+                    && message.contains(r#""key":"ai.error.claude.notAuthenticated""#)
+        )));
     }
 
     #[cfg(unix)]

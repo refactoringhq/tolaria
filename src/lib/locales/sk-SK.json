@@ -452,6 +452,7 @@
   "ai.panel.send": "Odoslať správu",
   "ai.panel.stop": "Zastaviť odpoveď",
   "ai.panel.stoppedResponse": "Zastavené.",
+  "ai.error.claude.notAuthenticated": "Rozhranie príkazového riadka Claude CLI nie je overené. V termináli spustite príkaz „claude auth login“.",
   "ai.error.claude.tooManyRedirects": "Claude Code sa nemohol pripojiť k svojmu poskytovateľovi, pretože požiadavka API bola presmerovaná príliš veľa ráz. V Termináli spustite „claude auth status“ a v prípade potreby potom „claude auth login“. Ak používate vlastného poskytovateľa alebo proxy, skontrolujte ANTHROPIC_BASE_URL, HTTPS_PROXY, HTTP_PROXY a firemné nastavenia SSO/proxy a potom reštartujte Tolaria.",
   "ai.error.pi.emptyOutput": "Pi CLI ukončené bez výstupu agenta. Tolaria očakávala udalosti streamu JSON z 'pi --mode json'; spustite Pi v termináli a skontrolujte nastavenie.",
   "ai.error.pi.emptyOutputWithDiagnostic": "Pi CLI ukončil činnosť bez výstupu agenta. Tolaria očakávala udalosti toku JSON z 'pi --mode json', ale Pi napísal iba:\n{diagnostic_output}",

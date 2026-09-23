@@ -454,6 +454,7 @@ files:
     ai.panel.send: 747c6a3564774149c989884e0c581d53
     ai.panel.stop: 4c7fadd610e7adf3e0ab80fa4459ad96
     ai.panel.stoppedResponse: d223fbbd5ade7a06a14ea75105df4f9d
+    ai.error.claude.notAuthenticated: 7384f901818c66d6fa6c2744597f7c53
     ai.error.claude.tooManyRedirects: 590099fedac46db892be91909814b0c7
     ai.error.pi.emptyOutput: f7e27de4f237828178113efbf60e8e52
     ai.error.pi.emptyOutputWithDiagnostic: 41a47dab0883245a1ac42013368e2da4

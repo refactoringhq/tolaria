@@ -452,6 +452,7 @@
   "ai.panel.send": "メッセージを送信",
   "ai.panel.stop": "応答を停止",
   "ai.panel.stoppedResponse": "停止しました。",
+  "ai.error.claude.notAuthenticated": "Claude CLIが認証されていません。ターミナルで「claude auth login」を実行してください。",
   "ai.error.claude.tooManyRedirects": "APIリクエストがリダイレクトされた回数が多すぎるため、Claude Codeはプロバイダーに接続できませんでした。ターミナルで「claude auth status」を実行し、必要に応じて「claude auth login」を実行してください。カスタムプロバイダーまたはプロキシを使用している場合は、ANTHROPIC_BASE_URL、HTTPS_PROXY、HTTP_PROXY、および企業のSSO/プロキシ設定を確認してから、Tolariaを再起動してください。",
   "ai.error.pi.emptyOutput": "Pi CLIはエージェント出力なしで終了しました。Tolariaは'pi --mode json'からJSONストリームイベントを期待していました。ターミナルでPiを実行して、セットアップを確認してください。",
   "ai.error.pi.emptyOutputWithDiagnostic": "Pi CLIはエージェント出力なしで終了しました。Tolariaは'pi --mode json'からJSONストリームイベントを期待していましたが、Piは次のように書き込むだけでした。\n{diagnostic_output}",

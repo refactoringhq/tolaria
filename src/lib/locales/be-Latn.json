@@ -452,6 +452,7 @@
   "ai.panel.send": "Adpravić paviedamliennie",
   "ai.panel.stop": "Spynić adkaz",
   "ai.panel.stoppedResponse": "Spyniena.",
+  "ai.error.claude.notAuthenticated": "CLI Claude nie aŭtentyfikavany. Vykanajcie kamandu «claude auth login» u terminale.",
   "ai.error.claude.tooManyRedirects": "Claude Code nia zmoh padklučycca da svajho pastaŭščyka, tamu što zapyt API pieranakiroŭvaŭsia zanadta šmat razoŭ. U Terminal zapusćicie `claude auth status`, a zatym, pry nieabchodnasci, `claude auth login`. Kali vy vykarystoŭvajecie karystalnicki pravajdar abo proksi, pravierycie nalady ANTHROPIC_BASE_URL, HTTPS_PROXY, HTTP_PROXY i karparatyŭnaha SSO/proksi, a zatym pierazapusćicie Tolaria.",
   "ai.error.pi.emptyOutput": "Pi CLI zaviaršyŭsia biez vychadu ahienta. Tolaria čakawa JSON-strumiennyja padziei ad `pi --mode json`; zapusćicie Pi u terminale, kab praveryć nastaŭliennie.",
   "ai.error.pi.emptyOutputWithDiagnostic": "Pi CLI zaviaršyŭsia biez vychadu ahienta. Tolaria čakawa JSON-strumiennyja padziei ad `pi --mode json`, ale Pi napisaŭ tolki:\n{diagnostic_output}",

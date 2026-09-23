@@ -452,6 +452,7 @@
   "ai.panel.send": "傳送訊息",
   "ai.panel.stop": "停止回應",
   "ai.panel.stoppedResponse": "已停止。",
+  "ai.error.claude.notAuthenticated": "Claude CLI 未通過驗證。在終端機中執行「claude auth login」。",
   "ai.error.claude.tooManyRedirects": "Claude Code 無法連接到其提供者，因為 API 請求重新導向次數過多。在 Terminal 中，執行「claude auth status」，然後在必要時執行「claude auth login」。如果您使用自訂提供者或代理伺服器，請檢查 ANTHROPIC_BASE_URL、HTTPS_PROXY、HTTP_PROXY 以及公司 SSO/代理伺服器設定，然後重新啟動 Tolaria。",
   "ai.error.pi.emptyOutput": "Pi CLI 在沒有代理程式輸出的情況下退出。Tolaria 預期從 'pi --mode json' 獲得 JSON 串流事件；請在終端機中執行 Pi 以檢查設定。",
   "ai.error.pi.emptyOutputWithDiagnostic": "Pi CLI 在沒有代理程式輸出的情況下退出。Tolaria 預期從 'pi --mode json' 獲得 JSON 串流事件，但 Pi 只寫出：\n{diagnostic_output}",

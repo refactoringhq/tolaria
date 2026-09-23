@@ -7,6 +7,7 @@ import {
 } from './i18n'
 
 const LOCALIZED_ERROR_PREFIX = 'tolaria:i18n-error:'
+const LEGACY_CLAUDE_AUTH_ERROR = 'Claude CLI is not authenticated. Run `claude auth login` in your terminal.'
 
 interface LocalizedStreamErrorRequest {
   message: string
@@ -61,5 +62,9 @@ export function localizedStreamErrorMessage({
   locale,
 }: LocalizedStreamErrorRequest): string {
   const payload = parseLocalizedErrorPayload(message)
-  return payload ? translate(locale, payload.key, payload.values) : message
+  if (payload) return translate(locale, payload.key, payload.values)
+  if (message === LEGACY_CLAUDE_AUTH_ERROR) {
+    return translate(locale, 'ai.error.claude.notAuthenticated')
+  }
+  return message
 }

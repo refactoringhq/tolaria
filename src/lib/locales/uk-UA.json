@@ -452,6 +452,7 @@
   "ai.panel.send": "Надіслати повідомлення",
   "ai.panel.stop": "Зупинити відповідь",
   "ai.panel.stoppedResponse": "Зупинено.",
+  "ai.error.claude.notAuthenticated": "Інтерфейс командного рядка Claude не автентифіковано. Виконайте команду «claude auth login» у терміналі.",
   "ai.error.claude.tooManyRedirects": "Claude Code не вдалося підключитися до свого провайдера, оскільки запит API переадресовувався забагато разів. У Terminal запустіть «claude auth status», а потім, за потреби, «claude auth login». Якщо ви використовуєте власного провайдера або проксі-сервер, перевірте ANTHROPIC_BASE_URL, HTTPS_PROXY, HTTP_PROXY та корпоративні налаштування SSO/проксі-сервера, а потім перезапустіть Tolaria.",
   "ai.error.pi.emptyOutput": "Pi CLI завершив роботу без виводу агента. Tolaria очікувала події потоку JSON від «pi --mode json»; запустіть Pi в терміналі, щоб перевірити налаштування.",
   "ai.error.pi.emptyOutputWithDiagnostic": "Pi CLI завершив роботу без виводу агента. Tolaria очікувала події потоку JSON від 'pi --mode json', але Pi написав лише:\n{diagnostic_output}",

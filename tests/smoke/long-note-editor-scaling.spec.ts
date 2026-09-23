@@ -1,5 +1,4 @@
-import fs from 'fs'
-import path from 'path'
+import path from 'node:path'
 import { test, expect, type Page } from '@playwright/test'
 import {
   createFixtureVaultCopy,
@@ -55,7 +54,12 @@ test.beforeEach(async ({ page }, testInfo) => {
   testInfo.setTimeout(120_000)
   tempVaultDir = createFixtureVaultCopy()
   longNotePath = path.join(tempVaultDir, LONG_NOTE_RELATIVE_PATH)
-  fs.writeFileSync(longNotePath, makeLongNoteMarkdown(), 'utf8')
+  await openFixtureVaultDesktopHarness(page, tempVaultDir, { expectedReadyTitle: 'Note B' })
+  await page.evaluate(async ({ content, notePath }) => {
+    const createNote = window.__mockHandlers?.create_note_content
+    if (typeof createNote !== 'function') throw new Error('Fixture create-note handler is unavailable')
+    await createNote({ path: notePath, content })
+  }, { content: makeLongNoteMarkdown(), notePath: longNotePath })
   await openFixtureVaultDesktopHarness(page, tempVaultDir, { expectedReadyTitle: LONG_NOTE_TITLE })
 })
 
@@ -71,19 +75,16 @@ test('long rich-editor notes stay editable across typing, wikilinks, save, and n
   await openNote(page, LONG_NOTE_TITLE)
 
   await appendTextToSegment(page, segmentLabel(1), beginningEdit)
-  await appendTextToSegment(page, segmentLabel(41), middleEdit)
-  await appendTextToSegment(page, segmentLabel(82), endEdit)
-
-  const wikilinkParagraph = page.locator('.bn-editor p').filter({ hasText: segmentLabel(41) }).first()
-  await wikilinkParagraph.click()
-  await page.keyboard.press('End')
-  await page.keyboard.type(' [[Alpha')
+  await appendTextToSegment(page, segmentLabel(41), `${middleEdit} [[Alpha`)
 
   const wikilinkMenu = page.locator('.wikilink-menu')
   await expect(wikilinkMenu).toBeVisible({ timeout: 5_000 })
   await expect(wikilinkMenu).toContainText('Alpha Project')
   await page.keyboard.press('Enter')
   await expect(page.locator('.bn-editor .wikilink').filter({ hasText: 'Alpha Project' }).last()).toBeVisible()
+  const wikilinkParagraph = page.locator('.bn-editor p').filter({ hasText: segmentLabel(41) }).first()
+  await expect(wikilinkParagraph).toContainText(middleEdit.trim())
+  await appendTextToSegment(page, segmentLabel(82), endEdit)
 
   await page.keyboard.press('PageUp')
   await page.keyboard.press('ArrowDown')
@@ -99,9 +100,15 @@ test('long rich-editor notes stay editable across typing, wikilinks, save, and n
   await expect(editor).toContainText(endEdit.trim(), { timeout: 5_000 })
   await expect(editor.locator('.wikilink').filter({ hasText: 'Alpha Project' }).last()).toBeVisible()
 
-  await expect.poll(() => fs.readFileSync(longNotePath, 'utf8'), { timeout: 5_000 }).toContain(beginningEdit.trim())
-  await expect.poll(() => fs.readFileSync(longNotePath, 'utf8'), { timeout: 5_000 }).toContain(middleEdit.trim())
-  await expect.poll(() => fs.readFileSync(longNotePath, 'utf8'), { timeout: 5_000 }).toContain(endEdit.trim())
+  await expect.poll(() => {
+    return page.evaluate(async ({ edits, notePath }) => {
+      const readNote = window.__mockHandlers?.get_note_content
+      if (typeof readNote !== 'function') return false
+      const savedContent = await readNote({ path: notePath })
+      return typeof savedContent === 'string'
+        && edits.every((edit) => savedContent.includes(edit.trim()))
+    }, { edits: [beginningEdit, middleEdit, endEdit], notePath: longNotePath })
+  }, { timeout: 5_000 }).toBe(true)
 })
 
 test('opening the plus menu at the end of a long note preserves scroll position', async ({ page }) => {

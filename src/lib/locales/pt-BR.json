@@ -452,6 +452,7 @@
   "ai.panel.send": "Enviar mensagem",
   "ai.panel.stop": "Parar resposta",
   "ai.panel.stoppedResponse": "Interrompido.",
+  "ai.error.claude.notAuthenticated": "A CLI do Claude não está autenticada. Execute \"claude auth login\" no seu terminal.",
   "ai.error.claude.tooManyRedirects": "O Claude Code não conseguiu se conectar ao seu provedor porque a solicitação de API foi redirecionada muitas vezes. No Terminal, execute 'claude auth status' e, em seguida, 'claude auth login', se necessário. Se você usa um provedor ou proxy personalizado, verifique ANTHROPIC_BASE_URL, HTTPS_PROXY, HTTP_PROXY e as configurações corporativas de SSO/proxy e, em seguida, reinicie o Tolaria.",
   "ai.error.pi.emptyOutput": "O Pi CLI foi encerrado sem saída do agente. O Tolaria esperava eventos de fluxo JSON de 'pi --mode json'; execute o Pi em um terminal para inspecionar a configuração.",
   "ai.error.pi.emptyOutputWithDiagnostic": "O Pi CLI foi encerrado sem saída do agente. Tolaria esperava eventos de fluxo JSON de 'pi --mode json', mas Pi apenas escreveu:\n{diagnostic_output}",

@@ -329,6 +329,23 @@ describe('SingleEditorView interactions', () => {
     })
   })
 
+  it('ignores editable clicks while the Tiptap view is not mounted', () => {
+    const { container, editor } = renderEditorHarness()
+    const editable = document.createElement('div')
+    editable.setAttribute('contenteditable', 'true')
+    container.appendChild(editable)
+    window.getSelection()?.removeAllRanges()
+    Object.defineProperty(editor._tiptapEditor, 'view', {
+      get: () => {
+        throw new Error("[tiptap error]: The editor view is not available. Cannot access view['dom'].")
+      },
+    })
+
+    expect(() => fireEvent.click(editable, { button: 0, clientX: 280, clientY: 120 })).not.toThrow()
+    expect(editor.focus).not.toHaveBeenCalled()
+    expect(editor._tiptapEditor.commands.setTextSelection).not.toHaveBeenCalled()
+  })
+
   it('ignores editor-container click handling for link toolbar interactions', () => {
     const { container, editor } = renderEditorHarness()
     const linkAction = appendToolbarButton(container, 'bn-link-toolbar', 'Open in a new tab')
