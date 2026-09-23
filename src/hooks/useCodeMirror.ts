@@ -11,7 +11,8 @@ import {
   type ViewUpdate,
 } from '@codemirror/view'
 import { EditorSelection, EditorState, Prec, type SelectionRange } from '@codemirror/state'
-import { defaultKeymap, history, historyKeymap, insertTab } from '@codemirror/commands'
+import { defaultKeymap, history, historyKeymap, indentLess, insertTab } from '@codemirror/commands'
+import { indentUnit } from '@codemirror/language'
 import { rawEditorLanguageExtensionsForPath } from '../extensions/rawEditorLanguage'
 import { editorFindHighlightExtension } from '../extensions/editorFindHighlight'
 import { RUNTIME_STYLE_NONCE } from '../lib/runtimeStyleNonce'
@@ -168,6 +169,7 @@ function buildApplicationKeymap(callbacks: { current: CodeMirrorCallbacks }) {
   }, {
     key: 'Tab',
     run: insertTab,
+    shift: indentLess,
   }]))
 }
 
@@ -369,6 +371,7 @@ export function useCodeMirror(
         buildArrowLigaturesExtension(),
         buildRawEditorKeymap(),
         buildApplicationKeymap(callbacksRef),
+        indentUnit.of('\t'),
         buildBaseTheme(),
         editorFindHighlightExtension,
         EditorView.cspNonce.of(RUNTIME_STYLE_NONCE),

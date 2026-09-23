@@ -194,6 +194,33 @@ describe('useCodeMirror', () => {
     expect(onDocChange).toHaveBeenCalledWith('hello\t')
   })
 
+  it('outdents the current raw-editor line on Shift+Tab without moving focus away', () => {
+    const ref = { current: container }
+    const onDocChange = vi.fn()
+    const { result } = renderHook(() =>
+      useCodeMirror(ref, '- parent\n\t- child', { ...noopCallbacks, onDocChange }),
+    )
+    const view = result.current.current
+    if (!view) throw new Error('CodeMirror view was not created')
+
+    act(() => {
+      view.dispatch({ selection: { anchor: view.state.doc.length } })
+      view.focus()
+    })
+
+    const handled = !view.contentDOM.dispatchEvent(new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'Tab',
+      shiftKey: true,
+    }))
+
+    expect(handled).toBe(true)
+    expect(view.hasFocus).toBe(true)
+    expect(view.state.doc.toString()).toBe('- parent\n- child')
+    expect(onDocChange).toHaveBeenCalledWith('- parent\n- child')
+  })
+
   it('keeps Windows Home and End inside the current raw-editor line when visual boundary lookup crosses lines', () => {
     setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
     const ref = { current: container }

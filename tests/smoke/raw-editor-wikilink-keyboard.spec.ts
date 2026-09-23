@@ -69,3 +69,18 @@ test('@smoke raw wikilink suggestions support Arrow keys, Enter, and Escape', as
   await expect(menu).not.toBeVisible()
   expect((await rawEditorState(page)).doc).toContain('[[manage-sponsorships]]')
 })
+
+test('@smoke raw editor Shift+Tab outdents without moving focus to app chrome', async ({ page }) => {
+  await openRawEditor(page)
+  await focusRawEditorEnd(page)
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('Tab')
+  await page.keyboard.type('- child')
+
+  expect((await rawEditorState(page)).doc).toMatch(/\n\t- child$/u)
+
+  await page.keyboard.press('Shift+Tab')
+
+  await expect(page.locator('.cm-content')).toBeFocused()
+  expect((await rawEditorState(page)).doc).toMatch(/\n- child$/u)
+})
