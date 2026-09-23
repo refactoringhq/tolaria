@@ -62,6 +62,16 @@ const EDITABLE_NAVIGATION_COMMIT_KEYS = new Set([
   'Return',
   'Tab',
 ])
+const EDITABLE_NAVIGATION_DELTAS: Record<string, readonly [row: number, column: number]> = {
+  ArrowDown: [1, 0],
+  ArrowLeft: [0, -1],
+  ArrowRight: [0, 1],
+  ArrowUp: [-1, 0],
+  Enter: [1, 0],
+  Return: [1, 0],
+  Tab: [0, 1],
+}
+const REVERSE_EDITABLE_NAVIGATION_KEYS = new Set(['Enter', 'Return', 'Tab'])
 
 function saveWorkbookNow({
   cancelScheduledSerialize,
@@ -177,21 +187,11 @@ function edgeNavigationTarget(
 ) {
   switch (key) {
     case 'ArrowDown':
-      return {
-        column: view.column,
-        leftColumn: view.left_column,
-        row: MAX_SHEET_ROWS,
-        topRow: MAX_SHEET_ROWS,
-      }
+      return { column: view.column, leftColumn: view.left_column, row: MAX_SHEET_ROWS, topRow: MAX_SHEET_ROWS }
     case 'ArrowLeft':
       return { column: 1, leftColumn: 1, row: view.row, topRow: view.top_row }
     case 'ArrowRight':
-      return {
-        column: MAX_SHEET_COLUMNS,
-        leftColumn: MAX_SHEET_COLUMNS,
-        row: view.row,
-        topRow: view.top_row,
-      }
+      return { column: MAX_SHEET_COLUMNS, leftColumn: MAX_SHEET_COLUMNS, row: view.row, topRow: view.top_row }
     case 'ArrowUp':
       return { column: view.column, leftColumn: view.left_column, row: 1, topRow: 1 }
   }
@@ -248,6 +248,7 @@ function commitEditableTextInput(
     | 'commitSheetTextInput'
     | 'setFormulaAutocomplete'
     | 'setWikilinkAutocomplete'
+    | 'workbookRef'
   >,
 ) {
   const editableInput = formulaInputFromTarget(event.target)
@@ -255,7 +256,40 @@ function commitEditableTextInput(
   if (!options.commitSheetTextInput(editableInput)) return false
 
   dismissFormulaAutocomplete(options)
+  blockOutOfBoundsEditableNavigation(event, options.workbookRef.current)
   return true
+}
+
+function blockOutOfBoundsEditableNavigation(
+  event: ReactKeyboardEvent<HTMLDivElement>,
+  current: SheetWorkbookState | null,
+) {
+  const target = editableNavigationTarget(event, current)
+  if (!target || isValidSheetCoordinate(target)) return
+
+  event.preventDefault()
+  event.stopPropagation()
+  event.nativeEvent.stopImmediatePropagation()
+}
+
+function editableNavigationTarget(
+  event: ReactKeyboardEvent<HTMLDivElement>,
+  current: SheetWorkbookState | null,
+) {
+  if (!current) return null
+  const delta = EDITABLE_NAVIGATION_DELTAS[event.key]
+  if (!delta) return null
+
+  const direction = event.shiftKey && REVERSE_EDITABLE_NAVIGATION_KEYS.has(event.key) ? -1 : 1
+  const view = current.model.getSelectedView()
+  return {
+    column: view.column + delta[1] * direction,
+    row: view.row + delta[0] * direction,
+  }
+}
+
+function isValidSheetCoordinate({ column, row }: { column: number; row: number }) {
+  return [row >= 1, row <= MAX_SHEET_ROWS, column >= 1, column <= MAX_SHEET_COLUMNS].every(Boolean)
 }
 
 function shouldHandleCapturedEscape(

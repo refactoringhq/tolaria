@@ -111,4 +111,32 @@ describe('SheetEditor edge navigation', () => {
     expect(ironCalcMock.state.lastModel?.getRawCellContent(0, 1, 2)).toBe('old')
     expect(ironCalcMock.state.lastModel?.getRawCellContent(0, 2, 2)).toBe('foo')
   })
+
+  it.each([
+    ['ArrowLeft', false, 1, 1],
+    ['ArrowUp', false, 1, 1],
+    ['Tab', true, 1, 1],
+    ['Enter', true, 1, 1],
+    ['ArrowRight', false, 1, MAX_SHEET_COLUMNS],
+    ['ArrowDown', false, MAX_SHEET_ROWS, 1],
+    ['Tab', false, 1, MAX_SHEET_COLUMNS],
+    ['Enter', false, MAX_SHEET_ROWS, 1],
+  ])('blocks %s navigation beyond the sheet boundary', async (key, shiftKey, row, column) => {
+    renderSheetEditor()
+    await activateWorkbookRoot()
+    ironCalcMock.state.selectedView = {
+      column,
+      left_column: column,
+      range: [row, column, row, column],
+      row,
+      sheet: 0,
+      top_row: row,
+    }
+    const cellEditor = screen.getByLabelText<HTMLTextAreaElement>('Cell editor')
+    cellEditor.focus()
+    fireEvent.input(cellEditor, { target: { value: 'boundary' } })
+
+    expect(fireEvent.keyDown(cellEditor, { key, shiftKey })).toBe(false)
+    expect(ironCalcMock.state.selectedView).toMatchObject({ column, row })
+  })
 })
