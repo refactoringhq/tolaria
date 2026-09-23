@@ -21,6 +21,19 @@ function setUserAgent(userAgent: string) {
   })
 }
 
+function dispatchKey(view: EditorView, key: string): boolean {
+  let handled = false
+  act(() => {
+    view.focus()
+    handled = !view.contentDOM.dispatchEvent(new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key,
+    }))
+  })
+  return handled
+}
+
 describe('useCodeMirror', () => {
   let container: HTMLDivElement
 
@@ -137,16 +150,24 @@ describe('useCodeMirror', () => {
     )
     const view = result.current.current!
 
-    act(() => {
-      view.focus()
-      view.contentDOM.dispatchEvent(new KeyboardEvent('keydown', {
-        bubbles: true,
-        cancelable: true,
-        key: 'Escape',
-      }))
-    })
+    dispatchKey(view, 'Escape')
 
     expect(onEscape).toHaveBeenCalledOnce()
+  })
+
+  it('lets suggestion navigation run before the CodeMirror default keymap', () => {
+    const ref = { current: container }
+    const onSuggestionKey = vi.fn(() => true)
+    const { result } = renderHook(() =>
+      useCodeMirror(ref, 'first\nsecond', { ...noopCallbacks, onSuggestionKey }),
+    )
+    const view = result.current.current
+    if (!view) throw new Error('CodeMirror view was not created')
+
+    const handled = dispatchKey(view, 'ArrowDown')
+
+    expect(handled).toBe(true)
+    expect(onSuggestionKey).toHaveBeenCalledWith('ArrowDown')
   })
 
   it('inserts a literal tab instead of letting Tab move focus away', () => {

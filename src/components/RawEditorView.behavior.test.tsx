@@ -123,16 +123,19 @@ function createMockView(docText = '[[Target') {
   }
 }
 
+function latestCodeMirrorCallbacks<T>(): T {
+  const callbacks = useCodeMirrorMock.mock.calls.at(-1)?.[2]
+  if (!callbacks) throw new Error('CodeMirror callbacks were not registered')
+  return callbacks as T
+}
+
 describe('RawEditorView behavior coverage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.useFakeTimers()
     noteSearchListState.lastProps = null
     viewRefState.current = createMockView()
-    useCodeMirrorMock.mockImplementation((_containerRef: unknown, _content: string, callbacks: unknown) => {
-      useCodeMirrorMock.mock.calls[useCodeMirrorMock.mock.calls.length - 1]![2] = callbacks
-      return viewRefState
-    })
+    useCodeMirrorMock.mockImplementation(() => viewRefState)
     buildRawEditorBaseItemsMock.mockReturnValue([{ title: 'Base item' }])
     buildTypeEntryMapMock.mockReturnValue({ Note: { title: 'Note' } })
     detectYamlErrorMock.mockImplementation((doc: string) => (
@@ -166,10 +169,10 @@ describe('RawEditorView behavior coverage', () => {
       />,
     )
 
-    const callbacks = useCodeMirrorMock.mock.calls[0]![2] as {
+    const callbacks = latestCodeMirrorCallbacks<{
       onDocChange: (doc: string) => void
       onSave: () => void
-    }
+    }>()
 
     act(() => {
       callbacks.onDocChange('broken content')
@@ -235,14 +238,16 @@ describe('RawEditorView behavior coverage', () => {
       />,
     )
 
-    const callbacks = useCodeMirrorMock.mock.calls[0]![2] as {
+    let callbacks = latestCodeMirrorCallbacks<{
       onCursorActivity: (view: unknown) => void
       onEscape: () => boolean
-    }
+      onSuggestionKey?: (key: string) => boolean
+    }>()
 
     act(() => {
       callbacks.onCursorActivity(mockView)
     })
+    callbacks = latestCodeMirrorCallbacks<typeof callbacks>()
 
     expect(buildRawEditorAutocompleteStateMock).toHaveBeenCalledWith(expect.objectContaining({
       query: 'alp',
@@ -251,16 +256,28 @@ describe('RawEditorView behavior coverage', () => {
     expect(screen.getByTestId('raw-editor-wikilink-dropdown')).toBeInTheDocument()
     expect(screen.getByTestId('note-search-selected-index')).toHaveTextContent('0')
 
-    fireEvent.keyDown(screen.getByRole('presentation'), { key: 'ArrowDown' })
+    let handled = false
+    act(() => {
+      handled = callbacks.onSuggestionKey?.('ArrowDown') ?? false
+    })
+    expect(handled).toBe(true)
     expect(screen.getByTestId('note-search-selected-index')).toHaveTextContent('1')
+    callbacks = latestCodeMirrorCallbacks<typeof callbacks>()
 
-    fireEvent.keyDown(screen.getByRole('presentation'), { key: 'ArrowUp' })
+    act(() => {
+      handled = callbacks.onSuggestionKey?.('ArrowUp') ?? false
+    })
+    expect(handled).toBe(true)
     expect(screen.getByTestId('note-search-selected-index')).toHaveTextContent('0')
 
     fireEvent.mouseEnter(screen.getByTestId('note-search-item-1'))
     expect(screen.getByTestId('note-search-selected-index')).toHaveTextContent('1')
+    callbacks = latestCodeMirrorCallbacks<typeof callbacks>()
 
-    fireEvent.keyDown(screen.getByRole('presentation'), { key: 'Enter' })
+    act(() => {
+      handled = callbacks.onSuggestionKey?.('Enter') ?? false
+    })
+    expect(handled).toBe(true)
 
     expect(replaceActiveWikilinkQueryMock).toHaveBeenCalledWith('[[alp', '[[alp'.length, 'Beta')
     expect(mockView.dispatch).toHaveBeenCalledWith({
@@ -270,6 +287,7 @@ describe('RawEditorView behavior coverage', () => {
     expect(onContentChange).toHaveBeenCalledWith('/vault/a.md', '[[Inserted]]')
     expect(trackEventMock).toHaveBeenCalledWith('wikilink_inserted')
     expect(mockView.focus).toHaveBeenCalledTimes(1)
+    callbacks = latestCodeMirrorCallbacks<typeof callbacks>()
     expect(callbacks.onEscape()).toBe(false)
   })
 
@@ -296,10 +314,10 @@ describe('RawEditorView behavior coverage', () => {
       />,
     )
 
-    let callbacks = useCodeMirrorMock.mock.calls[0]![2] as {
+    let callbacks = latestCodeMirrorCallbacks<{
       onCursorActivity: (view: unknown) => void
       onEscape: () => boolean
-    }
+    }>()
 
     act(() => {
       callbacks.onCursorActivity(mockView)
@@ -307,14 +325,14 @@ describe('RawEditorView behavior coverage', () => {
 
     expect(screen.queryByTestId('raw-editor-wikilink-dropdown')).not.toBeInTheDocument()
 
-    callbacks = useCodeMirrorMock.mock.calls.at(-1)![2] as typeof callbacks
+    callbacks = latestCodeMirrorCallbacks<typeof callbacks>()
 
     act(() => {
       callbacks.onCursorActivity(mockView)
     })
 
     expect(screen.getByTestId('raw-editor-wikilink-dropdown')).toBeInTheDocument()
-    callbacks = useCodeMirrorMock.mock.calls.at(-1)![2] as typeof callbacks
+    callbacks = latestCodeMirrorCallbacks<typeof callbacks>()
     expect(callbacks.onEscape()).toBe(true)
   })
 

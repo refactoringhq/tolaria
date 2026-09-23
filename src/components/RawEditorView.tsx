@@ -1,16 +1,9 @@
-import { useRef, useState, useCallback, useEffect, useMemo } from 'react'
-import { trackEvent } from '../lib/telemetry'
+import { useRef, useState, useCallback, useEffect } from 'react'
 import type { EditorView } from '@codemirror/view'
-import { MIN_QUERY_LENGTH } from '../utils/wikilinkSuggestions'
-import { buildTypeEntryMap } from '../utils/typeColors'
-import { NoteSearchList } from './NoteSearchList'
+import { trackEvent } from '../lib/telemetry'
 import {
-  buildRawEditorAutocompleteState,
-  buildRawEditorBaseItems,
   detectYamlError,
-  extractWikilinkQuery,
   getRawEditorDropdownPosition,
-  replaceActiveWikilinkQuery,
   type RawEditorAutocompleteState,
 } from '../utils/rawEditorUtils'
 import { useCodeMirror } from '../hooks/useCodeMirror'
@@ -30,6 +23,14 @@ import {
   replaceImportedRemoteImages,
   type RemoteImageImportResult,
 } from '../utils/remoteImagePaste'
+import {
+  RAW_EDITOR_DROPDOWN_MAX_HEIGHT,
+  useRawEditorAutocompleteController,
+  useRawEditorWikilinkInsertion,
+  type RawEditorPendingChangeRefs,
+  type RawEditorSetAutocomplete,
+} from './rawEditorAutocomplete'
+import { RawEditorAutocompleteDropdown } from './RawEditorAutocompleteDropdown'
 
 export interface RawEditorViewProps {
   content: string
@@ -48,14 +49,7 @@ export interface RawEditorViewProps {
 }
 
 const DEBOUNCE_MS = 500
-const DROPDOWN_MAX_HEIGHT = 200
-
-type PendingChangeRefs = {
-  debounceRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>
-  latestDocRef: React.MutableRefObject<string>
-  onContentChangeRef: React.MutableRefObject<RawEditorViewProps['onContentChange']>
-  pathRef: React.MutableRefObject<string>
-}
+type PendingChangeRefs = RawEditorPendingChangeRefs
 
 function useLatestRef<T>(value: T): React.MutableRefObject<T> {
   const ref = useRef(value)
@@ -78,18 +72,6 @@ function flushPendingRawEditorChange({
   onContentChangeRef.current(pathRef.current, latestDocRef.current)
 }
 
-function moveRawEditorAutocompleteSelection(
-  autocomplete: RawEditorAutocompleteState,
-  direction: 'next' | 'previous',
-): RawEditorAutocompleteState {
-  const selectedIndex =
-    direction === 'next'
-    ? Math.min(autocomplete.selectedIndex + 1, autocomplete.items.length - 1)
-    : Math.max(autocomplete.selectedIndex - 1, 0)
-
-  return { ...autocomplete, selectedIndex }
-}
-
 function RawEditorYamlErrorBanner({ error }: { error: string | null }) {
   if (!error) return null
 
@@ -106,40 +88,6 @@ function RawEditorYamlErrorBanner({ error }: { error: string | null }) {
     >
       <span style={{ fontWeight: 600 }}>YAML error:</span>
       <span>{error}</span>
-    </div>
-  )
-}
-
-function RawEditorAutocompleteDropdown({
-  autocomplete,
-  onItemHover,
-  position,
-}: {
-  autocomplete: RawEditorAutocompleteState | null
-  onItemHover: (index: number) => void
-  position: { top: number; left: number }
-}) {
-  if (!autocomplete || autocomplete.items.length === 0) return null
-
-  return (
-    <div
-      className="fixed z-50 min-w-64 max-w-xs overflow-auto rounded-md border shadow-[0_12px_30px_var(--shadow-dialog)]"
-      style={{
-        top: position.top,
-        left: position.left,
-        maxHeight: DROPDOWN_MAX_HEIGHT,
-        background: 'var(--popover)',
-        borderColor: 'var(--border)',
-      }}
-      data-testid="raw-editor-wikilink-dropdown"
-    >
-      <NoteSearchList
-        items={autocomplete.items}
-        selectedIndex={autocomplete.selectedIndex}
-        getItemKey={(item, i) => `${item.title}-${item.path ?? i}`}
-        onItemClick={(item) => item.onItemClick()}
-        onItemHover={onItemHover}
-      />
     </div>
   )
 }
@@ -215,182 +163,6 @@ function useRawEditorPendingChanges({
     pathRef,
     yamlError,
   }
-}
-
-type RawEditorAutocompleteDirection = 'next' | 'previous'
-type RawEditorSetAutocomplete = React.Dispatch<React.SetStateAction<RawEditorAutocompleteState | null>>
-type RawEditorTypeEntryMap = ReturnType<typeof buildTypeEntryMap>
-
-function getRawEditorAutocompleteDirection(key: string): RawEditorAutocompleteDirection | null {
-  if (key === 'ArrowDown') return 'next'
-  if (key === 'ArrowUp') return 'previous'
-  return null
-}
-
-function buildNextRawEditorAutocomplete({
-  baseItems,
-  insertWikilinkRef,
-  sourceEntry,
-  typeEntryMap,
-  vaultPath,
-  view,
-}: {
-  baseItems: ReturnType<typeof buildRawEditorBaseItems>
-  insertWikilinkRef: React.MutableRefObject<(target: string) => void>
-  sourceEntry?: VaultEntry
-  typeEntryMap: RawEditorTypeEntryMap
-  vaultPath?: string
-  view: EditorView
-}): RawEditorAutocompleteState | null {
-  const doc = view.state.doc.toString()
-  const cursor = view.state.selection.main.head
-  const query = extractWikilinkQuery(doc, cursor)
-  if (query === null || query.length < MIN_QUERY_LENGTH) return null
-
-  return buildRawEditorAutocompleteState({
-    view,
-    baseItems,
-    query,
-    typeEntryMap,
-    onInsertTarget: (target: string) => insertWikilinkRef.current(target),
-    sourceEntry,
-    vaultPath: vaultPath ?? '',
-  })
-}
-
-function useRawEditorAutocompleteEscape(
-  autocomplete: RawEditorAutocompleteState | null,
-  setAutocomplete: RawEditorSetAutocomplete,
-) {
-  return useCallback(() => {
-    if (autocomplete) {
-      setAutocomplete(null)
-      return true
-    }
-    return false
-  }, [autocomplete, setAutocomplete])
-}
-
-function useRawEditorAutocompleteKeyboard(
-  autocomplete: RawEditorAutocompleteState | null,
-  setAutocomplete: RawEditorSetAutocomplete,
-) {
-  return useCallback(
-    (e: Pick<KeyboardEvent, 'key' | 'preventDefault'>) => {
-    if (!autocomplete) return
-
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      autocomplete.items[autocomplete.selectedIndex]?.onItemClick()
-      return
-    }
-
-    const direction = getRawEditorAutocompleteDirection(e.key)
-    if (!direction) return
-
-    e.preventDefault()
-      setAutocomplete((prev) => (prev ? moveRawEditorAutocompleteSelection(prev, direction) : null))
-    },
-    [autocomplete, setAutocomplete],
-  )
-}
-
-function useRawEditorAutocompleteController({
-  entries,
-  sourceEntry,
-  vaultPath,
-}: Pick<RawEditorViewProps, 'entries' | 'sourceEntry' | 'vaultPath'>) {
-  const [autocomplete, setAutocomplete] = useState<RawEditorAutocompleteState | null>(null)
-  const typeEntryMap = useMemo(() => buildTypeEntryMap(entries), [entries])
-  const baseItems = useMemo(() => buildRawEditorBaseItems(entries), [entries])
-  const insertWikilinkRef = useRef<(target: string) => void>(() => {})
-
-  const handleCursorActivity = useCallback(
-    (view: EditorView) => {
-      setAutocomplete(
-        buildNextRawEditorAutocomplete({
-      baseItems,
-      insertWikilinkRef,
-      sourceEntry,
-      typeEntryMap,
-      vaultPath,
-      view,
-        }),
-      )
-    },
-    [baseItems, sourceEntry, typeEntryMap, vaultPath],
-  )
-
-  const handleItemHover = useCallback((index: number) => {
-    setAutocomplete((prev) => (prev ? { ...prev, selectedIndex: index } : null))
-  }, [])
-
-  const handleEscape = useRawEditorAutocompleteEscape(autocomplete, setAutocomplete)
-  const handleAutocompleteKey = useRawEditorAutocompleteKeyboard(autocomplete, setAutocomplete)
-
-  return {
-    autocomplete,
-    handleAutocompleteKey,
-    handleCursorActivity,
-    handleEscape,
-    handleItemHover,
-    insertWikilinkRef,
-    setAutocomplete,
-  }
-}
-
-function useRawEditorWikilinkInsertion({
-  debounceRef,
-  insertWikilinkRef,
-  latestDocRef,
-  onContentChangeRef,
-  pathRef,
-  setAutocomplete,
-  viewRef,
-}: PendingChangeRefs & {
-  insertWikilinkRef: React.MutableRefObject<(target: string) => void>
-  setAutocomplete: RawEditorSetAutocomplete
-  viewRef: React.MutableRefObject<EditorView | null>
-}) {
-  const applyWikilinkChange = useCallback(
-    (view: EditorView, next: { text: string; cursor: number }) => {
-    const doc = view.state.doc.toString()
-
-    view.dispatch({
-      changes: { from: 0, to: doc.length, insert: next.text },
-      selection: { anchor: next.cursor },
-    })
-    trackEvent('wikilink_inserted')
-    setAutocomplete(null)
-
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = null
-    latestDocRef.current = next.text
-    onContentChangeRef.current(pathRef.current, next.text)
-
-    view.focus()
-    },
-    [debounceRef, latestDocRef, onContentChangeRef, pathRef, setAutocomplete],
-  )
-
-  const insertAutocompleteWikilink = useCallback(
-    (target: string) => {
-    const view = viewRef.current
-    if (!view) return
-
-    const cursor = view.state.selection.main.head
-    const doc = view.state.doc.toString()
-    const replacement = replaceActiveWikilinkQuery(doc, cursor, target)
-    if (!replacement) return
-
-    applyWikilinkChange(view, replacement)
-    },
-    [applyWikilinkChange, viewRef],
-  )
-
-  useEffect(() => {
-    insertWikilinkRef.current = insertAutocompleteWikilink
-  }, [insertAutocompleteWikilink, insertWikilinkRef])
 }
 
 function useRawEditorPlainTextPasteTarget({
@@ -533,13 +305,11 @@ function canRewriteRawImagePaste({
 function useRawEditorDomEvents(
   rootRef: React.RefObject<HTMLDivElement | null>,
   activatePlainTextPaste: () => void,
-  handleAutocompleteKey: (event: KeyboardEvent) => void,
   flushPendingChange: () => void,
 ): void {
   useEffect(() => {
     const root = rootRef.current
     if (!root) return
-    const handleKeyDown = (event: KeyboardEvent) => handleAutocompleteKey(event)
     const handleFocusOut = (event: FocusEvent) => {
       if (event.relatedTarget instanceof Node && root.contains(event.relatedTarget)) return
       flushPendingChange()
@@ -547,14 +317,12 @@ function useRawEditorDomEvents(
     root.addEventListener('focusin', activatePlainTextPaste)
     root.addEventListener('focusout', handleFocusOut)
     root.addEventListener('mousedown', activatePlainTextPaste, { capture: true })
-    root.addEventListener('keydown', handleKeyDown)
     return () => {
       root.removeEventListener('focusin', activatePlainTextPaste)
       root.removeEventListener('focusout', handleFocusOut)
       root.removeEventListener('mousedown', activatePlainTextPaste, { capture: true })
-      root.removeEventListener('keydown', handleKeyDown)
     }
-  }, [activatePlainTextPaste, flushPendingChange, handleAutocompleteKey, rootRef])
+  }, [activatePlainTextPaste, flushPendingChange, rootRef])
 }
 
 function useRawEditorContentSync(options: {
@@ -597,7 +365,7 @@ interface RawEditorSurfaceProps {
 
 function RawEditorSurface(options: RawEditorSurfaceProps) {
   const { autocomplete, containerRef, findOpen, findRequest, handleItemHover, handleRemoteImagePaste, locale, path, pendingChanges, rawDoc, replaceOpen, rootRef, setFindOpen, setReplaceOpen, showFrontmatterWarning, viewRef } = options
-  const dropdownPosition = getRawEditorDropdownPosition(autocomplete, DROPDOWN_MAX_HEIGHT, window)
+  const dropdownPosition = getRawEditorDropdownPosition(autocomplete, RAW_EDITOR_DROPDOWN_MAX_HEIGHT, window)
   return (
     <div ref={rootRef} className="flex flex-1 flex-col min-h-0 relative" style={{ background: 'var(--background)' }} onPasteCapture={handleRemoteImagePaste}>
       <RawEditorYamlErrorBanner error={showFrontmatterWarning ? pendingChanges.yamlError : null} />
@@ -639,6 +407,7 @@ function useRawEditorViewRef(options: {
       onCursorActivity: autocompleteController.handleCursorActivity,
       onSave: pendingChanges.handleSave,
       onEscape: handleEscape,
+      onSuggestionKey: autocompleteController.handleSuggestionKey,
     },
     path,
   )
@@ -676,7 +445,6 @@ function useRawEditorState(options: RawEditorViewProps) {
     containerRef,
     findOpen,
     findRequest,
-    handleAutocompleteKey: autocompleteController.handleAutocompleteKey,
     handleItemHover: autocompleteController.handleItemHover,
     insertWikilinkRef: autocompleteController.insertWikilinkRef,
     locale,
@@ -702,7 +470,6 @@ function useRawEditorEffects(
   const { content, findRequest, onImageImportResult, path } = options
   const {
     containerRef,
-    handleAutocompleteKey,
     insertWikilinkRef,
     pendingChanges,
     rootRef,
@@ -723,7 +490,7 @@ function useRawEditorEffects(
     setAutocomplete,
     viewRef,
   })
-  useRawEditorDomEvents(rootRef, activatePlainTextPaste, handleAutocompleteKey, pendingChanges.flush)
+  useRawEditorDomEvents(rootRef, activatePlainTextPaste, pendingChanges.flush)
 
   useRawEditorWikilinkInsertion({
     debounceRef: pendingChanges.debounceRef,

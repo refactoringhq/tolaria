@@ -68,6 +68,7 @@ export interface CodeMirrorCallbacks {
   onCursorActivity: (view: EditorView) => void
   onSave: () => void
   onEscape: () => boolean
+  onSuggestionKey?: (key: 'ArrowDown' | 'ArrowUp' | 'Enter') => boolean
 }
 
 function buildBaseTheme() {
@@ -153,8 +154,12 @@ function buildAutoTextDirectionExtension() {
   ]
 }
 
-function buildSaveKeymap(callbacks: { current: CodeMirrorCallbacks }) {
-  return Prec.highest(keymap.of([{
+function buildApplicationKeymap(callbacks: { current: CodeMirrorCallbacks }) {
+  const suggestionKeys = ['ArrowDown', 'ArrowUp', 'Enter'] as const
+  return Prec.highest(keymap.of([...suggestionKeys.map((suggestionKey) => ({
+    key: suggestionKey,
+    run: () => callbacks.current.onSuggestionKey?.(suggestionKey) ?? false,
+  })), {
     key: 'Mod-s',
     run: () => { callbacks.current.onSave(); return true },
   }, {
@@ -363,7 +368,7 @@ export function useCodeMirror(
         history(),
         buildArrowLigaturesExtension(),
         buildRawEditorKeymap(),
-        buildSaveKeymap(callbacksRef),
+        buildApplicationKeymap(callbacksRef),
         buildBaseTheme(),
         editorFindHighlightExtension,
         EditorView.cspNonce.of(RUNTIME_STYLE_NONCE),

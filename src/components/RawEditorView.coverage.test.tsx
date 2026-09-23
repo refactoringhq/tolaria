@@ -29,6 +29,7 @@ type CodeMirrorCallbacks = {
   onDocChange: (doc: string) => void
   onEscape: () => boolean
   onSave: () => void
+  onSuggestionKey?: (key: string) => boolean
 }
 
 let latestCallbacks: CodeMirrorCallbacks | null = null
@@ -40,6 +41,14 @@ let latestViewRef: MutableRefObject<{
     selection: { main: { head: number } }
   }
 } | null>
+
+function runLatestSuggestionKey(key: string): boolean {
+  let handled = false
+  act(() => {
+    handled = latestCallbacks?.onSuggestionKey?.(key) ?? false
+  })
+  return handled
+}
 
 vi.mock('../lib/telemetry', () => ({
   trackEvent: trackEventMock,
@@ -252,10 +261,9 @@ describe('RawEditorView additional coverage', () => {
     expect(buildRawEditorAutocompleteStateMock).toHaveBeenCalled()
     expect(screen.getByTestId('raw-editor-wikilink-dropdown')).toBeInTheDocument()
 
-    const presentation = screen.getByRole('presentation')
-    fireEvent.keyDown(presentation, { key: 'ArrowDown' })
-    fireEvent.keyDown(presentation, { key: 'ArrowUp' })
-    fireEvent.keyDown(presentation, { key: 'Enter' })
+    expect(runLatestSuggestionKey('ArrowDown')).toBe(true)
+    expect(runLatestSuggestionKey('ArrowUp')).toBe(true)
+    expect(runLatestSuggestionKey('Enter')).toBe(true)
 
     await waitFor(() => {
       expect(replaceActiveWikilinkQueryMock).toHaveBeenCalledWith('Before [[Al', 11, 'Alpha')
