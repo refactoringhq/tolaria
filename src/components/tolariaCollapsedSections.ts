@@ -28,6 +28,11 @@ type CollapsedSectionRenderState = {
   collapsedHeadingIds: Set<string>
   hiddenBlockIds: Set<string>
 }
+type CollapsedSectionItem = {
+  blockId?: string
+  descendantBlockIds: readonly string[]
+  headingLevel: number | null
+}
 type CollapsedHeadingDotsHit = {
   blockId: string
   inlineContent: HTMLElement
@@ -123,15 +128,6 @@ function isCollapsibleSectionBlock(block: CollapsibleBlock | undefined) {
   return blockHeadingLevel(block) !== null || isCollapsibleListItemBlock(block)
 }
 
-function addDescendantBlockIds(block: CollapsibleBlock, hiddenBlockIds: Set<string>) {
-  if (!Array.isArray(block.children)) return
-
-  for (const child of block.children) {
-    if (typeof child.id === 'string') hiddenBlockIds.add(child.id)
-    addDescendantBlockIds(child, hiddenBlockIds)
-  }
-}
-
 function flattenBlocks(blocks: readonly CollapsibleBlock[], result: CollapsibleBlock[] = []) {
   for (const block of blocks) {
     result.push(block)
@@ -141,39 +137,82 @@ function flattenBlocks(blocks: readonly CollapsibleBlock[], result: CollapsibleB
   return result
 }
 
-function collapsedSectionRenderState(
-  blocks: readonly CollapsibleBlock[],
+function descendantBlockIds(block: CollapsibleBlock, result: string[] = []) {
+  if (!Array.isArray(block.children)) return result
+
+  for (const child of block.children) {
+    if (typeof child.id === 'string') result.push(child.id)
+    descendantBlockIds(child, result)
+  }
+
+  return result
+}
+
+function collapsedSectionItemFromBlock(block: CollapsibleBlock): CollapsedSectionItem {
+  return {
+    blockId: typeof block.id === 'string' ? block.id : undefined,
+    descendantBlockIds: isCollapsibleListItemBlock(block) ? descendantBlockIds(block) : [],
+    headingLevel: blockHeadingLevel(block),
+  }
+}
+
+function openCollapsedSectionLevel(
+  activeCollapsedLevel: number | null,
+  headingLevel: number | null,
+) {
+  if (activeCollapsedLevel === null) return null
+  return isClosingHeading(headingLevel, activeCollapsedLevel) ? null : activeCollapsedLevel
+}
+
+function hideBlockInsideCollapsedSection(
+  state: CollapsedSectionRenderState,
+  activeCollapsedLevel: number | null,
+  blockId: string | undefined,
+) {
+  if (activeCollapsedLevel === null) return false
+  if (blockId) state.hiddenBlockIds.add(blockId)
+  return true
+}
+
+function startCollapsedSection(
+  state: CollapsedSectionRenderState,
+  item: CollapsedSectionItem,
+  collapsedHeadingIds: ReadonlySet<string>,
+) {
+  if (!item.blockId || !collapsedHeadingIds.has(item.blockId)) return null
+  if (item.headingLevel === null && item.descendantBlockIds.length === 0) return null
+
+  state.collapsedHeadingIds.add(item.blockId)
+  item.descendantBlockIds.forEach((blockId) => {
+    state.hiddenBlockIds.add(blockId)
+  })
+  return item.headingLevel
+}
+
+function collapsedSectionRenderStateFromItems(
+  items: readonly CollapsedSectionItem[],
   collapsedHeadingIds: ReadonlySet<string>,
 ): CollapsedSectionRenderState {
   const state = emptyCollapsedSectionRenderState()
   let activeCollapsedLevel: number | null = null
 
-  for (const block of flattenBlocks(blocks)) {
-    const blockId = typeof block.id === 'string' ? block.id : undefined
-    const headingLevel = blockHeadingLevel(block)
-    const closesActiveSection = activeCollapsedLevel !== null
-      && isClosingHeading(headingLevel, activeCollapsedLevel)
-
-    if (closesActiveSection) activeCollapsedLevel = null
-
-    if (activeCollapsedLevel !== null) {
-      if (blockId) state.hiddenBlockIds.add(blockId)
-      continue
-    }
-
-    if (blockId && headingLevel !== null && collapsedHeadingIds.has(blockId)) {
-      state.collapsedHeadingIds.add(blockId)
-      activeCollapsedLevel = headingLevel
-      continue
-    }
-
-    if (blockId && isCollapsibleListItemBlock(block) && collapsedHeadingIds.has(blockId)) {
-      state.collapsedHeadingIds.add(blockId)
-      addDescendantBlockIds(block, state.hiddenBlockIds)
-    }
+  for (const item of items) {
+    activeCollapsedLevel = openCollapsedSectionLevel(activeCollapsedLevel, item.headingLevel)
+    if (hideBlockInsideCollapsedSection(state, activeCollapsedLevel, item.blockId)) continue
+    activeCollapsedLevel = startCollapsedSection(state, item, collapsedHeadingIds)
   }
 
   return state
+}
+
+function collapsedSectionRenderState(
+  blocks: readonly CollapsibleBlock[],
+  collapsedHeadingIds: ReadonlySet<string>,
+): CollapsedSectionRenderState {
+  return collapsedSectionRenderStateFromItems(
+    flattenBlocks(blocks).map(collapsedSectionItemFromBlock),
+    collapsedHeadingIds,
+  )
 }
 
 function cssString(value: string) {
@@ -359,9 +398,13 @@ function renderedListItemHasChildren(element: HTMLElement) {
   return isRenderedListItemBlock(element) && renderedChildBlockElements(element).length > 0
 }
 
-function addRenderedDescendantBlockIds(element: HTMLElement, hiddenBlockIds: Set<string>) {
-  for (const child of renderedChildBlockElements(element)) {
-    if (child.dataset.id) hiddenBlockIds.add(child.dataset.id)
+function collapsedSectionItemFromElement(element: HTMLElement): CollapsedSectionItem {
+  return {
+    blockId: element.dataset.id,
+    descendantBlockIds: renderedListItemHasChildren(element)
+      ? renderedChildBlockElements(element).flatMap((child) => child.dataset.id ?? [])
+      : [],
+    headingLevel: headingLevelFromRenderedBlock(element),
   }
 }
 
@@ -380,35 +423,10 @@ function collapsedSectionRenderStateFromElements(
   elements: readonly HTMLElement[],
   collapsedHeadingIds: ReadonlySet<string>,
 ): CollapsedSectionRenderState {
-  const state = emptyCollapsedSectionRenderState()
-  let activeCollapsedLevel: number | null = null
-
-  for (const element of elements) {
-    const blockId = element.dataset.id
-    const headingLevel = headingLevelFromRenderedBlock(element)
-    const closesActiveSection = activeCollapsedLevel !== null
-      && isClosingHeading(headingLevel, activeCollapsedLevel)
-
-    if (closesActiveSection) activeCollapsedLevel = null
-
-    if (activeCollapsedLevel !== null) {
-      if (blockId) state.hiddenBlockIds.add(blockId)
-      continue
-    }
-
-    if (blockId && headingLevel !== null && collapsedHeadingIds.has(blockId)) {
-      state.collapsedHeadingIds.add(blockId)
-      activeCollapsedLevel = headingLevel
-      continue
-    }
-
-    if (blockId && collapsedHeadingIds.has(blockId) && renderedListItemHasChildren(element)) {
-      state.collapsedHeadingIds.add(blockId)
-      addRenderedDescendantBlockIds(element, state.hiddenBlockIds)
-    }
-  }
-
-  return state
+  return collapsedSectionRenderStateFromItems(
+    elements.map(collapsedSectionItemFromElement),
+    collapsedHeadingIds,
+  )
 }
 
 function mergeCollapsedSectionRenderStates(...states: CollapsedSectionRenderState[]): CollapsedSectionRenderState {
