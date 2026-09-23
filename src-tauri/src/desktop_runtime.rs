@@ -73,6 +73,17 @@ pub(crate) fn stop_ws_bridge_child(active_child: &mut Option<Child>) {
     }
 }
 
+pub(crate) fn stop_ws_bridge_on_exit(state: &WsBridgeChild) {
+    let mut active_child = match state.0.lock() {
+        Ok(active_child) => active_child,
+        Err(poisoned) => {
+            log::warn!("Recovered poisoned ws-bridge state during app exit");
+            poisoned.into_inner()
+        }
+    };
+    stop_ws_bridge_child(&mut active_child);
+}
+
 pub(crate) fn sync_ws_bridge_for_vault(
     app_handle: &tauri::AppHandle,
     vault_path: Option<&Path>,
@@ -185,4 +196,24 @@ pub(crate) fn spawn_initial_ws_bridge_sync(app: &tauri::App) {
 
         sync_ws_bridge_for_selected_vault(&app_handle);
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{stop_ws_bridge_on_exit, WsBridgeChild};
+    use std::panic::{catch_unwind, AssertUnwindSafe};
+    use std::sync::Mutex;
+
+    #[test]
+    fn exit_cleanup_recovers_a_poisoned_bridge_lock() {
+        let state = WsBridgeChild(Mutex::new(None));
+        let panic = catch_unwind(AssertUnwindSafe(|| {
+            let _guard = state.0.lock().unwrap();
+            panic!("poison bridge state");
+        }));
+
+        assert!(panic.is_err());
+        assert!(state.0.is_poisoned());
+        stop_ws_bridge_on_exit(&state);
+    }
 }

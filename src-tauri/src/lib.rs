@@ -403,8 +403,7 @@ fn handle_run_event(app_handle: &tauri::AppHandle, event: &tauri::RunEvent) {
 
     if let tauri::RunEvent::Exit = event {
         let state: tauri::State<'_, desktop_runtime::WsBridgeChild> = app_handle.state();
-        let mut guard = state.0.lock().unwrap();
-        desktop_runtime::stop_ws_bridge_child(&mut guard);
+        desktop_runtime::stop_ws_bridge_on_exit(&state);
     }
 }
 
