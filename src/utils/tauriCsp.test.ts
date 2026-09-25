@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs'
 
+const tauriConfigSource = readFileSync('src-tauri/tauri.conf.json', 'utf8')
+
 describe('Tauri Content Security Policy', () => {
   it('allows runtime style elements and React style attributes', () => {
-    const config = JSON.parse(readFileSync(`${process.cwd()}/src-tauri/tauri.conf.json`, 'utf8'))
+    const config = JSON.parse(tauriConfigSource)
     const csp = config.app.security.csp as Record<string, string>
 
     expect(csp['style-src']).toContain("'unsafe-inline'")
@@ -13,7 +15,7 @@ describe('Tauri Content Security Policy', () => {
   })
 
   it('keeps startup font loading local and network independent', () => {
-    const config = JSON.parse(readFileSync('src-tauri/tauri.conf.json', 'utf8'))
+    const config = JSON.parse(tauriConfigSource)
     const appDocumentSource = readFileSync('index.html', 'utf8')
     const mainEntry = readFileSync('src/main.tsx', 'utf8')
     const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
@@ -36,30 +38,42 @@ describe('Tauri Content Security Policy', () => {
     expect(devCsp).not.toMatch(/https:\/\/fonts\.(?:googleapis|gstatic)\.com/)
   })
 
-  it('allows PDF object previews from scoped Tauri asset URLs', () => {
-    const config = JSON.parse(readFileSync(`${process.cwd()}/src-tauri/tauri.conf.json`, 'utf8'))
+  it('blocks legacy object-based PDF previews', () => {
+    const config = JSON.parse(tauriConfigSource)
     const csp = config.app.security.csp as Record<string, string>
 
-    expect(csp['object-src']).toContain('asset:')
-    expect(csp['object-src']).toContain('http://asset.localhost')
+    expect(csp['object-src']).toBe("'none'")
+  })
+
+  it('allows the app-owned PDF renderer to fetch assets and start its bundled worker', () => {
+    const config = JSON.parse(tauriConfigSource)
+    const csp = config.app.security.csp as Record<string, string>
+    const devCsp = config.app.security.devCsp as string
+
+    expect(csp['connect-src']).toContain('asset:')
+    expect(csp['connect-src']).toContain('http://asset.localhost')
+    expect(csp['worker-src']).toBe("'self'")
+    expect(devCsp).toContain('connect-src')
+    expect(devCsp).toContain('asset: http://asset.localhost')
+    expect(devCsp).toContain("worker-src 'self'")
   })
 
   it('allows packaged PDF and isolated scripted HTML preview frames', () => {
-    const config = JSON.parse(readFileSync(`${process.cwd()}/src-tauri/tauri.conf.json`, 'utf8'))
+    const config = JSON.parse(tauriConfigSource)
     const csp = config.app.security.csp as Record<string, string>
     const devCsp = config.app.security.devCsp as string
 
     expect(csp['frame-src']).toBe(
-      "'self' asset: http://asset.localhost data: tolaria-html-block: http://tolaria-html-block.localhost",
+      "'self' data: tolaria-html-block: http://tolaria-html-block.localhost",
     )
     expect(devCsp).toContain(
-      "frame-src 'self' asset: http://asset.localhost data: tolaria-html-block: http://tolaria-html-block.localhost",
+      "frame-src 'self' data: tolaria-html-block: http://tolaria-html-block.localhost",
     )
     expect(csp['script-src']).not.toContain("'unsafe-inline'")
   })
 
   it('allows audio and video media previews from scoped Tauri asset URLs', () => {
-    const config = JSON.parse(readFileSync(`${process.cwd()}/src-tauri/tauri.conf.json`, 'utf8'))
+    const config = JSON.parse(tauriConfigSource)
     const csp = config.app.security.csp as Record<string, string>
 
     expect(csp['media-src']).toContain('asset:')
@@ -67,14 +81,14 @@ describe('Tauri Content Security Policy', () => {
   })
 
   it('allows bundled tldraw translation JSON fetched from inlined data URLs', () => {
-    const config = JSON.parse(readFileSync(`${process.cwd()}/src-tauri/tauri.conf.json`, 'utf8'))
+    const config = JSON.parse(tauriConfigSource)
     const csp = config.app.security.csp as Record<string, string>
 
     expect(csp['connect-src']).toContain('data:')
   })
 
   it('uses a dev-only CSP that permits Vite React Refresh without weakening production script policy', () => {
-    const config = JSON.parse(readFileSync(`${process.cwd()}/src-tauri/tauri.conf.json`, 'utf8'))
+    const config = JSON.parse(tauriConfigSource)
     const productionCsp = config.app.security.csp as Record<string, string>
     const devCsp = config.app.security.devCsp as string
 

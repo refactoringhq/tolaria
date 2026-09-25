@@ -234,3 +234,4 @@ proposed → active → superseded
 | [0178](0178-custom-protocol-for-scripted-html-blocks.md) | Custom protocol for scripted HTML blocks | active |
 | [0180](0180-shared-cross-runtime-word-count-contract.md) | Shared cross-runtime word-count contract | active |
 | [0181](0181-shared-cross-runtime-inline-markdown-stripping-contract.md) | Shared cross-runtime inline-markdown stripping contract | active |
+| [0182](0182-app-owned-cross-platform-pdf-rendering.md) | App-owned cross-platform PDF rendering | active |

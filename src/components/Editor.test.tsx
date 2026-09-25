@@ -140,7 +140,7 @@ describe('Editor', () => {
     })
 
     expect(screen.getByTestId('pdf-file-preview')).toHaveAttribute(
-      'data',
+      'data-pdf-source',
       expect.stringMatching(/^asset:\/\/localhost\/%2Fvault%2Fassets%2Freport\.pdf\?tolaria_pdf_preview=/u),
     )
     expect(screen.queryByTestId('blocknote-view')).not.toBeInTheDocument()
@@ -726,10 +726,10 @@ describe('click empty editor space', () => {
     )
 
     const container = document.querySelector('.editor__blocknote-container')
-    expect(container).toBeTruthy()
+    if (!(container instanceof HTMLElement)) throw new Error('Expected the BlockNote editor container')
 
     // Click directly on the container (simulates clicking empty space below content)
-    fireEvent.click(container!)
+    fireEvent.click(container)
 
     expect(mockEditor.setTextCursorPosition).toHaveBeenCalledWith('1', 'end')
     expect(mockEditor.focus).toHaveBeenCalled()
