@@ -269,6 +269,7 @@ test('toolbar only exposes audited markdown-safe formatting controls', async ({ 
   await expect(page.locator('.bn-formatting-toolbar [data-test="italic"]')).toBeVisible()
   await expect(page.locator('.bn-formatting-toolbar [data-test="code"]')).toBeVisible()
   await expect(page.locator('.bn-formatting-toolbar [data-test="highlight"]')).toBeVisible()
+  await expect(page.locator('.bn-formatting-toolbar [data-test="colors"]')).toBeVisible()
   await expect(page.locator('.bn-formatting-toolbar [data-test="strike"]')).toBeVisible()
   await expect(page.locator('.bn-formatting-toolbar [data-test="createLink"]')).toBeVisible()
 
@@ -283,7 +284,6 @@ test('toolbar only exposes audited markdown-safe formatting controls', async ({ 
   await expect(page.getByRole('menuitem', { name: 'Toggle List' })).toHaveCount(0)
 
   await expect(page.locator('.bn-formatting-toolbar [data-test="underline"]')).toHaveCount(0)
-  await expect(page.locator('.bn-formatting-toolbar [data-test="colors"]')).toHaveCount(0)
   await expect(page.locator('.bn-formatting-toolbar [data-test="alignTextLeft"]')).toHaveCount(0)
   await expect(page.locator('.bn-formatting-toolbar [data-test="alignTextCenter"]')).toHaveCount(0)
   await expect(page.locator('.bn-formatting-toolbar [data-test="alignTextRight"]')).toHaveCount(0)
@@ -427,6 +427,45 @@ test('toolbar dropdown and boundary control choose and change highlight colors',
   await roundTripThroughAnotherNote(page)
   await openRawMode(page)
   expect(await getRawEditorContent(page)).toContain('This is Note B, ==🔵referenced== by Alpha Project.')
+})
+
+test('toolbar color control applies text and background colors that persist', async ({ page }) => {
+  await openNote(page, 'Note B')
+  await selectWord(page, 1, 'referenced')
+
+  await page.locator('.bn-formatting-toolbar [data-test="colors"]').click()
+  await page.locator('[data-test="text-color-red"]').click()
+  await page.keyboard.press('Escape')
+
+  await selectWord(page, 1, 'referenced')
+  await page.locator('.bn-formatting-toolbar [data-test="colors"]').click()
+  await page.locator('[data-test="background-color-blue"]').click()
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(700)
+
+  await roundTripThroughAnotherNote(page)
+  await openRawMode(page)
+  expect(await getRawEditorContent(page)).toContain(
+    '<span style="color:#e03e3e"><span style="background-color:#0b6e99">referenced</span></span>',
+  )
+})
+
+test('inline color markup renders without markers and persists', async ({ page }) => {
+  await openNote(page, 'Note B')
+  await openRawMode(page)
+  const raw = await getRawEditorContent(page)
+  const coloredLine = '<span style="color:#e03e3e"><span style="background-color:#0b6e99">painted</span></span> plain'
+  await setRawEditorContent(page, `${raw.trimEnd()}\n\n${coloredLine}\n`)
+
+  await openBlockNoteMode(page)
+  await expect(
+    page.locator('.bn-editor [data-text-color="red"], .bn-editor [data-style-type="textColor"][data-value="red"]'),
+  ).toContainText('painted')
+  await expect(page.locator('.bn-editor')).not.toContainText('span style=')
+
+  await roundTripThroughAnotherNote(page)
+  await openRawMode(page)
+  expect(await getRawEditorContent(page)).toContain(coloredLine)
 })
 
 test('toolbar block-type commands persist numbered lists', async ({ page }) => {
