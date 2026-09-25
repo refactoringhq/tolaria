@@ -8,6 +8,7 @@ import {
 } from './editorDurableMarkdown'
 import { portableFileAttachmentUrls } from './fileAttachmentMarkdown'
 import { logRichEditorSerializationTrace } from './editorPerformanceTrace'
+import { injectInlineColorsInBlocks, preProcessInlineColorMarkdown } from './inlineColorMarkdown'
 import { injectMarkdownHighlightsInBlocks } from './markdownHighlightMarkdown'
 import { injectLinkedCodeInBlocks, preProcessLinkedCodeMarkdown } from './linkedCodeMarkdown'
 import { injectMathInBlocks, preProcessMathMarkdown } from './mathMarkdown'
@@ -101,7 +102,8 @@ export function preProcessRichEditorMarkdown(
 ): PreprocessedMarkdown {
   const withLiteralBackslashes = preserveLiteralBackslashes(markdown)
   const withDurableBlocks = preProcessDurableEditorMarkdown({ markdown: withLiteralBackslashes })
-  const withEmptyChecklists = preProcessEmptyChecklistItems(withDurableBlocks)
+  const withInlineColors = preProcessInlineColorMarkdown({ markdown: withDurableBlocks })
+  const withEmptyChecklists = preProcessEmptyChecklistItems(withInlineColors)
   const withBlankQuotes = preProcessBlankBlockquoteParagraphs(withEmptyChecklists)
   const withBlankParagraphs = preProcessBlankParagraphs(withBlankQuotes)
   const withBareImages = normalizeBareImageUrls(withBlankParagraphs)
@@ -117,7 +119,8 @@ export function injectRichEditorMarkdownBlocks(blocks: EditorBlocksSnapshot): Ed
   const withWikilinks = injectWikilinks(withLinkedCode)
   const withMath = injectMathInBlocks(withWikilinks)
   const withHighlights = injectMarkdownHighlightsInBlocks(withMath)
-  const withDurableBlocks = injectDurableEditorMarkdownBlocks(withHighlights)
+  const withInlineColors = injectInlineColorsInBlocks(withHighlights)
+  const withDurableBlocks = injectDurableEditorMarkdownBlocks(withInlineColors)
   const withCallouts = injectCalloutBlocks(withDurableBlocks)
   const withBlankParagraphs = injectBlankParagraphBlocks(withCallouts)
   return restoreLiteralBackslashesInBlocks(withBlankParagraphs)

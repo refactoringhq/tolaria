@@ -98,7 +98,6 @@ const UNSUPPORTED_FORMATTING_TOOLBAR_KEYS = new Set([
   'textAlignLeftButton',
   'textAlignCenterButton',
   'textAlignRightButton',
-  'colorStyleButton',
 ])
 
 const UNSUPPORTED_SLASH_MENU_KEYS = new Set([

@@ -58,9 +58,10 @@ describe('tolariaEditorFormatting', () => {
     expect(itemKeys).toContain('createLinkButton')
     expect(itemKeys).toContain('nestBlockButton')
     expect(itemKeys).toContain('unnestBlockButton')
+    // Text and background colors stay available: markdown highlights round-trip through `==`.
+    expect(itemKeys).toContain('colorStyleButton')
 
     expect(itemKeys).not.toContain('underlineStyleButton')
-    expect(itemKeys).not.toContain('colorStyleButton')
     expect(itemKeys).not.toContain('textAlignLeftButton')
     expect(itemKeys).not.toContain('textAlignCenterButton')
     expect(itemKeys).not.toContain('textAlignRightButton')
