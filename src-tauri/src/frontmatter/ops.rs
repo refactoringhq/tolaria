@@ -59,6 +59,12 @@ impl<'a> FrontmatterLine<'a> {
             .map(|(key, _)| key.trim())
             .filter(|key| !key.is_empty())
     }
+
+    fn scalar_value(self) -> Option<&'a str> {
+        let (_, value) = self.0.split_once(':')?;
+        let value = value.trim().trim_matches('"').trim_matches('\'');
+        (!value.is_empty()).then_some(value)
+    }
 }
 
 fn quoted_yaml_key(raw: &str, quote: char) -> Option<&str> {
@@ -100,6 +106,18 @@ fn split_frontmatter_block(content: &str) -> Result<Option<FrontmatterBlock<'_>>
         rest: &after_open[rest_start..],
         line_ending,
     }))
+}
+
+/// Extract the scalar `title` value from an LF or CRLF frontmatter block.
+pub fn extract_frontmatter_title(content: &str) -> Option<String> {
+    let block = split_frontmatter_block(content).ok()??;
+    block
+        .body
+        .lines()
+        .map(FrontmatterLine)
+        .find(|line| line.key() == Some("title"))?
+        .scalar_value()
+        .map(str::to_string)
 }
 
 #[derive(Clone, Copy)]
@@ -213,6 +231,19 @@ mod tests {
 
     fn frontmatter_delimiter_lines(content: &str) -> usize {
         content.lines().filter(|line| *line == "---").count()
+    }
+
+    #[test]
+    fn extracts_title_from_lf_and_crlf_frontmatter() {
+        for content in [
+            "---\ntitle: My Note\ntype: Note\n---\n# My Note\n",
+            "---\r\n\"title\": 'My Note'\r\ntype: Note\r\n---\r\n# My Note\r\n",
+        ] {
+            assert_eq!(
+                extract_frontmatter_title(content).as_deref(),
+                Some("My Note")
+            );
+        }
     }
 
     #[test]

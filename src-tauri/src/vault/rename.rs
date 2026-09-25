@@ -10,7 +10,7 @@ use walkdir::WalkDir;
 use super::filename_rules::validate_filename_stem;
 use super::path_identity::vault_relative_markdown_stem;
 use super::rename_transaction::RenameWorkspace;
-use crate::frontmatter::{update_frontmatter_content, FrontmatterValue};
+use crate::frontmatter::{extract_frontmatter_title, update_frontmatter_content, FrontmatterValue};
 
 /// Result of a rename operation
 #[derive(Debug, Serialize, Deserialize)]
@@ -187,29 +187,6 @@ fn rewrite_wikilinks_in_file(path: &Path, re: &Regex, replacement: &str) -> Resu
         .map_err(|e| format!("Failed to write {}: {}", path.display(), e))
 }
 
-/// Extract the value of the `title:` frontmatter field from raw content.
-fn extract_fm_title_value(content: &str) -> Option<String> {
-    let (after_open, line_ending) = content
-        .strip_prefix("---\n")
-        .map(|after| (after, "\n"))
-        .or_else(|| content.strip_prefix("---\r\n").map(|after| (after, "\r\n")))?;
-    let close_marker = format!("{line_ending}---");
-    let fm = after_open.split(&close_marker).next()?;
-    fm.lines()
-        .map(str::trim_start)
-        .find_map(extract_title_value_from_frontmatter_line)
-}
-
-fn extract_title_value_from_frontmatter_line(line: &str) -> Option<String> {
-    ["title:", "\"title\":"]
-        .iter()
-        .find_map(|prefix| line.strip_prefix(prefix))
-        .map(str::trim)
-        .map(|value| value.trim_matches('"').trim_matches('\''))
-        .filter(|value| !value.is_empty())
-        .map(|value| value.to_string())
-}
-
 /// Update the `title:` frontmatter field in content.
 /// Always writes `title` to frontmatter (creates it if absent).
 /// H1 headings are body content and are NOT modified — the title source
@@ -325,7 +302,7 @@ fn load_note_for_title_rename(
         .file_name()
         .map(|f| f.to_string_lossy().to_string())
         .unwrap_or_default();
-    let fm_title = extract_fm_title_value(&content);
+    let fm_title = extract_frontmatter_title(&content);
     let extracted_title = super::extract_title(fm_title.as_deref(), &content, &filename);
 
     Ok(LoadedNote {
@@ -415,7 +392,7 @@ pub fn rename_note_filename(
         .unwrap_or_default();
     let content = fs::read_to_string(old_file)
         .map_err(|e| format!("Failed to read {}: {}", request.old_path, e))?;
-    let fm_title = extract_fm_title_value(&content);
+    let fm_title = extract_frontmatter_title(&content);
     let old_title = super::extract_title(fm_title.as_deref(), &content, &old_filename);
     let new_filename = format!("{}.md", normalized_stem);
 
@@ -465,7 +442,7 @@ pub fn move_note_to_folder(request: MoveNoteToFolderRequest<'_>) -> Result<Renam
         .unwrap_or_default();
     let content = fs::read_to_string(old_file)
         .map_err(|e| format!("Failed to read {}: {}", request.old_path, e))?;
-    let fm_title = extract_fm_title_value(&content);
+    let fm_title = extract_frontmatter_title(&content);
     let old_title = super::extract_title(fm_title.as_deref(), &content, &old_filename);
     let new_file = destination_dir.join(&old_filename);
 
@@ -509,7 +486,7 @@ pub fn move_note_to_workspace(
         .file_name()
         .map(|f| f.to_string_lossy().to_string())
         .unwrap_or_default();
-    let fm_title = extract_fm_title_value(&content);
+    let fm_title = extract_frontmatter_title(&content);
     let old_title = super::extract_title(fm_title.as_deref(), &content, &old_filename);
 
     create_new_note_file(new_file, &content)?;
@@ -688,6 +665,14 @@ mod tests {
         content: &'a str,
         new_title: &'a str,
         old_title_hint: Option<&'a str>,
+    }
+
+    struct WikilinkRewriteCase<'a> {
+        ref_content: &'a str,
+        note_content: &'a str,
+        new_title: &'a str,
+        expected_link: &'a str,
+        removed_link: Option<&'a str>,
     }
 
     fn rename_test_note_file(
@@ -1005,14 +990,6 @@ mod tests {
 
     #[test]
     fn test_rename_note_updates_legacy_wikilink_targets() {
-        struct WikilinkRewriteCase<'a> {
-            ref_content: &'a str,
-            note_content: &'a str,
-            new_title: &'a str,
-            expected_link: &'a str,
-            removed_link: Option<&'a str>,
-        }
-
         let cases = [
             WikilinkRewriteCase {
                 ref_content: "# Ref\n\nSee [[Weekly Review|my review]] for info.\n",
@@ -1272,6 +1249,29 @@ mod tests {
         assert!(ref_content.contains("[[note/manual-name]]"));
         assert!(!ref_content.contains("[[Project Kickoff]]"));
         assert!(!ref_content.contains("[[note/project-kickoff]]"));
+    }
+
+    #[test]
+    fn test_rename_note_filename_uses_crlf_frontmatter_title_for_wikilinks() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path();
+        create_test_file(
+            vault,
+            "note/project-kickoff.md",
+            "---\r\ntitle: Project Kickoff\r\ntype: Note\r\n---\r\n# Project Kickoff\r\n",
+        );
+        create_test_file(vault, "note/ref.md", "See [[Project Kickoff]].\n");
+
+        rename_note_filename(RenameNoteFilenameRequest {
+            vault_path: vault.to_str().unwrap(),
+            old_path: vault.join("note/project-kickoff.md").to_str().unwrap(),
+            new_filename_stem: "manual-name",
+        })
+        .unwrap();
+
+        let ref_content = fs::read_to_string(vault.join("note/ref.md")).unwrap();
+        assert!(ref_content.contains("[[note/manual-name]]"));
+        assert!(!ref_content.contains("[[Project Kickoff]]"));
     }
 
     #[test]

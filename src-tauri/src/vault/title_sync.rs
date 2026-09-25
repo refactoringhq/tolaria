@@ -1,12 +1,10 @@
 use std::fs;
 use std::path::Path;
 
-use crate::frontmatter::{update_frontmatter_content, FrontmatterValue};
+use crate::frontmatter::{extract_frontmatter_title, update_frontmatter_content, FrontmatterValue};
 
 use super::parsing::slug_to_title;
 use super::rename::title_to_slug;
-
-const TITLE_PREFIXES: [&str; 2] = ["title:", "\"title\":"];
 
 /// Result of a title sync check.
 #[derive(Debug, PartialEq)]
@@ -15,31 +13,6 @@ pub enum SyncAction {
     InSync,
     /// Title was absent or desynced; frontmatter was updated on disk.
     Updated { title: String },
-}
-
-/// Extract the raw `title:` value from frontmatter in file content.
-fn extract_raw_title(content: &str) -> Option<String> {
-    if !content.starts_with("---\n") {
-        return None;
-    }
-    let fm = content[4..].split("\n---").next()?;
-    fm.lines().find_map(extract_title_from_line)
-}
-
-fn extract_title_from_line(line: &str) -> Option<String> {
-    TITLE_PREFIXES
-        .iter()
-        .find_map(|prefix| line.trim_start().strip_prefix(prefix))
-        .map(clean_title_value)
-        .filter(|value| !value.is_empty())
-}
-
-fn clean_title_value(raw_value: &str) -> String {
-    raw_value
-        .trim()
-        .trim_matches('"')
-        .trim_matches('\'')
-        .to_string()
 }
 
 /// Sync the `title` frontmatter field with the filename.
@@ -58,7 +31,7 @@ pub fn sync_title_on_open(path: &Path) -> Result<SyncAction, String> {
     let stem = filename.strip_suffix(".md").unwrap_or(&filename);
     let expected_title = slug_to_title(stem);
 
-    let fm_title = extract_raw_title(&content);
+    let fm_title = extract_frontmatter_title(&content);
 
     match fm_title {
         Some(ref title) if title_to_slug(title) == stem => Ok(SyncAction::InSync),
@@ -113,15 +86,16 @@ mod tests {
     }
 
     #[test]
-    fn test_sync_noop_when_in_sync() {
-        let dir = TempDir::new().unwrap();
-        let path = write_note(
-            dir.path(),
-            "my-note.md",
+    fn test_sync_noop_when_lf_or_crlf_title_is_in_sync() {
+        for content in [
             "---\ntitle: My Note\ntype: Note\n---\n# My Note\n",
-        );
-        let result = sync_title_on_open(&path).unwrap();
-        assert_eq!(result, SyncAction::InSync);
+            "---\r\ntitle: My Note\r\ntype: Note\r\n---\r\n# My Note\r\n",
+        ] {
+            let dir = TempDir::new().unwrap();
+            let path = write_note(dir.path(), "my-note.md", content);
+
+            assert_eq!(sync_title_on_open(&path).unwrap(), SyncAction::InSync);
+        }
     }
 
     #[test]
