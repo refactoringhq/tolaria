@@ -5,6 +5,7 @@ import { FolderTree } from './FolderTree'
 import { FOLDER_ROW_SINGLE_CLICK_DELAY_MS } from './folder-tree/useFolderRowInteractions'
 import { FOLDER_ROW_NESTING_INDENT, getFolderConnectorLeft } from './folder-tree/folderTreeLayout'
 import { CREATE_NOTE_IN_FOLDER_EVENT } from '../hooks/noteCreationRequests'
+import type { FolderRenameTarget } from '../hooks/folder-actions/useFolderRename'
 import type { FolderNode, SidebarSelection } from '../types'
 
 const mockFolders: FolderNode[] = [
@@ -367,7 +368,7 @@ describe('FolderTree', () => {
       />,
     )
     fireEvent.doubleClick(screen.getByTestId('folder-row:projects'))
-    expect(onStartRenameFolder).toHaveBeenCalledWith('projects')
+    expect(onStartRenameFolder).toHaveBeenCalledWith('projects', undefined)
   })
 
   it('keeps rename and delete out of row hover actions', () => {
@@ -477,8 +478,8 @@ describe('FolderTree', () => {
           folders={mockFolders}
           selection={{ kind: 'folder', path: 'projects' }}
           onSelect={vi.fn()}
-          onRenameFolder={(folderPath, nextName) => {
-            renameSpy(folderPath, nextName)
+          onRenameFolder={(folderPath, nextName, rootPath) => {
+            renameSpy(folderPath, nextName, rootPath)
             setRenamingFolderPath(null)
             return true
           }}
@@ -493,7 +494,7 @@ describe('FolderTree', () => {
     fireEvent.blur(screen.getByTestId('rename-folder-input'))
 
     await vi.waitFor(() => {
-      expect(renameSpy).toHaveBeenCalledWith('projects', 'projects')
+      expect(renameSpy).toHaveBeenCalledWith('projects', 'projects', undefined)
     })
     expect(screen.queryByTestId('rename-folder-input')).not.toBeInTheDocument()
     expect(screen.queryByText('laputa')).not.toBeInTheDocument()
@@ -521,7 +522,7 @@ describe('FolderTree', () => {
     fireEvent.contextMenu(screen.getByText('projects'))
     expect(screen.getByTestId('folder-context-menu')).toBeInTheDocument()
     fireEvent.click(screen.getByTestId('delete-folder-menu-item'))
-    expect(onDeleteFolder).toHaveBeenCalledWith('projects')
+    expect(onDeleteFolder).toHaveBeenCalledWith('projects', undefined)
   })
 
   it('sizes the folder context menu to visible actions instead of filling the viewport', () => {
@@ -585,6 +586,166 @@ describe('FolderTree', () => {
     fireEvent.contextMenu(screen.getByText('projects'))
     fireEvent.click(screen.getByTestId('copy-folder-path-menu-item'))
     expect(onCopyFolderPath).toHaveBeenCalledWith('projects')
+  })
+
+  it('opens the folder context menu when a mounted folder rootPath differs from the tree root', async () => {
+    const onCreateNoteInFolder = vi.fn()
+    const onCreateFolder = vi.fn().mockResolvedValue(true)
+    const onDeleteFolder = vi.fn()
+    const folders: FolderNode[] = [
+      {
+        name: 'Personal',
+        path: '',
+        rootPath: '/Users/luca/Personal',
+        children: [{ name: 'projects', path: 'projects', rootPath: '/Users/luca/Personal', children: [] }],
+      },
+      {
+        name: 'Team',
+        path: '',
+        rootPath: '/Users/luca/Team',
+        children: [{ name: 'projects', path: 'projects', rootPath: '/Users/luca/Team', children: [] }],
+      },
+    ]
+
+    render(
+      <FolderTree
+        folders={folders}
+        selection={defaultSelection}
+        onSelect={vi.fn()}
+        onCreateFolder={onCreateFolder}
+        onDeleteFolder={onDeleteFolder}
+        onStartRenameFolder={vi.fn()}
+        vaultRootPath="/Users/luca/Personal"
+      />,
+    )
+
+    fireEvent.contextMenu(screen.getAllByTestId('folder-row:projects')[1])
+    const menu = screen.getByTestId('folder-context-menu')
+    expect(menu).toBeInTheDocument()
+    expect(within(menu).getByTestId('delete-folder-menu-item')).toBeInTheDocument()
+    expect(within(menu).getByText('Rename folder...')).toBeInTheDocument()
+    fireEvent.click(within(menu).getByTestId('delete-folder-menu-item'))
+    expect(onDeleteFolder).toHaveBeenCalledWith('projects', '/Users/luca/Team')
+    expect(onDeleteFolder).not.toHaveBeenCalledWith('projects', '/Users/luca/Personal')
+
+    fireEvent.contextMenu(screen.getAllByTestId('folder-row:projects')[1])
+    window.addEventListener(CREATE_NOTE_IN_FOLDER_EVENT, onCreateNoteInFolder)
+    fireEvent.click(screen.getByTestId('create-note-in-folder-menu-item'))
+    expect((onCreateNoteInFolder.mock.calls[0][0] as CustomEvent).detail).toEqual({
+      folderPath: 'projects',
+      rootPath: '/Users/luca/Team',
+    })
+    window.removeEventListener(CREATE_NOTE_IN_FOLDER_EVENT, onCreateNoteInFolder)
+
+    fireEvent.contextMenu(screen.getAllByTestId('folder-row:projects')[1])
+    fireEvent.click(screen.getByTestId('create-folder-in-folder-menu-item'))
+    const parentRow = screen.getByTestId('folder-create-parent:projects')
+    const input = within(parentRow).getByTestId('new-folder-input')
+    fireEvent.change(input, { target: { value: 'research' } })
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter' })
+    })
+    await vi.waitFor(() => {
+      expect(onCreateFolder).toHaveBeenCalledWith('research', {
+        path: 'projects',
+        rootPath: '/Users/luca/Team',
+      })
+    })
+  })
+
+  it('keeps rename and delete off a mounted vault-root row whose rootPath differs from the tree root', () => {
+    const folders: FolderNode[] = [
+      {
+        name: 'Personal',
+        path: '',
+        rootPath: '/Users/luca/Personal',
+        children: [{ name: 'projects', path: 'projects', rootPath: '/Users/luca/Personal', children: [] }],
+      },
+      {
+        name: 'Team',
+        path: '',
+        rootPath: '/Users/luca/Team',
+        children: [{ name: 'projects', path: 'projects', rootPath: '/Users/luca/Team', children: [] }],
+      },
+    ]
+
+    render(
+      <FolderTree
+        folders={folders}
+        selection={defaultSelection}
+        onSelect={vi.fn()}
+        folderFileActions={{
+          copyFolderPath: vi.fn(),
+          revealFolder: vi.fn(),
+        }}
+        onDeleteFolder={vi.fn()}
+        onStartRenameFolder={vi.fn()}
+        vaultRootPath="/Users/luca/Personal"
+      />,
+    )
+
+    fireEvent.contextMenu(screen.getByText('Team'))
+    expect(screen.getByTestId('folder-context-menu')).toBeInTheDocument()
+    expect(screen.getByTestId('create-note-in-folder-menu-item')).toBeInTheDocument()
+    expect(screen.queryByText('Rename folder...')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('delete-folder-menu-item')).not.toBeInTheDocument()
+
+    const onCreateNoteInFolder = vi.fn()
+    window.addEventListener(CREATE_NOTE_IN_FOLDER_EVENT, onCreateNoteInFolder)
+    fireEvent.click(screen.getByTestId('create-note-in-folder-menu-item'))
+    expect((onCreateNoteInFolder.mock.calls[0][0] as CustomEvent).detail).toEqual({
+      folderPath: '',
+      rootPath: '/Users/luca/Team',
+    })
+    window.removeEventListener(CREATE_NOTE_IN_FOLDER_EVENT, onCreateNoteInFolder)
+  })
+
+  it('renames only the mounted folder whose rootPath matches', () => {
+    const folders: FolderNode[] = [
+      {
+        name: 'Personal',
+        path: '',
+        rootPath: '/Users/luca/Personal',
+        children: [{ name: 'projects', path: 'projects', rootPath: '/Users/luca/Personal', children: [] }],
+      },
+      {
+        name: 'Team',
+        path: '',
+        rootPath: '/Users/luca/Team',
+        children: [{ name: 'projects', path: 'projects', rootPath: '/Users/luca/Team', children: [] }],
+      },
+    ]
+
+    const onRenameFolder = vi.fn().mockResolvedValue(true)
+
+    function FolderTreeScopedRenameHarness() {
+      const [renamingFolderPath, setRenamingFolderPath] = useState<FolderRenameTarget | null>(null)
+      return (
+        <FolderTree
+          folders={folders}
+          selection={defaultSelection}
+          onSelect={vi.fn()}
+          onRenameFolder={onRenameFolder}
+          renamingFolderPath={renamingFolderPath}
+          onStartRenameFolder={(path, rootPath) => setRenamingFolderPath(rootPath ? { path, rootPath } : { path })}
+          onCancelRenameFolder={() => setRenamingFolderPath(null)}
+          vaultRootPath="/Users/luca/Personal"
+        />
+      )
+    }
+
+    render(<FolderTreeScopedRenameHarness />)
+
+    fireEvent.doubleClick(screen.getAllByTestId('folder-row:projects')[1])
+
+    expect(screen.getAllByTestId('rename-folder-input')).toHaveLength(1)
+    expect(screen.getAllByTestId('folder-row:projects')).toHaveLength(1)
+
+    const renameInput = screen.getByTestId('rename-folder-input')
+    fireEvent.change(renameInput, { target: { value: 'work' } })
+    fireEvent.blur(renameInput)
+    expect(onRenameFolder).toHaveBeenCalledWith('projects', 'work', '/Users/luca/Team')
+    expect(onRenameFolder).not.toHaveBeenCalledWith('projects', 'work', '/Users/luca/Personal')
   })
 
   it('creates a note in the right-clicked mounted folder', () => {

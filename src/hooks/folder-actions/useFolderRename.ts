@@ -3,10 +3,16 @@ import type { SidebarSelection, VaultEntry } from '../../types'
 import {
   folderLabel,
   invokeRenameFolder,
+  resolveFolderVaultPath,
   type FolderTab,
   updateSelectionAfterFolderRename,
   updateTabsAfterFolderRename,
 } from './folderActionUtils'
+
+export interface FolderRenameTarget {
+  path: string
+  rootPath?: string
+}
 
 interface UseFolderRenameInput {
   activeTabPathRef: React.MutableRefObject<string | null>
@@ -22,22 +28,26 @@ interface UseFolderRenameInput {
 
 export function useFolderRename(options: UseFolderRenameInput) {
   const { activeTabPathRef, handleSwitchTab, reloadFolders, reloadVault, selection, setSelection, setTabs, setToastMessage, vaultPath } = options
-  const [renamingFolderPath, setRenamingFolderPath] = useState<string | null>(null)
+  const [renamingFolderPath, setRenamingFolderPath] = useState<FolderRenameTarget | null>(null)
 
   const cancelFolderRename = useCallback(() => setRenamingFolderPath(null), [])
-  const startFolderRename = useCallback((folderPath: string) => setRenamingFolderPath(folderPath), [])
+  const startFolderRename = useCallback((folderPath: string, rootPath?: string) => {
+    setRenamingFolderPath(rootPath ? { path: folderPath, rootPath } : { path: folderPath })
+  }, [])
 
   const renameFolder = useCallback(
-    async (folderPath: string, nextName: string) => {
+    async (folderPath: string, nextName: string, rootPath?: string) => {
     const trimmedName = nextName.trim()
     if (trimmedName === folderLabel({ folderPath })) {
       setRenamingFolderPath(null)
       return true
     }
 
+    const targetVaultPath = resolveFolderVaultPath(rootPath ?? renamingFolderPath?.rootPath, vaultPath)
+
     try {
         const renameResult = await invokeRenameFolder({
-          vaultPath,
+          vaultPath: targetVaultPath,
           folderPath,
           newName: trimmedName,
         })
@@ -50,14 +60,14 @@ export function useFolderRename(options: UseFolderRenameInput) {
         refreshedEntries,
         renameResult,
         setTabs,
-        vaultPath,
+        vaultPath: targetVaultPath,
       })
       updateSelectionAfterFolderRename({
         refreshedEntries,
         renameResult,
         selection,
         setSelection,
-        vaultPath,
+        vaultPath: targetVaultPath,
       })
       setToastMessage(`Renamed folder to "${trimmedName}"`)
       return true
@@ -71,6 +81,7 @@ export function useFolderRename(options: UseFolderRenameInput) {
       handleSwitchTab,
       reloadFolders,
       reloadVault,
+      renamingFolderPath,
       selection,
       setSelection,
       setTabs,
@@ -81,7 +92,7 @@ export function useFolderRename(options: UseFolderRenameInput) {
 
   const renameSelectedFolder = useCallback(() => {
     if (selection.kind !== 'folder' || !selection.path) return
-    startFolderRename(selection.path)
+    startFolderRename(selection.path, selection.rootPath)
   }, [selection, startFolderRename])
 
   return {
