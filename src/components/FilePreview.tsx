@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import {
   ArrowSquareOut,
@@ -20,6 +20,7 @@ import { useExternalMediaPreview } from '../utils/mediaPreviewRuntime'
 import { focusNoteListContainer } from '../utils/neighborhoodHistory'
 import { openLocalFile } from '../utils/url'
 import { Button } from './ui/button'
+import { PdfFilePreview } from './PdfFilePreview'
 
 interface FilePreviewProps {
   entry: VaultEntry
@@ -128,24 +129,18 @@ function fallbackContentForPreviewKind(
   }
 }
 
+const FILE_PREVIEW_ICONS = new Map<FilePreviewKind, ReactNode>([
+  ['image', <ImageSquare size={17} className="shrink-0 text-muted-foreground" aria-hidden="true" />],
+  ['pdf', <FilePdf size={17} className="shrink-0 text-muted-foreground" aria-hidden="true" />],
+  ['audio', <SpeakerHigh size={17} className="shrink-0 text-muted-foreground" aria-hidden="true" />],
+  ['video', <Video size={17} className="shrink-0 text-muted-foreground" aria-hidden="true" />],
+])
+const DEFAULT_FILE_PREVIEW_ICON = (
+  <FileDashed size={17} className="shrink-0 text-muted-foreground" aria-hidden="true" />
+)
+
 function FilePreviewHeaderIcon({ previewKind }: { previewKind: FilePreviewKind | null }) {
-  if (previewKind === 'image') {
-    return <ImageSquare size={17} className="shrink-0 text-muted-foreground" aria-hidden="true" />
-  }
-
-  if (previewKind === 'pdf') {
-    return <FilePdf size={17} className="shrink-0 text-muted-foreground" aria-hidden="true" />
-  }
-
-  if (previewKind === 'audio') {
-    return <SpeakerHigh size={17} className="shrink-0 text-muted-foreground" aria-hidden="true" />
-  }
-
-  if (previewKind === 'video') {
-    return <Video size={17} className="shrink-0 text-muted-foreground" aria-hidden="true" />
-  }
-
-  return <FileDashed size={17} className="shrink-0 text-muted-foreground" aria-hidden="true" />
+  return previewKind === null ? DEFAULT_FILE_PREVIEW_ICON : FILE_PREVIEW_ICONS.get(previewKind) ?? DEFAULT_FILE_PREVIEW_ICON
 }
 
 function FilePreviewFallback({
@@ -234,36 +229,6 @@ function FilePreviewHeader(options: {
         </Button>
       </div>
     </div>
-  )
-}
-
-function FilePreviewPdf({
-  entry,
-  pdfSrc,
-  onOpenExternal,
-}: {
-  entry: VaultEntry
-  pdfSrc: string
-  onOpenExternal: () => void
-}) {
-  const fallback = fallbackContentForPreviewKind('pdf')
-
-  return (
-    <object
-      key={pdfSrc}
-      data={pdfSrc}
-      type="application/pdf"
-      title={entry.title}
-      className="h-full min-h-[320px] w-full bg-background"
-      data-testid="pdf-file-preview"
-    >
-      <FilePreviewFallback
-        icon={fallback.icon}
-        title={fallback.title}
-        description={fallback.description}
-        onOpenExternal={onOpenExternal}
-      />
-    </object>
   )
 }
 
@@ -357,6 +322,7 @@ function FilePreviewBody(options: {
   onImageError: () => void
   onAudioError: () => void
   onVideoError: () => void
+  onPdfError: () => void
   onOpenExternal: () => void
 }) {
   const {
@@ -368,6 +334,7 @@ function FilePreviewBody(options: {
     onImageError,
     onAudioError,
     onVideoError,
+    onPdfError,
     onOpenExternal,
   } = options
   if (shouldRenderImagePreview(previewKind === 'image', assetSrc, imageFailed)) {
@@ -375,7 +342,23 @@ function FilePreviewBody(options: {
   }
 
   if (previewKind === 'pdf' && assetSrc !== null) {
-    return <FilePreviewPdf entry={entry} pdfSrc={assetSrc} onOpenExternal={onOpenExternal} />
+    const fallback = fallbackContentForPreviewKind('pdf')
+    return (
+      <PdfFilePreview
+        key={assetSrc}
+        source={assetSrc}
+        title={entry.title}
+        onError={onPdfError}
+        fallback={
+          <FilePreviewFallback
+            icon={fallback.icon}
+            title={fallback.title}
+            description={fallback.description}
+            onOpenExternal={onOpenExternal}
+          />
+        }
+      />
+    )
   }
 
   if (previewKind === 'audio' && assetSrc !== null) {
@@ -415,6 +398,9 @@ function useFilePreviewFailureState(entryPath: string) {
     setFailedMediaPath(entryPath)
     trackFilePreviewFailed('video')
   }, [entryPath])
+  const handlePdfError = useCallback(() => {
+    trackFilePreviewFailed('pdf')
+  }, [])
 
   return {
     imageFailed: failedImagePath === entryPath,
@@ -422,6 +408,7 @@ function useFilePreviewFailureState(entryPath: string) {
     handleImageError,
     handleAudioError,
     handleVideoError,
+    handlePdfError,
   }
 }
 
@@ -490,6 +477,43 @@ function previewKindForBody(
   return previewKind
 }
 
+function FilePreviewLayout(options: {
+  actions: ReturnType<typeof useFilePreviewActions>
+  assetSrc: string | null
+  canUseFileActions: boolean
+  entry: VaultEntry
+  externalMediaPreview: boolean
+  failures: ReturnType<typeof useFilePreviewFailureState>
+  fileTypeLabel: string
+  locale: AppLocale
+  onCopyDeepLink?: (entry: VaultEntry) => void
+  onCopyFilePath?: (path: string) => void
+  onRevealFile?: (path: string) => void
+  previewKind: FilePreviewKind | null
+  previewRef: RefObject<HTMLElement | null>
+}) {
+  const { actions, assetSrc, canUseFileActions, entry, externalMediaPreview, failures, fileTypeLabel, locale,
+    onCopyDeepLink, onCopyFilePath, onRevealFile, previewKind, previewRef } = options
+  return (
+    <section ref={previewRef} className="flex min-h-0 min-w-0 flex-1 flex-col bg-background text-foreground"
+      data-testid="file-preview" aria-label={`Preview ${entry.title}`}>
+      <FilePreviewHeader entry={entry} previewKind={previewKind} canUseFileActions={canUseFileActions}
+        fileTypeLabel={fileTypeLabel} locale={locale} onOpenExternal={actions.handleOpenExternal}
+        onRevealFile={onRevealFile ? actions.handleRevealFile : undefined}
+        onCopyFilePath={onCopyFilePath ? actions.handleCopyFilePath : undefined}
+        onCopyDeepLink={onCopyDeepLink ? actions.handleCopyDeepLink : undefined} />
+      <div className="min-h-0 flex-1 overflow-auto bg-background">
+        <FilePreviewBody entry={entry}
+          previewKind={previewKindForBody(previewKind, failures.mediaFailed, externalMediaPreview)}
+          assetSrc={assetSrc} imageFailed={failures.imageFailed} canOpenExternal={canUseFileActions}
+          onImageError={failures.handleImageError} onAudioError={failures.handleAudioError}
+          onVideoError={failures.handleVideoError} onPdfError={failures.handlePdfError}
+          onOpenExternal={actions.handleOpenExternal} />
+      </div>
+    </section>
+  )
+}
+
 export function FilePreview({
   entry,
   locale = 'en',
@@ -537,37 +561,8 @@ export function FilePreview({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  return (
-    <section
-      ref={previewRef}
-      className="flex min-h-0 min-w-0 flex-1 flex-col bg-background text-foreground"
-      data-testid="file-preview"
-      aria-label={`Preview ${entry.title}`}
-    >
-      <FilePreviewHeader
-        entry={entry}
-        previewKind={previewKind}
-        canUseFileActions={canUseFileActions}
-        fileTypeLabel={fileTypeLabel}
-        locale={locale}
-        onOpenExternal={actions.handleOpenExternal}
-        onRevealFile={onRevealFile ? actions.handleRevealFile : undefined}
-        onCopyFilePath={onCopyFilePath ? actions.handleCopyFilePath : undefined}
-        onCopyDeepLink={onCopyDeepLink ? actions.handleCopyDeepLink : undefined}
-      />
-      <div className="min-h-0 flex-1 overflow-auto bg-background">
-        <FilePreviewBody
-          entry={entry}
-          previewKind={previewKindForBody(previewKind, failures.mediaFailed, externalMediaPreview)}
-          assetSrc={assetSrc}
-          imageFailed={failures.imageFailed}
-          canOpenExternal={canUseFileActions}
-          onImageError={failures.handleImageError}
-          onAudioError={failures.handleAudioError}
-          onVideoError={failures.handleVideoError}
-          onOpenExternal={actions.handleOpenExternal}
-        />
-      </div>
-    </section>
-  )
+  return <FilePreviewLayout actions={actions} assetSrc={assetSrc} canUseFileActions={canUseFileActions}
+    entry={entry} externalMediaPreview={externalMediaPreview} failures={failures} fileTypeLabel={fileTypeLabel}
+    locale={locale} onCopyDeepLink={onCopyDeepLink} onCopyFilePath={onCopyFilePath} onRevealFile={onRevealFile}
+    previewKind={previewKind} previewRef={previewRef} />
 }

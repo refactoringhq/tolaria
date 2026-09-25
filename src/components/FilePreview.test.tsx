@@ -21,6 +21,14 @@ vi.mock('../utils/mediaPreviewRuntime', () => ({
   useExternalMediaPreview: externalMediaPreviewMock,
 }))
 
+vi.mock('./PdfFilePreview', () => ({
+  PdfFilePreview: ({ fallback, source, title }: { fallback: React.ReactNode; source: string; title: string }) => (
+    <section data-testid="pdf-file-preview" data-pdf-source={source} aria-label={title}>
+      {fallback}
+    </section>
+  ),
+}))
+
 const imageEntry: VaultEntry = {
   path: '/vault/Attachments/photo.png',
   filename: 'photo.png',
@@ -138,11 +146,14 @@ describe('FilePreview', () => {
     })
   })
 
-  it('renders supported PDF files through the asset preview path', () => {
+  it('renders supported PDF files through the app-owned preview path', () => {
     render(<FilePreview entry={pdfEntry} />)
 
-    expect(screen.getByTestId('pdf-file-preview')).toHaveAttribute(
-      'data',
+    const preview = screen.getByTestId('pdf-file-preview')
+
+    expect(preview.tagName).not.toBe('OBJECT')
+    expect(preview).toHaveAttribute(
+      'data-pdf-source',
       expect.stringMatching(/^asset:\/\/\/vault\/Attachments\/report\.pdf\?tolaria_pdf_preview=/u),
     )
     expect(screen.getByText('PDF file')).toBeInTheDocument()
@@ -152,34 +163,34 @@ describe('FilePreview', () => {
     render(<FilePreview entry={{ ...pdfEntry, fileKind: undefined }} />)
 
     expect(screen.getByTestId('pdf-file-preview')).toHaveAttribute(
-      'data',
+      'data-pdf-source',
       expect.stringMatching(/^asset:\/\/\/vault\/Attachments\/report\.pdf\?tolaria_pdf_preview=/u),
     )
   })
 
   it('uses a fresh PDF asset URL when reopening the same PDF after navigation', () => {
     const firstRender = render(<FilePreview entry={pdfEntry} />)
-    const firstPdfSrc = firstRender.getByTestId('pdf-file-preview').getAttribute('data')
+    const firstPdfSrc = firstRender.getByTestId('pdf-file-preview').getAttribute('data-pdf-source')
 
     firstRender.unmount()
     render(<FilePreview entry={pdfEntry} />)
 
     expect(screen.getByTestId('pdf-file-preview')).toHaveAttribute(
-      'data',
+      'data-pdf-source',
       expect.stringMatching(/^asset:\/\/\/vault\/Attachments\/report\.pdf\?tolaria_pdf_preview=/u),
     )
-    expect(screen.getByTestId('pdf-file-preview').getAttribute('data')).not.toBe(firstPdfSrc)
+    expect(screen.getByTestId('pdf-file-preview').getAttribute('data-pdf-source')).not.toBe(firstPdfSrc)
   })
 
   it('refreshes the PDF object URL when the preview remounts for a PDF file switch', () => {
     const renderPreview = (entry: VaultEntry) => <FilePreview key={entry.path} entry={entry} />
     const { rerender } = render(renderPreview(pdfEntry))
-    const firstPdfSrc = screen.getByTestId('pdf-file-preview').getAttribute('data')
+    const firstPdfSrc = screen.getByTestId('pdf-file-preview').getAttribute('data-pdf-source')
 
     rerender(renderPreview(secondPdfEntry))
     rerender(renderPreview(pdfEntry))
 
-    expect(screen.getByTestId('pdf-file-preview').getAttribute('data')).not.toBe(firstPdfSrc)
+    expect(screen.getByTestId('pdf-file-preview').getAttribute('data-pdf-source')).not.toBe(firstPdfSrc)
   })
 
   it('renders supported audio files through the media asset path', () => {
