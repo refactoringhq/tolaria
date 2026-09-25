@@ -117,9 +117,10 @@ The sidecar is Linux-based, so keep native macOS Tauri QA and app-focus screensh
 
 ## CircleCI
 
-CircleCI is the authoritative outer-loop CI/CD system. `.circleci/config.yml` runs the same
-frontend, Rust, and Playwright lane scripts used by Chunk, then owns native macOS, Linux, and
-Windows release builds, GitHub Release publication, and documentation deployment.
+CircleCI is the authoritative outer-loop CI/CD system. `.circleci/config.yml` reuses the Chunk
+frontend and Playwright lanes, runs the same Rust lint/format and coverage commands in parallel,
+then owns native macOS, Linux, and Windows release builds, GitHub Release publication, and
+documentation deployment.
 
 Validate configuration changes before pushing:
 

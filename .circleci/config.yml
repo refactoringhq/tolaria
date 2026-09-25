@@ -201,7 +201,7 @@ jobs:
           slug: refactoringhq/tolaria
           upload_name: frontend
 
-  rust-quality:
+  rust-coverage:
     executor: rust
     environment:
       CARGO_BUILD_JOBS: "4"
@@ -218,9 +218,18 @@ jobs:
               cargo install cargo-llvm-cov --locked
             fi
       - run:
-          name: Rust lint, format, tests, and coverage
+          name: Rust tests and coverage
           command: |
-            RUST_COVERAGE_LCOV_OUTPUT=coverage/rust.lcov bash .chunk/run-rust-gate.sh
+            mkdir -p "$HOME/Documents" coverage
+            cargo llvm-cov \
+              --manifest-path src-tauri/Cargo.toml \
+              --no-clean \
+              --ignore-filename-regex "lib\\.rs|main\\.rs|menu\\.rs" \
+              --fail-under-lines 85 \
+              --lcov \
+              --output-path coverage/rust.lcov \
+              -- \
+              --test-threads=1
       - save_cache:
           key: rust-ci-v2026-07-24-{{ checksum "src-tauri/Cargo.lock" }}
           paths:
@@ -235,6 +244,22 @@ jobs:
           flags: rust
           slug: refactoringhq/tolaria
           upload_name: rust
+
+  rust-lint:
+    executor: rust
+    environment:
+      CARGO_BUILD_JOBS: "4"
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - rust-ci-v2026-07-24-{{ checksum "src-tauri/Cargo.lock" }}
+            - rust-ci-v2026-07-24-
+      - run:
+          name: Rust lint and format
+          command: |
+            cargo clippy --manifest-path=src-tauri/Cargo.toml -- -D warnings
+            cargo fmt --manifest-path=src-tauri/Cargo.toml -- --check
 
   playwright-smoke:
     executor: browser
@@ -1159,7 +1184,13 @@ workflows:
               ignore: gh-pages
             tags:
               ignore: /.*/
-      - rust-quality:
+      - rust-coverage:
+          filters:
+            branches:
+              ignore: gh-pages
+            tags:
+              ignore: /.*/
+      - rust-lint:
           filters:
             branches:
               ignore: gh-pages
