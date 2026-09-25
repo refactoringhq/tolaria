@@ -1,9 +1,11 @@
 import type React from 'react'
-import { useMemo, useRef } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import type { useCreateBlockNote } from '@blocknote/react'
 import type { AppLocale } from '../../lib/i18n'
 import type { NoteWidthMode, NoteStatus, VaultEntry } from '../../types'
 import { useEditorTheme } from '../../hooks/useTheme'
+import { updateVaultConfigField } from '../../utils/vaultConfigStore'
+import type { BlockNoteRenderRecoveryReason } from '../blockNoteRenderRecovery'
 import { deriveEditorContentState } from './editorContentState'
 import type { RawEditorFindRequest } from '../RawEditorFindBar'
 import type { ImageImportError } from '../../hooks/useImageDrop'
@@ -26,7 +28,7 @@ export interface EditorContentProps {
   richEditorContentReady: boolean
   onToggleDiff: () => void
   rawMode: boolean
-  onToggleRaw: () => void
+  onToggleRaw: (recoveryReason?: BlockNoteRenderRecoveryReason) => void
   onRawContentChange?: (path: string, content: string) => void
   onSave?: () => void
   activeStatus: NoteStatus
@@ -72,6 +74,7 @@ export function useEditorContentModel(props: EditorContentProps) {
     entries,
     rawMode,
     diffMode,
+    onToggleRaw: toggleRaw,
   } = props
 
   const { cssVars } = useEditorTheme()
@@ -96,11 +99,20 @@ export function useEditorContentModel(props: EditorContentProps) {
     ? entries.find((entry) => entry.path === activeTabPath) ?? null
     : null
   const loadingTab = loadingEntry ? { entry: loadingEntry, content: '' } : null
+  const onToggleRaw = useCallback((recoveryReason?: BlockNoteRenderRecoveryReason) => {
+    if (recoveryReason === 'react_update_depth_exceeded') {
+      updateVaultConfigField('editor_mode', 'raw')
+      return
+    }
+
+    toggleRaw()
+  }, [toggleRaw])
 
   const breadcrumbBarRef = useRef<HTMLDivElement | null>(null)
 
   return {
     ...props,
+    onToggleRaw,
     cssVars,
     isArchived,
     isDeletedPreview,

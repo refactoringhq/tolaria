@@ -1,7 +1,9 @@
 import { createRef } from 'react'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, renderHook, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import * as vaultConfigStore from '../../utils/vaultConfigStore'
 import { EditorContentLayout } from './EditorContentLayout'
+import { useEditorContentModel } from './useEditorContentModel'
 
 vi.mock('../BreadcrumbBar', () => ({
   BreadcrumbBar: ({ content, noteWidth }: { content?: string; noteWidth?: string }) => (
@@ -134,6 +136,37 @@ describe('EditorContentLayout', () => {
     fireEvent.click(screen.getByTestId('single-editor-view'))
 
     expect(onToggleRaw).toHaveBeenCalledOnce()
+  })
+
+  it('enters raw mode without flushing the looping rich editor', () => {
+    const onToggleRaw = vi.fn()
+    vaultConfigStore.resetVaultConfigStore()
+    vaultConfigStore.bindVaultConfigStore(
+      {
+        zoom: null,
+        view_mode: null,
+        editor_mode: null,
+        tag_colors: null,
+        status_colors: null,
+        property_display_modes: null,
+      },
+      vi.fn(),
+    )
+    const { result, unmount } = renderHook(() => useEditorContentModel({
+      ...createModel({ onToggleRaw }),
+      activeTabPath: '/vault/project/demo.md',
+      rawMode: false,
+      activeStatus: 'clean',
+    } as never))
+
+    act(() => {
+      result.current.onToggleRaw('react_update_depth_exceeded')
+    })
+
+    expect(onToggleRaw).not.toHaveBeenCalled()
+    expect(vaultConfigStore.getVaultConfig().editor_mode).toBe('raw')
+    unmount()
+    vaultConfigStore.resetVaultConfigStore()
   })
 
   it('does not show stale editor chrome while switching tabs', () => {
