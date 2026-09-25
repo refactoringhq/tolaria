@@ -341,6 +341,26 @@ test('Bear-style colored highlight markdown renders without circle prefixes and 
   expect(await getRawEditorContent(page)).toContain(highlightedLine)
 })
 
+test('circle-only highlight markdown keeps its emoji visible and persists', async ({ page }) => {
+  await openNote(page, 'Note B')
+  await openRawMode(page)
+  const raw = await getRawEditorContent(page)
+  const highlightedLine = '作者==🟢== 的原话：「Adobe==🔴== Photoshop 太贵」'
+  await setRawEditorContent(page, `${raw.trimEnd()}\n\n${highlightedLine}\n`)
+
+  await openBlockNoteMode(page)
+  const greenCircle = page.locator('.bn-editor mark.markdown-highlight', { hasText: '🟢' })
+  const redCircle = page.locator('.bn-editor mark.markdown-highlight', { hasText: '🔴' })
+  await expect(greenCircle).toBeVisible()
+  await expect(redCircle).toBeVisible()
+  await expect(page.locator('.bn-editor')).not.toContainText('==')
+
+  await roundTripThroughAnotherNote(page)
+  await openRawMode(page)
+
+  expect(await getRawEditorContent(page)).toContain(highlightedLine)
+})
+
 test('Obsidian-style highlight markdown typed in rich mode renders and persists', async ({ page }) => {
   await openNote(page, 'Note B')
 
