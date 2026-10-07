@@ -25,10 +25,10 @@ export function useFolderRename(options: UseFolderRenameInput) {
   const [renamingFolderPath, setRenamingFolderPath] = useState<string | null>(null)
 
   const cancelFolderRename = useCallback(() => setRenamingFolderPath(null), [])
-  const startFolderRename = useCallback((folderPath: string) => setRenamingFolderPath(folderPath), [])
+  const startFolderRename = useCallback((folderPath: string, _rootPath?: string) => setRenamingFolderPath(folderPath), [])
 
   const renameFolder = useCallback(
-    async (folderPath: string, nextName: string) => {
+    async (folderPath: string, nextName: string, _rootPath?: string) => {
     const trimmedName = nextName.trim()
     if (trimmedName === folderLabel({ folderPath })) {
       setRenamingFolderPath(null)

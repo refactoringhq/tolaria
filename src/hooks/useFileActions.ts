@@ -10,8 +10,8 @@ import {
 import { localizedStreamErrorMessage as localizedErrorMessage } from '../lib/localizedStreamError'
 
 export interface FolderFileActions {
-  copyFolderPath: (folderPath: string) => void
-  revealFolder: (folderPath: string) => void
+  copyFolderPath: (folderPath: string, rootPath?: string) => void
+  revealFolder: (folderPath: string, rootPath?: string) => void
 }
 
 interface UseFileActionsInput {
@@ -75,15 +75,15 @@ export function useFileActions({
   ), [vaultPath])
 
   const folderActions = useMemo<FolderFileActions>(() => ({
-    copyFolderPath: (folderPath) => {
-      const absolutePath = resolveFolderPath(folderPath)
+    copyFolderPath: (folderPath, rootPath) => {
+      const absolutePath = resolveFolderPath(folderPath, rootPath)
       void copyLocalPath(absolutePath)
         .then(() => setToastMessage(translate(locale, 'fileActions.copied.folderPath')))
         .catch((error) => {
           setToastMessage(fileActionErrorMessage(locale, 'fileActions.error.copyFolderPath', error))
         })
     },
-    revealFolder: (folderPath) => revealFile(resolveFolderPath(folderPath)),
+    revealFolder: (folderPath, rootPath) => revealFile(resolveFolderPath(folderPath, rootPath)),
   }), [locale, resolveFolderPath, revealFile, setToastMessage])
 
   const revealSelectedFolder = useCallback(() => {

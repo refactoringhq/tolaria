@@ -48,11 +48,11 @@ interface SidebarProps {
   onReorderViews?: (orderedFilenames: string[]) => void
   folders?: FolderNode[]
   onCreateFolder?: (name: string, parent?: FolderCreationParent) => Promise<boolean> | boolean
-  onRenameFolder?: (folderPath: string, nextName: string) => Promise<boolean> | boolean
-  onDeleteFolder?: (folderPath: string) => void
+  onRenameFolder?: (folderPath: string, nextName: string, rootPath?: string) => Promise<boolean> | boolean
+  onDeleteFolder?: (folderPath: string, rootPath?: string) => void
   folderFileActions?: FolderFileActions
   renamingFolderPath?: string | null
-  onStartRenameFolder?: (folderPath: string) => void
+  onStartRenameFolder?: (folderPath: string, rootPath?: string) => void
   onCancelRenameFolder?: () => void
   onCanDropNoteOnFolder?: (notePath: string, folderPath: string) => boolean
   onMoveNoteToFolder?: (notePath: string, folderPath: string) => Promise<unknown> | unknown

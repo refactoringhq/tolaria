@@ -17,11 +17,11 @@ interface FolderTreeProps {
   selection: SidebarSelection
   onSelect: (selection: SidebarSelection) => void
   onCreateFolder?: (name: string, parent?: FolderCreationParent) => Promise<boolean> | boolean
-  onRenameFolder?: (folderPath: string, nextName: string) => Promise<boolean> | boolean
-  onDeleteFolder?: (folderPath: string) => void
+  onRenameFolder?: (folderPath: string, nextName: string, rootPath?: string) => Promise<boolean> | boolean
+  onDeleteFolder?: (folderPath: string, rootPath?: string) => void
   folderFileActions?: FolderFileActions
   renamingFolderPath?: string | null
-  onStartRenameFolder?: (folderPath: string) => void
+  onStartRenameFolder?: (folderPath: string, rootPath?: string) => void
   onCancelRenameFolder?: () => void
   onCanDropNote?: (notePath: string, folderPath: string) => boolean
   onMoveNoteToFolder?: (notePath: string, folderPath: string) => Promise<unknown> | unknown
@@ -158,6 +158,9 @@ export const FolderTree = memo(function FolderTree(options: FolderTreeProps) {
         renamingFolderPath,
         selection,
       })
+      const canRenameDeleteFolder = useCallback((folderPath: string, rootPath?: string) => {
+        return folderPath.length > 0 && (!rootPath || rootPath === vaultRootPath)
+      }, [vaultRootPath])
       const openCreateFormForParent = useCallback(
         (folderPath: string, rootPath?: string) => {
         setCreationParent(folderCreationParent(folderPath, rootPath))
@@ -181,6 +184,7 @@ export const FolderTree = memo(function FolderTree(options: FolderTreeProps) {
         folderFileActions,
         onCreateFolder: onCreateFolder ? openCreateFormForParent : undefined,
         onStartRenameFolder,
+        canRenameDeleteFolder,
       })
 
       const handleCloseCreateForm = useCallback(() => {

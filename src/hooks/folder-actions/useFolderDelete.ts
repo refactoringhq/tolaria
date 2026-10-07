@@ -27,7 +27,7 @@ export function useFolderDelete(options: UseFolderDeleteInput) {
   const [confirmDeleteFolder, setConfirmDeleteFolder] = useState<ConfirmFolderDeleteState | null>(null)
 
   const requestDeleteFolder = useCallback(
-    (folderPath: string) => {
+    (folderPath: string, _rootPath?: string) => {
     clearFolderRename()
     setConfirmDeleteFolder({
       path: folderPath,
