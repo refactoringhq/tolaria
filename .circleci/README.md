@@ -16,6 +16,31 @@ The frontend and Playwright jobs reuse `.chunk/` lane scripts. The parallel Rust
 lint, format, and coverage commands as `.chunk/run-rust-gate.sh`. Chunk sidecars remain the preferred
 pre-push path; CircleCI is the authoritative outer loop.
 
+## Shadow mode and cutover
+
+The migration from GitHub Actions is staged:
+
+- Pipeline parameters default to shadow mode. `validation` runs on every push, while
+  `alpha-release` and `stable-release` only run when a pipeline is triggered with
+  `run_release_workflows: true`. GitHub Actions keeps owning signed alpha/stable releases,
+  documentation deployment, and pull-request branch updates until the release contexts below are
+  provisioned and a full shadow release has produced every platform artifact.
+- Codecov uploads run in validation but do not fail the job while `codecov_required` is `false`.
+  Set it to `true` (and add `CODECOV_TOKEN` to `tolaria-ci` if tokenless uploads are rejected)
+  when GitHub Actions `ci.yml` is retired.
+- Disable a GitHub Actions workflow only after the matching CircleCI jobs are green on `main`.
+
+| GitHub Actions workflow | CircleCI replacement | Status |
+| --- | --- | --- |
+| `ci.yml` frontend static quality + tests | `validation/frontend-quality` | Shadow |
+| `ci.yml` Rust tests, coverage, Clippy, rustfmt | `validation/rust-coverage`, `validation/rust-lint` | Shadow |
+| `ci.yml` Linux build verification (PRs) | `validation/linux-build-verification` (non-main branches) | Shadow |
+| none (pre-push only) | `validation/playwright-smoke`, `validation/performance-regression` | New |
+| `release.yml` + `release-build-artifacts.yml` | `alpha-release` | Gated off |
+| `release-stable.yml` | `stable-release` | Gated off |
+| `deploy-docs.yml` | `publish-docs` | Gated off (needs Pages source change) |
+| `auto-update-prs.yml` | `update-pr-branches` | Gated off |
+
 ## Contexts
 
 Create three restricted CircleCI contexts.
