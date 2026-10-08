@@ -1,0 +1,186 @@
+<?xml version="1.0"?>
+<ruleset name="Codacy PMD Ruleset"
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    <description>Codacy PMD Ruleset</description>
+    <rule ref="category/apex/design.xml/AvoidDeeplyNestedIfStmts"/>
+    <rule ref="category/apex/design.xml/ExcessiveClassLength"/>
+    <rule ref="category/apex/design.xml/ExcessiveParameterList"/>
+    <rule ref="category/apex/design.xml/ExcessivePublicCount"/>
+    <rule ref="category/apex/security.xml/ApexBadCrypto"/>
+    <rule ref="category/apex/security.xml/ApexCRUDViolation"/>
+    <rule ref="category/apex/security.xml/ApexDangerousMethods"/>
+    <rule ref="category/apex/security.xml/ApexInsecureEndpoint"/>
+    <rule ref="category/apex/security.xml/ApexOpenRedirect"/>
+    <rule ref="category/apex/security.xml/ApexSharingViolations"/>
+    <rule ref="category/apex/security.xml/ApexSOQLInjection"/>
+    <rule ref="category/apex/security.xml/ApexSuggestUsingNamedCred"/>
+    <rule ref="category/apex/security.xml/ApexXSSFromEscapeFalse"/>
+    <rule ref="category/apex/security.xml/ApexXSSFromURLParam"/>
+    <rule ref="category/ecmascript/bestpractices.xml/AvoidWithStatement"/>
+    <rule ref="category/ecmascript/bestpractices.xml/ConsistentReturn"/>
+    <rule ref="category/ecmascript/bestpractices.xml/UseBaseWithParseInt"/>
+    <rule ref="category/ecmascript/codestyle.xml/AssignmentInOperand">
+        <properties>
+            <property name="allowFor" value="false"/>
+            <property name="allowIf" value="false"/>
+            <property name="allowIncrementDecrement" value="false"/>
+            <property name="allowTernary" value="false"/>
+            <property name="allowTernaryResults" value="false"/>
+            <property name="allowWhile" value="false"/>
+        </properties>
+    </rule>
+    <rule ref="category/ecmascript/codestyle.xml/UnnecessaryBlock"/>
+    <rule ref="category/ecmascript/errorprone.xml/EqualComparison"/>
+    <rule ref="category/ecmascript/errorprone.xml/InnaccurateNumericLiteral"/>
+    <rule ref="category/java/bestpractices.xml/AvoidReassigningParameters"/>
+    <rule ref="category/java/bestpractices.xml/CheckResultSet"/>
+    <rule ref="category/java/bestpractices.xml/JUnitTestsShouldIncludeAssert"/>
+    <rule ref="category/java/bestpractices.xml/OneDeclarationPerLine">
+        <properties>
+            <property name="strictMode" value="false"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/bestpractices.xml/SwitchStmtsShouldHaveDefault"/>
+    <rule ref="category/java/bestpractices.xml/UnusedFormalParameter"/>
+    <rule ref="category/java/bestpractices.xml/UnusedLocalVariable"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateField"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod"/>
+    <rule ref="category/java/codestyle.xml/ClassNamingConventions">
+        <properties>
+            <property name="abstractClassPattern" value="[A-Z][a-zA-Z0-9]*"/>
+            <property name="annotationPattern" value="[A-Z][a-zA-Z0-9]*"/>
+            <property name="classPattern" value="[A-Z][a-zA-Z0-9]*"/>
+            <property name="enumPattern" value="[A-Z][a-zA-Z0-9]*"/>
+            <property name="interfacePattern" value="[A-Z][a-zA-Z0-9]*"/>
+            <property name="testClassPattern" value="^Test.*$|^[A-Z][a-zA-Z0-9]*Test(s|Case)?$"/>
+            <property name="utilityClassPattern" value="[A-Z][a-zA-Z0-9]*"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/codestyle.xml/ExtendsObject"/>
+    <rule ref="category/java/codestyle.xml/FieldDeclarationsShouldBeAtStartOfClass"/>
+    <rule ref="category/java/codestyle.xml/GenericsNaming"/>
+    <rule ref="category/java/codestyle.xml/MethodNamingConventions">
+        <properties>
+            <property name="junit3TestPattern" value="test[A-Z0-9][a-zA-Z0-9]*"/>
+            <property name="junit4TestPattern" value="[a-z][a-zA-Z0-9]*"/>
+            <property name="junit5TestPattern" value="[a-z][a-zA-Z0-9]*"/>
+            <property name="methodPattern" value="[a-z][a-zA-Z0-9]*"/>
+            <property name="nativePattern" value="[a-z][a-zA-Z0-9]*"/>
+            <property name="staticPattern" value="[a-z][a-zA-Z0-9]*"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/codestyle.xml/NoPackage"/>
+    <rule ref="category/java/codestyle.xml/PackageCase"/>
+    <rule ref="category/java/codestyle.xml/UnnecessaryConstructor"/>
+    <rule ref="category/java/codestyle.xml/UnnecessaryFullyQualifiedName"/>
+    <rule ref="category/java/codestyle.xml/UnnecessaryReturn"/>
+    <rule ref="category/java/design.xml/AvoidThrowingNullPointerException"/>
+    <rule ref="category/java/design.xml/AvoidThrowingRawExceptionTypes"/>
+    <rule ref="category/java/design.xml/CollapsibleIfStatements"/>
+    <rule ref="category/java/design.xml/ExcessiveParameterList"/>
+    <rule ref="category/java/design.xml/LogicInversion"/>
+    <rule ref="category/java/design.xml/NPathComplexity"/>
+    <rule ref="category/java/design.xml/SimplifyBooleanExpressions"/>
+    <rule ref="category/java/design.xml/SimplifyBooleanReturns"/>
+    <rule ref="category/java/design.xml/SingularField"/>
+    <rule ref="category/java/documentation.xml/UncommentedEmptyMethodBody"/>
+    <rule ref="category/java/errorprone.xml/AssignmentToNonFinalStatic"/>
+    <rule ref="category/java/errorprone.xml/AvoidAccessibilityAlteration"/>
+    <rule ref="category/java/errorprone.xml/AvoidBranchingStatementAsLastInLoop"/>
+    <rule ref="category/java/errorprone.xml/AvoidCallingFinalize"/>
+    <rule ref="category/java/errorprone.xml/AvoidDecimalLiteralsInBigDecimalConstructor"/>
+    <rule ref="category/java/errorprone.xml/AvoidInstanceofChecksInCatchClause"/>
+    <rule ref="category/java/errorprone.xml/AvoidMultipleUnaryOperators"/>
+    <rule ref="category/java/errorprone.xml/BrokenNullCheck"/>
+    <rule ref="category/java/errorprone.xml/CheckSkipResult"/>
+    <rule ref="category/java/errorprone.xml/CompareObjectsWithEquals">
+        <properties>
+            <property name="typesThatCompareByReference" value="java.lang.Enum,java.lang.Class"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/errorprone.xml/DoNotHardCodeSDCard"/>
+    <rule ref="category/java/errorprone.xml/DontUseFloatTypeForLoopIndices"/>
+    <rule ref="category/java/errorprone.xml/EmptyFinalizer"/>
+    <rule ref="category/java/errorprone.xml/EqualsNull"/>
+    <rule ref="category/java/errorprone.xml/JumbledIncrementer"/>
+    <rule ref="category/java/errorprone.xml/JUnitSpelling"/>
+    <rule ref="category/java/errorprone.xml/JUnitStaticSuite"/>
+    <rule ref="category/java/errorprone.xml/MethodWithSameNameAsEnclosingClass"/>
+    <rule ref="category/java/errorprone.xml/MisplacedNullCheck"/>
+    <rule ref="category/java/errorprone.xml/MissingStaticMethodInNonInstantiatableClass">
+        <properties>
+            <property name="annotations" value="org.springframework.beans.factory.annotation.Autowired,javax.inject.Inject"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/errorprone.xml/NonCaseLabelInSwitchStatement"/>
+    <rule ref="category/java/errorprone.xml/NonStaticInitializer"/>
+    <rule ref="category/java/errorprone.xml/ReturnFromFinallyBlock"/>
+    <rule ref="category/java/errorprone.xml/UnconditionalIfStatement"/>
+    <rule ref="category/java/errorprone.xml/UnnecessaryBooleanAssertion"/>
+    <rule ref="category/java/errorprone.xml/UnnecessaryCaseChange"/>
+    <rule ref="category/java/errorprone.xml/UseEqualsToCompareStrings"/>
+    <rule ref="category/java/errorprone.xml/UselessOperationOnImmutable"/>
+    <rule ref="category/java/multithreading.xml/AvoidThreadGroup"/>
+    <rule ref="category/java/multithreading.xml/DontCallThreadRun"/>
+    <rule ref="category/java/performance.xml/StringInstantiation"/>
+    <rule ref="category/java/performance.xml/StringToString"/>
+    <rule ref="category/java/performance.xml/UseStringBufferLength"/>
+    <rule ref="category/jsp/bestpractices.xml/DontNestJsfInJstlIteration"/>
+    <rule ref="category/jsp/bestpractices.xml/NoClassAttribute"/>
+    <rule ref="category/jsp/bestpractices.xml/NoHtmlComments"/>
+    <rule ref="category/jsp/bestpractices.xml/NoJspForward"/>
+    <rule ref="category/jsp/codestyle.xml/DuplicateJspImports"/>
+    <rule ref="category/jsp/design.xml/NoInlineScript"/>
+    <rule ref="category/jsp/design.xml/NoInlineStyleInformation"/>
+    <rule ref="category/jsp/design.xml/NoLongScripts"/>
+    <rule ref="category/jsp/design.xml/NoScriptlets"/>
+    <rule ref="category/jsp/errorprone.xml/JspEncoding"/>
+    <rule ref="category/jsp/security.xml/IframeMissingSrcAttribute"/>
+    <rule ref="category/jsp/security.xml/NoUnsanitizedJSPExpression"/>
+    <rule ref="category/plsql/bestpractices.xml/TomKytesDespair"/>
+    <rule ref="category/plsql/codestyle.xml/MisplacedPragma"/>
+    <rule ref="category/plsql/design.xml/ExcessiveMethodLength"/>
+    <rule ref="category/plsql/design.xml/ExcessiveObjectLength"/>
+    <rule ref="category/plsql/design.xml/ExcessivePackageBodyLength"/>
+    <rule ref="category/plsql/design.xml/ExcessivePackageSpecificationLength"/>
+    <rule ref="category/plsql/design.xml/ExcessiveParameterList"/>
+    <rule ref="category/plsql/design.xml/ExcessiveTypeLength"/>
+    <rule ref="category/plsql/design.xml/TooManyMethods">
+        <properties>
+            <property name="maxmethods" value="1"/>
+        </properties>
+    </rule>
+    <rule ref="category/plsql/errorprone.xml/TO_DATE_TO_CHAR"/>
+    <rule ref="category/plsql/errorprone.xml/TO_DATEWithoutDateFormat"/>
+    <rule ref="category/plsql/errorprone.xml/TO_TIMESTAMPWithoutDateFormat"/>
+    <rule ref="category/pom/errorprone.xml/InvalidDependencyTypes">
+        <properties>
+            <property name="validTypes" value="pom,jar,maven-plugin,ejb,war,ear,rar,par"/>
+        </properties>
+    </rule>
+    <rule ref="category/pom/errorprone.xml/ProjectVersionAsDependencyVersion"/>
+    <rule ref="category/vf/security.xml/VfCsrf"/>
+    <rule ref="category/vf/security.xml/VfUnescapeEl"/>
+    <rule ref="category/vm/bestpractices.xml/AvoidReassigningParameters"/>
+    <rule ref="category/vm/bestpractices.xml/UnusedMacroParameter"/>
+    <rule ref="category/vm/design.xml/AvoidDeeplyNestedIfStmts"/>
+    <rule ref="category/vm/design.xml/CollapsibleIfStatements"/>
+    <rule ref="category/vm/design.xml/ExcessiveTemplateLength">
+        <properties>
+            <property name="minimum" value="1000"/>
+        </properties>
+    </rule>
+    <rule ref="category/vm/design.xml/NoInlineJavaScript"/>
+    <rule ref="category/vm/design.xml/NoInlineStyles"/>
+    <rule ref="category/vm/errorprone.xml/EmptyForeachStmt"/>
+    <rule ref="category/vm/errorprone.xml/EmptyIfStmt"/>
+    <rule ref="category/xml/errorprone.xml/MistypedCDATASection"/>
+    <rule ref="category/xsl/codestyle.xml/UseConcatOnce"/>
+    <rule ref="category/xsl/performance.xml/AvoidAxisNavigation">
+        <properties>
+            <property name="checkSelfDescendantAbreviation" value="false"/>
+        </properties>
+    </rule>
+</ruleset>

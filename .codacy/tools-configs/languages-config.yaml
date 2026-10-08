@@ -1,0 +1,25 @@
+tools:
+  - name: eslint
+    languages: [Javascript, TypeScript]
+    extensions: [.js, .jsm, .jsx, .mjs, .ts, .tsx, .vue]
+    files: []
+  - name: lizard
+    languages: [C, CPP, CSharp, Erlang, Fortran, Go, Java, Javascript, Kotlin, Lua, Objective C, PHP, Python, Ruby, Rust, Scala, Solidity, Swift, TypeScript]
+    extensions: [.c, .cc, .cpp, .cs, .cxx, .gemspec, .go, .h, .hpp, .ino, .java, .jbuilder, .js, .jsm, .jsx, .kt, .kts, .m, .mjs, .opal, .php, .podspec, .py, .rake, .rb, .rlib, .rs, .scala, .swift, .ts, .tsx, .vue]
+    files: []
+  - name: opengrep
+    languages: [Apex, C, CPP, CSharp, Dockerfile, Go, Java, Javascript, Kotlin, PHP, PLSQL, Python, Ruby, Rust, SQL, Scala, Shell, Swift, Terraform, TypeScript, YAML]
+    extensions: [.bash, .c, .cc, .cls, .cpp, .cs, .cxx, .dockerfile, .env, .fnc, .gemspec, .go, .h, .hpp, .ino, .java, .jbuilder, .js, .jsm, .jsx, .kt, .kts, .mjs, .opal, .pck, .php, .pkb, .pkh, .pks, .plb, .pld, .plh, .pls, .podspec, .prc, .py, .rake, .rb, .rlib, .rs, .scala, .sh, .sql, .swift, .tf, .tpb, .tps, .trg, .trigger, .ts, .tsx, .tyb, .typ, .vue, .yaml, .yml]
+    files: []
+  - name: pmd
+    languages: [Apex, JSP, Java, Javascript, PLSQL, SQL, Velocity, VisualForce, XML]
+    extensions: [.cls, .component, .fnc, .java, .js, .jsm, .jsp, .jsx, .mjs, .page, .pck, .pkb, .pkh, .pks, .plb, .pld, .plh, .pls, .pom, .prc, .sql, .tpb, .tps, .trg, .trigger, .tyb, .typ, .vm, .vue, .wsdl, .xml, .xsl]
+    files: []
+  - name: pylint
+    languages: [Python]
+    extensions: [.py]
+    files: []
+  - name: trivy
+    languages: [C, CPP, CSharp, Dart, Dockerfile, Elixir, Go, JSON, Java, Javascript, PHP, Python, Ruby, Rust, Scala, Swift, Terraform, TypeScript, XML, YAML]
+    extensions: [.c, .cc, .cpp, .cs, .cxx, .dart, .dockerfile, .env, .ex, .exs, .gemspec, .go, .h, .hpp, .ino, .java, .jbuilder, .js, .jsm, .json, .jsx, .mjs, .opal, .php, .podspec, .pom, .py, .rake, .rb, .rlib, .rs, .scala, .swift, .tf, .ts, .tsx, .vue, .wsdl, .xml, .xsl, .yaml, .yml]
+    files: [.deps.json, .env, .env.dev, .env.development, .env.prod, .env.production, .env.staging, Berksfile, Capfile, Cargo.lock, Cheffile, Directory.Packages.props, Dockerfile, Fastfile, Gemfile, Gemfile.lock, Guardfile, Package.resolved, Packages.props, Pipfile.lock, Podfile, Podfile.lock, Rakefile, Thorfile, Vagabondfile, Vagrantfile, build.sbt.lock, composer.lock, conan.lock, config.ru, go.mod, go.sum, gradle.lockfile, mix.lock, package-lock.json, package.json, packages.config, packages.lock.json, pnpm-lock.yaml, poetry.lock, pom.xml, pubspec.lock, requirements.txt, uv.lock, yarn.lock]
