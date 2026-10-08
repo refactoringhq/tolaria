@@ -531,8 +531,10 @@ jobs:
 
   playwright-smoke:
     executor: browser
-    # 8 smoke shards, 4 per container, 2 at a time per container (as before, just split in two).
-    parallelism: 2
+    # One container, 8 shards, 2 at a time. With the shards split over two containers,
+    # new-note-title-focus (shard 5) failed on main in 2 of 4 runs where it started on a fresh
+    # container (pipelines 12 and 14); it has never failed with shards 1-4 run before it on the
+    # same server, so keep that order until the test is fixed. See .circleci/README.md.
     steps:
       - checkout
       - skip_unless_changed:
@@ -553,14 +555,10 @@ jobs:
       - run:
           name: Run curated Playwright smoke suite
           command: |
-            per_node=4
-            first=$((CIRCLE_NODE_INDEX * per_node + 1))
             PLAYWRIGHT_SHARED_SERVER=1 \
-            PLAYWRIGHT_WARM_SERVER=1 \
+            PLAYWRIGHT_SHARDS=8 \
             PLAYWRIGHT_CONCURRENCY=2 \
-            PLAYWRIGHT_FIRST_SHARD="$first" \
-            PLAYWRIGHT_LAST_SHARD=$((first + per_node - 1)) \
-              bash .chunk/run-playwright-shards.sh $((per_node * CIRCLE_NODE_TOTAL))
+              bash .chunk/run-playwright-shards.sh 8
       - store_test_results:
           path: test-results
       - store_artifacts:
