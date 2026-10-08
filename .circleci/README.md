@@ -34,7 +34,10 @@ The migration from GitHub Actions is staged:
   Codacy scan) sets the wall clock: about 4-5 minutes per main push on the Free plan (Docker
   large), down from about 16. Vitest coverage runs as `frontend_coverage_shards` CircleCI
   containers whose reports `frontend-coverage-report` merges before enforcing the global
-  thresholds; Playwright smoke runs its 8 shards across 2 containers.
+  thresholds. Playwright smoke still runs its 8 shards in one container: when the shards were
+  split over two containers, `tests/smoke/new-note-title-focus.spec.ts` failed in 2 of 4 runs
+  where shard 5 started on a fresh container (main pipelines 12 and 14, both attempts, at the
+  click into the second new note's title) and has never failed with shards 1-4 run before it.
 - Every job except `static-gates` halts early (and reports success) when none of its inputs
   changed since the last `main` commit on which that same job passed (`skip_unless_changed`,
   with the pass recorded as a small `validated-v1-<job>-main-<sha>` cache entry). Frontend jobs ignore

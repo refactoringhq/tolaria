@@ -69,6 +69,9 @@ playwright_args=(
   --config playwright.smoke.config.ts
   "${smoke_files[@]}"
   --reporter=line
+  # Each shard keeps its own output directory; with a shared one, the next shard's run wipes
+  # the previous shard's failure context (error-context.md, screenshots, traces).
+  --output "test-results/smoke-${shard_label}"
 )
 
 if [[ -n "$shard" ]]; then
