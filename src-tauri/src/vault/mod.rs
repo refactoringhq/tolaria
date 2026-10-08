@@ -348,36 +348,37 @@ const TEXT_EXTENSIONS: &[&str] = &[
     "cmd",
 ];
 
+const EXTENSIONLESS_TEXT_FILES: &[&str] = &[
+    "makefile",
+    "dockerfile",
+    "rakefile",
+    "gemfile",
+    "procfile",
+    "brewfile",
+    ".gitignore",
+    ".gitattributes",
+    ".editorconfig",
+    ".env",
+];
+
+fn extensionless_file_kind(path: &Path) -> String {
+    let name = path
+        .file_name()
+        .map(|name| name.to_string_lossy().to_lowercase())
+        .unwrap_or_default();
+    if EXTENSIONLESS_TEXT_FILES.contains(&name.as_str()) {
+        "text".to_string()
+    } else {
+        "binary".to_string()
+    }
+}
+
 /// Classify a file extension into "markdown", "text", or "binary".
 pub(crate) fn classify_file_kind(path: &Path) -> String {
-    let ext = match path.extension() {
-        Some(e) => e.to_string_lossy().to_lowercase(),
-        None => {
-            // Files without extension: check if name itself is a known text file
-            let name = path
-                .file_name()
-                .map(|n| n.to_string_lossy().to_lowercase())
-                .unwrap_or_default();
-            return if [
-                "makefile",
-                "dockerfile",
-                "rakefile",
-                "gemfile",
-                "procfile",
-                "brewfile",
-                ".gitignore",
-                ".gitattributes",
-                ".editorconfig",
-                ".env",
-            ]
-            .contains(&name.as_str())
-            {
-                "text".to_string()
-            } else {
-                "binary".to_string()
-            };
-        }
+    let Some(extension) = path.extension() else {
+        return extensionless_file_kind(path);
     };
+    let ext = extension.to_string_lossy().to_lowercase();
     if ext == "md" || ext == "markdown" {
         "markdown".to_string()
     } else if TEXT_EXTENSIONS.contains(&ext.as_str()) {
@@ -385,6 +386,38 @@ pub(crate) fn classify_file_kind(path: &Path) -> String {
     } else {
         "binary".to_string()
     }
+}
+
+fn folder_node(entry: fs::DirEntry, vault_root: &Path) -> Option<FolderNode> {
+    let path = entry.path();
+    if !path.is_dir() {
+        return None;
+    }
+
+    let name = entry.file_name().to_string_lossy().to_string();
+    if is_folder_tree_hidden_dir(&name) {
+        return None;
+    }
+
+    let relative_path = path_identity::vault_relative_path_string(vault_root, &path)
+        .unwrap_or_else(|_| path_identity::normalize_path_for_identity(&path.to_string_lossy()));
+    Some(FolderNode {
+        name,
+        path: relative_path,
+        children: build_folder_tree(&path, vault_root),
+    })
+}
+
+fn build_folder_tree(dir: &Path, vault_root: &Path) -> Vec<FolderNode> {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return Vec::new();
+    };
+    let mut nodes = entries
+        .flatten()
+        .filter_map(|entry| folder_node(entry, vault_root))
+        .collect::<Vec<_>>();
+    nodes.sort_by_key(|node| node.name.to_lowercase());
+    nodes
 }
 
 use crate::git::GitDates;
@@ -489,36 +522,7 @@ pub fn scan_vault_folders(vault_path: &Path) -> Result<Vec<FolderNode>, String> 
     if !vault_path.is_dir() {
         return Err(format!("Not a directory: {}", vault_path.display()));
     }
-    fn build_tree(dir: &Path, vault_root: &Path) -> Vec<FolderNode> {
-        let mut nodes: Vec<FolderNode> = Vec::new();
-        let entries = match fs::read_dir(dir) {
-            Ok(d) => d,
-            Err(_) => return nodes,
-        };
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if !path.is_dir() {
-                continue;
-            }
-            let name = entry.file_name().to_string_lossy().to_string();
-            if is_folder_tree_hidden_dir(&name) {
-                continue;
-            }
-            let rel_path = path_identity::vault_relative_path_string(vault_root, &path)
-                .unwrap_or_else(|_| {
-                    path_identity::normalize_path_for_identity(&path.to_string_lossy())
-                });
-            let children = build_tree(&path, vault_root);
-            nodes.push(FolderNode {
-                name,
-                path: rel_path,
-                children,
-            });
-        }
-        nodes.sort_by_key(|node| node.name.to_lowercase());
-        nodes
-    }
-    Ok(build_tree(vault_path, vault_path))
+    Ok(build_folder_tree(vault_path, vault_path))
 }
 
 #[cfg(test)]
