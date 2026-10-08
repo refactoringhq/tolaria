@@ -5,10 +5,11 @@ import { requestCreateNoteInFolder } from '../../hooks/noteCreationRequests'
 import { useSidebarContextMenu } from '../sidebar/sidebarHooks'
 
 interface UseFolderContextMenuInput {
-  onDeleteFolder?: (folderPath: string) => void
+  onDeleteFolder?: (folderPath: string, rootPath?: string) => void
   folderFileActions?: FolderFileActions
   onCreateFolder?: (folderPath: string, rootPath?: string) => void
-  onStartRenameFolder?: (folderPath: string) => void
+  onStartRenameFolder?: (folderPath: string, rootPath?: string) => void
+  canRenameDeleteFolder?: (folderPath: string, rootPath?: string) => boolean
 }
 
 export function useFolderContextMenu({
@@ -16,6 +17,7 @@ export function useFolderContextMenu({
   folderFileActions,
   onCreateFolder,
   onStartRenameFolder,
+  canRenameDeleteFolder,
 }: UseFolderContextMenuInput) {
   const {
     closeContextMenu,
@@ -38,30 +40,31 @@ export function useFolderContextMenu({
     onCreateFolder?.(folderPath, rootPath)
   }, [closeContextMenu, onCreateFolder])
 
-  const handleRenameFromMenu = useCallback((folderPath: string) => {
+  const handleRenameFromMenu = useCallback((folderPath: string, rootPath?: string) => {
     closeContextMenu()
-    onStartRenameFolder?.(folderPath)
+    onStartRenameFolder?.(folderPath, rootPath)
   }, [closeContextMenu, onStartRenameFolder])
 
-  const handleDeleteFromMenu = useCallback((folderPath: string) => {
+  const handleDeleteFromMenu = useCallback((folderPath: string, rootPath?: string) => {
     closeContextMenu()
-    onDeleteFolder?.(folderPath)
+    onDeleteFolder?.(folderPath, rootPath)
   }, [closeContextMenu, onDeleteFolder])
 
-  const handleRevealFromMenu = useCallback((folderPath: string) => {
+  const handleRevealFromMenu = useCallback((folderPath: string, rootPath?: string) => {
     closeContextMenu()
-    folderFileActions?.revealFolder(folderPath)
+    folderFileActions?.revealFolder(folderPath, rootPath)
   }, [closeContextMenu, folderFileActions])
 
-  const handleCopyPathFromMenu = useCallback((folderPath: string) => {
+  const handleCopyPathFromMenu = useCallback((folderPath: string, rootPath?: string) => {
     closeContextMenu()
-    folderFileActions?.copyFolderPath(folderPath)
+    folderFileActions?.copyFolderPath(folderPath, rootPath)
   }, [closeContextMenu, folderFileActions])
   const menu = contextMenu ? {
     path: contextMenu.target.path,
     rootPath: contextMenu.target.rootPath,
     x: contextMenu.pos.x,
     y: contextMenu.pos.y,
+    canRenameDelete: canRenameDeleteFolder?.(contextMenu.target.path, contextMenu.target.rootPath) ?? true,
   } : null
 
   return {

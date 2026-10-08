@@ -14,11 +14,11 @@ interface FolderTreeRowProps {
   isCreating?: boolean
   onCancelCreateFolder?: () => void
   onCreateFolderSubmit?: (value: string) => Promise<boolean>
-  onDeleteFolder?: (folderPath: string) => void
+  onDeleteFolder?: (folderPath: string, rootPath?: string) => void
   onOpenMenu: (node: FolderNode, event: ReactMouseEvent<HTMLElement>) => void
-  onRenameFolder?: (folderPath: string, nextName: string) => Promise<boolean> | boolean
+  onRenameFolder?: (folderPath: string, nextName: string, rootPath?: string) => Promise<boolean> | boolean
   onSelect: (selection: SidebarSelection) => void
-  onStartRenameFolder?: (folderPath: string) => void
+  onStartRenameFolder?: (folderPath: string, rootPath?: string) => void
   onToggle: (path: string) => void
   onCancelRenameFolder?: () => void
   onCanDropNote?: (notePath: string, folderPath: string) => boolean
@@ -249,6 +249,9 @@ export const FolderTreeRow = memo(function FolderTreeRow(options: FolderTreeRowP
   const selectFolder = useCallback(() => {
     onSelect(selectionForFolder(node.path, nodeRootPath))
   }, [node.path, nodeRootPath, onSelect])
+  const handleStartRename = useCallback(() => {
+    onStartRenameFolder?.(node.path, nodeRootPath)
+  }, [node.path, nodeRootPath, onStartRenameFolder])
   const row = (
     <FolderItemRow
       canOpenMenu={canUseDefaultFolderActions}
@@ -259,7 +262,7 @@ export const FolderTreeRow = memo(function FolderTreeRow(options: FolderTreeRowP
       node={node}
       onOpenMenu={onOpenMenu}
       onSelect={selectFolder}
-      onStartRenameFolder={canMutateFolder ? onStartRenameFolder : undefined}
+      onStartRenameFolder={canMutateFolder ? handleStartRename : undefined}
       onToggle={() => onToggle(nodeKey)}
       onCanDropNote={onCanDropNote}
       onMoveNoteToFolder={onMoveNoteToFolder}
@@ -321,14 +324,13 @@ function resolveFolderTreeRowState(options: Pick<FolderTreeRowProps, 'expanded' 
   const { expanded, node, renamingFolderPath, rootPath, selection } = options
   const nodeRootPath = node.rootPath ?? rootPath
   const nodeKey = folderNodeKey({ path: node.path, rootPath: nodeRootPath })
-  const canUseDefaultFolderActions = !nodeRootPath || nodeRootPath === rootPath
-  const canMutateFolder = node.path.length > 0 && canUseDefaultFolderActions
+  const canMutateFolder = node.path.length > 0 && (!nodeRootPath || nodeRootPath === rootPath)
   return {
     nodeKey,
     nodeRootPath,
     isExpanded: (Reflect.get(expanded, nodeKey) as boolean | undefined) ?? false,
     isSelected: folderSelectionMatches(selection, { ...node, rootPath: nodeRootPath }, rootPath),
-    canUseDefaultFolderActions,
+    canUseDefaultFolderActions: true,
     canMutateFolder,
     isRenaming: canMutateFolder && renamingFolderPath === node.path,
   }
