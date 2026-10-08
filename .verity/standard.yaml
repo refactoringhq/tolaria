@@ -1,0 +1,140 @@
+version: 1.0.0
+created_by: verity-cli
+knowledge_spec:
+  project_name: tolaria
+  languages:
+    - typescript
+    - rust
+    - javascript
+    - shell
+  frameworks:
+    - react
+  architecture: monorepo
+  build_system: pnpm
+  test_framework: playwright
+quality_dimensions:
+  - id: comprehensibility
+    description: Code readable in one context load
+    signals:
+      - metric: file_length
+        threshold: 300
+        unit: lines
+        rationale: AI context windows degrade on large files
+        measured_project_average: 183
+      - metric: cyclomatic_complexity
+        threshold: 15
+        unit: per_function
+        rationale: Complexity-aware feedback improves AI performance by 35.71%
+      - metric: function_length
+        threshold: 50
+        unit: lines
+        rationale: Short functions are easier for agents to modify safely
+      - metric: naming_quality
+        tool: ai
+        rationale: Descriptive names improve AI comprehension by 2x
+  - id: modularity
+    description: Modify one concern without touching 3+ files
+    signals:
+      - metric: single_responsibility
+        tool: ai
+        rationale: AI performance drops sharply at 3+ files per change
+      - metric: shallow_abstractions
+        tool: ai
+        rationale: LLMs struggle with deep inheritance hierarchies
+  - id: type_safety
+    description: Type system catches errors before runtime
+    signals:
+      - metric: strict_types
+        language: typescript
+        tool: eslint
+        rules:
+          - "@typescript-eslint/no-explicit-any"
+          - "@typescript-eslint/explicit-function-return-type"
+        rationale: ">50% reduction in compilation errors with type constraints"
+  - id: test_adequacy
+    description: Tests define expected behavior for agents
+    signals:
+      - metric: test_coverage
+        threshold: 80
+        unit: percent
+        ai_threshold: 90
+        rationale: 90% recommended for AI-generated code
+      - metric: test_quality
+        tool: ai
+        rationale: Tests are the primary safety net for AI agents
+security_patterns:
+  - id: no-hardcoded-secrets
+    description: No secrets, API keys, passwords, or tokens in source code
+    severity: critical
+    cwe:
+      - CWE-798
+    enforced_by:
+      - tool: Trivy
+  - id: input-sanitization
+    description: All user input validated and sanitized before use
+    severity: critical
+    cwe:
+      - CWE-20
+      - CWE-80
+      - CWE-89
+      - CWE-117
+    enforced_by: []
+  - id: parameterized-queries
+    description: Database queries use parameters, never string concatenation
+    severity: critical
+    cwe:
+      - CWE-89
+    enforced_by: []
+  - id: dependency-verification
+    description: No known-vulnerable dependencies
+    severity: high
+    cwe:
+      - CWE-1395
+    enforced_by:
+      - tool: Trivy
+  - id: no-unsafe-deserialization
+    description: No unsafe deserialization of untrusted data
+    severity: high
+    cwe:
+      - CWE-502
+    enforced_by: []
+  - id: access-control-checks
+    description: Authorization verified on all sensitive operations
+    severity: high
+    cwe:
+      - CWE-639
+    enforced_by: []
+  - id: config-file-integrity
+    description: Configuration files not manipulable by untrusted input
+    severity: high
+    cwe:
+      - CWE-15
+    enforced_by: []
+custom_patterns: []
+process_constraints:
+  self_healing_limit: 2
+  analysis_mode: balanced
+  compound_enabled: true
+  memory_graph_enabled: true
+  memory_graph_budget_tokens: 2000
+  knowledge_injection_budget_tokens: 2000
+  finding_autosuppress_threshold: 2
+  intent_fail_threshold: 4
+  intent_warn_threshold: 7
+  exclude_paths:
+    - node_modules
+    - dist
+    - build
+    - .git
+    - vendor
+    - __pycache__
+    - .next
+    - coverage
+tool_configuration:
+  ESLint9:
+    enabled: true
+    project_config_detected: ./eslint.config.js
+  Trivy:
+    enabled: true
+  shellcheck:
+    enabled: true

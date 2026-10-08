@@ -77,10 +77,14 @@ CODE-HEALTH-REPORT.md
 .env.local
 .env.*.local
 
-# Codacy's runtime cache is local, while the pinned launcher and the two
-# rule configurations used by the repository gate are versioned.
+# Codacy's runtime cache is local, while the pinned launcher, the CLI mode file
+# and the tool configurations used by the repository gate are versioned. The
+# generated files (cli-config.yaml, eslint.config.mjs, languages-config.yaml,
+# pylint.rc, ruleset.xml) come from `.codacy/cli.sh init`; without them a fresh
+# clone runs ESLint without the project config and every tool on every file.
 .codacy/*
 !.codacy/cli.sh
+!.codacy/cli-config.yaml
 !.codacy/codacy.yaml
 !.codacy/codacy.config.json
 !.codacy/tools-configs/
@@ -88,3 +92,14 @@ CODE-HEALTH-REPORT.md
 !.codacy/tools-configs/semgrep.yaml
 !.codacy/tools-configs/trivy.yaml
 !.codacy/tools-configs/lizard.yaml
+!.codacy/tools-configs/eslint.config.mjs
+!.codacy/tools-configs/languages-config.yaml
+!.codacy/tools-configs/pylint.rc
+!.codacy/tools-configs/ruleset.xml
+
+# Verity — machine-local state. Everything in .verity/ is ignored except the
+# shared standard, which is meant to be committed. The knowledge graph under
+# .verity/memory/ is machine-local too: the service rebuilds it, and committing
+# it puts generated notes in every diff and pull request.
+.verity/*
+!.verity/standard.yaml
