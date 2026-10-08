@@ -35,7 +35,6 @@ import { clearEditorDomSelection, EDITOR_CONTAINER_SELECTOR } from './editorDomS
 import { editorDocumentSignature, isBlankEditorDocument } from './editorDocumentState'
 import {
   cacheEditorState,
-  cacheParsedEditorState,
   cacheResolvedEditorState,
   isBlankBodyContent,
   resolveBlocksForTarget,
@@ -747,6 +746,7 @@ function editorChangedDuringUntitledEmptyHeadingParse(
 
 function scheduleEmptyHeadingSwap(options: {
   editor: ReturnType<typeof useCreateBlockNote>
+  cache: Map<string, CachedTabState>
   targetPath: string
   content: string
   prevActivePathRef: MutableRefObject<string | null>
@@ -759,6 +759,7 @@ function scheduleEmptyHeadingSwap(options: {
 }) {
   const {
     editor,
+    cache,
     targetPath,
     content,
     prevActivePathRef,
@@ -781,7 +782,11 @@ function scheduleEmptyHeadingSwap(options: {
         suppressChangeRef.current = false
         return
       }
-      cacheParsedEditorState(targetPath, { blocks, scrollTop: 0, sourceContent: content }, vaultPath)
+      // Record the swap in the tab cache too, like the blank and parsed swap paths do. BlockNote
+      // serializes the empty title as "#" while the note source says "# ", so without this the
+      // next render of the same tab looks stale and swaps the same blocks in again, which moves
+      // the caret out of the new note's title.
+      cacheResolvedEditorState(cache, targetPath, { blocks, scrollTop: 0, sourceContent: content }, vaultPath)
       if (!applyBlocksToEditor({ editor, blocks, scrollTop: 0, suppressChangeRef, editorContentPathRef, targetPath })) return
       signalTabSwap({ path: targetPath })
     })
@@ -848,6 +853,7 @@ function scheduleTabSwap(options: {
 
     if (scheduleEmptyHeadingSwap({
       editor,
+      cache,
       targetPath,
       content: activeTab.content,
       prevActivePathRef,
