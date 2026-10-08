@@ -26,8 +26,9 @@ The migration from GitHub Actions is staged:
   documentation deployment, and pull-request branch updates until the release contexts below are
   provisioned and a full shadow release has produced every platform artifact.
 - Codecov uploads run in validation but do not fail the job while `codecov_required` is `false`.
-  Set it to `true` (and add `CODECOV_TOKEN` to `tolaria-ci` if tokenless uploads are rejected)
-  when GitHub Actions `ci.yml` is retired.
+  Codecov rejects tokenless uploads to the protected `main` branch, so add `CODECOV_TOKEN` to the
+  `tolaria-ci` context and set `codecov_required` to `true` before GitHub Actions `ci.yml` is
+  retired.
 - Disable a GitHub Actions workflow only after the matching CircleCI jobs are green on `main`.
 
 | GitHub Actions workflow | CircleCI replacement | Status |
@@ -35,7 +36,8 @@ The migration from GitHub Actions is staged:
 | `ci.yml` frontend static quality + tests | `validation/frontend-quality` | Shadow |
 | `ci.yml` Rust tests, coverage, Clippy, rustfmt | `validation/rust-coverage`, `validation/rust-lint` | Shadow |
 | `ci.yml` Linux build verification (PRs) | `validation/linux-build-verification` (non-main branches) | Shadow |
-| none (pre-push only) | `validation/playwright-smoke`, `validation/performance-regression` | New |
+| none (pre-push only) | `validation/playwright-smoke` | New |
+| none | `performance/performance-regression` | Opt-in (`run_performance_gate`); thresholds need CI baselines |
 | `release.yml` + `release-build-artifacts.yml` | `alpha-release` | Gated off |
 | `release-stable.yml` | `stable-release` | Gated off |
 | `deploy-docs.yml` | `publish-docs` | Gated off (needs Pages source change) |
