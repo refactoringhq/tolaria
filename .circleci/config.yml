@@ -18,14 +18,15 @@ executors:
   node:
     docker:
       - image: cimg/node:22.14.0
-    resource_class: xlarge
+    # The CircleCI Free plan tops out at Docker large (4 vCPU / 8 GB).
+    resource_class: large
     environment:
       NODE_OPTIONS: --max-old-space-size=4096
 
   browser:
     docker:
       - image: cimg/node:22.14.0-browsers
-    resource_class: xlarge
+    resource_class: large
     environment:
       NODE_OPTIONS: --max-old-space-size=4096
 
@@ -134,6 +135,21 @@ commands:
               exit 1
             fi
             echo "Codecov upload failed; continuing because codecov_required is false."
+
+  install_node_runtime:
+    steps:
+      - run:
+          name: Install Node.js runtime for Rust tests
+          command: |
+            set -euo pipefail
+            version=v22.14.0
+            archive="node-${version}-linux-x64.tar.xz"
+            cd /tmp
+            curl --proto '=https' --tlsv1.2 -fsSLO "https://nodejs.org/dist/${version}/${archive}"
+            curl --proto '=https' --tlsv1.2 -fsSL "https://nodejs.org/dist/${version}/SHASUMS256.txt" |
+              grep " ${archive}\$" | sha256sum -c -
+            sudo tar -xJf "$archive" -C /usr/local --strip-components=1
+            node --version
 
   install_frontend_dependencies:
     steps:
@@ -270,8 +286,8 @@ jobs:
           name: Frontend lint, build, and sharded coverage
           command: |
             FRONTEND_COVERAGE_SHARDS=2 \
-            FRONTEND_COVERAGE_CONCURRENCY=2 \
-            VITEST_COVERAGE_MAX_WORKERS=2 \
+            FRONTEND_COVERAGE_CONCURRENCY=1 \
+            VITEST_COVERAGE_MAX_WORKERS=3 \
               bash .chunk/run-sidecar-lane.sh frontend
       - run:
           name: Documentation build check
@@ -293,6 +309,7 @@ jobs:
     steps:
       - checkout
       - install_rust_ci_toolchain
+      - install_node_runtime
       - restore_cache:
           keys:
             - rust-ci-v2026-10-08-{{ checksum "src-tauri/Cargo.lock" }}
@@ -370,7 +387,7 @@ jobs:
           command: |
             PLAYWRIGHT_SHARED_SERVER=1 \
             PLAYWRIGHT_SHARDS=8 \
-            PLAYWRIGHT_CONCURRENCY=4 \
+            PLAYWRIGHT_CONCURRENCY=2 \
               bash .chunk/run-playwright-shards.sh 8
       - store_test_results:
           path: test-results
