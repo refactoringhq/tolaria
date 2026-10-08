@@ -14,9 +14,6 @@ parameters:
       Fail validation when the Codecov upload fails. Keep false while GitHub Actions remains the
       authoritative Codecov uploader.
 
-orbs:
-  codecov: codecov/codecov@6.0.0
-
 executors:
   node:
     docker:
@@ -102,6 +99,41 @@ commands:
             rustup toolchain install stable --profile minimal --component clippy,rustfmt,llvm-tools-preview
             rustup default stable
             rustc --version
+
+  upload_codecov:
+    parameters:
+      file:
+        type: string
+      flag:
+        type: string
+    steps:
+      - run:
+          name: Upload << parameters.flag >> coverage to Codecov
+          command: |
+            set -uo pipefail
+            upload() {
+              set -e
+              curl --proto '=https' --tlsv1.2 -fsSLo /tmp/codecov https://cli.codecov.io/latest/linux/codecov
+              curl --proto '=https' --tlsv1.2 -fsSLo /tmp/codecov.SHA256SUM https://cli.codecov.io/latest/linux/codecov.SHA256SUM
+              (cd /tmp && sha256sum -c codecov.SHA256SUM)
+              chmod +x /tmp/codecov
+              # The CLI reads CODECOV_TOKEN from the environment when it is configured.
+              /tmp/codecov --verbose upload-process \
+                --disable-search \
+                --fail-on-error \
+                --git-service github \
+                --slug refactoringhq/tolaria \
+                --file "<< parameters.file >>" \
+                --flag "<< parameters.flag >>" \
+                --name "circleci-<< parameters.flag >>"
+            }
+            if (upload); then
+              exit 0
+            fi
+            if [[ "<< pipeline.parameters.codecov_required >>" == "true" ]]; then
+              exit 1
+            fi
+            echo "Codecov upload failed; continuing because codecov_required is false."
 
   install_frontend_dependencies:
     steps:
@@ -250,13 +282,9 @@ jobs:
             else
               echo "Documentation inputs unchanged; skipping docs build."
             fi
-      - codecov/upload:
-          disable_search: true
-          fail_on_error: << pipeline.parameters.codecov_required >>
-          files: coverage/lcov.info
-          flags: frontend
-          slug: refactoringhq/tolaria
-          upload_name: frontend
+      - upload_codecov:
+          file: coverage/lcov.info
+          flag: frontend
 
   rust-coverage:
     executor: rust
@@ -300,13 +328,9 @@ jobs:
             - ~/.cargo/git
             - ~/.cargo/bin/cargo-llvm-cov
             - src-tauri/target
-      - codecov/upload:
-          disable_search: true
-          fail_on_error: << pipeline.parameters.codecov_required >>
-          files: coverage/rust.lcov
-          flags: rust
-          slug: refactoringhq/tolaria
-          upload_name: rust
+      - upload_codecov:
+          file: coverage/rust.lcov
+          flag: rust
 
   rust-lint:
     executor: rust
