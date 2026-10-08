@@ -450,6 +450,17 @@ fn try_parse_file(
     }
 }
 
+fn should_visit_vault_entry(entry: &walkdir::DirEntry) -> bool {
+    if !entry.file_type().is_dir() || entry.depth() == 0 {
+        return true;
+    }
+    !is_hidden_dir(&entry.file_name().to_string_lossy())
+}
+
+fn is_visible_vault_file(entry: &walkdir::DirEntry) -> bool {
+    entry.path().is_file() && !entry.file_name().to_string_lossy().starts_with('.')
+}
+
 /// Scan all files in the vault, including subdirectories.
 /// Hidden directories (starting with `.`) are excluded.
 fn scan_all_files(
@@ -460,26 +471,9 @@ fn scan_all_files(
     let walker = WalkDir::new(vault_path)
         .follow_links(true)
         .into_iter()
-        .filter_entry(|e| {
-            if e.file_type().is_dir() {
-                let name = e.file_name().to_string_lossy();
-                // Skip the vault root itself (depth 0) — we only filter subdirs
-                if e.depth() == 0 {
-                    return true;
-                }
-                return !is_hidden_dir(&name);
-            }
-            true
-        });
-    for entry in walker.filter_map(|e| e.ok()) {
-        if entry.path().is_file() {
-            // Skip hidden files (starting with '.') — e.g. .gitignore, .DS_Store
-            let fname = entry.file_name().to_string_lossy();
-            if fname.starts_with('.') {
-                continue;
-            }
-            try_parse_file(entry.path(), vault_path, git_dates, entries);
-        }
+        .filter_entry(should_visit_vault_entry);
+    for entry in walker.filter_map(Result::ok).filter(is_visible_vault_file) {
+        try_parse_file(entry.path(), vault_path, git_dates, entries);
     }
 }
 
