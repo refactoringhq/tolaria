@@ -119,9 +119,10 @@ commands:
   skip_unless_changed:
     description: >-
       Halt the job (it then reports success) when none of its inputs changed since the last
-      commit on which this same job passed. Each passing job saves that commit as a tiny cache
-      entry (mark_validated); with no marker, or a marker that is not an ancestor of HEAD, the
-      job runs. The comparison covers every commit since that pass, not just the last one.
+      main commit on which this same job passed. Each passing job saves that commit as a tiny
+      cache entry (mark_validated); only main markers are read, so the marker is always an
+      ancestor of later main commits. With no marker, or one that is not an ancestor of HEAD,
+      the job runs. The comparison covers every commit since that pass, not just the last one.
     parameters:
       scope:
         type: string
@@ -136,7 +137,7 @@ commands:
     steps:
       - restore_cache:
           keys:
-            - validated-v1-<< parameters.scope >>-
+            - validated-v1-<< parameters.scope >>-main-
       - run:
           name: Skip when << parameters.scope >> inputs are unchanged
           command: |
@@ -173,7 +174,7 @@ commands:
             mkdir -p "$HOME/.tolaria-validated"
             git rev-parse HEAD > "$HOME/.tolaria-validated/<< parameters.scope >>"
       - save_cache:
-          key: validated-v1-<< parameters.scope >>-{{ .Revision }}
+          key: validated-v1-<< parameters.scope >>-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.tolaria-validated/<< parameters.scope >>
 
@@ -555,6 +556,7 @@ jobs:
             per_node=4
             first=$((CIRCLE_NODE_INDEX * per_node + 1))
             PLAYWRIGHT_SHARED_SERVER=1 \
+            PLAYWRIGHT_WARM_SERVER=1 \
             PLAYWRIGHT_CONCURRENCY=2 \
             PLAYWRIGHT_FIRST_SHARD="$first" \
             PLAYWRIGHT_LAST_SHARD=$((first + per_node - 1)) \

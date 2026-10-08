@@ -84,6 +84,33 @@ wait_for_shared_server() {
   done
 }
 
+warm_shared_server() {
+  if [[ "${PLAYWRIGHT_WARM_SERVER:-0}" != "1" ]]; then
+    return
+  fi
+
+  # A cold Vite server compiles the whole module graph during the first shards' tests, which
+  # can push timing-sensitive smoke tests past their timeouts. Load the app once first.
+  local started="$SECONDS"
+  printf '[chunk-playwright] warming shared server at %s\n' "$base_url"
+  if ! timeout 150 node -e '
+    const { chromium } = require("@playwright/test")
+    const warm = async () => {
+      const browser = await chromium.launch()
+      const page = await browser.newPage()
+      await page.goto(process.argv[1], { waitUntil: "networkidle", timeout: 120000 })
+      await browser.close()
+    }
+    warm().catch((error) => {
+      console.error(error.message)
+      process.exit(1)
+    })
+  ' "$base_url"; then
+    printf '[chunk-playwright] warm-up failed; continuing with a cold server\n' >&2
+  fi
+  printf '[chunk-playwright] warm-up took %ss\n' "$((SECONDS - started))"
+}
+
 start_shared_server() {
   if [[ "$shared_server" != "1" ]]; then
     return
@@ -94,6 +121,7 @@ start_shared_server() {
     node scripts/playwright-smoke-server.mjs "$server_port" >"${log_dir}/shared-server.log" 2>&1 &
   server_pid="$!"
   wait_for_shared_server
+  warm_shared_server
 }
 
 run_batch() {
