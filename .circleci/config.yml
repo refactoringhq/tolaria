@@ -1,5 +1,19 @@
 version: 2.1
 
+parameters:
+  run_release_workflows:
+    type: boolean
+    default: false
+    description: >-
+      Run the CircleCI alpha/stable release, docs publication, and PR-branch maintenance workflows.
+      GitHub Actions keeps owning signed releases until the release contexts are provisioned.
+  codecov_required:
+    type: boolean
+    default: false
+    description: >-
+      Fail validation when the Codecov upload fails. Keep false while GitHub Actions remains the
+      authoritative Codecov uploader.
+
 orbs:
   codecov: codecov/codecov@6.0.0
 
@@ -46,6 +60,48 @@ commands:
           key: pnpm-v1-{{ checksum "pnpm-lock.yaml" }}
           paths:
             - ~/.local/share/pnpm/store
+
+  resolve_diff_base:
+    steps:
+      - run:
+          name: Resolve diff base revision
+          command: |
+            set -euo pipefail
+            git fetch origin main --no-tags
+            # GitHub App pipelines do not expose the push "before" SHA. Main pushes are
+            # checked against the previous commit (the pre-push hook already gates the full
+            # pushed range); branches are checked against their merge base with main.
+            if [[ "${CIRCLE_BRANCH:-}" == "main" ]]; then
+              base_sha="$(git rev-parse HEAD~1)"
+            else
+              base_sha="$(git merge-base origin/main HEAD)"
+              if [[ "$base_sha" == "$(git rev-parse HEAD)" ]]; then
+                base_sha="$(git rev-parse HEAD~1)"
+              fi
+            fi
+            echo "export DIFF_BASE_SHA=${base_sha}" >> "$BASH_ENV"
+            echo "Diff base: ${base_sha}"
+
+  install_rust_ci_toolchain:
+    steps:
+      - run:
+          name: Install Tauri Linux dependencies and Rust toolchain
+          command: |
+            set -euo pipefail
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends \
+              build-essential \
+              file \
+              libayatana-appindicator3-dev \
+              librsvg2-dev \
+              libsoup-3.0-dev \
+              libssl-dev \
+              libwebkit2gtk-4.1-dev \
+              libxdo-dev \
+              pkg-config
+            rustup toolchain install stable --profile minimal --component clippy,rustfmt,llvm-tools-preview
+            rustup default stable
+            rustc --version
 
   install_frontend_dependencies:
     steps:
@@ -137,14 +193,12 @@ jobs:
     steps:
       - checkout
       - install_frontend_dependencies
+      - resolve_diff_base
       - run:
           name: Codacy differential gate
           command: |
             set -euo pipefail
-            git fetch origin main --no-tags
-            export CODACY_BASE_REF
-            CODACY_BASE_REF="$(git merge-base origin/main HEAD~1 2>/dev/null || git rev-parse HEAD~1)"
-            pnpm codacy:gate
+            CODACY_BASE_REF="$DIFF_BASE_SHA" pnpm codacy:gate
       - run:
           name: CodeScene project health gate
           command: |
@@ -163,18 +217,23 @@ jobs:
             AVERAGE_SCORE="$(jq -r '.analysis.code_health.now' \<<<"$response")" \
             HOTSPOT_THRESHOLD="$hotspot_threshold" \
             AVERAGE_THRESHOLD="$average_threshold" \
-              python3 - \<<'PY'
-            import os
-
-            hotspot = float(os.environ["HOTSPOT_SCORE"])
-            average = float(os.environ["AVERAGE_SCORE"])
-            hotspot_threshold = float(os.environ["HOTSPOT_THRESHOLD"])
-            average_threshold = float(os.environ["AVERAGE_THRESHOLD"])
-            print(f"Hotspot Code Health: {hotspot:.2f} (threshold {hotspot_threshold:.2f})")
-            print(f"Average Code Health: {average:.2f} (threshold {average_threshold:.2f})")
-            if hotspot < hotspot_threshold or average < average_threshold:
-                raise SystemExit("CodeScene project health gate failed")
-            PY
+              node -e '
+                const read = (name) => {
+                  const value = Number.parseFloat(process.env[name] ?? "");
+                  if (!Number.isFinite(value)) throw new Error(`${name} is not numeric`);
+                  return value;
+                };
+                const hotspot = read("HOTSPOT_SCORE");
+                const average = read("AVERAGE_SCORE");
+                const hotspotThreshold = read("HOTSPOT_THRESHOLD");
+                const averageThreshold = read("AVERAGE_THRESHOLD");
+                console.log(`Hotspot Code Health: ${hotspot.toFixed(2)} (threshold ${hotspotThreshold.toFixed(2)})`);
+                console.log(`Average Code Health: ${average.toFixed(2)} (threshold ${averageThreshold.toFixed(2)})`);
+                if (hotspot < hotspotThreshold || average < averageThreshold) {
+                  console.error("CodeScene project health gate failed");
+                  process.exit(1);
+                }
+              '
       - run:
           name: Frontend lint, build, and sharded coverage
           command: |
@@ -186,16 +245,14 @@ jobs:
           name: Documentation build check
           command: |
             set -euo pipefail
-            git fetch origin main --no-tags
-            base_sha="$(git merge-base origin/main HEAD~1 2>/dev/null || git rev-parse HEAD~1)"
-            if git diff --name-only "$base_sha" HEAD | grep -qE '^(docs/|site/|scripts/build-agent-docs\.mjs|package\.json|pnpm-lock\.yaml|\.circleci/)'; then
+            if git diff --name-only "$DIFF_BASE_SHA" HEAD | grep -qE '^(docs/|site/|scripts/build-agent-docs\.mjs|package\.json|pnpm-lock\.yaml|\.circleci/)'; then
               pnpm docs:build
             else
               echo "Documentation inputs unchanged; skipping docs build."
             fi
       - codecov/upload:
           disable_search: true
-          fail_on_error: true
+          fail_on_error: << pipeline.parameters.codecov_required >>
           files: coverage/lcov.info
           flags: frontend
           slug: refactoringhq/tolaria
@@ -207,16 +264,22 @@ jobs:
       CARGO_BUILD_JOBS: "4"
     steps:
       - checkout
+      - install_rust_ci_toolchain
       - restore_cache:
           keys:
-            - rust-ci-v2026-07-24-{{ checksum "src-tauri/Cargo.lock" }}
-            - rust-ci-v2026-07-24-
+            - rust-ci-v2026-10-08-{{ checksum "src-tauri/Cargo.lock" }}
+            - rust-ci-v2026-10-08-
       - run:
           name: Install cargo-llvm-cov
           command: |
+            set -euo pipefail
             if ! command -v cargo-llvm-cov >/dev/null 2>&1; then
-              cargo install cargo-llvm-cov --locked
+              mkdir -p "$HOME/.cargo/bin"
+              curl --proto '=https' --tlsv1.2 -fsSL \
+                https://github.com/taiki-e/cargo-llvm-cov/releases/latest/download/cargo-llvm-cov-x86_64-unknown-linux-gnu.tar.gz |
+                tar -xzf - -C "$HOME/.cargo/bin"
             fi
+            cargo llvm-cov --version
       - run:
           name: Rust tests and coverage
           command: |
@@ -231,7 +294,7 @@ jobs:
               -- \
               --test-threads=1
       - save_cache:
-          key: rust-ci-v2026-07-24-{{ checksum "src-tauri/Cargo.lock" }}
+          key: rust-ci-v2026-10-08-{{ checksum "src-tauri/Cargo.lock" }}
           paths:
             - ~/.cargo/registry
             - ~/.cargo/git
@@ -239,7 +302,7 @@ jobs:
             - src-tauri/target
       - codecov/upload:
           disable_search: true
-          fail_on_error: true
+          fail_on_error: << pipeline.parameters.codecov_required >>
           files: coverage/rust.lcov
           flags: rust
           slug: refactoringhq/tolaria
@@ -251,10 +314,11 @@ jobs:
       CARGO_BUILD_JOBS: "4"
     steps:
       - checkout
+      - install_rust_ci_toolchain
       - restore_cache:
           keys:
-            - rust-ci-v2026-07-24-{{ checksum "src-tauri/Cargo.lock" }}
-            - rust-ci-v2026-07-24-
+            - rust-ci-v2026-10-08-{{ checksum "src-tauri/Cargo.lock" }}
+            - rust-ci-v2026-10-08-
       - run:
           name: Rust lint and format
           command: |
@@ -272,7 +336,7 @@ jobs:
             - playwright-v1-
       - run:
           name: Install Playwright Chromium
-          command: pnpm exec playwright install chromium
+          command: pnpm exec playwright install --with-deps chromium
       - save_cache:
           key: playwright-v1-{{ checksum "pnpm-lock.yaml" }}
           paths:
@@ -301,7 +365,7 @@ jobs:
             - playwright-v1-
       - run:
           name: Install Playwright Chromium
-          command: pnpm exec playwright install chromium
+          command: pnpm exec playwright install --with-deps chromium
       - save_cache:
           key: playwright-v1-{{ checksum "pnpm-lock.yaml" }}
           paths:
@@ -1218,6 +1282,7 @@ workflows:
               ignore: /.*/
 
   alpha-release:
+    when: << pipeline.parameters.run_release_workflows >>
     jobs:
       - compute-alpha-version:
           filters:
@@ -1306,6 +1371,7 @@ workflows:
               ignore: /.*/
 
   stable-release:
+    when: << pipeline.parameters.run_release_workflows >>
     jobs:
       - compute-stable-version:
           filters:
