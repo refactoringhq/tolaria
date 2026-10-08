@@ -289,6 +289,35 @@ describe('useEditorTabSwap untitled rename continuity', () => {
     expect(editor.tryParseMarkdownToBlocks).not.toHaveBeenCalled()
   })
 
+  it('does not re-apply an untouched empty-heading note when its tab re-renders unchanged', async () => {
+    setupMountedEditorMocks()
+
+    // BlockNote serializes an empty H1 as "#", while new notes are written as "# ".
+    const editor = makeMockEditor('#\n')
+    const tab = makeContentTab('untitled-note-123.md', '---\ntype: Note\n---\n\n# \n\n')
+
+    const { rerender } = renderHook(
+      ({ tabs, activeTabPath }) => useEditorTabSwap({
+        tabs,
+        activeTabPath,
+        editor: editor as never,
+      }),
+      { initialProps: { tabs: [tab], activeTabPath: tab.entry.path } },
+    )
+
+    await act(() => new Promise(r => setTimeout(r, 0)))
+    expect(editor.replaceBlocks).toHaveBeenCalledTimes(1)
+    editor.replaceBlocks.mockClear()
+
+    // A later render with the same note content (for example once the new note has been
+    // persisted) must not swap the same blocks in again: that would reset the caret the
+    // app just placed in the title.
+    rerender({ tabs: [{ ...tab }], activeTabPath: tab.entry.path })
+    await act(() => new Promise(r => setTimeout(r, 0)))
+
+    expect(editor.replaceBlocks).not.toHaveBeenCalled()
+  })
+
   it('flushes pending first typing instead of re-swapping stale tab content', async () => {
     setupMountedEditorMocks()
 

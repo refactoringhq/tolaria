@@ -54,7 +54,9 @@ test('@smoke new-note title stays focused when auto-rename lands during a typing
     timeout: 5_000,
   })
   const nextTitleHeading = page.locator('.bn-editor [data-content-type="heading"]').first()
-  await nextTitleHeading.click()
+  // No click: Cmd+N alone must leave the caret in the new title. A redundant second content
+  // swap used to move it into the body, and clicking the title only hid that when the click
+  // happened to land after the second swap.
   await expectTitleEditingFocus(page)
 
   await page.keyboard.type('Consecutive', { delay: 35 })
