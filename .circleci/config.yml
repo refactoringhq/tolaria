@@ -145,7 +145,7 @@ commands:
   install_node_runtime:
     steps:
       - run:
-          name: Install Node.js runtime for Rust tests
+          name: Install Node.js runtime
           command: |
             set -euo pipefail
             version=v22.14.0
@@ -449,21 +449,17 @@ jobs:
               libwebkit2gtk-4.1-dev \
               libxdo-dev \
               pkg-config
+      - install_node_runtime
       - run:
-          name: Configure Node, pnpm, and Rust
+          name: Configure pnpm and Rust
           command: |
             set -euo pipefail
-            source "$HOME/.nvm/nvm.sh"
-            nvm install 22
-            nvm use 22
             sudo corepack enable
             corepack prepare pnpm@10.33.0 --activate
             if ! command -v rustup >/dev/null 2>&1; then
               curl --proto '=https' --tlsv1.2 -sSf -o /tmp/rustup-init.sh https://sh.rustup.rs
               sh /tmp/rustup-init.sh -y --profile minimal
             fi
-            echo 'source "$HOME/.nvm/nvm.sh"' >> "$BASH_ENV"
-            echo 'nvm use 22 >/dev/null' >> "$BASH_ENV"
             echo 'source "$HOME/.cargo/env"' >> "$BASH_ENV"
             source "$HOME/.cargo/env"
             rustup default stable
@@ -670,13 +666,11 @@ jobs:
               pkg-config \
               rpm \
               wget
+      - install_node_runtime
       - run:
-          name: Configure Node, pnpm, and Rust
+          name: Configure pnpm and Rust
           command: |
             set -euo pipefail
-            source "$HOME/.nvm/nvm.sh"
-            nvm install 22
-            nvm use 22
             sudo corepack enable
             corepack prepare pnpm@10.33.0 --activate
             if ! command -v rustup >/dev/null 2>&1; then
@@ -686,8 +680,6 @@ jobs:
             source "$HOME/.cargo/env"
             rustup default stable
             rustup target add x86_64-unknown-linux-gnu
-            echo 'source "$HOME/.nvm/nvm.sh"' >> "$BASH_ENV"
-            echo 'nvm use 22 >/dev/null' >> "$BASH_ENV"
             echo 'source "$HOME/.cargo/env"' >> "$BASH_ENV"
       - restore_pnpm_cache
       - restore_rust_cache:
