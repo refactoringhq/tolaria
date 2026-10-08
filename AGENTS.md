@@ -6,6 +6,17 @@
 
 Use an exception only when a required service or analyzer remains unavailable after one retry, or when satisfying the rule is technically impossible without increasing security or data-loss risk. The repository owner is the sole approver. Before proceeding, record the blocked command, evidence, affected files, risk, compensating check, approver, and an expiry of at most 72 hours in the Todoist task or final handoff; review and remove the exception within seven days. A preference, deadline, or failing quality gate is not sufficient exception criteria.
 
+### Task tracking (Todoist now, Linear after cutover)
+
+**Transition note:** until the migration to Linear is announced, the Todoist Tolaria project remains the live queue (sections Open → In Progress → In Review, plus To Rework). Agents keep using Todoist for now; the Linear rules below apply only after cutover.
+
+**Linear (after cutover)** — workspace Refactoring, team Tolaria, issue key `TOL`.
+
+- Workflow: **Backlog** (not ready) → **Open** (ready for an agent) → **To Rework** (review failed: read the latest review comment and fix only that; pick these **before** Open) → **In Progress** (claimed) → **In Review** (pushed, awaiting Luca's QA) → **Done** / **Canceled** / **Duplicate**.
+- Claim an issue by moving it to In Progress **before** starting work, so agents never collide. Never start an issue that is already In Progress.
+- Labels: type `Bug` / `Feature` / `Improvement`; `mac-only` (leave for the Mac mini); Source group `Sentry` / `Canny` / `GitHub`.
+- Reference the issue ID in commit messages, e.g. `fix: keep image width after restart (TOL-123)`.
+
 ### Start working on a task
 
 **Before writing a single line of code:** inspect the configured CodeScene project's current Hotspot and Average Code Health and compare them with `.codescene-thresholds`. Then capture the file-level Code Health score for every existing code file you intend to edit. If the project is already below the threshold, **stop and refactor first** — find the worst files with the MCP, improve them, commit, then start the task. If the gate cannot be restored, stop and obtain explicit repository-owner direction before starting feature work.
@@ -112,7 +123,9 @@ sleep 3
 BASE_URL="http://localhost:5201" npx playwright test tests/smoke/<slug>.spec.ts
 ```
 
-**Phase 2 — Native app QA:**
+**Phase 2 — Native app QA (macOS):**
+
+> On a Linux agent box, skip this Phase 2 block and follow **Linux agent boxes (Hetzner / remote)** below instead.
 
 ```bash
 pnpm tauri dev &
@@ -125,12 +138,22 @@ Use computer-use/browser-control interaction for native UI QA when either tool i
 
 Use `osascript` for app focus, keyboard shortcuts, and keyboard-specific checks. **⚠️ WKWebView:** if an `osascript keystroke` fails to enter editor text, use computer use for the native editor interaction and rely on Playwright for deterministic text-input coverage. Write the result as a Todoist comment (✅ or ❌), or in the final handoff when no Todoist task exists.
 
+### Linux agent boxes (Hetzner / remote)
+
+These rules apply when the agent runs on a Linux box (no macOS desktop, no `osascript`, no `~/.openclaw`). The macOS instructions above stay in force for the Mac mini; do not remove or weaken them.
+
+**Mac-native tasks stay with the Mac mini.** Do not claim tasks labeled `mac-only`, or tasks that clearly need macOS/Windows-native surfaces: updater / auto-update, Homebrew, macOS menus and Cmd/Option shortcut wiring, native file/open/save dialogs, signing/notarization, Windows installers. Leave them in the queue for the Mac mini.
+
+**QA on Linux = the Linux Tolaria build with a throwaway vault.** There is no macOS native QA on these boxes. Build the Linux app (`CI=true pnpm tauri build --debug --no-bundle`) and drive it under Xvfb with a throwaway copy of `demo-vault-v2/` — on the agent boxes use the installed `tolaria-qa` CLI (`tolaria-qa help`: `start`, `click`, `key ctrl+…`, `xtype`, `shot`, `smoke`, `stop`). Never open, create, or modify `~/Laputa` or any real user vault. Test the primary mouse path first, then each keyboard shortcut you added or changed (`Ctrl` on Linux where macOS uses `Cmd`). Phase 1 Playwright still applies. Record QA (✅/❌, what was clicked/typed, screenshots) in the task comment as usual.
+
+**Before pushing to main:** the full check suite passes; then `git fetch origin && git rebase origin/main` (stop on conflicts you cannot resolve safely), re-run the checks (including the Linux build and a Linux app smoke) on the rebased HEAD, then `git push origin main` so the pre-push hook runs against the latest `origin/main`. Never `--no-verify` without a recorded repository-owner exception.
+
 ### Release-readiness checklist
 
 Before pushing or moving a task to In Review, verify the release gates and add a **completion comment** to the Todoist task. Exception: when the work has no Todoist task, put the identical evidence in the final handoff and identify it as the release record. The record must include:
 
 - What was implemented (a few lines covering logic and UX/UI).
-- QA: what was tested and how (Playwright / native screenshot / osascript).
+- QA: what was tested and how (Playwright / native screenshot / osascript on macOS; Linux app driven with a throwaway vault on Linux agent boxes).
 - Tests/coverage: commands run and final coverage result.
 - CodeScene: before/after touched-file checks, the pre-commit safeguard verdict, the final `origin/main` change-set verdict, plus final Hotspot and Average scores after push; every gate must pass `.codescene-thresholds`, or the record must include explicit repository-owner approval for a documented exception.
 - Coverage commands passed (`pnpm test:coverage` and `cargo llvm-cov ... --fail-under-lines 85`) or the change is docs-only.
