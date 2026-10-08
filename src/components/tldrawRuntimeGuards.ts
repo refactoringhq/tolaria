@@ -8,6 +8,7 @@ import {
   isWhiteboardPlatformPermissionRejection,
   retainWhiteboardPlatformPermissionGuard,
 } from '../utils/whiteboardPlatformPermissionRejection'
+import { errorMessageIncludes } from '../utils/vaultErrors'
 
 const TLDRAW_UI_ICON_SELECTOR = '.tlui-icon'
 const WEBKIT_MASK_PROPERTY = '-webkit-mask'
@@ -36,7 +37,7 @@ function installTldrawPlatformPermissionGuard({
 }
 
 function isIncompatibleTldrawPasteError(error: unknown): boolean {
-  return error instanceof Error && error.message.includes('Could not put content: could not migrate content')
+  return errorMessageIncludes(error, 'Could not put content: could not migrate content')
 }
 
 function installTldrawPasteMigrationGuard(

@@ -7,7 +7,7 @@ import { createViewFilename } from '../utils/viewFilename'
 import { nextViewOrder } from '../utils/viewOrdering'
 import { viewMatchesSelection, viewVaultPath } from '../utils/viewIdentity'
 import { viewCreationVaultPath } from '../utils/viewTargetVault'
-import { isActiveVaultUnavailableError } from '../utils/vaultErrors'
+import { errorMessage, isActiveVaultUnavailableError } from '../utils/vaultErrors'
 import { trackEvent } from '../lib/telemetry'
 
 interface EditingViewState {
@@ -123,10 +123,6 @@ function savedViewDefinition(
 
 function shouldPreserveViewRootPath(views: ViewFile[], editingRootPath?: string): boolean {
   return Boolean(editingRootPath) || views.some((view) => view.rootPath)
-}
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : String(err)
 }
 
 function savedViewEvent(editingView: EditingViewState | null): 'view_created' | 'view_updated' {

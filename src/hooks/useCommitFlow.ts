@@ -17,6 +17,7 @@ import { createTranslator, type AppLocale } from '../lib/i18n'
 import type { AiTarget } from '../lib/aiTargets'
 import { trackCommitMessageGenerated } from '../lib/productAnalytics'
 import { generateCommitMessageDraft } from '../utils/commitMessageDraft'
+import { errorMessage } from '../utils/vaultErrors'
 
 export type CommitMode = 'push' | 'local'
 
@@ -223,10 +224,6 @@ function commitToastMessage(result: CommitResult): string {
 
 function isPushRejected(result: CommitResult): boolean {
   return result.status === 'rejected'
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
 }
 
 function isMissingGitAuthorIdentityError(message: string): boolean {
@@ -852,9 +849,7 @@ function useCommitMessageDraftAction(config: CommitMessageDraftActionConfig) {
   ])
 }
 
-/** Manages the commit dialog state and the save→commit→push/local flow. */
-export function useCommitFlow(options: CommitFlowConfig) {
-  const { aiFeaturesEnabled, autoGitAiCommitMessagesEnabled, commitMessageTarget, commitMessageTargetReady, savePending, loadModifiedFiles, loadModifiedFilesForVaultPath, resolveRemoteStatusForVaultPath, setToastMessage, onPushRejected, automaticVaultPaths, locale, manualVaultPath, vaultPath } = options
+function useCommitFlowState(locale: AppLocale | undefined) {
   const [showCommitDialog, setShowCommitDialog] = useState(false)
   const [commitMode, setCommitMode] = useState<CommitMode>('push')
   const [authorIdentity, setAuthorIdentity] = useState<GitAuthorIdentity | null>(null)
@@ -891,65 +886,102 @@ export function useCommitFlow(options: CommitFlowConfig) {
     })
   }, [])
 
-  const openCommitDialog = useOpenCommitDialog({
-    dialogOpeningRef,
-    commitModeVaultPathRef,
-    loadAuthorIdentityForVaultPath,
-    loadModifiedFiles,
-    manualVaultPath,
-    resolveRemoteStatusForVaultPath,
-    savePending,
-    setCommitMode,
-    setDialogOpening: setOpeningCommitDialog,
-    setShowCommitDialog,
-    setToastMessage,
-    vaultPath,
-  })
-
-  const runAutomaticCheckpoint = useAutomaticCheckpointAction({
+  return {
+    authorIdentity,
     checkpointInFlightRef,
-    aiFeaturesEnabled,
-    autoGitAiCommitMessagesEnabled,
-    commitMessageTarget,
-    commitMessageTargetReady,
-    savePending,
-    loadModifiedFiles,
-    loadModifiedFilesForVaultPath,
-    resolveRemoteStatusForVaultPath,
-    setToastMessage,
-    onPushRejected,
-    automaticVaultPaths,
-    vaultPath,
-    t,
-  })
-
-  const handleCommitPush = useManualCommitPushAction({
-    checkpointInFlightRef,
-    savePending,
-    loadModifiedFiles,
-    resolveRemoteStatusForVaultPath,
-    setToastMessage,
-    onPushRejected,
-    manualVaultPath,
-    vaultPath,
-    setShowCommitDialog,
-    t,
-  })
-
-  const generateCommitMessageForDialog = useCommitMessageDraftAction({
-    aiFeaturesEnabled,
     commitMessageGenerationRef,
-    commitMessageTarget,
-    commitMessageTargetReady,
-    loadModifiedFilesForVaultPath,
-    manualVaultPath,
-    savePending,
+    commitMode,
+    commitModeVaultPathRef,
+    dialogOpeningRef,
+    generatedCommitMessage,
+    generatedCommitMessageKey,
+    isGeneratingCommitMessage,
+    isOpeningCommitDialog,
+    loadAuthorIdentityForVaultPath,
+    setCommitMode,
     setGeneratedCommitMessage,
     setGeneratedCommitMessageKey,
     setGeneratingCommitMessage,
-    setToastMessage,
+    setOpeningCommitDialog,
+    setShowCommitDialog,
+    showCommitDialog,
     t,
-    vaultPath,
+  }
+}
+
+type CommitFlowState = ReturnType<typeof useCommitFlowState>
+
+function useCommitDialogOpenAction(options: CommitFlowConfig, state: CommitFlowState) {
+  return useOpenCommitDialog({
+    dialogOpeningRef: state.dialogOpeningRef,
+    commitModeVaultPathRef: state.commitModeVaultPathRef,
+    loadAuthorIdentityForVaultPath: state.loadAuthorIdentityForVaultPath,
+    loadModifiedFiles: options.loadModifiedFiles,
+    manualVaultPath: options.manualVaultPath,
+    resolveRemoteStatusForVaultPath: options.resolveRemoteStatusForVaultPath,
+    savePending: options.savePending,
+    setCommitMode: state.setCommitMode,
+    setDialogOpening: state.setOpeningCommitDialog,
+    setShowCommitDialog: state.setShowCommitDialog,
+    setToastMessage: options.setToastMessage,
+    vaultPath: options.vaultPath,
+  })
+}
+
+function useCheckpointActions(options: CommitFlowConfig, state: CommitFlowState) {
+  const runAutomaticCheckpoint = useAutomaticCheckpointAction({
+    checkpointInFlightRef: state.checkpointInFlightRef,
+    aiFeaturesEnabled: options.aiFeaturesEnabled,
+    autoGitAiCommitMessagesEnabled: options.autoGitAiCommitMessagesEnabled,
+    commitMessageTarget: options.commitMessageTarget,
+    commitMessageTargetReady: options.commitMessageTargetReady,
+    savePending: options.savePending,
+    loadModifiedFiles: options.loadModifiedFiles,
+    loadModifiedFilesForVaultPath: options.loadModifiedFilesForVaultPath,
+    resolveRemoteStatusForVaultPath: options.resolveRemoteStatusForVaultPath,
+    setToastMessage: options.setToastMessage,
+    onPushRejected: options.onPushRejected,
+    automaticVaultPaths: options.automaticVaultPaths,
+    vaultPath: options.vaultPath,
+    t: state.t,
+  })
+
+  const handleCommitPush = useManualCommitPushAction({
+    checkpointInFlightRef: state.checkpointInFlightRef,
+    savePending: options.savePending,
+    loadModifiedFiles: options.loadModifiedFiles,
+    resolveRemoteStatusForVaultPath: options.resolveRemoteStatusForVaultPath,
+    setToastMessage: options.setToastMessage,
+    onPushRejected: options.onPushRejected,
+    manualVaultPath: options.manualVaultPath,
+    vaultPath: options.vaultPath,
+    setShowCommitDialog: state.setShowCommitDialog,
+    t: state.t,
+  })
+
+  return { handleCommitPush, runAutomaticCheckpoint }
+}
+
+function useCommitMessageDialogActions(
+  options: CommitFlowConfig,
+  state: CommitFlowState,
+  openCommitDialog: () => Promise<void>,
+) {
+  const { setShowCommitDialog } = state
+  const generateCommitMessageForDialog = useCommitMessageDraftAction({
+    aiFeaturesEnabled: options.aiFeaturesEnabled,
+    commitMessageGenerationRef: state.commitMessageGenerationRef,
+    commitMessageTarget: options.commitMessageTarget,
+    commitMessageTargetReady: options.commitMessageTargetReady,
+    loadModifiedFilesForVaultPath: options.loadModifiedFilesForVaultPath,
+    manualVaultPath: options.manualVaultPath,
+    savePending: options.savePending,
+    setGeneratedCommitMessage: state.setGeneratedCommitMessage,
+    setGeneratedCommitMessageKey: state.setGeneratedCommitMessageKey,
+    setGeneratingCommitMessage: state.setGeneratingCommitMessage,
+    setToastMessage: options.setToastMessage,
+    t: state.t,
+    vaultPath: options.vaultPath,
   })
 
   const openCommitDialogWithGeneratedMessage = useCallback(async () => {
@@ -958,30 +990,40 @@ export function useCommitFlow(options: CommitFlowConfig) {
   }, [generateCommitMessageForDialog, openCommitDialog])
 
   useCommitModeRefresh({
-    commitModeVaultPathRef,
-    loadAuthorIdentityForVaultPath,
-    manualVaultPath,
-    resolveRemoteStatusForVaultPath,
-    setCommitMode,
-    showCommitDialog,
-    vaultPath,
+    commitModeVaultPathRef: state.commitModeVaultPathRef,
+    loadAuthorIdentityForVaultPath: state.loadAuthorIdentityForVaultPath,
+    manualVaultPath: options.manualVaultPath,
+    resolveRemoteStatusForVaultPath: options.resolveRemoteStatusForVaultPath,
+    setCommitMode: state.setCommitMode,
+    showCommitDialog: state.showCommitDialog,
+    vaultPath: options.vaultPath,
   })
 
-  const closeCommitDialog = useCallback(() => setShowCommitDialog(false), [])
+  const closeCommitDialog = useCallback(() => setShowCommitDialog(false), [setShowCommitDialog])
+  return { closeCommitDialog, generateCommitMessageForDialog, openCommitDialogWithGeneratedMessage }
+}
+
+function useCommitFlowActions(options: CommitFlowConfig, state: CommitFlowState) {
+  const openCommitDialog = useCommitDialogOpenAction(options, state)
+  const checkpointActions = useCheckpointActions(options, state)
+  const messageActions = useCommitMessageDialogActions(options, state, openCommitDialog)
+
+  return { openCommitDialog, ...checkpointActions, ...messageActions }
+}
+
+/** Manages the commit dialog state and the save→commit→push/local flow. */
+export function useCommitFlow(options: CommitFlowConfig) {
+  const state = useCommitFlowState(options.locale)
+  const actions = useCommitFlowActions(options, state)
 
   return {
-    showCommitDialog,
-    commitMode,
-    authorIdentity,
-    isOpeningCommitDialog,
-    generatedCommitMessage,
-    generatedCommitMessageKey,
-    isGeneratingCommitMessage,
-    openCommitDialog,
-    openCommitDialogWithGeneratedMessage,
-    generateCommitMessageForDialog,
-    handleCommitPush,
-    closeCommitDialog,
-    runAutomaticCheckpoint,
+    showCommitDialog: state.showCommitDialog,
+    commitMode: state.commitMode,
+    authorIdentity: state.authorIdentity,
+    isOpeningCommitDialog: state.isOpeningCommitDialog,
+    generatedCommitMessage: state.generatedCommitMessage,
+    generatedCommitMessageKey: state.generatedCommitMessageKey,
+    isGeneratingCommitMessage: state.isGeneratingCommitMessage,
+    ...actions,
   }
 }

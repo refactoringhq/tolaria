@@ -10,6 +10,7 @@ import {
   type useCreateBlockNote,
 } from '@blocknote/react'
 import type { AppLocale } from '../lib/i18n'
+import { errorMessageIncludes } from '../utils/vaultErrors'
 import { TolariaFilePanelController } from './TolariaFilePanel'
 import { TolariaLinkToolbar } from './TolariaLinkToolbar'
 import { TolariaSlashMenu } from './TolariaSlashMenu'
@@ -34,9 +35,7 @@ type LinkToolbarElementLookup = {
 const guardedLinkToolbarExtensions = new WeakSet<LinkToolbarElementLookup>()
 
 function isUnavailableEditorViewError(error: unknown) {
-  return error instanceof Error
-    && error.message.includes('[tiptap error]')
-    && error.message.includes('editor view is not available')
+  return errorMessageIncludes(error, '[tiptap error]', 'editor view is not available')
 }
 
 function guardLinkToolbarElementLookup(extension: LinkToolbarElementLookup) {
