@@ -171,6 +171,13 @@ commands:
       - run:
           name: Record << parameters.scope >> pass
           command: |
+            # In a parallel job each container would record a pass for the whole job even when
+            # another container failed (this happened to playwright-smoke in pipeline 14), so
+            # only single-container jobs may record one. Parallel jobs need a follow-up job.
+            if [[ "${CIRCLE_NODE_TOTAL:-1}" != "1" ]]; then
+              echo "mark_validated must run in a single-container job" >&2
+              exit 1
+            fi
             mkdir -p "$HOME/.tolaria-validated"
             git rev-parse HEAD > "$HOME/.tolaria-validated/<< parameters.scope >>"
       - save_cache:
