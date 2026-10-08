@@ -30,13 +30,14 @@ The migration from GitHub Actions is staged:
   `tolaria-ci` context and set `codecov_required` to `true` before GitHub Actions `ci.yml` is
   retired.
 - Disable a GitHub Actions workflow only after the matching CircleCI jobs are green on `main`.
-- Validation is split into independent jobs so a main push finishes in about 5 minutes on the
-  Free plan (Docker large). Vitest coverage runs as `frontend_coverage_shards` CircleCI
+- Validation is split into independent jobs so the slowest job (`static-gates`, mostly the
+  Codacy scan) sets the wall clock: about 4-5 minutes per main push on the Free plan (Docker
+  large), down from about 16. Vitest coverage runs as `frontend_coverage_shards` CircleCI
   containers whose reports `frontend-coverage-report` merges before enforcing the global
   thresholds; Playwright smoke runs its 8 shards across 2 containers.
 - Every job except `static-gates` halts early (and reports success) when none of its inputs
-  changed since the last commit on which that same job passed (`skip_unless_changed`, with the
-  pass recorded as a small `validated-v1-<job>-<sha>` cache entry). Frontend jobs ignore
+  changed since the last `main` commit on which that same job passed (`skip_unless_changed`,
+  with the pass recorded as a small `validated-v1-<job>-main-<sha>` cache entry). Frontend jobs ignore
   `src-tauri/**/*.rs` and `docs/`; Rust jobs only need `src-tauri/`, `src/shared/`,
   `mcp-server/`, or `.circleci/`. Trigger a pipeline with `run_all_validation: true` to run
   everything.
