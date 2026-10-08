@@ -3,6 +3,9 @@ set -euo pipefail
 
 total_shards="${1:-${PLAYWRIGHT_SHARDS:-8}}"
 concurrency="${PLAYWRIGHT_CONCURRENCY:-$total_shards}"
+# Optional sub-range, so CI can split the shards across containers.
+first_shard="${PLAYWRIGHT_FIRST_SHARD:-1}"
+last_shard="${PLAYWRIGHT_LAST_SHARD:-$total_shards}"
 log_dir="${TMPDIR:-/tmp}/tolaria-playwright-shards-$$"
 batch_pids=()
 shared_server="${PLAYWRIGHT_SHARED_SERVER:-1}"
@@ -18,6 +21,12 @@ fi
 
 if [[ ! "$concurrency" =~ ^[1-9][0-9]*$ ]]; then
   printf 'PLAYWRIGHT_CONCURRENCY must be a positive integer\n' >&2
+  exit 2
+fi
+
+if [[ ! "$first_shard" =~ ^[1-9][0-9]*$ || ! "$last_shard" =~ ^[1-9][0-9]*$ ]] ||
+  (( first_shard > last_shard || last_shard > total_shards )); then
+  printf 'PLAYWRIGHT_FIRST_SHARD/PLAYWRIGHT_LAST_SHARD must satisfy 1 <= first <= last <= %s\n' "$total_shards" >&2
   exit 2
 fi
 
@@ -95,7 +104,7 @@ run_batch() {
 
   batch_pids=()
 
-  while [[ "$shard" -le "$total_shards" && "${#batch_pids[@]}" -lt "$concurrency" ]]; do
+  while [[ "$shard" -le "$last_shard" && "${#batch_pids[@]}" -lt "$concurrency" ]]; do
     local name="smoke-${shard}-${total_shards}"
     local log_file="${log_dir}/${name}.log"
 
@@ -130,12 +139,12 @@ run_batch() {
   return "$failures"
 }
 
-next_shard=1
+next_shard="$first_shard"
 failed=0
 
 start_shared_server
 
-while [[ "$next_shard" -le "$total_shards" ]]; do
+while [[ "$next_shard" -le "$last_shard" ]]; do
   if ! run_batch "$next_shard"; then
     failed=1
   fi

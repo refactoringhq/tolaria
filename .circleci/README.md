@@ -30,10 +30,20 @@ The migration from GitHub Actions is staged:
   `tolaria-ci` context and set `codecov_required` to `true` before GitHub Actions `ci.yml` is
   retired.
 - Disable a GitHub Actions workflow only after the matching CircleCI jobs are green on `main`.
+- Validation is split into independent jobs so a main push finishes in about 5 minutes on the
+  Free plan (Docker large). Vitest coverage runs as `frontend_coverage_shards` CircleCI
+  containers whose reports `frontend-coverage-report` merges before enforcing the global
+  thresholds; Playwright smoke runs its 8 shards across 2 containers.
+- Every job except `static-gates` halts early (and reports success) when none of its inputs
+  changed since the last commit on which that same job passed (`skip_unless_changed`, with the
+  pass recorded as a small `validated-v1-<job>-<sha>` cache entry). Frontend jobs ignore
+  `src-tauri/**/*.rs` and `docs/`; Rust jobs only need `src-tauri/`, `src/shared/`,
+  `mcp-server/`, or `.circleci/`. Trigger a pipeline with `run_all_validation: true` to run
+  everything.
 
 | GitHub Actions workflow | CircleCI replacement | Status |
 | --- | --- | --- |
-| `ci.yml` frontend static quality + tests | `validation/frontend-quality` | Shadow |
+| `ci.yml` frontend static quality + tests | `validation/static-gates` (Codacy, CodeScene, docs), `validation/frontend-lint-build`, `validation/frontend-coverage` (6 containers) + `validation/frontend-coverage-report` | Shadow |
 | `ci.yml` Rust tests, coverage, Clippy, rustfmt | `validation/rust-coverage`, `validation/rust-lint` | Shadow |
 | `ci.yml` Linux build verification (PRs) | `validation/linux-build-verification` (non-main branches) | Shadow |
 | none (pre-push only) | `validation/playwright-smoke` | New |
@@ -92,7 +102,9 @@ jobs from receiving signing credentials.
 Install the CircleCI GitHub App for the repository and enable CircleCI Checks. Require these checks
 for protected branches:
 
-- `validation/frontend-quality`
+- `validation/static-gates`
+- `validation/frontend-lint-build`
+- `validation/frontend-coverage-report`
 - `validation/rust-coverage`
 - `validation/rust-lint`
 - `validation/playwright-smoke`

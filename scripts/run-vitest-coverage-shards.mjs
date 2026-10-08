@@ -9,14 +9,19 @@ import process from 'node:process'
 import { resolve } from 'node:path'
 
 const rootDir = process.cwd()
-const forwardedArgs = process.argv.slice(2)
+// --merge-only skips running Vitest and merges shard reports that already exist under
+// VITEST_COVERAGE_SHARD_ROOT (CircleCI runs each shard in its own container).
+const mergeOnly = process.argv.includes('--merge-only')
+const forwardedArgs = process.argv.slice(2).filter((arg) => arg !== '--merge-only')
 const totalShards = positiveInteger(process.env.FRONTEND_COVERAGE_SHARDS ?? '2', 'FRONTEND_COVERAGE_SHARDS')
 const concurrency = positiveInteger(
   process.env.FRONTEND_COVERAGE_CONCURRENCY ?? String(totalShards),
   'FRONTEND_COVERAGE_CONCURRENCY',
 )
 const runId = `${Date.now()}-${process.pid}`
-const shardRoot = resolve(os.tmpdir(), 'tolaria-vitest-coverage-shards', runId)
+const shardRoot = process.env.VITEST_COVERAGE_SHARD_ROOT
+  ? resolve(rootDir, process.env.VITEST_COVERAGE_SHARD_ROOT)
+  : resolve(os.tmpdir(), 'tolaria-vitest-coverage-shards', runId)
 const finalCoverageDir = resolve(rootDir, 'coverage')
 const coverageRequire = createCoverageRequire()
 const { createCoverageMap } = coverageRequire('istanbul-lib-coverage')
@@ -191,10 +196,14 @@ function checkCoverageThresholds(coverageMap) {
   process.exit(1)
 }
 
-await clearVitestCache()
-await runShards()
+if (!mergeOnly) {
+  await clearVitestCache()
+  await runShards()
+}
 
 const coverageMap = await mergeCoverage()
 await writeCoverageReports(coverageMap)
 checkCoverageThresholds(coverageMap)
-await rm(shardRoot, { recursive: true, force: true })
+if (!mergeOnly) {
+  await rm(shardRoot, { recursive: true, force: true })
+}

@@ -13,6 +13,15 @@ parameters:
     description: >-
       Run the core editor performance regression gate. Its thresholds are calibrated on Apple
       Silicon and fail on CircleCI Docker large, so it stays opt-in until CI baselines exist.
+  frontend_coverage_shards:
+    type: integer
+    default: 6
+    description: Number of CircleCI containers (one Vitest coverage shard each) for frontend-coverage.
+  run_all_validation:
+    type: boolean
+    default: false
+    description: >-
+      Run every validation job even when its inputs are unchanged since the job last passed.
   codecov_required:
     type: boolean
     default: false
@@ -106,6 +115,67 @@ commands:
             rustup toolchain install stable --profile minimal --component clippy,rustfmt,llvm-tools-preview
             rustup default stable
             rustc --version
+
+  skip_unless_changed:
+    description: >-
+      Halt the job (it then reports success) when none of its inputs changed since the last
+      commit on which this same job passed. Each passing job saves that commit as a tiny cache
+      entry (mark_validated); with no marker, or a marker that is not an ancestor of HEAD, the
+      job runs. The comparison covers every commit since that pass, not just the last one.
+    parameters:
+      scope:
+        type: string
+      ignore:
+        type: string
+        default: "^$"
+        description: Extended regex of changed paths this job never needs to re-check.
+      paths:
+        type: string
+        default: "."
+        description: Extended regex; the job runs when any remaining changed path matches.
+    steps:
+      - restore_cache:
+          keys:
+            - validated-v1-<< parameters.scope >>-
+      - run:
+          name: Skip when << parameters.scope >> inputs are unchanged
+          command: |
+            set -euo pipefail
+            marker="$HOME/.tolaria-validated/<< parameters.scope >>"
+            if [[ "<< pipeline.parameters.run_all_validation >>" == "true" || ! -s "$marker" ]]; then
+              echo "No pass marker for << parameters.scope >> (or run_all_validation); running."
+              exit 0
+            fi
+            base="$(tr -d '[:space:]' < "$marker")"
+            if ! git merge-base --is-ancestor "$base" HEAD 2>/dev/null; then
+              echo "Last pass ${base} is not an ancestor of HEAD; running."
+              exit 0
+            fi
+            relevant="$(git diff --name-only "$base" HEAD |
+              { grep -vE '<< parameters.ignore >>' || true; } |
+              { grep -E '<< parameters.paths >>' || true; })"
+            if [[ -n "$relevant" ]]; then
+              echo "<< parameters.scope >> inputs changed since its last pass (${base}):"
+              printf '%s\n' "$relevant" | head -20
+              exit 0
+            fi
+            echo "No << parameters.scope >> inputs changed since its last pass (${base}); skipping."
+            circleci-agent step halt
+
+  mark_validated:
+    parameters:
+      scope:
+        type: string
+    steps:
+      - run:
+          name: Record << parameters.scope >> pass
+          command: |
+            mkdir -p "$HOME/.tolaria-validated"
+            git rev-parse HEAD > "$HOME/.tolaria-validated/<< parameters.scope >>"
+      - save_cache:
+          key: validated-v1-<< parameters.scope >>-{{ .Revision }}
+          paths:
+            - ~/.tolaria-validated/<< parameters.scope >>
 
   upload_codecov:
     parameters:
@@ -242,7 +312,10 @@ commands:
             done
 
 jobs:
-  frontend-quality:
+  # Validation runs as independent jobs so the slowest one, not their sum, sets the wall clock.
+  # Job inputs, for skip_unless_changed: frontend jobs ignore Rust sources and docs/; Rust jobs
+  # need src-tauri/, the shared JSON contracts it embeds (src/shared/, mcp-server/), or CI config.
+  static-gates:
     executor: node
     steps:
       - checkout
@@ -289,13 +362,6 @@ jobs:
                 }
               '
       - run:
-          name: Frontend lint, build, and sharded coverage
-          command: |
-            FRONTEND_COVERAGE_SHARDS=2 \
-            FRONTEND_COVERAGE_CONCURRENCY=1 \
-            VITEST_COVERAGE_MAX_WORKERS=3 \
-              bash .chunk/run-sidecar-lane.sh frontend
-      - run:
           name: Documentation build check
           command: |
             set -euo pipefail
@@ -304,9 +370,81 @@ jobs:
             else
               echo "Documentation inputs unchanged; skipping docs build."
             fi
+
+  frontend-lint-build:
+    executor: node
+    steps:
+      - checkout
+      - skip_unless_changed:
+          scope: frontend-lint-build
+          ignore: "^(src-tauri/.*\\.rs|docs/)"
+      - install_frontend_dependencies
+      - run:
+          name: Frontend lint and build (in parallel)
+          command: |
+            set -uo pipefail
+            pnpm lint > /tmp/frontend-lint.log 2>&1 &
+            lint_pid=$!
+            pnpm build > /tmp/frontend-build.log 2>&1 &
+            build_pid=$!
+            wait "$lint_pid"; lint_status=$?
+            wait "$build_pid"; build_status=$?
+            echo "--- pnpm lint (exit ${lint_status})"; cat /tmp/frontend-lint.log
+            echo "--- pnpm build (exit ${build_status})"; cat /tmp/frontend-build.log
+            exit $(( lint_status || build_status ))
+      - mark_validated:
+          scope: frontend-lint-build
+
+  frontend-coverage:
+    executor: node
+    # Each container runs one Vitest shard; frontend-coverage-report merges them and enforces
+    # the global thresholds exactly like scripts/run-vitest-coverage-shards.mjs does locally.
+    parallelism: << pipeline.parameters.frontend_coverage_shards >>
+    steps:
+      - checkout
+      - skip_unless_changed:
+          scope: frontend-coverage
+          ignore: "^(src-tauri/.*\\.rs|docs/)"
+      - install_frontend_dependencies
+      - run:
+          name: Vitest coverage shard
+          command: |
+            set -euo pipefail
+            shard=$((CIRCLE_NODE_INDEX + 1))
+            VITEST_COVERAGE_SHARD="${shard}/${CIRCLE_NODE_TOTAL}" \
+            VITEST_COVERAGE_FINAL_DIR="/tmp/coverage-shards/shard-${shard}" \
+            VITEST_COVERAGE_SKIP_THRESHOLDS=1 \
+            VITEST_COVERAGE_SKIP_CLEAR_CACHE=1 \
+            VITEST_COVERAGE_MAX_WORKERS=3 \
+              node scripts/run-vitest-coverage.mjs --coverage.reporter=json --silent
+      - persist_to_workspace:
+          root: /tmp/coverage-shards
+          paths:
+            - shard-*/coverage-final.json
+
+  frontend-coverage-report:
+    executor: node
+    resource_class: medium
+    steps:
+      - checkout
+      - skip_unless_changed:
+          scope: frontend-coverage
+          ignore: "^(src-tauri/.*\\.rs|docs/)"
+      - attach_workspace:
+          at: /tmp/coverage-shards
+      - install_frontend_dependencies
+      - run:
+          name: Merge coverage shards and enforce thresholds
+          command: |
+            set -euo pipefail
+            FRONTEND_COVERAGE_SHARDS="<< pipeline.parameters.frontend_coverage_shards >>" \
+            VITEST_COVERAGE_SHARD_ROOT=/tmp/coverage-shards \
+              node scripts/run-vitest-coverage-shards.mjs --merge-only
       - upload_codecov:
           file: coverage/lcov.info
           flag: frontend
+      - mark_validated:
+          scope: frontend-coverage
 
   rust-coverage:
     executor: rust
@@ -314,6 +452,9 @@ jobs:
       CARGO_BUILD_JOBS: "4"
     steps:
       - checkout
+      - skip_unless_changed:
+          scope: rust-coverage
+          paths: "^(src-tauri/|src/shared/|mcp-server/|\\.circleci/|rust-toolchain)"
       - install_rust_ci_toolchain
       - install_node_runtime
       - restore_cache:
@@ -354,6 +495,8 @@ jobs:
       - upload_codecov:
           file: coverage/rust.lcov
           flag: rust
+      - mark_validated:
+          scope: rust-coverage
 
   rust-lint:
     executor: rust
@@ -361,21 +504,39 @@ jobs:
       CARGO_BUILD_JOBS: "4"
     steps:
       - checkout
+      - skip_unless_changed:
+          scope: rust-lint
+          paths: "^(src-tauri/|src/shared/|mcp-server/|\\.circleci/|rust-toolchain)"
       - install_rust_ci_toolchain
       - restore_cache:
           keys:
-            - rust-ci-v2026-10-08-{{ checksum "src-tauri/Cargo.lock" }}
-            - rust-ci-v2026-10-08-
+            # clippy's dependency metadata lives in target/debug, which the llvm-cov cache
+            # (rust-ci-*) does not contain, so rust-lint keeps its own cache.
+            - rust-lint-v2026-10-08-{{ checksum "src-tauri/Cargo.lock" }}
+            - rust-lint-v2026-10-08-
       - run:
           name: Rust lint and format
           command: |
             cargo clippy --manifest-path=src-tauri/Cargo.toml -- -D warnings
             cargo fmt --manifest-path=src-tauri/Cargo.toml -- --check
+      - save_cache:
+          key: rust-lint-v2026-10-08-{{ checksum "src-tauri/Cargo.lock" }}
+          paths:
+            - ~/.cargo/registry
+            - ~/.cargo/git
+            - src-tauri/target
+      - mark_validated:
+          scope: rust-lint
 
   playwright-smoke:
     executor: browser
+    # 8 smoke shards, 4 per container, 2 at a time per container (as before, just split in two).
+    parallelism: 2
     steps:
       - checkout
+      - skip_unless_changed:
+          scope: playwright-smoke
+          ignore: "^(src-tauri/.*\\.rs|docs/)"
       - install_frontend_dependencies
       - restore_cache:
           keys:
@@ -391,15 +552,20 @@ jobs:
       - run:
           name: Run curated Playwright smoke suite
           command: |
+            per_node=4
+            first=$((CIRCLE_NODE_INDEX * per_node + 1))
             PLAYWRIGHT_SHARED_SERVER=1 \
-            PLAYWRIGHT_SHARDS=8 \
             PLAYWRIGHT_CONCURRENCY=2 \
-              bash .chunk/run-playwright-shards.sh 8
+            PLAYWRIGHT_FIRST_SHARD="$first" \
+            PLAYWRIGHT_LAST_SHARD=$((first + per_node - 1)) \
+              bash .chunk/run-playwright-shards.sh $((per_node * CIRCLE_NODE_TOTAL))
       - store_test_results:
           path: test-results
       - store_artifacts:
           path: test-results
           destination: playwright
+      - mark_validated:
+          scope: playwright-smoke
 
   performance-regression:
     executor: browser
@@ -1285,8 +1451,29 @@ jobs:
 workflows:
   validation:
     jobs:
-      - frontend-quality:
+      - static-gates:
           context: tolaria-ci
+          filters:
+            branches:
+              ignore: gh-pages
+            tags:
+              ignore: /.*/
+      - frontend-lint-build:
+          filters:
+            branches:
+              ignore: gh-pages
+            tags:
+              ignore: /.*/
+      - frontend-coverage:
+          filters:
+            branches:
+              ignore: gh-pages
+            tags:
+              ignore: /.*/
+      - frontend-coverage-report:
+          context: tolaria-ci
+          requires:
+            - frontend-coverage
           filters:
             branches:
               ignore: gh-pages
