@@ -111,7 +111,7 @@ describe('MathBlockEditor', () => {
   })
 
   it('keeps display math selection chrome scoped to the rendered formula width', () => {
-    const editorThemeCss = readFileSync(`${process.cwd()}/src/components/EditorTheme.css`, 'utf8')
+    const editorThemeCss = readFileSync('src/components/EditorTheme.css', 'utf8')
 
     expect(editorThemeCss).toContain('.editor__blocknote-container .math-block-shell {')
     expect(editorThemeCss).toContain('max-width: 100%;')
@@ -123,8 +123,18 @@ describe('MathBlockEditor', () => {
     expect(editorThemeCss).toContain('width: 100%;')
   })
 
+  it('keeps display equation tags in normal flow beside the formula', () => {
+    const editorThemeCss = readFileSync('src/components/EditorTheme.css', 'utf8')
+
+    expect(editorThemeCss).toContain(
+      '.editor__blocknote-container .math--block .katex-display > .katex > .katex-html > .tag {',
+    )
+    expect(editorThemeCss).toContain('position: static;')
+    expect(editorThemeCss).toContain('margin-inline-start: 1em;')
+  })
+
   it('does not stack divider bottom spacing with following heading top spacing', () => {
-    const editorThemeCss = readFileSync(`${process.cwd()}/src/components/EditorTheme.css`, 'utf8')
+    const editorThemeCss = readFileSync('src/components/EditorTheme.css', 'utf8')
 
     expect(editorThemeCss).toContain('.editor__blocknote-container .bn-block-outer:has(hr)')
     expect(editorThemeCss).toContain('+ .bn-block-outer:has(> .bn-block > [data-content-type="heading"])')

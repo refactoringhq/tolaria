@@ -78,16 +78,12 @@ function isMessage(error: unknown, message: string): boolean {
   return error instanceof Error && error.message === message
 }
 
-function messageIncludes(error: unknown, text: string): boolean {
-  return error instanceof Error && error.message.includes(text)
-}
-
 function messageMatches(error: unknown, pattern: RegExp): boolean {
   return error instanceof Error && pattern.test(error.message)
 }
 
 function isMismatchedTransactionError(error: unknown): boolean {
-  return messageIncludes(error, 'Applying a mismatched transaction')
+  return errorMessageIncludes(error, 'Applying a mismatched transaction')
 }
 
 function isInvalidContentTransactionError(error: unknown): boolean {
@@ -95,7 +91,7 @@ function isInvalidContentTransactionError(error: unknown): boolean {
 }
 
 function isMissingBlockContentError(error: unknown): boolean {
-  return messageIncludes(error, BLOCKNOTE_MISSING_BLOCK_CONTENT_ERROR)
+  return errorMessageIncludes(error, BLOCKNOTE_MISSING_BLOCK_CONTENT_ERROR)
 }
 
 function isReactUpdateDepthExceededError(error: unknown): boolean {
@@ -107,7 +103,8 @@ function isReactUpdateDepthExceededError(error: unknown): boolean {
 }
 
 function isInvalidInsertionDepthError(error: unknown): boolean {
-  return error instanceof RangeError && messageIncludes(error, 'Inserted content deeper than insertion position')
+  return error instanceof RangeError
+    && errorMessageIncludes(error, 'Inserted content deeper than insertion position')
 }
 
 function isInvalidBlockJoinError(error: unknown): boolean {
@@ -297,3 +294,4 @@ export function richEditorRecoveryErrorNeedsDocumentRepair(error: unknown): bool
     matcher.repairsDocument === true && matcher.matches(error)
   ))
 }
+import { errorMessageIncludes } from '../utils/vaultErrors'

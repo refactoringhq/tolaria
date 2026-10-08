@@ -5,6 +5,7 @@ import { notePdfExportFilename, printActiveNoteAsPdf, type NotePdfExportSource }
 import type { VaultEntry } from '../types'
 import { isMarkdownEntry } from '../utils/typeDefinitions'
 import { isHtmlFileEntry } from '../utils/filePreview'
+import { errorMessage } from '../utils/vaultErrors'
 
 interface EditorPdfExportTab {
   entry: VaultEntry
@@ -48,10 +49,6 @@ interface PendingPdfExportParams {
 
 function isPdfExportableTab(activeTab: EditorPdfExportTab | null): activeTab is EditorPdfExportTab {
   return Boolean(activeTab && (isMarkdownEntry(activeTab.entry) || isHtmlFileEntry(activeTab.entry)))
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
 }
 
 function reportPdfExportError({ error, locale, onToast }: PdfExportErrorParams): void {

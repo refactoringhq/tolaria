@@ -527,8 +527,13 @@
   text-align: center;
 }
 
+.editor__blocknote-container .math--block .katex-display > .katex > .katex-html > .tag {
+  position: static;
+  margin-inline-start: 1em;
+}
+
 .editor__blocknote-container .math .katex-error {
-  color: var(--destructive) !important;
+  color: var(--destructive);
   white-space: pre-wrap;
 }
 

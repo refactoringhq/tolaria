@@ -1,4 +1,5 @@
 import type { Editor } from 'tldraw'
+import { errorMessage } from '../utils/vaultErrors'
 
 type TextMeasure = Pick<Editor, 'textMeasure'>['textMeasure']
 type MeasureElementTextNodeSpans = TextMeasure['measureElementTextNodeSpans']
@@ -12,7 +13,7 @@ interface TextMeasurementHost {
 }
 
 function isMissingRangeRectError(error: unknown): boolean {
-  const message = errorMessage(error).toLowerCase()
+  const message = errorMessage(error, '').toLowerCase()
   return message.includes('top') && (
     message.includes('cannot read')
     || message.includes('not an object')
@@ -54,15 +55,6 @@ function fallbackTextNodeSpans(element: HTMLElement, options: TextMeasurementOpt
       text: measuredText.text,
     }],
   }
-}
-
-function errorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message
-  if (typeof error === 'string') return error
-  if (typeof error !== 'object' || error === null || !('message' in error)) return ''
-
-  const { message } = error
-  return typeof message === 'string' ? message : ''
 }
 
 export function installTldrawTextMeasurementGuard(host: TextMeasurementHost): () => void {

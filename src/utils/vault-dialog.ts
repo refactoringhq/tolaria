@@ -10,6 +10,7 @@ import {
   markRestartRequiredAfterUpdate,
   RESTART_REQUIRED_FOLDER_PICKER_MESSAGE,
 } from '../lib/appUpdater'
+import { errorMessage, errorMessageIncludes } from './vaultErrors'
 
 const NS_OPEN_PANEL_UNAVAILABLE_MARKER = 'unexpected NULL returned from +[NSOpenPanel openPanel]'
 
@@ -26,14 +27,8 @@ export function isNativeFolderPickerBlockedError(
   return error instanceof NativeFolderPickerBlockedError
 }
 
-function errorMessage(error: unknown): string {
-  if (typeof error === 'string') return error
-  if (error instanceof Error) return error.message
-  return ''
-}
-
 function isUnavailableNativeFolderPicker(error: unknown): boolean {
-  return errorMessage(error).includes(NS_OPEN_PANEL_UNAVAILABLE_MARKER)
+  return errorMessageIncludes(error, NS_OPEN_PANEL_UNAVAILABLE_MARKER)
 }
 
 export function formatFolderPickerActionError(
@@ -44,7 +39,7 @@ export function formatFolderPickerActionError(
     return error.message
   }
 
-  const message = errorMessage(error)
+  const message = errorMessage(error, '')
 
   return message ? `${action}: ${message}` : action
 }
@@ -111,7 +106,7 @@ async function pickNativeFolder(title?: string): Promise<string | null> {
  * Opens a native folder picker dialog (Tauri) or falls back to prompt (browser).
  * Returns the selected folder path, or null if the user cancelled.
  */
-export async function pickFolder(title?: string): Promise<string | null> {
+export const pickFolder = async (title?: string): Promise<string | null> => {
   if (folderPickerRequestInFlight) return null
 
   folderPickerRequestInFlight = true

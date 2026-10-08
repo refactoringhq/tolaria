@@ -3,6 +3,7 @@ import type { SetStateAction } from 'react'
 import { useSaveNote } from './useSaveNote'
 import { createTranslator, type AppLocale } from '../lib/i18n'
 import { canWritePathToVault } from '../utils/vaultPathContainment'
+import { errorMessage } from '../utils/vaultErrors'
 import type { VaultEntry } from '../types'
 
 interface Tab {
@@ -69,6 +70,21 @@ interface ReusableInFlightSaveParams {
   resolvePath?: EditorSaveConfig['resolvePath']
 }
 
+interface PersistResolvedContentParams {
+  path: string
+  content: string
+  saveNote: (path: string, content: string) => Promise<void>
+  onBeforePersist?: EditorSaveConfig['onBeforePersist']
+  resolvePath?: EditorSaveConfig['resolvePath']
+  resolvePathBeforeSave?: EditorSaveConfig['resolvePathBeforeSave']
+  persistenceScopeRef: MutableRefObject<string | readonly string[] | undefined>
+}
+
+interface PersistUnsavedFallbackParams extends Omit<PersistResolvedContentParams, 'path' | 'content'> {
+  onNotePersisted?: EditorSaveConfig['onNotePersisted']
+  unsavedFallback?: PendingContent
+}
+
 interface EditorSaveCommandsParams {
   pendingContentRef: MutableRefObject<PendingContent | null>
   autoSaveTimerRef: MutableRefObject<ReturnType<typeof setTimeout> | null>
@@ -86,11 +102,6 @@ interface EditorSaveCommandsParams {
   persistenceScope?: EditorSaveConfig['persistenceScope']
   disabledSaveMessage: string
   t: Translator
-}
-
-function errorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message
-  return String(error)
 }
 
 function isInvalidPathSaveError(message: string): boolean {
@@ -168,23 +179,16 @@ function reusableInFlightSave({
   return inFlightSave.promise
 }
 
-async function persistResolvedContent({
-  path,
-  content,
-  saveNote,
-  onBeforePersist,
-  resolvePath,
-  resolvePathBeforeSave,
-  persistenceScopeRef,
-}: {
-  path: string
-  content: string
-  saveNote: (path: string, content: string) => Promise<void>
-  onBeforePersist?: EditorSaveConfig['onBeforePersist']
-  resolvePath?: EditorSaveConfig['resolvePath']
-  resolvePathBeforeSave?: EditorSaveConfig['resolvePathBeforeSave']
-  persistenceScopeRef: MutableRefObject<string | readonly string[] | undefined>
-}): Promise<string | null> {
+async function persistResolvedContent(options: PersistResolvedContentParams): Promise<string | null> {
+  const {
+    path,
+    content,
+    saveNote,
+    onBeforePersist,
+    resolvePath,
+    resolvePathBeforeSave,
+    persistenceScopeRef,
+  } = options
   const targetPath = await resolvePersistPath(path, resolvePath, resolvePathBeforeSave)
   if (!canWritePathToVault(targetPath, persistenceScopeRef.current ?? '')) return null
   onBeforePersist?.(targetPath)
@@ -352,23 +356,16 @@ function usePendingContentScopeReset({
   }, [cancelAutoSave, pendingContentRef, persistenceScope])
 }
 
-async function persistUnsavedFallback({
-  unsavedFallback,
-  saveNote,
-  onBeforePersist,
-  onNotePersisted,
-  resolvePath,
-  resolvePathBeforeSave,
-  persistenceScopeRef,
-}: {
-  unsavedFallback?: { path: string; content: string }
-  saveNote: (path: string, content: string) => Promise<void>
-  onBeforePersist?: EditorSaveConfig['onBeforePersist']
-  onNotePersisted?: EditorSaveConfig['onNotePersisted']
-  resolvePath?: EditorSaveConfig['resolvePath']
-  resolvePathBeforeSave?: EditorSaveConfig['resolvePathBeforeSave']
-  persistenceScopeRef: MutableRefObject<string | readonly string[] | undefined>
-}): Promise<boolean> {
+async function persistUnsavedFallback(options: PersistUnsavedFallbackParams): Promise<boolean> {
+  const {
+    unsavedFallback,
+    saveNote,
+    onBeforePersist,
+    onNotePersisted,
+    resolvePath,
+    resolvePathBeforeSave,
+    persistenceScopeRef,
+  } = options
   if (!unsavedFallback) return false
   const targetPath = await persistResolvedContent({
     path: unsavedFallback.path,
