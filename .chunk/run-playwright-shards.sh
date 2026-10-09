@@ -37,9 +37,11 @@ stop_shared_server() {
     return
   fi
 
-  kill -TERM "$server_pid" 2>/dev/null || true
+  # The server runs in its own process group so pnpm and the Vite grandchild stop with it;
+  # killing only the node wrapper used to leave an orphaned Vite holding the port.
+  kill -TERM -- "-${server_pid}" 2>/dev/null || kill -TERM "$server_pid" 2>/dev/null || true
   sleep 2
-  kill -KILL "$server_pid" 2>/dev/null || true
+  kill -KILL -- "-${server_pid}" 2>/dev/null || kill -KILL "$server_pid" 2>/dev/null || true
   server_pid=""
 }
 
@@ -82,6 +84,24 @@ wait_for_shared_server() {
 
     sleep 1
   done
+
+  if [[ -n "$server_pid" ]] && ! kill -0 "$server_pid" 2>/dev/null; then
+    printf '[chunk-playwright] shared server exited; %s is served by another process\n' "$base_url" >&2
+    sed 's/^/[shared-server] /' "${log_dir}/shared-server.log" >&2 || true
+    return 1
+  fi
+}
+
+refuse_occupied_server_port() {
+  if ! curl -fsS --max-time 5 "$base_url" >/dev/null 2>&1; then
+    return
+  fi
+
+  # Never reuse a server we did not start: it serves a stale tree, and starting Vite against the
+  # shared cache dir would wipe the optimized deps that the stale server is still serving.
+  printf '[chunk-playwright] %s already answers before the shared server started.\n' "$base_url" >&2
+  printf '[chunk-playwright] Stop the stale server on port %s and rerun.\n' "$server_port" >&2
+  return 1
 }
 
 warm_shared_server() {
@@ -116,9 +136,16 @@ start_shared_server() {
     return
   fi
 
+  refuse_occupied_server_port
+
+  local session_cmd=()
+  if command -v setsid >/dev/null 2>&1; then
+    session_cmd=(setsid)
+  fi
+
   printf '[chunk-playwright] starting shared server at %s\n' "$base_url"
   TOLARIA_VITE_CACHE_DIR="${TOLARIA_VITE_CACHE_DIR:-${TMPDIR:-/tmp}/tolaria-vite-smoke-shared}" \
-    node scripts/playwright-smoke-server.mjs "$server_port" >"${log_dir}/shared-server.log" 2>&1 &
+    "${session_cmd[@]}" node scripts/playwright-smoke-server.mjs "$server_port" >"${log_dir}/shared-server.log" 2>&1 &
   server_pid="$!"
   wait_for_shared_server
   warm_shared_server

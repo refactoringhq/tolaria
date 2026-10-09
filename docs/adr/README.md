@@ -175,7 +175,7 @@ proposed → active → superseded
 | [0114](0114-mounted-workspaces-unified-graph.md) | Mounted workspaces unified graph | active |
 | [0115](0115-scoped-react-context-for-shared-ui-preferences.md) | Scoped React Context for shared UI preferences | active |
 | [0116](0116-rich-raw-transition-and-serialization-ownership.md) | Rich/raw transition and serialization ownership | active |
-| [0117](0117-appimage-fcitx-gtk3-frontend-bundle.md) | Bundle the fcitx GTK3 frontend in Linux AppImages | active |
+| [0117](0117-appimage-fcitx-gtk3-frontend-bundle.md) | Bundle the fcitx GTK3 frontend in Linux AppImages | superseded → [0184](0184-host-compatible-appimage-library-boundary.md) |
 | [0118](0118-entry-scoped-note-windows-without-vault-index-scans.md) | Entry-scoped note windows without vault index scans | superseded -> [0123](0123-full-vault-graph-for-secondary-note-windows.md) |
 | [0119](0119-vault-neutral-mcp-registration-with-mounted-workspace-guidance.md) | Vault-neutral MCP registration with mounted workspace guidance | active |
 | [0120](0120-stable-appimage-mcp-server-path-with-opencode-registration.md) | Stable AppImage MCP server path with OpenCode registration | active |
@@ -236,3 +236,4 @@ proposed → active → superseded
 | [0181](0181-shared-cross-runtime-inline-markdown-stripping-contract.md) | Shared cross-runtime inline-markdown stripping contract | active |
 | [0182](0182-app-owned-cross-platform-pdf-rendering.md) | App-owned cross-platform PDF rendering | active |
 | [0183](0183-normalize-stale-prosemirror-selection-boundaries.md) | Normalize stale ProseMirror selection boundaries | active |
+| [0184](0184-host-compatible-appimage-library-boundary.md) | Host-compatible AppImage library boundary | active |

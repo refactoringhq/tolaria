@@ -11,7 +11,7 @@ import {
   writeFile,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
@@ -28,8 +28,21 @@ export const APPIMAGE_FCITX_GCLIENT_LIBRARY_PATH =
   'usr/lib/x86_64-linux-gnu/libFcitx5GClient.so.2'
 export const DEFAULT_APPIMAGE_PLUGIN_URL =
   'https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/download/continuous/linuxdeploy-plugin-appimage-x86_64.AppImage'
+export const APPIMAGE_HOST_LIBRARY_GLOBS = Object.freeze([
+  'libsystemd.so*',
+  'libudev.so*',
+  'libdbus-1.so*',
+  'libwayland-*.so*',
+  'libepoxy.so*',
+  'libnghttp2.so*',
+])
+export const LINUXDEPLOY_EXCLUDED_LIBRARIES = APPIMAGE_HOST_LIBRARY_GLOBS.join(';')
 
 const WRAPPER_MARKER = 'Tolaria AppImage symlink launcher shim'
+const APPIMAGE_PLUGIN_URL_TOKEN = '__TOLARIA_APPIMAGE_PLUGIN_URL__'
+const APPIMAGE_HOST_LIBRARY_PREFIXES = APPIMAGE_HOST_LIBRARY_GLOBS.map((pattern) =>
+  pattern.replace(/\*.*$/, ''),
+)
 const REQUIRED_APPIMAGE_PATHS = [
   'AppRun',
   APPIMAGE_FCITX_GTK3_IM_MODULE_PATH,
@@ -76,14 +89,26 @@ export function assertSymlinkSafeAppRunText(text, label = 'AppRun') {
   }
 }
 
-export function appImagePluginWrapperSource({
-  pluginUrl = DEFAULT_APPIMAGE_PLUGIN_URL,
-} = {}) {
-  return `#!/usr/bin/env bash
+export function findBundledHostLibraries(libraryPaths) {
+  const matches = libraryPaths
+    .map((libraryPath) => basename(libraryPath))
+    .filter((name) => APPIMAGE_HOST_LIBRARY_PREFIXES.some((prefix) => name.startsWith(prefix)))
+
+  return [...new Set(matches)].sort()
+}
+
+export function assertNoBundledHostLibraries(libraryPaths, label = 'AppImage') {
+  const matches = findBundledHostLibraries(libraryPaths)
+  if (matches.length > 0) {
+    throw new Error(`${label} bundles host system libraries: ${matches.join(', ')}`)
+  }
+}
+
+const APPIMAGE_PLUGIN_WRAPPER_SOURCE = `#!/usr/bin/env bash
 set -euo pipefail
 
 # ${WRAPPER_MARKER}
-PLUGIN_URL="\${TOLARIA_APPIMAGE_PLUGIN_URL:-${pluginUrl}}"
+PLUGIN_URL="\${TOLARIA_APPIMAGE_PLUGIN_URL:-${APPIMAGE_PLUGIN_URL_TOKEN}}"
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 REAL_PLUGIN="\${TOLARIA_APPIMAGE_REAL_PLUGIN:-"$SCRIPT_DIR/${REAL_APPIMAGE_PLUGIN_NAME}"}"
 FCITX_GTK3_IM_MODULE="\${TOLARIA_FCITX_GTK3_IM_MODULE:-/usr/lib/x86_64-linux-gnu/gtk-3.0/3.0.0/immodules/im-fcitx5.so}"
@@ -196,6 +221,11 @@ patch_apprun "$@"
 bundle_fcitx_gtk3_module "$@"
 exec "$REAL_PLUGIN" "$@"
 `
+
+export function appImagePluginWrapperSource({
+  pluginUrl = DEFAULT_APPIMAGE_PLUGIN_URL,
+} = {}) {
+  return APPIMAGE_PLUGIN_WRAPPER_SOURCE.replace(APPIMAGE_PLUGIN_URL_TOKEN, () => pluginUrl)
 }
 
 export async function preparePluginWrapper({
@@ -256,6 +286,22 @@ function assertAppImagePathsExtracted(appImage, tempDir, requiredPaths) {
   }
 }
 
+function listExtractedLibraries(tempDir) {
+  const result = spawnSync('find', ['squashfs-root/usr/lib', '-mindepth', '1', '-printf', '%P\\n'], {
+    cwd: tempDir,
+    encoding: 'utf8',
+  })
+  if (result.status !== 0) {
+    throw new Error(`Failed to list extracted AppImage libraries: ${result.stderr.trim()}`)
+  }
+  return result.stdout.split('\n').filter(Boolean)
+}
+
+async function validateBundledLibraries(appImage, tempDir) {
+  extractAppImagePath(appImage, 'usr/lib', tempDir)
+  assertNoBundledHostLibraries(listExtractedLibraries(tempDir), appImage)
+}
+
 async function validateExtractedAppImage(appImage, tempDir) {
   for (const requiredPath of REQUIRED_APPIMAGE_PATHS) {
     extractAppImagePath(appImage, requiredPath, tempDir)
@@ -263,9 +309,10 @@ async function validateExtractedAppImage(appImage, tempDir) {
 
   await validateAppRunFile(join(tempDir, 'squashfs-root', 'AppRun'))
   assertAppImagePathsExtracted(appImage, tempDir, REQUIRED_APPIMAGE_PATHS.slice(1))
+  await validateBundledLibraries(appImage, tempDir)
 }
 
-export async function validateAppImages(paths) {
+async function validateEachAppImage(paths, validate) {
   if (paths.length === 0) {
     throw new Error('At least one AppImage path is required for launcher validation')
   }
@@ -273,11 +320,19 @@ export async function validateAppImages(paths) {
   for (const appImage of paths.map((path) => resolve(path))) {
     const tempDir = await mkdtemp(join(tmpdir(), 'tolaria-appimage-'))
     try {
-      await validateExtractedAppImage(appImage, tempDir)
+      await validate(appImage, tempDir)
     } finally {
       await rm(tempDir, { recursive: true, force: true })
     }
   }
+}
+
+export async function validateAppImages(paths) {
+  await validateEachAppImage(paths, validateExtractedAppImage)
+}
+
+export async function validateAppImageLibraries(paths) {
+  await validateEachAppImage(paths, validateBundledLibraries)
 }
 
 async function preparePluginCommand() {
@@ -300,14 +355,27 @@ async function validateAppImagesCommand(paths) {
   }
 }
 
+async function validateAppImageLibrariesCommand(paths) {
+  await validateAppImageLibraries(paths)
+  for (const path of paths) {
+    log(`Validated AppImage host-library boundary in ${path}`)
+  }
+}
+
+async function printLinuxdeployExclusionsCommand() {
+  log(LINUXDEPLOY_EXCLUDED_LIBRARIES)
+}
+
 const COMMANDS = new Map([
   ['prepare-plugin', preparePluginCommand],
+  ['print-linuxdeploy-exclusions', printLinuxdeployExclusionsCommand],
   ['validate-apprun-file', validateAppRunFilesCommand],
   ['validate-appimages', validateAppImagesCommand],
+  ['validate-appimage-libraries', validateAppImageLibrariesCommand],
 ])
 
 function usage() {
-  return 'Usage: node scripts/appimage-launcher-tools.mjs prepare-plugin | validate-apprun-file <AppRun...> | validate-appimages <AppImage...>'
+  return 'Usage: node scripts/appimage-launcher-tools.mjs prepare-plugin | print-linuxdeploy-exclusions | validate-apprun-file <AppRun...> | validate-appimages <AppImage...> | validate-appimage-libraries <AppImage...>'
 }
 
 async function main() {

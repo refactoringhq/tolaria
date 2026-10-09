@@ -17,10 +17,15 @@ import test from 'node:test'
 import {
   BROKEN_LINUXDEPLOY_APPRUN_DIR_LINE,
   FIXED_LINUXDEPLOY_APPRUN_DIR_LINE,
+  LINUXDEPLOY_EXCLUDED_LIBRARIES,
   REAL_APPIMAGE_PLUGIN_NAME,
   appImagePluginWrapperSource,
+  assertNoBundledHostLibraries,
+  findBundledHostLibraries,
   patchAppRunText,
   preparePluginWrapper,
+  validateAppImageLibraries,
+  validateAppImages,
 } from './appimage-launcher-tools.mjs'
 
 function brokenResolverDir(invokedPath) {
@@ -30,6 +35,110 @@ function brokenResolverDir(invokedPath) {
 function fixedResolverDir(invokedPath) {
   return dirname(realpathSync(invokedPath))
 }
+
+test('rejects AppImages that carry host-owned system library families', () => {
+  const bundledLibraries = [
+    'usr/lib/libFcitx5GClient.so.2',
+    'usr/lib/x86_64-linux-gnu/libsystemd.so.0',
+    'usr/lib/libudev.so.1',
+    'usr/lib/libdbus-1.so.3',
+    'usr/lib/libwayland-client.so.0',
+    'usr/lib/libwayland-egl.so.1',
+    'usr/lib/libepoxy.so.0',
+    'usr/lib/libnghttp2.so.14',
+    'usr/lib/libglib-2.0.so.0',
+  ]
+
+  assert.deepEqual(findBundledHostLibraries(bundledLibraries), [
+    'libdbus-1.so.3',
+    'libepoxy.so.0',
+    'libnghttp2.so.14',
+    'libsystemd.so.0',
+    'libudev.so.1',
+    'libwayland-client.so.0',
+    'libwayland-egl.so.1',
+  ])
+  assert.throws(
+    () => assertNoBundledHostLibraries(bundledLibraries, 'Tolaria.AppImage'),
+    /Tolaria\.AppImage bundles host system libraries: libdbus-1\.so\.3.*libsystemd\.so\.0/,
+  )
+  assert.doesNotThrow(() =>
+    assertNoBundledHostLibraries([
+      'usr/lib/libFcitx5GClient.so.2',
+      'usr/lib/libglib-2.0.so.0',
+    ]),
+  )
+  assert.equal(
+    LINUXDEPLOY_EXCLUDED_LIBRARIES,
+    'libsystemd.so*;libudev.so*;libdbus-1.so*;libwayland-*.so*;libepoxy.so*;libnghttp2.so*',
+  )
+})
+
+async function writeFakeAppImage(root, { includeSystemd = false, stock = false } = {}) {
+  const name = `${stock ? 'stock' : 'shim'}-${includeSystemd ? 'unsafe' : 'safe'}.AppImage`
+  const fakeAppImage = join(root, name)
+  const appRunLine = stock ? BROKEN_LINUXDEPLOY_APPRUN_DIR_LINE : FIXED_LINUXDEPLOY_APPRUN_DIR_LINE
+  const systemdFixture = includeSystemd ? 'touch squashfs-root/usr/lib/libsystemd.so.0' : ''
+  const otherPayload = stock
+    ? 'exit 1'
+    : 'mkdir -p "squashfs-root/$(dirname "$requested")" && touch "squashfs-root/$requested"'
+
+  const script = `#!/usr/bin/env bash
+set -euo pipefail
+requested="$2"
+case "$requested" in
+  AppRun)
+    mkdir -p squashfs-root
+    printf '%s\\n' '#!/usr/bin/env bash' '${appRunLine}' > squashfs-root/AppRun
+    ;;
+  usr/lib)
+    mkdir -p squashfs-root/usr/lib
+    touch squashfs-root/usr/lib/libglib-2.0.so.0
+    ${systemdFixture}
+    ;;
+  *)
+    ${otherPayload}
+    ;;
+esac
+`
+  const written = spawnSync('tee', [name], { cwd: root, input: script, stdio: ['pipe', 'ignore', 'pipe'] })
+  assert.equal(written.status, 0, String(written.stderr))
+  const madeExecutable = spawnSync('chmod', ['755', name], { cwd: root })
+  assert.equal(madeExecutable.status, 0, String(madeExecutable.stderr))
+  return fakeAppImage
+}
+
+test('sealed AppImage validation enforces the host-library boundary', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'tolaria-appimage-policy-'))
+  const safeAppImage = await writeFakeAppImage(root)
+  const unsafeAppImage = await writeFakeAppImage(root, { includeSystemd: true })
+
+  await validateAppImages([safeAppImage])
+  await assert.rejects(
+    validateAppImages([unsafeAppImage]),
+    /shim-unsafe\.AppImage bundles host system libraries: libsystemd\.so\.0/,
+  )
+})
+
+test('library-only validation accepts stock AppImages and still enforces the host-library boundary', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'tolaria-appimage-stock-'))
+  const stockAppImage = await writeFakeAppImage(root, { stock: true })
+  const unsafeStockAppImage = await writeFakeAppImage(root, { stock: true, includeSystemd: true })
+
+  await validateAppImageLibraries([stockAppImage])
+  await assert.rejects(
+    validateAppImages([stockAppImage]),
+    /Failed to extract .*im-fcitx5\.so from .*stock-safe\.AppImage/,
+  )
+  await assert.rejects(
+    validateAppImageLibraries([unsafeStockAppImage]),
+    /stock-unsafe\.AppImage bundles host system libraries: libsystemd\.so\.0/,
+  )
+  await assert.rejects(
+    validateAppImageLibraries([]),
+    /At least one AppImage path is required/,
+  )
+})
 
 test('patches linuxdeploy AppRun wrapper to resolve the invoked path before dirname', () => {
   const original = [

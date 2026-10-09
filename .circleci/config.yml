@@ -883,6 +883,8 @@ jobs:
             source /tmp/tolaria-release/release.env
             export TAURI_SIGNING_PRIVATE_KEY_PASSWORD="$TAURI_KEY_PASSWORD"
             export VITE_SENTRY_RELEASE="$VERSION"
+            export LINUXDEPLOY_EXCLUDED_LIBRARIES
+            LINUXDEPLOY_EXCLUDED_LIBRARIES="$(node scripts/appimage-launcher-tools.mjs print-linuxdeploy-exclusions)"
             pnpm tauri build --target x86_64-unknown-linux-gnu --bundles deb,rpm,appimage
       - run:
           name: Validate and collect Linux bundles
@@ -901,6 +903,7 @@ jobs:
               echo "Linux build did not produce all required installers and updater signatures." >&2
               exit 1
             fi
+            node scripts/appimage-launcher-tools.mjs validate-appimage-libraries "${appimages[@]}"
             validate_desktop_categories() {
               local package_path="$1"
               local extract_dir="$2"

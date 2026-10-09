@@ -47,13 +47,16 @@ If your distribution stores the 64-bit library elsewhere, use that path instead,
 
 ### Linux AppImage packaging checks
 
-Linux release CI currently uses Tauri's stock linuxdeploy AppImage output plugin:
+Linux release CI uses Tauri CLI 2.12.1 or newer with its updated stock linuxdeploy and GTK plugins. Before packaging, the job exports Tolaria's host-library exclusion policy; after packaging, it extracts every sealed AppImage and verifies that those libraries are absent:
 
 ```bash
+export LINUXDEPLOY_EXCLUDED_LIBRARIES="$(node scripts/appimage-launcher-tools.mjs print-linuxdeploy-exclusions)"
 pnpm tauri build --target x86_64-unknown-linux-gnu --bundles deb,rpm,appimage
+node scripts/appimage-launcher-tools.mjs validate-appimage-libraries \
+  src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
 ```
 
-Release validation verifies that the Linux job produced an AppImage, at least one installer bundle, and updater signature artifacts. Windows release jobs always require Tauri updater signatures; when Authenticode certificate secrets are configured, they also import the CI code-signing certificate, build NSIS with a generated Tauri Authenticode signing config, and verify the app executable plus installer signatures before upload. The experimental AppImage output-plugin shim in `scripts/appimage-launcher-tools.mjs` is retained for local investigation, but it is not wired into release packaging because linuxdeploy currently exits before sealing the AppImage when the shim is pre-seeded in Tauri's tools cache.
+The exclusion boundary keeps systemd/udev, D-Bus, Wayland, epoxy, and nghttp2 on the host while retaining the coherent bundled GTK/GLib stack needed by older distributions. Release validation also verifies that the Linux job produced an AppImage, at least one installer bundle, and updater signature artifacts. Windows release jobs always require Tauri updater signatures; when Authenticode certificate secrets are configured, they also import the CI code-signing certificate, build NSIS with a generated Tauri Authenticode signing config, and verify the app executable plus installer signatures before upload. The experimental AppImage output-plugin shim in `scripts/appimage-launcher-tools.mjs` remains available for local investigation but is not pre-seeded in release packaging; its stricter `validate-appimages` check (symlink-safe AppRun plus fcitx payload) only passes for shim-built AppImages. Without the exclusion export, linuxdeploy still bundles these libraries on Tauri CLI 2.12.1, so keep both steps together.
 
 ## Quick Start
 

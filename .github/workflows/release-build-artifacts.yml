@@ -305,6 +305,8 @@ jobs:
           VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
           VITE_POSTHOG_HOST: ${{ secrets.VITE_POSTHOG_HOST }}
         run: |
+          export LINUXDEPLOY_EXCLUDED_LIBRARIES
+          LINUXDEPLOY_EXCLUDED_LIBRARIES="$(node scripts/appimage-launcher-tools.mjs print-linuxdeploy-exclusions)"
           pnpm tauri build --target x86_64-unknown-linux-gnu --bundles deb,rpm,appimage
 
       - name: Validate Linux bundles
@@ -335,6 +337,8 @@ jobs:
             echo "::error::Linux build produced no updater signature (.sig) artifact."
             exit 1
           fi
+
+          node scripts/appimage-launcher-tools.mjs validate-appimage-libraries "${appimages[@]}"
 
           validate_desktop_categories() {
             local package_path="$1"
