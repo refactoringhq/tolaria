@@ -1,5 +1,5 @@
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
-import type { ComponentProps } from 'react'
+import type { ComponentProps, ComponentType } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Editor } from 'tldraw'
 import { TldrawWhiteboard } from './TldrawWhiteboard'
@@ -7,6 +7,9 @@ import { TooltipProvider } from './ui/tooltip'
 
 interface MockTldrawProps {
   assetUrls: MockAssetUrls
+  components?: {
+    Canvas?: ComponentType
+  }
   onMount: (editor: Editor) => () => void
   user?: MockTldrawUser
 }
@@ -25,7 +28,7 @@ interface MockAssetUrls {
 }
 
 interface MockCreateTLStoreOptions {
-  onMount?: (editor: Editor) => void | (() => void)
+  onMount?: (editor: Editor) => undefined | (() => void)
 }
 
 interface MockTldrawStore {
@@ -35,8 +38,10 @@ interface MockTldrawStore {
 }
 
 const tldrawMock = vi.hoisted(() => ({
+  DefaultCanvas: vi.fn(),
   Tldraw: vi.fn(),
   defaultHandleExternalTldrawContent: vi.fn(),
+  useEditor: vi.fn(),
 }))
 
 const tldrawStoreMock = vi.hoisted(() => ({
@@ -95,6 +100,7 @@ vi.mock('tldraw', async () => {
         this.h = h
       }
     },
+    DefaultCanvas: tldrawMock.DefaultCanvas,
     Tldraw: tldrawMock.Tldraw,
     createTLStore: tldrawStoreMock.createTLStore,
     defaultUserPreferences: {
@@ -110,6 +116,7 @@ vi.mock('tldraw', async () => {
         get: () => userPreferences,
       },
     })),
+    useEditor: tldrawMock.useEditor,
   }
 })
 
@@ -302,6 +309,26 @@ describe('TldrawWhiteboard', () => {
 
     if (typeof cleanupStoreMount === 'function') cleanupStoreMount()
     expect(() => editor.textMeasure.measureElementTextNodeSpans(measuredTextElement())).toThrow('top')
+  })
+
+  it('installs the text measurement guard before the default canvas renders', () => {
+    renderWhiteboard()
+
+    const editor = mockEditor()
+    tldrawMock.useEditor.mockReturnValue(editor)
+    const Canvas = renderedTldrawProps().components?.Canvas
+    expect(Canvas).toEqual(expect.any(Function))
+
+    render(<Canvas />)
+
+    expect(tldrawMock.DefaultCanvas).toHaveBeenCalled()
+    expect(editor.textMeasure.measureElementTextNodeSpans(measuredTextElement())).toEqual({
+      didTruncate: false,
+      spans: [{
+        box: { h: 24, w: 88, x: 0, y: 0 },
+        text: 'Label',
+      }],
+    })
   })
 
   it('mirrors tldraw icon masks to WebKit masks while mounted', async () => {

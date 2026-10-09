@@ -1,18 +1,15 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type MutableRefObject, type PointerEvent as ReactPointerEvent } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type MouseEvent as ReactMouseEvent, type MutableRefObject, type PointerEvent as ReactPointerEvent, type SetStateAction } from 'react'
 import { getAssetUrlsByImport } from '@tldraw/assets/imports.vite'
 import { ArrowsIn, ArrowsOut } from '@phosphor-icons/react'
 import { Dialog as DialogPrimitive } from 'radix-ui'
 import {
   Tldraw,
-  createTLStore,
   defaultUserPreferences,
-  loadSnapshot,
   useDialogs,
   useTldrawUser,
   useValue,
   type Editor,
   type TLUiDialog,
-  type TLStoreSnapshot,
   type TLUserPreferences,
 } from 'tldraw'
 import 'tldraw/tldraw.css'
@@ -20,10 +17,11 @@ import { useDocumentThemeMode } from '../hooks/useDocumentThemeMode'
 import { resolveEffectiveLocale, translate, type AppLocale } from '../lib/i18n'
 import { trackEvent } from '../lib/telemetry'
 import type { ResolvedThemeMode } from '../lib/themeMode'
+import { GuardedTldrawCanvas } from './GuardedTldrawCanvas'
 import { Button } from './ui/button'
 import { ActionTooltip } from './ui/action-tooltip'
-import { installTldrawTextMeasurementGuard } from './tldrawTextMeasurementGuard'
 import { installWhiteboardRuntimeGuards } from './tldrawRuntimeGuards'
+import { useTldrawBoardStore } from './useTldrawBoardStore'
 
 const EMPTY_TLDRAW_TRANSLATION_URL = 'data:application/json;base64,e30K'
 const TOLARIA_TLDRAW_USER_ID = 'tolaria-whiteboard'
@@ -133,27 +131,54 @@ function useDocumentLocale(): AppLocale {
   return locale
 }
 
-function parseSnapshot(source: string): TLStoreSnapshot | null {
-  if (!source.trim()) return null
-
-  try {
-    return JSON.parse(source) as TLStoreSnapshot
-  } catch {
-    return null
-  }
+interface WhiteboardRuntimeAlertProps {
+  body: string
+  testId: string
+  title: string
 }
 
-function createBoardStore(boardId: string) {
-  void boardId
-  return createTLStore({ onMount: installTldrawTextMeasurementGuard })
+function WhiteboardRuntimeAlert({ body, testId, title }: WhiteboardRuntimeAlertProps) {
+  return (
+    <div
+      role="alert"
+      className="tldraw-whiteboard__permission-error"
+      data-testid={testId}
+    >
+      <strong>{title}</strong>
+      <span>{body}</span>
+    </div>
+  )
 }
 
-function serializeSnapshot(snapshot: TLStoreSnapshot): string {
-  return `${JSON.stringify(snapshot, null, 2)}\n`
+interface WhiteboardRuntimeAlertsProps {
+  locale: AppLocale
+  pasteError: boolean
+  platformPermissionDenied: boolean
 }
 
-function getDocumentSnapshot(store: ReturnType<typeof createTLStore>): TLStoreSnapshot {
-  return store.getStoreSnapshot()
+function WhiteboardRuntimeAlerts({
+  locale,
+  pasteError,
+  platformPermissionDenied,
+}: WhiteboardRuntimeAlertsProps) {
+  return (
+    <>
+      {platformPermissionDenied ? (
+        <WhiteboardRuntimeAlert
+          body={translate(locale, 'editor.whiteboard.permissionDeniedBody')}
+          testId="tldraw-whiteboard-permission-error"
+          title={translate(locale, 'editor.whiteboard.permissionDeniedTitle')}
+        />
+      ) : null}
+      {pasteError ? (
+        <WhiteboardRuntimeAlert
+          body={translate(locale, 'editor.whiteboard.incompatiblePasteBody')}
+          testId="tldraw-whiteboard-paste-error"
+          title={translate(locale, 'editor.whiteboard.incompatiblePasteTitle')}
+        />
+      ) : null}
+    </>
+  )
 }
 
 interface TolariaTldrawDialogProps {
@@ -352,19 +377,95 @@ function useFullscreenWhiteboard() {
   return { fullscreen, toggleFullscreen }
 }
 
-export function TldrawWhiteboard({
+interface WhiteboardResizeContext {
+  boardRef: MutableRefObject<HTMLDivElement | null>
+  onSizeChange: TldrawWhiteboardProps['onSizeChange']
+  setResizingSize: Dispatch<SetStateAction<PixelSize | null>>
+  visibleSize: PixelSize
+}
+
+function beginWhiteboardResize(
+  event: ReactPointerEvent<HTMLButtonElement>,
+  { boardRef, onSizeChange, setResizingSize, visibleSize }: WhiteboardResizeContext,
+) {
+  event.preventDefault()
+  event.stopPropagation()
+  const mode = resizeModeFromHandle(event.currentTarget)
+  const rect = boardRef.current?.getBoundingClientRect()
+  const start: ResizeStart = {
+    height: visibleSize.height,
+    pointerX: event.clientX,
+    pointerY: event.clientY,
+    width: visibleSize.width ?? rect?.width ?? MIN_WIDTH,
+  }
+  const onPointerMove = (moveEvent: PointerEvent) => {
+    const nextSize = {
+      height: mode === 'width' ? start.height : start.height + moveEvent.clientY - start.pointerY,
+      width: mode === 'height' ? visibleSize.width : start.width + moveEvent.clientX - start.pointerX,
+    }
+    setResizingSize(normalizeSize(sizeToProps(nextSize)))
+  }
+  const onPointerUp = (upEvent: PointerEvent) => {
+    window.removeEventListener('pointermove', onPointerMove)
+    window.removeEventListener('pointerup', onPointerUp)
+    const finalSize = {
+      height: mode === 'width' ? start.height : start.height + upEvent.clientY - start.pointerY,
+      width: mode === 'height' ? visibleSize.width : start.width + upEvent.clientX - start.pointerX,
+    }
+    setResizingSize(null)
+    onSizeChange(sizeToProps(normalizeSize(sizeToProps(finalSize))))
+  }
+  window.addEventListener('pointermove', onPointerMove)
+  window.addEventListener('pointerup', onPointerUp, { once: true })
+}
+
+interface WhiteboardControlsProps {
+  fullscreen: boolean
+  fullscreenLabel: string
+  onResizeStart: (event: ReactPointerEvent<HTMLButtonElement>) => void
+  onToggleFullscreen: (event: ReactMouseEvent<HTMLButtonElement>) => void
+}
+
+function WhiteboardControls({
+  fullscreen,
+  fullscreenLabel,
+  onResizeStart,
+  onToggleFullscreen,
+}: WhiteboardControlsProps) {
+  return (
+    <>
+      <ActionTooltip copy={{ label: fullscreenLabel }} side="left">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-xs"
+          aria-label={fullscreenLabel}
+          aria-pressed={fullscreen}
+          className="tldraw-whiteboard__fullscreen-button"
+          data-testid="tldraw-whiteboard-fullscreen-toggle"
+          title={fullscreenLabel}
+          onClick={onToggleFullscreen}
+        >
+          {fullscreen ? <ArrowsIn aria-hidden="true" /> : <ArrowsOut aria-hidden="true" />}
+        </Button>
+      </ActionTooltip>
+      <button type="button" aria-label="Resize whiteboard width" className="tldraw-whiteboard__resize-handle tldraw-whiteboard__resize-handle--width border-0 bg-transparent p-0" data-resize-mode="width" onPointerDown={onResizeStart} />
+      <button type="button" aria-label="Resize whiteboard height" className="tldraw-whiteboard__resize-handle tldraw-whiteboard__resize-handle--height border-0 bg-transparent p-0" data-resize-mode="height" onPointerDown={onResizeStart} />
+      <button type="button" aria-label="Resize whiteboard" className="tldraw-whiteboard__resize-handle tldraw-whiteboard__resize-handle--corner border-0 bg-transparent p-0" data-resize-mode="both" onPointerDown={onResizeStart} />
+    </>
+  )
+}
+
+function useWhiteboardRuntime({
   boardId,
   height,
+  onSizeChange,
+  onSnapshotChange,
   snapshot,
   width,
-  onSnapshotChange,
-  onSizeChange,
 }: TldrawWhiteboardProps) {
-  const store = useMemo(() => createBoardStore(boardId), [boardId])
+  const store = useTldrawBoardStore({ boardId, onSnapshotChange, snapshot })
   const boardRef = useRef<HTMLDivElement | null>(null)
-  const savedSnapshotRef = useRef<string | null>(null)
-  const savedBoardIdRef = useRef<string | null>(null)
-  const onSnapshotChangeRef = useRef(onSnapshotChange)
   const persistedSize = useMemo(() => normalizeSize({ height, width }), [height, width])
   const [resizingSize, setResizingSize] = useState<PixelSize | null>(null)
   const [permissionDeniedBoardId, setPermissionDeniedBoardId] = useState<string | null>(null)
@@ -384,7 +485,10 @@ export function TldrawWhiteboard({
     setUserPreferences: ignoreTldrawUserPreferencesUpdate,
     userPreferences,
   })
-  const tldrawUiComponents = useMemo(() => ({ Dialogs: TolariaTldrawDialogs }), [])
+  const tldrawUiComponents = useMemo(() => ({
+    Canvas: GuardedTldrawCanvas,
+    Dialogs: TolariaTldrawDialogs,
+  }), [])
   const handleTldrawMount = useCallback((editor: Editor) =>
     installWhiteboardRuntimeGuards(editor, {
       onIncompatiblePaste: () => {
@@ -394,165 +498,63 @@ export function TldrawWhiteboard({
       onPlatformPermissionDenied: () => { setPermissionDeniedBoardId(boardId) },
     }), [boardId])
 
-  useEffect(() => {
-    onSnapshotChangeRef.current = onSnapshotChange
-  }, [onSnapshotChange])
+  const startResize = (event: ReactPointerEvent<HTMLButtonElement>) => beginWhiteboardResize(event, {
+    boardRef,
+    onSizeChange,
+    setResizingSize,
+    visibleSize,
+  })
 
-  useEffect(() => {
-    if (boardId === savedBoardIdRef.current && snapshot === savedSnapshotRef.current) return
-
-    const parsed = parseSnapshot(snapshot)
-    if (parsed) {
-      try {
-        loadSnapshot(store, parsed)
-        savedBoardIdRef.current = boardId
-        savedSnapshotRef.current = snapshot
-        return
-      } catch {
-        // Fall through to an empty board when legacy or hand-edited JSON is invalid.
-      }
-    }
-
-    const emptySnapshot = getDocumentSnapshot(createTLStore())
-    loadSnapshot(store, emptySnapshot)
-    savedBoardIdRef.current = boardId
-    savedSnapshotRef.current = serializeSnapshot(emptySnapshot)
-  }, [boardId, snapshot, store])
-
-  useEffect(() => {
-    let timeoutId: number | null = null
-
-    const flushSnapshot = () => {
-      timeoutId = null
-      const nextSnapshot = serializeSnapshot(getDocumentSnapshot(store))
-      if (nextSnapshot === savedSnapshotRef.current) return
-
-      savedBoardIdRef.current = boardId
-      savedSnapshotRef.current = nextSnapshot
-      onSnapshotChangeRef.current(nextSnapshot)
-    }
-
-    const scheduleSnapshotFlush = () => {
-      if (timeoutId !== null) window.clearTimeout(timeoutId)
-      timeoutId = window.setTimeout(flushSnapshot, 350)
-    }
-
-    const cleanup = store.listen(scheduleSnapshotFlush, { source: 'user', scope: 'document' })
-    return () => {
-      cleanup()
-      if (timeoutId !== null) window.clearTimeout(timeoutId)
-    }
-  }, [boardId, store])
-
-  const startResize = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
-    const mode = resizeModeFromHandle(event.currentTarget)
-
-    const rect = boardRef.current?.getBoundingClientRect()
-    const start: ResizeStart = {
-      height: visibleSize.height,
-      pointerX: event.clientX,
-      pointerY: event.clientY,
-      width: visibleSize.width ?? rect?.width ?? MIN_WIDTH,
-    }
-
-    const onPointerMove = (moveEvent: PointerEvent) => {
-      const nextSize = {
-        height: mode === 'width' ? start.height : start.height + moveEvent.clientY - start.pointerY,
-        width: mode === 'height' ? visibleSize.width : start.width + moveEvent.clientX - start.pointerX,
-      }
-      setResizingSize(normalizeSize(sizeToProps(nextSize)))
-    }
-
-    const onPointerUp = (upEvent: PointerEvent) => {
-      window.removeEventListener('pointermove', onPointerMove)
-      window.removeEventListener('pointerup', onPointerUp)
-
-      const finalSize = {
-        height: mode === 'width' ? start.height : start.height + upEvent.clientY - start.pointerY,
-        width: mode === 'height' ? visibleSize.width : start.width + upEvent.clientX - start.pointerX,
-      }
-      const nextProps = sizeToProps(normalizeSize(sizeToProps(finalSize)))
-      setResizingSize(null)
-      onSizeChange(nextProps)
-    }
-
-    window.addEventListener('pointermove', onPointerMove)
-    window.addEventListener('pointerup', onPointerUp, { once: true })
+  return {
+    boardRef,
+    fullscreen,
+    fullscreenLabel,
+    handleTldrawMount,
+    locale,
+    pasteError,
+    platformPermissionDenied,
+    startResize,
+    store,
+    tldrawUiComponents,
+    tldrawUser,
+    toggleFullscreen,
+    visibleSize,
   }
+}
+
+export function TldrawWhiteboard(props: TldrawWhiteboardProps) {
+  const {
+    boardRef, fullscreen, fullscreenLabel, handleTldrawMount, locale, pasteError,
+    platformPermissionDenied, startResize, store, tldrawUiComponents, tldrawUser,
+    toggleFullscreen, visibleSize,
+  } = useWhiteboardRuntime(props)
 
   return (
     <div
       ref={boardRef}
       className={fullscreen ? 'tldraw-whiteboard tldraw-whiteboard--fullscreen' : 'tldraw-whiteboard'}
       contentEditable={false}
-      data-board-id={boardId}
+      data-board-id={props.boardId}
       style={cssSize(visibleSize)}
     >
       <Tldraw
         assetUrls={tldrawAssetUrls}
         components={tldrawUiComponents}
-        key={boardId}
+        key={props.boardId}
         onMount={handleTldrawMount}
         store={store}
         user={tldrawUser}
       />
-      {platformPermissionDenied ? (
-        <div
-          role="alert"
-          className="tldraw-whiteboard__permission-error"
-          data-testid="tldraw-whiteboard-permission-error"
-        >
-          <strong>{translate(locale, 'editor.whiteboard.permissionDeniedTitle')}</strong>
-          <span>{translate(locale, 'editor.whiteboard.permissionDeniedBody')}</span>
-        </div>
-      ) : null}
-      {pasteError ? (
-        <div
-          role="alert"
-          className="tldraw-whiteboard__permission-error"
-          data-testid="tldraw-whiteboard-paste-error"
-        >
-          <strong>{translate(locale, 'editor.whiteboard.incompatiblePasteTitle')}</strong>
-          <span>{translate(locale, 'editor.whiteboard.incompatiblePasteBody')}</span>
-        </div>
-      ) : null}
-      <ActionTooltip copy={{ label: fullscreenLabel }} side="left">
-        <Button
-          type="button"
-          variant="outline"
-          size="icon-xs"
-          aria-label={fullscreenLabel}
-          aria-pressed={fullscreen}
-          className="tldraw-whiteboard__fullscreen-button"
-          data-testid="tldraw-whiteboard-fullscreen-toggle"
-          title={fullscreenLabel}
-          onClick={toggleFullscreen}
-        >
-          {fullscreen ? <ArrowsIn aria-hidden="true" /> : <ArrowsOut aria-hidden="true" />}
-        </Button>
-      </ActionTooltip>
-      <button
-        type="button"
-        aria-label="Resize whiteboard width"
-        className="tldraw-whiteboard__resize-handle tldraw-whiteboard__resize-handle--width border-0 bg-transparent p-0"
-        data-resize-mode="width"
-        onPointerDown={startResize}
+      <WhiteboardRuntimeAlerts
+        locale={locale}
+        pasteError={pasteError}
+        platformPermissionDenied={platformPermissionDenied}
       />
-      <button
-        type="button"
-        aria-label="Resize whiteboard height"
-        className="tldraw-whiteboard__resize-handle tldraw-whiteboard__resize-handle--height border-0 bg-transparent p-0"
-        data-resize-mode="height"
-        onPointerDown={startResize}
-      />
-      <button
-        type="button"
-        aria-label="Resize whiteboard"
-        className="tldraw-whiteboard__resize-handle tldraw-whiteboard__resize-handle--corner border-0 bg-transparent p-0"
-        data-resize-mode="both"
-        onPointerDown={startResize}
+      <WhiteboardControls
+        fullscreen={fullscreen}
+        fullscreenLabel={fullscreenLabel}
+        onResizeStart={startResize}
+        onToggleFullscreen={toggleFullscreen}
       />
     </div>
   )

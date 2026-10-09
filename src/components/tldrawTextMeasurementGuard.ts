@@ -12,6 +12,13 @@ interface TextMeasurementHost {
   }
 }
 
+interface InstalledTextMeasurementGuard {
+  cleanup: () => void
+  guardedMeasure: MeasureElementTextNodeSpans
+}
+
+const installedGuards = new WeakMap<TextMeasurementHost['textMeasure'], InstalledTextMeasurementGuard>()
+
 function isMissingRangeRectError(error: unknown): boolean {
   const message = errorMessage(error, '').toLowerCase()
   return message.includes('top') && (
@@ -57,10 +64,11 @@ function fallbackTextNodeSpans(element: HTMLElement, options: TextMeasurementOpt
   }
 }
 
-export function installTldrawTextMeasurementGuard(host: TextMeasurementHost): () => void {
-  const { textMeasure } = host
-  const originalMeasure = textMeasure.measureElementTextNodeSpans
-  const guardedMeasure: MeasureElementTextNodeSpans = (element, options) => {
+function guardTextMeasurement(
+  textMeasure: TextMeasurementHost['textMeasure'],
+  originalMeasure: MeasureElementTextNodeSpans,
+): MeasureElementTextNodeSpans {
+  return (element, options) => {
     try {
       return originalMeasure.call(textMeasure, element, options)
     } catch (error) {
@@ -68,11 +76,34 @@ export function installTldrawTextMeasurementGuard(host: TextMeasurementHost): ()
       return fallbackTextNodeSpans(element, options)
     }
   }
+}
 
-  textMeasure.measureElementTextNodeSpans = guardedMeasure
+function cleanupGuard(
+  textMeasure: TextMeasurementHost['textMeasure'],
+  guardedMeasure: MeasureElementTextNodeSpans,
+  originalMeasure: MeasureElementTextNodeSpans,
+) {
   return () => {
+    if (installedGuards.get(textMeasure)?.guardedMeasure !== guardedMeasure) return
+
+    installedGuards.delete(textMeasure)
     if (textMeasure.measureElementTextNodeSpans === guardedMeasure) {
       textMeasure.measureElementTextNodeSpans = originalMeasure
     }
   }
+}
+
+export function installTldrawTextMeasurementGuard(host: TextMeasurementHost): () => void {
+  const { textMeasure } = host
+  const installedGuard = installedGuards.get(textMeasure)
+  if (installedGuard?.guardedMeasure === textMeasure.measureElementTextNodeSpans) {
+    return installedGuard.cleanup
+  }
+
+  const originalMeasure = textMeasure.measureElementTextNodeSpans
+  const guardedMeasure = guardTextMeasurement(textMeasure, originalMeasure)
+  textMeasure.measureElementTextNodeSpans = guardedMeasure
+  const cleanup = cleanupGuard(textMeasure, guardedMeasure, originalMeasure)
+  installedGuards.set(textMeasure, { cleanup, guardedMeasure })
+  return cleanup
 }

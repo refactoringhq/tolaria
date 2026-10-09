@@ -88,4 +88,17 @@ describe('tldraw text measurement guard', () => {
     expect(() => host.textMeasure.measureElementTextNodeSpans(elementWithText('Label')))
       .toThrow('bad measurement state')
   })
+
+  it('does not stack guards when installation happens before the mount callback', () => {
+    const originalMeasure = vi.fn(() => {
+      throw new TypeError("Cannot read properties of undefined (reading 'top')")
+    })
+    const host = textMeasureHost(originalMeasure)
+
+    installTldrawTextMeasurementGuard(host)
+    const cleanupMountGuard = installTldrawTextMeasurementGuard(host)
+    cleanupMountGuard()
+
+    expect(() => host.textMeasure.measureElementTextNodeSpans(elementWithText('Label'))).toThrow('top')
+  })
 })
