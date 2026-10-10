@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from 'react'
 import { Dimensions, Platform, StyleSheet, useWindowDimensions, View } from 'react-native'
 import Reanimated from 'react-native-reanimated'
+import { GestureDetector } from 'react-native-gesture-handler'
 import { CaretLeft, CaretRight, SidebarSimple } from 'phosphor-react-native'
 import { MobileCommandPalette } from '../components/workspace/MobileCommandPalette'
 import { MobileNoteListPanel } from '../components/workspace/MobileNoteListPanel'
@@ -235,16 +236,11 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
     return () => clearTimeout(timeout)
   }, [handleSelectTableOfContentsTarget, props.tableOfContentsProbe, tableOfContentsTarget])
 
-  useEffect(() => {
-    if (commandPaletteProbe) logNativeMobileCommandPaletteProof(commandPaletteCommands)
-  }, [commandPaletteCommands, commandPaletteProbe])
-  useEffect(() => {
-    if (props.keyboardShortcutProbe) logNativeMobileKeyboardShortcutBridgeProof()
-  }, [props.keyboardShortcutProbe])
+  useTabletChromeQaProofs(commandPaletteProbe, props.keyboardShortcutProbe, commandPaletteCommands)
 
   return (
+    <GestureDetector gesture={gestures.panGesture}>
     <View
-      {...gestures.workspacePanHandlers}
       collapsable={false}
       style={styles.shell}
       testID="tablet-workspace-gesture-surface"
@@ -279,7 +275,21 @@ function TabletWorkspaceChrome(props: TabletWorkspaceChromeProps) {
         onClose={closeCommandPalette}
       />
     </View>
+    </GestureDetector>
   )
+}
+
+function useTabletChromeQaProofs(
+  paletteProbe: boolean | undefined,
+  keyboardProbe: boolean | undefined,
+  commands: ComponentProps<typeof MobileCommandPalette>['commands'],
+) {
+  useEffect(() => {
+    if (paletteProbe) logNativeMobileCommandPaletteProof(commands)
+  }, [commands, paletteProbe])
+  useEffect(() => {
+    if (keyboardProbe) logNativeMobileKeyboardShortcutBridgeProof()
+  }, [keyboardProbe])
 }
 
 function TabletCommandPaletteHost({

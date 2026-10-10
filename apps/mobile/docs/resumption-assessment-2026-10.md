@@ -59,5 +59,23 @@ conflict editing, multi-vault use, and phone polish are not first-launch prerequ
   successful scan. Project ESLint passes. Codacy Opengrep succeeds with UTF-8
   locale settings and reports no findings in the first core implementation scan.
 
+## Second batch
+
+- Committed Git foundation: `ccb2b8a30`. Verified hooks passed 1,121 mobile tests.
+  Real Git subprocesses explicitly remove inherited `GIT_*` settings; hooks had
+  previously contaminated the disposable HTTP fixture's repository discovery.
+- Replaced tablet PanResponder with Gesture Handler/Reanimated worklets. No
+  per-frame React state or JavaScript-thread movement callbacks. Preserved existing
+  dimensions, toolbar actions, and the left strip's sequential snap points.
+- Native Expo Go 54 layout assertion passed **204 metrics** on the booted iPad Pro
+  13-inch simulator, using the current Metro bundle and all-panels fixture.
+- Instrumented native input during CUA drag attempts: a touch-down arrived but no
+  touch-move callbacks followed. This does not establish a real gesture pass.
+  Temporary logging was removed. Physical-touch interaction remains unverified.
+- Moved the dependency store's `v10` cache to
+  `/Volumes/Jupiter/Cache/tolaria-pnpm-store-internal-v10-20261010` with a symlink
+  at its original location, preserving it and recovering internal disk space.
+  Removed only temporary repositories created by this run.
+
 This is a working assessment, not a release-readiness declaration. Tests in Node
 prove Git semantics, not native throughput or file-provider behavior.

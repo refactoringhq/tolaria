@@ -16,6 +16,15 @@ belongs in the mobile bundle. See ADR 0194 and the mobile October assessment for
 integration status and remaining native-provider work. This layer is not an
 iCloud synchronizer and must not label local disk writes as remote synchronization.
 
+## Tablet Panel Motion
+
+`tabletPanelGestureIntent.ts` decides whether a touch should move panels or yield
+to vertical content scrolling. `tabletNativePanGesture.ts` runs gesture updates
+and springs on the UI thread. `useTabletPanelGestures.ts` exposes toolbar actions
+and settled accessibility state. Offsets always use desktop panel tokens. Native
+interaction QA is mandatory; web tests cannot verify native responder arbitration.
+See ADR 0195.
+
 ## Design Philosophy
 
 Tolaria's abstractions follow the **convention over configuration** principle: standard field names, types, and relationships have well-defined meanings and trigger UI behavior automatically. This makes vaults legible both to humans and to AI agents — the more a vault follows conventions, the less custom configuration an AI needs to navigate it correctly.
