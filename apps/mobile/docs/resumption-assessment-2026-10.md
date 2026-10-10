@@ -202,3 +202,15 @@ vault throughput, Android, or file-provider behavior.
 - The new warning was translated with Lara into all 19 configured targets; the
   existing Belarusian Latin catalog was updated too. This is a safety correction,
   not a new user action requiring a product analytics event.
+
+## Native launch source correction
+
+- Final simulator inspection caught fixture notes after a `source=native` launch.
+  The URL resolver recognized only `native-vault` and defaulted every unknown
+  source to fixtures. Four failing cases reproduced this and inherited-object
+  lookup for `constructor`/`__proto__`.
+- Source lookup now uses Map, accepts `native`, and defaults unknown native
+  launches to the real repository. Explicit fixtures and isolated QA routes still
+  work. All 19 resolver tests pass. The corrected simulator launch shows the
+  imported Laputa copy with 5,867 open entries and 169 archived entries.
+- No localization or product analytics changes for this launch-routing fix.

@@ -32,12 +32,14 @@ const fixtureProbeParams = [
   'wysiwygWikilinkInsertProbe',
 ] as const
 
-const configuredWorkspaceSources: Record<string, NonNullable<ReadOnlyWorkspaceRequest['source']>> = {
-  'dev-vault': 'dev',
-  'host-vault': 'host',
-  'local-vault': 'dev',
-  'native-vault': 'native',
-}
+const configuredWorkspaceSources = new Map<string, NonNullable<ReadOnlyWorkspaceRequest['source']>>([
+  ['dev-vault', 'dev'],
+  ['host-vault', 'host'],
+  ['local-vault', 'dev'],
+  ['native-vault', 'native'],
+  ['native', 'native'],
+  ['fixture', 'fixture'],
+])
 
 export function initialMobileUiNativeSearch({
   initialUrlSearch,
@@ -66,7 +68,7 @@ export function mobileUiRequestedWorkspaceSource({
   if (qaSource) return qaSource
   if (shouldUseNativeWorkspace({ hasDevVaultUrl, hasNativeWorkspace, requestedSource })) return 'native'
   if (!requestedSource) return unconfiguredWorkspaceSource(platform, searchParams)
-  return configuredWorkspaceSources[requestedSource] ?? 'fixture'
+  return configuredWorkspaceSources.get(requestedSource) ?? (platform === 'web' ? 'fixture' : 'native')
 }
 
 function shouldUseNativeWorkspace({

@@ -71,6 +71,24 @@ describe('resolveMobileUiWorkspace', () => {
 })
 
 describe('mobileUiRequestedWorkspaceSource', () => {
+  it.each(['native', 'native-vault', 'unrecognized', 'constructor', '__proto__'])('never substitutes mock notes for native launch source %s', (requestedSource) => {
+    expect(mobileUiRequestedWorkspaceSource({
+      hasNativeWorkspace: true,
+      platform: 'ios',
+      requestedSource,
+      searchParams: new URLSearchParams('layoutProbe=1'),
+    })).toBe('native')
+  })
+
+  it('still permits an explicitly selected fixture for QA', () => {
+    expect(mobileUiRequestedWorkspaceSource({
+      hasNativeWorkspace: true,
+      platform: 'ios',
+      requestedSource: 'fixture',
+      searchParams: new URLSearchParams(),
+    })).toBe('fixture')
+  })
+
   it('starts interactive launches on the native workspace instead of fixture data', () => {
     expect(mobileUiRequestedWorkspaceSource({
       hasNativeWorkspace: false,
