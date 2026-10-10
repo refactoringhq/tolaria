@@ -232,3 +232,36 @@ vault throughput, Android, or file-provider behavior.
   findings. Existing localized recovery copy is reused; no new product analytics
   event is appropriate for this data-safety correction. Original Laputa and demo
   fixtures remain untouched. Live provider integration is still not enabled.
+
+## Repeatable native gesture verification
+
+- A fresh standalone XCUITest runner passed eight actual panel transitions plus
+  vertical-pan non-collapse in 31.9 seconds. It asserts native editor positions
+  at x=600, x=340, and x=0, and a 300-point inspector, using actual touch synthesis.
+  This supersedes the earlier inability to deliver continuous drag events via CUA.
+- Caught and corrected two QA-harness problems: querying `isHittable` on an absent
+  element caused retries/timeouts, and Xcode reused an old unsigned runner after
+  rebuilding. The committed runner checks existence first and reinstalls itself
+  before every run. Tolaria app data is never removed.
+- The repository command, not only the temporary prototype, passed. Final native
+  WYSIWYG persistence and all 140 layout assertions also passed on the rebuilt app.
+  These results do not establish animation frame rate, interrupted drags, text
+  selection arbitration, Android, or physical-device behavior.
+- New scorable QA files score 10.0; the Ruby project generator has no scorable code
+  and no findings. Codacy's sole audit warning is the credential-free loopback
+  Metro status request, not remote unencrypted traffic; redirects are rejected.
+  No UI copy or analytics changes. ADR 0199 records the additive native QA lane.
+
+## Remaining integration limits
+
+- This branch has not been rebased onto the October `main` tip. The recovered
+  mobile baseline is August; reconcile shared desktop contracts in a separate
+  verified integration batch before promotion. The inspected desktop color-token
+  diff adds editor selection colors, not a wholesale palette change.
+- Desktop-derived mobile constants have parity checks, but are still mirrored
+  definitions rather than a single generated cross-platform design-token source.
+- GitHub authenticated login needs a configured public OAuth client ID and live
+  verification. Public cloning and local-server authenticated-independent Git
+  transport proofs are not a substitute for testing a user's private repository.
+- Linked original folders need picker/refresh/conflict integration and real
+  provider QA. The current standalone picker intentionally remains copy import.

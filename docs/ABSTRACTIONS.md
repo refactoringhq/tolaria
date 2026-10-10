@@ -63,6 +63,11 @@ and settled accessibility state. Offsets always use desktop panel tokens. Native
 interaction QA is mandatory; web tests cannot verify native responder arbitration.
 See ADR 0195.
 
+`apps/mobile/native-ui-tests/` adds an independent XCUITest runner for actual
+native panel drags and toolbar actions. `test-ios-panel-gestures.mjs` generates
+the project outside the repository, reinstalls only the disposable runner to avoid
+stale unsigned test bundles, and retains an `.xcresult` artifact. See ADR 0199.
+
 ## Design Philosophy
 
 Tolaria's abstractions follow the **convention over configuration** principle: standard field names, types, and relationships have well-defined meanings and trigger UI behavior automatically. This makes vaults legible both to humans and to AI agents — the more a vault follows conventions, the less custom configuration an AI needs to navigate it correctly.
