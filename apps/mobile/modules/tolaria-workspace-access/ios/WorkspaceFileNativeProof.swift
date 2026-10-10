@@ -19,7 +19,17 @@ func runWorkspaceFileNativeProof() throws -> [String: Bool] {
     "traversalRejected": operationRejected { try files.write("../escape.md", data: content, expectedRevision: nil) },
     "gitProtected": operationRejected { try files.write(".git/config", data: content, expectedRevision: nil) },
     "bookmarkRestored": try proveWorkspaceBookmark(root),
+    "invalidTextRejected": try proveInvalidWorkspaceText(root),
   ]
+}
+
+private func proveInvalidWorkspaceText(_ root: URL) throws -> Bool {
+  let url = root.appendingPathComponent("invalid.md")
+  let bytes = Data([0xFF, 0xFE, 0xFF])
+  try bytes.write(to: url)
+  defer { try? FileManager.default.removeItem(at: url) }
+  let rejected = operationRejected { try WorkspaceFileIndex(root: root).read() }
+  return try rejected && Data(contentsOf: url) == bytes
 }
 
 private func operationRejected<T>(_ operation: () throws -> T) -> Bool {

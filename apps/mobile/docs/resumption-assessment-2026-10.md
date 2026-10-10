@@ -214,3 +214,21 @@ vault throughput, Android, or file-provider behavior.
   work. All 19 resolver tests pass. The corrected simulator launch shows the
   imported Laputa copy with 5,867 open entries and 169 archived entries.
 - No localization or product analytics changes for this launch-routing fix.
+
+## Read and import safety
+
+- Reproduced empty-content fallback for invalid text, silent missing-root reads
+  on iOS, and import/restore failures being mistaken for cancellation or first launch.
+  These now reject. A staged import must validate fully before replacing the
+  previous managed folder; visible symlinks and recursive self-import are rejected.
+- Extracted the native index/import functions for real-filesystem testing. All
+  17 Swift tests pass, including preserving the previous vault after invalid imports.
+  The rebuilt standalone app passes the invalid-text proof, missing-root checks,
+  and the actual Git round trip (1,981 ms for the small disposable fixture).
+- Added a workspace error boundary with vault-management recovery controls. Failed
+  reads cannot leave a blank editable document or remove access to vault selection.
+  React DOM recovery coverage and the focused bridge/repository tests pass.
+- Touched/new scorable files remain 10.0. Scoped Codacy Opengrep reports zero
+  findings. Existing localized recovery copy is reused; no new product analytics
+  event is appropriate for this data-safety correction. Original Laputa and demo
+  fixtures remain untouched. Live provider integration is still not enabled.

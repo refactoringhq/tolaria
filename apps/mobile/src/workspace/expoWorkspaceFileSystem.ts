@@ -59,14 +59,14 @@ export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
   readVaultFiles: (rootUri) => {
     const module = expoFileSystem()
     const root = new module.Directory(rootUri)
-    if (!root.exists) return []
+    if (!root.exists) throw new Error('workspaceRootMissing')
 
     return readDirectoryFiles(module, root, '')
   },
   readVaultDirectories: (rootUri) => {
     const module = expoFileSystem()
     const root = new module.Directory(rootUri)
-    if (!root.exists) return []
+    if (!root.exists) throw new Error('workspaceRootMissing')
 
     return readDirectoryPaths(module, root, '')
   },
@@ -150,7 +150,7 @@ function readDirectoryPaths(
 function localVaultFile(file: File, relativePath: RelativeVaultPath): LocalVaultFile {
   const info = file.info()
   const fileKind = mobileFileKindForPath(relativePath)
-  const content = fileKind === 'binary' ? '' : safeTextContent(file)
+  const content = fileKind === 'binary' ? '' : file.textSync()
 
   return {
     absolutePath: file.uri,
@@ -196,12 +196,4 @@ function shouldReadFile(relativePath: RelativeVaultPath): boolean {
 
 function shouldReadDirectory(name: DirectoryName): boolean {
   return !name.startsWith('.') && name !== 'node_modules'
-}
-
-function safeTextContent(file: File): string {
-  try {
-    return file.textSync()
-  } catch {
-    return ''
-  }
 }

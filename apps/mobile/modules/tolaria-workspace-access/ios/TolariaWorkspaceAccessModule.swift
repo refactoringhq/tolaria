@@ -44,16 +44,16 @@ public class TolariaWorkspaceAccessModule: Module {
   public func definition() -> ModuleDefinition {
     Name("TolariaWorkspaceAccess")
 
-    AsyncFunction("importWorkspace") { (uri: String) -> [String: String]? in
-      return self.importWorkspace(uri)
+    AsyncFunction("importWorkspace") { (uri: String) throws -> [String: String]? in
+      return try self.importWorkspace(uri)
     }
 
     AsyncFunction("pickAndImportWorkspace") { (promise: Promise) in
       self.presentWorkspacePicker(promise)
     }.runOnQueue(.main)
 
-    AsyncFunction("restoreWorkspace") { () -> [String: String]? in
-      return self.restoreWorkspace()
+    AsyncFunction("restoreWorkspace") { () throws -> [String: String]? in
+      return try self.restoreWorkspace()
     }
 
     #if DEBUG
@@ -63,7 +63,7 @@ public class TolariaWorkspaceAccessModule: Module {
     #endif
   }
 
-  private func importWorkspace(_ uri: String) -> [String: String]? {
+  private func importWorkspace(_ uri: String) throws -> [String: String]? {
     guard let source = URL(string: uri), source.isFileURL else { return nil }
 
     let usesSecurityScope = source.startAccessingSecurityScopedResource()
@@ -76,29 +76,17 @@ public class TolariaWorkspaceAccessModule: Module {
       return nil
     }
 
-    return copyWorkspace(from: source)
+    return try copyWorkspace(from: source)
   }
 
-  private func copyWorkspace(from source: URL) -> [String: String]? {
+  private func copyWorkspace(from source: URL) throws -> [String: String] {
     let label = source.deletingPathExtension().lastPathComponent
-    guard !label.isEmpty else { return nil }
+    guard !label.isEmpty else { throw WorkspaceFileError.invalidPath }
 
-    do {
-      let managed = try managedWorkspaceURL()
-      if source.standardizedFileURL == managed.standardizedFileURL {
-        UserDefaults.standard.set(label, forKey: managedWorkspaceLabelKey)
-        return workspaceRecord(uri: managed.absoluteString, label: label)
-      }
-      let staging = managed.deletingLastPathComponent()
-        .appendingPathComponent(".tolaria-import-\(UUID().uuidString)", isDirectory: true)
-      defer { try? FileManager.default.removeItem(at: staging) }
-      try FileManager.default.copyItem(at: source, to: staging)
-      try replaceManagedWorkspace(at: managed, with: staging)
-      UserDefaults.standard.set(label, forKey: managedWorkspaceLabelKey)
-      return workspaceRecord(uri: managed.absoluteString, label: label)
-    } catch {
-      return nil
-    }
+    let managed = try managedWorkspaceURL()
+    let indexJson = try importManagedWorkspace(from: source, to: managed)
+    UserDefaults.standard.set(label, forKey: managedWorkspaceLabelKey)
+    return ["indexJson": indexJson, "label": label, "uri": managed.absoluteString]
   }
 
   private func presentWorkspacePicker(_ promise: Promise) {
@@ -128,16 +116,17 @@ public class TolariaWorkspaceAccessModule: Module {
     guard let promise = takePickerPromise() else { return }
     let usesSecurityScope = source.startAccessingSecurityScopedResource()
     guard usesSecurityScope || FileManager.default.isReadableFile(atPath: source.path) else {
-      promise.resolve(nil)
+      promise.reject(CocoaError(.fileReadNoPermission))
       return
     }
 
     DispatchQueue.global(qos: .userInitiated).async {
-      let record = self.copyWorkspace(from: source)
-      if usesSecurityScope {
-        source.stopAccessingSecurityScopedResource()
+      defer { if usesSecurityScope { source.stopAccessingSecurityScopedResource() } }
+      do {
+        promise.resolve(try self.copyWorkspace(from: source))
+      } catch {
+        promise.reject(error)
       }
-      promise.resolve(record)
     }
   }
 
@@ -151,13 +140,12 @@ public class TolariaWorkspaceAccessModule: Module {
     return promise
   }
 
-  private func restoreWorkspace() -> [String: String]? {
+  private func restoreWorkspace() throws -> [String: String]? {
     guard let label = UserDefaults.standard.string(forKey: managedWorkspaceLabelKey) else {
       return nil
     }
-    guard let managed = try? managedWorkspaceURL() else { return nil }
-    guard FileManager.default.isReadableFile(atPath: managed.path) else { return nil }
-    return workspaceRecord(uri: managed.absoluteString, label: label)
+    let managed = try managedWorkspaceURL()
+    return try workspaceRecord(root: managed, label: label)
   }
 
   private func managedWorkspaceURL() throws -> URL {
@@ -170,157 +158,11 @@ public class TolariaWorkspaceAccessModule: Module {
     return documents.appendingPathComponent(managedWorkspaceDirectoryName, isDirectory: true)
   }
 
-  private func replaceManagedWorkspace(at managed: URL, with staging: URL) throws {
-    let fileManager = FileManager.default
-    let backup = managed.deletingLastPathComponent()
-      .appendingPathComponent(".tolaria-backup-\(UUID().uuidString)", isDirectory: true)
-    let hadManagedWorkspace = fileManager.fileExists(atPath: managed.path)
-
-    if hadManagedWorkspace {
-      try fileManager.moveItem(at: managed, to: backup)
-    }
-
-    do {
-      try fileManager.moveItem(at: staging, to: managed)
-      if hadManagedWorkspace {
-        try? fileManager.removeItem(at: backup)
-      }
-    } catch {
-      try? fileManager.removeItem(at: staging)
-      if hadManagedWorkspace {
-        try? fileManager.moveItem(at: backup, to: managed)
-      }
-      throw error
-    }
-  }
-
-  private func workspaceRecord(uri: String, label: String) -> [String: String] {
-    let root = URL(string: uri)
+  private func workspaceRecord(root: URL, label: String) throws -> [String: String] {
     return [
-      "indexJson": root.flatMap(workspaceIndexJson) ?? emptyWorkspaceIndexJson,
+      "indexJson": try WorkspaceFileIndex(root: root).json(),
       "label": label,
-      "uri": uri,
+      "uri": root.absoluteString,
     ]
-  }
-
-  private func workspaceIndexJson(_ root: URL) -> String? {
-    let keys: Set<URLResourceKey> = [
-      .contentModificationDateKey,
-      .creationDateKey,
-      .fileSizeKey,
-      .isDirectoryKey,
-      .isRegularFileKey,
-    ]
-    guard let enumerator = FileManager.default.enumerator(
-      at: root,
-      includingPropertiesForKeys: Array(keys),
-      options: [.skipsHiddenFiles, .skipsPackageDescendants]
-    ) else { return emptyWorkspaceIndexJson }
-
-    var directories: [String] = []
-    var files: [[String: Any]] = []
-    for case let url as URL in enumerator {
-      appendWorkspaceEntry(
-        url,
-        root: root,
-        keys: keys,
-        enumerator: enumerator,
-        directories: &directories,
-        files: &files
-      )
-    }
-    let index: [String: Any] = ["directories": directories, "files": files]
-    guard let data = try? JSONSerialization.data(withJSONObject: index) else { return nil }
-    return String(data: data, encoding: .utf8)
-  }
-
-  private func appendWorkspaceEntry(
-    _ url: URL,
-    root: URL,
-    keys: Set<URLResourceKey>,
-    enumerator: FileManager.DirectoryEnumerator,
-    directories: inout [String],
-    files: inout [[String: Any]]
-  ) {
-    guard let values = try? url.resourceValues(forKeys: keys) else { return }
-    let relativePath = workspaceRelativePath(url, root: root)
-    guard values.isDirectory != true else {
-      appendWorkspaceDirectory(
-        url,
-        relativePath: relativePath,
-        enumerator: enumerator,
-        directories: &directories
-      )
-      return
-    }
-    guard values.isRegularFile == true, !relativePath.isEmpty else { return }
-    files.append(workspaceFileRecord(url, relativePath: relativePath, values: values))
-  }
-
-  private func appendWorkspaceDirectory(
-    _ url: URL,
-    relativePath: String,
-    enumerator: FileManager.DirectoryEnumerator,
-    directories: inout [String]
-  ) {
-    guard url.lastPathComponent != "node_modules" else {
-      enumerator.skipDescendants()
-      return
-    }
-    guard !relativePath.isEmpty else { return }
-    directories.append(relativePath)
-  }
-
-  private func workspaceFileRecord(
-    _ url: URL,
-    relativePath: String,
-    values: URLResourceValues
-  ) -> [String: Any] {
-    let content = workspaceTextContent(url, relativePath: relativePath)
-    return [
-      "absolutePath": url.absoluteString,
-      "content": content,
-      "createdAt": milliseconds(values.creationDate),
-      "modifiedAt": milliseconds(values.contentModificationDate),
-      "relativePath": relativePath,
-      "size": values.fileSize ?? content.utf8.count,
-    ]
-  }
-
-  private func workspaceTextContent(_ url: URL, relativePath: String) -> String {
-    guard isWorkspaceTextFile(relativePath) else { return "" }
-    return (try? String(contentsOf: url, encoding: .utf8)) ?? ""
-  }
-
-  private func workspaceRelativePath(_ url: URL, root: URL) -> String {
-    let rootPath = root.standardizedFileURL.path
-    let path = url.standardizedFileURL.path
-    guard path.hasPrefix(rootPath) else { return "" }
-    return String(path.dropFirst(rootPath.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-  }
-
-  private func isWorkspaceTextFile(_ path: String) -> Bool {
-    let url = URL(fileURLWithPath: path)
-    let extensionName = url.pathExtension.lowercased()
-    return workspaceTextExtensions.contains(extensionName)
-      || workspaceTextFileNames.contains(url.lastPathComponent.lowercased())
-  }
-
-  private func milliseconds(_ date: Date?) -> Any {
-    return date.map { $0.timeIntervalSince1970 * 1000 } ?? NSNull()
   }
 }
-
-private let emptyWorkspaceIndexJson = #"{"directories":[],"files":[]}"#
-
-private let workspaceTextExtensions: Set<String> = [
-  "bash", "bat", "c", "cfg", "clj", "cmd", "conf", "cpp", "css", "csv", "el", "erl",
-  "ex", "exs", "fish", "go", "graphql", "h", "hcl", "hpp", "hs", "htm", "html", "ini",
-  "java", "jl", "js", "json", "jsx", "kt", "less", "lisp", "lua", "md", "markdown", "mdx",
-  "ml", "nix", "properties", "ps1", "py", "r", "rb", "rs", "scss", "sh", "sql", "svelte",
-  "swift", "tf", "toml", "ts", "tsx", "txt", "vim", "vue", "xml", "yaml", "yml", "zig", "zsh",
-]
-
-private let workspaceTextFileNames: Set<String> = [
-  ".editorconfig", ".env", ".gitignore", "brewfile", "dockerfile", "makefile",
-]

@@ -32,11 +32,7 @@ export async function pickAndImportNativeWorkspace(
 ): Promise<NativeWorkspaceRecord | null> {
   if (!module?.pickAndImportWorkspace) return null
 
-  try {
-    return normalizedWorkspaceRecord(await module.pickAndImportWorkspace())
-  } catch {
-    return null
-  }
+  return normalizedWorkspaceRecord(await module.pickAndImportWorkspace())
 }
 
 export async function restoreNativeWorkspace(
@@ -44,11 +40,7 @@ export async function restoreNativeWorkspace(
 ): Promise<NativeWorkspaceRecord | null> {
   if (!module) return null
 
-  try {
-    return normalizedWorkspaceRecord(await module.restoreWorkspace())
-  } catch {
-    return null
-  }
+  return normalizedWorkspaceRecord(await module.restoreWorkspace())
 }
 
 function normalizedWorkspaceRecord(record: NativeWorkspaceBridgeRecord | null): NativeWorkspaceRecord | null {

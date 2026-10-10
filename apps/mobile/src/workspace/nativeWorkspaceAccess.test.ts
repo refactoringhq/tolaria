@@ -43,6 +43,17 @@ describe('native workspace access', () => {
     })
   })
 
+  it('distinguishes native import failure from picker cancellation', async () => {
+    const module: NativeWorkspaceAccessModule = {
+      importWorkspace: vi.fn(),
+      pickAndImportWorkspace: vi.fn().mockRejectedValue(new Error('unreadable note')),
+      restoreWorkspace: vi.fn(),
+    }
+    await expect(pickAndImportNativeWorkspace(module)).rejects.toThrow('unreadable note')
+    module.pickAndImportWorkspace = vi.fn().mockResolvedValue(null)
+    await expect(pickAndImportNativeWorkspace(module)).resolves.toBeNull()
+  })
+
   it('restores a persisted workspace URI and rejects malformed native results', async () => {
     const index: NativeWorkspaceIndex = {
       directories: ['Writing'],
@@ -96,13 +107,13 @@ describe('native workspace access', () => {
     })
   })
 
-  it('fails closed when bookmark persistence or restoration throws', async () => {
+  it('rejects failed restoration without turning it into a first launch', async () => {
     const module: NativeWorkspaceAccessModule = {
       importWorkspace: vi.fn().mockRejectedValue(new Error('import failed')),
       restoreWorkspace: vi.fn().mockRejectedValue(new Error('permission revoked')),
     }
 
     await expect(importNativeWorkspace('file:///vault', module)).resolves.toBeNull()
-    await expect(restoreNativeWorkspace(module)).resolves.toBeNull()
+    await expect(restoreNativeWorkspace(module)).rejects.toThrow('permission revoked')
   })
 })

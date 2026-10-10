@@ -28,6 +28,12 @@ export function useMobileVaults() {
   const running = useRef(false)
   const restorePending = local.restorePending || catalog.pending
   useEffect(() => editors.subscribeDirty(() => setStatus('pending')), [editors])
+  useEffect(() => {
+    if (!local.restoreFailed) return
+    if (catalog.pending || catalog.restored) return
+    setError(true)
+    setOpened(true)
+  }, [local.restoreFailed, catalog.pending, catalog.restored])
 
   const open = useCallback(async () => { editors.setBlocked(true); setOpened(true) }, [editors])
   const close = () => {

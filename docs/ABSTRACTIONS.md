@@ -42,6 +42,14 @@ The Swift package's filesystem tests run without Expo. The standalone native Git
 probe additionally invokes the DEBUG-only iOS file-access proof with disposable
 files and isolated preferences. See ADR 0198 for the remaining integration gates.
 
+`WorkspaceFileIndex` rejects incomplete enumeration, invalid UTF-8 text, and
+visible symlinks instead of publishing blank editable notes. `ManagedWorkspaceImport`
+validates a staged copy before replacing the previous managed folder. Import and
+restore failures reach the vault manager; cancellation alone returns no selection.
+Expo filesystem reads likewise propagate failures instead of synthesizing empty content.
+`WorkspaceLoadBoundary` keeps vault-management controls available after a read or
+render failure; a successful vault operation remounts the boundary from the new revision.
+
 `nativeQaSink.ts` carries layout measurements and known persistence proofs to the
 simulator harness over loopback, so standalone QA does not depend on JavaScript
 console messages appearing in the iOS unified log.

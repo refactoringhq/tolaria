@@ -10,10 +10,13 @@ export async function assertNativeWorkspaceWriteErrors(root: Directory) {
   await expectRejected(() => fileSystem.moveTextFile(root.uri, 'missing.md', 'destination.md'))
   await expectRejected(() => fileSystem.writeTextFile(root.uri, '../outside.md', 'blocked'))
   await expectRejected(() => fileSystem.writeTextFile(root.uri, '.git/config', 'blocked'))
+  const missing = new Directory(root, 'missing-vault')
+  await expectRejected(() => { fileSystem.readVaultFiles(missing.uri) })
+  await expectRejected(() => { fileSystem.readVaultDirectories(missing.uri) })
   if (await source.text() !== 'source' || await existing.text() !== 'existing') throw new Error('failedMoveChangedFiles')
 }
 
 async function expectRejected(operation: () => void | Promise<void>) {
   try { await operation() } catch { return }
-  throw new Error('workspaceMutationIncorrectlySucceeded')
+  throw new Error('workspaceOperationIncorrectlySucceeded')
 }

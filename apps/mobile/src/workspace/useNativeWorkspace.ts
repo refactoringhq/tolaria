@@ -14,9 +14,10 @@ export function useNativeWorkspace() {
 export function useLocalWorkspaceRestore() {
   const [accessModule] = useState(optionalNativeWorkspaceAccessModule)
   const [restorePending, setRestorePending] = useState(accessModule !== null)
+  const [restoreFailed, setRestoreFailed] = useState(false)
   const [selection, setSelection] = useState<NativeWorkspaceSelection | null>(null)
 
-  useEffect(() => restoreWorkspace(accessModule, setSelection, setRestorePending), [accessModule])
+  useEffect(() => restoreWorkspace(accessModule, setSelection, setRestorePending, setRestoreFailed), [accessModule])
 
   const open = useCallback(async (initialUri?: string | null) => {
     const nextSelection = await pickNativeWorkspaceDirectory(initialUri, accessModule)
@@ -24,13 +25,14 @@ export function useLocalWorkspaceRestore() {
     return nextSelection
   }, [accessModule])
 
-  return { open, restorePending, selection }
+  return { open, restorePending, restoreFailed, selection }
 }
 
 function restoreWorkspace(
   accessModule: ReturnType<typeof optionalNativeWorkspaceAccessModule>,
   setSelection: (selection: NativeWorkspaceSelection | null) => void,
   setRestorePending: (pending: boolean) => void,
+  setRestoreFailed: (failed: boolean) => void,
 ) {
   if (!accessModule) return
 
@@ -38,8 +40,8 @@ function restoreWorkspace(
   void restoreNativeWorkspaceDirectory(accessModule).then((selection) => {
     if (!mounted) return
     setSelection(selection)
-    setRestorePending(false)
-  })
+  }).catch(() => { if (mounted) setRestoreFailed(true) })
+    .finally(() => { if (mounted) setRestorePending(false) })
 
   return () => {
     mounted = false

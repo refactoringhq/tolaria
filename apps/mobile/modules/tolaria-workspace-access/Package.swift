@@ -9,7 +9,7 @@ let package = Package(
       name: "TolariaWorkspaceFiles",
       path: "ios",
       exclude: ["TolariaWorkspaceAccessModule.swift", "TolariaWorkspaceAccess.podspec"],
-      sources: ["WorkspaceFileSafety.swift", "CoordinatedWorkspaceFile.swift", "WorkspaceBookmarkStore.swift", "WorkspaceFileNativeProof.swift"]
+      sources: ["WorkspaceFileSafety.swift", "CoordinatedWorkspaceFile.swift", "WorkspaceBookmarkStore.swift", "WorkspaceFileNativeProof.swift", "WorkspaceFileIndex.swift", "ManagedWorkspaceImport.swift"]
     ),
     .testTarget(name: "TolariaWorkspaceFilesTests", dependencies: ["TolariaWorkspaceFiles"], path: "tests"),
   ]
