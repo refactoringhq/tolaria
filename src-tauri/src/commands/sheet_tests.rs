@@ -31,6 +31,22 @@ fn link(source_path: &str, target: &str, target_path: &str) -> SheetExternalRefe
 }
 
 #[test]
+fn parses_the_same_sheet_body_after_lf_and_crlf_frontmatter() {
+    for content in [
+        "---\ntype: Note\n---\nName,Value\nAlpha,1",
+        "---\r\ntype: Note\r\n---\r\nName,Value\r\nAlpha,1",
+    ] {
+        assert_eq!(
+            parse_sheet_rows(SheetText::new(content)),
+            vec![
+                vec!["Name".to_string(), "Value".to_string()],
+                vec!["Alpha".to_string(), "1".to_string()],
+            ]
+        );
+    }
+}
+
+#[test]
 fn resolves_direct_external_formula_input() {
     let response = resolve_sheet_external_formula_inputs_sync(request(
         "Total\n=[[b]].A1+5",

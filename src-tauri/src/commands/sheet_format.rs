@@ -60,58 +60,10 @@ pub(super) fn workbook_name_from_path(path: SheetText<'_>) -> String {
         .to_string()
 }
 
-fn first_line_break_len(content: SheetText<'_>, index: usize) -> usize {
-    let content = content.0;
-    let bytes = content.as_bytes();
-    match (bytes.get(index), bytes.get(index + 1)) {
-        (Some(b'\r'), Some(b'\n')) => 2,
-        (Some(b'\n' | b'\r'), _) => 1,
-        _ => 0,
-    }
-}
-
-fn is_frontmatter_delimiter(line: SheetText<'_>) -> bool {
-    let line = line.0;
-    line.strip_prefix("---")
-        .map(|rest| rest.chars().all(|ch| ch == ' ' || ch == '\t'))
-        .unwrap_or(false)
-}
-
-fn split_sheet_body(content: SheetText<'_>) -> &str {
-    let content = content.0;
-    if !content.starts_with("---") {
-        return content;
-    }
-
-    let opening_line_break = first_line_break_len(SheetText::new(content), 3);
-    if opening_line_break == 0 {
-        return content;
-    }
-
-    let mut line_start = 3 + opening_line_break;
-    while line_start < content.len() {
-        let mut line_end = line_start;
-        while line_end < content.len() && !matches!(content.as_bytes()[line_end], b'\n' | b'\r') {
-            line_end += 1;
-        }
-
-        if is_frontmatter_delimiter(SheetText::new(&content[line_start..line_end])) {
-            let closing_line_break = first_line_break_len(SheetText::new(content), line_end);
-            return &content[line_end + closing_line_break..];
-        }
-
-        let line_break = first_line_break_len(SheetText::new(content), line_end);
-        if line_break == 0 {
-            break;
-        }
-        line_start = line_end + line_break;
-    }
-
-    content
-}
-
 pub(super) fn parse_sheet_rows(content: SheetText<'_>) -> Vec<Vec<String>> {
-    parse_csv_rows(SheetText::new(split_sheet_body(content).trim_end()))
+    parse_csv_rows(SheetText::new(
+        crate::frontmatter::frontmatter_body(content.0).trim_end(),
+    ))
 }
 
 fn parse_csv_rows(source: SheetText<'_>) -> Vec<Vec<String>> {

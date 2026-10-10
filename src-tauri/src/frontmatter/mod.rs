@@ -7,6 +7,7 @@ mod yaml;
 use std::fs;
 use std::path::Path;
 
+pub(crate) use ops::frontmatter_body;
 pub use ops::{extract_frontmatter_title, update_frontmatter_content};
 pub use yaml::{format_yaml_key, FrontmatterValue};
 

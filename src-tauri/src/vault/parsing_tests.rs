@@ -371,39 +371,6 @@ fn test_count_body_words_plain_text_only() {
     assert_eq!(count_body_words(content), 6);
 }
 
-// --- strip_frontmatter tests ---
-
-#[test]
-fn test_strip_frontmatter_basic() {
-    let content = "---\ntitle: Test\n---\nBody content.";
-    assert_eq!(strip_frontmatter(text(content)), "Body content.");
-}
-
-#[test]
-fn test_strip_frontmatter_no_frontmatter() {
-    let content = "Just plain content.";
-    assert_eq!(strip_frontmatter(text(content)), "Just plain content.");
-}
-
-#[test]
-fn test_strip_frontmatter_dashes_in_value() {
-    // The closing --- must be at line start, not inside a value
-    let content = "---\ntitle: foo---bar\nstatus: active\n---\nBody here.";
-    assert_eq!(strip_frontmatter(text(content)), "Body here.");
-}
-
-#[test]
-fn test_strip_frontmatter_unclosed() {
-    let content = "---\ntitle: Test\nNo closing fence";
-    assert_eq!(strip_frontmatter(text(content)), content);
-}
-
-#[test]
-fn test_strip_frontmatter_empty_body() {
-    let content = "---\ntitle: Test\n---\n";
-    assert_eq!(strip_frontmatter(text(content)), "");
-}
-
 #[test]
 fn test_count_body_words_with_dashes_in_frontmatter_value() {
     // Regression: strip_frontmatter previously matched --- inside values

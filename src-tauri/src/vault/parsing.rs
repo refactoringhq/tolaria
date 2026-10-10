@@ -93,7 +93,7 @@ pub(super) fn slug_to_title(stem: &str) -> String {
 /// Extract the H1 title from the first non-empty line of the body (after frontmatter).
 /// Returns `None` if no H1 is found on the first non-empty line.
 pub(super) fn extract_h1_title(content: &str) -> Option<String> {
-    let body = strip_frontmatter(TextSlice(content));
+    let body = crate::frontmatter::frontmatter_body(content).trim_start();
     let title =
         first_non_empty_line(TextSlice(body)).and_then(|line| markdown_h1_text(TextSlice(line)))?;
     let stripped = strip_markdown_chars(TextSlice(title));
@@ -135,24 +135,6 @@ pub(super) fn extract_title(fm_title: Option<&str>, content: &str, filename: &st
     // 3. filename slug
     let stem = filename.strip_suffix(".md").unwrap_or(filename);
     slug_to_title(stem)
-}
-
-/// Remove YAML frontmatter (triple-dash delimited) from content.
-/// The closing `---` must appear at the start of a line to avoid matching
-/// occurrences inside frontmatter values (e.g. `title: foo---bar`).
-fn strip_frontmatter(content: TextSlice<'_>) -> &str {
-    let value = content.as_str();
-    let Some(rest) = value.strip_prefix("---") else {
-        return value;
-    };
-    // Find closing `---` at the start of a line (preceded by newline)
-    match rest.find("\n---") {
-        Some(end) => {
-            let after = end + 4; // skip past "\n---"
-            rest[after..].trim_start()
-        }
-        None => value,
-    }
 }
 
 /// Check if a line is useful for snippet extraction (not blank, heading, code fence, or rule).
@@ -215,7 +197,7 @@ fn truncate_with_ellipsis(s: TextSlice<'_>, max_len: usize) -> String {
 
 /// Count the number of words in the note body (excluding frontmatter and H1 title).
 pub(super) fn count_body_words(content: &str) -> u32 {
-    let without_fm = strip_frontmatter(TextSlice(content));
+    let without_fm = crate::frontmatter::frontmatter_body(content).trim_start();
     let body = without_h1_line(TextSlice(without_fm)).unwrap_or(without_fm);
     let patterns = word_count_patterns();
     let without_wikilinks = patterns.wikilink.replace_all(body, "");
@@ -233,7 +215,7 @@ fn count_multilingual_words(text: &str) -> u32 {
 
 /// Extract a snippet: first ~160 chars of content after frontmatter/title, stripped of markdown.
 pub(super) fn extract_snippet(content: &str) -> String {
-    let without_fm = strip_frontmatter(TextSlice(content));
+    let without_fm = crate::frontmatter::frontmatter_body(content).trim_start();
     let body = without_h1_line(TextSlice(without_fm)).unwrap_or(without_fm);
     let clean: String = body
         .lines()

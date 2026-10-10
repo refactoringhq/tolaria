@@ -72,40 +72,73 @@ fn quoted_yaml_key(raw: &str, quote: char) -> Option<&str> {
     rest.trim_start().starts_with(':').then_some(key)
 }
 
-fn frontmatter_open(content: &str) -> Option<(&str, &'static str)> {
-    content
-        .strip_prefix("---\n")
-        .map(|after| (after, "\n"))
-        .or_else(|| content.strip_prefix("---\r\n").map(|after| (after, "\r\n")))
+fn line_end(content: &str, start: usize) -> usize {
+    content.as_bytes()[start..]
+        .iter()
+        .position(|byte| matches!(byte, b'\n' | b'\r'))
+        .map(|offset| start + offset)
+        .unwrap_or(content.len())
 }
 
-fn close_marker(line_ending: &str) -> String {
-    format!("{line_ending}---")
+fn line_break(content: &str, index: usize) -> Option<(&'static str, usize)> {
+    match (
+        content.as_bytes().get(index),
+        content.as_bytes().get(index + 1),
+    ) {
+        (Some(b'\r'), Some(b'\n')) => Some(("\r\n", 2)),
+        (Some(b'\n'), _) => Some(("\n", 1)),
+        (Some(b'\r'), _) => Some(("\r", 1)),
+        _ => None,
+    }
+}
+
+fn is_frontmatter_delimiter(line: &str) -> bool {
+    line.strip_prefix("---")
+        .is_some_and(|rest| rest.chars().all(|ch| matches!(ch, ' ' | '\t')))
+}
+
+fn frontmatter_open(content: &str) -> Option<(usize, &'static str)> {
+    let opening_end = line_end(content, 0);
+    if !is_frontmatter_delimiter(&content[..opening_end]) {
+        return None;
+    }
+    let (line_ending, break_len) = line_break(content, opening_end)?;
+    Some((opening_end + break_len, line_ending))
 }
 
 fn split_frontmatter_block(content: &str) -> Result<Option<FrontmatterBlock<'_>>, String> {
-    let Some((after_open, line_ending)) = frontmatter_open(content) else {
+    let Some((body_start, line_ending)) = frontmatter_open(content) else {
         return Ok(None);
     };
 
-    if let Some(rest) = after_open.strip_prefix("---") {
-        return Ok(Some(FrontmatterBlock {
-            body: "",
-            rest,
-            line_ending,
-        }));
+    let mut line_start = body_start;
+    while line_start < content.len() {
+        let current_line_end = line_end(content, line_start);
+        if is_frontmatter_delimiter(&content[line_start..current_line_end]) {
+            return Ok(Some(FrontmatterBlock {
+                body: &content[body_start..line_start],
+                rest: &content[current_line_end..],
+                line_ending,
+            }));
+        }
+
+        let Some((_, break_len)) = line_break(content, current_line_end) else {
+            break;
+        };
+        line_start = current_line_end + break_len;
     }
 
-    let marker = close_marker(line_ending);
-    let close_start = after_open
-        .find(&marker)
-        .ok_or_else(|| "Malformed frontmatter: no closing ---".to_string())?;
-    let rest_start = close_start + marker.len();
-    Ok(Some(FrontmatterBlock {
-        body: &after_open[..close_start],
-        rest: &after_open[rest_start..],
-        line_ending,
-    }))
+    Err("Malformed frontmatter: no closing ---".to_string())
+}
+
+pub(crate) fn frontmatter_body(content: &str) -> &str {
+    let Some(block) = split_frontmatter_block(content).ok().flatten() else {
+        return content;
+    };
+    let break_len = line_break(block.rest, 0)
+        .map(|(_, break_len)| break_len)
+        .unwrap_or(0);
+    &block.rest[break_len..]
 }
 
 /// Extract the scalar `title` value from an LF or CRLF frontmatter block.
@@ -113,7 +146,7 @@ pub fn extract_frontmatter_title(content: &str) -> Option<String> {
     let block = split_frontmatter_block(content).ok()??;
     block
         .body
-        .lines()
+        .split_terminator(block.line_ending)
         .map(FrontmatterLine)
         .find(|line| line.key() == Some("title"))?
         .scalar_value()
@@ -176,7 +209,11 @@ impl<'a> FieldUpdate<'a> {
             };
         };
 
-        let lines: Vec<FrontmatterLine<'_>> = block.body.lines().map(FrontmatterLine).collect();
+        let lines: Vec<FrontmatterLine<'_>> = block
+            .body
+            .split_terminator(block.line_ending)
+            .map(FrontmatterLine)
+            .collect();
         let new_fm = self.apply_to_lines(&lines).join(block.line_ending);
         Ok(format!(
             "---{}{}{}---{}",
@@ -231,6 +268,35 @@ mod tests {
 
     fn frontmatter_delimiter_lines(content: &str) -> usize {
         content.lines().filter(|line| *line == "---").count()
+    }
+
+    #[test]
+    fn frontmatter_body_uses_line_anchored_delimiters() {
+        let cases = [
+            ("lf", "---\ntitle: Note\n---\nBody", "Body"),
+            ("crlf", "---\r\ntitle: Note\r\n---\r\nBody", "Body"),
+            ("cr", "---\rtitle: Note\r---\rBody", "Body"),
+            ("empty", "---\n---", ""),
+            (
+                "unclosed",
+                "---\ntitle: Note\nBody",
+                "---\ntitle: Note\nBody",
+            ),
+            (
+                "closing whitespace",
+                "---\ntitle: Note\n--- \t\nBody",
+                "Body",
+            ),
+            (
+                "prefixed dashes inside yaml",
+                "---\ntitle: Note\n---bar\nstatus: active\n---\nBody",
+                "Body",
+            ),
+        ];
+
+        for (name, content, expected) in cases {
+            assert_eq!(frontmatter_body(content), expected, "{name}");
+        }
     }
 
     #[test]

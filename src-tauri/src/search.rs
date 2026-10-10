@@ -174,20 +174,9 @@ pub fn search_vault(
     })
 }
 
-fn strip_frontmatter(content: &str) -> &str {
-    let Some(rest) = content.strip_prefix("---") else {
-        return content;
-    };
-
-    match rest.find("\n---") {
-        Some(end) => rest[end + 4..].trim_start(),
-        None => content,
-    }
-}
-
 fn searchable_content(content: &str, exclude_frontmatter: bool) -> &str {
     if exclude_frontmatter {
-        strip_frontmatter(content)
+        crate::frontmatter::frontmatter_body(content).trim_start()
     } else {
         content
     }
