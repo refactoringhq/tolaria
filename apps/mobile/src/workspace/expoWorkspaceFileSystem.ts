@@ -7,6 +7,7 @@ import {
 import { normalizedWorkspaceRelativePath, type WorkspaceFileSystem } from './fileSystemWorkspaceRepository'
 import { requireWorkspaceWritePath } from './workspaceWriteValidation'
 import { assertGitCheckoutComplete } from './git/gitCheckoutGuard'
+import { recoverNativeWorkspaceText, writeNativeWorkspaceText } from './workspaceTextRecovery'
 
 type ExpoFileSystemModule = {
   Directory: typeof Directory
@@ -23,6 +24,10 @@ declare const require: (moduleName: string) => ExpoFileSystemModule
 let expoFileSystemModule: ExpoFileSystemModule | null = null
 
 export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
+  recoverPendingWrites: (rootUri) => {
+    assertGitCheckoutComplete(expoFileSystem(), rootUri)
+    return recoverNativeWorkspaceText(rootUri)
+  },
   createDirectory: (rootUri, relativePath) => {
     const normalizedPath = requireWorkspaceWritePath(relativePath)
 
@@ -60,6 +65,7 @@ export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
   readVaultFiles: (rootUri) => {
     const module = expoFileSystem()
     assertGitCheckoutComplete(module, rootUri)
+    recoverNativeWorkspaceText(rootUri)
     const root = new module.Directory(rootUri)
     if (!root.exists) throw new Error('workspaceRootMissing')
 
@@ -68,6 +74,7 @@ export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
   readVaultDirectories: (rootUri) => {
     const module = expoFileSystem()
     assertGitCheckoutComplete(module, rootUri)
+    recoverNativeWorkspaceText(rootUri)
     const root = new module.Directory(rootUri)
     if (!root.exists) throw new Error('workspaceRootMissing')
 
@@ -77,6 +84,8 @@ export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
     const normalizedPath = requireWorkspaceWritePath(relativePath)
 
     const file = workspaceFile(expoFileSystem(), rootUri, normalizedPath)
+    const nativeWrite = writeNativeWorkspaceText(rootUri, normalizedPath, content)
+    if (nativeWrite) return nativeWrite
     file.parentDirectory.create({ idempotent: true, intermediates: true })
     if (!file.exists) file.create({ intermediates: true })
     file.write(content, { encoding: 'utf8' })
@@ -84,8 +93,11 @@ export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
   writeVaultConfig: (rootUri, config) => {
     const file = vaultConfigFile(expoFileSystem(), rootUri)
     file.parentDirectory.create({ idempotent: true, intermediates: true })
+    const content = serializeMobileVaultConfig(config)
+    const nativeWrite = writeNativeWorkspaceText(file.parentDirectory.uri, file.name, content)
+    if (nativeWrite) return nativeWrite
     if (!file.exists) file.create({ intermediates: true })
-    file.write(serializeMobileVaultConfig(config), { encoding: 'utf8' })
+    file.write(content, { encoding: 'utf8' })
   },
 }
 
@@ -168,17 +180,20 @@ function localVaultFile(file: File, relativePath: RelativeVaultPath): LocalVault
 
 function workspaceFile(module: ExpoFileSystemModule, rootUri: RootUri, relativePath: RelativeVaultPath): File {
   assertGitCheckoutComplete(module, rootUri)
+  recoverNativeWorkspaceText(rootUri)
   return new module.File(rootUri, ...relativePath.split('/'))
 }
 
 function workspaceDirectory(module: ExpoFileSystemModule, rootUri: RootUri, relativePath: RelativeVaultPath): Directory {
   assertGitCheckoutComplete(module, rootUri)
+  recoverNativeWorkspaceText(rootUri)
   return new module.Directory(rootUri, ...relativePath.split('/'))
 }
 
 function vaultConfigFile(module: ExpoFileSystemModule, rootUri: RootUri): File {
   assertGitCheckoutComplete(module, rootUri)
   const directory = new module.Directory(module.Paths.document, '.tolaria-mobile-config')
+  recoverNativeWorkspaceText(directory.uri)
   return new module.File(directory.uri, `${stableVaultConfigName(rootUri)}.json`)
 }
 

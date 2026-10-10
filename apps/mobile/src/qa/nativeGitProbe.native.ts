@@ -9,6 +9,12 @@ export function useNativeGitProbe() {
       try {
         const endpoint = new URL(url).searchParams.get('gitProbe')
         if (!endpoint || !isLoopbackEndpoint(endpoint)) return
+        const recoveryPhase = new URL(url).searchParams.get('writeRecoveryProbe')
+        if (recoveryPhase) {
+          const { runNativeWriteRecoveryProbe } = await import('./nativeWriteRecoveryProbe')
+          await runNativeWriteRecoveryProbe(endpoint, recoveryPhase)
+          return
+        }
         const { runNativeGitProbe } = await import('./runNativeGitProbe')
         await runNativeGitProbe(endpoint)
       } catch (error) {

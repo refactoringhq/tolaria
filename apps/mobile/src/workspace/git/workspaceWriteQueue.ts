@@ -1,4 +1,5 @@
 import { withWorkspaceOperation } from './workspaceOperationQueue'
+import { recoverNativeWorkspaceText } from '../workspaceTextRecovery'
 
 type WorkspaceWrite = () => void | Promise<void>
 const unsaved = new Map<string, WorkspaceWrite[]>()
@@ -16,6 +17,7 @@ export function persistWorkspaceOperations(root: string, operations: WorkspaceWr
 export function withSavedWorkspace<T>(root: string, operation: () => Promise<T>): Promise<T> {
   return withWorkspaceOperation(root, async () => {
     await flushWorkspaceWrites(root)
+    recoverNativeWorkspaceText(root)
     return operation()
   })
 }

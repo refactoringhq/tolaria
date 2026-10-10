@@ -44,6 +44,14 @@ public class TolariaWorkspaceAccessModule: Module {
   public func definition() -> ModuleDefinition {
     Name("TolariaWorkspaceAccess")
 
+    AsyncFunction("writeWorkspaceText") { (uri: String, path: String, content: String) throws in
+      try managedWorkspaceText(uri).write(path, content: content)
+    }
+
+    Function("recoverWorkspaceText") { (uri: String) throws -> Bool in
+      return try managedWorkspaceText(uri).recover()
+    }
+
     AsyncFunction("importWorkspace") { (uri: String) throws -> [String: String]? in
       return try self.importWorkspace(uri)
     }
@@ -57,6 +65,10 @@ public class TolariaWorkspaceAccessModule: Module {
     }
 
     #if DEBUG
+    AsyncFunction("runTextRecoveryProbe") { (phase: String) throws -> [String: Any] in
+      return try runWorkspaceTextRecoveryNativeProof(phase)
+    }
+
     AsyncFunction("runFileAccessProbe") { () throws -> [String: Bool] in
       return try runWorkspaceFileNativeProof()
     }
@@ -84,6 +96,7 @@ public class TolariaWorkspaceAccessModule: Module {
     guard !label.isEmpty else { throw WorkspaceFileError.invalidPath }
 
     let managed = try managedWorkspaceURL()
+    try managedWorkspaceText(managed.absoluteString).recover()
     let indexJson = try importManagedWorkspace(from: source, to: managed)
     UserDefaults.standard.set(label, forKey: managedWorkspaceLabelKey)
     return ["indexJson": indexJson, "label": label, "uri": managed.absoluteString]
@@ -159,6 +172,7 @@ public class TolariaWorkspaceAccessModule: Module {
   }
 
   private func workspaceRecord(root: URL, label: String) throws -> [String: String] {
+    try managedWorkspaceText(root.absoluteString).recover()
     return [
       "indexJson": try WorkspaceFileIndex(root: root).json(),
       "label": label,

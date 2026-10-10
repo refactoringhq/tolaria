@@ -6,8 +6,9 @@ Assessment started 2026-10-10. Target: iPad and Android tablets, phone later.
 
 - Follow-through is underway: recoverable Git checkout now passes real write-fault
   and restart tests, including the standalone iPad filesystem. Incomplete checkout
-  cannot be edited or checkpointed as new user content. This does not yet provide
-  a general crash-safe editor mutation journal.
+  cannot be edited or checkpointed as new user content. Standalone iOS text saves
+  now have atomic publication and restart recovery, with external-edit exclusion.
+  Moves/deletions and multi-file transactions still need equivalent protection.
 - Current-source standalone iPad app rebuilt and installed. Native touch tests
   cover panel transitions, contextual formatting menus, and repeated rotation
   while preserving the selected note. Native WYSIWYG persistence plus 117 layout
@@ -64,7 +65,8 @@ custom native-module changes require a rebuilt development app, separately.
 
 - [x] Recover interrupted Git checkout before reopening or checkpointing.
 - [ ] Reduce measured large-vault sync cost without missing rapid edits.
-- [ ] Durable editor-write recovery, deletion recovery, and incremental startup.
+- [x] Restart recovery for published standalone iOS text saves.
+- [ ] Deletion/move recovery and incremental startup.
 - [x] Contextual native formatting toolbar with measured touch targets.
 - [ ] Tablet properties/forms touch polish.
 - [x] Native tablet rotation preserves the selected note and readable editor width.
@@ -137,6 +139,13 @@ conflict editing, multi-vault use, and phone polish are not first-launch prerequ
   updated. Only disposable fixture notes were used in the rotation test.
 
 ## Evidence log
+
+- Text-save batch: 1,200 scoped mobile tests, 29 Swift filesystem tests, current
+  standalone build, cross-launch recovery/conflict probe, normal native Git
+  round trip, and WYSIWYG persistence plus 117 numeric layout metrics pass.
+  Per-file CodeScene reaches 10.0 (unscorable files have zero findings). The
+  explicitly approved temporary analyzer exception and per-file scoped scan
+  evidence are in `editor-save-recovery-batch.md`; dashboard parity is not claimed.
 
 - Starting CodeScene project scores: Hotspot 10.0, Average 9.991289335928062;
   branch thresholds 10.0 and 9.99 pass.

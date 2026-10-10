@@ -48,6 +48,24 @@ checkpointing finish pending intent before proceeding. `gitCheckoutGuard.ts`
 blocks native workspace reads/writes while checkout is incomplete; recovery never
 forces away unexpected edits. See ADR 0201 and the native Git recovery probe.
 
+## Native Text Save Recovery
+
+`WorkspaceTextRecovery` atomically publishes a pending text save outside the vault,
+replaces the destination, and removes the record last. Replay checks the previous
+or intended SHA-256 digest; conflicts retain both versions and prevent further
+operations. `ManagedWorkspaceText` restricts access to app-container roots and
+keys records by stable home-relative paths. `workspaceTextRecovery.ts` connects
+the asynchronous native writer and recovery checks to the existing Expo adapter,
+repository reads, and Git save barrier. A recovered save invalidates stale launch
+indexes and cached raw note content. Old standalone binaries fail closed rather
+than silently falling back to a non-atomic writer. Expo Go/Android do not yet
+provide this native guarantee. See ADR 0203.
+
+`assert-ios-write-recovery.mjs` terminates/relaunches the standalone simulator app
+between journal publication and recovery, then repeats with an external edit.
+Its native DEBUG probe uses only a dedicated cache fixture and the regular
+repository/read/write/sync barriers. It is separate from browser visual QA.
+
 ## Native Provider File Foundation
 
 `modules/tolaria-workspace-access/ios/CoordinatedWorkspaceFile.swift` wraps scoped,

@@ -1,6 +1,8 @@
 import type { WorkspaceFileIndex } from './fileSystemWorkspaceRepository'
 
 export type NativeWorkspaceAccessModule = {
+  writeWorkspaceText?: (root: string, path: string, content: string) => Promise<void>
+  recoverWorkspaceText?: (root: string) => boolean
   importWorkspace: (uri: string) => Promise<NativeWorkspaceBridgeRecord | null>
   pickAndImportWorkspace?: () => Promise<NativeWorkspaceBridgeRecord | null>
   restoreWorkspace: () => Promise<NativeWorkspaceBridgeRecord | null>

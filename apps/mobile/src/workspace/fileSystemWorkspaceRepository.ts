@@ -9,6 +9,7 @@ export { normalizedWorkspaceRelativePath } from './workspaceWriteValidation'
 type WorkspaceMutation = void | Promise<void>
 
 export type WorkspaceFileSystem = {
+  recoverPendingWrites?: (rootUri: string) => boolean
   createDirectory: (rootUri: string, relativePath: string) => WorkspaceMutation
   deleteDirectory: (rootUri: string, relativePath: string) => WorkspaceMutation
   deleteTextFile: (rootUri: string, relativePath: string) => WorkspaceMutation
@@ -38,9 +39,10 @@ export function createFileSystemWorkspaceRepository(fileSystem: WorkspaceFileSys
       await persistWorkspaceOperations(rootUri, writes.map((write) => () => persistWorkspaceWrite(fileSystem, rootUri, write)))
     },
     readNoteContent: async (note, request) => {
-      if (note.rawContent !== undefined) return note.rawContent
-
       const rootUri = workspaceRootUri(request)
+      const recovered = rootUri ? fileSystem.recoverPendingWrites?.(rootUri) : false
+      if (note.rawContent !== undefined && !recovered) return note.rawContent
+
       const relativePath = noteRelativePath(note)
       if (!rootUri || !relativePath) return null
 
@@ -50,7 +52,7 @@ export function createFileSystemWorkspaceRepository(fileSystem: WorkspaceFileSys
       const rootUri = workspaceRootUri(request)
       if (!rootUri) return emptyFileSystemSnapshot(request)
 
-      const index = request?.workspaceIndex
+      const index = recoveredWorkspaceIndex(fileSystem, rootUri, request)
 
       return buildLocalVaultWorkspaceSnapshot({
         files: index?.files ?? fileSystem.readVaultFiles(rootUri),
@@ -62,6 +64,11 @@ export function createFileSystemWorkspaceRepository(fileSystem: WorkspaceFileSys
       })
     },
   }
+}
+
+function recoveredWorkspaceIndex(fileSystem: WorkspaceFileSystem, root: string, request?: ReadOnlyWorkspaceRequest) {
+  if (fileSystem.recoverPendingWrites?.(root)) return undefined
+  return request?.workspaceIndex
 }
 
 function persistWorkspaceWrite(
