@@ -2,16 +2,26 @@ import { Buffer } from 'buffer'
 import type * as ExpoFileSystem from 'expo-file-system'
 import { gitFileUri, gitFsError } from './gitFileSystemPaths'
 
-type FileSystemModule = typeof ExpoFileSystem
+type NativeGitFile = Pick<ExpoFileSystem.File, 'bytes' | 'write' | 'delete' | 'info'>
+type FileSystemModule = {
+  File: new (uri: string) => NativeGitFile
+  Directory: new (uri: string) => Pick<ExpoFileSystem.Directory, 'create' | 'delete'>
+  Paths: Pick<typeof ExpoFileSystem.Paths, 'info'>
+}
 type GitPath = string
 type FileUri = string
-declare const require: (name: string) => FileSystemModule
+declare function require(name: 'expo-file-system'): FileSystemModule
+declare function require(name: 'expo-file-system/legacy'): { readDirectoryAsync: (uri: string) => Promise<string[]> }
 
-export function createExpoGitFileSystem(rootUri: FileUri, module: FileSystemModule = require('expo-file-system')) {
-  const uri = (path: GitPath) => gitFileUri(rootUri, path)
-  const file = (path: GitPath) => new module.File(uri(path))
-  const directory = (path: GitPath) => new module.Directory(uri(path))
-  const stat = async (path: GitPath) => gitStat(module, uri(path))
+export function createExpoGitFileSystem(
+  rootUri: FileUri,
+  module: FileSystemModule = require('expo-file-system'),
+  readDirectory = require('expo-file-system/legacy').readDirectoryAsync,
+) {
+  const uri = cachedHandle((path: GitPath) => gitFileUri(rootUri, path))
+  const file = cachedHandle((path: GitPath) => new module.File(uri(path)))
+  const directory = cachedHandle((path: GitPath) => new module.Directory(uri(path)))
+  const stat = async (path: GitPath) => gitStat(module, uri(path), () => file(path))
   return {
     promises: {
       readFile: async (path: GitPath, options?: string | { encoding?: string }) => {
@@ -28,7 +38,7 @@ export function createExpoGitFileSystem(rootUri: FileUri, module: FileSystemModu
       unlink: async (path: GitPath) => { requireEntry(module, uri(path), false); file(path).delete() },
       readdir: async (path: GitPath) => {
         requireEntry(module, uri(path), true)
-        return directory(path).list().map((entry) => entry.name)
+        return readDirectory(uri(path))
       },
       mkdir: async (path: GitPath) => {
         if (module.Paths.info(uri(path)).exists) throw gitFsError('EEXIST')
@@ -37,7 +47,7 @@ export function createExpoGitFileSystem(rootUri: FileUri, module: FileSystemModu
       },
       rmdir: async (path: GitPath) => {
         requireEntry(module, uri(path), true)
-        if (directory(path).list().length) throw gitFsError('ENOTEMPTY')
+        if ((await readDirectory(uri(path))).length) throw gitFsError('ENOTEMPTY')
         directory(path).delete()
       },
       stat,
@@ -59,11 +69,11 @@ function requireEntry(module: FileSystemModule, uri: FileUri, directory: boolean
   if (info.isDirectory !== directory) throw gitFsError(directory ? 'ENOTDIR' : 'EISDIR')
 }
 
-function gitStat(module: FileSystemModule, uri: FileUri) {
+function gitStat(module: FileSystemModule, uri: FileUri, file: () => NativeGitFile) {
   const info = module.Paths.info(uri)
   if (!info.exists) throw gitFsError('ENOENT')
   const isDirectory = Boolean(info.isDirectory)
-  const metadata = isDirectory ? null : new module.File(uri).info()
+  const metadata = isDirectory ? null : file().info()
   return {
     isDirectory: () => isDirectory,
     isFile: () => !isDirectory,
@@ -76,5 +86,18 @@ function gitStat(module: FileSystemModule, uri: FileUri) {
     gid: 0,
     dev: 0,
     ino: 0,
+  }
+}
+
+function cachedHandle<T>(create: (path: string) => T) {
+  // Cache only path handles, never bytes, existence, or timestamps. Bound memory
+  // even when a connection is retained across operations on a very large vault.
+  const entries = new Map<string, T>()
+  return (path: string): T => {
+    if (entries.has(path)) return entries.get(path)!
+    const entry = create(path)
+    if (entries.size >= 8192) entries.clear()
+    entries.set(path, entry)
+    return entry
   }
 }

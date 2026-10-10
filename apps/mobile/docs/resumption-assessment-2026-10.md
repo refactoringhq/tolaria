@@ -78,6 +78,15 @@ existing loopback QA callback, Git SHA-1 test vector, and non-security catalog I
 suffix findings; no new security defect was introduced. No UI copy changed and
 no analytics event is needed for internal recovery guards. See ADR 0201.
 
+The next filesystem batch reuses bounded native path handles (never cached bytes
+or timestamps), and enumerates directory names through Expo's supported async
+API instead of constructing every child as a native File. The identical 6,000-file
+fixture passed: clones 41,640/54,714 ms, push 75,298 ms, pull 68,296 ms, total
+241,985 ms. Previous total was 404,585 ms. These are single debug-simulator runs,
+not release budgets; metadata calls still dominate the sampled native profile.
+Three adapter tests verify fresh metadata/content, byte views, path containment,
+and filesystem errors. Both adapter files score 10.0. No copy/analytics changes.
+
 Manual Git sync is the first scope. Divergence stops with both histories intact;
 no forced pushes or hidden conflict resolution. Background sync, rich on-device
 conflict editing, multi-vault use, and phone polish are not first-launch prerequisites.

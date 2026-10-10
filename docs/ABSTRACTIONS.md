@@ -22,6 +22,8 @@ clone/push/pull timings; routine checks retain the fast two-note fixture.
 `gitRuntime.native.ts` supplies missing digest support through Expo Crypto, while
 `gitDigest.ts` preserves existing runtime APIs and byte-view boundaries. Git uses
 one library-owned cache per sync operation, released afterwards (ADR 0200).
+The Expo adapter separately reuses bounded path handles without caching contents
+or metadata; directory enumeration returns names without allocating child handles.
 Checkpoints explicitly stage content before comparing the matrix, protecting
 same-length rapid edits that the library's coarse timestamp shortcut misses.
 This requires a content scan; the measured large-vault sync cost remains a
