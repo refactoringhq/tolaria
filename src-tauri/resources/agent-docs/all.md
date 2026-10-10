@@ -1370,14 +1370,14 @@ Tolaria renders Obsidian-style callouts and GitHub alert syntax as editable bloc
 > This note stays readable outside Tolaria.
 ```
 
-Use `+` or `-` after the callout type to choose its initial fold state:
+Callouts stay expanded in the rich editor. Use a plain marker when you want Tolaria to render an editable callout:
 
 ```md
-> [!TIP]- Optional details
-> This callout starts collapsed.
+> [!TIP] Optional details
+> This callout stays expanded and editable.
 ```
 
-The callout body remains editable in rich mode. Change the callout type, title, or initial fold marker in raw mode.
+Obsidian's `+` and `-` fold markers are not supported yet; blocks that use them remain ordinary blockquotes. Change a callout's type or title in raw mode.
 
 ## Highlight Text
 
