@@ -18,7 +18,7 @@ export function useMobileVaults() {
   const account = useGitHubAccount()
   const [editors] = useState(createWorkspaceSyncEditors)
   const [override, setOverride] = useState<ActiveVault | null>(null)
-  const active = override ?? catalog.restored ?? { selection: local.selection, git: null }
+  const active = override ?? catalog.restored ?? { selection: catalog.error ? null : local.selection, git: null }
   const [revision, setRevision] = useState(0)
   const [opened, setOpened] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -29,11 +29,11 @@ export function useMobileVaults() {
   const restorePending = local.restorePending || catalog.pending
   useEffect(() => editors.subscribeDirty(() => setStatus('pending')), [editors])
   useEffect(() => {
-    if (!local.restoreFailed) return
+    if (!local.restoreFailed && !catalog.error) return
     if (catalog.pending || catalog.restored) return
     setError(true)
     setOpened(true)
-  }, [local.restoreFailed, catalog.pending, catalog.restored])
+  }, [local.restoreFailed, catalog.error, catalog.pending, catalog.restored])
 
   const open = useCallback(async () => { editors.setBlocked(true); setOpened(true) }, [editors])
   const close = () => {
@@ -72,7 +72,7 @@ export function useMobileVaults() {
   }
 
   const select = async (vault: ManagedGitVault) => {
-    const selection = managedGitSelection(vault)
+    const selection = await managedGitSelection(vault)
     await activateManagedGitVault(vault.id)
     setStatus('pending')
     return { git: vault, selection }

@@ -12,11 +12,13 @@ export function useManagedVaultCatalog() {
   const [error, setError] = useState(false)
   useEffect(() => {
     let active = true
-    void readManagedGitCatalog().then((catalog) => {
+    void readManagedGitCatalog().then(async (catalog) => {
       if (!active) return
       setVaults(catalog.vaults)
       const git = catalog.vaults.find((vault) => vault.id === catalog.activeId)
-      if (git) setRestored({ git, selection: managedGitSelection(git) })
+      if (!git) return
+      const selection = await managedGitSelection(git)
+      if (active) setRestored({ git, selection })
     }).catch(() => { if (active) setError(true) })
       .finally(() => { if (active) setPending(false) })
     return () => { active = false }

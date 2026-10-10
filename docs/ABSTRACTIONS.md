@@ -40,6 +40,11 @@ recoverable backup. `githubAccountState.ts` isolates cancellation and ordered
 SecureStore writes from React. Native Git HTTP uses Expo's streaming fetch with
 redirects disabled. The footer distinguishes local-only folders, pending sync,
 success, failure, and divergence; edits clear the previous successful sync state.
+`gitCheckoutRecovery.ts` persists checkout intent before replacing files and
+advances the branch only after checkout succeeds. Managed-vault activation and
+checkpointing finish pending intent before proceeding. `gitCheckoutGuard.ts`
+blocks native workspace reads/writes while checkout is incomplete; recovery never
+forces away unexpected edits. See ADR 0201 and the native Git recovery probe.
 
 ## Native Provider File Foundation
 

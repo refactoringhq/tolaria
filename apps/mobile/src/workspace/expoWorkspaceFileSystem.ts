@@ -6,6 +6,7 @@ import {
 } from './mobileVaultConfig'
 import { normalizedWorkspaceRelativePath, type WorkspaceFileSystem } from './fileSystemWorkspaceRepository'
 import { requireWorkspaceWritePath } from './workspaceWriteValidation'
+import { assertGitCheckoutComplete } from './git/gitCheckoutGuard'
 
 type ExpoFileSystemModule = {
   Directory: typeof Directory
@@ -58,6 +59,7 @@ export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
   },
   readVaultFiles: (rootUri) => {
     const module = expoFileSystem()
+    assertGitCheckoutComplete(module, rootUri)
     const root = new module.Directory(rootUri)
     if (!root.exists) throw new Error('workspaceRootMissing')
 
@@ -65,6 +67,7 @@ export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
   },
   readVaultDirectories: (rootUri) => {
     const module = expoFileSystem()
+    assertGitCheckoutComplete(module, rootUri)
     const root = new module.Directory(rootUri)
     if (!root.exists) throw new Error('workspaceRootMissing')
 
@@ -164,14 +167,17 @@ function localVaultFile(file: File, relativePath: RelativeVaultPath): LocalVault
 }
 
 function workspaceFile(module: ExpoFileSystemModule, rootUri: RootUri, relativePath: RelativeVaultPath): File {
+  assertGitCheckoutComplete(module, rootUri)
   return new module.File(rootUri, ...relativePath.split('/'))
 }
 
 function workspaceDirectory(module: ExpoFileSystemModule, rootUri: RootUri, relativePath: RelativeVaultPath): Directory {
+  assertGitCheckoutComplete(module, rootUri)
   return new module.Directory(rootUri, ...relativePath.split('/'))
 }
 
 function vaultConfigFile(module: ExpoFileSystemModule, rootUri: RootUri): File {
+  assertGitCheckoutComplete(module, rootUri)
   const directory = new module.Directory(module.Paths.document, '.tolaria-mobile-config')
   return new module.File(directory.uri, `${stableVaultConfigName(rootUri)}.json`)
 }

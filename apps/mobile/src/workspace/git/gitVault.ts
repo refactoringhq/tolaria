@@ -1,5 +1,6 @@
 import './gitRuntime'
 import git, { type FsClient } from 'isomorphic-git'
+import { checkoutGitFastForward, recoverGitCheckout } from './gitCheckoutRecovery'
 
 export type GitAuthor = { name: string; email: string }
 export type GitRelationship = 'equal' | 'ahead' | 'behind' | 'diverged'
@@ -13,6 +14,7 @@ export function createGitVault(options: GitVaultContext) {
     checkpoint: (author: GitAuthor) => checkpoint(context, author),
     integrate: (remoteOid: string) => integrate(context, remoteOid),
     relationship: (remoteOid: string) => relationship(context, remoteOid),
+    recover: () => recoverGitCheckout(context),
   }
 }
 
@@ -21,6 +23,7 @@ async function changes(context: GitVaultContext) {
 }
 
 async function checkpoint(context: GitVaultContext, author: GitAuthor) {
+  await recoverGitCheckout(context)
   // Do not trust second-resolution stat matches for rapid equal-length edits.
   await git.add({ ...context, filepath: '.', parallel: false })
   const changed = await changes(context)
@@ -42,12 +45,12 @@ async function relationship(context: GitVaultContext, remoteOid: string): Promis
 }
 
 async function integrate(context: GitVaultContext, remoteOid: string) {
+  await recoverGitCheckout(context)
   if ((await changes(context)).length) throw new Error('dirtyWorkingCopy')
   const state = await relationship(context, remoteOid)
   if (state !== 'behind') return state
   const branch = await git.currentBranch(context)
   if (!branch) throw new Error('detachedHead')
-  await git.merge({ ...context, ours: branch, theirs: remoteOid, fastForwardOnly: true })
-  await git.checkout({ ...context, ref: branch, nonBlocking: true, batchSize: 20 })
+  await checkoutGitFastForward(context, branch, remoteOid)
   return 'updated' as const
 }

@@ -40,9 +40,12 @@ export async function cloneManagedGitVault(repositoryUrl: string, http: HttpClie
   }
 }
 
-export function managedGitSelection(vault: ManagedGitVault): NativeWorkspaceSelection {
+export async function managedGitSelection(vault: ManagedGitVault): Promise<NativeWorkspaceSelection> {
   const directory = managedDirectory(vault)
   if (!directory.exists || !new Directory(directory, '.git').exists) throw new Error('vaultNotFound')
+  const connection = managedGitConnection(vault)
+  const { createGitVault } = await import('./gitVault')
+  await withWorkspaceOperation(connection.operationKey, () => createGitVault(connection).recover())
   return { vaultAlias: vault.id, vaultLabel: vault.label, vaultRootUri: directory.uri }
 }
 

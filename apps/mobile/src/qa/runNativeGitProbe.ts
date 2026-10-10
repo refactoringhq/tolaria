@@ -7,6 +7,7 @@ import { createExpoGitFileSystem } from '../workspace/git/expoGitFileSystem'
 import { gitVirtualRoot } from '../workspace/git/gitFileSystemPaths'
 import { assertNativeWorkspaceWriteErrors } from './nativeWorkspaceWriteErrors'
 import { nativeVaultReadBenchmark } from './nativeVaultReadBenchmark'
+import { assertNativeGitRecovery } from './nativeGitRecoveryProbe'
 
 let running = false
 
@@ -21,10 +22,11 @@ export async function runNativeGitProbe(endpoint: string) {
     await assertNativeWorkspaceWriteErrors(root)
     const nativeDigestVerified = await verifyNativeDigest()
     const nativeFiles = await nativeFileAccessProof()
+    const checkoutRecovery = await assertNativeGitRecovery(root)
     const proof = await roundTrip(root, endpoint)
     const elapsedMs = Date.now() - started
     const restoredVault = nativeFiles ? await nativeVaultReadBenchmark() : null
-    await publishProof(endpoint, { ...proof, nativeFiles, nativeDigestVerified, restoredVault, elapsedMs })
+    await publishProof(endpoint, { ...proof, nativeFiles, nativeDigestVerified, checkoutRecovery, restoredVault, elapsedMs })
   } catch (error) {
     await publishProof(endpoint, { error: error instanceof Error ? error.message : 'unknown', stack: error instanceof Error ? error.stack : null, passed: false })
   } finally {

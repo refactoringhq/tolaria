@@ -4,6 +4,10 @@ Assessment started 2026-10-10. Target: iPad and Android tablets, phone later.
 
 ## Current checkpoint
 
+- Follow-through is underway: recoverable Git checkout now passes real write-fault
+  and restart tests, including the standalone iPad filesystem. Incomplete checkout
+  cannot be edited or checkpointed as new user content. This does not yet provide
+  a general crash-safe editor mutation journal.
 - Current-source standalone iPad app rebuilt and installed. Native touch tests
   pass eight panel transitions and vertical-pan non-collapse. Native WYSIWYG
   persistence and 140 numeric layout checks pass after the final rebuild.
@@ -54,6 +58,25 @@ custom native-module changes require a rebuilt development app, separately.
 5. Tablet usability pass with representative data: keyboard, scroll/drag arbitration,
    rotation, split-screen, modal sizing, text sizes, touch targets, and accessibility.
 6. Device validation and measured large-vault budgets before launch promotion.
+
+### Approved follow-through
+
+- [x] Recover interrupted Git checkout before reopening or checkpointing.
+- [ ] Reduce measured large-vault sync cost without missing rapid edits.
+- [ ] Durable editor-write recovery, deletion recovery, and incremental startup.
+- [ ] Contextual formatting toolbar and tablet form/touch polish.
+- [ ] Gesture interruption/selection tests, adaptive layouts, and focus restoration.
+- [ ] Live provider folders, configured GitHub login, and actionable sync recovery.
+- [ ] Consolidated shared design tokens and parity audit against current desktop.
+- [ ] Release-device performance budgets, accessibility, and Android tablet QA.
+
+The first recovery batch started at Hotspot 10.0 / Average 9.991289335928062.
+All touched/new code remains 10.0. Scoped Git tests passed 45 assertions, and the
+standalone iPad proof verified real interrupted checkout, read/write exclusion,
+retry, binary/deletion preservation, and remote round trips. Codacy reviewed the
+existing loopback QA callback, Git SHA-1 test vector, and non-security catalog ID
+suffix findings; no new security defect was introduced. No UI copy changed and
+no analytics event is needed for internal recovery guards. See ADR 0201.
 
 Manual Git sync is the first scope. Divergence stops with both histories intact;
 no forced pushes or hidden conflict resolution. Background sync, rich on-device
