@@ -18,11 +18,11 @@ describe('createFileSystemWorkspaceRepository', () => {
     const repository = createFileSystemWorkspaceRepository(fileSystem)
 
     const snapshot = repository.readSnapshot({ source: 'native' })
-    await repository.persistWrites([{
+    await expect(repository.persistWrites([{
       content: '# Phantom Note\n',
       kind: 'createNote',
       path: 'Phantom Note.md',
-    }], { source: 'native' })
+    }], { source: 'native' })).rejects.toThrow('workspaceNotSelected')
 
     expect(snapshot).toMatchObject({
       notes: [],
@@ -311,7 +311,7 @@ type: Project
     const fileSystem = fakeWorkspaceFileSystem({})
     const repository = createFileSystemWorkspaceRepository(fileSystem)
 
-    await repository.persistWrites([{
+    await expect(repository.persistWrites([{
       content: 'nope',
       kind: 'saveNote',
       path: '../outside.md',
@@ -319,7 +319,7 @@ type: Project
       content: 'nope',
       kind: 'saveNote',
       path: 'file:///outside.md',
-    }], { source: 'native', vaultRootUri: 'file:///vault' })
+    }], { source: 'native', vaultRootUri: 'file:///vault' })).rejects.toThrow('invalidWorkspacePath')
 
     expect(fileSystem.files()).toEqual({})
     expect(normalizedWorkspaceRelativePath('Folder\\Note.md')).toBe('Folder/Note.md')

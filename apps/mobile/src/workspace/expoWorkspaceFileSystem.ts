@@ -5,6 +5,7 @@ import {
   serializeMobileVaultConfig,
 } from './mobileVaultConfig'
 import { normalizedWorkspaceRelativePath, type WorkspaceFileSystem } from './fileSystemWorkspaceRepository'
+import { requireWorkspaceWritePath } from './workspaceWriteValidation'
 
 type ExpoFileSystemModule = {
   Directory: typeof Directory
@@ -22,21 +23,18 @@ let expoFileSystemModule: ExpoFileSystemModule | null = null
 
 export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
   createDirectory: (rootUri, relativePath) => {
-    const normalizedPath = normalizedWorkspaceRelativePath(relativePath)
-    if (!normalizedPath) return
+    const normalizedPath = requireWorkspaceWritePath(relativePath)
 
     workspaceDirectory(expoFileSystem(), rootUri, normalizedPath).create({ idempotent: true, intermediates: true })
   },
   deleteDirectory: (rootUri, relativePath) => {
-    const normalizedPath = normalizedWorkspaceRelativePath(relativePath)
-    if (!normalizedPath) return
+    const normalizedPath = requireWorkspaceWritePath(relativePath)
 
     const directory = workspaceDirectory(expoFileSystem(), rootUri, normalizedPath)
     if (directory.exists) directory.delete()
   },
   deleteTextFile: (rootUri, relativePath) => {
-    const normalizedPath = normalizedWorkspaceRelativePath(relativePath)
-    if (!normalizedPath) return
+    const normalizedPath = requireWorkspaceWritePath(relativePath)
 
     const file = workspaceFile(expoFileSystem(), rootUri, normalizedPath)
     if (file.exists) file.delete()
@@ -73,8 +71,7 @@ export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
     return readDirectoryPaths(module, root, '')
   },
   writeTextFile: (rootUri, relativePath, content) => {
-    const normalizedPath = normalizedWorkspaceRelativePath(relativePath)
-    if (!normalizedPath) return
+    const normalizedPath = requireWorkspaceWritePath(relativePath)
 
     const file = workspaceFile(expoFileSystem(), rootUri, normalizedPath)
     file.parentDirectory.create({ idempotent: true, intermediates: true })
@@ -100,14 +97,15 @@ function moveWorkspaceEntry(
   toRelativePath: RelativeVaultPath,
   entryForPath: (module: ExpoFileSystemModule, rootUri: RootUri, relativePath: RelativeVaultPath) => MovableWorkspaceEntry,
 ) {
-  const fromPath = normalizedWorkspaceRelativePath(fromRelativePath)
-  const toPath = normalizedWorkspaceRelativePath(toRelativePath)
-  if (!fromPath || !toPath) return
+  const fromPath = requireWorkspaceWritePath(fromRelativePath)
+  const toPath = requireWorkspaceWritePath(toRelativePath)
 
   const module = expoFileSystem()
   const source = entryForPath(module, rootUri, fromPath)
   const destination = entryForPath(module, rootUri, toPath)
-  if (!source.exists || destination.exists) return
+  if (!source.exists) throw new Error('workspaceMoveSourceMissing')
+  if (fromPath === toPath) return
+  if (destination.exists) throw new Error('workspaceMoveDestinationExists')
 
   destination.parentDirectory.create({ idempotent: true, intermediates: true })
   source.move(destination)

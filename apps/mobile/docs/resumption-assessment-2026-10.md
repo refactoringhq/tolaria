@@ -144,3 +144,16 @@ vault throughput, Android, or file-provider behavior.
 - GitHub sign-in remains unverified and explicitly unavailable without
   `EXPO_PUBLIC_GITHUB_CLIENT_ID`. Live folders, Android, and large-vault sync
   performance remain open work, not implied by the public clone success.
+
+## Filesystem safety batch
+
+- A native regression first reproduced silently successful moves when the source
+  was missing or the destination already existed. These now reject without
+  changing either file. Mutation paths reject traversal and `.git` access.
+- The repository validates the complete write plan before queuing it, rejects a
+  missing root, and awaits asynchronous filesystem operations before Git can
+  read the working copy. Targeted repository coverage: 14 tests passed.
+- The same assertions run inside the native Git probe, which passed in Expo Go
+  on the iPad simulator (1,758 ms for the small disposable round trip).
+- No UI copy or analytics changes; this is persistence correctness, not a new
+  user action. Live file-provider access still requires the standalone build.

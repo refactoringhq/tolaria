@@ -4,6 +4,7 @@ import type { HttpClient } from 'isomorphic-git'
 import { cloneGitVault, syncGitVault } from '../workspace/git/gitRemote'
 import { createExpoGitFileSystem } from '../workspace/git/expoGitFileSystem'
 import { gitVirtualRoot } from '../workspace/git/gitFileSystemPaths'
+import { assertNativeWorkspaceWriteErrors } from './nativeWorkspaceWriteErrors'
 
 let running = false
 
@@ -15,6 +16,7 @@ export async function runNativeGitProbe(endpoint: string) {
   const started = Date.now()
   try {
     root.create()
+    await assertNativeWorkspaceWriteErrors(root)
     const proof = await roundTrip(root, endpoint)
     await publishProof(endpoint, { ...proof, elapsedMs: Date.now() - started })
   } catch (error) {

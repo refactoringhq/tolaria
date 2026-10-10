@@ -3,19 +3,23 @@ import type { MobileNote, MobileVaultConfig, MobileWorkspaceSnapshot } from './m
 import type { MobileWorkspaceWrite } from './mobileWorkspaceEditing'
 import type { ReadOnlyWorkspaceRepository, ReadOnlyWorkspaceRequest } from './readOnlyWorkspaceRepository'
 import { persistWorkspaceOperations } from './git/workspaceWriteQueue'
+import { normalizedWorkspaceRelativePath, requireWorkspaceWritePath, validateWorkspaceWrites } from './workspaceWriteValidation'
+export { normalizedWorkspaceRelativePath } from './workspaceWriteValidation'
+
+type WorkspaceMutation = void | Promise<void>
 
 export type WorkspaceFileSystem = {
-  createDirectory: (rootUri: string, relativePath: string) => void
-  deleteDirectory: (rootUri: string, relativePath: string) => void
-  deleteTextFile: (rootUri: string, relativePath: string) => void
-  moveDirectory: (rootUri: string, fromRelativePath: string, toRelativePath: string) => void
-  moveTextFile: (rootUri: string, fromRelativePath: string, toRelativePath: string) => void
+  createDirectory: (rootUri: string, relativePath: string) => WorkspaceMutation
+  deleteDirectory: (rootUri: string, relativePath: string) => WorkspaceMutation
+  deleteTextFile: (rootUri: string, relativePath: string) => WorkspaceMutation
+  moveDirectory: (rootUri: string, fromRelativePath: string, toRelativePath: string) => WorkspaceMutation
+  moveTextFile: (rootUri: string, fromRelativePath: string, toRelativePath: string) => WorkspaceMutation
   readVaultConfig?: (rootUri: string) => MobileVaultConfig | null
   readVaultDirectories: (rootUri: string) => string[]
   readTextFile: (rootUri: string, relativePath: string) => string | null
   readVaultFiles: (rootUri: string) => LocalVaultFile[]
-  writeVaultConfig?: (rootUri: string, config: MobileVaultConfig) => void
-  writeTextFile: (rootUri: string, relativePath: string, content: string) => void
+  writeVaultConfig?: (rootUri: string, config: MobileVaultConfig) => WorkspaceMutation
+  writeTextFile: (rootUri: string, relativePath: string, content: string) => WorkspaceMutation
 }
 
 export type WorkspaceFileIndex = {
@@ -26,8 +30,10 @@ export type WorkspaceFileIndex = {
 export function createFileSystemWorkspaceRepository(fileSystem: WorkspaceFileSystem): ReadOnlyWorkspaceRepository {
   return {
     persistWrites: async (writes, request) => {
+      if (writes.length === 0) return
       const rootUri = workspaceRootUri(request)
-      if (!rootUri) return
+      if (!rootUri) throw new Error('workspaceNotSelected')
+      validateWorkspaceWrites(writes)
 
       await persistWorkspaceOperations(rootUri, writes.map((write) => () => persistWorkspaceWrite(fileSystem, rootUri, write)))
     },
@@ -64,29 +70,29 @@ function persistWorkspaceWrite(
   write: MobileWorkspaceWrite,
 ) {
   if (write.kind === 'saveVaultConfig') {
-    if (write.config) fileSystem.writeVaultConfig?.(rootUri, write.config)
-    return
+    return persistVaultConfig(fileSystem, rootUri, write.config)
   }
 
-  const relativePath = normalizedWorkspaceRelativePath(write.path)
-  if (!relativePath) return
+  const relativePath = requireWorkspaceWritePath(write.path)
 
   if (isDeleteTextWrite(write)) {
-    fileSystem.deleteTextFile(rootUri, relativePath)
-    return
+    return fileSystem.deleteTextFile(rootUri, relativePath)
   }
 
   if (write.kind === 'createFolder') {
-    fileSystem.createDirectory(rootUri, relativePath)
-    return
+    return fileSystem.createDirectory(rootUri, relativePath)
   }
 
   if (write.kind === 'deleteFolder') {
-    fileSystem.deleteDirectory(rootUri, relativePath)
-    return
+    return fileSystem.deleteDirectory(rootUri, relativePath)
   }
 
-  persistMoveOrTextWrite(fileSystem, rootUri, relativePath, write)
+  return persistMoveOrTextWrite(fileSystem, rootUri, relativePath, write)
+}
+
+function persistVaultConfig(fileSystem: WorkspaceFileSystem, rootUri: string, config?: MobileVaultConfig) {
+  if (!config || !fileSystem.writeVaultConfig) throw new Error('unsupportedWorkspaceConfig')
+  return fileSystem.writeVaultConfig(rootUri, config)
 }
 
 function persistMoveOrTextWrite(
@@ -96,18 +102,14 @@ function persistMoveOrTextWrite(
   write: Extract<MobileWorkspaceWrite, { kind: 'createNote' | 'moveNote' | 'renameFolder' | 'saveNote' | 'saveView' }>,
 ) {
   if (write.kind === 'moveNote') {
-    const toRelativePath = normalizedWorkspaceRelativePath(write.toPath)
-    if (toRelativePath) fileSystem.moveTextFile(rootUri, relativePath, toRelativePath)
-    return
+    return fileSystem.moveTextFile(rootUri, relativePath, requireWorkspaceWritePath(write.toPath))
   }
 
   if (write.kind === 'renameFolder') {
-    const toRelativePath = normalizedWorkspaceRelativePath(write.toPath)
-    if (toRelativePath) fileSystem.moveDirectory(rootUri, relativePath, toRelativePath)
-    return
+    return fileSystem.moveDirectory(rootUri, relativePath, requireWorkspaceWritePath(write.toPath))
   }
 
-  fileSystem.writeTextFile(rootUri, relativePath, write.content)
+  return fileSystem.writeTextFile(rootUri, relativePath, write.content)
 }
 
 function isDeleteTextWrite(
@@ -151,14 +153,4 @@ function emptyFileSystemSnapshot(request?: ReadOnlyWorkspaceRequest): MobileWork
 
 function noteRelativePath(note: MobileNote): string | null {
   return normalizedWorkspaceRelativePath(note.path ?? note.id)
-}
-
-export function normalizedWorkspaceRelativePath(path: string): string | null {
-  const normalized = path.replaceAll('\\', '/').trim()
-  if (!normalized || normalized.startsWith('/') || normalized.includes('://')) return null
-
-  const parts = normalized.split('/').filter(Boolean)
-  if (parts.some((part) => part === '.' || part === '..')) return null
-
-  return parts.join('/')
 }
