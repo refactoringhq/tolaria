@@ -2,6 +2,22 @@
 
 Assessment started 2026-10-10. Target: iPad and Android tablets, phone later.
 
+## Current checkpoint
+
+- Current-source standalone iPad app rebuilt and installed. Native touch tests
+  pass eight panel transitions and vertical-pan non-collapse. Native WYSIWYG
+  persistence and 140 numeric layout checks pass after the final rebuild.
+- Scoped mobile gates pass 1,170 tests across 186 files; 17 Swift filesystem
+  tests passed in the native storage batch. No full desktop suite was run.
+- Public GitHub cloning, persisted vault selection, and real native Git
+  push/pull against a disposable server work. The simulator uses an isolated
+  6,036-file Laputa copy, not the original vault.
+- Not launch-ready: a 6,000-file debug fixture still takes about two minutes
+  for manual push or pull. Linked original folders, configured/live GitHub
+  authentication, Android device QA, and October-main integration remain open.
+- The table and evidence below are chronological, starting with the recovered
+  baseline; later batches supersede the earlier observations.
+
 ## Recovered baseline
 
 The task reopened at detached June commit `ca79c12ff`. The maintained August
@@ -278,8 +294,11 @@ vault throughput, Android, or file-provider behavior.
 - These are individual debug-simulator runs, with sampled profiling, not release
   device latency guarantees. Do not claim light-speed sync from these results.
 - New/touched scorable files are 10.0; the native initializer has no scorable code
-  and no findings. Scoped Codacy reports only the existing development-loopback
-  proof callback audit warning; the rapid-edit fix has zero findings. No UI copy
+  and no findings. Final scoped Codacy reports two reviewed QA warnings: the
+  development-only, loopback-validated proof callback, and SHA-1 on a fixed empty
+  input to verify Git's required digest. Neither is used to hash credentials or
+  accept arbitrary remote destinations; no rule was suppressed. The rapid-edit
+  fix has zero findings. No UI copy
   changed; no product analytics event is appropriate for internal performance
   and data-safety fixes. ADR 0200 documents the dependency and cache lifetime.
 
