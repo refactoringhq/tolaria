@@ -1,6 +1,5 @@
 import {
   Pressable,
-  StyleSheet,
   type NativeSyntheticEvent,
   type StyleProp,
   type TextInputSelectionChangeEventData,
@@ -11,8 +10,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Input } from '../ui/input'
 import { Text } from '../ui/text'
 import { MobileChip } from '../../ui/MobileChip'
-import { desktopEditorParity } from '../../ui/desktopParity'
-import { mobileColors, mobileRadius, mobileSpace, mobileType } from '../../ui/tokens'
+import { mobileColors } from '../../ui/tokens'
+import { editorStyles } from './MobileMarkdownSourceEditorStyles'
+import { useWorkspaceSyncEditor } from '../../workspace/workspaceSyncEditors'
 import {
   activeMobileEmojiShortcodeQuery,
   activeMobilePersonMentionQuery,
@@ -186,6 +186,7 @@ function MarkdownSourceEditor(props: Omit<MobileMarkdownSourceEditorProps, 'plai
       <View style={editorStyles.editorBody}>
         <SourceEditorInput
           compact={compact}
+          editable={!editorDraft.paused}
           testID="editor-markdown-input"
           value={editorDraft.content}
           selection={autocomplete.controlledSelection}
@@ -219,6 +220,7 @@ function MarkdownSourceEditor(props: Omit<MobileMarkdownSourceEditorProps, 'plai
 
 function SourceEditorInput({
   compact,
+  editable,
   onChangeText,
   onSelectionChange,
   selection,
@@ -226,6 +228,7 @@ function SourceEditorInput({
   value,
 }: {
   compact: boolean
+  editable: boolean
   onChangeText: (value: string) => void
   onSelectionChange: (event: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => void
   selection?: MobileMarkdownTextSelection
@@ -244,6 +247,7 @@ function SourceEditorInput({
       <Input
         multiline
         scrollEnabled
+        editable={editable}
         className="border-0 bg-transparent py-3 text-[15px]"
         underlineColorAndroid="transparent"
         placeholderTextColor={mobileColors.textFaint}
@@ -284,7 +288,7 @@ function MobilePlainTextSourceEditor({
   idleSave,
   sourceSelectionProbe,
 }: Pick<MobileMarkdownSourceEditorProps, 'compact' | 'idleSave' | 'note' | 'onRegisterEditorCommands' | 'onUpdateContent' | 'sourceSelectionProbe'>) {
-  const { content, save, updateContent } = useMobileSourceEditorDraft({
+  const { content, paused, save, updateContent } = useMobileSourceEditorDraft({
     noteId: note.id,
     idleSave,
     onCommit: onUpdateContent,
@@ -325,6 +329,7 @@ function MobilePlainTextSourceEditor({
       <Input
         multiline
         scrollEnabled
+        editable={!paused}
         placeholderTextColor={mobileColors.textFaint}
         style={[editorStyles.input, compact ? editorStyles.inputCompact : null]}
         testID="editor-text-file-input"
@@ -353,6 +358,8 @@ function useMobileSourceEditorDraft({
   const onCommitRef = useRef(onCommit)
   const [draft, setDraft] = useState(() => createMobileEditorDraft(noteId, sourceContent))
   const draftRef = useRef<MobileEditorDraftState>(draft)
+  const pausedRef = useRef(false)
+  const [paused, setPaused] = useState(false)
 
   useEffect(() => {
     onCommitRef.current = onCommit
@@ -381,12 +388,22 @@ function useMobileSourceEditorDraft({
     commitTimerRef.current = setTimeout(commitDraft, mobileEditorDraftCommitDelayMs)
   }, [clearScheduledCommit, commitDraft])
   const updateContent = useCallback((_noteId: string, nextContent: string) => {
+    if (pausedRef.current) return
     const nextDraft = editMobileEditorDraft(draftRef.current, nextContent)
     draftRef.current = nextDraft
     setDraft(nextDraft)
     if (mobileEditorDraftNeedsCommit(nextDraft) && idleSave) scheduleCommit()
     else clearScheduledCommit()
   }, [clearScheduledCommit, idleSave, scheduleCommit])
+  useWorkspaceSyncEditor(async () => {
+    commitDraft()
+    pausedRef.current = true
+    setPaused(true)
+    return () => {
+      pausedRef.current = false
+      setPaused(false)
+    }
+  })
 
   useEffect(() => {
     setDraft((current) => {
@@ -401,6 +418,7 @@ function useMobileSourceEditorDraft({
 
   return {
     content: draft.draftContent,
+    paused,
     save: commitDraft,
     updateContent,
   }
@@ -707,159 +725,3 @@ function markdownInlineTokenStyle(token: string): StyleProp<TextStyle> {
   if (token.startsWith('**')) return editorStyles.syntaxStrong
   return editorStyles.syntaxEmphasis
 }
-
-const editorStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: mobileColors.editor,
-  },
-  editorBody: {
-    minHeight: 0,
-    flex: 1,
-  },
-  highlightedInput: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'transparent',
-    borderColor: 'transparent',
-    borderWidth: 0,
-    color: 'rgba(55, 53, 47, 0.01)',
-    fontFamily: 'Menlo',
-    fontSize: desktopEditorParity.bodyFontSize,
-    lineHeight: desktopEditorParity.bodyLineHeight,
-    paddingHorizontal: mobileSpace.md,
-    paddingVertical: mobileSpace.md,
-  },
-  input: {
-    flex: 1,
-    minHeight: 420,
-    borderWidth: 0,
-    color: mobileColors.text,
-    fontFamily: 'Menlo',
-    fontSize: desktopEditorParity.bodyFontSize,
-    lineHeight: desktopEditorParity.bodyLineHeight,
-    paddingHorizontal: mobileSpace.md,
-    paddingVertical: mobileSpace.md,
-  },
-  inputCompact: {
-    minHeight: 360,
-  },
-  sourceInputHost: {
-    flex: 1,
-    minHeight: 420,
-    backgroundColor: mobileColors.editor,
-    borderColor: 'transparent',
-    borderWidth: 0,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  sourceInputHostCompact: {
-    minHeight: 360,
-  },
-  syntaxAttachment: {
-    color: mobileColors.orange,
-  },
-  syntaxCodeFence: {
-    color: mobileColors.orange,
-  },
-  syntaxEmphasis: {
-    color: mobileColors.textMuted,
-    fontStyle: 'italic',
-  },
-  syntaxHeading: {
-    color: mobileColors.text,
-    fontWeight: '700',
-  },
-  syntaxInlineCode: {
-    color: mobileColors.orange,
-  },
-  syntaxLayer: {
-    ...StyleSheet.absoluteFillObject,
-    paddingHorizontal: mobileSpace.md,
-    paddingVertical: mobileSpace.md,
-  },
-  syntaxListMarker: {
-    color: mobileColors.primary,
-  },
-  syntaxMeta: {
-    color: mobileColors.textMuted,
-  },
-  syntaxPropertyKey: {
-    color: mobileColors.primary,
-  },
-  syntaxQuote: {
-    color: mobileColors.textMuted,
-    fontStyle: 'italic',
-  },
-  syntaxStrong: {
-    color: mobileColors.text,
-    fontWeight: '700',
-  },
-  syntaxTable: {
-    color: mobileColors.textMuted,
-  },
-  syntaxText: {
-    color: mobileColors.text,
-    fontFamily: 'Menlo',
-    fontSize: desktopEditorParity.bodyFontSize,
-    lineHeight: desktopEditorParity.bodyLineHeight,
-  },
-  syntaxWikilink: {
-    color: mobileColors.primary,
-  },
-  frontmatterIssue: {
-    alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    borderColor: '#D97706',
-    borderRadius: mobileRadius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: mobileSpace.xs,
-    paddingHorizontal: mobileSpace.md,
-    paddingVertical: mobileSpace.sm,
-  },
-  frontmatterIssueLabel: {
-    color: '#92400E',
-    fontSize: mobileType.caption,
-    fontWeight: '600',
-  },
-  frontmatterIssueText: {
-    color: '#92400E',
-    flex: 1,
-    fontSize: mobileType.caption,
-  },
-  suggestionRow: {
-    minHeight: 32,
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: mobileSpace.sm,
-    borderRadius: 6,
-    paddingHorizontal: mobileSpace.sm,
-    paddingVertical: mobileSpace.xs,
-  },
-  suggestionRowPressed: {
-    backgroundColor: mobileColors.graySoft,
-  },
-  suggestions: {
-    gap: mobileSpace.xs,
-    borderTopColor: mobileColors.border,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    backgroundColor: mobileColors.editor,
-    paddingHorizontal: mobileSpace.md,
-    paddingVertical: mobileSpace.xs,
-  },
-  suggestionTitle: {
-    minWidth: 0,
-    flex: 1,
-    color: mobileColors.text,
-    fontSize: mobileType.body,
-    fontWeight: '500',
-  },
-  toolbarHost: {
-    flexShrink: 0,
-    borderTopColor: mobileColors.border,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    backgroundColor: mobileColors.editor,
-    paddingHorizontal: mobileSpace.md,
-    paddingTop: mobileSpace.xs,
-  },
-})

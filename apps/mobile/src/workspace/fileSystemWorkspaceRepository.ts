@@ -2,6 +2,7 @@ import { buildLocalVaultWorkspaceSnapshot, type LocalVaultFile } from './localVa
 import type { MobileNote, MobileVaultConfig, MobileWorkspaceSnapshot } from './mobileWorkspaceModel'
 import type { MobileWorkspaceWrite } from './mobileWorkspaceEditing'
 import type { ReadOnlyWorkspaceRepository, ReadOnlyWorkspaceRequest } from './readOnlyWorkspaceRepository'
+import { persistWorkspaceOperations } from './git/workspaceWriteQueue'
 
 export type WorkspaceFileSystem = {
   createDirectory: (rootUri: string, relativePath: string) => void
@@ -28,9 +29,7 @@ export function createFileSystemWorkspaceRepository(fileSystem: WorkspaceFileSys
       const rootUri = workspaceRootUri(request)
       if (!rootUri) return
 
-      for (const write of writes) {
-        persistWorkspaceWrite(fileSystem, rootUri, write)
-      }
+      await persistWorkspaceOperations(rootUri, writes.map((write) => () => persistWorkspaceWrite(fileSystem, rootUri, write)))
     },
     readNoteContent: async (note, request) => {
       if (note.rawContent !== undefined) return note.rawContent

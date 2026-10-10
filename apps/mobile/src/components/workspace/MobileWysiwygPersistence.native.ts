@@ -1,5 +1,5 @@
 import type { EditorBridge } from '@10play/tentap-editor'
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Platform } from 'react-native'
 import {
   nativeWysiwygExternalLinkLogLine,
@@ -21,6 +21,8 @@ import {
 import type { NativeTentapEditorRefs } from './MobileWysiwygEditorLifecycle.native'
 import { publishNativeWysiwygMutationProof } from './MobileWysiwygMutationProbe.native'
 import { publishNativeWysiwygTableCommandMutationProof } from './MobileWysiwygTableCommandMutationProbe.native'
+import { createEditorSaveGate } from '../../workspace/editorSaveGate'
+import { useWorkspaceSyncEditor } from '../../workspace/workspaceSyncEditors'
 
 type JsonReadableEditorBridge = EditorBridge & {
   getJSON: () => Promise<unknown>
@@ -40,19 +42,41 @@ type FlushEditorDocumentOptions = {
 }
 
 export function useFlushEditorDocument(options: FlushEditorDocumentOptions) {
-  return useCallback(() => flushEditorDocumentFromBridge(options), [options])
-}
-
-function flushEditorDocumentFromBridge(options: FlushEditorDocumentOptions) {
-  const editor = options.refs.editorRef.current
-  if (!isJsonReadableEditorBridge(editor)) return
-
-  void editor
-    .getJSON()
-    .then((json) => writeEditorJsonToMarkdown(options, json))
-    .catch((error: unknown) => {
+  const [gate] = useState(() => createEditorSaveGate(nativeEditorDocumentAdapter(options)))
+  useEffect(() => { gate.updateAdapter(nativeEditorDocumentAdapter(options)) }, [gate, options])
+  useWorkspaceSyncEditor(gate.prepare)
+  return useCallback(() => {
+    void gate.save().catch((error: unknown) => {
       console.warn('[mobile-editor] Failed to read TenTap JSON:', error)
     })
+  }, [gate])
+}
+
+function nativeEditorDocumentAdapter(options: FlushEditorDocumentOptions) {
+  return {
+    read: async () => ({ json: await readEditorJson(options), options }),
+    commit: (document: { json: unknown; options: FlushEditorDocumentOptions }) => writeEditorJsonToMarkdown(document.options, document.json),
+    setEditable: (editable: boolean) => {
+      const editor = options.refs.editorRef.current
+      editor?.setEditable(editable)
+      if (!editable) editor?.blur()
+    },
+  }
+}
+
+async function readEditorJson(options: FlushEditorDocumentOptions) {
+  const editor = options.refs.editorRef.current
+  if (!isJsonReadableEditorBridge(editor)) throw new Error('editorNotReady')
+
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      editor.getJSON(),
+      new Promise<never>((_resolve, reject) => { timeout = setTimeout(() => reject(new Error('editorReadTimedOut')), 10_000) }),
+    ])
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 function writeEditorJsonToMarkdown(options: FlushEditorDocumentOptions, json: unknown) {

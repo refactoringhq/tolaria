@@ -48,7 +48,7 @@ export function useNativeWysiwygMutationProbe({
       enableNativeWysiwygMutationProbe(refs)
 
       const editor = refs.editorRef.current
-      if (!isContentSettableEditorBridge(editor)) {
+      if (!isContentSettableEditorBridge(editor) || !editor.getEditorState().isReady) {
         scheduleProbe(mutationProbeRetryDelayMs)
         return
       }

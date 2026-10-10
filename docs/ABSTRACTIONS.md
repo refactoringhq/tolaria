@@ -17,6 +17,10 @@ integration status and remaining native-provider work. This layer is not an
 iCloud synchronizer and must not label local disk writes as remote synchronization.
 `assert-native-git.mjs` exercises real smart-HTTP transport through Hermes and
 Expo's filesystem on the booted iOS simulator, using disposable repositories only.
+`workspaceWriteQueue.ts` retains failed mutations in order and drains them before
+Git. `workspaceSyncEditors.ts` collects awaitable editor preparation operations;
+`editorSaveGate.ts` prevents stale TenTap replies from overwriting pulled content.
+The vault manager must use both boundaries (ADR 0196).
 
 ## Tablet Panel Motion
 

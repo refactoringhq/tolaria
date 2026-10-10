@@ -95,3 +95,21 @@ conflict editing, multi-vault use, and phone polish are not first-launch prerequ
 This is a working assessment, not a release-readiness declaration. Native Git
 transport is proven for a small fixture, not live GitHub authentication, large
 vault throughput, Android, or file-provider behavior.
+
+## Save-boundary batch
+
+- Added ordered failed-write retention, shared with Git's actual-root operation
+  key. Tests prove failed saves stop checkout and retries do not replay successful
+  mutations or overwrite newer edits with older content.
+- Added awaitable editor preparation and stale-reply suppression. TenTap freezes
+  input before its final JSON read; source editors flush and freeze their draft.
+  The registry still needs wiring into the vault-manager sync owner.
+- Native workspace persistence passed. Native WYSIWYG persistence and 140 layout
+  assertions passed after fixing the probe to wait for TenTap readiness, rather
+  than relying on a 1.5-second startup assumption.
+- Source editor CodeScene improved from 8.87 to 9.68 by separating its style
+  groups; remaining touched/new code is 10.0. Scoped Opengrep: zero findings for
+  the save boundary. The earlier native Git probe scan flags its proof POST as
+  potential SSRF; reviewed as a development-only, loopback-validated fixture
+  callback with generated data and no credentials or user-vault access.
+- No UI copy changes or analytics events: these are internal persistence fixes.

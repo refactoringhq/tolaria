@@ -1,17 +1,19 @@
 import git, { type HttpClient } from 'isomorphic-git'
 import { createGitVault, githubRepositoryUrl, type GitAuthor, type GitVaultContext } from './gitVault'
 import { withWorkspaceOperation } from './workspaceOperationQueue'
+import { withSavedWorkspace } from './workspaceWriteQueue'
 
 export type GitSyncPhase = 'checkpoint' | 'fetch' | 'checkout' | 'push'
 export type GitRemoteOptions = GitVaultContext & {
   http: HttpClient
   token?: string
   onPhase?: (phase: GitSyncPhase) => void
+  operationKey?: string
 }
 
 export function cloneGitVault(options: GitRemoteOptions, repositoryUrl: string) {
   const url = githubRepositoryUrl(repositoryUrl)
-  return withWorkspaceOperation(options.dir, () => git.clone({
+  return withWorkspaceOperation(options.operationKey ?? options.dir, () => git.clone({
     ...transport(options, url),
     url,
     singleBranch: true,
@@ -22,7 +24,7 @@ export function cloneGitVault(options: GitRemoteOptions, repositoryUrl: string) 
 }
 
 export function syncGitVault(options: GitRemoteOptions, author: GitAuthor) {
-  return withWorkspaceOperation(options.dir, () => syncUnlocked(options, author))
+  return withSavedWorkspace(options.operationKey ?? options.dir, () => syncUnlocked(options, author))
 }
 
 async function syncUnlocked(options: GitRemoteOptions, author: GitAuthor) {
