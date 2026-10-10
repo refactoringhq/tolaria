@@ -9,9 +9,10 @@ Assessment started 2026-10-10. Target: iPad and Android tablets, phone later.
   cannot be edited or checkpointed as new user content. This does not yet provide
   a general crash-safe editor mutation journal.
 - Current-source standalone iPad app rebuilt and installed. Native touch tests
-  pass eight panel transitions and vertical-pan non-collapse. Native WYSIWYG
-  persistence and 140 numeric layout checks pass after the final rebuild.
-- Scoped mobile gates pass 1,170 tests across 186 files; 17 Swift filesystem
+  cover panel transitions, contextual formatting menus, and repeated rotation
+  while preserving the selected note. Native WYSIWYG persistence plus 117 layout
+  metrics, and the all-panels fixture's 181 metrics pass with the compact toolbar.
+- Scoped mobile gates pass 1,185 tests across 189 files; 17 Swift filesystem
   tests passed in the native storage batch. No full desktop suite was run.
 - Public GitHub cloning, persisted vault selection, and real native Git
   push/pull against a disposable server work. The simulator uses an isolated
@@ -66,7 +67,8 @@ custom native-module changes require a rebuilt development app, separately.
 - [ ] Durable editor-write recovery, deletion recovery, and incremental startup.
 - [x] Contextual native formatting toolbar with measured touch targets.
 - [ ] Tablet properties/forms touch polish.
-- [ ] Gesture interruption/selection tests, adaptive layouts, and focus restoration.
+- [x] Native tablet rotation preserves the selected note and readable editor width.
+- [ ] Gesture interruption/selection tests, split-screen layout, and focus restoration.
 - [ ] Live provider folders, configured GitHub login, and actionable sync recovery.
 - [ ] Consolidated shared design tokens and parity audit against current desktop.
 - [ ] Release-device performance budgets, accessibility, and Android tablet QA.
@@ -117,6 +119,22 @@ conflict editing, multi-vault use, and phone polish are not first-launch prerequ
   or account data was instrumented. Demo and original user vaults are unchanged.
 - VoiceOver traversal, Android, physical devices, and the rest of the approved
   adaptive-layout/form work remain unverified. This is not launch sign-off.
+
+### Tablet resize correction
+
+- A real iPad rotation test first failed: launch-time panel defaults left the
+  editor below its existing 520-point minimum after rotating to portrait. Window
+  resize now hides left panels in order and preserves the selected note. Growing
+  does not reopen dismissed panes. Closing the inspector also validates the
+  restored pane arrangement against the new width.
+- The same native regression passed after the fix, including repeated rotation
+  and inspector toggling. Pure resize/transition/screen-mode coverage passes
+  32 tests. An active drag session is invalidated on resize; interrupted physical
+  drags and split-screen window switching still need their own native tests.
+- All four touched/new scorable files reach 10.0; the existing gesture hook stays
+  10.0. Scoped Codacy reports no findings. No UI copy or analytics changes are
+  needed for this correction. No new ADR or storage change; abstraction inventory
+  updated. Only disposable fixture notes were used in the rotation test.
 
 ## Evidence log
 

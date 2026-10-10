@@ -198,6 +198,7 @@ Workspace surfaces now sit one level above those primitives:
 | `MobileWysiwygTentapEditorHtml.ts` | Generated custom TenTap WebView HTML used by the native WYSIWYG editor |
 | `nativeWysiwyg*Probe.ts` | Native Expo simulator proof models for mobile editor behavior that must be verified outside React Native Web |
 | `TabletWorkspace` | Tablet shell that owns selected-note state, panel layout, action-sheet forms, and editable snapshot state |
+| `tabletPanelResize` | Reconciles current pane visibility with a resized window and the existing readable-editor minimum; preserves hidden panes when widening |
 | `PhoneWorkspace` | Phone shell that reuses the tablet controller/repository boundary while adapting navigation to list, sidebar, editor, and properties screens |
 | `MobileWorkspaceSidebar` | Sidebar groups, counts, and folder tree |
 | `MobileNoteListPanel` | Note-list toolbar, rows, chips, and empty state |

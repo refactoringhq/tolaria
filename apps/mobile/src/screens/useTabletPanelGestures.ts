@@ -1,9 +1,10 @@
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useWindowDimensions } from 'react-native'
 import { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
 import { desktopPanelParity } from '../ui/desktopParity'
 import { tabletLeftPanelStageAfterDrag, tabletLeftPanelStageOffset, type TabletLeftPanelStage } from './tabletWorkspacePanelTransitions'
 import { createTabletPanGesture, tabletPanelSpring, type TabletPanelPosition, type TabletPanSession } from './tabletNativePanGesture'
+import { tabletPanelPositionAfterResize } from './tabletPanelResize'
 
 export type TabletPanelGestureOptions = {
   compactTablet: boolean
@@ -41,6 +42,12 @@ export function useTabletPanelGestures(options: TabletPanelGestureOptions) {
     setPosition({ stage: normalized, propertiesVisible })
   }, [compactTablet, left, properties])
 
+  useWindowResize(width, () => {
+    const next = tabletPanelPositionAfterResize(position, width, compactTablet)
+    session.set({ ...session.value, mode: 'fail' })
+    settle(next.stage, next.propertiesVisible)
+  })
+
   useLayoutEffect(() => {
     left.set(withSpring(tabletLeftPanelStageOffset(position.stage, compactTablet), tabletPanelSpring))
   }, [compactTablet, left, position.stage])
@@ -54,8 +61,8 @@ export function useTabletPanelGestures(options: TabletPanelGestureOptions) {
     const stage = propertiesReplaceSidebar
       ? tabletLeftPanelStageAfterDrag({ compactTablet, stage: 'all', startOffset: restoreLeft.value, dx: 0, vx: 0 })
       : position.stage
-    settle(stage, false)
-  }, [compactTablet, position.stage, propertiesReplaceSidebar, restoreLeft, settle])
+    settle(tabletPanelPositionAfterResize({ stage, propertiesVisible: false }, width, compactTablet).stage, false)
+  }, [compactTablet, position.stage, propertiesReplaceSidebar, restoreLeft, settle, width])
   const showSidebar = position.stage === 'all' && !compactTablet
   const noteListVisible = position.stage !== 'editor'
   const leftChromeMotionStyle = useAnimatedStyle(() => ({
@@ -92,4 +99,13 @@ export function useTabletPanelGestures(options: TabletPanelGestureOptions) {
     toggleSidebar: useCallback(() => showLeftStage(showSidebar ? 'list' : 'all'), [showLeftStage, showSidebar]),
     toggleSidebarAndNoteList: useCallback(() => showLeftStage(noteListVisible ? 'editor' : 'all'), [noteListVisible, showLeftStage]),
   }
+}
+
+function useWindowResize(width: number, onResize: () => void) {
+  const previousWidth = useRef(width)
+  useLayoutEffect(() => {
+    if (previousWidth.current === width) return
+    previousWidth.current = width
+    onResize()
+  }, [onResize, width])
 }
