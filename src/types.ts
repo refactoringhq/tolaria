@@ -144,6 +144,7 @@ export interface Settings {
   default_ai_target?: string | null
   ai_model_providers?: AiModelProvider[] | null
   ai_workspace_conversations?: AiWorkspaceConversationSetting[] | null
+  commit_message_templates?: CommitMessageTemplate[] | null
   hide_gitignored_files?: boolean | null
   all_notes_show_pdfs?: boolean | null
   all_notes_show_images?: boolean | null
@@ -157,6 +158,13 @@ export interface AiWorkspaceConversationSetting {
   model_id?: string | null
   target_id?: string | null
   title: string
+}
+
+export interface CommitMessageTemplate {
+  id: string
+  name: string
+  titleTemplate: string
+  bodyTemplate: string
 }
 
 export interface GitPullResult {

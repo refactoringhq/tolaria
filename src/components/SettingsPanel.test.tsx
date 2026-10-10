@@ -18,6 +18,7 @@ vi.mock('../lib/telemetry', () => ({
 
 vi.mock('../utils/macosDismissableEscapeSurface', () => ({
   registerMacosDismissableEscapeSurface: registerEscapeSurfaceMock,
+  useMacosDismissableEscapeSurfaceRef: () => () => {},
 }))
 
 const emptySettings: Settings = {
@@ -295,6 +296,39 @@ describe('SettingsPanel', () => {
       multi_workspace_enabled: false,
     }))
     expect(onClose).toHaveBeenCalled()
+  })
+
+  it('manages commit message templates and saves them with settings', () => {
+    render(
+      <SettingsPanel
+        open={true}
+        settings={{
+          ...emptySettings,
+          commit_message_templates: [
+            { id: 'tpl-1', name: 'Daily', titleTemplate: 'docs: update', bodyTemplate: '' },
+          ],
+        }}
+        onSave={onSave}
+        onClose={onClose}
+      />,
+    )
+
+    expect(screen.getByText('Push message templates')).toBeInTheDocument()
+    expect(screen.getByText('Daily')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('commit-template-add'))
+    fireEvent.change(screen.getByLabelText('Template name'), { target: { value: 'Weekly' } })
+    fireEvent.change(screen.getByLabelText('Commit title template'), { target: { value: 'chore: weekly' } })
+    fireEvent.click(screen.getByTestId('commit-template-editor-save'))
+
+    fireEvent.click(screen.getByTestId('settings-save'))
+
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
+      commit_message_templates: expect.arrayContaining([
+        expect.objectContaining({ id: 'tpl-1', name: 'Daily' }),
+        expect.objectContaining({ name: 'Weekly', titleTemplate: 'chore: weekly' }),
+      ]),
+    }))
   })
 
   it('keeps vault identity management hidden until multiple vaults are enabled', () => {

@@ -1040,6 +1040,16 @@ function MainApp({ noteWindowParams }: { noteWindowParams: NoteWindowParams | nu
     vaultPath: resolvedPath,
   })
   const suggestedCommitMessage = useMemo(() => generateCommitMessage(commitModifiedFiles), [commitModifiedFiles])
+  const { commitRepositoryPath, remoteStatusForRepository } = gitSurfaces
+  const commitTemplateBranch = useMemo(() => {
+    const repositoryStatus = commitRepositoryPath ? remoteStatusForRepository(commitRepositoryPath) : null
+    return repositoryStatus?.branch ?? autoSync.remoteStatus?.branch ?? ''
+  }, [autoSync.remoteStatus, commitRepositoryPath, remoteStatusForRepository])
+  const commitTemplateVaultName = useMemo(() => {
+    const activeVault = vaultSwitcher.allVaults.find((vault) => vault.path === resolvedPath)
+    if (activeVault?.label) return activeVault.label
+    return resolvedPath.split('/').filter(Boolean).pop() ?? ''
+  }, [resolvedPath, vaultSwitcher.allVaults])
   const isGitVault = gitFeaturesEnabled && gitRepoState !== 'missing'
   const {
     activitySignature: autoGitActivitySignature,
@@ -1900,6 +1910,10 @@ function MainApp({ noteWindowParams }: { noteWindowParams: NoteWindowParams | nu
           generatedMessageKey={commitFlow.generatedCommitMessageKey}
           isGeneratingMessage={commitFlow.isGeneratingCommitMessage}
           suggestedMessage={suggestedCommitMessage}
+          templates={settings.commit_message_templates}
+          branch={commitTemplateBranch}
+          vaultName={commitTemplateVaultName}
+          dateDisplayFormat={dateDisplayFormat}
           onGenerateMessage={commitFlow.generateCommitMessageForDialog}
           onRepositoryChange={gitSurfaces.setCommitRepositoryPath}
           onCommit={commitFlow.handleCommitPush}

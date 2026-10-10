@@ -13,6 +13,7 @@ import { trackThemeModeChanged } from '../lib/productAnalytics'
 import { normalizeReleaseChannel, serializeReleaseChannel } from '../lib/releaseChannel'
 import { normalizeDateDisplayFormat } from '../utils/dateDisplay'
 import { DEFAULT_THEME_MODE, normalizeThemeMode, type ThemeMode } from '../lib/themeMode'
+import { normalizeCommitMessageTemplates } from '../lib/commitMessageTemplates'
 import type { Settings } from '../types'
 import { normalizeNoteWidthMode } from '../utils/noteWidth'
 
@@ -66,6 +67,7 @@ const EMPTY_SETTINGS: Settings = {
   default_ai_target: null,
   ai_model_providers: null,
   ai_workspace_conversations: null,
+  commit_message_templates: null,
   hide_gitignored_files: null,
   all_notes_show_pdfs: null,
   all_notes_show_images: null,
@@ -105,6 +107,9 @@ function normalizeSettings(settings: Settings): Settings {
     default_ai_target: settings.default_ai_target?.trim() || null,
     ai_model_providers: nonEmptyArrayOrNull(aiModelProviders),
     ai_workspace_conversations: normalizeAiWorkspaceConversations(settings.ai_workspace_conversations),
+    commit_message_templates: nonEmptyArrayOrNull(
+      normalizeCommitMessageTemplates(settings.commit_message_templates),
+    ),
     hide_gitignored_files: nullableBoolean(settings.hide_gitignored_files),
     all_notes_show_pdfs: nullableBoolean(settings.all_notes_show_pdfs),
     all_notes_show_images: nullableBoolean(settings.all_notes_show_images),

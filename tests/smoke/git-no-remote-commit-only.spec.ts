@@ -78,7 +78,7 @@ test('nested parent-repository vault commits stay scoped and local without a rem
   await expect(page.getByRole('heading', { name: 'Commit' })).toBeVisible()
   await expect(page.getByText(/local commit only/i)).toBeVisible()
 
-  await page.locator('textarea[placeholder="Commit message..."]').fill('test local commit')
+  await page.locator('input[placeholder="Commit title…"]').fill('test local commit')
   await page.getByRole('button', { name: 'Commit', exact: true }).click()
 
   await expect(page.locator('.fixed.bottom-8')).toContainText('Committed locally', { timeout: 5000 })

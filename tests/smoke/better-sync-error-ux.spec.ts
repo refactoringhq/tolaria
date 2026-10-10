@@ -28,7 +28,7 @@ test.describe('Sync error UX — actionable push error messages', () => {
     await executeCommand(page, 'Commit & Push')
 
     // Wait for the CommitDialog textarea
-    const textarea = page.locator('textarea[placeholder="Commit message..."]')
+    const textarea = page.locator('input[placeholder="Commit title…"]')
     await textarea.waitFor({ timeout: 5000 })
     await textarea.fill('test commit')
 
@@ -54,7 +54,7 @@ test.describe('Sync error UX — actionable push error messages', () => {
     await openCommandPalette(page)
     await executeCommand(page, 'Commit & Push')
 
-    const textarea = page.locator('textarea[placeholder="Commit message..."]')
+    const textarea = page.locator('input[placeholder="Commit title…"]')
     await textarea.waitFor({ timeout: 5000 })
     await textarea.fill('test commit')
 
@@ -68,7 +68,7 @@ test.describe('Sync error UX — actionable push error messages', () => {
     await openCommandPalette(page)
     await executeCommand(page, 'Commit & Push')
 
-    const textarea = page.locator('textarea[placeholder="Commit message..."]')
+    const textarea = page.locator('input[placeholder="Commit title…"]')
     await textarea.waitFor({ timeout: 5000 })
     await textarea.fill('test commit')
 
