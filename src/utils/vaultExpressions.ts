@@ -69,6 +69,7 @@ export interface VaultExpressionContext {
   contentsByPath: Map<string, string>
   currentContent: string
   entries: VaultEntry[]
+  sheetCellsReady?: boolean
   locale?: string
   sourceEntry: VaultEntry | null
   vaultPath?: string
@@ -798,6 +799,8 @@ function resolveLine(reference: ReferenceExpression, context: VaultExpressionCon
 }
 
 function resolveCell(reference: ReferenceExpression, context: VaultExpressionContext): EvaluationResult {
+  if (context.sheetCellsReady === false) return UNRESOLVED_RESULT
+
   const resolved = referencedEntry(reference, context)
   const address = cellAddressToIndexes(reference.path[0] ?? '')
   if (!resolved || !address) return UNRESOLVED_RESULT

@@ -748,6 +748,8 @@ Defined in `src/utils/durableMarkdownBlocks.ts`, `src/utils/editorDurableMarkdow
 
 ### Sandboxed HTML Blocks
 
+Sheet-cell expressions wait for the shared IronCalc initialization in `src/utils/ironCalcReady.ts` before constructing workbook models. `VaultExpressionContext` renders unresolved cell placeholders while initialization is pending, then rerenders automatically; property and line expressions remain available. The sheet editor uses the same initialization promise. A failed initialization clears the promise so reopening a dashboard or sheet can retry.
+
 Defined in `src/utils/durableMarkdownBlocks.ts`, `src/utils/editorDurableMarkdown.ts`, `src/utils/htmlBlockMarkdown.ts`, `src/utils/htmlBlockSandbox.ts`, `src/components/HtmlBlock.tsx`, `src/components/editorSchema.tsx`, `src-tauri/src/html_block_protocol.rs`, and styled in `src/components/EditorTheme.css`:
 
 - Fenced `html` blocks become `htmlBlock` schema nodes before BlockNote sees the Markdown body. Portable `height="..."` and `scripts="sandboxed"` fence attributes store the block's vertical size and explicit script opt-in; missing or invalid values fall back to the default height and blocked scripts.

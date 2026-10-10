@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MutableRefObject } from 'react'
-import ironCalcWasmUrl from '@ironcalc/wasm/wasm_bg.wasm?url'
-import { init as initIronCalc, type Model } from '@ironcalc/workbook'
+import type { Model } from '@ironcalc/workbook'
+import { ensureIronCalcReady } from '../../utils/ironCalcReady'
 import { trackSheetEditorOpened } from '../../lib/productAnalytics'
 import { notePathsMatch } from '../../utils/notePathIdentity'
 import { cancelIdle, scheduleIdle, type IdleHandle } from '../../utils/sheetBrowserScheduling'
@@ -20,8 +20,6 @@ import type { ScheduleSheetSerializeOptions, SheetWorkbookState } from './sheetE
 
 const SERIALIZE_DEBOUNCE_MS = 450
 
-let ironCalcInitPromise: Promise<void> | null = null
-
 interface UseSheetWorkbookControllerOptions {
   content: string
   externalFormulaContextForBuild?: SheetExternalFormulaContext
@@ -30,18 +28,6 @@ interface UseSheetWorkbookControllerOptions {
   path: string
   pendingExternalFormulaCommitRef: MutableRefObject<number>
   shouldWaitForInitialExternalFormulaResolution?: (workbookAlreadyBuilt: boolean) => boolean
-}
-
-function ensureIronCalcReady(): Promise<void> {
-  if (!ironCalcInitPromise) {
-    ironCalcInitPromise = initIronCalc(ironCalcWasmUrl)
-      .then(() => undefined)
-      .catch((error: unknown) => {
-        ironCalcInitPromise = null
-        throw error
-      })
-  }
-  return ironCalcInitPromise
 }
 
 function resetDirtyTracking(

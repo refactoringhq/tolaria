@@ -10,9 +10,11 @@ import {
   compileVaultExpressionTemplate,
   renderVaultExpressionTemplate,
   vaultExpressionDependencySource,
+  vaultExpressionReferences,
   type CompiledVaultExpressionTemplate,
 } from '../utils/vaultExpressions'
 import { resolveExternalSheetDependencyEntries } from '../utils/sheetWorkbook'
+import { ensureIronCalcReady } from '../utils/ironCalcReady'
 
 interface VaultExpressionContextValue {
   currentContent: string
@@ -167,16 +169,40 @@ function useVaultExpressionDependencyContents(
   return contentsByPath
 }
 
+function useExpressionSheetCellsReady(compiled: CompiledVaultExpressionTemplate): boolean {
+  const [ready, setReady] = useState(false)
+  const needsCells = useMemo(() => (
+    vaultExpressionReferences(compiled).some((reference) => reference.kind === 'cell')
+  ), [compiled])
+
+  useEffect(() => {
+    if (!needsCells) return
+    let subscribed = true
+    void ensureIronCalcReady()
+      .then(() => {
+        if (subscribed) setReady(true)
+      })
+      .catch((error: Error) => {
+        console.warn('[html-block] Failed to initialize sheet expressions:', error)
+      })
+    return () => { subscribed = false }
+  }, [compiled, needsCells])
+
+  return ready
+}
+
 export function useResolvedVaultExpressionTemplate(source: string): ResolvedVaultExpressionTemplate {
   const expressionContext = useVaultExpressionContext()
   const compiled = useMemo(() => compileVaultExpressionTemplate(source), [source])
   const contentsByPath = useVaultExpressionDependencyContents(compiled, expressionContext)
+  const sheetCellsReady = useExpressionSheetCellsReady(compiled)
 
   return useMemo(() => renderVaultExpressionTemplate({
     compiled,
     context: {
       contentsByPath,
       ...expressionContext,
+      sheetCellsReady,
     },
-  }), [compiled, contentsByPath, expressionContext])
+  }), [compiled, contentsByPath, expressionContext, sheetCellsReady])
 }
