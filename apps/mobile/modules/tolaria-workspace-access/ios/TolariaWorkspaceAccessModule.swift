@@ -55,6 +55,12 @@ public class TolariaWorkspaceAccessModule: Module {
     AsyncFunction("restoreWorkspace") { () -> [String: String]? in
       return self.restoreWorkspace()
     }
+
+    #if DEBUG
+    AsyncFunction("runFileAccessProbe") { () throws -> [String: Bool] in
+      return try runWorkspaceFileNativeProof()
+    }
+    #endif
   }
 
   private func importWorkspace(_ uri: String) -> [String: String]? {

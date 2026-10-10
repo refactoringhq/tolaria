@@ -1,4 +1,5 @@
 import type { Directory, Paths } from 'expo-file-system'
+import { logNativeQaProof } from './nativeQaSink'
 import { expoWorkspaceFileSystem } from '../workspace/expoWorkspaceFileSystem'
 import type { MobileWorkspaceWrite } from '../workspace/mobileWorkspaceEditing'
 import type { MobileNote } from '../workspace/mobileWorkspaceModel'
@@ -81,7 +82,7 @@ function logPersistenceProofForProbeWrites(
   const content = expoWorkspaceFileSystem.readTextFile(request.vaultRootUri, nativeWysiwygPersistenceProbeNotePath)
   if (content === null) return
 
-  console.info(nativeWysiwygPersistenceLogLine({
+  logNativeQaProof(nativeWysiwygPersistenceLogLine({
     mutation: nativeWysiwygMutationProof({ content, noteId: nativeWysiwygPersistenceProbeNotePath }),
     path: nativeWysiwygPersistenceProbeNotePath,
     persistedToNativeRepository: true,

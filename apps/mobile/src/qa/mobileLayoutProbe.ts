@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Platform, type LayoutChangeEvent } from 'react-native'
+import { postNativeQaEvent, setNativeQaSinkUrl } from './nativeQaSink'
 
 export type MobileLayoutMetric = {
   height: number
@@ -18,10 +19,8 @@ type LayoutProbeGlobal = typeof globalThis & {
 }
 
 const emptyProbeProps = {}
-let metricSinkUrl: string | null = null
-
 export function setMobileLayoutMetricSinkUrl(url: string | null) {
-  metricSinkUrl = url
+  setNativeQaSinkUrl(url)
 }
 
 export function useMobileLayoutProbe(enabled: boolean) {
@@ -87,18 +86,8 @@ function publishMetric(metric: MobileLayoutMetric) {
 
   if (Platform.OS !== 'web') {
     console.info(`TOLARIA_MOBILE_LAYOUT_METRIC ${JSON.stringify(metric)}`)
-    publishMetricToSink(metric)
+    postNativeQaEvent(metric)
   }
-}
-
-function publishMetricToSink(metric: MobileLayoutMetric) {
-  if (!metricSinkUrl) return
-
-  void fetch(metricSinkUrl, {
-    body: JSON.stringify(metric),
-    headers: { 'content-type': 'application/json' },
-    method: 'POST',
-  }).catch(() => undefined)
 }
 
 function roundMetric(value: number) {

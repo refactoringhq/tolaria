@@ -157,3 +157,35 @@ vault throughput, Android, or file-provider behavior.
   on the iPad simulator (1,758 ms for the small disposable round trip).
 - No UI copy or analytics changes; this is persistence correctness, not a new
   user action. Live file-provider access still requires the standalone build.
+
+## Standalone QA and provider-file foundation
+
+- Built and installed the current-source standalone iPad app, rather than testing
+  the old August binary or substituting the browser for native QA.
+- Reproduced a standalone QA harness failure: JavaScript persistence proofs were
+  visible in Metro but absent from the iOS unified log. The loopback collector now
+  carries both metrics and known proof events. The standalone app passed all 140
+  layout assertions and the native WYSIWYG save/persistence proof after this fix.
+- Added a Foundation-only Swift package: nine real-filesystem tests cover atomic
+  writes, SHA-256 revision checks, external edits/deletions, create collisions,
+  special and Unicode filenames, symlinks, traversal, and bookmark restoration.
+  The DEBUG-only native bridge can run disposable iOS file-access checks too.
+- This is storage groundwork, not a live-folder feature claim. Picker integration,
+  refresh/indexing, directory mutations, and conflict recovery remain required
+  before exposing original provider files to editing (ADR 0198).
+- The Mac locked during unattended work. Interactive CUA QA stopped; simulator
+  instrumentation and builds continued without attempting to unlock it. No
+  additional continuous-gesture verification is claimed.
+- Android setup is absent: no SDK/emulator and only an old x86 Java 8 runtime.
+  Android tablet QA remains a separate required gate.
+- Touched and new scorable files score 10.0. Scoped Codacy found only the already
+  reviewed development-loopback Git proof callback warning, not a new security
+  defect. No UI copy changed; no product analytics event is appropriate for this
+  internal QA/storage groundwork. Demo fixtures and the original Laputa vault
+  remain untouched.
+- Standalone iOS verification passed all five file-access checks plus the real
+  Git round trip (2,634 ms for the disposable fixture). Restoring the existing
+  app-local copy measured 6,036 files: 1,414 ms native read and 1,601 ms JavaScript
+  snapshot construction. These are debug-run baselines, not a release performance
+  budget or proof of fast large-vault Git sync. No original vault files were read
+  or written during this measurement.

@@ -10,6 +10,8 @@ const root = await mkdtemp(join(tmpdir(), 'tolaria-native-git-'))
 const gitOptions = { env: gitTestEnvironment(), stdio: 'pipe' }
 const remote = join(root, 'team', 'vault.git')
 const seed = join(root, 'seed')
+const standalone = process.argv.includes('--standalone')
+const bundleId = standalone ? 'com.tolaria.mobile.dev' : 'host.exp.Exponent'
 let server
 let timeout
 
@@ -54,14 +56,15 @@ try {
     void readProof(request, response, resolveProof, rejectProof).catch(rejectProof)
     return true
   })
-  const url = `exp://127.0.0.1:8081/--/?source=fixture&gitProbe=${encodeURIComponent(server.url)}&qaRun=native-git`
+  const scheme = standalone ? 'tolaria:///' : 'exp://127.0.0.1:8081/--/'
+  const url = `${scheme}?source=fixture&gitProbe=${encodeURIComponent(server.url)}&qaRun=native-git`
   try {
-    execFileSync('xcrun', ['simctl', 'terminate', 'booted', 'host.exp.Exponent'], { stdio: 'pipe' })
+    execFileSync('xcrun', ['simctl', 'terminate', 'booted', bundleId], { stdio: 'pipe' })
   } catch { /* Expo may not be running. */ }
   execFileSync('xcrun', ['simctl', 'openurl', 'booted', url])
   const result = await proof
   console.log(JSON.stringify(result, null, 2))
-  if (!result.passed) process.exitCode = 1
+  if (!result.passed || (standalone && !result.nativeFiles)) process.exitCode = 1
 } finally {
   clearTimeout(timeout)
   await server?.close()

@@ -32,6 +32,20 @@ SecureStore writes from React. Native Git HTTP uses Expo's streaming fetch with
 redirects disabled. The footer distinguishes local-only folders, pending sync,
 success, failure, and divergence; edits clear the previous successful sync state.
 
+## Native Provider File Foundation
+
+`modules/tolaria-workspace-access/ios/CoordinatedWorkspaceFile.swift` wraps scoped,
+coordinated reads and atomic revision-checked writes. `WorkspaceBookmarkStore`
+persists and restores the original directory grant; `WorkspaceFileSafety` rejects
+unsafe relative paths and symlinks. These are not yet wired to the live-folder UI.
+The Swift package's filesystem tests run without Expo. The standalone native Git
+probe additionally invokes the DEBUG-only iOS file-access proof with disposable
+files and isolated preferences. See ADR 0198 for the remaining integration gates.
+
+`nativeQaSink.ts` carries layout measurements and known persistence proofs to the
+simulator harness over loopback, so standalone QA does not depend on JavaScript
+console messages appearing in the iOS unified log.
+
 ## Tablet Panel Motion
 
 `tabletPanelGestureIntent.ts` decides whether a touch should move panels or yield

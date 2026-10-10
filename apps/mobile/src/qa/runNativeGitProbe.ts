@@ -1,10 +1,12 @@
 import { Directory, File, Paths } from 'expo-file-system'
+import { requireOptionalNativeModule } from 'expo'
 import { nativeGitHttp } from '../workspace/git/nativeGitHttp'
 import type { HttpClient } from 'isomorphic-git'
 import { cloneGitVault, syncGitVault } from '../workspace/git/gitRemote'
 import { createExpoGitFileSystem } from '../workspace/git/expoGitFileSystem'
 import { gitVirtualRoot } from '../workspace/git/gitFileSystemPaths'
 import { assertNativeWorkspaceWriteErrors } from './nativeWorkspaceWriteErrors'
+import { nativeVaultReadBenchmark } from './nativeVaultReadBenchmark'
 
 let running = false
 
@@ -17,14 +19,25 @@ export async function runNativeGitProbe(endpoint: string) {
   try {
     root.create()
     await assertNativeWorkspaceWriteErrors(root)
+    const nativeFiles = await nativeFileAccessProof()
     const proof = await roundTrip(root, endpoint)
-    await publishProof(endpoint, { ...proof, elapsedMs: Date.now() - started })
+    const elapsedMs = Date.now() - started
+    const restoredVault = nativeFiles ? await nativeVaultReadBenchmark() : null
+    await publishProof(endpoint, { ...proof, nativeFiles, restoredVault, elapsedMs })
   } catch (error) {
     await publishProof(endpoint, { error: error instanceof Error ? error.message : 'unknown', stack: error instanceof Error ? error.stack : null, passed: false })
   } finally {
     if (root.exists) root.delete()
     running = false
   }
+}
+
+async function nativeFileAccessProof() {
+  const module = requireOptionalNativeModule<{ runFileAccessProbe?: () => Promise<Record<string, boolean>> }>('TolariaWorkspaceAccess')
+  if (!module?.runFileAccessProbe) return null
+  const checks = await module.runFileAccessProbe()
+  if (!Object.values(checks).every(Boolean)) throw new Error('nativeFileAccessProofFailed')
+  return checks
 }
 
 async function roundTrip(root: Directory, endpoint: string) {

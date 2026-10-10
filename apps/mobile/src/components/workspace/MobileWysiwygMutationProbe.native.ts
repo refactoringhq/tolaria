@@ -1,5 +1,6 @@
 import { useEffect, type MutableRefObject } from 'react'
 import type { EditorBridge } from '@10play/tentap-editor'
+import { logNativeQaProof } from '../../qa/nativeQaSink'
 import {
   nativeWysiwygMutationLogLine,
   nativeWysiwygMutationProbeContent,
@@ -74,7 +75,7 @@ export function enableNativeWysiwygMutationProbe(refs: NativeWysiwygMutationProb
 }
 
 export function publishNativeWysiwygMutationProof(noteId: string, content: string, json?: unknown): void {
-  console.info(nativeWysiwygMutationLogLine(nativeWysiwygMutationProof({ content, json, noteId })))
+  logNativeQaProof(nativeWysiwygMutationLogLine(nativeWysiwygMutationProof({ content, json, noteId })))
 }
 
 function isContentSettableEditorBridge(editor: EditorBridge | null): editor is ContentSettableEditorBridge {

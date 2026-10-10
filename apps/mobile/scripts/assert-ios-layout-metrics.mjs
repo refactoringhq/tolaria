@@ -12,6 +12,7 @@ import {
   parseNativeLayoutMetrics,
 } from '../src/qa/nativeLayoutMetrics.ts'
 import { assertNativeQaOpenUrl } from '../src/qa/nativeQaUrls.ts'
+import { nativeQaSinkLogLine } from '../src/qa/nativeQaSink.ts'
 import {
   assertNativeWysiwygMutationProofs,
   formatNativeWysiwygMutationFailures,
@@ -241,7 +242,7 @@ async function startMetricSinkServer() {
 
   return {
     close: () => closeServer(server),
-    logText: () => metrics.map(metricLogLine).join('\n'),
+    logText: () => metrics.map(nativeQaSinkLogLine).filter(Boolean).join('\n'),
     url: `http://127.0.0.1:${port}`,
   }
 }
@@ -272,10 +273,6 @@ function closeServer(server) {
   return new Promise((resolve, reject) => {
     server.close((error) => (error ? reject(error) : resolve()))
   })
-}
-
-function metricLogLine(metric) {
-  return `TOLARIA_MOBILE_LAYOUT_METRIC ${JSON.stringify(metric)}`
 }
 
 function sleep(ms) {
@@ -393,7 +390,7 @@ function collectNativeQaEvidence({ device, logStart, metricSink, options }) {
 
   return {
     layoutLogs: combinedLayoutLogs(simulatorLogs, metricSink),
-    proofLogs: simulatorLogs,
+    proofLogs: combinedLayoutLogs(simulatorLogs, metricSink),
   }
 }
 
