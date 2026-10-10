@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from 'react'
+import { useCallback, useContext, useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from 'react'
+import { WorkspaceSyncEditorsContext } from '../workspace/workspaceSyncEditors'
 import {
   applyMobileWorkspaceEditWithWrites,
   type MobileWorkspaceEdit,
@@ -88,9 +89,13 @@ function useWorkspaceEditApplier({
   setWorkspaceHistory: WorkspaceHistorySetter
   snapshotState: ReturnType<typeof useWorkspaceSnapshotState>
 }) {
+  const syncEditors = useContext(WorkspaceSyncEditorsContext)
+  const [generation] = useState(() => syncEditors?.generation())
   return useCallback((edit: MobileWorkspaceEdit, options: WorkspaceEditOptions = {}) => {
     const previousSnapshot = snapshotState.workspaceSnapshotRef.current
+    if (generation !== syncEditors?.generation()) return { snapshot: previousSnapshot, writes: [] }
     const result = applyWorkspaceEditToWritableSnapshot(previousSnapshot, edit)
+    if (result.writes.length > 0) syncEditors?.markDirty()
     snapshotState.replaceWorkspaceSnapshot(result.snapshot)
     recordWorkspaceEditHistory({ edit, options, previousSnapshot, resultSnapshot: result.snapshot, setWorkspaceHistory })
     if (result.writes.length > 0) void persistWorkspaceWrites({
@@ -101,7 +106,7 @@ function useWorkspaceEditApplier({
       writes: result.writes,
     })
     return result
-  }, [repository, repositoryRequest, setWorkspaceHistory, snapshotState])
+  }, [generation, repository, repositoryRequest, setWorkspaceHistory, snapshotState, syncEditors])
 }
 
 export function applyWorkspaceEditToWritableSnapshot(

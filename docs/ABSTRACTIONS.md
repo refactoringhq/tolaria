@@ -20,7 +20,17 @@ Expo's filesystem on the booted iOS simulator, using disposable repositories onl
 `workspaceWriteQueue.ts` retains failed mutations in order and drains them before
 Git. `workspaceSyncEditors.ts` collects awaitable editor preparation operations;
 `editorSaveGate.ts` prevents stale TenTap replies from overwriting pulled content.
-The vault manager must use both boundaries (ADR 0196).
+The vault manager uses both boundaries (ADR 0196). `MobileVaultProvider` owns
+vault switching and manual sync, while a separate memoized workspace context
+prevents progress updates from re-indexing the vault. `savedVaultOperation.ts`
+freezes/flushes editors, drains disk writes, invalidates old callback generations,
+and remounts from disk; a pre-barrier failure instead resumes the existing draft.
+`managedGitStorage.native.ts` keeps app-owned working copies and a credential-free
+catalog. Catalog publication renames a validated pending file and retains a
+recoverable backup. `githubAccountState.ts` isolates cancellation and ordered
+SecureStore writes from React. Native Git HTTP uses Expo's streaming fetch with
+redirects disabled. The footer distinguishes local-only folders, pending sync,
+success, failure, and divergence; edits clear the previous successful sync state.
 
 ## Tablet Panel Motion
 

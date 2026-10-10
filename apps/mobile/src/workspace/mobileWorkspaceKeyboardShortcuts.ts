@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useContext, useEffect } from 'react'
+import { WorkspaceSyncEditorsContext } from './workspaceSyncEditors'
 import {
   optionalNativeMobileKeyCommandsModule,
   type NativeMobileKeyCommandEvent,
@@ -53,21 +54,26 @@ export function useMobileWorkspaceKeyboardShortcuts({
   onShortcutAction,
   onToggleRawEditor,
 }: KeyboardShortcutHandlers) {
+  const syncEditors = useContext(WorkspaceSyncEditorsContext)
   useEffect(() => {
+    const handlers = {
+      commandPalette: onOpenCommandPalette,
+      createNote: onCreateNote,
+      findInNote: onOpenFindInNote,
+      nextNote: onSelectNextNote,
+      previousNote: onSelectPreviousNote,
+      search: onOpenSearch,
+      toggleRawEditor: onToggleRawEditor,
+    }
     const handleKeyDown = (event: MobileKeyboardShortcutEvent) => {
+      if (syncEditors?.isBlocked()) return
       const action = mobileWorkspaceKeyboardAction(event)
       if (!action) return
       if (!shouldHandleMobileWorkspaceKeyboardAction(action, event, { nativeNoteNavigationEnabled })) return
 
       event.preventDefault?.()
       onShortcutAction?.(action, event)
-      if (action === 'commandPalette') onOpenCommandPalette()
-      else if (action === 'findInNote') onOpenFindInNote?.()
-      else if (action === 'nextNote') onSelectNextNote?.()
-      else if (action === 'previousNote') onSelectPreviousNote?.()
-      else if (action === 'search') onOpenSearch()
-      else if (action === 'toggleRawEditor') onToggleRawEditor?.()
-      else onCreateNote?.()
+      handlers[action]?.()
     }
 
     return installMobileWorkspaceKeyboardShortcuts(handleKeyDown)
@@ -81,6 +87,7 @@ export function useMobileWorkspaceKeyboardShortcuts({
     onShortcutAction,
     onToggleRawEditor,
     nativeNoteNavigationEnabled,
+    syncEditors,
   ])
 }
 
@@ -131,22 +138,19 @@ function isKeyboardTarget(target: KeyboardTargetCandidate): target is KeyboardDo
 export function mobileWorkspaceKeyboardAction(
   event: Pick<KeyboardEvent, 'altKey' | 'ctrlKey' | 'key' | 'metaKey' | 'shiftKey'> & Partial<Pick<KeyboardEvent, 'code'>>,
 ): MobileWorkspaceKeyboardAction | null {
-  const key = normalizedKeyboardKey(event)
-  if (!event.metaKey && !event.ctrlKey) {
-    if (event.altKey || event.shiftKey) return null
-    if (key === 'arrowdown') return 'nextNote'
-    if (key === 'arrowup') return 'previousNote'
-    return null
-  }
   if (event.altKey || event.shiftKey) return null
-
-  if (key === 'k' || key === 'keyk') return 'commandPalette'
-  if (key === 'f' || key === 'keyf') return 'findInNote'
-  if (key === 'o' || key === 'keyo' || key === 'p' || key === 'keyp') return 'search'
-  if (key === '\\' || key === 'backslash') return 'toggleRawEditor'
-  if (key === 'n' || key === 'keyn') return 'createNote'
-  return null
+  const key = normalizedKeyboardKey(event).replace(/^key/u, '')
+  const actions = event.metaKey || event.ctrlKey ? commandActions : navigationActions
+  return actions.get(key) ?? null
 }
+
+const commandActions = new Map<string, MobileWorkspaceKeyboardAction>([
+  ['k', 'commandPalette'], ['f', 'findInNote'], ['o', 'search'], ['p', 'search'],
+  ['\\', 'toggleRawEditor'], ['backslash', 'toggleRawEditor'], ['n', 'createNote'],
+])
+const navigationActions = new Map<string, MobileWorkspaceKeyboardAction>([
+  ['arrowdown', 'nextNote'], ['arrowup', 'previousNote'],
+])
 
 export function shouldHandleMobileWorkspaceKeyboardAction(
   action: MobileWorkspaceKeyboardAction,

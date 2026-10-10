@@ -12,6 +12,7 @@ import {
   type NativeWorkspaceSelection,
 } from '../workspace/nativeWorkspacePicker'
 import { useNativeWorkspace } from '../workspace/useNativeWorkspace'
+import { MobileVaultDisplayContext } from '../workspace/MobileVaultContext'
 import { initialMobileEditorStateFromMode } from './mobileEditorMode'
 import {
   nativeSourceSelectionProbeEnabled,
@@ -128,7 +129,7 @@ export function MobileUiLab() {
   const actionAdapterProbeRunKey = searchParams.get('qaRun') ?? 'interactive'
   const selectedSnapshot = mobileSnapshotWithRequestedSelectedNote(
     workspaceSource.baseSnapshot,
-    requestedSelectedNoteId(searchParams),
+    requestedSelectedNoteId(searchParams) ?? nativeWorkspace?.selectedNoteId ?? null,
   )
   const snapshot = mobileSnapshotForProbes(selectedSnapshot, {
     tableOfContentsProbe: qa.tableOfContentsProbe,
@@ -164,67 +165,22 @@ export function MobileUiLab() {
   const statusScreen = mobileUiStatusScreen({ devVault, devVaultUrl, nativeWorkspaceRestorePending, source })
   if (statusScreen) return statusScreen
 
-  if (isWideEnoughForTablet) {
-    return (
-      <TabletWorkspace
-        key={workspaceKey}
-        forceDesktopPanels={qa.forceDesktopPanels}
-        initialCommandPaletteOpen={qa.initialCommandPaletteOpen}
-        initialActionSheet={qa.initialActionSheet}
-        initialEditorEditing={qa.initialEditorEditing}
-        initialEditorEditingMode={qa.initialEditorEditingMode}
-        commandPaletteProbe={qa.mobileCommandPaletteProbe}
-        keyboardShortcutProbe={qa.mobileKeyboardShortcutProbe}
-        layoutProbe={qa.layoutProbe}
-        onOpenNativeVault={handleOpenNativeVault}
-        repository={repository}
-        repositoryRequest={repositoryRequest}
-        sourceIdleSave={!editorIdleSaveDisabled(searchParams)}
-        sourceSelectionProbe={qa.sourceSelectionProbe}
-        snapshot={snapshot}
-        tableOfContentsProbe={qa.tableOfContentsProbe}
-        tabletTransitionProbe={qa.tabletTransitionProbe}
-        onTableOfContentsScrollProof={qa.tableOfContentsProbe ? handleTableOfContentsScrollProof : undefined}
-        wysiwygAutocompleteProbe={qa.wysiwygAutocompleteProbe}
-        wysiwygExternalLinkProbe={qa.wysiwygExternalLinkProbe}
-        wysiwygFormatCommandProbe={qa.wysiwygFormatCommandProbe}
-        wysiwygInputTransformProbe={qa.wysiwygInputTransformProbe}
-        wysiwygMarkdownBlockProbe={qa.wysiwygMarkdownBlockProbe}
-        wysiwygMathEditProbe={qa.wysiwygMathEditProbe}
-        wysiwygTableCommandMutationProbe={qa.wysiwygTableCommandMutationProbe}
-        wysiwygWikilinkInsertProbe={qa.wysiwygWikilinkInsertProbe}
-        wysiwygMutationProbe={qa.wysiwygMutationProbe}
-      />
-    )
+  const sharedProps = {
+    ...qa,
+    commandPaletteProbe: qa.mobileCommandPaletteProbe,
+    keyboardShortcutProbe: qa.mobileKeyboardShortcutProbe,
+    onOpenNativeVault: handleOpenNativeVault,
+    repository,
+    repositoryRequest,
+    sourceIdleSave: !editorIdleSaveDisabled(searchParams),
+    snapshot,
   }
-
   return (
-    <PhoneWorkspace
-      key={workspaceKey}
-      initialEditorEditing={qa.initialEditorEditing}
-      initialEditorEditingMode={qa.initialEditorEditingMode}
-      initialCommandPaletteOpen={qa.initialCommandPaletteOpen}
-      initialActionSheet={qa.initialActionSheet}
-      commandPaletteProbe={qa.mobileCommandPaletteProbe}
-      keyboardShortcutProbe={qa.mobileKeyboardShortcutProbe}
-      initialState={currentPhoneState(searchParams)}
-      layoutProbe={qa.layoutProbe}
-      onOpenNativeVault={handleOpenNativeVault}
-      repository={repository}
-      repositoryRequest={repositoryRequest}
-      sourceIdleSave={!editorIdleSaveDisabled(searchParams)}
-      sourceSelectionProbe={qa.sourceSelectionProbe}
-      snapshot={snapshot}
-      wysiwygAutocompleteProbe={qa.wysiwygAutocompleteProbe}
-      wysiwygExternalLinkProbe={qa.wysiwygExternalLinkProbe}
-      wysiwygFormatCommandProbe={qa.wysiwygFormatCommandProbe}
-      wysiwygInputTransformProbe={qa.wysiwygInputTransformProbe}
-      wysiwygMarkdownBlockProbe={qa.wysiwygMarkdownBlockProbe}
-      wysiwygMathEditProbe={qa.wysiwygMathEditProbe}
-      wysiwygTableCommandMutationProbe={qa.wysiwygTableCommandMutationProbe}
-      wysiwygWikilinkInsertProbe={qa.wysiwygWikilinkInsertProbe}
-      wysiwygMutationProbe={qa.wysiwygMutationProbe}
-    />
+    <MobileVaultDisplayContext.Provider value={{ source, rootUri: repositoryRequest.vaultRootUri }}>
+      {isWideEnoughForTablet
+        ? <TabletWorkspace key={workspaceKey} {...sharedProps} onTableOfContentsScrollProof={qa.tableOfContentsProbe ? handleTableOfContentsScrollProof : undefined} />
+        : <PhoneWorkspace key={workspaceKey} {...sharedProps} initialState={currentPhoneState(searchParams)} />}
+    </MobileVaultDisplayContext.Provider>
   )
 }
 

@@ -9,6 +9,7 @@ import {
 import type { NativeWorkspaceIndex } from './nativeWorkspaceAccess'
 
 export type NativeWorkspaceSelection = {
+  selectedNoteId?: string
   index?: NativeWorkspaceIndex
   vaultAlias: string | null
   vaultLabel: string

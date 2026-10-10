@@ -1165,3 +1165,27 @@ files:
     inspector.properties.valueKind.color: cb5feb1b7314637725a2e73bdc9f7295
     status.vault.devBridgeMissingUrl: 4bdc5014ece1669f626eee53acb8f820
     status.vault.devBridgeFailed: 7e363c19a1615bddf02075956534d1f0
+    mobile.vaults.localOnly: 0dae103909ed6e557fdcf65c22cf8a23
+    mobile.vaults.localCopy: aa20c1d667c2ef2eb659ff3c2b11697c
+    mobile.vaults.github: d3b7c913cd04ebfec0e9ec32cb6fd58c
+    mobile.vaults.signIn: 9906352b29a82243c688629fd911893e
+    mobile.vaults.signOut: c87aacf5673fada1108c9f809d354311
+    mobile.vaults.notConfigured: 2d33e8a8e25632cf621aafc08d241f78
+    mobile.vaults.repositoryUrl: 03f473f095af3f5db1b6cf6a25dd5cf7
+    mobile.vaults.clone: 47264ada9bf203c6967098ce1bb23d5f
+    mobile.vaults.cloning: b1f52f7c8685c73d7808f5f419448a0b
+    mobile.vaults.repositories: de1f88f6f7789baf4d35f2919f100fc3
+    mobile.vaults.loadRepositories: 8b6144929a0512d94cd191e6283b4cb0
+    mobile.vaults.more: f6b5f35f6564a567f1810df0b730e3dc
+    mobile.vaults.openGitHub: 66ec93052668cd43d0ec1f100bc1824b
+    mobile.vaults.deviceCode: 67f981e4910421e95dc4a88be242397b
+    mobile.vaults.requestFailed: 23d523bd5f38e459cb818abda1045032
+    mobile.vaults.catalogFailed: 959d00638eaad955646fa2cafd9002dc
+    mobile.vaults.diverged: eb9883175a55936ddc2526ee0d9fe55d
+    mobile.vaults.checkpoint: a937d10266de6dce3543aebe7e4b5899
+    mobile.vaults.fetch: ededa7d275710f6c3a8f104844814afd
+    mobile.vaults.checkout: af625c3914c5c3cd45dd16bee7a8cf63
+    mobile.vaults.push: ed642ff7fa8977240a49343a72602b2e
+    mobile.vaults.saving: 16fad28eaaaba7669c199475fd7d9ef0
+    mobile.vaults.authFailed: 6c6512798939546ee12e8d906339906f
+    mobile.vaults.connectedAs: 4b5043f870431a18a158664675e94cc6

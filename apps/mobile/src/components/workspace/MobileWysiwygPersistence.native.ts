@@ -44,7 +44,7 @@ type FlushEditorDocumentOptions = {
 export function useFlushEditorDocument(options: FlushEditorDocumentOptions) {
   const [gate] = useState(() => createEditorSaveGate(nativeEditorDocumentAdapter(options)))
   useEffect(() => { gate.updateAdapter(nativeEditorDocumentAdapter(options)) }, [gate, options])
-  useWorkspaceSyncEditor(gate.prepare)
+  useWorkspaceSyncEditor(gate.prepare, options.noteId)
   return useCallback(() => {
     void gate.save().catch((error: unknown) => {
       console.warn('[mobile-editor] Failed to read TenTap JSON:', error)

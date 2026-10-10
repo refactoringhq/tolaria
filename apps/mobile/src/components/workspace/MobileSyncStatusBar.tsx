@@ -6,6 +6,7 @@ import { MobileButton } from '../../ui/MobileButton'
 import { desktopStatusBarParity } from '../../ui/desktopParity'
 import { mobileColors } from '../../ui/tokens'
 import type { MobileSyncStatus } from '../../workspace/mobileWorkspaceModel'
+import { useVaultSyncPresentation } from '../vaults/useVaultSyncPresentation'
 
 export function MobileSyncStatusBar({
   onOpenLocalVault,
@@ -14,20 +15,22 @@ export function MobileSyncStatusBar({
   onOpenLocalVault?: () => void
   sync: MobileSyncStatus
 }) {
+  const vault = useVaultSyncPresentation(sync)
   const action = statusBarAction(onOpenLocalVault)
 
   return (
     <View style={styles.syncBar} testID="sync-status-bar">
       <View style={styles.syncStatusGroup}>
-        <Tray color={syncStatusColor(sync)} size={desktopStatusBarParity.iconSize} />
-        <Text numberOfLines={1} style={styles.syncStatusText} testID="sync-status-label">{syncStatusLabel(sync)}</Text>
-        <Text numberOfLines={1} style={styles.syncDetailText} testID="sync-status-detail">{syncStatusDetail(sync)}</Text>
+        <Tray color={vault?.color ?? syncStatusColor(sync)} size={desktopStatusBarParity.iconSize} />
+        <Text numberOfLines={1} style={styles.syncStatusText} testID="sync-status-label">{vault?.label ?? syncStatusLabel(sync)}</Text>
+        {!vault && <Text numberOfLines={1} style={styles.syncDetailText} testID="sync-status-detail">{syncStatusDetail(sync)}</Text>}
       </View>
+      {vault?.sync && <MobileButton density="status" disabled={vault.busy} icon={<Tray color={mobileColors.textMuted} size={desktopStatusBarParity.iconSize} />} label={mobileText('status.sync.now')} onPress={() => { void vault.sync?.() }} variant="ghost" />}
       <MobileButton
         density="status"
         icon={action.icon}
-        label={action.label}
-        onPress={action.onPress}
+        label={vault ? mobileText('status.vault.manageWorkspaces') : action.label}
+        onPress={vault ? () => { void vault.open() } : action.onPress}
         variant="ghost"
       />
     </View>

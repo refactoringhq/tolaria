@@ -113,3 +113,34 @@ vault throughput, Android, or file-provider behavior.
   potential SSRF; reviewed as a development-only, loopback-validated fixture
   callback with generated data and no credentials or user-vault access.
 - No UI copy changes or analytics events: these are internal persistence fixes.
+
+## Vault-manager batch
+
+- Native Expo Go cloned `isomorphic-git/lightning-fs` over real GitHub HTTPS from
+  the new vault manager. The README opened in TenTap, a full app restart restored
+  the vault, and reading the note left its working copy clean. No remote push was
+  attempted against that public repository.
+- A nonexistent-repository clone returned a visible error and preserved the
+  previous vault and selected note. The local filesystem catalog contains only
+  the successfully cloned vault; failed clone directories are removed.
+- Catalog publication retains a validated backup. Regression tests cover an
+  interrupted publish and an unrecoverable corrupt catalog. Authentication tests
+  cover late restoration, cancelled authorization, and sign-out during listing.
+- The sync owner now uses the editor/disk barrier. After replacement, callbacks
+  from an old workspace generation cannot write. An edit clears the last sync
+  success; local folders no longer claim remote synchronization.
+- CodeScene: source editor 9.68 -> 10.0, keyboard shortcuts 8.45 -> 9.38;
+  other touched code remains 10.0 and new scorable code reaches 10.0.
+- Localization: Lara translated 19 configured targets; the existing Belarusian
+  Latin catalog was also updated. Validation passes all 21 catalogs.
+- Scoped Codacy Opengrep reviewed 56 files: two audit findings. The generated
+  vault suffix is not a credential or security boundary (exclusive directory
+  creation rejects collisions); shortcut dispatch uses a closed action union,
+  and untrusted key lookup now uses Map to exclude inherited object properties.
+  Neither finding represents a new Critical/High security defect.
+- PostHog is intentionally not enabled in this experimental mobile build: mobile
+  consent/settings integration is absent. No vault, account, or note data is sent
+  as analytics. Instrumentation remains a release-readiness task.
+- GitHub sign-in remains unverified and explicitly unavailable without
+  `EXPO_PUBLIC_GITHUB_CLIENT_ID`. Live folders, Android, and large-vault sync
+  performance remain open work, not implied by the public clone success.

@@ -1,5 +1,5 @@
 import { Directory, File, Paths } from 'expo-file-system'
-import webHttp from 'isomorphic-git/http/web'
+import { nativeGitHttp } from '../workspace/git/nativeGitHttp'
 import type { HttpClient } from 'isomorphic-git'
 import { cloneGitVault, syncGitVault } from '../workspace/git/gitRemote'
 import { createExpoGitFileSystem } from '../workspace/git/expoGitFileSystem'
@@ -33,7 +33,7 @@ async function roundTrip(root: Directory, endpoint: string) {
   const http: HttpClient = {
     request: (request) => {
       const url = new URL(request.url)
-      return webHttp.request({ ...request, url: `${endpoint}${url.pathname}${url.search}` })
+      return nativeGitHttp.request({ ...request, url: `${endpoint}${url.pathname}${url.search}` })
     },
   }
   const connection = (directory: Directory) => ({ fs: createExpoGitFileSystem(directory.uri), dir: gitVirtualRoot, http })

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useState } from 'react'
+import { NativeWorkspaceContext } from './NativeWorkspaceContext'
 import { optionalNativeWorkspaceAccessModule } from './nativeWorkspaceAccess'
 import {
   pickNativeWorkspaceDirectory,
@@ -7,6 +8,10 @@ import {
 } from './nativeWorkspacePicker'
 
 export function useNativeWorkspace() {
+  return useContext(NativeWorkspaceContext)
+}
+
+export function useLocalWorkspaceRestore() {
   const [accessModule] = useState(optionalNativeWorkspaceAccessModule)
   const [restorePending, setRestorePending] = useState(accessModule !== null)
   const [selection, setSelection] = useState<NativeWorkspaceSelection | null>(null)
@@ -16,6 +21,7 @@ export function useNativeWorkspace() {
   const open = useCallback(async (initialUri?: string | null) => {
     const nextSelection = await pickNativeWorkspaceDirectory(initialUri, accessModule)
     if (nextSelection) setSelection(nextSelection)
+    return nextSelection
   }, [accessModule])
 
   return { open, restorePending, selection }
