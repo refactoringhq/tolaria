@@ -1165,6 +1165,7 @@
   "status.vault.devBridgeFailed": "로컬 Vault 브리지 실패",
   "mobile.vaults.localOnly": "로컬 전용",
   "mobile.vaults.localCopy": "이 빌드에서는 가져온 폴더가 로컬 복사본입니다. 변경 사항은 iCloud나 원본 폴더에 다시 동기화되지 않습니다.",
+  "mobile.vaults.sessionFolder": "원본 폴더에 대한 세션 전용 액세스. 편집하면 해당 폴더의 파일이 변경됩니다. 다시 시작한 후 다시 여세요. Tolaria는 제공자 동기화를 관리하지 않습니다.",
   "mobile.vaults.github": "GitHub",
   "mobile.vaults.signIn": "GitHub로 로그인",
   "mobile.vaults.signOut": "로그아웃",

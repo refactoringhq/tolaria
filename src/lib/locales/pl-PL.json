@@ -1165,6 +1165,7 @@
   "status.vault.devBridgeFailed": "Lokalny most do skarbca nie powiódł się",
   "mobile.vaults.localOnly": "Tylko lokalnie",
   "mobile.vaults.localCopy": "W tej kompilacji zaimportowane foldery są kopiami lokalnymi. Zmiany nie są synchronizowane z iCloud ani z oryginalnym folderem.",
+  "mobile.vaults.sessionFolder": "Dostęp do oryginalnego folderu tylko w ramach sesji. Edycje zmieniają jego pliki. Otwórz ponownie po ponownym uruchomieniu; Tolaria nie zarządza synchronizacją z dostawcą.",
   "mobile.vaults.github": "GitHub",
   "mobile.vaults.signIn": "Zaloguj się przez GitHub",
   "mobile.vaults.signOut": "Wyloguj się",

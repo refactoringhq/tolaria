@@ -1165,6 +1165,7 @@
   "status.vault.devBridgeFailed": "Lokálny vault bridge zlyhal",
   "mobile.vaults.localOnly": "Iba lokálne",
   "mobile.vaults.localCopy": "Importované priečinky sú v tejto zostave lokálne kópie. Zmeny sa nesynchronizujú späť do iCloudu ani do pôvodného priečinka.",
+  "mobile.vaults.sessionFolder": "Prístup k pôvodnému priečinku len počas relácie. Úpravami sa menia jeho súbory. Po reštarte znova otvorte; Tolaria nespravuje synchronizáciu poskytovateľa.",
   "mobile.vaults.github": "GitHub",
   "mobile.vaults.signIn": "Prihlásiť sa cez GitHub",
   "mobile.vaults.signOut": "Odhlásiť sa",

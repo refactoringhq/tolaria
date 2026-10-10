@@ -10,6 +10,7 @@ import { MobileTextInput } from '../../ui/MobileTextInput'
 import { mobileColors } from '../../ui/tokens'
 import type { useMobileVaults } from '../../workspace/git/useMobileVaults'
 import { githubRepositoryUrl } from '../../workspace/git/githubRepositoryUrl'
+import { optionalNativeWorkspaceAccessModule } from '../../workspace/nativeWorkspaceAccess'
 import { MobileGitHubAccount } from './MobileGitHubAccount'
 import { vaultManagerStyles as styles } from './vaultManagerStyles'
 
@@ -28,7 +29,7 @@ export function MobileVaultManager({ manager }: { manager: VaultManager }) {
           <VaultOperationStatus manager={manager} />
           <View style={styles.section}>
             <MobileButton disabled={manager.busy} label={mobileText('status.vault.openLocal')} icon={<FolderOpen size={16} color={mobileColors.text} />} onPress={() => { void manager.openFolder() }} />
-            <Text style={styles.detail}>{mobileText('mobile.vaults.localCopy')}</Text>
+            <Text style={styles.detail}>{mobileText(optionalNativeWorkspaceAccessModule() ? 'mobile.vaults.localCopy' : 'mobile.vaults.sessionFolder')}</Text>
           </View>
           <SavedVaults manager={manager} />
           <MobileGitHubAccount account={manager.account} disabled={manager.busy} clone={manager.clone} />

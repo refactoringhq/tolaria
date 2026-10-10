@@ -1165,6 +1165,7 @@
   "status.vault.devBridgeFailed": "Ошибка локального моста хранилища",
   "mobile.vaults.localOnly": "Только локально",
   "mobile.vaults.localCopy": "В этой сборке импортированные папки представляют собой локальные копии. Изменения не синхронизируются с iCloud или исходной папкой.",
+  "mobile.vaults.sessionFolder": "Доступ к исходной папке только в рамках сеанса. Изменения вносят правки в его файлы. Откройте снова после перезапуска; Tolaria не управляет синхронизацией с провайдером.",
   "mobile.vaults.github": "GitHub",
   "mobile.vaults.signIn": "Войти с помощью GitHub",
   "mobile.vaults.signOut": "Выйти",

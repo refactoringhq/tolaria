@@ -1165,6 +1165,7 @@
   "status.vault.devBridgeFailed": "本地 Vault 桥接失败",
   "mobile.vaults.localOnly": "仅限本地",
   "mobile.vaults.localCopy": "在此版本中，导入的文件夹是本地副本。更改不会同步回 iCloud 或原始文件夹。",
+  "mobile.vaults.sessionFolder": "仅在会话期间可访问原始文件夹。编辑操作会更改其文件。重启后重新打开；Tolaria 不负责管理提供商同步。",
   "mobile.vaults.github": "GitHub",
   "mobile.vaults.signIn": "使用 GitHub 登录",
   "mobile.vaults.signOut": "退出登录",

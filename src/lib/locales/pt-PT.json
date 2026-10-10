@@ -1165,6 +1165,7 @@
   "status.vault.devBridgeFailed": "Falha na ponte do cofre local",
   "mobile.vaults.localOnly": "Apenas local",
   "mobile.vaults.localCopy": "As pastas importadas são cópias locais nesta versão. As alterações não são sincronizadas com o iCloud nem com a pasta original.",
+  "mobile.vaults.sessionFolder": "Acesso à pasta original apenas durante a sessão. As edições alteram os seus ficheiros. Reabrir após reiniciar; o Tolaria não gere a sincronização do fornecedor.",
   "mobile.vaults.github": "GitHub",
   "mobile.vaults.signIn": "Iniciar sessão com o GitHub",
   "mobile.vaults.signOut": "Terminar sessão",

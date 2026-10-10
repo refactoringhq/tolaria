@@ -1165,6 +1165,7 @@
   "status.vault.devBridgeFailed": "Лакальны мост сховішча не спрацаваў",
   "mobile.vaults.localOnly": "Толькі лакальна",
   "mobile.vaults.localCopy": "Імпартаваныя папкі ў гэтай зборцы — гэта лакальныя копіі. Змены не сінхранізуюцца з iCloud або зыходнай папкай.",
+  "mobile.vaults.sessionFolder": "Доступ да зыходнай тэчкі толькі на працягу сеансу. Правіць — значыць змяняць яго файлы. Адкрыйце зноў пасля перазапуску; Tolaria не кіруе сінхранізацыяй з пастаўшчыкамі.",
   "mobile.vaults.github": "GitHub",
   "mobile.vaults.signIn": "Увайсці з дапамогай GitHub",
   "mobile.vaults.signOut": "Выйсці",

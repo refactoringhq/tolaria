@@ -1165,6 +1165,7 @@
   "status.vault.devBridgeFailed": "Falha na ponte do vault local",
   "mobile.vaults.localOnly": "Apenas local",
   "mobile.vaults.localCopy": "Nesta versão, as pastas importadas são cópias locais. As alterações não são sincronizadas de volta com o iCloud nem com a pasta original.",
+  "mobile.vaults.sessionFolder": "Acesso à pasta original apenas durante a sessão. As edições alteram seus arquivos. Reabra após reiniciar; o Tolaria não gerencia a sincronização do provedor.",
   "mobile.vaults.github": "GitHub",
   "mobile.vaults.signIn": "Entrar com o GitHub",
   "mobile.vaults.signOut": "Sair",

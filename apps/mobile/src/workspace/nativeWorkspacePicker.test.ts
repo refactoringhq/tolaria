@@ -100,7 +100,20 @@ describe('native workspace picker', () => {
     expect(pickDirectory).toHaveBeenCalledOnce()
   })
 
-  it('restores a bookmarked native workspace without reopening the picker', async () => {
+  it('does not open the original folder when a managed import fails', async () => {
+    const pickDirectory = vi.fn().mockResolvedValue({ name: 'Laputa', uri: 'file:///original/' })
+    const module = accessModule({ importWorkspace: vi.fn().mockResolvedValue(null) })
+    await expect(pickNativeWorkspaceDirectoryWithDependencies(pickDirectory, module))
+      .rejects.toThrow('workspaceImportFailed')
+  })
+
+  it('uses session access only when no native importer exists', async () => {
+    const pickDirectory = vi.fn().mockResolvedValue({ name: 'Laputa', uri: 'file:///original/' })
+    await expect(pickNativeWorkspaceDirectoryWithDependencies(pickDirectory, null))
+      .resolves.toMatchObject({ vaultRootUri: 'file:///original/' })
+  })
+
+  it('restores a managed native workspace without reopening the picker', async () => {
     const module = accessModule({
       pickAndImportWorkspace: vi.fn().mockResolvedValue(null),
       restoreWorkspace: vi.fn().mockResolvedValue({

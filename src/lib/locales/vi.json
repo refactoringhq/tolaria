@@ -1165,6 +1165,7 @@
   "status.vault.devBridgeFailed": "Cầu vault cục bộ không thành công",
   "mobile.vaults.localOnly": "Chỉ cục bộ",
   "mobile.vaults.localCopy": "Các thư mục đã nhập là bản sao cục bộ trong bản dựng này. Các thay đổi không được đồng bộ hóa ngược lại với iCloud hoặc thư mục gốc.",
+  "mobile.vaults.sessionFolder": "Quyền truy cập vào thư mục gốc chỉ trong phạm vi phiên làm việc. Các thao tác chỉnh sửa sẽ thay đổi các tệp của nó. Mở lại sau khi khởi động lại; Tolaria không quản lý đồng bộ hóa nhà cung cấp.",
   "mobile.vaults.github": "GitHub",
   "mobile.vaults.signIn": "Đăng nhập bằng GitHub",
   "mobile.vaults.signOut": "Đăng xuất",

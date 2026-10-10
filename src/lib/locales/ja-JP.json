@@ -1165,6 +1165,7 @@
   "status.vault.devBridgeFailed": "ローカルVaultブリッジに失敗しました",
   "mobile.vaults.localOnly": "ローカルのみ",
   "mobile.vaults.localCopy": "このビルドでは、インポートされたフォルダーはローカルコピーです。変更はiCloudや元のフォルダに同期されません。",
+  "mobile.vaults.sessionFolder": "元のフォルダへのアクセスはセッション中のみです。編集すると、そのファイルが変更されます。再起動後に再度開いてください。Tolariaはプロバイダーの同期を管理しません。",
   "mobile.vaults.github": "GitHub",
   "mobile.vaults.signIn": "GitHubでサインイン",
   "mobile.vaults.signOut": "サインアウト",

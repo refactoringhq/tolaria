@@ -58,11 +58,11 @@ export async function pickNativeWorkspaceDirectoryWithDependencies(
 
   const picked = await pickNativeWorkspaceDirectoryWithPicker(pickDirectory, initialUri ?? undefined)
   if (!picked) return null
+  if (!module) return picked
 
   const imported = await importNativeWorkspace(picked.vaultRootUri, module)
-  return imported
-    ? nativeWorkspaceSelectionFromDirectory({ index: imported.index, name: imported.label, uri: imported.uri })
-    : picked
+  if (!imported) throw new Error('workspaceImportFailed')
+  return nativeWorkspaceSelectionFromDirectory({ index: imported.index, name: imported.label, uri: imported.uri })
 }
 
 export async function restoreNativeWorkspaceDirectory(

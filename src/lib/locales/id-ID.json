@@ -1165,6 +1165,7 @@
   "status.vault.devBridgeFailed": "Jembatan vault lokal gagal",
   "mobile.vaults.localOnly": "Hanya lokal",
   "mobile.vaults.localCopy": "Folder yang diimpor adalah salinan lokal dalam build ini. Perubahan tidak disinkronkan kembali ke iCloud atau folder aslinya.",
+  "mobile.vaults.sessionFolder": "Akses ke folder asli hanya selama sesi. Penyuntingan mengubah file-filenya. Buka kembali setelah memulai ulang; Tolaria tidak mengelola sinkronisasi penyedia.",
   "mobile.vaults.github": "GitHub",
   "mobile.vaults.signIn": "Masuk dengan GitHub",
   "mobile.vaults.signOut": "Keluar",

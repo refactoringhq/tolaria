@@ -1165,6 +1165,7 @@
   "status.vault.devBridgeFailed": "Échec du pont de coffre local",
   "mobile.vaults.localOnly": "Local uniquement",
   "mobile.vaults.localCopy": "Dans cette version, les dossiers importés sont des copies locales. Les modifications ne sont pas synchronisées avec iCloud ni avec le dossier d'origine.",
+  "mobile.vaults.sessionFolder": "Accès au dossier d'origine uniquement pendant la session. Les modifications affectent ses fichiers. Rouvrir après le redémarrage ; Tolaria ne gère pas la synchronisation des fournisseurs.",
   "mobile.vaults.github": "GitHub",
   "mobile.vaults.signIn": "Se connecter avec GitHub",
   "mobile.vaults.signOut": "Se déconnecter",

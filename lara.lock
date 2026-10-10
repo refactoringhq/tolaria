@@ -1167,6 +1167,7 @@ files:
     status.vault.devBridgeFailed: 7e363c19a1615bddf02075956534d1f0
     mobile.vaults.localOnly: 0dae103909ed6e557fdcf65c22cf8a23
     mobile.vaults.localCopy: aa20c1d667c2ef2eb659ff3c2b11697c
+    mobile.vaults.sessionFolder: 957a1315ef9c0afeb8de62a2e72335c7
     mobile.vaults.github: d3b7c913cd04ebfec0e9ec32cb6fd58c
     mobile.vaults.signIn: 9906352b29a82243c688629fd911893e
     mobile.vaults.signOut: c87aacf5673fada1108c9f809d354311

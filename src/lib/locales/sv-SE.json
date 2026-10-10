@@ -1165,6 +1165,7 @@
   "status.vault.devBridgeFailed": "Lokal vault-brygga misslyckades",
   "mobile.vaults.localOnly": "Endast lokalt",
   "mobile.vaults.localCopy": "Importerade mappar är lokala kopior i den här versionen. Ändringar synkroniseras inte tillbaka till iCloud eller den ursprungliga mappen.",
+  "mobile.vaults.sessionFolder": "Åtkomst till den ursprungliga mappen endast under sessionen. Redigeringar ändrar dess filer. Öppna igen efter omstart; Tolaria hanterar inte synkronisering med leverantörer.",
   "mobile.vaults.github": "GitHub",
   "mobile.vaults.signIn": "Logga in med GitHub",
   "mobile.vaults.signOut": "Logga ut",

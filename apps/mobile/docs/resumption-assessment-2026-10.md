@@ -189,3 +189,16 @@ vault throughput, Android, or file-provider behavior.
   snapshot construction. These are debug-run baselines, not a release performance
   budget or proof of fast large-vault Git sync. No original vault files were read
   or written during this measurement.
+
+## Folder access disclosure
+
+- The vault manager now distinguishes the standalone local-copy importer from
+  Expo Go's session-only access to original files. It no longer promises that
+  Expo Go edits cannot affect the original folder.
+- A failing legacy managed importer rejects instead of falling back to the
+  original picked root. The regression reproduced that fallback before the fix;
+  all nine picker tests pass afterwards. Native picker cancellation still keeps
+  the current vault.
+- The new warning was translated with Lara into all 19 configured targets; the
+  existing Belarusian Latin catalog was updated too. This is a safety correction,
+  not a new user action requiring a product analytics event.
