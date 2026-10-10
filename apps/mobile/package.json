@@ -23,6 +23,7 @@
     "clsx": "^2.1.1",
     "expo": "~54.0.36",
     "expo-clipboard": "~8.0.8",
+    "expo-crypto": "~15.0.9",
     "expo-document-picker": "~14.0.8",
     "expo-file-system": "~19.0.23",
     "expo-print": "~15.0.8",

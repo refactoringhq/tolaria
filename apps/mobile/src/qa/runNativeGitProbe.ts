@@ -19,17 +19,25 @@ export async function runNativeGitProbe(endpoint: string) {
   try {
     root.create()
     await assertNativeWorkspaceWriteErrors(root)
+    const nativeDigestVerified = await verifyNativeDigest()
     const nativeFiles = await nativeFileAccessProof()
     const proof = await roundTrip(root, endpoint)
     const elapsedMs = Date.now() - started
     const restoredVault = nativeFiles ? await nativeVaultReadBenchmark() : null
-    await publishProof(endpoint, { ...proof, nativeFiles, restoredVault, elapsedMs })
+    await publishProof(endpoint, { ...proof, nativeFiles, nativeDigestVerified, restoredVault, elapsedMs })
   } catch (error) {
     await publishProof(endpoint, { error: error instanceof Error ? error.message : 'unknown', stack: error instanceof Error ? error.stack : null, passed: false })
   } finally {
     if (root.exists) root.delete()
     running = false
   }
+}
+
+async function verifyNativeDigest() {
+  const digest = await crypto.subtle.digest('SHA-1', new Uint8Array())
+  const hex = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+  if (hex !== 'da39a3ee5e6b4b0d3255bfef95601890afd80709') throw new Error('nativeDigestVerificationFailed')
+  return true
 }
 
 async function nativeFileAccessProof() {
@@ -53,8 +61,11 @@ async function roundTrip(root: Directory, endpoint: string) {
   }
   const connection = (directory: Directory) => ({ fs: createExpoGitFileSystem(directory.uri), dir: gitVirtualRoot, http })
   const repositoryUrl = 'https://github.com/team/vault'
+  const started = Date.now()
   await cloneGitVault(connection(first), repositoryUrl)
+  const firstCloned = Date.now()
   await cloneGitVault(connection(second), repositoryUrl)
+  const secondCloned = Date.now()
   const content = '---\ncustom: preserved\ntags: [native]\n---\n# Native Git round trip\n'
   new File(first, 'note.md').write(content)
   const attachment = new Uint8Array([0, 255, 1, 128, 10, 0, 250])
@@ -63,13 +74,21 @@ async function roundTrip(root: Directory, endpoint: string) {
   new File(first, 'deleted.md').delete()
   const author = { name: 'Native QA', email: 'qa@example.invalid' }
   const pushed = await syncGitVault(connection(first), author)
+  const firstSynced = Date.now()
   const pulled = await syncGitVault(connection(second), author)
+  const secondSynced = Date.now()
   const saved = await new File(second, 'note.md').text()
   const binary = await new File(second, 'attachments', 'bytes.bin').bytes()
   const binaryPreserved = binary.length === attachment.length && binary.every((byte, index) => byte === attachment[index])
   const deletionPreserved = !new File(second, 'deleted.md').exists
   const passed = saved === content && pushed.kind === 'synced' && pulled.kind === 'synced' && binaryPreserved && deletionPreserved
-  return { passed, binaryPreserved, deletionPreserved, pushed: pushed.kind, pulled: pulled.kind }
+  const timings = {
+    firstCloneMs: firstCloned - started,
+    secondCloneMs: secondCloned - firstCloned,
+    pushMs: firstSynced - secondCloned,
+    pullMs: secondSynced - firstSynced,
+  }
+  return { passed, binaryPreserved, deletionPreserved, pushed: pushed.kind, pulled: pulled.kind, timings }
 }
 
 async function publishProof(endpoint: string, proof: Record<string, unknown>) {

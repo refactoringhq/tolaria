@@ -3,11 +3,12 @@ import git, { type FsClient } from 'isomorphic-git'
 
 export type GitAuthor = { name: string; email: string }
 export type GitRelationship = 'equal' | 'ahead' | 'behind' | 'diverged'
-export type GitVaultContext = { fs: FsClient; dir: string }
+export type GitVaultContext = { fs: FsClient; dir: string; cache?: object }
 
 export { githubRepositoryUrl } from './githubRepositoryUrl'
 
-export function createGitVault(context: GitVaultContext) {
+export function createGitVault(options: GitVaultContext) {
+  const context = { ...options, cache: options.cache ?? {} }
   return {
     checkpoint: (author: GitAuthor) => checkpoint(context, author),
     integrate: (remoteOid: string) => integrate(context, remoteOid),
@@ -20,10 +21,11 @@ async function changes(context: GitVaultContext) {
 }
 
 async function checkpoint(context: GitVaultContext, author: GitAuthor) {
+  // Do not trust second-resolution stat matches for rapid equal-length edits.
+  await git.add({ ...context, filepath: '.', parallel: false })
   const changed = await changes(context)
   for (const [filepath, , worktree] of changed) {
     if (worktree === 0) await git.remove({ ...context, filepath })
-    else await git.add({ ...context, filepath })
   }
   const oid = changed.length
     ? await git.commit({ ...context, author, message: 'Update vault from Tolaria mobile' })

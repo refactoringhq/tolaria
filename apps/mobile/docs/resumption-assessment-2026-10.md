@@ -252,6 +252,37 @@ vault throughput, Android, or file-provider behavior.
   Metro status request, not remote unencrypted traffic; redirects are rejected.
   No UI copy or analytics changes. ADR 0199 records the additive native QA lane.
 
+## Native Git scale and rapid-edit safety
+
+- Added an opt-in 6,000-file generated fixture (~24 MB of content) to the native
+  Git harness. It never copies user notes or contacts a user's remote repository.
+- Before optimization, the standalone debug run passed correctness but took
+  90,863 / 154,789 ms for its two clones, 117,549 ms for push, and 108,908 ms
+  for pull (473,850 ms total). This is not acceptable as a launch performance target.
+- A Hermes CPU profile showed JavaScript hashing and garbage collection. Expo
+  Crypto now provides native digest support without replacing existing crypto
+  APIs. A library-owned cache is scoped to each sync, rather than repeatedly
+  reading immutable packs. The read-budget regression failed at three reads and
+  now passes at one.
+- A separate deterministic regression caught equal-length edits being omitted
+  from checkpoints when timestamps did not advance. Checkpoints now explicitly
+  stage file content before inspecting the matrix. This prioritizes correctness
+  over the library's metadata shortcut; large-vault costs must include that work.
+- The standalone app was rebuilt with Expo Crypto. The small native round trip
+  and all six native file-access checks pass (1,516 ms for the Git fixture).
+- Follow-up: clone 64,398 / 98,890 ms; push 116,589 ms; pull 122,913 ms;
+  total 404,585 ms. All content/binary/deletion checks pass. Cloning improved,
+  but sync is still around two minutes and **remains a launch blocker**. A second
+  profile points to filesystem info calls and URI/object construction. The native
+  digest's known SHA-1 vector was also verified directly on Hermes.
+- These are individual debug-simulator runs, with sampled profiling, not release
+  device latency guarantees. Do not claim light-speed sync from these results.
+- New/touched scorable files are 10.0; the native initializer has no scorable code
+  and no findings. Scoped Codacy reports only the existing development-loopback
+  proof callback audit warning; the rapid-edit fix has zero findings. No UI copy
+  changed; no product analytics event is appropriate for internal performance
+  and data-safety fixes. ADR 0200 documents the dependency and cache lifetime.
+
 ## Remaining integration limits
 
 - This branch has not been rebased onto the October `main` tip. The recovered

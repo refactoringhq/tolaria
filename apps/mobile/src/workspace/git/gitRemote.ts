@@ -29,16 +29,17 @@ export function syncGitVault(options: GitRemoteOptions, author: GitAuthor) {
 
 async function syncUnlocked(options: GitRemoteOptions, author: GitAuthor) {
   const { fs, dir } = options
-  const url = githubRepositoryUrl(String(await git.getConfig({ fs, dir, path: 'remote.origin.url' })))
-  const ref = await git.currentBranch({ fs, dir })
+  const context = { fs, dir, cache: {} }
+  const url = githubRepositoryUrl(String(await git.getConfig({ ...context, path: 'remote.origin.url' })))
+  const ref = await git.currentBranch(context)
   if (!ref) throw new Error('detachedHead')
-  const vault = createGitVault({ fs, dir })
+  const vault = createGitVault(context)
   emitPhase(options, 'checkpoint')
   const checkpoint = await vault.checkpoint(author)
   emitPhase(options, 'fetch')
-  const connection = transport(options, url)
+  const connection = transport({ ...options, cache: context.cache }, url)
   await git.fetch({ ...connection, url, ref, singleBranch: true, tags: false })
-  const remoteOid = await git.resolveRef({ fs, dir, ref: `refs/remotes/origin/${ref}` })
+  const remoteOid = await git.resolveRef({ ...context, ref: `refs/remotes/origin/${ref}` })
   emitPhase(options, 'checkout')
   const integrated = await vault.integrate(remoteOid)
   if (integrated === 'diverged') return { kind: 'diverged' as const, changedFiles: checkpoint.changedFiles }
@@ -54,11 +55,12 @@ function emitPhase(options: GitRemoteOptions, phase: GitSyncPhase) {
   options.onPhase?.(phase)
 }
 
-function transport({ fs, dir, http, token }: GitRemoteOptions, repositoryUrl: string) {
+function transport({ fs, dir, http, token, cache }: GitRemoteOptions, repositoryUrl: string) {
   return {
     fs,
     dir,
     http,
+    cache,
     onAuth: (url: string) => {
       if (githubRepositoryUrl(url) !== repositoryUrl || !token) return { cancel: true as const }
       return { username: 'x-access-token', password: token }

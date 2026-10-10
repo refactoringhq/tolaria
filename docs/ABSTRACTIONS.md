@@ -17,6 +17,15 @@ integration status and remaining native-provider work. This layer is not an
 iCloud synchronizer and must not label local disk writes as remote synchronization.
 `assert-native-git.mjs` exercises real smart-HTTP transport through Hermes and
 Expo's filesystem on the booted iOS simulator, using disposable repositories only.
+Set `TOLARIA_GIT_QA_FILES=6000` for the opt-in large-vault fixture and separate
+clone/push/pull timings; routine checks retain the fast two-note fixture.
+`gitRuntime.native.ts` supplies missing digest support through Expo Crypto, while
+`gitDigest.ts` preserves existing runtime APIs and byte-view boundaries. Git uses
+one library-owned cache per sync operation, released afterwards (ADR 0200).
+Checkpoints explicitly stage content before comparing the matrix, protecting
+same-length rapid edits that the library's coarse timestamp shortcut misses.
+This requires a content scan; the measured large-vault sync cost remains a
+release blocker, not hidden behind a misleading success/performance claim.
 `workspaceWriteQueue.ts` retains failed mutations in order and drains them before
 Git. `workspaceSyncEditors.ts` collects awaitable editor preparation operations;
 `editorSaveGate.ts` prevents stale TenTap replies from overwriting pulled content.
