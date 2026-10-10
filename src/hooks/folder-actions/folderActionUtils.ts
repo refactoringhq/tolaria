@@ -14,6 +14,7 @@ export interface FolderTab {
 
 export interface ConfirmFolderDeleteState {
   path: string
+  rootPath?: string
   title: string
   message: string
   confirmLabel: string
@@ -57,6 +58,11 @@ export function folderLabel(params: { folderPath: string }): string {
   return params.folderPath.split('/').filter(Boolean).at(-1) ?? params.folderPath
 }
 
+export function resolveFolderVaultPath(rowRootPath: string | undefined, activeVaultPath: string): string {
+  const trimmed = rowRootPath?.trim()
+  return trimmed ? trimmed : activeVaultPath
+}
+
 export async function invokeRenameFolder(params: {
   vaultPath: string
   folderPath: string
@@ -92,14 +98,16 @@ export function updateSelectionAfterFolderRename(params: {
 
   if (selection.kind === 'folder') {
     if (!isWithinPrefix({ path: selection.path, prefix: renameResult.old_path })) return
-    setSelection({
-      kind: 'folder',
-      path: replaceRelativeFolderPrefix({
-        path: selection.path,
-        oldPrefix: renameResult.old_path,
-        newPrefix: renameResult.new_path,
-      }),
+    const nextPath = replaceRelativeFolderPrefix({
+      path: selection.path,
+      oldPrefix: renameResult.old_path,
+      newPrefix: renameResult.new_path,
     })
+    setSelection(
+      selection.rootPath
+        ? { kind: 'folder', path: nextPath, rootPath: selection.rootPath }
+        : { kind: 'folder', path: nextPath },
+    )
     return
   }
 

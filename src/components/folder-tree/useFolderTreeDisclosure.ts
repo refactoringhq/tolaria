@@ -1,15 +1,27 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { SidebarSelection } from '../../types'
 import { ancestorTreePaths, expandedTreePaths, folderNodeKey, mergeExpandedPaths, scopedFolderKeys } from './folderTreeUtils'
+import type { FolderRenameTarget } from '../../hooks/folder-actions/useFolderRename'
 
 interface UseFolderTreeDisclosureInput {
   collapsed?: boolean
   onToggle?: () => void
-  renamingFolderPath?: string | null
+  renamingFolderPath?: FolderRenameTarget | string | null
   selection: SidebarSelection
 }
 
-function useExpandedFolders(selection: SidebarSelection, renamingFolderPath?: string | null) {
+function renamingExpansionPaths(renamingFolderPath?: FolderRenameTarget | string | null): string[] {
+  if (!renamingFolderPath) return []
+  const target = typeof renamingFolderPath === 'string' ? { path: renamingFolderPath } : renamingFolderPath
+  const paths = expandedTreePaths(target.path)
+  if (!target.rootPath) return paths
+  return [
+    folderNodeKey({ path: '', rootPath: target.rootPath }),
+    ...scopedFolderKeys(paths, target.rootPath),
+  ]
+}
+
+function useExpandedFolders(selection: SidebarSelection, renamingFolderPath?: FolderRenameTarget | string | null) {
   const [manualExpanded, setManualExpanded] = useState<Record<string, boolean>>({})
   const requiredExpandedPaths = useMemo(() => {
     const nextPaths: string[] = []
@@ -17,7 +29,7 @@ function useExpandedFolders(selection: SidebarSelection, renamingFolderPath?: st
       if (selection.path && selection.rootPath) nextPaths.push(folderNodeKey({ path: '', rootPath: selection.rootPath }))
       nextPaths.push(...scopedFolderKeys(ancestorTreePaths(selection.path), selection.rootPath))
     }
-    if (renamingFolderPath) nextPaths.push(...expandedTreePaths(renamingFolderPath))
+    nextPaths.push(...renamingExpansionPaths(renamingFolderPath))
     return [...new Set(nextPaths)]
   }, [renamingFolderPath, selection])
 
@@ -52,7 +64,7 @@ function useExpandedFolders(selection: SidebarSelection, renamingFolderPath?: st
 function useFolderSectionState(
   externalCollapsed: boolean | undefined,
   onToggle: (() => void) | undefined,
-  renamingFolderPath?: string | null,
+  renamingFolderPath?: FolderRenameTarget | string | null,
 ) {
   const [internalCollapsed, setInternalCollapsed] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
