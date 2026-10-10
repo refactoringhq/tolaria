@@ -11,6 +11,7 @@ import {
   preProcessFileAttachmentMarkdown,
   serializeFileAttachmentBlocks,
 } from './fileAttachmentMarkdown'
+import { restoreInlineColorsInBlocks } from './inlineColorMarkdown'
 import { restoreMarkdownHighlightsInBlocks } from './markdownHighlightMarkdown'
 import { restoreMathInBlocks, serializeMathAwareBlocks } from './mathMarkdown'
 import {
@@ -50,7 +51,7 @@ function serializeCalloutAndMathAwareBlocks(editor: MarkdownSerializer, blocks: 
 
   const flushPending = () => {
     if (pending.length === 0) return
-    const restored = restoreMarkdownHighlightsInBlocks(pending)
+    const restored = restoreInlineColorsInBlocks(restoreMarkdownHighlightsInBlocks(pending))
     const markdown = serializeMathAwareBlocks(editor, restored).trimEnd()
     if (markdown) chunks.push(markdown)
     pending = []
@@ -60,7 +61,7 @@ function serializeCalloutAndMathAwareBlocks(editor: MarkdownSerializer, blocks: 
     if (isCalloutBlock(block as Parameters<typeof isCalloutBlock>[0])) {
       flushPending()
       const [restoredCallout] = restoreMathInBlocks(
-        restoreMarkdownHighlightsInBlocks([block]),
+        restoreInlineColorsInBlocks(restoreMarkdownHighlightsInBlocks([block])),
       )
       chunks.push(serializeCalloutBlock(
         editor,
