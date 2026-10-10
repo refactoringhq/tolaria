@@ -15,6 +15,8 @@ device authorization and checks the resulting account identity; no client secret
 belongs in the mobile bundle. See ADR 0194 and the mobile October assessment for
 integration status and remaining native-provider work. This layer is not an
 iCloud synchronizer and must not label local disk writes as remote synchronization.
+`assert-native-git.mjs` exercises real smart-HTTP transport through Hermes and
+Expo's filesystem on the booted iOS simulator, using disposable repositories only.
 
 ## Tablet Panel Motion
 

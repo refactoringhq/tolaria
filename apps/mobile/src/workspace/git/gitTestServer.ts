@@ -13,8 +13,10 @@ export function gitTestEnvironment() {
 }
 
 /** Real smart-HTTP Git transport against disposable repositories, never user data. */
-export async function startGitTestServer(root: string) {
-  const server = createServer((request, response) => serveGit(root, request, response))
+export async function startGitTestServer(root: string, onRequest?: (request: IncomingMessage, response: ServerResponse) => boolean) {
+  const server = createServer((request, response) => {
+    if (!onRequest?.(request, response)) serveGit(root, request, response)
+  })
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
   const address = server.address()
   if (!address || typeof address === 'string') throw new Error('Missing test server address')
@@ -28,6 +30,7 @@ export async function startGitTestServer(root: string) {
   }
   return {
     http: client,
+    url: `http://127.0.0.1:${address.port}`,
     close: () => new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve())),
   }
 }

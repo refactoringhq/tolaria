@@ -20,7 +20,11 @@ export function createExpoGitFileSystem(rootUri: FileUri, module: FileSystemModu
         return options === 'utf8' || (typeof options === 'object' && options.encoding === 'utf8')
           ? bytes.toString('utf8') : bytes
       },
-      writeFile: async (path: GitPath, content: string | Uint8Array) => { file(path).write(content) },
+      writeFile: async (path: GitPath, content: string | Uint8Array) => {
+        requireParent(module, uri(path))
+        // Expo's JSI converter requires a plain Uint8Array, not a Buffer subclass.
+        file(path).write(typeof content === 'string' ? content : new Uint8Array(content))
+      },
       unlink: async (path: GitPath) => { requireEntry(module, uri(path), false); file(path).delete() },
       readdir: async (path: GitPath) => {
         requireEntry(module, uri(path), true)
@@ -28,6 +32,7 @@ export function createExpoGitFileSystem(rootUri: FileUri, module: FileSystemModu
       },
       mkdir: async (path: GitPath) => {
         if (module.Paths.info(uri(path)).exists) throw gitFsError('EEXIST')
+        requireParent(module, uri(path))
         directory(path).create()
       },
       rmdir: async (path: GitPath) => {
@@ -41,6 +46,11 @@ export function createExpoGitFileSystem(rootUri: FileUri, module: FileSystemModu
       symlink: async () => { throw gitFsError('ENOTSUP') },
     },
   }
+}
+
+function requireParent(module: FileSystemModule, uri: FileUri) {
+  const parent = uri.slice(0, uri.replace(/\/$/u, '').lastIndexOf('/'))
+  requireEntry(module, parent, true)
 }
 
 function requireEntry(module: FileSystemModule, uri: FileUri, directory: boolean) {

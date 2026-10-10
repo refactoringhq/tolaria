@@ -1,3 +1,4 @@
+import './gitRuntime'
 import git, { type FsClient } from 'isomorphic-git'
 
 export type GitAuthor = { name: string; email: string }

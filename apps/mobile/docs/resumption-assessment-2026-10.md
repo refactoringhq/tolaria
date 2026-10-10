@@ -77,5 +77,21 @@ conflict editing, multi-vault use, and phone polish are not first-launch prerequ
   at its original location, preserving it and recovering internal disk space.
   Removed only temporary repositories created by this run.
 
-This is a working assessment, not a release-readiness declaration. Tests in Node
-prove Git semantics, not native throughput or file-provider behavior.
+## Native Git batch
+
+- `node apps/mobile/scripts/assert-native-git.mjs` creates a disposable smart-HTTP
+  Git server and starts the current bundle in Expo Go on the booted simulator.
+  The in-app probe is development-only and accepts only a loopback test endpoint.
+- Actual Hermes/Expo filesystem clone, commit, push, and pull passed on iPad:
+  frontmatter, binary bytes, a nested attachment, and deletion survived the round
+  trip. The small fixture completed in 1,837 ms; this is not a large-vault budget.
+- Native-only fixes: provide the global Buffer required by the Git library;
+  convert Buffer subclasses to plain Uint8Array at Expo's JSI write boundary;
+  report missing parents as ENOENT; normalize harmless `.` path segments while
+  still rejecting traversal outside the working copy.
+- Touched code remains CodeScene 10.0; the Buffer initializer has no scorable code
+  and zero findings. No UI copy or analytics changes in this internal batch.
+
+This is a working assessment, not a release-readiness declaration. Native Git
+transport is proven for a small fixture, not live GitHub authentication, large
+vault throughput, Android, or file-provider behavior.
