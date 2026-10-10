@@ -5,8 +5,8 @@ directory = File.expand_path(ARGV.fetch(0))
 FileUtils.mkdir_p(directory)
 project = Xcodeproj::Project.new(File.join(directory, 'TabletPanelGestureTests.xcodeproj'))
 target = project.new_target(:ui_test_bundle, 'TabletPanelGestureTests', :ios, '15.1')
-source = File.expand_path('TabletPanelGestureTests.swift', __dir__)
-target.add_file_references([project.main_group.new_file(source)])
+sources = Dir.glob(File.expand_path('*Tests.swift', __dir__)).sort
+target.add_file_references(sources.map { |source| project.main_group.new_file(source) })
 target.build_configurations.each do |config|
   config.build_settings.merge!({
     'SWIFT_VERSION' => '5.0',

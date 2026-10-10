@@ -1187,5 +1187,9 @@
   "mobile.vaults.saving": "Zachavannie redaktara...",
   "mobile.vaults.authFailed": "Aŭtaryzacyja GitHub nie prajšła abo skončyłasia. Kab praciahnuć, uvajdzicie jašče raz.",
   "mobile.vaults.connectedAs": "Padklučana jak {login}",
-  "mobile.vaults.sessionFolder": "Dostup da zychodnaj tečki toĺki ŭ hetaj siesii. Praŭki zmianiajuć jaje fajły. Paśla pierazapusku adkryjcie tečku znoŭ; Tolaria nie kiruje synchranizacyjaj pravajdera."
+  "mobile.vaults.sessionFolder": "Dostup da zychodnaj tečki toĺki ŭ hetaj siesii. Praŭki zmianiajuć jaje fajły. Paśla pierazapusku adkryjcie tečku znoŭ; Tolaria nie kiruje synchranizacyjaj pravajdera.",
+  "editor.formatting.headings": "Zahałoŭki",
+  "editor.formatting.lists": "Spisy",
+  "editor.formatting.insert": "Ustavić",
+  "editor.formatting.more": "Bolš farmatavańnia"
 }

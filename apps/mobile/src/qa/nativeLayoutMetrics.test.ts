@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { desktopNoteItemParity, desktopPanelParity, desktopPropertyParity, desktopRelationshipParity, desktopSidebarParity, desktopToolbarActionParity } from '../ui/desktopParity'
+import { desktopNoteItemParity, desktopPanelParity, desktopPropertyParity, desktopRelationshipParity, desktopSidebarParity } from '../ui/desktopParity'
 import { mobileSpace } from '../ui/tokens'
 import {
   assertNativeMobileLayoutMetrics,
@@ -49,9 +49,9 @@ describe('native layout metrics', () => {
   it('keeps native editor and inspector contracts synced with desktop parity tokens', () => {
     expect(nativeWysiwygEditorMetricContract).toEqual({
       minFormHeight: 320,
-      toolbarActionCount: 21,
+      toolbarActionCount: 8,
       toolbarActionGap: mobileSpace.xs,
-      toolbarActionSize: desktopToolbarActionParity.iconButtonSize,
+      toolbarActionSize: 44,
       toolbarHostPaddingHorizontal: mobileSpace.md,
       toolbarHostPaddingTop: mobileSpace.xs,
     })
@@ -276,7 +276,7 @@ describe('native layout metrics', () => {
 
     expect(formatted).toContain('editor.wysiwyg.toolbarHost: WYSIWYG toolbar stays pinned to the editor bottom')
     expect(formatted).toContain('editor.wysiwyg.toolbar: WYSIWYG toolbar keeps desktop horizontal inset')
-    expect(formatted).toContain('editor.wysiwyg.toolbar.action.bold: WYSIWYG toolbar action keeps desktop button width')
+    expect(formatted).toContain('editor.wysiwyg.toolbar.action.bold: WYSIWYG toolbar action keeps tablet touch target width')
     expect(formatted).toContain('editor.wysiwyg.toolbar.action.italic: WYSIWYG toolbar action keeps desktop action gap')
   })
 })
@@ -379,7 +379,7 @@ const invalidNativeDesktopSpacingMetrics = [
   noteListItemMetric('noteList.item.open-source-project', { frameWidth: 284, headerX: 0, y: 22 }),
 ]
 
-const wysiwygToolbarActions = ['attachment', 'pastePlainText', 'bold', 'italic', 'strike', 'code', 'highlight', 'link', 'wikilink', 'heading1', 'heading2', 'heading3', 'heading4', 'heading5', 'heading6', 'bulletList', 'orderedList', 'taskList', 'indent', 'outdent', 'quote'] as const
+const wysiwygToolbarActions = ['action.bold', 'action.italic', 'action.link', 'action.wikilink', 'group.headings', 'group.lists', 'group.insert', 'group.more'] as const
 
 function wysiwygEditorMetric({
   actionGap = nativeWysiwygEditorMetricContract.toolbarActionGap,
@@ -427,7 +427,7 @@ function wysiwygEditorMetric({
     ...wysiwygToolbarActions.map((action, index) =>
       containerMetric({
         height: actionSize,
-        id: `editor.wysiwyg.toolbar.action.${action}`,
+        id: `editor.wysiwyg.toolbar.${action}`,
         width: actionSize,
         x: index * (actionSize + actionGap),
       }),

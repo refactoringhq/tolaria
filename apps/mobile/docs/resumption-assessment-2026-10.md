@@ -16,7 +16,7 @@ Assessment started 2026-10-10. Target: iPad and Android tablets, phone later.
 - Public GitHub cloning, persisted vault selection, and real native Git
   push/pull against a disposable server work. The simulator uses an isolated
   6,036-file Laputa copy, not the original vault.
-- Not launch-ready: a 6,000-file debug fixture still takes about two minutes
+- Not launch-ready: a 6,000-file debug fixture still takes 68-75 seconds
   for manual push or pull. Linked original folders, configured/live GitHub
   authentication, Android device QA, and October-main integration remain open.
 - The table and evidence below are chronological, starting with the recovered
@@ -64,7 +64,8 @@ custom native-module changes require a rebuilt development app, separately.
 - [x] Recover interrupted Git checkout before reopening or checkpointing.
 - [ ] Reduce measured large-vault sync cost without missing rapid edits.
 - [ ] Durable editor-write recovery, deletion recovery, and incremental startup.
-- [ ] Contextual formatting toolbar and tablet form/touch polish.
+- [x] Contextual native formatting toolbar with measured touch targets.
+- [ ] Tablet properties/forms touch polish.
 - [ ] Gesture interruption/selection tests, adaptive layouts, and focus restoration.
 - [ ] Live provider folders, configured GitHub login, and actionable sync recovery.
 - [ ] Consolidated shared design tokens and parity audit against current desktop.
@@ -85,11 +86,37 @@ fixture passed: clones 41,640/54,714 ms, push 75,298 ms, pull 68,296 ms, total
 241,985 ms. Previous total was 404,585 ms. These are single debug-simulator runs,
 not release budgets; metadata calls still dominate the sampled native profile.
 Three adapter tests verify fresh metadata/content, byte views, path containment,
-and filesystem errors. Both adapter files score 10.0. No copy/analytics changes.
+and filesystem errors. Both adapter files score 10.0. Codacy's nine audit findings
+are non-literal paths in the disposable Node test adapter, not production file
+access defects; none were suppressed. No copy/analytics changes.
 
 Manual Git sync is the first scope. Divergence stops with both histories intact;
 no forced pushes or hidden conflict resolution. Background sync, rich on-device
 conflict editing, multi-vault use, and phone polish are not first-launch prerequisites.
+
+### Contextual toolbar batch
+
+- Four primary formatting actions plus heading/list/insert/more menus replace the
+  native WYSIWYG command strip. Table commands appear only in table context. The
+  source toolbar and existing command semantics remain unchanged (ADR 0202).
+- RNR primitives own dropdown behavior. Native tap QA reproduced an iOS
+  accessibility grouping bug that hid individual items; the wrapper now exposes
+  each command. XCUITest then passed heading application, selected-state reporting,
+  outside dismissal, a second menu, and subsequent inspector toggling. Existing
+  eight-transition panel drag coverage also passes: two tests, 59.7 seconds.
+- Native numeric layout check: 181 metrics passed. Native WYSIWYG persistence
+  and its 117 metrics passed. Controls measure 44 x 44 points, menus at least
+  44 points per row. These are explicit tablet touch exceptions, not invented
+  desktop padding. No browser check is substituted for the native results.
+- CodeScene: native layout assertions 8.03 -> 8.28; other touched/new scorable
+  files 10.0. The command-data module and Ruby generator have no scorable code
+  and zero findings. Scoped Codacy Opengrep: 15 files, zero findings.
+- Lara translated the four menu labels into 19 targets; Belarusian Latin was
+  updated too, and validation passes all 21 catalogs. Mobile analytics remains
+  intentionally disabled pending consent/settings integration; no note content
+  or account data was instrumented. Demo and original user vaults are unchanged.
+- VoiceOver traversal, Android, physical devices, and the rest of the approved
+  adaptive-layout/form work remain unverified. This is not launch sign-off.
 
 ## Evidence log
 

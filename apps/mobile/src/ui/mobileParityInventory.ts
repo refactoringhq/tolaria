@@ -281,6 +281,27 @@ export const mobileParityInventory = [
     surface: 'Markdown formatting toolbar',
   },
   {
+    assertions: ['command inventory coverage and native formatting dispatch'],
+    contracts: ['desktopToolbarActionParity'],
+    desktopSource: 'Existing BlockNote formatting command icons, labels, and semantics',
+    mobileFile: 'src/components/workspace/mobileFormattingCommands.tsx',
+    surface: 'Shared source/native formatting command definitions',
+  },
+  {
+    assertions: ['native 44-point target metrics', 'XCUITest menu selection and dismissal'],
+    contracts: ['desktopToolbarActionParity', 'ADR 0202 explicit tablet touch adaptation'],
+    desktopSource: 'BlockNote formatting commands and Tolaria toolbar colors/icons; grouped for touch',
+    mobileFile: 'src/components/workspace/MobileCompactFormattingToolbar.tsx',
+    surface: 'Contextual native formatting controls',
+  },
+  {
+    assertions: ['cursor formatting-state model tests', 'XCUITest selected heading state'],
+    contracts: ['desktopEditorParity', 'ADR 0202 TenTap selection ownership'],
+    desktopSource: 'BlockNote active formatting marks and selected block type',
+    mobileFile: 'src/components/workspace/MobileWysiwygFormattingToolbar.native.tsx',
+    surface: 'Native editor formatting-state subscriber',
+  },
+  {
     assertions: ['external link URL normalization and active-link prefill model tests', 'native iOS WYSIWYG external-link save/unlink proof'],
     contracts: ['desktopEditorParity', 'desktopToolbarActionParity'],
     desktopSource: 'BlockNote LinkToolbar, EditLinkButton, DeleteLinkButton, and normalizeExternalUrl',

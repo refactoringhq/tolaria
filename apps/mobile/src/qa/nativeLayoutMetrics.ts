@@ -111,27 +111,14 @@ const metricPrefix = 'TOLARIA_MOBILE_LAYOUT_METRIC'
 const layoutTolerance = 1.5
 const sidebarSectionOrder = ['primary', 'favorites', 'views', 'types', 'folders']
 const wysiwygToolbarActionMetricIds = [
-  'editor.wysiwyg.toolbar.action.attachment',
-  'editor.wysiwyg.toolbar.action.pastePlainText',
   'editor.wysiwyg.toolbar.action.bold',
   'editor.wysiwyg.toolbar.action.italic',
-  'editor.wysiwyg.toolbar.action.strike',
-  'editor.wysiwyg.toolbar.action.code',
-  'editor.wysiwyg.toolbar.action.highlight',
   'editor.wysiwyg.toolbar.action.link',
   'editor.wysiwyg.toolbar.action.wikilink',
-  'editor.wysiwyg.toolbar.action.heading1',
-  'editor.wysiwyg.toolbar.action.heading2',
-  'editor.wysiwyg.toolbar.action.heading3',
-  'editor.wysiwyg.toolbar.action.heading4',
-  'editor.wysiwyg.toolbar.action.heading5',
-  'editor.wysiwyg.toolbar.action.heading6',
-  'editor.wysiwyg.toolbar.action.bulletList',
-  'editor.wysiwyg.toolbar.action.orderedList',
-  'editor.wysiwyg.toolbar.action.taskList',
-  'editor.wysiwyg.toolbar.action.indent',
-  'editor.wysiwyg.toolbar.action.outdent',
-  'editor.wysiwyg.toolbar.action.quote',
+  'editor.wysiwyg.toolbar.group.headings',
+  'editor.wysiwyg.toolbar.group.lists',
+  'editor.wysiwyg.toolbar.group.insert',
+  'editor.wysiwyg.toolbar.group.more',
 ] as const
 export const nativeSidebarMetricContract = {
   countPill: {
@@ -171,7 +158,7 @@ export const nativeWysiwygEditorMetricContract = {
   minFormHeight: 320,
   toolbarActionCount: wysiwygToolbarActionMetricIds.length,
   toolbarActionGap: 4,
-  toolbarActionSize: 24,
+  toolbarActionSize: 44,
   toolbarHostPaddingHorizontal: 12,
   toolbarHostPaddingTop: 4,
 } as const
@@ -423,13 +410,13 @@ const assertWysiwygToolbarActionSize = (
       actual: action?.width ?? null,
       expected: nativeWysiwygEditorMetricContract.toolbarActionSize,
       id,
-      message: 'WYSIWYG toolbar action keeps desktop button width',
+      message: 'WYSIWYG toolbar action keeps tablet touch target width',
     }),
     ...expectClose({
       actual: action?.height ?? null,
       expected: nativeWysiwygEditorMetricContract.toolbarActionSize,
       id,
-      message: 'WYSIWYG toolbar action keeps desktop button height',
+      message: 'WYSIWYG toolbar action keeps tablet touch target height',
     }),
   ]
 };
@@ -720,11 +707,15 @@ function sectionTitleMetricSpecsForMetrics(metrics: NativeLayoutMetricMap): Sect
   const types = groups.find((group) => group.some(isTypeSidebarItemMetricId))
 
   return [
-    { firstContentMetricId: favorites?.[0] ? `${favorites[0]}.row` : undefined, sectionId: 'favorites' },
-    { firstContentMetricId: views?.[0] ? `${views[0]}.row` : undefined, sectionId: 'views' },
-    { firstContentMetricId: types?.[0] ? `${types[0]}.row` : undefined, sectionId: 'types' },
+    { firstContentMetricId: firstSidebarRow(favorites), sectionId: 'favorites' },
+    { firstContentMetricId: firstSidebarRow(views), sectionId: 'views' },
+    { firstContentMetricId: firstSidebarRow(types), sectionId: 'types' },
     { firstContentMetricId: metrics['sidebar.folderTree.root'] ? 'sidebar.folderTree.root' : undefined, sectionId: 'folders' },
   ]
+}
+
+function firstSidebarRow(group: string[] | undefined) {
+  return group?.[0] ? `${group[0]}.row` : undefined
 }
 
 function isPrimarySidebarItemMetricId(id: string): boolean {

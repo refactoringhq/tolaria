@@ -206,6 +206,9 @@ Workspace surfaces now sit one level above those primitives:
 | `MobileWorkspaceActionSheet` | Search, create, property, relationship, and more-action sheets |
 | `TabletEditorPanel` | Editor rendering plus full raw markdown/frontmatter editing with wikilink suggestions |
 | `MobileWysiwygMarkdownEditor` | Native TenTap editor wrapper, custom bridge registration, markdown hydration/serialization, and editor command registration |
+| `MobileWysiwygFormattingToolbar.native` | Small TenTap cursor-state subscriber feeding a compact toolbar; state changes do not own document rendering |
+| `MobileCompactFormattingToolbar` / `mobileFormattingToolbarModel` | Existing command registry grouped into primary actions and contextual menus, with 44-point native touch targets |
+| `components/ui/dropdown-menu` | Thin RNR dropdown composition with Tolaria colors/spacing and a root portal host; primitive-owned anchoring and dismissal |
 | `MobilePropertiesPanel` | Scalar properties, tags, and typed relationship display/removal |
 | `MobileSyncStatusBar` | Bottom sync/status footer |
 

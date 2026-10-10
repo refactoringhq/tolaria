@@ -1,5 +1,6 @@
 import './global.css'
 import { StatusBar } from 'expo-status-bar'
+import { PortalHost } from '@rn-primitives/portal'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { MobileUiLab } from './src/screens/MobileUiLab'
@@ -16,6 +17,7 @@ export function App() {
           <StatusBar style="dark" />
           <MobileVaultProvider><MobileUiLab /></MobileVaultProvider>
         </SafeAreaView>
+        <PortalHost />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   )

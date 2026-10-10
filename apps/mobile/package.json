@@ -14,6 +14,8 @@
   "dependencies": {
     "@10play/tentap-editor": "^1.0.1",
     "@expo/metro-runtime": "6.1.2",
+    "@rn-primitives/dropdown-menu": "1.4.0",
+    "@rn-primitives/portal": "1.4.0",
     "@rn-primitives/slot": "1.4.0",
     "@tiptap/core": "3.22.5",
     "@tiptap/extension-code-block": "3.22.5",

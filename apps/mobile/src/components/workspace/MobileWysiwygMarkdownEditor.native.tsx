@@ -23,7 +23,7 @@ import {
 import type { MobileTableOfContentsTarget } from '../../workspace/mobileTableOfContents'
 import type { MobileEditorBlock, MobileNote, MobileTypeDefinitions } from '../../workspace/mobileWorkspaceModel'
 import { nativeWysiwygDocumentWithInputTransforms } from '../../workspace/mobileWysiwygInputTransforms'
-import { MobileMarkdownFormattingToolbar } from './MobileMarkdownFormattingToolbar'
+import { MobileWysiwygFormattingToolbar } from './MobileWysiwygFormattingToolbar.native'
 import { useNativeWysiwygAutocompleteProbe } from './MobileWysiwygAutocompleteProbe.native'
 import { MobileCodeBlockBridge } from './MobileWysiwygCodeBlockBridge'
 import {
@@ -347,7 +347,8 @@ function NativeTentapEditorSurface(props: NativeTentapEditorSurfaceProps) {
         behavior="padding"
         style={nativeEditorStyles.toolbarHost}
       >
-        <MobileMarkdownFormattingToolbar
+        <MobileWysiwygFormattingToolbar
+          editor={editor}
           actions={nativeWysiwygFormattingActions}
           layoutProbe={layoutProbe}
           metricId="editor.wysiwyg.toolbar"

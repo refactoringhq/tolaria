@@ -1097,6 +1097,10 @@ files:
     noteList.bulk.clear: 80ffff123555bd5173345bc8f144edeb
     editor.toolbar.openFileInDefaultApp: 66e8265021958aa54613b9c17320297e
     editor.formatting.toolbar: 767042e4dbdd6d8f737786f122d66d4f
+    editor.formatting.headings: 545b1150d9c178bf41eee6c799b715d7
+    editor.formatting.lists: 691d1860ec58dd973e803e209697d065
+    editor.formatting.insert: a458be0f08b7e4ff3c0f633c100176c0
+    editor.formatting.more: c53aa91e986501dad6061ab85b1a2148
     editor.formatting.attachment: c9c26afac313ee59c05f3e4cd68b64d6
     editor.formatting.bold: 114c3050111d8b8ddd830b99ccebd246
     editor.formatting.italic: 1d874710ccdcd46b95397049d2e7500c
