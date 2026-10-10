@@ -19,30 +19,34 @@ export function tabletLeftPanelDragOffset({
   compactTablet,
   dx,
   stage,
+  startOffset,
 }: {
   compactTablet: boolean
   dx: number
   stage: TabletLeftPanelStage
+  startOffset?: number
 }) {
   const minimum = tabletLeftPanelStageOffset('editor', compactTablet)
-  return clamp(tabletLeftPanelStageOffset(stage, compactTablet) + dx, minimum, 0)
+  return clamp((startOffset ?? tabletLeftPanelStageOffset(stage, compactTablet)) + dx, minimum, 0)
 }
 
 export function tabletLeftPanelStageAfterDrag({
   compactTablet,
   dx,
   stage,
+  startOffset,
   vx,
 }: {
   compactTablet: boolean
   dx: number
   stage: TabletLeftPanelStage
+  startOffset?: number
   vx: number
 }) {
   const stages = compactTablet
     ? (['list', 'editor'] as const)
     : (['all', 'list', 'editor'] as const)
-  const offset = tabletLeftPanelDragOffset({ compactTablet, dx, stage })
+  const offset = tabletLeftPanelDragOffset({ compactTablet, dx, stage, startOffset })
   const projectedOffset = clamp(
     offset + vx * 200,
     tabletLeftPanelStageOffset('editor', compactTablet),
@@ -67,7 +71,7 @@ export function tabletWorkspaceDragMode({
   screenWidth: number
   x0: number
 }): TabletWorkspaceDragMode {
-  if (propertiesVisible && dx > 0) return 'properties'
+  if (propertiesVisible && x0 >= screenWidth - desktopPanelParity.inspectorWidth) return 'properties'
   if (!propertiesVisible && dx < 0 && x0 >= screenWidth - tabletPropertiesEdgeWidth) return 'properties'
   return 'left'
 }

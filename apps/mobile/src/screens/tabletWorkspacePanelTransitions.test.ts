@@ -43,6 +43,11 @@ describe('tablet left-panel direct manipulation', () => {
     expect(tabletLeftPanelStageOffset('editor', true)).toBe(-desktopPanelParity.noteListWidth)
     expect(tabletLeftPanelStageAfterDrag({ compactTablet: true, dx: -200, stage: 'list', vx: 0 })).toBe('editor')
   })
+
+  it('continues an interrupted animation from its presented offset', () => {
+    expect(tabletLeftPanelDragOffset({ compactTablet: false, dx: 20, stage: 'editor', startOffset: -180 })).toBe(-160)
+    expect(tabletLeftPanelStageAfterDrag({ compactTablet: false, dx: 20, stage: 'editor', startOffset: -180, vx: 0 })).toBe('list')
+  })
 })
 
 describe('tablet workspace drag ownership', () => {
@@ -70,9 +75,14 @@ describe('tablet workspace drag ownership', () => {
       dx: 40,
       propertiesVisible: true,
       screenWidth: 1366,
-      x0: 900,
+      x0: 1200,
     })).toBe('properties')
     expect(tabletPropertiesVisibleAfterDrag({ dx: 170, visible: true, vx: 0 })).toBe(false)
+  })
+
+  it('does not let visible Properties steal drags from the note list or editor', () => {
+    expect(tabletWorkspaceDragMode({ dx: 40, propertiesVisible: true, screenWidth: 1366, x0: 400 })).toBe('left')
+    expect(tabletWorkspaceDragMode({ dx: 40, propertiesVisible: true, screenWidth: 1366, x0: 900 })).toBe('left')
   })
 })
 

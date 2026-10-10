@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { PanResponder, type PanResponderGestureState, useWindowDimensions } from 'react-native'
 import {
   cancelAnimation,
@@ -51,6 +51,7 @@ function normalizedLeftStage(stage: TabletLeftPanelStage, compactTablet: boolean
 function useLeftPanelMotion(initialStage: TabletLeftPanelStage, compactTablet: boolean) {
   const [stage, setStage] = useState(() => normalizedLeftStage(initialStage, compactTablet))
   const offset = useSharedValue(tabletLeftPanelStageOffset(stage, compactTablet))
+  const dragOffset = useRef(tabletLeftPanelStageOffset(stage, compactTablet))
 
   const settle = useCallback((nextStage: TabletLeftPanelStage) => {
     const normalized = normalizedLeftStage(nextStage, compactTablet)
@@ -66,18 +67,19 @@ function useLeftPanelMotion(initialStage: TabletLeftPanelStage, compactTablet: b
   return {
     beginDrag: useCallback(() => {
       cancelAnimation(offset)
+      dragOffset.current = offset.value
       return stage
     }, [offset, stage]),
     canDrag: useCallback((dx: number) => {
-      const current = tabletLeftPanelStageOffset(stage, compactTablet)
+      const current = offset.value
       const minimum = tabletLeftPanelStageOffset('editor', compactTablet)
       return (dx < 0 && current > minimum) || (dx > 0 && current < 0)
-    }, [compactTablet, stage]),
+    }, [compactTablet, offset]),
     drag: useCallback((dx: number, startStage: TabletLeftPanelStage) => {
-      setDirectOffset(offset, tabletLeftPanelDragOffset({ compactTablet, dx, stage: startStage }))
+      setDirectOffset(offset, tabletLeftPanelDragOffset({ compactTablet, dx, stage: startStage, startOffset: dragOffset.current }))
     }, [compactTablet, offset]),
     finishDrag: useCallback((dx: number, vx: number, startStage: TabletLeftPanelStage) => {
-      settle(tabletLeftPanelStageAfterDrag({ compactTablet, dx, stage: startStage, vx }))
+      settle(tabletLeftPanelStageAfterDrag({ compactTablet, dx, stage: startStage, startOffset: dragOffset.current, vx }))
     }, [compactTablet, settle]),
     motionStyle,
     offset,
@@ -260,38 +262,68 @@ function useWorkspacePanHandlers({
   properties: PropertiesPanelMotion
 }) {
   const { width } = useWindowDimensions()
+  const responder = useMemo(() => createWorkspacePanController(), [])
+  useLayoutEffect(() => {
+    responder.setContext({ leftPanels, properties, width })
+  }, [leftPanels, properties, responder, width])
+  return responder.panHandlers
+}
 
+type WorkspacePanContext = {
+  leftPanels: LeftPanelMotion
+  properties: PropertiesPanelMotion
+  width: number
+}
+
+function createWorkspacePanController() {
+  let context: WorkspacePanContext | null = null
+  return {
+    panHandlers: createWorkspacePanHandlers(() => context),
+    setContext: (next: WorkspacePanContext) => { context = next },
+  }
+}
+
+function createWorkspacePanHandlers(readContext: () => WorkspacePanContext | null) {
+  let session: { mode: TabletWorkspaceDragMode; stage: TabletLeftPanelStage } | null = null
   return PanResponder.create({
     onMoveShouldSetPanResponderCapture: (_, gesture) => {
       if (!horizontalSwipeCapturesMovement(gesture)) return false
+      const context = readContext()
+      if (!context) return false
+      const { leftPanels, properties, width } = context
       const mode = workspaceDragMode(gesture, properties.visible, width)
       if (mode === 'left' && !leftPanels.canDrag(gesture.dx)) return false
+      session = { mode, stage: leftPanels.stage }
       return true
     },
-    onPanResponderGrant: (_, gesture) => {
-      if (workspaceDragMode(gesture, properties.visible, width) === 'properties') properties.beginDrag()
-      else leftPanels.beginDrag()
+    onPanResponderGrant: () => {
+      beginWorkspaceDrag(readContext(), session)
     },
     onPanResponderMove: (_, gesture) => {
-      if (workspaceDragMode(gesture, properties.visible, width) === 'properties') properties.drag(gesture.dx)
-      else leftPanels.drag(gesture.dx, leftPanels.stage)
+      moveWorkspaceDrag(gesture, readContext(), session)
     },
-    onPanResponderRelease: (_, gesture) => finishWorkspaceDrag({
-      gesture,
-      leftPanels,
-      leftStartStage: leftPanels.stage,
-      mode: workspaceDragMode(gesture, properties.visible, width),
-      properties,
-    }),
-    onPanResponderTerminate: (_, gesture) => finishWorkspaceDrag({
-      gesture,
-      leftPanels,
-      leftStartStage: leftPanels.stage,
-      mode: workspaceDragMode(gesture, properties.visible, width),
-      properties,
-    }),
+    onPanResponderRelease: (_, gesture) => finishWorkspaceDrag(gesture, readContext(), session),
+    onPanResponderTerminate: (_, gesture) => finishWorkspaceDrag(gesture, readContext(), session),
     onPanResponderTerminationRequest: () => false,
   }).panHandlers
+}
+
+type WorkspaceDragSession = { mode: TabletWorkspaceDragMode; stage: TabletLeftPanelStage } | null
+
+function beginWorkspaceDrag(context: WorkspacePanContext | null, session: WorkspaceDragSession) {
+  if (!session || !context) return
+  if (session.mode === 'properties') context.properties.beginDrag()
+  else context.leftPanels.beginDrag()
+}
+
+function moveWorkspaceDrag(
+  gesture: PanResponderGestureState,
+  context: WorkspacePanContext | null,
+  session: WorkspaceDragSession,
+) {
+  if (!session || !context) return
+  if (session.mode === 'properties') context.properties.drag(gesture.dx)
+  else context.leftPanels.drag(gesture.dx, session.stage)
 }
 
 function workspaceDragMode(
@@ -308,22 +340,14 @@ function workspaceDragMode(
 }
 
 function finishWorkspaceDrag(
-  {
-    gesture,
-    leftPanels,
-    leftStartStage,
-    mode,
-    properties,
-  }: {
-    gesture: PanResponderGestureState
-    leftPanels: LeftPanelMotion
-    leftStartStage: TabletLeftPanelStage
-    mode: TabletWorkspaceDragMode
-    properties: PropertiesPanelMotion
-  },
+  gesture: PanResponderGestureState,
+  context: WorkspacePanContext | null,
+  session: { mode: TabletWorkspaceDragMode; stage: TabletLeftPanelStage } | null,
 ) {
-  if (mode === 'properties') properties.finishDrag(gesture.dx, gesture.vx)
-  else leftPanels.finishDrag(gesture.dx, gesture.vx, leftStartStage)
+  if (!session || !context) return
+  const { leftPanels, properties } = context
+  if (session.mode === 'properties') properties.finishDrag(gesture.dx, gesture.vx)
+  else leftPanels.finishDrag(gesture.dx, gesture.vx, session.stage)
 }
 
 function defaultLeftStage(options: TabletPanelGestureOptions): TabletLeftPanelStage {

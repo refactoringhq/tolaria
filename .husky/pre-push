@@ -109,7 +109,7 @@ if [ "$CURRENT_BRANCH" = "mobile-ui-foundation" ] && [ "${TOLARIA_MOBILE_FULL_GA
   pnpm mobile:lint --quiet
   pnpm mobile:typecheck
   pnpm mobile:test
-  pnpm mobile:qa:screenshots
+  pnpm mobile:export:web
 
   if [ -n "$CODESCENE_PAT" ] && [ -n "$CODESCENE_PROJECT_ID" ]; then
     API_RESPONSE=$(curl -sf \

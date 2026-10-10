@@ -2,6 +2,20 @@
 
 Key abstractions and domain models in Tolaria.
 
+## Mobile Git Working Copies
+
+`apps/mobile/src/workspace/git/` separates the embedded Git engine, GitHub
+authentication, and Expo filesystem adapter from the editor. `gitVault.ts` owns
+checkpoints and commit-graph classification. `gitRemote.ts` performs serialized
+clone and manual sync; it stops on divergent history without changing either
+branch. `workspaceOperationQueue.ts` is the shared working-copy mutation boundary.
+`expoGitFileSystem.ts` maps virtual `/vault` paths to one app-owned file URI, with
+explicit path containment and unsupported symlink errors. `githubAuth.ts` uses
+device authorization and checks the resulting account identity; no client secret
+belongs in the mobile bundle. See ADR 0194 and the mobile October assessment for
+integration status and remaining native-provider work. This layer is not an
+iCloud synchronizer and must not label local disk writes as remote synchronization.
+
 ## Design Philosophy
 
 Tolaria's abstractions follow the **convention over configuration** principle: standard field names, types, and relationships have well-defined meanings and trigger UI behavior automatically. This makes vaults legible both to humans and to AI agents — the more a vault follows conventions, the less custom configuration an AI needs to navigate it correctly.
