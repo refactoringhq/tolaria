@@ -124,6 +124,7 @@ function now(): number {
 }
 
 function signalEditorTabSwapped(path: string): void {
+  if (typeof window === 'undefined') return
   window.dispatchEvent(new CustomEvent('laputa:editor-tab-swapped', {
     detail: { path },
   }))
@@ -1084,6 +1085,16 @@ function useTabSwapEffect(options: UseTabSwapEffectOptions) {
   ])
 }
 
+function useInvalidateSwapsOnUnmount(
+  pendingSwapRef: MutableRefObject<(() => void) | null>,
+  swapSeqRef: MutableRefObject<number>,
+) {
+  useEffect(() => () => {
+    // Deferred swaps (rAF/setTimeout) must not touch the DOM after unmount.
+    invalidatePendingSwap({ pendingSwapRef, swapSeqRef })
+  }, [pendingSwapRef, swapSeqRef])
+}
+
 function useForegroundWorkTracker(
   activeTabPath: string | null,
   handleEditorChange: () => void,
@@ -1160,6 +1171,7 @@ export function useEditorTabSwap({ tabs, activeTabPath, editor, onContentChange,
   const { foregroundWorkAtRef, handleForegroundEditorChange } = useForegroundWorkTracker(activeTabPath, handleEditorChange)
   const prepareParsedBlocks = usePrepareParsedBlocks({ editor, tabCacheRef, vaultPathRef })
   useEditorMountState(editor, editorMountedRef, pendingSwapRef)
+  useInvalidateSwapsOnUnmount(pendingSwapRef, swapSeqRef)
   useParsedBlockPreload({
     activeTabPathRef: activeTabPathLatestRef,
     editorMountedRef,

@@ -44,6 +44,26 @@ describe('useEditorTabSwap raw mode sync', () => {
     expect(mockEditor.replaceBlocks).toHaveBeenCalled()
   })
 
+  it('drops a deferred tab swap when the editor unmounts before it runs', async () => {
+    const tabA = makeTab('a.md', 'Note A')
+    const tabB = makeTab('b.md', 'Note B')
+    const { mockEditor, rerender, unmount } = await createSwapHarness({
+      initialProps: { tabs: [tabA], activeTabPath: 'a.md', rawMode: false },
+    })
+    mockEditor.replaceBlocks.mockClear()
+    const swapListener = vi.fn()
+    window.addEventListener('laputa:editor-tab-swapped', swapListener)
+
+    rerender({ tabs: [tabA, tabB], activeTabPath: 'b.md', rawMode: false })
+    unmount()
+    await flushEditorTick()
+    await flushEditorTick()
+
+    expect(mockEditor.replaceBlocks).not.toHaveBeenCalled()
+    expect(swapListener).not.toHaveBeenCalled()
+    window.removeEventListener('laputa:editor-tab-swapped', swapListener)
+  })
+
   it('signals when the target tab content has been applied', async () => {
     const swapListener = vi.fn()
     window.addEventListener('laputa:editor-tab-swapped', swapListener)

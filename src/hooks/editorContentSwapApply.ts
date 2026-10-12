@@ -355,7 +355,7 @@ function commitAppliedEditorContent(
       return
     }
     editorContentPathRef.current = targetPath
-    const scrollEl = document.querySelector(EDITOR_CONTAINER_SELECTOR)
+    const scrollEl = typeof document === 'undefined' ? null : document.querySelector(EDITOR_CONTAINER_SELECTOR)
     if (scrollEl) scrollEl.scrollTop = scrollTop
     onCommitted?.()
     suppressChangeRef.current = false
