@@ -164,6 +164,7 @@ function toggleInjectedHighlight(state: HighlightInjectionState): InlineItem[] {
 function consumeHighlightColorPrefix(
   item: InlineItem,
   state: HighlightInjectionState,
+  hasContentAfter: boolean,
 ): InlineItem {
   if (state.color === null || !state.readsColorPrefix) return item
 
@@ -172,7 +173,14 @@ function consumeHighlightColorPrefix(
 
   const prefixed = readMarkdownHighlightPrefix(item.text)
   state.color = prefixed.color
+  // `==🟢==` holds nothing but its own circle, so the emoji is the content, not a color cue:
+  // dropping it would delete text the reader never meant to hide.
+  if (prefixed.text.length === 0 && !hasContentAfter) return item
   return textItemWithText(item, prefixed.text)
+}
+
+function hasHighlightContentAfter(segments: InlineSegment[], index: number): boolean {
+  return segments[index + 1]?.kind === 'item'
 }
 
 function isEmptyTextItem(item: InlineItem): boolean {
@@ -182,10 +190,11 @@ function isEmptyTextItem(item: InlineItem): boolean {
 function injectHighlightSegment(
   segment: InlineSegment,
   state: HighlightInjectionState,
+  hasContentAfter: boolean,
 ): InlineItem[] {
   if (segment.kind === 'delimiter') return toggleInjectedHighlight(state)
 
-  const item = consumeHighlightColorPrefix(segment.item, state)
+  const item = consumeHighlightColorPrefix(segment.item, state, hasContentAfter)
   state.readsColorPrefix = false
   if (isEmptyTextItem(item)) return []
 
@@ -198,7 +207,9 @@ function injectMarkdownHighlights(content: InlineItem[]): InlineItem[] {
   if (delimiters === 0 || delimiters % 2 !== 0) return content
 
   const state: HighlightInjectionState = { color: null, readsColorPrefix: false }
-  return segments.flatMap(segment => injectHighlightSegment(segment, state))
+  return segments.flatMap((segment, index) => (
+    injectHighlightSegment(segment, state, hasHighlightContentAfter(segments, index))
+  ))
 }
 
 function withoutHighlightStyle(styles: TextStyles | undefined): TextStyles {
@@ -232,11 +243,45 @@ function appendRestoredHighlightedItem(
   activeColor: MarkdownHighlightColor | null,
 ): MarkdownHighlightColor {
   const color = markdownHighlightColorFromStyles(item.styles) ?? DEFAULT_MARKDOWN_HIGHLIGHT_COLOR
-  if (activeColor !== color) {
-    if (activeColor !== null) restored.push(highlightMarker())
-    restored.push(highlightMarker(markdownHighlightPrefix(color)))
-  }
+  appendHighlightColorSwitch(restored, activeColor, color)
   restored.push(restoreHighlightedTextItem(item))
+  return color
+}
+
+function appendHighlightColorSwitch(
+  restored: InlineItem[],
+  activeColor: MarkdownHighlightColor | null,
+  color: MarkdownHighlightColor,
+): void {
+  if (activeColor === color) return
+  if (activeColor !== null) restored.push(highlightMarker())
+  restored.push(highlightMarker(markdownHighlightPrefix(color)))
+}
+
+function highlightedItemColor(item: InlineItem): MarkdownHighlightColor {
+  return markdownHighlightColorFromStyles(item.styles) ?? DEFAULT_MARKDOWN_HIGHLIGHT_COLOR
+}
+
+function isBareHighlightColorPrefix(item: InlineItem, color: MarkdownHighlightColor): boolean {
+  const prefix = markdownHighlightPrefix(color)
+  return prefix.length > 0 && isTextItem(item) && item.text === prefix
+}
+
+/** A highlight holding nothing but its own circle is persisted as `==🟢==`, not `==🟢🟢==`. */
+function bareHighlightColorMarker(
+  content: InlineItem[],
+  index: number,
+): MarkdownHighlightColor | null {
+  const item = content[index]
+  if (!isHighlightedTextItem(item)) return null
+
+  const color = highlightedItemColor(item)
+  if (!isBareHighlightColorPrefix(item, color)) return null
+
+  const next = content[index + 1]
+  if (next !== undefined && isHighlightedTextItem(next) && highlightedItemColor(next) === color) {
+    return null
+  }
   return color
 }
 
@@ -254,7 +299,15 @@ function restoreMarkdownHighlights(content: InlineItem[]): InlineItem[] {
   let activeColor: MarkdownHighlightColor | null = null
   let changed = false
 
-  for (const item of content) {
+  for (const [index, item] of content.entries()) {
+    const bareColor = bareHighlightColorMarker(content, index)
+    if (bareColor !== null) {
+      appendHighlightColorSwitch(restored, activeColor, bareColor)
+      activeColor = bareColor
+      changed = true
+      continue
+    }
+
     if (isHighlightedTextItem(item)) {
       activeColor = appendRestoredHighlightedItem(restored, item, activeColor)
       changed = true
