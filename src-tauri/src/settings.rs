@@ -90,6 +90,17 @@ pub struct AiWorkspaceConversationSetting {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct CommitMessageTemplate {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub title_template: String,
+    #[serde(default)]
+    pub body_template: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct Settings {
     pub auto_pull_interval_minutes: Option<u32>,
     pub git_enabled: Option<bool>,
@@ -118,6 +129,7 @@ pub struct Settings {
     pub default_ai_target: Option<String>,
     pub ai_model_providers: Option<Vec<AiModelProvider>>,
     pub ai_workspace_conversations: Option<Vec<AiWorkspaceConversationSetting>>,
+    pub commit_message_templates: Option<Vec<CommitMessageTemplate>>,
     pub hide_gitignored_files: Option<bool>,
     pub all_notes_show_pdfs: Option<bool>,
     pub all_notes_show_images: Option<bool>,
@@ -249,6 +261,7 @@ fn normalize_settings(settings: Settings) -> Settings {
         ai_workspace_conversations: normalize_ai_workspace_conversations(
             settings.ai_workspace_conversations,
         ),
+        commit_message_templates: normalize_commit_message_templates(settings.commit_message_templates),
         hide_gitignored_files: settings.hide_gitignored_files,
         all_notes_show_pdfs: settings.all_notes_show_pdfs,
         all_notes_show_images: settings.all_notes_show_images,
@@ -276,6 +289,37 @@ fn normalize_ai_workspace_conversations(
                 model_id: normalize_optional_string(conversation.model_id),
                 target_id: normalize_optional_string(conversation.target_id),
                 title,
+            })
+        })
+        .take(100)
+        .collect();
+
+    if normalized.is_empty() {
+        None
+    } else {
+        Some(normalized)
+    }
+}
+
+fn normalize_commit_message_templates(
+    templates: Option<Vec<CommitMessageTemplate>>,
+) -> Option<Vec<CommitMessageTemplate>> {
+    let normalized: Vec<CommitMessageTemplate> = templates
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|template| {
+            let id = template.id.trim().to_string();
+            let name = template.name.trim().to_string();
+            let title_template = template.title_template.trim().to_string();
+            if id.is_empty() || name.is_empty() || title_template.is_empty() {
+                return None;
+            }
+
+            Some(CommitMessageTemplate {
+                id,
+                name,
+                title_template,
+                body_template: template.body_template.trim().to_string(),
             })
         })
         .take(100)

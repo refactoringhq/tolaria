@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Sparkle } from '@phosphor-icons/react'
 import {
   Dialog,
@@ -10,12 +10,32 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { formatShortcutDisplay } from '../hooks/appCommandCatalog'
 import type { CommitMode } from '../hooks/useCommitFlow'
 import { GitRepositorySelect } from './GitRepositorySelect'
 import type { GitRepositoryOption } from '../utils/gitRepositories'
 import { translate, type AppLocale } from '../lib/i18n'
+import {
+  applyTemplateToMessage,
+  getAvailableTemplates,
+  isDefaultCommitMessageTemplate,
+  joinCommitMessage,
+  normalizeCommitMessageTemplates,
+  splitCommitMessage,
+  type CommitMessageTemplate,
+  type TemplateVariableContext,
+} from '../lib/commitMessageTemplates'
+import { trackCommitTemplateApplied } from '../lib/productAnalytics'
+import { DEFAULT_DATE_DISPLAY_FORMAT, formatDateForDisplay, type DateDisplayFormat } from '../utils/dateDisplay'
 import type { GitAuthorIdentity } from '../types'
 
 type CommitDialogCopy = {
@@ -58,7 +78,7 @@ const formatAuthorIdentity = (identity: GitAuthorIdentity): string => `${identit
 const formatOptionalAuthorIdentity = (identity: GitAuthorIdentity | null): string =>
   identity ? formatAuthorIdentity(identity) : ''
 
-const focusMessageInput = (inputRef: React.RefObject<HTMLTextAreaElement | null>): void => {
+const focusTitleInput = (inputRef: React.RefObject<HTMLInputElement | null>): void => {
   setTimeout(() => inputRef.current?.focus(), 50)
 }
 
@@ -95,24 +115,70 @@ const CommitAuthorIdentity = ({ identity, locale }: { identity: GitAuthorIdentit
   )
 }
 
+function templateDisplayName(template: CommitMessageTemplate, locale: AppLocale): string {
+  return isDefaultCommitMessageTemplate(template)
+    ? translate(locale, 'settings.commitTemplates.defaultName')
+    : template.name
+}
+
+function CommitTemplatePicker({
+  availableTemplates,
+  locale,
+  onSelect,
+  selectedTemplateId,
+}: {
+  availableTemplates: CommitMessageTemplate[]
+  locale: AppLocale
+  onSelect: (templateId: string) => void
+  selectedTemplateId: string
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label htmlFor="commit-template-picker" className="text-xs font-medium text-muted-foreground">
+        {translate(locale, 'git.commit.template.label')}
+      </label>
+      <Select value={selectedTemplateId} onValueChange={onSelect}>
+        <SelectTrigger
+          id="commit-template-picker"
+          className="w-full bg-[var(--bg-input)]"
+          data-testid="commit-template-picker"
+        >
+          <SelectValue placeholder={translate(locale, 'git.commit.template.placeholder')} />
+        </SelectTrigger>
+        <SelectContent position="popper">
+          {availableTemplates.map((template) => (
+            <SelectItem key={template.id} value={template.id}>
+              {templateDisplayName(template, locale)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
 function useGeneratedCommitMessage({
   generatedMessage,
   generatedMessageKey,
   inputRef,
   open,
-  setMessage,
+  setBody,
+  setTitle,
 }: {
   generatedMessage?: string
   generatedMessageKey: number
-  inputRef: React.RefObject<HTMLTextAreaElement | null>
+  inputRef: React.RefObject<HTMLInputElement | null>
   open: boolean
-  setMessage: (message: string) => void
+  setBody: (body: string) => void
+  setTitle: (title: string) => void
 }) {
   useEffect(() => {
     if (!open || generatedMessageKey === 0 || !generatedMessage) return
-    setMessage(generatedMessage)
-    focusMessageInput(inputRef)
-  }, [generatedMessage, generatedMessageKey, inputRef, open, setMessage])
+    const { title, body } = splitCommitMessage(generatedMessage)
+    setTitle(title)
+    setBody(body)
+    focusTitleInput(inputRef)
+  }, [generatedMessage, generatedMessageKey, inputRef, open, setBody, setTitle])
 }
 
 function CommitMessageGenerateButton({
@@ -158,7 +224,7 @@ function CommitDialogActions(
   options: CommitDialogCopy & {
     isGeneratingMessage: boolean
     locale: AppLocale
-    message: string
+    title: string
     modifiedCount: number
     onClose: () => void
     onGenerateMessage?: () => Promise<string> | string
@@ -170,7 +236,7 @@ function CommitDialogActions(
     actionLabel,
     isGeneratingMessage,
     locale,
-    message,
+    title,
     modifiedCount,
     onClose,
     onGenerateMessage,
@@ -192,7 +258,7 @@ function CommitDialogActions(
         <Button variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button onClick={onSubmit} disabled={!message.trim()}>
+        <Button onClick={onSubmit} disabled={!title.trim()}>
           {actionLabel}
         </Button>
       </div>
@@ -212,6 +278,10 @@ interface CommitDialogProps {
   generatedMessageKey?: number
   isGeneratingMessage?: boolean
   suggestedMessage?: string
+  templates?: CommitMessageTemplate[] | null
+  branch?: string
+  vaultName?: string
+  dateDisplayFormat?: DateDisplayFormat
   onGenerateMessage?: () => Promise<string> | string
   onRepositoryChange?: (path: string) => void
   onCommit: (message: string) => void
@@ -221,27 +291,32 @@ interface CommitDialogProps {
 interface CommitDialogViewOptions {
   actionLabel: string
   authorIdentity: GitAuthorIdentity | null
+  availableTemplates: CommitMessageTemplate[]
   copy: ReturnType<typeof getDialogCopy>
-  inputRef: React.RefObject<HTMLTextAreaElement | null>
+  inputRef: React.RefObject<HTMLInputElement | null>
   isGeneratingMessage: boolean
   locale: AppLocale
-  message: string
+  title: string
+  body: string
   modifiedCount: number
   onClose: () => void
   onGenerateMessage?: () => Promise<string> | string
   onGeneratedMessage: (generated: string) => void
   onKeyDown: (event: React.KeyboardEvent) => void
-  onMessageChange: (message: string) => void
+  onTitleChange: (title: string) => void
+  onBodyChange: (body: string) => void
   onOpenChange: (open: boolean) => void
   onRepositoryChange?: (path: string) => void
   onSubmit: () => void
+  onTemplateSelect: (templateId: string) => void
   open: boolean
   repositories: GitRepositoryOption[]
   selectedRepositoryPath: string
+  selectedTemplateId: string
 }
 
 function CommitDialogView({ options }: { options: CommitDialogViewOptions }) {
-  const { actionLabel, authorIdentity, copy, inputRef, isGeneratingMessage, locale, message, modifiedCount, onClose, onGenerateMessage, onGeneratedMessage, onKeyDown, onMessageChange, onOpenChange, onRepositoryChange, onSubmit, open, repositories, selectedRepositoryPath } = options
+  const { actionLabel, authorIdentity, availableTemplates, copy, inputRef, isGeneratingMessage, locale, title, body, modifiedCount, onClose, onGenerateMessage, onGeneratedMessage, onKeyDown, onTitleChange, onBodyChange, onOpenChange, onRepositoryChange, onSubmit, onTemplateSelect, open, repositories, selectedRepositoryPath, selectedTemplateId } = options
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent showCloseButton={false} className="sm:max-w-[420px]">
@@ -256,21 +331,55 @@ function CommitDialogView({ options }: { options: CommitDialogViewOptions }) {
           <GitRepositorySelect label={translate(locale, 'git.repository.select')} repositories={repositories} selectedPath={selectedRepositoryPath} onChange={onRepositoryChange} testId="commit-repository-select" />
         )}
         <CommitAuthorIdentity identity={authorIdentity} locale={locale} />
-        <Textarea ref={inputRef} className="min-h-[84px] resize-y bg-[var(--bg-input)] py-2.5 text-[13px]" placeholder="Commit message..." value={message} onChange={(event) => onMessageChange(event.target.value)} onKeyDown={onKeyDown} rows={3} />
-        <CommitDialogActions {...copy} actionLabel={actionLabel} isGeneratingMessage={isGeneratingMessage} locale={locale} message={message} modifiedCount={modifiedCount} onClose={onClose} onGenerateMessage={onGenerateMessage} onGeneratedMessage={onGeneratedMessage} onSubmit={onSubmit} />
+        <CommitTemplatePicker
+          availableTemplates={availableTemplates}
+          locale={locale}
+          onSelect={onTemplateSelect}
+          selectedTemplateId={selectedTemplateId}
+        />
+        <div className="space-y-1.5">
+          <label htmlFor="commit-title-input" className="text-xs font-medium text-muted-foreground">
+            {translate(locale, 'git.commit.title.label')}
+          </label>
+          <Input
+            id="commit-title-input"
+            ref={inputRef}
+            className="bg-[var(--bg-input)] py-2.5 text-[13px]"
+            placeholder={translate(locale, 'git.commit.title.placeholder')}
+            value={title}
+            onChange={(event) => onTitleChange(event.target.value)}
+            onKeyDown={onKeyDown}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="commit-body-input" className="text-xs font-medium text-muted-foreground">
+            {translate(locale, 'git.commit.body.label')}
+          </label>
+          <Textarea
+            id="commit-body-input"
+            className="min-h-[84px] resize-y bg-[var(--bg-input)] py-2.5 text-[13px]"
+            placeholder={translate(locale, 'git.commit.body.placeholder')}
+            value={body}
+            onChange={(event) => onBodyChange(event.target.value)}
+            onKeyDown={onKeyDown}
+            rows={3}
+          />
+        </div>
+        <CommitDialogActions {...copy} actionLabel={actionLabel} isGeneratingMessage={isGeneratingMessage} locale={locale} title={title} modifiedCount={modifiedCount} onClose={onClose} onGenerateMessage={onGenerateMessage} onGeneratedMessage={onGeneratedMessage} onSubmit={onSubmit} />
       </DialogContent>
     </Dialog>
   )
 }
 
 function createCommitDialogHandlers(options: {
-  message: string
+  title: string
+  body: string
   onClose: () => void
   onCommit: (message: string) => void
 }) {
   const handleSubmit = () => {
-    const trimmed = options.message.trim()
-    if (trimmed) options.onCommit(trimmed)
+    if (!options.title.trim()) return
+    options.onCommit(joinCommitMessage(options.title, options.body))
   }
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (isSubmitShortcut(event)) {
@@ -296,61 +405,105 @@ export function CommitDialog(props: CommitDialogProps) {
     generatedMessageKey = 0,
     isGeneratingMessage = false,
     suggestedMessage,
+    templates = null,
+    branch = '',
+    vaultName = '',
+    dateDisplayFormat = DEFAULT_DATE_DISPLAY_FORMAT,
     onGenerateMessage,
     onRepositoryChange,
     onCommit,
     onClose,
   } = props
-  const [message, setMessage] = useState('')
-  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const [title, setTitle] = useState('')
+  const [body, setBody] = useState('')
+  const [selectedTemplateId, setSelectedTemplateId] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
   const suggestedMessageRef = useRef(suggestedMessage)
   const copy = getDialogCopy(commitMode)
+
+  const availableTemplates = useMemo(
+    () => getAvailableTemplates(normalizeCommitMessageTemplates(templates)),
+    [templates],
+  )
+
+  const variableContext: TemplateVariableContext = useMemo(() => ({
+    date: formatDateForDisplay(new Date(), dateDisplayFormat),
+    branch,
+    vault: vaultName,
+  }), [branch, dateDisplayFormat, vaultName])
 
   useEffect(() => {
     suggestedMessageRef.current = suggestedMessage
   }, [suggestedMessage])
 
+  /* eslint-disable react-hooks/set-state-in-effect -- reset on dialog open */
   useEffect(() => {
     if (open) {
-      setMessage(suggestedMessageRef.current ?? '') // eslint-disable-line react-hooks/set-state-in-effect -- reset on dialog open
-      focusMessageInput(inputRef)
+      const { title: suggestedTitle, body: suggestedBody } = splitCommitMessage(suggestedMessageRef.current ?? '')
+      setTitle(suggestedTitle)
+      setBody(suggestedBody)
+      setSelectedTemplateId('')
+      focusTitleInput(inputRef)
     }
   }, [open])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useGeneratedCommitMessage({
     generatedMessage,
     generatedMessageKey,
     inputRef,
     open,
-    setMessage,
+    setBody,
+    setTitle,
   })
 
-  const { handleKeyDown, handleSubmit } = createCommitDialogHandlers({ message, onClose, onCommit })
+  const handleTemplateSelect = (templateId: string) => {
+    const template = availableTemplates.find((candidate) => candidate.id === templateId)
+    if (!template) return
+    const applied = applyTemplateToMessage(template, variableContext)
+    setTitle(applied.title)
+    setBody(applied.body)
+    setSelectedTemplateId(templateId)
+    focusTitleInput(inputRef)
+    trackCommitTemplateApplied({
+      templateId: template.id,
+      isDefault: isDefaultCommitMessageTemplate(template),
+    })
+  }
+
+  const { handleKeyDown, handleSubmit } = createCommitDialogHandlers({ title, body, onClose, onCommit })
 
   const handleGeneratedMessage = (generated: string) => {
-    setMessage(generated)
-    focusMessageInput(inputRef)
+    const { title: generatedTitle, body: generatedBody } = splitCommitMessage(generated)
+    setTitle(generatedTitle)
+    setBody(generatedBody)
+    focusTitleInput(inputRef)
   }
 
   return <CommitDialogView options={{
     actionLabel: copy.actionLabel,
     authorIdentity,
+    availableTemplates,
     copy,
     inputRef,
     isGeneratingMessage,
     locale,
-    message,
+    title,
+    body,
     modifiedCount,
     onClose,
     onGenerateMessage,
     onGeneratedMessage: handleGeneratedMessage,
     onKeyDown: handleKeyDown,
-    onMessageChange: setMessage,
+    onTitleChange: setTitle,
+    onBodyChange: setBody,
     onOpenChange: (isOpen) => { if (!isOpen) onClose() },
     onRepositoryChange,
     onSubmit: handleSubmit,
+    onTemplateSelect: handleTemplateSelect,
     open,
     repositories,
     selectedRepositoryPath,
+    selectedTemplateId,
   }} />
 }

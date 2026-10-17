@@ -47,6 +47,12 @@ fn test_settings_json_roundtrip() {
         default_ai_target: Some("agent:codex".to_string()),
         ai_model_providers: None,
         ai_workspace_conversations: None,
+        commit_message_templates: Some(vec![CommitMessageTemplate {
+            id: "tpl-1".to_string(),
+            name: "Daily sync".to_string(),
+            title_template: "docs({vault}): update {date}".to_string(),
+            body_template: "Synced from {branch}.".to_string(),
+        }]),
         hide_gitignored_files: Some(false),
         multi_workspace_enabled: Some(true),
         all_notes_show_pdfs: Some(true),
@@ -364,4 +370,73 @@ fn test_ui_language_aliases_are_canonicalized() {
     );
     assert_eq!(normalize_ui_language(Some("id")).as_deref(), Some("id-ID"));
     assert_eq!(normalize_ui_language(Some("sk")).as_deref(), Some("sk-SK"));
+}
+
+#[test]
+fn test_commit_message_templates_normalization() {
+    let loaded = save_and_reload(Settings {
+        commit_message_templates: Some(vec![
+            CommitMessageTemplate {
+                id: "  tpl-1  ".to_string(),
+                name: "  Daily sync  ".to_string(),
+                title_template: "  docs: update  ".to_string(),
+                body_template: "  body  ".to_string(),
+            },
+            CommitMessageTemplate {
+                id: "tpl-2".to_string(),
+                name: "No body".to_string(),
+                title_template: "title only".to_string(),
+                body_template: String::new(),
+            },
+            // Invalid entries are dropped: blank id, blank name, blank title.
+            CommitMessageTemplate {
+                id: String::new(),
+                name: "bad".to_string(),
+                title_template: "title".to_string(),
+                body_template: String::new(),
+            },
+            CommitMessageTemplate {
+                id: "tpl-4".to_string(),
+                name: "   ".to_string(),
+                title_template: "title".to_string(),
+                body_template: String::new(),
+            },
+            CommitMessageTemplate {
+                id: "tpl-5".to_string(),
+                name: "bad".to_string(),
+                title_template: "   ".to_string(),
+                body_template: String::new(),
+            },
+        ]),
+        ..Default::default()
+    });
+
+    let templates = loaded.commit_message_templates.expect("templates survive save/load");
+    assert_eq!(templates.len(), 2);
+    assert_eq!(templates[0].id, "tpl-1");
+    assert_eq!(templates[0].name, "Daily sync");
+    assert_eq!(templates[0].title_template, "docs: update");
+    assert_eq!(templates[0].body_template, "body");
+    assert_eq!(templates[1].id, "tpl-2");
+    assert_eq!(templates[1].body_template, "");
+}
+
+#[test]
+fn test_commit_message_templates_empty_becomes_none() {
+    let loaded = save_and_reload(Settings {
+        commit_message_templates: Some(vec![]),
+        ..Default::default()
+    });
+    assert_eq!(loaded.commit_message_templates, None);
+
+    let loaded = save_and_reload(Settings {
+        commit_message_templates: Some(vec![CommitMessageTemplate {
+            id: String::new(),
+            name: String::new(),
+            title_template: String::new(),
+            body_template: String::new(),
+        }]),
+        ..Default::default()
+    });
+    assert_eq!(loaded.commit_message_templates, None);
 }

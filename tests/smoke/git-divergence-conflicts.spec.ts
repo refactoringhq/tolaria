@@ -20,7 +20,7 @@ test.describe('Git divergence, conflicts, and manual pull', () => {
     await openCommandPalette(page)
     await executeCommand(page, 'Commit & Push')
 
-    const textarea = page.locator('textarea[placeholder="Commit message..."]')
+    const textarea = page.locator('input[placeholder="Commit title…"]')
     await textarea.waitFor({ timeout: 5000 })
     await textarea.fill('test commit')
     await page.getByRole('button', { name: 'Commit & Push' }).click()

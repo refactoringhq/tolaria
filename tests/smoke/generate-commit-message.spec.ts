@@ -10,7 +10,7 @@ test('command palette generates an editable commit message from the current diff
   await openCommandPalette(page)
   await executeCommand(page, 'Generate Commit Message from Diff')
 
-  const messageInput = page.locator('textarea[placeholder="Commit message..."]')
+  const messageInput = page.locator('input[placeholder="Commit title…"]')
   await expect(page.getByRole('heading', { name: 'Commit & Push' })).toBeVisible()
   await expect(messageInput).toHaveValue('Update 4 notes', { timeout: 5_000 })
   await expect(messageInput).toBeFocused()
