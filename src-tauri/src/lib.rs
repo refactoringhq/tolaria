@@ -35,6 +35,7 @@ pub mod opencode_cli;
 mod opencode_config;
 mod opencode_discovery;
 mod opencode_events;
+mod phase_trace;
 pub mod pi_cli;
 mod pi_config;
 mod pi_discovery;
