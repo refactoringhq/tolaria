@@ -600,6 +600,7 @@
   "noteList.clearSearch": "Rensa sökning",
   "noteList.quickOpenCreate": "Skapa anteckning \"{title}\"",
   "noteList.createNote": "Skapa ny anteckning",
+  "noteList.showSubfolderNotes": "Visa anteckningar från undermappar",
   "noteList.context.renameNote": "Byt namn på fil",
   "noteList.rename.title": "Byt namn på filnamn",
   "noteList.rename.description": "Ange ett nytt filnamn för den här anteckningen.",

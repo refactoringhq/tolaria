@@ -600,6 +600,7 @@
   "noteList.clearSearch": "清除搜尋",
   "noteList.quickOpenCreate": "建立筆記「{title}」",
   "noteList.createNote": "新建筆記",
+  "noteList.showSubfolderNotes": "顯示子資料夾中的筆記",
   "noteList.context.renameNote": "重新命名檔案名稱",
   "noteList.rename.title": "重新命名檔案名稱",
   "noteList.rename.description": "為此筆記輸入新的檔案名稱。",

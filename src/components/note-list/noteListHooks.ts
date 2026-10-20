@@ -56,6 +56,7 @@ interface FilteredEntriesParams {
   inboxPeriod?: InboxPeriod
   views?: ViewFile[]
   allNotesFileVisibility?: AllNotesFileVisibility
+  includeSubfolders?: boolean
 }
 
 function buildFilteredEntries(
@@ -64,7 +65,7 @@ function buildFilteredEntries(
     isInboxView: boolean
   },
 ) {
-  const { entries, selection, isChangesView, isInboxView, modifiedPathSet, modifiedSuffixes, modifiedFiles, subFilter, inboxPeriod, views, allNotesFileVisibility } = options
+  const { entries, selection, isChangesView, isInboxView, modifiedPathSet, modifiedSuffixes, modifiedFiles, subFilter, inboxPeriod, views, allNotesFileVisibility, includeSubfolders } = options
   let changesEntries: VaultEntry[] | undefined
   if (isChangesView) {
     if (modifiedFiles) return buildChangesEntries(entries, modifiedFiles)
@@ -76,13 +77,14 @@ function buildFilteredEntries(
     subFilter,
     views,
     allNotesFileVisibility,
+    includeSubfolders,
     changesEntries,
     inboxEntries: isInboxView ? filterInboxEntries(entries, inboxPeriod ?? 'month') : undefined,
   }).entries
 }
 
 export function useFilteredEntries(options: FilteredEntriesParams) {
-  const { entries, selection, modifiedPathSet, modifiedSuffixes, modifiedFiles, subFilter, inboxPeriod, views, allNotesFileVisibility } = options
+  const { entries, selection, modifiedPathSet, modifiedSuffixes, modifiedFiles, subFilter, inboxPeriod, views, allNotesFileVisibility, includeSubfolders } = options
   const isChangesView = selection.kind === 'filter' && selection.filter === 'changes'
   const isInboxView = selection.kind === 'filter' && selection.filter === 'inbox'
   return useMemo(() => {
@@ -98,10 +100,12 @@ export function useFilteredEntries(options: FilteredEntriesParams) {
       inboxPeriod,
       views,
       allNotesFileVisibility,
+      includeSubfolders,
     })
   }, [
     allNotesFileVisibility,
     entries,
+    includeSubfolders,
     inboxPeriod,
     isChangesView,
     isInboxView,
@@ -129,10 +133,11 @@ interface NoteListDataParams {
   inboxPeriod?: InboxPeriod
   views?: ViewFile[]
   allNotesFileVisibility?: AllNotesFileVisibility
+  includeSubfolders?: boolean
 }
 
 export function useNoteListData(options: NoteListDataParams) {
-  const { entries, selection, query, listSort, listDirection, modifiedPathSet, modifiedSuffixes, modifiedFiles, subFilter, inboxPeriod, views, allNotesFileVisibility } = options
+  const { entries, selection, query, listSort, listDirection, modifiedPathSet, modifiedSuffixes, modifiedFiles, subFilter, inboxPeriod, views, allNotesFileVisibility, includeSubfolders } = options
   const isEntityView = selection.kind === 'entity'
   const isArchivedView = (selection.kind === 'filter' && selection.filter === 'archived') || subFilter === 'archived'
   const entityEntry = useMemo(() => {
@@ -150,6 +155,7 @@ export function useNoteListData(options: NoteListDataParams) {
     inboxPeriod,
     views,
     allNotesFileVisibility,
+    includeSubfolders,
   })
 
   const searched = useMemo(() => {
@@ -365,13 +371,14 @@ export interface UseNoteListSortParams {
   subFilter?: NoteListFilter
   inboxPeriod?: InboxPeriod
   views?: ViewFile[]
+  includeSubfolders?: boolean
   onUpdateTypeSort?: (path: string, key: string, value: string | number | boolean | string[] | null) => void
   onUpdateViewDefinition?: (filename: string, patch: Partial<ViewDefinition>, rootPath?: string) => void
   updateEntry?: (path: string, patch: Partial<VaultEntry>) => void
 }
 
 export function useNoteListSort(options: UseNoteListSortParams) {
-  const { entries, selection, modifiedPathSet, modifiedSuffixes, subFilter, inboxPeriod, views, onUpdateTypeSort, onUpdateViewDefinition, updateEntry } = options
+  const { entries, selection, modifiedPathSet, modifiedSuffixes, subFilter, inboxPeriod, views, includeSubfolders, onUpdateTypeSort, onUpdateViewDefinition, updateEntry } = options
   const [sortPrefs, setSortPrefs] = useState<Record<string, SortConfig>>(loadSortPreferences)
   const typeDocument = useMemo(() => findSelectedTypeDocument(entries, selection), [entries, selection])
   const selectedView = useMemo(() => findSelectedViewFile(selection, views), [selection, views])
@@ -411,6 +418,7 @@ export function useNoteListSort(options: UseNoteListSortParams) {
     subFilter,
     inboxPeriod,
     views,
+    includeSubfolders,
   })
   const customProperties = useMemo(
     () => includeConfiguredSortProperty(extractSortableProperties(filteredEntries), listConfig.option),

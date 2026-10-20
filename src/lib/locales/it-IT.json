@@ -600,6 +600,7 @@
   "noteList.clearSearch": "Cancella ricerca",
   "noteList.quickOpenCreate": "Crea nota \"{title}\"",
   "noteList.createNote": "Crea nuova nota",
+  "noteList.showSubfolderNotes": "Mostra note delle sottocartelle",
   "noteList.context.renameNote": "Rinomina il file",
   "noteList.rename.title": "Rinomina il nome del file",
   "noteList.rename.description": "Inserisci un nuovo nome file per questa nota.",

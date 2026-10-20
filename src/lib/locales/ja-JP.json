@@ -600,6 +600,7 @@
   "noteList.clearSearch": "検索をクリア",
   "noteList.quickOpenCreate": "メモ「{title}」を作成",
   "noteList.createNote": "新しいノートを作成",
+  "noteList.showSubfolderNotes": "サブフォルダのメモを表示",
   "noteList.context.renameNote": "ファイル名を変更",
   "noteList.rename.title": "ファイル名を変更",
   "noteList.rename.description": "このノートの新しいファイル名を入力してください。",

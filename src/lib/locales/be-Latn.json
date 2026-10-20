@@ -601,6 +601,7 @@
   "noteList.clearSearch": "Ačyscić pošuk",
   "noteList.quickOpenCreate": "Stvaryć natatku \"{title}\"",
   "noteList.createNote": "Stvaryć natatku",
+  "noteList.showSubfolderNotes": "Pakazvać natatki z padpapak",
   "noteList.context.renameNote": "Pierajmienavać nazvu fajla",
   "noteList.rename.title": "Pierajmienavać nazvu fajla",
   "noteList.rename.description": "Uviadzicie novuju nazvu fajla dla hetaj natatki.",

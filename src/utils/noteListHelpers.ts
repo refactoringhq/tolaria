@@ -25,6 +25,8 @@ export interface FilterEntriesOptions {
   subFilter?: NoteListFilter
   views?: ViewFile[]
   allNotesFileVisibility?: AllNotesFileVisibility
+  /** Folder selections only: include files from nested subfolders (default true). */
+  includeSubfolders?: boolean
 }
 
 export interface RelationshipGroup {
@@ -514,15 +516,29 @@ function isEntryInSelectedFolder(entryPath: string, folderRelPath: string, rootP
   return relativeEntryPath ? isInFolder(relativeEntryPath, folderRelPath) : false
 }
 
+function isEntryDirectlyInSelectedFolder(entryPath: string, folderRelPath: string, rootPath?: string): boolean {
+  const relativeEntryPath = pathRelativeToRoot(entryPath, rootPath)
+  const folderPath = normalizeFolderPath(folderRelPath)
+  if (!relativeEntryPath || !folderPath) return false
+  const parentPath = relativeEntryPath.slice(0, Math.max(0, relativeEntryPath.lastIndexOf('/')))
+  return parentPath === folderPath || parentPath.endsWith(`/${folderPath}`)
+}
+
 function filterRootEntries(entries: VaultEntry[], rootPath: string | undefined, subFilter?: NoteListFilter): VaultEntry[] {
   const rootEntries = entries.filter((entry) => isDirectRootEntry(entry.path, rootPath))
   return subFilter ? applySubFilter(rootEntries, subFilter) : rootEntries.filter(isActive)
 }
 
-function filterFolderEntries(entries: VaultEntry[], selection: Extract<SidebarSelection, { kind: 'folder' }>, subFilter?: NoteListFilter): VaultEntry[] {
+function filterFolderEntries(
+  entries: VaultEntry[],
+  selection: Extract<SidebarSelection, { kind: 'folder' }>,
+  options: FilterEntriesOptions,
+): VaultEntry[] {
+  const { subFilter, includeSubfolders = true } = options
   if (!selection.path) return filterRootEntries(entries, selection.rootPath, subFilter)
+  const isInScope = includeSubfolders ? isEntryInSelectedFolder : isEntryDirectlyInSelectedFolder
   // Folder view shows ALL files (text + binary), not just markdown
-  const folderEntries = entries.filter((entry) => isEntryInSelectedFolder(entry.path, selection.path, selection.rootPath))
+  const folderEntries = entries.filter((entry) => isInScope(entry.path, selection.path, selection.rootPath))
   return subFilter ? applySubFilter(folderEntries, subFilter) : folderEntries.filter(isActive)
 }
 
@@ -551,7 +567,7 @@ function filterByKind(
 ): VaultEntry[] {
   if (selection.kind === 'entity') return []
   if (selection.kind === 'view') return filterViewEntries(entries, selection, options.views)
-  if (selection.kind === 'folder') return filterFolderEntries(entries, selection, options.subFilter)
+  if (selection.kind === 'folder') return filterFolderEntries(entries, selection, options)
   if (selection.kind === 'sectionGroup') return filterSectionGroupEntries(entries, selection.type, options.subFilter)
   return filterTopLevelEntries(entries, selection, options)
 }

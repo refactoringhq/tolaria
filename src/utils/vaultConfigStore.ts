@@ -12,7 +12,7 @@ const DEFAULT_CONFIG: VaultConfig = {
   git_setup_preference: 'prompt',
   ai_agent_permission_mode: DEFAULT_AI_AGENT_PERMISSION_MODE,
   tag_colors: null, status_colors: null, property_display_modes: null,
-  inbox: null, allNotes: null,
+  inbox: null, allNotes: null, folders: null,
 }
 
 let config: VaultConfig = DEFAULT_CONFIG

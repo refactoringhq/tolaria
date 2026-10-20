@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { CircleNotch as Loader2, MagnifyingGlass, Plus, SidebarSimple, X } from '@phosphor-icons/react'
+import { CircleNotch as Loader2, MagnifyingGlass, Plus, SidebarSimple, TreeStructure, X } from '@phosphor-icons/react'
 import type { VaultEntry } from '../../types'
 import type { SortOption, SortDirection } from '../../utils/noteListHelpers'
 import { translate, type AppLocale, type TranslationKey } from '../../lib/i18n'
@@ -35,6 +35,11 @@ const localizeViewPropertiesTriggerTitle = (triggerTitle: string, locale: AppLoc
   })
 }
 
+export interface SubfolderToggleState {
+  checked: boolean
+  onChange: (value: boolean) => void
+}
+
 interface NoteListHeaderProps {
   title: string
   typeDocument: VaultEntry | null
@@ -49,6 +54,7 @@ interface NoteListHeaderProps {
   isSearching: boolean
   searchInputRef: React.RefObject<HTMLInputElement | null>
   propertyPicker?: ListPropertiesPopoverProps | null
+  subfolderToggle?: SubfolderToggleState | null
   gitRepositories?: GitRepositoryOption[]
   selectedGitRepositoryPath?: string
   locale?: AppLocale
@@ -162,6 +168,31 @@ function RepositorySelectorRow({
   )
 }
 
+function SubfolderToggleButton({ checked, onChange, locale }: SubfolderToggleState & { locale: AppLocale }) {
+  const label = translate(locale, 'noteList.showSubfolderNotes')
+  const handleClick = () => {
+    trackEvent('note_list_subfolder_notes_toggled', { enabled: checked ? 0 : 1 })
+    onChange(!checked)
+  }
+
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-xs"
+      // Highlight only the non-default state, so a narrowed list is noticeable at a glance.
+      className={checked ? NOTE_LIST_ACTION_BUTTON_CLASSNAME : `${NOTE_LIST_ACTION_BUTTON_CLASSNAME} !text-foreground`}
+      onClick={handleClick}
+      title={label}
+      aria-label={label}
+      aria-pressed={checked}
+      data-testid="note-list-subfolder-toggle"
+    >
+      <TreeStructure size={16} weight={checked ? 'regular' : 'fill'} />
+    </Button>
+  )
+}
+
 function HeaderActions(options: Pick<
   NoteListHeaderProps,
   | 'isEntityView'
@@ -169,6 +200,7 @@ function HeaderActions(options: Pick<
   | 'listDirection'
   | 'customProperties'
   | 'propertyPicker'
+  | 'subfolderToggle'
   | 'locale'
   | 'onSortChange'
   | 'onCreateNote'
@@ -182,6 +214,7 @@ function HeaderActions(options: Pick<
     listDirection,
     customProperties,
     propertyPicker,
+    subfolderToggle,
     locale,
     onSortChange,
     onCreateNote,
@@ -207,6 +240,7 @@ function HeaderActions(options: Pick<
   }, [])
   return (
     <div className="ml-3 flex shrink-0 items-center justify-end gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+      {subfolderToggle && <SubfolderToggleButton {...subfolderToggle} locale={locale} />}
       {!isEntityView && <SortDropdown groupLabel="__list__" current={listSort} direction={listDirection} customProperties={customProperties} locale={locale} onChange={onSortChange} />}
       <Button type="button" variant="ghost" size="icon-xs" className={NOTE_LIST_ACTION_BUTTON_CLASSNAME} onClick={onToggleSearch} title={translate(locale, 'noteList.searchAction')} aria-label={translate(locale, 'noteList.searchAction')}>
         <MagnifyingGlass size={16} />
@@ -316,7 +350,7 @@ function SearchRow({ search, isSearching, searchInputRef, locale, onSearchChange
 
 export function NoteListHeader(options: NoteListHeaderProps) {
   const { title, typeDocument, isEntityView, isChangesView = false, listSort, listDirection, customProperties } = options
-  const { sidebarCollapsed, searchVisible, search, isSearching, searchInputRef, propertyPicker } = options
+  const { sidebarCollapsed, searchVisible, search, isSearching, searchInputRef, propertyPicker, subfolderToggle } = options
   const { gitRepositories = [], selectedGitRepositoryPath = '', locale = 'en' } = options
   const { onSortChange, onCreateNote, onOpenType, onToggleSearch, onSearchChange, onSearchKeyDown, onGitRepositoryChange } = options
   const { dragRegionRef } = useDragRegion<HTMLDivElement>()
@@ -340,6 +374,7 @@ export function NoteListHeader(options: NoteListHeaderProps) {
           listDirection={listDirection}
           customProperties={customProperties}
           propertyPicker={propertyPicker}
+          subfolderToggle={subfolderToggle}
           locale={locale}
           onSortChange={onSortChange}
           onCreateNote={onCreateNote}

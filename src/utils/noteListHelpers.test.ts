@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildRelationshipGroups, countAllByFilter, countAllNotesByFilter, countByFilter, filterEntries } from './noteListHelpers'
 import { allSelection, makeEntry, mockEntries } from '../test-utils/noteListTestUtils'
-import type { WorkspaceIdentity } from '../types'
+import type { SidebarSelection, WorkspaceIdentity } from '../types'
 
 const mainWorkspace: WorkspaceIdentity = {
   id: 'main',
@@ -179,6 +179,38 @@ describe('filterEntries', () => {
 
     expect(filterEntries(entries, { kind: 'folder', path: 'Client Work' }).map((entry) => entry.title)).toEqual(['Alpha', 'Beta'])
     expect(filterEntries(entries, { kind: 'folder', path: '客户' }).map((entry) => entry.title)).toEqual(['Unicode'])
+  })
+
+  it('shows only files directly inside the selected folder when subfolders are excluded', () => {
+    const entries = [
+      makeEntry({ path: '/Users/luca/Laputa/projects/alpha.md', title: 'Alpha' }),
+      makeEntry({ path: '/Users/luca/Laputa/projects/notes.txt', title: 'Notes', fileKind: 'text' }),
+      makeEntry({ path: '/Users/luca/Laputa/projects/2024/beta.md', title: 'Beta' }),
+      makeEntry({ path: '/Users/luca/Laputa/projects/2024/q1/gamma.md', title: 'Gamma' }),
+      makeEntry({ path: '/Users/luca/Laputa/projects-old/delta.md', title: 'Delta' }),
+    ]
+    const selection: SidebarSelection = { kind: 'folder', path: 'projects', rootPath: '/Users/luca/Laputa' }
+
+    expect(filterEntries(entries, selection).map((entry) => entry.title)).toEqual(['Alpha', 'Notes', 'Beta', 'Gamma'])
+    expect(filterEntries(entries, selection, { includeSubfolders: false }).map((entry) => entry.title)).toEqual(['Alpha', 'Notes'])
+    expect(
+      filterEntries(entries, { kind: 'folder', path: 'projects/2024', rootPath: '/Users/luca/Laputa' }, { includeSubfolders: false })
+        .map((entry) => entry.title),
+    ).toEqual(['Beta'])
+  })
+
+  it('excludes subfolder files for Windows paths and keeps the archive sub-filter', () => {
+    const entries = [
+      makeEntry({ path: 'C:\\Users\\luca\\Vault\\Client Work\\Alpha.md', title: 'Alpha' }),
+      makeEntry({ path: 'C:\\Users\\luca\\Vault\\Client Work\\Old.md', title: 'Old', archived: true }),
+      makeEntry({ path: 'C:\\Users\\luca\\Vault\\Client Work\\Nested\\Beta.md', title: 'Beta' }),
+    ]
+    const selection: SidebarSelection = { kind: 'folder', path: 'Client Work' }
+
+    expect(filterEntries(entries, selection, { includeSubfolders: false }).map((entry) => entry.title)).toEqual(['Alpha'])
+    expect(
+      filterEntries(entries, selection, { includeSubfolders: false, subFilter: 'archived' }).map((entry) => entry.title),
+    ).toEqual(['Old'])
   })
 
   it('shows only direct root-level files when selecting the vault root folder', () => {

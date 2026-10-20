@@ -600,6 +600,7 @@
   "noteList.clearSearch": "Hapus pencarian",
   "noteList.quickOpenCreate": "Buat catatan \"{title}\"",
   "noteList.createNote": "Buat catatan baru",
+  "noteList.showSubfolderNotes": "Tampilkan catatan subfolder",
   "noteList.context.renameNote": "Ubah nama file",
   "noteList.rename.title": "Ubah nama file",
   "noteList.rename.description": "Masukkan nama file baru untuk catatan ini.",

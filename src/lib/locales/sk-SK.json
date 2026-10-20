@@ -600,6 +600,7 @@
   "noteList.clearSearch": "Vymazať vyhľadávanie",
   "noteList.quickOpenCreate": "Vytvoriť poznámku „{title}“",
   "noteList.createNote": "Vytvoriť novú poznámku",
+  "noteList.showSubfolderNotes": "Zobraziť poznámky z podpriečinkov",
   "noteList.context.renameNote": "Premenovať názov súboru",
   "noteList.rename.title": "Premenovať názov súboru",
   "noteList.rename.description": "Zadajte nový názov súboru pre túto poznámku.",

@@ -10,7 +10,7 @@ import type {
 } from '../../types'
 import type { AppLocale } from '../../lib/i18n'
 import type { NoteListFilter, RelationshipGroup } from '../../utils/noteListHelpers'
-import { countByFilter, countAllByFilter, countAllNotesByFilter } from '../../utils/noteListHelpers'
+import { countByFilter, countAllNotesByFilter, filterEntries } from '../../utils/noteListHelpers'
 import type { AllNotesFileVisibility } from '../../utils/allNotesFileVisibility'
 import type { GitRepositoryOption } from '../../utils/gitRepositories'
 import type { ImmediateCreateOptions } from '../../hooks/useNoteCreation'
@@ -32,6 +32,7 @@ import {
   useVisibleNotesSync,
 } from './noteListHooks'
 import { useChangesContextMenu } from './NoteListChangesMenu'
+import type { SubfolderToggleState } from './NoteListHeader'
 import { useNoteListContextMenu } from './NoteListContextMenu'
 import { addNoteListSearchToggleListener, dispatchNoteListSearchAvailability } from '../../utils/noteListSearchEvents'
 import { useDateDisplayFormat } from '../../hooks/useAppPreferences'
@@ -139,19 +140,41 @@ function useBulkActions(
   }
 }
 
+function countFolderByFilter(
+  entries: VaultEntry[],
+  selection: Extract<SidebarSelection, { kind: 'folder' }>,
+  includeSubfolders: boolean,
+): Record<NoteListFilter, number> {
+  return {
+    open: filterEntries(entries, selection, { subFilter: 'open', includeSubfolders }).length,
+    archived: filterEntries(entries, selection, { subFilter: 'archived', includeSubfolders }).length,
+  }
+}
+
 function useFilterCounts(
   entries: VaultEntry[],
   selection: SidebarSelection,
-  allNotesFileVisibility?: AllNotesFileVisibility,
+  allNotesFileVisibility: AllNotesFileVisibility | undefined,
+  includeSubfolders: boolean,
 ) {
   return useMemo(() => {
     if (selection.kind === 'sectionGroup') return countByFilter(entries, selection.type)
-    if (selection.kind === 'folder') return countAllByFilter(entries)
+    if (selection.kind === 'folder') return countFolderByFilter(entries, selection, includeSubfolders)
     if (selection.kind === 'filter' && selection.filter === 'all') {
       return countAllNotesByFilter(entries, allNotesFileVisibility)
     }
     return { open: 0, archived: 0 }
-  }, [allNotesFileVisibility, entries, selection])
+  }, [allNotesFileVisibility, entries, includeSubfolders, selection])
+}
+
+/** The subfolder toggle applies to nested folders; the vault root already lists only its direct files. */
+function resolveSubfolderToggle(
+  selection: SidebarSelection,
+  includeSubfolders: boolean,
+  onChange?: (value: boolean) => void,
+): SubfolderToggleState | null {
+  if (selection.kind !== 'folder' || !selection.path || !onChange) return null
+  return { checked: includeSubfolders, onChange }
 }
 
 interface UseNoteListContentParams {
@@ -174,6 +197,7 @@ interface UseNoteListContentParams {
   views?: ViewFile[]
   visibleNotesRef?: React.MutableRefObject<VaultEntry[]>
   allNotesFileVisibility?: AllNotesFileVisibility
+  includeSubfolders: boolean
 }
 
 function useFilteredNoteListSearch({
@@ -221,7 +245,7 @@ function useFilteredNoteListSearch({
 }
 
 function useNoteListContent(options: UseNoteListContentParams) {
-  const { entries, selection, noteListFilter, inboxPeriod, modifiedFiles, modifiedSuffixes, modifiedPathSet, isInboxView, selectedNotePath, allNotesNoteListProperties, onUpdateAllNotesNoteListProperties, inboxNoteListProperties, onUpdateInboxNoteListProperties, onUpdateViewDefinition, onUpdateTypeSort, updateEntry, views, visibleNotesRef, allNotesFileVisibility } = options
+  const { entries, selection, noteListFilter, inboxPeriod, modifiedFiles, modifiedSuffixes, modifiedPathSet, isInboxView, selectedNotePath, allNotesNoteListProperties, onUpdateAllNotesNoteListProperties, inboxNoteListProperties, onUpdateInboxNoteListProperties, onUpdateViewDefinition, onUpdateTypeSort, updateEntry, views, visibleNotesRef, allNotesFileVisibility, includeSubfolders } = options
   const dateDisplayFormat = useDateDisplayFormat()
   const subFilter = selection.kind === 'sectionGroup' || selection.kind === 'folder' ? noteListFilter : undefined
   const effectiveInboxPeriod = isInboxView ? inboxPeriod : undefined
@@ -233,6 +257,7 @@ function useNoteListContent(options: UseNoteListContentParams) {
     subFilter,
     inboxPeriod: effectiveInboxPeriod,
     views,
+    includeSubfolders,
     onUpdateTypeSort,
     onUpdateViewDefinition,
     updateEntry,
@@ -281,6 +306,7 @@ function useNoteListContent(options: UseNoteListContentParams) {
         inboxPeriod: effectiveInboxPeriod,
         views,
         allNotesFileVisibility,
+        includeSubfolders,
       })
       const { isFullTextSearching, searched, searchedGroups } = useFilteredNoteListSearch({
         entries,
@@ -560,6 +586,9 @@ export interface NoteListProps {
   views?: ViewFile[]
   visibleNotesRef?: React.MutableRefObject<VaultEntry[]>
   allNotesFileVisibility?: AllNotesFileVisibility
+  /** Folder view: include notes from nested subfolders (default true). */
+  folderIncludeSubfolders?: boolean
+  onFolderIncludeSubfoldersChange?: (value: boolean) => void
   locale?: AppLocale
 }
 
@@ -576,6 +605,7 @@ function buildNoteListLayoutModel(params: {
   filterCounts: ReturnType<typeof useFilterCounts>
   onNoteListFilterChange: (filter: NoteListFilter) => void
   onOpenType: (entry: VaultEntry) => void
+  subfolderToggle: SubfolderToggleState | null
   locale: AppLocale
   content: ReturnType<typeof useNoteListContent> & {
     handleSearchKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void
@@ -600,6 +630,7 @@ function buildNoteListLayoutModel(params: {
     isSearching: params.content.isSearching,
     searchInputRef: params.content.searchInputRef,
     propertyPicker: params.content.propertyPicker,
+    subfolderToggle: params.subfolderToggle,
     handleSortChange: params.content.handleSortChange,
     handleCreateNote: params.interaction.handleCreateNote,
     onOpenType: params.onOpenType,
@@ -651,14 +682,14 @@ function buildNoteListLayoutModel(params: {
 }
 
 export function useNoteListModel(options: NoteListProps) {
-  const { entries, selection, selectedNote, loading = false, noteListFilter, onNoteListFilterChange, inboxPeriod = 'all', modifiedFiles, modifiedFilesError, gitRepositories, selectedGitRepositoryPath, onGitRepositoryChange, getNoteStatus, sidebarCollapsed, onReplaceActiveTab, onEnterNeighborhood, onCreateNote, onBulkArchive, onBulkDeletePermanently, onUpdateTypeSort, updateEntry, onOpenInNewWindow, onRenameFilename, onExportPdf, onToggleFavorite, onToggleOrganized, onRevealFile, onCopyFilePath, canCopyGitUrl, onCopyGitUrl, onDiscardFile, onAutoTriggerDiff, onOpenDeletedNote, allNotesNoteListProperties, onUpdateAllNotesNoteListProperties, inboxNoteListProperties, onUpdateInboxNoteListProperties, onUpdateViewDefinition, views, visibleNotesRef, allNotesFileVisibility, locale = 'en' } = options
+  const { entries, selection, selectedNote, loading = false, noteListFilter, onNoteListFilterChange, inboxPeriod = 'all', modifiedFiles, modifiedFilesError, gitRepositories, selectedGitRepositoryPath, onGitRepositoryChange, getNoteStatus, sidebarCollapsed, onReplaceActiveTab, onEnterNeighborhood, onCreateNote, onBulkArchive, onBulkDeletePermanently, onUpdateTypeSort, updateEntry, onOpenInNewWindow, onRenameFilename, onExportPdf, onToggleFavorite, onToggleOrganized, onRevealFile, onCopyFilePath, canCopyGitUrl, onCopyGitUrl, onDiscardFile, onAutoTriggerDiff, onOpenDeletedNote, allNotesNoteListProperties, onUpdateAllNotesNoteListProperties, inboxNoteListProperties, onUpdateInboxNoteListProperties, onUpdateViewDefinition, views, visibleNotesRef, allNotesFileVisibility, folderIncludeSubfolders = true, onFolderIncludeSubfoldersChange, locale = 'en' } = options
   const selectedNotePath = selectedNote?.path ?? null
   const { modifiedPathSet, modifiedSuffixes, resolvedGetNoteStatus } = useModifiedFilesState(
     modifiedFiles,
     getNoteStatus,
   )
   const { isInboxView } = useViewFlags(selection)
-  const filterCounts = useFilterCounts(entries, selection, allNotesFileVisibility)
+  const filterCounts = useFilterCounts(entries, selection, allNotesFileVisibility, folderIncludeSubfolders)
   const content = useNoteListContent({
     entries,
     selection,
@@ -679,6 +710,7 @@ export function useNoteListModel(options: NoteListProps) {
     views,
     visibleNotesRef,
     allNotesFileVisibility,
+    includeSubfolders: folderIncludeSubfolders,
   })
   const interaction = useNoteListInteractionState({
     searched: content.searched,
@@ -762,6 +794,7 @@ export function useNoteListModel(options: NoteListProps) {
     noteListFilter,
     filterCounts,
     onNoteListFilterChange,
+    subfolderToggle: resolveSubfolderToggle(selection, folderIncludeSubfolders, onFolderIncludeSubfoldersChange),
     locale,
     content: {
       ...content,

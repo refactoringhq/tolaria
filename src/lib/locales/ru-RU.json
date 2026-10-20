@@ -600,6 +600,7 @@
   "noteList.clearSearch": "Очистить поиск",
   "noteList.quickOpenCreate": "Создать заметку «{title}»",
   "noteList.createNote": "Создать новую заметку",
+  "noteList.showSubfolderNotes": "Показывать заметки из подпапок",
   "noteList.context.renameNote": "Переименовать файл",
   "noteList.rename.title": "Переименовать файл",
   "noteList.rename.description": "Введите новое имя файла для этой заметки.",

@@ -600,6 +600,7 @@
   "noteList.clearSearch": "검색 지우기",
   "noteList.quickOpenCreate": "메모 \"{title}\" 생성",
   "noteList.createNote": "새 노트 만들기",
+  "noteList.showSubfolderNotes": "하위 폴더의 노트 표시",
   "noteList.context.renameNote": "파일 이름 변경",
   "noteList.rename.title": "파일 이름 변경",
   "noteList.rename.description": "이 노트에 대한 새 파일 이름을 입력하세요.",

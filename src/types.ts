@@ -245,6 +245,12 @@ export interface AllNotesConfig {
 }
 
 /** Vault-scoped UI configuration stored locally per vault path. */
+export interface FoldersConfig {
+  /** Folder view lists notes from nested subfolders too (default true). */
+  includeSubfolders: boolean | null
+}
+
+/** Vault-scoped UI configuration stored locally per vault path. */
 export type NoteLayout = 'centered' | 'left'
 
 export type NoteWidthMode = 'normal' | 'wide'
@@ -264,6 +270,7 @@ export interface VaultConfig {
   property_display_modes: Record<string, string> | null
   inbox?: InboxConfig | null
   allNotes?: AllNotesConfig | null
+  folders?: FoldersConfig | null
 }
 
 export interface PulseFile {

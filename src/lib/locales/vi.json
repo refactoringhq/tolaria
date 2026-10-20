@@ -600,6 +600,7 @@
   "noteList.clearSearch": "Xóa tìm kiếm",
   "noteList.quickOpenCreate": "Tạo ghi chú \"{title}\"",
   "noteList.createNote": "Tạo ghi chú mới",
+  "noteList.showSubfolderNotes": "Hiển thị ghi chú trong thư mục con",
   "noteList.context.renameNote": "Đổi tên tệp",
   "noteList.rename.title": "Đổi tên tệp",
   "noteList.rename.description": "Nhập tên tệp mới cho ghi chú này.",

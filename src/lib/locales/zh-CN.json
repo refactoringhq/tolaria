@@ -600,6 +600,7 @@
   "noteList.clearSearch": "清除搜索",
   "noteList.quickOpenCreate": "创建笔记“{title}”",
   "noteList.createNote": "新建笔记",
+  "noteList.showSubfolderNotes": "显示子文件夹中的笔记",
   "noteList.context.renameNote": "重命名文件名",
   "noteList.rename.title": "重命名文件名",
   "noteList.rename.description": "为此笔记输入新文件名。",

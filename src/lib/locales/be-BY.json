@@ -600,6 +600,7 @@
   "noteList.clearSearch": "Ачысціць пошук",
   "noteList.quickOpenCreate": "Стварыць нататку «{title}»",
   "noteList.createNote": "Стварыць нататку",
+  "noteList.showSubfolderNotes": "Паказваць нататкі з падпапак",
   "noteList.context.renameNote": "Перайменаваць файл",
   "noteList.rename.title": "Перайменаваць імя файла",
   "noteList.rename.description": "Увядзіце новую назву файла для гэтай нататкі.",

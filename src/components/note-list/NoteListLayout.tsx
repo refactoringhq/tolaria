@@ -283,6 +283,7 @@ function NoteListLayoutHeader(
   | 'isSearching'
   | 'searchInputRef'
   | 'propertyPicker'
+  | 'subfolderToggle'
   | 'handleSortChange'
   | 'handleCreateNote'
   | 'onOpenType'
@@ -309,6 +310,7 @@ function NoteListLayoutHeader(
     isSearching,
     searchInputRef,
     propertyPicker,
+    subfolderToggle,
     handleSortChange,
     handleCreateNote,
     onOpenType,
@@ -335,6 +337,7 @@ function NoteListLayoutHeader(
       isSearching={isSearching}
       searchInputRef={searchInputRef}
       propertyPicker={propertyPicker}
+      subfolderToggle={subfolderToggle}
       onSortChange={handleSortChange}
       onCreateNote={handleCreateNote}
       onOpenType={onOpenType}

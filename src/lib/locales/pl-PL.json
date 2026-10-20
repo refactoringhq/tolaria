@@ -600,6 +600,7 @@
   "noteList.clearSearch": "Wyczyść wyszukiwanie",
   "noteList.quickOpenCreate": "Utwórz notatkę „{title}”",
   "noteList.createNote": "Utwórz nową notatkę",
+  "noteList.showSubfolderNotes": "Pokaż notatki z podfolderów",
   "noteList.context.renameNote": "Zmień nazwę pliku",
   "noteList.rename.title": "Zmień nazwę pliku",
   "noteList.rename.description": "Wprowadź nową nazwę pliku dla tej notatki.",

@@ -590,6 +590,7 @@ Per-vault UI settings stored locally per vault path (currently in browser/Tauri 
 - `property_display_modes`: Property display preferences
 - `inbox.noteListProperties`: Optional Inbox-only property chip override for the note list
 - `allNotes.noteListProperties`: Optional All Notes-only property chip override for the note list
+- `folders.includeSubfolders`: Whether a nested folder selection lists files from its subfolders too (`null`/absent = `true`); toggled from the note list header
 - `inbox.explicitOrganization`: When `false`, hide Inbox and the organized toggle so the vault behaves like a plain note collection
 - `git_setup_preference`: `"never"` when the user has opted out of future automatic Git setup prompts for that vault
 

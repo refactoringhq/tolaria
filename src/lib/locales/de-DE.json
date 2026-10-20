@@ -600,6 +600,7 @@
   "noteList.clearSearch": "Suche löschen",
   "noteList.quickOpenCreate": "Notiz „{title}“ erstellen",
   "noteList.createNote": "Neue Notiz erstellen",
+  "noteList.showSubfolderNotes": "Notizen aus Unterordnern anzeigen",
   "noteList.context.renameNote": "Dateinamen umbenennen",
   "noteList.rename.title": "Dateinamen umbenennen",
   "noteList.rename.description": "Geben Sie einen neuen Dateinamen für diese Notiz ein.",
