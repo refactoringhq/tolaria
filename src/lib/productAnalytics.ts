@@ -304,3 +304,21 @@ export function trackAiWorkspaceSidebarToggled(collapsed: AnalyticsBoolean, mode
 export function trackAiWorkspaceChatTitled(source: AiWorkspaceTitleSource): void {
   trackEvent('ai_workspace_chat_titled', { source })
 }
+
+type CommitTemplateChangeAction = 'created' | 'updated' | 'deleted'
+
+export function trackCommitTemplateChanged(params: {
+  action: CommitTemplateChangeAction
+}): void {
+  trackEvent('commit_template_changed', { action: params.action })
+}
+
+export function trackCommitTemplateApplied(params: {
+  templateId: string
+  isDefault: boolean
+}): void {
+  trackEvent('commit_template_applied', {
+    is_default: numericFlag(params.isDefault),
+    template_id: params.templateId,
+  })
+}

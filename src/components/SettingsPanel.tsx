@@ -17,6 +17,7 @@ import {
 } from '../lib/aiTargets'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { GitProviderId, Settings } from '../types'
+import type { CommitMessageTemplate } from '../types'
 import {
   APP_LOCALES,
   SYSTEM_UI_LANGUAGE,
@@ -41,6 +42,7 @@ import { areAiFeaturesEnabled } from '../lib/aiFeatures'
 import { areAutomaticUpdateChecksEnabled } from '../lib/automaticUpdateChecks'
 import { trackAllNotesVisibilityChanged } from '../lib/productAnalytics'
 import { AiProviderSettings } from './AiProviderSettings'
+import { CommitMessageTemplateSettings } from './CommitMessageTemplateSettings'
 import { AiAgentIcon } from './AiAgentIcon'
 import { GitSettingsSection } from './GitSettingsSection'
 import { PrivacySettingsSection } from './PrivacySettingsSection'
@@ -61,6 +63,7 @@ import {
   settingsWithAllNotesFileVisibility,
   type AllNotesFileVisibility,
 } from '../utils/allNotesFileVisibility'
+import { normalizeCommitMessageTemplates } from '../lib/commitMessageTemplates'
 import { DEFAULT_NOTE_WIDTH_MODE, normalizeNoteWidthMode } from '../utils/noteWidth'
 import { DEFAULT_DATE_DISPLAY_FORMAT, normalizeDateDisplayFormat, type DateDisplayFormat } from '../utils/dateDisplay'
 import { Button } from './ui/button'
@@ -108,6 +111,7 @@ interface SettingsDraft {
   defaultAiAgent: AiAgentId
   defaultAiTarget: string
   aiModelProviders: AiModelProvider[]
+  commitMessageTemplates: CommitMessageTemplate[]
   releaseChannel: ReleaseChannel
   automaticUpdateChecksEnabled: boolean
   themeMode: ThemeMode
@@ -155,6 +159,8 @@ interface SettingsBodyProps {
   setDefaultAiTarget: (value: string) => void
   aiModelProviders: AiModelProvider[]
   setAiModelProviders: (value: AiModelProvider[]) => void
+  commitMessageTemplates: CommitMessageTemplate[]
+  setCommitMessageTemplates: (value: CommitMessageTemplate[]) => void
   onCopyMcpConfig?: () => void
   releaseChannel: ReleaseChannel
   setReleaseChannel: (value: ReleaseChannel) => void
@@ -224,6 +230,7 @@ function createSettingsDraft(settings: Settings, explicitOrganizationEnabled: bo
     defaultAiAgent: resolveDefaultAiAgent(settings.default_ai_agent),
     defaultAiTarget: resolveAiTarget(settings).id,
     aiModelProviders: normalizeAiModelProviders(settings.ai_model_providers),
+    commitMessageTemplates: normalizeCommitMessageTemplates(settings.commit_message_templates),
     releaseChannel: normalizeReleaseChannel(settings.release_channel),
     automaticUpdateChecksEnabled: areAutomaticUpdateChecksEnabled(settings),
     themeMode: resolveSettingsDraftThemeMode(settings.theme_mode),
@@ -287,6 +294,7 @@ function buildSettingsFromDraft(settings: Settings, draft: SettingsDraft): Setti
     default_ai_agent: draft.defaultAiAgent,
     default_ai_target: draft.defaultAiTarget,
     ai_model_providers: draft.aiModelProviders.length > 0 ? draft.aiModelProviders : null,
+    commit_message_templates: draft.commitMessageTemplates.length > 0 ? draft.commitMessageTemplates : null,
     hide_gitignored_files: draft.hideGitignoredFiles,
     multi_workspace_enabled: draft.multiWorkspaceEnabled,
   }
@@ -597,6 +605,8 @@ function SettingsBodyFromDraft(options: SettingsBodyFromDraftProps) {
       setDefaultAiTarget={(value) => updateDraft('defaultAiTarget', value)}
       aiModelProviders={draft.aiModelProviders}
       setAiModelProviders={(value) => updateDraft('aiModelProviders', value)}
+      commitMessageTemplates={draft.commitMessageTemplates}
+      setCommitMessageTemplates={(value) => updateDraft('commitMessageTemplates', value)}
       onCopyMcpConfig={onCopyMcpConfig}
       releaseChannel={draft.releaseChannel}
       setReleaseChannel={(value) => updateDraft('releaseChannel', value)}
@@ -652,7 +662,7 @@ function SettingsBody(props: SettingsBodyProps) {
 }
 
 function SettingsSyncAndAppearanceSections(options: SettingsBodyProps) {
-  const { t, locale, systemLocale, multiWorkspaceEnabled, setMultiWorkspaceEnabled, vaults, defaultWorkspacePath, onRemoveVault, onReorderVaults, onSetDefaultWorkspace, onUpdateWorkspaceIdentity, themeMode, setThemeMode, uiLanguage, setUiLanguage } = options
+  const { t, locale, systemLocale, multiWorkspaceEnabled, setMultiWorkspaceEnabled, vaults, defaultWorkspacePath, onRemoveVault, onReorderVaults, onSetDefaultWorkspace, onUpdateWorkspaceIdentity, themeMode, setThemeMode, uiLanguage, setUiLanguage, commitMessageTemplates, setCommitMessageTemplates } = options
   return (
     <>
       <SettingsSection id={SETTINGS_SECTION_IDS.sync} showDivider={false}>
@@ -676,6 +686,11 @@ function SettingsSyncAndAppearanceSections(options: SettingsBodyProps) {
       </SettingsSection>
       <SettingsSection id={SETTINGS_SECTION_IDS.autogit}>
         <GitSettingsSection {...options} />
+        <CommitMessageTemplateSettings
+          templates={commitMessageTemplates}
+          onTemplatesChange={setCommitMessageTemplates}
+          t={t}
+        />
       </SettingsSection>
 
       <SettingsSection id={SETTINGS_SECTION_IDS.appearance}>

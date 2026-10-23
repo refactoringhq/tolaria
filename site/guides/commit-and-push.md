@@ -12,6 +12,20 @@ Tolaria can act as a lightweight Git client for a Git-enabled vault. You can man
 
 If the remote has changed, pull first and resolve any conflicts. If the vault has no remote, manual commits still give you local history, diffs, and rollback.
 
+## Commit Message Templates
+
+If you push often with similar messages, save reusable templates in Settings → Git → Push message templates. Each template has a name, a commit title template, and an optional commit body template.
+
+In the commit dialog, pick a template from the Template dropdown to pre-fill the title and description. You can still edit the text before committing.
+
+Templates support variables:
+
+- `{date}` — today's date, formatted with your date display preference
+- `{branch}` — the current Git branch
+- `{vault}` — the active vault name
+
+Unknown variables (for example a typo like `{dat}`) are kept as-is and never break the push. A built-in Default template is always available, so the commit flow works the same when you have no custom templates.
+
 ## AutoGit
 
 AutoGit is available in Settings for Git-enabled vaults. When enabled, Tolaria automatically commits and pushes saved local changes after an idle pause or after the app becomes inactive.
