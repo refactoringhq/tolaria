@@ -216,6 +216,18 @@ function collectRelationshipDefaults(typeEntry: VaultEntry): TypeInstanceDefault
   })
 }
 
+function isStatusKey(key: string): boolean {
+  return canonicalFrontmatterKey(key) === 'status'
+}
+
+/** Status is semantic on every entry, so read its current value from `status`
+ *  and only borrow the author's key spelling from the Type's properties. */
+function collectStatusDefault(typeEntry: VaultEntry): TypeInstanceDefault[] {
+  if (!isDefaultablePropertyValue(typeEntry.status)) return []
+  const key = Object.keys(typeEntry.properties ?? {}).find(isStatusKey) ?? 'status'
+  return [{ key, value: typeEntry.status, kind: 'property' }]
+}
+
 function appendUniqueDefault(
   defaults: TypeInstanceDefault[],
   seenKeys: Set<string>,
@@ -233,7 +245,11 @@ export function resolveTypeInstanceDefaults(params: TemplateLookupParams): TypeI
 
   const defaults: TypeInstanceDefault[] = []
   const seenKeys = new Set<string>()
-  const candidateDefaults = [...collectPropertyDefaults(typeEntry), ...collectRelationshipDefaults(typeEntry)]
+  const candidateDefaults = [
+    ...collectStatusDefault(typeEntry),
+    ...collectPropertyDefaults(typeEntry),
+    ...collectRelationshipDefaults(typeEntry),
+  ]
   for (const defaultValue of candidateDefaults) {
     appendUniqueDefault(defaults, seenKeys, defaultValue)
   }
@@ -417,16 +433,21 @@ function applyTypeDefaults({
 
   const relationships = { ...entry.relationships }
   const properties = { ...entry.properties }
+  let status = entry.status
   for (const defaultValue of defaults) {
     if (defaultValue.kind === 'relationship') {
       relationships[defaultValue.key] = relationshipRefs(defaultValue.value)
+      continue
+    }
+    if (isStatusKey(defaultValue.key)) {
+      status = String(defaultValue.value)
       continue
     }
     properties[defaultValue.key] = defaultValue.value as string | number | boolean
   }
 
   return {
-    entry: { ...entry, relationships, properties },
+    entry: { ...entry, relationships, properties, status },
     content,
   }
 }

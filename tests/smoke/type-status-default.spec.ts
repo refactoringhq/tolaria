@@ -22,18 +22,6 @@ test("type-view creation copies semantic status defaults @smoke", async ({
 					"---\ntype: Type\nStatus: Active\nBudget:\ncolor: red\n_icon: rocket\n---\n# Initiative\n",
 			});
 		}, vaultPath);
-		// The browser fixture parser does not run Rust. Supply the native parser's
-		// Type-property shape, covered by the Rust status regression test.
-		await page.route("**/api/vault/list*", async (route) => {
-			const response = await route.fetch();
-			const entries = await response.json();
-			for (const entry of entries) {
-				if (entry.isA === "Type" && entry.title === "Initiative") {
-					entry.properties = { ...entry.properties, Status: "Active" };
-				}
-			}
-			await route.fulfill({ response, json: entries });
-		});
 		await page.reload({ waitUntil: "domcontentloaded" });
 		await page
 			.locator("aside")
@@ -48,7 +36,7 @@ test("type-view creation copies semantic status defaults @smoke", async ({
 		await executeCommand(page, "Toggle Raw");
 		const raw = page.locator(".cm-content");
 		await expect(raw).toContainText("type: Initiative");
-		await expect(raw).toContainText("Status: Active");
+		await expect(raw).toContainText(/status: Active/i);
 		await expect(raw).not.toContainText("Budget:");
 		await expect(raw).not.toContainText("color:");
 		await expect(raw).not.toContainText("_icon:");

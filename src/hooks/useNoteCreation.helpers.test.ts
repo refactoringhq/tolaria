@@ -243,6 +243,25 @@ describe('resolveNewNote', () => {
     expect(entry.relationships).toEqual({ Author: ['[[person/frank-herbert]]'] })
   })
 
+  it('applies the type status to new instances when the type properties omit it', () => {
+    const typeEntry = makeEntry({ title: 'Project', isA: 'Type', status: 'Active', properties: {} })
+    const defaults = resolveTypeInstanceDefaults({ entries: [typeEntry], typeName: 'Project' })
+    const { entry, content } = resolveNewNote({ title: 'Launch', type: 'Project', vaultPath: '/vault', defaults })
+
+    expect(content).toContain('status: Active')
+    expect(entry.status).toBe('Active')
+    expect(entry.properties).toEqual({})
+  })
+
+  it('writes the type status once using the author key spelling and current value', () => {
+    const typeEntry = makeEntry({ title: 'Project', isA: 'Type', status: 'Done', properties: { Status: 'Active' } })
+    const defaults = resolveTypeInstanceDefaults({ entries: [typeEntry], typeName: 'Project' })
+    const { content } = resolveNewNote({ title: 'Launch', type: 'Project', vaultPath: '/vault', defaults })
+
+    expect(content).toContain('Status: Done')
+    expect(content.match(/status:/gi)).toHaveLength(1)
+  })
+
   it('blocks creation when macOS /tmp aliases point at the same note path', () => {
     const plan = planNewNoteCreation({
       entries: [makeEntry({ path: '/private/tmp/tolaria-vault/briefing.md', filename: 'briefing.md' })],

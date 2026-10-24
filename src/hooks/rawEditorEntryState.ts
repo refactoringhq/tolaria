@@ -1,5 +1,6 @@
 import type { VaultEntry, VaultPropertyValue } from '../types'
 import { parseFrontmatter } from '../utils/frontmatter'
+import { canonicalFrontmatterKey } from '../utils/systemMetadata'
 import { splitFrontmatter } from '../utils/wikilinks'
 import { frontmatterToEntryPatch, type PropertiesPatch } from './frontmatterOps'
 
@@ -70,12 +71,24 @@ function mergeProperties(
   }
 }
 
+/** Mirrors the native parser: Type status is also an instance default, so it
+ *  stays in properties under the author's key spelling. */
+function mergeTypeStatusProperty(
+  properties: Record<string, VaultPropertyValue>,
+  frontmatter: ReturnType<typeof parseFrontmatter>,
+): void {
+  for (const [key, value] of Object.entries(frontmatter)) {
+    if (canonicalFrontmatterKey(key) === 'status' && typeof value === 'string') Reflect.set(properties, key, value)
+  }
+}
+
 export function deriveRawEditorEntryState(content: string): Partial<VaultEntry> {
   const derived = createRawEditorEntryState()
   const properties: Record<string, VaultPropertyValue> = {}
   const relationships: Record<string, string[]> = {}
+  const frontmatter = parseFrontmatter(content)
 
-  for (const [key, value] of Object.entries(parseFrontmatter(content))) {
+  for (const [key, value] of Object.entries(frontmatter)) {
     const { patch, relationshipPatch, propertiesPatch } = frontmatterToEntryPatch('update', key, value)
     Object.assign(derived, patch)
     mergeRelationships(relationships, relationshipPatch)
@@ -84,8 +97,9 @@ export function deriveRawEditorEntryState(content: string): Partial<VaultEntry> 
 
   derived.properties = properties
   derived.relationships = relationships
-  if (derived.isA === 'Type' && derived.template === null) {
-    derived.template = bodyTemplate(content)
+  if (derived.isA === 'Type') {
+    mergeTypeStatusProperty(properties, frontmatter)
+    derived.template ??= bodyTemplate(content)
   }
   return derived
 }
