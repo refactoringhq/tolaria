@@ -542,7 +542,7 @@
   "save.error.autoFailed": "Error en el guardado automático: {error}",
   "save.error.invalidPath": "Error al guardar: la ruta de la nota no es válida en esta plataforma. Cambie el nombre de la nota o muévala a una carpeta válida y, a continuación, inténtelo de nuevo.",
   "savedViews.reordered": "Vistas reordenadas",
-  "locale.en": "Español",
+  "locale.en": "Inglés",
   "sidebar.nav.inbox": "Bandeja de entrada",
   "sidebar.nav.allNotes": "Todas las notas",
   "sidebar.nav.archive": "Archivar",

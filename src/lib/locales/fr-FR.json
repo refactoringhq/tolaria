@@ -542,7 +542,7 @@
   "save.error.autoFailed": "Échec de l'enregistrement automatique : {error}",
   "save.error.invalidPath": "Échec de l'enregistrement : le chemin d'accès de la note n'est pas valide sur cette plateforme. Renommez la note ou déplacez-la dans un dossier valide, puis réessayez.",
   "savedViews.reordered": "Vues réorganisées",
-  "locale.en": "Français",
+  "locale.en": "Anglais",
   "sidebar.nav.inbox": "Boîte de réception",
   "sidebar.nav.allNotes": "Toutes les notes",
   "sidebar.nav.archive": "Archiver",
