@@ -139,6 +139,7 @@ import { useAutoGitWork } from './hooks/useAutoGitWork'
 import { useAppAiWorkspaceBridge } from './hooks/useAppAiWorkspaceBridge'
 import { useAiWorkspaceWindowBridgeEvents } from './hooks/useAiWorkspaceWindowBridgeEvents'
 import { useMcpSetupDialogController } from './hooks/useMcpSetupDialogController'
+import { useWebRouting } from './hooks/useWebRouting'
 import { shouldReplaceSyncedTabEntry } from './utils/tabEntrySync'
 import { persistEditorStateBeforeMutation } from './utils/editorMutationFlush'
 import {
@@ -1429,6 +1430,14 @@ function MainApp({ noteWindowParams }: { noteWindowParams: NoteWindowParams | nu
     onboardingStatus: onboarding.state.status,
     settingsLoaded,
     vaultListLoaded: vaultSwitcher.loaded,
+  })
+  useWebRouting({
+    selection,
+    onSelectNote: notes.handleSelectNote,
+    onSetSelection: handleSetSelection,
+    entries: visibleEntries,
+    views: vault.views,
+    enabled: !isTauri() && !noteWindowParams && !aiWorkspaceWindow,
   })
   const deepLinks = useDeepLinks({
     activeEntry: activeTab?.entry ?? null,
