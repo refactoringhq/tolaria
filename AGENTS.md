@@ -13,21 +13,60 @@ Use an exception only when a required service or analyzer remains unavailable af
 **Linear** — workspace Refactoring, team Tolaria, issue key `TOL`.
 
 - Workflow: **Backlog** (not ready) → **Open** (ready for an agent) → **To Rework** (review failed: read the latest review comment and fix only that; pick these **before** Open) → **In Progress** (claimed) → **In Review** (pushed, awaiting Luca's QA) → **Done** / **Canceled** / **Duplicate**.
-- Claim an issue by moving it to In Progress only when a session actually starts work on it. At most one In Progress card per lane (Mac mini mobile: 1, agent-openai desktop: 1, agent-claude web: 2); release your current card (In Review, or back to Open with a comment) before claiming another. Never take another worker's In Progress issue; resume your own only when a prior claim comment identifies this worker and worktree. Re-read the issue after claiming and stop on a conflicting claim. Exception: follow the mandatory-rule exception protocol if Linear remains unavailable after one retry.
-- Labels: type `Bug` / `Feature` / `Improvement`; `needs-luca` (only when a human decision or owner action is truly needed, always with a comment saying what is needed); `dubious` and `contributor-pr` (Backlog, awaiting Luca); Source group `Sentry` / `Canny` / `GitHub`. Exception: an unavailable Linear labeling service requires the same owner-approved exception protocol.
-- No platform labels and no "blocked" label of any kind (Luca, 2026-10-23): the project decides the lane (Desktop → Codex on agent-openai, including Mac-specific work it can't test on Linux; Web → Claude Code on agent-claude; Mobile → the Mac mini). A stuck card goes back to Open with a comment and is retried on a later run with backoff; never label it as blocked.
+- Claim an issue by moving it to In Progress only when a session actually starts work on it. At most one In Progress card per lane (Mac mini mobile: 1, agent-openai desktop: 1, agent-claude web: 2); release your current card (In Review, or back to Open with its Status line saying why) before claiming another; a card held only by "Waiting for main to go green" doesn't count. Never take another worker's In Progress issue; resume your own only when the card's Status line names your lane (e.g. "Codex (desktop) is working on it"). Re-read the issue after claiming and stop on a conflicting claim. Exception: follow the mandatory-rule exception protocol if Linear remains unavailable after one retry.
+- Labels: type `Bug` / `Feature` / `Improvement`; `needs-luca` (only when a human decision or owner action is truly needed, always with a "Needs you" comment); `dubious` and `contributor-pr` (Backlog, awaiting Luca); Source group `Sentry` / `Canny` / `GitHub`. Exception: an unavailable Linear labeling service requires the same owner-approved exception protocol.
+- No platform labels and no "blocked" label of any kind (Luca, 2026-10-23): the project decides the lane (Desktop → Codex on agent-openai, including Mac-specific work it can't test on Linux; Web → Claude Code on agent-claude; Mobile → the Mac mini). A stuck card goes back to Open with its Status line saying why and is retried on a later run with backoff; never label it as blocked.
 - Reference the issue ID in commit messages, e.g. `fix: keep image width after restart (TOL-123)`.
+
+### Linear comments (Luca, 2026-10-26)
+
+Luca reads the comments, never the code. Each card gets at most three kinds of comment, in plain language:
+
+1. **Status**: one comment per card, edited in place (never a new one). One line, e.g. `**Status:** Codex (desktop) is working on it`, `**Status:** Waiting for main to go green`, `**Status:** Didn't finish: <plain reason>. Retrying after 18:30 (Rome)`. Times are Rome local time.
+2. **Ready for QA**: posted once, when the work is on main and all of CI is green. It contains:
+   - `**Ready for QA: <short title>**`
+   - `**What changed:**` 1–2 sentences, for the user.
+   - `**Try it:**` 2–4 steps.
+   - `**Proof:**` uploaded inline (see Proof before push).
+   - `**Tested:**` one plain line.
+   - `**Not tested:**` what wasn't tested, if anything (e.g. the macOS app from a Linux box).
+3. **Needs you**: only when Luca has a decision to make. Give the question, the options and your recommendation in a few lines, and add `needs-luca`.
+
+A failed QA, red CI or rework is a reply in the Ready for QA thread: `Didn't pass: <what went wrong>. Next: <what happens>`.
+
+Never post start, claim or resume notices, heartbeats or no-progress checkpoints, retry or backoff counts, run IDs, commit hashes, file paths, log dirs, CodeScene, Codacy or coverage scores, raw logs, or UTC times. The full release record (checklist below) is an attached `release-record.md` file, not comment text.
+
+Uploading: call the Linear `fileUpload` mutation, `PUT` the file to `uploadUrl` with the returned headers, then embed `assetUrl` (`![after](assetUrl)` for images, a link otherwise). On the Linux agent boxes the runner does this from the agent's `ready-for-qa.md`, `proof/` and `release-record.md`.
+
+### Proof before push
+
+No proof, no push. Collect proof before pushing; it goes inline in Ready for QA:
+
+- UI change: before/after screenshots, or a short clip for interactions.
+- Editor or serialization change: before/after `.md` round-trip files plus the regression test.
+- Bug fix: the regression test's output failing before the fix and passing after.
+- CI or infra change: a link to the green CircleCI run.
+
+Risky areas also need a review of the diff by a fresh-context agent (a new session with no shared history) before push, and you fix what it finds. Risky areas are note save/serialization, sync/Git, the updater, and release/CI workflows. Luca never reviews code.
+
+### Done gate (full CI)
+
+Move a card to In Review only when every job in the CircleCI `validation` workflow on main for your commit is green, with none pending (web-gates and publish-mobile-alpha included). The same goes for "no change needed": check the current main. If main is red for another reason, keep the card In Progress with Status "Waiting for main to go green". If your commit broke main, fix it in one push or revert within ~30 min.
+
+### Incidents
+
+Every incident or revert adds a regression test. If it's a pattern, also add one line to this file.
 
 ### Start working on a task
 
 **Before writing a single line of code:** inspect the configured CodeScene project's current Hotspot and Average Code Health and compare them with `.codescene-thresholds`. Then capture the file-level Code Health score for every existing code file you intend to edit. If the project is already below the threshold, **stop and refactor first** — find the worst files with the MCP, improve them, commit, then start the task. If the gate cannot be restored, stop and obtain explicit repository-owner direction before starting feature work.
 
 - Read task description and all comments fully
-- For To Rework: the ❌ QA failed comment tells you exactly what to fix
+- For To Rework: Luca's latest comment, or the "Didn't pass" reply, tells you exactly what to fix
 - Check `docs/adr/` for relevant architecture decisions before structural choices
 - Check `docs/ARCHITECTURE.md` and `docs/ABSTRACTIONS.md` for relevant structural information
 - For UI tasks: study app visual language and components first. Prioritize reusing existing components, assets, and variables over recreating them.
-- If working on a Linear issue, add a comment: `🚀 Starting work on this task. [Brief description of approach]`
+- If working on a Linear issue, set its Status line (create or edit it in place); never post a start comment
 
 ### Commits & pushes
 
@@ -54,9 +93,9 @@ The general coding, quality, localization, analytics, credentials and completion
 Keep the scheduled prompt limited to queue orchestration; this file owns coding and release policy.
 
 1. Reuse the routine's attached worktree and inspect current work. Resume its own identified unfinished claim before taking another issue; keep execution serial under the claim protocol above.
-2. Otherwise paginate **Tolaria Mobile** To Rework, then Open; order by priority (unspecified last), then oldest creation time. Skip work assigned or delegated to others (including cards assigned to Luca for owner action), unmet dependencies, and cards whose latest comment records a failed attempt less than 1 h ago (after a 2nd consecutive failure wait 2 h, after a 3rd 4 h, then 8 h). Do not pull Backlog or In Review into implementation. Follow the claim protocol above.
-3. Implement the selected issue under this file's rules. On a blocker, failure or session exit, record the evidence, the checkpoint location and the required action in Linear, then move the card back to Open (or to In Review if verified work landed on main) before claiming the next one; never leave a blocked card In Progress. Continue independent eligible work without mixing partial changes or extending exceptions.
-4. Put verified implementation In Review with its release record, not self-approved Done. Report meaningful milestones or actionable blockers; stay quiet when the queue or status is unchanged. Resume remaining work on the next hourly run. Keep only one active mobile queue routine.
+2. Otherwise paginate **Tolaria Mobile** To Rework, then Open; order by priority (unspecified last), then oldest creation time. Skip work assigned or delegated to others (including cards assigned to Luca for owner action), unmet dependencies, and cards whose Status line records a failed attempt less than 1 h ago (after a 2nd consecutive failure wait 2 h, after a 3rd 4 h, then 8 h). Do not pull Backlog or In Review into implementation. Follow the claim protocol above.
+3. Implement the selected issue under this file's rules, including Linear comments, proof before push and the done gate. On a blocker, failure or session exit, edit the Status line with the plain reason (keep evidence and the checkpoint location in `release-record.md` or the worktree, not in comments; post "Needs you" only for a decision), then move the card back to Open (or to In Review if verified work landed on main) before claiming the next one; never leave a blocked card In Progress. Continue independent eligible work without mixing partial changes or extending exceptions.
+4. Put verified implementation In Review with one Ready for QA comment (proof inline, iPhone/iPad/Android screenshots or clips for UI) and `release-record.md` attached, not self-approved Done. Report meaningful milestones or actionable blockers; stay quiet when the queue or status is unchanged. Resume remaining work on the next hourly run. Keep only one active mobile queue routine.
 
 ### TDD (mandatory)
 
@@ -76,9 +115,9 @@ Use `pnpm l10n:translate:force` only when intentionally regenerating existing tr
 
 ### Product analytics (mandatory for meaningful features)
 
-New features should emit a PostHog event so we can see whether users actually discover and use them. Skip instrumentation when the change has no meaningful user action or when a dedicated event would create noise; record that reason in the completion comment. If the correct instrumentation remains unclear, obtain repository-owner direction before release. Use clear, stable event names, avoid PII or note content, and include only safe metadata that helps evaluate adoption and failures.
+New features should emit a PostHog event so we can see whether users actually discover and use them. Skip instrumentation when the change has no meaningful user action or when a dedicated event would create noise; record that reason in the release record. If the correct instrumentation remains unclear, obtain repository-owner direction before release. Use clear, stable event names, avoid PII or note content, and include only safe metadata that helps evaluate adoption and failures.
 
-When adding or changing a meaningful user-facing feature, include the event name(s) in the Linear completion comment alongside QA, docs, and code health. If intentionally not instrumenting a feature, explain why in the completion comment.
+When adding or changing a meaningful user-facing feature, include the event name(s) in the release record alongside QA, docs, and code health. If intentionally not instrumenting a feature, explain why there.
 
 ### Code health (mandatory)
 
@@ -120,7 +159,7 @@ Use Codacy as a security and static-analysis gate before a task is considered re
 - **Before every commit:** re-scan every touched/new code file individually and compare the complete SARIF results with its recorded baseline. Do not rely on added-line filtering, repository totals, or `pnpm codacy:gate` alone; if an individual scan cannot complete, stop and obtain explicit repository-owner approval.
 - **Post-push dashboard verification:** after `git push origin main`, wait until `codacy_get_repository_with_analysis` reports the exact pushed SHA as `lastAnalysedCommit`. Re-read the enabled-tool roster, paginate `codacy_list_repository_issues` to completion, and filter by each exact manifest path; use file-level MCP queries as supporting detail, not as a substitute for the complete repository issue list because newly created files may not yet resolve through file lookup. Absence from the issue list counts as zero only when the exact SHA is analyzed, the analyzer roster still matches the pre-edit parity record, and the repository reports no analyzer problem. Every new code file must have zero dashboard findings at every severity from every enabled analyzer; every existing touched file must have no new finding and must have fewer findings than its pre-edit dashboard baseline (or remain at zero). If the dashboard reports a finding—even one from a deprecated or misconfigured analyzer—the task remains unfinished until the file is fixed or the analyzer configuration is corrected and a replacement exact SHA is fully reanalyzed. Exception: if verification remains unavailable after one retry, use the mandatory-rule exception protocol and obtain repository-owner approval before release.
 - **Repository-wide dashboard counts:** use `codacy_get_repository_with_analysis` for the total and `codacy_list_repository_issues` with full pagination for severity/tool breakdowns. Derive the provider/organization/repository from the Git remote without printing credential-bearing remote URLs; for this repository use `gh` / `refactoringhq` / `tolaria` and branch `main`.
-- **Escalation:** if a scanner is unavailable or a finding is demonstrably false, stop and obtain explicit repository-owner approval recorded in the completion comment. Rule suppression requires that same explicit approval and documentation.
+- **Escalation:** if a scanner is unavailable or a finding is demonstrably false, stop and obtain explicit repository-owner approval recorded in the release record. Rule suppression requires that same explicit approval and documentation.
 - `pnpm codacy:gate` is a required fail-closed added-line safety net in pre-push and CI; it does not replace the touched-file before/after check.
 
 ### Check suite (runs on every push)
@@ -160,21 +199,21 @@ bash ~/.openclaw/skills/tolaria-qa/scripts/screenshot.sh /tmp/qa-native.png
 
 Use computer-use/browser-control interaction for native UI QA when either tool is present in the current environment: click, hover, drag, select, scroll, and type the way a real user would with the mouse and trackpad. For every UI feature, test the primary mouse-driven path first, then verify each keyboard shortcut or keyboard-first workflow implemented or modified by the task. If neither interaction tool is present, run the scripted focus, screenshot, and shortcut checks and document that limitation.
 
-Use `osascript` for app focus, keyboard shortcuts, and keyboard-specific checks. **⚠️ WKWebView:** if an `osascript keystroke` fails to enter editor text, use computer use for the native editor interaction and rely on Playwright for deterministic text-input coverage. Write the result as a Linear comment (✅ or ❌), or in the final handoff when no Linear issue exists.
+Use `osascript` for app focus, keyboard shortcuts, and keyboard-specific checks. **⚠️ WKWebView:** if an `osascript keystroke` fails to enter editor text, use computer use for the native editor interaction and rely on Playwright for deterministic text-input coverage. Keep the screenshots as proof for Ready for QA and the details in the release record (or the final handoff when no Linear issue exists).
 
 ### Linux agent boxes (Hetzner / remote)
 
 These rules apply when the agent runs on a Linux box (no macOS desktop, no `osascript`, no `~/.openclaw`). The macOS instructions above stay in force for the Mac mini; do not remove or weaken them.
 
-**Mac-specific desktop work is done here too (Luca, 2026-10-23).** Every Tolaria Desktop card goes to the agent-openai box, including macOS/Windows-native surfaces (updater, Homebrew, macOS menus and Cmd/Option shortcut wiring, native dialogs, signing, Windows installers). When part of a change can't be built or tested on Linux, implement it carefully anyway, unit-test the logic you can, and list exactly what was not tested on Linux (and how to check it on a Mac or Windows machine) in the Linear comment. That is not a reason to skip or block the card.
+**Mac-specific desktop work is done here too (Luca, 2026-10-23).** Every Tolaria Desktop card goes to the agent-openai box, including macOS/Windows-native surfaces (updater, Homebrew, macOS menus and Cmd/Option shortcut wiring, native dialogs, signing, Windows installers). When part of a change can't be built or tested on Linux, implement it carefully anyway, unit-test the logic you can, and list exactly what was not tested on Linux (and how to check it on a Mac or Windows machine) under Not tested in Ready for QA. That is not a reason to skip or block the card.
 
-**QA on Linux = the Linux Tolaria build with a throwaway vault.** There is no macOS native QA on these boxes. Build the Linux app (`CI=true pnpm tauri build --debug --no-bundle`) and drive it under Xvfb with a throwaway copy of `demo-vault-v2/` — on the agent boxes use the installed `tolaria-qa` CLI (`tolaria-qa help`: `start`, `click`, `key ctrl+…`, `xtype`, `shot`, `smoke`, `stop`). Never open, create, or modify `~/Laputa` or any real user vault. Test the primary mouse path first, then each keyboard shortcut you added or changed (`Ctrl` on Linux where macOS uses `Cmd`). Phase 1 Playwright still applies. Record QA (✅/❌, what was clicked/typed, screenshots) in the task comment as usual.
+**QA on Linux = the Linux Tolaria build with a throwaway vault.** There is no macOS native QA on these boxes. Build the Linux app (`CI=true pnpm tauri build --debug --no-bundle`) and drive it under Xvfb with a throwaway copy of `demo-vault-v2/` — on the agent boxes use the installed `tolaria-qa` CLI (`tolaria-qa help`: `start`, `click`, `key ctrl+…`, `xtype`, `shot`, `smoke`, `stop`). Never open, create, or modify `~/Laputa` or any real user vault. Test the primary mouse path first, then each keyboard shortcut you added or changed (`Ctrl` on Linux where macOS uses `Cmd`). Phase 1 Playwright still applies. Screenshots are proof for Ready for QA; what was clicked or typed goes in the release record.
 
 **Before pushing to main:** the full check suite passes; then `git fetch origin && git rebase origin/main` (stop on conflicts you cannot resolve safely), re-run the checks (including the Linux build and a Linux app smoke) on the rebased HEAD, then `git push origin main` so the pre-push hook runs against the latest `origin/main`. Never `--no-verify` without a recorded repository-owner exception.
 
 ### Release-readiness checklist
 
-Before pushing or moving a task to In Review, verify the release gates and add a **completion comment** to the Linear issue. Exception: when the work has no Linear issue, put the identical evidence in the final handoff and identify it as the release record. The record must include:
+Before pushing or moving a task to In Review, verify the release gates and write them to `release-record.md`, attached to the Linear issue (never pasted as comment text). When the work has no Linear issue, put the same evidence in the final handoff. The record must include:
 
 - What was implemented (a few lines covering logic and UX/UI).
 - QA: what was tested and how (Playwright / native screenshot / osascript on macOS; Linux app driven with a throwaway vault on Linux agent boxes).
@@ -187,6 +226,7 @@ Before pushing or moving a task to In Review, verify the release gates and add a
 - Refactoring: any files refactored to meet the CodeScene gate, or "none needed".
 - ADRs: any new/updated ADRs, or "none".
 - Docs: any updated docs (`docs/ARCHITECTURE.md`, `docs/ABSTRACTIONS.md`, etc.), or "none".
+- Proof: what was collected for Ready for QA, and the fresh-context review verdict for risky areas.
 - Demo vault dirt checked: `git status --short -- demo-vault demo-vault-v2` is empty unless fixture changes are intentional.
 
 ### ADRs & docs
@@ -302,4 +342,4 @@ Prefer Mermaid (`flowchart`, `sequenceDiagram`, `classDiagram`, `stateDiagram-v2
 
 ## Stuck or blocked tasks
 
-Whenever an agent moves a task back to Open, adds `needs-luca`, or otherwise leaves a task stuck, it must ALWAYS add a task comment explaining why: the exact blocker, the evidence (command/log path), and what decision or action would unblock it. Never leave a task blocked without that comment. Exception: a Linear outage after one retry requires the identical evidence in the final handoff and repository-owner approval under the mandatory-rule exception protocol.
+Whenever an agent moves a task back to Open or otherwise leaves it stuck, it must ALWAYS update the card's Status line with the plain reason and what happens next. Keep evidence (commands, logs) in the release record or local logs. When only Luca can unblock it, add `needs-luca` and a "Needs you" comment with the decision needed. Never leave a task blocked without saying why. Exception: a Linear outage after one retry requires the identical evidence in the final handoff and repository-owner approval under the mandatory-rule exception protocol.
