@@ -54,6 +54,22 @@ function editor(page: Page) {
 	return page.locator(".bn-editor");
 }
 
+function editorHasFocus(page: Page): Promise<boolean> {
+	return page.evaluate(
+		() => document.activeElement?.closest(".bn-editor") != null,
+	);
+}
+
+/** The untitled notes on the server that were not there before the test. */
+async function addedUntitledPaths(
+	request: APIRequestContext,
+	before: string[],
+): Promise<string[]> {
+	return (await serverPaths(request)).filter(
+		(path) => !before.includes(path) && /^untitled-note-\d+/.test(path),
+	);
+}
+
 /** The phone shows the note or the list (TOL-193): back to the list there; true on a phone. */
 async function showNoteList(page: Page): Promise<boolean> {
 	const back = page.getByTestId("phone-back-to-notes");
@@ -80,31 +96,29 @@ test("a note created on the web is renamed after its heading and deleted", async
 
 	await page.getByRole("button", { name: "Create new note" }).first().click();
 
-	// Created on the server with a fresh untitled name.
-	let untitledPath = "";
+	// Created on the server with a fresh untitled name: one click, one note.
 	await expect
-		.poll(async () => {
-			const added = (await serverPaths(request)).filter(
-				(path) => !before.includes(path),
-			);
-			untitledPath = added.find((path) => /^untitled-note-\d+/.test(path)) ?? "";
-			return untitledPath;
-		})
-		.not.toBe("");
+		.poll(async () => addedUntitledPaths(request, before))
+		.toHaveLength(1);
+	const [untitledPath] = await addedUntitledPaths(request, before);
 	await expect
 		.poll(() => remotePaths(), { timeout: 10_000 })
 		.toContain(untitledPath);
 
-	// The new note's heading is focused: typing names the note.
+	// The new note's heading is focused: typing names the note. The caret lands once the
+	// note's live document is open.
 	await expect(editor(page)).toBeVisible({ timeout: 10_000 });
-	await expect(editor(page).locator("h1, [data-content-type='heading']").first()).toBeVisible();
+	await expect(
+		editor(page).locator("h1, [data-content-type='heading']").first(),
+	).toBeVisible();
+	await expect.poll(() => editorHasFocus(page), { timeout: 10_000 }).toBe(true);
 	await page.keyboard.type(title);
 
 	// Like the desktop, the untitled note takes its heading's name once typing pauses.
 	await expect
 		.poll(async () => serverPaths(request), { timeout: 20_000 })
 		.toContain(renamedPath);
-	expect(await serverPaths(request)).not.toContain(untitledPath);
+	expect(await addedUntitledPaths(request, before)).toEqual([]);
 
 	// The editor kept the caret through the rename: typing goes on in the same note.
 	await page.keyboard.press("Enter");
@@ -139,7 +153,8 @@ test("a note created on the web is renamed after its heading and deleted", async
 	// Still gone after a reload: the list comes from the server.
 	await page.reload({ waitUntil: "load" });
 	// Like the desktop, the phone opened the next note in the deleted one's place.
-	if (phone) await page.getByTestId("phone-back-to-notes").click({ timeout: 10_000 });
+	if (phone)
+		await page.getByTestId("phone-back-to-notes").click({ timeout: 10_000 });
 	await expect(noteList.getByText("Welcome", { exact: true })).toBeVisible({
 		timeout: 10_000,
 	});

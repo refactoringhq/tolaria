@@ -36,7 +36,22 @@ function clearPendingFocusRequest(path: string): void {
   if (pendingFocusRequest?.detail.path === path) pendingFocusRequest = null
 }
 
+const TRIGGER_CONTROL_SELECTOR = 'button, [role="button"], [role="menuitem"]'
+
+/**
+ * A new note takes the keyboard from the control that created it at once. A remote note opens
+ * its live document before its editor can take focus; until then a space or Enter typed for the
+ * title would press that control again and create another note.
+ */
+function releaseTriggerControlFocus(): void {
+  const activeElement = document.activeElement
+  if (activeElement instanceof HTMLElement && activeElement.matches(TRIGGER_CONTROL_SELECTOR)) {
+    activeElement.blur()
+  }
+}
+
 export function requestEditorFocus(detail: FocusEventDetail): void {
+  if (detail.path && detail.selectTitle) releaseTriggerControlFocus()
   rememberPendingFocusRequest(detail)
   window.setTimeout(() => {
     window.dispatchEvent(new CustomEvent(FOCUS_EVENT_NAME, { detail }))
