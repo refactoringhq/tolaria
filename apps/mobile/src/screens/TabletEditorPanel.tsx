@@ -1,4 +1,4 @@
-import { type ReactElement, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { type ReactElement, useCallback, useEffect, useRef, useState } from 'react'
 import {
   type LayoutChangeEvent,
   type NativeScrollEvent,
@@ -29,7 +29,6 @@ import type { MobileTableOfContentsTarget } from '../workspace/mobileTableOfCont
 import type { MobileEditorBlock, MobileNote } from '../workspace/mobileWorkspaceModel'
 import { useMobilePullToSync } from '../workspace/useMobilePullToSync'
 import type { MobileNoteReadState } from '../workspace/mobileNoteRead'
-import { WorkspaceSnapshotRevisionContext } from '../workspace/workspaceSyncEditors'
 import type {
   EditorContentProps,
   EditorEditingMode,
@@ -369,12 +368,11 @@ function EditorContent({
   wysiwygWikilinkInsertProbe = false,
   wysiwygMutationProbe = false,
 }: EditorContentProps) {
-  const revision = useContext(WorkspaceSnapshotRevisionContext)
   if (editing) {
     if (plainText || editingMode === 'source') {
       return (
         <MobileMarkdownSourceEditor
-          key={`${revision}:${note.id}:${plainText ? 'text' : 'source'}`}
+          key={`${note.id}:${plainText ? 'text' : 'source'}`}
           blocks={blocks}
           bullets={bullets}
           compact={compact}
@@ -392,7 +390,7 @@ function EditorContent({
 
     return (
       <MobileWysiwygMarkdownEditor
-        key={`${revision}:${note.id}:wysiwyg`}
+        key={`${note.id}:wysiwyg`}
         blocks={blocks}
         bullets={bullets}
         compact={compact}

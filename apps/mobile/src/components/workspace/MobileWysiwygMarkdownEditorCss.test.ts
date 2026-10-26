@@ -22,6 +22,10 @@ describe('mobile TenTap editor CSS', () => {
     expect(proseMirror).toContain('margin: 0;')
     expect(proseMirror).toContain('padding: 20px clamp(24px, 4vw, 72px) 96px;')
   })
+
+  it('reveals the editor only after its appearance stylesheet is injected', () => {
+    expect(cssBlock(mobileTentapEditorCss(false), '#root')).toContain('visibility: visible;')
+  })
 })
 
 function cssBlock(css: string, selector: string): string {

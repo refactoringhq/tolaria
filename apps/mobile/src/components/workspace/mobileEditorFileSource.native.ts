@@ -36,7 +36,11 @@ async function writeEditorShell(): Promise<string> {
     cacheInitialized = true
   }
   const uri = `${previewCache}editor.html`
-  await writeAsStringAsync(uri, mobileWysiwygTentapEditorHtml)
+  const shell = mobileWysiwygTentapEditorHtml.replace(
+    '</head>',
+    '<style>#root { visibility: hidden; }</style></head>',
+  )
+  await writeAsStringAsync(uri, shell)
   return uri
 }
 

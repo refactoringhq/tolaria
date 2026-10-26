@@ -9,7 +9,9 @@ vi.mock('expo-file-system/legacy', () => ({
   deleteAsync: disk.remove,
   writeAsStringAsync: disk.write,
 }))
-vi.mock('./MobileWysiwygTentapEditorHtml', () => ({ mobileWysiwygTentapEditorHtml: '<html>editor shell</html>' }))
+vi.mock('./MobileWysiwygTentapEditorHtml', () => ({
+  mobileWysiwygTentapEditorHtml: '<html><head></head><body><div id="root"></div></body></html>',
+}))
 
 beforeEach(() => {
   vi.resetModules()
@@ -23,7 +25,10 @@ it('stages only referenced images beside the editor shell, without writing into 
   expect(disk.copy).toHaveBeenCalledWith({ from: 'file:///vault/attachments/a.png', to: `${preview.rootUri}attachments/a.png` })
   expect(disk.copy).toHaveBeenCalledWith({ from: 'file:///vault/attachments/nested/b%20c.png', to: `${preview.rootUri}attachments/nested/b%20c.png` })
   expect(disk.copy).toHaveBeenCalledTimes(3)
-  expect(disk.write).toHaveBeenCalledExactlyOnceWith('file:///application/Cache/tolaria-editor-previews/editor.html', '<html>editor shell</html>')
+  expect(disk.write).toHaveBeenCalledExactlyOnceWith(
+    'file:///application/Cache/tolaria-editor-previews/editor.html',
+    '<html><head><style>#root { visibility: hidden; }</style></head><body><div id="root"></div></body></html>',
+  )
   await preview.prepare('![one](attachments/a.png)')
   expect(disk.copy).toHaveBeenCalledTimes(3)
   await preview.dispose()

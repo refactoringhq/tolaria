@@ -21,4 +21,13 @@ describe('rich editor appearance', () => {
     expect(editor.setSelection).not.toHaveBeenCalled()
     expect(injectMobileEditorAppearance(null, '')).toBe(false)
   })
+
+  it('reveals the editor if its native bridge cannot inject CSS', () => {
+    const editor = { injectJS: vi.fn() }
+
+    expect(injectMobileEditorAppearance(editor, 'body { color: white; }')).toBe(false)
+    expect(editor.injectJS).toHaveBeenCalledWith(
+      "document.getElementById('root')?.style.setProperty('visibility', 'visible'); true;",
+    )
+  })
 })

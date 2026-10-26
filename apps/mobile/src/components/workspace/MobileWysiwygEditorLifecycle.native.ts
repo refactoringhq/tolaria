@@ -188,8 +188,8 @@ export function activateNativeEditorChanges(refs: NativeTentapEditorRefs) {
   refs.acceptsEditorChangesRef.current = true
 }
 
-function canSyncInitialContent(refs: NativeTentapEditorRefs) {
-  return !refs.acceptsEditorChangesRef.current && !refs.hasAcceptedEditorChangeRef.current
+export function canSyncInitialContent(refs: NativeTentapEditorRefs) {
+  return !refs.hasAcceptedEditorChangeRef.current
 }
 
 function cancelNativeInitialContentSync(refs: NativeTentapEditorRefs) {

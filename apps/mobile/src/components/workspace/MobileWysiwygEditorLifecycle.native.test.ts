@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { EditorBridge } from '@10play/tentap-editor'
 import {
   activateNativeEditorChanges,
+  canSyncInitialContent,
   nativeInitialContentReady,
   type NativeTentapEditorRefs,
   setNativeEditorContentSilently,
@@ -36,5 +37,18 @@ describe('native WYSIWYG initial content sync', () => {
     activateNativeEditorChanges({ acceptsEditorChangesRef } as NativeTentapEditorRefs)
 
     expect(acceptsEditorChangesRef.current).toBe(true)
+  })
+
+  it('allows a disk reread after a touch until an editor change is accepted', () => {
+    const refs = {
+      acceptsEditorChangesRef: { current: false },
+      hasAcceptedEditorChangeRef: { current: false },
+    } as NativeTentapEditorRefs
+
+    activateNativeEditorChanges(refs)
+    expect(canSyncInitialContent(refs)).toBe(true)
+
+    refs.hasAcceptedEditorChangeRef.current = true
+    expect(canSyncInitialContent(refs)).toBe(false)
   })
 })

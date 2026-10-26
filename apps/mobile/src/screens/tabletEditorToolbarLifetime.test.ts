@@ -42,10 +42,16 @@ vi.mock('../workspace/mobileAttachmentOpen', () => ({ useMobileAttachmentLinkOpe
 vi.mock('../components/workspace/MobileEditorBlocks', () => ({ MobileEditorBlocks: () => createElement('div', { 'data-testid': 'cached-read-only-content' }) }))
 vi.mock('../components/workspace/MobileFilePreview', () => ({ MobileFilePreview: () => null }))
 vi.mock('../components/workspace/MobileWysiwygMarkdownEditor', () => ({
-  MobileWysiwygMarkdownEditor: ({ note }: { note: MobileNote }) => createElement('div', { 'data-rich-note': note.id }),
+  MobileWysiwygMarkdownEditor: ({ note }: { note: MobileNote }) => createElement('div', {
+    'data-rich-note': note.id,
+    'data-note-content': note.rawContent,
+  }),
 }))
 vi.mock('../components/workspace/MobileMarkdownSourceEditor', () => ({
-  MobileMarkdownSourceEditor: ({ note }: { note: MobileNote }) => createElement('div', { 'data-source-note': note.id }),
+  MobileMarkdownSourceEditor: ({ note }: { note: MobileNote }) => createElement('div', {
+    'data-source-note': note.id,
+    'data-note-content': note.rawContent,
+  }),
 }))
 vi.mock('./TabletEditorPanelChrome', () => ({ EmptyEditorPanel: () => null, MobileFilePreviewFallback: () => null,
   MobileNoteReadFallback: ({ state }: { state: { status: string } }) => createElement('div', { 'data-testid': 'note-read-fallback', 'data-state': state.status }),
@@ -55,15 +61,19 @@ let root: ReturnType<typeof createRoot> | undefined
 beforeEach(() => vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true))
 afterEach(async () => { await act(async () => root?.unmount()); vi.unstubAllGlobals() })
 
-it('replaces only the rich document on a new revision, retaining the toolbar control', async () => {
+it('keeps the rich editor mounted and clean when an opened note receives its disk reread', async () => {
   const h = createHarness()
   await h.select(0)
   const document = h.host.querySelector('[data-rich-note]')
   const control = h.button('editor-source-action')
   await h.select(0, 0)
   expect(h.host.querySelector('[data-rich-note]')).toBe(document)
+  h.publishDiskRead(0, '# Authoritative disk content')
   await h.select(0, 1)
-  expect(h.host.querySelector('[data-rich-note]')).not.toBe(document)
+  expect(h.host.querySelector('[data-rich-note]')).toBe(document)
+  expect(document?.getAttribute('data-note-content')).toBe('# Authoritative disk content')
+  expect(h.onUpdateContent).not.toHaveBeenCalled()
+  expect(h.diskBytes.get(h.notes[0].id)).toBe('# Authoritative disk content')
   expect(h.button('editor-source-action')).toBe(control)
 })
 
@@ -73,9 +83,12 @@ it('replaces a raw document on a new revision without resetting source mode or c
   await act(async () => h.button('editor-source-action').click())
   const document = h.host.querySelector('[data-source-note]')
   const control = h.button('editor-source-action')
+  h.publishDiskRead(0, '# Authoritative disk content')
   await h.select(0, 1)
   expect(h.host.querySelector('[data-source-note]')).not.toBeNull()
-  expect(h.host.querySelector('[data-source-note]')).not.toBe(document)
+  expect(h.host.querySelector('[data-source-note]')).toBe(document)
+  expect(document?.getAttribute('data-note-content')).toBe('# Authoritative disk content')
+  expect(h.onUpdateContent).not.toHaveBeenCalled()
   expect(h.button('editor-source-action')).toBe(control)
 })
 
@@ -167,7 +180,13 @@ function createHarness() {
     ? { ...note, rawContent: '# Cached note', editorBlocks: [] }
     : note)
   const editors = createWorkspaceSyncEditors()
-  return { host, notes, editors,
+  const diskBytes = new Map(notes.map(note => [note.id, note.rawContent ?? '']))
+  const onUpdateContent = vi.fn((noteId: string, content: string) => { diskBytes.set(noteId, content) })
+  return { host, notes, editors, diskBytes, onUpdateContent,
+    publishDiskRead: (index: number, content: string) => {
+      diskBytes.set(notes[index].id, content)
+      notes[index] = { ...notes[index], rawContent: content }
+    },
     button: (testID: string) => {
       const button = host.querySelector<HTMLButtonElement>(`[data-testid="${testID}"]`)
       if (!button) throw new Error(`Missing ${testID}`)
@@ -175,7 +194,7 @@ function createHarness() {
     },
     select: (index: number, revision = 0, noteRead?: { status: 'loading'; retry: () => void }) => act(async () => {
       root?.render(createElement(WorkspaceSnapshotRevisionContext.Provider, { value: revision }, createElement(WorkspaceSyncEditorsContext.Provider, { value: editors }, createElement(TabletEditorPanel, { blocks: [], bullets: [], compact: false, notes,
-        note: notes[index], noteRead, onUpdateContent: vi.fn(), onToggleFavorite: vi.fn(), onOpenMoreActions: vi.fn(), onNavigateWikilink: vi.fn(),
+        note: notes[index], noteRead, onUpdateContent, onToggleFavorite: vi.fn(), onOpenMoreActions: vi.fn(), onNavigateWikilink: vi.fn(),
         renameFilename: { value: 'renamed.md', notes, onChange: vi.fn(), onSubmit: vi.fn() } }))))
     }),
   }

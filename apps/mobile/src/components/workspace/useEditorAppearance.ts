@@ -3,10 +3,18 @@ import { useMobileColors, useMobileMetrics } from '../../ui/theme/useMobileTheme
 import type { MobileNoteWidth } from '../../workspace/mobileWorkspaceModel'
 import { mobileTentapEditorCss } from './MobileWysiwygMarkdownEditorCss'
 
-type CssEditor = { injectCSS?: (css: string, tag?: string) => void }
+type CssEditor = {
+  injectCSS?: (css: string, tag?: string) => void
+  injectJS?: (javascript: string) => void
+}
+
+const revealEditorRoot = "document.getElementById('root')?.style.setProperty('visibility', 'visible'); true;"
 
 export function injectMobileEditorAppearance(editor: CssEditor | null, css: string): boolean {
-  if (!editor?.injectCSS) return false
+  if (!editor?.injectCSS) {
+    editor?.injectJS?.(revealEditorRoot)
+    return false
+  }
   editor.injectCSS(css, 'tolaria-editor')
   return true
 }

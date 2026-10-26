@@ -17,6 +17,7 @@ export function mobileTentapEditorCss(
   const wide = noteWidth === 'wide'
 
   return [
+    cssRule('#root', [['visibility', 'visible']]),
     ...documentRules(colors, metrics, { horizontalPadding, wide }),
     ...headingRules(colors, metrics, { h1FontSize, h1LineHeight }),
     ...blockRules(colors, metrics),
