@@ -207,10 +207,7 @@ private final class TolariaKeyCommandsRootViewController: UIViewController {
         modifierFlags: specification.modifierFlags,
         action: #selector(handleTolariaKeyCommand(_:))
       )
-      let isBareArrow = specification.modifierFlags.isEmpty
-        && (specification.input == UIKeyCommand.inputUpArrow
-          || specification.input == UIKeyCommand.inputDownArrow)
-      command.wantsPriorityOverSystemBehavior = !isBareArrow
+      command.wantsPriorityOverSystemBehavior = true
       return command
     }
   }

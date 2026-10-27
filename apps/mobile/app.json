@@ -15,21 +15,8 @@
       },
       "bundleIdentifier": "com.tolaria.mobile.dev",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
         "LSSupportsOpeningDocumentsInPlace": true,
         "UIFileSharingEnabled": true
-      },
-      "privacyManifests": {
-        "NSPrivacyTracking": false,
-        "NSPrivacyTrackingDomains": [],
-        "NSPrivacyCollectedDataTypes": [
-          {
-            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeProductInteraction",
-            "NSPrivacyCollectedDataTypeLinked": false,
-            "NSPrivacyCollectedDataTypeTracking": false,
-            "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAnalytics"]
-          }
-        ]
       }
     },
     "android": {

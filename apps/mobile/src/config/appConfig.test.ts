@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
-import type { ExpoConfig } from 'expo/config'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import type { ExpoConfig } from 'expo/config'
 import manifest from '../../app.json'
 
 const require = createRequire(import.meta.url)
@@ -73,26 +73,6 @@ it('uses the approved production identity without losing native settings', () =>
   expect(app.name).toBe('Tolaria')
   expect(app.android).toEqual(manifest.expo.android)
   expect(manifest.expo.ios.bundleIdentifier).toBe('com.tolaria.mobile.dev')
-})
-
-it('persists the approved exempt-encryption declaration across native profiles', () => {
-  expect(configuredApp().ios?.infoPlist).toHaveProperty('ITSAppUsesNonExemptEncryption', false)
-  expect(testFlight().ios?.infoPlist).toHaveProperty('ITSAppUsesNonExemptEncryption', false)
-})
-
-it('declares existing opt-in product interaction analytics without identity linking or tracking', () => {
-  const privacy = configuredApp().ios?.privacyManifests
-  expect(privacy).toEqual({
-    NSPrivacyTracking: false,
-    NSPrivacyTrackingDomains: [],
-    NSPrivacyCollectedDataTypes: [{
-      NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypeProductInteraction',
-      NSPrivacyCollectedDataTypeLinked: false,
-      NSPrivacyCollectedDataTypeTracking: false,
-      NSPrivacyCollectedDataTypePurposes: ['NSPrivacyCollectedDataTypePurposeAnalytics'],
-    }],
-  })
-  expect(testFlight().ios?.privacyManifests).toEqual(privacy)
 })
 
 it.each([undefined, '', '0', '-1', '01', '1.2', '1e2', ' 1 ', '10000'])('rejects invalid TestFlight build number %s', (build) => {
