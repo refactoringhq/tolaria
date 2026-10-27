@@ -79,6 +79,14 @@ describe("UpdateBanner", () => {
 		);
 	});
 
+	it("lets the user dismiss an updater error", () => {
+		const { actions } = renderBanner({ state: "error", kind: "check" });
+
+		fireEvent.click(screen.getByTestId("update-dismiss"));
+
+		expect(actions.dismiss).toHaveBeenCalledOnce();
+	});
+
 	it("shows immediate feedback while checking for updates", () => {
 		renderBanner({ state: "checking" });
 

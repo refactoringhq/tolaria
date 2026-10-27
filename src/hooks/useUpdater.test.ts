@@ -234,6 +234,53 @@ describe("useUpdater", () => {
 		expect(result.current.status).toEqual({ state: "idle" });
 	});
 
+	it("ends a stalled update check after its timeout", async () => {
+		vi.mocked(isTauri).mockReturnValue(true);
+		mockInvoke.mockReturnValue(new Promise(() => {}));
+
+		const { result } = renderUpdater("stable", false);
+		let checkPromise: Promise<unknown> | null = null;
+
+		await act(async () => {
+			checkPromise = result.current.actions.checkForUpdates();
+			await Promise.resolve();
+		});
+
+		expect(result.current.status).toEqual({ state: "checking" });
+
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(10_000);
+			await checkPromise;
+		});
+
+		expect(result.current.status).toEqual({ state: "error", kind: "check" });
+	});
+
+	it("keeps a dismissed check from restoring its late result", async () => {
+		vi.mocked(isTauri).mockReturnValue(true);
+		let resolveCheck: (value: AppUpdateMetadata | null) => void = () => {};
+		mockInvoke.mockReturnValue(
+			new Promise<AppUpdateMetadata | null>((resolve) => {
+				resolveCheck = resolve;
+			}),
+		);
+
+		const { result } = renderUpdater("stable");
+		let checkPromise: Promise<unknown> | null = null;
+		await act(async () => {
+			checkPromise = result.current.actions.checkForUpdates();
+			await Promise.resolve();
+		});
+		act(() => result.current.actions.dismiss());
+
+		await act(async () => {
+			resolveCheck(makeUpdate());
+			await checkPromise;
+		});
+
+		expect(result.current.status).toEqual({ state: "idle" });
+	});
+
 	it("returns available and sets status when an update exists", async () => {
 		const { result, outcome } = await performManualCheck(
 			"stable",

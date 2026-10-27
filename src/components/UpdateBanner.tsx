@@ -230,14 +230,27 @@ function renderBannerContent(
 			return renderReadyContent(status, locale);
 		case "error":
 			return (
-				<span>
-					{translate(
-						locale,
-						status.kind === "check"
-							? "update.error.check"
-							: "update.error.download",
-					)}
-				</span>
+				<>
+					<span>
+						{translate(
+							locale,
+							status.kind === "check"
+								? "update.error.check"
+								: "update.error.download",
+						)}
+					</span>
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-xs"
+						data-testid="update-dismiss"
+						onClick={actions.dismiss}
+						style={dismissButtonStyle}
+						aria-label={translate(locale, "update.dismiss")}
+					>
+						<X size={14} />
+					</Button>
+				</>
 			);
 	}
 }

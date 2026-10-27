@@ -17,6 +17,20 @@ import { formatCalendarVersionForDisplay } from "../utils/calendarVersion";
 import { openExternalUrl } from "../utils/url";
 
 const RELEASE_NOTES_URL = "https://tolaria.md/releases/";
+const UPDATER_CHECK_TIMEOUT_MS = 10_000;
+
+function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
+	let timeout: ReturnType<typeof setTimeout> | undefined;
+	const deadline = new Promise<never>((_resolve, reject) => {
+		timeout = setTimeout(
+			() => reject(new Error("Update check timed out")),
+			timeoutMs,
+		);
+	});
+	return Promise.race([operation, deadline]).finally(() => {
+		if (timeout) clearTimeout(timeout);
+	});
+}
 
 interface UpdateVersionInfo {
 	version: string;
@@ -91,45 +105,86 @@ function createDownloadProgressHandler(
 	};
 }
 
+function applyUpdateCheckResult({
+	checkId,
+	currentCheckId,
+	update,
+	updateRef,
+	setStatus,
+}: {
+	checkId: number;
+	currentCheckId: number;
+	update: AppUpdateMetadata | null;
+	updateRef: { current: AppUpdateMetadata | null };
+	setStatus: Dispatch<SetStateAction<UpdateStatus>>;
+}): UpdateCheckResult {
+	if (checkId !== currentCheckId) return { kind: "error" };
+	if (!update) {
+		updateRef.current = null;
+		setStatus({ state: "idle" });
+		return { kind: "up-to-date" };
+	}
+
+	const versionInfo = createVersionInfo(update.version);
+	updateRef.current = update;
+	setStatus(toAvailableStatus(update));
+	return { kind: "available", ...versionInfo };
+}
+
+function reportUpdateCheckFailure(
+	checkId: number,
+	currentCheckId: number,
+	setStatus: Dispatch<SetStateAction<UpdateStatus>>,
+): void {
+	if (checkId !== currentCheckId) return;
+	console.warn("[updater] Failed to check for updates");
+	setStatus({ state: "error", kind: "check" });
+}
+
+function useAutomaticUpdateCheck(
+	automaticChecksEnabled: boolean,
+	checkForUpdates: () => Promise<UpdateCheckResult>,
+): void {
+	useEffect(() => {
+		if (!automaticChecksEnabled || !isTauri()) return;
+		const timer = setTimeout(() => checkForUpdates(), 3000);
+		return () => clearTimeout(timer);
+	}, [automaticChecksEnabled, checkForUpdates]);
+}
+
 export function useUpdater(
 	releaseChannel: string | null | undefined,
 	automaticChecksEnabled = true,
 ): { status: UpdateStatus; actions: UpdateActions } {
 	const [status, setStatus] = useState<UpdateStatus>({ state: "idle" });
 	const updateRef = useRef<AppUpdateMetadata | null>(null);
+	const checkSequence = useRef(0);
 
 	const checkForUpdates = useCallback(async (): Promise<UpdateCheckResult> => {
 		if (!isTauri()) return { kind: "up-to-date" };
 
+		const checkId = ++checkSequence.current;
 		setStatus({ state: "checking" });
 
 		try {
-			const update = await checkForAppUpdate(releaseChannel);
-			if (!update) {
-				updateRef.current = null;
-				setStatus({ state: "idle" });
-				return { kind: "up-to-date" };
-			}
-
-			const versionInfo = createVersionInfo(update.version);
-			updateRef.current = update;
-			setStatus(toAvailableStatus(update));
-			return { kind: "available", ...versionInfo };
+			const update = await withTimeout(
+				checkForAppUpdate(releaseChannel),
+				UPDATER_CHECK_TIMEOUT_MS,
+			);
+			return applyUpdateCheckResult({
+				checkId,
+				currentCheckId: checkSequence.current,
+				update,
+				updateRef,
+				setStatus,
+			});
 		} catch {
-			console.warn("[updater] Failed to check for updates");
-			setStatus({ state: "error", kind: "check" });
+			reportUpdateCheckFailure(checkId, checkSequence.current, setStatus);
 			return { kind: "error" };
 		}
 	}, [releaseChannel]);
 
-	useEffect(() => {
-		if (!automaticChecksEnabled) return;
-		if (!isTauri()) return;
-		const timer = setTimeout(() => {
-			checkForUpdates();
-		}, 3000);
-		return () => clearTimeout(timer);
-	}, [automaticChecksEnabled, checkForUpdates]);
+	useAutomaticUpdateCheck(automaticChecksEnabled, checkForUpdates);
 
 	const startDownload = useCallback(async () => {
 		const update = updateRef.current;
@@ -162,6 +217,7 @@ export function useUpdater(
 	}, []);
 
 	const dismiss = useCallback(() => {
+		checkSequence.current += 1;
 		updateRef.current = null;
 		setStatus({ state: "idle" });
 	}, []);
