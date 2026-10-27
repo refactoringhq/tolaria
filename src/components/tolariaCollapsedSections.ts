@@ -99,14 +99,50 @@ export function useCollapsedHeadingIds(editor: TolariaBlockNoteEditor) {
   return store.collapsedHeadingIds
 }
 
-export function getCollapsedHeadingIds(editor: TolariaBlockNoteEditor): ReadonlySet<string> {
-  return collapsedHeadingStore(editor).collapsedHeadingIds
-}
-
 export function blockHeadingLevel(block: CollapsibleBlock | undefined): number | null {
   if (block?.type !== 'heading') return null
 
   return normalizedHeadingLevel(block.props?.level)
+}
+
+function collapsedSectionOwnerIndex(items: readonly { block: CollapsibleBlock; level: number | null }[],
+  headingId: string, collapsedIds: ReadonlySet<string>) {
+  if (!collapsedIds.has(headingId)) return -1
+  let activeLevel: number | null = null
+  let ownerIndex = -1
+  for (const [index, { block, level }] of items.entries()) {
+    activeLevel = openCollapsedSectionLevel(activeLevel, level)
+    if (activeLevel === null && typeof block.id === 'string' && collapsedIds.has(block.id) && level !== null) {
+      ownerIndex = index
+      activeLevel = level
+    }
+    if (block.id === headingId) return ownerIndex
+  }
+  return ownerIndex
+}
+
+function collapsedSectionLastBlock(items: readonly { block: CollapsibleBlock; level: number | null }[],
+  ownerIndex: number, ownerLevel: number) {
+  let endBlock = items.at(ownerIndex)?.block
+  for (const item of items.slice(ownerIndex + 1)) {
+    if (isClosingHeading(item.level, ownerLevel)) break
+    endBlock = item.block
+  }
+  return endBlock
+}
+
+function topLevelBlockContaining(blocks: readonly CollapsibleBlock[], target: CollapsibleBlock) {
+  return blocks.find((block) => block === target || flattenBlocks(block.children ?? []).includes(target)) ?? null
+}
+
+export function collapsedSectionEndBlock(editor: TolariaBlockNoteEditor, headingId: string): CollapsibleBlock | null {
+  const blocks = editor.document as readonly CollapsibleBlock[]
+  const collapsedIds = collapsedHeadingStore(editor).collapsedHeadingIds
+  const items = flattenBlocks(blocks).map((block) => ({ block, level: blockHeadingLevel(block) }))
+  const ownerIndex = collapsedSectionOwnerIndex(items, headingId, collapsedIds)
+  const owner = items.at(ownerIndex)
+  const endBlock = owner?.level ? collapsedSectionLastBlock(items, ownerIndex, owner.level) : null
+  return endBlock ? topLevelBlockContaining(blocks, endBlock) : null
 }
 
 function normalizedHeadingLevel(rawLevel: unknown): number | null {

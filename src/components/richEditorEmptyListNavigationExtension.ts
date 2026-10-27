@@ -7,7 +7,7 @@ import {
   type RichEditorView,
 } from './richEditorKeyboard'
 import {
-  getCollapsedHeadingIds,
+  collapsedSectionEndBlock,
   keepBlockVisibleOutsideCollapsedSection,
 } from './tolariaCollapsedSections'
 
@@ -26,7 +26,6 @@ type BlockLike = {
   children?: BlockLike[]
   content?: unknown
   id?: string
-  props?: Record<string, unknown>
   type: string
 }
 type CollapsedEnterEditor = EmptyListNavigationEditor & {
@@ -173,43 +172,6 @@ function handleArrowKey(
   consumeKeyboardEvent(event)
 }
 
-function headingLevel(block: BlockLike | undefined): number {
-  const value = block?.props?.level
-  return typeof value === 'number' ? value : Number.parseInt(String(value ?? 1), 10)
-}
-
-function isHeading(block: BlockLike, level: number) {
-  return block.type === 'heading' && headingLevel(block) <= level
-}
-
-function headingSectionEndIndex(document: readonly BlockLike[], headingIndex: number) {
-  const level = headingLevel(document.at(headingIndex))
-  const boundary = document.findIndex((block, index) => index > headingIndex && isHeading(block, level))
-  return boundary < 0 ? document.length : boundary
-}
-
-function collapsedSectionOwnerIndex(
-  document: readonly BlockLike[],
-  targetIndex: number,
-  collapsedIds: ReadonlySet<string>,
-) {
-  for (let index = 0; index < targetIndex; index += 1) {
-    const candidate = document.at(index)
-    if (candidate?.type !== 'heading' || !candidate.id || !collapsedIds.has(candidate.id)) continue
-    if (targetIndex < headingSectionEndIndex(document, index)) return index
-  }
-  return targetIndex
-}
-
-function collapsedSectionEnd(document: readonly BlockLike[], headingId: string, collapsedIds: ReadonlySet<string>) {
-  const targetIndex = document.findIndex((block) => block.id === headingId && block.type === 'heading')
-  if (targetIndex < 0 || !collapsedIds.has(headingId)) return null
-
-  const ownerIndex = collapsedSectionOwnerIndex(document, targetIndex, collapsedIds)
-  const endIndex = headingSectionEndIndex(document, ownerIndex)
-  return document.at(endIndex - 1) ?? document.at(ownerIndex)
-}
-
 function isEligibleCollapsedEnter(event: ArrowEvent, editor: CollapsedEnterEditor, view: RichEditorView) {
   return event.key === 'Enter' && !hasModifier(event) && editor.isEditable !== false
     && !isComposingKeyboardEvent(event, view) && isAtTextblockEnd(view)
@@ -225,7 +187,7 @@ function insertAfterCollapsedSection(event: ArrowEvent, editor: CollapsedEnterEd
 
   const { block } = editor.getTextCursorPosition()
   if (block.type !== 'heading' || !block.id) return false
-  const sectionEnd = collapsedSectionEnd(editor.document, block.id, getCollapsedHeadingIds(editor as never))
+  const sectionEnd = collapsedSectionEndBlock(editor as never, block.id)
   if (!sectionEnd?.id) return false
 
   const [paragraph] = editor.insertBlocks([{ type: 'paragraph' }], sectionEnd.id, 'after')

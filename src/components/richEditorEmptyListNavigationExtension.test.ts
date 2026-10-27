@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createRichEditorEmptyListNavigationExtension } from './richEditorEmptyListNavigationExtension'
 import {
+  collapsedSectionEndBlock,
   collapsedSectionHiddenBlockIds,
   toggleCollapsedHeading,
 } from './tolariaCollapsedSections'
@@ -81,6 +82,42 @@ function createFixture({
 }
 
 describe('createRichEditorEmptyListNavigationExtension', () => {
+  it('uses the containing top-level block when the collapsed section ends in nested content', () => {
+    const editor = {
+      document: [
+        { id: 'heading', type: 'heading', props: { level: 1 } },
+        {
+          children: [{ id: 'nested-end', type: 'paragraph' }],
+          id: 'section-parent',
+          type: 'bulletListItem',
+        },
+        { id: 'next-heading', type: 'heading', props: { level: 1 } },
+      ],
+      onChange: vi.fn(() => vi.fn()),
+    }
+    const editorElement = document.createElement('div')
+    toggleCollapsedHeading(editor as never, 'heading', editorElement)
+
+    expect(collapsedSectionEndBlock(editor as never, 'heading')).toMatchObject({ id: 'section-parent' })
+    toggleCollapsedHeading(editor as never, 'heading', editorElement)
+  })
+
+  it('uses the final top-level block when a collapsed section ends the document', () => {
+    const endBlock = { id: 'last', type: 'paragraph' }
+    const editor = {
+      document: [
+        { id: 'heading', type: 'heading', props: { level: 1 } },
+        endBlock,
+      ],
+      onChange: vi.fn(() => vi.fn()),
+    }
+    const editorElement = document.createElement('div')
+    toggleCollapsedHeading(editor as never, 'heading', editorElement)
+
+    expect(collapsedSectionEndBlock(editor as never, 'heading')).toBe(endBlock)
+    toggleCollapsedHeading(editor as never, 'heading', editorElement)
+  })
+
   it('moves through an adjacent empty list item at the visual block edge', () => {
     const down = createFixture()
     const downEvent = down.fire('ArrowDown')
