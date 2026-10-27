@@ -51,7 +51,7 @@ const TooltipContent = React.forwardRef<
 				data-slot="tooltip-content"
 				sideOffset={sideOffset}
 				collisionPadding={collisionPadding}
-				className="z-50 origin-(--radix-tooltip-content-transform-origin)"
+				className="z-[1400] origin-(--radix-tooltip-content-transform-origin)"
 				// Keep content wrapper unzoomed for correct positioning
 				style={{ zoom: 1 }}
 				{...props}

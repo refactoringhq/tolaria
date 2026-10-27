@@ -51,8 +51,10 @@ describe("tooltip positioning at non-100% zoom", () => {
 				</TooltipProvider>,
 			);
 
-			// The tooltip component should render and apply the zoom factor to its visual
 			expect(container).toBeTruthy();
+			expect(
+				document.querySelector('[data-slot="tooltip-content"]'),
+			).toHaveClass("z-[1400]");
 		});
 	}
 
