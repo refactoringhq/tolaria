@@ -25,11 +25,7 @@ lanes_file="${state_dir}/lanes.tsv"
 
 : > "$lanes_file"
 
-cleanup_state() {
-  rm -rf "$state_dir"
-}
-
-trap cleanup_state EXIT
+trap 'rm -rf "$state_dir"' EXIT
 
 resolve_chunk_bin() {
   if [[ -n "${CHUNK_BIN:-}" && -x "$CHUNK_BIN" ]]; then
@@ -152,7 +148,8 @@ record_lane() {
 launch_lane() {
   local lane="$1"
   local sidecar_id="$2"
-  local run_id="tolaria-${lane}-$(date +%s)-$$"
+  local run_id
+  run_id="tolaria-${lane}-$(date +%s)-$$"
   local remote_status="/tmp/${run_id}.status"
   local remote_log="/tmp/${run_id}.log"
   local remote_pid="/tmp/${run_id}.pid"
@@ -253,12 +250,17 @@ poll_lane_status() {
   local status_file="$2"
   local log_file="$3"
   local pid_file="$4"
+  local poll_output
+  local status
 
-  "$CHUNK_BIN" sidecar exec \
+  poll_output="$("$CHUNK_BIN" sidecar exec \
     --sidecar-id "$sidecar_id" \
     --command bash \
     --args -lc \
-    --args "if [ -f '$status_file' ]; then cat '$status_file'; elif test -s '$pid_file' && kill -0 \"\$(cat '$pid_file')\" 2>/dev/null; then echo running; elif ps -eo pid=,command= | awk -v target='$log_file' '\$0 ~ target && \$0 !~ /awk/ { found=1 } END { exit found ? 0 : 1 }'; then echo running; else echo missing; fi" 2>&1
+    --args "if [ -f '$status_file' ]; then cat '$status_file'; elif test -s '$pid_file' && kill -0 \"\$(cat '$pid_file')\" 2>/dev/null; then echo running; elif ps -eo pid=,command= | awk -v target='$log_file' '\$0 ~ target && \$0 !~ /awk/ { found=1 } END { exit found ? 0 : 1 }'; then echo running; else echo missing; fi" 2>/dev/null)" || return 0
+
+  status="$(printf '%s\n' "$poll_output" | awk '/^(running|missing|[0-9]+)$/ { status=$0 } END { print status }')"
+  printf '%s\n' "$status"
 }
 
 poll_lanes() {
@@ -305,10 +307,14 @@ poll_lanes() {
           echo "$lane" >> "$completed_file"
           ;;
         *)
-          echo "  -> ${lane} failed with status ${status}"
-          fetch_remote_log_tail "$lane" "$sidecar_id" "$log_file"
-          failed=1
-          echo "$lane" >> "$completed_file"
+          if [[ "$status" =~ ^[0-9]+$ ]]; then
+            echo "  -> ${lane} failed with status ${status}"
+            fetch_remote_log_tail "$lane" "$sidecar_id" "$log_file"
+            failed=1
+            echo "$lane" >> "$completed_file"
+          else
+            all_done=0
+          fi
           ;;
       esac
     done < "$lanes_file"
