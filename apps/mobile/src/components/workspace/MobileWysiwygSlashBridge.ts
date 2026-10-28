@@ -1,4 +1,4 @@
-import { type AnyExtension, type Editor, Extension, Node } from "@tiptap/core";
+import { type AnyExtension, type Editor, Extension } from "@tiptap/core";
 import type {
 	MobileSlashAction,
 	MobileSlashState,
@@ -25,14 +25,6 @@ const nativeRuntime: SlashRuntime = {
 	run: () => false,
 };
 
-const horizontalRule = Node.create({
-	name: "horizontalRule",
-	group: "block",
-	atom: true,
-	parseHTML: () => [{ tag: "hr" }],
-	renderHTML: () => ["hr"],
-});
-
 export function createMobileSlashBridge(runtime = nativeRuntime) {
 	return {
 		name: "mobileSlash",
@@ -41,10 +33,7 @@ export function createMobileSlashBridge(runtime = nativeRuntime) {
 		configureCSS: () => createMobileSlashBridge(runtime),
 		configureExtension: () => createMobileSlashBridge(runtime),
 		extendExtension: () => createMobileSlashBridge(runtime),
-		configureTiptapExtensionsOnRunTime: () => [
-			runtime.extension,
-			horizontalRule,
-		],
+		configureTiptapExtensionsOnRunTime: () => [runtime.extension],
 		extendCSS: "",
 		extendEditorState: (editor: Editor) => ({
 			mobileSlash: runtime.read(editor),
