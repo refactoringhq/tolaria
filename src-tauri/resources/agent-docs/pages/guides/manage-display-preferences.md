@@ -9,9 +9,14 @@ Display preferences live in local app settings unless a setting is intentionally
 
 ## Theme
 
-Choose Light, Dark, or System in Settings. System follows the operating system appearance at runtime.
+Choose Light, Dark, Hybrid, or System in Settings:
 
-You can also switch theme mode from the command palette.
+- **Light** — Light sidebar and light note content.
+- **Dark** — Dark sidebar and dark note content.
+- **Hybrid** — Dark sidebar with light note content.
+- **System** — Follows the operating system appearance at runtime.
+
+You can also switch to Light, Dark, or System from the command palette. Hybrid is only in Settings for now.
 
 ## Note Width
 

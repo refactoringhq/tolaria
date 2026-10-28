@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import test from 'node:test'
-import { addedLinesFromDiff, biomeGateFailures, eslintGateFailures } from './codacy-gate-lib.mjs'
+import { addedLinesFromDiff, biomeGateFailures, codacyExcludePatterns, eslintGateFailures, matchesCodacyGlob, withoutExcludedPaths } from './codacy-gate-lib.mjs'
 import { isAuditedRustUnsafe, sarifGateFailures, scannerOutputFailures, scannerProcessFailures } from './codacy-sarif.mjs'
 
 test('reports findings only on added lines', () => {
@@ -146,4 +146,72 @@ test('reports security ESLint findings only on added lines at every severity', (
     rule: 'security/new',
     tool: 'Codacy ESLint security rules',
   }])
+})
+
+test('reads exclude_paths from .codacy.yaml', () => {
+  const yaml = ['---', 'exclude_paths:', '  - "dist/**"', '  # imported code', "  - 'site/landing/**'  # mirrored", '  - plain/path/**', '  - "**/package-lock.json"', 'engines:', '  - "not/an/exclude"'].join('\n')
+  assert.deepEqual(codacyExcludePatterns(yaml), ['dist/**', 'site/landing/**', 'plain/path/**', '**/package-lock.json'])
+})
+
+test('matches Codacy globs on repository-relative paths', () => {
+  assert.ok(matchesCodacyGlob('site/landing/**', 'site/landing/src/App.tsx'))
+  assert.ok(!matchesCodacyGlob('site/landing/**', 'site/landingx/App.tsx'))
+  assert.ok(!matchesCodacyGlob('site/landing/**', 'site/.vitepress/theme/tolaria/Layout.vue'))
+  assert.ok(matchesCodacyGlob('**/package-lock.json', 'package-lock.json'))
+  assert.ok(matchesCodacyGlob('**/package-lock.json', 'apps/web/package-lock.json'))
+  assert.ok(!matchesCodacyGlob('dist/**', 'apps/web/dist/index.js'))
+  assert.ok(matchesCodacyGlob('src/*.test.ts', 'src/a.test.ts'))
+  assert.ok(!matchesCodacyGlob('src/*.test.ts', 'src/nested/a.test.ts'))
+})
+
+test('drops excluded files before findings are matched to added lines', () => {
+  const root = '/repo'
+  const additions = addedLinesFromDiff([
+    '+++ b/site/landing/src/App.tsx', '@@ -0,0 +1 @@', '+Math.random()',
+    '+++ b/site/.vitepress/theme/tolaria/Layout.vue', '@@ -0,0 +1 @@', '+x',
+  ].join('\n'), root)
+  assert.deepEqual([...withoutExcludedPaths(additions, ['site/landing/**'], root).keys()], ['/repo/site/.vitepress/theme/tolaria/Layout.vue'])
+})
+
+// The local gate skips exactly what hosted Codacy skips. Pin the list so widening it is a reviewed change:
+// everything main already excluded, plus the imported landing.
+const EXPECTED_CODACY_EXCLUDES = [
+  'apps/web/dist/**', 'apps/web/tests/**', '.chunk/**', 'coverage/**', 'dist/**', 'node_modules/**',
+  'site/.vitepress/cache/**', 'site/.vitepress/dist/**', 'site/landing/**', 'src-tauri/gen/**',
+  'src-tauri/resources/agent-docs/**', 'src-tauri/resources/mcp-server/**', 'src-tauri/target/**',
+  'target/**', 'test-results/**', '**/package-lock.json',
+]
+
+test('repository .codacy.yaml excludes only the pinned paths', () => {
+  const config = spawnSync('git', ['show', 'HEAD:.codacy.yaml'], { encoding: 'utf8' })
+  assert.equal(config.status, 0)
+  assert.deepEqual(codacyExcludePatterns(config.stdout), EXPECTED_CODACY_EXCLUDES)
+})
+
+test('findings outside the excluded paths still fail the gate', () => {
+  const root = '/repo'
+  const files = [
+    'site/landing/src/App.tsx',
+    'site/.vitepress/theme/tolaria/Layout.vue',
+    'site/landing.md',
+    'scripts/codacy-gate.mjs',
+    'src/App.tsx',
+    'apps/web/src/main.ts',
+  ]
+  const diff = files.flatMap((file) => [`+++ b/${file}`, '@@ -0,0 +1 @@', '+Math.random()']).join('\n')
+  const additions = withoutExcludedPaths(addedLinesFromDiff(diff, root), EXPECTED_CODACY_EXCLUDES, root)
+  const expected = files.filter((file) => !file.startsWith('site/landing/')).map((file) => `${root}/${file}`)
+
+  const biome = { diagnostics: files.map((file) => ({ category: 'lint/example', location: { path: `${root}/${file}`, start: { line: 1 } } })) }
+  assert.deepEqual(biomeGateFailures(biome, additions, root).map((failure) => failure.path), expected)
+
+  const eslint = files.map((file) => ({ filePath: `${root}/${file}`, messages: [{ line: 1, ruleId: 'security/example', severity: 2 }] }))
+  assert.deepEqual(eslintGateFailures(eslint, additions).map((failure) => failure.path), expected)
+
+  const sarif = { runs: [{ tool: { driver: { name: 'opengrep' } }, results: files.map((file) => ({
+    locations: [{ physicalLocation: { artifactLocation: { uri: file }, region: { startLine: 1 } } }],
+    message: { text: 'insecure random' },
+    ruleId: 'insecure-random',
+  })) }] }
+  assert.deepEqual(sarifGateFailures(sarif, additions, root).map((failure) => failure.path), expected)
 })

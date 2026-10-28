@@ -1,5 +1,5 @@
 import { createExtension } from '@blocknote/core'
-import type { Node as ProsemirrorNode } from '@tiptap/pm/model'
+import type { MarkType, Node as ProsemirrorNode } from '@tiptap/pm/model'
 import { Plugin, PluginKey, Selection, type EditorState, type Transaction } from '@tiptap/pm/state'
 import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view'
 import { editorBlockElement, type TolariaBlockNoteEditor } from './tolariaBlockNoteDom'
@@ -206,13 +206,16 @@ function handlePasteSelection(
     const insertedBlocks = editor.insertBlocks(blocksWithoutIds(blocks), referenceBlockId, 'after')
     editor.focus?.()
     stopClipboardEvent(event)
-
-    const nextSelection = insertedBlockIds(insertedBlocks)
-    if (!dispatchBlockSelection(view, nextSelection)) dispatchBlockSelection(view, [referenceBlockId])
+    selectPastedBlocks(view, insertedBlocks, referenceBlockId)
     return true
   } catch {
     return false
   }
+}
+
+function selectPastedBlocks(view: EditorView, blocks: readonly unknown[], referenceBlockId: string): void {
+  const nextSelection = insertedBlockIds(blocks)
+  if (!dispatchBlockSelection(view, nextSelection)) dispatchBlockSelection(view, [referenceBlockId])
 }
 
 function isPlainEscape(event: KeyboardEvent): boolean {
@@ -249,12 +252,20 @@ function isBlockNavigationArrow(event: KeyboardEvent): event is KeyboardEvent & 
     && !event.metaKey
 }
 
+function hasCommandModifier(event: KeyboardEvent): boolean {
+  return event.ctrlKey || event.metaKey
+}
+
+function isVerticalArrowKey(key: string): key is 'ArrowDown' | 'ArrowUp' {
+  return key === 'ArrowDown' || key === 'ArrowUp'
+}
+
+function isModifiedVerticalArrow(event: KeyboardEvent): event is KeyboardEvent & { key: 'ArrowDown' | 'ArrowUp' } {
+  return isVerticalArrowKey(event.key) && !event.isComposing && !event.altKey
+}
+
 function isBlockMoveArrow(event: KeyboardEvent): event is KeyboardEvent & { key: 'ArrowDown' | 'ArrowUp' } {
-  return (event.key === 'ArrowDown' || event.key === 'ArrowUp')
-    && !event.isComposing
-    && !event.altKey
-    && (event.ctrlKey || event.metaKey)
-    && event.shiftKey
+  return isModifiedVerticalArrow(event) && hasCommandModifier(event) && event.shiftKey
 }
 
 function isDeleteKey(event: KeyboardEvent): boolean {
@@ -272,6 +283,79 @@ function isPrintableTextKey(event: KeyboardEvent): boolean {
     && !event.altKey
     && !event.ctrlKey
     && !event.metaKey
+}
+
+type InlineFormattingShortcut = 'bold' | 'italic' | 'underline' | 'strike' | 'code'
+
+function inlineFormattingShortcut(event: KeyboardEvent): InlineFormattingShortcut | null {
+  if (event.shiftKey) return event.key.toLowerCase() === 'x' ? 'strike' : null
+  const key = event.key.toLowerCase()
+  if (key === 'b') return 'bold'
+  if (key === 'i') return 'italic'
+  if (key === 'u') return 'underline'
+  return key === 'e' ? 'code' : null
+}
+
+function formattingMarkType(state: EditorState, shortcut: InlineFormattingShortcut): MarkType | null {
+  return Object.values(state.schema.marks).find((markType) => markType.name === shortcut) ?? null
+}
+
+function inlineFormattingMarkType(state: EditorState, event: KeyboardEvent): MarkType | null {
+  if (event.isComposing || event.altKey || !hasCommandModifier(event)) return null
+  const shortcut = inlineFormattingShortcut(event)
+  return shortcut ? formattingMarkType(state, shortcut) : null
+}
+
+function selectedBlockTextRange(doc: ProsemirrorNode, blockIds: readonly string[]): { from: number; to: number } | null {
+  const positions = blockIds
+    .map((blockId) => blockPositionById(doc, blockId))
+    .filter((position): position is { node: ProsemirrorNode; pos: number } => position !== null)
+  const first = positions[0]
+  const last = positions[positions.length - 1]
+  if (!first || !last) return null
+
+  const from = Math.min(first.pos + 1, doc.content.size)
+  const to = Math.max(from, Math.min(last.pos + last.node.nodeSize - 1, doc.content.size))
+  return { from, to }
+}
+
+function handleActiveFormattingKey(
+  view: EditorView,
+  event: KeyboardEvent,
+  selection: BlockSelectionState,
+): boolean {
+  const markType = inlineFormattingMarkType(view.state, event)
+  const range = markType ? selectedBlockTextRange(view.state.doc, selection.blockIds) : null
+  if (!markType || !range || range.from >= range.to) return false
+
+  if (!applyInlineFormattingMark(view, range, markType)) return false
+  stopEditorKey(event)
+  view.dispatch(view.state.tr.setMeta(richEditorBlockSelectionPluginKey, {
+    type: 'set',
+    blockIds: selection.blockIds,
+  } satisfies BlockSelectionMeta))
+  return true
+}
+
+function applyInlineFormattingMark(
+  view: EditorView,
+  range: { from: number; to: number },
+  markType: MarkType,
+): boolean {
+  let hasText = false
+  let allTextHasMark = true
+  view.state.doc.nodesBetween(range.from, range.to, (node) => {
+    if (!node.isText) return
+    hasText = true
+    allTextHasMark &&= markType.isInSet(node.marks) !== undefined
+  })
+  if (!hasText) return false
+
+  const transaction = view.state.tr
+  if (allTextHasMark) transaction.removeMark(range.from, range.to, markType)
+  else transaction.addMark(range.from, range.to, markType.create())
+  view.dispatch(transaction)
+  return true
 }
 
 function blockSelectionMeta(transaction: Transaction): BlockSelectionMeta | undefined {
@@ -516,7 +600,8 @@ function handleActiveBlockSelectionKey(
   event: KeyboardEvent,
   selection: BlockSelectionState,
 ): boolean {
-  return handleActiveEscapeKey(view, event)
+  return handleActiveFormattingKey(view, event, selection)
+    || handleActiveEscapeKey(view, event)
     || handleActiveNavigationKey(editor, view, event, selection)
     || handleActiveMoveKey(editor, view, event, selection)
     || handleActiveToggleCollapsedKey(editor, view, event, selection)

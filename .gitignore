@@ -13,6 +13,7 @@ dist-ssr
 .expo/
 site/.vitepress/cache/
 site/.vitepress/dist/
+site/landing/dist/
 _site/
 *.local
 

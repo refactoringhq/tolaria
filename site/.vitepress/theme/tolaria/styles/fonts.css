@@ -1,0 +1,7 @@
+/* Brand web fonts. Relative URLs so Vite bundles and hashes them (works with any VitePress `base`).
+ * Inter + Inter Tight: SIL OFL 1.1 (fonts/OFL-*.txt), copied from tolaria-landing ui/public/fonts.
+ * Display type is Inter Tight bold, like the public landing (the Refactoring display face is private and not shipped).
+ */
+@font-face { font-family: "Inter"; src: url("../fonts/InterVariable.woff2") format("woff2"); font-weight: 400 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Inter"; src: url("../fonts/InterVariable-Italic.woff2") format("woff2"); font-weight: 400 700; font-style: italic; font-display: swap; }
+@font-face { font-family: "Inter Tight"; src: url("../fonts/InterTight-Variable.woff2") format("woff2"); font-weight: 400 700; font-style: normal; font-display: swap; }

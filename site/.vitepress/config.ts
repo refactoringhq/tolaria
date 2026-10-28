@@ -1,5 +1,6 @@
 import process from "node:process";
 import { defineConfig } from "vitepress";
+import { tolariaThemeConfig } from "./theme/tolaria/config";
 
 const base = process.env.VITEPRESS_BASE ?? "/";
 
@@ -13,10 +14,13 @@ export default defineConfig({
       target: "esnext",
     },
   },
-  ignoreDeadLinks: [/^\/download\/?(?:index)?$/, /^\/releases\/?(?:index)?$/],
+  ignoreDeadLinks: [/^\/download\/?(?:index)?$/, /^\/releases\/?(?:index)?$/, /^\/(?:#.*)?$/],
+  srcExclude: ["landing/**"],
+  // Emit the docs home as docs/index.html so /docs/ resolves; GitHub Pages 301s /docs to /docs/.
+  rewrites: { "docs.md": "docs/index.md" },
   cleanUrls: true,
   head: [
-    ["link", { rel: "icon", type: "image/png", href: `${base}landing/favicon.png` }],
+    ["link", { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" }],
     ["meta", { property: "og:title", content: "Tolaria" }],
     [
       "meta",
@@ -37,14 +41,7 @@ gtag('config', 'G-0NJ6E1GH9D');`,
     ],
   ],
   themeConfig: {
-    logo: { src: "/landing/tolaria-icon.png", alt: "Tolaria" },
-    nav: [
-      { text: "Start", link: "/start/install" },
-      { text: "Concepts", link: "/concepts/vaults" },
-      { text: "Guides", link: "/guides/capture-a-note" },
-      { text: "Templates", link: "/templates/portent" },
-      { text: "Downloads", link: "https://tolaria.md/download/", target: "_self", noIcon: true },
-    ],
+    ...tolariaThemeConfig,
     search: {
       provider: "local",
     },

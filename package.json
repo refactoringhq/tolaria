@@ -29,7 +29,7 @@
     "perf:editor:update": "pnpm build && node scripts/editor-performance-benchmark.mjs --scenario small,large --update",
     "preview": "vite preview",
     "tauri": "node scripts/tauri-cli.mjs",
-    "test": "vitest run && node --test scripts/release-version.test.mjs scripts/appimage-launcher-tools.test.mjs && pnpm test:web-config && pnpm test:server && pnpm test:dev-mock",
+    "test": "vitest run && node --test scripts/release-version.test.mjs scripts/appimage-launcher-tools.test.mjs && bash scripts/verify-pages-site.test.sh && pnpm test:web-config && pnpm test:server && pnpm test:dev-mock",
     "test:web-config": "node --experimental-strip-types --test apps/web/previewOptions.test.ts apps/web/phosphorIconChunk.test.ts apps/web/serviceWorkerPlugin.test.ts apps/web/appShellPreload.test.ts apps/web/bigVaultBudgets.test.ts apps/web/sentryWebBuild.test.ts apps/web/sourcemapUpload.test.ts apps/web/convergenceReport.test.ts",
     "test:server": "vitest run --config apps/server/vitest.config.ts --coverage",
     "server": "node --experimental-strip-types apps/server/scripts/run.ts apps/server/src/main.ts",

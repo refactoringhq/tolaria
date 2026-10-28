@@ -94,9 +94,7 @@ Tolaria for iOS is currently in **beta** via TestFlight. The mobile app brings T
 - **Real git integration** — Auto-commit on save, with merge support for multi-device workflows
 - **Sync with desktop** — Your vaults sync seamlessly through iCloud or Files, and share the same git repository as the desktop app
 
-The mobile app is still early and under active development. To get access to the beta:
-
-- Join the [Tolaria Discord community](https://discord.gg/tRBC2u428B) to request TestFlight access and stay updated on mobile development
+The mobile app is still early and under active development. To join the beta, open the [public TestFlight invite](https://testflight.apple.com/join/7aPD4GAB) on your iPhone or iPad, and join the [Tolaria Discord community](https://discord.gg/tRBC2u428B) to stay updated on mobile development.
 
 ## Getting started
 

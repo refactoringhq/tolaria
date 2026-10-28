@@ -461,6 +461,7 @@ jobs:
           name: Documentation build check
           command: |
             set -euo pipefail
+            bash scripts/verify-pages-site.test.sh
             if git diff --name-only "$DIFF_BASE_SHA" HEAD | grep -qE '^(docs/|site/|scripts/build-agent-docs\.mjs|package\.json|pnpm-lock\.yaml|\.circleci/)'; then
               pnpm docs:build
             else
@@ -1679,58 +1680,8 @@ jobs:
           name: Build documentation and release pages
           command: |
             set -euo pipefail
-            VITEPRESS_BASE="/" pnpm docs:build
-            dist="site/.vitepress/dist"
-            mkdir -p "$dist/alpha" "$dist/stable" "$dist/download" "$dist/releases" "$dist/stable/download"
-            gh api \
-              -H "Accept: application/vnd.github.html+json" \
-              repos/refactoringhq/tolaria/releases \
-              --paginate > "$dist/releases.json"
-            stable_tag="$(
-              gh release list \
-                --repo refactoringhq/tolaria \
-                --limit 100 \
-                --json tagName,isDraft,isPrerelease \
-                --jq '[.[] | select(.isDraft == false and .isPrerelease == false)][0].tagName // ""'
-            )"
-            if [[ -n "$stable_tag" ]]; then
-              gh release download \
-                --repo refactoringhq/tolaria \
-                "$stable_tag" \
-                --pattern stable-latest.json \
-                --output "$dist/stable/latest.json" ||
-                printf '{}\n' > "$dist/stable/latest.json"
-            else
-              printf '{}\n' > "$dist/stable/latest.json"
-            fi
-            alpha_tag="$(
-              gh release list \
-                --repo refactoringhq/tolaria \
-                --limit 100 \
-                --json tagName,isDraft,isPrerelease \
-                --jq '[.[] | select(.isDraft == false and .isPrerelease == true)][0].tagName // ""'
-            )"
-            if [[ -n "$alpha_tag" ]]; then
-              gh release download \
-                --repo refactoringhq/tolaria \
-                "$alpha_tag" \
-                --pattern alpha-latest.json \
-                --output "$dist/alpha/latest.json" ||
-                printf '{}\n' > "$dist/alpha/latest.json"
-            else
-              printf '{}\n' > "$dist/alpha/latest.json"
-            fi
-            bun scripts/build-release-download-page.ts \
-              --latest-json "$dist/stable/latest.json" \
-              --releases-json "$dist/releases.json" \
-              --output-file "$dist/download/index.html"
-            bun scripts/build-release-history-page.ts \
-              --releases-json "$dist/releases.json" \
-              --output-file "$dist/releases/index.html"
-            cp "$dist/download/index.html" "$dist/stable/download/index.html"
-            cp "$dist/alpha/latest.json" "$dist/latest.json"
-            cp "$dist/alpha/latest.json" "$dist/latest-canary.json"
-            touch "$dist/.nojekyll"
+            GITHUB_REPOSITORY=refactoringhq/tolaria bash scripts/build-pages-site.sh site/.vitepress/dist
+            touch site/.vitepress/dist/.nojekyll
       - run:
           name: Publish gh-pages branch
           command: |

@@ -1265,7 +1265,7 @@ push to main
       → generate alpha-latest.json with darwin-aarch64, darwin-x86_64, Linux, and Windows updater URLs
       → publish GitHub prerelease alpha-vYYYY.M.D-alpha.NNNN named Tolaria Alpha YYYY.M.D.N
   → publish-main-docs job:
-      → build VitePress public docs into the GitHub Pages root
+      → build the site with scripts/build-pages-site.sh: tolaria.md landing at /, VitePress docs, then the release pages and updater manifests, then verify-pages-site.sh
       → build static HTML release history page at /releases/
       → publish alpha/latest.json
       → refresh latest.json + latest-canary.json as compatibility aliases to alpha
@@ -1295,13 +1295,15 @@ push vYYYY-MM-DD or stable-vYYYY.M.D tag
       → generate stable-latest.json with macOS Apple Silicon, macOS Intel, Linux, and Windows updater URLs plus platform-specific manual download URLs
       → publish GitHub release Tolaria YYYY.M.D
   → publish-stable-docs job:
-      → build VitePress public docs into the GitHub Pages root
+      → build the site with scripts/build-pages-site.sh: tolaria.md landing at /, VitePress docs, then the release pages and updater manifests, then verify-pages-site.sh
       → build static HTML release history page at /releases/
       → publish stable/latest.json
       → publish stable/download/ and download/ as permanent download pages that keep the browser page visible while the platform installer starts, default Linux visitors to AppImage, require an explicit Windows installer click with managed-device guidance, and expose RPM as a manual Linux option when the stable release includes one
       → preserve alpha/latest.json
       → commit the generated site to `gh-pages` for GitHub's managed Pages deployment
 ```
+
+GitHub Pages is served from GitHub Actions deployments (`deploy-docs.yml` on docs/landing pushes and the `pages` job of `release.yml` after each Alpha). Every Pages publisher, including the CircleCI jobs above, builds through `scripts/build-pages-site.sh`, which lays the landing over the docs and runs `assemble-pages-site.sh` last so the updater manifests always win; `scripts/verify-pages-site.test.sh` fails if a publisher bypasses it.
 
 Linux AppImage release jobs pin Tauri CLI 2.12.1 or newer so packaging uses the updated stock linuxdeploy and GTK plugins. `scripts/appimage-launcher-tools.mjs` owns the explicit host-library boundary: the CircleCI release job and the reusable GitHub Actions artifact workflow (`.github/workflows/release-build-artifacts.yml`) both export its linuxdeploy exclusion list for systemd/udev, D-Bus, Wayland, epoxy, and nghttp2 as `LINUXDEPLOY_EXCLUDED_LIBRARIES`, then run `validate-appimage-libraries`, which extracts every sealed AppImage and fails if any excluded family is present. The stricter `validate-appimages` command additionally requires the symlink-safe AppRun and fcitx payload that only the experimental output-plugin shim produces, so it is not a release gate for stock packaging. GTK and GLib remain bundled as one coherent application stack for older distributions. The experimental output-plugin shim remains available for local investigation, but release packaging does not pre-seed it because that path previously exited before sealing the AppImage. See [ADR-0184](./adr/0184-host-compatible-appimage-library-boundary.md).
 

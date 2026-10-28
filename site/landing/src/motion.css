@@ -1,0 +1,201 @@
+/* Motion system. One curve (--ease-out-weighted), transform + opacity only.
+ * .reveal: rise 32px + fade once on scroll (IntersectionObserver in motion.ts), siblings staggered by --i (60ms, capped 360ms).
+ * .loop: a looping story (hero window, feature demos). Paused until it scrolls into view and again offscreen
+ *        (motion.ts toggles [data-play]). Every keyframe set starts and ends on the same frame, so loops are seamless.
+ *        Base styles (no animation) are the resting frame, used for prefers-reduced-motion. */
+:root { --ease: cubic-bezier(0.22, 1, 0.36, 1); }
+
+.js .reveal { opacity: 0; transform: translateY(32px); transition: opacity 700ms var(--ease), transform 700ms var(--ease), box-shadow 300ms var(--ease), border-color 300ms var(--ease); transition-delay: calc(min(var(--i, 0) * 60ms, 360ms)); }
+.js .reveal[data-shown] { opacity: 1; transform: none; }
+.js .reveal[data-done] { transition-delay: 0ms; }
+
+/* hero entrance on load (staggered) */
+.js .rise { animation: rise 900ms var(--ease) both; animation-delay: calc(var(--i, 0) * 80ms); }
+@keyframes rise { from { opacity: 0; transform: translateY(24px); } }
+
+.loop, .loop * { animation-timing-function: var(--ease); }
+.loop:not([data-play]), .loop:not([data-play]) * { animation-play-state: paused !important; }
+
+
+/* ---------- typing helpers (transform only): a mask slides off the text, the caret rides a track ---------- */
+.typed { position: relative; display: inline-block; overflow: hidden; vertical-align: bottom; white-space: nowrap; }
+.typed > .mask { position: absolute; inset: 0; background: var(--mask, #fff); }
+.typed > .track { position: absolute; inset: 0; pointer-events: none; }
+.typed > .track > .caret { position: absolute; right: -1px; top: 10%; bottom: 10%; width: 2px; border-radius: 1px; background: var(--color-primary); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+/* =========================== hero window (12s) =========================== */
+.hw { --T: 12s; }
+.hw .sel { animation: hw-sel var(--T) infinite; }
+@keyframes hw-sel { 0%, 6% { transform: translateY(var(--row)); } 14%, 92% { transform: none; } 98%, 100% { transform: translateY(var(--row)); } }
+.hw .sel-a { opacity: 0; animation: hw-sela var(--T) infinite; }
+@keyframes hw-sela { 0%, 6% { opacity: 1; } 12%, 93% { opacity: 0; } 98%, 100% { opacity: 1; } }
+/* note switch: the outgoing note fades out completely before the incoming one rises in (no overlapping texts) */
+.hw .ed-a, .hw .crumb-a { opacity: 0; animation: hw-eda var(--T) infinite; }
+@keyframes hw-eda { 0%, 6% { opacity: 1; } 8.5%, 95.5% { opacity: 0; } 98%, 100% { opacity: 1; } }
+.hw .ed-b, .hw .crumb-b { animation: hw-edb var(--T) infinite; }
+@keyframes hw-edb { 0%, 8.5% { opacity: 0; transform: translateY(6px); } 11%, 93% { opacity: 1; transform: none; } 95.5%, 100% { opacity: 0; transform: none; } }
+.hw .mod-dot { opacity: 0; transform: scale(0); animation: hw-mod var(--T) infinite; }
+@keyframes hw-mod { 0%, 26% { opacity: 0; transform: scale(0); } 28%, 68% { opacity: 1; transform: none; } 71%, 100% { opacity: 0; transform: scale(0); } }
+
+.hw .line { animation: hw-line var(--T) infinite; }
+@keyframes hw-line { 0%, 53% { opacity: 1; } 54%, 97% { opacity: 0; } 98%, 100% { opacity: 1; } }
+.hw .line .mask { animation: hw-type var(--T) infinite; animation-timing-function: steps(14) !important; }
+.hw .line .track { animation: hw-track var(--T) infinite; animation-timing-function: steps(14) !important; }
+@keyframes hw-type { 0%, 26% { transform: translateX(0); } 38%, 96% { transform: translateX(101%); } 97%, 100% { transform: translateX(0); } }
+@keyframes hw-track { 0%, 26% { transform: translateX(-100%); } 38%, 96% { transform: translateX(0); } 97%, 100% { transform: translateX(-100%); } }
+.hw .line .track { opacity: 1; }
+.hw .caret-wrap { animation: hw-caret var(--T) infinite; }
+@keyframes hw-caret { 0%, 53% { opacity: 1; } 54%, 99% { opacity: 0; } 100% { opacity: 1; } }
+.hw .pop { transform-origin: 0 0; animation: hw-pop var(--T) infinite; }
+@keyframes hw-pop { 0%, 41% { opacity: 0; transform: translateY(4px) scale(0.98); } 44%, 52% { opacity: 1; transform: none; } 55%, 100% { opacity: 0; transform: translateY(4px) scale(0.98); } }
+.hw .pop-hi { animation: hw-hi var(--T) infinite; }
+@keyframes hw-hi { 0%, 100% { transform: translateY(0); } }
+.hw .link { transform-origin: 0 50%; animation: hw-link var(--T) infinite; }
+@keyframes hw-link { 0%, 53% { opacity: 0; } 55%, 90% { opacity: 1; } 95%, 100% { opacity: 0; } }
+.hw .s1 { animation: hw-s1 var(--T) infinite; }
+.hw .s2 { animation: hw-s2 var(--T) infinite; }
+.hw .s3 { animation: hw-s3 var(--T) infinite; }
+@keyframes hw-s1 { 0%, 62% { opacity: 1; transform: none; } 64%, 95% { opacity: 0; transform: translateY(-6px); } 98%, 100% { opacity: 1; transform: none; } }
+@keyframes hw-s2 { 0%, 62% { opacity: 0; transform: translateY(6px); } 64%, 68% { opacity: 1; transform: none; } 70%, 100% { opacity: 0; transform: translateY(-6px); } }
+@keyframes hw-s3 { 0%, 68% { opacity: 0; transform: translateY(6px); } 70%, 92% { opacity: 1; transform: none; } 95%, 100% { opacity: 0; transform: translateY(-6px); } }
+.hw .commit-btn { animation: hw-press var(--T) infinite; }
+@keyframes hw-press { 0%, 61% { transform: none; } 62% { transform: scale(0.94); } 64%, 100% { transform: none; } }
+.hw .dot-pulse { animation: hw-dot var(--T) infinite; }
+@keyframes hw-dot { 0%, 70% { transform: scale(1); opacity: 1; } 73% { transform: scale(1.6); opacity: 0.4; } 76%, 100% { transform: scale(1); opacity: 1; } }
+
+/* =========================== feature demos (8s) =========================== */
+.fx { --T: 8s; }
+
+/* 2. editor: a table row is typed in place, its status pops, then the raw Markdown */
+.fx-editor .new-row { animation: ed-row var(--T) infinite; }
+@keyframes ed-row { 0%, 6% { opacity: 0; transform: translateY(4px); } 9%, 94% { opacity: 1; transform: none; } 98%, 100% { opacity: 0; transform: translateY(4px); } }
+.fx-editor .c1 .mask { animation: ed-c1 var(--T) infinite; animation-timing-function: steps(14) !important; }
+.fx-editor .c1 .track { animation: ed-c1t var(--T) infinite; animation-timing-function: steps(14) !important; }
+@keyframes ed-c1 { 0%, 10% { transform: translateX(0); } 26%, 97% { transform: translateX(101%); } 98%, 100% { transform: translateX(0); } }
+@keyframes ed-c1t { 0%, 10% { transform: translateX(-100%); } 26%, 97% { transform: translateX(0); } 98%, 100% { transform: translateX(-100%); } }
+.fx-editor .c1 .cw { animation: ed-c1c var(--T) infinite; }
+@keyframes ed-c1c { 0%, 9% { opacity: 0; } 10%, 27% { opacity: 1; } 28%, 100% { opacity: 0; } }
+.fx-editor .c2 .mask { animation: ed-c2 var(--T) infinite; animation-timing-function: steps(6) !important; }
+.fx-editor .c2 .track { animation: ed-c2t var(--T) infinite; animation-timing-function: steps(6) !important; }
+@keyframes ed-c2 { 0%, 29% { transform: translateX(0); } 37%, 97% { transform: translateX(101%); } 98%, 100% { transform: translateX(0); } }
+@keyframes ed-c2t { 0%, 29% { transform: translateX(-100%); } 37%, 97% { transform: translateX(0); } 98%, 100% { transform: translateX(-100%); } }
+.fx-editor .c2 .cw { animation: ed-c2c var(--T) infinite; }
+@keyframes ed-c2c { 0%, 28% { opacity: 0; } 29%, 38% { opacity: 1; } 39%, 100% { opacity: 0; } }
+.fx-editor .chip-pop { animation: ed-chip var(--T) infinite; }
+@keyframes ed-chip { 0%, 41% { opacity: 0; transform: scale(0.6); } 44% { opacity: 1; transform: scale(1.08); } 46%, 94% { opacity: 1; transform: none; } 98%, 100% { opacity: 0; transform: scale(0.6); } }
+.fx-editor .thumb { animation: ed-thumb var(--T) infinite; }
+@keyframes ed-thumb { 0%, 52% { transform: none; } 57%, 84% { transform: translateX(100%); } 89%, 100% { transform: none; } }
+.fx-editor .rendered { animation: ed-rendered var(--T) infinite; }
+@keyframes ed-rendered { 0%, 53% { opacity: 1; transform: none; } 58%, 84% { opacity: 0; transform: translateY(-8px); } 90%, 100% { opacity: 1; transform: none; } }
+.fx-editor .raw { animation: ed-rawbg var(--T) infinite; }
+@keyframes ed-rawbg { 0%, 54% { opacity: 0; } 58%, 85% { opacity: 1; } 89%, 100% { opacity: 0; } }
+.fx-editor .raw-line { animation: ed-raw var(--T) infinite; animation-delay: calc(var(--i, 0) * 60ms); animation-fill-mode: both; }
+@keyframes ed-raw { 0%, 55% { opacity: 0; transform: translateY(6px); } 60%, 84% { opacity: 1; transform: none; } 88%, 100% { opacity: 0; transform: translateY(-4px); } }
+.fx-editor .lbl-a { animation: fd-la2 var(--T) infinite; }
+.fx-editor .lbl-b { animation: fd-lb2 var(--T) infinite; }
+@keyframes fd-la2 { 0%, 53% { opacity: 1; } 57%, 84% { opacity: 0.55; } 89%, 100% { opacity: 1; } }
+@keyframes fd-lb2 { 0%, 53% { opacity: 0.55; } 57%, 84% { opacity: 1; } 89%, 100% { opacity: 0.55; } }
+
+/* 3. relationships: chips land one by one, the count ticks */
+.fx-rel .chip { animation: rl-chip var(--T) infinite; animation-delay: calc(var(--i, 0) * 400ms); animation-fill-mode: both; }
+@keyframes rl-chip { 0%, 8% { opacity: 0; transform: translateY(10px) scale(0.98); } 14%, 84% { opacity: 1; transform: none; } 90%, 100% { opacity: 0; transform: none; } }
+.fx-rel .count-a { animation: rl-ca var(--T) infinite; }
+.fx-rel .count-b { animation: rl-cb var(--T) infinite; }
+@keyframes rl-ca { 0%, 22% { opacity: 1; transform: none; } 25%, 90% { opacity: 0; transform: translateY(-6px); } 94%, 100% { opacity: 1; transform: none; } }
+@keyframes rl-cb { 0%, 22% { opacity: 0; transform: translateY(6px); } 25%, 90% { opacity: 1; transform: none; } 94%, 100% { opacity: 0; transform: translateY(6px); } }
+.fx-rel .backlink { animation: rl-bl var(--T) infinite; }
+@keyframes rl-bl { 0%, 50% { opacity: 0; transform: translateY(8px); } 55%, 86% { opacity: 1; transform: none; } 91%, 100% { opacity: 0; transform: none; } }
+
+/* 4. git: changes -> commit -> pushed, history grows */
+.fx-git .row { animation: gt-row var(--T) infinite; animation-delay: calc(var(--i, 0) * 60ms); animation-fill-mode: both; }
+@keyframes gt-row { 0%, 30% { opacity: 1; transform: none; } 36%, 92% { opacity: 0; transform: translateX(-12px); } 97%, 100% { opacity: 1; transform: none; } }
+.fx-git .btn { animation: gt-btn var(--T) infinite; }
+@keyframes gt-btn { 0%, 27% { transform: none; } 29% { transform: scale(0.94); } 32%, 100% { transform: none; } }
+.fx-git .clean { animation: gt-clean var(--T) infinite; }
+@keyframes gt-clean { 0%, 38% { opacity: 0; transform: translateY(6px); } 42%, 90% { opacity: 1; transform: none; } 95%, 100% { opacity: 0; } }
+.fx-git .hist { animation: gt-hist var(--T) infinite; }
+@keyframes gt-hist { 0%, 44% { transform: translateY(-48px); } 50%, 92% { transform: none; } 98%, 100% { transform: translateY(-48px); } }
+.fx-git .hist-new { animation: gt-new var(--T) infinite; }
+@keyframes gt-new { 0%, 45% { opacity: 0; transform: scale(0.98); } 51%, 90% { opacity: 1; transform: none; } 95%, 100% { opacity: 0; } }
+.fx-git .count { animation: gt-count var(--T) infinite; }
+@keyframes gt-count { 0%, 30% { opacity: 1; transform: none; } 34%, 94% { opacity: 0; transform: scale(0.85); } 98%, 100% { opacity: 1; transform: none; } }
+
+/* 5. AI: ask -> skills -> answer -> notes edited */
+.fx-ai .ask { animation: ai-ask var(--T) infinite; }
+@keyframes ai-ask { 0%, 6% { opacity: 0; transform: translateY(10px); } 12%, 88% { opacity: 1; transform: none; } 93%, 100% { opacity: 0; } }
+.fx-ai .skill { animation: ai-skill var(--T) infinite; }
+@keyframes ai-skill { 0%, 18% { opacity: 0; transform: scale(0.9); } 22%, 88% { opacity: 1; transform: none; } 93%, 100% { opacity: 0; } }
+.fx-ai .ans { transform-origin: 0 50%; animation: ai-ans var(--T) infinite; animation-delay: calc(var(--i, 0) * 180ms); animation-fill-mode: both; }
+@keyframes ai-ans { 0%, 28% { opacity: 0; transform: translateY(6px); } 34%, 88% { opacity: 1; transform: none; } 93%, 100% { opacity: 0; } }
+.fx-ai .edited { animation: ai-ed var(--T) infinite; }
+@keyframes ai-ed { 0%, 52% { opacity: 0; transform: translateY(8px); } 57%, 88% { opacity: 1; transform: none; } 93%, 100% { opacity: 0; } }
+
+/* 6. make it yours: Light -> Dark -> Hybrid -> Light */
+.fx-theme .thumb { animation: th-thumb var(--T) infinite; }
+@keyframes th-thumb { 0%, 22% { transform: none; } 28%, 52% { transform: translateX(100%); } 58%, 86% { transform: translateX(200%); } 92%, 100% { transform: none; } }
+.fx-theme .side-dark { animation: th-side var(--T) infinite; }
+@keyframes th-side { 0%, 22% { opacity: 0; } 28%, 86% { opacity: 1; } 92%, 100% { opacity: 0; } }
+.fx-theme .main-dark { animation: th-main var(--T) infinite; }
+@keyframes th-main { 0%, 22% { opacity: 0; } 28%, 52% { opacity: 1; } 58%, 100% { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .js .reveal { transform: none !important; transition-property: opacity; }
+  .js .rise { animation-name: fade; }
+  .loop, .loop * { animation: none !important; }
+  /* resting frames: the end state of each story, with menus and in-between labels hidden */
+  .loop .typed > .mask, .loop .typed > .track, .hw .caret-wrap, .hw .pop, .hw .s1, .hw .s2,
+  .fx-editor .raw-line, .fx-editor .raw, .loop .cw, .hw .sel-a, .hw .mod-dot, .hw .ed-a, .hw .crumb-a, .fx-theme .main-dark,
+  .fx-git .row, .fx-git .count,
+  .fx-rel .count-a { opacity: 0 !important; }
+  .fx-editor .lbl-b { opacity: 0.55; }
+  .fx-theme .thumb { transform: translateX(200%); }
+  .hw .line { opacity: 0; }
+}
+@keyframes fade { from { opacity: 0; } }
+
+/* =========================== phone (12s): Inbox -> sidebar -> Projects -> note -> tick -> back =========================== */
+.mw { --T: 12s; }
+.mw .m-side { transform: translateX(-100%); animation: mw-side var(--T) infinite; }
+@keyframes mw-side { 0%, 12% { transform: translateX(-100%); } 18%, 34% { transform: none; } 40%, 100% { transform: translateX(-100%); } }
+.mw .m-list { animation: mw-list var(--T) infinite; }
+@keyframes mw-list { 0%, 12% { transform: none; } 18%, 34% { transform: translateX(262px); } 40%, 46% { transform: none; } 52%, 86% { transform: translateX(-28%); } 92%, 100% { transform: none; } }
+.mw .m-sidetap { opacity: 0; animation: mw-sidetap var(--T) infinite; }
+@keyframes mw-sidetap { 0%, 25% { opacity: 0; } 27%, 33% { opacity: 1; } 37%, 100% { opacity: 0; } }
+.mw .m-inbox { animation: mw-inbox var(--T) infinite; }
+@keyframes mw-inbox { 0%, 32% { opacity: 1; } 34%, 94% { opacity: 0; } 97%, 100% { opacity: 1; } }
+.mw .m-tap { opacity: 0; animation: mw-tap var(--T) infinite; }
+@keyframes mw-tap { 0%, 43% { opacity: 0; } 45%, 52% { opacity: 1; } 56%, 100% { opacity: 0; } }
+.mw .m-note { transform: translateX(100%); animation: mw-note var(--T) infinite; }
+@keyframes mw-note { 0%, 46% { transform: translateX(100%); } 52%, 86% { transform: none; } 92%, 100% { transform: translateX(100%); } }
+.mw .m-c1 { opacity: 0; transform: scale(0.4); animation: mw-c1 var(--T) infinite; }
+@keyframes mw-c1 { 0%, 64% { opacity: 0; transform: scale(0.4); } 67% { opacity: 1; transform: scale(1.12); } 69%, 93% { opacity: 1; transform: none; } 95%, 100% { opacity: 0; transform: scale(0.4); } }
+.mw .m-t1 { animation: mw-t1 var(--T) infinite; }
+@keyframes mw-t1 { 0%, 66% { opacity: 1; } 69%, 93% { opacity: 0.5; } 95%, 100% { opacity: 1; } }
+
+/* =========================== Peel to Markdown (scroll-linked, Peel.tsx writes --a --b --c) =========================== */
+/* --on is 0 at rest and 1 as soon as the peel starts: the whole card swaps for the two halves in the same frame */
+.peel { --on: min(1, calc(var(--a) * 1000)); }
+.peel .peel-whole { opacity: calc(1 - var(--on)); }
+.peel .peel-l { transform: translateX(calc(var(--a) * -70%)) rotate(calc(var(--a) * -3deg)); opacity: calc(var(--on) * (1 - var(--a))); }
+.peel .peel-r { transform: translateX(calc(var(--a) * 70%)) rotate(calc(var(--a) * 3deg)); opacity: calc(var(--on) * (1 - var(--a))); }
+.peel .peel-l, .peel .peel-r { filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.08)) drop-shadow(0 18px 30px rgb(10 30 80 / 0.18)); }
+.peel .peel-raw { transform: scale(calc(0.94 + var(--a) * 0.06)); opacity: var(--a); }
+.peel .peel-chip { transform: translateY(calc((1 - var(--b)) * 24px)); opacity: var(--b); }
+.peel .peel-phone { transform: translate(calc((1 - var(--c)) * 40%), calc((1 - var(--c)) * 24px)); opacity: var(--c); }
+.peel .peel-step { opacity: 0.45; }
+.peel[data-step="1"] .peel-step[data-n="1"], .peel[data-step="2"] .peel-step[data-n="2"], .peel[data-step="3"] .peel-step[data-n="3"] { opacity: 1; }
+
+/* masked line pull-up for the h1 */
+.ml { display: block; overflow: hidden; padding: .06em .15em .14em; margin: -.06em -.15em -.14em; }
+.js .ml > span { display: block; animation: ml-up 700ms var(--ease) both; animation-delay: calc(200ms + var(--i, 0) * 140ms); }
+@keyframes ml-up { from { transform: translateY(110%); } }
+@media (prefers-reduced-motion: reduce) { .js .ml > span { animation: fade 400ms linear both; } }
+
+/* =========================== hero ASCII field (?bg=plain turns it off) =========================== */
+.hero-bg { animation: fade 1200ms var(--ease) 200ms both; }
+/* the canvas fades in once; everything else is drawn per frame in HeroBg.tsx */
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-bg { animation: none !important; }
+}

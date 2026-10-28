@@ -7,7 +7,7 @@ Tolaria is available on desktop (built with Tauri) and mobile (React Native with
 | macOS | Primary | Main development and QA target. Apple Silicon and Intel artifacts are published. |
 | Windows | Supported, early | NSIS installers and signed updater bundles are published. Menu, shell-path, and credential-helper behavior receive platform-specific fixes as they appear. |
 | Linux | Supported, early | AppImage, deb, and RPM artifacts are published. Behavior can depend on distro WebKitGTK packages, Wayland/X11 details, and input-method setup. |
-| iOS (iPhone, iPad) | Beta | Available via TestFlight. WYSIWYG editor, real git sync, iCloud/Files integration. Request access through the [Discord community](https://discord.gg/tRBC2u428B). |
+| iOS (iPhone, iPad) | Beta | Public beta via [TestFlight](https://testflight.apple.com/join/7aPD4GAB). WYSIWYG editor, real git sync, iCloud/Files integration. |
 
 ## Support Policy
 

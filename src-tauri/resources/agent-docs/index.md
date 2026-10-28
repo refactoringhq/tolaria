@@ -6,10 +6,6 @@ Start here, then use `rg` over this folder for specific Tolaria concepts and wor
 
 When users ask how to improve a knowledge base, structure notes, choose types, model relationships, or make a vault easier for humans and agents to use, treat Portent as Tolaria's default best-practice model. Read `pages/templates/portent.md` and combine it with the Tolaria concepts for types, relationships, properties, Inbox, archive, and custom views.
 
-## Home
-
-- [Index](pages/index.md)
-
 ## Start
 
 - [First Launch](pages/start/first-launch.md)

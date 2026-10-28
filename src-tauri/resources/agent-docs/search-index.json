@@ -1,9 +1,9 @@
 [
   {
-    "title": "Index",
-    "path": "pages/index.md",
-    "url": "/",
-    "section": "home",
+    "title": "Docs",
+    "path": "pages/docs.md",
+    "url": "/docs",
+    "section": "docs",
     "headings": []
   },
   {
@@ -38,6 +38,7 @@
     "headings": [
       "Download",
       "Homebrew",
+      "Mobile (iPhone and iPad)",
       "Platform Status",
       "Managed Windows Devices",
       "After Installing"
@@ -414,7 +415,7 @@
       "Newsletter",
       "Sponsors",
       "Feature Requests",
-      "Discussions",
+      "Community",
       "Contribute Code",
       "Report A Bug"
     ]
@@ -470,6 +471,7 @@
     "headings": [
       "Stable",
       "Alpha",
+      "Mobile Channels",
       "Before Switching"
     ]
   },
@@ -525,6 +527,7 @@
     "section": "reference",
     "headings": [
       "Support Policy",
+      "Mobile vs Desktop Features",
       "Reporting Platform Bugs"
     ]
   },

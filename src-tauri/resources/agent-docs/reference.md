@@ -24,9 +24,9 @@ Tolaria is supported by a panel of tools Luca uses every day to keep the project
 
 Use the [product board](https://tolaria.canny.io/) for feature ideas. Search first, upvote existing ideas, and create a new post when the request is genuinely new.
 
-## Discussions
+## Community
 
-Use [GitHub Discussions](https://github.com/refactoringhq/tolaria/discussions) for questions, conversations, show and tell, and broader community context.
+Join the [Tolaria Discord server](https://discord.gg/tRBC2u428B) for questions, conversations, show and tell, tips, and development updates.
 
 ## Contribute Code
 
@@ -281,6 +281,15 @@ Compatibility endpoints also point to the alpha metadata:
 /latest.json
 /latest-canary.json
 ```
+
+## Mobile Channels
+
+The iPhone and iPad app has its own Release channel setting with **Stable** (the default) and **Alpha**. The channel decides which over-the-air (OTA) updates the app downloads; it does not change the app build you installed.
+
+- Mobile Alpha updates are published from `main` after CI passes, like desktop Alpha.
+- Mobile Stable updates are published manually.
+- The app checks for an update when it launches and again when you return to it. A downloaded update applies on the next launch, or right away with **Restart now** in Settings.
+- OTA updates only cover JavaScript changes compatible with your installed build. Native changes need a new app build from TestFlight.
 
 ## Before Switching
 
@@ -673,17 +682,30 @@ URL: /reference/supported-platforms
 
 # Supported Platforms
 
-Tolaria is a desktop app built with Tauri. Releases currently target macOS, Windows, and Linux.
+Tolaria is available on desktop (built with Tauri) and mobile (React Native with Expo). Releases currently target macOS, Windows, Linux, iPhone, and iPad.
 
 | Platform | Current support | Notes |
 | --- | --- | --- |
 | macOS | Primary | Main development and QA target. Apple Silicon and Intel artifacts are published. |
 | Windows | Supported, early | NSIS installers and signed updater bundles are published. Menu, shell-path, and credential-helper behavior receive platform-specific fixes as they appear. |
 | Linux | Supported, early | AppImage, deb, and RPM artifacts are published. Behavior can depend on distro WebKitGTK packages, Wayland/X11 details, and input-method setup. |
+| iOS (iPhone, iPad) | Beta | Public beta via [TestFlight](https://testflight.apple.com/join/7aPD4GAB). WYSIWYG editor, real git sync, iCloud/Files integration. |
 
 ## Support Policy
 
-Primary support means the platform is part of normal development and release validation. Supported, early means release artifacts exist and the app is expected to work, but platform-specific bugs can take longer to diagnose than macOS issues.
+Primary support means the platform is part of normal development and release validation. Supported, early means release artifacts exist and the app is expected to work, but platform-specific bugs can take longer to diagnose than macOS issues. Beta means the platform is under active development with core features working but not all desktop features implemented yet.
+
+## Mobile vs Desktop Features
+
+The iOS app (iPhone and iPad) currently focuses on core note editing and sync:
+
+- ✅ WYSIWYG Markdown editing with TenTap/Tiptap
+- ✅ Git auto-commit and merge support
+- ✅ Sync through iCloud or Files
+- ✅ GitHub repository integration
+- ⏳ Desktop-only: AI panel, advanced search, some desktop power-user features are not yet on mobile
+
+The mobile app shares the same vault format and git repository as the desktop app, so you can seamlessly work across devices.
 
 ## Reporting Platform Bugs
 

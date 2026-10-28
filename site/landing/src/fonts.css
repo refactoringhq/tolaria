@@ -1,0 +1,23 @@
+/* Web fonts (SIL Open Font License 1.1, licences in public/fonts/OFL-*.txt). Inter 4 (roman + italic) and Inter Tight
+ * are variable (400-700). Display type uses Inter Tight bold (see index.css). */
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/InterVariable.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/InterVariable-Italic.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter Tight";
+  src: url("/fonts/InterTight-Variable.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}

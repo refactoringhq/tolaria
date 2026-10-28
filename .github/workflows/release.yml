@@ -309,10 +309,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VITEPRESS_BASE="/" pnpm docs:build
-          mkdir -p _site
-          cp -R site/.vitepress/dist/. _site/
-          bash scripts/assemble-pages-site.sh _site "${{ needs.version.outputs.tag }}"
+          bash scripts/build-pages-site.sh _site "${{ needs.version.outputs.tag }}"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4

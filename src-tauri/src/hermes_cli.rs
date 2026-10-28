@@ -46,7 +46,7 @@ fn build_hermes_command(
         .arg("chat")
         .arg("--quiet")
         .arg("--source")
-        .arg("tolaria")
+        .arg("tool")
         .arg("-q")
         .arg(prompt)
         .current_dir(vault_path)
@@ -123,7 +123,7 @@ mod tests {
 
         assert_eq!(
             args,
-            ["chat", "--quiet", "--source", "tolaria", "-q", "Prompt"]
+            ["chat", "--quiet", "--source", "tool", "-q", "Prompt"]
         );
         assert_eq!(command.get_current_dir(), Some(Path::new("/tmp/vault")));
     }

@@ -8,6 +8,9 @@ exclude_paths:
   - "node_modules/**"
   - "site/.vitepress/cache/**"
   - "site/.vitepress/dist/**"
+  # Imported marketing code mirrored from refactoringhq/tolaria-landing; edited upstream and
+  # copied in, and already ignored by eslint (eslint.config.js).
+  - "site/landing/**"
   - "src-tauri/gen/**"
   - "src-tauri/resources/agent-docs/**"
   - "src-tauri/resources/mcp-server/**"

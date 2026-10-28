@@ -12,6 +12,7 @@ export default eslintConfig.defineConfig([
     'coverage',
     'site/.vitepress/cache/',
     'site/.vitepress/dist/',
+    'site/landing/',
     'src-tauri/resources/mcp-server/',
     'src-tauri/target/',
     'src-tauri/gen/',

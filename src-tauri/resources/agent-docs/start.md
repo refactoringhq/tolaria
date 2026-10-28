@@ -96,7 +96,11 @@ URL: /start/install
 
 # Install Tolaria
 
-Tolaria publishes desktop builds for macOS, Windows, and Linux. macOS is the primary day-to-day development target, with Windows and Linux builds supported through the release pipeline and fixed as platform issues are found.
+Tolaria is available on desktop (macOS, Windows, Linux) and mobile (iPhone, iPad).
+
+Desktop builds are published through GitHub Releases and Homebrew. macOS is the primary day-to-day development target, with Windows and Linux builds supported through the release pipeline and fixed as platform issues are found.
+
+The mobile app for iOS is currently in beta via TestFlight.
 
 ## Download
 
@@ -114,6 +118,16 @@ On macOS you can install the cask:
 brew install --cask tolaria
 ```
 
+## Mobile (iPhone and iPad)
+
+Tolaria for iOS is in **beta**. The mobile app brings Tolaria's core features to iPhone and iPad:
+
+- **WYSIWYG Markdown editor** — Fast, native rich-text editing
+- **Real git integration** — Auto-commit on save, with merge support for multi-device workflows  
+- **Sync with desktop** — Vaults sync through iCloud or Files and share the same git repository
+
+To join the beta, install Apple's TestFlight app, then open the [public TestFlight invite](https://testflight.apple.com/join/7aPD4GAB) on your iPhone or iPad.
+
 ## Platform Status
 
 | Platform | Status | Notes |
@@ -121,6 +135,7 @@ brew install --cask tolaria
 | macOS | Primary | Apple Silicon and Intel builds are published. Homebrew is available. |
 | Windows | Supported, early | NSIS installers and updater bundles are Tauri-signed. Authenticode publisher signing will be added after Windows certificate provisioning; company-managed SmartScreen, Defender, or WDAC policies can still require IT approval before install. |
 | Linux | Supported, early | AppImage, deb, and RPM artifacts are published. Desktop behavior depends on distribution WebKitGTK and input-method integration. |
+| iOS (iPhone, iPad) | Beta | Public beta via [TestFlight](https://testflight.apple.com/join/7aPD4GAB). |
 
 See [Supported Platforms](/reference/supported-platforms) for the current support policy.
 

@@ -73,6 +73,9 @@ jobs:
             echo "should-build=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Pages publisher guard (landing at /, shared assembly)
+        run: bash scripts/verify-pages-site.test.sh
+
       - name: Docs build check
         if: steps.docs-changes.outputs.should-build == 'true'
         run: pnpm docs:build

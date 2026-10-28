@@ -16,7 +16,7 @@ Tolaria gives you two ways to ask for AI help: open the AI panel for an ongoing 
 
 Open Settings and choose the default AI target:
 
-- **Coding agent** for tool-backed vault editing through Claude Code, Codex, GitHub Copilot, OpenCode, Pi, Antigravity CLI, Kiro, or Hermes Agent.
+- **Coding agent** for tool-backed vault editing through Claude Code, Codex, GitHub Copilot, OpenCode, Pi, Antigravity CLI, Kiro, or Hermes Agent. Claude Code in the AI panel can use your configured Skills for specialized capabilities.
 - **Local model** for Ollama or LM Studio chat over note context.
 - **API model** for OpenAI, Anthropic, Gemini, OpenRouter, or an OpenAI-compatible endpoint.
 

@@ -1,0 +1,47 @@
+/* Refactoring theme for shadcn/ui. ./brand/ is vendored from refactoringhq/brand by scripts/sync-brand.sh; don't edit it. */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "./fonts.css";
+@import "./brand/shadcn.css";
+@import "./accent.css";
+@import "./motion.css";
+
+/* Polish rules adapted from elayadesign/ai-design-skills (MIT), Part B. Brand wins. */
+@theme {
+  --ease-out-weighted: cubic-bezier(0.22, 1, 0.36, 1);
+}
+@utility press {
+  &:active:not(:disabled) { transform: scale(0.98); }
+}
+/* Display type: Inter Tight bold (the brand display face is private; builds that may use it set these vars at runtime) */
+:root {
+  --font-display: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
+  --font-hand-family: "Comic Neue", cursive;
+}
+/* bold display type (a single-weight brand display face, when present, looks the same at any weight) */
+@layer utilities { .font-display { font-weight: 700; } }
+html { scroll-behavior: smooth; scroll-padding-top: 96px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { -webkit-font-smoothing: antialiased; background: var(--background); }
+/* iPhone notch / status bar: viewport-fit=cover + theme-color #155DFF (index.html) let the blue hero run under the status
+ * bar; the hero and the fixed nav add env(safe-area-inset-top). html paints blue above the fold and white below, so a
+ * rubber-band overscroll at the top shows blue and at the bottom white (body itself stays white). */
+html { background: linear-gradient(to bottom, var(--primary) 50%, var(--background) 50%); }
+
+
+/* Full-bleed hero band. --hero-inset is the inset from the blue edge to the hero copy; --hero-gap (the vertical gap
+ * between the copy and the top of the devices) derives from it (Luca, 27 Oct: equal felt slightly too much). % resolves
+ * against the band width in both padding-inline and padding-bottom, so the two stay in step.
+ * --hero-overlap is how far the devices (Showcase, negative margin) sit up into the band. */
+:root { --hero-hx: 40px; --hero-overlap: 7rem; }
+@media (min-width: 40rem) { :root { --hero-hx: 64px; --hero-overlap: 12rem; } }
+@media (min-width: 64rem) { :root { --hero-overlap: 14rem; } }
+.hero-band {
+  --hero-inset: max(var(--hero-hx), calc((100% - 72rem) / 2 + var(--hero-hx)));
+  /* copy-to-devices gap: ~70% of the side inset, never under 40px (phones) or over 96px (wide desktops) */
+  --hero-gap: min(96px, max(40px, calc(var(--hero-inset) * 0.7)));
+  padding-inline: var(--hero-inset);
+  padding-bottom: calc(var(--hero-overlap) + var(--hero-gap));
+}
+.hero-overlap { margin-top: calc(-1 * var(--hero-overlap)); }

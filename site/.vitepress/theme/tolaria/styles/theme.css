@@ -1,0 +1,194 @@
+/* Tolaria docs: VitePress default theme mapped onto the landing's look. */
+
+/* ------------------------------------------------------------------ light (the landing has light only) */
+:root {
+  --vp-font-family-base: var(--tl-font-sans);
+  --vp-font-family-mono: var(--tl-font-mono);
+
+  --vp-c-brand-1: var(--tl-blue-600);
+  --vp-c-brand-2: var(--tl-blue-700);
+  --vp-c-brand-3: var(--tl-blue-600);
+  --vp-c-brand-soft: rgb(21 93 255 / 0.1);
+
+  --vp-c-bg: #FFFFFF;
+  --vp-c-bg-alt: var(--tl-gray-50);
+  --vp-c-bg-elv: #FFFFFF;
+  --vp-c-bg-soft: var(--tl-gray-50);
+  --vp-c-text-1: #0A0A0A;
+  --vp-c-text-2: var(--tl-gray-700);
+  --vp-c-text-3: var(--tl-gray-500);
+  --vp-c-border: var(--tl-gray-200);
+  --vp-c-divider: var(--tl-border);
+  --vp-c-gutter: var(--tl-border);
+
+  --vp-button-brand-border: transparent;
+  --vp-button-brand-text: var(--tl-primary-fg);
+  --vp-button-brand-bg: var(--tl-primary);
+  --vp-button-brand-hover-border: transparent;
+  --vp-button-brand-hover-text: var(--tl-primary-fg);
+  --vp-button-brand-hover-bg: var(--tl-blue-700);
+  --vp-button-brand-active-border: transparent;
+  --vp-button-brand-active-text: var(--tl-primary-fg);
+  --vp-button-brand-active-bg: var(--tl-blue-800);
+
+  --vp-nav-height: 64px;
+  --vp-nav-bg-color: transparent;
+  --vp-nav-screen-bg-color: #FFFFFF;
+  --vp-sidebar-bg-color: #FFFFFF;
+  --vp-local-nav-bg-color: var(--tl-glass);
+
+  --vp-code-bg: var(--tl-blue-50);
+  --vp-code-color: var(--tl-blue-700);
+  --vp-code-block-bg: var(--tl-gray-50);
+  --vp-code-copy-code-bg: #FFFFFF;
+  --vp-code-tab-bg: var(--tl-gray-50);
+
+  --vp-custom-block-tip-border: transparent;
+  --vp-custom-block-tip-text: var(--vp-c-text-1);
+  --vp-custom-block-tip-bg: var(--tl-blue-50);
+  --vp-custom-block-tip-code-bg: #FFFFFF;
+  --vp-c-tip-1: var(--tl-blue-700);
+  --vp-c-tip-2: var(--tl-blue-600);
+  --vp-c-tip-soft: var(--tl-blue-50);
+
+  --vp-local-search-highlight-bg: var(--tl-primary);
+  --vp-local-search-highlight-text: var(--tl-primary-fg);
+}
+
+/* ------------------------------------------------------------------ dark (sensible, optional: see README) */
+.dark {
+  --vp-c-brand-1: var(--tl-blue-400);
+  --vp-c-brand-2: var(--tl-blue-300);
+  --vp-c-brand-3: var(--tl-blue-600);
+  --vp-c-brand-soft: rgb(110 158 255 / 0.16);
+  --vp-c-bg: #111111;
+  --vp-c-bg-alt: var(--tl-gray-950);
+  --vp-c-bg-elv: var(--tl-gray-900);
+  --vp-c-bg-soft: var(--tl-gray-900);
+  --vp-c-text-1: #F2F2F2;
+  --vp-c-text-2: var(--tl-gray-300);
+  --vp-c-text-3: var(--tl-gray-500);
+  --vp-c-border: var(--tl-gray-800);
+  --vp-c-divider: #262626;
+  --vp-c-gutter: #262626;
+  --vp-nav-screen-bg-color: #111111;
+  --vp-sidebar-bg-color: #111111;
+  --vp-code-bg: rgb(110 158 255 / 0.14);
+  --vp-code-color: var(--tl-blue-300);
+  --vp-code-block-bg: #181818;
+  --vp-code-copy-code-bg: var(--tl-gray-900);
+  --vp-code-tab-bg: #181818;
+  --vp-custom-block-tip-bg: rgb(110 158 255 / 0.1);
+  --vp-custom-block-tip-code-bg: var(--tl-gray-900);
+  --vp-c-tip-1: var(--tl-blue-300);
+  --vp-c-tip-2: var(--tl-blue-400);
+  --vp-c-tip-soft: rgb(110 158 255 / 0.1);
+  --tl-glass: rgb(17 17 17 / 0.72);
+  --tl-glass-border: rgb(255 255 255 / 0.08);
+  --tl-glass-shadow: 0 8px 30px -12px rgb(0 0 0 / 0.6);
+  --tl-border: #262626;
+}
+
+body { -webkit-font-smoothing: antialiased; }
+::selection { background: var(--tl-blue-100); color: var(--tl-blue-950); }
+.dark ::selection { background: var(--tl-blue-800); color: #fff; }
+
+/* ------------------------------------------------------------------ frosted nav (drop + wordmark) */
+/* The glass sits on a pseudo-element: backdrop-filter on .VPNav itself would make it the containing block for the
+ * fixed mobile menu (.VPNavScreen) and clip it to the 64px bar. */
+.VPNav { isolation: isolate; border-bottom: 1px solid var(--tl-glass-border); transition: box-shadow 300ms var(--tl-ease); }
+.VPNav::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: var(--tl-glass); -webkit-backdrop-filter: blur(20px) saturate(1.5); backdrop-filter: blur(20px) saturate(1.5);
+}
+.tl-scrolled .VPNav { box-shadow: 0 6px 24px -16px rgb(10 30 80 / 0.35); }
+/* VitePress paints the bar, its title and content-body from these variables; clearing them lets the glass show through. */
+.VPNav .VPNavBar { --vp-nav-bg-color: transparent; --vp-sidebar-bg-color: transparent; background-color: transparent; }
+.VPNavBar .divider, .VPNavBar .divider-line { display: none; }
+/* VitePress draws the title's bottom border with --vp-c-divider when there is a sidebar; hide it inside the glass bar. */
+.VPNavBarTitle.has-sidebar { --vp-c-divider: transparent; }
+.VPNavBarTitle .title { gap: 8px; }
+.VPNavBarTitle .title > span { font-family: var(--tl-font-display); font-size: 20px; font-weight: 700; letter-spacing: 0; color: var(--vp-c-text-1); line-height: 1; }
+.tl-drop { height: 24px; width: auto; }
+.VPNavBarMenuLink, .VPNavBarMenuGroup .button { font-weight: 600; font-size: 14px; color: var(--vp-c-text-2); border-radius: 12px; }
+.VPNavBarMenuLink:hover, .VPNavBarMenuGroup .button:hover { color: var(--vp-c-text-1); }
+.VPNavBarMenuLink.active, .VPNavBarMenuGroup.active .button { color: var(--vp-c-brand-1); }
+
+.tl-nav-actions { display: flex; align-items: center; gap: 4px; margin-left: 12px; }
+.tl-star, .tl-download {
+  display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 12px;
+  font-size: 14px; font-weight: 600; line-height: 1; text-decoration: none; white-space: nowrap;
+  transition: transform 300ms var(--tl-ease), opacity 300ms var(--tl-ease), background-color 300ms var(--tl-ease), color 300ms var(--tl-ease);
+}
+.tl-star { color: var(--vp-c-text-2); }
+.tl-star:hover { background: var(--tl-gray-100); color: var(--vp-c-text-1); }
+.dark .tl-star:hover { background: var(--tl-gray-900); }
+.tl-nav-actions .tl-download { background: var(--tl-primary); color: var(--tl-primary-fg); }
+.tl-download:hover { opacity: 0.9; }
+.tl-download:active, .tl-star:active { transform: scale(0.98); }
+.tl-star:focus-visible, .tl-download:focus-visible { outline: 3px solid rgb(21 93 255 / 0.5); outline-offset: 2px; }
+@media (max-width: 767px) {
+  .tl-nav-actions { margin-left: 4px; }
+  .tl-nav-actions .tl-star span { display: none; }
+  .tl-star { padding: 0 8px; }
+  .tl-download { padding: 0 10px; }
+}
+@media (max-width: 400px) { .tl-nav-actions .tl-download span { display: none; } }
+
+/* search button in the nav */
+/* VitePress fills the button with --vp-c-bg-alt from 768px up and leaves it transparent below, which is what we want. */
+.VPNavBar .DocSearch-Button { --vp-c-bg-alt: var(--tl-gray-100); border-radius: 12px; }
+.dark .VPNavBar .DocSearch-Button { --vp-c-bg-alt: var(--tl-gray-900); }
+.VPNavBar .DocSearch-Button:hover { box-shadow: inset 0 0 0 1px var(--vp-c-brand-1); }
+@media (max-width: 767px) { .VPNavBar .DocSearch-Button:hover { box-shadow: none; } }
+
+/* ------------------------------------------------------------------ sidebar */
+.VPSidebar { border-right: 1px solid var(--vp-c-divider); }
+.VPSidebarItem.level-0 > .item .text { font-family: var(--tl-font-heading); font-weight: 700; font-size: 14px; }
+.VPSidebarItem .link:hover .text { color: var(--vp-c-text-1); }
+.VPSidebarItem.is-active > .item .link > .text { color: var(--vp-c-brand-1); font-weight: 600; }
+.VPSidebarItem.level-1.is-active > .item .indicator { background: var(--vp-c-brand-1); }
+
+/* ------------------------------------------------------------------ doc typography */
+.vp-doc h1 { font-family: var(--tl-font-display); font-weight: 700; font-size: 40px; line-height: 1.1; letter-spacing: 0; text-wrap: balance; }
+.vp-doc h2 { font-family: var(--tl-font-heading); font-weight: 700; font-size: 26px; letter-spacing: 0; }
+.vp-doc h3, .vp-doc h4 { font-family: var(--tl-font-heading); font-weight: 700; letter-spacing: 0; }
+@media (max-width: 640px) { .vp-doc h1 { font-size: 32px; } .vp-doc h2 { font-size: 22px; } }
+.vp-doc a { color: var(--vp-c-brand-1); font-weight: 500; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; text-decoration-color: rgb(21 93 255 / 0.35); }
+.vp-doc a:hover { text-decoration-color: currentColor; }
+.vp-doc .header-anchor { text-decoration: none; }
+.vp-doc :not(pre) > code { border-radius: 6px; font-weight: 500; }
+@media (min-width: 640px) { .vp-doc div[class*="language-"] { border-radius: var(--tl-radius); box-shadow: inset 0 0 0 1px var(--vp-c-divider); } }
+.vp-doc table { display: table; width: 100%; border-radius: var(--tl-radius); }
+.vp-doc th { font-family: var(--tl-font-heading); color: var(--vp-c-text-1); background: var(--vp-c-bg-soft); }
+.vp-doc .custom-block { border-radius: var(--tl-radius); }
+.vp-doc .custom-block-title { font-family: var(--tl-font-heading); }
+.VPDocFooter .pager-link { border-radius: var(--tl-radius); transition: border-color 300ms var(--tl-ease), transform 300ms var(--tl-ease); }
+.VPDocFooter .pager-link:hover { transform: translateY(-2px); }
+.VPDocAsideOutline .outline-title { font-family: var(--tl-font-heading); }
+
+/* ------------------------------------------------------------------ slim ASCII band (DocsBand.vue) */
+.tl-band {
+  position: relative; isolation: isolate; overflow: hidden; margin: 0 0 32px; padding: 28px 28px 30px;
+  border-radius: 16px; background: var(--tl-primary); color: var(--tl-primary-fg);
+}
+.tl-band-copy { position: relative; z-index: 1; max-width: 560px; }
+.tl-band-kicker { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: rgb(255 255 255 / 0.8); }
+.tl-band-title { margin: 0; font-family: var(--tl-font-display); font-weight: 700; font-size: 28px; line-height: 1.15; text-wrap: balance; }
+.tl-band-text { margin: 8px 0 0; font-size: 15px; line-height: 1.5; color: rgb(255 255 255 / 0.9); text-wrap: pretty; }
+
+/* ------------------------------------------------------------------ hero page: nav floats over the blue as a pill */
+@media (min-width: 0px) {
+  html.tl-hero-page .VPNav {
+    position: fixed; top: calc(env(safe-area-inset-top) + 12px); left: 12px; right: 12px; width: auto; max-width: 1152px; margin-inline: auto;
+    border-radius: 16px; border: 1px solid rgb(255 255 255 / 0.4); box-shadow: var(--tl-glass-shadow);
+  }
+  html.tl-hero-page .VPNavBar { height: 60px; }
+  html.tl-hero-page .VPNavBar .wrapper { padding: 0 8px 0 16px; }
+  html.tl-hero-page .VPNavBar .container { max-width: none; }
+  html.tl-hero-page .VPNavBar .content-body, html.tl-hero-page .VPNavBarTitle .title { height: 60px; }
+  html.tl-hero-page .VPContent { padding-top: 0; }
+  html.tl-hero-page .VPNavScreen { top: calc(env(safe-area-inset-top) + 84px); }
+  html.tl-hero-page .VPFooter { border-top: 0; }
+}
+.dark html.tl-hero-page .VPNav, html.dark.tl-hero-page .VPNav { border-color: rgb(255 255 255 / 0.1); }

@@ -1,0 +1,36 @@
+/* Refactoring / Tolaria brand tokens, copied (hex) from tolaria-landing ui/src/brand/shadcn.css + ui/src/accent.css
+ * (refactoringhq/brand@a36af44). Copied rather than imported so the docs build has no Tailwind dependency.
+ * Re-copy when the brand changes; don't hand-tune values here. */
+:root {
+  --tl-blue-50: #F0F5FF; --tl-blue-100: #DDE9FF; --tl-blue-200: #C5D9FF; --tl-blue-300: #A1C1FF; --tl-blue-400: #6E9EFF;
+  --tl-blue-500: #437FFF; --tl-blue-600: #155DFF; --tl-blue-700: #0A4DE1; --tl-blue-800: #083EB9; --tl-blue-900: #0D3896; --tl-blue-950: #062263;
+  --tl-gray-50: #FAFAFA; --tl-gray-100: #EEEEEE; --tl-gray-200: #DFDFDF; --tl-gray-300: #CBCBCB; --tl-gray-400: #A4A4A4;
+  --tl-gray-500: #7B7B7B; --tl-gray-600: #5B5B5B; --tl-gray-700: #444444; --tl-gray-800: #303030; --tl-gray-900: #202020; --tl-gray-950: #0F0F0F;
+  --tl-green-500: #00B38B; --tl-green-50: #F2FAF7; --tl-green-700: #00755A;
+  --tl-yellow-50: #FEFBF2; --tl-yellow-500: #F0B100; --tl-yellow-700: #9B6700;
+  --tl-red-50: #FFF2F1; --tl-red-500: #FC203A; --tl-red-700: #BD0023;
+
+  /* semantic (shadcn names in the landing) */
+  --tl-primary: var(--tl-blue-600);
+  --tl-primary-fg: #FFFFFF;          /* white text on any solid brand colour (Luca, 2026-10-23) */
+  --tl-app-ink: var(--tl-blue-700);
+  --tl-app-light: var(--tl-blue-100);
+  --tl-app-tint: var(--tl-blue-50);
+  --tl-fg: #000000;
+  --tl-muted-fg: var(--tl-gray-700);
+  --tl-border: #E5E5E5;
+  --tl-radius: 0.75rem;
+
+  --tl-font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --tl-font-heading: "Inter Tight", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --tl-font-display: "Inter Tight", ui-sans-serif, system-ui, sans-serif; /* bold display type, same as the public landing */
+  --tl-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  /* motion: transform + opacity only, one curve */
+  --tl-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* frosted nav glass */
+  --tl-glass: rgb(255 255 255 / 0.8);
+  --tl-glass-border: rgb(0 0 0 / 0.06);
+  --tl-glass-shadow: 0 8px 30px -12px rgb(10 30 80 / 0.35);
+}

@@ -1,7 +1,7 @@
 import { execFileSync, spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { addedLinesFromDiff, biomeGateFailures, eslintGateFailures } from './codacy-gate-lib.mjs'
+import { addedLinesFromDiff, biomeGateFailures, codacyExcludePatterns, eslintGateFailures, withoutExcludedPaths } from './codacy-gate-lib.mjs'
 import { scannerOutputFailures } from './codacy-sarif.mjs'
 import { partitionApprovedReports } from './codacy-approved-reports.mjs'
 
@@ -14,7 +14,9 @@ const diff = execFileSync('git', ['diff', '--unified=0', `${base}...HEAD`], {
   encoding: 'utf8',
   maxBuffer: 20 * 1024 * 1024,
 })
-const additions = addedLinesFromDiff(diff, root)
+const codacyConfig = spawnSync('git', ['show', 'HEAD:.codacy.yaml'], { cwd: root, encoding: 'utf8' })
+const excludePatterns = codacyConfig.status === 0 ? codacyExcludePatterns(codacyConfig.stdout) : []
+const additions = withoutExcludedPaths(addedLinesFromDiff(diff, root), excludePatterns, root)
 
 if (additions.size === 0) {
   console.log('Codacy gate: no added lines to analyze.')

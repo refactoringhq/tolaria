@@ -2,6 +2,7 @@ packages:
   - apps/*
   - mcp-server
   - packages/*
+  - site/landing
 
 ignoredBuiltDependencies:
   - esbuild

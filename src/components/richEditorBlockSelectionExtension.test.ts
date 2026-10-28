@@ -300,6 +300,66 @@ describe('rich editor block selection extension', () => {
     expect(selectedBlockIds(editor)).toEqual(['two'])
   })
 
+  it.each([
+    { key: 'b', style: 'bold' as const, shift: false },
+    { key: 'i', style: 'italic' as const, shift: false },
+    { key: 'u', style: 'underline' as const, shift: false },
+    { key: 'x', style: 'strike' as const, shift: true },
+    { key: 'e', style: 'code' as const, shift: false },
+  ])('toggles $style on one block selection and keeps it selected', ({ key, style, shift }) => {
+    const editor = mountEditor()
+    selectBlock(editor, 'two')
+
+    const first = dispatchEditorKey(editor, key, { metaKey: true, shiftKey: shift })
+    expect(first.handled).toBe(true)
+    expect(selectedBlockIds(editor)).toEqual(['two'])
+    expect(editor.document[1]?.content).toEqual([{ type: 'text', text: 'Two', styles: { [style]: true } }])
+
+    dispatchEditorKey(editor, key, { metaKey: true, shiftKey: shift })
+    expect(selectedBlockIds(editor)).toEqual(['two'])
+    expect(editor.document[1]?.content).toEqual([{ type: 'text', text: 'Two', styles: {} }])
+  })
+
+  it.each([
+    { key: 'b', style: 'bold' as const },
+    { key: 'i', style: 'italic' as const },
+  ])('toggles $style on a multi-block selection', ({ key, style }) => {
+    const editor = mountEditor()
+    editor.setSelection('one', 'three')
+    dispatchEditorKey(editor, 'Escape')
+
+    dispatchEditorKey(editor, key, { metaKey: true })
+    expect(selectedBlockIds(editor)).toEqual(['one', 'two', 'three'])
+    expect(editor.document.filter((block) => ['one', 'two', 'three'].includes(block.id)).map((block) => block.content)).toEqual(
+      ['One', 'Two', 'Three'].map((text) => [{ type: 'text', text, styles: { [style]: true } }]),
+    )
+
+    dispatchEditorKey(editor, key, { metaKey: true })
+    expect(selectedBlockIds(editor)).toEqual(['one', 'two', 'three'])
+    expect(editor.document.filter((block) => ['one', 'two', 'three'].includes(block.id)).map((block) => block.content)).toEqual(
+      ['One', 'Two', 'Three'].map((text) => [{ type: 'text', text, styles: {} }]),
+    )
+  })
+
+  it('matches text-selection Markdown output and undoes block formatting in one step', () => {
+    const blockSelectedEditor = mountEditor()
+    selectBlock(blockSelectedEditor, 'two')
+    dispatchEditorKey(blockSelectedEditor, 'b', { metaKey: true })
+    const blockMarkdown = blockSelectedEditor.blocksToMarkdownLossy(blockSelectedEditor.document)
+
+    const textSelectedEditor = mountEditor()
+    textSelectedEditor.setTextCursorPosition('two', 'start')
+    const start = textSelectedEditor._tiptapEditor.state.selection.from
+    textSelectedEditor._tiptapEditor.commands.setTextSelection({ from: start, to: start + 3 })
+    textSelectedEditor.toggleStyles({ bold: true })
+    expect(blockMarkdown).toBe(textSelectedEditor.blocksToMarkdownLossy(textSelectedEditor.document))
+
+    blockSelectedEditor.undo()
+    expect(blockSelectedEditor.blocksToMarkdownLossy(blockSelectedEditor.document)).toBe(
+      textSelectedEditor.blocksToMarkdownLossy(textSelectedEditor.document).replace('**Two**', 'Two'),
+    )
+  })
+
   it('uses Enter to edit the selected block at the end', () => {
     const editor = mountEditor()
     editor.setTextCursorPosition('two', 'start')

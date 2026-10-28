@@ -21,11 +21,7 @@ Use the [product board](https://tolaria.canny.io/) for feature ideas. Search fir
 
 ## Community
 
-Join the [Tolaria Discord server](https://discord.gg/tRBC2u428B) to connect with other users, request mobile beta access, share tips, and stay updated on development.
-
-## Discussions
-
-Use [GitHub Discussions](https://github.com/refactoringhq/tolaria/discussions) for questions, conversations, show and tell, and broader community context.
+Join the [Tolaria Discord server](https://discord.gg/tRBC2u428B) for questions, conversations, show and tell, tips, and development updates.
 
 ## Contribute Code
 
