@@ -3,8 +3,8 @@ import {
 	LinkBridge,
 	TenTapStartKit,
 } from "@10play/tentap-editor/web";
-import { Node } from "@tiptap/core";
 import { mobileWikilinkHref } from "../../workspace/mobileWikilinks";
+import { MobileWysiwygHorizontalRule } from "./MobileWysiwygHorizontalRule";
 
 type LinkValidationContext = { defaultValidate: (url: string) => boolean };
 
@@ -17,13 +17,7 @@ function allowsMobileLink(url: string, context: LinkValidationContext) {
 }
 
 const horizontalRule = new BridgeExtension({
-	tiptapExtension: Node.create({
-		name: "horizontalRule",
-		group: "block",
-		atom: true,
-		parseHTML: () => [{ tag: "hr" }],
-		renderHTML: () => ["hr"],
-	}),
+	tiptapExtension: MobileWysiwygHorizontalRule,
 });
 
 // Configure the web schema itself: native bridge configuration is injected separately.
