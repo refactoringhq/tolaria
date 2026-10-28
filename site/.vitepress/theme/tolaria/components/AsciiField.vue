@@ -39,6 +39,7 @@ onMounted(() => {
   let raf = 0, last = 0, visible = true, hot = 0
   const t0 = performance.now()
   const ptr = { x: 0, y: 0, has: false }
+  const randomValues = new Uint32Array(512)
 
   const buildAtlas = () => {
     const fs = w < 640 ? 12 : 13
@@ -56,71 +57,89 @@ onMounted(() => {
     cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr)
     cols = Math.ceil(w / cw); rows = Math.ceil(h / ch)
     heat = new Float32Array(cols * rows); scr = new Uint8Array(cols * rows); calm = new Float32Array(cols * rows)
-    // calm mask: tight text bounds of each calm element (not its full box), eased down to `floor` with a soft edge
-    const parts = props.calm ? Array.from(host.querySelectorAll<HTMLElement>(props.calm)) : []
-    const rs = parts.map((e) => {
+    buildCalmMask(r)
+    buildAtlas(); draw(performance.now(), 0)
+  }
+
+  const textBounds = (elements: HTMLElement[]) => {
+    const rs = elements.map((e) => {
       const q = e.getBoundingClientRect(); const rr = document.createRange(); rr.selectNodeContents(e)
       const t = rr.getBoundingClientRect(); return t.width ? t : q
     }).filter((q) => q.width && q.height)
-    const copy = rs.length ? {
+    return rs.length ? {
       left: Math.min(...rs.map((q) => q.left)), right: Math.max(...rs.map((q) => q.right)),
       top: Math.min(...rs.map((q) => q.top)), bottom: Math.max(...rs.map((q) => q.bottom)),
     } : null
+  }
+
+  const calmAtCell = ({ x, y, r, copy, floor }: { x: number; y: number; r: DOMRect; copy: DOMRect | null; floor: number }) => {
+    if (!copy) return 1
+    const px = x * cw + cw / 2 + r.left, py = y * ch + ch / 2 + r.top
+    const dx = Math.max(copy.left - px, 0, px - copy.right), dy = Math.max(copy.top - py, 0, py - copy.bottom)
+    return floor + (1 - floor) * Math.min(1, Math.hypot(dx, dy) / (w < 640 ? 40 : 80))
+  }
+
+  const buildCalmMask = (r: DOMRect) => {
+    // calm mask: tight text bounds of each calm element (not its full box), eased down to `floor` with a soft edge
+    const parts = props.calm ? Array.from(host.querySelectorAll<HTMLElement>(props.calm)) : []
+    const copy = textBounds(parts)
     const floor = w < 640 ? 0.42 : 0.3
-    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-      let m = 1
-      if (copy) {
-        const px = x * cw + cw / 2 + r.left, py = y * ch + ch / 2 + r.top
-        const dx = Math.max(copy.left - px, 0, px - copy.right), dy = Math.max(copy.top - py, 0, py - copy.bottom)
-        m = floor + (1 - floor) * Math.min(1, Math.hypot(dx, dy) / (w < 640 ? 40 : 80))
-      }
-      calm[y * cols + x] = m
-    }
-    buildAtlas(); draw(performance.now(), 0)
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) calm[y * cols + x] = calmAtCell({ x, y, r, copy, floor })
   }
 
   const splat = (x: number, y: number, amt: number) => {
     const R = w < 640 ? 70 : 96
     const cx0 = Math.max(0, Math.floor((x - R) / cw)), cx1 = Math.min(cols - 1, Math.ceil((x + R) / cw))
     const cy0 = Math.max(0, Math.floor((y - R) / ch)), cy1 = Math.min(rows - 1, Math.ceil((y + R) / ch))
+    crypto.getRandomValues(randomValues)
+    let randomIndex = 0
     for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) {
       const d2 = (cx * cw + cw / 2 - x) ** 2 + (cy * ch + ch / 2 - y) ** 2
       const v = amt * Math.exp(-d2 / (2 * (R * 0.45) ** 2))
       if (v < 0.01) continue
       const i = cy * cols + cx
       heat[i] = Math.min(1, heat[i] + v)
-      if (v > 0.25 && Math.random() < 0.35) scr[i] = 1 + Math.floor(Math.random() * MD.length)
+      if (v > 0.25 && randomValues[randomIndex++] / 0x100000000 < 0.35) {
+        scr[i] = 1 + Math.floor((randomValues[randomIndex++] / 0x100000000) * MD.length)
+      }
     }
     hot = 1
   }
 
-  const draw = (now: number, dt: number) => {
-    const t = reduce ? 4 : (now - t0) / 1000
-    const k = dt ? 0.5 ** (dt / 220) // heat halves every ~220ms, so a stroke fades out over ~800ms
-      : 1
-    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height)
-    const sw = Math.ceil(cw * dpr), sh = Math.ceil(ch * dpr)
-    let live = 0
-    // phones: copy fills most of the width, so the field outside it runs brighter to stay visible
-    const boost = w < 640 ? 3.4 : 1
-    const gain = props.intensity
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
+  const drawCell = ({ x, y, t, k, sw, sh, boost, gain }: { x: number; y: number; t: number; k: number; sw: number; sh: number; boost: number; gain: number }) => {
         const i = y * cols + x
         let ht = heat[i]
-        if (ht > 0) { ht *= k; if (ht < 0.004) { ht = 0; scr[i] = 0 } heat[i] = ht; live++ }
+        if (ht > 0) { ht *= k; if (ht < 0.004) { ht = 0; scr[i] = 0 } heat[i] = ht }
         // ambient: three slow travelling sine fields, sharpened so most of the field stays quiet
         const a = Math.sin(x * 0.11 + t * 0.35) + Math.sin(y * 0.17 - t * 0.27 + x * 0.05) + Math.sin((x + y) * 0.06 + t * 0.18)
         const j = (((i * 2654435761) >>> 0) % 1000) / 1000 - 0.5 // per-cell jitter: organic, grainy field
         const amb = Math.max(0, (a + 3) / 6 + j * 0.28) ** 3 * 0.6
         const v = Math.min(1, (amb * calm[i] * (calm[i] > 0.9 ? boost : 1) + ht * (0.6 + 0.4 * calm[i])) * gain)
-        if (v < 0.07) continue
+        if (v < 0.07) return ht > 0
         const ci = scr[i] && ht > 0.18 ? RAMP.length + scr[i] - 1 : Math.min(RAMP.length - 1, Math.floor(v * RAMP.length))
-        if (ci === 0) continue
+        if (ci === 0) return ht > 0
         ctx.globalAlpha = Math.min(0.6, 0.08 + v * 0.52)
         ctx.drawImage(atlas, ci * sw, 0, sw, sh, Math.round(x * cw * dpr), Math.round(y * ch * dpr), sw, sh)
-      }
+        return ht > 0
+  }
+
+  const drawGrid = ({ t, k, sw, sh, boost, gain }: { t: number; k: number; sw: number; sh: number; boost: number; gain: number }) => {
+    let live = 0
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      if (drawCell({ x, y, t, k, sw, sh, boost, gain })) live++
     }
+    return live
+  }
+
+  const draw = (now: number, dt: number) => {
+    const t = reduce ? 4 : (now - t0) / 1000
+    const k = dt ? 0.5 ** (dt / 220) : 1 // heat halves every ~220ms, so a stroke fades out over ~800ms
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height)
+    const sw = Math.ceil(cw * dpr), sh = Math.ceil(ch * dpr)
+    // phones: copy fills most of the width, so the field outside it runs brighter to stay visible
+    const boost = w < 640 ? 3.4 : 1
+    const gain = props.intensity
+    const live = drawGrid({ t, k, sw, sh, boost, gain })
     ctx.globalAlpha = 1
     hot = live ? 1 : 0
   }
@@ -132,7 +151,8 @@ onMounted(() => {
     if (dt > (hot ? 15 : 32)) { draw(now, last ? Math.min(dt, 100) : 0); last = now }
     raf = requestAnimationFrame(tick)
   }
-  const start = () => { if (!reduce && !raf && visible && !document.hidden) { last = 0; raf = requestAnimationFrame(tick) } }
+  const canStart = () => !reduce && !raf && visible && !document.hidden
+  const start = () => { if (canStart()) { last = 0; raf = requestAnimationFrame(tick) } }
   const stop = () => { cancelAnimationFrame(raf); raf = 0 }
 
   const ro = new ResizeObserver(layout); ro.observe(host)
