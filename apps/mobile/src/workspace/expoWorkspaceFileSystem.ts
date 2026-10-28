@@ -67,13 +67,8 @@ export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
     const file = workspaceFile(expoFileSystem(), rootUri, normalizedPath)
     return file.exists ? file.textSync() : null
   },
-  readTextFileAsync: async (rootUri, relativePath) => {
-    const normalizedPath = normalizedWorkspaceRelativePath(relativePath)
-    if (!normalizedPath) return null
-
-    const file = workspaceFile(expoFileSystem(), rootUri, normalizedPath)
-    return file.exists ? file.text() : null
-  },
+  readTextFileAsync: (rootUri, relativePath) =>
+    readWorkspaceTextFileAsync(expoFileSystem(), rootUri, relativePath),
   readVaultFiles: (rootUri) => {
     const module = expoFileSystem()
     assertGitCheckoutComplete(module, rootUri)
@@ -116,6 +111,18 @@ export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
 function expoFileSystem(): ExpoFileSystemModule {
   expoFileSystemModule ??= require('expo-file-system')
   return expoFileSystemModule
+}
+
+export async function readWorkspaceTextFileAsync(
+  module: ExpoFileSystemModule,
+  rootUri: RootUri,
+  relativePath: RelativeVaultPath,
+): Promise<string | null> {
+  const normalizedPath = normalizedWorkspaceRelativePath(relativePath)
+  if (!normalizedPath) return null
+
+  const file = workspaceFile(module, rootUri, normalizedPath, false)
+  return file.exists ? file.text() : null
 }
 
 function moveWorkspaceEntry(
@@ -197,9 +204,14 @@ function localFileTime(primary: number | null | undefined, fallback: () => numbe
   return primary ?? fallback() ?? null
 }
 
-function workspaceFile(module: ExpoFileSystemModule, rootUri: RootUri, relativePath: RelativeVaultPath): File {
+function workspaceFile(
+  module: ExpoFileSystemModule,
+  rootUri: RootUri,
+  relativePath: RelativeVaultPath,
+  recover = true,
+): File {
   assertGitCheckoutComplete(module, rootUri)
-  recoverNativeWorkspaceText(rootUri)
+  if (recover) recoverNativeWorkspaceText(rootUri)
   return new module.File(rootUri, ...relativePath.split('/'))
 }
 
