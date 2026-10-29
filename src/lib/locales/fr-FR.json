@@ -1236,6 +1236,7 @@
   "mobile.vaults.openGitHub": "Ouvrir GitHub",
   "mobile.vaults.deviceCode": "Saisissez ce code sur GitHub",
   "mobile.vaults.requestFailed": "L'opération a échoué. Vos fichiers locaux ont été conservés. Vérifiez votre connexion et les autorisations du dépôt, puis réessayez.",
+  "mobile.vaults.checkoutWriteFailed": "Un fichier du dépôt n’a pas pu être écrit. Vos fichiers locaux ont été conservés. Chemin d’accès en échec : {path}",
   "mobile.vaults.catalogFailed": "La liste des coffres-forts enregistrée n'a pas pu être lue. Aucun fichier du coffre-fort n'a été supprimé.",
   "mobile.editor.loading": "Chargement de la note…",
   "mobile.editor.readFailed": "Cette note n'a pas pu être lue. Son fichier n'a pas été modifié.",

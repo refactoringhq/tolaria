@@ -1231,6 +1231,7 @@
   "mobile.vaults.privateRepository": "Pryvatny repazitoryj",
   "mobile.vaults.publicRepository": "Publičny repazitoryj",
   "mobile.vaults.requestFailed": "Aperacyja nie atrymalasia. Vašy lakaĺnyja fajly zachavany. Praviercie svajo złučennie i dazvoly dla schovišča, a zatym paŭtarycie sprobu.",
+  "mobile.vaults.checkoutWriteFailed": "Nie atrymalasia zapisac fajł schovišča. Vašy lakaĺnyja fajły zachavany. Nieŭdały šlach: {path}",
   "mobile.vaults.catalogFailed": "Nie ŭdałosia pračytać zachavany spis schoviščaŭ. Nijakija fajly schovišča nie byli vydalenyja.",
   "mobile.editor.loading": "Zahruzka natatki...",
   "mobile.editor.readFailed": "Hetuju natatku nie ŭdałosia pračytać. Jaje fajł nie byŭ źmienieny.",

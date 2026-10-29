@@ -1,11 +1,12 @@
 import fs from 'node:fs'
 import { execFileSync } from 'node:child_process'
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import git from 'isomorphic-git'
 import { afterEach, expect, it, vi } from 'vitest'
 import { cloneGitVault, syncGitVault, type GitRemoteOptions } from './gitRemote'
+import { createExpoGitFileSystem, gitFileWriteFailurePath } from './expoGitFileSystem'
 import { createGitVault } from './gitVault'
 import { gitTestEnvironment, startGitTestServer } from './gitTestServer'
 import { createGitEditorAccess } from './gitEditorAccess'
@@ -16,7 +17,7 @@ const cleanup: (() => Promise<void>)[] = []
 const gitProcessOptions = { env: gitTestEnvironment(), stdio: 'pipe' as const }
 afterEach(async () => { for (const action of cleanup.splice(0).reverse()) await action() })
 
-async function fixture() {
+async function fixture({ includeSymlink = false }: { includeSymlink?: boolean } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'tolaria-sync-'))
   cleanup.push(() => rm(root, { recursive: true, force: true }))
   const remote = join(root, 'team', 'vault.git')
@@ -26,6 +27,7 @@ async function fixture() {
   await mkdir(seed)
   await git.init({ fs, dir: seed, defaultBranch: 'main' })
   await writeFile(join(seed, 'note.md'), '---\nstatus: draft\n---\n# Initial\n')
+  if (includeSymlink) await symlink('note.md', join(seed, 'linked.md'))
   await createGitVault({ fs, dir: seed }).checkpoint(author)
   execFileSync('git', ['-C', seed, 'push', remote, 'main'], gitProcessOptions)
   const server = await startGitTestServer(root)
@@ -34,8 +36,61 @@ async function fixture() {
   const second = { fs, http: server.http, dir: join(root, 'second') }
   await cloneGitVault(first, 'https://github.com/team/vault')
   await cloneGitVault(second, 'https://github.com/team/vault')
-  return { first, second, remote }
+  return { first, second, remote, root }
 }
+
+function memoryExpoBytes(value: string | Uint8Array) {
+  return typeof value === 'string' ? new TextEncoder().encode(value) : new Uint8Array(value)
+}
+
+function createMemoryExpoFileSystem(rootUri: string) {
+  const files = new Map<string, string | Uint8Array>()
+  let failWrites = false
+  const module = {
+    File: class {
+      constructor(private readonly uri: string) {}
+      bytes = async () => memoryExpoBytes(files.get(this.uri) ?? '')
+      write = (content: string | Uint8Array) => {
+        if (failWrites && this.uri.endsWith('/write-failure.md')) throw new Error('disk full')
+        files.set(this.uri, typeof content === 'string' ? content : new Uint8Array(content))
+      }
+      delete = () => { files.delete(this.uri) }
+      info = () => ({ exists: true, size: memoryExpoBytes(files.get(this.uri) ?? '').byteLength, modificationTime: 1, creationTime: 1 })
+    },
+    Directory: class { create = () => {}; delete = () => {} },
+    Paths: { info: (uri: string) => ({
+      exists: uri === rootUri || files.has(uri),
+      isDirectory: uri === rootUri ? true : files.has(uri) ? false : null,
+    }) },
+  }
+  return {
+    adapter: createExpoGitFileSystem(rootUri, module, async () => [], module.Paths.info).promises,
+    setFailWrites: (value: boolean) => { failWrites = value },
+  }
+}
+
+it('checks out Git symlinks as regular files containing their targets on Expo storage', { timeout: 20_000 }, async () => {
+  const { first, root } = await fixture({ includeSymlink: true })
+  const expoFs = createMemoryExpoFileSystem('file:///expo-client')
+  const clientRoot = join(root, 'expo-client')
+  await mkdir(clientRoot)
+  const checkoutFs = Object.create(fs.promises) as typeof fs.promises
+  checkoutFs.symlink = async (target, path) => {
+    await expoFs.adapter.symlink(String(target), '/vault/linked.md')
+    await writeFile(String(path), String(target))
+  }
+
+  await cloneGitVault({ fs: checkoutFs, dir: clientRoot, http: first.http }, 'https://github.com/team/vault')
+
+  expect(await readFile(join(clientRoot, 'linked.md'), 'utf8')).toBe('note.md')
+  expect(await expoFs.adapter.readFile('/vault/linked.md', 'utf8')).toBe('note.md')
+  expect((await expoFs.adapter.stat('/vault/linked.md')).isFile()).toBe(true)
+  expoFs.setFailWrites(true)
+  const failure = await expoFs.adapter.writeFile('/vault/write-failure.md', 'data').catch(error => error)
+  expect(gitFileWriteFailurePath(failure)).toBe('/vault/write-failure.md')
+  expect(gitFileWriteFailurePath(Object.assign(new Error('checkout failed'), { errors: [failure] })))
+    .toBe('/vault/write-failure.md')
+})
 
 it('clones, checkpoints, pushes, and pulls real Git objects through HTTP', { timeout: 20_000 }, async () => {
   const { first, second } = await fixture()

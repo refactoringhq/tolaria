@@ -1236,6 +1236,7 @@
   "mobile.vaults.openGitHub": "Abrir GitHub",
   "mobile.vaults.deviceCode": "Introduce este código en GitHub",
   "mobile.vaults.requestFailed": "La operación ha fallado. Se han conservado tus archivos locales. Compruebe su conexión y los permisos del repositorio y, a continuación, inténtelo de nuevo.",
+  "mobile.vaults.checkoutWriteFailed": "No se ha podido escribir un archivo del repositorio. Se han conservado tus archivos locales. Ruta con error: {path}",
   "mobile.vaults.catalogFailed": "No se ha podido leer la lista de bóvedas guardada. No se ha eliminado ningún archivo del repositorio.",
   "mobile.editor.loading": "Cargando nota...",
   "mobile.editor.readFailed": "No se ha podido leer esta nota. Su archivo no se ha modificado.",

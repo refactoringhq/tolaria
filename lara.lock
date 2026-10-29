@@ -1238,6 +1238,7 @@ files:
     mobile.vaults.openGitHub: 66ec93052668cd43d0ec1f100bc1824b
     mobile.vaults.deviceCode: 67f981e4910421e95dc4a88be242397b
     mobile.vaults.requestFailed: 23d523bd5f38e459cb818abda1045032
+    mobile.vaults.checkoutWriteFailed: 88ce06acdf115cee302b04bbbb3b5606
     mobile.vaults.catalogFailed: 959d00638eaad955646fa2cafd9002dc
     mobile.editor.loading: 88d1d76b5e54b416c0103fe99cc7fefa
     mobile.editor.readFailed: 9c6c94312466ead61546b567527d7d32

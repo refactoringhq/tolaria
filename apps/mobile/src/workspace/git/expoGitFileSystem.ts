@@ -35,6 +35,16 @@ export function createExpoGitFileSystem(
   const uri = cachedHandle((path: GitPath) => gitFileUri(rootUri, path))
   const file = cachedHandle((path: GitPath) => new module.File(uri(path)))
   const directory = cachedHandle((path: GitPath) => new module.Directory(uri(path)))
+  const writeFile = (path: GitPath, content: string | Uint8Array) => run(async () => {
+    try {
+      requireParent(readInfo, uri(path))
+      // Expo needs a plain Uint8Array. Share its bounded buffer instead of copying a whole Git pack.
+      await file(path).write(typeof content === 'string' ? content
+        : new Uint8Array(content.buffer, content.byteOffset, content.byteLength))
+    } catch (failure) {
+      throw gitFileWriteFailure(path, failure)
+    }
+  })
   const stat = (path: GitPath) => run(() => {
     const info = readInfo(uri(path))
     return gitStat(info, () => nativeInfo ? info : file(path).info())
@@ -48,12 +58,7 @@ export function createExpoGitFileSystem(
         return options === 'utf8' || (typeof options === 'object' && options.encoding === 'utf8')
           ? bytes.toString('utf8') : bytes
       }),
-      writeFile: (path: GitPath, content: string | Uint8Array) => run(() => {
-        requireParent(readInfo, uri(path))
-        // Expo needs a plain Uint8Array. Share its bounded buffer instead of copying a whole Git pack.
-        file(path).write(typeof content === 'string' ? content
-          : new Uint8Array(content.buffer, content.byteOffset, content.byteLength))
-      }),
+      writeFile,
       unlink: (path: GitPath) => run(() => {
         requireEntry(readInfo, uri(path), false)
         file(path).delete()
@@ -62,10 +67,14 @@ export function createExpoGitFileSystem(
         requireEntry(readInfo, uri(path), true)
         return readDirectory(uri(path))
       }),
-      mkdir: (path: GitPath) => run(() => {
-        if (readInfo(uri(path)).exists) throw gitFsError('EEXIST')
-        requireParent(readInfo, uri(path))
-        directory(path).create()
+      mkdir: (path: GitPath) => run(async () => {
+        try {
+          if (readInfo(uri(path)).exists) throw gitFsError('EEXIST')
+          requireParent(readInfo, uri(path))
+          await directory(path).create()
+        } catch (failure) {
+          throw gitFileWriteFailure(path, failure)
+        }
       }),
       rmdir: (path: GitPath) => run(async () => {
         requireEntry(readInfo, uri(path), true)
@@ -75,9 +84,41 @@ export function createExpoGitFileSystem(
       stat,
       lstat: stat,
       readlink: async () => { throw gitFsError('ENOTSUP') },
-      symlink: async () => { throw gitFsError('ENOTSUP') },
+      // Like core.symlinks=false, keep the Git link target as an inert regular file.
+      symlink: (target: string, path: GitPath) => writeFile(path, target),
     },
   }
+}
+
+function gitFileWriteFailure(path: GitPath, failure: unknown) {
+  const error = failure instanceof Error ? failure : new Error(String(failure))
+  error.message = `gitFileWriteFailed:${path}: ${error.message}`
+  return Object.assign(error, { gitFileWriteFailure: true, gitPath: path })
+}
+
+export function gitFileWriteFailurePath(failure: unknown): string | null {
+  return findGitFileWriteFailurePath(failure, new Set())
+}
+
+function findGitFileWriteFailurePath(failure: unknown, seen: Set<object>): string | null {
+  if (!failure || typeof failure !== 'object' || seen.has(failure)) return null
+  seen.add(failure)
+  if (Array.isArray(failure)) return firstGitFileWriteFailurePath(failure, seen)
+  return gitFileWriteFailurePathFromObject(failure, seen)
+}
+
+function gitFileWriteFailurePathFromObject(failure: object, seen: Set<object>): string | null {
+  const value = failure as { gitFileWriteFailure?: unknown; gitPath?: unknown; errors?: unknown; cause?: unknown }
+  if (value.gitFileWriteFailure && typeof value.gitPath === 'string') return value.gitPath
+  return findGitFileWriteFailurePath(value.errors, seen) ?? findGitFileWriteFailurePath(value.cause, seen)
+}
+
+function firstGitFileWriteFailurePath(errors: unknown[], seen: Set<object>): string | null {
+  for (const error of errors) {
+    const path = findGitFileWriteFailurePath(error, seen)
+    if (path) return path
+  }
+  return null
 }
 
 function requireParent(readInfo: ReadEntryInfo, uri: FileUri) {

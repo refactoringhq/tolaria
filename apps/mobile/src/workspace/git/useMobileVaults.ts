@@ -12,6 +12,7 @@ import { useVaultNotices } from '../useVaultNotices'
 import { useVaultSyncLedger } from '../useVaultSyncLedger'
 import type { VaultConflictReview } from '../vaultConflictOperations'
 import { createWorkspaceSyncEditors } from '../workspaceSyncEditors'
+import { gitFileWriteFailurePath } from './expoGitFileSystem'
 import { githubFailure } from './githubFailure'
 import type { GitAuthor } from './gitVault'
 import { managedGitConnection } from './managedGitStorage'
@@ -37,6 +38,7 @@ type VaultError =
   | 'mobile.vaults.saveFailed'
   | 'mobile.vaults.folderUnavailable'
   | 'mobile.vaults.folderConflict'
+  | { kind: 'checkoutWrite'; path: string }
   | null
 
 export function useMobileVaults() {
@@ -447,6 +449,8 @@ async function resolveVaultTask(task: VaultTask, active: ActiveVault, select: (n
 function vaultFailure(saved: boolean, failure: unknown): { error: VaultError; status: VaultSyncState } {
   if (!saved) return { error: 'mobile.vaults.saveFailed', status: 'saveFailed' }
   if (failure instanceof Error && failure.message === 'linkedFolderUnavailable') return { error: 'mobile.vaults.folderUnavailable', status: 'failed' }
+  const path = gitFileWriteFailurePath(failure)
+  if (path) return { error: { kind: 'checkoutWrite', path: path.replace(/^\/vault\//u, '') }, status: 'failed' }
   return { error: githubFailure(failure), status: 'failed' }
 }
 

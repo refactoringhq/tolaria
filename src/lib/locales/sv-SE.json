@@ -1236,6 +1236,7 @@
   "mobile.vaults.openGitHub": "Öppna GitHub",
   "mobile.vaults.deviceCode": "Ange den här koden på GitHub",
   "mobile.vaults.requestFailed": "Åtgärden misslyckades. Dina lokala filer har behållits. Kontrollera din anslutning och dina behörigheter för lagringsplatsen och försök igen.",
+  "mobile.vaults.checkoutWriteFailed": "En fil i databasen kunde inte skrivas. Dina lokala filer har behållits. Felaktig sökväg: {path}",
   "mobile.vaults.catalogFailed": "Den sparade listan över valv kunde inte läsas. Inga valvfiler har tagits bort.",
   "mobile.editor.loading": "Laddar anteckning …",
   "mobile.editor.readFailed": "Den här anteckningen kunde inte läsas. Dess fil har inte ändrats.",

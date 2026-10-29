@@ -1236,6 +1236,7 @@
   "mobile.vaults.openGitHub": "Abrir o GitHub",
   "mobile.vaults.deviceCode": "Insira este código no GitHub",
   "mobile.vaults.requestFailed": "A operação falhou. Seus arquivos locais foram mantidos. Verifique sua conexão e as permissões do repositório e tente novamente.",
+  "mobile.vaults.checkoutWriteFailed": "Não foi possível gravar um arquivo do repositório. Seus arquivos locais foram mantidos. Caminho com falha: {path}",
   "mobile.vaults.catalogFailed": "Não foi possível ler a lista de vaults salva. Nenhum arquivo do vault foi removido.",
   "mobile.editor.loading": "Carregando nota...",
   "mobile.editor.readFailed": "Não foi possível ler esta nota. O arquivo dela não foi alterado.",

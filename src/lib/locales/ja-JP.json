@@ -1236,6 +1236,7 @@
   "mobile.vaults.openGitHub": "GitHubを開く",
   "mobile.vaults.deviceCode": "このコードをGitHubに入力してください",
   "mobile.vaults.requestFailed": "操作に失敗しました。ローカルファイルは保持されています。接続とリポジトリの権限を確認してから、もう一度お試しください。",
+  "mobile.vaults.checkoutWriteFailed": "リポジトリファイルを書き込めませんでした。ローカルファイルは保持されました。失敗したパス：{path}",
   "mobile.vaults.catalogFailed": "保存されたボールトリストを読み込めませんでした。Vaultファイルは削除されていません。",
   "mobile.editor.loading": "ノートを読み込み中...",
   "mobile.editor.readFailed": "このノートを読み取れませんでした。そのファイルは変更されていません。",
