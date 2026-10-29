@@ -748,6 +748,8 @@
   "editor.blockType.numberedList": "Daftar Bernomor",
   "editor.blockType.checklist": "Daftar periksa",
   "editor.blockType.codeBlock": "Blok Kode",
+  "editor.placeholder": "Masukkan teks atau ketik '/' untuk perintah",
+  "editor.placeholder.title": "Judul",
   "editor.toolbar.rawReturn": "Kembali ke editor",
   "editor.toolbar.rawOpen": "Buka editor mentah",
   "editor.toolbar.noteWidthNormal": "Beralih ke lebar catatan normal",

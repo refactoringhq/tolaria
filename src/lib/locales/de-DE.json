@@ -748,6 +748,8 @@
   "editor.blockType.numberedList": "Nummerierte Liste",
   "editor.blockType.checklist": "Checkliste",
   "editor.blockType.codeBlock": "Codeblock",
+  "editor.placeholder": "Geben Sie Text ein oder tippen Sie „/“ für Befehle",
+  "editor.placeholder.title": "Titel",
   "editor.toolbar.rawReturn": "Zum Editor zurückkehren",
   "editor.toolbar.rawOpen": "Raw-Editor öffnen",
   "editor.toolbar.noteWidthNormal": "Zur normalen Notenbreite wechseln",

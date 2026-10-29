@@ -748,6 +748,8 @@
   "editor.blockType.numberedList": "Нумараваны спіс",
   "editor.blockType.checklist": "Кантрольны спіс",
   "editor.blockType.codeBlock": "Блок кода",
+  "editor.placeholder": "Увядзіце тэкст або ўвядзіце «/» для каманд",
+  "editor.placeholder.title": "Назва",
   "editor.toolbar.rawReturn": "Вярнуцца ў рэдактар",
   "editor.toolbar.rawOpen": "Адкрыць зыходны код",
   "editor.toolbar.noteWidthNormal": "Звычайная шырыня",

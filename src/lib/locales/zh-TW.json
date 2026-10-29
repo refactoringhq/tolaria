@@ -748,6 +748,8 @@
   "editor.blockType.numberedList": "編號清單",
   "editor.blockType.checklist": "檢查清單",
   "editor.blockType.codeBlock": "程式碼區塊",
+  "editor.placeholder": "輸入文字或輸入「/」以使用命令",
+  "editor.placeholder.title": "標題",
   "editor.toolbar.rawReturn": "返回編輯器",
   "editor.toolbar.rawOpen": "開啟原始碼編輯器",
   "editor.toolbar.noteWidthNormal": "切換為一般筆記寬度",

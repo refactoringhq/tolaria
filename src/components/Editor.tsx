@@ -301,6 +301,7 @@ function EditorInner(
 		rawToggleRef: props.rawToggleRef,
 		diffToggleRef: props.diffToggleRef,
 		onImageImportError,
+		locale: props.locale,
 	});
 	const findRequest = useEditorFindCommand({
 		activeTab: runtime.activeTab,

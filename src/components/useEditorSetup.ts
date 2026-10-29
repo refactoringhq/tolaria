@@ -15,11 +15,15 @@ import { RUNTIME_STYLE_NONCE } from "../lib/runtimeStyleNonce";
 import { markStartupPhase } from "../lib/startupPerformance";
 import type { NoteStatus, VaultEntry } from "../types";
 import { installRichEditorMarkdownSerializer } from "../utils/richEditorMarkdown";
+import { renderCollabCursor } from "./collabCursor";
 import {
 	type CollabEditorBinding,
 	useLiveTitleReporter,
 } from "./collabEditorBinding";
-import { renderCollabCursor } from "./collabCursor";
+import {
+	applyBlockNoteLocale,
+	createBlockNoteDictionary,
+} from "./editorLocalization";
 import {
 	type PendingRawExitContent,
 	resolvePendingRawExitContent,
@@ -111,6 +115,7 @@ interface EditorSetupParams {
 	rawToggleRef?: React.MutableRefObject<() => void>;
 	diffToggleRef?: React.MutableRefObject<() => void>;
 	onImageImportError?: ImageImportErrorHandler;
+	locale?: import("../lib/i18n").AppLocale;
 }
 
 const NO_SWAP_TABS: Tab[] = [];
@@ -219,20 +224,16 @@ export function useEditorSetup(options: EditorSetupParams) {
 	const sheetFlushRef = useRef<((path: string) => void) | null>(null);
 	useEffect(() => {
 		vaultPathRef.current = vaultPath;
-	}, [vaultPath]);
-	useEffect(() => {
 		activeTabPathRef.current = activeTabPath;
-	}, [activeTabPath]);
-	useEffect(() => {
 		onImageImportErrorRef.current = onImageImportError;
-	}, [onImageImportError]);
+	}, [activeTabPath, onImageImportError, vaultPath]);
 
 	const collaboration = blockNoteCollaboration(collabBinding);
-
 	const editor = useCreateBlockNote({
 		...RICH_EDITOR_BLOCKNOTE_PERFORMANCE_OPTIONS,
 		schema,
 		domAttributes: RICH_EDITOR_BIDI_DOM_ATTRIBUTES,
+		dictionary: createBlockNoteDictionary(options.locale),
 		collaboration,
 		uploadFile: async (file: File) => {
 			try {
@@ -278,6 +279,7 @@ export function useEditorSetup(options: EditorSetupParams) {
 			createRichEditorBlockSelectionExtension(),
 		],
 	});
+	applyBlockNoteLocale(editor, options.locale);
 	installRichEditorMarkdownSerializer(editor);
 	useEffect(() => {
 		installRichEditorDispatchPerformanceProbe(

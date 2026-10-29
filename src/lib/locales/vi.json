@@ -748,6 +748,8 @@
   "editor.blockType.numberedList": "Danh sách đánh số",
   "editor.blockType.checklist": "Danh sách kiểm tra",
   "editor.blockType.codeBlock": "Khối mã",
+  "editor.placeholder": "Nhập văn bản hoặc gõ '/' để xem các lệnh",
+  "editor.placeholder.title": "Tiêu đề",
   "editor.toolbar.rawReturn": "Quay lại trình soạn thảo",
   "editor.toolbar.rawOpen": "Mở trình soạn thảo thô",
   "editor.toolbar.noteWidthNormal": "Switch to normal note width",

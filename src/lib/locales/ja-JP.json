@@ -748,6 +748,8 @@
   "editor.blockType.numberedList": "番号付きリスト",
   "editor.blockType.checklist": "チェックリスト",
   "editor.blockType.codeBlock": "コードブロック",
+  "editor.placeholder": "テキストを入力するか、「/」を入力してコマンドを表示します",
+  "editor.placeholder.title": "タイトル",
   "editor.toolbar.rawReturn": "エディターに戻る",
   "editor.toolbar.rawOpen": "RAWエディターを開く",
   "editor.toolbar.noteWidthNormal": "通常のノート幅に切り替える",

@@ -657,6 +657,8 @@
   "editor.slash.callout.todo": "Treba zrabić",
   "editor.slash.callout.warning": "Aściaroha",
   "editor.slash.date": "Data",
+  "editor.placeholder": "Uviadzitse tekst abo napechataytse «/» dlia kamand",
+  "editor.placeholder.title": "Zahałovak",
   "editor.slash.datetime": "Data i čas",
   "editor.slash.htmlBlock": "HTML-blok",
   "editor.slash.math": "Matematyka",

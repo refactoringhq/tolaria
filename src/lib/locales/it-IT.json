@@ -748,6 +748,8 @@
   "editor.blockType.numberedList": "Elenco numerato",
   "editor.blockType.checklist": "Lista di controllo",
   "editor.blockType.codeBlock": "Blocco di codice",
+  "editor.placeholder": "Inserisci il testo o digita \"/\" per i comandi",
+  "editor.placeholder.title": "Titolo",
   "editor.toolbar.rawReturn": "Torna all'editor",
   "editor.toolbar.rawOpen": "Apri l'editor raw",
   "editor.toolbar.noteWidthNormal": "Passa alla larghezza normale delle note",
