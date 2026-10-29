@@ -574,6 +574,7 @@
   "sidebar.action.createNoteInFolderMenu": "このフォルダに新しいノートを作成",
   "sidebar.action.createFolderInFolderMenu": "このフォルダに新しいフォルダを作成",
   "sidebar.action.revealFolderMenu": "Finder で表示",
+  "sidebar.action.showSidebar": "サイドバーを表示",
   "sidebar.action.copyFolderPathMenu": "フォルダパスをコピー",
   "sidebar.action.renameFolderMenu": "フォルダー名を変更...",
   "sidebar.action.deleteFolderMenu": "フォルダーを削除...",

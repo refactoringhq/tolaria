@@ -574,6 +574,7 @@
   "sidebar.action.createNoteInFolderMenu": "Vytvoriť novú poznámku v tomto priečinku",
   "sidebar.action.createFolderInFolderMenu": "Vytvoriť nový priečinok v tomto priečinku",
   "sidebar.action.revealFolderMenu": "Zobraziť vo Finderi",
+  "sidebar.action.showSidebar": "Zobraziť bočný panel",
   "sidebar.action.copyFolderPathMenu": "Kopírovať cestu k priečinku",
   "sidebar.action.renameFolderMenu": "Premenovať priečinok...",
   "sidebar.action.deleteFolderMenu": "Odstrániť priečinok...",

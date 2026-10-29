@@ -574,6 +574,7 @@
   "sidebar.action.createNoteInFolderMenu": "Neue Notiz in diesem Ordner erstellen",
   "sidebar.action.createFolderInFolderMenu": "Einen neuen Ordner in diesem Ordner erstellen",
   "sidebar.action.revealFolderMenu": "Im Finder anzeigen",
+  "sidebar.action.showSidebar": "Seitenleiste anzeigen",
   "sidebar.action.copyFolderPathMenu": "Ordnerpfad kopieren",
   "sidebar.action.renameFolderMenu": "Ordner umbenennen …",
   "sidebar.action.deleteFolderMenu": "Ordner löschen …",

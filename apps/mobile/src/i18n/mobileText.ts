@@ -15,6 +15,7 @@ export const mobileCopy = {
   modified: mobileText('noteList.sort.modified'),
   properties: mobileText('inspector.title.properties'),
   searchNotes: mobileText('noteList.searchAction'),
+  showSidebar: mobileText('sidebar.action.showSidebar'),
   types: mobileText('sidebar.group.types'),
   views: mobileText('sidebar.group.views'),
 }

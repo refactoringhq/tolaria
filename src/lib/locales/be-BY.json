@@ -574,6 +574,7 @@
   "sidebar.action.createNoteInFolderMenu": "Стварыць новую нататку ў гэтай папцы",
   "sidebar.action.createFolderInFolderMenu": "Стварыць новую папку ў гэтай папцы",
   "sidebar.action.revealFolderMenu": "Паказаць у Finder / Explorer",
+  "sidebar.action.showSidebar": "Паказаць бакавую панэль",
   "sidebar.action.copyFolderPathMenu": "Капіяваць шлях",
   "sidebar.action.renameFolderMenu": "Перайменаваць…",
   "sidebar.action.deleteFolderMenu": "Выдаліць…",

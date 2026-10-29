@@ -574,6 +574,7 @@
   "sidebar.action.createNoteInFolderMenu": "Criar uma nova nota nesta pasta",
   "sidebar.action.createFolderInFolderMenu": "Criar uma nova pasta nesta pasta",
   "sidebar.action.revealFolderMenu": "Exibir no Finder",
+  "sidebar.action.showSidebar": "Mostrar barra lateral",
   "sidebar.action.copyFolderPathMenu": "Copiar caminho da pasta",
   "sidebar.action.renameFolderMenu": "Renomear pasta...",
   "sidebar.action.deleteFolderMenu": "Excluir pasta...",

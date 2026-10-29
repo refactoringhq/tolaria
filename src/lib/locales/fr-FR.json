@@ -574,6 +574,7 @@
   "sidebar.action.createNoteInFolderMenu": "Créer une nouvelle note dans ce dossier",
   "sidebar.action.createFolderInFolderMenu": "Créer un nouveau dossier dans ce dossier",
   "sidebar.action.revealFolderMenu": "Afficher dans le Finder",
+  "sidebar.action.showSidebar": "Afficher la barre latérale",
   "sidebar.action.copyFolderPathMenu": "Copier le chemin du dossier",
   "sidebar.action.renameFolderMenu": "Renommer le dossier…",
   "sidebar.action.deleteFolderMenu": "Supprimer le dossier…",

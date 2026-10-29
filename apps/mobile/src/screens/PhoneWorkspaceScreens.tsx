@@ -1,20 +1,23 @@
+import { List } from 'phosphor-react-native'
 import { Fragment, useCallback } from 'react'
 import { View } from 'react-native'
 import { MobileNoteListPanel } from '../components/workspace/MobileNoteListPanel'
 import { MobilePropertiesPanel } from '../components/workspace/MobilePropertiesPanel'
 import { MobileWorkspaceSidebar } from '../components/workspace/MobileWorkspaceSidebar'
-import { mobileText } from '../i18n/mobileText'
+import { mobileCopy, mobileText } from '../i18n/mobileText'
 import { probeProps } from '../qa/mobileLayoutProbe'
+import { desktopToolbarActionParity } from '../ui/desktopParity'
+import { MobileIconButton } from '../ui/MobileIconButton'
 import { useMobileStyles } from '../ui/theme/useMobileTheme'
-import { noteFilename, noteWritePath } from '../workspace/mobileWorkspacePathRewrites'
 import { mobileWorkspaceHasNoVault } from '../workspace/mobileWorkspaceEmptyState'
+import { noteFilename, noteWritePath } from '../workspace/mobileWorkspacePathRewrites'
 import { PhoneScreenLayer } from './PhoneScreenLayer'
-import { PhoneEditorScreen } from './PhoneWorkspaceEditorScreen'
 import { PhoneTopBar } from './PhoneWorkspaceChrome'
-import { createThemeStyles } from './phoneWorkspaceStyles'
-import type { PhoneWorkspaceStateViewProps, PhoneWorkspaceController } from './phoneWorkspaceScreenSupport'
-import { phoneWorkspaceSidebarDrawerWidth } from './phoneWorkspaceTransitions'
+import { PhoneEditorScreen } from './PhoneWorkspaceEditorScreen'
 import { phoneRailFrame } from './phonePanelRail'
+import type { PhoneWorkspaceController, PhoneWorkspaceStateViewProps } from './phoneWorkspaceScreenSupport'
+import { createThemeStyles } from './phoneWorkspaceStyles'
+import { phoneWorkspaceSidebarDrawerWidth } from './phoneWorkspaceTransitions'
 import { useMobileInspectorReferenceGroups } from './useMobileInspectorReferenceGroups'
 import { usePhoneViewportWidth } from './usePhoneViewportWidth'
 
@@ -22,9 +25,10 @@ function PhoneNoteListScreen({
   controller,
   options,
   openEditor,
+  openSidebar,
   phoneLayoutProbe,
 }: PhoneWorkspaceStateViewProps) {
-  const { styles } = useMobileStyles(createThemeStyles)
+  const { styles, mobileColors } = useMobileStyles(createThemeStyles)
 
   return (
     <View {...probeProps(phoneLayoutProbe, 'phone.list.screen')} style={styles.screen} testID="phone-note-list-screen">
@@ -35,6 +39,16 @@ function PhoneNoteListScreen({
         displayPropertyKeys={controller.noteListProperties}
         emptyVault={mobileWorkspaceHasNoVault(controller.snapshot)}
         fullWidth
+        leading={(
+          <MobileIconButton
+            accessibilityLabel={mobileCopy.showSidebar}
+            density="default"
+            testID="phone-note-list-sidebar-button"
+            onPress={openSidebar}
+          >
+            <List color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />
+          </MobileIconButton>
+        )}
         layoutProbe={options.layoutProbe}
         neighborhood={controller.noteListNeighborhood}
         noteListFilter={controller.noteListFilter}

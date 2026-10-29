@@ -574,6 +574,7 @@
   "sidebar.action.createNoteInFolderMenu": "Skapa en ny anteckning i den här mappen",
   "sidebar.action.createFolderInFolderMenu": "Skapa en ny mapp i den här mappen",
   "sidebar.action.revealFolderMenu": "Visa i Finder",
+  "sidebar.action.showSidebar": "Visa sidofält",
   "sidebar.action.copyFolderPathMenu": "Kopiera mappsökväg",
   "sidebar.action.renameFolderMenu": "Byt namn på mapp...",
   "sidebar.action.deleteFolderMenu": "Radera mapp...",

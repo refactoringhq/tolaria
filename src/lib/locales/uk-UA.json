@@ -574,6 +574,7 @@
   "sidebar.action.createNoteInFolderMenu": "Створити нову нотатку в цій папці",
   "sidebar.action.createFolderInFolderMenu": "Створити нову папку в цій папці",
   "sidebar.action.revealFolderMenu": "Показати у Finder",
+  "sidebar.action.showSidebar": "Показати бічну панель",
   "sidebar.action.copyFolderPathMenu": "Копіювати шлях до теки",
   "sidebar.action.renameFolderMenu": "Перейменувати теку...",
   "sidebar.action.deleteFolderMenu": "Видалити теку...",
