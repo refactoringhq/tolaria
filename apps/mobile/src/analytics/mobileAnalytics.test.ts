@@ -8,6 +8,16 @@ function setup() {
 }
 
 describe('consent-bound mobile analytics', () => {
+  it('records link activation kind without note targets or URLs', () => {
+    const { analytics, send } = setup()
+    analytics.setEnabled(true)
+    analytics.capture({ name: 'mobile_note_link_activated', kind: 'wikilink' })
+    expect(send.mock.calls[0]?.[0]).toEqual({
+      event: 'mobile_note_link_activated', distinct_id: 'anonymous-session',
+      properties: { $process_person_profile: false, $geoip_disable: true, platform: 'ios', kind: 'wikilink' },
+    })
+  })
+
   it('records editor tool discovery without queries or document content', () => {
     const { analytics, send } = setup()
     analytics.setEnabled(true)

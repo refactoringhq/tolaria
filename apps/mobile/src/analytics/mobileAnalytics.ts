@@ -14,6 +14,7 @@ export type MobileAnalyticsEvent =
   | { name: 'mobile_git_operation_requested'; operation: 'commit' | 'sync' | 'autoSync' | 'resolveConflicts' }
   | { name: 'mobile_folder_sync_requested'; operation: 'sync' | 'resolveConflicts' }
   | { name: 'mobile_editor_tool_opened'; tool: 'find' | 'replace' | 'slash' | 'filename' }
+  | { name: 'mobile_note_link_activated'; kind: 'external' | 'wikilink' }
   | { name: 'mobile_vault_catalog_used'; action: 'add' | 'switch' | 'forget'; kind: 'local' | 'git' }
 
 export type MobileAnalyticsBody = { event: MobileAnalyticsEvent['name']; distinct_id: string; properties: Record<string, string | boolean> }
@@ -56,6 +57,7 @@ export function createMobileAnalytics({ configured, createId, platform, context,
 
 // Select properties explicitly: never spread caller objects into telemetry.
 function eventProperties(event: MobileAnalyticsEvent): Record<string, string> {
+  if (event.name === 'mobile_note_link_activated') return { kind: event.kind }
   if (event.name === 'mobile_editor_recovery_requested') return { reason: event.reason }
   if (event.name === 'mobile_folder_open_failed') return { stage: event.stage }
   if (event.name === 'mobile_update_channel_selected') return { channel: event.channel, outcome: event.outcome }

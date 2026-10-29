@@ -3,9 +3,11 @@ import { act, createElement, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
-import { TabletEditorPanel } from './TabletEditorPanel'
 import type { MobileNote } from '../workspace/mobileWorkspaceModel'
 import { createWorkspaceSyncEditors, WorkspaceSnapshotRevisionContext, WorkspaceSyncEditorsContext } from '../workspace/workspaceSyncEditors'
+import { TabletEditorPanel } from './TabletEditorPanel'
+
+const nativeAlert = vi.hoisted(() => ({ alert: vi.fn() }))
 
 type SurfaceProps = { children?: ReactNode; testID?: string }
 function Surface({ children, testID }: SurfaceProps) {
@@ -14,7 +16,7 @@ function Surface({ children, testID }: SurfaceProps) {
 function Control({ children, testID, onPress }: SurfaceProps & { onPress?: () => void }) {
   return createElement('button', { type: 'button', onClick: onPress, 'data-testid': testID }, children)
 }
-vi.mock('react-native', () => ({ View: Surface, ScrollView: Surface,
+vi.mock('react-native', () => ({ View: Surface, ScrollView: Surface, Alert: nativeAlert,
   StyleSheet: { create: (value: object) => value, flatten: (value: object) => value, hairlineWidth: 0.5 } }))
 vi.mock('../ui/theme/useMobileTheme', async () => {
   const { mobileMetrics } = await import('../ui/mobileMetrics')
@@ -42,10 +44,12 @@ vi.mock('../workspace/mobileAttachmentOpen', () => ({ useMobileAttachmentLinkOpe
 vi.mock('../components/workspace/MobileEditorBlocks', () => ({ MobileEditorBlocks: () => createElement('div', { 'data-testid': 'cached-read-only-content' }) }))
 vi.mock('../components/workspace/MobileFilePreview', () => ({ MobileFilePreview: () => null }))
 vi.mock('../components/workspace/MobileWysiwygMarkdownEditor', () => ({
-  MobileWysiwygMarkdownEditor: ({ note }: { note: MobileNote }) => createElement('div', {
+  MobileWysiwygMarkdownEditor: ({ note, onNavigateWikilink }: {
+    note: MobileNote; onNavigateWikilink: (target: string) => void
+  }) => createElement('div', {
     'data-rich-note': note.id,
     'data-note-content': note.rawContent,
-  }),
+  }, createElement('button', { type: 'button', 'data-testid': 'navigate-missing-wikilink', onClick: () => onNavigateWikilink('missing') })),
 }))
 vi.mock('../components/workspace/MobileMarkdownSourceEditor', () => ({
   MobileMarkdownSourceEditor: ({ note }: { note: MobileNote }) => createElement('div', {
@@ -60,6 +64,13 @@ vi.mock('./TabletEditorPanelChrome', () => ({ EmptyEditorPanel: () => null, Mobi
 let root: ReturnType<typeof createRoot> | undefined
 beforeEach(() => vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true))
 afterEach(async () => { await act(async () => root?.unmount()); vi.unstubAllGlobals() })
+
+it('shows a localized alert when a wikilink target cannot be resolved', async () => {
+  const h = createHarness()
+  await h.select(0)
+  await act(async () => h.host.querySelector<HTMLButtonElement>('[data-testid="navigate-missing-wikilink"]')?.click())
+  expect(nativeAlert.alert).toHaveBeenCalledWith('No matching notes')
+})
 
 it('keeps the rich editor mounted and clean when an opened note receives its disk reread', async () => {
   const h = createHarness()

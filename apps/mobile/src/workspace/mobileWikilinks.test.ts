@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import type { MobileNote } from './mobileWorkspaceModel'
 import {
   mobileNoteIdForWikilinkTarget,
   mobileWikilinkHref,
   mobileWikilinkTargetForNote,
   parseMobileWikilink,
 } from './mobileWikilinks'
+import type { MobileNote } from './mobileWorkspaceModel'
 
 describe('mobile wikilink resolution', () => {
   it('parses desktop wikilink frontmatter values with surrounding whitespace', () => {
@@ -55,6 +55,12 @@ describe('mobile wikilink resolution', () => {
         title: 'Project Alpha',
       }),
     ], 'Project Alpha.md')).toBe('research/project-alpha.md')
+  })
+
+  it('opens the note when a wikilink includes a heading fragment', () => {
+    expect(mobileNoteIdForWikilinkTarget([
+      note({ id: 'research/project-alpha.md', path: 'research/project-alpha.md', title: 'Project Alpha' }),
+    ], 'research/project-alpha#Background')).toBe('research/project-alpha.md')
   })
 
   it('resolves desktop legacy path-style targets through path suffixes and filename stems', () => {
