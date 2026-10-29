@@ -1,20 +1,22 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { View } from 'react-native'
 import { probeProps } from '../qa/mobileLayoutProbe'
 import { useMobileStyles } from '../ui/theme/useMobileTheme'
-import { mobileNoteIdForWikilinkTarget } from '../workspace/mobileWikilinks'
 import type { RegisterMobileEditorCommands } from '../workspace/mobileEditorCommands'
+import { mobileNoteIdForWikilinkTarget } from '../workspace/mobileWikilinks'
 import type { MobileNote } from '../workspace/mobileWorkspaceModel'
-import { TabletEditorPanel } from './TabletEditorPanel'
+import { PhoneBackButton, PhoneTopBar } from './PhoneWorkspaceChrome'
 import type { PhoneWorkspaceEditorOptions } from './phoneWorkspaceEditorOptions'
-import { PhoneTopBar } from './PhoneWorkspaceChrome'
+import type { PhoneTableOfContentsTargetRequest, PhoneWorkspaceController, PhoneWorkspaceStateViewProps } from './phoneWorkspaceScreenSupport'
 import { createThemeStyles } from './phoneWorkspaceStyles'
-import type { PhoneWorkspaceStateViewProps, PhoneWorkspaceController, PhoneTableOfContentsTargetRequest } from './phoneWorkspaceScreenSupport'
+import { TabletEditorPanel } from './TabletEditorPanel'
 
 type PhoneEditorBodyProps = {
   controller: PhoneWorkspaceController
   notes: MobileNote[]
   onNavigateWikilink: (target: string) => void
+  onBackFromWikilink: () => void
+  hasWikilinkHistory: boolean
   onRegisterEditorCommands?: RegisterMobileEditorCommands
   options: PhoneWorkspaceEditorOptions
   sourceModeRequest: number
@@ -24,8 +26,10 @@ type PhoneEditorBodyProps = {
 function PhoneEditorBody(props: PhoneEditorBodyProps) {
   const {
     controller,
+    hasWikilinkHistory,
     notes,
     onNavigateWikilink,
+    onBackFromWikilink,
     onRegisterEditorCommands,
     options,
     sourceModeRequest,
@@ -41,6 +45,7 @@ function PhoneEditorBody(props: PhoneEditorBodyProps) {
       compact
       initialEditing={sourceModeRequested || options.initialEditorEditing}
       initialEditingMode={sourceModeRequested ? 'source' : options.initialEditorEditingMode}
+      leading={hasWikilinkHistory ? <PhoneBackButton onBack={onBackFromWikilink} /> : undefined}
       layoutProbe={options.layoutProbe}
       note={controller.selectedNote}
       noteRead={controller.selectedNoteRead}
@@ -79,12 +84,23 @@ function usePhoneWikilinkNavigation({
   controller,
   suggestionNotes,
 }: UsePhoneWikilinkNavigationProps) {
-  return useCallback((target: string) => {
+  const [history, setHistory] = useState<string[]>([])
+  const navigate = useCallback((target: string) => {
     const noteId = mobileNoteIdForWikilinkTarget(suggestionNotes, target)
-    if (!noteId) return
+    const sourceId = controller.selectedNote?.id
+    if (!noteId || !sourceId || noteId === sourceId) return
 
+    setHistory((current) => [...current, sourceId])
     controller.onSelectNote(noteId)
   }, [controller, suggestionNotes])
+  const back = useCallback(() => {
+    const previousNoteId = history.at(-1)
+    if (!previousNoteId) return
+
+    setHistory((current) => current.slice(0, -1))
+    controller.onSelectNote(previousNoteId)
+  }, [controller, history])
+  return { back, hasHistory: history.length > 0, navigate }
 }
 
 
@@ -100,15 +116,17 @@ export function PhoneEditorScreen(props: PhoneWorkspaceStateViewProps) {
     tableOfContentsTarget,
   } = props
   const { styles } = useMobileStyles(createThemeStyles)
-  const handleNavigateWikilink = usePhoneWikilinkNavigation({ controller, suggestionNotes })
+  const wikilinkNavigation = usePhoneWikilinkNavigation({ controller, suggestionNotes })
 
   return (
     <View {...probeProps(phoneLayoutProbe, 'phone.editor.screen')} style={styles.screen} testID="phone-editor-screen">
       {!controller.selectedNote && <PhoneTopBar title="" onBack={openList} />}
       <PhoneEditorBody
         controller={controller}
+        hasWikilinkHistory={wikilinkNavigation.hasHistory}
         notes={suggestionNotes}
-        onNavigateWikilink={handleNavigateWikilink}
+        onNavigateWikilink={wikilinkNavigation.navigate}
+        onBackFromWikilink={wikilinkNavigation.back}
         onRegisterEditorCommands={onRegisterEditorCommands}
         options={options}
         sourceModeRequest={sourceModeRequest}

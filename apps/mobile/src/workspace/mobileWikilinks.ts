@@ -1,5 +1,5 @@
-import type { MobileNote } from './mobileWorkspaceModel'
 import { normalizedMobileSearchQuery } from './mobileNoteSearch'
+import type { MobileNote } from './mobileWorkspaceModel'
 
 type WikilinkText = string
 type WikilinkTarget = string
@@ -29,7 +29,8 @@ export function parseMobileWikilink(value: WikilinkText): MobileParsedWikilink |
 }
 
 export function normalizeMobileWikilinkTarget(value: string): string {
-  return normalizedMobileSearchQuery(value).replace(/\.md$/iu, '')
+  const withoutHeading = value.split('#', 1)[0] ?? ''
+  return normalizedMobileSearchQuery(withoutHeading).replace(/\.md$/iu, '')
 }
 
 function mobileWikilinkResolutionKey(

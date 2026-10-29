@@ -1,5 +1,6 @@
 import { type ReactElement, useCallback, useEffect, useRef, useState } from 'react'
 import {
+  Alert,
   type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -24,11 +25,13 @@ import { useMobileAttachmentImporter } from '../workspace/mobileAttachmentImport
 import { useMobileAttachmentLinkOpener } from '../workspace/mobileAttachmentOpen'
 import { useRegisteredMobileEditorCommands } from '../workspace/mobileEditorCommands'
 import { mobileNoteActionMode } from '../workspace/mobileNoteActionMode'
+import type { MobileNoteReadState } from '../workspace/mobileNoteRead'
 import { mobileSpreadsheetNeedsFallback } from '../workspace/mobileSpreadsheetFormat'
 import type { MobileTableOfContentsTarget } from '../workspace/mobileTableOfContents'
+import { mobileNoteIdForWikilinkTarget } from '../workspace/mobileWikilinks'
 import type { MobileEditorBlock, MobileNote } from '../workspace/mobileWorkspaceModel'
 import { useMobilePullToSync } from '../workspace/useMobilePullToSync'
-import type { MobileNoteReadState } from '../workspace/mobileNoteRead'
+import { MobileEditorToolbar } from './MobileEditorToolbar'
 import type {
   EditorContentProps,
   EditorEditingMode,
@@ -44,7 +47,6 @@ import {
   MobileSpreadsheetFallback,
 } from './TabletEditorPanelChrome'
 import { createEditorPanelStyles } from './TabletEditorPanelStyles'
-import { MobileEditorToolbar } from './MobileEditorToolbar'
 import { useEditorModeSwitch } from './useEditorModeSwitch'
 
 export type { EditorEditingMode } from './TabletEditorPanel.types'
@@ -62,6 +64,8 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     trailing,
     note,
     noteRead,
+    notes,
+    onNavigateWikilink,
     onOpenMoreActions,
     onOpenTableOfContents,
     onRegisterEditorCommands,
@@ -78,6 +82,13 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
   )
   const importAttachment = useMobileAttachmentImporter(vaultRootUri)
   const openLink = useMobileAttachmentLinkOpener(vaultRootUri)
+  const navigateWikilink = useCallback((target: string) => {
+    if (!mobileNoteIdForWikilinkTarget(notes, target)) {
+      Alert.alert(mobileText('noteList.empty.noMatching'))
+      return
+    }
+    onNavigateWikilink(target)
+  }, [notes, onNavigateWikilink])
   const layoutProbe = useMobileLayoutProbe(layoutProbeEnabled)
   const changeEditingMode = useCallback(() => {
     setEditingMode((current) => (current === 'source' ? 'wysiwyg' : 'source'))
@@ -98,7 +109,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
   const plainText = fileMode === 'text'
   const effectiveEditing = canEditCurrentNote(fileMode, initialEditing, noteRead)
   const effectiveEditingMode = plainText ? 'source' : editingMode
-  const contentProps = createEditorContentProps(props, note, {
+  const contentProps = createEditorContentProps({ ...props, onNavigateWikilink: navigateWikilink }, note, {
     editing: effectiveEditing,
     editingMode: effectiveEditingMode,
     layoutProbe: layoutProbe.probe,
@@ -397,7 +408,9 @@ function EditorContent({
         layoutProbe={layoutProbe}
         note={note}
         notes={notes}
+        onNavigateWikilink={onNavigateWikilink}
         onImportAttachment={onImportAttachment}
+        onOpenLink={onOpenLink}
         onRegisterEditorCommands={onRegisterEditorCommands}
         onTableOfContentsScrollProof={onTableOfContentsScrollProof}
         onUpdateContent={onUpdateContent}

@@ -30,6 +30,14 @@ Escape discards the draft. Changing the selected note resets the inline form.
 The note title/body is not a filename input. Non-Markdown file names remain
 read-only because the current rename command is Markdown-specific.
 
+## Mobile WYSIWYG Link Navigation
+
+Long-pressing a link in the TenTap WebView emits a typed link action over its
+existing WebView bridge. Native code routes custom wikilink URIs through the
+workspace's existing target resolver and supported external schemes through the
+existing link opener. Ordinary taps still place the caret; phone navigation
+keeps the source note available through the editor back control.
+
 ## Mobile Native Lifecycle
 
 `apps/mobile/app.config.js` enables Expo SDK 57's supported scene lifecycle

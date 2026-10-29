@@ -15,7 +15,9 @@ export type MobileWysiwygMarkdownEditorProps = {
   layoutProbe?: MobileLayoutProbe
   note: MobileNote
   notes: MobileNote[]
+  onNavigateWikilink?: (target: string) => void
   onImportAttachment?: () => Promise<NativeWysiwygAttachmentPayload | null>
+  onOpenLink?: (href: string) => void
   onRegisterEditorCommands?: RegisterMobileEditorCommands
   onTableOfContentsScrollProof?: (proof: NativeTableOfContentsProof) => void
   onUpdateContent: (noteId: string, content: string) => void

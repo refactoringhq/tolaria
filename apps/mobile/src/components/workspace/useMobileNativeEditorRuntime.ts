@@ -1,27 +1,28 @@
 import { type EditorBridge, TenTapStartKit, useEditorBridge } from '@10play/tentap-editor'
-import { type MutableRefObject, useCallback, useMemo, useRef } from 'react'
+import { type MutableRefObject, useCallback, useLayoutEffect, useMemo, useRef } from 'react'
+import { useMobileAnalytics } from '../../analytics/useMobileAnalytics'
 import { mobileDocumentBody, mobileNoteEditableContent } from '../../workspace/mobileDocumentContent'
+import type { MobileWysiwygMarkdownEditorProps, NativeTentapEditorBridgeOptions, NativeTentapEditorRuntime, NativeWysiwygEditorMutation, NativeWysiwygInlineAutocompleteHandler, TimerHandle } from './MobileNativeEditor.types'
 import { useNativeWysiwygAutocompleteProbe } from './MobileWysiwygAutocompleteProbe.native'
 import { MobileCodeBlockBridge } from './MobileWysiwygCodeBlockBridge'
-import { MobileDiagramBridge } from './MobileWysiwygDiagramBridge'
-import { activateNativeEditorChanges, type NativeTentapEditorRefs, useEditableContentRef, useEditorBridgeRef, useEditorCssInjection, useFlushOnUnmount, useResetEditorChangeGate, useSyncInitialEditorContent } from './MobileWysiwygEditorLifecycle.native'
-import { MobileMathInlineBridge } from './MobileWysiwygMathBridge'
 import { MobileWysiwygContentBridge } from './MobileWysiwygContentBridge'
+import { MobileDiagramBridge } from './MobileWysiwygDiagramBridge'
 import { createMobileEditorDocumentBridge } from './MobileWysiwygDocumentReads.native'
-import type { NativeInitialContentSync } from './nativeInitialContentSync'
-import { MobileWysiwygOutlineBridge } from './MobileWysiwygOutlineBridge'
-import { MobileWysiwygSlashBridge } from './MobileWysiwygSlashBridge'
+import { activateNativeEditorChanges, type NativeTentapEditorRefs, retireNativeEditorSession, useEditableContentRef, useEditorBridgeRef, useEditorCssInjection, useFlushOnUnmount, useResetEditorChangeGate, useSyncInitialEditorContent } from './MobileWysiwygEditorLifecycle.native'
 import { MobileWysiwygFindBridge } from './MobileWysiwygFindBridge'
+import { MobileMathInlineBridge } from './MobileWysiwygMathBridge'
+import { MobileWysiwygOutlineBridge } from './MobileWysiwygOutlineBridge'
 import { useMobileWysiwygOutlineNavigation } from './MobileWysiwygOutlineNavigation.native'
 import { useFlushEditorDocument } from './MobileWysiwygPersistence.native'
+import { MobileWysiwygSlashBridge } from './MobileWysiwygSlashBridge'
 import { MobileTableBridge } from './MobileWysiwygTableBridge'
 import { mobileWysiwygTentapEditorHtml } from './MobileWysiwygTentapEditorHtml'
-import { mobileEditorPreviewHtml } from './mobileEditorFileSource.native'
 import type { NativeWysiwygSelection } from './MobileWysiwygWikilinkBridgeModel'
-import type { MobileWysiwygMarkdownEditorProps, NativeTentapEditorBridgeOptions, NativeTentapEditorRuntime, TimerHandle, NativeWysiwygEditorMutation, NativeWysiwygInlineAutocompleteHandler } from './MobileNativeEditor.types'
-import { detectNativeWysiwygInlineAutocomplete, insertWikilinkIntoNativeEditor, insertAttachmentIntoNativeEditor, insertMarkdownBlockIntoNativeEditor, insertPlainTextIntoNativeEditor, applyNativeWysiwygInputTransforms } from './mobileNativeEditorOperations'
-import { useNativeWysiwygTextProbes, useNativeWysiwygBlockProbes } from './useMobileNativeEditorProbes'
-import { retireNativeEditorSession } from './MobileWysiwygEditorLifecycle.native'
+import { mobileEditorPreviewHtml } from './mobileEditorFileSource.native'
+import { applyNativeWysiwygInputTransforms, detectNativeWysiwygInlineAutocomplete, insertAttachmentIntoNativeEditor, insertMarkdownBlockIntoNativeEditor, insertPlainTextIntoNativeEditor, insertWikilinkIntoNativeEditor } from './mobileNativeEditorOperations'
+import { routeMobileWysiwygLink } from './mobileWysiwygLinkRouting'
+import type { NativeInitialContentSync } from './nativeInitialContentSync'
+import { useNativeWysiwygBlockProbes, useNativeWysiwygTextProbes } from './useMobileNativeEditorProbes'
 
 const mobileTenTapBridgeExtensions = [
   ...TenTapStartKit,
@@ -92,13 +93,30 @@ export function useNativeTentapEditorRuntime(options: NativeTentapEditorBridgeOp
     onUpdateContent,
     vaultRootUri = null,
   } = options
+  const analytics = useMobileAnalytics()
   const initialBody = mobileDocumentBody(initialDocumentContent)
   const initialBodyHasContent = initialBody.trim().length > 0
   const initialContent = useMemo(
     () => mobileEditorPreviewHtml(initialBody, vaultRootUri),
     [initialBody, vaultRootUri],
   )
-  const refs = useNativeTentapEditorRefs(initialDocumentContent)
+  const linkHandlersRef = useRef({
+    onNavigateWikilink: options.onNavigateWikilink,
+    onOpenLink: options.onOpenLink,
+  })
+  const analyticsRef = useRef(analytics)
+  useLayoutEffect(() => {
+    linkHandlersRef.current = {
+      onNavigateWikilink: options.onNavigateWikilink,
+      onOpenLink: options.onOpenLink,
+    }
+    analyticsRef.current = analytics
+  }, [analytics, options.onNavigateWikilink, options.onOpenLink])
+  const onLinkTap = useCallback((href: string) => {
+    const kind = routeMobileWysiwygLink(href, linkHandlersRef.current)
+    if (kind) analyticsRef.current.capture({ name: 'mobile_note_link_activated', kind })
+  }, [])
+  const refs = useNativeTentapEditorRefs(initialDocumentContent, onLinkTap)
 
   const flushEditorDocument = useFlushEditorDocument({
     externalLinkProbeEnabled: options.wysiwygExternalLinkProbe === true,
@@ -165,7 +183,10 @@ function useNativeTentapEditorLifecycle(
   })
 }
 
-function useNativeTentapEditorRefs(initialDocumentContent: string): NativeTentapEditorRefs {
+function useNativeTentapEditorRefs(
+  initialDocumentContent: string,
+  onLinkTap: (href: string) => void,
+): NativeTentapEditorRefs {
   const acceptsEditorChangesRef = useRef(false)
   const contentRef = useRef(initialDocumentContent)
   const editorRef = useRef<EditorBridge | null>(null)
@@ -181,7 +202,7 @@ function useNativeTentapEditorRefs(initialDocumentContent: string): NativeTentap
 
   return useMemo(
     () => ({
-      documentReads: createMobileEditorDocumentBridge(mobileTenTapBridgeExtensions),
+      documentReads: createMobileEditorDocumentBridge(mobileTenTapBridgeExtensions, onLinkTap),
       acceptsEditorChangesRef,
       contentRef,
       editorRef,
@@ -195,7 +216,7 @@ function useNativeTentapEditorRefs(initialDocumentContent: string): NativeTentap
       tableCommandMutationProofReadyRef,
       webViewLoadedRef,
     }),
-    [],
+    [onLinkTap],
   )
 }
 
