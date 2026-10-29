@@ -1236,6 +1236,7 @@
   "mobile.vaults.openGitHub": "開啟 GitHub",
   "mobile.vaults.deviceCode": "在 GitHub 上輸入此代碼",
   "mobile.vaults.requestFailed": "操作失敗。您的本機檔案已保留。請檢查您的網路連線和儲存庫權限，然後再試一次。",
+  "mobile.vaults.checkoutWriteFailed": "無法寫入儲存庫檔案。您的本機檔案已保留。失敗的路徑：{path}",
   "mobile.vaults.catalogFailed": "無法讀取已儲存的 Vault 清單。未移除任何 Vault 檔案。",
   "mobile.editor.loading": "正在載入筆記……",
   "mobile.editor.readFailed": "無法讀取此筆記。其檔案未經變更。",

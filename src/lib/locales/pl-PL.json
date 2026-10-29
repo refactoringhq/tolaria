@@ -1236,6 +1236,7 @@
   "mobile.vaults.openGitHub": "Otwórz GitHub",
   "mobile.vaults.deviceCode": "Wprowadź ten kod na GitHubie",
   "mobile.vaults.requestFailed": "Operacja nie powiodła się. Twoje lokalne pliki zostały zachowane. Sprawdź połączenie i uprawnienia do repozytorium, a następnie spróbuj ponownie.",
+  "mobile.vaults.checkoutWriteFailed": "Nie udało się zapisać pliku repozytorium. Twoje pliki lokalne zostały zachowane. Ścieżka, na której wystąpił błąd: {path}",
   "mobile.vaults.catalogFailed": "Nie udało się odczytać zapisanej listy repozytoriów. Nie usunięto żadnych plików repozytorium.",
   "mobile.editor.loading": "Ładowanie notatki...",
   "mobile.editor.readFailed": "Nie udało się odczytać tej notatki. Jej plik nie został zmieniony.",

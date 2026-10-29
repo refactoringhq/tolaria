@@ -1236,6 +1236,7 @@
   "mobile.vaults.openGitHub": "GitHub öffnen",
   "mobile.vaults.deviceCode": "Geben Sie diesen Code auf GitHub ein",
   "mobile.vaults.requestFailed": "Der Vorgang ist fehlgeschlagen. Ihre lokalen Dateien wurden beibehalten. Überprüfen Sie Ihre Verbindung und die Repository-Berechtigungen und versuchen Sie es dann erneut.",
+  "mobile.vaults.checkoutWriteFailed": "Eine Repository-Datei konnte nicht geschrieben werden. Ihre lokalen Dateien wurden beibehalten. Fehlgeschlagener Pfad: {path}",
   "mobile.vaults.catalogFailed": "Die gespeicherte Vault-Liste konnte nicht gelesen werden. Es wurden keine Vault-Dateien entfernt.",
   "mobile.editor.loading": "Notiz wird geladen …",
   "mobile.editor.readFailed": "Diese Notiz konnte nicht gelesen werden. Die zugehörige Datei wurde nicht geändert.",

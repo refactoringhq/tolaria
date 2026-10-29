@@ -1236,6 +1236,7 @@
   "mobile.vaults.openGitHub": "Buka GitHub",
   "mobile.vaults.deviceCode": "Masukkan kode ini di GitHub",
   "mobile.vaults.requestFailed": "Operasi gagal. File lokal Anda telah disimpan. Periksa koneksi dan izin repositori Anda, lalu coba lagi.",
+  "mobile.vaults.checkoutWriteFailed": "File repositori tidak dapat ditulis. File lokal Anda telah disimpan. Jalur yang gagal: {path}",
   "mobile.vaults.catalogFailed": "Daftar vault yang disimpan tidak dapat dibaca. Tidak ada file vault yang dihapus.",
   "mobile.editor.loading": "Memuat catatan...",
   "mobile.editor.readFailed": "Catatan ini tidak dapat dibaca. File-nya tidak diubah.",

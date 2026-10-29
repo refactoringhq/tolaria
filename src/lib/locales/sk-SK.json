@@ -1236,6 +1236,7 @@
   "mobile.vaults.openGitHub": "Otvoriť GitHub",
   "mobile.vaults.deviceCode": "Zadajte tento kód na GitHub",
   "mobile.vaults.requestFailed": "Operácia zlyhala. Vaše lokálne súbory boli zachované. Skontrolujte svoje pripojenie a oprávnenia pre ukladací priestor a potom to skúste znova.",
+  "mobile.vaults.checkoutWriteFailed": "Súbor v úložisku sa nepodarilo zapísať. Vaše lokálne súbory boli zachované. Neúspešná cesta: {path}",
   "mobile.vaults.catalogFailed": "Uložený zoznam trezorov sa nepodarilo prečítať. Neboli odstránené žiadne súbory úložiska.",
   "mobile.editor.loading": "Načítava sa poznámka…",
   "mobile.editor.readFailed": "Túto poznámku sa nepodarilo prečítať. Jej súbor nebol zmenený.",

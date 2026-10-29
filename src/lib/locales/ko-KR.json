@@ -1236,6 +1236,7 @@
   "mobile.vaults.openGitHub": "GitHub 열기",
   "mobile.vaults.deviceCode": "GitHub에 이 코드 입력",
   "mobile.vaults.requestFailed": "작업에 실패했습니다. 로컬 파일은 그대로 유지되었습니다. 인터넷 연결과 리포지토리 권한을 확인한 후 다시 시도하세요.",
+  "mobile.vaults.checkoutWriteFailed": "리포지토리 파일을 쓸 수 없습니다. 로컬 파일은 그대로 유지되었습니다. 실패한 경로: {path}",
   "mobile.vaults.catalogFailed": "저장된 볼트 목록을 읽을 수 없습니다. 볼트 파일이 제거되지 않았습니다.",
   "mobile.editor.loading": "노트 불러오는 중...",
   "mobile.editor.readFailed": "이 노트를 읽을 수 없습니다. 해당 파일은 변경되지 않았습니다.",

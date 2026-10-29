@@ -1236,6 +1236,7 @@
   "mobile.vaults.openGitHub": "Open GitHub",
   "mobile.vaults.deviceCode": "Enter this code on GitHub",
   "mobile.vaults.requestFailed": "The operation failed. Your local files have been kept. Check your connection and repository permissions, then retry.",
+  "mobile.vaults.checkoutWriteFailed": "A repository file could not be written. Your local files have been kept. Failed path: {path}",
   "mobile.vaults.catalogFailed": "The saved vault list could not be read. No vault files have been removed.",
   "mobile.editor.loading": "Loading note...",
   "mobile.editor.readFailed": "This note could not be read. Its file has not been changed.",

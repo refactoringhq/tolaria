@@ -1236,6 +1236,7 @@
   "mobile.vaults.openGitHub": "打开 GitHub",
   "mobile.vaults.deviceCode": "在 GitHub 上输入此代码",
   "mobile.vaults.requestFailed": "操作失败。您的本地文件已保留。请检查您的网络连接和仓库权限，然后重试。",
+  "mobile.vaults.checkoutWriteFailed": "无法写入仓库文件。您的本地文件已保留。失败的路径：{path}",
   "mobile.vaults.catalogFailed": "无法读取已保存的 Vault 列表。未移除任何 Vault 文件。",
   "mobile.editor.loading": "正在加载笔记……",
   "mobile.editor.readFailed": "无法读取此笔记。其文件未发生更改。",
