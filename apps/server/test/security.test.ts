@@ -1,4 +1,4 @@
-import type { Server } from "node:http";
+import { request as httpRequest, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -158,17 +158,35 @@ describe("Path traversal protection", () => {
 
 describe("Request body size limits", () => {
 	it("rejects bodies larger than the configured limit based on Content-Length", async () => {
-		const largeBody = "x".repeat(2 * 1024 * 1024); // 2MB, over 1MB limit
-		const response = await api("/v1/files/large.txt", {
-			method: "PUT",
-			body: largeBody,
-			headers: {
-				"if-none-match": "*",
-				"content-length": String(largeBody.length),
+		const response = await new Promise<{ status: number; body: string }>(
+			(resolve, reject) => {
+				const request = httpRequest(
+					new URL("/v1/files/large.txt", testServerOrigin),
+					{
+						method: "PUT",
+						headers: {
+							authorization: `Bearer ${TOKEN}`,
+							"if-none-match": "*",
+							"content-length": String(2 * 1024 * 1024),
+						},
+					},
+					(response) => {
+						const chunks: Buffer[] = [];
+						response.on("data", (chunk: Buffer) => chunks.push(chunk));
+						response.on("end", () =>
+							resolve({
+								status: response.statusCode ?? 0,
+								body: Buffer.concat(chunks).toString("utf8"),
+							}),
+						);
+					},
+				);
+				request.on("error", reject);
+				request.end("x");
 			},
-		});
+		);
 		expect(response.status).toBe(413);
-		expect(await response.json()).toMatchObject({
+		expect(JSON.parse(response.body)).toMatchObject({
 			error: { code: "payload_too_large" },
 		});
 	});
