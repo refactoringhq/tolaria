@@ -750,6 +750,8 @@ files:
     editor.blockType.numberedList: bf087c065d8d3f2e77bc07a82c07df52
     editor.blockType.checklist: a5d727df2ce2d168bae39c78df4b9054
     editor.blockType.codeBlock: febf6b24daaaeced55c4cc4db7dc931b
+    editor.placeholder: 145afb80fbbaaa665c0a9045cd482223
+    editor.placeholder.title: b78a3223503896721cca1303f776159b
     editor.toolbar.rawReturn: 5ddcf5e0dc8b933b344bb6ca3d8e131d
     editor.toolbar.rawOpen: 89ad60735a649b60dacd2301cda0c4ec
     editor.toolbar.noteWidthNormal: 9bb55413ec536c4a8fa41c4c4464ab44

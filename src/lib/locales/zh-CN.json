@@ -748,6 +748,8 @@
   "editor.blockType.numberedList": "编号列表",
   "editor.blockType.checklist": "检查清单",
   "editor.blockType.codeBlock": "代码块",
+  "editor.placeholder": "输入文本或键入“/”以使用命令",
+  "editor.placeholder.title": "标题",
   "editor.toolbar.rawReturn": "返回编辑器",
   "editor.toolbar.rawOpen": "打开源码编辑器",
   "editor.toolbar.noteWidthNormal": "切换为普通笔记宽度",

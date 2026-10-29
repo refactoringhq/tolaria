@@ -748,6 +748,8 @@
   "editor.blockType.numberedList": "Нумерований список",
   "editor.blockType.checklist": "Контрольний список",
   "editor.blockType.codeBlock": "Блок коду",
+  "editor.placeholder": "Введіть текст або символ «/» для команд",
+  "editor.placeholder.title": "Назва",
   "editor.toolbar.rawReturn": "Повернутися до редактора",
   "editor.toolbar.rawOpen": "Відкрити редактор Raw",
   "editor.toolbar.noteWidthNormal": "Перемкнути на звичайну ширину нотатки",

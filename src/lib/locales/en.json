@@ -748,6 +748,8 @@
   "editor.blockType.numberedList": "Numbered List",
   "editor.blockType.checklist": "Checklist",
   "editor.blockType.codeBlock": "Code Block",
+  "editor.placeholder": "Enter text or type '/' for commands",
+  "editor.placeholder.title": "Title",
   "editor.toolbar.rawReturn": "Return to the editor",
   "editor.toolbar.rawOpen": "Open the raw editor",
   "editor.toolbar.noteWidthNormal": "Switch to normal note width",

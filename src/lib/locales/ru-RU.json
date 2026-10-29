@@ -748,6 +748,8 @@
   "editor.blockType.numberedList": "Нумерованный список",
   "editor.blockType.checklist": "Контрольный список",
   "editor.blockType.codeBlock": "Блок кода",
+  "editor.placeholder": "Введите текст или символ «/» для команд",
+  "editor.placeholder.title": "Заголовок",
   "editor.toolbar.rawReturn": "Вернуться в редактор",
   "editor.toolbar.rawOpen": "Открыть RAW-редактор",
   "editor.toolbar.noteWidthNormal": "Переключиться на обычную ширину нот",

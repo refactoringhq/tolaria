@@ -748,6 +748,8 @@
   "editor.blockType.numberedList": "Numrerad lista",
   "editor.blockType.checklist": "Checklista",
   "editor.blockType.codeBlock": "Kodblock",
+  "editor.placeholder": "Skriv in text eller skriv \"/\" för kommandon",
+  "editor.placeholder.title": "Titel",
   "editor.toolbar.rawReturn": "Återgå till redigeraren",
   "editor.toolbar.rawOpen": "Öppna råredigeraren",
   "editor.toolbar.noteWidthNormal": "Byt till normal anteckningsbredd",

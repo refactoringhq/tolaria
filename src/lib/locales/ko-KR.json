@@ -748,6 +748,8 @@
   "editor.blockType.numberedList": "번호 매기기 목록",
   "editor.blockType.checklist": "체크리스트",
   "editor.blockType.codeBlock": "코드 블록",
+  "editor.placeholder": "텍스트를 입력하거나 명령을 사용하려면 '/'를 입력하세요.",
+  "editor.placeholder.title": "제목",
   "editor.toolbar.rawReturn": "편집기로 돌아가기",
   "editor.toolbar.rawOpen": "Raw 편집기 열기",
   "editor.toolbar.noteWidthNormal": "일반 노트 너비로 전환",
