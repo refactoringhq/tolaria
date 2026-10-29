@@ -574,6 +574,7 @@
   "sidebar.action.createNoteInFolderMenu": "在此資料夾中建立新筆記",
   "sidebar.action.createFolderInFolderMenu": "在此資料夾中建立新資料夾",
   "sidebar.action.revealFolderMenu": "在檔案管理器中顯示",
+  "sidebar.action.showSidebar": "顯示側邊欄",
   "sidebar.action.copyFolderPathMenu": "複製資料夾路徑",
   "sidebar.action.renameFolderMenu": "重新命名資料夾...",
   "sidebar.action.deleteFolderMenu": "刪除資料夾...",

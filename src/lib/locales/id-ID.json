@@ -574,6 +574,7 @@
   "sidebar.action.createNoteInFolderMenu": "Buat catatan baru di folder ini",
   "sidebar.action.createFolderInFolderMenu": "Buat folder baru di folder ini",
   "sidebar.action.revealFolderMenu": "Tampilkan di Finder",
+  "sidebar.action.showSidebar": "Tampilkan bilah sisi",
   "sidebar.action.copyFolderPathMenu": "Salin jalur folder",
   "sidebar.action.renameFolderMenu": "Ganti nama folder...",
   "sidebar.action.deleteFolderMenu": "Hapus folder...",

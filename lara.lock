@@ -576,6 +576,7 @@ files:
     sidebar.action.createNoteInFolderMenu: b1dbc8fe9fa4e735ef9d8baacff46377
     sidebar.action.createFolderInFolderMenu: 21a068a0d74b87c91f795d7fb3e52ad6
     sidebar.action.revealFolderMenu: 76f4ed52da9937ae432dcf5a108fabb4
+    sidebar.action.showSidebar: babeac99d3c7fd005b057af8acfc659f
     sidebar.action.copyFolderPathMenu: 1779ec6018a385912c1a5499a1bbf2b2
     sidebar.action.renameFolderMenu: deb1d8fa030292e7eda2c244b313aca2
     sidebar.action.deleteFolderMenu: c78c889ac7396dc148fc859c9221e545

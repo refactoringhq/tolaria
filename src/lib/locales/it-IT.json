@@ -574,6 +574,7 @@
   "sidebar.action.createNoteInFolderMenu": "Crea una nuova nota in questa cartella",
   "sidebar.action.createFolderInFolderMenu": "Crea una nuova cartella in questa cartella",
   "sidebar.action.revealFolderMenu": "Mostra in Finder",
+  "sidebar.action.showSidebar": "Mostra barra laterale",
   "sidebar.action.copyFolderPathMenu": "Copia percorso della cartella",
   "sidebar.action.renameFolderMenu": "Rinomina cartella...",
   "sidebar.action.deleteFolderMenu": "Elimina cartella...",
