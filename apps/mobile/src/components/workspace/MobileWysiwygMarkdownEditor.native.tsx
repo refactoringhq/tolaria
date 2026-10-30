@@ -1,17 +1,11 @@
 import { RichText } from "@10play/tentap-editor";
-import { useCallback, useMemo } from "react";
+import { createElement, useCallback } from "react";
 import { StyleSheet, View } from "react-native";
 import { probeProps } from "../../qa/mobileLayoutProbe";
 import { MobileKeyboardAvoidingView } from "../../ui/MobileKeyboardAvoidingView";
 import type { MobileMetrics } from "../../ui/mobileMetrics";
 import type { MobileColors } from "../../ui/theme/mobilePalette";
-import {
-	useMobileColors,
-	useMobileMetrics,
-	useMobileStyles,
-} from "../../ui/theme/useMobileTheme";
-import { isMobileImageAttachment } from "../../workspace/mobileAttachments";
-import { useRegisteredMobileEditorCommands } from "../../workspace/mobileEditorCommands";
+import { useMobileStyles } from "../../ui/theme/useMobileTheme";
 import type {
 	MobileNote,
 	MobileTypeDefinitions,
@@ -33,7 +27,6 @@ import {
 	nativeWysiwygFormattingActions,
 } from "./MobileWysiwygFormatCommands";
 import { MobileWysiwygFormattingToolbar } from "./MobileWysiwygFormattingToolbar.native";
-import { mobileTentapEditorCss } from "./MobileWysiwygMarkdownEditorCss";
 import { MobileWysiwygSlashMenu } from "./MobileWysiwygSlashMenu.native";
 import type {
 	NativeWysiwygPlainTextPayload,
@@ -46,14 +39,14 @@ import {
 	insertClipboardPlainText,
 	insertImportedAttachment,
 } from "./mobileNativeEditorOperations";
+import { createNativeEditorWebViewProps } from "./mobileNativeEditorWebViewProps.native";
+import { NativeEditorSession } from "./native/NativeEditorSession.native";
 import {
 	type NativeEditorRecoveryHandlers,
 	useNativeEditorRecovery,
 } from "./useNativeEditorRecovery";
-import { useNativeEditorSurfaceSession } from "./useNativeEditorSurfaceSession";
+import { useRegisteredNativeSurfaceActions } from "./useRegisteredNativeSurfaceActions.native";
 
-type SessionProps = MobileWysiwygMarkdownEditorProps &
-	NativeEditorRecoveryHandlers;
 type SurfaceProps = NativeTentapEditorSurfaceProps &
 	NativeEditorRecoveryHandlers;
 
@@ -61,67 +54,42 @@ export function MobileWysiwygMarkdownEditor(
 	props: MobileWysiwygMarkdownEditorProps,
 ) {
 	const recovery = useNativeEditorRecovery();
-	return (
-		<NativeEditorSession
-			key={recovery.generation}
-			{...props}
-			onProcessLoss={recovery.onProcessLoss}
-		/>
-	);
-}
-
-function NativeEditorSession(props: SessionProps) {
-	const session = useNativeEditorSurfaceSession(props);
-	return <NativeTentapEditorSurface {...session} />;
-}
-
-function NativeTentapEditorSurface(props: SurfaceProps) {
-	const colors = useMobileColors();
-	const metrics = useMobileMetrics();
-	const appearance = useMemo(
-		() => ({
-			css: mobileTentapEditorCss(
-				props.compact,
-				props.sourceNote.noteWidth,
-				colors,
-				metrics,
-			),
-		}),
-		[colors, metrics, props.compact, props.sourceNote.noteWidth],
-	);
-	return (
-		<NativeTentapEditorSurfaceSession
-			key={props.vaultRootUri ?? ""}
-			{...props}
-			appearance={appearance}
-		/>
-	);
+	return createElement(NativeEditorSession, {
+		...props,
+		key: recovery.generation,
+		onProcessLoss: recovery.onProcessLoss,
+		EditorSurface: EditorSurfaceSession,
+	});
 }
 
 type SurfaceSessionProps = SurfaceProps & { appearance: { css: string } };
 
-function NativeTentapEditorSurfaceSession(props: SurfaceSessionProps) {
+function EditorSurfaceSession(props: SurfaceSessionProps) {
 	const { nativeEditorStyles } = useMobileStyles(createThemeStyles);
 	const fileSource = useMobileEditorFileSource(
 		props.vaultRootUri,
 		props.previewMarkdown,
 		props.appearance,
 	);
-	const actions = useRegisteredNativeSurfaceActions(props, fileSource);
-	return (
-		<MobileKeyboardAvoidingView
-			{...probeProps(props.layoutProbe, "editor.wysiwyg.form")}
-			style={nativeEditorStyles.container}
-			testID="editor-wysiwyg-form"
-			onTouchStart={props.activateEditorChanges}
-		>
-			<NativeEditorInput {...props} fileSource={fileSource} />
-			<NativeEditorControls {...props} actions={actions} />
-		</MobileKeyboardAvoidingView>
+	const actions = useRegisteredNativeSurfaceActions(
+		props,
+		fileSource,
+		useNativeTentapEditorSurfaceActions,
+	);
+	return createElement(
+		MobileKeyboardAvoidingView,
+		{
+			...probeProps(props.layoutProbe, "editor.wysiwyg.form"),
+			style: nativeEditorStyles.container,
+			testID: "editor-wysiwyg-form",
+			onTouchStart: props.activateEditorChanges,
+		},
+		createElement(NativeEditorInput, { ...props, fileSource }),
+		createElement(NativeEditorControls, { ...props, actions }),
 	);
 }
 
-type NativeEditorInputProps = Pick<
+export type NativeEditorInputProps = Pick<
 	SurfaceProps,
 	| "activateEditorChanges"
 	| "editor"
@@ -130,6 +98,10 @@ type NativeEditorInputProps = Pick<
 	| "onProcessLoss"
 	| "onRegisterEditorCommands"
 > & { fileSource: ReturnType<typeof useMobileEditorFileSource> };
+
+export type NativeEditorStyle = ReturnType<
+	typeof createThemeStyles
+>["nativeEditorStyles"]["richText"];
 
 function NativeEditorInput(props: NativeEditorInputProps) {
 	return (
@@ -151,16 +123,7 @@ function NativeEditorWebView(props: NativeEditorInputProps) {
 
 	return (
 		<RichText
-			editor={props.editor}
-			{...props.fileSource.webViewProps}
-			{...probeProps(props.layoutProbe, "editor.wysiwyg.richText")}
-			style={nativeEditorStyles.richText}
-			testID="editor-wysiwyg-input"
-			onLoadEnd={props.injectEditorCss}
-			onContentProcessDidTerminate={() =>
-				props.onProcessLoss("contentProcessTerminated")
-			}
-			onRenderProcessGone={() => props.onProcessLoss("renderProcessGone")}
+			{...createNativeEditorWebViewProps(props, nativeEditorStyles.richText)}
 		/>
 	);
 }
@@ -241,28 +204,6 @@ function NativeEditorOverlays(props: NativeEditorOverlaysProps) {
 			/>
 		</>
 	);
-}
-
-function useRegisteredNativeSurfaceActions(
-	props: SurfaceProps,
-	fileSource: ReturnType<typeof useMobileEditorFileSource>,
-) {
-	const actionProps: NativeTentapEditorSurfaceActionProps = {
-		...props,
-		onImportAttachment: async () => {
-			const attachment = await props.onImportAttachment?.();
-			if (attachment && isMobileImageAttachment(attachment))
-				await fileSource.prepareAttachment?.(attachment.path);
-			return attachment ?? null;
-		},
-	};
-	const actions = useNativeTentapEditorSurfaceActions(actionProps);
-	useRegisteredMobileEditorCommands(props.onRegisterEditorCommands, {
-		blur: () => props.editor.blur(),
-		pastePlainText: actions.handlePastePlainText,
-		save: props.flushEditorDocument,
-	});
-	return actions;
 }
 
 function useNativeTentapEditorSurfaceActions(
