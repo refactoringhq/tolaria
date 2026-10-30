@@ -1,7 +1,8 @@
-import { isTauri } from '../mock-tauri'
 import type { AiModelDefinition, AiModelProvider } from '../lib/aiTargets'
-import type { AgentStreamCallbacks } from './streamAiAgent'
+import { isTauri } from '../mock-tauri'
 import { createScopedStreamEventName } from './aiStreamEvents'
+import { streamScriptedMockAiResponse } from './mockAiStream'
+import type { AgentStreamCallbacks } from './streamAiAgent'
 import { cleanupTauriEventListener } from './tauriEventCleanup'
 
 type AiModelStreamEvent =
@@ -63,6 +64,7 @@ function handleStreamEvent(data: AiModelStreamEvent, callbacks: AgentStreamCallb
 }
 
 function streamMockAiModel({ provider, model, message, callbacks }: StreamAiModelRequest): void {
+  if (streamScriptedMockAiResponse(callbacks)) return
   setTimeout(() => {
     callbacks.onText(mockModelResponse(provider, model, message))
     callbacks.onDone()

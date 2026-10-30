@@ -1,5 +1,9 @@
 # Architecture
 
+## Scripted AI Streams in Browser Mock Mode
+
+The browser mock backend installs `window.__mockAiStream` in Vite development builds. It accepts a sequence of text, thinking, tool, error, and done chunks and releases them with `next()` or `releaseUntil(count)`. The browser AI-agent stream forwards released chunks through the same callbacks as provider events; native Tauri streams do not consult this hook. Production builds remove the hook path.
+
 ## Desktop Note Save Transport
 
 `persistContent` sends native desktop saves through `save_note_content_bytes`

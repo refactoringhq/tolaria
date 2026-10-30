@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AiModelDefinition, AiModelProvider } from '../lib/aiTargets'
+import { createMockAiStreamHook } from '../mock-tauri/mock-ai-stream'
 
 const {
   invokeMock,
@@ -55,6 +56,26 @@ describe('streamAiModel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     isTauriState.value = false
+    delete window.__mockHandlers
+    delete window.__mockAiStream
+  })
+
+  it('uses the scripted chunks for browser model streams in mock mode', async () => {
+    window.__mockHandlers = {}
+    window.__mockAiStream = createMockAiStreamHook()
+    window.__mockAiStream.setScript([
+      { kind: 'text', text: 'A scripted answer.' },
+      { kind: 'done' },
+    ])
+    const callbacks = createCallbacks()
+
+    await streamAiModel({ provider, model, message: 'hello', callbacks })
+
+    expect(callbacks.onText).not.toHaveBeenCalled()
+    window.__mockAiStream.next()
+    expect(callbacks.onText).toHaveBeenCalledWith('A scripted answer.')
+    window.__mockAiStream.next()
+    expect(callbacks.onDone).toHaveBeenCalledTimes(1)
   })
 
   it('uses a request-scoped event channel for native model streams', async () => {

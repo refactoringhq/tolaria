@@ -4,13 +4,14 @@
  * this provides realistic test data so the UI can be verified visually.
  */
 
-import { MOCK_CONTENT } from './mock-content'
-import { mockHandlers, addMockEntry, updateMockContent, trackMockChange } from './mock-handlers'
-import { tryVaultApi } from './vault-api'
 import { assertVaultWritable } from '../lib/offline/offlineMode'
 import { resolveBrowserBackendKind } from '../lib/platformCapabilities'
+import { createMockAiStreamHook } from './mock-ai-stream'
+import { MOCK_CONTENT } from './mock-content'
+import { addMockEntry, mockHandlers, trackMockChange, updateMockContent } from './mock-handlers'
+import { tryVaultApi } from './vault-api'
 
-export { addMockEntry, updateMockContent, trackMockChange }
+export { addMockEntry, trackMockChange, updateMockContent }
 
 type MockHandler = (args?: unknown) => unknown
 
@@ -40,6 +41,7 @@ export function isTauri(): boolean {
 if (typeof window !== 'undefined') {
   window.__mockContent = MOCK_CONTENT
   window.__mockHandlers = registeredMockHandlers
+  if (import.meta.env.DEV) window.__mockAiStream = createMockAiStreamHook()
 }
 
 function resolveMockHandler(command: string) {

@@ -30,6 +30,7 @@ vi.mock('@tauri-apps/api/event', () => ({
   listen: listenMock,
 }))
 
+import { createMockAiStreamHook } from '../mock-tauri/mock-ai-stream'
 import { streamAiAgent } from './streamAiAgent'
 
 const STREAM_EVENT_NAME_PATTERN = /^ai-agent-stream-/
@@ -53,6 +54,8 @@ describe('streamAiAgent', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+    delete window.__mockHandlers
+    delete window.__mockAiStream
   })
 
   it('uses the mock response when Tauri is unavailable', async () => {
@@ -75,6 +78,37 @@ describe('streamAiAgent', () => {
     expect(callbacks.onDone).toHaveBeenCalledTimes(1)
     expect(listenMock).not.toHaveBeenCalled()
     expect(invokeMock).not.toHaveBeenCalled()
+  })
+
+  it('releases scripted mock stream chunks only when the video advances them', async () => {
+    vi.useFakeTimers()
+    const callbacks = createCallbacks()
+    window.__mockHandlers = {}
+    window.__mockAiStream = createMockAiStreamHook()
+    window.__mockAiStream.setScript([
+      { kind: 'text', text: 'Hello ' },
+      { kind: 'thinking', text: 'planning' },
+      { kind: 'tool-start', toolName: 'Read', toolId: 'read-1', input: 'note.md' },
+      { kind: 'tool-done', toolId: 'read-1', output: 'contents' },
+      { kind: 'text', text: 'there.' },
+      { kind: 'done' },
+    ])
+
+    const promise = streamAiAgent({ agent: 'codex', message: 'Hello', vaultPath: '/vault', callbacks })
+    await vi.advanceTimersByTimeAsync(300)
+
+    expect(callbacks.onText).not.toHaveBeenCalled()
+    expect(window.__mockAiStream.releaseUntil(1)).toBe(1)
+    expect(callbacks.onText).toHaveBeenCalledWith('Hello ')
+    expect(callbacks.onDone).not.toHaveBeenCalled()
+    expect(window.__mockAiStream.releaseUntil(6)).toBe(6)
+    await promise
+
+    expect(callbacks.onText).toHaveBeenNthCalledWith(2, 'there.')
+    expect(callbacks.onThinking).toHaveBeenCalledWith('planning')
+    expect(callbacks.onToolStart).toHaveBeenCalledWith('Read', 'read-1', 'note.md')
+    expect(callbacks.onToolDone).toHaveBeenCalledWith('read-1', 'contents')
+    expect(callbacks.onDone).toHaveBeenCalledTimes(1)
   })
 
   it('forwards streamed Tauri events and invokes the backend request', async () => {

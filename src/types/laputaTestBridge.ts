@@ -15,8 +15,24 @@ export interface LaputaTestBridge {
   seedAutoGitSavedChange?: () => Promise<void> | void
 }
 
+export type MockAiStreamChunk =
+  | { kind: 'text'; text: string }
+  | { kind: 'thinking'; text: string }
+  | { kind: 'tool-start'; toolName: string; toolId: string; input?: string }
+  | { kind: 'tool-done'; toolId: string; output?: string }
+  | { kind: 'error'; message: string }
+  | { kind: 'done' }
+
+export interface MockAiStreamHook {
+  setScript: (chunks: MockAiStreamChunk[]) => void
+  next: () => number
+  releaseUntil: (chunkCount: number) => number
+  subscribe: (release: (chunk: MockAiStreamChunk) => void) => () => void
+}
+
 declare global {
   interface Window {
     __laputaTest?: LaputaTestBridge
+    __mockAiStream?: MockAiStreamHook
   }
 }
