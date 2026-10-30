@@ -31,12 +31,23 @@ export function mobileWikilinkStartKit() {
 				return { ...this.parent?.(), isAllowedUri: allowsMobileLink };
 			},
 			addProseMirrorPlugins() {
+				const focusedBeforePointerDown = new WeakMap<object, boolean>();
 				return [
 					...(this.parent?.() ?? []),
 					new Plugin({
 						props: {
 							handleDOMEvents: {
-								contextmenu: (_view, event) => handleMobileLinkContextMenu(event),
+								pointerdown: (view) => {
+									focusedBeforePointerDown.set(view, view.hasFocus());
+									return false;
+								},
+								click: (view, event) => {
+									const wasFocused = focusedBeforePointerDown.get(view) ?? true;
+									focusedBeforePointerDown.delete(view);
+									return handleMobileLinkClick(event, wasFocused);
+								},
+								contextmenu: (_view, event) =>
+									handleMobileLinkContextMenu(event),
 							},
 						},
 					}),
@@ -57,17 +68,34 @@ type NativeWebViewWindow = Window & {
 };
 
 export function handleMobileLinkContextMenu(event: MouseEvent): boolean {
- const target = event.target as (Element & { parentElement?: Element | null }) | null;
- const anchor = (typeof target?.closest === "function" ? target.closest("a[href]") : null)
-  ?? target?.parentElement?.closest("a[href]");
+	return postMobileLinkAction(event);
+}
+
+export function handleMobileLinkClick(
+	event: MouseEvent,
+	editorWasFocused: boolean,
+): boolean {
+	return !editorWasFocused && postMobileLinkAction(event);
+}
+
+function postMobileLinkAction(event: MouseEvent): boolean {
+	const target = event.target as
+		| (Element & { parentElement?: Element | null })
+		| null;
+	const anchor =
+		(typeof target?.closest === "function"
+			? target.closest("a[href]")
+			: null) ?? target?.parentElement?.closest("a[href]");
 	const href = anchor?.getAttribute("href");
 	const webView = (window as NativeWebViewWindow).ReactNativeWebView;
 	if (!href || !webView) return false;
 
-	webView.postMessage(JSON.stringify({
-		type: "action",
-		payload: { type: mobileWysiwygLinkActionType, payload: { href } },
-	}));
+	webView.postMessage(
+		JSON.stringify({
+			type: "action",
+			payload: { type: mobileWysiwygLinkActionType, payload: { href } },
+		}),
+	);
 	event.preventDefault();
 	return true;
 }
