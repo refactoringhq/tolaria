@@ -52,7 +52,7 @@ export function MobileToolbarSpacer() {
 }
 
 function createThemeStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
-  const { toolbar: desktopToolbarParity, panel: desktopPanelParity } = metrics
+  const { toolbar: desktopToolbarParity, panel: desktopPanelParity, noteItem } = metrics
   const styles = StyleSheet.create({
     panel: {
       minWidth: 0,
@@ -81,7 +81,7 @@ function createThemeStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
       gap: desktopToolbarParity.gap,
       borderBottomColor: mobileColors.border,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      paddingHorizontal: desktopToolbarParity.paddingHorizontal,
+      paddingHorizontal: noteItem.padding.left,
     },
   })
 
