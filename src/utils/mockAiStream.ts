@@ -35,7 +35,7 @@ export function streamScriptedMockAiResponse(
   callbacks: AgentStreamCallbacks,
   signal?: AbortSignal,
 ): boolean {
-  if (!import.meta.env.DEV || !window.__mockHandlers || !window.__mockAiStream) return false
+  if (!import.meta.env.DEV || !window.__mockHandlers || !window.__mockAiStream?.hasScript()) return false
   subscribeToScriptedChunks(window.__mockAiStream, callbacks, signal)
   return true
 }
