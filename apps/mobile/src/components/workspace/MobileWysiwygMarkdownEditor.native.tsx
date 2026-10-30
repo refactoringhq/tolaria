@@ -115,45 +115,79 @@ function NativeTentapEditorSurfaceSession(props: SurfaceSessionProps) {
 			testID="editor-wysiwyg-form"
 			onTouchStart={props.activateEditorChanges}
 		>
+			<NativeEditorInput {...props} fileSource={fileSource} />
+			<NativeEditorControls {...props} actions={actions} />
+		</MobileKeyboardAvoidingView>
+	);
+}
+
+type NativeEditorInputProps = Pick<
+	SurfaceProps,
+	| "activateEditorChanges"
+	| "editor"
+	| "injectEditorCss"
+	| "layoutProbe"
+	| "onProcessLoss"
+	| "onRegisterEditorCommands"
+> & { fileSource: ReturnType<typeof useMobileEditorFileSource> };
+
+function NativeEditorInput(props: NativeEditorInputProps) {
+	return (
+		<>
 			<MobileWysiwygFind
 				editor={props.editor}
 				register={props.onRegisterEditorCommands}
 				onBeforeReplace={props.activateEditorChanges}
 			/>
-			{fileSource.ready && (
-				<RichText
-					editor={props.editor}
-					{...fileSource.webViewProps}
-					{...probeProps(props.layoutProbe, "editor.wysiwyg.richText")}
-					style={nativeEditorStyles.richText}
-					testID="editor-wysiwyg-input"
-					onLoadEnd={props.injectEditorCss}
-					onContentProcessDidTerminate={() =>
-						props.onProcessLoss("contentProcessTerminated")
-					}
-					onRenderProcessGone={() => props.onProcessLoss("renderProcessGone")}
-				/>
-			)}
+			<NativeEditorWebView {...props} />
 			<MobileWysiwygSlashMenu editor={props.editor} />
+		</>
+	);
+}
+
+function NativeEditorWebView(props: NativeEditorInputProps) {
+	const { nativeEditorStyles } = useMobileStyles(createThemeStyles);
+	if (!props.fileSource.ready) return null;
+
+	return (
+		<RichText
+			editor={props.editor}
+			{...props.fileSource.webViewProps}
+			{...probeProps(props.layoutProbe, "editor.wysiwyg.richText")}
+			style={nativeEditorStyles.richText}
+			testID="editor-wysiwyg-input"
+			onLoadEnd={props.injectEditorCss}
+			onContentProcessDidTerminate={() =>
+				props.onProcessLoss("contentProcessTerminated")
+			}
+			onRenderProcessGone={() => props.onProcessLoss("renderProcessGone")}
+		/>
+	);
+}
+
+type NativeEditorControlsProps = Pick<
+	SurfaceProps,
+	| "editor"
+	| "layoutProbe"
+	| "notes"
+	| "pickerState"
+	| "sourceNote"
+	| "typeDefinitions"
+	| "externalLinkState"
+	| "onCloseWikilinkPicker"
+	| "onCloseExternalLinkSheet"
+> & { actions: NativeTentapEditorSurfaceActions };
+
+function NativeEditorControls(props: NativeEditorControlsProps) {
+	return (
+		<>
 			<NativeEditorToolbar
 				editor={props.editor}
 				layoutProbe={props.layoutProbe}
-				onFormat={actions.handleFormat}
+				onFormat={props.actions.handleFormat}
 			/>
-			<NativeWysiwygPickerOverlay
-				actions={actions}
-				notes={props.notes}
-				pickerState={props.pickerState}
-				sourceNote={props.sourceNote}
-				typeDefinitions={props.typeDefinitions}
-				onClose={props.onCloseWikilinkPicker}
-			/>
-			<NativeWysiwygExternalLinkOverlay
-				actions={actions}
-				externalLinkState={props.externalLinkState}
-				onClose={props.onCloseExternalLinkSheet}
-			/>
-		</MobileKeyboardAvoidingView>
+			<NativeEditorOverlays {...props} />
+		</>
 	);
 }
 
@@ -175,6 +209,37 @@ function NativeEditorToolbar(props: ToolbarProps) {
 				onFormat={props.onFormat}
 			/>
 		</View>
+	);
+}
+
+type NativeEditorOverlaysProps = Pick<
+	SurfaceProps,
+	| "notes"
+	| "pickerState"
+	| "sourceNote"
+	| "typeDefinitions"
+	| "externalLinkState"
+	| "onCloseWikilinkPicker"
+	| "onCloseExternalLinkSheet"
+> & { actions: NativeTentapEditorSurfaceActions };
+
+function NativeEditorOverlays(props: NativeEditorOverlaysProps) {
+	return (
+		<>
+			<NativeWysiwygPickerOverlay
+				actions={props.actions}
+				notes={props.notes}
+				pickerState={props.pickerState}
+				sourceNote={props.sourceNote}
+				typeDefinitions={props.typeDefinitions}
+				onClose={props.onCloseWikilinkPicker}
+			/>
+			<NativeWysiwygExternalLinkOverlay
+				actions={props.actions}
+				externalLinkState={props.externalLinkState}
+				onClose={props.onCloseExternalLinkSheet}
+			/>
+		</>
 	);
 }
 
@@ -205,18 +270,12 @@ function useNativeTentapEditorSurfaceActions(
 ): NativeTentapEditorSurfaceActions {
 	const {
 		editor,
-		externalLinkState,
-		flushEditorDocument,
 		insertAttachment,
 		insertMarkdownBlock,
 		insertPlainText,
-		insertWikilink,
-		onCloseExternalLinkSheet,
-		onCloseWikilinkPicker,
 		onImportAttachment,
 		onOpenExternalLinkSheet,
 		onOpenToolbarWikilinkPicker,
-		pickerState,
 	} = props;
 	const handleFormat = useNativeWysiwygToolbarHandler({
 		editor,
@@ -230,6 +289,32 @@ function useNativeTentapEditorSurfaceActions(
 	const handlePastePlainText = useCallback(() => {
 		void handleFormat("pastePlainText");
 	}, [handleFormat]);
+	const pickerActions = useNativeWikilinkPickerActions(props);
+	const externalLinkActions = useNativeExternalLinkActions(props);
+
+	return {
+		...externalLinkActions,
+		handleFormat,
+		...pickerActions,
+		handlePastePlainText,
+	};
+}
+
+function useNativeWikilinkPickerActions(
+	props: Pick<
+		NativeTentapEditorSurfaceActionProps,
+		| "insertPlainText"
+		| "insertWikilink"
+		| "onCloseWikilinkPicker"
+		| "pickerState"
+	>,
+) {
+	const {
+		insertPlainText,
+		insertWikilink,
+		onCloseWikilinkPicker,
+		pickerState,
+	} = props;
 	const replacementRange = pickerState?.replacementRange;
 	const handleInsertWikilink = useCallback(
 		(payload: NativeWysiwygWikilinkPayload) => {
@@ -245,45 +330,47 @@ function useNativeTentapEditorSurfaceActions(
 		},
 		[insertPlainText, onCloseWikilinkPicker, replacementRange],
 	);
-	const externalLinkSelection = externalLinkState?.selection;
-	const handleApplyExternalLink = useCallback(
-		(url: string) => {
+	return { handleInsertEmoji, handleInsertWikilink };
+}
+
+function useNativeExternalLinkActions(
+	props: Pick<
+		NativeTentapEditorSurfaceActionProps,
+		| "editor"
+		| "externalLinkState"
+		| "flushEditorDocument"
+		| "onCloseExternalLinkSheet"
+	>,
+) {
+	const {
+		editor,
+		externalLinkState,
+		flushEditorDocument,
+		onCloseExternalLinkSheet,
+	} = props;
+	const selection = externalLinkState?.selection;
+	const applyExternalLink = useCallback(
+		(url: string | null) => {
 			applyNativeWysiwygExternalLink(
 				editor,
 				url,
 				flushEditorDocument,
-				externalLinkSelection,
+				selection,
 			);
 			onCloseExternalLinkSheet();
 		},
-		[
-			editor,
-			externalLinkSelection,
-			flushEditorDocument,
-			onCloseExternalLinkSheet,
-		],
+		[editor, flushEditorDocument, onCloseExternalLinkSheet, selection],
 	);
-	const handleRemoveExternalLink = useCallback(() => {
-		applyNativeWysiwygExternalLink(
-			editor,
-			null,
-			flushEditorDocument,
-			externalLinkSelection,
-		);
-		onCloseExternalLinkSheet();
-	}, [
-		editor,
-		externalLinkSelection,
-		flushEditorDocument,
-		onCloseExternalLinkSheet,
-	]);
-
+	const handleApplyExternalLink = useCallback(
+		(url: string) => applyExternalLink(url),
+		[applyExternalLink],
+	);
+	const handleRemoveExternalLink = useCallback(
+		() => applyExternalLink(null),
+		[applyExternalLink],
+	);
 	return {
 		handleApplyExternalLink,
-		handleFormat,
-		handleInsertEmoji,
-		handleInsertWikilink,
-		handlePastePlainText,
 		handleRemoveExternalLink,
 	};
 }
