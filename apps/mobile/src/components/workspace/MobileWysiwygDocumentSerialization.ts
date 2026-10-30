@@ -18,6 +18,13 @@ type NativeWysiwygDocumentSerializationResult = {
 	skipped: boolean;
 };
 
+export function persistAcceptedNativeEditorSerialization(
+	hasAcceptedEditorChange: boolean,
+	persist: () => void,
+): void {
+	if (hasAcceptedEditorChange) persist();
+}
+
 export function nativeWysiwygDocumentContentFromJson({
 	currentContent,
 	initialBodyHasContent,
