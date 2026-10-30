@@ -3,12 +3,17 @@ import type { MockAiStreamChunk, MockAiStreamHook } from '../types/laputaTestBri
 export function createMockAiStreamHook(): MockAiStreamHook {
   let chunks: MockAiStreamChunk[] = []
   let released = 0
+  let scriptConfigured = false
   const subscribers = new Set<(chunk: MockAiStreamChunk) => void>()
 
   return {
     setScript(script) {
+      scriptConfigured = true
       chunks = [...script]
       released = 0
+    },
+    hasScript() {
+      return scriptConfigured
     },
     next() {
       const chunk = chunks.at(released)

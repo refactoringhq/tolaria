@@ -60,6 +60,21 @@ describe('streamAiModel', () => {
     delete window.__mockAiStream
   })
 
+  it('uses the fallback response when the browser mock stream has no script', async () => {
+    vi.useFakeTimers()
+    window.__mockHandlers = {}
+    window.__mockAiStream = createMockAiStreamHook()
+    const callbacks = createCallbacks()
+
+    const promise = streamAiModel({ provider, model, message: 'hello', callbacks })
+    await vi.advanceTimersByTimeAsync(300)
+    await promise
+
+    expect(callbacks.onText).toHaveBeenCalledWith('[mock-Provider Model] You asked: "hello"')
+    expect(callbacks.onDone).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
+
   it('uses the scripted chunks for browser model streams in mock mode', async () => {
     window.__mockHandlers = {}
     window.__mockAiStream = createMockAiStreamHook()

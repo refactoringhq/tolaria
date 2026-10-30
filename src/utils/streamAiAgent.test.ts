@@ -80,6 +80,20 @@ describe('streamAiAgent', () => {
     expect(invokeMock).not.toHaveBeenCalled()
   })
 
+  it('uses the fallback response when the browser mock stream has no script', async () => {
+    vi.useFakeTimers()
+    const callbacks = createCallbacks()
+    window.__mockHandlers = {}
+    window.__mockAiStream = createMockAiStreamHook()
+
+    const promise = streamAiAgent({ agent: 'codex', message: 'Hello', vaultPath: '/vault', callbacks })
+    await vi.advanceTimersByTimeAsync(300)
+    await promise
+
+    expect(callbacks.onText).toHaveBeenCalledWith(expect.stringContaining('[mock-codex]'))
+    expect(callbacks.onDone).toHaveBeenCalledTimes(1)
+  })
+
   it('releases scripted mock stream chunks only when the video advances them', async () => {
     vi.useFakeTimers()
     const callbacks = createCallbacks()

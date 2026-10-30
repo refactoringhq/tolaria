@@ -25,6 +25,7 @@ export type MockAiStreamChunk =
 
 export interface MockAiStreamHook {
   setScript: (chunks: MockAiStreamChunk[]) => void
+  hasScript: () => boolean
   next: () => number
   releaseUntil: (chunkCount: number) => number
   subscribe: (release: (chunk: MockAiStreamChunk) => void) => () => void
