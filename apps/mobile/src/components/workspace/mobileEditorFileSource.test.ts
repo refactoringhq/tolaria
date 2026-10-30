@@ -25,6 +25,44 @@ beforeEach(() => {
 		fn.mockReset().mockResolvedValue(undefined);
 });
 
+function requirePath(paths: Set<string>, path: string, message: string) {
+	if (!paths.has(path)) throw new Error(message);
+}
+
+function removePathTree(paths: Set<string>, path: string) {
+	for (const entry of paths) {
+		if (entry.startsWith(path)) paths.delete(entry);
+	}
+}
+
+function configureFilesystemAwareDisk(paths: Set<string>) {
+	disk.mkdir.mockImplementation(async (uri: string) => {
+		paths.add(uri.endsWith("/") ? uri : `${uri}/`);
+	});
+	disk.remove.mockImplementation(async (uri: string) =>
+		removePathTree(paths, uri),
+	);
+	disk.write.mockImplementation(async (uri: string) => {
+		requirePath(
+			paths,
+			uri.slice(0, uri.lastIndexOf("/") + 1),
+			"missing parent",
+		);
+		paths.add(uri);
+	});
+	disk.copy.mockImplementation(
+		async ({ from, to }: { from: string; to: string }) => {
+			requirePath(paths, from, "missing source");
+			requirePath(
+				paths,
+				to.slice(0, to.lastIndexOf("/") + 1),
+				"missing parent",
+			);
+			paths.add(to);
+		},
+	);
+}
+
 it("stages only referenced images beside the editor shell, without writing into the vault", async () => {
 	const { createMobileEditorPreview } = await import(
 		"./mobileEditorFileSource.native"
@@ -173,4 +211,19 @@ it("cleans previews abandoned by a previous process only once, before staging an
 	expect(disk.remove.mock.invocationCallOrder[0]).toBeLessThan(
 		disk.copy.mock.invocationCallOrder[0],
 	);
+});
+
+it("creates the preview directory after initializing the shared cache", async () => {
+	const paths = new Set(["file:///application/Cache/"]);
+	configureFilesystemAwareDisk(paths);
+
+	const { createMobileEditorPreview } = await import(
+		"./mobileEditorFileSource.native"
+	);
+	const preview = createMobileEditorPreview("file:///vault/");
+
+	await preview.prepare("# Cold start");
+
+	expect(paths.has(preview.rootUri)).toBe(true);
+	expect(paths.has(preview.source.uri)).toBe(true);
 });

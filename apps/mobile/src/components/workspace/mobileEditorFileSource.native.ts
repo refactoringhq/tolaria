@@ -35,6 +35,18 @@ let shellUseSequence = 0;
 const previewCache = `${cacheDirectory}tolaria-editor-previews/`;
 const maxCachedEditorShells = 4;
 
+async function initializePreviewCache() {
+	if (!cacheDirectory) throw new Error("Editor cache directory unavailable");
+	cacheInitialization ??= (async () => {
+		await deleteAsync(previewCache, { idempotent: true });
+		await makeDirectoryAsync(previewCache, { intermediates: true });
+	})().catch((error: unknown) => {
+		cacheInitialization = null;
+		throw error;
+	});
+	await cacheInitialization;
+}
+
 export function mobileEditorPreviewHtml(
 	markdown: MarkdownBody,
 	vaultRootUri?: VaultRootUri | null,
@@ -90,15 +102,7 @@ function trimEditorShellCache() {
 }
 
 async function writeEditorShell(appearance: EditorAppearance): Promise<string> {
-	if (!cacheDirectory) throw new Error("Editor cache directory unavailable");
-	cacheInitialization ??= (async () => {
-		await deleteAsync(previewCache, { idempotent: true });
-		await makeDirectoryAsync(previewCache, { intermediates: true });
-	})().catch((error: unknown) => {
-		cacheInitialization = null;
-		throw error;
-	});
-	await cacheInitialization;
+	await initializePreviewCache();
 	const uri = `${previewCache}editor-${randomUUID()}.html`;
 	await writeAsStringAsync(
 		uri,
@@ -144,6 +148,7 @@ class MobileEditorPreview {
 			this.preparedAppearanceCss !== this.appearance.css
 		) {
 			const appearanceCss = this.appearance.css;
+			await initializePreviewCache();
 			await makeDirectoryAsync(this.rootUri, { intermediates: true });
 			await copyEditorShell(this.appearance, this.source.uri);
 			if (appearanceCss !== this.appearance.css) continue;
