@@ -5,7 +5,8 @@
  * points the app at it, and verifies real file I/O: creation, rename,
  * wikilink updates, archive/trash filtering, and relationship display.
  */
-import { test, expect } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
+
 import fs from 'fs'
 import path from 'path'
 import { createFixtureVaultCopy, openFixtureVault, removeFixtureVaultCopy } from '../helpers/fixtureVault'
@@ -23,18 +24,18 @@ test.afterEach(async () => {
 })
 
 /** Helper: locate the note-list container. */
-function noteList(page: import('@playwright/test').Page) {
+function noteList(page: Page) {
   return page.locator('[data-testid="note-list-container"]')
 }
 
 /** Helper: click a note item by title text in the sidebar. */
-async function openNote(page: import('@playwright/test').Page, title: string) {
+async function openNote(page: Page, title: string) {
   await noteList(page).getByText(title, { exact: true }).click()
   await page.waitForTimeout(300)
 }
 
 /** Helper: rename the active note filename through the breadcrumb control. */
-async function renameActiveNoteFilename(page: import('@playwright/test').Page, nextFilename: string) {
+async function renameActiveNoteFilename(page: Page, nextFilename: string) {
   await page.getByTestId('breadcrumb-filename-trigger').dblclick()
   const filenameInput = page.getByTestId('breadcrumb-filename-input')
   await expect(filenameInput).toBeVisible({ timeout: 5_000 })

@@ -1,7 +1,8 @@
-import { test, expect } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
+
 import { openCommandPalette, executeCommand } from './helpers'
 
-async function navigateToChanges(page: import('@playwright/test').Page) {
+async function navigateToChanges(page: Page) {
   await openCommandPalette(page)
   await executeCommand(page, 'Go to Changes')
   await page.waitForTimeout(500)

@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
+
 import fs from 'fs'
 import path from 'path'
 import { createFixtureVaultCopy, openFixtureVaultDesktopHarness, removeFixtureVaultCopy } from '../helpers/fixtureVault'
@@ -34,7 +35,7 @@ function addBodyOnlySearchNote(vaultDir: string) {
 }
 
 async function showInboxPropertyColumn(
-  page: import('@playwright/test').Page,
+  page: Page,
   propertyName: string,
   visibleValue: string,
 ) {
@@ -46,7 +47,7 @@ async function showInboxPropertyColumn(
   await expect(page.getByTestId('note-list-container').getByText(visibleValue, { exact: true })).toBeVisible()
 }
 
-async function showNoteListSearch(page: import('@playwright/test').Page) {
+async function showNoteListSearch(page: Page) {
   const toggle = page.getByTitle('Search notes')
   await expect(toggle).toBeVisible()
   await toggle.click()
@@ -54,7 +55,7 @@ async function showNoteListSearch(page: import('@playwright/test').Page) {
 }
 
 async function searchAndOpenByKeyboard(
-  page: import('@playwright/test').Page,
+  page: Page,
   query: string,
   expectedTitle: string,
   expectedFilenameStem: string,

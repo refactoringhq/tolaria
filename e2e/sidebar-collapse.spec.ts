@@ -1,7 +1,8 @@
-import { test, expect } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
+
 
 // On macOS, Alt+key produces special characters, so we dispatch events directly
-function dispatchAltKey(page: import('@playwright/test').Page, key: string) {
+function dispatchAltKey(page: Page, key: string) {
   return page.evaluate((k) => {
     window.dispatchEvent(new KeyboardEvent('keydown', {
       key: k, altKey: true, metaKey: false, ctrlKey: false,
@@ -10,7 +11,7 @@ function dispatchAltKey(page: import('@playwright/test').Page, key: string) {
   }, key)
 }
 
-async function loadApp(page: import('@playwright/test').Page) {
+async function loadApp(page: Page) {
   await page.goto('/')
   // Clear stored view mode so we start fresh
   await page.evaluate(() => localStorage.removeItem('laputa-view-mode'))

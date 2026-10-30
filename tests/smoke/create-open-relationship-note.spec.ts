@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
+
 import {
   createFixtureVaultCopy,
   openFixtureVault,
@@ -7,19 +8,19 @@ import {
 
 let tempVaultDir: string
 
-async function openNote(page: import('@playwright/test').Page, title: string) {
+async function openNote(page: Page, title: string) {
   await page.getByTestId('note-list-container').getByText(title, { exact: true }).click()
   await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible({ timeout: 5_000 })
 }
 
-async function openPropertiesPanel(page: import('@playwright/test').Page) {
+async function openPropertiesPanel(page: Page) {
   const openPanelButton = page.getByRole('button', { name: 'Open the properties panel' })
   if (await openPanelButton.count()) {
     await openPanelButton.click()
   }
 }
 
-async function openFirstRelationshipInput(page: import('@playwright/test').Page) {
+async function openFirstRelationshipInput(page: Page) {
   const belongsToLabel = page.getByTestId('relationship-section-label').filter({ hasText: 'Belongs to' }).first()
   await expect(belongsToLabel).toBeVisible({ timeout: 5_000 })
 

@@ -1,7 +1,8 @@
-import { test, expect } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
+
 
 /** Click the first non-Theme note with a visible type selector, starting from startIndex. */
-async function clickNonThemeNote(page: import('@playwright/test').Page, startIndex = 0) {
+async function clickNonThemeNote(page: Page, startIndex = 0) {
   const noteListContainer = page.locator('[data-testid="note-list-container"]')
   await noteListContainer.waitFor({ timeout: 5000 })
   const items = noteListContainer.locator('.cursor-pointer')

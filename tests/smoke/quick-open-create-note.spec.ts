@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
-import { test, expect } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
+
 import {
   createFixtureVaultCopy,
   openFixtureVaultDesktopHarness,
@@ -18,7 +19,7 @@ test.afterEach(() => {
   removeFixtureVaultCopy(tempVaultDir)
 })
 
-async function openNoteWithCmdO(page: import('@playwright/test').Page): Promise<void> {
+async function openNoteWithCmdO(page: Page): Promise<void> {
   await dispatchShortcutEvent(page, {
     key: 'o',
     code: 'KeyO',

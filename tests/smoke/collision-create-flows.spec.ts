@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
+
 import fs from 'fs'
 import path from 'path'
 import { createFixtureVaultCopy, openFixtureVaultDesktopHarness, removeFixtureVaultCopy } from '../helpers/fixtureVault'
@@ -12,11 +13,11 @@ function writeFixtureNote(vaultPath: string, filename: string, content: string):
   return notePath
 }
 
-function toast(page: import('@playwright/test').Page) {
+function toast(page: Page) {
   return page.locator('.fixed.bottom-8')
 }
 
-async function createTypeFromCommandPalette(page: import('@playwright/test').Page, typeName: string): Promise<void> {
+async function createTypeFromCommandPalette(page: Page, typeName: string): Promise<void> {
   await openCommandPalette(page)
   await page.locator('input[placeholder="Type a command..."]').fill('new type')
   await page.keyboard.press('Enter')
