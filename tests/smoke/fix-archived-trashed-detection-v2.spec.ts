@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Locator, type Page } from '@playwright/test'
+
 import { sendShortcut } from './helpers'
 
 const QUICK_OPEN_INPUT = 'input[placeholder="Search notes..."]'
@@ -6,17 +7,17 @@ const QUICK_OPEN_INPUT = 'input[placeholder="Search notes..."]'
 /** Known archived note titles from mock data */
 const ARCHIVED_TITLES = ['Website Redesign', 'Twitter Thread Growth Experiment']
 
-async function openQuickOpen(page: import('@playwright/test').Page) {
+async function openQuickOpen(page: Page) {
   await page.locator('body').click()
   await sendShortcut(page, 'p', ['Control'])
   await expect(page.locator(QUICK_OPEN_INPUT)).toBeVisible()
 }
 
-function quickOpenPanel(page: import('@playwright/test').Page) {
+function quickOpenPanel(page: Page) {
   return page.locator('.fixed.inset-0').filter({ has: page.locator(QUICK_OPEN_INPUT) })
 }
 
-function getResultTitles(container: import('@playwright/test').Locator) {
+function getResultTitles(container: Locator) {
   return container.locator('span.truncate').allTextContents()
 }
 

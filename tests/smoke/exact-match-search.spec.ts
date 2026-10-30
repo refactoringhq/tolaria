@@ -1,9 +1,10 @@
-import { test, expect } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
+
 import { sendShortcut } from './helpers'
 
 const QUICK_OPEN_INPUT = 'input[placeholder="Search notes..."]'
 
-async function openQuickOpen(page: import('@playwright/test').Page) {
+async function openQuickOpen(page: Page) {
   await page.locator('body').click()
   await sendShortcut(page, 'p', ['Control'])
   await expect(page.locator(QUICK_OPEN_INPUT)).toBeVisible()
@@ -13,7 +14,7 @@ async function openQuickOpen(page: import('@playwright/test').Page) {
  * Get the title text of the first (selected) search result in the Quick Open palette.
  * The selected item has `bg-accent` class, and the title is in a nested `.truncate` span.
  */
-async function getFirstResultTitle(page: import('@playwright/test').Page): Promise<string> {
+async function getFirstResultTitle(page: Page): Promise<string> {
   // The selected result row contains the title in a span.truncate
   const titleSpan = page.getByTestId('quick-open-palette').locator('[class*="bg-accent"] span.truncate')
   await titleSpan.first().waitFor({ timeout: 3000 })

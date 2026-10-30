@@ -1,7 +1,8 @@
-import { test, expect } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
+
 import { sendShortcut } from './helpers'
 
-async function openNoteViaQuickOpen(page: import('@playwright/test').Page, query: string) {
+async function openNoteViaQuickOpen(page: Page, query: string) {
   await page.locator('body').click()
   await sendShortcut(page, 'p', ['Control'])
   const searchInput = page.locator('input[placeholder="Search notes..."]')

@@ -1,7 +1,8 @@
-import { test, expect } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
+
 import { openCommandPalette, executeCommand } from './helpers'
 
-async function openSettings(page: import('@playwright/test').Page) {
+async function openSettings(page: Page) {
   await page.locator('body').click()
   await page.keyboard.press('Meta+,')
   const panel = page.locator('[data-testid="settings-panel"]')

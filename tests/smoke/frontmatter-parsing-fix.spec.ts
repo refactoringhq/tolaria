@@ -1,9 +1,10 @@
-import { test, expect } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
+
 import { sendShortcut } from './helpers'
 
 const QUICK_OPEN_INPUT = 'input[placeholder="Search notes..."]'
 
-async function openQuickOpen(page: import('@playwright/test').Page) {
+async function openQuickOpen(page: Page) {
   await page.locator('body').click()
   await sendShortcut(page, 'p', ['Control'])
   await expect(page.locator(QUICK_OPEN_INPUT)).toBeVisible()

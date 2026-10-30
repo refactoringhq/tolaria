@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
+
 import {
   createFixtureVaultCopy,
   openFixtureVaultDesktopHarness,
@@ -8,7 +9,7 @@ import { sendShortcut } from './helpers'
 
 let tempVaultDir: string
 
-function collectLinkifyWarnings(page: import('@playwright/test').Page) {
+function collectLinkifyWarnings(page: Page) {
   const warnings: string[] = []
 
   page.on('console', (message) => {
@@ -27,7 +28,7 @@ function collectLinkifyWarnings(page: import('@playwright/test').Page) {
   return warnings
 }
 
-async function openNote(page: import('@playwright/test').Page, title: string) {
+async function openNote(page: Page, title: string) {
   await page.getByTestId('note-list-container').getByText(title, { exact: true }).click()
   await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible({ timeout: 5_000 })
 }
