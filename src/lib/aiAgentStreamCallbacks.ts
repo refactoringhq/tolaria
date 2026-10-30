@@ -1,19 +1,19 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import type { AgentStatus, AiAgentMessage } from './aiAgentConversation'
-import { detectFileOperation, type AgentFileCallbacks } from './aiAgentFileOperations'
+import { type AgentFileCallbacks, detectFileOperation } from './aiAgentFileOperations'
 import {
   markReasoningDone,
+  type ToolInvocation,
   updateMessage,
   updateToolAction,
-  type ToolInvocation,
 } from './aiAgentMessageState'
-import { getAiAgentDefinition, type AiAgentId } from './aiAgents'
+import { type AiAgentId, getAiAgentDefinition } from './aiAgents'
+import type { AppLocale } from './i18n'
+import { localizedStreamErrorMessage } from './localizedStreamError'
 import {
   trackAiAgentResponseCompleted,
   trackAiAgentResponseFailed,
 } from './productAnalytics'
-import type { AppLocale } from './i18n'
-import { localizedStreamErrorMessage } from './localizedStreamError'
 
 const MAX_RETAINED_TOOL_OUTPUT_CHARS = 20_000
 const ASCII_WORD_RE = /^[A-Za-z0-9_]$/u
@@ -158,6 +158,10 @@ export function createStreamCallbacks(context: StreamMutationContext) {
       if (abortRef.current.aborted) return
       markReasoningDone(setMessages, messageId)
       responseAccRef.current += chunk
+      updateMessage(setMessages, messageId, (message) => ({
+        ...message,
+        response: responseAccRef.current,
+      }))
     },
 
     onToolStart: (toolName: string, toolId: string, input?: string) => {

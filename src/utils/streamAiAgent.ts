@@ -1,10 +1,11 @@
-import { isTauri } from '../mock-tauri'
-import { getAiAgentDefinition, type AiAgentId } from '../lib/aiAgents'
 import {
-  normalizeAiAgentPermissionMode,
   type AiAgentPermissionMode,
+  normalizeAiAgentPermissionMode,
 } from '../lib/aiAgentPermissionMode'
+import { type AiAgentId, getAiAgentDefinition } from '../lib/aiAgents'
+import { isTauri } from '../mock-tauri'
 import { createScopedStreamEventName } from './aiStreamEvents'
+import { streamScriptedMockAiResponse } from './mockAiStream'
 import { cleanupTauriEventListener } from './tauriEventCleanup'
 
 type AiAgentStreamEvent =
@@ -177,6 +178,7 @@ export async function streamAiAgent(request: StreamAiAgentRequest): Promise<void
   }
 
   if (!isTauri()) {
+    if (streamScriptedMockAiResponse(request.callbacks, request.signal)) return
     streamMockAiAgent(request)
     return
   }

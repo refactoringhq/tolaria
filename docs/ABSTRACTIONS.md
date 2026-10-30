@@ -1,5 +1,9 @@
 # Abstractions
 
+## Scripted AI Stream Hook
+
+`window.__mockAiStream.setScript(chunks)` loads a frame-controlled browser mock response. `next()` releases one chunk, while `releaseUntil(count)` advances to a one-based chunk count. It is installed only when the development browser mock handlers are present; tests and Remotion scenes can use the same subscription boundary. The stream callback adapter maps chunks to the existing AI panel callbacks.
+
 ## Desktop Note Save Transport
 
 `persistContent` sends native desktop saves through `save_note_content_bytes`
