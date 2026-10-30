@@ -1751,13 +1751,23 @@ Defined in `src/components/editorSchema.tsx` and styled in `src/components/Edito
 
 ### Blockquote Callouts
 
-Defined in `src/utils/calloutCatalog.ts`, `src/utils/calloutMarkdown.ts`, `src/utils/richEditorMarkdown.ts`, `src/utils/editorDurableMarkdown.ts`, `src/components/CalloutBlock.tsx`, `src/components/calloutIcons.ts`, `src/components/TolariaSlashMenu.tsx`, `src/components/tolariaEditorFormattingConfig.ts`, `src/components/editorSchema.tsx`, and styled in `src/components/Editor.css`:
+Defined in `src/utils/calloutCatalog.ts`, `src/utils/calloutMarkdown.ts`,
+`src/utils/richEditorMarkdown.ts`, `src/utils/editorDurableMarkdown.ts`,
+`src/components/CalloutBlock.tsx`, `src/components/calloutIcons.ts`,
+`src/components/TolariaSlashMenu.tsx`,
+`src/components/tolariaSlashMenuPosition.ts`,
+`src/components/tolariaEditorFormattingConfig.ts`,
+`src/components/editorSchema.tsx`, and styled in `src/components/Editor.css`:
 
 - Blockquotes whose first line matches `[!type]`, with an optional title, become `calloutBlock` schema nodes after BlockNote parsing. Ordinary blockquotes and collapsible `[!type]+` / `[!type]-` variants pass through untouched.
 - Marker metadata lives in block props, but the body remains editable BlockNote inline content. Conversion slices only the marker prefix, preserving body text styles, links, wikilinks, and other supported inline nodes.
 - All default Obsidian types and aliases map to Tolaria's semantic color families and a distinct Phosphor icon per canonical type; unknown type tokens retain neutral note styling and still serialize unchanged. Callouts use a borderless tinted surface with a larger title.
 - The mixed durable serializer serializes the live body through BlockNote, restores `> [!type]` syntax, and keeps the callout in the same autosave/raw-mode/tab-swap pipeline as other Markdown.
 - The editor `/` menu exposes a localized Callout parent command whose pointer- and keyboard-accessible submenu opens to the right and inserts any default Obsidian type. The action emits `editor_callout_slash_command_used` with the canonical type only.
+- `tolariaSlashMenuPosition.ts` measures the rendered submenu in viewport
+  coordinates, aligns it flush with its parent row, flips it left when the right
+  edge would overflow, and clamps its vertical position. The menu consumes
+  Up/Down while the submenu is open; Left and Escape close it.
 - Callout body serialization uses the direct Markdown projection where available and removes only serializer-owned hard-break markers from fallback multiline output, so opening the raw editor does not add trailing backslashes to quote lines.
 - Callouts are always expanded and expose no disclosure control. Untitled note callouts resolve their visible fallback heading through the app locale published by `AppPreferencesProvider`.
 
