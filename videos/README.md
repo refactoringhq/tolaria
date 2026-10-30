@@ -18,28 +18,41 @@ Videos use the **Refactoring brand kit** from the private `refactoringhq/brand` 
 
 ## Architecture
 
-- **`src/components/`** - Reusable UI components (Stage, NoteCard, EditorView)
-- **`src/lib/`** - Utilities (timing/easing, FLIP transitions)
-- **`src/clips/`** - Individual video compositions
-- **`src/styles.css`** - Tolaria design tokens (synchronized with main app)
+- **`real-ui/`** - Serves the **real Tolaria app** (repo-root `index.html` + `src/`, unmodified) for capture, plus the in-app *director* and per-clip *scenes*
+- **`src/components/TolariaApp.tsx`** - Embeds the real app in a composition and drives it frame by frame
+- **`src/clips/`** - Individual video compositions (`QuickOpen.tsx` = real UI; `WikilinkFanOut.tsx` = legacy replica clip)
+- **`src/components/`** - Brand layer (`Caption`, `Keycaps`, `BrandMark`) and the legacy replicas (`NoteCard`, `EditorView`, used only by `WikilinkFanOut`)
+- **`src/lib/`** - House easing (`house.ts`), local brand loading (`brandLocal.ts`), legacy timing/FLIP helpers
 
-### Design Approach
+### Real UI, not replicas (preferred)
 
-**Two-Layer System:**
+New clips use the actual React components, so the product layer is live DOM: crisp at any zoom, and always what ships.
 
-1. **Tolaria UI Layer** (app authenticity)
-   - Replicated components: `NoteCard`, `EditorView`, `Wikilink`
-   - Uses Tolaria's real CSS variables, typography, spacing from `src/index.css`
-   - Stays faithful to the actual app look
+```
+Remotion composition ──postMessage(frame)──▶ iframe: real Tolaria app (pnpm ui, :5320)
+        ▲                                         │  mock-tauri + copy of demo-vault-v2
+        └──────── ready(frame, rects) ◀───────────┘  director applies scene events for that frame
+```
 
-2. **Brand Layer** (video polish)
-   - Refactoring brand fonts, colors, assets from `refactoringhq/brand`
-   - Title/end cards use Refactoring Sans ExtraBold
-   - Annotations/captions use Refactoring Hand with hand-drawn arrows
-   - Brand colors for emphasis (red circles, yellow highlights)
-   - Logo/monogram on end cards
+- `pnpm ui` runs the **same Vite config as `pnpm dev`** (merged, not forked), so `import.meta.glob`, `?worker`, the `@` alias and Tailwind v4 all just work. (Bundling `src/` into Remotion's webpack would need shims for all of those.)
+- The browser vault points at `videos/.vault-snapshot/` (a fresh copy of `demo-vault-v2/` with pinned mtimes, recreated on every `pnpm ui`), so nothing the app writes touches tracked files and dates/sorting are identical on every render.
+- The boot script clears storage and dismisses onboarding/banners; vault paths are overridden through the same `window.__mockHandlers` hook the smoke tests use.
+- **Determinism:** a scene (`real-ui/scenes/*.ts`) is a list of UI events pinned to frames (open a palette via `__laputaTest.dispatchAppCommand`, set the query, press keys) plus a pure `style(frame)` pass. CSS transitions/animations and the caret blink are disabled; all motion is frame-driven. Remotion holds every frame (`delayRender`) until the director reports the DOM settled. Frames are pixel-identical across runs.
+- `measure(frame)` returns named DOM rects so overlays (e.g. a hand-drawn circle) land exactly on real UI.
+- Shared timings live in `real-ui/scenes/<clip>.timeline.ts`, imported by both the scene and the composition.
 
-**Why Replicated:** Avoids Tauri IPC dependencies; keeps videos renderable standalone while matching the real app.
+### Brand layer
+
+Captions (Inter Tight 600 on a dark pill, active word yellow), keycaps, one hand-drawn brand mark (drawn on by the brand runtime) and the pen-drawn logo end move. House ease `rf` = cubic-bezier(0.22, 1, 0.36, 1).
+
+Private brand files are read at render time from **`videos/public/brand/`** (gitignored) and fall back gracefully when missing:
+
+```
+public/brand/fonts/InterTight-Variable.woff2, RefactoringSans-ExtraBold.woff2
+public/brand/rf-drawing.js            # refactoringhq/brand motion/runtime
+public/brand/marks/circle-03.json     # refactoringhq/brand motion/marks
+public/brand/logo-reveal.mp4|.webm    # house logoReveal render (webm = alpha, for 9:16)
+```
 
 ## Quick Start
 
@@ -72,7 +85,32 @@ pnpm brand:sync
 
 If brand assets aren't synced, clips will render with fallback fonts/styles (still functional).
 
-### 3. Preview a Clip
+### 3. Real-UI clips: start the app server
+
+The real-UI clips need the root workspace deps (`pnpm install` at the repo root) and the app server running:
+
+```bash
+cd videos
+pnpm ui            # real Tolaria UI on http://localhost:5320 (override with TOLARIA_UI_PORT / REMOTION_TOLARIA_UI_ORIGIN)
+```
+
+Then, in another shell:
+
+```bash
+pnpm render:quick-open      # output/quick-open-16x9.mp4 + output/quick-open-9x16.mp4
+# or one at a time / stills
+./node_modules/.bin/remotion render quick-open output/quick-open-16x9.mp4
+./node_modules/.bin/remotion still quick-open output/f150.png --frame=150
+```
+
+Add `--browser-executable=/path/to/chrome` if Remotion can't download its headless shell. For delivery, re-encode to H.264 yuv420p, TV range, `-movflags +faststart`.
+
+### Quick Open clip (`quick-open`, `quick-open-vertical`)
+
+13.6 s @ 30 fps, 1920x1080 and a restaged 1080x1920. Real app: start on *Writing for Clarity*, ⌘O opens the real `QuickOpenPalette`, typing "sponsor" filters the real `NoteSearchList`, two arrow-downs select *Sponsor Onboarding*, Enter opens it in the real BlockNote editor. Camera pushes in as the results narrow, a hand-drawn circle marks the pick, the camera follows into the note, then the logo end move.
+
+### 4. Preview a Clip
+
 
 ```bash
 pnpm studio
@@ -80,7 +118,7 @@ pnpm studio
 
 Opens Remotion Studio for live preview and scrubbing.
 
-### 4. Render a Clip
+### 5. Render a Clip
 
 Since this package is isolated, use the local Remotion CLI:
 
@@ -197,7 +235,7 @@ This package is intentionally isolated from the main app build:
 - Separate `package.json` and `node_modules`
 - Not included in root workspace
 - Does not affect main app tests, lint, or build
-- `.gitignore` excludes `videos/node_modules/`, `videos/output/`, and **`videos/brand/`** (private assets)
+- `.gitignore` excludes `videos/node_modules/`, `videos/output/`, **`videos/brand/`** and **`videos/public/brand/`** (private assets), `videos/.vault-snapshot/` and `videos/.vite/`
 
 ## Tips
 
