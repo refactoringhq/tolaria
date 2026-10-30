@@ -1,5 +1,7 @@
 # ADR-0248: Expo React Native Mobile UI Foundation
 
+> Superseded in part by ADR 0299: mobile chrome now follows iOS/Android platform conventions. The React Native foundation, native primitives, and desktop-derived note content/type-icon contracts remain active.
+
 ## Status
 
 Accepted
