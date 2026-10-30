@@ -42,7 +42,7 @@ function PhoneNoteListScreen({
         leading={(
           <MobileIconButton
             accessibilityLabel={mobileCopy.showSidebar}
-            density="default"
+            density="leading"
             testID="phone-note-list-sidebar-button"
             onPress={openSidebar}
           >
