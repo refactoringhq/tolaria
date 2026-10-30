@@ -24,20 +24,28 @@ export function MobileIconButton({
   testID?: string
 }) {
   const { styles, hitSlop } = useMobileStyles(createIconButtonStyles)
+  const presentation = getButtonPresentation(selected)
   return (
     <Button
       accessibilityLabel={accessibilityLabel}
-      className={cn('active:opacity-70', selected ? 'bg-accent' : 'bg-transparent')}
+      className={presentation.className}
       hitSlop={hitSlop}
       onPress={onPress}
       size="icon"
       style={StyleSheet.flatten(styles[density])}
       testID={testID}
-      variant={selected ? 'secondary' : 'ghost'}
+      variant={presentation.variant}
     >
       {children}
     </Button>
   )
+}
+
+function getButtonPresentation(selected: boolean) {
+  if (selected) {
+    return { className: 'active:opacity-70 bg-accent', variant: 'secondary' as const }
+  }
+  return { className: cn('active:opacity-70', 'bg-transparent'), variant: 'ghost' as const }
 }
 
 function createIconButtonStyles(_colors: MobileColors, metrics: MobileMetrics) {
