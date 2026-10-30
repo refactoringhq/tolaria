@@ -11,3 +11,8 @@ dist
 
 # Brand kit (private assets, synced from refactoringhq/brand)
 brand/
+
+# Real-UI capture: throwaway vault copy, Vite cache, local-only brand media
+.vault-snapshot/
+.vite/
+public/brand/

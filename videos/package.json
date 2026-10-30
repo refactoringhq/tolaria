@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "brand:sync": "bash scripts/sync-brand.sh",
+    "ui": "cd .. && node_modules/.bin/vite --config videos/real-ui/vite.config.ts",
     "render": "remotion render",
+    "render:quick-open": "remotion render quick-open output/quick-open-16x9.mp4 && remotion render quick-open-vertical output/quick-open-9x16.mp4",
     "preview": "remotion preview",
     "studio": "remotion studio"
   },
