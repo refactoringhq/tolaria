@@ -31,7 +31,6 @@ type MobileListRowState = {
 export function MobileListRow(props: MobileListRowProps) {
   const themeStyles = useMobileStyles(createThemeStyles)
   const isPhone = isPhoneViewport(useWindowDimensions().width, Platform.OS === 'ios' && Platform.isPad)
-  const { styles } = themeStyles
   const rowState = mobileListRowState(props)
 
   return (
@@ -40,37 +39,59 @@ export function MobileListRow(props: MobileListRowProps) {
       testID={props.testID}
       style={mobileListRowFrameStyle(themeStyles, props, rowState)}
     >
-      <Pressable
-        {...rowProbeProps(props.layoutProbe, props.metricId, 'body')}
-        accessibilityState={{ selected: rowState.accessibilitySelected }}
-        accessibilityRole="button"
-        onLongPress={props.onLongPress}
-        onPress={props.onPress}
-        style={[rowState.desktopSelected ? styles.baseSelected : styles.base, isPhone ? styles.phoneBase : null]}
-      >
-        <View {...rowProbeProps(props.layoutProbe, props.metricId, 'header')} style={styles.header}>
-          {props.leading}
-          <Text
-            {...rowProbeProps(props.layoutProbe, props.metricId, 'title')}
-            numberOfLines={1}
-            style={[styles.title, isPhone ? styles.phoneTitle : null, rowState.desktopSelected ? styles.titleSelected : null]}
-          >
-            {props.title}
-          </Text>
-          {props.trailing}
-        </View>
+      <MobileListRowBody isPhone={isPhone} props={props} rowState={rowState} styles={themeStyles.styles} />
+    </View>
+  )
+}
+
+function MobileListRowBody({
+  isPhone,
+  props,
+  rowState,
+  styles,
+}: {
+  isPhone: boolean
+  props: MobileListRowProps
+  rowState: MobileListRowState
+  styles: ReturnType<typeof createThemeStyles>['styles']
+}) {
+  return (
+    <Pressable
+      {...rowProbeProps(props.layoutProbe, props.metricId, 'body')}
+      accessibilityState={{ selected: rowState.accessibilitySelected }}
+      accessibilityRole="button"
+      onLongPress={props.onLongPress}
+      onPress={props.onPress}
+      style={[rowState.desktopSelected ? styles.baseSelected : styles.base, isPhone ? styles.phoneBase : null]}
+    >
+      <View {...rowProbeProps(props.layoutProbe, props.metricId, 'header')} style={styles.header}>
+        {props.leading}
         <Text
-          {...rowProbeProps(props.layoutProbe, props.metricId, 'subtitle')}
-          numberOfLines={2}
-          style={[styles.subtitle, isPhone ? styles.phoneSubtitle : null]}
+          {...rowProbeProps(props.layoutProbe, props.metricId, 'title')}
+          numberOfLines={1}
+          style={[styles.title, isPhone ? styles.phoneTitle : null, rowState.desktopSelected ? styles.titleSelected : null]}
         >
-          {props.subtitle}
+          {props.title}
         </Text>
-        <View {...rowProbeProps(props.layoutProbe, props.metricId, 'footer')} style={styles.footer}>
-          {props.chips}
-          {props.meta ? <Text style={styles.meta}>{props.meta}</Text> : null}
-        </View>
-      </Pressable>
+        {props.trailing}
+      </View>
+      <Text
+        {...rowProbeProps(props.layoutProbe, props.metricId, 'subtitle')}
+        numberOfLines={2}
+        style={[styles.subtitle, isPhone ? styles.phoneSubtitle : null]}
+      >
+        {props.subtitle}
+      </Text>
+      <MobileListRowFooter props={props} styles={styles} />
+    </Pressable>
+  )
+}
+
+function MobileListRowFooter({ props, styles }: { props: MobileListRowProps; styles: ReturnType<typeof createThemeStyles>['styles'] }) {
+  return (
+    <View {...rowProbeProps(props.layoutProbe, props.metricId, 'footer')} style={styles.footer}>
+      {props.chips}
+      {props.meta ? <Text style={styles.meta}>{props.meta}</Text> : null}
     </View>
   )
 }
