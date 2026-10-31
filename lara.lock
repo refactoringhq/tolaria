@@ -583,6 +583,7 @@ files:
     sidebar.view.name: 67b904f75d1872abba088a3442caff40
     sidebar.folder.name: 710417c4e57a6a01500fe4c0c448ce3d
     sidebar.folder.newName: e0ad5b2db20359a85de80c1231323bea
+    workspace.action.nameAlreadyExists: e047f1dd7692fd382176b26116ef1e9c
     sidebar.folder.expand: b7545cb143816942ff096d890090fb6f
     sidebar.folder.collapse: e9f8c6da708219313d72d99cc3998388
     sidebar.section.name: c3642037e309db278bbbfe0590114c02

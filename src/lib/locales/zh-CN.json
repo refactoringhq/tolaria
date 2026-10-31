@@ -581,6 +581,7 @@
   "sidebar.view.name": "视图名称",
   "sidebar.folder.name": "文件夹名称",
   "sidebar.folder.newName": "新文件夹名称",
+  "workspace.action.nameAlreadyExists": "已存在同名项目。",
   "sidebar.folder.expand": "展开{name}",
   "sidebar.folder.collapse": "折叠{name}",
   "sidebar.section.name": "分组名称",

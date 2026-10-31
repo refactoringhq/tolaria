@@ -581,6 +581,7 @@
   "sidebar.view.name": "Назва подання",
   "sidebar.folder.name": "Назва теки",
   "sidebar.folder.newName": "Нова назва теки",
+  "workspace.action.nameAlreadyExists": "Елемент із такою назвою вже існує.",
   "sidebar.folder.expand": "Розгорнути {name}",
   "sidebar.folder.collapse": "Згорнути {name}",
   "sidebar.section.name": "Назва розділу",

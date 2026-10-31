@@ -581,6 +581,7 @@
   "sidebar.view.name": "Nama tampilan",
   "sidebar.folder.name": "Nama folder",
   "sidebar.folder.newName": "Nama folder baru",
+  "workspace.action.nameAlreadyExists": "Item dengan nama ini sudah ada.",
   "sidebar.folder.expand": "Perluas {name}",
   "sidebar.folder.collapse": "Ciutkan {name}",
   "sidebar.section.name": "Nama bagian",

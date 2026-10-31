@@ -581,6 +581,7 @@
   "sidebar.view.name": "檢視名稱",
   "sidebar.folder.name": "資料夾名稱",
   "sidebar.folder.newName": "新資料夾名稱",
+  "workspace.action.nameAlreadyExists": "已存在使用此名稱的項目。",
   "sidebar.folder.expand": "展開{name}",
   "sidebar.folder.collapse": "摺疊{name}",
   "sidebar.section.name": "分組名稱",

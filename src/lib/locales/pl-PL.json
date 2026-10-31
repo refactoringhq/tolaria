@@ -581,6 +581,7 @@
   "sidebar.view.name": "Nazwa widoku",
   "sidebar.folder.name": "Nazwa folderu",
   "sidebar.folder.newName": "Nowa nazwa folderu",
+  "workspace.action.nameAlreadyExists": "Element o tej nazwie już istnieje.",
   "sidebar.folder.expand": "Rozwiń {name}",
   "sidebar.folder.collapse": "Zwiń {name}",
   "sidebar.section.name": "Nazwa sekcji",

@@ -581,6 +581,7 @@
   "sidebar.view.name": "View name",
   "sidebar.folder.name": "Tên thư mục",
   "sidebar.folder.newName": "Tên thư mục mới",
+  "workspace.action.nameAlreadyExists": "Đã có một mục có tên này.",
   "sidebar.folder.expand": "Mở rộng {name}",
   "sidebar.folder.collapse": "Thu gọn {name}",
   "sidebar.section.name": "Tên mục",

@@ -581,6 +581,7 @@
   "sidebar.view.name": "ビュー名",
   "sidebar.folder.name": "フォルダー名",
   "sidebar.folder.newName": "新しいフォルダー名",
+  "workspace.action.nameAlreadyExists": "この名前のアイテムは既に存在します。",
   "sidebar.folder.expand": "{name} を展開",
   "sidebar.folder.collapse": "{name}を折りたたむ",
   "sidebar.section.name": "セクション名",
