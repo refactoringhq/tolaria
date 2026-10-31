@@ -88,7 +88,7 @@ it("bounds in-flight working-tree stat calls while checkpointing changed notes",
 });
 
 it.each(["NFC", "NFD"] as const)(
-	"keeps a tracked %s filename when macOS enumerates decomposed Unicode",
+	"keeps a tracked %s filename when enumeration uses decomposed Unicode",
 	async (normalization) => {
 		const dir = await mkdtemp(join(tmpdir(), "tolaria-unicode-path-"));
 		roots.push(dir);
@@ -99,15 +99,34 @@ it.each(["NFC", "NFD"] as const)(
 		await git.commit({ fs, dir, author, message: "Unicode fixture" });
 
 		const decomposedFs = {
-			promises: {
-				...fs.promises,
-				readdir: async (path: fs.PathLike) =>
-					(await fs.promises.readdir(path)).map((name) =>
-						name.normalize("NFD"),
-					),
-			},
+			promises: new Proxy(fs.promises, {
+				get(target, property, receiver) {
+					const method = Reflect.get(target, property, receiver);
+					if (property === "readdir")
+						return async (...args: Parameters<typeof fs.promises.readdir>) => {
+							const names = (await Reflect.apply(
+								method,
+								target,
+								args,
+							)) as string[];
+							return names.map((name) =>
+								typeof name === "string" ? name.normalize("NFD") : name,
+							);
+						};
+					if (["lstat", "stat", "readFile"].includes(String(property)))
+						return (...args: unknown[]) => {
+							if (typeof args[0] === "string")
+								args[0] = args[0].normalize("NFC");
+							return Reflect.apply(method, target, args);
+						};
+					return method;
+				},
+			}),
 		};
 		await writeFile(join(dir, trackedName), "# After\n");
+		expect(await decomposedFs.promises.readdir(dir)).toContain(
+			"Matthäus 17.md".normalize("NFD"),
+		);
 
 		expect(await readGitWorkingTreeChanges({ fs: decomposedFs, dir })).toEqual([
 			{ filepath: trackedName, deleted: false },
