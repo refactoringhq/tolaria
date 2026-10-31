@@ -51,7 +51,11 @@ module subscribers and the keyboard root-controller handler remain responsible
 for lifecycle-dependent work and keyboard input. SDK/native dependency changes
 require a new signed binary and accepted OTA fingerprint. Sentry's JavaScript,
 core and native dependency declarations are aligned while existing consent and
-redaction boundaries remain unchanged. See ADR 0246.
+redaction boundaries remain unchanged. The `expo-web-browser` and
+`expo-sharing` config plugins are registered in static app config. The alternate
+`nativeUiFoundationProbeEntry.tsx` is used only in a disposable development
+build to verify glass availability, native symbol rendering, and Expo UI host
+rendering. See ADR 0246.
 
 Editor mode changes use `useEditorModeSwitch` and the existing workspace editor
 save barrier before unmounting either editor. Failed reads retain the current
@@ -823,6 +827,7 @@ Workspace surfaces now sit one level above those primitives:
 | `MobileWysiwygLinkBridge.web.ts` | Configures the production/test TenTap link schema to preserve internal wikilink addresses through HTML hydration, while retaining external-link validation |
 | `MobileWysiwygContentBridge.ts` | Silent programmatic-content bridge that prevents initial hydration from being persisted as a user edit |
 | `MobileWysiwygTentapEditorHtml.ts` | Generated custom TenTap WebView HTML used by the native WYSIWYG editor |
+| `NativeUiFoundationProbeScreen.tsx` | Isolated diagnostics for native module availability and rendering |
 | `build-wysiwyg-editor-html.mjs` | Builds TenTap from its shipped web source against the installed dependency graph; the in-memory build exposes provenance metadata without rewriting generated HTML during imports/tests |
 | `updates.config.js` | SDK-native OTA launch configuration, explicit channel/profile matching and EAS project identity; validation uses a separate application container |
 | `publish-mobile-update.mjs` | Main CI automatically publishes compatible alpha iOS OTA after the current validation graph; desktop-only ranges skip native-target and credential checks. Uses the last successful Alpha check (full-history fallback), verifies ancestry, accepted native runtime/build, and strict Sentry source-map processing. SDK 57 publishing explicitly selects the EAS environment (ADR 0269) |

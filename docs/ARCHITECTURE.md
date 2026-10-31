@@ -203,7 +203,7 @@ Core perceived latency is protected by a synthetic production-browser benchmark.
 |-------|-----------|---------|
 | Desktop shell | Tauri v2 | 2.10.0 |
 | Frontend | React + TypeScript | React 19, TS 5.9 |
-| Mobile shell | Expo React Native | Expo 54, React Native 0.81 |
+| Mobile shell | Expo React Native | Expo 57, React Native 0.86 |
 | Editor | BlockNote | 0.46.2 |
 | Editor render extensions | @tiptap/pm | ProseMirror decorations for rich-editor node presentation |
 | Code block highlighting | @blocknote/code-block | 0.46.2 |
@@ -234,6 +234,11 @@ The type customization grid renders the catalog in progressive batches while
 preserving search across every registered icon. See [ADR-0174](./adr/0174-lazy-full-phosphor-icon-catalog.md).
 
 ### Mobile App Foundation
+
+The alternate QA entrypoint at
+`apps/mobile/src/qa/nativeUiFoundationProbeEntry.tsx` verifies native-module
+availability and rendering for Expo Glass Effect, Expo Symbols, and an Expo UI
+`Host` in a disposable development build; it is not in the production entry.
 
 Standalone iOS editor text saves use the existing workspace module's asynchronous
 atomic writer (ADR 0203). A private, versioned recovery record is published before
