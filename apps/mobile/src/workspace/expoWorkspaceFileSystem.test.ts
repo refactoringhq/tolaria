@@ -21,7 +21,51 @@ vi.mock("./mobileVaultConfig", () => ({
 	serializeMobileVaultConfig: () => "",
 }));
 
-import { readWorkspaceTextFileAsync } from "./expoWorkspaceFileSystem";
+import {
+	localVaultFile,
+	readWorkspaceTextFileAsync,
+} from "./expoWorkspaceFileSystem";
+
+it("treats text files with invalid UTF-8 as binary instead of failing the vault read", () => {
+	const bytes = new Uint8Array([0x50, 0x72, 0x61, 0x67, 0x75, 0x65, 0xe1]);
+	const file = {
+		bytesSync: () => bytes,
+		info: () => ({ creationTime: 1, modificationTime: 2, size: bytes.length }),
+		textSync: () => {
+			throw new TypeError("Invalid UTF-8");
+		},
+		uri: "file:///vault/legacy.txt",
+	} as never;
+
+	expect(localVaultFile(file, "legacy.txt")).toMatchObject({
+		content: "",
+		fileKind: "binary",
+		relativePath: "legacy.txt",
+		size: bytes.length,
+	});
+});
+
+it("preserves valid UTF-8 text and still propagates filesystem read failures", () => {
+	const file = {
+		bytesSync: () => new TextEncoder().encode("Praha áéí"),
+		info: () => ({ creationTime: 1, modificationTime: 2, size: 12 }),
+		uri: "file:///vault/valid.txt",
+	};
+	const unreadable = {
+		...file,
+		bytesSync: () => {
+			throw new Error("provider download unavailable");
+		},
+	};
+
+	expect(localVaultFile(file as never, "valid.txt")).toMatchObject({
+		content: "Praha áéí",
+		fileKind: "text",
+	});
+	expect(() => localVaultFile(unreadable as never, "valid.txt")).toThrow(
+		"provider download unavailable",
+	);
+});
 
 it("reads note bytes without synchronously replaying native recovery", async () => {
 	const file = { exists: true, text: vi.fn(async () => "# Disk content") };
