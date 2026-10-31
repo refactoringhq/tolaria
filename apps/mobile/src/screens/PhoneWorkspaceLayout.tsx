@@ -6,16 +6,16 @@ import type { MobileLayoutProbe } from '../qa/mobileLayoutProbe'
 import { useMobileStyles } from '../ui/theme/useMobileTheme'
 import type { useHorizontalSwipe } from '../ui/useHorizontalSwipe'
 import type { useMobileEditorCommandRegistry } from '../workspace/mobileEditorCommands'
-import type { MobileNote } from '../workspace/mobileWorkspaceModel'
 import type { MobileTableOfContentsTarget } from '../workspace/mobileTableOfContents'
+import type { MobileNote } from '../workspace/mobileWorkspaceModel'
 import type { PhoneWorkspaceNavigation } from './PhoneWorkspace'
-import { createThemeStyles } from './phoneWorkspaceStyles'
 import { PhoneWorkspaceScreens } from './PhoneWorkspaceScreens'
 import { PhoneWorkspaceTransition } from './PhoneWorkspaceTransition'
-import { WorkspaceActionSheetHost } from './TabletWorkspace'
-import type { PhoneWorkspaceState } from './phoneWorkspaceTransitions'
 import type { PhoneWorkspaceEditorOptions } from './phoneWorkspaceEditorOptions'
-import type { PhoneWorkspaceController, PhonePanelRail, PhoneTableOfContentsTargetRequest } from './phoneWorkspaceScreenSupport'
+import type { PhonePanelRail, PhoneTableOfContentsTargetRequest, PhoneWorkspaceController } from './phoneWorkspaceScreenSupport'
+import { createThemeStyles } from './phoneWorkspaceStyles'
+import type { PhoneWorkspaceState } from './phoneWorkspaceTransitions'
+import { WorkspaceActionSheetHost } from './TabletWorkspace'
 
 type PhoneWorkspaceRootProps = {
   commandPaletteElement: ReactNode
@@ -42,7 +42,7 @@ export function PhoneWorkspaceRoot(props: PhoneWorkspaceRootProps) {
   const topColor = props.phoneState === 'sidebar' ? mobileColors.sidebar : mobileColors.card
   return (
     <View {...props.phoneLayoutProbe('phone.root')} style={styles.root}>
-      <View testID="phone-top-inset" style={{ height: insets.top, backgroundColor: topColor }} />
+      {props.phoneState === 'editor' ? null : <View testID="phone-top-inset" style={{ height: insets.top, backgroundColor: topColor }} />}
       <PhoneWorkspaceContent {...props} />
       <MobileWorkspaceEditNotice retry={props.controller.retryFailedEdit} />
       <PhoneWorkspaceActions {...props} />
@@ -70,6 +70,7 @@ function PhoneWorkspaceContent(props: PhoneWorkspaceRootProps) {
         phoneState={props.phoneState}
         onRegisterEditorCommands={props.editorCommandRegistry.register}
         sourceModeRequest={props.sourceModeRequest}
+        toggleRawEditor={props.editorCommandRegistry.commands.toggleRawEditor ?? (() => {})}
         suggestionNotes={props.suggestionNotes}
         tableOfContentsTarget={props.tableOfContentsTarget}
       />

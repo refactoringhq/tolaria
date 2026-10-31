@@ -1,11 +1,12 @@
 import type { PhoneWorkspaceController, PhoneWorkspaceStateViewProps } from './phoneWorkspaceScreenSupport'
 
-export function createPhoneWorkspaceScreenProps(
-  openCommandPalette: () => void,
-): PhoneWorkspaceStateViewProps {
+export function createPhoneWorkspaceScreenProps(openCommandPalette: () => void): PhoneWorkspaceStateViewProps {
   const noop = () => {}
   return {
-    controller: { ...controllerState(), ...controllerActions(noop) } as unknown as PhoneWorkspaceController,
+    controller: {
+      ...controllerState(),
+      ...controllerActions(noop),
+    } as unknown as PhoneWorkspaceController,
     options: {} as PhoneWorkspaceStateViewProps['options'],
     openEditor: noop,
     openSourceEditor: noop,
@@ -16,6 +17,7 @@ export function createPhoneWorkspaceScreenProps(
     phoneLayoutProbe: (() => ({})) as PhoneWorkspaceStateViewProps['phoneLayoutProbe'],
     phoneState: 'list',
     sourceModeRequest: 0,
+    toggleRawEditor: noop,
     suggestionNotes: [],
     tableOfContentsTarget: null,
   }
@@ -40,7 +42,12 @@ function controllerState() {
     selectedNote: null,
     selectedNoteId: null,
     selectedNoteRead: null,
-    snapshot: { sidebarSections: [], source: { label: 'Test vault' }, typeDefinitions: {}, vaultConfig: {} },
+    snapshot: {
+      sidebarSections: [],
+      source: { label: 'Test vault' },
+      typeDefinitions: {},
+      vaultConfig: {},
+    },
     vaultRootUri: '',
   }
 }

@@ -1,19 +1,14 @@
 import type { ReactNode } from 'react'
-import type {
-  LayoutChangeEvent,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  ScrollView,
-} from 'react-native'
+import type { LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, ScrollView } from 'react-native'
+import type { MobileFilenameRename } from '../components/workspace/MobileEditorFileIdentity'
 import type { MobileLayoutProbe } from '../qa/mobileLayoutProbe'
 import type { NativeTableOfContentsProof } from '../qa/nativeTableOfContentsProbe'
 import type { MobileAttachmentImporter } from '../workspace/mobileAttachmentImport'
 import type { MobileAttachmentLinkOpener } from '../workspace/mobileAttachmentOpen'
 import type { RegisterMobileEditorCommands } from '../workspace/mobileEditorCommands'
+import type { MobileNoteReadState } from '../workspace/mobileNoteRead'
 import type { MobileTableOfContentsTarget } from '../workspace/mobileTableOfContents'
 import type { MobileEditorBlock, MobileNote, MobileTypeDefinitions } from '../workspace/mobileWorkspaceModel'
-import type { MobileNoteReadState } from '../workspace/mobileNoteRead'
-import type { MobileFilenameRename } from '../components/workspace/MobileEditorFileIdentity'
 
 export type EditorEditingMode = 'source' | 'wysiwyg'
 export type EditorFileMode = 'binary' | 'markdown' | 'text'
@@ -25,6 +20,9 @@ export type TabletEditorPanelProps = {
   initialEditing?: boolean
   initialEditingMode?: EditorEditingMode
   layoutProbe?: boolean
+  hideToolbar?: boolean
+  phoneChromeTopInset?: number
+  onTitleVisibilityChange?: (visible: boolean) => void
   leading?: ReactNode
   trailing?: ReactNode
   note: MobileNote | null
@@ -87,6 +85,8 @@ export type EditorContentProps = {
   blocks: MobileEditorBlock[]
   bullets: string[]
   compact: boolean
+  phoneChromeTopInset?: number
+  onTitleVisibilityChange?: (visible: boolean) => void
   editing: boolean
   editingMode: EditorEditingMode
   note: MobileNote

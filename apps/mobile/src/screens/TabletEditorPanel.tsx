@@ -15,10 +15,7 @@ import { MobileWysiwygMarkdownEditor } from '../components/workspace/MobileWysiw
 import { mobileText } from '../i18n/mobileText'
 import { MobileLayoutProbeReadout } from '../qa/MobileLayoutProbeReadout'
 import { useMobileLayoutProbe } from '../qa/mobileLayoutProbe'
-import {
-  type NativeTableOfContentsProof,
-  nativeTableOfContentsScrollProof,
-} from '../qa/nativeTableOfContentsProbe'
+import { type NativeTableOfContentsProof, nativeTableOfContentsScrollProof } from '../qa/nativeTableOfContentsProbe'
 import { MobilePanel } from '../ui/MobilePanel'
 import { useMobileColors, useMobileMetrics, useMobileStyles } from '../ui/theme/useMobileTheme'
 import { useMobileAttachmentImporter } from '../workspace/mobileAttachmentImport'
@@ -31,7 +28,7 @@ import type { MobileTableOfContentsTarget } from '../workspace/mobileTableOfCont
 import { mobileNoteIdForWikilinkTarget } from '../workspace/mobileWikilinks'
 import type { MobileEditorBlock, MobileNote } from '../workspace/mobileWorkspaceModel'
 import { useMobilePullToSync } from '../workspace/useMobilePullToSync'
-import { MobileEditorToolbar } from './MobileEditorToolbar'
+import { EditorPanelToolbar } from './EditorPanelToolbar'
 import type {
   EditorContentProps,
   EditorEditingMode,
@@ -40,12 +37,7 @@ import type {
   TableOfContentsScroll,
   TabletEditorPanelProps,
 } from './TabletEditorPanel.types'
-import {
-  EmptyEditorPanel,
-  MobileFilePreviewFallback,
-  MobileNoteReadFallback,
-  MobileSpreadsheetFallback,
-} from './TabletEditorPanelChrome'
+import { EmptyEditorPanel, MobileFilePreviewFallback, MobileNoteReadFallback, MobileSpreadsheetFallback } from './TabletEditorPanelChrome'
 import { createEditorPanelStyles } from './TabletEditorPanelStyles'
 import { useEditorModeSwitch } from './useEditorModeSwitch'
 
@@ -60,6 +52,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     initialEditing = true,
     initialEditingMode = 'wysiwyg',
     layoutProbe: layoutProbeEnabled = false,
+    hideToolbar = false,
     leading,
     trailing,
     note,
@@ -76,27 +69,24 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     vaultRootUri = null,
   } = props
   const [editingMode, setEditingMode] = useState<EditorEditingMode>(initialEditingMode)
-  const { onScroll, onTargetLayout, setScrollViewNode } = useTableOfContentsScroll(
-    tableOfContentsTarget,
-    onTableOfContentsScrollProof,
-  )
+  const { onScroll, onTargetLayout, setScrollViewNode } = useTableOfContentsScroll(tableOfContentsTarget, onTableOfContentsScrollProof)
   const importAttachment = useMobileAttachmentImporter(vaultRootUri)
   const openLink = useMobileAttachmentLinkOpener(vaultRootUri)
-  const navigateWikilink = useCallback((target: string) => {
-    if (!mobileNoteIdForWikilinkTarget(notes, target)) {
-      Alert.alert(mobileText('noteList.empty.noMatching'))
-      return
-    }
-    onNavigateWikilink(target)
-  }, [notes, onNavigateWikilink])
+  const navigateWikilink = useCallback(
+    (target: string) => {
+      if (!mobileNoteIdForWikilinkTarget(notes, target)) {
+        Alert.alert(mobileText('noteList.empty.noMatching'))
+        return
+      }
+      onNavigateWikilink(target)
+    },
+    [notes, onNavigateWikilink],
+  )
   const layoutProbe = useMobileLayoutProbe(layoutProbeEnabled)
   const changeEditingMode = useCallback(() => {
     setEditingMode((current) => (current === 'source' ? 'wysiwyg' : 'source'))
   }, [])
-  const { toggle: toggleSourceMode, failed: modeSwitchFailed } = useEditorModeSwitch(
-    note?.id,
-    changeEditingMode,
-  )
+  const { toggle: toggleSourceMode, failed: modeSwitchFailed } = useEditorModeSwitch(note?.id, changeEditingMode)
   useRegisteredMobileEditorCommands(onRegisterEditorCommands, {
     toggleRawEditor: note && editorFileMode(note) === 'markdown' ? toggleSourceMode : undefined,
   })
@@ -105,27 +95,22 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     return <EmptyEditorPanel />
   }
 
-  const fileMode = editorFileMode(note)
-  const plainText = fileMode === 'text'
-  const effectiveEditing = canEditCurrentNote(fileMode, initialEditing, noteRead)
-  const effectiveEditingMode = plainText ? 'source' : editingMode
-  const contentProps = createEditorContentProps({ ...props, onNavigateWikilink: navigateWikilink }, note, {
-    editing: effectiveEditing,
-    editingMode: effectiveEditingMode,
+  const { contentProps, effectiveEditing, effectiveEditingMode, fileMode } = createTabletEditorPanelViewModel({
+    props: { ...props, onNavigateWikilink: navigateWikilink },
+    note,
+    initialEditing,
+    noteRead,
+    editingMode,
     layoutProbe: layoutProbe.probe,
-    onImportAttachment: importAttachment,
-    onOpenLink: openLink,
-    onTableOfContentsTargetLayout: onTargetLayout,
-    plainText,
+    importAttachment,
+    openLink,
+    onTargetLayout,
   })
 
   return (
-    <MobilePanel
-      {...layoutProbe.probe('editor.panel')}
-      style={panelStyles.panel}
-      testID="editor-panel"
-    >
-      <MobileEditorToolbar
+    <MobilePanel {...layoutProbe.probe('editor.panel')} style={panelStyles.panel} testID="editor-panel">
+      <EditorPanelToolbar
+        hidden={hideToolbar}
         editingMode={effectiveEditingMode}
         editing={effectiveEditing}
         fileMode={fileMode}
@@ -150,11 +135,37 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
         onScrollViewRef={setScrollViewNode}
         refreshControl={refreshControl}
       />
-      {layoutProbeEnabled ? (
-        <MobileLayoutProbeReadout metrics={layoutProbe.metrics} testID="editor-layout-metrics" />
-      ) : null}
+      {layoutProbeEnabled ? <MobileLayoutProbeReadout metrics={layoutProbe.metrics} testID="editor-layout-metrics" /> : null}
     </MobilePanel>
   )
+}
+
+function createTabletEditorPanelViewModel(options: {
+  props: TabletEditorPanelProps
+  note: MobileNote
+  initialEditing: boolean
+  noteRead: TabletEditorPanelProps['noteRead']
+  editingMode: EditorEditingMode
+  layoutProbe: EditorContentProps['layoutProbe']
+  importAttachment: EditorContentProps['onImportAttachment']
+  openLink: EditorContentProps['onOpenLink']
+  onTargetLayout: EditorContentProps['onTableOfContentsTargetLayout']
+}) {
+  const { editingMode, importAttachment, initialEditing, layoutProbe, note, noteRead, onTargetLayout, openLink, props } = options
+  const fileMode = editorFileMode(note)
+  const plainText = fileMode === 'text'
+  const effectiveEditing = canEditCurrentNote(fileMode, initialEditing, noteRead)
+  const effectiveEditingMode = plainText ? 'source' : editingMode
+  const contentProps = createEditorContentProps(props, note, {
+    editing: effectiveEditing,
+    editingMode: effectiveEditingMode,
+    layoutProbe,
+    onImportAttachment: importAttachment,
+    onOpenLink: openLink,
+    onTableOfContentsTargetLayout: onTargetLayout,
+    plainText,
+  })
+  return { contentProps, effectiveEditing, effectiveEditingMode, fileMode }
 }
 
 function createEditorContentProps(
@@ -162,19 +173,15 @@ function createEditorContentProps(
   note: MobileNote,
   options: Pick<
     EditorContentProps,
-    | 'editing'
-    | 'editingMode'
-    | 'layoutProbe'
-    | 'onImportAttachment'
-    | 'onOpenLink'
-    | 'onTableOfContentsTargetLayout'
-    | 'plainText'
+    'editing' | 'editingMode' | 'layoutProbe' | 'onImportAttachment' | 'onOpenLink' | 'onTableOfContentsTargetLayout' | 'plainText'
   >,
 ): EditorContentProps {
   return {
     blocks: props.blocks,
     bullets: props.bullets,
     compact: props.compact,
+    phoneChromeTopInset: props.phoneChromeTopInset,
+    onTitleVisibilityChange: props.onTitleVisibilityChange,
     ...options,
     note,
     notes: props.notes,
@@ -221,16 +228,7 @@ function EditorPanelBody(
     refreshControl?: ReactElement<RefreshControlProps>
   },
 ) {
-  const {
-    compact,
-    contentProps,
-    fileMode,
-    note,
-    noteRead,
-    onScroll,
-    onScrollViewRef,
-    refreshControl,
-  } = props
+  const { compact, contentProps, fileMode, note, noteRead, onScroll, onScrollViewRef, refreshControl } = props
   const themeStyles = useMobileStyles(createEditorPanelStyles)
   const { panelStyles } = themeStyles
   const readFallback = noteReadFallbackState(noteRead, note)
@@ -256,7 +254,12 @@ function EditorPanelBody(
   if (contentProps.editing) {
     return (
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={[
+          { flexGrow: 1 },
+          compact && (contentProps.plainText || contentProps.editingMode === 'source')
+            ? { paddingTop: contentProps.phoneChromeTopInset }
+            : null,
+        ]}
         nestedScrollEnabled
         refreshControl={refreshControl}
         style={panelStyles.editorHost}
@@ -351,6 +354,8 @@ function EditorContent({
   blocks,
   bullets,
   compact,
+  phoneChromeTopInset,
+  onTitleVisibilityChange,
   editing,
   editingMode,
   layoutProbe,
@@ -405,6 +410,8 @@ function EditorContent({
         blocks={blocks}
         bullets={bullets}
         compact={compact}
+        phoneChromeTopInset={phoneChromeTopInset}
+        onTitleVisibilityChange={onTitleVisibilityChange}
         layoutProbe={layoutProbe}
         note={note}
         notes={notes}
@@ -460,15 +467,7 @@ function editorFileMode(note: MobileNote): EditorFileMode {
   return actionMode === 'text-file' ? 'text' : 'markdown'
 }
 
-function readModeContentStyle(
-  themeStyles: ReturnType<typeof createEditorPanelStyles>,
-  note: MobileNote,
-  compact: boolean,
-) {
+function readModeContentStyle(themeStyles: ReturnType<typeof createEditorPanelStyles>, note: MobileNote, compact: boolean) {
   const { panelStyles } = themeStyles
-  return [
-    panelStyles.content,
-    note.noteWidth === 'wide' ? panelStyles.contentWide : null,
-    compact ? panelStyles.contentCompact : null,
-  ]
+  return [panelStyles.content, note.noteWidth === 'wide' ? panelStyles.contentWide : null, compact ? panelStyles.contentCompact : null]
 }

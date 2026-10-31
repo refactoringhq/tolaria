@@ -97,6 +97,7 @@ export type NativeEditorInputProps = Pick<
 	| "layoutProbe"
 	| "onProcessLoss"
 	| "onRegisterEditorCommands"
+	| "onTitleVisibilityChange"
 > & { fileSource: ReturnType<typeof useMobileEditorFileSource> };
 
 export type NativeEditorStyle = ReturnType<

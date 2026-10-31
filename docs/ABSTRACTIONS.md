@@ -804,6 +804,8 @@ Current primitives:
 | `MobileListRow` | Dense note-list rows with selected state, metadata, and chips |
 | `MobileChip` | Type, tag, and relationship labels |
 | `MobilePropertyRow` | Properties panel label/value rows |
+| `PhoneEditorGlassChrome` | Floating iOS editor controls layered over the document without owning editor state or changing its scrolling surface |
+| `PhoneEditorGlassControlRow` / `PhoneEditorGlassTitle` | Native back/action menu and scroll-aware title pill for the phone editor |
 
 Workspace surfaces now sit one level above those primitives:
 

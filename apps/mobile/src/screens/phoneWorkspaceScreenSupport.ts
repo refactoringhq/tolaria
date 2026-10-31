@@ -1,24 +1,27 @@
-import { useCallback, type Dispatch, type SetStateAction } from 'react'
+import { type Dispatch, type SetStateAction, useCallback } from 'react'
 import { useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { MobileLayoutProbe } from '../qa/mobileLayoutProbe'
 import type { RegisterMobileEditorCommands } from '../workspace/mobileEditorCommands'
-import type { MobileNote } from '../workspace/mobileWorkspaceModel'
 import type { MobileTableOfContentsTarget } from '../workspace/mobileTableOfContents'
+import type { MobileNote } from '../workspace/mobileWorkspaceModel'
 import { phonePanelDragSurface } from './phonePanelDragSurface'
-import type { PhoneWorkspaceState } from './phoneWorkspaceTransitions'
 import type { PhoneWorkspaceEditorOptions } from './phoneWorkspaceEditorOptions'
+import type { PhoneWorkspaceState } from './phoneWorkspaceTransitions'
 import type { usePhonePanelRail } from './usePhonePanelRail'
 import type { useTabletWorkspaceController } from './useTabletWorkspaceController'
 
-export type PhoneTableOfContentsTargetRequest = MobileTableOfContentsTarget & { requestId: number }
+export type PhoneTableOfContentsTargetRequest = MobileTableOfContentsTarget & {
+  requestId: number
+}
 
 export function usePhonePanelDragSurface(state: PhoneWorkspaceState) {
   const { width } = useWindowDimensions()
   const { top, left, right } = useSafeAreaInsets()
-  return useCallback((start: { x: number; y: number }) => (
-    phonePanelDragSurface(state, { x: start.x - left, y: start.y }, width - left - right, top)
-  ), [state, width, top, left, right])
+  return useCallback(
+    (start: { x: number; y: number }) => phonePanelDragSurface(state, { x: start.x - left, y: start.y }, width - left - right, top),
+    [state, width, top, left, right],
+  )
 }
 
 export type PhoneWorkspaceController = ReturnType<typeof useTabletWorkspaceController>
@@ -34,19 +37,32 @@ export function usePhoneWorkspaceNavigation({ controller, setPhoneState, setSour
   const openList = useCallback(() => setPhoneState('list'), [setPhoneState])
   const openSidebar = useCallback(() => setPhoneState('sidebar'), [setPhoneState])
   const openProperties = useCallback(() => setPhoneState('properties'), [setPhoneState])
-  const openEditor = useCallback((noteId?: string) => {
-    if (noteId) controller.onSelectNote(noteId)
-    setPhoneState('editor')
-  }, [controller, setPhoneState])
+  const openEditor = useCallback(
+    (noteId?: string) => {
+      if (noteId) controller.onSelectNote(noteId)
+      setPhoneState('editor')
+    },
+    [controller, setPhoneState],
+  )
   const openSourceEditor = useCallback(() => {
-    setSourceModeRequest(current => current + 1)
+    setSourceModeRequest((current) => current + 1)
     setPhoneState('editor')
   }, [setPhoneState, setSourceModeRequest])
-  const openNeighborhoodList = useCallback((noteId: string) => {
-    controller.onEnterNeighborhood(noteId)
-    setPhoneState('list')
-  }, [controller, setPhoneState])
-  return { openEditor, openList, openNeighborhoodList, openProperties, openSidebar, openSourceEditor }
+  const openNeighborhoodList = useCallback(
+    (noteId: string) => {
+      controller.onEnterNeighborhood(noteId)
+      setPhoneState('list')
+    },
+    [controller, setPhoneState],
+  )
+  return {
+    openEditor,
+    openList,
+    openNeighborhoodList,
+    openProperties,
+    openSidebar,
+    openSourceEditor,
+  }
 }
 
 export type PhoneWorkspaceStateViewProps = {
@@ -62,6 +78,7 @@ export type PhoneWorkspaceStateViewProps = {
   phoneState: PhoneWorkspaceState
   onRegisterEditorCommands?: RegisterMobileEditorCommands
   sourceModeRequest: number
+  toggleRawEditor: () => void
   suggestionNotes: MobileNote[]
   tableOfContentsTarget: PhoneTableOfContentsTargetRequest | null
 }

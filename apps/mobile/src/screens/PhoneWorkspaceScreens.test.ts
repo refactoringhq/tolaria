@@ -2,20 +2,28 @@
 import { act, createElement, type ReactNode, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import type { MobileNote } from '../workspace/mobileWorkspaceModel'
 import { PhoneWorkspaceScreens } from './PhoneWorkspaceScreens'
 import { createPhoneWorkspaceScreenProps } from './PhoneWorkspaceScreens.testSupport'
 
-const calls = vi.hoisted(() => ({ sidebar: vi.fn(), list: vi.fn(), properties: vi.fn(), editor: vi.fn() }))
+const calls = vi.hoisted(() => ({
+  sidebar: vi.fn(),
+  list: vi.fn(),
+  properties: vi.fn(),
+  editor: vi.fn(),
+  glass: vi.fn(),
+}))
 vi.mock('react-native', () => ({
-  View: ({ children, testID }: { children?: ReactNode; testID?: string }) =>
-    createElement('div', { 'data-testid': testID }, children),
+  View: ({ children, testID }: { children?: ReactNode; testID?: string }) => createElement('div', { 'data-testid': testID }, children),
   StyleSheet: { create: (styles: object) => styles, hairlineWidth: 1 },
 }))
 vi.mock('phosphor-react-native', () => ({ List: () => null }))
-vi.mock('../components/workspace/MobileNoteListPanel', () => ({ MobileNoteListPanel: (props: Record<string, unknown>) => {
-  calls.list(props)
-  return createElement('div', { 'data-testid': 'phone-test-note-list' }, props.leading as ReactNode)
-} }))
+vi.mock('../components/workspace/MobileNoteListPanel', () => ({
+  MobileNoteListPanel: (props: Record<string, unknown>) => {
+    calls.list(props)
+    return createElement('div', { 'data-testid': 'phone-test-note-list' }, props.leading as ReactNode)
+  },
+}))
 vi.mock('../ui/MobileIconButton', () => ({
   MobileIconButton: ({
     accessibilityLabel,
@@ -27,45 +35,76 @@ vi.mock('../ui/MobileIconButton', () => ({
     children?: ReactNode
     onPress?: () => void
     testID?: string
-  }) => createElement('button', {
-    'aria-label': accessibilityLabel,
-    'data-testid': testID,
-    onClick: onPress,
-    type: 'button',
-  }, children),
+  }) =>
+    createElement(
+      'button',
+      {
+        'aria-label': accessibilityLabel,
+        'data-testid': testID,
+        onClick: onPress,
+        type: 'button',
+      },
+      children,
+    ),
 }))
-vi.mock('../components/workspace/MobilePropertiesPanel', () => ({ MobilePropertiesPanel: () => {
-  calls.properties()
-  return null
-} }))
-vi.mock('../components/workspace/MobileWorkspaceSidebar', () => ({ MobileWorkspaceSidebar: (props: { onOpenCommandPalette?: () => void }) => {
-  calls.sidebar(props)
-  return createElement('button', { type: 'button', 'data-testid': 'sidebar-command-palette-action', onClick: props.onOpenCommandPalette })
-} }))
-vi.mock('../ui/theme/useMobileTheme', () => ({ useMobileStyles: () => ({
-  mobileColors: { textMuted: '#777' },
-  styles: { screen: {}, drawerRoot: {}, drawerPanel: {} },
-}) }))
-vi.mock('../workspace/mobileWorkspaceEmptyState', () => ({ mobileWorkspaceHasNoVault: () => false }))
-vi.mock('./usePhoneViewportWidth', () => ({ usePhoneViewportWidth: () => 390 }))
-vi.mock('./PhoneScreenLayer', () => ({ PhoneScreenLayer: ({
-  active,
-  children,
-  testID,
-}: {
-  active: boolean
-  children?: ReactNode
-  testID: string
-}) => createElement('div', { 'data-active': String(active), 'data-testid': testID }, children) }))
+vi.mock('../components/workspace/MobilePropertiesPanel', () => ({
+  MobilePropertiesPanel: () => {
+    calls.properties()
+    return null
+  },
+}))
+vi.mock('../components/workspace/MobileWorkspaceSidebar', () => ({
+  MobileWorkspaceSidebar: (props: { onOpenCommandPalette?: () => void }) => {
+    calls.sidebar(props)
+    return createElement('button', {
+      type: 'button',
+      'data-testid': 'sidebar-command-palette-action',
+      onClick: props.onOpenCommandPalette,
+    })
+  },
+}))
+vi.mock('../ui/theme/useMobileTheme', () => ({
+  useMobileStyles: () => ({
+    mobileColors: { textMuted: '#777' },
+    styles: { screen: {}, drawerRoot: {}, drawerPanel: {} },
+  }),
+}))
+vi.mock('../workspace/mobileWorkspaceEmptyState', () => ({
+  mobileWorkspaceHasNoVault: () => false,
+}))
+vi.mock('./usePhoneViewportWidth', () => ({
+  usePhoneViewportWidth: () => 390,
+}))
+vi.mock('./PhoneScreenLayer', () => ({
+  PhoneScreenLayer: ({ active, children, testID }: { active: boolean; children?: ReactNode; testID: string }) =>
+    createElement('div', { 'data-active': String(active), 'data-testid': testID }, children),
+}))
+vi.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 47, left: 0, right: 0, bottom: 0 }),
+}))
 vi.mock('./PhoneWorkspaceChrome', () => ({
   PhoneBackButton: () => null,
   PhoneTopBar: ({ children }: { children?: ReactNode }) => createElement('header', null, children),
 }))
-vi.mock('./TabletEditorPanel', () => ({ TabletEditorPanel: (props: Record<string, unknown>) => {
-  calls.editor(props)
-  return null
-} }))
-vi.mock('./useMobileInspectorReferenceGroups', () => ({ useMobileInspectorReferenceGroups: () => [] }))
+vi.mock('./TabletEditorPanel', () => ({
+  TabletEditorPanel: (props: Record<string, unknown>) => {
+    calls.editor(props)
+    return null
+  },
+}))
+vi.mock('./PhoneEditorGlassChrome', () => ({
+  PhoneEditorGlassChrome: (props: Record<string, unknown>) => {
+    calls.glass(props)
+    return createElement('button', {
+      'data-testid': 'phone-glass-back',
+      onClick: props.onBack as () => void,
+      type: 'button',
+    })
+  },
+}))
+vi.mock('./useMobileInspectorReferenceGroups', () => ({
+  useMobileInspectorReferenceGroups: () => [],
+}))
 
 let root: ReturnType<typeof createRoot>
 let host: HTMLDivElement
@@ -114,4 +153,22 @@ it('opens the sidebar from the phone note-list header', async () => {
   await act(async () => button?.click())
   expect(host.querySelector('[data-testid="phone-sidebar-slot"]')?.getAttribute('data-active')).toBe('true')
   expect(host.querySelector('[data-testid="phone-list-slot"]')?.getAttribute('data-active')).toBe('false')
+})
+
+it('uses floating chrome, hides the phone toolbar, and keeps back navigation wired', async () => {
+  const props = createPhoneWorkspaceScreenProps(openCommandPalette)
+  props.controller.selectedNote = {
+    id: 'note-a',
+    title: 'A note',
+    favorite: false,
+  } as unknown as MobileNote
+  props.phoneState = 'editor'
+  const openList = vi.fn()
+
+  await act(async () => root.render(createElement(PhoneWorkspaceScreens, { ...props, openList })))
+
+  expect(calls.glass.mock.lastCall?.[0].onBack).toBe(openList)
+  expect(calls.editor.mock.lastCall?.[0].hideToolbar).toBe(true)
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-testid="phone-glass-back"]')?.click())
+  expect(openList).toHaveBeenCalledOnce()
 })

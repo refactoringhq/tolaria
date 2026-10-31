@@ -24,6 +24,8 @@ export type MobileWysiwygMarkdownEditorProps = {
 	blocks: MobileEditorBlock[];
 	bullets: string[];
 	compact: boolean;
+	phoneChromeTopInset?: number;
+	onTitleVisibilityChange?: (visible: boolean) => void;
 	layoutProbe?: MobileLayoutProbe;
 	note: MobileNote;
 	notes: MobileNote[];
@@ -84,6 +86,8 @@ export type NativeTentapEditorRuntime = ReturnType<
 
 export type NativeTentapEditorSurfaceProps = {
 	compact: boolean;
+	phoneChromeTopInset?: number;
+	onTitleVisibilityChange?: (visible: boolean) => void;
 	vaultRootUri?: string | null;
 	previewMarkdown: string;
 	activateEditorChanges: () => void;

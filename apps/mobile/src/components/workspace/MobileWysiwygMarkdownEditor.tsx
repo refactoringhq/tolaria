@@ -5,9 +5,11 @@ import type { MobileTypeDefinitions } from '../../workspace/mobileWorkspaceModel
 import { MobileMarkdownSourceEditor, type MobileMarkdownSourceEditorProps } from './MobileMarkdownSourceEditor'
 
 type MobileWysiwygMarkdownEditorProps = MobileMarkdownSourceEditorProps & {
+  phoneChromeTopInset?: number
   layoutProbe?: MobileLayoutProbe
   onNavigateWikilink?: (target: string) => void
   onOpenLink?: (href: string) => void
+  onTitleVisibilityChange?: (visible: boolean) => void
   onTableOfContentsScrollProof?: (proof: NativeTableOfContentsProof) => void
   tableOfContentsTarget?: MobileTableOfContentsTarget | null
   wysiwygAutocompleteProbe?: boolean
@@ -26,8 +28,10 @@ type MobileWysiwygMarkdownEditorProps = MobileMarkdownSourceEditorProps & {
 export function MobileWysiwygMarkdownEditor(props: MobileWysiwygMarkdownEditorProps) {
   const {
     layoutProbe,
+    phoneChromeTopInset,
     onNavigateWikilink,
     onOpenLink,
+    onTitleVisibilityChange,
     onTableOfContentsScrollProof,
     tableOfContentsTarget,
     wysiwygAutocompleteProbe,
@@ -44,8 +48,10 @@ export function MobileWysiwygMarkdownEditor(props: MobileWysiwygMarkdownEditorPr
     ...sourceEditorProps
   } = props
   void layoutProbe
+  void phoneChromeTopInset
   void onNavigateWikilink
   void onOpenLink
+  void onTitleVisibilityChange
   void onTableOfContentsScrollProof
   void tableOfContentsTarget
   void wysiwygAutocompleteProbe

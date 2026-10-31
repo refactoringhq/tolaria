@@ -26,6 +26,10 @@ describe('mobile TenTap editor CSS', () => {
   it('reveals the editor only after its appearance stylesheet is injected', () => {
     expect(cssBlock(mobileTentapEditorCss(false), '#root')).toContain('visibility: visible;')
   })
+
+  it('adds phone glass chrome clearance through appearance CSS without changing content', () => {
+    expect(cssBlock(mobileTentapEditorCss(true, null, undefined, undefined, 107), '.ProseMirror')).toContain('padding: 127px 24px 96px;')
+  })
 })
 
 function cssBlock(css: string, selector: string): string {

@@ -1,5 +1,5 @@
-import { mobilePalettes, type MobileColors } from '../../ui/theme/mobilePalette'
-import { mobileMetrics, type MobileMetrics } from '../../ui/mobileMetrics'
+import { type MobileMetrics, mobileMetrics } from '../../ui/mobileMetrics'
+import { type MobileColors, mobilePalettes } from '../../ui/theme/mobilePalette'
 import type { MobileNoteWidth } from '../../workspace/mobileWorkspaceModel'
 
 type CssDeclaration = readonly [property: string, value: string | number]
@@ -9,6 +9,7 @@ export function mobileTentapEditorCss(
   noteWidth: MobileNoteWidth | null | undefined = null,
   colors: MobileColors = mobilePalettes.light,
   metrics: MobileMetrics = mobileMetrics[1],
+  phoneChromeTopInset = 0,
 ): string {
   const { editor: desktopEditorParity, space: mobileSpace } = metrics
   const horizontalPadding = compact ? mobileSpace.xl : desktopEditorParity.contentPaddingHorizontal
@@ -18,7 +19,11 @@ export function mobileTentapEditorCss(
 
   return [
     cssRule('#root', [['visibility', 'visible']]),
-    ...documentRules(colors, metrics, { horizontalPadding, wide }),
+    ...documentRules(colors, metrics, {
+      horizontalPadding,
+      wide,
+      phoneChromeTopInset,
+    }),
     ...headingRules(colors, metrics, { h1FontSize, h1LineHeight }),
     ...blockRules(colors, metrics),
     ...tableRules(colors, metrics),
@@ -28,20 +33,36 @@ export function mobileTentapEditorCss(
 
 function wikilinkRules(): string[] {
   // Phosphor FileText regular, matching the note icon used elsewhere in the app.
-  const path = 'm213.66 82.34-56-56A8 8 0 0 0 152 24H56a16 16 0 0 0-16 16v176a16 16 0 0 0 16 16h144a16 16 0 0 0 16-16V88a8 8 0 0 0-2.34-5.66M160 51.31 188.69 80H160ZM200 216H56V40h88v48a8 8 0 0 0 8 8h48zm-32-80a8 8 0 0 1-8 8H96a8 8 0 0 1 0-16h64a8 8 0 0 1 8 8m0 32a8 8 0 0 1-8 8H96a8 8 0 0 1 0-16h64a8 8 0 0 1 8 8'
+  const path =
+    'm213.66 82.34-56-56A8 8 0 0 0 152 24H56a16 16 0 0 0-16 16v176a16 16 0 0 0 16 16h144a16 16 0 0 0 16-16V88a8 8 0 0 0-2.34-5.66M160 51.31 188.69 80H160ZM200 216H56V40h88v48a8 8 0 0 0 8 8h48zm-32-80a8 8 0 0 1-8 8H96a8 8 0 0 1 0-16h64a8 8 0 0 1 8 8m0 32a8 8 0 0 1-8 8H96a8 8 0 0 1 0-16h64a8 8 0 0 1 8 8'
   const icon = `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><path d="${path}"/></svg>`)}")`
   const selector = '.ProseMirror a[href^="tolaria://wikilink/"]'
   return [
-    cssRule(selector, [['text-decoration', 'underline dotted'], ['text-underline-offset', '2px'], ['border-radius', '2px'], ['padding', '0 1px']]),
+    cssRule(selector, [
+      ['text-decoration', 'underline dotted'],
+      ['text-underline-offset', '2px'],
+      ['border-radius', '2px'],
+      ['padding', '0 1px'],
+    ]),
     cssRule(`${selector}::before`, [
-      ['content', '""'], ['display', 'inline-block'], ['width', '0.9em'], ['height', '0.9em'],
-      ['margin-right', '0.2em'], ['vertical-align', '-0.1em'], ['background-color', 'currentColor'],
-      ['-webkit-mask', `${icon} center / contain no-repeat`], ['mask', `${icon} center / contain no-repeat`],
+      ['content', '""'],
+      ['display', 'inline-block'],
+      ['width', '0.9em'],
+      ['height', '0.9em'],
+      ['margin-right', '0.2em'],
+      ['vertical-align', '-0.1em'],
+      ['background-color', 'currentColor'],
+      ['-webkit-mask', `${icon} center / contain no-repeat`],
+      ['mask', `${icon} center / contain no-repeat`],
     ]),
   ]
 }
 
-function documentRules(mobileColors: MobileColors, metrics: MobileMetrics, { horizontalPadding, wide }: { horizontalPadding: number; wide: boolean }): string[] {
+function documentRules(
+  mobileColors: MobileColors,
+  metrics: MobileMetrics,
+  { horizontalPadding, wide, phoneChromeTopInset }: { horizontalPadding: number; wide: boolean; phoneChromeTopInset: number },
+): string[] {
   const desktopEditorParity = metrics.editor
   const widePadding = `clamp(${metrics.size(24)}px, 4vw, ${metrics.size(72)}px)`
   return [
@@ -54,9 +75,7 @@ function documentRules(mobileColors: MobileColors, metrics: MobileMetrics, { hor
       ['margin', 0],
       ['padding', 0],
     ]),
-    cssRule('#root > div:first-child', [
-      ['overflow-x', 'hidden'],
-    ]),
+    cssRule('#root > div:first-child', [['overflow-x', 'hidden']]),
     cssRule('.ProseMirror', [
       ['box-sizing', 'border-box'],
       ['caret-color', mobileColors.primary],
@@ -65,13 +84,20 @@ function documentRules(mobileColors: MobileColors, metrics: MobileMetrics, { hor
       ['min-height', '100vh'],
       ['outline', 'none'],
       ['overflow-wrap', 'anywhere'],
-      ['padding', `${desktopEditorParity.contentPaddingVertical}px ${wide ? widePadding : `${horizontalPadding}px`} ${metrics.size(96)}px`],
+      [
+        'padding',
+        `${desktopEditorParity.contentPaddingVertical + phoneChromeTopInset}px ${wide ? widePadding : `${horizontalPadding}px`} ${metrics.size(96)}px`,
+      ],
       ['width', '100%'],
     ]),
   ]
 }
 
-function headingRules(mobileColors: MobileColors, metrics: MobileMetrics, { h1FontSize, h1LineHeight }: { h1FontSize: number; h1LineHeight: number }): string[] {
+function headingRules(
+  mobileColors: MobileColors,
+  metrics: MobileMetrics,
+  { h1FontSize, h1LineHeight }: { h1FontSize: number; h1LineHeight: number },
+): string[] {
   const desktopEditorParity = metrics.editor
   return [
     cssRule('.ProseMirror h1', [
@@ -107,9 +133,7 @@ function headingRules(mobileColors: MobileColors, metrics: MobileMetrics, { h1Fo
 function blockRules(mobileColors: MobileColors, metrics: MobileMetrics): string[] {
   const { editor: desktopEditorParity, space: mobileSpace } = metrics
   return [
-    cssRule('.ProseMirror p', [
-      ['margin', `0 0 ${desktopEditorParity.paragraphSpacing}px`],
-    ]),
+    cssRule('.ProseMirror p', [['margin', `0 0 ${desktopEditorParity.paragraphSpacing}px`]]),
     cssRule('.ProseMirror blockquote', [
       ['border-left', `3px solid ${mobileColors.primary}`],
       ['color', mobileColors.textMuted],
@@ -134,9 +158,7 @@ function blockRules(mobileColors: MobileColors, metrics: MobileMetrics): string[
       ['margin', `0 0 ${desktopEditorParity.paragraphSpacing}px`],
       ['padding-left', `${desktopEditorParity.listIndentSize + desktopEditorParity.listPaddingLeft}px`],
     ]),
-    cssRule('.ProseMirror li', [
-      ['margin', `${desktopEditorParity.listItemSpacing}px 0`],
-    ]),
+    cssRule('.ProseMirror li', [['margin', `${desktopEditorParity.listItemSpacing}px 0`]]),
     cssRule('.ProseMirror hr', [
       ['border', 0],
       ['border-top', `${desktopEditorParity.horizontalRuleThickness}px solid ${mobileColors.border}`],
@@ -164,16 +186,19 @@ function tableRules(mobileColors: MobileColors, metrics: MobileMetrics): string[
       ['padding', `${desktopEditorParity.tableCellPaddingVertical}px ${desktopEditorParity.tableCellPaddingHorizontal}px`],
       ['text-align', 'left'],
     ]),
-    cssRule('.ProseMirror a', [
-      ['color', mobileColors.primary],
-    ]),
+    cssRule('.ProseMirror a', [['color', mobileColors.primary]]),
   ]
 }
 
 function headingRule(
   mobileColors: MobileColors,
   selector: string,
-  tokens: { fontSize: number; lineHeight: number; marginBottom: number; marginTop: number },
+  tokens: {
+    fontSize: number
+    lineHeight: number
+    marginBottom: number
+    marginTop: number
+  },
 ): string {
   return cssRule(selector, [
     ['color', mobileColors.text],
