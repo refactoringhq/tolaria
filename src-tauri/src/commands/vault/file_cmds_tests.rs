@@ -124,6 +124,57 @@ async fn folder_and_listing_commands_use_expanded_vault_root() {
 }
 
 #[test]
+fn startup_snapshot_reuses_ignored_paths_from_the_last_listing() {
+    let _cache_dir_lock = vault::TEST_CACHE_DIR_LOCK.lock().unwrap();
+    let cache_dir = TempDir::new().unwrap();
+    std::env::set_var("LAPUTA_CACHE_DIR", cache_dir.path());
+    let dir = TempDir::new().unwrap();
+    fs::write(dir.path().join("visible.md"), "# Visible\n").unwrap();
+    fs::write(dir.path().join("ignored.md"), "# Ignored\n").unwrap();
+    fs::write(dir.path().join(".gitignore"), "ignored.md\n").unwrap();
+    for args in [
+        &["init"][..],
+        &["add", "."],
+        &[
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@test.com",
+            "commit",
+            "-m",
+            "init",
+        ],
+    ] {
+        std::process::Command::new("git")
+            .args(args)
+            .current_dir(dir.path())
+            .output()
+            .unwrap();
+    }
+    let listed = scan_visible_vault_entries_with(dir.path(), true).unwrap();
+    assert!(!listed.iter().any(|entry| entry.filename == "ignored.md"));
+
+    // The snapshot must not consult git: with the rule gone it still hides the
+    // file until the next listing refreshes the remembered set.
+    fs::write(dir.path().join(".gitignore"), "").unwrap();
+    let snapshot = vault::read_vault_snapshot(dir.path()).unwrap().unwrap();
+    let before_refresh = snapshot_visible_entries(dir.path(), snapshot, true);
+    scan_visible_vault_entries_with(dir.path(), true).unwrap();
+    let snapshot = vault::read_vault_snapshot(dir.path()).unwrap().unwrap();
+    let after_refresh = snapshot_visible_entries(dir.path(), snapshot, true);
+
+    assert!(before_refresh
+        .iter()
+        .any(|entry| entry.filename == "visible.md"));
+    assert!(!before_refresh
+        .iter()
+        .any(|entry| entry.filename == "ignored.md"));
+    assert!(after_refresh
+        .iter()
+        .any(|entry| entry.filename == "ignored.md"));
+}
+
+#[test]
 fn startup_snapshot_visibility_keeps_snapshot_and_filters_ignored_entries() {
     let dir = TempDir::new().unwrap();
     fs::write(dir.path().join("visible.md"), "# Visible\n").unwrap();
