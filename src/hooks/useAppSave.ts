@@ -4,6 +4,7 @@ import { createVaultBackend } from '../lib/vaultBackend'
 import { autoRenameRemoteNote, hasRemoteVault } from '../lib/remoteNotes'
 import { onLiveNoteTitle } from '../lib/liveNoteTitle'
 import { useEditorSaveWithLinks } from './useEditorSaveWithLinks'
+import { attachmentCleanup, vaultRootForNote } from './attachmentCleanup'
 import { flushEditorContent } from '../utils/autoSave'
 import { extractH1TitleFromContent } from '../utils/noteTitle'
 import { isTauri } from '../mock-tauri'
@@ -745,14 +746,24 @@ function useEditorPersistence(options: EditorPersistenceOptions) {
     loadModifiedFiles()
   }, [loadModifiedFiles])
 
+  const onBeforePersist = useCallback(
+    (path: string) => {
+    attachmentCleanup.rememberBeforePersist(path)
+    onInternalVaultWrite?.(path)
+    },
+    [onInternalVaultWrite],
+  )
+
   const onNotePersisted = useCallback(
     (path: string, content: string) => {
     onInternalVaultWrite?.(path)
     clearUnsaved(path)
     if (path.endsWith('.yml')) reloadViews?.()
     scheduleUntitledRename(path, content)
+    const vaultPath = vaultRootForNote(path, persistenceScope)
+    if (vaultPath) attachmentCleanup.handlePersisted({ path, content, vaultPath })
     },
-    [clearUnsaved, onInternalVaultWrite, reloadViews, scheduleUntitledRename],
+    [clearUnsaved, onInternalVaultWrite, persistenceScope, reloadViews, scheduleUntitledRename],
   )
 
   const {
@@ -765,7 +776,7 @@ function useEditorPersistence(options: EditorPersistenceOptions) {
         setTabs,
         setToastMessage,
         onAfterSave,
-        onBeforePersist: onInternalVaultWrite,
+        onBeforePersist,
         onNotePersisted,
         resolvePath: resolveCurrentPath,
         resolvePathBeforeSave,
@@ -781,6 +792,8 @@ function useEditorPersistence(options: EditorPersistenceOptions) {
         refreshPendingUntitledRename(currentPath, content)
         trackUnsaved?.(currentPath)
         handleContentChangeRaw(currentPath, content)
+        const vaultPath = vaultRootForNote(currentPath, persistenceScope)
+        if (vaultPath) attachmentCleanup.handleContentChanged({ path: currentPath, content, vaultPath })
         },
         [handleContentChangeRaw, persistenceScope, refreshPendingUntitledRename, resolveCurrentPath, trackUnsaved],
       )

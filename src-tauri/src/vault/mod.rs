@@ -1,3 +1,4 @@
+mod attachment_cleanup;
 mod attachment_rename;
 mod cache;
 mod config_seed;
@@ -28,6 +29,10 @@ mod view_tests;
 mod view_value_conversions;
 mod views;
 
+pub use attachment_cleanup::{
+    remove_unreferenced_attachment, restore_removed_attachment, AttachmentRemovalRequest,
+    AttachmentRemovalResult, AttachmentRestoreRequest,
+};
 pub use attachment_rename::{rename_attachment, AttachmentRenameRequest, AttachmentRenameResult};
 pub use cache::{invalidate_cache, read_vault_snapshot, refresh_vault_cache, scan_vault_cached};
 pub use config_seed::{
