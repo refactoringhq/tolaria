@@ -171,47 +171,22 @@ describe('DynamicPropertiesPanel', () => {
 
     expect(screen.getByText('Luca').parentElement).toHaveClass('justify-start', 'text-left')
     expect(screen.getByText('0.84').parentElement).toHaveClass('justify-start', 'text-left')
-    expect(screen.getByTestId('date-display')).toHaveClass('text-left')
+    for (const dateDisplay of screen.getAllByTestId('date-display')) {
+      expect(dateDisplay).toHaveClass('text-left')
+    }
     expect(screen.getByText('#3b82f6')).toHaveClass('text-left')
-    expect(screen.getByText('\u2014').parentElement).toHaveClass('justify-start', 'text-left')
   })
 
   it('keeps present empty properties visible and editable', () => {
     renderPanel({ frontmatter: { 'start date': '' }, onUpdateProperty })
 
     expect(screen.getByText('Start date')).toBeInTheDocument()
-    fireEvent.click(screen.getByText('\u2014'))
-    const input = screen.getByDisplayValue('')
+    fireEvent.click(screen.getByTestId('date-display'))
+    const input = screen.getByTestId('date-picker-input')
     fireEvent.change(input, { target: { value: '2026-05-03' } })
-    fireEvent.blur(input)
+    fireEvent.keyDown(input, { key: 'Enter' })
 
     expect(onUpdateProperty).toHaveBeenCalledWith('start date', '2026-05-03')
-  })
-
-  it('shows missing type-defined properties as gray editable placeholders', () => {
-    const typeEntry = makeEntry({
-      title: 'Book',
-      isA: 'Type',
-      properties: {
-        'start date': null,
-      },
-    })
-
-    renderPanel({
-      entry: makeEntry({ title: 'Dune', isA: 'Book' }),
-      entries: [typeEntry],
-      frontmatter: {},
-      onUpdateProperty,
-    })
-
-    const placeholder = screen.getByTestId('type-derived-property')
-    expect(within(placeholder).getByText('Start date')).toHaveClass('text-muted-foreground/40')
-    fireEvent.click(placeholder)
-    const input = screen.getByDisplayValue('')
-    fireEvent.change(input, { target: { value: '2026-05-04' } })
-    fireEvent.blur(input)
-
-    expect(onUpdateProperty).toHaveBeenCalledWith('start date', '2026-05-04')
   })
 
   it('hides Owner with wikilink value from Properties panel', () => {
@@ -976,5 +951,28 @@ describe('DynamicPropertiesPanel', () => {
       // Default mode is text
       expect(screen.getByPlaceholderText('Value')).toBeInTheDocument()
     })
+  })
+})
+
+describe('Type-derived date placeholders', () => {
+  it('opens the date picker for an empty type-defined date property', () => {
+    const onUpdateProperty = vi.fn()
+    const typeEntry = makeEntry({ title: 'Event', isA: 'Type', properties: { date: null } })
+
+    renderPanel({
+      entry: makeEntry({ title: 'Concert', isA: 'Event' }),
+      entries: [typeEntry],
+      frontmatter: {},
+      onUpdateProperty,
+    })
+
+    const placeholder = screen.getByTestId('type-derived-property')
+    expect(within(placeholder).getByText('Date')).toHaveClass('text-muted-foreground/40')
+    fireEvent.click(placeholder)
+    const input = screen.getByTestId('date-picker-input')
+    fireEvent.change(input, { target: { value: '2026-05-04' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    expect(onUpdateProperty).toHaveBeenCalledWith('date', '2026-05-04')
   })
 })
