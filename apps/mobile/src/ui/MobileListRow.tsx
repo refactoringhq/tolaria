@@ -1,10 +1,10 @@
-import type { MobileMetrics } from './mobileMetrics'
-import { useMobileStyles } from './theme/useMobileTheme'
-import type { MobileColors } from './theme/mobilePalette'
 import type { ReactNode } from 'react'
-import { Pressable, StyleSheet, View } from 'react-native'
+import { Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native'
 import { Text } from '../components/ui/text'
-import { probeProps, type MobileLayoutProbe } from '../qa/mobileLayoutProbe'
+import { type MobileLayoutProbe, probeProps } from '../qa/mobileLayoutProbe'
+import { isPhoneViewport, type MobileMetrics } from './mobileMetrics'
+import type { MobileColors } from './theme/mobilePalette'
+import { useMobileStyles } from './theme/useMobileTheme'
 
 type MobileListRowProps = {
   chips?: ReactNode
@@ -30,6 +30,7 @@ type MobileListRowState = {
 
 export function MobileListRow(props: MobileListRowProps) {
   const themeStyles = useMobileStyles(createThemeStyles)
+  const isPhone = isPhoneViewport(useWindowDimensions().width, Platform.OS === 'ios' && Platform.isPad)
   const { styles } = themeStyles
   const rowState = mobileListRowState(props)
 
@@ -45,14 +46,14 @@ export function MobileListRow(props: MobileListRowProps) {
         accessibilityRole="button"
         onLongPress={props.onLongPress}
         onPress={props.onPress}
-        style={rowState.desktopSelected ? styles.baseSelected : styles.base}
+        style={[rowState.desktopSelected ? styles.baseSelected : styles.base, isPhone ? styles.phoneBase : null]}
       >
         <View {...rowProbeProps(props.layoutProbe, props.metricId, 'header')} style={styles.header}>
           {props.leading}
           <Text
             {...rowProbeProps(props.layoutProbe, props.metricId, 'title')}
             numberOfLines={1}
-            style={[styles.title, rowState.desktopSelected ? styles.titleSelected : null]}
+            style={[styles.title, isPhone ? styles.phoneTitle : null, rowState.desktopSelected ? styles.titleSelected : null]}
           >
             {props.title}
           </Text>
@@ -61,7 +62,7 @@ export function MobileListRow(props: MobileListRowProps) {
         <Text
           {...rowProbeProps(props.layoutProbe, props.metricId, 'subtitle')}
           numberOfLines={2}
-          style={styles.subtitle}
+          style={[styles.subtitle, isPhone ? styles.phoneSubtitle : null]}
         >
           {props.subtitle}
         </Text>
@@ -123,6 +124,9 @@ function createThemeStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
     baseSelected: {
       ...baseContentStyle,
     },
+    phoneBase: {
+      ...phoneRowBaseStyle(metrics),
+    },
     frame: {
       alignSelf: 'stretch',
       borderBottomColor: mobileColors.border,
@@ -151,8 +155,34 @@ function createThemeStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
       borderLeftWidth: 0,
     },
     ...rowTextStyles(mobileColors, metrics),
+    ...phoneRowTextStyles(metrics),
   })
   return { mobileColors, styles }
+}
+
+function phoneRowBaseStyle(metrics: MobileMetrics) {
+  const phone = metrics.phoneChrome
+  return {
+    minHeight: phone.noteRowMinHeight,
+    paddingBottom: phone.noteRowPaddingVertical,
+    paddingHorizontal: phone.rowHorizontalPadding,
+    paddingTop: phone.noteRowPaddingVertical,
+  }
+}
+
+function phoneRowTextStyles(metrics: MobileMetrics) {
+  const phone = metrics.phoneChrome
+  return {
+    phoneTitle: {
+      fontSize: phone.noteTitleTextSize,
+      lineHeight: phone.noteTitleLineHeight,
+    },
+    phoneSubtitle: {
+      marginTop: phone.noteSnippetMarginTop,
+      fontSize: phone.noteSnippetTextSize,
+      lineHeight: phone.noteSnippetLineHeight,
+    },
+  }
 }
 
 function rowTextStyles(mobileColors: MobileColors, metrics: MobileMetrics) {

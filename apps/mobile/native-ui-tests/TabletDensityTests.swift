@@ -29,18 +29,28 @@ final class TabletDensityTests: XCTestCase {
     XCUIDevice.shared.orientation = .landscapeLeft
   }
 
-  func testPhoneFixedDensityUsesTheSameNativeInsets() {
+  func testPhoneChromeUsesNativeRowMetrics() {
     XCUIDevice.shared.orientation = .portrait
     let app = XCUIApplication(bundleIdentifier: "com.tolaria.mobile.dev")
     app.launchArguments = ["--tolaria-mobile-search", "?source=fixture&phoneState=sidebar&layoutProbe=1&qaRun=density"]
     app.launchEnvironment["TOLARIA_MOBILE_SEARCH"] = "?source=fixture&phoneState=sidebar&layoutProbe=1&qaRun=density"
     app.launch()
     XCTAssertTrue(element(app, "sidebar-item-inbox").waitForExistence(timeout: 30))
-    assertSidebar(app, rowHeight: 38.4)
-    assertMeasuredInsets(app, scale: 1.2)
+    assertPhoneSidebar(app, minimumRowHeight: 44)
+    assertPhoneMetrics(app)
     assertSectionLabelCoordinates(app)
     assertNoDensitySetting(app)
-    record("phone-fixed-120-density")
+    record("phone-native-chrome-metrics")
+    app.terminate()
+
+    let listApp = XCUIApplication(bundleIdentifier: "com.tolaria.mobile.dev")
+    listApp.launchArguments = ["--tolaria-mobile-search", "?source=fixture&phoneState=list&layoutProbe=1&qaRun=density"]
+    listApp.launchEnvironment["TOLARIA_MOBILE_SEARCH"] = "?source=fixture&phoneState=list&layoutProbe=1&qaRun=density"
+    listApp.launch()
+    let listMetricsElement = element(listApp, "note-list-layout-metrics")
+    XCTAssertTrue(listMetricsElement.waitForExistence(timeout: 30))
+    assertPhoneNoteRow(listApp, metrics: NativeDensityMetrics(readout: listMetricsElement.label))
+    record("phone-native-note-list-metrics")
   }
 
   private func assertNoDensitySetting(_ app: XCUIApplication) {
@@ -55,10 +65,13 @@ final class TabletDensityTests: XCTestCase {
   private func assertSidebar(_ app: XCUIApplication, rowHeight: CGFloat) {
     let row = element(app, "sidebar-item-inbox")
     XCTAssertTrue(row.waitForExistence(timeout: 5))
-    let expectation = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
-      abs(row.frame.height - rowHeight) <= 1
-    }, object: nil)
-    XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 5), .completed)
+    XCTAssertEqual(row.frame.height, rowHeight, accuracy: 1, "Measured sidebar row height")
+  }
+
+  private func assertPhoneSidebar(_ app: XCUIApplication, minimumRowHeight: CGFloat) {
+    let row = element(app, "sidebar-item-inbox")
+    XCTAssertTrue(row.waitForExistence(timeout: 5))
+    XCTAssertGreaterThanOrEqual(row.frame.height, minimumRowHeight - 1)
   }
 
   private func record(_ name: String) {
@@ -66,6 +79,33 @@ final class TabletDensityTests: XCTestCase {
     attachment.name = name
     attachment.lifetime = .keepAlways
     add(attachment)
+  }
+
+  private func assertPhoneMetrics(_ app: XCUIApplication) {
+    let sidebar = NativeDensityMetrics(readout: element(app, "sidebar-layout-metrics").label)
+    for item in ["inbox", "all-notes", "archive", "personal-journal", "essays"] {
+      let prefix = "sidebar.item.\(item)"
+      XCTAssertGreaterThanOrEqual(sidebar.frame("\(prefix).label").height, 22)
+    }
+    XCTAssertFalse(element(app, "sidebar.item.inbox.count.container").exists)
+    XCTAssertGreaterThanOrEqual(sidebar.frame("sidebar.item.inbox.count.text").height, 22)
+    XCTAssertGreaterThanOrEqual(sidebar.frame("sidebar.folder.writing.row").height, 44)
+    XCTAssertGreaterThanOrEqual(sidebar.frame("sidebar.folder.writing.label").height, 22)
+  }
+
+  private func assertPhoneNoteRow(_ app: XCUIApplication, metrics: NativeDensityMetrics) {
+    guard let frameId = metrics.firstFrameId(prefix: "noteList.item.", suffix: ".frame") else {
+      XCTFail("No native note-row frame was captured")
+      return
+    }
+
+    let firstRow = app.descendants(matching: .any)
+      .matching(NSPredicate(format: "identifier BEGINSWITH %@", "note-row-"))
+      .firstMatch
+    XCTAssertTrue(firstRow.waitForExistence(timeout: 5))
+    XCTAssertGreaterThanOrEqual(metrics.frame(frameId).height, 44)
+    XCTAssertGreaterThanOrEqual(metrics.frame(frameId.replacingOccurrences(of: ".frame", with: ".title")).height, 22)
+    XCTAssertGreaterThanOrEqual(metrics.frame(frameId.replacingOccurrences(of: ".frame", with: ".subtitle")).height, 20)
   }
 
   private func assertMeasuredInsets(_ app: XCUIApplication, scale: Double) {
@@ -108,6 +148,13 @@ final class TabletDensityTests: XCTestCase {
 
 private struct NativeDensityMetrics {
   let readout: String
+
+  func firstFrameId(prefix: String, suffix: String) -> String? {
+    readout
+      .split(separator: "|")
+      .first(where: { $0.hasPrefix(prefix) && $0.contains("\(suffix):") })
+      .map { String($0.split(separator: ":", maxSplits: 1)[0]) }
+  }
 
   func frame(_ identifier: String, file: StaticString = #filePath, line: UInt = #line) -> CGRect {
     let prefix = identifier + ":"
