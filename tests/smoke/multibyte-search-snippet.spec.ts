@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import {
 	createFixtureVaultCopy,
 	openFixtureVaultDesktopHarness,
@@ -9,7 +9,7 @@ import {
 
 let tempVaultDir: string;
 
-async function showNoteListSearch(page: import("@playwright/test").Page) {
+async function showNoteListSearch(page: Page) {
 	await page.getByTitle("Search notes").click();
 	await expect(page.getByPlaceholder("Search notes...")).toBeVisible();
 }
