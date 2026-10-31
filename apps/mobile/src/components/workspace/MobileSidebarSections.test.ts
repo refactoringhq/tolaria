@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-import { act, createElement, useLayoutEffect, type CSSProperties, type ReactNode } from 'react'
+import { act, type CSSProperties, createElement, type ReactNode, useLayoutEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { mobileMetrics } from '../../ui/mobileMetrics'
 import { mobilePalettes } from '../../ui/theme/mobilePalette'
-import { MobileWorkspaceSidebar } from './MobileWorkspaceSidebar'
 import type { MobileSidebarSection } from '../../workspace/mobileWorkspaceModel'
+import { MobileWorkspaceSidebar } from './MobileWorkspaceSidebar'
 
 type Props = { children?: ReactNode; testID?: string; style?: CSSProperties | CSSProperties[];
   contentContainerStyle?: CSSProperties[]; onPress?: () => void; accessibilityLabel?: string;
@@ -23,22 +23,22 @@ function Surface(props: Props) {
 }
 vi.mock('react-native', () => ({ View: Surface, Text: Surface, Pressable: Surface, ScrollView: Surface,
   Platform: { OS: 'web' }, StyleSheet: { create: (value: object) => value, hairlineWidth: 1 },
-  useWindowDimensions: () => ({ fontScale: 1 }) }))
+  useWindowDimensions: () => ({ fontScale: 1, width: 390 }) }))
 vi.mock('../../ui/theme/useMobileTheme', () => ({ useMobileStyles: (factory: typeof import('./mobileSidebarStyles').createSidebarStyles) => factory(mobilePalettes.light, mobileMetrics[1.2]) }))
 vi.mock('../../ui/MobilePanel', () => ({ MobilePanel: Surface, MobileToolbar: Surface }))
 vi.mock('../../ui/MobileIconButton', () => ({ MobileIconButton: Surface }))
 vi.mock('../ui/text', () => ({ Text: Surface }))
 vi.mock('./MobileSidebarSettings', () => ({ MobileSidebarSettings: () => createElement(Surface, { testID: 'sidebar-settings' }) }))
 vi.mock('../vaults/MobileVaultPicker', () => ({ MobileVaultPicker: () => null }))
-vi.mock('./MobileSidebarCountPill', () => ({ MobileSidebarCountPill: () => null }))
+vi.mock('./MobileSidebarCountPill', () => ({ MobileSidebarCountPill: ({ plain, testID, value }: { plain?: boolean; testID: string; value: string }) => createElement(Surface, { testID, style: { backgroundColor: plain ? '' : '#eee', fontSize: plain ? '17px' : '12px' } }, value) }))
 vi.mock('./MobileWorkspaceIconResolver', () => ({ mobilePhosphorIconElement: () => null }))
 vi.mock('./MobileWorkspaceSidebarFolderTree', () => ({ FolderTree: () => createElement(Surface, { testID: 'owned-folder-tree' }) }))
 vi.mock('phosphor-react-native', () => ({ CaretDown: () => null, CaretRight: () => null, FileText: () => null, Eye: () => null, Plus: () => null }))
 
 const select = vi.fn(), create = vi.fn(), visibility = vi.fn()
 const sections: MobileSidebarSection[] = [
-  { id: 'primary', items: [{ id: 'inbox', icon: 'Inbox', label: 'Inbox' }] },
-  ...['views', 'favorites', 'types', 'folders'].map(id => ({ id, label: id,
+  { id: 'primary', items: [{ id: 'inbox', icon: 'Inbox', label: 'Inbox', count: '12' }] },
+  ...['views', 'favorites', 'types', 'folders'].map(id => ({ id, label: id, count: id === 'views' ? '8' : undefined,
     items: [{ id: `owned-${id}`, icon: 'FileText', label: `Owned ${id}`, active: true }],
     ...(id === 'folders' ? { folders: [] } : {}),
   })),
@@ -84,6 +84,19 @@ it('floats controls without a background strip and reserves their measured scrol
   expect(overlay.style.bottom).toBe('0px')
   expect(overlay.style.backgroundColor).toBe('')
   expect(element('sidebar-scroll').style.paddingBottom).toBe('96px')
+})
+
+it('uses native-size phone sidebar rows and plain right-side counts', () => {
+  const inbox = element('sidebar-item-inbox')
+  const count = element('sidebar-item-inbox-count')
+  expect(inbox.style.minHeight).toBe('44px')
+  expect(element('sidebar-item-inbox-label').style.fontSize).toBe('17px')
+  expect(count.textContent).toBe('12')
+  expect(count.style.backgroundColor).toBe('')
+  expect(count.style.fontSize).toBe('17px')
+  const sectionCount = element('sidebar-section-count-views')
+  expect(sectionCount.textContent).toBe('8')
+  expect(sectionCount.style.backgroundColor).toBe('')
 })
 
 function element(id: string) {

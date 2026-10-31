@@ -1,14 +1,15 @@
-import type { MobileMetrics } from '../../ui/mobileMetrics'
-import { useMobileStyles } from '../../ui/theme/useMobileTheme'
-import type { MobileColors } from '../../ui/theme/mobilePalette'
 import { Platform, StyleSheet, View } from 'react-native'
+import { type MobileLayoutProbe, probeProps } from '../../qa/mobileLayoutProbe'
+import type { MobileMetrics } from '../../ui/mobileMetrics'
+import type { MobileColors } from '../../ui/theme/mobilePalette'
+import { useMobileStyles } from '../../ui/theme/useMobileTheme'
 import { Text } from '../ui/text'
-import { probeProps, type MobileLayoutProbe } from '../../qa/mobileLayoutProbe'
 
 
 type MobileSidebarCountPillProps = {
   activeColor?: string
   compact?: boolean
+  plain?: boolean
   layoutProbe?: MobileLayoutProbe
   metricId?: string
   testID: string
@@ -18,12 +19,24 @@ type MobileSidebarCountPillProps = {
 function NativeCountPill({
   activeColor,
   compact = false,
+  plain = false,
   layoutProbe,
   metricId,
   testID,
   value,
 }: MobileSidebarCountPillProps) {
   const { nativeStyles } = useMobileStyles(createThemeStyles)
+  if (plain) {
+    return (
+      <Text
+        {...countPillProbeProps(layoutProbe, metricId, 'text')}
+        style={nativeStyles.plainText}
+        testID={testID}
+      >
+        {value}
+      </Text>
+    )
+  }
   return (
     <View
       {...countPillProbeProps(layoutProbe, metricId, 'container')}
@@ -53,10 +66,14 @@ function countPillProbeProps(
 function WebCountPill({
   activeColor,
   compact = false,
+  plain = false,
   testID,
   value,
 }: MobileSidebarCountPillProps) {
   const { webStyles, mobileColors } = useMobileStyles(createThemeStyles)
+  if (plain) {
+    return <Text style={webStyles.plainText} testID={testID}>{value}</Text>
+  }
   return (
     <Text
       style={[compact ? webStyles.sectionCount : webStyles.count, activeColor ? { backgroundColor: activeColor, color: mobileColors.textInverse } : null]}
@@ -73,19 +90,8 @@ export function MobileSidebarCountPill(props: MobileSidebarCountPillProps) {
 
 function createThemeStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
   const { sidebar: desktopSidebarParity } = metrics
-  const pill = {
-    overflow: 'hidden' as const,
-    borderRadius: desktopSidebarParity.countPillRadius,
-    backgroundColor: mobileColors.graySoft,
-    paddingHorizontal: desktopSidebarParity.countPillPaddingHorizontal,
-  }
-  const text = {
-    color: mobileColors.textMuted,
-    fontSize: desktopSidebarParity.countPillTextSize,
-    fontWeight: '400' as const,
-    textAlign: 'center' as const,
-  }
-  const nativePill = { ...pill, alignItems: 'center' as const, justifyContent: 'center' as const }
+  const { pill, text, nativePill } = baseCountPillStyles(mobileColors, desktopSidebarParity)
+  const plainText = plainCountTextStyles(mobileColors, metrics)
   const nativeStyles = StyleSheet.create({
     activeText: { color: mobileColors.textInverse },
     compact: {
@@ -102,6 +108,7 @@ function createThemeStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
       ...text,
       lineHeight: metrics.size(12),
     },
+    plainText,
   })
 
   const webStyles = {
@@ -117,6 +124,36 @@ function createThemeStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
       minWidth: desktopSidebarParity.countPillCompactMinWidth,
       height: desktopSidebarParity.countPillCompactHeight,
     },
+    plainText,
   }
   return { mobileColors, nativeStyles, webStyles }
+}
+
+function baseCountPillStyles(mobileColors: MobileColors, metrics: MobileMetrics['sidebar']) {
+  const pill = {
+    overflow: 'hidden' as const,
+    borderRadius: metrics.countPillRadius,
+    backgroundColor: mobileColors.graySoft,
+    paddingHorizontal: metrics.countPillPaddingHorizontal,
+  }
+  const text = {
+    color: mobileColors.textMuted,
+    fontSize: metrics.countPillTextSize,
+    fontWeight: '400' as const,
+    textAlign: 'center' as const,
+  }
+  return {
+    pill,
+    text,
+    nativePill: { ...pill, alignItems: 'center' as const, justifyContent: 'center' as const },
+  }
+}
+
+function plainCountTextStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
+  return {
+    color: mobileColors.textMuted,
+    fontSize: metrics.phoneChrome.countTextSize,
+    fontVariant: ['tabular-nums' as const],
+    lineHeight: metrics.phoneChrome.sidebarTextLineHeight,
+  }
 }

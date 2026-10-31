@@ -581,6 +581,7 @@
   "sidebar.view.name": "Nome da visualização",
   "sidebar.folder.name": "Nome da pasta",
   "sidebar.folder.newName": "Novo nome da pasta",
+  "workspace.action.nameAlreadyExists": "Já existe um item com este nome.",
   "sidebar.folder.expand": "Expandir {name}",
   "sidebar.folder.collapse": "Recolher {name}",
   "sidebar.section.name": "Nome da seção",

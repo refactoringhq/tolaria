@@ -1,33 +1,32 @@
-import type { MobileMetrics } from '../../ui/mobileMetrics'
-import { useMobileStyles } from '../../ui/theme/useMobileTheme'
-import { useCallback, useState, type ReactNode } from 'react'
 import {
   CaretDown,
   CaretRight,
-  FileText,
   Eye,
+  FileText,
   Plus,
 } from 'phosphor-react-native'
-import { Pressable, ScrollView, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native'
-import { Text } from '../ui/text'
+import { type ReactNode, useCallback, useState } from 'react'
+import { type LayoutChangeEvent, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native'
 import { mobileCopy, mobileText } from '../../i18n/mobileText'
 import { MobileLayoutProbeReadout } from '../../qa/MobileLayoutProbeReadout'
-import { probeProps, useMobileLayoutProbe, type MobileLayoutProbe } from '../../qa/mobileLayoutProbe'
+import { type MobileLayoutProbe, probeProps, useMobileLayoutProbe } from '../../qa/mobileLayoutProbe'
 import { MobileIconButton } from '../../ui/MobileIconButton'
 import { MobilePanel, MobileToolbar } from '../../ui/MobilePanel'
-
+import { isPhoneViewport, type MobileMetrics, phoneViewportStyle } from '../../ui/mobileMetrics'
+import { useMobileStyles } from '../../ui/theme/useMobileTheme'
 import type {
   MobileNote,
   MobileSidebarIcon,
   MobileSidebarItem,
   MobileSidebarSection,
 } from '../../workspace/mobileWorkspaceModel'
+import { Text } from '../ui/text'
+import { MobileVaultPicker } from '../vaults/MobileVaultPicker'
 import { MobileSidebarCountPill } from './MobileSidebarCountPill'
 import { MobileSidebarSettings } from './MobileSidebarSettings'
-import { MobileVaultPicker } from '../vaults/MobileVaultPicker'
-import { createSidebarStyles as createThemeStyles } from './mobileSidebarStyles'
-import { FolderTree, type MobileSidebarFolderSelection } from './MobileWorkspaceSidebarFolderTree'
 import { mobilePhosphorIconElement } from './MobileWorkspaceIconResolver'
+import { FolderTree, type MobileSidebarFolderSelection } from './MobileWorkspaceSidebarFolderTree'
+import { createSidebarStyles as createThemeStyles } from './mobileSidebarStyles'
 import { noteTypeColor, noteTypeSoftColor } from './mobileWorkspaceTone'
 
 export type { MobileSidebarFolderSelection } from './MobileWorkspaceSidebarFolderTree'
@@ -314,7 +313,7 @@ function sidebarItemSelection(
 }
 
 function SidebarItem(props: SidebarItemProps) {
-  const themeStyles = useMobileStyles(createThemeStyles)
+  const themeStyles = useMobileStyles(createThemeStyles), isPhone = isPhoneViewport(useWindowDimensions().width, Platform.OS === 'ios' && Platform.isPad)
   const { mobileColors, styles } = themeStyles
   const {
     active = false,
@@ -341,32 +340,25 @@ function SidebarItem(props: SidebarItemProps) {
       style={[
         styles.item,
         sidebarItemPadding(themeStyles.metrics.sidebar, Boolean(count)),
+        phoneViewportStyle(isPhone, themeStyles.phoneItemStyle),
         active ? { backgroundColor: activeBackgroundColor } : null,
       ]}
       testID={`sidebar-item-${slug}`}
     >
       <View
         {...probeProps(layoutProbe, `${metricId}.content`)}
-        style={[styles.itemContent, sidebarItemContentHeight(themeStyles.metrics.sidebar, Boolean(count))]}
+        style={[styles.itemContent, sidebarItemContentHeight(themeStyles.metrics.sidebar, Boolean(count)), phoneViewportStyle(isPhone, themeStyles.phoneItemContentStyle)]}
       >
         {icon}
         <Text
           {...probeProps(layoutProbe, `${metricId}.label`)}
           numberOfLines={1}
-          style={[styles.itemText, themeStyles.nativeItemTextStyle, active ? { color: activeColor } : null]}
+          style={[styles.itemText, themeStyles.nativeItemTextStyle, phoneViewportStyle(isPhone, themeStyles.phoneItemTextStyle), active ? { color: activeColor } : null]}
           testID={`sidebar-item-${slug}-label`}
         >
           {label}
         </Text>
-        {count ? (
-          <MobileSidebarCountPill
-            activeColor={active ? activeColor : undefined}
-            layoutProbe={layoutProbe}
-            metricId={`${metricId}.count`}
-            testID={`sidebar-item-${slug}-count`}
-            value={count}
-          />
-        ) : null}
+        {count && <MobileSidebarCountPill activeColor={active ? activeColor : undefined} layoutProbe={layoutProbe} metricId={`${metricId}.count`} plain={isPhone} testID={`sidebar-item-${slug}-count`} value={count} />}
       </View>
     </Pressable>
   )
@@ -418,8 +410,10 @@ function SectionTitle(props: SectionTitleProps) {
 
 function SectionTitleActions(props: SectionTitleProps) {
   const { count, layoutProbe, sectionId } = props
-  const { styles, mobileColors, metrics } = useMobileStyles(createThemeStyles)
-  const { fontScale } = useWindowDimensions()
+  const themeStyles = useMobileStyles(createThemeStyles)
+  const { styles, mobileColors, metrics } = themeStyles
+  const { fontScale, width } = useWindowDimensions()
+  const isPhone = isPhoneViewport(width, Platform.OS === 'ios' && Platform.isPad)
   const actions = sectionTitleActions(props)
   if (!count && actions.length === 0) return null
 
@@ -430,6 +424,7 @@ function SectionTitleActions(props: SectionTitleProps) {
           compact
           layoutProbe={layoutProbe}
           metricId={`sidebar.section.${sectionId}.count`}
+          plain={isPhone}
           testID={`sidebar-section-count-${sectionId}`}
           value={count}
         />
