@@ -9,7 +9,7 @@ import {
 	writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import git from "isomorphic-git";
 import { afterEach, expect, it } from "vitest";
 import { createGitVault } from "./gitVault";
@@ -97,6 +97,13 @@ it.each(["NFC", "NFD"] as const)(
 		await git.init({ fs, dir, defaultBranch: "main" });
 		await git.add({ fs, dir, filepath: trackedName });
 		await git.commit({ fs, dir, author, message: "Unicode fixture" });
+		const resolveLikeMac = (path: unknown) => {
+			if (typeof path !== "string") return path;
+			const name = basename(path);
+			return name.normalize("NFC") === trackedName.normalize("NFC")
+				? join(dirname(path), trackedName)
+				: path;
+		};
 
 		const decomposedFs = {
 			promises: new Proxy(fs.promises, {
@@ -115,8 +122,7 @@ it.each(["NFC", "NFD"] as const)(
 						};
 					if (["lstat", "stat", "readFile"].includes(String(property)))
 						return (...args: unknown[]) => {
-							if (typeof args[0] === "string")
-								args[0] = args[0].normalize("NFC");
+							args[0] = resolveLikeMac(args[0]);
 							return Reflect.apply(method, target, args);
 						};
 					return method;
