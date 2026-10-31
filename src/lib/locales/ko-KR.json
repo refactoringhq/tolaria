@@ -581,7 +581,6 @@
   "sidebar.view.name": "보기 이름",
   "sidebar.folder.name": "폴더 이름",
   "sidebar.folder.newName": "새 폴더 이름",
-  "workspace.action.nameAlreadyExists": "이 이름의 항목이 이미 존재합니다.",
   "sidebar.folder.expand": "{name} 펼치기",
   "sidebar.folder.collapse": "{name} 접기",
   "sidebar.section.name": "섹션 이름",

@@ -16,11 +16,11 @@ The hooks expect `node` and `pnpm` to be available. If they are installed via `n
 
 ## Policy
 
-- Commit on `main` only, except long-lived mobile foundation work on `mobile-ui-foundation`.
-- Push from `main` to `origin/main` only, except `mobile-ui-foundation` to `origin/mobile-ui-foundation`.
+- Commit on `main` only, except long-lived mobile UI work on `mobile-ui-foundation` or `mobile-native-ui`.
+- Push from `main` to `origin/main` only, except `mobile-ui-foundation` to `origin/mobile-ui-foundation` and `mobile-native-ui` to `origin/mobile-native-ui`.
 - Never use `--no-verify`.
 - `.codescene-thresholds` is a ratchet. It can only move up.
-- `mobile-ui-foundation` is experimental and uses scoped mobile checks unless `TOLARIA_MOBILE_FULL_GATE=1` is set.
+- `mobile-ui-foundation` and `mobile-native-ui` are experimental and use scoped mobile checks unless `TOLARIA_MOBILE_FULL_GATE=1` is set.
 
 ## Pre-commit
 
@@ -51,7 +51,7 @@ CodeScene's change-aware commit safeguard is agent-side because it is provided t
 
 Chunk sidecars are preferred for the portable automatic gates. If the sidecars are unavailable, the hook runs the same checks locally.
 
-On `mobile-ui-foundation`, the default pre-push fast lane runs `pnpm mobile:lint`, `pnpm mobile:typecheck`, `pnpm mobile:test`, and `pnpm mobile:qa:screenshots`. Native simulator probes remain an explicit QA step. Set `TOLARIA_MOBILE_FULL_GATE=1` to run the production gate before promotion.
+On `mobile-ui-foundation` and `mobile-native-ui`, the default pre-push fast lane runs `pnpm mobile:lint`, `pnpm mobile:typecheck`, `pnpm mobile:test`, and `pnpm mobile:qa:screenshots`. Native simulator probes remain an explicit QA step. Set `TOLARIA_MOBILE_FULL_GATE=1` to run the production gate before promotion.
 
 If the remote CodeScene scores are better than the current thresholds, the hook updates `.codescene-thresholds`, stages it, and stops the push. Commit that file normally, then push again. The hook does not auto-commit or bypass itself.
 

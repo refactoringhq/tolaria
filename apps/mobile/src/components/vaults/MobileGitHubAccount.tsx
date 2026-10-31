@@ -1,14 +1,14 @@
-import { ArrowSquareOut, GithubLogo, SignOut } from 'phosphor-react-native'
+import { useMobileColors, useMobileStyles } from '../../ui/theme/useMobileTheme'
 import { Linking, View } from 'react-native'
+import { ArrowSquareOut, GithubLogo, SignOut } from 'phosphor-react-native'
+import { Text } from '../ui/text'
 import { mobileText } from '../../i18n/mobileText'
 import { MobileButton } from '../../ui/MobileButton'
-import { useMobileColors, useMobileStyles } from '../../ui/theme/useMobileTheme'
+
 import type { useGitHubAccount } from '../../workspace/git/useGitHubAccount'
-import { showNativeConfirmation } from '../ui/mobileNativeDialogs'
-import { Text } from '../ui/text'
+import { createVaultManagerStyles } from './vaultManagerStyles'
 import { MobileDeviceCode } from './MobileDeviceCode'
 import { MobileGitHubRepositories } from './MobileGitHubRepositories'
-import { createVaultManagerStyles } from './vaultManagerStyles'
 
 type GitHubAccountProps = { account: ReturnType<typeof useGitHubAccount>; disabled: boolean; clone: (url: string) => Promise<void> }
 
@@ -24,13 +24,7 @@ export function MobileGitHubAccount({ account, disabled, clone }: GitHubAccountP
       <Text style={styles.detail}>{mobileText('mobile.vaults.connectedAs').replace('{login}', account.session.login)}</Text>
       <View style={styles.row}>
         <MobileGitHubRepositories account={account} clone={clone} disabled={locked} />
-        <MobileButton disabled={locked} label={mobileText('mobile.vaults.signOut')} icon={<SignOut size={16} color={mobileColors.textMuted} />} onPress={() => showNativeConfirmation({
-          cancelLabel: mobileText('common.cancel'),
-          confirmLabel: mobileText('mobile.vaults.signOut'),
-          message: mobileText('mobile.vaults.connectedAs').replace('{login}', account.session?.login ?? ''),
-          onConfirm: () => { void account.signOut() },
-          title: mobileText('mobile.vaults.signOut'),
-        })} variant="ghost" />
+        <MobileButton disabled={locked} label={mobileText('mobile.vaults.signOut')} icon={<SignOut size={16} color={mobileColors.textMuted} />} onPress={() => { void account.signOut() }} variant="ghost" />
       </View>
     </> : <MobileButton disabled={locked || !account.configured} label={mobileText('mobile.vaults.signIn')} icon={<GithubLogo size={16} color={mobileColors.text} />} onPress={() => { void account.signIn() }} />}
     {account.code && <View style={styles.section}>

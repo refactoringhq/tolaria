@@ -581,7 +581,6 @@
   "sidebar.view.name": "Name der Ansicht",
   "sidebar.folder.name": "Ordnername",
   "sidebar.folder.newName": "Neuer Ordnername",
-  "workspace.action.nameAlreadyExists": "Ein Element mit diesem Namen ist bereits vorhanden.",
   "sidebar.folder.expand": "{name} erweitern",
   "sidebar.folder.collapse": "{name} einklappen",
   "sidebar.section.name": "Abschnittsname",
