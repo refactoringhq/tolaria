@@ -333,6 +333,15 @@ fn windows_path_to_wsl_path(path: &str) -> Option<String> {
     }
 
     let normalized = trimmed.replace('\\', "/");
+
+    let normalized = if let Some(rest) = normalized.strip_prefix("//?/UNC/") {
+        format!("//{rest}")
+    } else if let Some(rest) = normalized.strip_prefix("//?/") {
+        rest.to_string()
+    } else {
+        normalized
+    };
+
     if let Some(path) = drive_path_to_wsl_path(&normalized) {
         return Some(path);
     }
@@ -407,10 +416,20 @@ mod tests {
             ("D:/Work/Tolaria", "/mnt/d/Work/Tolaria"),
             (r"\\wsl$\Ubuntu\home\luca\vault", "/home/luca/vault"),
             (r"\\wsl.localhost\Debian\var\repo", "/var/repo"),
+            (
+                r"\\?\UNC\wsl.localhost\Ubuntu\home\eugenio\developer\knowledge",
+                "/home/eugenio/developer/knowledge",
+            ),
+            (r"\\?\UNC\wsl$\Ubuntu\home\luca\vault", "/home/luca/vault"),
+            (r"\\?\C:\Users\Luca\Vault", "/mnt/c/Users/Luca/Vault"),
         ];
 
         for (path, expected) in cases {
-            assert_eq!(windows_path_to_wsl_path(path).as_deref(), Some(expected));
+            assert_eq!(
+                windows_path_to_wsl_path(path).as_deref(),
+                Some(expected),
+                "{path}"
+            );
         }
     }
 
