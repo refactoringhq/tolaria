@@ -1,8 +1,3 @@
-import type { MobileMetrics } from '../../ui/mobileMetrics'
-import { useMobileStyles } from '../../ui/theme/useMobileTheme'
-import type { MobileColors } from '../../ui/theme/mobilePalette'
-import type { ReactNode } from 'react'
-import { StyleSheet, View } from 'react-native'
 import {
   ArchiveIcon,
   ArrowClockwise,
@@ -21,12 +16,17 @@ import {
   TextAa,
   Trash,
 } from 'phosphor-react-native'
-import { Text } from '../ui/text'
-import { Button } from '../ui/button'
+import type { ReactNode } from 'react'
+import { StyleSheet, View } from 'react-native'
 import { mobileText } from '../../i18n/mobileText'
 import { desktopToolbarActionParity } from '../../ui/desktopParity'
-
+import type { MobileMetrics } from '../../ui/mobileMetrics'
+import type { MobileColors } from '../../ui/theme/mobilePalette'
+import { useMobileStyles } from '../../ui/theme/useMobileTheme'
 import type { MobileNote } from '../../workspace/mobileWorkspaceModel'
+import { Button } from '../ui/button'
+import { showNativeConfirmation } from '../ui/mobileNativeDialogs'
+import { Text } from '../ui/text'
 import {
   isMobileMarkdownActionNote,
   isMobileTextLikeActionNote,
@@ -71,7 +71,7 @@ export function NoteMoreActionRows(props: NoteMoreActionRowsProps) {
       <NoteNavigationActionRows {...props} />
       <NoteIconActionRows {...props} />
       <NoteWidthActionRow noteWide={note.noteWidth === 'wide'} onClose={props.onClose} onToggleNoteWidth={props.onToggleNoteWidth} />
-      <DeleteActionRow onClose={props.onClose} onDeleteNote={props.onDeleteNote} />
+      <DeleteActionRow message={note.title} onClose={props.onClose} onDeleteNote={props.onDeleteNote} />
     </>
   )
 }
@@ -112,7 +112,7 @@ function NonMarkdownFileActionRows(props: NoteMoreActionRowsProps) {
           onClose()
         }}
       />
-      <DeleteActionRow onClose={onClose} onDeleteNote={onDeleteNote} />
+      <DeleteActionRow message={note.title} onClose={onClose} onDeleteNote={onDeleteNote} />
     </>
   )
 }
@@ -388,9 +388,11 @@ function NoteFlagActionRow({
 }
 
 function DeleteActionRow({
+  message,
   onClose,
   onDeleteNote,
 }: {
+  message: string
   onClose: () => void
   onDeleteNote: () => void
 }) {
@@ -402,8 +404,13 @@ function DeleteActionRow({
       label={mobileText('command.note.deleteNote')}
       testID="workspace-action-delete-note"
       onPress={() => {
-        onDeleteNote()
-        onClose()
+        showNativeConfirmation({
+          cancelLabel: mobileText('common.cancel'),
+          confirmLabel: mobileText('command.note.deleteNote'),
+          message,
+          onConfirm: () => { onDeleteNote(); onClose() },
+          title: mobileText('command.note.deleteNote'),
+        })
       }}
     />
   )

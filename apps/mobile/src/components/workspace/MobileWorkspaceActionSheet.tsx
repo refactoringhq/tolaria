@@ -1,31 +1,34 @@
-import { useMobileStyles } from '../../ui/theme/useMobileTheme'
-import { useEffect, type ReactNode } from 'react'
-import { useMobileModalDismiss } from '../../workspace/useMobileModalDismiss'
-import { Keyboard, Pressable, ScrollView, View, useWindowDimensions } from 'react-native'
 import { ArrowSquareOut, CheckCircle, ClipboardText, FilePlus, FolderOpen, Trash } from 'phosphor-react-native'
-import { Text } from '../ui/text'
+import { type ReactNode, useEffect } from 'react'
+import { Keyboard, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native'
 import { mobileText } from '../../i18n/mobileText'
+import { desktopToolbarActionParity } from '../../ui/desktopParity'
 import { MobileButton } from '../../ui/MobileButton'
+import { MobileKeyboardAvoidingView } from '../../ui/MobileKeyboardAvoidingView'
 import { MobilePanel, MobileToolbar, MobileToolbarSpacer, MobileToolbarTitle } from '../../ui/MobilePanel'
 import { MobileTextInput } from '../../ui/MobileTextInput'
-import { MobileKeyboardAvoidingView } from '../../ui/MobileKeyboardAvoidingView'
+import { useMobileStyles } from '../../ui/theme/useMobileTheme'
 import { useMobileDeviceLayout } from '../../ui/useMobileDeviceLayout'
-import { desktopToolbarActionParity } from '../../ui/desktopParity'
+import { useMobileModalDismiss } from '../../workspace/useMobileModalDismiss'
+import { showNativeConfirmation } from '../ui/mobileNativeDialogs'
+import { Text } from '../ui/text'
+import { MobileEditorFindSheet } from './MobileEditorFindSheet'
+import { MobileQuickOpenSheet } from './MobileQuickOpenSheet'
+import { MobileTableOfContentsSheet } from './MobileTableOfContentsSheet'
 import { MobileTypeSectionEditor } from './MobileTypeSectionEditor'
 import { MobileTypeVisibilityEditor } from './MobileTypeVisibilityEditor'
 import { MobileViewDisplayPropertiesPicker } from './MobileViewDisplayPropertiesPicker'
-import { MobileEditorFindSheet } from './MobileEditorFindSheet'
-import { MobileTableOfContentsSheet } from './MobileTableOfContentsSheet'
+import type { ActionContentProps, MobileWorkspaceAction, MobileWorkspaceActionSheetProps } from './MobileWorkspaceActionSheet.types'
+import { mobileActionSheetLongFormHeight, mobileActionSheetUsesCompactForm, mobileWorkspaceFormSheetAutoFocus } from './MobileWorkspaceActionSheetModel'
+import { showNativeFolderRenamePrompt } from './MobileWorkspaceFolderPrompt'
 import { MoreActionsContent } from './MobileWorkspaceMoreActionsContent'
 import { MobileFavoriteActions, MobileTypeSectionActions } from './MobileWorkspaceMoveActions'
-import { MobileQuickOpenSheet } from './MobileQuickOpenSheet'
-import { createMobileWorkspaceSheetStyles as createThemeStyles } from './mobileWorkspaceActionSheetStyles'
-import { mobileActionSheetLongFormHeight, mobileActionSheetUsesCompactForm, mobileWorkspaceFormSheetAutoFocus } from './MobileWorkspaceActionSheetModel'
-import type { MobileWorkspaceActionSheetProps, ActionContentProps, MobileWorkspaceAction } from './MobileWorkspaceActionSheet.types'
-import { phoneSheetStyles, actionTitle } from './mobileWorkspaceSheetPresentation'
-import { ActionRow, SheetFooter } from './MobileWorkspaceSheetChrome'
-import { RetargetNoteContent, WorkspaceSingleTextFieldContent, ViewFormContent } from './MobileWorkspaceTextFieldForms'
+import { NativeSingleFieldPrompt } from './MobileWorkspaceNativePrompt'
 import { AddPropertyContent, AddRelationshipContent } from './MobileWorkspacePropertyForms'
+import { ActionRow, SheetFooter } from './MobileWorkspaceSheetChrome'
+import { RetargetNoteContent, ViewFormContent, WorkspaceSingleTextFieldContent } from './MobileWorkspaceTextFieldForms'
+import { createMobileWorkspaceSheetStyles as createThemeStyles } from './mobileWorkspaceActionSheetStyles'
+import { actionTitle, phoneSheetStyles } from './mobileWorkspaceSheetPresentation'
 
 export function MobileWorkspaceActionSheet(props: MobileWorkspaceActionSheetProps) {
   useMobileModalDismiss(props.onClose)
@@ -42,6 +45,8 @@ export function MobileWorkspaceActionSheet(props: MobileWorkspaceActionSheetProp
   const longFormSheetStyle = usesLongFormSheet(props.action) || compactForm
     ? { height: longFormSheetHeight, maxHeight: longFormSheetHeight }
     : null
+
+  if (Platform.OS === 'ios' && isNativePromptAction(props.action)) return <NativeSingleFieldPrompt {...props} compactForm={compactForm} />
 
   return (
     <MobileKeyboardAvoidingView style={styles.overlay} testID="workspace-action-sheet">
@@ -74,6 +79,10 @@ function WorkspaceSheetHeader(props: ActionContentProps) {
 function ActionContent(props: ActionContentProps) {
   const Content = Object.hasOwn(actionContentByAction, props.action) ? actionContentByAction[props.action] : null
   return Content ? <Content {...props} /> : null
+}
+
+function isNativePromptAction(action: MobileWorkspaceAction) {
+  return action === 'createFolder' || action === 'createType' || action === 'renameNoteFile'
 }
 
 function usesLongFormSheet(action: MobileWorkspaceAction) {
@@ -132,14 +141,19 @@ function FolderActionsContent(props: MobileWorkspaceActionSheetProps) {
   const { styles, mobileColors } = useMobileStyles(createThemeStyles)
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" style={styles.scrollArea}>
-      <MobileTextInput
+      {Platform.OS === 'ios' ? <ActionRow
+        icon={<FolderOpen color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
+        label={mobileText('sidebar.action.renameFolder')}
+        testID="workspace-rename-folder-prompt"
+        onPress={() => showNativeFolderRenamePrompt(props)}
+      /> : <MobileTextInput
         autoFocus={mobileWorkspaceFormSheetAutoFocus}
         label={mobileText('sidebar.folder.newName')}
         placeholder={mobileText('sidebar.folder.newName')}
         testID="workspace-rename-folder-input"
         value={props.folderName}
         onChangeText={props.onFolderNameChange}
-      />
+      />}
       <ActionRow
         icon={<FilePlus color={mobileColors.textMuted} size={desktopToolbarActionParity.iconSize} />}
         label={mobileText('sidebar.action.createNodeInFolderMenu')}
@@ -169,7 +183,13 @@ function FolderActionsContent(props: MobileWorkspaceActionSheetProps) {
         icon={<Trash color={mobileColors.red} size={desktopToolbarActionParity.iconSize} />}
         label={mobileText('sidebar.action.deleteFolder')}
         testID="workspace-action-delete-folder"
-        onPress={props.onDeleteFolder}
+        onPress={() => showNativeConfirmation({
+          cancelLabel: mobileText('common.cancel'),
+          confirmLabel: mobileText('sidebar.action.deleteFolder'),
+          message: props.folderPath,
+          onConfirm: props.onDeleteFolder,
+          title: mobileText('sidebar.action.deleteFolder'),
+        })}
       />
       <SheetFooter>
         <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={props.onClose} />

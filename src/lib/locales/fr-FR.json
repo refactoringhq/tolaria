@@ -581,6 +581,7 @@
   "sidebar.view.name": "Nom de la vue",
   "sidebar.folder.name": "Nom du dossier",
   "sidebar.folder.newName": "Nouveau nom du dossier",
+  "workspace.action.nameAlreadyExists": "Un élément portant ce nom existe déjà.",
   "sidebar.folder.expand": "Développer {name}",
   "sidebar.folder.collapse": "Réduire {name}",
   "sidebar.section.name": "Nom de la section",

@@ -582,6 +582,7 @@
   "sidebar.view.name": "Imia ahliadu",
   "sidebar.folder.name": "Imia papki",
   "sidebar.folder.newName": "Novaje imia",
+  "workspace.action.nameAlreadyExists": "Element z takim imiam uzho isnuje.",
   "sidebar.folder.expand": "Razharnuć {name}",
   "sidebar.folder.collapse": "Zharnuć {name}",
   "sidebar.section.name": "Imia siekcyi",
