@@ -581,7 +581,6 @@
   "sidebar.view.name": "Nome della vista",
   "sidebar.folder.name": "Nome della cartella",
   "sidebar.folder.newName": "Nuovo nome della cartella",
-  "workspace.action.nameAlreadyExists": "Esiste già un elemento con questo nome.",
   "sidebar.folder.expand": "Espandi {name}",
   "sidebar.folder.collapse": "Comprimi {name}",
   "sidebar.section.name": "Nome della sezione",

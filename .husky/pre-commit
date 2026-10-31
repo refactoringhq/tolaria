@@ -29,7 +29,7 @@ STAGED_FILES=$(git diff --cached --name-only)
 APP_CHANGED=false
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
-if [ "$CURRENT_BRANCH" = "mobile-ui-foundation" ]; then
+if [ "$CURRENT_BRANCH" = "mobile-ui-foundation" ] || [ "$CURRENT_BRANCH" = "mobile-native-ui" ]; then
   MOBILE_CHANGED=false
   HOOK_CHANGED=false
 

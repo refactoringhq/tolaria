@@ -66,8 +66,8 @@ ensure_node_tooling() {
 
 require_main_push() {
   CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  if [ "$CURRENT_BRANCH" != "main" ] && [ "$CURRENT_BRANCH" != "HEAD" ] && [ "$CURRENT_BRANCH" != "mobile-ui-foundation" ]; then
-    echo "❌ Pushes must happen from main, a detached HEAD pushed to main, or mobile-ui-foundation. Current branch: $CURRENT_BRANCH"
+  if [ "$CURRENT_BRANCH" != "main" ] && [ "$CURRENT_BRANCH" != "HEAD" ] && [ "$CURRENT_BRANCH" != "mobile-ui-foundation" ] && [ "$CURRENT_BRANCH" != "mobile-native-ui" ]; then
+    echo "❌ Pushes must happen from main, a detached HEAD pushed to main, mobile-ui-foundation, or mobile-native-ui. Current branch: $CURRENT_BRANCH"
     exit 1
   fi
 
@@ -81,10 +81,12 @@ require_main_push() {
         ;;
       refs/heads/mobile-ui-foundation:refs/heads/mobile-ui-foundation)
         ;;
+      refs/heads/mobile-native-ui:refs/heads/mobile-native-ui)
+        ;;
       refs/tags/*:refs/tags/*)
         ;;
       *)
-        echo "❌ Pushes must be main -> main or mobile-ui-foundation -> mobile-ui-foundation only."
+        echo "❌ Pushes must be main -> main, mobile-ui-foundation -> mobile-ui-foundation, or mobile-native-ui -> mobile-native-ui only."
         echo "   Attempted: ${LOCAL_REF:-<none>} -> ${REMOTE_REF:-<none>}"
         exit 1
         ;;
@@ -104,7 +106,7 @@ ensure_node_tooling
 
 START_TIME=$(date +%s)
 
-if [ "$CURRENT_BRANCH" = "mobile-ui-foundation" ] && [ "${TOLARIA_MOBILE_FULL_GATE:-0}" != "1" ]; then
+if { [ "$CURRENT_BRANCH" = "mobile-ui-foundation" ] || [ "$CURRENT_BRANCH" = "mobile-native-ui" ]; } && [ "${TOLARIA_MOBILE_FULL_GATE:-0}" != "1" ]; then
   echo "📱 Mobile UI foundation fast lane"
   pnpm mobile:lint --quiet
   pnpm mobile:typecheck

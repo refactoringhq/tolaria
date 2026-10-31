@@ -8,7 +8,6 @@ export function createSidebarStyles(mobileColors: MobileColors, metrics: MobileM
     sectionTitleRow: { minHeight: metrics.size(30) },
     sectionTitle: { lineHeight: metrics.size(14) },
   })
-  const phoneStyles = createPhoneStyles(mobileColors, metrics)
   const panelStyles = createPanelStyles(mobileColors, metrics)
   const itemStyles = createItemStyles(mobileColors, metrics)
   const sectionTitleStyles = createSectionTitleStyles(mobileColors, metrics)
@@ -16,28 +15,9 @@ export function createSidebarStyles(mobileColors: MobileColors, metrics: MobileM
     mobileColors, metrics, panelStyles, itemStyles, sectionTitleStyles,
     styles: { ...panelStyles, ...itemStyles, ...sectionTitleStyles },
     nativeItemTextStyle: Platform.OS === 'web' ? null : nativeStyles.itemText,
-    phoneItemStyle: phoneStyles.phoneItem,
-    phoneItemContentStyle: phoneStyles.phoneItemContent,
-    phoneItemTextStyle: phoneStyles.phoneItemText,
-    phoneCountTextStyle: phoneStyles.phoneCountText,
     nativeSectionTitleRowStyle: Platform.OS === 'web' ? null : nativeStyles.sectionTitleRow,
     nativeSectionTitleTextStyle: Platform.OS === 'web' ? null : nativeStyles.sectionTitle,
   }
-}
-
-function createPhoneStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
-  const phone = metrics.phoneChrome
-  return StyleSheet.create({
-    phoneItem: { minHeight: phone.sidebarRowHeight, paddingHorizontal: phone.rowHorizontalPadding, paddingVertical: 0 },
-    phoneItemContent: { minHeight: phone.sidebarRowHeight },
-    phoneItemText: { fontSize: phone.sidebarTextSize, lineHeight: phone.sidebarTextLineHeight },
-    phoneCountText: {
-      color: mobileColors.textMuted,
-      fontSize: phone.countTextSize,
-      lineHeight: phone.sidebarTextLineHeight,
-      fontVariant: ['tabular-nums'],
-    },
-  })
 }
 
 function createPanelStyles(colors: MobileColors, metrics: MobileMetrics) {

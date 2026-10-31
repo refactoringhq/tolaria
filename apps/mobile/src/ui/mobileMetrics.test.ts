@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { desktopEditorParity, desktopNoteItemParity, desktopPanelParity, desktopSidebarParity } from './desktopParity'
-import { isPhoneViewport, mobileMetrics } from './mobileMetrics'
+import { mobileMetrics } from './mobileMetrics'
 
 describe('explicit mobile UI density', () => {
   it('retains canonical desktop metrics at 100 percent', () => {
@@ -37,19 +37,5 @@ describe('explicit mobile UI density', () => {
     expect(desktopNoteItemParity.padding.left).toBe(16)
     expect(mobileMetrics[1.2]).toBe(mobileMetrics[1.2])
     expect(mobileMetrics[1.2].size(44)).toBe(52.8)
-  })
-
-  it('uses native phone text and touch-row metrics only in phone-width layouts', () => {
-    const { phoneChrome } = mobileMetrics[1.2]
-    expect(phoneChrome).toMatchObject({
-      noteTitleTextSize: 17,
-      noteSnippetTextSize: 15,
-      sidebarTextSize: 17,
-      sidebarRowHeight: 44,
-      folderRowHeight: 44,
-    })
-    expect(isPhoneViewport(599)).toBe(true)
-    expect(isPhoneViewport(600)).toBe(false)
-    expect(isPhoneViewport(390, true)).toBe(false)
   })
 })

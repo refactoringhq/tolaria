@@ -581,7 +581,6 @@
   "sidebar.view.name": "Vynamn",
   "sidebar.folder.name": "Mappnamn",
   "sidebar.folder.newName": "Nytt mappnamn",
-  "workspace.action.nameAlreadyExists": "Det finns redan ett objekt med det här namnet.",
   "sidebar.folder.expand": "Expandera {name}",
   "sidebar.folder.collapse": "Fäll ihop {name}",
   "sidebar.section.name": "Sektionsnamn",

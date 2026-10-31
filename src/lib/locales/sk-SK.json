@@ -581,7 +581,6 @@
   "sidebar.view.name": "Názov zobrazenia",
   "sidebar.folder.name": "Názov priečinka",
   "sidebar.folder.newName": "Nový názov priečinka",
-  "workspace.action.nameAlreadyExists": "Položka s týmto názvom už existuje.",
   "sidebar.folder.expand": "Rozbaliť {name}",
   "sidebar.folder.collapse": "Zbaliť {name}",
   "sidebar.section.name": "Názov sekcie",

@@ -581,7 +581,6 @@
   "sidebar.view.name": "Імя агляду",
   "sidebar.folder.name": "Імя папкі",
   "sidebar.folder.newName": "Новае імя",
-  "workspace.action.nameAlreadyExists": "Элемент з такой назвай ужо існуе.",
   "sidebar.folder.expand": "Разгарнуць {name}",
   "sidebar.folder.collapse": "Згарнуць {name}",
   "sidebar.section.name": "Імя секцыі",
