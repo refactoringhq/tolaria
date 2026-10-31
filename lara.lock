@@ -399,6 +399,7 @@ files:
     settings.save: c9cc8cce247e49bae79f15173ce97354
     common.cancel: ea4788705e6873b424c65e91c2846b19
     common.create: 686e697538050e4664636337cc3b834f
+    common.done: f92965e2c8a7afb3c1b9a5c09a263636
     common.save: c9cc8cce247e49bae79f15173ce97354
     common.remove: 1063e38cb53d94d386f21227fcd84717
     customize.color: cb5feb1b7314637725a2e73bdc9f7295

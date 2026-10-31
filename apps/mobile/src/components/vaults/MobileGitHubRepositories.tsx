@@ -1,21 +1,20 @@
-import type { MobileMetrics } from '../../ui/mobileMetrics'
-import { useMobileStyles } from '../../ui/theme/useMobileTheme'
-import type { MobileColors } from '../../ui/theme/mobilePalette'
+import { GitBranch, GithubLogo, Globe, LockKey } from 'phosphor-react-native'
 import { useMemo, useState } from 'react'
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Modal, Platform, StyleSheet, View } from 'react-native'
-import { GitBranch, GithubLogo, Globe, LockKey, X } from 'phosphor-react-native'
-import { Button } from '../ui/button'
-import { Text } from '../ui/text'
 import { mobileText } from '../../i18n/mobileText'
 import { MobileButton } from '../../ui/MobileButton'
-import { MobileIconButton } from '../../ui/MobileIconButton'
 import { MobilePanel, MobileToolbar, MobileToolbarSpacer, MobileToolbarTitle } from '../../ui/MobilePanel'
 import { MobileTextInput } from '../../ui/MobileTextInput'
-
-import { filterGitHubRepositories } from '../../workspace/git/githubRepositorySearch'
+import type { MobileMetrics } from '../../ui/mobileMetrics'
+import { mobileSheetPresentation } from '../../ui/mobileSheetPresentation'
+import type { MobileColors } from '../../ui/theme/mobilePalette'
+import { useMobileStyles } from '../../ui/theme/useMobileTheme'
 import type { GitHubRepository } from '../../workspace/git/githubAuth'
+import { filterGitHubRepositories } from '../../workspace/git/githubRepositorySearch'
 import type { useGitHubAccount } from '../../workspace/git/useGitHubAccount'
 import { useMobileModalDismiss } from '../../workspace/useMobileModalDismiss'
+import { Button } from '../ui/button'
+import { Text } from '../ui/text'
 
 type Props = { account: ReturnType<typeof useGitHubAccount>; disabled: boolean; clone: (url: string) => Promise<void> }
 
@@ -33,12 +32,12 @@ export function MobileGitHubRepositories({ account, clone, disabled }: Props) {
     <MobileButton disabled={disabled} label={mobileText('mobile.vaults.loadRepositories')}
       icon={<GithubLogo size={16} color={mobileColors.text} />}
       onPress={() => { setOpen(true); void account.loadRepositories() }} />
-    <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.backdrop}>
-        <MobilePanel style={styles.panel} accessibilityViewIsModal testID="github-repository-picker">
+    <Modal visible={open} {...mobileSheetPresentation(Platform.OS)} onRequestClose={() => setOpen(false)}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={Platform.OS === 'ios' ? styles.sheetRoot : styles.backdrop}>
+        <MobilePanel style={Platform.OS === 'ios' ? styles.sheetPanel : styles.panel} accessibilityViewIsModal testID="github-repository-picker">
           <MobileToolbar>
             <MobileToolbarTitle title={mobileText('mobile.vaults.repositories')} /><MobileToolbarSpacer />
-            <MobileIconButton accessibilityLabel={mobileText('window.close')} onPress={() => setOpen(false)}><X size={18} color={mobileColors.textMuted} /></MobileIconButton>
+            <MobileButton density="compact" label={mobileText('common.done')} onPress={() => setOpen(false)} testID="repositories-done" variant="ghost" />
           </MobileToolbar>
           <View style={styles.search}>
             <MobileTextInput label={mobileText('mobile.vaults.searchRepositories')} value={query} onChangeText={setQuery}
@@ -77,6 +76,8 @@ function createThemeStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
   const styles = StyleSheet.create({
     backdrop: { flex: 1, padding: metrics.size(24), backgroundColor: mobileColors.overlay, alignItems: 'center', justifyContent: 'center' },
     panel: { width: '100%', maxWidth: 560, height: '85%', maxHeight: 640, borderRadius: 8, overflow: 'hidden' },
+    sheetRoot: { flex: 1 },
+    sheetPanel: { flex: 1, width: '100%', maxWidth: '100%', maxHeight: '100%', borderRadius: 0, overflow: 'hidden' },
     search: { padding: metrics.size(16) },
     list: { flex: 1 },
     repository: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: metrics.size(12), minHeight: 64, height: 'auto', paddingHorizontal: metrics.size(16), paddingVertical: metrics.size(10), borderRadius: 0, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: mobileColors.border },
