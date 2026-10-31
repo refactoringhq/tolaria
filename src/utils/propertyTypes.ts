@@ -62,13 +62,22 @@ function detectStringType(key: PropertyKey, strValue: PropertyValueText): Proper
   return 'text'
 }
 
+function detectEmptyValueType(key: PropertyKey): PropertyDisplayMode {
+  return isDateKey(key) ? 'date' : 'text'
+}
+
+function isEmptyString(value: FrontmatterValue): value is string {
+  return typeof value === 'string' && value.trim() === ''
+}
+
 export function detectPropertyType(key: PropertyKey, value: FrontmatterValue): PropertyDisplayMode {
-  if (value === null) return 'text'
+  if (value === null) return detectEmptyValueType(key)
   if (typeof value === 'number') return 'number'
   if (typeof value === 'boolean') return 'boolean'
   if (isIconKey(key)) return 'text'
   if (keyMatchesPatterns(key, TAGS_KEY_PATTERNS)) return 'tags'
   if (Array.isArray(value)) return 'text'
+  if (isEmptyString(value)) return detectEmptyValueType(key)
   return detectStringType(key, String(value))
 }
 
