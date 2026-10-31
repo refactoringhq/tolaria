@@ -1,12 +1,11 @@
-import type { MobileMetrics } from '../../ui/mobileMetrics'
-import { useMobileStyles } from '../../ui/theme/useMobileTheme'
-import type { MobileColors } from '../../ui/theme/mobilePalette'
 import { CaretDown, CaretRight, Folder, FolderOpen } from 'phosphor-react-native'
-import { Platform, Pressable, StyleSheet, View } from 'react-native'
-import { Text } from '../ui/text'
-import { probeProps, type MobileLayoutProbe } from '../../qa/mobileLayoutProbe'
-
+import { Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native'
+import { type MobileLayoutProbe, probeProps } from '../../qa/mobileLayoutProbe'
+import { isPhoneViewport, type MobileMetrics, phoneViewportStyle } from '../../ui/mobileMetrics'
+import type { MobileColors } from '../../ui/theme/mobilePalette'
+import { useMobileStyles } from '../../ui/theme/useMobileTheme'
 import type { MobileSidebarFolder } from '../../workspace/mobileWorkspaceModel'
+import { Text } from '../ui/text'
 
 export type MobileSidebarFolderSelection = {
   id: string
@@ -60,6 +59,7 @@ function FolderTreeRow({
   onSelectFolder?: (selection: MobileSidebarFolderSelection) => void
 }) {
   const { folderTreeStyles, nativeFolderTreeRowStyle, nativeFolderTreeTextStyle, metrics } = useMobileStyles(createThemeStyles)
+  const isPhone = isPhoneViewport(useWindowDimensions().width, Platform.OS === 'ios' && Platform.isPad)
   const hasChildren = folder.children.length > 0
   const active = activeFolderId ? folder.id === activeFolderId : folder.active
   const metricId = sidebarFolderMetricId(folder.id)
@@ -76,6 +76,7 @@ function FolderTreeRow({
         style={[
           folderTreeStyles.row,
           nativeFolderTreeRowStyle,
+          phoneViewportStyle(isPhone, folderTreeStyles.phoneRow),
           active ? folderTreeStyles.rowActive : null,
           folderTreeIndent(metrics.sidebar, depth),
         ]}
@@ -86,7 +87,7 @@ function FolderTreeRow({
           <Text
             {...probeProps(layoutProbe, `${metricId}.label`)}
             numberOfLines={1}
-            style={[folderTreeStyles.rowText, nativeFolderTreeTextStyle, active ? folderTreeStyles.rowTextActive : null]}
+            style={[folderTreeStyles.rowText, nativeFolderTreeTextStyle, phoneViewportStyle(isPhone, folderTreeStyles.phoneRowText), active ? folderTreeStyles.rowTextActive : null]}
           >
             {folder.name}
           </Text>
@@ -181,13 +182,19 @@ function FolderTreeIcon({
   expanded?: boolean
 }) {
   const { mobileColors, metrics } = useMobileStyles(createThemeStyles)
+  const isPhone = isPhoneViewport(useWindowDimensions().width, Platform.OS === 'ios' && Platform.isPad)
   const iconColor = active ? mobileColors.primary : mobileColors.textMuted
+  const iconSize = phoneFolderTreeIconSize(isPhone, metrics)
 
   if (active || expanded) {
-    return <FolderOpen color={iconColor} size={metrics.size(16)} weight={active ? 'fill' : 'regular'} />
+    return <FolderOpen color={iconColor} size={iconSize} weight={active ? 'fill' : 'regular'} />
   }
 
-  return <Folder color={iconColor} size={metrics.size(16)} />
+  return <Folder color={iconColor} size={iconSize} />
+}
+
+function phoneFolderTreeIconSize(isPhone: boolean, metrics: MobileMetrics) {
+  return phoneViewportStyle(isPhone, metrics.phoneChrome.folderIconSize) ?? metrics.size(16)
 }
 
 function createThemeStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
@@ -203,6 +210,11 @@ function createThemeStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
   })
 
   const folderTreeTextStyles = StyleSheet.create({
+    phoneRow: { minHeight: metrics.phoneChrome.folderRowHeight, paddingVertical: 0 },
+    phoneRowText: {
+      fontSize: metrics.phoneChrome.folderTextSize,
+      lineHeight: metrics.phoneChrome.folderTextLineHeight,
+    },
     rowText: {
       flex: 1,
       color: mobileColors.text,

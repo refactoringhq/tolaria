@@ -33,6 +33,24 @@ function createMetrics(factor: number) {
     toolbar: scaleMetrics(desktopToolbarParity, factor),
     toolbarAction: scaleMetrics(desktopToolbarActionParity, factor),
     statusBar: scaleMetrics(desktopStatusBarParity, factor),
+    phoneChrome: {
+      noteRowMinHeight: 44,
+      noteRowPaddingVertical: 8,
+      noteSnippetLineHeight: 20,
+      noteSnippetMarginTop: 4,
+      noteSnippetTextSize: 15,
+      noteTitleLineHeight: 22,
+      noteTitleTextSize: 17,
+      rowHorizontalPadding: 16,
+      sidebarRowHeight: 44,
+      sidebarTextLineHeight: 22,
+      sidebarTextSize: 17,
+      countTextSize: 17,
+      folderIconSize: 20,
+      folderRowHeight: 44,
+      folderTextLineHeight: 22,
+      folderTextSize: 17,
+    },
     space: scaleMetrics(mobileSpace, factor),
     type: scaleMetrics(mobileType, factor),
   }
@@ -40,3 +58,11 @@ function createMetrics(factor: number) {
 
 export const mobileMetrics = { 1: createMetrics(1), 1.2: createMetrics(1.2) }
 export type MobileMetrics = ReturnType<typeof createMetrics>
+
+export function isPhoneViewport(width: number, isPad = false) {
+  return width < 600 && !isPad
+}
+
+export function phoneViewportStyle<T>(isPhone: boolean, style: T): T | null {
+  return isPhone ? style : null
+}
