@@ -64,6 +64,34 @@ export function useMobileNoteListBulkSelection({
 		selectedNotes: selectionSnapshot.selectedNotes,
 	});
 
+	return useNoteListSelectionResult({
+		archiveSelected,
+		beginSelection,
+		bulkActions,
+		clearSelection,
+		pressNote,
+		runBulkAction,
+		selectionSnapshot,
+	});
+}
+
+function useNoteListSelectionResult({
+	archiveSelected,
+	beginSelection,
+	bulkActions,
+	clearSelection,
+	pressNote,
+	runBulkAction,
+	selectionSnapshot,
+}: {
+	archiveSelected: () => void;
+	beginSelection: (noteId: string) => void;
+	bulkActions?: MobileNoteListBulkActions;
+	clearSelection: () => void;
+	pressNote: (noteId: string) => void;
+	runBulkAction: (action: (noteIds: string[]) => void) => void;
+	selectionSnapshot: ReturnType<typeof useNoteListSelectionSnapshot>;
+}) {
 	return {
 		archiveSelected,
 		beginSelection,
