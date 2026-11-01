@@ -28,3 +28,19 @@
 - Localization: no UI copy added; the existing localized `noteList.empty.noMatching` string is reused.
 - PostHog: `mobile_note_link_activated` records only `kind` (`external` or `wikilink`) under consent; no URL, note title, or content is sent.
 - Refactoring: none needed. ADRs: none. Architecture and abstractions docs updated. Demo-vault dirt: none.
+
+# TOL-281 Checkpoint Record
+
+## Exception
+
+- **CodeScene-only, no-score exception approved by Luca on 2026-11-01:** the two new iPad-visible component rows in `apps/mobile/src/ui/mobileParityInventory.ts` only. CodeScene returned no score on two attempts because the file is declarative inventory data. The change is limited to registering `MobileNoteListPanelParts.tsx` and `MobileNoteListPanelView.tsx`; no CodeScene finding, other file, analyzer, or gate is waived. Expiry: **2026-11-04 04:50 Europe/Rome**.
+- Risk: inventory metadata has no scorable code, so its own maintainability score cannot be measured. Compensating gates: explicit two-path inventory assertion, full mobile suite, Biome, Lizard, Codacy, lint/typecheck, native simulator QA, and normal scoped pre-push checks. Review/remove the exception by expiry.
+
+## Checkpoint
+
+- Work is isolated to `mobile-native-ui`; no main promotion or OTA is authorized. Starting branch commit `f1e67bfa1` includes the local merge of `origin/main`.
+- The phone note-list screen was extracted into `PhoneNoteListScreen.tsx`, with separate header, filter, and list-body prop builders. Existing parity rows were divided into UI and workspace modules; the small index retains the two approved iPad-visible component rows.
+- Biome: all 20 touched mobile TypeScript files passed. `mobile:typecheck`, `mobile:lint`, and the full `mobile:test` suite passed (449 files, 2,702 tests).
+- Codacy local: all four relevant analyzers (ESLint, Lizard, Opengrep OSS, Trivy) completed with zero findings for the 20 changed authored code/test files; no partial-scan warnings. New inventory modules returned CodeScene no-score with empty reviews; the new screen module scored 10.0. `PhoneWorkspaceScreens.tsx` remains 10.0; the inventory index has no score under the approved two-row-only exception. CodeScene pre-commit safeguard passed (20 code files); branch change-set review against `origin/mobile-native-ui` passed (41 code files).
+- Native: the earlier disposable iPad simulator build and launch succeeded and showed the workspace. A fresh build after the behavior-preserving module extraction was not repeated because the internal disk has 7.8 GB free, below the 8 GB floor. The disposable simulator was deleted. No main merge, OTA, or TestFlight action was performed.
+- Localization: no UI copy changes. PostHog: no event needed because this is visual chrome and does not add a new user action. ADRs/docs: none beyond this release record. Demo-vault dirt: none.
