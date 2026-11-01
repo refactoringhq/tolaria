@@ -1,5 +1,5 @@
-import { useCallback } from 'react'
 import type { SharingOptions } from 'expo-sharing'
+import { useCallback } from 'react'
 import { Linking } from 'react-native'
 import { mobileAttachmentUriForHref } from './mobileAttachmentUris'
 
@@ -25,7 +25,7 @@ async function openMobileAttachmentOrHref(href: string, vaultRootUri?: string | 
     return
   }
 
-  if (/^(?:https?|mailto|tel|file):/iu.test(href)) await Linking.openURL(href)
+  if (/^(?:https?|mailto|tel|file):/iu.test(href) || href.startsWith('tolaria://')) await Linking.openURL(href)
 }
 
 async function shareMobileAttachment(uri: string): Promise<void> {

@@ -1,64 +1,10 @@
-import type { MobileMetrics } from '../ui/mobileMetrics'
-import { useMobileStyles } from '../ui/theme/useMobileTheme'
-import type { MobileColors } from '../ui/theme/mobilePalette'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Linking, StyleSheet, View } from 'react-native'
-import { useMobileDeviceLayout } from '../ui/useMobileDeviceLayout'
-import { PhoneWorkspace, type PhoneWorkspaceState } from './PhoneWorkspace'
-import { TabletWorkspace } from './TabletWorkspace'
-import type { TabletTransitionProbeMode } from './tabletWorkspaceTypes'
-import type { ReadOnlyWorkspaceRequest } from '../workspace/readOnlyWorkspaceRepository'
-import {
-  fetchDevVaultWorkspaceState,
-  type DevVaultWorkspaceState,
-} from '../workspace/devVaultWorkspaceRepository'
-import type { NativeWorkspaceSelection } from '../workspace/nativeWorkspacePicker'
-import { useNativeWorkspace } from '../workspace/useNativeWorkspace'
-import { MobileVaultDisplayContext } from '../workspace/MobileVaultContext'
-import { initialMobileEditorStateFromMode } from './mobileEditorMode'
-import {
-  nativeSourceSelectionProbeEnabled,
-} from '../qa/nativeSourceSelectionProbe'
-import {
-  nativeWysiwygMutationProbeEnabled,
-} from '../qa/nativeWysiwygMutationProbe'
-import {
-  nativeWysiwygPersistenceProbeEnabled,
-} from '../qa/nativeWysiwygPersistenceProbe'
-import {
-  nativeWysiwygAutocompleteProbeEnabled,
-} from '../qa/nativeWysiwygAutocompleteProbe'
-import {
-  nativeWysiwygFormatCommandProbeEnabled,
-} from '../qa/nativeWysiwygFormatCommandProbe'
-import {
-  nativeWysiwygInputTransformProbeEnabled,
-} from '../qa/nativeWysiwygInputTransformProbe'
-import {
-  nativeWysiwygExternalLinkProbeEnabled,
-} from '../qa/nativeWysiwygExternalLinkProbe'
-import {
-  nativeWysiwygWikilinkInsertProbeEnabled,
-} from '../qa/nativeWysiwygWikilinkInsertProbe'
-import {
-  nativeWysiwygMarkdownBlockProbeEnabled,
-} from '../qa/nativeWysiwygMarkdownBlockProbe'
-import {
-  nativeWysiwygMathEditProbeEnabled,
-} from '../qa/nativeWysiwygMathEditProbe'
-import {
-  nativeWysiwygTableCommandMutationProbeEnabled,
-} from '../qa/nativeWysiwygTableCommandMutationProbe'
-import {
-  nativeWorkspacePersistenceProbeEnabled,
-} from '../qa/nativeWorkspacePersistenceProbe'
-import {
-  nativeTableOfContentsLogLine,
-  nativeTableOfContentsProbeContent,
-  nativeTableOfContentsProbeEnabled,
-  nativeTableOfContentsProbeTitle,
-  type NativeTableOfContentsProof,
-} from '../qa/nativeTableOfContentsProbe'
+import { Text } from '../components/ui/text'
+import { MobileDeepLinkNotice } from '../components/vaults/MobileDeepLinkNotice'
+import { mobileText } from '../i18n/mobileText'
+import { nativeMobileLaunchSearch } from '../native/mobileNativeKeyCommands'
+import { setMobileLayoutMetricSinkUrl } from '../qa/mobileLayoutProbe'
 import {
   nativeMobileActionAdapterLogLine,
   nativeMobileActionAdapterProbeEnabled,
@@ -70,30 +16,85 @@ import {
 import {
   nativeMobileKeyboardShortcutProbeEnabled,
 } from '../qa/nativeMobileKeyboardShortcutProof'
-import { nativeMobileLaunchSearch } from '../native/mobileNativeKeyCommands'
-import { setMobileLayoutMetricSinkUrl } from '../qa/mobileLayoutProbe'
-import type { MobileNote, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
-import { mobileSnapshotWithWysiwygMutationProbeContent } from './mobileUiLabWysiwygMutationSnapshot'
+import {
+  nativeSourceSelectionProbeEnabled,
+} from '../qa/nativeSourceSelectionProbe'
+import {
+  type NativeTableOfContentsProof,
+  nativeTableOfContentsLogLine,
+  nativeTableOfContentsProbeContent,
+  nativeTableOfContentsProbeEnabled,
+  nativeTableOfContentsProbeTitle,
+} from '../qa/nativeTableOfContentsProbe'
+import {
+  nativeWorkspacePersistenceProbeEnabled,
+} from '../qa/nativeWorkspacePersistenceProbe'
+import {
+  nativeWysiwygAutocompleteProbeEnabled,
+} from '../qa/nativeWysiwygAutocompleteProbe'
+import {
+  nativeWysiwygExternalLinkProbeEnabled,
+} from '../qa/nativeWysiwygExternalLinkProbe'
+import {
+  nativeWysiwygFormatCommandProbeEnabled,
+} from '../qa/nativeWysiwygFormatCommandProbe'
+import {
+  nativeWysiwygInputTransformProbeEnabled,
+} from '../qa/nativeWysiwygInputTransformProbe'
+import {
+  nativeWysiwygMarkdownBlockProbeEnabled,
+} from '../qa/nativeWysiwygMarkdownBlockProbe'
+import {
+  nativeWysiwygMathEditProbeEnabled,
+} from '../qa/nativeWysiwygMathEditProbe'
+import {
+  nativeWysiwygMutationProbeEnabled,
+} from '../qa/nativeWysiwygMutationProbe'
+import {
+  nativeWysiwygPersistenceProbeEnabled,
+} from '../qa/nativeWysiwygPersistenceProbe'
+import {
+  nativeWysiwygTableCommandMutationProbeEnabled,
+} from '../qa/nativeWysiwygTableCommandMutationProbe'
+import {
+  nativeWysiwygWikilinkInsertProbeEnabled,
+} from '../qa/nativeWysiwygWikilinkInsertProbe'
+import type { MobileMetrics } from '../ui/mobileMetrics'
+import type { MobileColors } from '../ui/theme/mobilePalette'
+import { useMobileStyles } from '../ui/theme/useMobileTheme'
+import { useMobileDeviceLayout } from '../ui/useMobileDeviceLayout'
+import {
+  type DevVaultWorkspaceState,
+  fetchDevVaultWorkspaceState,
+} from '../workspace/devVaultWorkspaceRepository'
 import {
   localVaultEditorBlocks,
   localVaultEditorBullets,
   localVaultSnippet,
 } from '../workspace/localVaultMarkdown'
-import { Text } from '../components/ui/text'
-import { mobileText } from '../i18n/mobileText'
-
+import { MobileVaultDisplayContext, MobileVaultPickerContext } from '../workspace/MobileVaultContext'
+import type { MobileNote, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
+import type { NativeWorkspaceSelection } from '../workspace/nativeWorkspacePicker'
+import type { ReadOnlyWorkspaceRequest } from '../workspace/readOnlyWorkspaceRepository'
+import { useMobileIncomingDeepLink } from '../workspace/useMobileIncomingDeepLink'
+import { useNativeWorkspace } from '../workspace/useNativeWorkspace'
+import { requestedActionSheetQaTarget } from './mobileActionSheetQaTarget'
+import { initialMobileEditorStateFromMode } from './mobileEditorMode'
 import {
   mobileSnapshotWithRequestedSelectedNote,
   requestedSelectedNoteId,
 } from './mobileUiLabSelectedNote'
-import { requestedActionSheetQaTarget } from './mobileActionSheetQaTarget'
-import { tabletTransitionProbeMode } from './tabletTransitionProbeMode'
 import {
   initialMobileUiNativeSearch,
 } from './mobileUiLabWorkspaceResolution'
+import { mobileSnapshotWithWysiwygMutationProbeContent } from './mobileUiLabWysiwygMutationSnapshot'
 import { mobileRepositoryForProbes, mobileRepositoryRequestForProbes, mobileUiWorkspaceSourceRequest } from './mobileUiWorkspaceSourceRequest'
-import { useMobileWorkspaceResolution } from './useMobileWorkspaceResolution'
 import { mobileWorkspaceKey } from './mobileWorkspaceKey'
+import { PhoneWorkspace, type PhoneWorkspaceState } from './PhoneWorkspace'
+import { TabletWorkspace } from './TabletWorkspace'
+import { tabletTransitionProbeMode } from './tabletTransitionProbeMode'
+import type { TabletTransitionProbeMode } from './tabletWorkspaceTypes'
+import { useMobileWorkspaceResolution } from './useMobileWorkspaceResolution'
 
 type DevVaultLoadState =
   | { status: 'idle' | 'loading' }
@@ -117,12 +118,16 @@ export function MobileUiLab() {
     wysiwygPersistenceProbe,
   })
   const { devVault, devVaultUrl, repository, repositoryRequest, scenarioId, source } = workspaceSource
+  const incomingDeepLink = useMobileIncomingDeepLink(
+    useContext(MobileVaultPickerContext),
+    workspaceSource.baseSnapshot,
+  )
   const qa = mobileUiQaFlags(searchParams, { wysiwygPersistenceProbe })
   const metricSinkUrl = qa.layoutProbe ? searchParams.get('metricSink') : null
   const actionAdapterProbeRunKey = searchParams.get('qaRun') ?? 'interactive'
   const selectedSnapshot = mobileSnapshotWithRequestedSelectedNote(
     workspaceSource.baseSnapshot,
-    requestedSelectedNoteId(searchParams) ?? nativeWorkspace?.selectedNoteId ?? null,
+    incomingDeepLink.noteId ?? requestedSelectedNoteId(searchParams) ?? nativeWorkspace?.selectedNoteId ?? null,
   )
   const snapshot = mobileSnapshotForProbes(selectedSnapshot, {
     tableOfContentsProbe: qa.tableOfContentsProbe,
@@ -170,9 +175,12 @@ export function MobileUiLab() {
   }
   return (
     <MobileVaultDisplayContext.Provider value={{ source, rootUri: repositoryRequest.vaultRootUri }}>
-      {isWideEnoughForTablet
-        ? <TabletWorkspace key={workspaceKey} {...sharedProps} onTableOfContentsScrollProof={qa.tableOfContentsProbe ? handleTableOfContentsScrollProof : undefined} />
-        : <PhoneWorkspace key={workspaceKey} {...sharedProps} initialState={currentPhoneState(searchParams)} />}
+      <View style={{ flex: 1 }}>
+        {isWideEnoughForTablet
+          ? <TabletWorkspace key={workspaceKey} {...sharedProps} onTableOfContentsScrollProof={qa.tableOfContentsProbe ? handleTableOfContentsScrollProof : undefined} />
+          : <PhoneWorkspace key={workspaceKey} {...sharedProps} initialState={currentPhoneState(searchParams)} />}
+        {incomingDeepLink.notice && <MobileDeepLinkNotice message={incomingDeepLink.notice} />}
+      </View>
     </MobileVaultDisplayContext.Provider>
   )
 }

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { requiredFixture } from '../fixtures/requiredFixture'
 import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
+import { requestedActionSheetQaTarget } from './mobileActionSheetQaTarget'
 import {
   mobileSnapshotWithRequestedSelectedNote,
   requestedSelectedNoteId,
 } from './mobileUiLabSelectedNote'
-import { requestedActionSheetQaTarget } from './mobileActionSheetQaTarget'
 import { tabletTransitionProbeMode } from './tabletTransitionProbeMode'
 
 describe('requestedSelectedNoteId', () => {
@@ -50,6 +50,19 @@ describe('mobileSnapshotWithRequestedSelectedNote', () => {
       ...snapshot,
       allNotes: [...snapshot.notes, hiddenNote],
     }, hiddenNote.id).selectedNoteId).toBe(hiddenNote.id)
+  })
+
+  it('still selects a visible note when the indexed note list is stale', () => {
+    const snapshot = workspaceScenarioForId('default')
+    const visibleNote = {
+      ...requiredFixture(snapshot.notes[0]),
+      id: 'visible-only.md',
+    }
+    expect(mobileSnapshotWithRequestedSelectedNote({
+      ...snapshot,
+      allNotes: snapshot.notes.filter((note) => note.id !== visibleNote.id),
+      notes: [visibleNote],
+    }, visibleNote.id).selectedNoteId).toBe(visibleNote.id)
   })
 
   it('ignores blank or missing requested note IDs', () => {

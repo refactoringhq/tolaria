@@ -1,3 +1,4 @@
+import { parseMobileIncomingDeepLink } from '../../workspace/mobileDeepLinks'
 import { mobileWikilinkHref } from '../../workspace/mobileWikilinks'
 
 export const mobileWysiwygLinkActionType = 'mobile-open-link'
@@ -7,7 +8,7 @@ type MobileWysiwygLinkHandlers = {
   onOpenLink?: (href: string) => void
 }
 
-export type MobileWysiwygLinkKind = 'external' | 'wikilink'
+export type MobileWysiwygLinkKind = 'deepLink' | 'external' | 'wikilink'
 
 export function routeMobileWysiwygLink(
   href: string,
@@ -19,6 +20,11 @@ export function routeMobileWysiwygLink(
     if (!target || !handlers.onNavigateWikilink) return null
     handlers.onNavigateWikilink(target)
     return 'wikilink'
+  }
+
+  if (parseMobileIncomingDeepLink(href).kind === 'note' && handlers.onOpenLink) {
+    handlers.onOpenLink(href)
+    return 'deepLink'
   }
 
   if (!isSupportedExternalHref(href) || !handlers.onOpenLink) return null
