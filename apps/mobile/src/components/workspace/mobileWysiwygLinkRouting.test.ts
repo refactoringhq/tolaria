@@ -26,6 +26,12 @@ describe('routeMobileWysiwygLink', () => {
     },
   )
 
+  it('routes a Tolaria note deep link to the incoming-link handler', () => {
+    const onOpenLink = vi.fn()
+    expect(routeMobileWysiwygLink('tolaria://laputa-vault/Folder/Note.md', { onOpenLink })).toBe('deepLink')
+    expect(onOpenLink).toHaveBeenCalledWith('tolaria://laputa-vault/Folder/Note.md')
+  })
+
   it.each(['javascript:alert(1)', 'data:text/html,hello', 'file:///note.png', 'tolaria://wikilink/%E0%A4%A', '']) (
     'rejects unsupported or malformed href %s',
     (href) => {

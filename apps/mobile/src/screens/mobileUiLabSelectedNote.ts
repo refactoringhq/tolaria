@@ -20,5 +20,5 @@ export function mobileSnapshotWithRequestedSelectedNote(
 }
 
 function mobileSnapshotHasNote(snapshot: MobileWorkspaceSnapshot, noteId: string) {
-  return (snapshot.allNotes ?? snapshot.notes).some((note) => note.id === noteId)
+  return [...snapshot.notes, ...(snapshot.allNotes ?? [])].some((note) => note.id === noteId)
 }
