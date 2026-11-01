@@ -39,36 +39,29 @@ export function useMobileNoteListBulkSelection({
 			noteIds: emptySelection,
 			scope: "",
 		});
-	const visibleNoteIds = useMemo(() => notes.map((note) => note.id), [notes]);
-	const visibleNoteIdsSignature = visibleNoteIds.join("\u0000");
-	const selectionScope = selectionEnabled ? visibleNoteIdsSignature : "";
-	const selectedNoteIds = scopedSelectedNoteIds({
+	const selectionSnapshot = useNoteListSelectionSnapshot({
 		emptySelection,
-		selectionScope,
+		notes,
+		selectionEnabled,
 		selectionState,
 	});
-	const selectedNotes = useMemo(
-		() => selectedMobileNoteListNotes(notes, selectedNoteIds),
-		[notes, selectedNoteIds],
-	);
-	const selectedNoteIdsSignature = [...selectedNoteIds].join("\u0000");
 	const { beginSelection, clearSelection, pressNote } =
 		useNoteListSelectionActions({
 			onSelectNote,
-			selectedNoteIds,
+			selectedNoteIds: selectionSnapshot.selectedNoteIds,
 			selectionEnabled,
-			selectionScope,
+			selectionScope: selectionSnapshot.selectionScope,
 			setSelectionState,
 		});
 	const runBulkAction = useNoteListBulkActionRunner({
 		clearSelection,
 		notes,
-		selectedNoteIds,
+		selectedNoteIds: selectionSnapshot.selectedNoteIds,
 	});
 	const archiveSelected = useArchiveSelectionAction({
 		bulkActions,
 		runBulkAction,
-		selectedNotes,
+		selectedNotes: selectionSnapshot.selectedNotes,
 	});
 
 	return {
@@ -83,11 +76,41 @@ export function useMobileNoteListBulkSelection({
 		pressNote,
 		rowExtraData: useCallback(
 			(selectedNoteId: string | null) =>
-				`${selectedNoteId ?? ""}:${selectedNoteIdsSignature}`,
-			[selectedNoteIdsSignature],
+				`${selectedNoteId ?? ""}:${selectionSnapshot.selectedNoteIdsSignature}`,
+			[selectionSnapshot.selectedNoteIdsSignature],
 		),
+		selectedNoteIds: selectionSnapshot.selectedNoteIds,
+		selectedNotes: selectionSnapshot.selectedNotes,
+	};
+}
+
+function useNoteListSelectionSnapshot({
+	emptySelection,
+	notes,
+	selectionEnabled,
+	selectionState,
+}: {
+	emptySelection: ReadonlySet<string>;
+	notes: MobileNote[];
+	selectionEnabled: boolean;
+	selectionState: MobileNoteListSelectionState;
+}) {
+	const visibleNoteIds = useMemo(() => notes.map((note) => note.id), [notes]);
+	const selectionScope = selectionEnabled ? visibleNoteIds.join("\u0000") : "";
+	const selectedNoteIds = scopedSelectedNoteIds({
+		emptySelection,
+		selectionScope,
+		selectionState,
+	});
+	const selectedNotes = useMemo(
+		() => selectedMobileNoteListNotes(notes, selectedNoteIds),
+		[notes, selectedNoteIds],
+	);
+	return {
 		selectedNoteIds,
+		selectedNoteIdsSignature: [...selectedNoteIds].join("\u0000"),
 		selectedNotes,
+		selectionScope,
 	};
 }
 
