@@ -60,3 +60,20 @@
 - CodeScene: all scorable touched source/test files remained at 10.0; the type-only module and declarative parity inventory return no numeric score and no findings. The inventory score is covered only by the approved exception above. Pre-commit safeguard and branch change-set review against `origin/mobile-native-ui` passed; normal scoped pre-push remains to be run.
 - Native: Debug simulator build succeeded for the existing `Tolaria-iPhone-16-Pro` (iOS 18.3.1), using the external derived-data path `/Volumes/Jupiter/QA/TOL-282-derived` and Metro port 8082. App launch succeeded. Light and dark screenshots were captured at `/private/tmp/TOL-282-loaded-8082.png` and `/private/tmp/TOL-282-dark.png`; both show the note list with the drawer closed, so they do not visually prove the new sidebar. Simulator.app is absent, and Device Hub could not attach this simulator because its device set is configured at `/Volumes/Jupiter/Developer/CoreSimulator/Devices` while this simulator is in the default set. No other simulator was touched. Native drawer opening and menu interaction remain unverified. No main promotion, OTA, or TestFlight action.
 - Localization: no UI copy changes. PostHog: no event needed because this adapts existing sidebar navigation/actions without adding a new user action. Docs: `docs/ABSTRACTIONS.md`. ADRs: none. Demo-vault dirt: none.
+
+# TOL-283 Checkpoint Record
+
+## Implementation
+
+- Replaced the iOS settings body with an inset-grouped Expo UI SwiftUI Form. It groups workspaces, GitHub, sync, appearance, update channel/diagnostics, privacy, and About; existing workspace and account actions remain hosted from their shared React Native components.
+- Added an Android Compose settings layout using ListItem, Switch, and segmented controls, with a full-screen presentation and back-arrow toolbar. The iOS sheet keeps its Done button and swipe dismissal.
+- Moved Auto Git into the Sync section and hid the duplicate toggle in the embedded Git controls while retaining manual commit controls only when Auto Git is disabled. Theme, channel, analytics, crash-reporting and Auto Git continue through the existing persisted settings controller.
+
+## Validation
+
+- `mobile:lint`, `mobile:typecheck`, `mobile:test` (450 files / 2,708 tests), Biome on all seven changed source/test files, `l10n:validate` (21 catalogs / 1,367 keys), and `git diff --check`: passed.
+- iOS Debug simulator build succeeded for the existing Tolaria-iPhone-16-Pro using Metro port 8082 and external derived data `/Volumes/Jupiter/QA/TOL-283-derived`; reinstall and app launch succeeded. Screenshot `/private/tmp/TOL-283-postbuild.png` confirms launch only; Settings interactions and a Settings-screen screenshot were not verified because Simulator.app and the AXe UI bridge are unavailable in this Xcode install. Android native build and interaction QA were not run.
+- CodeScene: all seven touched/new source and test files score 10.0; pre-commit safeguard passed (7 files). Change-set analysis against `origin/mobile-native-ui` passed (10 changed files, including the earlier main merge).
+- Codacy local manifest: `MobileGitControls.tsx`, `MobileVaultManager.tsx`, `MobileSettingsSheet.tsx`, `mobileSettingsController.test.ts`, `MobileNativeSettingsForm.ios.tsx`, `MobileNativeSettingsForm.android.tsx`, and `MobileNativeSettingsForm.tsx`. ESLint, Lizard, Opengrep OSS, and Trivy completed per file with zero findings after two Lizard refactors. Biome passed separately; no partial scan. Codacy MCP wrapper failed, so the repository CLI fallback was used. Dashboard exact-branch analysis remains pending after push.
+- No local full desktop/root coverage or Android build was run; this is native-branch work, and the scoped branch push hook remains required. No OTA, TestFlight, or main merge.
+- Localization: no UI copy changes; existing localized strings reused. PostHog: existing preference/theme events retained; no new event needed because no new user action was introduced. Refactoring: extracted Git controls and iOS About section to satisfy Lizard. ADRs/docs: none. Demo-vault dirt: none.
