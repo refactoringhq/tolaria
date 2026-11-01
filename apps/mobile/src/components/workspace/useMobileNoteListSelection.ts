@@ -45,6 +45,38 @@ export function useMobileNoteListBulkSelection({
 		selectionEnabled,
 		selectionState,
 	});
+	const selectionActions = useNoteListSelectionControls({
+		bulkActions,
+		notes,
+		onSelectNote,
+		selectionEnabled,
+		selectionSnapshot,
+		setSelectionState,
+	});
+	return useNoteListSelectionResult({
+		...selectionActions,
+		bulkActions,
+		selectionSnapshot,
+	});
+}
+
+function useNoteListSelectionControls({
+	bulkActions,
+	notes,
+	onSelectNote,
+	selectionEnabled,
+	selectionSnapshot,
+	setSelectionState,
+}: {
+	bulkActions?: MobileNoteListBulkActions;
+	notes: MobileNote[];
+	onSelectNote: (noteId: string) => void;
+	selectionEnabled: boolean;
+	selectionSnapshot: ReturnType<typeof useNoteListSelectionSnapshot>;
+	setSelectionState: React.Dispatch<
+		React.SetStateAction<MobileNoteListSelectionState>
+	>;
+}) {
 	const { beginSelection, clearSelection, pressNote } =
 		useNoteListSelectionActions({
 			onSelectNote,
@@ -58,21 +90,17 @@ export function useMobileNoteListBulkSelection({
 		notes,
 		selectedNoteIds: selectionSnapshot.selectedNoteIds,
 	});
-	const archiveSelected = useArchiveSelectionAction({
-		bulkActions,
-		runBulkAction,
-		selectedNotes: selectionSnapshot.selectedNotes,
-	});
-
-	return useNoteListSelectionResult({
-		archiveSelected,
+	return {
+		archiveSelected: useArchiveSelectionAction({
+			bulkActions,
+			runBulkAction,
+			selectedNotes: selectionSnapshot.selectedNotes,
+		}),
 		beginSelection,
-		bulkActions,
 		clearSelection,
 		pressNote,
 		runBulkAction,
-		selectionSnapshot,
-	});
+	};
 }
 
 function useNoteListSelectionResult({
