@@ -1,16 +1,14 @@
 import { useMobileStyles } from '../ui/theme/useMobileTheme'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type Dispatch, type SetStateAction } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react'
 
 import { Dimensions, Platform, useWindowDimensions, View } from 'react-native'
-
-import { GestureDetector } from 'react-native-gesture-handler'
-
-import { MobileCommandPalette } from '../components/workspace/MobileCommandPalette'
 
 import { MobileWorkspaceEditNotice } from '../components/workspace/MobileWorkspaceEditNotice'
 
 import type { MobileNote, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
+import type { MobileDeepLinkNavigationRequest } from '../workspace/useMobileIncomingDeepLink'
+import { useIncomingDeepLinkNavigation } from '../workspace/useIncomingDeepLinkNavigation'
 
 import {
   fixtureReadOnlyWorkspaceRepository,
@@ -56,15 +54,9 @@ import { useInitialActionSheetQaTarget } from './useInitialActionSheetQaTarget'
 
 import { useTabletPanelGestures } from './useTabletPanelGestures'
 
-import {
-  TabletLeftChromeHost,
-  TabletEditorPanelHost,
-  TabletPropertiesPanelHost,
-  type TabletTableOfContentsTargetRequest,
-  type TabletPanelGestures,
-} from './TabletWorkspacePanels'
+import type { TabletTableOfContentsTargetRequest, TabletPanelGestures } from './TabletWorkspacePanels'
 
-import { WorkspaceActionSheetHost } from './TabletWorkspaceActionSheetHost'
+import { TabletWorkspaceChromeView } from './WorkspaceChromeView'
 
 import { createTabletWorkspaceStyles as createThemeStyles } from './TabletWorkspaceStyles'
 
@@ -74,6 +66,8 @@ type TabletWorkspaceProps = {
   initialEditorEditing?: boolean
   initialEditorEditingMode?: TabletWorkspaceChromeProps['initialEditorEditingMode']
   initialActionSheet?: MobileActionSheetQaTarget
+  incomingNavigation?: MobileDeepLinkNavigationRequest | null
+  onIncomingNavigationHandled?: (requestId: number) => void
   commandPaletteProbe?: boolean
   keyboardShortcutProbe?: boolean
   layoutProbe?: boolean
@@ -97,14 +91,8 @@ type TabletWorkspaceProps = {
   wysiwygMutationProbe?: boolean
 }
 
-type TabletWorkspaceChromeViewProps = {
-  workspace: TabletWorkspaceChromeProps
-  chrome: ReturnType<typeof useTabletChromeState>
-  styles: ReturnType<typeof createThemeStyles>['styles']
-}
-
 type TabletEditorCommandRegistry = ReturnType<typeof useMobileEditorCommandRegistry>
-type TabletCommandPaletteHostProps = ComponentProps<typeof MobileCommandPalette> & { open: boolean }
+export type TabletWorkspaceChromeState = ReturnType<typeof useTabletChromeState>
 
 export { WorkspaceActionSheetHost } from './TabletWorkspaceActionSheetHost'
 
@@ -119,6 +107,7 @@ export function TabletWorkspace(props: TabletWorkspaceProps) {
   } = props
   const { styles } = useMobileStyles(createThemeStyles)
   const controller = useTabletWorkspaceController({ repository, repositoryRequest, snapshot })
+  useIncomingDeepLinkNavigation(props.incomingNavigation, controller.onSelectNote, props.onIncomingNavigationHandled)
   const onCreateNote =
     controller.snapshot.sync.kind === 'noVault' || controller.snapshot.sync.kind === 'readOnly'
       ? (onOpenNativeVault ?? controller.onOpenCreateNote)
@@ -198,8 +187,11 @@ function useTabletChromeState(props: TabletWorkspaceChromeProps) {
   })
   const commandPaletteCommands = useTabletPaletteCommands(props, gestures, editorCommandRegistry, openCommandPalette)
   useTabletTransitionProbe(tabletTransitionProbe, gestures)
-  const handleNavigateWikilink = useTabletWikilinkNavigation(suggestionNotes, onSelectNote)
-  const handleSelectTableOfContentsTarget = useTabletOutlineSelection(setTableOfContentsTarget)
+  const { handleNavigateWikilink, handleSelectTableOfContentsTarget } = useTabletNavigationHandlers(
+    suggestionNotes,
+    onSelectNote,
+    setTableOfContentsTarget,
+  )
   useTabletTableOfContentsProbe(props, tableOfContentsTarget, handleSelectTableOfContentsTarget)
   useTabletChromeQaProofs(commandPaletteProbe, props.keyboardShortcutProbe, commandPaletteCommands)
   return {
@@ -213,6 +205,17 @@ function useTabletChromeState(props: TabletWorkspaceChromeProps) {
     commandPaletteCommands,
     commandPaletteOpen,
     closeCommandPalette,
+  }
+}
+
+function useTabletNavigationHandlers(
+  notes: MobileNote[],
+  onSelectNote: TabletWorkspaceChromeProps['onSelectNote'],
+  setTableOfContentsTarget: Dispatch<SetStateAction<TabletTableOfContentsTargetRequest | null>>,
+) {
+  return {
+    handleNavigateWikilink: useTabletWikilinkNavigation(notes, onSelectNote),
+    handleSelectTableOfContentsTarget: useTabletOutlineSelection(setTableOfContentsTarget),
   }
 }
 
@@ -233,68 +236,6 @@ function useTabletOutlineSelection(setTableOfContentsTarget: Dispatch<SetStateAc
       requestId: (current?.requestId ?? 0) + 1,
     }))
   }, [setTableOfContentsTarget])
-}
-
-function TabletWorkspaceChromeView(view: TabletWorkspaceChromeViewProps) {
-  const { workspace: props, chrome, styles } = view
-  const { onSelectNote, snapshot } = props
-  const {
-    gestures,
-    suggestionNotes,
-    editorCommandRegistry,
-    tableOfContentsTarget,
-    openCommandPalette,
-    handleNavigateWikilink,
-  } = chrome
-  return (
-    <GestureDetector gesture={gestures.panGesture}>
-      <View collapsable={false} style={styles.shell} testID="tablet-workspace-gesture-surface">
-        <TabletLeftChromeHost
-          {...props}
-          gestures={gestures}
-          onOpenCommandPalette={openCommandPalette}
-          onSelectNote={(noteId) => {
-            editorCommandRegistry.commands.blur?.()
-            onSelectNote(noteId)
-          }}
-        />
-        <TabletEditorPanelHost
-          {...props}
-          gestures={gestures}
-          suggestionNotes={suggestionNotes}
-          tableOfContentsTarget={tableOfContentsTarget}
-          typeDefinitions={snapshot.typeDefinitions}
-          onRegisterEditorCommands={editorCommandRegistry.register}
-          onNavigateWikilink={handleNavigateWikilink}
-        />
-        <TabletPropertiesPanelHost
-          {...props}
-          gestures={gestures}
-          onFixInvalidFrontmatter={editorCommandRegistry.commands.toggleRawEditor}
-        />
-        <TabletWorkspaceOverlayHost {...view} />
-      </View>
-    </GestureDetector>
-  )
-}
-
-function TabletWorkspaceOverlayHost(view: TabletWorkspaceChromeViewProps) {
-  const { workspace: props, chrome } = view
-  return (
-    <>
-      <WorkspaceActionSheetHost
-        {...props}
-        editorCommands={chrome.editorCommandRegistry.commands}
-        suggestionNotes={chrome.suggestionNotes}
-        onSelectTableOfContentsTarget={chrome.handleSelectTableOfContentsTarget}
-      />
-      <TabletCommandPaletteHost
-        commands={chrome.commandPaletteCommands}
-        open={chrome.commandPaletteOpen}
-        onClose={chrome.closeCommandPalette}
-      />
-    </>
-  )
 }
 
 function useTabletPaletteCommands(
@@ -354,7 +295,7 @@ function useTabletTableOfContentsProbe(
 function useTabletChromeQaProofs(
   paletteProbe: boolean | undefined,
   keyboardProbe: boolean | undefined,
-  commands: ComponentProps<typeof MobileCommandPalette>['commands'],
+  commands: ReturnType<typeof buildMobileCommandPaletteCommands>,
 ) {
   useEffect(() => {
     if (paletteProbe) logNativeMobileCommandPaletteProof(commands)
@@ -362,12 +303,6 @@ function useTabletChromeQaProofs(
   useEffect(() => {
     if (keyboardProbe) logNativeMobileKeyboardShortcutBridgeProof()
   }, [keyboardProbe])
-}
-
-function TabletCommandPaletteHost(props: TabletCommandPaletteHostProps) {
-  const { commands, open, onClose } = props
-  if (!open) return null
-  return <MobileCommandPalette commands={commands} onClose={onClose} />
 }
 
 function useTabletTransitionProbe(mode: TabletTransitionProbeMode, gestures: TabletPanelGestures) {
@@ -476,6 +411,15 @@ function adjacentVisibleNoteId(notes: MobileNote[], selectedNoteId: string | nul
 }
 
 function tabletWorkspacePresentationProps(props: TabletWorkspaceProps) {
+  return {
+    ...tabletWorkspaceCorePresentationProps(props),
+    ...tabletWorkspaceLayoutProbeProps(props),
+    ...tabletWorkspaceEditorProbeProps(props),
+    ...tabletWorkspaceContentProbeProps(props),
+  }
+}
+
+function tabletWorkspaceCorePresentationProps(props: TabletWorkspaceProps) {
   const {
     initialCommandPaletteOpen = false,
     initialEditorEditing = true,
@@ -486,17 +430,6 @@ function tabletWorkspacePresentationProps(props: TabletWorkspaceProps) {
     onTableOfContentsScrollProof,
     sourceIdleSave = true,
     sourceSelectionProbe = false,
-    tableOfContentsProbe = false,
-    tabletTransitionProbe = false,
-    wysiwygAutocompleteProbe = false,
-    wysiwygExternalLinkProbe = false,
-    wysiwygFormatCommandProbe = false,
-    wysiwygInputTransformProbe = false,
-    wysiwygMarkdownBlockProbe = false,
-    wysiwygMathEditProbe = false,
-    wysiwygTableCommandMutationProbe = false,
-    wysiwygWikilinkInsertProbe = false,
-    wysiwygMutationProbe = false,
   } = props
   return {
     initialCommandPaletteOpen,
@@ -508,12 +441,41 @@ function tabletWorkspacePresentationProps(props: TabletWorkspaceProps) {
     onTableOfContentsScrollProof,
     sourceIdleSave,
     sourceSelectionProbe,
-    tableOfContentsProbe,
-    tabletTransitionProbe,
+  }
+}
+
+function tabletWorkspaceLayoutProbeProps(props: TabletWorkspaceProps) {
+  const {
+    tableOfContentsProbe = false,
+    tabletTransitionProbe = false,
+  } = props
+  return { tableOfContentsProbe, tabletTransitionProbe }
+}
+
+function tabletWorkspaceEditorProbeProps(props: TabletWorkspaceProps) {
+  const {
+    wysiwygAutocompleteProbe = false,
+    wysiwygExternalLinkProbe = false,
+    wysiwygFormatCommandProbe = false,
+    wysiwygInputTransformProbe = false,
+  } = props
+  return {
     wysiwygAutocompleteProbe,
     wysiwygExternalLinkProbe,
     wysiwygFormatCommandProbe,
     wysiwygInputTransformProbe,
+  }
+}
+
+function tabletWorkspaceContentProbeProps(props: TabletWorkspaceProps) {
+  const {
+    wysiwygMarkdownBlockProbe = false,
+    wysiwygMathEditProbe = false,
+    wysiwygTableCommandMutationProbe = false,
+    wysiwygWikilinkInsertProbe = false,
+    wysiwygMutationProbe = false,
+  } = props
+  return {
     wysiwygMarkdownBlockProbe,
     wysiwygMathEditProbe,
     wysiwygTableCommandMutationProbe,
