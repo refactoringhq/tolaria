@@ -77,3 +77,18 @@
 - Codacy local manifest: `MobileGitControls.tsx`, `MobileVaultManager.tsx`, `MobileSettingsSheet.tsx`, `mobileSettingsController.test.ts`, `MobileNativeSettingsForm.ios.tsx`, `MobileNativeSettingsForm.android.tsx`, and `MobileNativeSettingsForm.tsx`. ESLint, Lizard, Opengrep OSS, and Trivy completed per file with zero findings after two Lizard refactors. Biome passed separately; no partial scan. Codacy MCP wrapper failed, so the repository CLI fallback was used. Dashboard exact-branch analysis remains pending after push.
 - No local full desktop/root coverage or Android build was run; this is native-branch work, and the scoped branch push hook remains required. No OTA, TestFlight, or main merge.
 - Localization: no UI copy changes; existing localized strings reused. PostHog: existing preference/theme events retained; no new event needed because no new user action was introduced. Refactoring: extracted Git controls and iOS About section to satisfy Lizard. ADRs/docs: none. Demo-vault dirt: none.
+
+# TOL-284 Checkpoint Record
+
+## Implementation
+
+- Added an iOS native long-press context menu for note rows with Favorite, Archive/Unarchive, Move, destructive Delete, and Select when bulk selection is available. Actions route through existing note-list callbacks; Android long-press selection and swipe gestures are unchanged.
+- Remaining TOL-284 scope: replace formatting dropdowns and convert the remaining workspace action sheets to native platform sheets/dialogs; remove the dropdown dependency only after its final use is gone.
+
+## Validation
+
+- Focused menu model tests: 2 passed. Full mobile suite: 451 files, 2,710 tests passed. `mobile:lint`, `mobile:typecheck`, `mobile:export:web`, Biome on all four touched source/test files, and `git diff --check` passed.
+- Codacy local SARIF: ESLint, Lizard, Opengrep OSS, and Trivy completed per file with zero findings for all four touched/new code files. Existing `MobileNoteListItems.tsx` and `MobileSwipeableNoteRow.tsx` had zero local findings at baseline and remain zero; new model and test files have zero findings. Dashboard baseline on analyzed main was zero issues for both existing files.
+- CodeScene: all four changed/new code files score 10.0; pre-commit safeguard and branch change-set review against `origin/mobile-native-ui` passed. No new inventory file was added; the existing note-list parity entry covers the row surface.
+- No native simulator interaction was run for this checkpoint; menu presentation/action behavior remains unverified in the simulator. No dependency removed, native build changed, main merge, OTA, or TestFlight action.
+- Localization: no new copy; existing localized menu strings reused. PostHog: no separate event needed because these invoke existing note actions. ADRs/docs: none. Demo-vault dirt: none.
