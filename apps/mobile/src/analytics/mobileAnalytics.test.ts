@@ -18,6 +18,16 @@ describe('consent-bound mobile analytics', () => {
     })
   })
 
+  it('records deep-link outcomes without vault or note identifiers', () => {
+    const { analytics, send } = setup()
+    analytics.setEnabled(true)
+    analytics.capture({ name: 'mobile_deep_link_opened', outcome: 'opened' })
+    expect(send.mock.calls[0]?.[0]).toEqual({
+      event: 'mobile_deep_link_opened', distinct_id: 'anonymous-session',
+      properties: { $process_person_profile: false, $geoip_disable: true, platform: 'ios', outcome: 'opened' },
+    })
+  })
+
   it('records editor tool discovery without queries or document content', () => {
     const { analytics, send } = setup()
     analytics.setEnabled(true)

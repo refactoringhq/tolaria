@@ -114,7 +114,7 @@ export function useNativeTentapEditorRuntime(options: NativeTentapEditorBridgeOp
   }, [analytics, options.onNavigateWikilink, options.onOpenLink])
   const onLinkTap = useCallback((href: string) => {
     const kind = routeMobileWysiwygLink(href, linkHandlersRef.current)
-    if (kind) analyticsRef.current.capture({ name: 'mobile_note_link_activated', kind })
+    if (kind && kind !== 'deepLink') analyticsRef.current.capture({ name: 'mobile_note_link_activated', kind })
   }, [])
   const refs = useNativeTentapEditorRefs(initialDocumentContent, onLinkTap)
 

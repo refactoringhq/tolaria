@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest'
-import { buildMobileDeepLinkForNote } from './mobileDeepLinks'
+import { describe, expect, it, vi } from 'vitest'
+import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
+import {
+  buildMobileDeepLinkForNote,
+  parseMobileIncomingDeepLink,
+  resolveMobileDeepLinkNote,
+  resolveMobileDeepLinkVault,
+} from './mobileDeepLinks'
 import type { MobileNote } from './mobileWorkspaceModel'
 
 describe('buildMobileDeepLinkForNote', () => {
@@ -72,6 +78,54 @@ describe('buildMobileDeepLinkForNote', () => {
     })
   })
 })
+
+describe('incoming mobile deep links', () => {
+  const vaults = [
+    { id: 'laputa', label: 'Laputa Vault', selected: false, select: vi.fn() },
+    { id: 'work', label: 'Work Vault', selected: true, select: vi.fn() },
+  ]
+
+  it('parses safe Tolaria note URLs and leaves QA launch URLs to their existing handlers', () => {
+    expect(parseMobileIncomingDeepLink('tolaria://laputa-vault/Folder/Note%20One.md')).toEqual({
+      kind: 'note',
+      relativePath: 'Folder/Note One.md',
+      slug: 'laputa-vault',
+    })
+    expect(parseMobileIncomingDeepLink('tolaria://qa')).toEqual({ kind: 'ignored' })
+    expect(parseMobileIncomingDeepLink('tolaria://mobile-ui-lab?layoutProbe=1')).toEqual({ kind: 'ignored' })
+    expect(parseMobileIncomingDeepLink('tolaria:///?gitProbe=http%3A%2F%2F127.0.0.1')).toEqual({ kind: 'ignored' })
+    expect(parseMobileIncomingDeepLink('tolaria://laputa-vault/%2E%2E/private.md')).toEqual({
+      error: 'unsafe_path',
+      kind: 'invalid',
+    })
+    expect(parseMobileIncomingDeepLink('tolaria://laputa-vault/folder%2Fprivate.md')).toEqual({
+      error: 'unsafe_path',
+      kind: 'invalid',
+    })
+  })
+
+  it('matches a linked vault label and reports unknown or ambiguous aliases', () => {
+    expect(resolveMobileDeepLinkVault(parsedNote('laputa-vault/Note.md').slug, vaults)).toEqual({ kind: 'matched', vault: vaults[0] })
+    expect(resolveMobileDeepLinkVault(parsedNote('missing/Note.md').slug, vaults)).toEqual({ kind: 'unknown' })
+    expect(resolveMobileDeepLinkVault(parsedNote('work-vault/Note.md').slug, [
+      ...vaults,
+      { ...vaults[0], id: 'second', label: 'Work Vault' },
+    ])).toEqual({ kind: 'ambiguous' })
+  })
+
+  it('selects a note by its vault-relative path, not by title', () => {
+    const target = note({ id: 'different-id', path: 'Folder/Note.md', title: 'A title' })
+    const snapshot = { ...workspaceScenarioForId('default'), notes: [target], allNotes: [target] }
+    expect(resolveMobileDeepLinkNote(snapshot, parsedNote('laputa/Folder/Note.md').relativePath)).toBe('different-id')
+    expect(resolveMobileDeepLinkNote(snapshot, parsedNote('laputa/A%20title').relativePath)).toBeNull()
+  })
+})
+
+function parsedNote(path: string) {
+  const parsed = parseMobileIncomingDeepLink(`tolaria://${path}`)
+  if (parsed.kind !== 'note') throw new Error('Expected a note deep link')
+  return parsed
+}
 
 function source() {
   return {
