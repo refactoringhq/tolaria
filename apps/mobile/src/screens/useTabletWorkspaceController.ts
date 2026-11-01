@@ -2,23 +2,24 @@ import { useCallback, useState } from 'react'
 import { useMobileSearchEvent } from '../analytics/useMobileDiscoveryEvents'
 import type { MobileWorkspaceAction } from '../components/workspace/MobileWorkspaceActionSheet'
 import type { MobileSidebarItemSelection } from '../components/workspace/MobileWorkspaceSidebar'
-import type { MobileNote, MobilePropertyValue, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
-import type { MobileWorkspaceEdit } from '../workspace/mobileWorkspaceEditing'
-import type { ReadOnlyWorkspaceRepository, ReadOnlyWorkspaceRequest } from '../workspace/readOnlyWorkspaceRepository'
 import { mobileNoteWithResolvedWidth } from '../workspace/mobileNoteWidth'
 import { mobileDefaultNoteWidthFromVaultConfig } from '../workspace/mobileVaultConfig'
-import { useTabletWorkspaceNavigation } from './tabletWorkspaceNavigation'
-import type { MobileActionSheetQaTarget, TabletReadOnlyForm } from './tabletWorkspaceTypes'
+import type { MobileWorkspaceEdit } from '../workspace/mobileWorkspaceEditing'
+import type { MobileNote, MobilePropertyValue, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
+import type { ReadOnlyWorkspaceRepository, ReadOnlyWorkspaceRequest } from '../workspace/readOnlyWorkspaceRepository'
+import { emptyReadOnlyForm } from './tabletWorkspaceActionForms'
+import { actionSheetWorkspaceActions } from './tabletWorkspaceActionOpeners'
+import type { ApplyWorkspaceEdit, SaveSelectedEdit, SetOpenAction, TabletWorkspaceNavigation, WorkspaceActionsContext } from './tabletWorkspaceController.types'
 import { editorWorkspaceActions } from './tabletWorkspaceEditorActions'
 import { selectAfterWorkspaceEdit } from './tabletWorkspaceEditSelection'
+import { noteIconWorkspaceActions, propertyWorkspaceActions, relationshipWorkspaceActions, retargetWorkspaceActions } from './tabletWorkspaceFieldActions'
+import { nativeWorkspaceFieldActions } from './tabletWorkspaceNativeFieldActions'
+import { useTabletWorkspaceNavigation } from './tabletWorkspaceNavigation'
 import { useWorkspaceEditPipeline } from './tabletWorkspacePersistence'
-import { useMobileNoteRead } from './useMobileNoteRead'
 import { selectedFolderCommandActions } from './tabletWorkspaceSelectedFolderActions'
+import type { MobileActionSheetQaTarget, TabletReadOnlyForm } from './tabletWorkspaceTypes'
 import { createWorkspaceActions, selectedViewCommandActions } from './tabletWorkspaceViewActions'
-import { propertyWorkspaceActions, relationshipWorkspaceActions, retargetWorkspaceActions, noteIconWorkspaceActions } from './tabletWorkspaceFieldActions'
-import { actionSheetWorkspaceActions } from './tabletWorkspaceActionOpeners'
-import type { TabletWorkspaceNavigation, SetOpenAction, ApplyWorkspaceEdit, WorkspaceActionsContext, SaveSelectedEdit } from './tabletWorkspaceController.types'
-import { emptyReadOnlyForm } from './tabletWorkspaceActionForms'
+import { useMobileNoteRead } from './useMobileNoteRead'
 
 type TabletWorkspaceControllerRequest = {
   repository: ReadOnlyWorkspaceRepository
@@ -300,6 +301,7 @@ function controllerPresentation(input: ControllerPresentationInput) {
   const { navigation, openAction, readOnlyForm, repositoryRequest, selectedNote, workspaceSnapshot } = context
   const { retryFailedEdit, canRedoWorkspaceEdit, canUndoWorkspaceEdit, redoWorkspaceEdit, reloadWorkspaceSnapshot, undoWorkspaceEdit } = pipeline
   return {
+    ...nativeWorkspaceFieldActions(context.applyEdit),
     openAction,
     readOnlyForm,
     searchQuery,

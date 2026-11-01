@@ -1,12 +1,13 @@
-import { useMobileStyles, useMobileColors } from '../../ui/theme/useMobileTheme'
 import { Plus, WarningCircle } from 'phosphor-react-native'
+import type { ReactNode } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { mobileCopy, mobileText } from '../../i18n/mobileText'
 import { type MobileLayoutProbe, probeProps, useMobileLayoutProbe } from '../../qa/mobileLayoutProbe'
-import { MobilePanel, MobileToolbar, MobileToolbarSpacer, MobileToolbarTitle } from '../../ui/MobilePanel'
 import { MobileIconButton } from '../../ui/MobileIconButton'
+import { MobilePanel, MobileToolbar, MobileToolbarSpacer, MobileToolbarTitle } from '../../ui/MobilePanel'
 import { MobilePropertyRow } from '../../ui/MobilePropertyRow'
+import { useMobileColors, useMobileStyles } from '../../ui/theme/useMobileTheme'
 import { mobileFrontmatterState, needsMobileFrontmatterNotice } from '../../workspace/mobileFrontmatterState'
 import { type MobileInspectorPropertySlot, type MobileInspectorRelationshipSlot, mobileInspectorPropertySlots, mobileInspectorRelationshipSlots } from '../../workspace/mobileInspectorSchema'
 import { resolveMobileMissingTypeName } from '../../workspace/mobileMissingType'
@@ -16,16 +17,18 @@ import { Text } from '../ui/text'
 import { MobileFrontmatterStateNotice } from './MobileFrontmatterStateNotice'
 import { createPropertyPanelStyles } from './MobilePropertiesPanel.styles'
 import { mobileInspectorPlaceholderActionLabel } from './MobilePropertiesPanelModel'
+import { PropertyActionRow, PropertySection } from './MobilePropertyRows'
+import { EditableChipValue, EditablePropertyRow, EditableTagsValue, WorkspaceBadge } from './MobilePropertyValues'
+import { ReferenceGroups, RelationshipValues } from './MobileRelationshipRows'
+import { relationshipHeading, testIdSegment } from './mobilePropertyRowModel'
 import { chipTone, statusTone } from './mobileWorkspaceTone'
-import { PropertySection, PropertyActionRow } from './MobilePropertyRows'
-import { testIdSegment, relationshipHeading } from './mobilePropertyRowModel'
-import { EditableChipValue, EditableTagsValue, EditablePropertyRow, WorkspaceBadge } from './MobilePropertyValues'
-import { RelationshipValues, ReferenceGroups } from './MobileRelationshipRows'
 
 type MobilePropertiesPanelProps = {
   compact: boolean
   fullWidth?: boolean
   showToolbar?: boolean
+  hideTypeRow?: boolean
+  nativeValueControl?: (property: { key: string; label: string; value: MobilePropertyValue }) => ReactNode
   layoutProbe?: boolean
   note: MobileNote | null
   onAddProperty: (key?: string) => void
@@ -126,6 +129,8 @@ function notePropertiesProps(props: MobilePropertiesPanelProps): Omit<NoteProper
     propertyDisplayModes: props.propertyDisplayModes,
     referenceGroups: props.referenceGroups ?? [],
     typeDefinitions: props.typeDefinitions,
+    hideTypeRow: props.hideTypeRow,
+    nativeValueControl: props.nativeValueControl,
   }
 }
 
@@ -145,6 +150,8 @@ type NotePropertiesProps = {
   propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
   referenceGroups: MobileNeighborhoodGroup[]
   typeDefinitions?: MobileTypeDefinitions
+  hideTypeRow?: boolean
+  nativeValueControl?: MobilePropertiesPanelProps['nativeValueControl']
 }
 
 function NoteProperties(props: NotePropertiesProps) {
@@ -187,17 +194,17 @@ function NoteProperties(props: NotePropertiesProps) {
 }
 
 function StandardPropertyRows({ missingTypeName, props }: { missingTypeName: string | null; props: NotePropertiesProps }) {
-  const { layoutProbe, note, onCreateMissingType, onEditProperty, onOpenChangeNoteType } = props
+  const { layoutProbe, note, onCreateMissingType, onEditProperty, onOpenChangeNoteType, nativeValueControl } = props
 
   return (
     <>
-      <TypePropertyRow
+      {!props.hideTypeRow ? <TypePropertyRow
         layoutProbe={layoutProbe}
         missingTypeName={missingTypeName}
         note={note}
         onCreateMissingType={onCreateMissingType}
         onOpenChangeNoteType={onOpenChangeNoteType}
-      />
+      /> : null}
       {note.status ? (
         <MobilePropertyRow
           label={mobileText('noteList.sort.status')}
@@ -207,6 +214,7 @@ function StandardPropertyRows({ missingTypeName, props }: { missingTypeName: str
               label={note.status}
               testID="property-row-status-edit"
               tone={statusTone(note.status)}
+              nativeValue={nativeValueControl?.({ key: 'Status', label: mobileText('noteList.sort.status'), value: note.status })}
               onPress={() => onEditProperty(note.id, 'Status', note.status)}
             />
           }
@@ -224,14 +232,14 @@ function StandardPropertyRows({ missingTypeName, props }: { missingTypeName: str
         value={<WorkspaceBadge label={note.workspace} />}
       />
       <MobilePropertyRow label="Tags" layoutProbe={layoutProbe} layoutProbeId="properties.section.tags" testID="property-section-tags"
-        value={<EditableTagsValue labels={note.tags} onPress={() => onEditProperty(note.id, 'tags', note.tags)} />} />
+        value={<EditableTagsValue labels={note.tags} nativeValue={nativeValueControl?.({ key: 'tags', label: 'Tags', value: note.tags })} onPress={() => onEditProperty(note.id, 'tags', note.tags)} />} />
       <MobilePropertyRow label="Links" layoutProbe={layoutProbe} layoutProbeId="properties.row.links" testID="property-row-links" value={`${note.links}`} />
     </>
   )
 }
 
 function CustomPropertyRows({ propertySlots, props }: { propertySlots: MobileInspectorPropertySlot[]; props: NotePropertiesProps }) {
-  const { layoutProbe, note, onEditProperty, propertyDisplayModes } = props
+  const { layoutProbe, note, onEditProperty, propertyDisplayModes, nativeValueControl } = props
 
   return (
     <>
@@ -240,6 +248,7 @@ function CustomPropertyRows({ propertySlots, props }: { propertySlots: MobileIns
           layoutProbe={layoutProbe}
           noteId={note.id}
           property={{ key: 'icon', label: 'Icon', value: note.icon }}
+          nativeValue={nativeValueControl?.({ key: 'icon', label: 'Icon', value: note.icon })}
           onEditProperty={onEditProperty}
         />
       ) : null}
@@ -249,6 +258,7 @@ function CustomPropertyRows({ propertySlots, props }: { propertySlots: MobileIns
           layoutProbe={layoutProbe}
           noteId={note.id}
           property={property}
+          nativeValue={nativeValueControl?.(property)}
           propertyDisplayModes={propertyDisplayModes}
           onEditProperty={onEditProperty}
         />

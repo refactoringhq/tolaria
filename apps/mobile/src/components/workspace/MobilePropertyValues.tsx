@@ -1,27 +1,31 @@
-import { useMobileStyles } from '../../ui/theme/useMobileTheme'
+import type { ReactNode } from 'react'
 import { Pressable, View } from 'react-native'
 import { mobileText } from '../../i18n/mobileText'
 import type { MobileLayoutProbe } from '../../qa/mobileLayoutProbe'
 import { MobileChip } from '../../ui/MobileChip'
 import { MobilePropertyRow } from '../../ui/MobilePropertyRow'
+import { useMobileStyles } from '../../ui/theme/useMobileTheme'
 import { type MobilePropertyDisplay, mobilePropertyDisplay } from '../../workspace/mobilePropertyDisplay'
 import type { MobileProperty, MobilePropertyDisplayMode, MobilePropertyValue } from '../../workspace/mobileWorkspaceModel'
 import { Text } from '../ui/text'
 import { createPropertyPanelStyles } from './MobilePropertiesPanel.styles'
-import { statusTone, tagTone } from './mobileWorkspaceTone'
 import { testIdSegment } from './mobilePropertyRowModel'
+import { statusTone, tagTone } from './mobileWorkspaceTone'
 
 export function EditableChipValue({
   label,
   onPress,
+  nativeValue,
   testID,
   tone,
 }: {
   label: string
   onPress: () => void
+  nativeValue?: ReactNode
   testID: string
   tone: Parameters<typeof MobileChip>[0]['tone']
 }) {
+  if (nativeValue !== undefined) return <>{nativeValue}</>
   return (
     <Pressable accessibilityLabel={label} accessibilityRole="button" testID={testID} onPress={onPress}>
       <MobileChip label={label} tone={tone} />
@@ -29,9 +33,10 @@ export function EditableChipValue({
   )
 }
 
-export function EditableTagsValue({ labels, onPress }: { labels: string[]; onPress: () => void }) {
+export function EditableTagsValue({ labels, onPress, nativeValue }: { labels: string[]; onPress: () => void; nativeValue?: ReactNode }) {
   const themeStyles = useMobileStyles(createPropertyPanelStyles)
   const { propertyStyles } = themeStyles
+  if (nativeValue !== undefined) return <>{nativeValue}</>
   if (labels.length > 0) {
     return (
       <Pressable accessibilityLabel="Tags" accessibilityRole="button" style={propertyStyles.tagsValue} testID="property-tags-edit" onPress={onPress}>
@@ -53,22 +58,28 @@ export function EditableTagsValue({ labels, onPress }: { labels: string[]; onPre
   )
 }
 
-export function EditablePropertyRow({
-  layoutProbe,
-  noteId,
-  onEditProperty,
-  propertyDisplayModes,
-  property,
-}: {
+export function EditablePropertyRow(props: {
   layoutProbe: MobileLayoutProbe
   noteId: string
   onEditProperty: (noteId: string, key: string, value: MobilePropertyValue) => void
   propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
   property: MobileProperty
+  nativeValue?: ReactNode
 }) {
+	const {
+		layoutProbe,
+		noteId,
+		onEditProperty,
+		nativeValue,
+		propertyDisplayModes,
+		property,
+	} = props
   const themeStyles = useMobileStyles(createPropertyPanelStyles)
   const { propertyStyles } = themeStyles
   const testId = `property-row-${testIdSegment(property.key)}`
+  if (nativeValue !== undefined) {
+    return <MobilePropertyRow label={property.label} layoutProbe={layoutProbe} layoutProbeId={`properties.row.${testIdSegment(property.key)}`} testID={testId} value={nativeValue} />
+  }
   const display = mobilePropertyDisplay(
     property.key,
     property.value,

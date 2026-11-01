@@ -123,6 +123,26 @@ vi.mock("./PhoneEditorGlassChrome", () => ({
 vi.mock("./useMobileInspectorReferenceGroups", () => ({
 	useMobileInspectorReferenceGroups: () => [],
 }));
+vi.mock("./PhonePropertiesSheet", () => ({
+	PhonePropertiesSheet: ({
+		phoneState,
+		openEditor,
+	}: {
+		phoneState: string;
+		openEditor: () => void;
+	}) =>
+		phoneState === "properties"
+			? createElement(
+					"div",
+					{ "data-testid": "phone-properties-sheet" },
+					createElement("button", {
+						"data-testid": "phone-properties-dismiss",
+						onClick: openEditor,
+							type: "button",
+					}),
+				)
+			: null,
+}));
 
 let root: ReturnType<typeof createRoot>;
 let host: HTMLDivElement;
@@ -167,7 +187,7 @@ it("keeps command palette access in the sidebar and removes it from phone header
 	expect(calls.list.mock.lastCall?.[0].leading).toBeDefined();
 	expect(calls.list.mock.lastCall?.[0].phoneChrome).toBe(true);
 	expect(calls.editor.mock.lastCall?.[0].trailing).toBeUndefined();
-	expect(calls.properties).toHaveBeenCalledOnce();
+	expect(calls.properties).not.toHaveBeenCalled();
 	expect(host.querySelectorAll('[aria-label="Command palette"]')).toHaveLength(
 		0,
 	);
@@ -225,4 +245,30 @@ it("uses floating chrome, hides the phone toolbar, and keeps back navigation wir
 			?.click(),
 	);
 	expect(openList).toHaveBeenCalledOnce();
+});
+
+it("presents properties as a dismissible sheet without adding a fourth rail pane", async () => {
+	const props = createPhoneWorkspaceScreenProps(openCommandPalette);
+	props.phoneState = "properties";
+	const openEditor = vi.fn();
+
+	await act(async () =>
+		root.render(createElement(PhoneWorkspaceScreens, { ...props, openEditor })),
+	);
+
+	expect(
+		host.querySelector('[data-testid="phone-properties-slot"]'),
+	).toBeNull();
+	expect(
+		host.querySelector('[data-testid="phone-properties-sheet"]'),
+	).not.toBeNull();
+	expect(calls.properties).not.toHaveBeenCalled();
+	await act(async () =>
+		host
+			.querySelector<HTMLButtonElement>(
+				'[data-testid="phone-properties-dismiss"]',
+			)
+			?.click(),
+	);
+	expect(openEditor).toHaveBeenCalledOnce();
 });

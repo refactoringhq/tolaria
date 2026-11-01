@@ -1006,6 +1006,10 @@ The tablet workspace controller owns temporary interaction state: selected sideb
 chrome, styles, and editor options remain separate from navigation callbacks.
 The standalone phone inspector uses the editor's literal filename identity in
 its existing single header; tablet Properties chrome remains unchanged.
+Phone Properties is presented in an Expo UI native bottom sheet; shared property
+sections retain the existing edit pipeline while iOS/Android field controls use
+their platform-native pickers and inputs. The selected type icon reuses the
+shared `MobileTypeIcon` mapping.
 `usePhonePanelRail` owns one native gesture and the absolute offset of the real
 panels. `phoneNativePanGesture` recognizes intent and settles with Reanimated;
 an epoch rejects interrupted completion callbacks. `phonePanelRail` owns pure
