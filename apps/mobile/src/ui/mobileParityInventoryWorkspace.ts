@@ -43,6 +43,32 @@ export const mobileParityInventoryWorkspace = [
 	},
 	{
 		assertions: [
+			"sidebar type/view/favorite row rendering, fixed-section symbols, and native long-press action tests",
+		],
+		contracts: ["desktopSidebarParity", "desktopNoteItemParity"],
+		desktopSource:
+			"SidebarParts and desktop Phosphor type/view/favorite item icons",
+		mobileFile: "src/components/workspace/MobileWorkspaceSidebarItems.tsx",
+		surface: "Workspace sidebar items and native context actions",
+	},
+	{
+		assertions: [
+			"sidebar section collapse, fixed header symbols, and Android section-row tests",
+		],
+		contracts: ["desktopSidebarParity"],
+		desktopSource: "SidebarGroupHeader and sidebar section composition",
+		mobileFile: "src/components/workspace/MobileWorkspaceSidebarSection.tsx",
+		surface: "Workspace sidebar section headers and disclosure",
+	},
+	{
+		assertions: ["sidebar sync-state and action interaction tests"],
+		contracts: ["desktopSidebarParity", "desktopToolbarActionParity"],
+		desktopSource: "Desktop sync status and workspace controls",
+		mobileFile: "src/components/workspace/MobileSidebarSyncPill.tsx",
+		surface: "Workspace sidebar sync status control",
+	},
+	{
+		assertions: [
 			"sidebar folder computed styles, measured native row insets, and click navigation",
 		],
 		contracts: ["desktopSidebarParity"],
