@@ -1,6 +1,9 @@
-import type { MobileNote, MobileWorkspaceSource } from './mobileWorkspaceModel'
+import type { MobileNote, MobileWorkspaceSnapshot, MobileWorkspaceSource } from './mobileWorkspaceModel'
 
 export const TOLARIA_MOBILE_DEEP_LINK_SCHEME = 'tolaria'
+
+export type MobileDeepLinkSlug = string & { readonly mobileDeepLinkSlug: true }
+export type MobileDeepLinkPath = string & { readonly mobileDeepLinkPath: true }
 
 export type MobileDeepLinkBuildError = 'missing_note' | 'missing_vault' | 'unsafe_path'
 
@@ -12,6 +15,97 @@ export type MobileDeepLinkBuildInput = {
   note: MobileNote | null
   source?: MobileWorkspaceSource
   vaultRootUri?: string | null
+}
+
+export type MobileIncomingDeepLink =
+  | { kind: 'ignored' }
+  | { error: string; kind: 'invalid' }
+  | { kind: 'note'; relativePath: MobileDeepLinkPath; slug: MobileDeepLinkSlug }
+
+export type MobileDeepLinkVaultChoice = {
+  id: string
+  label: string
+  selected: boolean
+  select: () => Promise<unknown>
+}
+
+export function parseMobileIncomingDeepLink(rawUrl: string): MobileIncomingDeepLink {
+  let url: URL
+  try {
+    url = new URL(rawUrl)
+  } catch {
+    return { error: 'malformed_url', kind: 'invalid' }
+  }
+
+  if (url.protocol !== `${TOLARIA_MOBILE_DEEP_LINK_SCHEME}:`) return { kind: 'ignored' }
+  if (['qa', 'mobile-ui-lab'].includes(url.hostname) || url.searchParams.has('gitProbe')) {
+    return { kind: 'ignored' }
+  }
+
+  const parsed = parseNoteDeepLink(rawUrl, url)
+  if ('error' in parsed) return { error: parsed.error, kind: 'invalid' }
+  return { kind: 'note', relativePath: parsed.relativePath, slug: url.hostname as MobileDeepLinkSlug }
+}
+
+function parseNoteDeepLink(
+  rawUrl: string,
+  url: URL,
+): { error: string } | { relativePath: MobileDeepLinkPath } {
+  if (!url.hostname) return { error: 'missing_vault' }
+  const encodedPath = encodedNotePath(rawUrl)
+  if (!encodedPath) return { error: 'missing_path' }
+  const relativePath = decodeNotePath(encodedPath)
+  return relativePath ? { relativePath: relativePath as MobileDeepLinkPath } : { error: 'unsafe_path' }
+}
+
+function encodedNotePath(rawUrl: string): string | null {
+  return rawUrl.match(/^tolaria:\/\/[^/?#]+(\/[^?#]*)/iu)?.[1]?.replace(/^\/+/, '') ?? null
+}
+
+function decodeNotePath(encodedPath: string): string | null {
+  const decodedSegments: string[] = []
+  for (const segment of encodedPath.split('/')) {
+    const decoded = decodeSafePathSegment(segment)
+    if (!decoded) return null
+    decodedSegments.push(decoded)
+  }
+  return decodedSegments.join('/')
+}
+
+function decodeSafePathSegment(segment: string): string | null {
+  if (!segment) return null
+  try {
+    const decoded = decodeURIComponent(segment)
+    if (!decoded || decoded === '.' || decoded === '..' || /[\\/]/u.test(decoded)) return null
+    return decoded
+  } catch {
+    return null
+  }
+}
+
+export function resolveMobileDeepLinkVault(
+  slug: MobileDeepLinkSlug,
+  vaults: readonly MobileDeepLinkVaultChoice[],
+): { kind: 'matched'; vault: MobileDeepLinkVaultChoice } | { kind: 'unknown' | 'ambiguous' } {
+  const target = slug.toLocaleLowerCase()
+  const matches = vaults.filter((vault) => {
+    return slugifyWorkspaceAlias(vault.label) === target || slugifyWorkspaceAlias(vault.id) === target
+  })
+  if (matches.length === 0) return { kind: 'unknown' }
+  if (matches.length > 1) return { kind: 'ambiguous' }
+  return { kind: 'matched', vault: matches[0] }
+}
+
+export function resolveMobileDeepLinkNote(
+  snapshot: MobileWorkspaceSnapshot,
+  relativePath: MobileDeepLinkPath,
+): string | null {
+  const expectedPath = normalizeRelativePath(relativePath)
+  const notes = new Map([...snapshot.notes, ...(snapshot.allNotes ?? [])].map((note) => [note.id, note]))
+  for (const note of notes.values()) {
+    if (normalizeRelativePath(note.path ?? note.id) === expectedPath) return note.id
+  }
+  return null
 }
 
 export function buildMobileDeepLinkForNote({
@@ -104,6 +198,10 @@ function encodeRelativePath(path: string): string {
 
 function stringValue(value: unknown): string {
   return typeof value === 'string' ? value : ''
+}
+
+function normalizeRelativePath(path: string): string {
+  return path.replaceAll('\\', '/').replace(/^\/+|\/+$/gu, '')
 }
 
 function sourceValue(value: unknown): string {
