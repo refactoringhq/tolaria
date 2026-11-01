@@ -6,7 +6,6 @@ import { useMobileWorkspaceKeyboardShortcuts } from '../workspace/mobileWorkspac
 import type { MobileNote, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
 import type { MobileDeepLinkNavigationRequest } from '../workspace/useMobileIncomingDeepLink'
 import { useIncomingDeepLinkNavigation } from '../workspace/useIncomingDeepLinkNavigation'
-import type { MobileTableOfContentsTarget } from '../workspace/mobileTableOfContents'
 import { fixtureReadOnlyWorkspaceRepository, type ReadOnlyWorkspaceRepository, type ReadOnlyWorkspaceRequest } from '../workspace/readOnlyWorkspaceRepository'
 import { MobileCommandPalette } from '../components/workspace/MobileCommandPalette'
 import { buildMobileCommandPaletteCommands } from '../workspace/mobileCommandPalette'
@@ -17,7 +16,8 @@ import { PhoneWorkspaceRoot } from './PhoneWorkspaceLayout'
 import { usePhonePanelRail } from './usePhonePanelRail'
 import { usePhoneViewportWidth } from './usePhoneViewportWidth'
 import { phoneWorkspaceEditorOptions } from './phoneWorkspaceEditorOptions'
-import { usePhonePanelDragSurface, usePhoneWorkspaceNavigation, type PhoneWorkspaceController, type PhoneTableOfContentsTargetRequest } from './phoneWorkspaceScreenSupport'
+import { usePhonePanelDragSurface, usePhoneWorkspaceNavigation, type PhoneWorkspaceController } from './phoneWorkspaceScreenSupport'
+import { usePhoneTableOfContentsTarget } from './usePhoneTableOfContentsTarget'
 import { useTabletWorkspaceController } from './useTabletWorkspaceController'
 import { useInitialActionSheetQaTarget } from './useInitialActionSheetQaTarget'
 import type { MobileActionSheetQaTarget } from './tabletWorkspaceTypes'
@@ -172,12 +172,6 @@ function selectAdjacentVisiblePhoneNote(
   if (noteId) onSelectNote(noteId)
 }
 
-function usePhoneCommandPaletteProof(commands: ReturnType<typeof buildMobileCommandPaletteCommands>, enabled: boolean) {
-  useEffect(() => {
-    if (enabled) logNativeMobileCommandPaletteProof(commands)
-  }, [commands, enabled])
-}
-
 function usePhoneKeyboardShortcutBridgeProof(enabled: boolean) {
   useEffect(() => {
     if (enabled) logNativeMobileKeyboardShortcutBridgeProof()
@@ -192,19 +186,6 @@ function useCreateRelationshipTargetAndOpenEditor(
     controller.onCreateRelationshipTarget()
     setPhoneState('editor')
   }, [controller, setPhoneState])
-}
-
-function usePhoneTableOfContentsTarget(setPhoneState: (nextState: PhoneWorkspaceState) => void) {
-  const [target, setTarget] = useState<PhoneTableOfContentsTargetRequest | null>(null)
-  const select = useCallback((nextTarget: MobileTableOfContentsTarget) => {
-    setTarget((current) => ({
-      ...nextTarget,
-      requestId: (current?.requestId ?? 0) + 1,
-    }))
-    setPhoneState('editor')
-  }, [setPhoneState])
-
-  return { select, target }
 }
 
 type UsePhoneCommandPaletteProps = {
@@ -297,4 +278,10 @@ function usePhoneSwipeHandlers({
     sidebar: { onSwipeLeft: openList },
   }
   return useHorizontalSwipe({ canStart, ...actions[phoneState] })
+}
+
+function usePhoneCommandPaletteProof(commands: ReturnType<typeof buildMobileCommandPaletteCommands>, enabled: boolean) {
+  useEffect(() => {
+    if (enabled) logNativeMobileCommandPaletteProof(commands)
+  }, [commands, enabled])
 }
