@@ -127,7 +127,7 @@ export function MobileUiLab() {
   const actionAdapterProbeRunKey = searchParams.get('qaRun') ?? 'interactive'
   const selectedSnapshot = mobileSnapshotWithRequestedSelectedNote(
     workspaceSource.baseSnapshot,
-    incomingDeepLink.noteId ?? requestedSelectedNoteId(searchParams) ?? nativeWorkspace?.selectedNoteId ?? null,
+    requestedSelectedNoteId(searchParams) ?? nativeWorkspace?.selectedNoteId ?? null,
   )
   const snapshot = mobileSnapshotForProbes(selectedSnapshot, {
     tableOfContentsProbe: qa.tableOfContentsProbe,
@@ -168,6 +168,7 @@ export function MobileUiLab() {
     commandPaletteProbe: qa.mobileCommandPaletteProbe,
     keyboardShortcutProbe: qa.mobileKeyboardShortcutProbe,
     onOpenNativeVault: handleOpenNativeVault,
+    ...{ incomingNavigation: incomingDeepLink.navigation, onIncomingNavigationHandled: incomingDeepLink.acknowledgeNavigation },
     repository,
     repositoryRequest,
     sourceIdleSave: !editorIdleSaveDisabled(searchParams),
