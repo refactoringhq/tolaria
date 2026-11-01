@@ -4,6 +4,8 @@ import { useHorizontalSwipe } from '../ui/useHorizontalSwipe'
 import { useMobileEditorCommandRegistry, useMobileEditorOverlayFocus } from '../workspace/mobileEditorCommands'
 import { useMobileWorkspaceKeyboardShortcuts } from '../workspace/mobileWorkspaceKeyboardShortcuts'
 import type { MobileNote, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
+import type { MobileDeepLinkNavigationRequest } from '../workspace/useMobileIncomingDeepLink'
+import { useIncomingDeepLinkNavigation } from '../workspace/useIncomingDeepLinkNavigation'
 import type { MobileTableOfContentsTarget } from '../workspace/mobileTableOfContents'
 import { fixtureReadOnlyWorkspaceRepository, type ReadOnlyWorkspaceRepository, type ReadOnlyWorkspaceRequest } from '../workspace/readOnlyWorkspaceRepository'
 import { MobileCommandPalette } from '../components/workspace/MobileCommandPalette'
@@ -31,6 +33,8 @@ type PhoneWorkspaceProps = {
   commandPaletteProbe?: boolean
   keyboardShortcutProbe?: boolean
   initialState?: PhoneWorkspaceState
+  incomingNavigation?: MobileDeepLinkNavigationRequest | null
+  onIncomingNavigationHandled?: (requestId: number) => void
   layoutProbe?: boolean
   onOpenNativeVault?: () => void
   repository?: ReadOnlyWorkspaceRepository
@@ -91,6 +95,7 @@ function PhoneWorkspaceChrome(props: PhoneWorkspaceChromeProps) {
   const tableOfContents = usePhoneTableOfContentsTarget(setPhoneState)
   const phoneLayoutProbe = useMobileLayoutProbe(options.layoutProbe)
   const navigation = usePhoneWorkspaceNavigation({ controller, setPhoneState, setSourceModeRequest })
+  useIncomingDeepLinkNavigation(props.incomingNavigation, navigation.openEditor, props.onIncomingNavigationHandled)
   const selectNextNote = useCallback(() => selectAdjacentVisiblePhoneNote(controller.notes, controller.selectedNoteId, controller.onSelectNote, 1), [controller])
   const selectPreviousNote = useCallback(() => selectAdjacentVisiblePhoneNote(controller.notes, controller.selectedNoteId, controller.onSelectNote, -1), [controller])
   const commandPalette = usePhoneCommandPalette({
