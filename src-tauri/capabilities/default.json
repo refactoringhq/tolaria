@@ -22,6 +22,7 @@
     "core:window:allow-set-title",
     "core:webview:allow-create-webview-window",
     "core:webview:allow-print",
+    "core:webview:allow-set-webview-zoom",
     "core:event:default",
     "dialog:default",
     "deep-link:default",
