@@ -45,7 +45,7 @@ export async function walkGitStatus(
 			if (record.gitlink) return null;
 		},
 	});
-	for (const record of coalesceUnicodeEquivalentEntries(
+	for (const record of coalesceUnicodeStatusEntries(
 		unicodeEntries,
 		1,
 		[0, 2],
@@ -53,6 +53,46 @@ export async function walkGitStatus(
 		if (stopIf()) break;
 		await visit(await toGitStatusEntry(record.filepath, record.entries));
 	}
+}
+
+function coalesceUnicodeStatusEntries<T extends GitWalkRecord>(
+	records: T[],
+	worktreeIndex: number,
+	trackedIndexes: number[],
+) {
+	const distinct = findDistinctTrackedSpellings(records, trackedIndexes);
+	const eligible = records.filter(
+		(record) => !distinct.has(record.filepath.normalize("NFC")),
+	);
+	return [
+		...coalesceUnicodeEquivalentEntries(
+			eligible,
+			worktreeIndex,
+			trackedIndexes,
+		),
+		...records.filter((record) =>
+			distinct.has(record.filepath.normalize("NFC")),
+		),
+	];
+}
+
+function findDistinctTrackedSpellings(
+	records: GitWalkRecord[],
+	trackedIndexes: number[],
+) {
+	const pathsByNormalizedName = new Map<string, Set<string>>();
+	for (const { filepath, entries } of records) {
+		if (!trackedIndexes.some((index) => entries[index])) continue;
+		const key = filepath.normalize("NFC");
+		const paths = pathsByNormalizedName.get(key) ?? new Set<string>();
+		paths.add(filepath);
+		pathsByNormalizedName.set(key, paths);
+	}
+	return new Set(
+		[...pathsByNormalizedName]
+			.filter(([, paths]) => paths.size > 1)
+			.map(([key]) => key),
+	);
 }
 
 async function toGitStatusEntry(
