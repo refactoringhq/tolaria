@@ -7,6 +7,7 @@ import {
   resolveMobileDeepLinkVault,
 } from './mobileDeepLinks'
 import type { MobileNote } from './mobileWorkspaceModel'
+import { mobileWorkspaceDeepLinkSlug } from './mobileWorkspaceAlias'
 
 describe('buildMobileDeepLinkForNote', () => {
   it('builds desktop-shaped Tolaria URLs from the active mobile vault and relative note path', () => {
@@ -77,6 +78,13 @@ describe('buildMobileDeepLinkForNote', () => {
       url: 'tolaria://laputa-personal/Inbox.md',
     })
   })
+
+  it('builds copied links from the saved vault alias before the display label', () => {
+    expect(buildMobileDeepLinkForNote({
+      note: note({ path: 'Inbox.md', workspace: 'Personal Vault' }),
+      source: { kind: 'localVault', alias: 'laputa', label: 'Personal Vault', totalNotes: 1, visibleNotes: 1 },
+    })).toEqual({ ok: true, url: 'tolaria://laputa/Inbox.md' })
+  })
 })
 
 describe('incoming mobile deep links', () => {
@@ -111,6 +119,22 @@ describe('incoming mobile deep links', () => {
       ...vaults,
       { ...vaults[0], id: 'second', label: 'Work Vault' },
     ])).toEqual({ kind: 'ambiguous' })
+  })
+
+  it('resolves a saved custom slug before the vault display label', () => {
+    const choice = { id: 'laputa', label: 'Personal Vault', selected: true, select: vi.fn() }
+    expect(resolveMobileDeepLinkVault(parsedNote('laputa/Note.md').slug, [choice])).toEqual({ kind: 'matched', vault: choice })
+  })
+
+  it('resolves the collision suffix used by copied links', () => {
+    const savedVaults = [
+      { id: 'one', label: 'Personal Vault', alias: 'laputa', selected: false, select: vi.fn() },
+      { id: 'two', label: 'Personal Vault', alias: 'laputa', selected: true, select: vi.fn() },
+    ]
+    const target = mobileWorkspaceDeepLinkSlug(savedVaults[1], savedVaults)
+    const choices = savedVaults.map((vault, index) => ({ ...vault,
+      id: mobileWorkspaceDeepLinkSlug(vault, savedVaults), selected: index === 1 }))
+    expect(resolveMobileDeepLinkVault(parsedNote(`${target}/Note.md`).slug, choices)).toEqual({ kind: 'matched', vault: choices[1] })
   })
 
   it('selects a note by its vault-relative path, not by title', () => {

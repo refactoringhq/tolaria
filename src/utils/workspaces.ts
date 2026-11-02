@@ -34,13 +34,14 @@ interface WritableWorkspaceOptions<T> {
   graphVaults: T[] | undefined
 }
 
+export function normalizeWorkspaceSlug(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const normalized = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  return normalized || null
+}
+
 function slugifyWorkspaceAlias({ label }: WorkspaceLabelInput): string {
-  const normalized = label
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-  return normalized || 'workspace'
+  return normalizeWorkspaceSlug(label) || 'workspace'
 }
 
 export function labelFromWorkspacePath(path: string | null | undefined): string {

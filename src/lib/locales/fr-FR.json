@@ -248,7 +248,7 @@
   "settings.workspaces.slugAria": "Slug du coffre-fort pour {label} }",
   "settings.workspaces.nameTooltip": "Nom d'affichage apparaissant dans les menus, les paramètres et les sélecteurs de coffre.",
   "settings.workspaces.labelTooltip": "Initiales abrégées affichées sur les notes, les résultats de recherche, le fil d'Ariane et les badges de coffre-fort.",
-  "settings.workspaces.slugTooltip": "Préfixe stable utilisé dans les liens et les relations entre coffres-forts. Pour l'instant, il est en lecture seule afin d'éviter de casser les références existantes.",
+  "settings.workspaces.slugTooltip": "Le préfixe stable utilisé dans les liens et les relations entre coffres-forts. Sa modification met à jour les liens générés et entrants.",
   "settings.workspaces.color": "Couleur",
   "settings.workspaces.moveUpAria": "Déplacer le coffre {label} vers le haut",
   "settings.workspaces.moveDownAria": "Déplacer le coffre {label} vers le bas",
