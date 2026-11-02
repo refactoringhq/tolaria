@@ -207,6 +207,7 @@ function WorkspaceRowActions(
   const removeLabel = t('settings.workspaces.removeAria', {
     label: workspace.label,
   })
+  const setDefault = () => saveDefaultWorkspace(vault.path, workspace.alias, onSetDefaultWorkspace)
 
   return (
     <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
@@ -229,12 +230,7 @@ function WorkspaceRowActions(
         type="button"
         variant="secondary"
         size="xs"
-        onClick={() => {
-          onSetDefaultWorkspace?.(vault.path)
-          trackEvent('workspace_default_changed', {
-            workspace_alias: workspace.alias,
-          })
-        }}
+        onClick={setDefault}
         disabled={!onSetDefaultWorkspace || workspace.defaultForNewNotes}
         data-testid={`settings-workspace-default-${workspace.alias}`}
       >
@@ -257,6 +253,15 @@ function WorkspaceRowActions(
       )}
     </div>
   )
+}
+
+function saveDefaultWorkspace(
+  path: string,
+  alias: string,
+  onSetDefaultWorkspace: WorkspaceSettingsRowsProps['onSetDefaultWorkspace'],
+) {
+  onSetDefaultWorkspace?.(path)
+  trackEvent('workspace_default_changed', { workspace_alias: alias })
 }
 
 function WorkspaceRemovalConfirmation({

@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState } from 'react-native'
 import { useMobileAnalytics } from '../../analytics/useMobileAnalytics'
-import { useMobileVaultEvents } from '../../analytics/useMobileDiscoveryEvents'
 import { useMobileSettings } from '../../settings/useMobileSettings'
 import { FolderOpenFailure, folderOpenMessage } from '../folderOpenFailure'
 import { isWorkspaceLinked, syncLinkedWorkspaceWithEditors } from '../linkedWorkspace'
@@ -29,6 +28,7 @@ import { useGitSyncProgress } from './useGitSyncProgress'
 import { type ActiveVault, useManagedVaultCatalog } from './useManagedVaultCatalog'
 import { useMobileAutoGit } from './useMobileAutoGit'
 import { usePreparedVaultRefresh } from './usePreparedVaultRefresh'
+import { useMobileVaultSelection } from './useMobileVaultSelection'
 
 export type { VaultSyncState } from '../syncLedgerModel'
 
@@ -99,13 +99,6 @@ function useMobileVaultCatalogState() {
   const { active } = selection
   const { revision, setRevision, workspaceRefresh } = refresh
   return { catalog, account, cloneProgress, syncProgress, preferences, analytics, editors, active, revision, setRevision, workspaceRefresh }
-}
-
-function useMobileVaultSelection(catalog: ReturnType<typeof useManagedVaultCatalog>) {
-  const [override, setOverride] = useState<ActiveVault | null>(null)
-  const active = useMemo(() => override ?? catalog.restored ?? { selection: null, git: null }, [catalog.restored, override])
-  useMobileVaultEvents(active.selection?.vaultRootUri)
-  return { active, setOverride }
 }
 
 function useMobileVaultRefresh(setOverride: (value: ActiveVault) => void) {
