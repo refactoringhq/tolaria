@@ -30,6 +30,31 @@ afterEach(async () => {
 })
 
 describe('createMcpToolService', () => {
+  it('returns context for every active vault through the tool service', async () => {
+    const service = makeService()
+
+    const context = await service.vaultContext()
+
+    assert.deepEqual(
+      context.vaults.map(({ vaultPath }) => vaultPath),
+      [firstVault, secondVault],
+    )
+    assert.equal(context.vaults[0].agentInstructions, null)
+    assert.equal(context.vaults[1].agentInstructions.content, '# Second Vault Rules\n')
+  })
+
+  it('returns one vault context and supports an explicit vaultPath', async () => {
+    const service = makeService({ vaultPaths: [firstVault] })
+
+    const singleContext = await service.vaultContext()
+    const explicitContext = await service.vaultContext({ vaultPath: firstVault })
+
+    assert.equal(singleContext.vaultPath, firstVault)
+    assert.equal(explicitContext.vaultPath, firstVault)
+    assert.equal(singleContext.agentInstructions, null)
+    assert.equal(explicitContext.agentInstructions, null)
+  })
+
   it('attaches a vault and exposes it to the same MCP service immediately', async () => {
     const emittedActions = []
     const attachedVault = path.join(tmpDir, 'Attached Vault')
@@ -249,9 +274,14 @@ describe('createMcpToolService', () => {
   })
 })
 
-function makeService({ emittedActions = [], attachVault, cloneVault } = {}) {
+function makeService({
+  emittedActions = [],
+  attachVault,
+  cloneVault,
+  vaultPaths = [firstVault, secondVault],
+} = {}) {
   return createMcpToolService({
-    resolveVaultPaths: () => [firstVault, secondVault],
+    resolveVaultPaths: () => vaultPaths,
     attachVault,
     cloneVault,
     emitUiAction: (action, payload) => {

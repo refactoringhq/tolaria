@@ -88,7 +88,9 @@ export function createMcpToolService({
 			return instructions.vaultContextWithInstructions(roots[0]);
 
 		return {
-			vaults: await Promise.all(roots.map(vaultContextWithInstructions)),
+			vaults: await Promise.all(
+				roots.map(instructions.vaultContextWithInstructions),
+			),
 		};
 	}
 
