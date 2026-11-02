@@ -330,24 +330,17 @@ function WorkspaceSettingsRow(
 
   return (
     <div className="grid gap-3 px-4 py-4" data-testid={`settings-workspace-row-${workspace.alias}`}>
-      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-        <div className="min-w-[220px] flex-1">
-          <div className="truncate text-sm font-medium text-foreground">{workspace.label}</div>
-          <div className="truncate text-[11px] text-muted-foreground">{workspace.path}</div>
-        </div>
-        <WorkspaceRowActions
-          canEdit={canEdit}
-          canMoveDown={canMoveVaultPath(vaults, vault.path, 'down')}
-          canMoveUp={canMoveVaultPath(vaults, vault.path, 'up')}
-          locale={locale}
-          onMoveVault={onMoveVault}
-          onSetDefaultWorkspace={onSetDefaultWorkspace}
-          onUpdateWorkspaceIdentity={onUpdateWorkspaceIdentity}
-          onRequestRemoveVault={onRequestRemoveVault}
-          workspace={workspace}
-          vault={vault}
-        />
-      </div>
+      <WorkspaceRowHeading
+        canEdit={canEdit}
+        locale={locale}
+        onMoveVault={onMoveVault}
+        onRequestRemoveVault={onRequestRemoveVault}
+        onSetDefaultWorkspace={onSetDefaultWorkspace}
+        onUpdateWorkspaceIdentity={onUpdateWorkspaceIdentity}
+        vault={vault}
+        vaults={vaults}
+        workspace={workspace}
+      />
       {pendingRemoval && onConfirmRemoveVault && (
         <WorkspaceRemovalConfirmation
           locale={locale}
@@ -360,6 +353,52 @@ function WorkspaceSettingsRow(
         canEdit={canEdit}
         locale={locale}
         onUpdateWorkspaceIdentity={onUpdateWorkspaceIdentity}
+        vault={vault}
+      />
+    </div>
+  )
+}
+
+type WorkspaceRowHeadingProps = Pick<
+  WorkspaceSettingsRowsProps,
+  'locale' | 'onSetDefaultWorkspace' | 'onUpdateWorkspaceIdentity'
+> & {
+  canEdit: boolean
+  onMoveVault?: (path: string, direction: VaultMoveDirection) => void
+  onRequestRemoveVault?: () => void
+  vault: VaultOption
+  vaults: VaultOption[]
+  workspace: ReturnType<typeof workspaceIdentityFromVault>
+}
+
+function WorkspaceRowHeading(options: WorkspaceRowHeadingProps) {
+  const {
+    canEdit,
+    locale,
+    onMoveVault,
+    onRequestRemoveVault,
+    onSetDefaultWorkspace,
+    onUpdateWorkspaceIdentity,
+    vault,
+    vaults,
+    workspace,
+  } = options
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+      <div className="min-w-[220px] flex-1">
+        <div className="truncate text-sm font-medium text-foreground">{workspace.label}</div>
+        <div className="truncate text-[11px] text-muted-foreground">{workspace.path}</div>
+      </div>
+      <WorkspaceRowActions
+        canEdit={canEdit}
+        canMoveDown={canMoveVaultPath(vaults, vault.path, 'down')}
+        canMoveUp={canMoveVaultPath(vaults, vault.path, 'up')}
+        locale={locale}
+        onMoveVault={onMoveVault}
+        onSetDefaultWorkspace={onSetDefaultWorkspace}
+        onUpdateWorkspaceIdentity={onUpdateWorkspaceIdentity}
+        onRequestRemoveVault={onRequestRemoveVault}
+        workspace={workspace}
         vault={vault}
       />
     </div>
