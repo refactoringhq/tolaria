@@ -66,6 +66,7 @@ import { translate, type AppLocale } from '../lib/i18n'
 import { useBlockNoteFormattingToolbarHoverGuard } from './blockNoteFormattingToolbarHoverGuard'
 import { openEditorAttachmentOrUrl } from './editorAttachmentActions'
 import { turnBlocksIntoType } from './richEditorBlockTypeCommands'
+import { withViewportSafeMiddleware } from './tolariaEditorFormattingFloating'
 
 type TolariaBasicTextStyle =
   | 'bold'
@@ -75,9 +76,6 @@ type TolariaBasicTextStyle =
   | typeof MARKDOWN_HIGHLIGHT_STYLE
 
 const FORMATTER_CLOSE_GRACE_MS = 160
-const FORMATTER_VIEWPORT_PADDING_PX = 8
-type TolariaFloatingOptions = NonNullable<FloatingUIOptions['useFloatingOptions']>
-type TolariaFloatingMiddleware = NonNullable<TolariaFloatingOptions['middleware']>[number]
 
 function isFocusStillWithinToolbar(
   currentTarget: EventTarget & Element,
@@ -290,42 +288,6 @@ function textAlignmentToPlacement(
       return 'top-end'
     default:
       return 'top-start'
-  }
-}
-
-function viewportClampMiddleware(): TolariaFloatingMiddleware {
-  return {
-    name: 'tolariaViewportClamp',
-    fn({ x, rects }: { rects: { floating: { width: number } }; x: number }) {
-      const viewportWidth = window.visualViewport?.width ?? window.innerWidth
-      const minX = FORMATTER_VIEWPORT_PADDING_PX
-      const maxX = Math.max(
-        minX,
-        viewportWidth - rects.floating.width - FORMATTER_VIEWPORT_PADDING_PX,
-      )
-
-      return {
-        x: Math.min(Math.max(x, minX), maxX),
-      }
-    },
-  }
-}
-
-function withViewportSafeMiddleware(
-  options?: TolariaFloatingOptions,
-): TolariaFloatingOptions {
-  if (!options) {
-    return {
-      middleware: [viewportClampMiddleware()],
-    }
-  }
-
-  return {
-    ...options,
-    middleware: [
-      ...(options.middleware ?? []),
-      viewportClampMiddleware(),
-    ],
   }
 }
 
@@ -848,18 +810,74 @@ function FormattingToolbarSurface(props: FormattingToolbarSurfaceProps) {
   )
 }
 
+function useFormattingToolbarPosition(
+  editor: BlockNoteEditor<BlockSchema, InlineContentSchema, StyleSchema>,
+  shouldRender: boolean,
+) {
+  return useEditorState({
+    editor,
+    selector: ({ editor }) => (
+      shouldRender
+        ? {
+            from: editor.prosemirrorState.selection.from,
+            to: editor.prosemirrorState.selection.to,
+          }
+        : undefined
+    ),
+  })
+}
+
+function useFormattingToolbarPlacement(
+  editor: BlockNoteEditor<BlockSchema, InlineContentSchema, StyleSchema>,
+) {
+  return useEditorState({
+    editor,
+    selector: ({ editor }) => {
+      const block = getCursorBlockSafely(editor)
+      if (!block) return 'top-start'
+
+      if (!blockHasType(block, editor, block.type, {
+        textAlignment: defaultProps.textAlignment,
+      })) {
+        return 'top-start'
+      }
+
+      return textAlignmentToPlacement(block.props.textAlignment)
+    },
+  })
+}
+
+function useFormattingToolbarBridgeHoverGuard(
+  editor: BlockNoteEditor<BlockSchema, InlineContentSchema, StyleSchema>,
+  isOpen: boolean,
+) {
+  const bridgeBlockId = useEditorState({
+    editor,
+    selector: ({ editor }) => getFormattingToolbarBridgeBlockId(editor),
+  })
+
+  useBlockNoteFormattingToolbarHoverGuard({
+    editor,
+    container:
+      editor.domElement?.closest('.editor__blocknote-container') ??
+      editor.domElement ??
+      null,
+    selectedFileBlockId: bridgeBlockId,
+    isOpen,
+  })
+}
+
+function useFormattingToolbarExtensionState(
+  editor: BlockNoteEditor<BlockSchema, InlineContentSchema, StyleSchema>,
+) {
+  const formattingToolbar = useExtension(FormattingToolbarExtension, { editor })
+  const show = useExtensionState(FormattingToolbarExtension, { editor })
+  return { formattingToolbar, show }
+}
+
 export function TolariaFormattingToolbarController(props: TolariaFormattingToolbarControllerProps) {
-  const editor = useBlockNoteEditor<
-    BlockSchema,
-    InlineContentSchema,
-    StyleSchema
-  >()
-  const formattingToolbar = useExtension(FormattingToolbarExtension, {
-    editor,
-  })
-  const show = useExtensionState(FormattingToolbarExtension, {
-    editor,
-  })
+  const editor = useBlockNoteEditor<BlockSchema, InlineContentSchema, StyleSchema>()
+  const { formattingToolbar, show } = useFormattingToolbarExtensionState(editor)
   const isComposing = useEditorComposing(editor)
   const {
     blockTypeMenuState,
@@ -875,50 +893,11 @@ export function TolariaFormattingToolbarController(props: TolariaFormattingToolb
     isComposing,
     show,
   })
-  const hasFloatingToolbarAnchor = getFormattingToolbarAnchorElement(editor) !== null
-  const shouldRenderFloatingToolbar = isOpen && hasFloatingToolbarAnchor
-  const currentBridgeBlockId = useEditorState({
-    editor,
-    selector: ({ editor }) => getFormattingToolbarBridgeBlockId(editor),
-  })
+  const shouldRenderFloatingToolbar = isOpen && getFormattingToolbarAnchorElement(editor) !== null
+  useFormattingToolbarBridgeHoverGuard(editor, isOpen)
 
-  useBlockNoteFormattingToolbarHoverGuard({
-    editor,
-    container:
-      editor.domElement?.closest('.editor__blocknote-container') ??
-      editor.domElement ??
-      null,
-    selectedFileBlockId: currentBridgeBlockId,
-    isOpen,
-  })
-
-  const position = useEditorState({
-    editor,
-    selector: ({ editor }) => (
-      shouldRenderFloatingToolbar
-        ? {
-            from: editor.prosemirrorState.selection.from,
-            to: editor.prosemirrorState.selection.to,
-          }
-        : undefined
-    ),
-  })
-
-  const placement = useEditorState({
-    editor,
-    selector: ({ editor }) => {
-      const block = getCursorBlockSafely(editor)
-      if (!block) return 'top-start'
-
-      if (!blockHasType(block, editor, block.type, {
-        textAlignment: defaultProps.textAlignment,
-      })) {
-        return 'top-start'
-      }
-
-      return textAlignmentToPlacement(block.props.textAlignment)
-    },
-  })
+  const position = useFormattingToolbarPosition(editor, shouldRenderFloatingToolbar)
+  const placement = useFormattingToolbarPlacement(editor)
 
   const floatingUIOptions = useMemo<FloatingUIOptions>(
     () => ({

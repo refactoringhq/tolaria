@@ -68,9 +68,13 @@ describe('detectPropertyType', () => {
   })
 
   it('detects empty semantic date properties by key', () => {
-    for (const key of ['date', 'deadline', 'due', 'start', 'end', 'scheduled']) {
+    for (const key of ['date', 'start date', 'due_date', 'deadline', 'due', 'start', 'end', 'scheduled']) {
       expect(detectPropertyType(key, null)).toBe('date')
       expect(detectPropertyType(key, '')).toBe('date')
+    }
+    for (const key of ['sender', 'backend', 'weekend', 'candidate', 'updated by']) {
+      expect(detectPropertyType(key, null)).toBe('text')
+      expect(detectPropertyType(key, '')).toBe('text')
     }
     expect(detectPropertyType('owner', null)).toBe('text')
     expect(detectPropertyType('owner', '')).toBe('text')

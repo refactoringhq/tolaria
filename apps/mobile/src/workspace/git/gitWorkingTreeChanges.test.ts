@@ -147,6 +147,34 @@ it.each(["NFC", "NFD"] as const)(
 	},
 );
 
+it("reports a staged canonical Unicode spelling rename as a change", async () => {
+	const context = await repository();
+	const composed = "Matthäus 17.md".normalize("NFC");
+	const decomposed = composed.normalize("NFD");
+	await writeFile(join(context.dir, composed), "# Same contents\n");
+	await git.add({ ...context, filepath: composed });
+	await git.commit({ ...context, author, message: "Track composed name" });
+	await rm(join(context.dir, composed));
+	await writeFile(join(context.dir, decomposed), "# Same contents\n");
+	await git.remove({ ...context, filepath: composed });
+	await git.add({ ...context, filepath: decomposed });
+
+	const changes = await readGitWorkingTreeChanges(context);
+	expect(changes).toHaveLength(2);
+	expect(changes).toEqual(
+		expect.arrayContaining([
+			{ filepath: composed, deleted: true },
+			{ filepath: decomposed, deleted: false },
+		]),
+	);
+	const checkpoint = await createGitVault(context).checkpoint(author);
+	expect(checkpoint.changedFiles).toBe(2);
+	const files = await git.listFiles(context);
+	expect(files).toContain(decomposed);
+	expect(files).not.toContain(composed);
+	expect(await readGitWorkingTreeChanges(context)).toEqual([]);
+});
+
 type Context = Awaited<ReturnType<typeof repository>>;
 const scenarios: {
 	name: string;
