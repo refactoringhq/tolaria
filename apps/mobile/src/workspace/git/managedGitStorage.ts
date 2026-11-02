@@ -6,6 +6,7 @@ import type { GitRemoteOptions } from './gitRemote'
 export async function readManagedGitCatalog(): Promise<ManagedGitVaultCatalog> {
   return { vaults: [], activeId: null }
 }
+export async function updateManagedGitCatalog(update: (catalog: ManagedGitVaultCatalog) => ManagedGitVaultCatalog): Promise<ManagedGitVaultCatalog> { void update; throw new Error('nativeOnly') }
 export async function activateManagedGitVault(id: string | null) { void id; throw new Error('nativeOnly') }
 export async function forgetManagedVault(id: string) { void id; throw new Error('nativeOnly') }
 export async function cloneManagedGitVault(url: string, http: HttpClient, token?: string,

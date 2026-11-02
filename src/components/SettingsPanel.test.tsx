@@ -99,6 +99,31 @@ function expectAutoGitControlsDisabled() {
   expect(screen.getByTestId('settings-autogit-inactive-threshold')).toBeDisabled()
 }
 
+function editWorkspaceNameAndLabel(onUpdateWorkspaceIdentity: ReturnType<typeof vi.fn>) {
+  const nameInput = screen.getByLabelText('Vault name for Personal Notes')
+  fireEvent.change(nameInput, { target: { value: 'Personal Main' } })
+  expect(nameInput).toHaveValue('Personal Main')
+  expect(onUpdateWorkspaceIdentity).not.toHaveBeenCalled()
+  fireEvent.blur(nameInput)
+  expect(onUpdateWorkspaceIdentity).toHaveBeenCalledWith('/personal', { label: 'Personal Main' })
+
+  onUpdateWorkspaceIdentity.mockClear()
+  const labelInput = screen.getByLabelText('Vault label for Personal Notes')
+  fireEvent.change(labelInput, { target: { value: 'pm' } })
+  expect(labelInput).toHaveValue('PM')
+  expect(onUpdateWorkspaceIdentity).not.toHaveBeenCalled()
+  fireEvent.blur(labelInput)
+  expect(onUpdateWorkspaceIdentity).toHaveBeenCalledWith('/personal', { shortLabel: 'PM' })
+}
+
+function editWorkspaceSlug(onUpdateWorkspaceIdentity: ReturnType<typeof vi.fn>) {
+  const slugInput = screen.getByLabelText('Vault slug for Personal Notes')
+  fireEvent.change(slugInput, { target: { value: ' Laputa / Main ' } })
+  expect(onUpdateWorkspaceIdentity).not.toHaveBeenCalledWith('/personal', { alias: 'laputa-main' })
+  fireEvent.blur(slugInput)
+  expect(onUpdateWorkspaceIdentity).toHaveBeenCalledWith('/personal', { alias: 'laputa-main' })
+}
+
 describe('SettingsPanel', () => {
   const onSave = vi.fn()
   const onClose = vi.fn()
@@ -199,7 +224,9 @@ describe('SettingsPanel', () => {
     fireEvent.mouseDown(screen.getByRole('tab', { name: 'API model' }), { button: 0, ctrlKey: false })
     expect(screen.getByRole('button', { name: 'Add API model' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Add local model' })).not.toBeInTheDocument()
-    fireEvent.pointerDown(screen.getByText('OpenAI').closest('button')!, { button: 0, pointerType: 'mouse' })
+    const providerButton = screen.getByText('OpenAI').closest('button')
+    if (!providerButton) throw new Error('Provider selector button was not rendered')
+    fireEvent.pointerDown(providerButton, { button: 0, pointerType: 'mouse' })
     fireEvent.click(screen.getByRole('option', { name: 'Gemini' }))
     expect(screen.getByDisplayValue('Gemini')).toBeInTheDocument()
     expect(screen.getByDisplayValue('https://generativelanguage.googleapis.com/v1beta/openai')).toBeInTheDocument()
@@ -214,7 +241,9 @@ describe('SettingsPanel', () => {
     expect(screen.getByText('API key storage')).toBeInTheDocument()
 
     fireEvent.change(screen.getByLabelText('Model ID'), { target: { value: 'local-llama' } })
-    fireEvent.pointerDown(screen.getByText('No key').closest('button')!, { button: 0, pointerType: 'mouse' })
+    const keyStorageButton = screen.getByText('No key').closest('button')
+    if (!keyStorageButton) throw new Error('Key storage selector button was not rendered')
+    fireEvent.pointerDown(keyStorageButton, { button: 0, pointerType: 'mouse' })
     fireEvent.click(screen.getByRole('option', { name: 'Save locally in Tolaria' }))
     fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'lm-secret' } })
     fireEvent.click(screen.getByRole('button', { name: 'Add local model' }))
@@ -324,38 +353,18 @@ describe('SettingsPanel', () => {
     expect(labelInput).toHaveValue('PN')
     const slugInput = screen.getByLabelText('Vault slug for Personal Notes') as HTMLInputElement
     expect(slugInput).toBeInTheDocument()
-    expect(slugInput.readOnly).toBe(true)
+    expect(slugInput.readOnly).toBe(false)
     expect(screen.getAllByLabelText('The display name shown in menus, settings, and vault selectors.').length).toBeGreaterThan(0)
     expect(screen.getAllByLabelText('The short initials shown on notes, search results, breadcrumbs, and vault badges.').length).toBeGreaterThan(0)
-    expect(screen.getAllByLabelText('The stable prefix used in cross-vault links and relationships. It is read-only for now to avoid breaking existing references.').length).toBeGreaterThan(0)
+    expect(screen.getAllByLabelText('The stable prefix used in cross-vault links and relationships. Editing it updates generated and incoming links.').length).toBeGreaterThan(0)
     expect(screen.getByRole('button', { name: 'Make Default' })).toHaveAttribute('data-variant', 'secondary')
     expect(within(screen.getByTestId('settings-workspace-row-personal')).getByRole('button', { name: 'Purple' }).getAttribute('style')).toContain('2px solid var(--foreground)')
     expect(screen.getByRole('button', { name: 'Move vault Personal Notes up' })).toBeDisabled()
     fireEvent.click(screen.getByRole('button', { name: 'Move vault Personal Notes down' }))
     expect(onReorderVaults).toHaveBeenCalledWith(['/team', '/personal'])
 
-    const nameInput = screen.getByLabelText('Vault name for Personal Notes')
-    fireEvent.change(nameInput, {
-      target: { value: 'Personal Main' },
-    })
-    expect(nameInput).toHaveValue('Personal Main')
-    expect(onUpdateWorkspaceIdentity).not.toHaveBeenCalled()
-    fireEvent.blur(nameInput)
-    expect(onUpdateWorkspaceIdentity).toHaveBeenCalledWith('/personal', { label: 'Personal Main' })
-
-    onUpdateWorkspaceIdentity.mockClear()
-    fireEvent.change(labelInput, {
-      target: { value: 'pm' },
-    })
-    expect(labelInput).toHaveValue('PM')
-    expect(onUpdateWorkspaceIdentity).not.toHaveBeenCalled()
-    fireEvent.blur(labelInput)
-    expect(onUpdateWorkspaceIdentity).toHaveBeenCalledWith('/personal', { shortLabel: 'PM' })
-
-    fireEvent.change(slugInput, {
-      target: { value: 'personal-main' },
-    })
-    expect(onUpdateWorkspaceIdentity).not.toHaveBeenCalledWith('/personal', { alias: 'personal-main' })
+    editWorkspaceNameAndLabel(onUpdateWorkspaceIdentity)
+    editWorkspaceSlug(onUpdateWorkspaceIdentity)
 
     saveSettingsPanel()
 

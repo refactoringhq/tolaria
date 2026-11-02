@@ -1,4 +1,6 @@
-export type ManagedLocalVault = { id: string; label: string; directory: string }
+import { parseOptionalManagedVaultAlias } from './managedVaultAlias'
+
+export type ManagedLocalVault = { id: string; label: string; directory: string; alias?: string }
 
 export function isManagedLocalDirectory(value: string) {
   return value === 'Tolaria Vault' || /^Local Vaults\/[a-z0-9-]{1,80}$/u.test(value)
@@ -14,12 +16,23 @@ export function parseManagedLocalVaults(value: unknown): ManagedLocalVault[] {
 function parseLocalVault(entry: unknown): ManagedLocalVault {
   if (!entry || typeof entry !== 'object') throw new Error('vaultCatalogInvalid')
   const value = entry as Partial<ManagedLocalVault>
-  const id = requiredText(value.id)
+  const id = managedLocalVaultId(value.id)
   const label = requiredText(value.label)
-  const directory = requiredText(value.directory)
+  const directory = managedLocalDirectory(value.directory)
+  const alias = parseOptionalManagedVaultAlias(value.alias, 'vaultCatalogInvalid')
+  return { id, label, directory, ...(alias ? { alias } : {}) }
+}
+
+function managedLocalVaultId(value: unknown): string {
+  const id = requiredText(value)
   if (!/^[a-z0-9-]{1,80}$/u.test(id)) throw new Error('vaultCatalogInvalid')
+  return id
+}
+
+function managedLocalDirectory(value: unknown): string {
+  const directory = requiredText(value)
   if (!isManagedLocalDirectory(directory)) throw new Error('vaultCatalogInvalid')
-  return { id, label, directory }
+  return directory
 }
 
 function requiredText(value: unknown): string {

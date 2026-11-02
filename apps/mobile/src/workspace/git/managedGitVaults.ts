@@ -1,7 +1,8 @@
 import { githubRepositoryUrl } from './githubRepositoryUrl'
 import { parseManagedLocalVaults, type ManagedLocalVault } from './managedLocalVaults'
+import { parseOptionalManagedVaultAlias } from './managedVaultAlias'
 
-export type ManagedGitVault = { id: string; label: string; repositoryUrl: string }
+export type ManagedGitVault = { id: string; label: string; repositoryUrl: string; alias?: string }
 export type ManagedGitVaultCatalog = {
   vaults: ManagedGitVault[]; activeId: string | null
   localVaults?: ManagedLocalVault[]; activeLocalId?: string | null
@@ -49,7 +50,9 @@ function parseVault(value: unknown): ManagedGitVault {
   if (!isRecord(value)) throw new Error('invalid')
   const id = requiredText(value.id)
   if (!isManagedVaultId(id)) throw new Error('invalid')
-  return { id, label: requiredText(value.label), repositoryUrl: githubRepositoryUrl(requiredText(value.repositoryUrl)) }
+  const label = requiredText(value.label)
+  const alias = parseOptionalManagedVaultAlias(value.alias, 'invalid')
+  return { id, label, repositoryUrl: githubRepositoryUrl(requiredText(value.repositoryUrl)), ...(alias ? { alias } : {}) }
 }
 
 function requiredText(value: unknown) {

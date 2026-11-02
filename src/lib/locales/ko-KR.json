@@ -248,7 +248,7 @@
   "settings.workspaces.slugAria": "{label}의 보관함 슬러그",
   "settings.workspaces.nameTooltip": "메뉴, 설정 및 보관함 선택 도구에 표시되는 표시 이름.",
   "settings.workspaces.labelTooltip": "노트, 검색 결과, 브레드크럼, 및 보관함 배지에 표시되는 짧은 이니셜.",
-  "settings.workspaces.slugTooltip": "Vault 간 링크 및 관계에 사용되는 안정적인 접두사. 기존 참조가 손상되는 것을 방지하기 위해 현재는 읽기 전용입니다.",
+  "settings.workspaces.slugTooltip": "크로스 볼트 링크 및 관계에 사용되는 안정적인 접두사입니다. 이를 편집하면 생성된 링크와 들어오는 링크가 업데이트됩니다.",
   "settings.workspaces.color": "색상",
   "settings.workspaces.moveUpAria": "보관함 {label} 위로 이동",
   "settings.workspaces.moveDownAria": "보관함 {label} 아래로 이동",
