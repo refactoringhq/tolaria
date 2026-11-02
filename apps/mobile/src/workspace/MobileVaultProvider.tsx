@@ -10,6 +10,7 @@ import { MobileVaultNotice } from '../components/vaults/MobileVaultNotice'
 import { MobileWorkspaceStartup } from '../components/workspace/MobileWorkspaceStartup'
 import { useMobileSettings } from '../settings/useMobileSettings'
 import { initialWorkspacePending, vaultControls, workspaceRecovery } from './mobileVaultPresentation'
+import { mobileWorkspaceDeepLinkSlug } from './mobileWorkspaceAlias'
 
 export function MobileVaultProvider({ children }: { children: ReactNode }) {
   const manager = useMobileVaults()
@@ -53,13 +54,14 @@ function useCachedFailureNotice(manager: ReturnType<typeof useMobileVaults>) {
 
 function vaultPicker(manager: ReturnType<typeof useMobileVaults>, manage: () => void) {
   const { active, restorePending } = manager
+  const vaults = [...manager.catalog.localVaults, ...manager.catalog.vaults]
   return {
     disabled: manager.busy || restorePending,
     manage,
     choices: [
-      ...manager.catalog.localVaults.map(vault => ({ id: vault.id, label: vault.label,
-        selected: active.selection?.vaultAlias === vault.id, select: () => manager.selectLocal(vault, false) })),
-      ...manager.catalog.vaults.map(vault => ({ id: vault.id, label: vault.label,
+      ...manager.catalog.localVaults.map(vault => ({ id: mobileWorkspaceDeepLinkSlug(vault, vaults), label: vault.label,
+        selected: active.selection?.catalogVaultId === vault.id, select: () => manager.selectLocal(vault, false) })),
+      ...manager.catalog.vaults.map(vault => ({ id: mobileWorkspaceDeepLinkSlug(vault, vaults), label: vault.label,
         selected: active.git?.id === vault.id, select: () => manager.select(vault, false) })),
     ],
   }

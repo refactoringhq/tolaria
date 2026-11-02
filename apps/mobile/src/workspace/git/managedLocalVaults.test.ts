@@ -8,6 +8,11 @@ it('restores multiple local copies independently of Git vaults', () => {
   expect(parseManagedGitVaultCatalog(JSON.stringify(catalog))).toEqual(catalog)
 })
 
+it('persists a validated local vault alias', () => {
+  const catalog = { vaults: [], activeId: null, localVaults: [{ ...local, alias: 'local-notes' }], activeLocalId: local.id }
+  expect(parseManagedGitVaultCatalog(JSON.stringify(catalog)).localVaults?.[0].alias).toBe('local-notes')
+})
+
 it.each(['../private', '/private', 'Local Vaults/../../private', 'file:///private', '.tolaria-mobile-config'])('rejects local directories outside imported copies: %s', (directory) => {
   expect(() => parseManagedGitVaultCatalog(JSON.stringify({ vaults: [], localVaults: [{ ...local, directory }] }))).toThrow('vaultCatalogInvalid')
 })
