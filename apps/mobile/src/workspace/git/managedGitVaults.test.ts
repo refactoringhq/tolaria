@@ -10,6 +10,12 @@ it('restores only validated app-owned vault identifiers and credential-free repo
   expect(() => parseManagedGitVaultCatalog(JSON.stringify({ vaults: [{ ...vault, repositoryUrl: 'https://secret@github.com/team/notes' }] }))).toThrow()
 })
 
+it('persists a normalized editable alias and rejects malformed saved aliases', () => {
+  const vault = { id: 'vault-123', repositoryUrl: 'https://github.com/team/notes.git', label: 'Notes', alias: 'laputa-notes' }
+  expect(parseManagedGitVaultCatalog(JSON.stringify({ vaults: [vault], activeId: vault.id })).vaults[0].alias).toBe('laputa-notes')
+  expect(() => parseManagedGitVaultCatalog(JSON.stringify({ vaults: [{ ...vault, alias: '../private' }] }))).toThrow()
+})
+
 it('does not invent an active vault or overwrite a corrupt catalog with an empty one', () => {
   expect(parseManagedGitVaultCatalog(null)).toEqual({ vaults: [], activeId: null })
   expect(parseManagedGitVaultCatalog('{"vaults":[],"activeId":"missing"}').activeId).toBeNull()

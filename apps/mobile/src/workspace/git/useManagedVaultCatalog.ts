@@ -7,14 +7,16 @@ import type { NativeWorkspaceSelection } from '../nativeWorkspacePicker'
 import { prepareNativeWorkspace } from '../prepareNativeWorkspace'
 import { readNativeWorkspaceStartupPreview } from '../nativeWorkspaceStartupPreview'
 import type { WorkspaceSnapshotPreview } from '../workspaceSnapshotPreview'
+import { mobileWorkspaceDeepLinkSlug } from '../mobileWorkspaceAlias'
+import { updateCatalogAlias } from './mobileWorkspaceAliasCatalog'
 
 export type ActiveVault = { selection: NativeWorkspaceSelection | null; git: ManagedGitVault | null }
 
-type CatalogState = {
+export type CatalogState = {
   vaults: ManagedGitVault[]; localVaults: ManagedLocalVault[]; restored: ActiveVault | null
   preview: WorkspaceSnapshotPreview | null; pending: boolean; error: 'catalog' | 'selection' | null
 }
-type UpdateCatalog = (update: (previous: CatalogState) => CatalogState) => void
+export type UpdateCatalog = (update: (previous: CatalogState) => CatalogState) => void
 
 export function useManagedVaultCatalog() {
   const [state, setState] = useState<CatalogState>({ vaults: [], localVaults: [], restored: null, preview: null, pending: true, error: null })
@@ -25,6 +27,7 @@ export function useManagedVaultCatalog() {
     setState(previous => ({ ...previous, ...catalogLists(catalog),
       error: previous.error === 'catalog' ? null : previous.error }))
   }, [])
+  const updateAlias = useCallback((id: string, value: string) => updateCatalogAlias(id, value, setState), [])
   const retry = useCallback(() => {
     setState(previous => ({ ...previous, pending: true, error: null }))
     setAttempt(value => value + 1)
@@ -32,7 +35,7 @@ export function useManagedVaultCatalog() {
   const selectPreviewNote = useCallback((noteId: string) => {
     setState(previous => selectCachedNote(previous, noteId))
   }, [])
-  return { ...state, reload, retry, selectPreviewNote }
+  return { ...state, reload, retry, selectPreviewNote, updateAlias }
 }
 
 function selectCachedNote(state: CatalogState, noteId: string): CatalogState {
@@ -83,8 +86,11 @@ function catalogLists(catalog: ManagedGitVaultCatalog) {
 }
 
 async function restoreCatalogSelection(catalog: ManagedGitVaultCatalog): Promise<ActiveVault> {
+  const vaults = [...catalog.vaults, ...(catalog.localVaults ?? [])]
   const git = catalog.vaults.find(vault => vault.id === catalog.activeId)
-  if (git) return { git, selection: await managedGitSelection(git) }
+  if (git) return { git, selection: { ...await managedGitSelection(git),
+    vaultAlias: mobileWorkspaceDeepLinkSlug(git, vaults) } }
   const local = catalog.localVaults?.find(vault => vault.id === catalog.activeLocalId)
-  return { git: null, selection: local ? await managedLocalSelection(local) : null }
+  return { git: null, selection: local ? { ...await managedLocalSelection(local),
+    vaultAlias: mobileWorkspaceDeepLinkSlug(local, vaults) } : null }
 }

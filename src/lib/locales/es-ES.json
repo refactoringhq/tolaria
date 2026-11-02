@@ -248,7 +248,7 @@
   "settings.workspaces.slugAria": "Slug del almacén para {label}",
   "settings.workspaces.nameTooltip": "Nombre para mostrar en menús, ajustes y selectores de caja fuerte.",
   "settings.workspaces.labelTooltip": "Las iniciales abreviadas que se muestran en las notas, los resultados de búsqueda, las rutas de navegación y las insignias de los almacenes.",
-  "settings.workspaces.slugTooltip": "El prefijo estable utilizado en los enlaces y las relaciones entre cajas fuertes. Por ahora, es de solo lectura para evitar que se rompan las referencias existentes.",
+  "settings.workspaces.slugTooltip": "El prefijo estable utilizado en los enlaces y las relaciones entre bóvedas. Al editarlo, se actualizan los enlaces generados y los enlaces entrantes.",
   "settings.workspaces.color": "Color",
   "settings.workspaces.moveUpAria": "Subir el almacén {label}",
   "settings.workspaces.moveDownAria": "Mover el almacén {label} hacia abajo",

@@ -3,6 +3,7 @@ import { randomUUID } from 'expo-crypto'
 import { restoreNativeWorkspaceDirectory, type NativeWorkspaceSelection } from '../nativeWorkspacePicker'
 import { readManagedGitCatalog, updateManagedGitCatalog } from './managedGitStorage.native'
 import { isManagedLocalDirectory, type ManagedLocalVault } from './managedLocalVaults'
+import { mobileWorkspaceAlias } from '../mobileWorkspaceAlias'
 
 export async function initializeLocalVaultCatalog() {
   const catalog = await readManagedGitCatalog()
@@ -45,7 +46,8 @@ export async function managedLocalSelection(vault: ManagedLocalVault): Promise<N
   if (!isManagedLocalDirectory(vault.directory)) throw new Error('vaultNotFound')
   const directory = new Directory(Paths.document, vault.directory)
   if (!directory.exists) throw new Error('vaultNotFound')
-  return { vaultAlias: vault.id, vaultLabel: vault.label, vaultRootUri: directory.uri }
+  return { catalogVaultId: vault.id, vaultAlias: mobileWorkspaceAlias({ alias: vault.alias, label: vault.label }),
+    vaultLabel: vault.label, vaultRootUri: directory.uri }
 }
 
 async function importedVaultRecord(selection: NativeWorkspaceSelection): Promise<ManagedLocalVault> {

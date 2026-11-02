@@ -38,7 +38,9 @@ export function createMobileVaultCatalogActions<Result>(context: CatalogActionsC
   })
   const forget = (id: string) => perform(async () => {
     const kind = catalog.vaults.some(vault => vault.id === id) ? 'git' : 'local'
-    const isActive = active.git?.id === id || active.selection?.vaultAlias === id
+    const isActive = active.git?.id === id
+      || active.selection?.catalogVaultId === id
+      || active.selection?.vaultAlias === id
     await forgetManagedVault(id)
     await catalog.reload()
     capture({ name: 'mobile_vault_catalog_used', action: 'forget', kind })

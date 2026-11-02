@@ -248,7 +248,7 @@
   "settings.workspaces.slugAria": "Slug сховища для {label}",
   "settings.workspaces.nameTooltip": "Відображувана назва, що показується в меню, налаштуваннях і селекторах сховищ.",
   "settings.workspaces.labelTooltip": "Короткі ініціали, що показуються на нотатках, у результатах пошуку, навігаційних ланцюжках і значках сховищ.",
-  "settings.workspaces.slugTooltip": "Стабільний префікс, що використовується в міжсховищних посиланнях і зв'язках. Наразі доступний лише для читання, щоб не порушити наявні посилання.",
+  "settings.workspaces.slugTooltip": "Стабільний префікс, який використовується в кроссховтних посиланнях і зв’язках. Редагування цієї опції оновлює створені та вхідні посилання.",
   "settings.workspaces.color": "Колір",
   "settings.workspaces.moveUpAria": "Перемістити сховище {label} вгору",
   "settings.workspaces.moveDownAria": "Перемістити сховище {label} вниз",

@@ -248,7 +248,7 @@
   "settings.workspaces.slugAria": "Valv-slug för {label}",
   "settings.workspaces.nameTooltip": "Visningsnamnet som visas i menyer, inställningar och valvväljare.",
   "settings.workspaces.labelTooltip": "De korta initialerna som visas på anteckningar, sökresultat, sökvägar och valvmärken.",
-  "settings.workspaces.slugTooltip": "Det stabila prefixet som används i länkar och relationer mellan valv. Det är skrivskyddat tills vidare för att inte bryta befintliga referenser.",
+  "settings.workspaces.slugTooltip": "Det stabila prefixet som används i länkar och relationer mellan olika valv. Om du redigerar det uppdateras genererade och inkommande länkar.",
   "settings.workspaces.color": "Färg",
   "settings.workspaces.moveUpAria": "Flytta valv {label} uppåt",
   "settings.workspaces.moveDownAria": "Flytta valv {label} nedåt",

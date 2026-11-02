@@ -10,7 +10,7 @@ import { createTranslator, type AppLocale } from '../lib/i18n'
 import { trackEvent } from '../lib/telemetry'
 import type { VaultOption } from './status-bar/types'
 import { canMoveVaultPath, moveVaultPath, type VaultMoveDirection } from '../utils/vaultOrdering'
-import { workspaceIdentityFromVault } from '../utils/workspaces'
+import { normalizeWorkspaceSlug, workspaceIdentityFromVault } from '../utils/workspaces'
 
 interface WorkspaceSettingsRowsProps {
   defaultWorkspacePath?: string | null
@@ -69,7 +69,6 @@ function WorkspaceIdentityInputs({
   const workspace = workspaceIdentityFromVault(vault)
   const nameId = workspaceInputId(workspace.alias, 'name')
   const labelId = workspaceInputId(workspace.alias, 'label')
-  const slugId = workspaceInputId(workspace.alias, 'slug')
   const savedNameDraft = vault.label ?? ''
   const savedShortLabelDraft = sanitizeWorkspaceShortLabel(vault.shortLabel || workspace.shortLabel)
   const [nameDraft, setNameDraft] = useState(savedNameDraft)
@@ -133,25 +132,48 @@ function WorkspaceIdentityInputs({
           className="h-8 bg-transparent uppercase"
         />
       </div>
-      <div className="grid gap-1.5">
-        <WorkspaceFieldLabel
-          htmlFor={slugId}
-          label={t('settings.workspaces.slug')}
-          tooltip={t('settings.workspaces.slugTooltip')}
-        />
-        <Input
-          id={slugId}
-          value={vault.alias ?? workspace.alias}
-          aria-label={t('settings.workspaces.slugAria', {
-            label: workspace.label,
-          })}
-          readOnly
-          aria-readonly="true"
-          className="h-8 cursor-default bg-muted/30 text-muted-foreground"
-        />
-      </div>
+      <WorkspaceSlugInput canEdit={canEdit} locale={locale}
+        onUpdateWorkspaceIdentity={onUpdateWorkspaceIdentity} vault={vault} workspace={workspace} />
     </div>
   )
+}
+
+function WorkspaceSlugInput({
+  canEdit,
+  locale,
+  onUpdateWorkspaceIdentity,
+  vault,
+  workspace,
+}: Pick<WorkspaceSettingsRowsProps, 'locale' | 'onUpdateWorkspaceIdentity'> & {
+  canEdit: boolean
+  vault: VaultOption
+  workspace: ReturnType<typeof workspaceIdentityFromVault>
+}) {
+  const t = createTranslator(locale)
+  const slugId = workspaceInputId(workspace.alias, 'slug')
+  const savedSlug = normalizeWorkspaceSlug(vault.alias || workspace.alias) ?? workspace.alias
+  const [slugDraft, setSlugDraft] = useState(savedSlug)
+  const commit = () => {
+    const normalizedSlug = normalizeWorkspaceSlug(slugDraft)
+    if (!shouldSaveWorkspaceSlug(canEdit, normalizedSlug, savedSlug)) {
+      setSlugDraft(savedSlug)
+      return
+    }
+    setSlugDraft(normalizedSlug)
+    onUpdateWorkspaceIdentity?.(vault.path, { alias: normalizedSlug })
+  }
+  return <div className="grid gap-1.5">
+    <WorkspaceFieldLabel htmlFor={slugId} label={t('settings.workspaces.slug')}
+      tooltip={t('settings.workspaces.slugTooltip')} />
+    <Input id={slugId} value={slugDraft} onChange={(event) => setSlugDraft(event.target.value)}
+      onBlur={commit} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }}
+      aria-label={t('settings.workspaces.slugAria', { label: workspace.label })}
+      disabled={!canEdit} className="h-8 bg-transparent" />
+  </div>
+}
+
+function shouldSaveWorkspaceSlug(canEdit: boolean, normalizedSlug: string | null, savedSlug: string) {
+  return canEdit && normalizedSlug !== null && normalizedSlug !== savedSlug
 }
 
 function WorkspaceRowActions(

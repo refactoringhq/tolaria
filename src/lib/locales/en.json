@@ -248,7 +248,7 @@
   "settings.workspaces.slugAria": "Vault slug for {label}",
   "settings.workspaces.nameTooltip": "The display name shown in menus, settings, and vault selectors.",
   "settings.workspaces.labelTooltip": "The short initials shown on notes, search results, breadcrumbs, and vault badges.",
-  "settings.workspaces.slugTooltip": "The stable prefix used in cross-vault links and relationships. It is read-only for now to avoid breaking existing references.",
+  "settings.workspaces.slugTooltip": "The stable prefix used in cross-vault links and relationships. Editing it updates generated and incoming links.",
   "settings.workspaces.color": "Color",
   "settings.workspaces.moveUpAria": "Move vault {label} up",
   "settings.workspaces.moveDownAria": "Move vault {label} down",
