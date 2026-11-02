@@ -16,7 +16,6 @@
     "@expo/metro-runtime": "~57.0.17",
     "@expo/ui": "~57.0.26",
     "@floating-ui/dom": "^1.8.0",
-    "@rn-primitives/dropdown-menu": "1.4.0",
     "@rn-primitives/portal": "1.4.0",
     "@rn-primitives/slot": "1.4.0",
     "@rn-primitives/switch": "1.4.0",
