@@ -26,6 +26,7 @@ import { mermaidFenceSource } from '../utils/mermaidMarkdown'
 import { CALLOUT_BLOCK_TYPE } from '../utils/calloutMarkdown'
 import type { ObsidianCalloutType } from '../utils/calloutCatalog'
 import { calloutIconForType } from './calloutIcons'
+import { withViewportSafeMiddleware } from './tolariaEditorFormattingFloating'
 
 function createSlashCommandEditorFixture() {
   const block = { id: 'active-block' }
@@ -46,6 +47,22 @@ function createSlashCommandEditorFixture() {
 }
 
 describe('tolariaEditorFormatting', () => {
+  it('offsets and flips the formatting toolbar while preserving caller middleware', () => {
+    const floatingOptions = withViewportSafeMiddleware({
+      middleware: [{ name: 'custom-middleware' } as never],
+    })
+
+    expect(floatingOptions.middleware?.map((middleware) => middleware.name)).toEqual(
+      expect.arrayContaining([
+        'offset',
+        'shift',
+        'flip',
+        'custom-middleware',
+        'tolariaViewportClamp',
+      ]),
+    )
+  })
+
   it('keeps the markdown-safe toolbar controls and block type select', () => {
     const itemKeys = filterTolariaFormattingToolbarItems(
       getFormattingToolbarItems(getTolariaBlockTypeSelectItems()),
