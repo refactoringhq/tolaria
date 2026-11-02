@@ -172,7 +172,11 @@ function WorkspaceSlugInput({
   </div>
 }
 
-function shouldSaveWorkspaceSlug(canEdit: boolean, normalizedSlug: string | null, savedSlug: string) {
+function shouldSaveWorkspaceSlug(
+  canEdit: boolean,
+  normalizedSlug: string | null,
+  savedSlug: string,
+): normalizedSlug is string {
   return canEdit && normalizedSlug !== null && normalizedSlug !== savedSlug
 }
 
