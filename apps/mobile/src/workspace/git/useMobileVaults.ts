@@ -94,15 +94,27 @@ function useMobileVaultCatalogState() {
   const preferences = useMobileSettings()
   const analytics = useMobileAnalytics()
   const [editors] = useState(createWorkspaceSyncEditors)
+  const selection = useMobileVaultSelection(catalog)
+  const refresh = useMobileVaultRefresh(selection.setOverride)
+  const { active } = selection
+  const { revision, setRevision, workspaceRefresh } = refresh
+  return { catalog, account, cloneProgress, syncProgress, preferences, analytics, editors, active, revision, setRevision, workspaceRefresh }
+}
+
+function useMobileVaultSelection(catalog: ReturnType<typeof useManagedVaultCatalog>) {
   const [override, setOverride] = useState<ActiveVault | null>(null)
   const active = useMemo(() => override ?? catalog.restored ?? { selection: null, git: null }, [catalog.restored, override])
   useMobileVaultEvents(active.selection?.vaultRootUri)
+  return { active, setOverride }
+}
+
+function useMobileVaultRefresh(setOverride: (value: ActiveVault) => void) {
   const [revision, setRevision] = useState(0)
   const workspaceRefresh = usePreparedVaultRefresh((next) => {
     setOverride(next)
     setRevision((value) => value + 1)
   })
-  return { catalog, account, cloneProgress, syncProgress, preferences, analytics, editors, active, revision, setRevision, workspaceRefresh }
+  return { revision, setRevision, workspaceRefresh }
 }
 
 type MobileVaultState = ReturnType<typeof useMobileVaultState>
