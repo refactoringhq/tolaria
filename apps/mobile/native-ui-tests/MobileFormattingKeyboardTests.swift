@@ -26,6 +26,36 @@ final class MobileFormattingKeyboardTests: XCTestCase {
     attachScreen("tablet-wide-formatting-unchanged")
   }
 
+  func testPhoneGlassToolbarControlsRemainTappable() throws {
+    try XCTSkipIf(UIDevice.current.userInterfaceIdiom == .pad, "Phone-specific compact toolbar")
+    continueAfterFailure = false
+    let app = XCUIApplication(bundleIdentifier: "com.tolaria.mobile.dev")
+    app.launchArguments = ["--tolaria-mobile-search", "?source=fixture&phoneState=list&editorMode=source&qaRun=phone-glass-toolbar"]
+    app.launch()
+    defer { app.terminate() }
+
+    let create = element(app, "phone-note-list-create")
+    XCTAssertTrue(create.waitForExistence(timeout: 30))
+    create.tap()
+    let source = element(app, "editor-markdown-input")
+    XCTAssertTrue(source.waitForExistence(timeout: 15))
+    source.tap()
+    XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 8))
+    XCUIDevice.shared.orientation = .landscapeLeft
+    waitUntil { app.frame.width > app.frame.height }
+
+    let toolbar = element(app, "editor-formatting-toolbar")
+    let glass = element(app, "editor-formatting-glass")
+    XCTAssertTrue(toolbar.waitForExistence(timeout: 8))
+    XCTAssertTrue(glass.waitForExistence(timeout: 8))
+    XCTAssertGreaterThan(glass.frame.width, toolbar.frame.width - 24)
+    let bold = app.buttons["editor-format-bold"]
+    XCTAssertTrue(bold.waitForExistence(timeout: 5))
+    XCTAssertTrue(bold.isHittable)
+    bold.tap()
+    attachScreen("phone-glass-toolbar-tappable")
+  }
+
   private func verify(mode: String) throws {
     try XCTSkipIf(UIDevice.current.userInterfaceIdiom == .pad, "Phone-specific compact toolbar")
     continueAfterFailure = false

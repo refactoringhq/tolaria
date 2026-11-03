@@ -1,4 +1,5 @@
 import MenuView from "@expo/ui/community/menu";
+import { GlassView } from "expo-glass-effect";
 import {
 	CaretDown,
 	DotsThree,
@@ -58,48 +59,61 @@ export function MobileCompactFormattingToolbar(props: Props) {
 	const groups = formattingToolbarGroups(props.actions, props.inTable);
 	return (
 		<View
-			style={[styles.container, mobilePaneFooterFrame(bottom)]}
+			style={[styles.footer, mobilePaneFooterFrame(bottom)]}
 			testID="editor-formatting-toolbar"
 			{...metricProps(props)}
 		>
-			<ScrollView
-				horizontal
-				accessibilityLabel={mobileText("editor.formatting.toolbar")}
-				keyboardShouldPersistTaps="always"
-				showsHorizontalScrollIndicator={false}
-				contentContainerStyle={styles.row}
-				style={styles.viewport}
-				testID="editor-formatting-actions"
-			>
-				<PrimaryActions actions={groups.primary} toolbar={props} />
-				<FormattingMenuGroups
-					groups={groups}
-					names={["headings", "lists", "table"]}
-					toolbar={props}
+			<View style={styles.glassFrame} testID="editor-formatting-glass">
+				<GlassView
+					glassEffectStyle="regular"
+					isInteractive
+					pointerEvents="none"
+					style={styles.glass}
+					testID="editor-formatting-glass-surface"
 				/>
-			</ScrollView>
-			<View
-				style={styles.fixedActions}
-				testID="editor-formatting-fixed-actions"
-			>
-				<FormattingMenuGroups
-					groups={groups}
-					names={["insert", "more"]}
-					toolbar={props}
-				/>
-				{keyboardVisible && (
-					<Button
-						accessibilityLabel={mobileText("editor.formatting.hideKeyboard")}
-						variant="ghost"
-						size="icon"
-						style={styles.action}
-						testID="editor-hide-keyboard-action"
-						onPress={() => (props.onDismissKeyboard ?? Keyboard.dismiss)()}
+				<View style={styles.container}>
+					<ScrollView
+						horizontal
+						accessibilityLabel={mobileText("editor.formatting.toolbar")}
+						keyboardShouldPersistTaps="always"
+						showsHorizontalScrollIndicator={false}
+						contentContainerStyle={styles.row}
+						style={styles.viewport}
+						testID="editor-formatting-actions"
 					>
-						<KeyboardIcon size={24} color={mobileColors.textMuted} />
-						<CaretDown size={10} color={mobileColors.textMuted} />
-					</Button>
-				)}
+						<PrimaryActions actions={groups.primary} toolbar={props} />
+						<FormattingMenuGroups
+							groups={groups}
+							names={["headings", "lists", "table"]}
+							toolbar={props}
+						/>
+					</ScrollView>
+					<View
+						style={styles.fixedActions}
+						testID="editor-formatting-fixed-actions"
+					>
+						<FormattingMenuGroups
+							groups={groups}
+							names={["insert", "more"]}
+							toolbar={props}
+						/>
+						{keyboardVisible && (
+							<Button
+								accessibilityLabel={mobileText(
+									"editor.formatting.hideKeyboard",
+								)}
+								variant="ghost"
+								size="icon"
+								style={styles.action}
+								testID="editor-hide-keyboard-action"
+								onPress={() => (props.onDismissKeyboard ?? Keyboard.dismiss)()}
+							>
+								<KeyboardIcon size={24} color={mobileColors.textMuted} />
+								<CaretDown size={10} color={mobileColors.textMuted} />
+							</Button>
+						)}
+					</View>
+				</View>
 			</View>
 		</View>
 	);
@@ -245,7 +259,25 @@ function metricProps(props: Props, segment?: string) {
 function createThemeStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
 	const { space: mobileSpace } = metrics;
 	const styles = StyleSheet.create({
-		container: { flexDirection: "row" },
+		footer: { justifyContent: "center" },
+		glassFrame: {
+			alignSelf: "stretch",
+			height: mobilePaneFooterRowHeight,
+			marginHorizontal: mobileSpace.sm,
+			position: "relative",
+			borderRadius: 24,
+			overflow: "hidden",
+		},
+		glass: {
+			position: "absolute",
+			top: 0,
+			right: 0,
+			bottom: 0,
+			left: 0,
+			borderRadius: 24,
+			overflow: "hidden",
+		},
+		container: { flexDirection: "row", height: mobilePaneFooterRowHeight },
 		fixedActions: {
 			flexDirection: "row",
 			flexShrink: 0,

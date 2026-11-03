@@ -14,12 +14,16 @@ const keyboard = vi.hoisted(() => ({
 }));
 type SurfaceProps = {
 	children?: ReactNode;
+	isInteractive?: boolean;
+	pointerEvents?: string;
 	style?: CSSProperties | CSSProperties[];
 	contentContainerStyle?: CSSProperties[];
 	testID?: string;
 };
 function Surface({
 	children,
+	isInteractive,
+	pointerEvents,
 	style,
 	contentContainerStyle,
 	testID,
@@ -28,6 +32,8 @@ function Surface({
 		"div",
 		{
 			style: Object.assign({}, ...[style, contentContainerStyle].flat()),
+			"data-interactive": isInteractive,
+			"data-pointer-events": pointerEvents,
 			"data-testid": testID,
 		},
 		children,
@@ -103,6 +109,7 @@ vi.mock("react-native", () => ({
 	},
 }));
 vi.mock("react-native-gesture-handler", () => ({ ScrollView: Surface }));
+vi.mock("expo-glass-effect", () => ({ GlassView: Surface }));
 vi.mock("react-native-safe-area-context", () => ({
 	useSafeAreaInsets: () => ({ bottom: keyboard.bottom }),
 }));
@@ -327,6 +334,31 @@ it("pins insert, more and dismiss outside the scrolling phone actions in that or
 	expect(format).toHaveBeenCalledExactlyOnceWith("wikilink");
 	await act(async () => requiredElement(fixed, "editor-format-strike").click());
 	expect(format).toHaveBeenLastCalledWith("strike");
+});
+
+it("wraps the phone keyboard toolbar in a floating glass capsule", async () => {
+	keyboard.visible = true;
+	const host = await mount(
+		createElement(MobileCompactFormattingToolbar, {
+			actions: ["heading2"],
+			selected: [],
+			inTable: false,
+			onFormat: vi.fn(),
+		}),
+	);
+	const glass = requiredElement(host, "editor-formatting-glass");
+	expect(glass.style.height).toBe("48px");
+	expect(glass.style.borderRadius).toBe("24px");
+	expect(glass.style.alignSelf).toBe("stretch");
+	const surface = requiredElement(host, "editor-formatting-glass-surface");
+	expect(surface.dataset.interactive).toBe("true");
+	expect(surface.dataset.pointerEvents).toBe("none");
+	expect(
+		glass.contains(requiredElement(host, "editor-format-menu-headings")),
+	).toBe(true);
+	expect(
+		glass.contains(requiredElement(host, "editor-hide-keyboard-action")),
+	).toBe(true);
 });
 
 function requiredElement(host: ParentNode, id: string) {
