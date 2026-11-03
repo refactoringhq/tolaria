@@ -1,7 +1,9 @@
 import { BlockNoteEditor, type PartialBlock } from '@blocknote/core'
 import type { Node as ProsemirrorNode } from '@tiptap/pm/model'
 import { afterEach, describe, expect, it } from 'vitest'
+import { serializeMarkdownHighlightAwareBlocks } from '../utils/markdownHighlightMarkdown'
 import { schema } from './editorSchema'
+import { toggleDefaultMarkdownHighlight } from './markdownHighlightModel'
 import {
   blockSelectionAfterArrow,
   createRichEditorBlockSelectionExtension,
@@ -339,6 +341,46 @@ describe('rich editor block selection extension', () => {
     expect(editor.document.filter((block) => ['one', 'two', 'three'].includes(block.id)).map((block) => block.content)).toEqual(
       ['One', 'Two', 'Three'].map((text) => [{ type: 'text', text, styles: {} }]),
     )
+  })
+
+  it.each([
+    { name: 'one block', blockIds: ['two'], expectedMarkdown: 'One\n\n==Two==\n\nThree', plainMarkdown: 'One\n\nTwo\n\nThree' },
+    { name: 'multiple blocks', blockIds: ['one', 'two'], expectedMarkdown: '==One==\n\n==Two==\n\nThree', plainMarkdown: 'One\n\nTwo\n\nThree' },
+  ])('toggles highlight on $name selection and preserves the selection', ({ blockIds, expectedMarkdown, plainMarkdown }) => {
+    const editor = mountEditor()
+    const firstBlockId = blockIds[0]
+    const lastBlockId = blockIds.at(-1)
+    if (!firstBlockId || !lastBlockId) throw new Error('Expected selected block ids')
+
+    if (blockIds.length === 1) {
+      selectBlock(editor, firstBlockId)
+    } else {
+      editor.setSelection(firstBlockId, lastBlockId)
+      dispatchEditorKey(editor, 'Escape')
+    }
+
+    toggleDefaultMarkdownHighlight(editor)
+    expect(selectedBlockIds(editor)).toEqual(blockIds)
+    expect(serializeMarkdownHighlightAwareBlocks(editor, editor.document)).toBe(expectedMarkdown)
+
+    toggleDefaultMarkdownHighlight(editor)
+    expect(selectedBlockIds(editor)).toEqual(blockIds)
+    expect(serializeMarkdownHighlightAwareBlocks(editor, editor.document)).toBe(plainMarkdown)
+  })
+
+  it('undoes block highlight formatting in one step', () => {
+    const editor = mountEditor()
+    selectBlock(editor, 'two')
+
+    toggleDefaultMarkdownHighlight(editor)
+    expect(editor.document[1]?.content).toEqual([
+      { type: 'text', text: 'Two', styles: { highlight: true } },
+    ])
+
+    editor.undo()
+    expect(editor.document[1]?.content).toEqual([
+      { type: 'text', text: 'Two', styles: {} },
+    ])
   })
 
   it('matches text-selection Markdown output and undoes block formatting in one step', () => {

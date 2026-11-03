@@ -12,10 +12,10 @@ import {
   useToolbarControlState,
 } from './markdownHighlightControlState'
 import {
+  markdownHighlightSelectionRange,
   toggleDefaultMarkdownHighlight,
   type HighlightEditor,
 } from './markdownHighlightModel'
-import { selectionOrHighlightRange } from './markdownHighlightRange'
 import { Button } from './ui/button'
 
 export function ToolbarHighlightColorControl({
@@ -29,7 +29,7 @@ export function ToolbarHighlightColorControl({
   useEditorRevision(editor)
   const control = useToolbarControlState(container)
   const locale = useDocumentLocale()
-  const range = selectionOrHighlightRange(editor)
+  const range = markdownHighlightSelectionRange(editor)
   const currentColor = markdownHighlightColorFromStyles(editor.getActiveStyles())
     ?? DEFAULT_MARKDOWN_HIGHLIGHT_COLOR
   const label = translate(locale, 'editor.formatting.highlightColor')
