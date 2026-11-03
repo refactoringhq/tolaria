@@ -228,21 +228,21 @@ function FormattingMenu({
 				}}
 				testID={`editor-format-menu-${group}`}
 			>
-				<Button
+				<View
+					accessible
 					accessibilityLabel={mobileText(menu.label)}
+					accessibilityRole="button"
 					style={StyleSheet.flatten([
 						styles.action,
 						selected && styles.selected,
 					])}
 					testID={`editor-format-menu-${group}`}
-					variant="ghost"
-					size="icon"
 				>
 					<Icon
 						size={24}
 						color={selected ? mobileColors.primary : mobileColors.textMuted}
 					/>
-				</Button>
+				</View>
 			</MenuView>
 		</View>
 	);

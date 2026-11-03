@@ -30,7 +30,10 @@ final class MobileFormattingKeyboardTests: XCTestCase {
     try XCTSkipIf(UIDevice.current.userInterfaceIdiom == .pad, "Phone-specific compact toolbar")
     continueAfterFailure = false
     let app = XCUIApplication(bundleIdentifier: "com.tolaria.mobile.dev")
-    app.launchArguments = ["--tolaria-mobile-search", "?source=fixture&phoneState=list&editorMode=source&qaRun=phone-glass-toolbar"]
+    app.launchArguments = [
+      "--tolaria-mobile-search",
+      "?source=fixture&phoneState=list&editorMode=source&qaRun=phone-glass-toolbar"
+    ]
     app.launch()
     defer { app.terminate() }
 
@@ -53,6 +56,13 @@ final class MobileFormattingKeyboardTests: XCTestCase {
     XCTAssertTrue(bold.waitForExistence(timeout: 5))
     XCTAssertTrue(bold.isHittable)
     bold.tap()
+    let headings = app.buttons["editor-format-menu-headings"]
+    XCTAssertTrue(headings.waitForExistence(timeout: 5))
+    XCTAssertTrue(headings.isHittable)
+    headings.tap()
+    let heading2 = app.buttons["Heading 2"]
+    XCTAssertTrue(heading2.waitForExistence(timeout: 5))
+    heading2.tap()
     attachScreen("phone-glass-toolbar-tappable")
   }
 
@@ -61,7 +71,10 @@ final class MobileFormattingKeyboardTests: XCTestCase {
     continueAfterFailure = false
     XCUIDevice.shared.orientation = .portrait
     let app = XCUIApplication(bundleIdentifier: "com.tolaria.mobile.dev")
-    app.launchArguments = ["--tolaria-mobile-search", "?source=fixture&phoneState=list&editorMode=\(mode)&qaRun=phone-format-keyboard"]
+    app.launchArguments = [
+      "--tolaria-mobile-search",
+      "?source=fixture&phoneState=list&editorMode=\(mode)&qaRun=phone-format-keyboard"
+    ]
     app.launch()
     defer { app.terminate() }
     let create = element(app, "note-list-create-action")
@@ -72,10 +85,25 @@ final class MobileFormattingKeyboardTests: XCTestCase {
     input.tap()
     XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 8))
     input.typeText("Phone formatting draft")
-    if mode == "source" { XCTAssertTrue((input.value as? String ?? "").contains("Phone formatting draft"), input.value as? String ?? "") }
+    if mode == "source" {
+      XCTAssertTrue(
+        (input.value as? String ?? "").contains("Phone formatting draft"),
+        input.value as? String ?? ""
+      )
+    }
     XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 8))
     assertDismissTarget(app)
     attachScreen("\(mode)-portrait-keyboard")
+    verifyLandscapeAndResume(app, input: input, isSource: mode == "source")
+    assertOverflowActions(app, mode: mode)
+    assertSourceDraft(app, mode: mode)
+  }
+
+  private func verifyLandscapeAndResume(
+    _ app: XCUIApplication,
+    input: XCUIElement,
+    isSource: Bool
+  ) {
     XCUIDevice.shared.orientation = .landscapeLeft
     waitUntil { app.frame.width > app.frame.height }
     assertDismissTarget(app)
@@ -87,11 +115,14 @@ final class MobileFormattingKeyboardTests: XCTestCase {
     heading.tap()
     XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 8))
     input.typeText(" landscape")
-    attachScreen("\(mode)-landscape-caret")
+    attachScreen(isSource ? "source-landscape-caret" : "wysiwyg-landscape-caret")
     element(app, "editor-hide-keyboard-action").tap()
     XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 8))
     XCTAssertTrue(element(app, "editor-hide-keyboard-action").waitForNonExistence(timeout: 5))
-    let stayedHidden = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.keyboards.firstMatch.exists }, object: nil)
+    let stayedHidden = XCTNSPredicateExpectation(
+      predicate: NSPredicate { _, _ in app.keyboards.firstMatch.exists },
+      object: nil
+    )
     stayedHidden.isInverted = true
     wait(for: [stayedHidden], timeout: 2)
     XCUIDevice.shared.orientation = .portrait
@@ -99,9 +130,7 @@ final class MobileFormattingKeyboardTests: XCTestCase {
     input.tap()
     XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 8))
     input.typeText(" resumed")
-    attachScreen("\(mode)-portrait-resumed-caret")
-    assertOverflowActions(app, mode: mode)
-    assertSourceDraft(app, mode: mode)
+    attachScreen(isSource ? "source-portrait-resumed-caret" : "wysiwyg-portrait-resumed-caret")
   }
 
   private func assertOverflowActions(_ app: XCUIApplication, mode: String) {
@@ -119,7 +148,9 @@ final class MobileFormattingKeyboardTests: XCTestCase {
       XCTAssertTrue((element(app, "editor-markdown-input").value as? String ?? "").contains("[["))
     } else {
       XCTAssertTrue(element(app, "editor-wysiwyg-wikilink-picker").waitForExistence(timeout: 5))
-      element(app, "editor-wysiwyg-wikilink-backdrop").coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.1)).tap()
+      element(app, "editor-wysiwyg-wikilink-backdrop")
+        .coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.1))
+        .tap()
     }
   }
 

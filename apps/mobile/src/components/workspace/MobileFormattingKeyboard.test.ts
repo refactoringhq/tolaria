@@ -317,8 +317,8 @@ it("pins insert, more and dismiss outside the scrolling phone actions in that or
 	const scroller = requiredElement(host, "editor-formatting-actions");
 	expect(fixed.style.flexShrink).toBe("0");
 	const controls = [
-		...fixed.querySelectorAll<HTMLButtonElement>(
-			'button[data-testid^="editor-format-menu-"], button[data-testid="editor-hide-keyboard-action"]',
+		...fixed.querySelectorAll<HTMLElement>(
+			'[data-testid^="editor-format-menu-"], button[data-testid="editor-hide-keyboard-action"]',
 		),
 	];
 	expect(controls.map((button) => button.dataset.testid)).toEqual([
