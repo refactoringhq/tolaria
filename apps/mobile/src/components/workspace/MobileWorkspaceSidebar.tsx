@@ -1,33 +1,33 @@
-import type { MobileMetrics } from '../../ui/mobileMetrics'
-import { useMobileStyles } from '../../ui/theme/useMobileTheme'
-import { useCallback, useState, type ReactNode } from 'react'
 import {
   CaretDown,
   CaretRight,
-  FileText,
   Eye,
+  FileText,
   Plus,
 } from 'phosphor-react-native'
-import { Pressable, ScrollView, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native'
-import { Text } from '../ui/text'
+import { type ReactNode, useCallback, useState } from 'react'
+import { type LayoutChangeEvent, Pressable, ScrollView, useWindowDimensions, View } from 'react-native'
 import { mobileCopy, mobileText } from '../../i18n/mobileText'
 import { MobileLayoutProbeReadout } from '../../qa/MobileLayoutProbeReadout'
-import { probeProps, useMobileLayoutProbe, type MobileLayoutProbe } from '../../qa/mobileLayoutProbe'
+import { type MobileLayoutProbe, probeProps, useMobileLayoutProbe } from '../../qa/mobileLayoutProbe'
 import { MobileIconButton } from '../../ui/MobileIconButton'
 import { MobilePanel, MobileToolbar } from '../../ui/MobilePanel'
-
+import type { MobileMetrics } from '../../ui/mobileMetrics'
+import { useMobileStyles } from '../../ui/theme/useMobileTheme'
 import type {
   MobileNote,
   MobileSidebarIcon,
   MobileSidebarItem,
   MobileSidebarSection,
 } from '../../workspace/mobileWorkspaceModel'
+import { Text } from '../ui/text'
+import { MobileVaultPicker } from '../vaults/MobileVaultPicker'
 import { MobileSidebarCountPill } from './MobileSidebarCountPill'
 import { MobileSidebarSettings } from './MobileSidebarSettings'
-import { MobileVaultPicker } from '../vaults/MobileVaultPicker'
-import { createSidebarStyles as createThemeStyles } from './mobileSidebarStyles'
-import { FolderTree, type MobileSidebarFolderSelection } from './MobileWorkspaceSidebarFolderTree'
+import { MobileListMotion } from './MobileSwipeableNoteRow'
 import { mobilePhosphorIconElement } from './MobileWorkspaceIconResolver'
+import { FolderTree, type MobileSidebarFolderSelection } from './MobileWorkspaceSidebarFolderTree'
+import { createSidebarStyles as createThemeStyles } from './mobileSidebarStyles'
 import { noteTypeColor, noteTypeSoftColor } from './mobileWorkspaceTone'
 
 export type { MobileSidebarFolderSelection } from './MobileWorkspaceSidebarFolderTree'
@@ -132,15 +132,19 @@ function SidebarSection(props: SidebarSectionProps) {
       testID={`sidebar-section-${section.id}`}
     >
       <SidebarSectionTitle {...props} expanded={expanded} onToggle={() => setExpanded(value => !value)} />
-      {expanded && <SidebarSectionItems {...props} />}
-      {expanded && section.folders ? (
-        <FolderTree
-          activeFolderId={props.activeFolderId}
-          folders={section.folders}
-          layoutProbe={layoutProbe}
-          onOpenFolderActions={props.onOpenFolderActions}
-          onSelectFolder={props.onSelectFolder}
-        />
+      {expanded ? (
+        <MobileListMotion testID={`sidebar-section-content-${section.id}`}>
+          <SidebarSectionItems {...props} />
+          {section.folders ? (
+            <FolderTree
+              activeFolderId={props.activeFolderId}
+              folders={section.folders}
+              layoutProbe={layoutProbe}
+              onOpenFolderActions={props.onOpenFolderActions}
+              onSelectFolder={props.onSelectFolder}
+            />
+          ) : null}
+        </MobileListMotion>
       ) : null}
     </View>
   )

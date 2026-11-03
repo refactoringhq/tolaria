@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-import { act, createElement, useLayoutEffect, type CSSProperties, type ReactNode } from 'react'
+import { act, type CSSProperties, createElement, type ReactNode, useLayoutEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { mobileMetrics } from '../../ui/mobileMetrics'
 import { mobilePalettes } from '../../ui/theme/mobilePalette'
-import { MobileWorkspaceSidebar } from './MobileWorkspaceSidebar'
 import type { MobileSidebarSection } from '../../workspace/mobileWorkspaceModel'
+import { MobileWorkspaceSidebar } from './MobileWorkspaceSidebar'
 
 type Props = { children?: ReactNode; testID?: string; style?: CSSProperties | CSSProperties[];
   contentContainerStyle?: CSSProperties[]; onPress?: () => void; accessibilityLabel?: string;
@@ -24,6 +24,9 @@ function Surface(props: Props) {
 vi.mock('react-native', () => ({ View: Surface, Text: Surface, Pressable: Surface, ScrollView: Surface,
   Platform: { OS: 'web' }, StyleSheet: { create: (value: object) => value, hairlineWidth: 1 },
   useWindowDimensions: () => ({ fontScale: 1 }) }))
+vi.mock('./MobileSwipeableNoteRow', () => ({
+  MobileListMotion: ({ children }: { children: ReactNode }) => children,
+}))
 vi.mock('../../ui/theme/useMobileTheme', () => ({ useMobileStyles: (factory: typeof import('./mobileSidebarStyles').createSidebarStyles) => factory(mobilePalettes.light, mobileMetrics[1.2]) }))
 vi.mock('../../ui/MobilePanel', () => ({ MobilePanel: Surface, MobileToolbar: Surface }))
 vi.mock('../../ui/MobileIconButton', () => ({ MobileIconButton: Surface }))
