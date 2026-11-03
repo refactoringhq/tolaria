@@ -12,6 +12,7 @@ import { folderOpenStep, FolderOpenFailure, isFolderPickerCancellation } from '.
 export type NativeWorkspaceSelection = {
   selectedNoteId?: string
   index?: NativeWorkspaceIndex
+  catalogVaultId?: string | null
   vaultAlias: string | null
   vaultLabel: string
   vaultRootUri: string

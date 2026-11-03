@@ -248,7 +248,7 @@
   "settings.workspaces.slugAria": "Slug vault cho {label}",
   "settings.workspaces.nameTooltip": "Tên hiển thị được hiển thị trong menu, cài đặt và bộ chọn vault.",
   "settings.workspaces.labelTooltip": "Tên viết tắt ngắn hiển thị trên ghi chú, kết quả tìm kiếm, đường dẫn điều hướng và huy hiệu kho lưu trữ.",
-  "settings.workspaces.slugTooltip": "Tiền tố ổn định được sử dụng trong các liên kết và mối quan hệ giữa các vault. Hiện tại, tiền tố này ở chế độ chỉ đọc để tránh làm hỏng các tham chiếu hiện có.",
+  "settings.workspaces.slugTooltip": "Tiền tố ổn định được sử dụng trong các liên kết và mối quan hệ liên vault. Việc chỉnh sửa nó sẽ cập nhật các liên kết được tạo và liên kết đến.",
   "settings.workspaces.color": "Màu",
   "settings.workspaces.moveUpAria": "Di chuyển vault {label} lên",
   "settings.workspaces.moveDownAria": "Di chuyển kho {label} xuống dưới",

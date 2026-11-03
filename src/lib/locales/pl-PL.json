@@ -248,7 +248,7 @@
   "settings.workspaces.slugAria": "Slug skarbca dla {label}",
   "settings.workspaces.nameTooltip": "Nazwa wyświetlana w menu, ustawieniach i selektorach skarbców.",
   "settings.workspaces.labelTooltip": "Skrócone inicjały wyświetlane w notatkach, wynikach wyszukiwania, ścieżkach nawigacyjnych i znacznikach magazynów.",
-  "settings.workspaces.slugTooltip": "Stały prefiks używany w linkach i relacjach między magazynami. Obecnie jest on dostępny tylko do odczytu, aby uniknąć uszkodzenia istniejących odwołań.",
+  "settings.workspaces.slugTooltip": "Stały prefiks używany w linkach i relacjach między magazynami. Edytowanie go powoduje aktualizację wygenerowanych i przychodzących linków.",
   "settings.workspaces.color": "Kolor",
   "settings.workspaces.moveUpAria": "Przenieś skarbiec {label} w górę",
   "settings.workspaces.moveDownAria": "Przenieś skarbiec {label} w dół",

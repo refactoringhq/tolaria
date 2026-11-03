@@ -248,7 +248,7 @@
   "settings.workspaces.slugAria": "Slug del vault per {label}",
   "settings.workspaces.nameTooltip": "Nome visualizzato nei menu, nelle impostazioni e nei selettori di vault.",
   "settings.workspaces.labelTooltip": "Le iniziali brevi visualizzate su note, risultati di ricerca, breadcrumb e badge dei vault.",
-  "settings.workspaces.slugTooltip": "Prefisso stabile utilizzato nei link e nelle relazioni tra vault. Per il momento è di sola lettura per evitare di compromettere i riferimenti esistenti.",
+  "settings.workspaces.slugTooltip": "Il prefisso stabile utilizzato nei collegamenti e nelle relazioni tra vault. La sua modifica aggiorna i collegamenti generati e in entrata.",
   "settings.workspaces.color": "Colore",
   "settings.workspaces.moveUpAria": "Sposta il vault {label} }",
   "settings.workspaces.moveDownAria": "Sposta il vault {label} in basso",

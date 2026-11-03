@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState } from 'react-native'
 import { useMobileAnalytics } from '../../analytics/useMobileAnalytics'
-import { useMobileVaultEvents } from '../../analytics/useMobileDiscoveryEvents'
 import { useMobileSettings } from '../../settings/useMobileSettings'
 import { FolderOpenFailure, folderOpenMessage } from '../folderOpenFailure'
 import { isWorkspaceLinked, syncLinkedWorkspaceWithEditors } from '../linkedWorkspace'
@@ -29,6 +28,7 @@ import { useGitSyncProgress } from './useGitSyncProgress'
 import { type ActiveVault, useManagedVaultCatalog } from './useManagedVaultCatalog'
 import { useMobileAutoGit } from './useMobileAutoGit'
 import { usePreparedVaultRefresh } from './usePreparedVaultRefresh'
+import { useMobileVaultSelection } from './useMobileVaultSelection'
 
 export type { VaultSyncState } from '../syncLedgerModel'
 
@@ -42,21 +42,14 @@ type VaultError =
   | null
 
 export function useMobileVaults() {
-  const catalog = useManagedVaultCatalog()
-  const account = useGitHubAccount()
-  const cloneProgress = useGitCloneProgress()
-  const syncProgress = useGitSyncProgress()
-  const preferences = useMobileSettings()
-  const analytics = useMobileAnalytics()
-  const [editors] = useState(createWorkspaceSyncEditors)
-  const [override, setOverride] = useState<ActiveVault | null>(null)
-  const active = useMemo(() => override ?? catalog.restored ?? { selection: null, git: null }, [catalog.restored, override])
-  useMobileVaultEvents(active.selection?.vaultRootUri)
-  const [revision, setRevision] = useState(0)
-  const workspaceRefresh = usePreparedVaultRefresh((next) => {
-    setOverride(next)
-    setRevision((value) => value + 1)
-  })
+  const state = useMobileVaultState()
+  const actions = useMobileVaultActions(state)
+  return { ...state, ...actions }
+}
+
+function useMobileVaultState() {
+  const catalogState = useMobileVaultCatalogState()
+  const { catalog, account, cloneProgress, syncProgress, preferences, analytics, editors, active, revision, setRevision, workspaceRefresh } = catalogState
   const [opened, setOpened] = useState(false)
   const [busy, setBusy] = useState(false)
   const [conflictReview, setConflictReview] = useState<VaultConflictReview | null>(null)
@@ -85,116 +78,131 @@ export function useMobileVaults() {
     editors.setBlocked(false)
     setOpened(false)
   }
+  return {
+    catalog, account, cloneProgress, syncProgress, analytics, editors, active, revision, setRevision, workspaceRefresh,
+    opened, setOpened, busy, setBusy, conflictReview, setConflictReview, conflictFailure, setConflictFailure, syncHistory, notices,
+    phase, status, lastCommitId, setPhase, setStatus, setLastCommitId, error, setError, operationLock,
+    dirtyVersion, restorePending, linked, open, close, refreshFailed: workspaceRefresh.failed, preferences,
+  }
+}
 
-  const perform = useCallback((task: VaultTask, present = true, operation?: VaultOperation, signal?: AbortSignal) =>
-    performVaultOperation({
-      active, analytics, editors, linked, notices, restorePending, operationLock, setBusy, setError, setOpened,
-      setPhase, setStatus, syncHistory, workspaceRefresh,
-    }, { task, present, operation, signal }), [
-    active, analytics, editors, linked, notices, restorePending, setBusy, setError, setOpened,
-    operationLock, setPhase, setStatus, syncHistory, workspaceRefresh,
-  ])
+function useMobileVaultCatalogState() {
+  const catalog = useManagedVaultCatalog()
+  const account = useGitHubAccount()
+  const cloneProgress = useGitCloneProgress()
+  const syncProgress = useGitSyncProgress()
+  const preferences = useMobileSettings()
+  const analytics = useMobileAnalytics()
+  const [editors] = useState(createWorkspaceSyncEditors)
+  const selection = useMobileVaultSelection(catalog)
+  const refresh = useMobileVaultRefresh(selection.setOverride)
+  const { active } = selection
+  const { revision, setRevision, workspaceRefresh } = refresh
+  return { catalog, account, cloneProgress, syncProgress, preferences, analytics, editors, active, revision, setRevision, workspaceRefresh }
+}
 
+function useMobileVaultRefresh(setOverride: (value: ActiveVault) => void) {
+  const [revision, setRevision] = useState(0)
+  const workspaceRefresh = usePreparedVaultRefresh((next) => {
+    setOverride(next)
+    setRevision((value) => value + 1)
+  })
+  return { revision, setRevision, workspaceRefresh }
+}
+
+type MobileVaultState = ReturnType<typeof useMobileVaultState>
+
+function useMobileVaultActions(state: MobileVaultState) {
+  const perform = useVaultPerformer(state)
   const syncFolder = (root: string) => syncLinkedFolder({
-    active, editors, notices, setError, setStatus, syncHistory, workspaceRefresh,
+    active: state.active, editors: state.editors, notices: state.notices, setError: state.setError,
+    setStatus: state.setStatus, syncHistory: state.syncHistory, workspaceRefresh: state.workspaceRefresh,
   }, root)
   const syncTask = createMobileVaultSyncTask({
-    active,
-    account,
-    author: () => mobileGitAuthor(account.session),
+    active: state.active,
+    account: state.account,
+    author: () => mobileGitAuthor(state.account.session),
     deferWhileFocused: automaticSyncInForeground,
-    dirtyVersion,
-    editors,
-    linked,
-    notices,
-    setLastCommitId,
-    setPhase,
-    setStatus,
+    dirtyVersion: state.dirtyVersion,
+    editors: state.editors,
+    linked: state.linked,
+    notices: state.notices,
+    setLastCommitId: state.setLastCommitId,
+    setPhase: state.setPhase,
+    setStatus: state.setStatus,
     syncFolder,
-    syncHistory,
-    syncProgress,
-    workspaceRefresh,
+    syncHistory: state.syncHistory,
+    syncProgress: state.syncProgress,
+    workspaceRefresh: state.workspaceRefresh,
   })
   const conflictActions = createMobileVaultConflictActions({
-    active,
-    analytics,
-    author: () => mobileGitAuthor(account.session),
-    autoGit: preferences.settings.autoGit,
-    busy,
-    conflictReview,
-    notices,
+    active: state.active,
+    analytics: state.analytics,
+    author: () => mobileGitAuthor(state.account.session),
+    autoGit: state.preferences.settings.autoGit,
+    busy: state.busy,
+    conflictReview: state.conflictReview,
+    notices: state.notices,
     perform,
-    setConflictFailure,
-    setConflictReview,
-    setLastCommitId,
-    setStatus,
+    setConflictFailure: state.setConflictFailure,
+    setConflictReview: state.setConflictReview,
+    setLastCommitId: state.setLastCommitId,
+    setStatus: state.setStatus,
     syncTask,
-    syncHistory,
+    syncHistory: state.syncHistory,
   })
-  const sync = async () => {
-    await perform(() => syncTask(preferences.settings.autoGit), false, 'sync')
-  }
-  const commit = (message: string, push = false) => commitVaultChanges({
-    active, analytics, perform, session: account.session, setLastCommitId, setPhase, setStatus, syncHistory, syncTask,
-  }, message, push)
-
   useVaultBackgroundSync({
-    active,
-    linked,
-    editors,
-    busy,
-    opened,
-    restorePending: restorePending || workspaceRefresh.failed,
-    status,
+    active: state.active,
+    linked: state.linked,
+    editors: state.editors,
+    busy: state.busy,
+    opened: state.opened,
+    restorePending: state.restorePending || state.workspaceRefresh.failed,
+    status: state.status,
     syncGit: (signal) => perform(() => syncTask(true, signal), false, 'autoSync', signal),
     syncFolder: (signal) => perform(() => syncTask(false, signal), false, undefined, signal),
   })
-
-  const catalogActions = (present = true) =>
-    createMobileVaultCatalogActions({
-      active,
-      catalog,
-      perform: (task) => perform(task, present),
-      capture: analytics.capture,
-      currentSession: account.currentSession,
-      runClone: cloneProgress.run,
-      startClone: () => setPhase('clone'),
-    })
+  const catalogActions = (present = true) => createMobileVaultCatalogActions({
+    active: state.active,
+    catalog: state.catalog,
+    perform: (task) => perform(task, present),
+    capture: state.analytics.capture,
+    currentSession: state.account.currentSession,
+    runClone: state.cloneProgress.run,
+    startClone: () => state.setPhase('clone'),
+  })
   return {
     openFolder: () => catalogActions().openFolder(),
     select: (vault: ManagedGitVault, present = true) => catalogActions(present).select(vault),
     selectLocal: (vault: ManagedLocalVault, present = true) => catalogActions(present).selectLocal(vault),
     forget: (id: string) => catalogActions().forget(id),
     clone: (url: string) => catalogActions().clone(url),
-    account,
-    active,
-    busy,
-    catalog,
-    close,
-    cloneProgress,
-    syncProgress,
-    editors,
-    error,
-    open,
-    opened,
-    linked,
-    syncHistory,
-    notices,
-    phase,
-    restorePending,
-    revision,
-    status,
-    sync,
-    commit,
-    lastCommitId,
-    refreshFailed: workspaceRefresh.failed,
-    retryWorkspace: () => perform(async () => active, false),
-    conflictReview,
-    conflictFailure,
+    sync: async () => { await perform(() => syncTask(state.preferences.settings.autoGit), false, 'sync') },
+    commit: (message: string, push = false) => commitVaultChanges({
+      active: state.active, analytics: state.analytics, perform, session: state.account.session,
+      setLastCommitId: state.setLastCommitId, setPhase: state.setPhase, setStatus: state.setStatus,
+      syncHistory: state.syncHistory, syncTask,
+    }, message, push),
+    retryWorkspace: () => perform(async () => state.active, false),
     reviewConflicts: conflictActions.reviewConflicts,
     resolveConflicts: conflictActions.resolveConflicts,
     cancelConflictReview: conflictActions.cancelConflictReview,
   }
+}
+
+function useVaultPerformer(state: MobileVaultState): PerformVaultTask {
+  const {
+    active, analytics, editors, linked, notices, restorePending, operationLock, setBusy, setError,
+    setOpened, setPhase, setStatus, syncHistory, workspaceRefresh,
+  } = state
+  return useCallback((task: VaultTask, present = true, operation?: VaultOperation, signal?: AbortSignal) =>
+    performVaultOperation({
+      active, analytics, editors, linked, notices, restorePending, operationLock, setBusy, setError,
+      setOpened, setPhase, setStatus, syncHistory, workspaceRefresh,
+    }, { task, present, operation, signal }), [
+    active, analytics, editors, linked, notices, restorePending, operationLock, setBusy, setError,
+    setOpened, setPhase, setStatus, syncHistory, workspaceRefresh,
+  ])
 }
 
 type BackgroundSyncOptions = {
@@ -437,7 +445,7 @@ function isCatalogOperation(present: boolean, operation?: 'commit' | 'sync' | 'a
 }
 
 function activeVaultId(active: ActiveVault) {
-  return active.git?.id ?? active.selection?.vaultAlias ?? undefined
+  return active.git?.id ?? active.selection?.catalogVaultId ?? active.selection?.vaultAlias ?? undefined
 }
 
 async function resolveVaultTask(task: VaultTask, active: ActiveVault, select: (next: ActiveVault) => void) {

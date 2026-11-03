@@ -248,7 +248,7 @@
   "settings.workspaces.slugAria": "{label} 的 Vault 別名 (slug)",
   "settings.workspaces.nameTooltip": "在選單、設定和 Vault 選擇器中顯示的顯示名稱。",
   "settings.workspaces.labelTooltip": "顯示在筆記、搜尋結果、頁面路徑和 Vault 徽章上的縮寫首字母。",
-  "settings.workspaces.slugTooltip": "用於跨 Vault 連結和關係的穩定前置詞。為了避免破壞現有參考，目前為唯讀狀態。",
+  "settings.workspaces.slugTooltip": "用於跨文件庫連結與關聯的穩定前綴。編輯它會更新已產生的連結和外部連結。",
   "settings.workspaces.color": "顏色",
   "settings.workspaces.moveUpAria": "將密室 {label} 向上移動",
   "settings.workspaces.moveDownAria": "將 Vault {label} 向下移動",

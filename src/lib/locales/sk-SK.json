@@ -248,7 +248,7 @@
   "settings.workspaces.slugAria": "Slug trezoru pre {label}",
   "settings.workspaces.nameTooltip": "Zobrazovaný názov v ponukách, nastaveniach a výberoch trezorov.",
   "settings.workspaces.labelTooltip": "Krátke iniciály zobrazené v poznámkach, výsledkoch vyhľadávania, breadcrumb navigácii a odznakoch trezora.",
-  "settings.workspaces.slugTooltip": "Stabilná predpona používaná v prepojeniach a vzťahoch medzi trezormi. Zatiaľ je iba na čítanie, aby sa predišlo poškodeniu existujúcich odkazov.",
+  "settings.workspaces.slugTooltip": "Stabilný predpona používaná v prepojeniach a vzťahoch medzi trezormi. Jeho úprava aktualizuje vygenerované a prichádzajúce odkazy.",
   "settings.workspaces.color": "Farba",
   "settings.workspaces.moveUpAria": "Presunúť trezor {label} nahor",
   "settings.workspaces.moveDownAria": "Presunúť trezor {label} nadol",

@@ -89,7 +89,8 @@ export function resolveMobileDeepLinkVault(
 ): { kind: 'matched'; vault: MobileDeepLinkVaultChoice } | { kind: 'unknown' | 'ambiguous' } {
   const target = slug.toLocaleLowerCase()
   const matches = vaults.filter((vault) => {
-    return slugifyWorkspaceAlias(vault.label) === target || slugifyWorkspaceAlias(vault.id) === target
+    return slugifyWorkspaceAlias(vault.label) === target
+      || slugifyWorkspaceAlias(vault.id) === target
   })
   if (matches.length === 0) return { kind: 'unknown' }
   if (matches.length > 1) return { kind: 'ambiguous' }
@@ -128,6 +129,9 @@ export function buildMobileDeepLinkForNote({
 }
 
 function activeVaultSlug(input: MobileDeepLinkBuildInput & { note: MobileNote }): string {
+  const savedAlias = sourceValue(input.source?.alias)
+  if (savedAlias) return slugifyWorkspaceAlias(savedAlias)
+
   const labelSlug = slugifyWorkspaceAlias(activeVaultLabel(input))
   if (labelSlug) return labelSlug
 

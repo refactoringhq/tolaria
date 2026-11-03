@@ -248,7 +248,7 @@
   "settings.workspaces.slugAria": "{label} の Vault スラッグ",
   "settings.workspaces.nameTooltip": "メニュー、設定、およびボールトセレクターに表示される表示名。",
   "settings.workspaces.labelTooltip": "ノート、検索結果、ブレッドクラム、およびボルトバッジに表示される短いイニシャル。",
-  "settings.workspaces.slugTooltip": "クロスボルトリンクと関係性で使用される安定したプレフィックス。既存の参照が破損するのを防ぐため、現時点では読み取り専用です。",
+  "settings.workspaces.slugTooltip": "クロスボルトリンクおよびリレーションシップで使用される安定したプレフィックス。これを編集すると、生成されたリンクと受信リンクが更新されます。",
   "settings.workspaces.color": "色",
   "settings.workspaces.moveUpAria": "ボールト{label}を上に移動",
   "settings.workspaces.moveDownAria": "ボールト{label}を下に移動",

@@ -5,6 +5,7 @@ import type { NativeWorkspaceSelection } from '../nativeWorkspacePicker'
 import { gitFileSystemSession } from './gitFileSystemSessions'
 import { gitVirtualRoot } from './gitFileSystemPaths'
 import { githubRepositoryUrl } from './githubRepositoryUrl'
+import { mobileWorkspaceAlias } from '../mobileWorkspaceAlias'
 import { isManagedVaultId, type ManagedGitVault, type ManagedGitVaultCatalog } from './managedGitVaults'
 import { readManagedCatalogFile, writeManagedCatalogFile } from './managedCatalogFile.native'
 import { withWorkspaceOperation } from './workspaceOperationQueue'
@@ -65,7 +66,8 @@ export async function managedGitSelection(vault: ManagedGitVault): Promise<Nativ
   const connection = managedGitConnection(vault)
   const { createGitVault } = await import('./gitVault')
   await withWorkspaceOperation(connection.operationKey, () => createGitVault(connection).recover())
-  return { vaultAlias: vault.id, vaultLabel: vault.label, vaultRootUri: directory.uri }
+  return { catalogVaultId: vault.id, vaultAlias: mobileWorkspaceAlias({ alias: vault.alias, label: vault.label }),
+    vaultLabel: vault.label, vaultRootUri: directory.uri }
 }
 
 export function managedGitConnection(vault: ManagedGitVault) {

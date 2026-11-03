@@ -5,6 +5,7 @@ import {
   filterEntriesToVisibleWorkspaces,
   graphWorkspaceVaults,
   graphWorkspaceVaultsForLoading,
+  normalizeWorkspaceSlug,
   vaultPathForEntry,
   visibleWorkspacePaths,
   workspaceIdentityFromVault,
@@ -15,6 +16,14 @@ const vaults: VaultOption[] = [
   { label: 'Personal', path: '/personal', alias: 'personal', available: true, mounted: true },
   { label: 'Team', path: '/team', alias: 'team', available: true, mounted: true },
 ]
+
+describe('normalizeWorkspaceSlug', () => {
+  it('normalizes user input and rejects empty slugs', () => {
+    expect(normalizeWorkspaceSlug('  Laputa / Main  ')).toBe('laputa-main')
+    expect(normalizeWorkspaceSlug(' --- ')).toBeNull()
+    expect(normalizeWorkspaceSlug(null)).toBeNull()
+  })
+})
 
 function vaultsWithMalformedPath(): VaultOption[] {
   return [

@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { mobileParityInventory } from './mobileParityInventory'
 
-declare global {
-  interface ImportMeta {
-    glob: (pattern: string) => Record<string, unknown>
-  }
-}
-
 describe('mobileParityInventory', () => {
   it('covers every visible iPad implementation component with a desktop source', () => {
     expect(inventoriedFiles()).toEqual(visibleIpadImplementationFiles())

@@ -1,93 +1,138 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { getAppStorageItem } from '../constants/appStorage'
-import { getVaultConfig, updateVaultConfigField, subscribeVaultConfig } from '../utils/vaultConfigStore'
+import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { getAppStorageItem } from "../constants/appStorage";
+import {
+	getVaultConfig,
+	subscribeVaultConfig,
+	updateVaultConfigField,
+} from "../utils/vaultConfigStore";
 
-const MIN_ZOOM = 80
-const MAX_ZOOM = 150
-const STEP = 10
-const DEFAULT_ZOOM = 100
+const MIN_ZOOM = 80;
+const MAX_ZOOM = 150;
+const STEP = 10;
+const DEFAULT_ZOOM = 100;
+let pendingNativeZoom = Promise.resolve();
+
+function isDesktopTauri(): boolean {
+	const runtimeFlag = Reflect.get(globalThis, "isTauri");
+	if (typeof runtimeFlag === "boolean") return runtimeFlag;
+	return (
+		typeof window !== "undefined" && Reflect.has(window, "__TAURI_INTERNALS__")
+	);
+}
 
 function loadPersistedZoom(): number {
-  const fromConfig = configToPercent(getVaultConfig().zoom)
-  if (fromConfig !== null) return fromConfig
-  // Fallback to localStorage during initial load
-  const stored = getAppStorageItem('zoom')
-  if (stored !== null) {
-    const val = Number(stored)
-    if (val >= MIN_ZOOM && val <= MAX_ZOOM && val % STEP === 0) return val
-  }
-  return DEFAULT_ZOOM
+	const fromConfig = configToPercent(getVaultConfig().zoom);
+	if (fromConfig !== null) return fromConfig;
+	// Fallback to localStorage during initial load
+	const stored = getAppStorageItem("zoom");
+	if (stored === null) return DEFAULT_ZOOM;
+	const val = Number(stored);
+	if (val < MIN_ZOOM || val > MAX_ZOOM) return DEFAULT_ZOOM;
+	if (val % STEP !== 0) return DEFAULT_ZOOM;
+	return val;
 }
 
 function isSupportedZoomPercent(value: number): boolean {
-  return value >= MIN_ZOOM && value <= MAX_ZOOM
+	return value >= MIN_ZOOM && value <= MAX_ZOOM;
 }
 
 /** Convert vault config zoom (0.8–1.5 fraction) to percentage (80–150). */
 function configToPercent(zoom: number | null): number | null {
-  if (zoom === null) return null
-  const percent = Math.round(zoom * 100)
-  return isSupportedZoomPercent(percent) ? percent : null
+	if (zoom === null) return null;
+	const percent = Math.round(zoom * 100);
+	return isSupportedZoomPercent(percent) ? percent : null;
 }
 
 function applyZoomToDocument(level: number): void {
-  document.documentElement.style.setProperty('zoom', `${level}%`)
-  document.documentElement.style.setProperty('--tolaria-overlay-zoom-factor', String(level / DEFAULT_ZOOM))
-  document.documentElement.style.setProperty('--tolaria-overlay-zoom-inverse', String(DEFAULT_ZOOM / level))
-  window.dispatchEvent(new Event('laputa-zoom-change'))
+	if (isDesktopTauri()) {
+		document.documentElement.style.removeProperty("zoom");
+		document.documentElement.style.setProperty(
+			"--tolaria-overlay-zoom-factor",
+			"1",
+		);
+		document.documentElement.style.setProperty(
+			"--tolaria-overlay-zoom-inverse",
+			"1",
+		);
+		pendingNativeZoom = pendingNativeZoom
+			.catch(() => undefined)
+			.then(() => getCurrentWebview().setZoom(level / DEFAULT_ZOOM))
+			.then(() => {
+				window.dispatchEvent(new Event("laputa-zoom-change"));
+			})
+			.catch((error: unknown) => {
+				console.error("Unable to apply native webview zoom", error);
+			});
+		return;
+	}
+
+	document.documentElement.style.setProperty("zoom", `${level}%`);
+	document.documentElement.style.setProperty(
+		"--tolaria-overlay-zoom-factor",
+		String(level / DEFAULT_ZOOM),
+	);
+	document.documentElement.style.setProperty(
+		"--tolaria-overlay-zoom-inverse",
+		String(DEFAULT_ZOOM / level),
+	);
+	window.dispatchEvent(new Event("laputa-zoom-change"));
 }
 
 function persistZoom(level: number): void {
-  updateVaultConfigField('zoom', level / 100)
+	updateVaultConfigField("zoom", level / 100);
 }
 
 export function useZoom() {
-  const [zoomLevel, setZoomLevel] = useState(() => {
-    const level = loadPersistedZoom()
-    // Apply zoom synchronously during init so child components (e.g. CodeMirror)
-    // measure the correct scale factor in their own effects.
-    applyZoomToDocument(level)
-    return level
-  })
-  const zoomLevelRef = useRef(zoomLevel)
+	const [zoomLevel, setZoomLevel] = useState(() => {
+		const level = loadPersistedZoom();
+		// Apply zoom synchronously during init so child components (e.g. CodeMirror)
+		// measure the correct scale factor in their own effects.
+		applyZoomToDocument(level);
+		return level;
+	});
+	const zoomLevelRef = useRef(zoomLevel);
 
-  const syncZoomLevel = useCallback((level: number) => {
-    zoomLevelRef.current = level
-    setZoomLevel(level)
-    applyZoomToDocument(level)
-  }, [])
+	const syncZoomLevel = useCallback((level: number) => {
+		zoomLevelRef.current = level;
+		setZoomLevel(level);
+		applyZoomToDocument(level);
+	}, []);
 
-  const commitZoomLevel = useCallback((level: number, forcePersist = false) => {
-    const unchanged = level === zoomLevelRef.current
-    if (!unchanged) {
-      syncZoomLevel(level)
-    }
-    if (!unchanged || forcePersist) {
-      persistZoom(level)
-    }
-  }, [syncZoomLevel])
+	const commitZoomLevel = useCallback(
+		(level: number, forcePersist = false) => {
+			const unchanged = level === zoomLevelRef.current;
+			if (!unchanged) {
+				syncZoomLevel(level);
+			}
+			if (!unchanged || forcePersist) {
+				persistZoom(level);
+			}
+		},
+		[syncZoomLevel],
+	);
 
-  // Re-sync when vault config becomes available
-  useEffect(() => {
-    return subscribeVaultConfig(() => {
-      const pct = configToPercent(getVaultConfig().zoom)
-      if (pct !== null && pct !== zoomLevelRef.current) {
-        syncZoomLevel(pct)
-      }
-    })
-  }, [syncZoomLevel])
+	// Re-sync when vault config becomes available
+	useEffect(() => {
+		return subscribeVaultConfig(() => {
+			const pct = configToPercent(getVaultConfig().zoom);
+			if (pct !== null && pct !== zoomLevelRef.current) {
+				syncZoomLevel(pct);
+			}
+		});
+	}, [syncZoomLevel]);
 
-  const zoomIn = useCallback(() => {
-    commitZoomLevel(Math.min(MAX_ZOOM, zoomLevelRef.current + STEP))
-  }, [commitZoomLevel])
+	const zoomIn = useCallback(() => {
+		commitZoomLevel(Math.min(MAX_ZOOM, zoomLevelRef.current + STEP));
+	}, [commitZoomLevel]);
 
-  const zoomOut = useCallback(() => {
-    commitZoomLevel(Math.max(MIN_ZOOM, zoomLevelRef.current - STEP))
-  }, [commitZoomLevel])
+	const zoomOut = useCallback(() => {
+		commitZoomLevel(Math.max(MIN_ZOOM, zoomLevelRef.current - STEP));
+	}, [commitZoomLevel]);
 
-  const zoomReset = useCallback(() => {
-    commitZoomLevel(DEFAULT_ZOOM, true)
-  }, [commitZoomLevel])
+	const zoomReset = useCallback(() => {
+		commitZoomLevel(DEFAULT_ZOOM, true);
+	}, [commitZoomLevel]);
 
-  return { zoomLevel, zoomIn, zoomOut, zoomReset }
+	return { zoomLevel, zoomIn, zoomOut, zoomReset };
 }

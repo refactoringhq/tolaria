@@ -248,7 +248,7 @@
   "settings.workspaces.slugAria": "Slug brankas untuk {label}",
   "settings.workspaces.nameTooltip": "Nama tampilan yang ditampilkan di menu, pengaturan, dan pemilih brankas.",
   "settings.workspaces.labelTooltip": "Inisial pendek yang ditampilkan pada catatan, hasil pencarian, breadcrumb, dan lencana brankas.",
-  "settings.workspaces.slugTooltip": "Awalan tetap yang digunakan dalam tautan dan hubungan antar brankas. Saat ini bersifat hanya-baca untuk menghindari pemutusan referensi yang ada.",
+  "settings.workspaces.slugTooltip": "Prefiks stabil yang digunakan dalam tautan dan relasi lintas-vault. Mengeditnya akan memperbarui tautan yang dihasilkan dan tautan masuk.",
   "settings.workspaces.color": "Warna",
   "settings.workspaces.moveUpAria": "Pindahkan brankas {label} ke atas",
   "settings.workspaces.moveDownAria": "Pindahkan brankas {label} ke bawah",

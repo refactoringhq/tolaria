@@ -248,7 +248,7 @@
   "settings.workspaces.slugAria": "Slug do cofre para {label}",
   "settings.workspaces.nameTooltip": "Nome de exibição mostrado em menus, configurações e seletores de cofre.",
   "settings.workspaces.labelTooltip": "As iniciais abreviadas exibidas em notas, resultados de busca, breadcrumbs e badges de cofre.",
-  "settings.workspaces.slugTooltip": "O prefixo estável usado em links e relacionamentos entre cofres. Por enquanto, ele é somente leitura para evitar que referências existentes sejam corrompidas.",
+  "settings.workspaces.slugTooltip": "O prefixo estável usado em links e relacionamentos entre vaults. Editar isso atualiza os links gerados e recebidos.",
   "settings.workspaces.color": "Cor",
   "settings.workspaces.moveUpAria": "Mover o cofre {label} para cima",
   "settings.workspaces.moveDownAria": "Mover o cofre {label} para baixo",

@@ -248,7 +248,7 @@
   "settings.workspaces.slugAria": "Vault-Slug für {label}",
   "settings.workspaces.nameTooltip": "Der Anzeigename, der in Menüs, Einstellungen und Vault-Auswahlfeldern angezeigt wird.",
   "settings.workspaces.labelTooltip": "Die kurzen Initialen, die in Notizen, Suchergebnissen, Breadcrumbs und Vault-Badges angezeigt werden.",
-  "settings.workspaces.slugTooltip": "Das stabile Präfix, das in vault-übergreifenden Links und Beziehungen verwendet wird. Derzeit schreibgeschützt, um zu vermeiden, dass bestehende Verweise beschädigt werden.",
+  "settings.workspaces.slugTooltip": "Das stabile Präfix, das in Vault-übergreifenden Links und Beziehungen verwendet wird. Wenn Sie es bearbeiten, werden generierte und eingehende Links aktualisiert.",
   "settings.workspaces.color": "Farbe",
   "settings.workspaces.moveUpAria": "Vault {label} nach oben verschieben",
   "settings.workspaces.moveDownAria": "Vault {label} nach unten verschieben",
