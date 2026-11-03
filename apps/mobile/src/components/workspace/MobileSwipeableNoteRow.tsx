@@ -1,14 +1,17 @@
 import { type ReactNode, useCallback, useMemo, useRef } from "react";
-import { Vibration, View } from "react-native";
+import { type StyleProp, Vibration, View, type ViewStyle } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Swipeable, {
 	type SwipeableMethods,
 } from "react-native-gesture-handler/ReanimatedSwipeable";
 import Animated, {
+	FadeInDown,
+	FadeOutUp,
 	LinearTransition,
 	runOnJS,
 	SlideInLeft,
 	SlideOutLeft,
+	useReducedMotion,
 	useSharedValue,
 } from "react-native-reanimated";
 import { useMobileAnalytics } from "../../analytics/useMobileAnalytics";
@@ -36,8 +39,49 @@ type Props = {
 };
 
 export function MobileSwipeableNoteRow(props: Props) {
-	if (!props.actions || props.disabled) return props.children;
-	return <SwipeableNoteRow {...props} actions={props.actions} />;
+	const row =
+		!props.actions || props.disabled ? (
+			props.children
+		) : (
+			<SwipeableNoteRow {...props} actions={props.actions} />
+		);
+	return <MobileListMotion variant="row">{row}</MobileListMotion>;
+}
+
+export function MobileListMotion({
+	children,
+	testID,
+	variant = "surface",
+	style,
+	pointerEvents,
+}: {
+	children: ReactNode;
+	testID?: string;
+	variant?: "row" | "surface";
+	style?: StyleProp<ViewStyle>;
+	pointerEvents?: "auto" | "none" | "box-none" | "box-only";
+}) {
+	const reduceMotion = useReducedMotion();
+	if (reduceMotion)
+		return (
+			<View pointerEvents={pointerEvents} style={style} testID={testID}>
+				{children}
+			</View>
+		);
+
+	const row = variant === "row";
+	return (
+		<Animated.View
+			entering={row ? SlideInLeft.duration(220) : FadeInDown.duration(180)}
+			exiting={row ? SlideOutLeft.duration(220) : FadeOutUp.duration(140)}
+			layout={LinearTransition.duration(180)}
+			pointerEvents={pointerEvents}
+			style={style}
+			testID={testID}
+		>
+			{children}
+		</Animated.View>
+	);
 }
 
 function useSwipeableNoteActions(
@@ -117,34 +161,28 @@ function SwipeableNoteRow({
 		width,
 	};
 	return (
-		<Animated.View
-			entering={SlideInLeft.duration(240)}
-			exiting={SlideOutLeft.duration(240)}
-			layout={LinearTransition.duration(240)}
-		>
-			<GestureDetector gesture={fullSwipe}>
-				<View onLayout={(event) => width.set(event.nativeEvent.layout.width)}>
-					<Swipeable
-						ref={swipeable}
-						childrenContainerStyle={{ backgroundColor: mobileColors.card }}
-						enableTrackpadTwoFingerGesture={false}
-						friction={1}
-						overshootFriction={1}
-						dragOffsetFromLeftEdge={Number.MAX_SAFE_INTEGER}
-						overshootLeft={false}
-						simultaneousWithExternalGesture={fullSwipe}
-						renderRightActions={(_, translation) => (
-							<MobileNoteSwipeActions
-								{...actionProps}
-								translation={translation}
-							/>
-						)}
-					>
-						{children}
-					</Swipeable>
-				</View>
-			</GestureDetector>
-		</Animated.View>
+		<GestureDetector gesture={fullSwipe}>
+			<View onLayout={(event) => width.set(event.nativeEvent.layout.width)}>
+				<Swipeable
+					ref={swipeable}
+					childrenContainerStyle={{ backgroundColor: mobileColors.card }}
+					enableTrackpadTwoFingerGesture={false}
+					friction={1}
+					overshootFriction={1}
+					dragOffsetFromLeftEdge={Number.MAX_SAFE_INTEGER}
+					overshootLeft={false}
+					simultaneousWithExternalGesture={fullSwipe}
+					renderRightActions={(_, translation) => (
+						<MobileNoteSwipeActions
+							{...actionProps}
+							translation={translation}
+						/>
+					)}
+				>
+					{children}
+				</Swipeable>
+			</View>
+		</GestureDetector>
 	);
 }
 
