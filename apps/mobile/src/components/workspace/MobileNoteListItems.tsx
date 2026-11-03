@@ -6,8 +6,8 @@ import { MobileButton } from '../../ui/MobileButton'
 import { MobileChip } from '../../ui/MobileChip'
 import { MobileListRow } from '../../ui/MobileListRow'
 import { useMobileColors, useMobileStyles } from '../../ui/theme/useMobileTheme'
-import { mobileNoteRowChips } from '../../workspace/mobileNoteDisplay'
 import type { MobileNeighborhoodGroup } from '../../workspace/mobileNeighborhood'
+import { mobileNoteRowChips } from '../../workspace/mobileNoteDisplay'
 import type {
   MobileNote,
   MobilePropertyDisplayMode,
@@ -17,8 +17,7 @@ import { Text } from '../ui/text'
 import { createThemeStyles } from './MobileNoteListPanel.styles'
 import { mobileNoteListEmptyStateChrome } from './MobileNoteListPanelChrome'
 import { MobilePendingNoteIndicator } from './MobilePendingNoteIndicator'
-import type { MobileNoteRowActions } from './MobileSwipeableNoteRow'
-import { MobileSwipeableNoteRow } from './MobileSwipeableNoteRow'
+import { MobileListMotion, type MobileNoteRowActions, MobileSwipeableNoteRow } from './MobileSwipeableNoteRow'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
 import { noteTypeSoftColor } from './mobileWorkspaceTone'
 
@@ -128,21 +127,23 @@ export function NoteListEmptyState({
   const chrome = mobileNoteListEmptyStateChrome({ emptyVault, searchQuery })
 
   return (
-    <View style={styles.emptyState}>
-      <Text style={styles.emptyTitle}>{mobileText(chrome.titleKey)}</Text>
-      {chrome.detailKey ? (
-        <Text style={styles.emptyText}>{mobileText(chrome.detailKey)}</Text>
-      ) : null}
-      {chrome.action === 'openVault' && onOpenVault ? (
-        <MobileButton
-          icon={<FolderOpen color={mobileColors.text} size={16} />}
-          label={mobileText('status.vault.openLocal')}
-          style={styles.emptyAction}
-          testID="note-list-empty-open-vault"
-          onPress={onOpenVault}
-        />
-      ) : null}
-    </View>
+    <MobileListMotion testID="note-list-empty-motion">
+      <View style={styles.emptyState}>
+        <Text style={styles.emptyTitle}>{mobileText(chrome.titleKey)}</Text>
+        {chrome.detailKey ? (
+          <Text style={styles.emptyText}>{mobileText(chrome.detailKey)}</Text>
+        ) : null}
+        {chrome.action === 'openVault' && onOpenVault ? (
+          <MobileButton
+            icon={<FolderOpen color={mobileColors.text} size={16} />}
+            label={mobileText('status.vault.openLocal')}
+            style={styles.emptyAction}
+            testID="note-list-empty-open-vault"
+            onPress={onOpenVault}
+          />
+        ) : null}
+      </View>
+    </MobileListMotion>
   )
 }
 

@@ -4,12 +4,13 @@ import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fixtureNotes } from "../../fixtures/workspaceFixtures";
-import { MobileSwipeableNoteRow } from "./MobileSwipeableNoteRow";
+import { MobileListMotion, MobileSwipeableNoteRow } from "./MobileSwipeableNoteRow";
 
 const nativeSwipe = vi.hoisted(() =>
 	vi.fn<(props: Record<string, unknown>) => null>(() => null),
 );
 const input = vi.hoisted(() => ({
+	reduceMotion: false,
 	onEnd: undefined as ((event: { translationX: number }) => void) | undefined,
 	onUpdate: undefined as
 		| ((event: { translationX: number }) => void)
@@ -74,12 +75,19 @@ vi.mock("react-native-reanimated", () => ({
 	LinearTransition: {
 		duration: (duration: number) => ({ kind: "layout", duration }),
 	},
+	FadeInDown: {
+		duration: (duration: number) => ({ kind: "enter-surface", duration }),
+	},
+	FadeOutUp: {
+		duration: (duration: number) => ({ kind: "exit-surface", duration }),
+	},
 	SlideOutLeft: {
 		duration: (duration: number) => ({ kind: "exit", duration }),
 	},
 	SlideInLeft: {
 		duration: (duration: number) => ({ kind: "enter", duration }),
 	},
+	useReducedMotion: () => input.reduceMotion,
 	useSharedValue: (initial: number) => {
 		let value = initial;
 		return Object.freeze({
@@ -107,6 +115,7 @@ afterEach(() => {
 	input.onOrganize.mockClear();
 	input.vibrate.mockClear();
 	input.animatedProps = undefined;
+	input.reduceMotion = false;
 	input.onStart = undefined;
 	input.onUpdate = undefined;
 	input.onEnd = undefined;
@@ -147,9 +156,9 @@ describe("note row input ownership", () => {
 	it("animates removal and commits once per completed full swipe", () => {
 		renderRow(false, "organize");
 		expect(input.animatedProps).toMatchObject({
-			entering: { duration: 240, kind: "enter" },
-			exiting: { duration: 240, kind: "exit" },
-			layout: { duration: 240, kind: "layout" },
+			entering: { duration: 220, kind: "enter" },
+			exiting: { duration: 220, kind: "exit" },
+			layout: { duration: 180, kind: "layout" },
 		});
 		setSwipeWidth();
 		beginSwipe();
@@ -164,6 +173,34 @@ describe("note row input ownership", () => {
 		finishSwipe();
 		expect(input.onOrganize).toHaveBeenCalledTimes(2);
 		expect(input.vibrate).toHaveBeenCalledTimes(2);
+	});
+
+	it("disables list transitions when Reduce Motion is enabled", () => {
+		input.reduceMotion = true;
+		renderRow(false, "organize");
+		expect(input.animatedProps).toBeUndefined();
+	});
+
+	it("animates non-row surfaces as they enter, leave, and change layout", () => {
+		const root = createRoot(document.createElement("div"));
+		try {
+			flushSync(() =>
+				root.render(
+					createElement(
+						MobileListMotion,
+						{ children: "Actions", testID: "surface" },
+					),
+				),
+			);
+			expect(input.animatedProps).toMatchObject({
+				entering: { duration: 180, kind: "enter-surface" },
+				exiting: { duration: 140, kind: "exit-surface" },
+				layout: { duration: 180, kind: "layout" },
+				testID: "surface",
+			});
+		} finally {
+			root.unmount();
+		}
 	});
 
 	it("does not favorite or archive on a full right swipe", () => {

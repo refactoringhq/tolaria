@@ -1,12 +1,13 @@
-import type { MobileMetrics } from '../../ui/mobileMetrics'
-import { useMobileStyles } from '../../ui/theme/useMobileTheme'
-import type { MobileColors } from '../../ui/theme/mobilePalette'
-import type { ReactNode } from 'react'
 import { ArchiveIcon, CheckCircle, Trash, X } from 'phosphor-react-native'
+import type { ReactNode } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
-import { Text } from '../ui/text'
 import { mobileText } from '../../i18n/mobileText'
+import type { MobileMetrics } from '../../ui/mobileMetrics'
+import type { MobileColors } from '../../ui/theme/mobilePalette'
+import { useMobileStyles } from '../../ui/theme/useMobileTheme'
 import { mobileRadius } from '../../ui/tokens'
+import { Text } from '../ui/text'
+import { MobileListMotion } from './MobileSwipeableNoteRow'
 
 type MobileNoteListBulkActionBarProps = {
   archivedMode: boolean
@@ -27,40 +28,54 @@ export function MobileNoteListBulkActionBar({
 }: MobileNoteListBulkActionBarProps) {
   const { styles, mobileColors } = useMobileStyles(createThemeStyles)
   return (
-    <View style={styles.bar} testID="note-list-bulk-action-bar">
+    <MobileListMotion testID="note-list-bulk-motion">
+      <View style={styles.bar} testID="note-list-bulk-action-bar">
       <Text style={styles.count} testID="note-list-bulk-selected-count">{selectedCountLabel(count)}</Text>
-      <View style={styles.actions}>
-        <BulkActionButton
-          accessibilityLabel={mobileText('noteList.bulk.organize')}
-          testID="note-list-bulk-organize"
-          onPress={onOrganize}
-        >
-          <CheckCircle color={mobileColors.textInverse} size={16} weight="fill" />
-        </BulkActionButton>
-        <BulkActionButton
-          accessibilityLabel={mobileText(archivedMode ? 'noteList.bulk.unarchive' : 'noteList.bulk.archive')}
-          testID="note-list-bulk-archive"
-          onPress={onArchiveToggle}
-        >
-          <ArchiveIcon color={mobileColors.textInverse} size={16} />
-        </BulkActionButton>
-        <BulkActionButton
-          accessibilityLabel={mobileText('noteList.bulk.delete')}
-          destructive
-          testID="note-list-bulk-delete"
-          onPress={onDelete}
-        >
-          <Trash color={mobileColors.textInverse} size={16} />
-        </BulkActionButton>
-        <BulkActionButton
-          accessibilityLabel={mobileText('noteList.bulk.clear')}
-          subtle
-          testID="note-list-bulk-clear"
-          onPress={onClear}
-        >
-          <X color={mobileColors.textInverse} size={16} />
-        </BulkActionButton>
+      <BulkActionButtons
+        archivedMode={archivedMode}
+        mobileColors={mobileColors}
+        onArchiveToggle={onArchiveToggle}
+        onClear={onClear}
+        onDelete={onDelete}
+        onOrganize={onOrganize}
+        styles={styles}
+      />
       </View>
+    </MobileListMotion>
+  )
+}
+
+function BulkActionButtons({
+  archivedMode,
+  mobileColors,
+  onArchiveToggle,
+  onClear,
+  onDelete,
+  onOrganize,
+  styles,
+}: {
+  archivedMode: boolean
+  mobileColors: MobileColors
+  onArchiveToggle: () => void
+  onClear: () => void
+  onDelete: () => void
+  onOrganize: () => void
+  styles: ReturnType<typeof createThemeStyles>['styles']
+}) {
+  return (
+    <View style={styles.actions}>
+      <BulkActionButton accessibilityLabel={mobileText('noteList.bulk.organize')} testID="note-list-bulk-organize" onPress={onOrganize}>
+        <CheckCircle color={mobileColors.textInverse} size={16} weight="fill" />
+      </BulkActionButton>
+      <BulkActionButton accessibilityLabel={mobileText(archivedMode ? 'noteList.bulk.unarchive' : 'noteList.bulk.archive')} testID="note-list-bulk-archive" onPress={onArchiveToggle}>
+        <ArchiveIcon color={mobileColors.textInverse} size={16} />
+      </BulkActionButton>
+      <BulkActionButton accessibilityLabel={mobileText('noteList.bulk.delete')} destructive testID="note-list-bulk-delete" onPress={onDelete}>
+        <Trash color={mobileColors.textInverse} size={16} />
+      </BulkActionButton>
+      <BulkActionButton accessibilityLabel={mobileText('noteList.bulk.clear')} subtle testID="note-list-bulk-clear" onPress={onClear}>
+        <X color={mobileColors.textInverse} size={16} />
+      </BulkActionButton>
     </View>
   )
 }

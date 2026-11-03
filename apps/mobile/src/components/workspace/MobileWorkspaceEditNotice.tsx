@@ -8,6 +8,7 @@ import type { MobileColors } from "../../ui/theme/mobilePalette";
 import { useMobileStyles } from "../../ui/theme/useMobileTheme";
 import type { MobileSyncStatus } from "../../workspace/mobileWorkspaceModel";
 import { Text } from "../ui/text";
+import { MobileListMotion } from "./MobileSwipeableNoteRow";
 
 export function MobileWorkspaceEditNotice({
 	retry,
@@ -28,23 +29,29 @@ export function MobileWorkspaceEditNotice({
 	}, [failed]);
 	if (!retry && !saveFailed) return null;
 	return (
-		<View pointerEvents="box-none" style={[styles.position, { top: top + 8 }]}>
-			<View style={styles.notice} testID="workspace-edit-notice">
-				<Text accessibilityLiveRegion="polite" style={styles.message}>
-					{mobileText(
-						retry ? "mobile.editor.readFailed" : "mobile.vaults.saveFailed",
-					)}
-				</Text>
-				{retry ? (
-					<MobileButton
-						label={mobileText("pulse.retry")}
-						onPress={retry}
-						testID="workspace-edit-retry"
-						variant="ghost"
-					/>
-				) : null}
+		<MobileListMotion
+			pointerEvents="box-none"
+			style={StyleSheet.absoluteFill}
+			testID="workspace-edit-notice-motion"
+		>
+			<View pointerEvents="box-none" style={[styles.position, { top: top + 8 }]}>
+				<View style={styles.notice} testID="workspace-edit-notice">
+					<Text accessibilityLiveRegion="polite" style={styles.message}>
+						{mobileText(
+							retry ? "mobile.editor.readFailed" : "mobile.vaults.saveFailed",
+						)}
+					</Text>
+					{retry ? (
+						<MobileButton
+							label={mobileText("pulse.retry")}
+							onPress={retry}
+							testID="workspace-edit-retry"
+							variant="ghost"
+						/>
+					) : null}
+				</View>
 			</View>
-		</View>
+		</MobileListMotion>
 	);
 }
 
