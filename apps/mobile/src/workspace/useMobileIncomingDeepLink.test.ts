@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, createElement, useEffect } from 'react'
+import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
@@ -75,6 +76,20 @@ describe('useMobileIncomingDeepLink', () => {
     await act(async () => linking.listener?.({ url: 'tolaria://missing-vault/Note.md' }))
     expect(state().notice).toBeTruthy()
     expect(state().navigation).toBeNull()
+  })
+
+  it('does not select a vault after its workspace unmounts before link resolution', async () => {
+    const snapshot = workspaceScenarioForId('default')
+    const select = vi.fn(async () => {})
+    await renderHook([{ id: 'work', label: 'Work', selected: false, select }], snapshot)
+
+    await act(async () => {
+      flushSync(() => linking.listener?.({ url: noteUrl('Work', 'Note.md') }))
+      root?.unmount()
+      await Promise.resolve()
+    })
+
+    expect(select).not.toHaveBeenCalled()
   })
 
   it('keeps the newest warm link when a delayed cold-start URL resolves later', async () => {
