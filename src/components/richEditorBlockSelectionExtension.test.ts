@@ -368,6 +368,21 @@ describe('rich editor block selection extension', () => {
     expect(serializeMarkdownHighlightAwareBlocks(editor, editor.document)).toBe(plainMarkdown)
   })
 
+  it('highlights every selected block when selection ids are in reverse document order', () => {
+    const editor = mountEditor()
+    editor._tiptapEditor.view.dispatch(
+      editor._tiptapEditor.state.tr.setMeta(richEditorBlockSelectionPluginKey, {
+        type: 'set',
+        blockIds: ['three', 'two', 'one'],
+      }),
+    )
+
+    toggleDefaultMarkdownHighlight(editor)
+
+    expect(selectedBlockIds(editor)).toEqual(['three', 'two', 'one'])
+    expect(serializeMarkdownHighlightAwareBlocks(editor, editor.document)).toBe('==One==\n\n==Two==\n\n==Three==')
+  })
+
   it('undoes block highlight formatting in one step', () => {
     const editor = mountEditor()
     selectBlock(editor, 'two')

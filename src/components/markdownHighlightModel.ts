@@ -32,12 +32,17 @@ function selectedBlockTextRange(editor: HighlightEditor, blockIds: readonly stri
     }
     return true
   })
-  const first = positions.get(blockIds[0] ?? '')
-  const last = positions.get(blockIds.at(-1) ?? '')
-  if (!first || !last) return null
+  const selectedPositions = [...positions.values()]
+  if (selectedPositions.length === 0) return null
 
-  const from = Math.min(first.pos + 1, doc.content.size)
-  const to = Math.max(from, Math.min(last.pos + last.nodeSize - 1, doc.content.size))
+  const from = Math.min(...selectedPositions.map(({ pos }) => pos + 1), doc.content.size)
+  const to = Math.max(
+    from,
+    Math.min(
+      Math.max(...selectedPositions.map(({ pos, nodeSize }) => pos + nodeSize - 1)),
+      doc.content.size,
+    ),
+  )
   return { from, to }
 }
 
