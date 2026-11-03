@@ -1,10 +1,16 @@
 import { type ReactNode, useCallback, useMemo, useRef } from "react";
-import { View } from "react-native";
+import { Vibration, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Swipeable, {
 	type SwipeableMethods,
 } from "react-native-gesture-handler/ReanimatedSwipeable";
-import { runOnJS, useSharedValue } from "react-native-reanimated";
+import Animated, {
+	LinearTransition,
+	runOnJS,
+	SlideInLeft,
+	SlideOutLeft,
+	useSharedValue,
+} from "react-native-reanimated";
 import { useMobileAnalytics } from "../../analytics/useMobileAnalytics";
 import { useMobileColors } from "../../ui/theme/useMobileTheme";
 import type { MobileNote } from "../../workspace/mobileWorkspaceModel";
@@ -42,7 +48,7 @@ function useSwipeableNoteActions(
 	const swipeable = useRef<SwipeableMethods>(null);
 	const perform = useCallback(
 		(action: MobileNoteSwipeAction | "delete") => {
-			swipeable.current?.close();
+			if (action === "favorite") swipeable.current?.close();
 			if (action === "favorite") actions.onToggleFavorite(note.id);
 			if (action === "archive") actions.onArchive([note.id], !note.archived);
 			if (action === "organize") actions.onOrganize([note.id]);
@@ -62,6 +68,8 @@ function SwipeableNoteRow({
 	const mobileColors = useMobileColors();
 	const { perform, swipeable } = useSwipeableNoteActions(actions, note);
 	const width = useSharedValue(0);
+	const committed = useSharedValue(false);
+	const hapticPlayed = useSharedValue(false);
 	// Swipeable owns dragging/snapping. This simultaneous observer only commits a full swipe on release.
 	const fullSwipe = useMemo(
 		() =>
@@ -69,15 +77,33 @@ function SwipeableNoteRow({
 				.activeOffsetX(-16)
 				.failOffsetX(16)
 				.failOffsetY([-12, 12])
+				.onStart(() => {
+					committed.set(false);
+					hapticPlayed.set(false);
+				})
+				.onUpdate((event) => {
+					const action = fullSwipeNoteAction(
+						event.translationX,
+						width.get(),
+						actions.primarySwipeAction,
+					);
+					if (action && !hapticPlayed.get()) {
+						hapticPlayed.set(true);
+						runOnJS(emitSwipeHaptic)();
+					}
+				})
 				.onEnd((event) => {
 					const action = fullSwipeNoteAction(
 						event.translationX,
 						width.get(),
 						actions.primarySwipeAction,
 					);
-					if (action) runOnJS(perform)(action);
+					if (action && !committed.get()) {
+						committed.set(true);
+						runOnJS(perform)(action);
+					}
 				}),
-		[actions.primarySwipeAction, perform, width],
+		[actions.primarySwipeAction, committed, hapticPlayed, perform, width],
 	);
 	const actionProps = {
 		archived: note.archived,
@@ -91,27 +117,37 @@ function SwipeableNoteRow({
 		width,
 	};
 	return (
-		<GestureDetector gesture={fullSwipe}>
-			<View onLayout={(event) => width.set(event.nativeEvent.layout.width)}>
-				<Swipeable
-					ref={swipeable}
-					childrenContainerStyle={{ backgroundColor: mobileColors.card }}
-					enableTrackpadTwoFingerGesture={false}
-					friction={1}
-					overshootFriction={1}
-					dragOffsetFromLeftEdge={Number.MAX_SAFE_INTEGER}
-					overshootLeft={false}
-					simultaneousWithExternalGesture={fullSwipe}
-					renderRightActions={(_, translation) => (
-						<MobileNoteSwipeActions
-							{...actionProps}
-							translation={translation}
-						/>
-					)}
-				>
-					{children}
-				</Swipeable>
-			</View>
-		</GestureDetector>
+		<Animated.View
+			entering={SlideInLeft.duration(240)}
+			exiting={SlideOutLeft.duration(240)}
+			layout={LinearTransition.duration(240)}
+		>
+			<GestureDetector gesture={fullSwipe}>
+				<View onLayout={(event) => width.set(event.nativeEvent.layout.width)}>
+					<Swipeable
+						ref={swipeable}
+						childrenContainerStyle={{ backgroundColor: mobileColors.card }}
+						enableTrackpadTwoFingerGesture={false}
+						friction={1}
+						overshootFriction={1}
+						dragOffsetFromLeftEdge={Number.MAX_SAFE_INTEGER}
+						overshootLeft={false}
+						simultaneousWithExternalGesture={fullSwipe}
+						renderRightActions={(_, translation) => (
+							<MobileNoteSwipeActions
+								{...actionProps}
+								translation={translation}
+							/>
+						)}
+					>
+						{children}
+					</Swipeable>
+				</View>
+			</GestureDetector>
+		</Animated.View>
 	);
+}
+
+function emitSwipeHaptic() {
+	Vibration.vibrate(10);
 }

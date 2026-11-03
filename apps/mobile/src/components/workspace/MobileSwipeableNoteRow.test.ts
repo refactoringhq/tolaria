@@ -11,16 +11,23 @@ const nativeSwipe = vi.hoisted(() =>
 );
 const input = vi.hoisted(() => ({
 	onEnd: undefined as ((event: { translationX: number }) => void) | undefined,
+	onUpdate: undefined as
+		| ((event: { translationX: number }) => void)
+		| undefined,
+	onStart: undefined as (() => void) | undefined,
 	onLayout: undefined as
 		| ((event: { nativeEvent: { layout: { width: number } } }) => void)
 		| undefined,
 	onArchive: vi.fn(),
 	onOrganize: vi.fn(),
+	animatedProps: undefined as Record<string, unknown> | undefined,
+	vibrate: vi.fn(),
 }));
 vi.mock("react-native-gesture-handler/ReanimatedSwipeable", () => ({
 	default: nativeSwipe,
 }));
 vi.mock("react-native", () => ({
+	Vibration: { vibrate: input.vibrate },
 	View: ({
 		children,
 		onLayout,
@@ -37,11 +44,19 @@ vi.mock("react-native-gesture-handler", () => ({
 	Gesture: {
 		Pan: () => {
 			const pan = {
+				onStart: (handler: typeof input.onStart) => {
+					input.onStart = handler;
+					return pan;
+				},
 				activeOffsetX: () => pan,
 				failOffsetX: () => pan,
 				failOffsetY: () => pan,
 				onEnd: (handler: typeof input.onEnd) => {
 					input.onEnd = handler;
+					return pan;
+				},
+				onUpdate: (handler: typeof input.onUpdate) => {
+					input.onUpdate = handler;
 					return pan;
 				},
 			};
@@ -50,6 +65,21 @@ vi.mock("react-native-gesture-handler", () => ({
 	},
 }));
 vi.mock("react-native-reanimated", () => ({
+	default: {
+		View: ({ children, ...props }: { children: ReactNode }) => {
+			input.animatedProps = props;
+			return children;
+		},
+	},
+	LinearTransition: {
+		duration: (duration: number) => ({ kind: "layout", duration }),
+	},
+	SlideOutLeft: {
+		duration: (duration: number) => ({ kind: "exit", duration }),
+	},
+	SlideInLeft: {
+		duration: (duration: number) => ({ kind: "enter", duration }),
+	},
 	useSharedValue: (initial: number) => {
 		let value = initial;
 		return Object.freeze({
@@ -75,6 +105,11 @@ afterEach(() => {
 	nativeSwipe.mockClear();
 	input.onArchive.mockClear();
 	input.onOrganize.mockClear();
+	input.vibrate.mockClear();
+	input.animatedProps = undefined;
+	input.onStart = undefined;
+	input.onUpdate = undefined;
+	input.onEnd = undefined;
 });
 
 describe("note row input ownership", () => {
@@ -107,6 +142,28 @@ describe("note row input ownership", () => {
 		input.onEnd?.({ translationX: -290 });
 		expect(input.onOrganize).toHaveBeenCalledWith([fixtureNotes[0].id]);
 		expect(input.onArchive).not.toHaveBeenCalled();
+	});
+
+	it("animates removal and commits once per completed full swipe", () => {
+		renderRow(false, "organize");
+		expect(input.animatedProps).toMatchObject({
+			entering: { duration: 240, kind: "enter" },
+			exiting: { duration: 240, kind: "exit" },
+			layout: { duration: 240, kind: "layout" },
+		});
+		setSwipeWidth();
+		beginSwipe();
+		crossSwipeThreshold();
+		crossSwipeThreshold();
+		expect(input.vibrate).toHaveBeenCalledTimes(1);
+		finishSwipe();
+		finishSwipe();
+		expect(input.onOrganize).toHaveBeenCalledTimes(1);
+		beginSwipe();
+		crossSwipeThreshold();
+		finishSwipe();
+		expect(input.onOrganize).toHaveBeenCalledTimes(2);
+		expect(input.vibrate).toHaveBeenCalledTimes(2);
 	});
 
 	it("does not favorite or archive on a full right swipe", () => {
@@ -148,4 +205,20 @@ function renderRow(
 	} finally {
 		root.unmount();
 	}
+}
+
+function setSwipeWidth() {
+	input.onLayout?.({ nativeEvent: { layout: { width: 300 } } });
+}
+
+function beginSwipe() {
+	input.onStart?.();
+}
+
+function crossSwipeThreshold() {
+	input.onUpdate?.({ translationX: -290 });
+}
+
+function finishSwipe() {
+	input.onEnd?.({ translationX: -290 });
 }
