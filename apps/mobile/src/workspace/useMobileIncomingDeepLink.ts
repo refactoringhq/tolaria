@@ -122,7 +122,7 @@ function useIncomingLinkSelection({
     const pending = incoming.pending
     if (!pending || !picker?.choices.length) return
     void Promise.resolve().then(() => {
-      if (incoming.latestRequestId.current !== pending.requestId) return
+      if (!incoming.mounted.current || incoming.latestRequestId.current !== pending.requestId) return
       const resolution = resolvePendingLink(pending, picker, snapshot)
       applyRouteResolution(resolution, { analytics, incoming, selecting, setNavigation })
     })
