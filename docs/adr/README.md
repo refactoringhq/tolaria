@@ -294,3 +294,4 @@ proposed → active → superseded
 | [0296](0296-sharing-enforced-in-the-server-with-signed-access-tickets.md) | Sharing is enforced in the open server with signed, short-lived access tickets; share records stay with the front end | active |
 | [0297](0297-collaborator-attribution-in-co-authored-by-trailers.md) | Shared edits name their collaborators in Co-authored-by trailers; the identity comes from the access ticket | active |
 | [0299](0299-mobile-native-platform-chrome.md) | Mobile chrome follows native platform conventions while note content and type icons retain desktop parity | active |
+| [0300](0300-optimistic-mobile-workspace-writes-with-per-path-locks-and-rollback.md) | Optimistic mobile workspace writes use per-path locks and selective rollback (complements [0285](0285-mobile-disk-authoritative-note-editing-and-index-reconciliation.md)) | active |
