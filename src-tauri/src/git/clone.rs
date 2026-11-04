@@ -253,8 +253,6 @@ mod tests {
                 "protocol.file.allow=user".to_string(),
                 "-c".to_string(),
                 "core.fsmonitor=false".to_string(),
-                "-c".to_string(),
-                "core.sshCommand=ssh".to_string(),
                 "clone".to_string(),
                 "--quiet".to_string(),
                 "--".to_string(),
