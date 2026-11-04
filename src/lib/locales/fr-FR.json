@@ -1367,5 +1367,19 @@
   "sharing.status.viewer": "Partagé · Lecture seule",
   "sharing.readOnly.banner": "Lecture seule : vous pouvez lire cette note, mais vous ne pouvez pas la modifier.",
   "sharing.revoked.title": "Accès supprimé",
-  "sharing.revoked.description": "Cette note ou ce coffre-fort n'est plus partagé avec vous."
+  "sharing.revoked.description": "Cette note ou ce coffre-fort n'est plus partagé avec vous.",
+  "mobile.workspace.action.deleted": "Supprimé",
+  "mobile.workspace.action.archived": "Archivé",
+  "mobile.workspace.action.unarchived": "Restauré depuis l’archive",
+  "mobile.workspace.action.organized": "Organisé",
+  "mobile.workspace.action.unorganized": "Déplacé vers la boîte de réception",
+  "mobile.workspace.action.relationshipRemoved": "Relation supprimée",
+  "mobile.workspace.action.multiple": "Modifications mises à jour",
+  "mobile.workspace.actionFailure.deleted": "Impossible de supprimer la note. La note est toujours disponible.",
+  "mobile.workspace.actionFailure.archived": "Impossible d’archiver la note. Votre note est inchangée.",
+  "mobile.workspace.actionFailure.unarchived": "Impossible de restaurer la note. Votre note est inchangée.",
+  "mobile.workspace.actionFailure.organized": "Impossible d'organiser la note. Votre note est inchangée.",
+  "mobile.workspace.actionFailure.unorganized": "Impossible de déplacer la note vers la boîte de réception. Votre note est inchangée.",
+  "mobile.workspace.actionFailure.relationshipRemoved": "Impossible de supprimer la relation. Votre note est inchangée.",
+  "mobile.workspace.actionFailure.multiple": "Impossible d'enregistrer ces modifications. Vos notes sont inchangées."
 }

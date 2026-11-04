@@ -1367,5 +1367,19 @@
   "sharing.status.viewer": "Udostępnione · Tylko do wglądu",
   "sharing.readOnly.banner": "Tylko do wglądu: możesz przeczytać tę notatkę, ale nie możesz jej zmieniać.",
   "sharing.revoked.title": "Dostęp usunięty",
-  "sharing.revoked.description": "Ta notatka lub skarbiec nie są już z Tobą udostępniane."
+  "sharing.revoked.description": "Ta notatka lub skarbiec nie są już z Tobą udostępniane.",
+  "mobile.workspace.action.deleted": "Usunięto",
+  "mobile.workspace.action.archived": "Zarchiwizowano",
+  "mobile.workspace.action.unarchived": "Przywrócono z archiwum",
+  "mobile.workspace.action.organized": "Uporządkowane",
+  "mobile.workspace.action.unorganized": "Przeniesiono do skrzynki odbiorczej",
+  "mobile.workspace.action.relationshipRemoved": "Relacja została usunięta",
+  "mobile.workspace.action.multiple": "Zaktualizowano zmiany",
+  "mobile.workspace.actionFailure.deleted": "Nie udało się usunąć notatki. Notatka jest nadal dostępna.",
+  "mobile.workspace.actionFailure.archived": "Nie udało się zarchiwizować notatki. Twoja notatka pozostaje bez zmian.",
+  "mobile.workspace.actionFailure.unarchived": "Nie udało się przywrócić notatki. Twoja notatka pozostaje bez zmian.",
+  "mobile.workspace.actionFailure.organized": "Nie udało się uporządkować notatki. Twoja notatka pozostaje bez zmian.",
+  "mobile.workspace.actionFailure.unorganized": "Nie udało się przenieść notatki do Skrzynki odbiorczej. Twoja notatka pozostaje bez zmian.",
+  "mobile.workspace.actionFailure.relationshipRemoved": "Nie udało się usunąć relacji. Twoja notatka pozostaje bez zmian.",
+  "mobile.workspace.actionFailure.multiple": "Nie udało się zapisać tych zmian. Twoje notatki pozostają bez zmian."
 }
