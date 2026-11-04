@@ -15,20 +15,16 @@ pub(crate) fn check_cli() -> AiAgentAvailability {
 }
 
 pub(crate) fn find_binary() -> Result<PathBuf, String> {
-    if let Some(binary) = find_binary_on_path() {
-        return Ok(binary);
-    }
-    if let Some(binary) = find_binary_in_user_shell() {
-        return Ok(binary);
-    }
-    if let Some(binary) = crate::cli_agent_runtime::find_executable_binary_candidate(
+    crate::ai_agents::find_binary_with_fallbacks(
         antigravity_binary_candidates(),
         "Antigravity CLI",
-    )? {
-        return Ok(binary);
-    }
-
-    Err("Antigravity CLI not found. Install it: https://antigravity.google/docs/cli/install".into())
+        find_binary_on_path,
+        find_binary_in_user_shell,
+        || {
+            "Antigravity CLI not found. Install it: https://antigravity.google/docs/cli/install"
+                .into()
+        },
+    )
 }
 
 fn find_binary_on_path() -> Option<PathBuf> {

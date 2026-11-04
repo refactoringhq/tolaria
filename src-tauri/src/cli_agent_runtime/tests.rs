@@ -1,4 +1,5 @@
 use super::*;
+use crate::ai_agents::find_binary_with_fallbacks;
 
 #[test]
 fn build_prompt_keeps_system_prompt_first() {
@@ -91,6 +92,28 @@ fn executable_binary_candidate_skips_unusable_file_when_later_candidate_works() 
         find_executable_binary_candidate(vec![unusable, executable.clone()], "Codex CLI").unwrap();
 
     assert_eq!(found, Some(executable));
+}
+
+#[cfg(unix)]
+#[test]
+fn known_binary_candidate_is_checked_before_the_login_shell_fallback() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let dir = tempfile::tempdir().unwrap();
+    let executable = dir.path().join("agy");
+    std::fs::write(&executable, "#!/bin/sh\n").unwrap();
+    std::fs::set_permissions(&executable, std::fs::Permissions::from_mode(0o755)).unwrap();
+
+    let found = find_binary_with_fallbacks(
+        vec![executable.clone()],
+        "Antigravity CLI",
+        || None,
+        || panic!("known install paths must be checked before the login shell"),
+        || "not found".into(),
+    )
+    .unwrap();
+
+    assert_eq!(found, executable);
 }
 
 #[cfg(unix)]

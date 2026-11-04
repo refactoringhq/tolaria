@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use std::time::Duration;
 use tokio::task::JoinHandle;
 
-const AI_AGENT_STATUS_PROBE_TIMEOUT: Duration = Duration::from_secs(5);
+const AI_AGENT_STATUS_PROBE_TIMEOUT: Duration = Duration::from_secs(15);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -30,6 +31,27 @@ pub enum AiAgentPermissionMode {
 pub struct AiAgentAvailability {
     pub installed: bool,
     pub version: Option<String>,
+}
+
+pub(crate) fn find_binary_with_fallbacks(
+    candidates: Vec<PathBuf>,
+    label: &str,
+    path_lookup: impl FnOnce() -> Option<PathBuf>,
+    shell_lookup: impl FnOnce() -> Option<PathBuf>,
+    not_found: impl FnOnce() -> String,
+) -> Result<PathBuf, String> {
+    if let Some(binary) = path_lookup() {
+        return Ok(binary);
+    }
+    if let Some(binary) =
+        crate::cli_agent_runtime::find_executable_binary_candidate(candidates, label)?
+    {
+        return Ok(binary);
+    }
+    if let Some(binary) = shell_lookup() {
+        return Ok(binary);
+    }
+    Err(not_found())
 }
 
 #[derive(Debug, Clone, Serialize)]
