@@ -1367,5 +1367,19 @@
   "sharing.status.viewer": "Shared · View only",
   "sharing.readOnly.banner": "View only: you can read this note but not change it.",
   "sharing.revoked.title": "Access removed",
-  "sharing.revoked.description": "This note or vault is no longer shared with you."
+  "sharing.revoked.description": "This note or vault is no longer shared with you.",
+  "mobile.workspace.action.deleted": "Deleted",
+  "mobile.workspace.action.archived": "Archived",
+  "mobile.workspace.action.unarchived": "Restored from Archive",
+  "mobile.workspace.action.organized": "Organized",
+  "mobile.workspace.action.unorganized": "Moved to Inbox",
+  "mobile.workspace.action.relationshipRemoved": "Relationship removed",
+  "mobile.workspace.action.multiple": "Changes updated",
+  "mobile.workspace.actionFailure.deleted": "Could not delete note. The note is still available.",
+  "mobile.workspace.actionFailure.archived": "Could not archive note. Your note is unchanged.",
+  "mobile.workspace.actionFailure.unarchived": "Could not restore note. Your note is unchanged.",
+  "mobile.workspace.actionFailure.organized": "Could not organize note. Your note is unchanged.",
+  "mobile.workspace.actionFailure.unorganized": "Could not move note to Inbox. Your note is unchanged.",
+  "mobile.workspace.actionFailure.relationshipRemoved": "Could not remove relationship. Your note is unchanged.",
+  "mobile.workspace.actionFailure.multiple": "Could not save these changes. Your notes are unchanged."
 }

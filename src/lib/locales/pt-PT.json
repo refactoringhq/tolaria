@@ -1367,5 +1367,19 @@
   "sharing.status.viewer": "Partilhado · Apenas para leitura",
   "sharing.readOnly.banner": "Apenas leitura: pode ler esta nota, mas não pode alterá-la.",
   "sharing.revoked.title": "Acesso removido",
-  "sharing.revoked.description": "Esta nota ou vault já não está partilhada consigo."
+  "sharing.revoked.description": "Esta nota ou vault já não está partilhada consigo.",
+  "mobile.workspace.action.deleted": "Eliminado",
+  "mobile.workspace.action.archived": "Arquivado",
+  "mobile.workspace.action.unarchived": "Restaurado do arquivo",
+  "mobile.workspace.action.organized": "Organizado",
+  "mobile.workspace.action.unorganized": "Movido para a Caixa de entrada",
+  "mobile.workspace.action.relationshipRemoved": "Relação removida",
+  "mobile.workspace.action.multiple": "Alterações atualizadas",
+  "mobile.workspace.actionFailure.deleted": "Não foi possível eliminar a nota. A nota ainda está disponível.",
+  "mobile.workspace.actionFailure.archived": "Não foi possível arquivar a nota. A sua nota permanece inalterada.",
+  "mobile.workspace.actionFailure.unarchived": "Não foi possível restaurar a nota. A sua nota permanece inalterada.",
+  "mobile.workspace.actionFailure.organized": "Não foi possível organizar a nota. A sua nota permanece inalterada.",
+  "mobile.workspace.actionFailure.unorganized": "Não foi possível mover a nota para a Caixa de entrada. A sua nota permanece inalterada.",
+  "mobile.workspace.actionFailure.relationshipRemoved": "Não foi possível remover a relação. A sua nota não foi alterada.",
+  "mobile.workspace.actionFailure.multiple": "Não foi possível guardar estas alterações. As suas notas permanecem inalteradas."
 }

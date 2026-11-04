@@ -1,224 +1,311 @@
-import { describe, expect, it } from 'vitest'
-import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
-import { mobileNoteEditableContent } from '../workspace/mobileDocumentContent'
-import { applyMobileWorkspaceEdit, type MobileWorkspaceEdit } from '../workspace/mobileWorkspaceEditing'
+import { describe, expect, it } from "vitest";
+import { workspaceScenarioForId } from "../fixtures/workspaceFixtures";
+import { mobileNoteEditableContent } from "../workspace/mobileDocumentContent";
 import {
-  emptyMobileWorkspaceHistory,
-  mobileWorkspaceHistoryEntry,
-  recordMobileWorkspaceHistory,
-} from './tabletWorkspaceHistory'
+	applyMobileWorkspaceEdit,
+	type MobileWorkspaceEdit,
+} from "../workspace/mobileWorkspaceEditing";
 import {
-  snapshotWithEditableNote,
-  relationshipTargetHistorySnapshot,
-  noteById,
-  noteByIdOptional,
-  requiredHistoryEntry,
-  applyHistoryEdits,
-  historyRoundTripWithWrites,
-  neverEdit,
-  isUpdateNoteContentEdit,
-} from './tabletWorkspaceHistoryTestFixtures'
+	emptyMobileWorkspaceHistory,
+	mobileWorkspaceHistoryEntry,
+	recordMobileWorkspaceHistory,
+} from "./tabletWorkspaceHistory";
+import {
+	applyHistoryEdits,
+	historyRoundTripWithWrites,
+	isUpdateNoteContentEdit,
+	neverEdit,
+	noteById,
+	noteByIdOptional,
+	relationshipTargetHistorySnapshot,
+	requiredHistoryEntry,
+	snapshotWithEditableNote,
+} from "./tabletWorkspaceHistoryTestFixtures";
 
-describe('tablet workspace editing history', () => {
-  it('records reversible markdown content edits from workspace snapshots', () => {
-    const originalContent = '# Workflow Orchestration Essay\n\nOriginal body.\n'
-    const previousSnapshot = snapshotWithEditableNote({
-      id: 'workflow-orchestration',
-      rawContent: originalContent,
-    })
-    const nextContent = '# Workflow Orchestration Essay\n\nUpdated body.\n'
-    const nextSnapshot = applyMobileWorkspaceEdit(previousSnapshot, {
-      content: nextContent,
-      noteId: 'workflow-orchestration',
-      type: 'updateNoteContent',
-    })
+describe("tablet workspace editing history", () => {
+	it("offers byte-exact delete restoration with an undo feedback action", () => {
+		const rawContent =
+			"---\ntitle: Exact restore\ntags: [one]\n---\nBody stays byte exact.\n";
+		const previousSnapshot = snapshotWithEditableNote({
+			id: "workflow-orchestration",
+			rawContent,
+		});
+		const deletion = {
+			noteId: "workflow-orchestration",
+			type: "deleteNote" as const,
+		};
+		const nextSnapshot = applyMobileWorkspaceEdit(previousSnapshot, deletion);
+		const entry = mobileWorkspaceHistoryEntry(
+			previousSnapshot,
+			nextSnapshot,
+			deletion,
+		);
+		expect(entry?.feedbackAction).toBe("deleted");
+		expect(entry).not.toBeNull();
+		const restoredSnapshot = applyMobileWorkspaceEdit(nextSnapshot, {
+			edits: entry?.undoEdits ?? [],
+			type: "bulkEdit",
+		});
+		expect(
+			noteById(restoredSnapshot, "workflow-orchestration").rawContent,
+		).toBe(rawContent);
+	});
 
-    const entry = mobileWorkspaceHistoryEntry(previousSnapshot, nextSnapshot)
+	it("records reversible markdown content edits from workspace snapshots", () => {
+		const originalContent =
+			"# Workflow Orchestration Essay\n\nOriginal body.\n";
+		const previousSnapshot = snapshotWithEditableNote({
+			id: "workflow-orchestration",
+			rawContent: originalContent,
+		});
+		const nextContent = "# Workflow Orchestration Essay\n\nUpdated body.\n";
+		const nextSnapshot = applyMobileWorkspaceEdit(previousSnapshot, {
+			content: nextContent,
+			noteId: "workflow-orchestration",
+			type: "updateNoteContent",
+		});
 
-    expect(entry).toEqual({
-      redoEdits: [{ content: nextContent, noteId: 'workflow-orchestration', type: 'updateNoteContent' }],
-      undoEdits: [{ content: originalContent, noteId: 'workflow-orchestration', type: 'updateNoteContent' }],
-    })
-    expect(
-      noteById(applyMobileWorkspaceEdit(nextSnapshot, entry?.undoEdits[0] ?? neverEdit()), 'workflow-orchestration')
-        .rawContent,
-    ).toBe(originalContent)
-  })
+		const entry = mobileWorkspaceHistoryEntry(previousSnapshot, nextSnapshot);
 
-  it('records text file edits without converting them into markdown notes', () => {
-    const previousSnapshot = snapshotWithEditableNote({
-      fileKind: 'text',
-      id: 'workflow-orchestration',
-      rawContent: 'plain=true\n',
-    })
-    const nextSnapshot = applyMobileWorkspaceEdit(previousSnapshot, {
-      content: 'plain=false\n',
-      noteId: 'workflow-orchestration',
-      type: 'updateTextFileContent',
-    })
+		expect(entry).toEqual({
+			redoEdits: [
+				{
+					content: nextContent,
+					noteId: "workflow-orchestration",
+					type: "updateNoteContent",
+				},
+			],
+			undoEdits: [
+				{
+					content: originalContent,
+					noteId: "workflow-orchestration",
+					type: "updateNoteContent",
+				},
+			],
+		});
+		expect(
+			noteById(
+				applyMobileWorkspaceEdit(
+					nextSnapshot,
+					entry?.undoEdits[0] ?? neverEdit(),
+				),
+				"workflow-orchestration",
+			).rawContent,
+		).toBe(originalContent);
+	});
 
-    const entry = mobileWorkspaceHistoryEntry(previousSnapshot, nextSnapshot)
+	it("records text file edits without converting them into markdown notes", () => {
+		const previousSnapshot = snapshotWithEditableNote({
+			fileKind: "text",
+			id: "workflow-orchestration",
+			rawContent: "plain=true\n",
+		});
+		const nextSnapshot = applyMobileWorkspaceEdit(previousSnapshot, {
+			content: "plain=false\n",
+			noteId: "workflow-orchestration",
+			type: "updateTextFileContent",
+		});
 
-    expect(entry?.undoEdits).toEqual([
-      { content: 'plain=true\n', noteId: 'workflow-orchestration', type: 'updateTextFileContent' },
-    ])
-    expect(entry?.redoEdits).toEqual([
-      { content: 'plain=false\n', noteId: 'workflow-orchestration', type: 'updateTextFileContent' },
-    ])
-  })
+		const entry = mobileWorkspaceHistoryEntry(previousSnapshot, nextSnapshot);
 
-  it('records fixture editor-block edits when raw content has not been hydrated yet', () => {
-    const previousSnapshot = workspaceScenarioForId('default')
-    const selectedNote = noteById(previousSnapshot, 'workflow-orchestration')
-    const content = mobileNoteEditableContent({
-      ...selectedNote,
-      editorBlocks: previousSnapshot.editorBlocks,
-      editorBullets: previousSnapshot.editorBullets,
-    })
-    const nextContent = content.replace('lower-priority', 'quiet')
-    const edit = {
-      content: nextContent,
-      noteId: 'workflow-orchestration',
-      type: 'updateNoteContent',
-    } as const
-    const nextSnapshot = applyMobileWorkspaceEdit(previousSnapshot, edit)
+		expect(entry?.undoEdits).toEqual([
+			{
+				content: "plain=true\n",
+				noteId: "workflow-orchestration",
+				type: "updateTextFileContent",
+			},
+		]);
+		expect(entry?.redoEdits).toEqual([
+			{
+				content: "plain=false\n",
+				noteId: "workflow-orchestration",
+				type: "updateTextFileContent",
+			},
+		]);
+	});
 
-    const entry = mobileWorkspaceHistoryEntry(previousSnapshot, nextSnapshot, edit)
+	it("records fixture editor-block edits when raw content has not been hydrated yet", () => {
+		const previousSnapshot = workspaceScenarioForId("default");
+		const selectedNote = noteById(previousSnapshot, "workflow-orchestration");
+		const content = mobileNoteEditableContent({
+			...selectedNote,
+			editorBlocks: previousSnapshot.editorBlocks,
+			editorBullets: previousSnapshot.editorBullets,
+		});
+		const nextContent = content.replace("lower-priority", "quiet");
+		const edit = {
+			content: nextContent,
+			noteId: "workflow-orchestration",
+			type: "updateNoteContent",
+		} as const;
+		const nextSnapshot = applyMobileWorkspaceEdit(previousSnapshot, edit);
 
-    const undoEdit = entry?.undoEdits.find(isUpdateNoteContentEdit)
-    const redoEdit = entry?.redoEdits.find(isUpdateNoteContentEdit)
+		const entry = mobileWorkspaceHistoryEntry(
+			previousSnapshot,
+			nextSnapshot,
+			edit,
+		);
 
-    expect(undoEdit).toMatchObject({
-      noteId: 'workflow-orchestration',
-      type: 'updateNoteContent',
-    })
-    expect(undoEdit?.content).toContain('lower-priority chrome')
-    expect(redoEdit?.content).toContain('quiet chrome')
-  })
+		const undoEdit = entry?.undoEdits.find(isUpdateNoteContentEdit);
+		const redoEdit = entry?.redoEdits.find(isUpdateNoteContentEdit);
 
-  it('does not record hydration or structural edits without stable loaded content', () => {
-    const previousSnapshot = workspaceScenarioForId('default')
-    const hydratedSnapshot = applyMobileWorkspaceEdit(previousSnapshot, {
-      noteId: 'workflow-orchestration',
-      rawContent: '# Workflow Orchestration Essay\n\nLoaded body.\n',
-      type: 'hydrateNoteContent',
-    })
-    const renamedSnapshot = applyMobileWorkspaceEdit(
-      snapshotWithEditableNote({
-        id: 'workflow-orchestration',
-        rawContent: '# Workflow Orchestration Essay\n\nLoaded body.\n',
-      }),
-      {
-        filenameStem: 'renamed-workflow',
-        noteId: 'workflow-orchestration',
-        type: 'renameNoteFile',
-      },
-    )
+		expect(undoEdit).toMatchObject({
+			noteId: "workflow-orchestration",
+			type: "updateNoteContent",
+		});
+		expect(undoEdit?.content).toContain("lower-priority chrome");
+		expect(redoEdit?.content).toContain("quiet chrome");
+	});
 
-    expect(
-      mobileWorkspaceHistoryEntry(previousSnapshot, hydratedSnapshot, {
-        noteId: 'workflow-orchestration',
-        rawContent: '# Workflow Orchestration Essay\n\nLoaded body.\n',
-        type: 'hydrateNoteContent',
-      }),
-    ).toBeNull()
-    expect(mobileWorkspaceHistoryEntry(previousSnapshot, renamedSnapshot)).toBeNull()
-  })
+	it("does not record hydration or structural edits without stable loaded content", () => {
+		const previousSnapshot = workspaceScenarioForId("default");
+		const hydratedSnapshot = applyMobileWorkspaceEdit(previousSnapshot, {
+			noteId: "workflow-orchestration",
+			rawContent: "# Workflow Orchestration Essay\n\nLoaded body.\n",
+			type: "hydrateNoteContent",
+		});
+		const renamedSnapshot = applyMobileWorkspaceEdit(
+			snapshotWithEditableNote({
+				id: "workflow-orchestration",
+				rawContent: "# Workflow Orchestration Essay\n\nLoaded body.\n",
+			}),
+			{
+				filenameStem: "renamed-workflow",
+				noteId: "workflow-orchestration",
+				type: "renameNoteFile",
+			},
+		);
 
-  it('appends new edits to the past stack and clears redo history', () => {
-    const entry = {
-      redoEdits: [{ content: 'next', noteId: 'workflow-orchestration', type: 'updateNoteContent' as const }],
-      undoEdits: [{ content: 'previous', noteId: 'workflow-orchestration', type: 'updateNoteContent' as const }],
-    }
-    const history = recordMobileWorkspaceHistory(
-      {
-        future: [entry],
-        past: [],
-      },
-      entry,
-    )
+		expect(
+			mobileWorkspaceHistoryEntry(previousSnapshot, hydratedSnapshot, {
+				noteId: "workflow-orchestration",
+				rawContent: "# Workflow Orchestration Essay\n\nLoaded body.\n",
+				type: "hydrateNoteContent",
+			}),
+		).toBeNull();
+		expect(
+			mobileWorkspaceHistoryEntry(previousSnapshot, renamedSnapshot),
+		).toBeNull();
+	});
 
-    expect(history).toEqual({
-      future: [],
-      past: [entry],
-    })
-    expect(recordMobileWorkspaceHistory(emptyMobileWorkspaceHistory, null)).toBe(emptyMobileWorkspaceHistory)
-  })
+	it("appends new edits to the past stack and clears redo history", () => {
+		const entry = {
+			redoEdits: [
+				{
+					content: "next",
+					noteId: "workflow-orchestration",
+					type: "updateNoteContent" as const,
+				},
+			],
+			undoEdits: [
+				{
+					content: "previous",
+					noteId: "workflow-orchestration",
+					type: "updateNoteContent" as const,
+				},
+			],
+		};
+		const history = recordMobileWorkspaceHistory(
+			{
+				future: [entry],
+				past: [],
+			},
+			entry,
+		);
 
-  it('undoes and redoes created notes with the exact created markdown', () => {
-    const previousSnapshot = workspaceScenarioForId('default')
-    const nextSnapshot = applyMobileWorkspaceEdit(previousSnapshot, {
-      title: 'Mobile Structural History',
-      type: 'createNote',
-    })
-    const entry = requiredHistoryEntry(previousSnapshot, nextSnapshot, {
-      title: 'Mobile Structural History',
-      type: 'createNote',
-    })
+		expect(history).toEqual({
+			future: [],
+			past: [entry],
+		});
+		expect(
+			recordMobileWorkspaceHistory(emptyMobileWorkspaceHistory, null),
+		).toBe(emptyMobileWorkspaceHistory);
+	});
 
-    const undoneSnapshot = applyHistoryEdits(nextSnapshot, entry.undoEdits)
-    const redoneSnapshot = applyHistoryEdits(undoneSnapshot, entry.redoEdits)
+	it("undoes and redoes created notes with the exact created markdown", () => {
+		const previousSnapshot = workspaceScenarioForId("default");
+		const nextSnapshot = applyMobileWorkspaceEdit(previousSnapshot, {
+			title: "Mobile Structural History",
+			type: "createNote",
+		});
+		const entry = requiredHistoryEntry(previousSnapshot, nextSnapshot, {
+			title: "Mobile Structural History",
+			type: "createNote",
+		});
 
-    expect(noteByIdOptional(undoneSnapshot, 'mobile-structural-history.md')).toBeNull()
-    expect(noteById(redoneSnapshot, 'mobile-structural-history.md').rawContent).toBe(
-      '---\ntitle: Mobile Structural History\ntype: Note\n---\n',
-    )
-  })
+		const undoneSnapshot = applyHistoryEdits(nextSnapshot, entry.undoEdits);
+		const redoneSnapshot = applyHistoryEdits(undoneSnapshot, entry.redoEdits);
 
-  it('undoes and redoes relationship target creation as one command', () => {
-    const previousSnapshot = relationshipTargetHistorySnapshot()
-    const edit: MobileWorkspaceEdit = {
-      key: 'related_to',
-      sourceNoteId: 'workflow-orchestration',
-      targetTitle: 'New Dependency',
-      type: 'createRelationshipTarget',
-    }
-    const nextSnapshot = applyMobileWorkspaceEdit(previousSnapshot, edit)
-    const entry = requiredHistoryEntry(previousSnapshot, nextSnapshot, edit)
-    const undoneSnapshot = applyHistoryEdits(nextSnapshot, entry.undoEdits)
-    const redoneSnapshot = applyHistoryEdits(undoneSnapshot, entry.redoEdits)
+		expect(
+			noteByIdOptional(undoneSnapshot, "mobile-structural-history.md"),
+		).toBeNull();
+		expect(
+			noteById(redoneSnapshot, "mobile-structural-history.md").rawContent,
+		).toBe("---\ntitle: Mobile Structural History\ntype: Note\n---\n");
+	});
 
-    expect(noteByIdOptional(undoneSnapshot, 'Tolaria/Mobile UI/new-dependency.md')).toBeNull()
-    expect(noteById(undoneSnapshot, 'workflow-orchestration').rawContent).toBe(
-      '# Workflow Orchestration Essay\n\nSource body.\n',
-    )
-    expect(noteById(redoneSnapshot, 'Tolaria/Mobile UI/new-dependency.md').rawContent).toBe(
-      '---\ntitle: New Dependency\ntype: Note\n---\n',
-    )
-    expect(noteById(redoneSnapshot, 'workflow-orchestration').rawContent).toContain(
-      'related_to:\n  - "[[Tolaria/Mobile UI/new-dependency]]"',
-    )
-  })
+	it("undoes and redoes relationship target creation as one command", () => {
+		const previousSnapshot = relationshipTargetHistorySnapshot();
+		const edit: MobileWorkspaceEdit = {
+			key: "related_to",
+			sourceNoteId: "workflow-orchestration",
+			targetTitle: "New Dependency",
+			type: "createRelationshipTarget",
+		};
+		const nextSnapshot = applyMobileWorkspaceEdit(previousSnapshot, edit);
+		const entry = requiredHistoryEntry(previousSnapshot, nextSnapshot, edit);
+		const undoneSnapshot = applyHistoryEdits(nextSnapshot, entry.undoEdits);
+		const redoneSnapshot = applyHistoryEdits(undoneSnapshot, entry.redoEdits);
 
-  it('persists relationship target undo and redo write plans', () => {
-    const sourcePath = 'Tolaria/Mobile UI/Workflow Orchestration Essay.md'
-    const targetPath = 'Tolaria/Mobile UI/new-dependency.md'
-    const { redoWrites, undoWrites } = historyRoundTripWithWrites(relationshipTargetHistorySnapshot(), {
-      key: 'related_to',
-      sourceNoteId: 'workflow-orchestration',
-      targetTitle: 'New Dependency',
-      type: 'createRelationshipTarget',
-    })
+		expect(
+			noteByIdOptional(undoneSnapshot, "Tolaria/Mobile UI/new-dependency.md"),
+		).toBeNull();
+		expect(noteById(undoneSnapshot, "workflow-orchestration").rawContent).toBe(
+			"# Workflow Orchestration Essay\n\nSource body.\n",
+		);
+		expect(
+			noteById(redoneSnapshot, "Tolaria/Mobile UI/new-dependency.md")
+				.rawContent,
+		).toBe("---\ntitle: New Dependency\ntype: Note\n---\n");
+		expect(
+			noteById(redoneSnapshot, "workflow-orchestration").rawContent,
+		).toContain('related_to:\n  - "[[Tolaria/Mobile UI/new-dependency]]"');
+	});
 
-    expect(undoWrites).toEqual([
-      {
-        content: '# Workflow Orchestration Essay\n\nSource body.\n',
-        kind: 'saveNote',
-        path: sourcePath,
-      },
-      { kind: 'deleteNote', path: targetPath },
-    ])
-    expect(redoWrites).toEqual([
-      {
-        content: expect.stringContaining('related_to:\n  - "[[Tolaria/Mobile UI/new-dependency]]"'),
-        kind: 'saveNote',
-        path: sourcePath,
-      },
-      {
-        content: '---\ntitle: New Dependency\ntype: Note\n---\n',
-        kind: 'createNote',
-        path: targetPath,
-      },
-    ])
-  })
-})
+	it("persists relationship target undo and redo write plans", () => {
+		const sourcePath = "Tolaria/Mobile UI/Workflow Orchestration Essay.md";
+		const targetPath = "Tolaria/Mobile UI/new-dependency.md";
+		const { redoWrites, undoWrites } = historyRoundTripWithWrites(
+			relationshipTargetHistorySnapshot(),
+			{
+				key: "related_to",
+				sourceNoteId: "workflow-orchestration",
+				targetTitle: "New Dependency",
+				type: "createRelationshipTarget",
+			},
+		);
+
+		expect(undoWrites).toEqual([
+			{
+				content: "# Workflow Orchestration Essay\n\nSource body.\n",
+				kind: "saveNote",
+				path: sourcePath,
+			},
+			{ kind: "deleteNote", path: targetPath },
+		]);
+		expect(redoWrites).toEqual([
+			{
+				content: expect.stringContaining(
+					'related_to:\n  - "[[Tolaria/Mobile UI/new-dependency]]"',
+				),
+				kind: "saveNote",
+				path: sourcePath,
+			},
+			{
+				content: "---\ntitle: New Dependency\ntype: Note\n---\n",
+				kind: "createNote",
+				path: targetPath,
+			},
+		]);
+	});
+});

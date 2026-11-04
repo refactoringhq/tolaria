@@ -1367,5 +1367,19 @@
   "sharing.status.viewer": "Condiviso · Solo visualizzazione",
   "sharing.readOnly.banner": "Sola visualizzazione: puoi leggere questa nota ma non modificarla.",
   "sharing.revoked.title": "Accesso rimosso",
-  "sharing.revoked.description": "Questa nota o questo vault non sono più condivisi con te."
+  "sharing.revoked.description": "Questa nota o questo vault non sono più condivisi con te.",
+  "mobile.workspace.action.deleted": "Eliminato",
+  "mobile.workspace.action.archived": "Archiviato",
+  "mobile.workspace.action.unarchived": "Ripristinato dall'archivio",
+  "mobile.workspace.action.organized": "Organizzato",
+  "mobile.workspace.action.unorganized": "Spostato nella Posta in arrivo",
+  "mobile.workspace.action.relationshipRemoved": "Relazione rimossa",
+  "mobile.workspace.action.multiple": "Modifiche aggiornate",
+  "mobile.workspace.actionFailure.deleted": "Impossibile eliminare la nota. La nota è ancora disponibile.",
+  "mobile.workspace.actionFailure.archived": "Impossibile archiviare la nota. La tua nota è rimasta invariata.",
+  "mobile.workspace.actionFailure.unarchived": "Impossibile ripristinare la nota. La tua nota è rimasta invariata.",
+  "mobile.workspace.actionFailure.organized": "Impossibile organizzare la nota. La tua nota è rimasta invariata.",
+  "mobile.workspace.actionFailure.unorganized": "Impossibile spostare la nota nella Inbox. La tua nota è rimasta invariata.",
+  "mobile.workspace.actionFailure.relationshipRemoved": "Impossibile rimuovere la relazione. La tua nota è rimasta invariata.",
+  "mobile.workspace.actionFailure.multiple": "Impossibile salvare queste modifiche. Le tue note sono rimaste invariate."
 }

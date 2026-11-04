@@ -6,14 +6,24 @@ import { MobileButton } from "../../ui/MobileButton";
 import type { MobileMetrics } from "../../ui/mobileMetrics";
 import type { MobileColors } from "../../ui/theme/mobilePalette";
 import { useMobileStyles } from "../../ui/theme/useMobileTheme";
+import type { MobileWorkspaceActionFeedback } from "../../workspace/mobileWorkspaceActionFeedback";
 import type { MobileSyncStatus } from "../../workspace/mobileWorkspaceModel";
 import { Text } from "../ui/text";
 import { MobileListMotion } from "./MobileSwipeableNoteRow";
 
 export function MobileWorkspaceEditNotice({
+	failedAction,
+	undo,
+	undoFeedback,
 	retry,
 	sync,
 }: {
+	failedAction?: MobileWorkspaceActionFeedback | null;
+	undo?: () => void;
+	undoFeedback?: {
+		action: MobileWorkspaceActionFeedback;
+		id: object;
+	} | null;
 	retry?: () => void;
 	sync?: MobileSyncStatus;
 }) {
@@ -22,6 +32,16 @@ export function MobileWorkspaceEditNotice({
 	const saveFailure = sync?.kind === "writeFailed";
 	const failed = Boolean(retry) && !saveFailure;
 	const saveFailed = useSaveFailureToast(sync, Boolean(retry));
+	const [dismissedUndo, setDismissedUndo] = useState<object | null>(null);
+	const undoFeedbackId = undoFeedback?.id;
+	const showUndo = Boolean(
+		undo && undoFeedbackId && !saveFailure && dismissedUndo !== undoFeedbackId,
+	);
+	useEffect(() => {
+		if (!showUndo || !undoFeedbackId) return;
+		const timeout = setTimeout(() => setDismissedUndo(undoFeedbackId), 4000);
+		return () => clearTimeout(timeout);
+	}, [showUndo, undoFeedbackId]);
 	useEffect(() => {
 		if (failed)
 			AccessibilityInfo.announceForAccessibility(
@@ -29,10 +49,14 @@ export function MobileWorkspaceEditNotice({
 			);
 		else if (saveFailure)
 			AccessibilityInfo.announceForAccessibility(
-				mobileText("mobile.vaults.saveFailed"),
+				mobileText(
+					failedAction
+						? actionFailureMessage(failedAction)
+						: "mobile.vaults.saveFailed",
+				),
 			);
-	}, [failed, saveFailure]);
-	if (!retry && !saveFailed) return null;
+	}, [failed, failedAction, saveFailure]);
+	if (!retry && !saveFailed && !showUndo) return null;
 	return (
 		<MobileListMotion
 			pointerEvents="box-none"
@@ -46,9 +70,25 @@ export function MobileWorkspaceEditNotice({
 				<View style={styles.notice} testID="workspace-edit-notice">
 					<Text accessibilityLiveRegion="polite" style={styles.message}>
 						{mobileText(
-							failed ? "mobile.editor.readFailed" : "mobile.vaults.saveFailed",
+							failed
+								? "mobile.editor.readFailed"
+								: saveFailed && failedAction
+									? actionFailureMessage(failedAction)
+									: saveFailed
+										? "mobile.vaults.saveFailed"
+										: undoFeedback
+											? actionFeedbackMessage(undoFeedback.action)
+											: "mobile.vaults.saveFailed",
 						)}
 					</Text>
+					{showUndo ? (
+						<MobileButton
+							label={mobileText("command.note.undo")}
+							onPress={() => undo?.()}
+							testID="workspace-action-undo-toast"
+							variant="ghost"
+						/>
+					) : null}
 					{retry ? (
 						<MobileButton
 							label={mobileText("pulse.retry")}
@@ -61,6 +101,14 @@ export function MobileWorkspaceEditNotice({
 			</View>
 		</MobileListMotion>
 	);
+}
+
+function actionFeedbackMessage(action: MobileWorkspaceActionFeedback) {
+	return `mobile.workspace.action.${action}` as const;
+}
+
+function actionFailureMessage(action: MobileWorkspaceActionFeedback) {
+	return `mobile.workspace.actionFailure.${action}` as const;
 }
 
 function useSaveFailureToast(
