@@ -110,3 +110,84 @@ fn executable_binary_candidate_reports_unusable_file_when_no_candidate_works() {
     assert!(error.contains(&unusable.display().to_string()));
     assert!(error.contains("not executable"));
 }
+
+#[test]
+fn cli_binary_resolution_stops_at_known_locations_before_spawning_the_login_shell() {
+    let lookups = std::cell::RefCell::new(Vec::new());
+    let candidate = PathBuf::from("/Users/alex/.local/bin/agy");
+
+    let resolved = resolve_cli_binary(
+        || {
+            lookups.borrow_mut().push("path");
+            None
+        },
+        || {
+            lookups.borrow_mut().push("candidates");
+            Ok(Some(candidate.clone()))
+        },
+        || {
+            lookups.borrow_mut().push("shell");
+            None
+        },
+        "Antigravity CLI",
+        "https://antigravity.google/docs/cli/install",
+    )
+    .unwrap();
+
+    assert_eq!(resolved, candidate);
+    assert_eq!(lookups.into_inner(), ["path", "candidates"]);
+}
+
+#[test]
+fn cli_binary_resolution_falls_back_to_the_login_shell_last() {
+    let lookups = std::cell::RefCell::new(Vec::new());
+    let from_shell = PathBuf::from("/Users/alex/bin/agy");
+
+    let resolved = resolve_cli_binary(
+        || {
+            lookups.borrow_mut().push("path");
+            None
+        },
+        || {
+            lookups.borrow_mut().push("candidates");
+            Ok(None)
+        },
+        || {
+            lookups.borrow_mut().push("shell");
+            Some(from_shell.clone())
+        },
+        "Antigravity CLI",
+        "https://antigravity.google/docs/cli/install",
+    )
+    .unwrap();
+
+    assert_eq!(resolved, from_shell);
+    assert_eq!(lookups.into_inner(), ["path", "candidates", "shell"]);
+}
+
+#[test]
+fn cli_binary_resolution_reports_an_unusable_candidate_only_when_nothing_else_matches() {
+    let from_shell = PathBuf::from("/opt/homebrew/bin/agy");
+    let not_executable =
+        "Antigravity CLI binary found at /Users/alex/.local/bin/agy but it is not executable.";
+
+    let resolved = resolve_cli_binary(
+        || None,
+        || Err(not_executable.into()),
+        || Some(from_shell.clone()),
+        "Antigravity CLI",
+        "https://antigravity.google/docs/cli/install",
+    )
+    .unwrap();
+    assert_eq!(resolved, from_shell);
+
+    let error = resolve_cli_binary(
+        || None,
+        || Err(not_executable.into()),
+        || None,
+        "Antigravity CLI",
+        "https://antigravity.google/docs/cli/install",
+    )
+    .unwrap_err();
+    assert!(error.contains("not executable"));
+}

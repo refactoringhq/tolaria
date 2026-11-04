@@ -146,6 +146,54 @@ describe('useAiAgentsStatus', () => {
       expect(mockInvoke).not.toHaveBeenCalled()
     })
 
+    it('retries a timed-out probe before marking every agent missing', async () => {
+      mockInvoke.mockReturnValue(new Promise(() => {}))
+
+      const { result } = renderHook(() => useAiAgentsStatus({ enabled: true }))
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+      expect(mockInvoke).toHaveBeenCalledTimes(1)
+      expectStatuses(result.current, 'checking')
+
+      // First timeout: the probe is retried instead of blanking the agent list,
+      // because a slow binary lookup is not the same thing as an absent CLI.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(AI_AGENTS_STATUS_PROBE_TIMEOUT_MS + 1)
+      })
+      expect(mockInvoke).toHaveBeenCalledTimes(2)
+      expectStatuses(result.current, 'checking')
+
+      // Second timeout: give up.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(AI_AGENTS_STATUS_PROBE_TIMEOUT_MS + 1)
+      })
+      expectStatuses(result.current, 'missing')
+    })
+
+    it('recovers when the retried probe resolves', async () => {
+      mockInvoke
+        .mockReturnValueOnce(new Promise(() => {}))
+        .mockResolvedValueOnce(installedStatusResponse())
+
+      const { result } = renderHook(() => useAiAgentsStatus({ enabled: true }))
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(AI_AGENTS_STATUS_PROBE_TIMEOUT_MS + 1)
+      })
+
+      expect(result.current.claude_code).toEqual({ status: 'installed', version: '1.0.20' })
+      expect(result.current.antigravity).toEqual({
+        status: 'installed',
+        version: 'Antigravity CLI 1.0.0',
+      })
+    })
+
     it('falls back to missing when the status probe never resolves', async () => {
       mockInvoke.mockReturnValue(new Promise(() => {}))
 
@@ -157,9 +205,11 @@ describe('useAiAgentsStatus', () => {
       expect(mockInvoke).toHaveBeenCalledWith('get_ai_agents_status')
       expectStatuses(result.current, 'checking')
 
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(AI_AGENTS_STATUS_PROBE_TIMEOUT_MS + 1)
-      })
+      for (let attempt = 1; attempt <= 2; attempt += 1) {
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(AI_AGENTS_STATUS_PROBE_TIMEOUT_MS + 1)
+        })
+      }
 
       expectStatuses(result.current, 'missing')
     })

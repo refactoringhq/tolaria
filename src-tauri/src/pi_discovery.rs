@@ -19,18 +19,26 @@ pub(crate) fn find_binary() -> Result<PathBuf, String> {
         return Ok(binary);
     }
 
+    // Known install locations are stat calls; the login shell evaluates the user's
+    // startup files and can take seconds, so it stays the last resort. A candidate
+    // that exists but is not executable must not hide a binary only the shell finds.
+    let unusable_candidate = match crate::cli_agent_runtime::find_executable_binary_candidate(
+        pi_binary_candidates(),
+        "Pi CLI",
+    ) {
+        Ok(Some(binary)) => return Ok(binary),
+        Ok(None) => None,
+        Err(error) => Some(error),
+    };
+
     if let Some(binary) = find_binary_in_user_shell() {
         return Ok(binary);
     }
 
-    if let Some(binary) = crate::cli_agent_runtime::find_executable_binary_candidate(
-        pi_binary_candidates(),
-        "Pi CLI",
-    )? {
-        return Ok(binary);
+    match unusable_candidate {
+        Some(error) => Err(error),
+        None => Err("Pi CLI not found. Install it: https://pi.dev".into()),
     }
-
-    Err("Pi CLI not found. Install it: https://pi.dev".into())
 }
 
 fn find_binary_on_path() -> Option<PathBuf> {

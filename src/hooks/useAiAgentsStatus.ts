@@ -13,6 +13,15 @@ type RawAiAgentsStatus = Partial<Record<AiAgentId, { installed?: boolean | null;
 
 export const AI_AGENTS_STATUS_PROBE_TIMEOUT_MS = 5000
 
+/**
+ * How many probe attempts are allowed before every agent is reported missing.
+ * A timed-out probe is usually a slow binary lookup (a login shell evaluating
+ * the user's startup files), not an absent CLI, so one retry keeps a single
+ * slow pass from blanking the agent list for the rest of the session — the
+ * effect only re-runs when `enabled` changes.
+ */
+const AI_AGENTS_STATUS_PROBE_MAX_ATTEMPTS = 2
+
 interface UseAiAgentsStatusOptions {
   /**
    * When false, the hook stays in its initial state and never calls the
@@ -74,13 +83,18 @@ export function useAiAgentsStatus(options?: UseAiAgentsStatusOptions): AiAgentsS
       timeoutId = null
     }
 
-    const fire = () => {
+    const fire = (attempt = 1) => {
       if (cancelled) return
 
       timeoutId = setTimeout(() => {
-        if (!cancelled) {
-          setStatuses(createMissingAiAgentsStatus())
+        if (cancelled) return
+
+        if (attempt < AI_AGENTS_STATUS_PROBE_MAX_ATTEMPTS) {
+          fire(attempt + 1)
+          return
         }
+
+        setStatuses(createMissingAiAgentsStatus())
       }, AI_AGENTS_STATUS_PROBE_TIMEOUT_MS)
 
       tauriCall<RawAiAgentsStatus>('get_ai_agents_status')

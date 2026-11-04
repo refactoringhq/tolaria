@@ -90,18 +90,28 @@ fn find_codex_binary() -> Result<PathBuf, String> {
         return Ok(binary);
     }
 
+    // Known install locations are stat calls; the login shell evaluates the user's
+    // startup files and can take seconds, so it stays the last resort. A candidate
+    // that exists but is not executable must not hide a binary only the shell finds.
+    let unusable_candidate = match crate::cli_agent_runtime::find_executable_binary_candidate(
+        codex_binary_candidates(),
+        "Codex CLI",
+    ) {
+        Ok(Some(binary)) => return Ok(binary),
+        Ok(None) => None,
+        Err(error) => Some(error),
+    };
+
     if let Some(binary) = find_codex_binary_in_user_shell() {
         return Ok(binary);
     }
 
-    if let Some(binary) = crate::cli_agent_runtime::find_executable_binary_candidate(
-        codex_binary_candidates(),
-        "Codex CLI",
-    )? {
-        return Ok(binary);
+    match unusable_candidate {
+        Some(error) => Err(error),
+        None => {
+            Err("Codex CLI not found. Install it: https://developers.openai.com/codex/cli".into())
+        }
     }
-
-    Err("Codex CLI not found. Install it: https://developers.openai.com/codex/cli".into())
 }
 
 fn codex_availability_from_binary_result(

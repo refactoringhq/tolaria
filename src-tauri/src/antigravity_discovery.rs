@@ -18,17 +18,29 @@ pub(crate) fn find_binary() -> Result<PathBuf, String> {
     if let Some(binary) = find_binary_on_path() {
         return Ok(binary);
     }
+    // Known install locations are stat calls; the login shell evaluates the user's
+    // startup files and can take seconds, so it stays the last resort. A candidate
+    // that exists but is not executable must not hide a binary only the shell finds.
+    let unusable_candidate = match crate::cli_agent_runtime::find_executable_binary_candidate(
+        antigravity_binary_candidates(),
+        "Antigravity CLI",
+    ) {
+        Ok(Some(binary)) => return Ok(binary),
+        Ok(None) => None,
+        Err(error) => Some(error),
+    };
+
     if let Some(binary) = find_binary_in_user_shell() {
         return Ok(binary);
     }
-    if let Some(binary) = crate::cli_agent_runtime::find_executable_binary_candidate(
-        antigravity_binary_candidates(),
-        "Antigravity CLI",
-    )? {
-        return Ok(binary);
-    }
 
-    Err("Antigravity CLI not found. Install it: https://antigravity.google/docs/cli/install".into())
+    match unusable_candidate {
+        Some(error) => Err(error),
+        None => Err(
+            "Antigravity CLI not found. Install it: https://antigravity.google/docs/cli/install"
+                .into(),
+        ),
+    }
 }
 
 fn find_binary_on_path() -> Option<PathBuf> {
