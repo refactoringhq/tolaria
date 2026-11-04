@@ -442,8 +442,13 @@ fn test_git_command_applies_security_config() {
     assert_has_config_arg(&args, "protocol.ext.allow=never");
     assert_has_config_arg(&args, "protocol.file.allow=user");
     assert_has_config_arg(&args, "core.fsmonitor=false");
-    assert_has_config_arg(&args, "core.sshCommand=ssh");
+    assert!(!args
+        .windows(2)
+        .any(|pair| pair[0] == "-c" && pair[1].starts_with("core.sshCommand=")));
 }
+
+#[path = "mod_tests/ssh_config.rs"]
+mod ssh_config;
 
 fn assert_has_config_arg(args: &[String], value: &str) {
     assert!(args
