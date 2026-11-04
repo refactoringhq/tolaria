@@ -1367,5 +1367,19 @@
   "sharing.status.viewer": "共有済み · 閲覧のみ",
   "sharing.readOnly.banner": "閲覧のみ：このノートを読むことはできますが、変更はできません。",
   "sharing.revoked.title": "アクセス権が削除されました",
-  "sharing.revoked.description": "このノートまたはボールトは、すでにあなたと共有されていません。"
+  "sharing.revoked.description": "このノートまたはボールトは、すでにあなたと共有されていません。",
+  "mobile.workspace.action.deleted": "削除済み",
+  "mobile.workspace.action.archived": "アーカイブ済み",
+  "mobile.workspace.action.unarchived": "アーカイブから復元済み",
+  "mobile.workspace.action.organized": "整理済み",
+  "mobile.workspace.action.unorganized": "受信トレイに移動しました",
+  "mobile.workspace.action.relationshipRemoved": "リレーションシップが削除されました",
+  "mobile.workspace.action.multiple": "変更が更新されました",
+  "mobile.workspace.actionFailure.deleted": "ノートを削除できませんでした。ノートは引き続き利用可能です。",
+  "mobile.workspace.actionFailure.archived": "ノートをアーカイブできませんでした。ノートは変更されていません。",
+  "mobile.workspace.actionFailure.unarchived": "ノートを復元できませんでした。ノートは変更されていません。",
+  "mobile.workspace.actionFailure.organized": "ノートを整理できませんでした。ノートは変更されていません。",
+  "mobile.workspace.actionFailure.unorganized": "ノートをインボックスに移動できませんでした。ノートは変更されていません。",
+  "mobile.workspace.actionFailure.relationshipRemoved": "リレーションシップを削除できませんでした。ノートは変更されていません。",
+  "mobile.workspace.actionFailure.multiple": "これらの変更を保存できませんでした。ノートは変更されていません。"
 }

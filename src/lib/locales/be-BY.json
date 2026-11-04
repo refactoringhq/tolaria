@@ -1367,5 +1367,19 @@
   "sharing.status.viewer": "Агульнадаступна · Толькі для прагляду",
   "sharing.readOnly.banner": "Толькі для прагляду: вы можаце чытаць гэтую нататку, але не можаце яе змяняць.",
   "sharing.revoked.title": "Доступ адменены",
-  "sharing.revoked.description": "Гэтая нататка або сховішча больш не абагульняюцца з вамі."
+  "sharing.revoked.description": "Гэтая нататка або сховішча больш не абагульняюцца з вамі.",
+  "mobile.workspace.action.deleted": "Выдалена",
+  "mobile.workspace.action.archived": "Архівавана",
+  "mobile.workspace.action.unarchived": "Аднаўлена з архіва",
+  "mobile.workspace.action.organized": "Упарадкавана",
+  "mobile.workspace.action.unorganized": "Перанесена ў папку «Уваходныя»",
+  "mobile.workspace.action.relationshipRemoved": "Сувязь выдалена",
+  "mobile.workspace.action.multiple": "Змены абноўлены",
+  "mobile.workspace.actionFailure.deleted": "Не ўдалося выдаліць нататку. Нататка ўсё яшчэ даступная.",
+  "mobile.workspace.actionFailure.archived": "Не ўдалося заархіваваць нататку. Ваша нататка засталася без зменаў.",
+  "mobile.workspace.actionFailure.unarchived": "Не ўдалося аднавіць нататку. Ваша нататка засталася без зменаў.",
+  "mobile.workspace.actionFailure.organized": "Не ўдалося ўпарадкаваць нататку. Ваша нататка засталася нязменнай.",
+  "mobile.workspace.actionFailure.unorganized": "Не ўдалося перамясціць нататку ў папку «Уваходныя». Ваша нататка засталася нязменнай.",
+  "mobile.workspace.actionFailure.relationshipRemoved": "Не ўдалося выдаліць сувязь. Ваша нататка засталася без зменаў.",
+  "mobile.workspace.actionFailure.multiple": "Не ўдалося захаваць гэтыя змены. Вашы нататкі засталіся без зменаў."
 }

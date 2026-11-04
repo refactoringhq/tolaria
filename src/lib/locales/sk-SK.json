@@ -1367,5 +1367,19 @@
   "sharing.status.viewer": "Zdieľané · Iba na zobrazenie",
   "sharing.readOnly.banner": "Iba na zobrazenie: Túto poznámku si môžete prečítať, ale nemôžete ju meniť.",
   "sharing.revoked.title": "Prístup bol odstránený",
-  "sharing.revoked.description": "Táto poznámka alebo úložisko už s vami nie sú zdieľané."
+  "sharing.revoked.description": "Táto poznámka alebo úložisko už s vami nie sú zdieľané.",
+  "mobile.workspace.action.deleted": "Odstránené",
+  "mobile.workspace.action.archived": "Archivované",
+  "mobile.workspace.action.unarchived": "Obnovené z archívu",
+  "mobile.workspace.action.organized": "Usporiadané",
+  "mobile.workspace.action.unorganized": "Presunuté do doručenej pošty",
+  "mobile.workspace.action.relationshipRemoved": "Vzťah bol odstránený",
+  "mobile.workspace.action.multiple": "Zmeny boli aktualizované",
+  "mobile.workspace.actionFailure.deleted": "Nepodarilo sa odstrániť poznámku. Poznámka je stále k dispozícii.",
+  "mobile.workspace.actionFailure.archived": "Nepodarilo sa archivovať poznámku. Vaša poznámka zostala nezmenená.",
+  "mobile.workspace.actionFailure.unarchived": "Nepodarilo sa obnoviť poznámku. Vaša poznámka zostala nezmenená.",
+  "mobile.workspace.actionFailure.organized": "Nepodarilo sa usporiadať poznámku. Vaša poznámka zostala nezmenená.",
+  "mobile.workspace.actionFailure.unorganized": "Nepodarilo sa presunúť poznámku do priečinka Doručené. Vaša poznámka zostala nezmenená.",
+  "mobile.workspace.actionFailure.relationshipRemoved": "Nepodarilo sa odstrániť vzťah. Vaša poznámka zostala nezmenená.",
+  "mobile.workspace.actionFailure.multiple": "Tieto zmeny sa nepodarilo uložiť. Vaše poznámky zostali nezmenené."
 }

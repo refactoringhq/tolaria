@@ -53,8 +53,11 @@ export function PhoneWorkspaceRoot(props: PhoneWorkspaceRootProps) {
 			/>
 			<PhoneWorkspaceContent {...props} />
 			<MobileWorkspaceEditNotice
+				failedAction={props.controller.failedWorkspaceAction}
 				retry={props.controller.retryFailedEdit}
 				sync={props.controller.snapshot.sync}
+				undo={props.controller.onUndoWorkspaceEdit}
+				undoFeedback={props.controller.latestUndoFeedback}
 			/>
 			<PhoneWorkspaceActions {...props} />
 			{props.commandPaletteElement}

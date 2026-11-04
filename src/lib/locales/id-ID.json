@@ -1367,5 +1367,19 @@
   "sharing.status.viewer": "Dibagikan · Hanya lihat",
   "sharing.readOnly.banner": "Hanya lihat: Anda dapat membaca catatan ini tetapi tidak dapat mengubahnya.",
   "sharing.revoked.title": "Akses dihapus",
-  "sharing.revoked.description": "Catatan atau vault ini tidak lagi dibagikan kepada Anda."
+  "sharing.revoked.description": "Catatan atau vault ini tidak lagi dibagikan kepada Anda.",
+  "mobile.workspace.action.deleted": "Dihapus",
+  "mobile.workspace.action.archived": "Diarsipkan",
+  "mobile.workspace.action.unarchived": "Dipulihkan dari Arsip",
+  "mobile.workspace.action.organized": "Telah diatur",
+  "mobile.workspace.action.unorganized": "Dipindahkan ke Kotak Masuk",
+  "mobile.workspace.action.relationshipRemoved": "Relasi dihapus",
+  "mobile.workspace.action.multiple": "Perubahan diperbarui",
+  "mobile.workspace.actionFailure.deleted": "Tidak dapat menghapus catatan. Catatan masih tersedia.",
+  "mobile.workspace.actionFailure.archived": "Tidak dapat mengarsipkan catatan. Catatan Anda tidak berubah.",
+  "mobile.workspace.actionFailure.unarchived": "Tidak dapat memulihkan catatan. Catatan Anda tidak berubah.",
+  "mobile.workspace.actionFailure.organized": "Tidak dapat menata catatan. Catatan Anda tidak berubah.",
+  "mobile.workspace.actionFailure.unorganized": "Tidak dapat memindahkan catatan ke Inbox. Catatan Anda tidak berubah.",
+  "mobile.workspace.actionFailure.relationshipRemoved": "Tidak dapat menghapus relasi. Catatan Anda tidak berubah.",
+  "mobile.workspace.actionFailure.multiple": "Tidak dapat menyimpan perubahan ini. Catatan Anda tidak berubah."
 }
