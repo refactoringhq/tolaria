@@ -456,23 +456,20 @@ where
     Ok(session_id)
 }
 
-/// Shared binary discovery: look up a CLI command by name using PATH, login shell, then candidates.
+/// Shared binary discovery: look up a CLI on PATH, at known paths, then in the login shell.
 pub(crate) fn find_cli_binary(
     name: &str,
     candidates: Vec<PathBuf>,
     label: &str,
     install_hint: &str,
 ) -> Result<PathBuf, String> {
-    if let Some(binary) = find_binary_on_path(name) {
-        return Ok(binary);
-    }
-    if let Some(binary) = find_binary_in_user_shell(name) {
-        return Ok(binary);
-    }
-    if let Some(binary) = find_executable_binary_candidate(candidates, label)? {
-        return Ok(binary);
-    }
-    Err(format!("{label} not found. Install it: {install_hint}"))
+    crate::ai_agents::find_binary_with_fallbacks(
+        candidates,
+        label,
+        || find_binary_on_path(name),
+        || find_binary_in_user_shell(name),
+        || format!("{label} not found. Install it: {install_hint}"),
+    )
 }
 
 fn find_binary_on_path(name: &str) -> Option<PathBuf> {
