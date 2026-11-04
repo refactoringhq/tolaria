@@ -79,7 +79,7 @@ The existing iPhone 16 Pro simulator is booted with Device Hub open, and Metro s
 - Biome check on all 16 changed TypeScript files: passed.
 - Codacy local per-file scans on all 16 source/test files: Trivy, ESLint, Lizard, and Opengrep OSS completed with zero findings. Codacy Cloud dashboard baseline on `6957e835d`: 0 on every touched file except `MobileWorkspaceSidebarFolderTree.tsx` had 2 Lizard findings; local result is now 0 for that file. Enabled dashboard roster confirmed Biome and ESLint9 enabled, deprecated ESLint disabled, with Lizard and Trivy enabled.
 - CodeScene: all 16 touched files scored 10.0 after changes; new files scored 10.0. Pre-commit safeguard and `origin/main` change-set review passed for all 16 files.
-- Root full gates, exact-SHA dashboard confirmation, simulator recordings, and CircleCI: pending.
+- Root lint/typecheck/test, coverage, Rust gates, Playwright smoke, CircleCI, and Codacy analysis on `fe9b657c7` passed. The exact-SHA dashboard issue list nevertheless exposed two Lizard findings on the folder-tree renderer (also present on baseline) and one Lizard finding on the bulk-action renderer; this follow-up extracts the JSX render paths to bring the dashboard-scored methods under the configured limit. Follow-up exact-SHA dashboard confirmation is pending.
 - Localization: no UI copy changes. PostHog: no event needed because this change adds feedback/performance behavior to existing actions without introducing a new user action. ADRs/docs: none. Demo vaults: clean.
 
 ## Device QA Still Needed
@@ -87,3 +87,7 @@ The existing iPhone 16 Pro simulator is booted with Device Hub open, and Metro s
 - Record iPhone and iPad proof that each row type shows pressed feedback.
 - Verify scrolling a 2,000+ note vault with the perf monitor and capture dropped-frame evidence.
 - Verify multi-selection survives an actual background sync.
+
+## Follow-up: dashboard Lizard findings
+
+- Exact-SHA Codacy analysis of `fe9b657c7` reported `FolderTree` at 262 NLOC / CCN 25 and `BulkActionButtons` at 63 NLOC, although the local CLI had reported zero Lizard findings. The folder-tree root renderer and row-content/style/action helpers are now separated, and bulk actions are split into primary and secondary renderers. Local per-file Codacy scans for both refactored files now complete all configured analyzers with zero findings; CodeScene remains 10.0 for both files. New exact-SHA dashboard verification is pending.
