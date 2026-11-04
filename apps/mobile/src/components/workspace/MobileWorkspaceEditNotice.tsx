@@ -19,14 +19,19 @@ export function MobileWorkspaceEditNotice({
 }) {
 	const styles = useMobileStyles(createStyles);
 	const { top } = useSafeAreaInsets();
-	const failed = Boolean(retry);
-	const saveFailed = useSaveFailureToast(sync);
+	const saveFailure = sync?.kind === "writeFailed";
+	const failed = Boolean(retry) && !saveFailure;
+	const saveFailed = useSaveFailureToast(sync, Boolean(retry));
 	useEffect(() => {
 		if (failed)
 			AccessibilityInfo.announceForAccessibility(
 				mobileText("mobile.editor.readFailed"),
 			);
-	}, [failed]);
+		else if (saveFailure)
+			AccessibilityInfo.announceForAccessibility(
+				mobileText("mobile.vaults.saveFailed"),
+			);
+	}, [failed, saveFailure]);
 	if (!retry && !saveFailed) return null;
 	return (
 		<MobileListMotion
@@ -34,11 +39,14 @@ export function MobileWorkspaceEditNotice({
 			style={StyleSheet.absoluteFill}
 			testID="workspace-edit-notice-motion"
 		>
-			<View pointerEvents="box-none" style={[styles.position, { top: top + 8 }]}>
+			<View
+				pointerEvents="box-none"
+				style={[styles.position, { top: top + 8 }]}
+			>
 				<View style={styles.notice} testID="workspace-edit-notice">
 					<Text accessibilityLiveRegion="polite" style={styles.message}>
 						{mobileText(
-							retry ? "mobile.editor.readFailed" : "mobile.vaults.saveFailed",
+							failed ? "mobile.editor.readFailed" : "mobile.vaults.saveFailed",
 						)}
 					</Text>
 					{retry ? (
@@ -55,7 +63,10 @@ export function MobileWorkspaceEditNotice({
 	);
 }
 
-function useSaveFailureToast(sync?: MobileSyncStatus) {
+function useSaveFailureToast(
+	sync: MobileSyncStatus | undefined,
+	retryable: boolean,
+) {
 	const [dismissedWriteFailure, setDismissedWriteFailure] =
 		useState<MobileSyncStatus | null>(null);
 	useEffect(() => {
@@ -63,7 +74,10 @@ function useSaveFailureToast(sync?: MobileSyncStatus) {
 		const timeout = setTimeout(() => setDismissedWriteFailure(sync), 2400);
 		return () => clearTimeout(timeout);
 	}, [sync]);
-	return sync?.kind === "writeFailed" && dismissedWriteFailure !== sync;
+	return (
+		sync?.kind === "writeFailed" &&
+		(retryable || dismissedWriteFailure !== sync)
+	);
 }
 
 function createStyles(colors: MobileColors, metrics: MobileMetrics) {
