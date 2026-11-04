@@ -596,8 +596,12 @@ files:
     noteList.title.view: 4351cfebe4b61d8aa5efa1d020710005
     noteList.title.notes: f4c6f851b00d5518bf888815de279aba
     noteList.searchPlaceholder: 4857cd2689a0a40eb4a77cdc745c518e
+    noteList.mobileSearchPlaceholder: 13348442cc6a27032d2b4aa28b75a5d3
     noteList.searchAction: 5012120fc480c67686dd22ee2f9493cd
     noteList.clearSearch: 9983381c21069a3d6e4432e0aaea0079
+    noteList.recentSearches: 8173dbf786c0d6bc93bdb6f54d6889d3
+    noteList.recentlyOpened: c1c9cdb573086d9ba74d34dba49eb3ef
+    noteList.noResults: c49c29bb6656c1f25f2cfac84f83b5ba
     noteList.quickOpenCreate: a4e964a3bc5b25e7ae87163624731e05
     noteList.createNote: f1484bc40bd3fe3430c13fb89e2ce1af
     noteList.context.renameNote: c31c2b468229232ad6287e734fe67d96
