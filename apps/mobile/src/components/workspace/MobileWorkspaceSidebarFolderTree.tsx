@@ -19,40 +19,6 @@ export type MobileSidebarFolderSelection = {
 	name: string;
 };
 
-export function FolderTree({
-	activeFolderId,
-	folders,
-	layoutProbe,
-	onOpenFolderActions,
-	onSelectFolder,
-}: {
-	activeFolderId?: string | null;
-	folders: MobileSidebarFolder[];
-	layoutProbe?: MobileLayoutProbe;
-	onOpenFolderActions?: (selection: MobileSidebarFolderSelection) => void;
-	onSelectFolder?: (selection: MobileSidebarFolderSelection) => void;
-}) {
-	const { folderTreeStyles } = useMobileStyles(createThemeStyles);
-	return (
-		<View
-			{...probeProps(layoutProbe, "sidebar.folderTree.root")}
-			style={folderTreeStyles.tree}
-		>
-			{folders.map((folder) => (
-				<FolderTreeRow
-					activeFolderId={activeFolderId}
-					depth={0}
-					folder={folder}
-					key={folder.id}
-					layoutProbe={layoutProbe}
-					onOpenFolderActions={onOpenFolderActions}
-					onSelectFolder={onSelectFolder}
-				/>
-			))}
-		</View>
-	);
-}
-
 type FolderTreeRowProps = {
 	activeFolderId?: string | null;
 	depth: number;
@@ -98,48 +64,92 @@ function FolderTreeRowButton({
 	props: FolderTreeRowProps;
 	themeStyles: ReturnType<typeof createThemeStyles>;
 }) {
-	const { folder, layoutProbe, onOpenFolderActions, onSelectFolder } = props;
-	const {
-		folderTreeStyles,
-		nativeFolderTreeRowStyle,
-		nativeFolderTreeTextStyle,
-		metrics,
-	} = themeStyles;
-	const selection = { id: folder.id, name: folder.name };
+	const { folder, layoutProbe } = props;
+	const actions = folderRowActions(props);
 	return (
 		<Pressable
 			{...probeProps(layoutProbe, `${metricId}.row`)}
 			accessibilityLabel={folder.name}
 			accessibilityRole="button"
-			onLongPress={() => onOpenFolderActions?.(selection)}
-			onPress={() => onSelectFolder?.(selection)}
-			style={({ pressed }) => [
-				folderTreeStyles.row,
-				nativeFolderTreeRowStyle,
-				active ? folderTreeStyles.rowActive : null,
-				folderTreeIndent(metrics.sidebar, props.depth),
-				mobilePressedStyle(pressed, metrics.toolbarAction.pressedOpacity),
-			]}
+			onLongPress={actions.onLongPress}
+			onPress={actions.onPress}
+			style={({ pressed }) =>
+				folderTreeRowStyle(pressed, active, props, themeStyles)
+			}
 		>
-			<View
-				{...probeProps(layoutProbe, `${metricId}.content`)}
-				style={folderTreeStyles.rowContent}
-			>
-				<FolderTreeCaret expanded={folder.expanded} hasChildren={hasChildren} />
-				<FolderTreeIcon active={active} expanded={folder.expanded} />
-				<Text
-					{...probeProps(layoutProbe, `${metricId}.label`)}
-					numberOfLines={1}
-					style={[
-						folderTreeStyles.rowText,
-						nativeFolderTreeTextStyle,
-						active ? folderTreeStyles.rowTextActive : null,
-					]}
-				>
-					{folder.name}
-				</Text>
-			</View>
+			<FolderTreeRowContent
+				active={active}
+				hasChildren={hasChildren}
+				metricId={metricId}
+				props={props}
+				themeStyles={themeStyles}
+			/>
 		</Pressable>
+	);
+}
+
+function folderTreeRowStyle(
+	pressed: boolean,
+	active: boolean,
+	props: FolderTreeRowProps,
+	themeStyles: ReturnType<typeof createThemeStyles>,
+) {
+	const { folderTreeStyles, nativeFolderTreeRowStyle, metrics } = themeStyles;
+	return [
+		folderTreeStyles.row,
+		nativeFolderTreeRowStyle,
+		active ? folderTreeStyles.rowActive : null,
+		folderTreeIndent(metrics.sidebar, props.depth),
+		mobilePressedStyle(pressed, metrics.toolbarAction.pressedOpacity),
+	];
+}
+
+function folderRowActions({
+	folder,
+	onOpenFolderActions,
+	onSelectFolder,
+}: FolderTreeRowProps) {
+	const selection = { id: folder.id, name: folder.name };
+	return {
+		onLongPress: () => onOpenFolderActions?.(selection),
+		onPress: () => onSelectFolder?.(selection),
+	};
+}
+
+function FolderTreeRowContent({
+	active,
+	hasChildren,
+	metricId,
+	props,
+	themeStyles,
+}: {
+	active: boolean;
+	hasChildren: boolean;
+	metricId: string;
+	props: FolderTreeRowProps;
+	themeStyles: ReturnType<typeof createThemeStyles>;
+}) {
+	const { folder, layoutProbe } = props;
+	const { folderTreeStyles, nativeFolderTreeTextStyle } = themeStyles;
+	return (
+		<View
+			{...probeProps(layoutProbe, `${metricId}.content`)}
+			style={folderTreeStyles.rowContent}
+		>
+			<FolderTreeCaret expanded={folder.expanded} hasChildren={hasChildren} />
+			<FolderTreeIcon active={active} expanded={folder.expanded} />
+			<Text
+				{...probeProps(layoutProbe, `${metricId}.label`)}
+				numberOfLines={1}
+				style={[
+					folderTreeStyles.rowText,
+					nativeFolderTreeTextStyle,
+					active ? folderTreeStyles.rowTextActive : null,
+				]}
+			>
+				{folder.name}
+			</Text>
+		</View>
 	);
 }
 
@@ -308,4 +318,38 @@ function createThemeStyles(mobileColors: MobileColors, metrics: MobileMetrics) {
 		nativeFolderTreeTextStyle:
 			Platform.OS === "web" ? null : nativeFolderTreeStyles.text,
 	};
+}
+
+export function FolderTree({
+	activeFolderId,
+	folders,
+	layoutProbe,
+	onOpenFolderActions,
+	onSelectFolder,
+}: {
+	activeFolderId?: string | null;
+	folders: MobileSidebarFolder[];
+	layoutProbe?: MobileLayoutProbe;
+	onOpenFolderActions?: (selection: MobileSidebarFolderSelection) => void;
+	onSelectFolder?: (selection: MobileSidebarFolderSelection) => void;
+}) {
+	const { folderTreeStyles } = useMobileStyles(createThemeStyles);
+	return (
+		<View
+			{...probeProps(layoutProbe, "sidebar.folderTree.root")}
+			style={folderTreeStyles.tree}
+		>
+			{folders.map((folder) => (
+				<FolderTreeRow
+					activeFolderId={activeFolderId}
+					depth={0}
+					folder={folder}
+					key={folder.id}
+					layoutProbe={layoutProbe}
+					onOpenFolderActions={onOpenFolderActions}
+					onSelectFolder={onSelectFolder}
+				/>
+			))}
+		</View>
+	);
 }

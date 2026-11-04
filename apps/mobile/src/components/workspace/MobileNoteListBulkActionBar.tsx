@@ -75,6 +75,38 @@ function BulkActionButtons({
 	const { pressedOpacity, styles } = presentation;
 	return (
 		<View style={styles.actions}>
+			<BulkPrimaryActions
+				archivedMode={archivedMode}
+				mobileColors={mobileColors}
+				onArchiveToggle={onArchiveToggle}
+				onOrganize={onOrganize}
+				pressedOpacity={pressedOpacity}
+			/>
+			<BulkSecondaryActions
+				mobileColors={mobileColors}
+				onClear={onClear}
+				onDelete={onDelete}
+				pressedOpacity={pressedOpacity}
+			/>
+		</View>
+	);
+}
+
+function BulkPrimaryActions({
+	archivedMode,
+	mobileColors,
+	onArchiveToggle,
+	onOrganize,
+	pressedOpacity,
+}: {
+	archivedMode: boolean;
+	mobileColors: MobileColors;
+	onArchiveToggle: () => void;
+	onOrganize: () => void;
+	pressedOpacity: number;
+}) {
+	return (
+		<>
 			<BulkActionButton
 				accessibilityLabel={mobileText("noteList.bulk.organize")}
 				pressedOpacity={pressedOpacity}
@@ -93,6 +125,23 @@ function BulkActionButtons({
 			>
 				<ArchiveIcon color={mobileColors.textInverse} size={16} />
 			</BulkActionButton>
+		</>
+	);
+}
+
+function BulkSecondaryActions({
+	mobileColors,
+	onClear,
+	onDelete,
+	pressedOpacity,
+}: {
+	mobileColors: MobileColors;
+	onClear: () => void;
+	onDelete: () => void;
+	pressedOpacity: number;
+}) {
+	return (
+		<>
 			<BulkActionButton
 				accessibilityLabel={mobileText("noteList.bulk.delete")}
 				pressedOpacity={pressedOpacity}
@@ -111,7 +160,7 @@ function BulkActionButtons({
 			>
 				<X color={mobileColors.textInverse} size={16} />
 			</BulkActionButton>
-		</View>
+		</>
 	);
 }
 
