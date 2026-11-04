@@ -456,23 +456,55 @@ where
     Ok(session_id)
 }
 
-/// Shared binary discovery: look up a CLI command by name using PATH, login shell, then candidates.
+/// Shared binary discovery: look up a CLI command by name using PATH, known install
+/// locations, then the user's login shell.
+///
+/// The login shell is the slow step: it spawns `zsh -lc`, which evaluates the user's
+/// startup files (nvm, oh-my-zsh, ...) and can take seconds. Known install locations
+/// are plain stat calls, so they are checked first and the shell stays the last resort.
+/// Otherwise a slow shell burns the status-probe budget of a caller like
+/// `ai_agents::get_ai_agents_status`, which then reports an agent that lives at a
+/// perfectly known path as "not installed".
 pub(crate) fn find_cli_binary(
     name: &str,
     candidates: Vec<PathBuf>,
     label: &str,
     install_hint: &str,
 ) -> Result<PathBuf, String> {
-    if let Some(binary) = find_binary_on_path(name) {
+    resolve_cli_binary(
+        || find_binary_on_path(name),
+        || find_executable_binary_candidate(candidates, label),
+        || find_binary_in_user_shell(name),
+        label,
+        install_hint,
+    )
+}
+
+fn resolve_cli_binary(
+    find_on_path: impl FnOnce() -> Option<PathBuf>,
+    find_candidate: impl FnOnce() -> Result<Option<PathBuf>, String>,
+    find_in_shell: impl FnOnce() -> Option<PathBuf>,
+    label: &str,
+    install_hint: &str,
+) -> Result<PathBuf, String> {
+    if let Some(binary) = find_on_path() {
         return Ok(binary);
     }
-    if let Some(binary) = find_binary_in_user_shell(name) {
+
+    let unusable_candidate = match find_candidate() {
+        Ok(Some(binary)) => return Ok(binary),
+        Ok(None) => None,
+        Err(error) => Some(error),
+    };
+
+    if let Some(binary) = find_in_shell() {
         return Ok(binary);
     }
-    if let Some(binary) = find_executable_binary_candidate(candidates, label)? {
-        return Ok(binary);
+
+    match unusable_candidate {
+        Some(error) => Err(error),
+        None => Err(format!("{label} not found. Install it: {install_hint}")),
     }
-    Err(format!("{label} not found. Install it: {install_hint}"))
 }
 
 fn find_binary_on_path(name: &str) -> Option<PathBuf> {
