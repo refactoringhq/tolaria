@@ -61,7 +61,7 @@ export function MobileWorkspaceActionSheet(props: MobileWorkspaceActionSheetProp
 }
 
 function WorkspaceSheetHeader(props: ActionContentProps) {
-  if (props.compactForm) return null
+  if (props.compactForm || props.action === 'search') return null
   return (
     <MobileToolbar testID="workspace-action-sheet-toolbar">
       <MobileToolbarTitle title={actionTitle(props.action, props.propertyName)} />
@@ -122,7 +122,6 @@ function SearchContent(props: MobileWorkspaceActionSheetProps) {
       typeDefinitions={props.typeDefinitions}
       onClearWorkspaceSearch={() => props.onSearchQueryChange('')}
       onClose={props.onClose}
-      onCreateNote={props.onCreateNote}
       onSelectNote={props.onSelectNote}
     />
   )
