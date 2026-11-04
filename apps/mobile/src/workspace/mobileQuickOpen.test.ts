@@ -3,9 +3,13 @@ import { requiredFixture } from '../fixtures/requiredFixture'
 import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
 import {
   mobileQuickOpenMoveIndex,
+  mobileQuickOpenRecentNotes,
   mobileQuickOpenResultLimit,
   mobileQuickOpenResults,
   mobileQuickOpenSelectedNote,
+  mobileQuickOpenSnippetParts,
+  rememberMobileQuickOpenNote,
+  rememberMobileQuickOpenSearch,
 } from './mobileQuickOpen'
 import type { MobileNote } from './mobileWorkspaceModel'
 
@@ -13,11 +17,11 @@ describe('mobile quick open', () => {
   it('returns the first active notes for an empty query', () => {
     const notes = workspaceScenarioForId('default').notes
 
-    expect(mobileQuickOpenResults(notes, '').map((note) => note.id).slice(0, 3)).toEqual([
-      'workflow-orchestration',
-      'open-source-project',
-      'release-2026-05-02',
-    ])
+    expect(
+      mobileQuickOpenResults(notes, '')
+        .map((note) => note.id)
+        .slice(0, 3),
+    ).toEqual(['workflow-orchestration', 'open-source-project', 'release-2026-05-02'])
   })
 
   it('excludes archived notes and caps empty-query results', () => {
@@ -37,7 +41,9 @@ describe('mobile quick open', () => {
   it('matches title, preview, metadata, tags, and path text', () => {
     const notes = workspaceScenarioForId('default').notes
 
-    expect(mobileQuickOpenResults(notes, 'workflow orchestration').map((note) => note.id)).toEqual(['workflow-orchestration'])
+    expect(mobileQuickOpenResults(notes, 'workflow orchestration').map((note) => note.id)).toEqual([
+      'workflow-orchestration',
+    ])
     expect(mobileQuickOpenResults(notes, 'unexpected success').map((note) => note.id)).toEqual(['open-source-project'])
     expect(mobileQuickOpenResults(notes, 'tolaria/releases').map((note) => note.id)).toEqual(['release-2026-05-02'])
     expect(mobileQuickOpenResults(notes, 'design').map((note) => note.id)).toContain('workflow-orchestration')
@@ -78,10 +84,7 @@ describe('mobile quick open', () => {
       note({ aliases: ['ref'], id: 'meeting', path: 'meeting.md', title: 'Meeting Notes' }),
     ]
 
-    expect(mobileQuickOpenResults(notes, 'ref').map((result) => result.id)).toEqual([
-      'meeting',
-      'reference',
-    ])
+    expect(mobileQuickOpenResults(notes, 'ref').map((result) => result.id)).toEqual(['meeting', 'reference'])
   })
 
   it('matches desktop quick-open fuzzy and slugified filename forms', () => {
@@ -110,6 +113,40 @@ describe('mobile quick open', () => {
 
     expect(mobileQuickOpenSelectedNote(results, 1)?.id).toBe('open-source-project')
     expect(mobileQuickOpenSelectedNote(results, 99)).toBeNull()
+  })
+
+  it('keeps unique recent searches in most-recent-first order', () => {
+    const recent = { searches: [], noteIds: [] }
+    const afterFirst = rememberMobileQuickOpenSearch(recent, 'Randy Shoup')
+    const afterSecond = rememberMobileQuickOpenSearch(afterFirst, 'design systems')
+
+    expect(rememberMobileQuickOpenSearch(afterSecond, ' randy shoup ')).toEqual({
+      searches: ['randy shoup', 'design systems'],
+      noteIds: [],
+    })
+  })
+
+  it('orders recently opened notes and excludes missing or archived notes', () => {
+    const notes = [
+      note({ id: 'first', title: 'First' }),
+      note({ archived: true, id: 'archived', title: 'Archived' }),
+      note({ id: 'second', title: 'Second' }),
+    ]
+    const recent = rememberMobileQuickOpenNote(
+      rememberMobileQuickOpenNote({ searches: [], noteIds: ['missing'] }, 'second'),
+      'archived',
+    )
+
+    expect(mobileQuickOpenRecentNotes(notes, recent).map(({ id }) => id)).toEqual(['second'])
+  })
+
+  it('splits matching snippet terms for bold rendering', () => {
+    expect(mobileQuickOpenSnippetParts('Randy Shoup spoke at React Summit', 'randy shoup')).toEqual([
+      { matched: true, text: 'Randy' },
+      { matched: false, text: ' ' },
+      { matched: true, text: 'Shoup' },
+      { matched: false, text: ' spoke at React Summit' },
+    ])
   })
 })
 
