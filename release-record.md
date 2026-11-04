@@ -60,3 +60,30 @@ The existing iPhone 16 Pro simulator is booted with Device Hub open, and Metro s
 3. A query with no matches shows the quiet No results state.
 4. Return opens the top result; iPad arrow keys move selection; clear and Cancel work; the sheet grows with results without flicker.
 5. Repeat empty/query/no-results states at larger Dynamic Type and with Reduce Motion enabled; capture before/after screenshots for both device sizes and a short typing/open/cancel recording.
+
+---
+
+# TOL-315 Release Record
+
+## Change
+
+- Added native pressed feedback to note rows, sidebar/folder rows, relationship rows, and bulk-action controls.
+- Memoized the note row and extracted sidebar composition into small internal components.
+- Kept multi-selection stable across visible-note updates and syncs, with focused selection regression tests.
+- Kept implementation-only sidebar composition modules out of the surface parity inventory; public surfaces remain checked against the inventory.
+
+## Validation
+
+- Targeted parity inventory regression: 2 tests passed; initial run reproduced 4 unregistered internal sidebar modules.
+- `mobile:lint`, `mobile:typecheck`, and `mobile:test`: passed; 447 files / 2,729 tests.
+- Biome check on all 16 changed TypeScript files: passed.
+- Codacy local per-file scans on all 16 source/test files: Trivy, ESLint, Lizard, and Opengrep OSS completed with zero findings. Codacy Cloud dashboard baseline on `6957e835d`: 0 on every touched file except `MobileWorkspaceSidebarFolderTree.tsx` had 2 Lizard findings; local result is now 0 for that file. Enabled dashboard roster confirmed Biome and ESLint9 enabled, deprecated ESLint disabled, with Lizard and Trivy enabled.
+- CodeScene: all 16 touched files scored 10.0 after changes; new files scored 10.0. Pre-commit safeguard and `origin/main` change-set review passed for all 16 files.
+- Root full gates, exact-SHA dashboard confirmation, simulator recordings, and CircleCI: pending.
+- Localization: no UI copy changes. PostHog: no event needed because this change adds feedback/performance behavior to existing actions without introducing a new user action. ADRs/docs: none. Demo vaults: clean.
+
+## Device QA Still Needed
+
+- Record iPhone and iPad proof that each row type shows pressed feedback.
+- Verify scrolling a 2,000+ note vault with the perf monitor and capture dropped-frame evidence.
+- Verify multi-selection survives an actual background sync.

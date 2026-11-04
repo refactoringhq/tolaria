@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MobileNeighborhood } from "../../workspace/mobileNeighborhood";
 import type { MobileNote } from "../../workspace/mobileWorkspaceModel";
 import {
@@ -36,7 +36,6 @@ export function useMobileNoteListBulkSelection({
 	const selection = useMobileNoteSelectionState({
 		onSelectNote,
 		selectionEnabled,
-		notes,
 	});
 	const selectedNotes = useMemo(
 		() => selectedMobileNoteListNotes(notes, selection.selectedNoteIds),
@@ -76,11 +75,9 @@ export function useMobileNoteListBulkSelection({
 function useMobileNoteSelectionState({
 	onSelectNote,
 	selectionEnabled,
-	notes,
 }: {
 	onSelectNote: (noteId: string) => void;
 	selectionEnabled: boolean;
-	notes: MobileNote[];
 }) {
 	const emptySelection = useMemo(() => new Set<string>(), []);
 	const [selectionState, setSelectionState] =
@@ -88,19 +85,49 @@ function useMobileNoteSelectionState({
 			noteIds: emptySelection,
 			scope: "",
 		});
-	const visibleNoteIds = useMemo(() => notes.map((note) => note.id), [notes]);
-	const visibleNoteIdsSignature = visibleNoteIds.join("\u0000");
-	const selectionScope = selectionEnabled ? visibleNoteIdsSignature : "";
+	const selectionScope = selectionEnabled ? "selection-enabled" : "";
 	const selectedNoteIds = scopedSelectedNoteIds({
 		emptySelection,
 		selectionScope,
 		selectionState,
 	});
 	const selectedNoteIdsSignature = [...selectedNoteIds].join("\u0000");
+	const { onSelectNoteRef, selectedNoteIdsRef } = useSelectionEventReferences(
+		selectedNoteIds,
+		onSelectNote,
+	);
+	const actions = useSelectionActions({
+		onSelectNoteRef,
+		selectedNoteIdsRef,
+		selectionEnabled,
+		selectionScope,
+		setSelectionState,
+	});
+	return {
+		...actions,
+		selectedNoteIds,
+		selectedNoteIdsSignature,
+	};
+}
+
+function useSelectionActions({
+	onSelectNoteRef,
+	selectedNoteIdsRef,
+	selectionEnabled,
+	selectionScope,
+	setSelectionState,
+}: {
+	onSelectNoteRef: React.MutableRefObject<(noteId: string) => void>;
+	selectedNoteIdsRef: React.MutableRefObject<ReadonlySet<string>>;
+	selectionEnabled: boolean;
+	selectionScope: string;
+	setSelectionState: React.Dispatch<
+		React.SetStateAction<MobileNoteListSelectionState>
+	>;
+}) {
 	const clearSelection = useCallback(() => {
 		setSelectionState({ noteIds: new Set(), scope: selectionScope });
-	}, [selectionScope]);
-
+	}, [selectionScope, setSelectionState]);
 	const beginSelection = useCallback(
 		(noteId: string) => {
 			if (!selectionEnabled) return;
@@ -113,13 +140,17 @@ function useMobileNoteSelectionState({
 				),
 			);
 		},
-		[selectionEnabled, selectionScope],
+		[selectionEnabled, selectionScope, setSelectionState],
 	);
-
 	const pressNote = useCallback(
 		(noteId: string) => {
-			if (shouldSelectNoteImmediately(selectionEnabled, selectedNoteIds)) {
-				onSelectNote(noteId);
+			if (
+				shouldSelectNoteImmediately(
+					selectionEnabled,
+					selectedNoteIdsRef.current,
+				)
+			) {
+				onSelectNoteRef.current(noteId);
 				return;
 			}
 			setSelectionState((current) =>
@@ -131,15 +162,30 @@ function useMobileNoteSelectionState({
 				),
 			);
 		},
-		[onSelectNote, selectedNoteIds, selectionEnabled, selectionScope],
+		[
+			onSelectNoteRef,
+			selectedNoteIdsRef,
+			selectionEnabled,
+			selectionScope,
+			setSelectionState,
+		],
 	);
-	return {
-		beginSelection,
-		clearSelection,
-		pressNote,
-		selectedNoteIds,
-		selectedNoteIdsSignature,
-	};
+	return { beginSelection, clearSelection, pressNote };
+}
+
+function useSelectionEventReferences(
+	selectedNoteIds: ReadonlySet<string>,
+	onSelectNote: (noteId: string) => void,
+) {
+	const selectedNoteIdsRef = useRef(selectedNoteIds);
+	const onSelectNoteRef = useRef(onSelectNote);
+	useEffect(() => {
+		selectedNoteIdsRef.current = selectedNoteIds;
+	}, [selectedNoteIds]);
+	useEffect(() => {
+		onSelectNoteRef.current = onSelectNote;
+	}, [onSelectNote]);
+	return { onSelectNoteRef, selectedNoteIdsRef };
 }
 
 function useBulkSelectionRunner(
