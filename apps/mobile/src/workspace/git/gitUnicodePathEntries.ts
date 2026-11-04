@@ -24,7 +24,8 @@ function coalesceGroup<T>(
 	worktreeIndex: number,
 	trackedIndexes: number[],
 ) {
-	if (group.length < 2) return group;
+	if (group.length === 1)
+		return canonicalizeUntrackedPath(group[0], trackedIndexes);
 	const worktreeRecords = group.filter(
 		(record) => record.entries[worktreeIndex],
 	);
@@ -36,6 +37,14 @@ function coalesceGroup<T>(
 			trackedIndexes.some((index) => record.entries[index]),
 		) ?? worktreeRecords[0];
 	return [{ filepath: canonical.filepath, entries }];
+}
+
+function canonicalizeUntrackedPath<T>(
+	record: PathRecord<T>,
+	trackedIndexes: number[],
+) {
+	if (trackedIndexes.some((index) => record.entries[index])) return [record];
+	return [{ ...record, filepath: record.filepath.normalize("NFC") }];
 }
 
 function hasSinglePathForEachTree<T>(
