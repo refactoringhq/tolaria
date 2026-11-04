@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { workspaceScenarioForId } from "../fixtures/workspaceFixtures";
-import { rollbackFailedFlagWrites } from "./mobileWorkspaceFlagWriteRollback";
+import { rollbackFailedNoteListWrites } from "./mobileWorkspaceFlagWriteRollback";
 import { applyWorkspaceEditToWritableSnapshot } from "./tabletWorkspacePersistence";
 
 describe("applyWorkspaceEditToWritableSnapshot", () => {
@@ -72,12 +72,13 @@ describe("applyWorkspaceEditToWritableSnapshot", () => {
 			),
 		};
 
-		const rolledBack = rollbackFailedFlagWrites(
+		const rollback = rollbackFailedNoteListWrites(
 			current,
 			previous,
 			optimistic.snapshot,
 			optimistic.writes,
 		);
+		const rolledBack = rollback.snapshot;
 
 		expect(optimistic.writes).toHaveLength(1);
 		expect(
