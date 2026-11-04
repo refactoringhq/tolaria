@@ -91,3 +91,27 @@ The existing iPhone 16 Pro simulator is booted with Device Hub open, and Metro s
 ## Follow-up: dashboard Lizard findings
 
 - Exact-SHA Codacy analysis of `fe9b657c7` reported `FolderTree` at 262 NLOC / CCN 25 and `BulkActionButtons` at 63 NLOC, although the local CLI had reported zero Lizard findings. The folder-tree root renderer and row-content/style/action helpers are now separated, and bulk actions are split into primary and secondary renderers. Local per-file Codacy scans for both refactored files now complete all configured analyzers with zero findings; CodeScene remains 10.0 for both files. New exact-SHA dashboard verification is pending.
+
+---
+
+# TOL-319 Release Record
+
+## Change
+
+- Active selections now derive their effective deep-link slug from the latest saved-vault catalog entry instead of keeping the alias captured when the vault was selected.
+- The selected note, vault root, and Git selection are preserved; collision-safe slug generation continues to use the shared alias helper.
+- Added a hook regression covering a selected Git-backed vault whose catalog slug changes while the selection override is active.
+
+## Validation
+
+- Focused catalog-selection and deep-link suites: 26 tests passed.
+- `mobile:lint`, `mobile:typecheck`, and `mobile:test`: passed; 447 files / 2,730 tests.
+- Biome lint/assist check on both changed TypeScript files passed (`biome check --formatter-enabled=false`; repo formatter defaults conflict with the established mobile formatting).
+- Codacy local per-file scans: ESLint, Lizard, Opengrep OSS, and Trivy completed on both changed files with zero findings. Initial Lizard CCN 9 on the hook was refactored into `currentCatalogSelection`; rescans are clean. Dashboard baseline on main (`68e3244a3`) was zero issues on both paths; enabled roster includes Biome, ESLint9, Lizard, Opengrep, and Trivy; deprecated ESLint is disabled. Biome was checked separately.
+- CodeScene before/after: both changed files 10.0. Project Hotspot 10.0 / Average 9.982230364474246, meeting `.codescene-thresholds` (10.0 / 9.98). Pre-commit safeguard and `origin/main` change-set safeguard passed.
+- Localization: no UI copy changes. PostHog: no event needed; this is an internal correction to existing vault alias state, not a new user action. ADRs/docs: none. Demo vaults: clean.
+
+## Device QA Still Needed
+
+- On iPhone, reproduce restore A, select B, edit B's slug, copy a note link and open an incoming link with the new slug.
+- Confirm the destination note opens while B's root, index, selected note, and Git connection remain intact, including a collision-safe slug case.
