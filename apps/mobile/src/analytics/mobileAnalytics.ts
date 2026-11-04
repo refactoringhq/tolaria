@@ -62,6 +62,7 @@ export type MobileAnalyticsEvent =
 			tool: "find" | "replace" | "slash" | "filename";
 	  }
 	| { name: "mobile_note_link_activated"; kind: "external" | "wikilink" }
+	| { name: "mobile_note_task_toggled"; state: "checked" | "unchecked" }
 	| {
 			name: "mobile_deep_link_opened";
 			outcome:
@@ -139,6 +140,7 @@ function eventProperties(event: MobileAnalyticsEvent): Record<string, string> {
 	if (event.name === "mobile_deep_link_opened")
 		return { outcome: event.outcome };
 	if (event.name === "mobile_note_link_activated") return { kind: event.kind };
+	if (event.name === "mobile_note_task_toggled") return { state: event.state };
 	if (event.name === "mobile_editor_recovery_requested")
 		return { reason: event.reason };
 	if (event.name === "mobile_folder_open_failed") return { stage: event.stage };

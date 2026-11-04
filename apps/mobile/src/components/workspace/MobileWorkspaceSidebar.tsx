@@ -58,6 +58,7 @@ type MobileWorkspaceSidebarProps = {
 	activeItemId?: string | null;
 	layoutProbe?: boolean;
 	fullWidth?: boolean;
+	scrollsToTop?: boolean;
 	onCreateFolder?: () => void;
 	onCreateType?: () => void;
 	onCreateView?: () => void;
@@ -101,6 +102,7 @@ export function MobileWorkspaceSidebar(props: MobileWorkspaceSidebarProps) {
 			<MobileSidebarSectionsScroll
 				controlsHeight={controlsHeight}
 				layoutProbe={layoutProbe}
+				scrollsToTop={props.scrollsToTop ?? false}
 				styles={styles}
 			>
 				{sections}

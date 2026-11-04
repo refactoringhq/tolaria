@@ -51,8 +51,8 @@ vi.mock("../ui/MobileIconButton", () => ({
 		),
 }));
 vi.mock("../components/workspace/MobilePropertiesPanel", () => ({
-	MobilePropertiesPanel: () => {
-		calls.properties();
+	MobilePropertiesPanel: (props: Record<string, unknown>) => {
+		calls.properties(props);
 		return null;
 	},
 }));
@@ -153,6 +153,7 @@ it("keeps command palette access in the sidebar and removes it from phone header
 	expect(calls.list.mock.lastCall?.[0].bulkActions.primarySwipeAction).toBe(
 		"organize",
 	);
+	expect(calls.list.mock.lastCall?.[0].scrollsToTop).toBe(true);
 	expect(calls.editor.mock.lastCall?.[0].trailing).toBeUndefined();
 	expect(calls.properties).toHaveBeenCalledOnce();
 	expect(host.querySelectorAll('[aria-label="Command palette"]')).toHaveLength(
@@ -188,4 +189,7 @@ it("opens the sidebar from the phone note-list header", async () => {
 			.querySelector('[data-testid="phone-list-slot"]')
 			?.getAttribute("data-active"),
 	).toBe("false");
+	expect(calls.list.mock.lastCall?.[0].scrollsToTop).toBe(false);
+	expect(calls.properties.mock.lastCall?.[0].scrollsToTop).toBe(false);
+	expect(calls.editor.mock.lastCall?.[0].scrollsToTop).toBeUndefined();
 });
