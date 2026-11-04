@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, createElement, type CSSProperties, type ReactNode } from 'react'
+import { act, type CSSProperties, createElement, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { MobileCompactFormattingToolbar } from './MobileCompactFormattingToolbar'
@@ -18,8 +18,10 @@ function WebTrigger({ children, testID, style }: SurfaceProps) {
   return createElement('button', { type: 'button', style: style as CSSProperties, 'data-testid': testID }, children)
 }
 vi.mock('react-native', () => ({ View: Surface, ScrollView: Surface,
+  Platform: { OS: 'ios' },
   StyleSheet: { create: (value: object) => value, flatten: (value: CSSProperties[]) => Object.assign({}, ...value) }, Keyboard: {
     isVisible: () => keyboard.visible, dismiss: keyboard.dismiss,
+    scheduleLayoutAnimation: vi.fn(),
     addListener: (event: string, callback: () => void) => {
       const listeners = keyboard.listeners.get(event) ?? new Set()
       listeners.add(callback)
@@ -66,13 +68,13 @@ it.each([0, 34])('shows a fixed 44-point dismiss control only while the keyboard
   keyboard.bottom = bottom
   const host = await mount(createElement(MobileCompactFormattingToolbar, { actions: ['bold'], selected: [], inTable: false, onFormat: vi.fn() }))
   expect(host.querySelector('[data-testid="editor-hide-keyboard-action"]')).toBeNull()
-  await keyboardEvent('keyboardDidShow')
+  await keyboardEvent('keyboardWillShow')
   const button = host.querySelector<HTMLButtonElement>('[data-testid="editor-hide-keyboard-action"]')
   expect(button?.style.width).toBe('44px')
   expect(button?.style.height).toBe('44px')
   await act(async () => button?.click())
   expect(keyboard.dismiss).toHaveBeenCalledExactlyOnceWith()
-  await keyboardEvent('keyboardDidHide')
+  await keyboardEvent('keyboardWillHide')
   expect(host.querySelector('[data-testid="editor-hide-keyboard-action"]')).toBeNull()
 })
 
