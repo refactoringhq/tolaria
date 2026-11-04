@@ -2,7 +2,7 @@
 
 import { spawn } from "node:child_process";
 import console from "node:console";
-import { access, cp, mkdir, rm } from "node:fs/promises";
+import { access, cp, mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import { resolve } from "node:path";
 import process from "node:process";
@@ -17,7 +17,6 @@ const finalCoverageDir = resolve(
 	rootDir,
 	process.env.VITEST_COVERAGE_FINAL_DIR ?? "coverage",
 );
-const coverageRunRoot = resolve(os.tmpdir(), "tolaria-vitest-coverage-runs");
 const forwardedArgs = process.argv.slice(2);
 const hasFileParallelismOverride = forwardedArgs.some(
 	(arg) => arg === "--fileParallelism" || arg === "--no-file-parallelism",
@@ -93,16 +92,18 @@ function coverageParallelismArgs(retryMode) {
 	];
 }
 
-async function runCoverageAttempt(attempt, retryMode) {
-	const runId = `${Date.now()}-${process.pid}-${attempt}`;
-	const runCoverageDir = resolve(coverageRunRoot, runId);
-	const runCoverageTempDir = resolve(runCoverageDir, ".tmp");
-
-	await mkdir(runCoverageDir, { recursive: true });
-	// Vitest writes per-worker coverage shards under reportsDirectory/.tmp.
-	await mkdir(runCoverageTempDir, { recursive: true });
+async function runCoverageAttempt(retryMode) {
+	const runCoverageDir = await mkdtemp(
+		resolve(os.tmpdir(), "tolaria-vitest-coverage-"),
+	);
 	if (!skipClearCache) {
-		await clearVitestCache();
+		const cacheExitCode = await clearVitestCache();
+		if (cacheExitCode !== 0) {
+			console.error(
+				`Vitest cache clear failed with exit code ${cacheExitCode}`,
+			);
+			return { exitCode: cacheExitCode, output: "", runCoverageDir };
+		}
 	}
 
 	const commandArgs = [
@@ -158,80 +159,97 @@ async function runCoverageAttempt(attempt, retryMode) {
 	};
 }
 
-async function clearVitestCache() {
-	const exitCode = await new Promise((resolveExit, rejectExit) => {
+function clearVitestCache() {
+	return new Promise((resolveExit) => {
 		const child = spawn(clearCacheCommand.command, clearCacheCommand.args, {
 			cwd: rootDir,
 			env: process.env,
 			stdio: "inherit",
 		});
 
-		child.on("error", rejectExit);
+		child.on("error", (error) => {
+			console.error(`Vitest cache clear failed: ${error.message}`);
+			resolveExit(1);
+		});
 		child.on("exit", (code, signal) => {
 			if (signal) {
-				rejectExit(
-					new Error(`Vitest cache clear exited via signal: ${signal}`),
-				);
+				console.error(`Vitest cache clear exited via signal: ${signal}`);
+				resolveExit(1);
 				return;
 			}
 
 			resolveExit(code ?? 1);
 		});
 	});
-
-	if (exitCode !== 0) {
-		throw new Error(`Vitest cache clear failed with exit code ${exitCode}`);
-	}
 }
 
-if (coverageShard && !isValidCoverageShard(coverageShard)) {
-	console.error(
-		`Invalid VITEST_COVERAGE_SHARD=${JSON.stringify(coverageShard)}; expected index/total`,
-	);
-	process.exit(2);
-}
+async function runCoverageAttempts() {
+	let finalRun = null;
+	let retryMode = null;
 
-let finalRun = null;
-let retryMode = null;
-
-for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-	const run = await runCoverageAttempt(attempt, retryMode);
-	finalRun = run;
-
-	if (run.exitCode === 0) {
-		const reportPath = resolve(run.runCoverageDir, "coverage-final.json");
+	for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+		let run;
 		try {
-			await access(reportPath);
-		} catch {
-			throw new Error(
-				`Vitest exited successfully without writing ${reportPath}`,
-			);
+			run = await runCoverageAttempt(retryMode);
+		} catch (error) {
+			console.error(`Coverage attempt failed: ${error.message}`);
+			process.exit(1);
+		}
+		finalRun = run;
+
+		if (run.exitCode === 0) {
+			await publishCoverage(run);
+			return 0;
 		}
 
-		await rm(finalCoverageDir, { recursive: true, force: true });
-		await cp(run.runCoverageDir, finalCoverageDir, {
-			force: true,
-			recursive: true,
-		});
-		await rm(run.runCoverageDir, { recursive: true, force: true });
-		process.exit(0);
+		retryMode = detectVitestRetryMode(run.output);
+		if (attempt < maxAttempts && retryMode) {
+			const retryDescription =
+				retryMode === VITEST_RETRY_MODE.SINGLE_WORKER
+					? "a worker-startup timeout; retrying once with a single worker"
+					: "a known internal-state teardown flake; retrying once";
+			console.error(`Vitest hit ${retryDescription}...`);
+			await rm(run.runCoverageDir, { recursive: true, force: true });
+			continue;
+		}
+
+		break;
 	}
 
-	retryMode = detectVitestRetryMode(run.output);
-	if (attempt < maxAttempts && retryMode) {
-		const retryDescription =
-			retryMode === VITEST_RETRY_MODE.SINGLE_WORKER
-				? "a worker-startup timeout; retrying once with a single worker"
-				: "a known internal-state teardown flake; retrying once";
-		console.error(`Vitest hit ${retryDescription}...`);
-		await rm(run.runCoverageDir, { recursive: true, force: true });
-		continue;
-	}
-
-	break;
+	console.error(
+		`Vitest coverage artifacts preserved at ${finalRun.runCoverageDir}`,
+	);
+	return finalRun.exitCode;
 }
 
-console.error(
-	`Vitest coverage artifacts preserved at ${finalRun.runCoverageDir}`,
-);
-process.exit(finalRun.exitCode);
+async function publishCoverage(run) {
+	const reportPath = resolve(run.runCoverageDir, "coverage-final.json");
+	try {
+		await access(reportPath);
+	} catch {
+		throw new Error(`Vitest exited successfully without writing ${reportPath}`);
+	}
+
+	await rm(finalCoverageDir, { recursive: true, force: true });
+	await cp(run.runCoverageDir, finalCoverageDir, {
+		force: true,
+		recursive: true,
+	});
+	await rm(run.runCoverageDir, { recursive: true, force: true });
+}
+
+async function main() {
+	if (coverageShard && !isValidCoverageShard(coverageShard)) {
+		console.error(
+			`Invalid VITEST_COVERAGE_SHARD=${JSON.stringify(coverageShard)}; expected index/total`,
+		);
+		process.exit(2);
+	}
+
+	process.exit(await runCoverageAttempts());
+}
+
+main().catch((error) => {
+	console.error(`Coverage runner failed: ${error.message}`);
+	process.exitCode = 1;
+});
