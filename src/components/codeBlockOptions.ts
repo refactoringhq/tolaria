@@ -128,7 +128,31 @@ async function loadVbScriptLanguage(): Promise<TolariaLanguageInput[]> {
   })
 }
 
+async function loadBashLanguage(): Promise<TolariaLanguageInput[]> {
+  const languages = await optionalLanguageInputs(() => import('@shikijs/langs/bash'))
+  return languages.map((language) => {
+    const registration = namedLanguageRegistration(language)
+    if (registration?.name !== 'shellscript') return language
+
+    const repository = registration.repository as Record<string, Record<string, unknown>>
+    const argumentContext = repository.argument_context
+    if (!Array.isArray(argumentContext.patterns)) return language
+
+    return {
+      ...registration,
+      repository: {
+        ...repository,
+        argument_context: {
+          ...argumentContext,
+          patterns: [{ include: '#comment' }, ...argumentContext.patterns],
+        },
+      },
+    } as unknown as TolariaLanguageInput
+  })
+}
+
 const EXTRA_LANGUAGE_LOADERS = new Map<string, TolariaLanguageLoader>([
+  ['bash', loadBashLanguage],
   ['powershell', async () => optionalLanguageInputs(() => import('@shikijs/langs/powershell'))],
   ['vbscript', loadVbScriptLanguage],
   ['dart', async () => optionalLanguageInputs(() => import('@shikijs/langs/dart'))],
@@ -151,21 +175,24 @@ const EXTRA_LANGUAGE_LOADERS = new Map<string, TolariaLanguageLoader>([
   ['pascal', async () => optionalLanguageInputs(() => import('@shikijs/langs/pascal'))],
 ])
 
-function expandGoLanguage(language: string): TolariaLanguageInput[] | null {
-  return canonicalKnownCodeBlockLanguage(language) === 'go'
+type LanguageId = { id: string }
+
+function expandGoLanguage({ id }: LanguageId): TolariaLanguageInput[] | null {
+  return canonicalKnownCodeBlockLanguage(id) === 'go'
     ? [GO_LANGUAGE_REGISTRATION as TolariaLanguageInput]
     : null
 }
 
-async function expandExternalLanguage(language: string): Promise<TolariaLanguageInput[] | null> {
-  const canonicalLanguage = canonicalKnownCodeBlockLanguage(language) ?? language.trim().toLowerCase()
+async function expandExternalLanguage({ id }: LanguageId): Promise<TolariaLanguageInput[] | null> {
+  const canonicalLanguage = canonicalKnownCodeBlockLanguage(id) ?? id.trim().toLowerCase()
   const loadLanguage = EXTRA_LANGUAGE_LOADERS.get(canonicalLanguage)
   return loadLanguage ? loadLanguage() : null
 }
 
 async function expandLanguage(language: TolariaLanguageInput): Promise<TolariaLanguageInput[]> {
   if (typeof language !== 'string') return [language]
-  return expandGoLanguage(language) ?? await expandExternalLanguage(language) ?? [language]
+  const languageId = { id: language }
+  return expandGoLanguage(languageId) ?? await expandExternalLanguage(languageId) ?? [language]
 }
 
 async function createTolariaCodeHighlighter(): Promise<TolariaCodeHighlighter> {
