@@ -115,3 +115,24 @@ The existing iPhone 16 Pro simulator is booted with Device Hub open, and Metro s
 
 - On iPhone, reproduce restore A, select B, edit B's slug, copy a note link and open an incoming link with the new slug.
 - Confirm the destination note opens while B's root, index, selected note, and Git connection remain intact, including a collision-safe slug case.
+
+---
+
+# TOL-75 Release Record — 33c6d8b60
+
+## Change
+
+- Removed the redundant clean-worktree scan immediately after `checkpointLocal` has verified a clean tree under the local-access lock. Sync uses the verified-clean integration path; standalone integration retains its own dirty-tree guard.
+- Added a regression test that confirms integration applies remote file changes without a second Git walk after the verified checkpoint. Updated `docs/ABSTRACTIONS.md` with the checkpoint-lock invariant.
+- This is a bounded Git-cost reduction. It does not claim measured device latency improvement or resolve the remaining large-pack/checkout costs.
+
+## Validation
+
+- TDD: regression failed before the verified-clean API existed, then passed. Focused Git suite: 4 files, 33 tests passed. Full mobile suite: 451 files, 2,741 tests passed; mobile lint and typecheck passed.
+- `npx biome check` on the 3 touched code files passed. Explicit local Codacy per-file scans completed for all 3 paths; ESLint, Lizard, Opengrep OSS, and Trivy each returned 0 findings, and Biome passed separately. Codacy differential pre-push gate passed.
+- Pre-commit used pnpm 10.33.0 and passed. Full normal pre-push passed: frontend lint/build, frontend coverage 89.72% lines, Rust tests and coverage 86.81% lines, 40 Playwright smoke tests, Codacy differential, and CodeScene thresholds.
+- CodeScene: all 3 code files remained 10.0; pre-commit safeguard passed; final `origin/main` change-set review passed (3 code files, no issues). Project Hotspot 10.0 / Average 9.981977855021611, meeting 10.0 / 9.98 floors.
+- Codacy Cloud: exact SHA `33c6d8b60f8393f1f20119bdedf92c9c7d95b207` analyzed with no analyzer problems. Dashboard roster is 37 tools / 21 enabled, including Biome, ESLint9, Lizard, Opengrep, and Trivy; deprecated ESLint remains disabled. Fully paginated main issue list: 972 total; 0 findings on the 3 touched code paths.
+- CircleCI exact-SHA checks all green, including `mobile-ota-quality`, `frontend-coverage`, `playwright-smoke`, `frontend-lint-build`, `web-build`, `static-gates`, and `publish-mobile-alpha`. The OTA publish job succeeded; no separate update ID/receipt was captured.
+- Native/device QA and device performance profiling were not run. Specifically unverified: 9,000-note sync timing/stall impact of this reduction, physical provider/iCloud delivery, iPad automatic-sync UI, and final signed-binary acceptance. No simulator or vault data was touched.
+- Localization: no UI copy changes. PostHog: no event needed because this is an internal sync-cost correction to an existing action. Refactoring: `gitVault.ts` and `gitRemote.ts` integration path. ADRs: none. Docs: `docs/ABSTRACTIONS.md`. Demo-vault dirt: none.
