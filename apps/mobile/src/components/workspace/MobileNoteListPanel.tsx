@@ -1,10 +1,9 @@
 import { MagnifyingGlass } from 'phosphor-react-native'
-import { type ReactElement, type ReactNode, useMemo } from 'react'
-import { FlatList, type RefreshControlProps, StyleSheet, View } from 'react-native'
+import type { ReactNode } from 'react'
+import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { mobileCopy, mobileText } from '../../i18n/mobileText'
-import { MobileLayoutProbeReadout } from '../../qa/MobileLayoutProbeReadout'
-import { type MobileLayoutProbe, useMobileLayoutProbe } from '../../qa/mobileLayoutProbe'
+import { mobileCopy } from '../../i18n/mobileText'
+import { useMobileLayoutProbe } from '../../qa/mobileLayoutProbe'
 import { desktopPanelParity, desktopToolbarActionParity } from '../../ui/desktopParity'
 import { MobileIconButton } from '../../ui/MobileIconButton'
 import {
@@ -22,29 +21,17 @@ import type {
   MobileTypeDefinitions,
 } from '../../workspace/mobileWorkspaceModel'
 import { useMobilePullToSync } from '../../workspace/useMobilePullToSync'
-import { Button } from '../ui/button'
-import { Text } from '../ui/text'
 import { MobileCreateNoteButton } from './MobileCreateNoteButton'
 import { MobileNoteListBulkActionBar } from './MobileNoteListBulkActionBar'
-import {
-  MobileNoteListRow,
-  MobileRelationshipGroupHeader,
-  NoteListEmptyState,
-  SearchPill,
-} from './MobileNoteListItems'
+import { SearchPill } from './MobileNoteListItems'
 import { createThemeStyles } from './MobileNoteListPanel.styles'
 import {
-  mobileNoteListFilterOptions,
   mobileNoteListToolbarChrome,
 } from './MobileNoteListPanelChrome'
-import type { MobileNoteRowActions } from './MobileSwipeableNoteRow'
+import { MobileNoteListPanelFooter } from './MobileNoteListPanelFooter.internal'
+import { MobileNoteListScrollContent } from './MobileNoteListScrollContent.internal'
 import { mobileNoteListSelectionIsArchived } from './mobileNoteListBulkSelection'
-import {
-  type MobileNeighborhoodRow,
-  mobileNeighborhoodRows,
-  mobileNoteListRowActions,
-} from './mobileNoteListRows'
-import { mobilePaneFooterFrame } from './mobilePaneFooterLayout'
+import { mobileNoteListRowActions } from './mobileNoteListRows'
 import {
   type MobileNoteListBulkActions,
   useMobileNoteListBulkSelection,
@@ -73,6 +60,7 @@ type MobileNoteListPanelProps = {
   onToggleNoteFavorite?: (noteId: string) => void
   propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
   searchQuery?: string
+  scrollsToTop?: boolean
   selectedNoteId: string | null
   subtitle: string
   title?: string
@@ -80,32 +68,16 @@ type MobileNoteListPanelProps = {
 }
 
 export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
-  const { styles, mobileColors } = useMobileStyles(createThemeStyles)
+  const themeStyles = useMobileStyles(createThemeStyles)
   const { bottom } = useSafeAreaInsets()
   const refreshControl = useMobilePullToSync()
   const {
     bulkActions,
-    compact,
-    displayPropertyKeys = [],
-    emptyVault = false,
-    fullWidth = false,
-    leading,
-    toolbarTrailing,
-    showCreateAction = true,
     layoutProbe: layoutProbeEnabled = false,
     neighborhood = null,
-    noteListFilter = 'open',
-    noteListFilterCounts = { archived: 0, open: 0 },
     notes,
-    onOpenCreateNote,
-    onOpenSearch,
-    onOpenVault,
     onSelectNote,
-    propertyDisplayModes,
-    searchQuery,
     selectedNoteId,
-    title = mobileCopy.inbox,
-    typeDefinitions,
   } = props
   const onFilterChange = noteListFilterAction(props)
   const activeNoteId = selectedNoteId ?? notes[0]?.id ?? null
@@ -117,208 +89,103 @@ export function MobileNoteListPanel(props: MobileNoteListPanelProps) {
     onSelectNote,
   })
 
+  return <MobileNoteListPanelFrame props={props} view={{
+    activeNoteId,
+    bottom,
+    bulkSelection,
+    layoutProbe,
+    onFilterChange,
+    refreshControl,
+    themeStyles,
+  }} />
+}
+
+type MobileNoteListPanelView = {
+  activeNoteId: string | null
+  bottom: number
+  bulkSelection: ReturnType<typeof useMobileNoteListBulkSelection>
+  layoutProbe: ReturnType<typeof useMobileLayoutProbe>
+  onFilterChange: ((filter: MobileNoteListFilter) => void) | undefined
+  refreshControl: ReturnType<typeof useMobilePullToSync>
+  themeStyles: ReturnType<typeof createThemeStyles>
+}
+
+function MobileNoteListPanelFrame({ props, view }: { props: MobileNoteListPanelProps; view: MobileNoteListPanelView }) {
   return (
-    <MobilePanel
-      {...layoutProbe.probe('noteList.panel')}
-      style={[
-        panelStyles.panel,
-        compact ? panelStyles.panelCompact : null,
-        fullWidth ? panelStyles.panelFullWidth : null,
-        { paddingBottom: onFilterChange ? 0 : bottom },
-      ]}
-      testID="note-list-panel"
-    >
-      <MobileToolbar testID="note-list-toolbar">
-        {leading}
-        <View style={styles.toolbarTitleBlock}>
-          <MobileToolbarTitle testID="note-list-toolbar-title" title={title} />
-        </View>
-        <MobileToolbarSpacer />
-        {toolbarTrailing ?? (
-          <MobileIconButton
-            accessibilityLabel={mobileCopy.searchNotes}
-            testID={mobileNoteListToolbarChrome.actionTestIds[0]}
-            onPress={onOpenSearch}
-          >
-            <MagnifyingGlass
-              color={mobileColors.textMuted}
-              size={desktopToolbarActionParity.iconSize}
-            />
-          </MobileIconButton>
-        )}
-      </MobileToolbar>
-      {searchQuery ? <SearchPill searchQuery={searchQuery} /> : null}
-      <View style={styles.listBody}>
-        <NoteListContent
-          rowActions={mobileNoteListRowActions(props.bulkActions, props.onToggleNoteFavorite)}
-          activeNoteId={activeNoteId}
-          bulkSelection={bulkSelection}
-          displayPropertyKeys={displayPropertyKeys}
-          emptyVault={emptyVault}
-          layoutProbe={layoutProbe.probe}
-          neighborhood={neighborhood}
-          notes={notes}
-          onSelectNote={onSelectNote}
-          onOpenVault={onOpenVault}
-          propertyDisplayModes={propertyDisplayModes}
-          searchQuery={searchQuery}
-          refreshControl={refreshControl}
-          selectedNoteId={selectedNoteId}
-          typeDefinitions={typeDefinitions}
-        />
-        <MobileCreateNoteButton
-          visible={showCreateAction && bulkSelection.selectedNotes.length === 0}
-          onPress={onOpenCreateNote}
-        />
-      </View>
-      <BulkSelectionBar bulkActions={bulkActions} bulkSelection={bulkSelection} />
-      {onFilterChange ? (
-        <NoteListFilterPills
-          active={noteListFilter}
-          counts={noteListFilterCounts}
-          onChange={onFilterChange}
-        />
-      ) : null}
-      {layoutProbeEnabled ? (
-        <MobileLayoutProbeReadout metrics={layoutProbe.metrics} testID="note-list-layout-metrics" />
-      ) : null}
+    <MobilePanel {...view.layoutProbe.probe('noteList.panel')} style={noteListPanelStyle(props, view)} testID="note-list-panel">
+      <MobileNoteListToolbar props={props} themeStyles={view.themeStyles} />
+      <MobileNoteListPanelBody props={props} view={view} />
+      <BulkSelectionBar bulkActions={props.bulkActions} bulkSelection={view.bulkSelection} />
+      <MobileNoteListPanelFooter
+        active={props.noteListFilter ?? 'open'}
+        counts={props.noteListFilterCounts ?? { archived: 0, open: 0 }}
+        layoutProbe={props.layoutProbe ? view.layoutProbe : null}
+        onChange={view.onFilterChange}
+      />
     </MobilePanel>
   )
 }
 
-type NoteListFilterPillsProps = {
-  active: MobileNoteListFilter
-  counts: Record<MobileNoteListFilter, number>
-  onChange: (filter: MobileNoteListFilter) => void
+function noteListPanelStyle(props: MobileNoteListPanelProps, view: MobileNoteListPanelView) {
+  return [
+    panelStyles.panel,
+    props.compact ? panelStyles.panelCompact : null,
+    props.fullWidth ? panelStyles.panelFullWidth : null,
+    { paddingBottom: view.onFilterChange ? 0 : view.bottom },
+  ]
 }
 
-function NoteListFilterPills({ active, counts, onChange }: NoteListFilterPillsProps) {
-  const { styles } = useMobileStyles(createThemeStyles)
-  const { bottom } = useSafeAreaInsets()
+function MobileNoteListToolbar({ props, themeStyles }: { props: MobileNoteListPanelProps; themeStyles: ReturnType<typeof createThemeStyles> }) {
   return (
-    <View
-      accessibilityRole="tablist"
-      style={[styles.filterBar, mobilePaneFooterFrame(bottom)]}
-      testID="note-list-filter-pills"
-    >
-      {mobileNoteListFilterOptions.map((option) => {
-        const selected = active === option.value
-        return (
-          <Button
-            accessibilityLabel={mobileText(option.labelKey)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected }}
-            className="shadow-none"
-            key={option.value}
-            size="sm"
-            style={[styles.filterPill, selected ? styles.filterPillSelected : null]}
-            testID={`filter-pill-${option.value}`}
-            variant="ghost"
-            onPress={() => onChange(option.value)}
-          >
-            <Text style={[styles.filterPillText, selected ? styles.filterPillTextSelected : null]}>
-              {mobileText(option.labelKey)}
-            </Text>
-            <Text
-              style={[styles.filterPillCount, selected ? styles.filterPillCountSelected : null]}
-            >
-              {counts[option.value].toLocaleString()}
-            </Text>
-          </Button>
-        )
-      })}
-    </View>
+    <MobileToolbar testID="note-list-toolbar">
+      {props.leading}
+      <View style={themeStyles.styles.toolbarTitleBlock}>
+        <MobileToolbarTitle testID="note-list-toolbar-title" title={props.title ?? mobileCopy.inbox} />
+      </View>
+      <MobileToolbarSpacer />
+      {props.toolbarTrailing ?? <MobileNoteListSearchButton onOpenSearch={props.onOpenSearch} color={themeStyles.mobileColors.textMuted} />}
+    </MobileToolbar>
   )
 }
 
-type NoteListContentProps = {
-  rowActions?: MobileNoteRowActions
-  activeNoteId: string | null
-  bulkSelection: ReturnType<typeof useMobileNoteListBulkSelection>
-  displayPropertyKeys: string[]
-  emptyVault: boolean
-  layoutProbe: MobileLayoutProbe
-  neighborhood: MobileNeighborhood | null
-  notes: MobileNote[]
-  onOpenVault?: () => void
-  onSelectNote: (noteId: string) => void
-  propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
-  searchQuery?: string
-  refreshControl?: ReactElement<RefreshControlProps>
-  selectedNoteId: string | null
-  typeDefinitions?: MobileTypeDefinitions
+function MobileNoteListSearchButton({ onOpenSearch, color }: { onOpenSearch: () => void; color: string }) {
+  return (
+    <MobileIconButton accessibilityLabel={mobileCopy.searchNotes} testID={mobileNoteListToolbarChrome.actionTestIds[0]} onPress={onOpenSearch}>
+      <MagnifyingGlass color={color} size={desktopToolbarActionParity.iconSize} />
+    </MobileIconButton>
+  )
 }
 
-function NoteListContent(props: NoteListContentProps) {
-  const { styles } = useMobileStyles(createThemeStyles)
-  const {
-    activeNoteId,
-    bulkSelection,
-    displayPropertyKeys,
-    emptyVault,
-    layoutProbe,
-    neighborhood,
-    notes,
-    onOpenVault,
-    onSelectNote,
-    propertyDisplayModes,
-    searchQuery,
-    refreshControl,
-    selectedNoteId,
-    typeDefinitions,
-  } = props
-  if (neighborhood) {
-    return (
-      <NeighborhoodNoteList
-        rowActions={props.rowActions}
-        activeNoteId={activeNoteId}
-        displayPropertyKeys={displayPropertyKeys}
-        layoutProbe={layoutProbe}
-        neighborhood={neighborhood}
-        refreshControl={refreshControl}
-        propertyDisplayModes={propertyDisplayModes}
-        typeDefinitions={typeDefinitions}
-        onSelectNote={onSelectNote}
-      />
-    )
-  }
-
+function MobileNoteListPanelBody({ props, view }: { props: MobileNoteListPanelProps; view: MobileNoteListPanelView }) {
+  const { styles } = view.themeStyles
   return (
-    <FlatList
-      {...layoutProbe('noteList.list')}
-      contentContainerStyle={styles.listContent}
-      data={notes}
-      extraData={bulkSelection.rowExtraData(selectedNoteId)}
-      initialNumToRender={16}
-      keyExtractor={(note) => note.id}
-      ListEmptyComponent={
-        <NoteListEmptyState
-          emptyVault={emptyVault}
-          searchQuery={searchQuery}
-          onOpenVault={onOpenVault}
+    <>
+      {props.searchQuery ? <SearchPill searchQuery={props.searchQuery} /> : null}
+      <View style={styles.listBody}>
+        <MobileNoteListScrollContent
+          rowActions={mobileNoteListRowActions(props.bulkActions, props.onToggleNoteFavorite)}
+          activeNoteId={view.activeNoteId}
+          bulkSelection={view.bulkSelection}
+          displayPropertyKeys={props.displayPropertyKeys ?? []}
+          emptyVault={props.emptyVault ?? false}
+          layoutProbe={view.layoutProbe.probe}
+          neighborhood={props.neighborhood ?? null}
+          notes={props.notes}
+          onSelectNote={props.onSelectNote}
+          onOpenVault={props.onOpenVault}
+          propertyDisplayModes={props.propertyDisplayModes}
+          searchQuery={props.searchQuery}
+          scrollsToTop={props.scrollsToTop ?? false}
+          refreshControl={view.refreshControl}
+          selectedNoteId={props.selectedNoteId}
+          typeDefinitions={props.typeDefinitions}
         />
-      }
-      refreshControl={refreshControl}
-      renderItem={({ item: note }) => (
-        <MobileNoteListRow
-          {...{
-            rowActions: bulkSelection.selectedNotes.length === 0 ? props.rowActions : undefined,
-            activeNoteId,
-            displayPropertyKeys,
-            layoutProbe,
-            multiSelected: bulkSelection.selectedNoteIds.has(note.id),
-            note,
-            onBeginSelection: bulkSelection.beginSelection,
-            propertyDisplayModes,
-            typeDefinitions,
-            onSelectNote: bulkSelection.pressNote,
-          }}
+        <MobileCreateNoteButton
+          visible={(props.showCreateAction ?? true) && view.bulkSelection.selectedNotes.length === 0}
+          onPress={props.onOpenCreateNote}
         />
-      )}
-      removeClippedSubviews
-      showsVerticalScrollIndicator={false}
-      windowSize={5}
-    />
+      </View>
+    </>
   )
 }
 
@@ -339,95 +206,6 @@ function BulkSelectionBar({
       onClear={bulkSelection.clearSelection}
       onDelete={bulkSelection.deleteSelected}
       onOrganize={bulkSelection.organizeSelected}
-    />
-  )
-}
-
-function NeighborhoodNoteList({
-  rowActions,
-  activeNoteId,
-  displayPropertyKeys,
-  layoutProbe,
-  neighborhood,
-  refreshControl,
-  onSelectNote,
-  propertyDisplayModes,
-  typeDefinitions,
-}: {
-  rowActions?: MobileNoteRowActions
-  activeNoteId: string | null
-  displayPropertyKeys: string[]
-  layoutProbe: MobileLayoutProbe
-  neighborhood: MobileNeighborhood
-  refreshControl?: ReactElement<RefreshControlProps>
-  onSelectNote: (noteId: string) => void
-  propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
-  typeDefinitions?: MobileTypeDefinitions
-}) {
-  const { styles } = useMobileStyles(createThemeStyles)
-  const rows = useMemo(() => mobileNeighborhoodRows(neighborhood), [neighborhood])
-
-  return (
-    <FlatList
-      contentContainerStyle={styles.listContent}
-      data={rows}
-      extraData={activeNoteId}
-      initialNumToRender={18}
-      keyExtractor={(row) => row.id}
-      refreshControl={refreshControl}
-      renderItem={({ item }) =>
-        neighborhoodRow({
-          rowActions,
-          activeNoteId,
-          displayPropertyKeys,
-          item,
-          layoutProbe,
-          propertyDisplayModes,
-          typeDefinitions,
-          onSelectNote,
-        })
-      }
-      removeClippedSubviews
-      showsVerticalScrollIndicator={false}
-      windowSize={5}
-    />
-  )
-}
-
-function neighborhoodRow({
-  rowActions,
-  activeNoteId,
-  displayPropertyKeys,
-  item,
-  layoutProbe,
-  onSelectNote,
-  propertyDisplayModes,
-  typeDefinitions,
-}: {
-  rowActions?: MobileNoteRowActions
-  activeNoteId: string | null
-  displayPropertyKeys: string[]
-  item: MobileNeighborhoodRow
-  layoutProbe: MobileLayoutProbe
-  onSelectNote: (noteId: string) => void
-  propertyDisplayModes?: Record<string, MobilePropertyDisplayMode> | null
-  typeDefinitions?: MobileTypeDefinitions
-}) {
-  if (item.kind === 'header') return <MobileRelationshipGroupHeader group={item.group} />
-
-  return (
-    <MobileNoteListRow
-      {...{
-        rowActions,
-        activeNoteId,
-        displayPropertyKeys,
-        forceSelected: item.kind === 'source',
-        layoutProbe,
-        note: item.note,
-        propertyDisplayModes,
-        typeDefinitions,
-        onSelectNote,
-      }}
     />
   )
 }

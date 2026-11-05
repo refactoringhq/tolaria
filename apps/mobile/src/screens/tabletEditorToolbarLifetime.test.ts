@@ -42,6 +42,11 @@ vi.mock('../qa/mobileLayoutProbe', () => ({ useMobileLayoutProbe: () => ({ probe
 vi.mock('../workspace/mobileAttachmentImport', () => ({ useMobileAttachmentImporter: () => vi.fn() }))
 vi.mock('../workspace/mobileAttachmentOpen', () => ({ useMobileAttachmentLinkOpener: () => vi.fn() }))
 vi.mock('../components/workspace/MobileEditorBlocks', () => ({ MobileEditorBlocks: () => createElement('div', { 'data-testid': 'cached-read-only-content' }) }))
+vi.mock('../components/workspace/MobileTransientNotice.internal', () => ({
+  MobileTransientNotice: ({ message }: { message: string | null }) => message
+    ? createElement('div', { 'data-testid': 'mobile-transient-notice' }, message)
+    : null,
+}))
 vi.mock('../components/workspace/MobileFilePreview', () => ({ MobileFilePreview: () => null }))
 vi.mock('../components/workspace/MobileWysiwygMarkdownEditor', () => ({
   MobileWysiwygMarkdownEditor: ({ note, onNavigateWikilink }: {
@@ -65,11 +70,12 @@ let root: ReturnType<typeof createRoot> | undefined
 beforeEach(() => vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true))
 afterEach(async () => { await act(async () => root?.unmount()); vi.unstubAllGlobals() })
 
-it('shows a localized alert when a wikilink target cannot be resolved', async () => {
+it('shows a nonblocking localized notice when a wikilink target cannot be resolved', async () => {
   const h = createHarness()
   await h.select(0)
   await act(async () => h.host.querySelector<HTMLButtonElement>('[data-testid="navigate-missing-wikilink"]')?.click())
-  expect(nativeAlert.alert).toHaveBeenCalledWith('No matching notes')
+  expect(h.host.querySelector('[data-testid="mobile-transient-notice"]')?.textContent).toBe('No matching notes')
+  expect(nativeAlert.alert).not.toHaveBeenCalled()
 })
 
 it('keeps the rich editor mounted and clean when an opened note receives its disk reread', async () => {

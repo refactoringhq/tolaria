@@ -1,4 +1,4 @@
-import { phoneWorkspaceSidebarDrawerWidth, type PhoneWorkspaceState } from './phoneWorkspaceTransitions'
+import { type PhoneWorkspaceState, phoneWorkspaceSidebarDrawerWidth } from './phoneWorkspaceTransitions'
 
 const states: PhoneWorkspaceState[] = ['sidebar', 'list', 'editor', 'properties']
 export type PhoneRailGeometry = { width: number; reduceMotion?: boolean }
@@ -46,6 +46,12 @@ export function phoneRailSettleState(settlement: PhoneRailSettlement) {
   'worklet'
   const { offset, velocity, bounds, width } = settlement
   return phoneRailNearestState(phoneRailDragOffset(offset, velocity * 0.12, bounds), width);
+}
+
+export function phoneRailSettleDurationMs(velocity: number, reduceMotion = false) {
+  'worklet'
+  if (reduceMotion) return 0
+  return Math.max(60, 180 - Math.min(120, Math.abs(velocity) * 0.08))
 }
 
 // Initialize helpers before dependent worklets capture them at module load.

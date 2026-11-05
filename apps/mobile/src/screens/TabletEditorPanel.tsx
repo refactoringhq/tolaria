@@ -1,6 +1,5 @@
 import { type ReactElement, useCallback, useEffect, useRef, useState } from 'react'
 import {
-  Alert,
   type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -28,9 +27,10 @@ import { mobileNoteActionMode } from '../workspace/mobileNoteActionMode'
 import type { MobileNoteReadState } from '../workspace/mobileNoteRead'
 import { mobileSpreadsheetNeedsFallback } from '../workspace/mobileSpreadsheetFormat'
 import type { MobileTableOfContentsTarget } from '../workspace/mobileTableOfContents'
-import { mobileNoteIdForWikilinkTarget } from '../workspace/mobileWikilinks'
+import { createMobileTaskToggleHandler } from '../workspace/mobileTaskCheckbox'
 import type { MobileEditorBlock, MobileNote } from '../workspace/mobileWorkspaceModel'
 import { useMobilePullToSync } from '../workspace/useMobilePullToSync'
+import { useMobileWikilinkNavigation } from '../workspace/useMobileWikilinkNavigation'
 import { MobileEditorToolbar } from './MobileEditorToolbar'
 import type {
   EditorContentProps,
@@ -82,13 +82,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
   )
   const importAttachment = useMobileAttachmentImporter(vaultRootUri)
   const openLink = useMobileAttachmentLinkOpener(vaultRootUri)
-  const navigateWikilink = useCallback((target: string) => {
-    if (!mobileNoteIdForWikilinkTarget(notes, target)) {
-      Alert.alert(mobileText('noteList.empty.noMatching'))
-      return
-    }
-    onNavigateWikilink(target)
-  }, [notes, onNavigateWikilink])
+  const { navigateWikilink, notice: missingWikilinkNotice } = useMobileWikilinkNavigation(notes, onNavigateWikilink)
   const layoutProbe = useMobileLayoutProbe(layoutProbeEnabled)
   const changeEditingMode = useCallback(() => {
     setEditingMode((current) => (current === 'source' ? 'wysiwyg' : 'source'))
@@ -150,6 +144,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
         onScrollViewRef={setScrollViewNode}
         refreshControl={refreshControl}
       />
+      {missingWikilinkNotice}
       {layoutProbeEnabled ? (
         <MobileLayoutProbeReadout metrics={layoutProbe.metrics} testID="editor-layout-metrics" />
       ) : null}
@@ -241,7 +236,7 @@ function EditorPanelBody(
         note={note}
         vaultRootUri={contentProps.vaultRootUri}
         fallback={
-          <ScrollView contentContainerStyle={panelStyles.filePreviewContent} testID="editor-scroll">
+          <ScrollView contentContainerStyle={panelStyles.filePreviewContent} scrollsToTop={false} testID="editor-scroll">
             <MobileFilePreviewFallback note={note} typeDefinitions={contentProps.typeDefinitions} />
           </ScrollView>
         }
@@ -259,6 +254,7 @@ function EditorPanelBody(
         contentContainerStyle={{ flexGrow: 1 }}
         nestedScrollEnabled
         refreshControl={refreshControl}
+        scrollsToTop={false}
         style={panelStyles.editorHost}
         testID="editor-scroll"
       >
@@ -273,6 +269,7 @@ function EditorPanelBody(
       onScroll={onScroll}
       ref={onScrollViewRef}
       refreshControl={refreshControl}
+      scrollsToTop={false}
       scrollEventThrottle={16}
       style={panelStyles.editorHost}
       testID="editor-scroll"
@@ -440,8 +437,11 @@ function EditorContent({
       renderTitleBlock={shouldRenderReadTitleBlock(note, readBlocks)}
       tableOfContentsTitle={note.title}
       onTableOfContentsTargetLayout={onTableOfContentsTargetLayout}
-      onOpenLink={onOpenLink}
-      onNavigateWikilink={onNavigateWikilink}
+      interactions={{
+        onOpenLink,
+        onNavigateWikilink,
+        onToggleTask: createMobileTaskToggleHandler(note.rawContent, note.id, onUpdateContent),
+      }}
     />
   )
 }

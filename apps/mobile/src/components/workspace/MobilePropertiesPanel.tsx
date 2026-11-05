@@ -1,12 +1,12 @@
-import { useMobileStyles, useMobileColors } from '../../ui/theme/useMobileTheme'
 import { Plus, WarningCircle } from 'phosphor-react-native'
 import { Pressable, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { mobileCopy, mobileText } from '../../i18n/mobileText'
 import { type MobileLayoutProbe, probeProps, useMobileLayoutProbe } from '../../qa/mobileLayoutProbe'
-import { MobilePanel, MobileToolbar, MobileToolbarSpacer, MobileToolbarTitle } from '../../ui/MobilePanel'
 import { MobileIconButton } from '../../ui/MobileIconButton'
+import { MobilePanel, MobileToolbar, MobileToolbarSpacer, MobileToolbarTitle } from '../../ui/MobilePanel'
 import { MobilePropertyRow } from '../../ui/MobilePropertyRow'
+import { useMobileColors, useMobileStyles } from '../../ui/theme/useMobileTheme'
 import { mobileFrontmatterState, needsMobileFrontmatterNotice } from '../../workspace/mobileFrontmatterState'
 import { type MobileInspectorPropertySlot, type MobileInspectorRelationshipSlot, mobileInspectorPropertySlots, mobileInspectorRelationshipSlots } from '../../workspace/mobileInspectorSchema'
 import { resolveMobileMissingTypeName } from '../../workspace/mobileMissingType'
@@ -16,16 +16,17 @@ import { Text } from '../ui/text'
 import { MobileFrontmatterStateNotice } from './MobileFrontmatterStateNotice'
 import { createPropertyPanelStyles } from './MobilePropertiesPanel.styles'
 import { mobileInspectorPlaceholderActionLabel } from './MobilePropertiesPanelModel'
+import { PropertyActionRow, PropertySection } from './MobilePropertyRows'
+import { EditableChipValue, EditablePropertyRow, EditableTagsValue, WorkspaceBadge } from './MobilePropertyValues'
+import { ReferenceGroups, RelationshipValues } from './MobileRelationshipRows'
+import { relationshipHeading, testIdSegment } from './mobilePropertyRowModel'
 import { chipTone, statusTone } from './mobileWorkspaceTone'
-import { PropertySection, PropertyActionRow } from './MobilePropertyRows'
-import { testIdSegment, relationshipHeading } from './mobilePropertyRowModel'
-import { EditableChipValue, EditableTagsValue, EditablePropertyRow, WorkspaceBadge } from './MobilePropertyValues'
-import { RelationshipValues, ReferenceGroups } from './MobileRelationshipRows'
 
 type MobilePropertiesPanelProps = {
   compact: boolean
   fullWidth?: boolean
   showToolbar?: boolean
+  scrollsToTop?: boolean
   layoutProbe?: boolean
   note: MobileNote | null
   onAddProperty: (key?: string) => void
@@ -68,6 +69,7 @@ export function MobilePropertiesPanel(props: MobilePropertiesPanelProps) {
       <PropertiesPanelToolbar {...props} />
       <ScrollView
         {...probeProps(propertyLayoutProbe.probe, 'properties.scroll')}
+        scrollsToTop={props.scrollsToTop ?? false}
         contentContainerStyle={[panelStyles.content, props.note ? null : panelStyles.emptyContent, { paddingBottom: panelStyles.content.padding + bottom }]}
         keyboardShouldPersistTaps="handled"
       >

@@ -1,10 +1,11 @@
 import { Gesture, type GestureStateManager, type GestureTouchEvent } from 'react-native-gesture-handler'
-import { cancelAnimation, runOnJS, withTiming, type SharedValue } from 'react-native-reanimated'
-import { phoneWorkspaceTransitionDurationMs, type PhoneWorkspaceState } from './phoneWorkspaceTransitions'
+import { cancelAnimation, runOnJS, type SharedValue, withTiming } from 'react-native-reanimated'
 import {
-  phoneRailBounds, phoneRailDragOffset, phoneRailIntent, phoneRailOffset, phoneRailSettleState,
   type PhoneRailBounds, type PhoneRailGeometry,
+  phoneRailBounds, phoneRailDragOffset, phoneRailIntent, phoneRailOffset,
+  phoneRailSettleDurationMs, phoneRailSettleState,
 } from './phonePanelRail'
+import type { PhoneWorkspaceState } from './phoneWorkspaceTransitions'
 
 export type PhonePanSession = {
   x: number; y: number; base: number; translation: number
@@ -57,7 +58,7 @@ export function createPhonePanGesture(options: Options) {
       tracePhonePan(options, 'end', { translationX: event.translationX, velocityX: event.velocityX })
       if (session.value.mode !== 'move') return
       settlePhonePan(options, phoneRailSettleState({ offset: offset.value, velocity: event.velocityX,
-        bounds: session.value.bounds, width: geometry.value.width }))
+        bounds: session.value.bounds, width: geometry.value.width }), event.velocityX)
     })
     .onFinalize((_, success) => {
       tracePhonePan(options, 'finalize', { success })
@@ -95,14 +96,14 @@ function recognizePhonePan(options: Options, event: GestureTouchEvent, manager: 
   else if (mode === 'move') manager.activate()
 }
 
-function settlePhonePan(options: Options, state: PhoneWorkspaceState) {
+function settlePhonePan(options: Options, state: PhoneWorkspaceState, velocity = 0) {
   'worklet'
   const { geometry, offset, epoch, session, onSettle } = options
   const ticket = epoch.value
   session.value = { ...session.value, mode: 'fail' }
   tracePhonePan(options, 'settle', { target: state, ticket })
   offset.value = withTiming(phoneRailOffset(state, geometry.value.width),
-    { duration: geometry.value.reduceMotion ? 0 : phoneWorkspaceTransitionDurationMs }, (finished) => {
+    { duration: phoneRailSettleDurationMs(velocity, geometry.value.reduceMotion) }, (finished) => {
       tracePhonePan(options, 'settled', { success: Boolean(finished && epoch.value === ticket), ticket, target: state })
       if (finished && epoch.value === ticket) runOnJS(onSettle)(state, ticket)
     })

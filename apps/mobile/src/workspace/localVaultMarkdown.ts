@@ -1,3 +1,5 @@
+import { isMobileMarkdownCodeFenceClose, readMobileMarkdownCodeFence } from './mobileMarkdownCodeFence'
+import { parseMobileWikilink } from './mobileWikilinks'
 import type {
   MobileEditorBlock,
   MobileEditorHeadingLevel,
@@ -6,8 +8,6 @@ import type {
   MobileEditorOrderedListItem,
   MobileEditorTaskItem,
 } from './mobileWorkspaceModel'
-import { isMobileMarkdownCodeFenceClose, readMobileMarkdownCodeFence } from './mobileMarkdownCodeFence'
-import { parseMobileWikilink } from './mobileWikilinks'
 
 type MarkdownBody = string
 type MarkdownLine = string
@@ -148,10 +148,8 @@ function stripInitialH1(body: MarkdownBody): MarkdownBody {
   const firstContentLine = lines[firstContentIndex]?.trim()
   if (firstContentIndex < 0 || (firstContentLine !== '#' && !firstContentLine?.startsWith('# '))) return body
 
-  return [
-    ...lines.slice(0, firstContentIndex),
-    ...lines.slice(firstContentIndex + 1),
-  ].join('\n')
+  lines[firstContentIndex] = ''
+  return lines.join('\n')
 }
 
 function lineFenceMarker(line: MarkdownLine): string | null {
@@ -291,7 +289,7 @@ function readTasks(
   lines: MarkdownLine[],
   startIndex: number,
 ): { block: Extract<MobileEditorBlock, { kind: 'tasks' }>; nextIndex: number } | null {
-  const items: MobileEditorTaskItem[] = []
+  const items: Array<MobileEditorTaskItem & { sourceLine: number }> = []
   let index = startIndex
 
   while (index < lines.length) {
@@ -301,6 +299,7 @@ function readTasks(
       checked: match[2].toLowerCase() === 'x',
       content: parseInlineText(match[3]),
       depth: listDepth(match[1]),
+      sourceLine: index,
     })
     index += 1
   }

@@ -31,6 +31,7 @@ import type { MobileNote, MobileTypeDefinitions } from '../../workspace/mobileWo
 import { Input } from '../ui/input'
 import { Text } from '../ui/text'
 import { MobileTypeIcon } from './MobileWorkspaceIcons'
+import { mobileSearchResultsScrollProps } from './mobileSearchResultsScrollProps'
 
 type MobileQuickOpenSheetProps = {
   notes: MobileNote[]
@@ -228,7 +229,7 @@ function quickOpenListDataProps({
     data,
     extraData,
     initialNumToRender: 10,
-    keyboardShouldPersistTaps: 'handled' as const,
+    ...mobileSearchResultsScrollProps(),
     keyExtractor: (note: MobileNote) => note.id,
     ListEmptyComponent: <QuickOpenEmptyState />,
     ListHeaderComponent: header,
