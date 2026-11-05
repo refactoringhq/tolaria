@@ -3,6 +3,7 @@ import type { Dispatch, MutableRefObject, PointerEvent as ReactPointerEvent, Set
 import { isSecondaryPointerButton } from '../../utils/pointerButtons'
 import { patchReactSheetPointerEvent } from '../../utils/sheetPointerCoordinates'
 import type { SheetContextMenuState } from '../../utils/sheetContextMenuState'
+import { isReleasedWorkbookModelError } from './sheetReleasedModel'
 import {
   focusWorkbookRoot,
   isEditableTarget,
@@ -46,13 +47,19 @@ function frozenSheetViewport(workbookRef: MutableRefObject<SheetWorkbookState | 
   const current = workbookRef.current
   if (!current) return null
   const { model } = current
-  const sheet = model.getSelectedSheet()
-  const hasFrozenPane = model.getFrozenRowsCount(sheet) > 0 || model.getFrozenColumnsCount(sheet) > 0
-  if (!hasFrozenPane) return null
-  const view = model.getSelectedView()
-  return {
-    leftColumn: view.left_column,
-    topRow: view.top_row,
+  try {
+    const sheet = model.getSelectedSheet()
+    const hasFrozenPane = model.getFrozenRowsCount(sheet) > 0 || model.getFrozenColumnsCount(sheet) > 0
+    if (!hasFrozenPane) return null
+    const view = model.getSelectedView()
+    return {
+      leftColumn: view.left_column,
+      topRow: view.top_row,
+    }
+  } catch (error) {
+    if (!isReleasedWorkbookModelError(error)) throw error
+    console.warn('[sheet-editor] Skipped stale workbook viewport read:', error)
+    return null
   }
 }
 
