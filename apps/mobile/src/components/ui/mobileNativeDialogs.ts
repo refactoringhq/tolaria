@@ -1,4 +1,5 @@
 import { Alert } from 'react-native'
+import { emitMobileHaptic } from '../../ui/mobileHaptics'
 
 type NativeConfirmation = {
   cancelLabel: string
@@ -22,7 +23,10 @@ export type NativeTextPrompt = {
 export function showNativeConfirmation({ cancelLabel, confirmLabel, message, onConfirm, title }: NativeConfirmation) {
   Alert.alert(title, message, [
     { text: cancelLabel, style: 'cancel' },
-    { text: confirmLabel, style: 'destructive', onPress: onConfirm },
+    { text: confirmLabel, style: 'destructive', onPress: () => {
+      emitMobileHaptic('warning')
+      onConfirm()
+    } },
   ])
 }
 

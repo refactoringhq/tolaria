@@ -1,11 +1,12 @@
 import { GlassView } from "expo-glass-effect";
 import { SymbolView } from "expo-symbols";
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View, type ColorValue } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "../components/ui/text";
 import { mobileCopy } from "../i18n/mobileText";
-import { useMobileColors, useMobileMetrics } from "../ui/theme/useMobileTheme";
+import { useMobileMetrics } from "../ui/theme/useMobileTheme";
+import { useMobileChromeColors } from "../ui/theme/useMobileChromeColors";
 import { PhoneEditorTopFade } from "./PhoneEditorTopFade";
 
 export function PhoneNoteListGlassChrome(props: {
@@ -14,7 +15,7 @@ export function PhoneNoteListGlassChrome(props: {
 	title: string;
 	titleVisible: boolean;
 }) {
-	const colors = useMobileColors();
+	const colors = useMobileChromeColors();
 	const metrics = useMobileMetrics();
 	const insets = useSafeAreaInsets();
 	return (
@@ -43,7 +44,7 @@ export function PhoneNoteListGlassChrome(props: {
 }
 
 function PhoneNoteListGlassActions(props: {
-	color: string;
+	color: ColorValue;
 	leading?: ReactNode;
 	left: number;
 	onOpenSearch: () => void;
@@ -89,7 +90,7 @@ function PhoneNoteListGlassActions(props: {
 }
 
 function PhoneNoteListCollapsedTitle(props: {
-	color: string;
+	color: ColorValue;
 	title: string;
 	top: number;
 }) {

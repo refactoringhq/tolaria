@@ -1,7 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const nativeAlert = vi.hoisted(() => ({ alert: vi.fn(), prompt: vi.fn() }))
+const haptics = vi.hoisted(() => ({ notificationAsync: vi.fn(() => Promise.resolve()) }))
 vi.mock('react-native', () => ({ Alert: { alert: nativeAlert.alert, prompt: nativeAlert.prompt } }))
+vi.mock('expo-haptics', () => ({
+  ImpactFeedbackStyle: { Light: 'light' },
+  NotificationFeedbackType: { Success: 'success', Warning: 'warning' },
+  impactAsync: vi.fn(() => Promise.resolve()),
+  notificationAsync: haptics.notificationAsync,
+  selectionAsync: vi.fn(() => Promise.resolve()),
+}))
 
 import { showNativeConfirmation, showNativeTextPrompt, submitPromptValueAfterStateUpdate } from './mobileNativeDialogs'
 
@@ -11,16 +19,15 @@ describe('mobile native dialogs', () => {
     nativeAlert.prompt.mockReset()
   })
 
-  it('marks irreversible confirmation as destructive and cancel as cancel', () => {
+  it('marks irreversible confirmation as destructive and cancel as cancel', async () => {
     const onConfirm = vi.fn()
     showNativeConfirmation({ cancelLabel: 'Cancel', confirmLabel: 'Remove', message: 'Vault', onConfirm, title: 'Remove vault' })
     const buttons = nativeAlert.alert.mock.calls[0]?.[2]
-    expect(buttons).toEqual([
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: onConfirm },
-    ])
+    expect(buttons?.[0]).toEqual({ text: 'Cancel', style: 'cancel' })
+    expect(buttons?.[1]).toMatchObject({ text: 'Remove', style: 'destructive' })
     buttons?.[1]?.onPress?.()
     expect(onConfirm).toHaveBeenCalledOnce()
+    await vi.waitFor(() => expect(haptics.notificationAsync).toHaveBeenCalledWith('warning'))
   })
 
   it('reopens a native prompt with the submitted value and validation message', () => {

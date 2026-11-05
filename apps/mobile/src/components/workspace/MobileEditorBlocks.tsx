@@ -2,6 +2,7 @@ import { CheckSquare, Square } from 'phosphor-react-native'
 import { type LayoutChangeEvent, Pressable, type TextStyle, View } from 'react-native'
 import { useMobileAnalytics } from '../../analytics/useMobileAnalytics'
 import type { MobileMetrics } from '../../ui/mobileMetrics'
+import { emitMobileHaptic } from '../../ui/mobileHaptics'
 import { useMobileStyles } from '../../ui/theme/useMobileTheme'
 import {
   mobileTableOfContentsTargetIdsForBlocks,
@@ -355,6 +356,7 @@ function TaskRow({
         disabled={!onToggleTask || sourceLine === undefined}
         onPress={() => {
           if (sourceLine === undefined) return
+          emitMobileHaptic('selection')
           analytics.capture({ name: 'mobile_note_task_toggled', state: item.checked ? 'unchecked' : 'checked' })
           onToggleTask?.(sourceLine)
         }}

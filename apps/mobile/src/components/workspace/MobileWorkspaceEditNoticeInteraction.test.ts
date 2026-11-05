@@ -30,6 +30,7 @@ vi.mock("react-native", () => ({
 		absoluteFill: { position: "absolute" },
 		create: (styles: object) => styles,
 	},
+	Platform: { OS: "web" },
 	View: Surface,
 }));
 vi.mock("react-native-safe-area-context", () => ({
@@ -44,6 +45,9 @@ vi.mock("../../ui/theme/useMobileTheme", () => ({
 			{ size: (value: number) => value },
 		),
 	}),
+}));
+vi.mock("../../ui/theme/useMobileChromeColors", () => ({
+	useMobileChromeColors: () => ({ text: "#111" }),
 }));
 vi.mock("../ui/text", () => ({ Text: Surface }));
 vi.mock("./MobileSwipeableNoteRow", () => ({ MobileListMotion: Surface }));

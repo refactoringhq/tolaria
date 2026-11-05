@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AccessibilityInfo, StyleSheet, View } from "react-native";
+import { AccessibilityInfo, Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { mobileText } from "../../i18n/mobileText";
 import { MobileButton } from "../../ui/MobileButton";
@@ -10,6 +10,8 @@ import type { MobileWorkspaceActionFeedback } from "../../workspace/mobileWorksp
 import type { MobileSyncStatus } from "../../workspace/mobileWorkspaceModel";
 import { Text } from "../ui/text";
 import { MobileListMotion } from "./MobileSwipeableNoteRow";
+import { MobileNativeNoticeSurface } from "../../ui/notices/MobileNativeNoticeSurface";
+import { useMobileChromeColors } from "../../ui/theme/useMobileChromeColors";
 
 export function MobileWorkspaceEditNotice({
 	failedAction,
@@ -28,6 +30,7 @@ export function MobileWorkspaceEditNotice({
 	sync?: MobileSyncStatus;
 }) {
 	const styles = useMobileStyles(createStyles);
+	const chrome = useMobileChromeColors();
 	const { top } = useSafeAreaInsets();
 	const saveFailure = sync?.kind === "writeFailed";
 	const failed = Boolean(retry) && !saveFailure;
@@ -65,10 +68,26 @@ export function MobileWorkspaceEditNotice({
 		>
 			<View
 				pointerEvents="box-none"
-				style={[styles.position, { top: top + 8 }]}
+				style={Platform.OS === "android" ? StyleSheet.absoluteFill : [styles.position, { top: top + 8 }]}
 			>
-				<View style={styles.notice} testID="workspace-edit-notice">
-					<Text accessibilityLiveRegion="polite" style={styles.message}>
+				<MobileNativeNoticeSurface
+					message={mobileText(
+						failed
+							? "mobile.editor.readFailed"
+							: saveFailed && failedAction
+								? actionFailureMessage(failedAction)
+								: saveFailed
+									? "mobile.vaults.saveFailed"
+									: undoFeedback
+										? actionFeedbackMessage(undoFeedback.action)
+										: "mobile.vaults.saveFailed",
+					)}
+					actionLabel={retry ? mobileText("pulse.retry") : showUndo ? mobileText("command.note.undo") : undefined}
+					onAction={retry ?? (showUndo ? undo : undefined)}
+					onDismiss={() => undefined}
+				>
+				<View style={[styles.notice, { backgroundColor: Platform.OS === "ios" ? "transparent" : undefined, borderColor: chrome.border }]} testID="workspace-edit-notice">
+					<Text accessibilityLiveRegion="polite" style={[styles.message, { color: chrome.text }]}>
 						{mobileText(
 							failed
 								? "mobile.editor.readFailed"
@@ -98,6 +117,7 @@ export function MobileWorkspaceEditNotice({
 						/>
 					) : null}
 				</View>
+				</MobileNativeNoticeSurface>
 			</View>
 		</MobileListMotion>
 	);

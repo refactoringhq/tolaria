@@ -4,6 +4,7 @@ import { mobileText } from "../../i18n/mobileText";
 import { MobileLayoutProbeReadout } from "../../qa/MobileLayoutProbeReadout";
 import type { useMobileLayoutProbe } from "../../qa/mobileLayoutProbe";
 import { useMobileStyles } from "../../ui/theme/useMobileTheme";
+import { emitMobileHaptic } from "../../ui/mobileHaptics";
 import type { MobileNoteListFilter } from "../../workspace/mobileNoteFilters";
 import { Button } from "../ui/button";
 import { Text } from "../ui/text";
@@ -64,7 +65,10 @@ function NoteListFilterPills({
 					key={option.value}
 					label={mobileText(option.labelKey)}
 					testID={`filter-pill-${option.value}`}
-					onPress={() => onChange(option.value)}
+					onPress={() => {
+						if (active !== option.value) emitMobileHaptic("selection");
+						onChange(option.value);
+					}}
 				/>
 			))}
 		</View>

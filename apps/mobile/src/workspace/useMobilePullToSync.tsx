@@ -1,6 +1,7 @@
 import { useCallback, useContext, useRef, useState } from 'react'
 import { RefreshControl } from 'react-native'
 import { MobileVaultControlsContext } from './MobileVaultContext'
+import { emitMobileHaptic } from '../ui/mobileHaptics'
 import { mobilePullToSyncProps } from './mobilePullToSync'
 
 export function useMobilePullToSync() {
@@ -16,6 +17,7 @@ export function useMobilePullToSync() {
     if (!props || refreshingRef.current) return
     const operation = props.onRefresh()
     if (!operation) return
+    emitMobileHaptic('selection')
     refreshingRef.current = true
     setRefreshing(true)
     void operation.then(

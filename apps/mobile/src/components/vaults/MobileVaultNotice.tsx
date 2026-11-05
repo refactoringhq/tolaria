@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { AccessibilityInfo, StyleSheet, View } from 'react-native'
+import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { X } from 'phosphor-react-native'
 import { Text } from '../ui/text'
@@ -10,12 +10,15 @@ import { useMobileColors, useMobileStyles } from '../../ui/theme/useMobileTheme'
 import type { MobileColors } from '../../ui/theme/mobilePalette'
 import type { MobileMetrics } from '../../ui/mobileMetrics'
 import type { VaultNotice } from '../../workspace/vaultNotices'
+import { MobileNativeNoticeSurface } from '../../ui/notices/MobileNativeNoticeSurface'
+import { useMobileChromeColors } from '../../ui/theme/useMobileChromeColors'
 
 export function MobileVaultNotice({ notice, dismiss, onManage }: {
   notice: VaultNotice; dismiss: () => void; onManage: () => void
 }) {
   const styles = useMobileStyles(createStyles)
   const colors = useMobileColors()
+  const chrome = useMobileChromeColors()
   const insets = useSafeAreaInsets()
   const messageKey = notice.kind === 'saveFailed' ? 'mobile.vaults.saveFailed'
     : notice.kind === 'provider' ? 'mobile.vaults.folderUnavailable' : `mobile.sync.${notice.kind}` as Parameters<typeof mobileText>[0]
@@ -25,10 +28,16 @@ export function MobileVaultNotice({ notice, dismiss, onManage }: {
     const timer = setTimeout(dismiss, 10_000)
     return () => clearTimeout(timer)
   }, [dismiss, message])
-  return <View pointerEvents="box-none" style={[styles.position, { top: insets.top + 8 }]}>
-    <View style={styles.notice} testID="vault-sync-notice">
+  return <View pointerEvents="box-none" style={Platform.OS === 'android' ? StyleSheet.absoluteFill : [styles.position, { top: insets.top + 8 }]}>
+    <MobileNativeNoticeSurface
+      message={message}
+      actionLabel={mobileText('status.vault.manageWorkspaces')}
+      onAction={() => { dismiss(); onManage() }}
+      onDismiss={dismiss}
+    >
+    <View style={[styles.notice, { backgroundColor: Platform.OS === 'ios' ? 'transparent' : colors.popover, borderColor: chrome.border }]} testID="vault-sync-notice">
       <View style={styles.row}>
-        <Text accessibilityLiveRegion="polite" style={styles.message}>{message}</Text>
+        <Text accessibilityLiveRegion="polite" style={[styles.message, { color: chrome.text }]}>{message}</Text>
         <MobileIconButton accessibilityLabel={mobileText('update.dismiss')} density="default" onPress={dismiss} testID="vault-notice-dismiss">
           <X size={20} color={colors.textMuted} />
         </MobileIconButton>
@@ -36,6 +45,7 @@ export function MobileVaultNotice({ notice, dismiss, onManage }: {
       <MobileButton label={mobileText('status.vault.manageWorkspaces')} variant="ghost" density="compact"
         onPress={() => { dismiss(); onManage() }} style={styles.action} testID="vault-notice-manage" />
     </View>
+    </MobileNativeNoticeSurface>
   </View>
 }
 

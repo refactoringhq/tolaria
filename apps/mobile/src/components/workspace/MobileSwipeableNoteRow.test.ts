@@ -22,13 +22,19 @@ const input = vi.hoisted(() => ({
 	onArchive: vi.fn(),
 	onOrganize: vi.fn(),
 	animatedProps: undefined as Record<string, unknown> | undefined,
-	vibrate: vi.fn(),
+	selection: vi.fn(() => Promise.resolve()),
+}));
+vi.mock("expo-haptics", () => ({
+	ImpactFeedbackStyle: { Light: "light" },
+	NotificationFeedbackType: { Success: "success", Warning: "warning" },
+	impactAsync: vi.fn(() => Promise.resolve()),
+	notificationAsync: vi.fn(() => Promise.resolve()),
+	selectionAsync: input.selection,
 }));
 vi.mock("react-native-gesture-handler/ReanimatedSwipeable", () => ({
 	default: nativeSwipe,
 }));
 vi.mock("react-native", () => ({
-	Vibration: { vibrate: input.vibrate },
 	View: ({
 		children,
 		onLayout,
@@ -113,7 +119,7 @@ afterEach(() => {
 	nativeSwipe.mockClear();
 	input.onArchive.mockClear();
 	input.onOrganize.mockClear();
-	input.vibrate.mockClear();
+	input.selection.mockClear();
 	input.animatedProps = undefined;
 	input.reduceMotion = false;
 	input.onStart = undefined;
@@ -153,7 +159,7 @@ describe("note row input ownership", () => {
 		expect(input.onArchive).not.toHaveBeenCalled();
 	});
 
-	it("animates removal and commits once per completed full swipe", () => {
+	it("animates removal and commits once per completed full swipe", async () => {
 		renderRow(false, "organize");
 		expect(input.animatedProps).toMatchObject({
 			entering: { duration: 220, kind: "enter" },
@@ -164,7 +170,7 @@ describe("note row input ownership", () => {
 		beginSwipe();
 		crossSwipeThreshold();
 		crossSwipeThreshold();
-		expect(input.vibrate).toHaveBeenCalledTimes(1);
+		await vi.waitFor(() => expect(input.selection).toHaveBeenCalledTimes(1));
 		finishSwipe();
 		finishSwipe();
 		expect(input.onOrganize).toHaveBeenCalledTimes(1);
@@ -172,7 +178,7 @@ describe("note row input ownership", () => {
 		crossSwipeThreshold();
 		finishSwipe();
 		expect(input.onOrganize).toHaveBeenCalledTimes(2);
-		expect(input.vibrate).toHaveBeenCalledTimes(2);
+		await vi.waitFor(() => expect(input.selection).toHaveBeenCalledTimes(1));
 	});
 
 	it("disables list transitions when Reduce Motion is enabled", () => {

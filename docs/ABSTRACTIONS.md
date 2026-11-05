@@ -105,6 +105,18 @@ for remote and linked-folder vaults. It delegates to the existing sync callback,
 so duplicate-operation guards, AutoGit checkpointing, editor save barriers, and
 failure reporting are not duplicated in list or editor UI.
 
+## Mobile Native Chrome Feedback
+
+`useMobileChromeColors` resolves only shell and status surfaces from iOS system
+colors or Android Material You colors. Note and editor content continue to use
+the desktop-derived mobile palette. `MobileNativeNoticeSurface` presents notices
+as an iOS glass capsule or an Android Material Snackbar while the owning notice
+component retains its timeout, accessibility announcement, and action semantics.
+`emitMobileHaptic` lazily loads Expo Haptics and contains device-unavailable
+errors; call sites attach feedback to completed native actions rather than
+changing workspace persistence behavior. GitHub device authorization uses the
+Expo in-app browser and keeps the device-code clipboard flow unchanged.
+
 ## Mobile Git Working Copies
 
 `useVaultNotices` owns bounded, session-local notification deduplication by vault

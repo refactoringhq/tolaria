@@ -1,5 +1,6 @@
 import type { MobileNote, MobileSidebarIcon, MobileTone, MobileViewFilterGroup, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
 import type { MobileWorkspaceEdit } from '../workspace/mobileWorkspaceEditing'
+import { emitMobileHaptic } from '../ui/mobileHaptics'
 import { canMoveMobileSavedView, evaluateMobileSavedView } from '../workspace/mobileSavedViews'
 import { mobileListPropertySuggestions, mobileSortablePropertySuggestions } from '../workspace/mobileWorkspaceSuggestions'
 import type { TabletReadOnlyForm } from './tabletWorkspaceTypes'
@@ -27,19 +28,25 @@ export function createWorkspaceActions(context: WorkspaceActionsContext) {
     workspaceSnapshot,
   } = context
   return {
-    onCreateNote: (titleOverride?: string) => createWorkspaceNote({
+    onCreateNote: (titleOverride?: string) => {
+      createWorkspaceNote({
       applyEdit,
       closeAction,
       selection: navigation.sidebarSelection,
       title: titleOverride ?? readOnlyForm.createTitle,
       typeDefinitions: workspaceSnapshot.typeDefinitions,
-    }),
-    onCreateNoteOfType: (typeName: string) => createTypedWorkspaceNote({
-      applyEdit,
-      closeAction,
-      typeDefinitions: workspaceSnapshot.typeDefinitions,
-      typeName,
-    }),
+      })
+      emitMobileHaptic('success')
+    },
+    onCreateNoteOfType: (typeName: string) => {
+      createTypedWorkspaceNote({
+        applyEdit,
+        closeAction,
+        typeDefinitions: workspaceSnapshot.typeDefinitions,
+        typeName,
+      })
+      emitMobileHaptic('success')
+    },
     onCreateTitleChange: (value: string) => updateReadOnlyForm('createTitle', value),
     onCreateView: () => createWorkspaceView({
       applyEdit,

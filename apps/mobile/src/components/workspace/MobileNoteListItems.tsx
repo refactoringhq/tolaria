@@ -7,6 +7,7 @@ import type { MobileLayoutProbe } from "../../qa/mobileLayoutProbe";
 import { MobileButton } from "../../ui/MobileButton";
 import { MobileChip } from "../../ui/MobileChip";
 import { MobileListRow } from "../../ui/MobileListRow";
+import { emitMobileHaptic } from "../../ui/mobileHaptics";
 import {
 	useMobileColors,
 	useMobileStyles,
@@ -94,9 +95,12 @@ function NoteRowContents(props: MobileNoteListRowProps) {
 				}
 				onLongPress={
 					Platform.OS === "ios"
-						? undefined
+						? () => emitMobileHaptic("selection")
 						: props.onBeginSelection
-							? () => props.onBeginSelection?.(note.id)
+							? () => {
+								emitMobileHaptic("selection");
+								props.onBeginSelection?.(note.id);
+							}
 							: undefined
 				}
 				onPress={() => props.onSelectNote(note.id)}
@@ -122,14 +126,15 @@ function NoteContextMenu(props: {
 				favorite: props.favorite,
 				selectionEnabled: Boolean(props.onBeginSelection),
 			})}
-			onPressAction={({ nativeEvent }) =>
+			onPressAction={({ nativeEvent }) => {
+				emitMobileHaptic("selection");
 				runMobileNoteContextAction(nativeEvent.event, {
 					actions: props.actions,
 					archived: props.archived,
 					noteId: props.noteId,
 					onBeginSelection: props.onBeginSelection,
-				})
-			}
+				});
+			}}
 			shouldOpenOnLongPress
 			testID={`note-context-menu-${props.noteId}`}
 			title={props.title}

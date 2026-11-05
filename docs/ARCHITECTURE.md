@@ -274,7 +274,8 @@ uses the desktop pluralization helper, while explicit type labels take priority.
 
 `MobilePanelSafeArea` owns each tablet pane's top inset, background and divider.
 There is no workspace footer: Settings lives at the sidebar bottom. The phone
-shell colors its top inset from the active panel. Panes and their dividers reach
+shell uses system/Material colors for outer chrome and the top inset while
+note/editor content retains the desktop-derived palette. Panes and their dividers reach
 the bottom edge; bottom controls and scrollable inspector content own their
 home-indicator clearance without leaving a separate band below the workspace.
 Pull-to-sync on mobile lists and editor scroll surfaces uses the native refresh

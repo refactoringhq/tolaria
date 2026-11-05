@@ -11,6 +11,7 @@ import {
 	View,
 } from "react-native";
 import { mobileText } from "../../i18n/mobileText";
+import { emitMobileHaptic } from "../../ui/mobileHaptics";
 import { MobileButton } from "../../ui/MobileButton";
 import {
 	MobileToolbar,
@@ -394,7 +395,10 @@ function VisibilitySwitchRow({
 				pressed ? styles.visibilityRowPressed : null,
 			]}
 			testID={testID}
-			onPress={() => onChange(!active)}
+			onPress={() => {
+				emitMobileHaptic("selection");
+				onChange(!active);
+			}}
 		>
 			<CheckCircle
 				color={active ? mobileColors.primary : mobileColors.textFaint}

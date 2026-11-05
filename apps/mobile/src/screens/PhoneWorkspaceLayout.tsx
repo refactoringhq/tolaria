@@ -14,6 +14,7 @@ import { PhoneWorkspaceTransition } from './PhoneWorkspaceTransition'
 import type { PhoneWorkspaceEditorOptions } from './phoneWorkspaceEditorOptions'
 import type { PhonePanelRail, PhoneTableOfContentsTargetRequest, PhoneWorkspaceController } from './phoneWorkspaceScreenSupport'
 import { createThemeStyles } from './phoneWorkspaceStyles'
+import { useMobileChromeColors } from '../ui/theme/useMobileChromeColors'
 import type { PhoneWorkspaceState } from './phoneWorkspaceTransitions'
 import { WorkspaceActionSheetHost } from './TabletWorkspace'
 
@@ -37,11 +38,12 @@ type PhoneWorkspaceRootProps = {
 }
 
 export function PhoneWorkspaceRoot(props: PhoneWorkspaceRootProps) {
-  const { styles, mobileColors } = useMobileStyles(createThemeStyles)
+  const { styles } = useMobileStyles(createThemeStyles)
+  const chrome = useMobileChromeColors()
   const insets = useSafeAreaInsets()
-  const topColor = props.phoneState === 'sidebar' ? mobileColors.sidebar : mobileColors.card
+  const topColor = props.phoneState === 'editor' ? chrome.background : chrome.surface
   return (
-    <View {...props.phoneLayoutProbe('phone.root')} style={styles.root}>
+    <View {...props.phoneLayoutProbe('phone.root')} style={[styles.root, { backgroundColor: chrome.background }]}>
       {props.phoneState === 'editor' ? null : <View testID="phone-top-inset" style={{ height: insets.top, backgroundColor: topColor }} />}
       <PhoneWorkspaceContent {...props} />
       <MobileWorkspaceEditNotice retry={props.controller.retryFailedEdit} />

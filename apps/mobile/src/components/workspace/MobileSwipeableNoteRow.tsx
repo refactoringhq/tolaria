@@ -1,5 +1,5 @@
 import { type ReactNode, useCallback, useMemo, useRef } from "react";
-import { type StyleProp, Vibration, View, type ViewStyle } from "react-native";
+import { type StyleProp, View, type ViewStyle } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Swipeable, {
 	type SwipeableMethods,
@@ -15,6 +15,7 @@ import Animated, {
 	useSharedValue,
 } from "react-native-reanimated";
 import { useMobileAnalytics } from "../../analytics/useMobileAnalytics";
+import { emitMobileHaptic } from "../../ui/mobileHaptics";
 import { useMobileColors } from "../../ui/theme/useMobileTheme";
 import type { MobileNote } from "../../workspace/mobileWorkspaceModel";
 import { MobileNoteSwipeActions } from "./MobileNoteSwipeActions";
@@ -83,7 +84,6 @@ export function MobileListMotion({
 		</Animated.View>
 	);
 }
-
 function useSwipeableNoteActions(
 	actions: MobileNoteRowActions,
 	note: MobileNote,
@@ -92,6 +92,7 @@ function useSwipeableNoteActions(
 	const swipeable = useRef<SwipeableMethods>(null);
 	const perform = useCallback(
 		(action: MobileNoteSwipeAction | "delete") => {
+			emitMobileHaptic("light");
 			if (action === "favorite") swipeable.current?.close();
 			if (action === "favorite") actions.onToggleFavorite(note.id);
 			if (action === "archive") actions.onArchive([note.id], !note.archived);
@@ -133,7 +134,7 @@ function SwipeableNoteRow({
 					);
 					if (action && !hapticPlayed.get()) {
 						hapticPlayed.set(true);
-						runOnJS(emitSwipeHaptic)();
+						runOnJS(emitMobileHaptic)("selection");
 					}
 				})
 				.onEnd((event) => {
@@ -184,8 +185,4 @@ function SwipeableNoteRow({
 			</View>
 		</GestureDetector>
 	);
-}
-
-function emitSwipeHaptic() {
-	Vibration.vibrate(10);
 }
