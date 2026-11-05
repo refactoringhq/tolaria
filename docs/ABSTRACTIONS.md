@@ -161,7 +161,10 @@ only action and kind, never vault names, paths, URLs, or content. See ADR 0216.
 
 `apps/mobile/src/workspace/git/` separates the embedded Git engine, GitHub
 authentication, and Expo filesystem adapter from the editor. `gitVault.ts` owns
-checkpoints and commit-graph classification. `githubClientId.ts` resolves the
+checkpoints and commit-graph classification. Remote sync integrates immediately
+after its fresh-byte checkpoint under the workspace operation lock, avoiding a
+second clean-worktree walk; standalone integration retains its dirty-worktree
+guard. `githubClientId.ts` resolves the
 public Tolaria OAuth client ID with an optional trimmed build-time override, so
 clean release and OTA builds do not depend on a developer's local dotenv file.
 `apps/mobile/fingerprint.config.js` normalizes only release channel routing and
