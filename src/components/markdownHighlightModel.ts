@@ -1,12 +1,13 @@
 import type { useCreateBlockNote } from '@blocknote/react'
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { trackEvent } from '../lib/telemetry'
 import { dispatchRichEditorExternalChange } from './editorExternalChangeEvents'
 import {
   DEFAULT_MARKDOWN_HIGHLIGHT_COLOR,
-  markdownHighlightColorFromStyles,
   type MarkdownHighlightColor,
 } from '../utils/markdownHighlightMarkdown'
 import { selectionOrHighlightRange } from './markdownHighlightRange'
+import { richEditorBlockSelectionPluginKey } from './richEditorBlockSelectionExtension'
 
 export type HighlightEditor = ReturnType<typeof useCreateBlockNote>
 export type HighlightRange = { from: number; to: number }
@@ -16,6 +17,40 @@ export type MarkdownHighlightRange = HighlightRange & {
 }
 
 export type HighlightControlSource = 'cursor' | 'toolbar'
+
+function isSelectedBlockNode(node: ProseMirrorNode, blockIds: readonly string[]): boolean {
+  const id = node.attrs.id
+  return node.type.isInGroup('bnBlock') && typeof id === 'string' && blockIds.includes(id)
+}
+
+function selectedBlockTextRange(editor: HighlightEditor, blockIds: readonly string[]): HighlightRange | null {
+  const doc = editor.prosemirrorState.doc
+  const positions = new Map<string, { pos: number; nodeSize: number }>()
+  doc.descendants((node: ProseMirrorNode, pos: number) => {
+    if (isSelectedBlockNode(node, blockIds)) {
+      positions.set(node.attrs.id as string, { pos, nodeSize: node.nodeSize })
+    }
+    return true
+  })
+  const selectedPositions = [...positions.values()]
+  if (selectedPositions.length === 0) return null
+
+  const from = Math.min(...selectedPositions.map(({ pos }) => pos + 1), doc.content.size)
+  const to = Math.max(
+    from,
+    Math.min(
+      Math.max(...selectedPositions.map(({ pos, nodeSize }) => pos + nodeSize - 1)),
+      doc.content.size,
+    ),
+  )
+  return { from, to }
+}
+
+export function markdownHighlightSelectionRange(editor: HighlightEditor): HighlightRange | null {
+  const blockSelection = richEditorBlockSelectionPluginKey.getState(editor.prosemirrorState)
+  if (blockSelection) return selectedBlockTextRange(editor, blockSelection.blockIds)
+  return selectionOrHighlightRange(editor)
+}
 
 function validRange(editor: HighlightEditor, range: HighlightRange | null): range is HighlightRange {
   if (!range) return false
@@ -66,14 +101,23 @@ export function applyMarkdownHighlightColor(
 }
 
 export function toggleDefaultMarkdownHighlight(editor: HighlightEditor) {
-  const activeColor = markdownHighlightColorFromStyles(editor.getActiveStyles())
-  const range = selectionOrHighlightRange(editor)
+  const range = markdownHighlightSelectionRange(editor)
 
   if (validRange(editor, range)) {
+    const highlightMark = editor.prosemirrorState.schema.marks.highlight
+    let hasText = false
+    let allTextHighlighted = true
+    editor.prosemirrorState.doc.nodesBetween(range.from, range.to, (node: ProseMirrorNode) => {
+      if (!node.isText) return
+      hasText = true
+      allTextHighlighted &&= Boolean(highlightMark?.isInSet(node.marks))
+    })
+    if (!hasText) return
+
     updateHighlightMarks(
       editor,
       range,
-      activeColor === null ? DEFAULT_MARKDOWN_HIGHLIGHT_COLOR : null,
+      allTextHighlighted ? null : DEFAULT_MARKDOWN_HIGHLIGHT_COLOR,
     )
     return
   }

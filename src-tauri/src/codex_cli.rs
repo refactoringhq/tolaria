@@ -86,22 +86,15 @@ fn parse_codex_model_catalog(catalog: &str) -> Result<Vec<CodexModelOption>, Str
 }
 
 fn find_codex_binary() -> Result<PathBuf, String> {
-    if let Some(binary) = find_codex_binary_on_path() {
-        return Ok(binary);
-    }
-
-    if let Some(binary) = find_codex_binary_in_user_shell() {
-        return Ok(binary);
-    }
-
-    if let Some(binary) = crate::cli_agent_runtime::find_executable_binary_candidate(
+    crate::ai_agents::find_binary_with_fallbacks(
         codex_binary_candidates(),
         "Codex CLI",
-    )? {
-        return Ok(binary);
-    }
-
-    Err("Codex CLI not found. Install it: https://developers.openai.com/codex/cli".into())
+        (
+            find_codex_binary_on_path,
+            find_codex_binary_in_user_shell,
+            || "Codex CLI not found. Install it: https://developers.openai.com/codex/cli".into(),
+        ),
+    )
 }
 
 fn codex_availability_from_binary_result(

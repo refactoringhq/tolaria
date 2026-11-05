@@ -29,6 +29,116 @@
 - PostHog: `mobile_note_link_activated` records only `kind` (`external` or `wikilink`) under consent; no URL, note title, or content is sent.
 - Refactoring: none needed. ADRs: none. Architecture and abstractions docs updated. Demo-vault dirt: none.
 
+---
+
+# TOL-317 Release Record
+
+## Change
+
+Reworked the mobile quick-open sheet with a single localized search field, recent searches and recently opened notes for an empty query, quiet no-results state, compact rows with gray type icons and bold query matches, keyboard selection, and immediate Return-to-top-result behavior. The sheet no longer repeats the action title or offers note creation. Search history is session-local and contains no note text in telemetry.
+
+## Verification
+
+- Focused quick-open helper tests: 13 passed.
+- Mobile: `pnpm mobile:lint`, `pnpm mobile:typecheck`, `pnpm mobile:test`; 443 files and 2,717 tests passed.
+- Root: `pnpm lint`, `tsc --noEmit`, `pnpm test`; 676 files passed (6,377 tests, 1 skipped), server 48 files / 1,033 tests passed, Pages/web-config/dev-mock checks passed.
+- Coverage: frontend line coverage 89.72%; server line coverage 95.73%; Rust tests passed (1,189 unit + 5 integration tests); Rust line coverage 85.79% passed the 85% threshold.
+- Localization: `pnpm l10n:translate` and `pnpm l10n:validate` passed for 21 catalogs / 1,369 English keys. `be-Latn` is not a configured Lara target; its new mobile strings were added manually, and its existing desktop search label was preserved.
+- Biome: changed TypeScript and locale catalogs checked clean using the repo's existing two-space/single-quote/semicolon-free style. `MobileWorkspaceActionSheet.tsx` was checked with Biome formatting/assist disabled to avoid rewriting untouched code; Biome lint passed.
+- Codacy local CLI: explicit per-file scans for all four changed code files; Trivy, ESLint, Lizard, and Opengrep completed with zero findings on each. The pre-edit `MobileQuickOpenSheet.tsx` had one ESLint hooks finding; it is now zero. Dashboard baseline for the four files was zero. Enabled dashboard roster: Biome and current ESLint9 (deprecated ESLint disabled), plus Lizard, Trivy, and Opengrep; Biome is covered by the repository Biome check.
+- CodeScene: all four changed code/test files are 10.0 before/after; pre-commit safeguard and `origin/main` change-set review passed. Initial project Hotspot 10.0 / Average 9.982230364474246, above `.codescene-thresholds` (10.0 / 9.98).
+- Demo vaults: no fixture changes.
+- PostHog: existing `search_used` event already records quick-open use; no additional event was added because this redesign keeps the same search action. Search terms and note content are not sent.
+- ADR/docs: none; this remains within the existing mobile quick-open flow and adds no native integration.
+
+## Device QA Still Needed
+
+The existing iPhone 16 Pro simulator is booted with Device Hub open, and Metro sessions are active in both the mobile-native-ui and mobile-ota-main worktrees. I did not take over the shared simulator or stop either Metro. Please verify on iPhone and iPad:
+
+1. Empty query shows one Search field, Recent searches, and Recently opened notes without a duplicate sheet title.
+2. Searching `randy shoup` shows the seeded result, bold matching snippet text, gray leading type icon, no tag chips or heavy separators, and a light selected row.
+3. A query with no matches shows the quiet No results state.
+4. Return opens the top result; iPad arrow keys move selection; clear and Cancel work; the sheet grows with results without flicker.
+5. Repeat empty/query/no-results states at larger Dynamic Type and with Reduce Motion enabled; capture before/after screenshots for both device sizes and a short typing/open/cancel recording.
+
+---
+
+# TOL-315 Release Record
+
+## Change
+
+- Added native pressed feedback to note rows, sidebar/folder rows, relationship rows, and bulk-action controls.
+- Memoized the note row and extracted sidebar composition into small internal components.
+- Kept multi-selection stable across visible-note updates and syncs, with focused selection regression tests.
+- Kept implementation-only sidebar composition modules out of the surface parity inventory; public surfaces remain checked against the inventory.
+
+## Validation
+
+- Targeted parity inventory regression: 2 tests passed; initial run reproduced 4 unregistered internal sidebar modules.
+- `mobile:lint`, `mobile:typecheck`, and `mobile:test`: passed; 447 files / 2,729 tests.
+- Biome check on all 16 changed TypeScript files: passed.
+- Codacy local per-file scans on all 16 source/test files: Trivy, ESLint, Lizard, and Opengrep OSS completed with zero findings. Codacy Cloud dashboard baseline on `6957e835d`: 0 on every touched file except `MobileWorkspaceSidebarFolderTree.tsx` had 2 Lizard findings; local result is now 0 for that file. Enabled dashboard roster confirmed Biome and ESLint9 enabled, deprecated ESLint disabled, with Lizard and Trivy enabled.
+- CodeScene: all 16 touched files scored 10.0 after changes; new files scored 10.0. Pre-commit safeguard and `origin/main` change-set review passed for all 16 files.
+- Root lint/typecheck/test, coverage, Rust gates, Playwright smoke, CircleCI, and Codacy analysis on `fe9b657c7` passed. The exact-SHA dashboard issue list nevertheless exposed two Lizard findings on the folder-tree renderer (also present on baseline) and one Lizard finding on the bulk-action renderer; this follow-up extracts the JSX render paths to bring the dashboard-scored methods under the configured limit. Follow-up exact-SHA dashboard confirmation is pending.
+- Localization: no UI copy changes. PostHog: no event needed because this change adds feedback/performance behavior to existing actions without introducing a new user action. ADRs/docs: none. Demo vaults: clean.
+
+## Device QA Still Needed
+
+- Record iPhone and iPad proof that each row type shows pressed feedback.
+- Verify scrolling a 2,000+ note vault with the perf monitor and capture dropped-frame evidence.
+- Verify multi-selection survives an actual background sync.
+
+## Follow-up: dashboard Lizard findings
+
+- Exact-SHA Codacy analysis of `fe9b657c7` reported `FolderTree` at 262 NLOC / CCN 25 and `BulkActionButtons` at 63 NLOC, although the local CLI had reported zero Lizard findings. The folder-tree root renderer and row-content/style/action helpers are now separated, and bulk actions are split into primary and secondary renderers. Local per-file Codacy scans for both refactored files now complete all configured analyzers with zero findings; CodeScene remains 10.0 for both files. New exact-SHA dashboard verification is pending.
+
+---
+
+# TOL-319 Release Record
+
+## Change
+
+- Active selections now derive their effective deep-link slug from the latest saved-vault catalog entry instead of keeping the alias captured when the vault was selected.
+- The selected note, vault root, and Git selection are preserved; collision-safe slug generation continues to use the shared alias helper.
+- Added a hook regression covering a selected Git-backed vault whose catalog slug changes while the selection override is active.
+
+## Validation
+
+- Focused catalog-selection and deep-link suites: 26 tests passed.
+- `mobile:lint`, `mobile:typecheck`, and `mobile:test`: passed; 447 files / 2,730 tests.
+- Biome lint/assist check on both changed TypeScript files passed (`biome check --formatter-enabled=false`; repo formatter defaults conflict with the established mobile formatting).
+- Codacy local per-file scans: ESLint, Lizard, Opengrep OSS, and Trivy completed on both changed files with zero findings. Initial Lizard CCN 9 on the hook was refactored into `currentCatalogSelection`; rescans are clean. Dashboard baseline on main (`68e3244a3`) was zero issues on both paths; enabled roster includes Biome, ESLint9, Lizard, Opengrep, and Trivy; deprecated ESLint is disabled. Biome was checked separately.
+- CodeScene before/after: both changed files 10.0. Project Hotspot 10.0 / Average 9.982230364474246, meeting `.codescene-thresholds` (10.0 / 9.98). Pre-commit safeguard and `origin/main` change-set safeguard passed.
+- Localization: no UI copy changes. PostHog: no event needed; this is an internal correction to existing vault alias state, not a new user action. ADRs/docs: none. Demo vaults: clean.
+
+## Device QA Still Needed
+
+- On iPhone, reproduce restore A, select B, edit B's slug, copy a note link and open an incoming link with the new slug.
+- Confirm the destination note opens while B's root, index, selected note, and Git connection remain intact, including a collision-safe slug case.
+
+---
+
+# TOL-75 Release Record — 33c6d8b60
+
+## Change
+
+- Removed the redundant clean-worktree scan immediately after `checkpointLocal` has verified a clean tree under the local-access lock. Sync uses the verified-clean integration path; standalone integration retains its own dirty-tree guard.
+- Added a regression test that confirms integration applies remote file changes without a second Git walk after the verified checkpoint. Updated `docs/ABSTRACTIONS.md` with the checkpoint-lock invariant.
+- This is a bounded Git-cost reduction. It does not claim measured device latency improvement or resolve the remaining large-pack/checkout costs.
+
+## Validation
+
+- TDD: regression failed before the verified-clean API existed, then passed. Focused Git suite: 4 files, 33 tests passed. Full mobile suite: 451 files, 2,741 tests passed; mobile lint and typecheck passed.
+- `npx biome check` on the 3 touched code files passed. Explicit local Codacy per-file scans completed for all 3 paths; ESLint, Lizard, Opengrep OSS, and Trivy each returned 0 findings, and Biome passed separately. Codacy differential pre-push gate passed.
+- Pre-commit used pnpm 10.33.0 and passed. Full normal pre-push passed: frontend lint/build, frontend coverage 89.72% lines, Rust tests and coverage 86.81% lines, 40 Playwright smoke tests, Codacy differential, and CodeScene thresholds.
+- CodeScene: all 3 code files remained 10.0; pre-commit safeguard passed; final `origin/main` change-set review passed (3 code files, no issues). Project Hotspot 10.0 / Average 9.981977855021611, meeting 10.0 / 9.98 floors.
+- Codacy Cloud: exact SHA `33c6d8b60f8393f1f20119bdedf92c9c7d95b207` analyzed with no analyzer problems. Dashboard roster is 37 tools / 21 enabled, including Biome, ESLint9, Lizard, Opengrep, and Trivy; deprecated ESLint remains disabled. Fully paginated main issue list: 972 total; 0 findings on the 3 touched code paths.
+- CircleCI exact-SHA checks all green, including `mobile-ota-quality`, `frontend-coverage`, `playwright-smoke`, `frontend-lint-build`, `web-build`, `static-gates`, and `publish-mobile-alpha`. The OTA publish job succeeded; no separate update ID/receipt was captured.
+- Native/device QA and device performance profiling were not run. Specifically unverified: 9,000-note sync timing/stall impact of this reduction, physical provider/iCloud delivery, iPad automatic-sync UI, and final signed-binary acceptance. No simulator or vault data was touched.
+- Localization: no UI copy changes. PostHog: no event needed because this is an internal sync-cost correction to an existing action. Refactoring: `gitVault.ts` and `gitRemote.ts` integration path. ADRs: none. Docs: `docs/ABSTRACTIONS.md`. Demo-vault dirt: none.
+
+---
+
 # TOL-281 Checkpoint Record
 
 ## Exception
@@ -99,12 +209,6 @@
 - Validation: `mobile:lint`, `mobile:typecheck`, full `mobile:test` (452 files / 2,714 tests), web export, Biome on the 10 touched TypeScript files, and explicit per-file Codacy CLI scans passed with zero findings from ESLint, Lizard, Opengrep OSS, and Trivy. CodeScene file scores are 10.0 for all 10 touched/new code files; pre-commit safeguard and branch change-set review against `origin/mobile-native-ui` passed.
 - Native QA: simulator build was interrupted when internal free space reached 7.8 GB, below the 8 GB floor. No simulator build/launch proof. Existing Tolaria-iPhone-16-Pro was not deleted or reset. Resume after disk is restored above the floor.
 - Localization: no UI copy changes. PostHog: no event needed; existing workspace actions only changed presentation. No main merge, OTA, or TestFlight.
-
-- Retry 2026-11-02: `xcodebuild -workspace apps/mobile/ios/Tolaria.xcworkspace -scheme Tolaria -configuration Debug -destination id=BA1280F0-6F2D-470B-9F08-B385E762E777 -derivedDataPath /private/tmp/tol284-resume-derived CODE_SIGNING_ALLOWED=NO build` succeeded with `SENTRY_DISABLE_AUTO_UPLOAD=true`. Disk ended at 9.5 GB free; the 8.5 GB guard remained active. No simulator app install/launch, app-container access, or vault change was performed. Metro on port 8082 was left untouched. Native interaction/screenshot acceptance remains pending.
-
-- Retry 2026-11-02 (5 GB floor): rebuilt the iOS Debug app successfully with signing enabled for the existing Tolaria-iPhone-16-Pro, using the isolated QA Metro on port 8083; the existing Metro on 8082 was not modified. Installed and launched the app with `source=fixture`; native Create View sheet and form rendered. Screenshot: `/private/tmp/tol284-native-qa/launch-with-port.plist.png`. A 7-case XCUITest run started but Xcode stalled finalizing simulator diagnostics (no result bundle completion); stopped that run with 5.5 GB free. This is not recorded as a passing test run. No simulator was created, deleted, or reset; no main merge, OTA, or TestFlight action.
-
-- Retry 2026-11-02 (5 GB floor): Device Hub was restarted and selected the existing Tolaria-iPhone-16-Pro, but starting/attaching still fails with `No matching device (BA1280F0-6F2D-470B-9F08-B385E762E777) in set at /Volumes/Jupiter/Developer/CoreSimulator/Devices` (404). No further interaction proof was possible; no simulator was created/deleted/reset. Shared Linear agent context was unavailable (`get_agent_context` not found); existing checked-in docs and TOL-284 notes were used. Work remains uncommitted on `mobile-native-ui`; no main/OTA/TestFlight action.
-
-- Retry 2026-11-02 after CoreSimulatorService restart: fresh Device Hub attached to the existing Tolaria-iPhone-16-Pro from the default device set. The initial focused XCUITest opened the native menu but used the wrong XCUI element type for its menu item; its screenshot confirmed the native menu was visible. Updated only the ignored local test harness to query `editor-format-heading-2`, then reran with `-collect-test-diagnostics never`: 1 test passed, selecting Heading 2 and confirming the menu dismissed. Result bundle: `/Volumes/Jupiter/Cache/tol284-native-qa-20261102/tol284-ui-retry2.xcresult`; menu screenshot: `/tmp/tol284-ui-retry2/E831FAE6-5122-4217-822F-A816B517D6C6.png`. No simulator was created, deleted, or reset; app/source changes remain only on `mobile-native-ui`.
-- After merging `origin/main` at `6b8f36c8a`, reran the same focused XCUITest on Tolaria-iPhone-16-Pro with `-collect-test-diagnostics never`: 1 passed, 0 failed. Result bundle: `/Volumes/Jupiter/Cache/tol284-native-qa-20261102/tol284-ui-merged.xcresult`; screenshot attached to TOL-284. The branch pre-push lane passed `mobile:lint`, `mobile:typecheck`, all 452 mobile test files / 2,719 tests, web export, and CodeScene (Hotspot 10.0 / Average 9.98215). The origin/main status was green across CircleCI jobs when checked. Branch push: `72a860670` plus main merge `e5fcc7518`, pushed to `origin/mobile-native-ui`; no main merge of native work, OTA, or TestFlight.
+- Retry 2026-11-02: Debug simulator build succeeded with external derived data `/private/tmp/tol284-resume-derived`; no app install/launch or vault change. Metro on port 8082 was untouched.
+- Retry 2026-11-02: XCUITest on existing Tolaria-iPhone-16-Pro initially stalled while collecting diagnostics; rerun with `-collect-test-diagnostics never` passed one test selecting Heading 2 and confirming the menu dismissed. Result bundle: `/Volumes/Jupiter/Cache/tol284-native-qa-20261102/tol284-ui-retry2.xcresult`; screenshot: `/tmp/tol284-ui-retry2/E831FAE6-5122-4217-822F-A816B517D6C6.png`. No simulator created, deleted, or reset.
+- After the earlier merge of `origin/main`, the focused XCUITest passed again (1 passed, 0 failed). Result bundle: `/Volumes/Jupiter/Cache/tol284-native-qa-20261102/tol284-ui-merged.xcresult`. Branch push `72a860670` plus merge `e5fcc7518` was to `origin/mobile-native-ui`; no main merge, OTA, or TestFlight.

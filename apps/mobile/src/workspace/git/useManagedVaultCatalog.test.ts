@@ -2,11 +2,12 @@
 import { act, createElement, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useManagedVaultCatalog } from './useManagedVaultCatalog'
+import { mobileWorkspaceDeepLinkSlug } from '../mobileWorkspaceAlias'
+import { preloadNativeWorkspace } from '../preloadNativeWorkspace'
 import { managedGitSelection, readManagedGitCatalog, updateManagedGitCatalog } from './managedGitStorage'
 import { initializeLocalVaultCatalog } from './managedLocalStorage'
-import { preloadNativeWorkspace } from '../preloadNativeWorkspace'
-import { mobileWorkspaceDeepLinkSlug } from '../mobileWorkspaceAlias'
+import { useManagedVaultCatalog } from './useManagedVaultCatalog'
+import { useMobileVaultSelection } from './useMobileVaultSelection'
 
 vi.mock('./managedGitStorage', () => ({ managedGitSelection: vi.fn(), readManagedGitCatalog: vi.fn(), updateManagedGitCatalog: vi.fn() }))
 vi.mock('./managedLocalStorage', () => ({ initializeLocalVaultCatalog: vi.fn(), managedLocalSelection: vi.fn() }))
@@ -96,6 +97,37 @@ describe('saved vault startup recovery', () => {
     )
     expect(current().restored?.selection?.vaultAlias).toMatch(/^laputa-notes-[a-z0-9]{6}$/u)
   })
+
+  it('uses the refreshed catalog slug for an active vault selection override', async () => {
+    const secondVault = { ...vault, id: 'second-vault', label: 'Second vault', alias: 'old-second' }
+    const twoVaultCatalog = { ...catalog, vaults: [vault, secondVault] }
+    vi.mocked(initializeLocalVaultCatalog).mockResolvedValue(twoVaultCatalog)
+    vi.mocked(readManagedGitCatalog).mockResolvedValue(twoVaultCatalog)
+    vi.mocked(managedGitSelection).mockImplementation(async selected => ({
+      ...selection,
+      catalogVaultId: selected.id,
+      vaultAlias: selected.alias ?? selected.label,
+    }))
+    vi.mocked(updateManagedGitCatalog).mockImplementation(async update => update(twoVaultCatalog))
+    const current = await mountSelection()
+    const activeSelection = {
+      ...selection,
+      catalogVaultId: secondVault.id,
+      vaultAlias: 'old-second',
+      selectedNoteId: 'note-1',
+    }
+
+    await act(async () => current().selection.setOverride({ git: secondVault, selection: activeSelection }))
+    await act(async () => current().catalog.updateAlias(secondVault.id, 'new second'))
+
+    expect(current().selection.active.selection).toMatchObject({
+      catalogVaultId: secondVault.id,
+      vaultAlias: 'new-second',
+      selectedNoteId: 'note-1',
+      vaultRootUri: activeSelection.vaultRootUri,
+    })
+    expect(current().selection.active.git).toMatchObject({ id: secondVault.id, alias: 'new-second' })
+  })
 })
 
 async function mountCatalog() {
@@ -105,6 +137,23 @@ async function mountCatalog() {
   function Probe() {
     const catalog = useManagedVaultCatalog()
     useEffect(() => { current = catalog }, [catalog])
+    return null
+  }
+  await act(async () => root.render(createElement(Probe)))
+  return () => current
+}
+
+async function mountSelection() {
+  const root = createRoot(document.createElement('div'))
+  roots.push(root)
+  let current: {
+    catalog: ReturnType<typeof useManagedVaultCatalog>
+    selection: ReturnType<typeof useMobileVaultSelection>
+  }
+  function Probe() {
+    const catalog = useManagedVaultCatalog()
+    const selection = useMobileVaultSelection(catalog)
+    useEffect(() => { current = { catalog, selection } }, [catalog, selection])
     return null
   }
   await act(async () => root.render(createElement(Probe)))

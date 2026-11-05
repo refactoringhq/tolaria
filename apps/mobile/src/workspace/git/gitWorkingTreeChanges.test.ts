@@ -147,6 +147,61 @@ it.each(["NFC", "NFD"] as const)(
 	},
 );
 
+it("stages a new Unicode filename using its canonical spelling", async () => {
+	const dir = await mkdtemp(join(tmpdir(), "tolaria-new-unicode-path-"));
+	roots.push(dir);
+	const context = { fs, dir };
+	await git.init({ ...context, defaultBranch: "main" });
+	await writeFile(join(dir, "README.md"), "# Fixture\n");
+	await git.add({ ...context, filepath: "README.md" });
+	await git.commit({ ...context, author, message: "Fixture" });
+
+	const filename = "Matthäus vom Handy.md".normalize("NFC");
+	await writeFile(join(dir, filename), "# New note\n");
+	const resolveLikeMac = (path: unknown) => {
+		if (typeof path !== "string") return path;
+		const name = basename(path);
+		return name.normalize("NFC") === filename
+			? join(dirname(path), filename)
+			: path;
+	};
+	const decomposedFs = {
+		promises: new Proxy(fs.promises, {
+			get(target, property, receiver) {
+				const method = Reflect.get(target, property, receiver);
+				if (property === "readdir")
+					return async (...args: Parameters<typeof fs.promises.readdir>) => {
+						const names = (await Reflect.apply(
+							method,
+							target,
+							args,
+						)) as string[];
+						return names.map((name) =>
+							typeof name === "string" ? name.normalize("NFD") : name,
+						);
+					};
+				if (["lstat", "stat", "readFile"].includes(String(property)))
+					return (...args: unknown[]) => {
+						args[0] = resolveLikeMac(args[0]);
+						return Reflect.apply(method, target, args);
+					};
+				return method;
+			},
+		}),
+	};
+
+	expect(await decomposedFs.promises.readdir(dir)).toContain(
+		filename.normalize("NFD"),
+	);
+	expect(
+		(await createGitVault({ ...context, fs: decomposedFs }).checkpoint(author))
+			.changedFiles,
+	).toBe(1);
+	expect(await git.listFiles(context)).toEqual(
+		expect.arrayContaining(["README.md", filename]),
+	);
+});
+
 it("reports a staged canonical Unicode spelling rename as a change", async () => {
 	const context = await repository();
 	const composed = "Matthäus 17.md".normalize("NFC");

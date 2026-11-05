@@ -1,11 +1,11 @@
-import { expect, it } from 'vitest'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createRequire } from 'node:module'
+import { expect, it } from 'vitest'
 import {
   phoneRailBounds, phoneRailDragOffset, phoneRailFrame, phoneRailIntent,
-  phoneRailNearestState, phoneRailOffset, phoneRailSettleState,
+  phoneRailNearestState, phoneRailOffset, phoneRailSettleDurationMs, phoneRailSettleState,
 } from './phonePanelRail'
 
 const width = 390
@@ -71,6 +71,14 @@ it('settles only at real pane positions and never overscrolls the rail', () => {
   expect(phoneRailSettleState({ offset: origin + 220, velocity: 0, bounds, width })).toBe('list')
   expect(phoneRailSettleState({ offset: origin - 100, velocity: -1000, bounds, width })).toBe('properties')
   expect(phoneRailDragOffset(origin, -9000, bounds)).toBe(-1084)
+})
+
+it('shortens panel settle animation for faster flicks', () => {
+  expect(phoneRailSettleDurationMs(0)).toBe(180)
+  expect(phoneRailSettleDurationMs(500)).toBe(140)
+  expect(phoneRailSettleDurationMs(-500)).toBe(140)
+  expect(phoneRailSettleDurationMs(4_000)).toBe(60)
+  expect(phoneRailSettleDurationMs(4_000, true)).toBe(0)
 })
 
 it('initializes captured helpers before the production worklet transform uses them', () => {

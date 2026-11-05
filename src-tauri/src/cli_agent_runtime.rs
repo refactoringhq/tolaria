@@ -1,10 +1,11 @@
 use crate::ai_agents::{AiAgentPermissionMode, AiAgentStreamEvent};
 use serde::Deserialize;
 use std::ffi::OsString;
-use std::io::{BufRead, Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 
+mod json_line_stdout;
 mod line_stream;
 mod mcp_config;
 mod shell_env;
@@ -277,31 +278,6 @@ pub(crate) fn parse_json_line(
     Ok(serde_json::from_str::<serde_json::Value>(trimmed).ok())
 }
 
-fn parse_process_stdout_line(
-    line: Result<String, std::io::Error>,
-    ignored_stdout_lines: &mut Vec<String>,
-) -> Result<Option<serde_json::Value>, String> {
-    let line = line.map_err(|error| format!("Read error: {error}"))?;
-    let trimmed = line.trim();
-    if trimmed.is_empty() {
-        return Ok(None);
-    }
-
-    match serde_json::from_str::<serde_json::Value>(trimmed) {
-        Ok(json) => Ok(Some(json)),
-        Err(_) => {
-            push_ignored_stdout_line(ignored_stdout_lines, trimmed);
-            Ok(None)
-        }
-    }
-}
-
-fn push_ignored_stdout_line(lines: &mut Vec<String>, line: &str) {
-    if lines.len() < 3 {
-        lines.push(line.to_string());
-    }
-}
-
 #[cfg(test)]
 pub(crate) fn parse_ai_agent_json_line<F>(
     line: Result<String, std::io::Error>,
@@ -340,23 +316,8 @@ where
     let stderr = child.stderr.take();
     let child = crate::ai_agent_processes::register_current_stream_child(child);
     let reader = std::io::BufReader::new(stdout);
-    let mut session_id = String::new();
-    let mut ignored_stdout_lines = Vec::new();
-    let mut parsed_json_lines = 0;
-
-    for line in reader.lines() {
-        match parse_process_stdout_line(line, &mut ignored_stdout_lines) {
-            Ok(Some(json)) => {
-                parsed_json_lines += 1;
-                handle_json(&json, emit, &mut session_id);
-            }
-            Ok(None) => {}
-            Err(message) => {
-                emit(error_event(message));
-                break;
-            }
-        }
-    }
+    let output =
+        json_line_stdout::consume_json_line_stdout(reader, emit, error_event, &mut handle_json);
 
     let stderr_output = stderr
         .and_then(|stderr| std::io::read_to_string(stderr).ok())
@@ -365,9 +326,9 @@ where
     let stderr_output = with_stdin_write_error(stderr_output, stdin_write_error);
 
     Ok(JsonLineRun {
-        session_id,
-        parsed_json_lines,
-        ignored_stdout_output: ignored_stdout_lines.join("\n"),
+        session_id: output.session_id,
+        parsed_json_lines: output.parsed_json_lines,
+        ignored_stdout_output: output.ignored_stdout_lines.join("\n"),
         stderr_output,
         status,
     })
@@ -456,23 +417,22 @@ where
     Ok(session_id)
 }
 
-/// Shared binary discovery: look up a CLI command by name using PATH, login shell, then candidates.
+/// Shared binary discovery: look up a CLI on PATH, at known paths, then in the login shell.
 pub(crate) fn find_cli_binary(
     name: &str,
     candidates: Vec<PathBuf>,
     label: &str,
     install_hint: &str,
 ) -> Result<PathBuf, String> {
-    if let Some(binary) = find_binary_on_path(name) {
-        return Ok(binary);
-    }
-    if let Some(binary) = find_binary_in_user_shell(name) {
-        return Ok(binary);
-    }
-    if let Some(binary) = find_executable_binary_candidate(candidates, label)? {
-        return Ok(binary);
-    }
-    Err(format!("{label} not found. Install it: {install_hint}"))
+    crate::ai_agents::find_binary_with_fallbacks(
+        candidates,
+        label,
+        (
+            || find_binary_on_path(name),
+            || find_binary_in_user_shell(name),
+            || format!("{label} not found. Install it: {install_hint}"),
+        ),
+    )
 }
 
 fn find_binary_on_path(name: &str) -> Option<PathBuf> {

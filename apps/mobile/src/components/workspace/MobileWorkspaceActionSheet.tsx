@@ -168,7 +168,6 @@ function SearchContent(props: MobileWorkspaceActionSheetProps) {
 			typeDefinitions={props.typeDefinitions}
 			onClearWorkspaceSearch={() => props.onSearchQueryChange("")}
 			onClose={props.onClose}
-			onCreateNote={props.onCreateNote}
 			onSelectNote={props.onSelectNote}
 		/>
 	);

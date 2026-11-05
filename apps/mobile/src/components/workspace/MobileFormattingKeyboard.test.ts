@@ -91,6 +91,7 @@ function NativeMenu({
 	);
 }
 vi.mock("react-native", () => ({
+	Platform: { OS: "android" },
 	View: Surface,
 	ScrollView: Surface,
 	StyleSheet: {

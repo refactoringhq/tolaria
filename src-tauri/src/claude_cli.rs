@@ -85,22 +85,18 @@ pub struct ChatStreamRequest {
 // ---------------------------------------------------------------------------
 
 pub(crate) fn find_claude_binary() -> Result<PathBuf, String> {
-    if let Some(binary) = find_claude_binary_on_path() {
-        return Ok(binary);
-    }
-
-    if let Some(binary) = find_claude_binary_in_user_shell() {
-        return Ok(binary);
-    }
-
-    if let Some(binary) = crate::cli_agent_runtime::find_executable_binary_candidate(
+    crate::ai_agents::find_binary_with_fallbacks(
         claude_binary_candidates(),
         "Claude CLI",
-    )? {
-        return Ok(binary);
-    }
-
-    Err("Claude CLI not found. Install it: https://docs.anthropic.com/en/docs/claude-code".into())
+        (
+            find_claude_binary_on_path,
+            find_claude_binary_in_user_shell,
+            || {
+                "Claude CLI not found. Install it: https://docs.anthropic.com/en/docs/claude-code"
+                    .into()
+            },
+        ),
+    )
 }
 
 fn find_claude_binary_on_path() -> Option<PathBuf> {
@@ -419,9 +415,8 @@ where
         )?;
 
         if !run.status.success() && state.session_id.is_empty() {
-            let has_fallback = index < request.fallback_args.len();
             let stderr = ClaudeStderr(&run.stderr_output);
-            if has_fallback && is_unsupported_claude_flag_error(stderr) {
+            if should_retry_claude_fallback(index, request.fallback_args.len(), stderr) {
                 continue;
             }
 
@@ -438,6 +433,14 @@ where
     }
 
     Ok(String::new())
+}
+
+fn should_retry_claude_fallback(
+    attempt_index: usize,
+    fallback_count: usize,
+    stderr: ClaudeStderr<'_>,
+) -> bool {
+    attempt_index < fallback_count && is_unsupported_claude_flag_error(stderr)
 }
 
 fn build_claude_command(

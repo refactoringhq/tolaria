@@ -140,8 +140,6 @@ pub(crate) fn git_command() -> Command {
         "protocol.file.allow=user",
         "-c",
         "core.fsmonitor=false",
-        "-c",
-        "core.sshCommand=ssh",
     ]);
     command
 }

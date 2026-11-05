@@ -113,6 +113,27 @@ describe('Markdown highlight color controls', () => {
     expect(serializeMarkdownHighlightAwareBlocks(editor, editor.document)).toBe('plain')
   })
 
+  it('round-trips a block highlight that crosses bold and italic text runs', async () => {
+    const editor = await editorFromMarkdown('**bold** and *italic*')
+    const range = {
+      from: textRange(editor, 'bold').from,
+      to: textRange(editor, 'italic').to,
+    }
+    selectText(editor, range.from, range.to)
+
+    toggleDefaultMarkdownHighlight(editor)
+    const markdown = serializeMarkdownHighlightAwareBlocks(editor, editor.document)
+    expect(markdown).toBe('==**bold** and *italic*==')
+
+    const reopened = await editorFromMarkdown(markdown)
+    const runs = reopened.document[0]?.content
+    expect(runs).toEqual([
+      { type: 'text', text: 'bold', styles: { bold: true, highlight: true } },
+      { type: 'text', text: ' and ', styles: { highlight: true } },
+      { type: 'text', text: 'italic', styles: { italic: true, highlight: true } },
+    ])
+  })
+
   it('mounts a shadcn color trigger beside the existing toolbar button and cleans it up', async () => {
     const editor = await editorFromMarkdown('plain')
     const container = document.createElement('div')

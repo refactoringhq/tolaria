@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use std::time::Duration;
 use tokio::task::JoinHandle;
 
-const AI_AGENT_STATUS_PROBE_TIMEOUT: Duration = Duration::from_secs(5);
+const AI_AGENT_STATUS_PROBE_TIMEOUT: Duration = Duration::from_secs(15);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -30,6 +31,30 @@ pub enum AiAgentPermissionMode {
 pub struct AiAgentAvailability {
     pub installed: bool,
     pub version: Option<String>,
+}
+
+pub(crate) fn find_binary_with_fallbacks(
+    candidates: Vec<PathBuf>,
+    label: &str,
+    lookups: (
+        impl FnOnce() -> Option<PathBuf>,
+        impl FnOnce() -> Option<PathBuf>,
+        impl FnOnce() -> String,
+    ),
+) -> Result<PathBuf, String> {
+    let (path_lookup, shell_lookup, not_found) = lookups;
+    if let Some(binary) = path_lookup() {
+        return Ok(binary);
+    }
+    if let Some(binary) =
+        crate::cli_agent_runtime::find_executable_binary_candidate(candidates, label)?
+    {
+        return Ok(binary);
+    }
+    if let Some(binary) = shell_lookup() {
+        return Ok(binary);
+    }
+    Err(not_found())
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -230,16 +255,21 @@ fn shared_agent_runner<F>(agent: AiAgentId) -> Option<SharedAgentRunner<F>>
 where
     F: FnMut(AiAgentStreamEvent),
 {
-    match agent {
-        AiAgentId::ClaudeCode => None,
-        AiAgentId::Codex => Some(crate::codex_cli::run_agent_stream),
-        AiAgentId::Copilot => Some(crate::copilot_cli::run_agent_stream),
-        AiAgentId::Opencode => Some(crate::opencode_cli::run_agent_stream),
-        AiAgentId::Pi => Some(crate::pi_cli::run_agent_stream),
-        AiAgentId::Antigravity => Some(crate::antigravity_cli::run_agent_stream),
-        AiAgentId::Kiro => Some(crate::kiro_cli::run_agent_stream),
-        AiAgentId::Hermes => Some(crate::hermes_cli::run_agent_stream),
-    }
+    let runners: [(AiAgentId, SharedAgentRunner<F>); 7] = [
+        (AiAgentId::Codex, crate::codex_cli::run_agent_stream),
+        (AiAgentId::Copilot, crate::copilot_cli::run_agent_stream),
+        (AiAgentId::Opencode, crate::opencode_cli::run_agent_stream),
+        (AiAgentId::Pi, crate::pi_cli::run_agent_stream),
+        (
+            AiAgentId::Antigravity,
+            crate::antigravity_cli::run_agent_stream,
+        ),
+        (AiAgentId::Kiro, crate::kiro_cli::run_agent_stream),
+        (AiAgentId::Hermes, crate::hermes_cli::run_agent_stream),
+    ];
+    runners
+        .into_iter()
+        .find_map(|(candidate, runner)| (candidate == agent).then_some(runner))
 }
 
 fn run_claude_agent_stream<F>(
@@ -296,6 +326,25 @@ fn availability_from_claude() -> AiAgentAvailability {
 
 fn map_claude_event(event: crate::claude_cli::ClaudeStreamEvent) -> Option<AiAgentStreamEvent> {
     match event {
+        event @ (crate::claude_cli::ClaudeStreamEvent::Init { .. }
+        | crate::claude_cli::ClaudeStreamEvent::TextDelta { .. }
+        | crate::claude_cli::ClaudeStreamEvent::ThinkingDelta { .. }) => {
+            map_claude_content_event(event)
+        }
+        event @ (crate::claude_cli::ClaudeStreamEvent::ToolStart { .. }
+        | crate::claude_cli::ClaudeStreamEvent::ToolDone { .. }) => map_claude_tool_event(event),
+        event @ (crate::claude_cli::ClaudeStreamEvent::Error { .. }
+        | crate::claude_cli::ClaudeStreamEvent::Done) => map_claude_terminal_event(event),
+        crate::claude_cli::ClaudeStreamEvent::Result { text, .. } => {
+            (!text.is_empty()).then_some(AiAgentStreamEvent::TextDelta { text })
+        }
+    }
+}
+
+fn map_claude_content_event(
+    event: crate::claude_cli::ClaudeStreamEvent,
+) -> Option<AiAgentStreamEvent> {
+    match event {
         crate::claude_cli::ClaudeStreamEvent::Init { session_id } => {
             Some(AiAgentStreamEvent::Init { session_id })
         }
@@ -305,6 +354,14 @@ fn map_claude_event(event: crate::claude_cli::ClaudeStreamEvent) -> Option<AiAge
         crate::claude_cli::ClaudeStreamEvent::ThinkingDelta { text } => {
             Some(AiAgentStreamEvent::ThinkingDelta { text })
         }
+        _ => None,
+    }
+}
+
+fn map_claude_tool_event(
+    event: crate::claude_cli::ClaudeStreamEvent,
+) -> Option<AiAgentStreamEvent> {
+    match event {
         crate::claude_cli::ClaudeStreamEvent::ToolStart {
             tool_name,
             tool_id,
@@ -317,14 +374,19 @@ fn map_claude_event(event: crate::claude_cli::ClaudeStreamEvent) -> Option<AiAge
         crate::claude_cli::ClaudeStreamEvent::ToolDone { tool_id, output } => {
             Some(AiAgentStreamEvent::ToolDone { tool_id, output })
         }
+        _ => None,
+    }
+}
+
+fn map_claude_terminal_event(
+    event: crate::claude_cli::ClaudeStreamEvent,
+) -> Option<AiAgentStreamEvent> {
+    match event {
         crate::claude_cli::ClaudeStreamEvent::Error { message } => {
             Some(AiAgentStreamEvent::Error { message })
         }
         crate::claude_cli::ClaudeStreamEvent::Done => Some(AiAgentStreamEvent::Done),
-        crate::claude_cli::ClaudeStreamEvent::Result { text, .. } if !text.is_empty() => {
-            Some(AiAgentStreamEvent::TextDelta { text })
-        }
-        crate::claude_cli::ClaudeStreamEvent::Result { .. } => None,
+        _ => None,
     }
 }
 

@@ -42,6 +42,16 @@ workspace's existing target resolver and supported external schemes through the
 existing link opener. Ordinary taps still place the caret; phone navigation
 keeps the source note available through the editor back control.
 
+## Mobile Read-Only Editor Interactions
+
+Markdown task blocks expose native accessible checkboxes in read-only mode. A
+toggle changes only the checkbox marker at the parsed source line and delegates
+the resulting note body to the existing editor write path, preserving all other
+bytes. Missing wikilinks use a brief, non-blocking accessible notice instead of
+a modal. Only the task-toggle state is sent to PostHog; note content and paths
+are not included. The active phone note list alone receives status-bar
+scroll-to-top ownership so hidden workspace panes do not compete for the gesture.
+
 ## Mobile Native Lifecycle
 
 `apps/mobile/app.config.js` enables Expo SDK 57's supported scene lifecycle
@@ -155,7 +165,10 @@ only action and kind, never vault names, paths, URLs, or content. See ADR 0216.
 
 `apps/mobile/src/workspace/git/` separates the embedded Git engine, GitHub
 authentication, and Expo filesystem adapter from the editor. `gitVault.ts` owns
-checkpoints and commit-graph classification. `githubClientId.ts` resolves the
+checkpoints and commit-graph classification. Remote sync integrates immediately
+after its fresh-byte checkpoint under the workspace operation lock, avoiding a
+second clean-worktree walk; standalone integration retains its dirty-worktree
+guard. `githubClientId.ts` resolves the
 public Tolaria OAuth client ID with an optional trimmed build-time override, so
 clean release and OTA builds do not depend on a developer's local dotenv file.
 `apps/mobile/fingerprint.config.js` normalizes only release channel routing and

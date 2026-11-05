@@ -1,240 +1,469 @@
-import { useCallback, useContext, useRef, type Dispatch, type MutableRefObject, type SetStateAction } from 'react'
-import { WorkspaceSyncEditorsContext } from '../workspace/workspaceSyncEditors'
-import { MobileVaultPickerContext } from '../workspace/MobileVaultContext'
-import { requestCreatedNoteFocus } from '../workspace/mobileEditorFocus'
-import { withDefaultNoteType } from '../workspace/mobileDefaultNoteType'
-import { workspacePendingWritePaths } from '../workspace/mobilePendingChanges'
-import { useMobileAnalytics } from '../analytics/useMobileAnalytics'
-import { trackSuccessfulMobileEdit } from '../analytics/mobileSuccessfulEdit'
-import { captureMobileError } from '../analytics/mobileCrashChannel'
-import { isMobileNoteHydration, mobileEditNeedsNoteRead } from '../workspace/mobileNoteRead'
-import { usePreparedWorkspaceEdits, type WorkspaceEditOptions } from './usePreparedWorkspaceEdits'
-import { useWorkspaceSnapshotFrame } from './useWorkspaceSnapshotFrame'
 import {
-  applyMobileWorkspaceEditWithWrites,
-  type MobileWorkspaceEdit,
-  type MobileWorkspaceWrite,
-} from '../workspace/mobileWorkspaceEditing'
-import type { MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
+	type ContextType,
+	type Dispatch,
+	type MutableRefObject,
+	type SetStateAction,
+	useCallback,
+	useContext,
+	useRef,
+	useState,
+} from "react";
+import { trackSuccessfulMobileEdit } from "../analytics/mobileSuccessfulEdit";
+import { useMobileAnalytics } from "../analytics/useMobileAnalytics";
+import { MobileVaultPickerContext } from "../workspace/MobileVaultContext";
+import { withDefaultNoteType } from "../workspace/mobileDefaultNoteType";
+import { requestCreatedNoteFocus } from "../workspace/mobileEditorFocus";
+import {
+	isMobileNoteHydration,
+	mobileEditNeedsNoteRead,
+} from "../workspace/mobileNoteRead";
+import { workspacePendingWritePaths } from "../workspace/mobilePendingChanges";
+import {
+	type MobileWorkspaceActionFeedback,
+	mobileWorkspaceActionFeedback,
+} from "../workspace/mobileWorkspaceActionFeedback";
+import {
+	applyMobileWorkspaceEditWithWrites,
+	type MobileWorkspaceEdit,
+} from "../workspace/mobileWorkspaceEditing";
+import type { MobileWorkspaceSnapshot } from "../workspace/mobileWorkspaceModel";
 import type {
-  ReadOnlyWorkspaceRepository,
-  ReadOnlyWorkspaceRequest,
-} from '../workspace/readOnlyWorkspaceRepository'
+	ReadOnlyWorkspaceRepository,
+	ReadOnlyWorkspaceRequest,
+} from "../workspace/readOnlyWorkspaceRepository";
+import { WorkspaceSyncEditorsContext } from "../workspace/workspaceSyncEditors";
+import { useWorkspaceEditRetry } from "./mobileWorkspaceEditRetry";
+import { isOptimisticNoteListEdit } from "./mobileWorkspaceFlagWriteRollback";
 import {
-  emptyMobileWorkspaceHistory,
-  mobileWorkspaceHistoryEntry,
-  recordMobileWorkspaceHistory,
-  type MobileWorkspaceHistoryEntry,
-} from './tabletWorkspaceHistory'
+	persistWorkspaceWrites,
+	snapshotAfterPendingWriteFailure,
+	writePathKeys,
+} from "./mobileWorkspaceWritePersistence";
+import {
+	emptyMobileWorkspaceHistory,
+	type MobileWorkspaceHistoryEntry,
+} from "./tabletWorkspaceHistory";
+import {
+	clearWorkspaceWriteFailure,
+	recordWorkspaceEditHistory,
+	useWorkspaceHistoryControls,
+} from "./tabletWorkspacePersistenceHistory";
+import {
+	usePreparedWorkspaceEdits,
+	type WorkspaceEditOptions,
+} from "./usePreparedWorkspaceEdits";
+import { useWorkspaceSnapshotFrame } from "./useWorkspaceSnapshotFrame";
 
-type WorkspaceSnapshotRef = MutableRefObject<MobileWorkspaceSnapshot>
-type WorkspaceSnapshotSetter = Dispatch<SetStateAction<MobileWorkspaceSnapshot>>
-type WorkspaceHistory = typeof emptyMobileWorkspaceHistory
-type WorkspaceHistorySetter = Dispatch<SetStateAction<WorkspaceHistory>>
+type WorkspaceHistory = typeof emptyMobileWorkspaceHistory;
+type WorkspaceHistorySetter = Dispatch<SetStateAction<WorkspaceHistory>>;
+type MobileVaultPicker = ContextType<typeof MobileVaultPickerContext>;
+type FailedWorkspaceWrite = { edit: MobileWorkspaceEdit };
+type WorkspaceUndoFeedback = {
+	action: MobileWorkspaceActionFeedback;
+	id: object;
+} | null;
+type FailedWorkspaceWriteSetter = Dispatch<
+	SetStateAction<FailedWorkspaceWrite | null>
+>;
+type WriteVersions = {
+	latest: MutableRefObject<number>;
+	byPath: MutableRefObject<Map<string, number>>;
+};
+type StartWorkspacePersistence = {
+	analytics: ReturnType<typeof useMobileAnalytics>;
+	edit: MobileWorkspaceEdit;
+	generation: number | undefined;
+	versions: WriteVersions;
+	optimisticSnapshot: MobileWorkspaceSnapshot;
+	previousSnapshot: MobileWorkspaceSnapshot;
+	repository: ReadOnlyWorkspaceRepository;
+	repositoryRequest?: ReadOnlyWorkspaceRequest;
+	result: ReturnType<typeof applyWorkspaceEditToWritableSnapshot>;
+	setFailedWrite: FailedWorkspaceWriteSetter;
+	snapshotState: ReturnType<typeof useWorkspaceSnapshotFrame>;
+	syncEditors: ContextType<typeof WorkspaceSyncEditorsContext>;
+};
+type ApplyWorkspaceEditServices = Omit<
+	StartWorkspacePersistence,
+	"result" | "optimisticSnapshot" | "previousSnapshot"
+> & {
+	options: WorkspaceEditOptions;
+	setLatestUndoFeedback: Dispatch<SetStateAction<WorkspaceUndoFeedback>>;
+	setWorkspaceHistory: WorkspaceHistorySetter;
+};
+type WorkspaceEditActionsInput = {
+	repository: ReadOnlyWorkspaceRepository;
+	repositoryRequest?: ReadOnlyWorkspaceRequest;
+	snapshotState: ReturnType<typeof useWorkspaceSnapshotFrame>;
+	setWorkspaceHistory: WorkspaceHistorySetter;
+	workspaceHistory: WorkspaceHistory;
+};
+type WorkspaceEditApplierInput = Omit<
+	WorkspaceEditActionsInput,
+	"workspaceHistory"
+>;
 
 export function useWorkspaceEditPipeline({
-  repository,
-  repositoryRequest,
-  snapshot,
+	repository,
+	repositoryRequest,
+	snapshot,
 }: {
-  repository: ReadOnlyWorkspaceRepository
-  repositoryRequest?: ReadOnlyWorkspaceRequest
-  snapshot: MobileWorkspaceSnapshot
+	repository: ReadOnlyWorkspaceRepository;
+	repositoryRequest?: ReadOnlyWorkspaceRequest;
+	snapshot: MobileWorkspaceSnapshot;
 }) {
-  const vaultPicker = useContext(MobileVaultPickerContext)
-  const snapshotState = useWorkspaceSnapshotFrame(snapshot, repositoryRequest?.vaultRootUri)
-  const { workspaceHistory, setWorkspaceHistory } = snapshotState
-  const applyEdit = useWorkspaceEditApplier({
-    repository,
-    repositoryRequest,
-    setWorkspaceHistory,
-    snapshotState,
-  })
-  const { apply: applyWorkspaceEdit, retryFailedEdit } = usePreparedWorkspaceEdits({
-    applyEdit, repository, repositoryRequest, snapshotRef: snapshotState.workspaceSnapshotRef, generation: snapshotState.generation,
-  })
-  const historyControls = useWorkspaceHistoryControls({
-    applyWorkspaceEdit,
-    setWorkspaceHistory,
-    workspaceHistory,
-  })
-  const reloadWorkspaceSnapshot = useCallback(() => {
-    if (repositoryRequest?.source === 'native') return vaultPicker?.choices.find(choice => choice.selected)?.select()
-    const nextSnapshot = repository.readSnapshot(repositoryRequest)
-    snapshotState.replaceWorkspaceSnapshot(nextSnapshot)
-    setWorkspaceHistory(emptyMobileWorkspaceHistory)
-  }, [repository, repositoryRequest, setWorkspaceHistory, snapshotState, vaultPicker])
+	const vaultPicker = useContext(MobileVaultPickerContext);
+	const snapshotState = useWorkspaceSnapshotFrame(
+		snapshot,
+		repositoryRequest?.vaultRootUri,
+	);
+	const { workspaceHistory, setWorkspaceHistory } = snapshotState;
+	const actions = useWorkspaceEditActions({
+		repository,
+		repositoryRequest,
+		snapshotState,
+		setWorkspaceHistory,
+		workspaceHistory,
+	});
+	const reloadWorkspaceSnapshot = useWorkspaceSnapshotReload({
+		repository,
+		repositoryRequest,
+		setWorkspaceHistory,
+		snapshotState,
+		vaultPicker,
+	});
 
-  return {
-    applyWorkspaceEdit,
-    retryFailedEdit,
-    reloadWorkspaceSnapshot,
-    workspaceSnapshot: snapshotState.workspaceSnapshot,
-    ...historyControls,
-  }
+	return {
+		...actions,
+		reloadWorkspaceSnapshot,
+		workspaceSnapshot: snapshotState.workspaceSnapshot,
+	};
+}
+
+function useWorkspaceEditActions(input: WorkspaceEditActionsInput) {
+	const {
+		repository,
+		repositoryRequest,
+		snapshotState,
+		setWorkspaceHistory,
+		workspaceHistory,
+	} = input;
+	const {
+		apply: applyEdit,
+		clearFailedWrite,
+		failedWrite,
+		latestUndoFeedback,
+	} = useWorkspaceEditApplier({
+		...input,
+	});
+	const { apply: applyWorkspaceEdit, retryFailedEdit: retryPreparedEdit } =
+		usePreparedWorkspaceEdits({
+			applyEdit,
+			repository,
+			repositoryRequest,
+			snapshotRef: snapshotState.workspaceSnapshotRef,
+			generation: snapshotState.generation,
+		});
+	const retryFailedEdit = useWorkspaceEditRetry({
+		applyWorkspaceEdit,
+		clearFailedWrite,
+		failedWrite,
+		retryPreparedEdit,
+	});
+	const historyControls = useWorkspaceHistoryControls({
+		applyWorkspaceEdit,
+		setWorkspaceHistory,
+		workspaceHistory,
+	});
+
+	return {
+		applyWorkspaceEdit,
+		failedWorkspaceAction: mobileWorkspaceActionFeedback(failedWrite?.edit),
+		latestUndoFeedback,
+		retryFailedEdit:
+			failedWrite || retryPreparedEdit ? retryFailedEdit : undefined,
+		...historyControls,
+	};
+}
+
+function useWorkspaceSnapshotReload({
+	repository,
+	repositoryRequest,
+	setWorkspaceHistory,
+	snapshotState,
+	vaultPicker,
+}: {
+	repository: ReadOnlyWorkspaceRepository;
+	repositoryRequest?: ReadOnlyWorkspaceRequest;
+	setWorkspaceHistory: WorkspaceHistorySetter;
+	snapshotState: ReturnType<typeof useWorkspaceSnapshotFrame>;
+	vaultPicker: MobileVaultPicker;
+}) {
+	return useCallback(() => {
+		if (repositoryRequest?.source === "native")
+			return vaultPicker?.choices.find((choice) => choice.selected)?.select();
+		const nextSnapshot = repository.readSnapshot(repositoryRequest);
+		snapshotState.replaceWorkspaceSnapshot(nextSnapshot);
+		setWorkspaceHistory(emptyMobileWorkspaceHistory);
+	}, [
+		repository,
+		repositoryRequest,
+		setWorkspaceHistory,
+		snapshotState,
+		vaultPicker,
+	]);
 }
 
 function useWorkspaceEditApplier({
-  repository,
-  repositoryRequest,
-  setWorkspaceHistory,
-  snapshotState,
-}: {
-  repository: ReadOnlyWorkspaceRepository
-  repositoryRequest?: ReadOnlyWorkspaceRequest
-  setWorkspaceHistory: WorkspaceHistorySetter
-  snapshotState: ReturnType<typeof useWorkspaceSnapshotFrame>
+	repository,
+	repositoryRequest,
+	setWorkspaceHistory,
+	snapshotState,
+}: WorkspaceEditApplierInput) {
+	const analytics = useMobileAnalytics();
+	const syncEditors = useContext(WorkspaceSyncEditorsContext);
+	const [failedWrite, setFailedWrite] = useState<FailedWorkspaceWrite | null>(
+		null,
+	);
+	const [latestUndoFeedback, setLatestUndoFeedback] =
+		useState<WorkspaceUndoFeedback>(null);
+	const latestWriteVersion = useRef(0);
+	const writeVersions = useRef(new Map<string, number>());
+	const { generation } = snapshotState;
+	const apply = useCallback(
+		(edit: MobileWorkspaceEdit, options: WorkspaceEditOptions = {}) =>
+			applyWorkspaceEditNow({
+				analytics,
+				edit,
+				generation,
+				options,
+				repository,
+				repositoryRequest,
+				setFailedWrite,
+				setLatestUndoFeedback,
+				setWorkspaceHistory,
+				snapshotState,
+				syncEditors,
+				versions: {
+					latest: latestWriteVersion,
+					byPath: writeVersions,
+				},
+			}),
+		[
+			analytics,
+			generation,
+			repository,
+			repositoryRequest,
+			setLatestUndoFeedback,
+			setWorkspaceHistory,
+			snapshotState,
+			syncEditors,
+		],
+	);
+	const clearFailedWrite = useCallback(() => setFailedWrite(null), []);
+	return { apply, clearFailedWrite, failedWrite, latestUndoFeedback };
+}
+
+function applyWorkspaceEditNow(services: ApplyWorkspaceEditServices) {
+	const previousSnapshot = services.snapshotState.workspaceSnapshotRef.current;
+	if (
+		!isWorkspaceEditGenerationCurrent(services.generation, services.syncEditors)
+	)
+		return { snapshot: previousSnapshot, writes: [] };
+	return applyCurrentWorkspaceEdit(services, previousSnapshot);
+}
+
+function applyCurrentWorkspaceEdit(
+	services: ApplyWorkspaceEditServices,
+	previousSnapshot: MobileWorkspaceSnapshot,
+) {
+	services.setFailedWrite(null);
+	const { result, optimisticSnapshot } = createOptimisticEditResult(
+		previousSnapshot,
+		services.edit,
+		services.repositoryRequest?.source,
+	);
+	publishAndPersistOptimisticEdit(
+		services,
+		previousSnapshot,
+		optimisticSnapshot,
+		result,
+	);
+	return result;
+}
+
+function publishAndPersistOptimisticEdit(
+	services: ApplyWorkspaceEditServices,
+	previousSnapshot: MobileWorkspaceSnapshot,
+	optimisticSnapshot: MobileWorkspaceSnapshot,
+	result: ReturnType<typeof applyWorkspaceEditToWritableSnapshot>,
+) {
+	const {
+		analytics,
+		edit,
+		generation,
+		repository,
+		repositoryRequest,
+		setFailedWrite,
+		setLatestUndoFeedback,
+		setWorkspaceHistory,
+		snapshotState,
+		syncEditors,
+		versions,
+		options,
+	} = services;
+	const historyEntry = publishOptimisticWorkspaceEdit({
+		edit,
+		options,
+		previousSnapshot,
+		setWorkspaceHistory,
+		optimisticSnapshot,
+		result,
+		snapshotState,
+		syncEditors,
+	});
+	updateLatestUndoFeedback(setLatestUndoFeedback, historyEntry);
+	if (result.writes.length > 0)
+		startWorkspaceEditPersistence({
+			analytics,
+			edit,
+			generation,
+			versions,
+			optimisticSnapshot,
+			previousSnapshot,
+			repository,
+			repositoryRequest,
+			result,
+			setFailedWrite,
+			snapshotState,
+			syncEditors,
+		});
+}
+
+function updateLatestUndoFeedback(
+	setLatestUndoFeedback: Dispatch<SetStateAction<WorkspaceUndoFeedback>>,
+	historyEntry: MobileWorkspaceHistoryEntry | null,
+) {
+	setLatestUndoFeedback(
+		historyEntry?.feedbackAction
+			? { action: historyEntry.feedbackAction, id: historyEntry }
+			: null,
+	);
+}
+
+function createOptimisticEditResult(
+	previousSnapshot: MobileWorkspaceSnapshot,
+	edit: MobileWorkspaceEdit,
+	source?: ReadOnlyWorkspaceRequest["source"],
+) {
+	const result = applyWorkspaceEditToWritableSnapshot(
+		previousSnapshot,
+		edit,
+		source,
+	);
+	return {
+		result,
+		optimisticSnapshot: snapshotAfterPendingWriteFailure(
+			result.snapshot,
+			result.writes.length > 0,
+		),
+	};
+}
+
+function isWorkspaceEditGenerationCurrent(
+	generation: number | undefined,
+	syncEditors: ContextType<typeof WorkspaceSyncEditorsContext>,
+) {
+	return generation === syncEditors?.generation();
+}
+
+function publishOptimisticWorkspaceEdit(services: {
+	edit: MobileWorkspaceEdit;
+	options: WorkspaceEditOptions;
+	previousSnapshot: MobileWorkspaceSnapshot;
+	setWorkspaceHistory: WorkspaceHistorySetter;
+	optimisticSnapshot: MobileWorkspaceSnapshot;
+	result: ReturnType<typeof applyWorkspaceEditToWritableSnapshot>;
+	snapshotState: ReturnType<typeof useWorkspaceSnapshotFrame>;
+	syncEditors: ContextType<typeof WorkspaceSyncEditorsContext>;
 }) {
-  const analytics = useMobileAnalytics()
-  const syncEditors = useContext(WorkspaceSyncEditorsContext)
-  const { generation } = snapshotState
-  return useCallback((edit: MobileWorkspaceEdit, options: WorkspaceEditOptions = {}) => {
-    const previousSnapshot = snapshotState.workspaceSnapshotRef.current
-    if (generation !== syncEditors?.generation()) return { snapshot: previousSnapshot, writes: [] }
-    const result = applyWorkspaceEditToWritableSnapshot(previousSnapshot, edit, repositoryRequest?.source)
-    requestCreatedNoteFocus(syncEditors, edit, result)
-    if (result.writes.length > 0) syncEditors?.markDirty(workspacePendingWritePaths(result.writes))
-    snapshotState.replaceWorkspaceSnapshot(result.snapshot)
-    recordWorkspaceEditHistory({ edit, options, previousSnapshot, resultSnapshot: result.snapshot, setWorkspaceHistory })
-    if (result.writes.length > 0) void persistWorkspaceWrites({
-      repository,
-      repositoryRequest,
-      setWorkspaceSnapshot: snapshotState.setWorkspaceSnapshot,
-      workspaceSnapshotRef: snapshotState.workspaceSnapshotRef,
-      writes: result.writes,
-      onSaved: () => trackSuccessfulMobileEdit(edit, result.writes.length, analytics.capture),
-    })
-    return result
-  }, [analytics, generation, repository, repositoryRequest, setWorkspaceHistory, snapshotState, syncEditors])
+	const {
+		edit,
+		options,
+		previousSnapshot,
+		setWorkspaceHistory,
+		optimisticSnapshot,
+		result,
+		snapshotState,
+		syncEditors,
+	} = services;
+	requestCreatedNoteFocus(syncEditors, edit, result);
+	if (result.writes.length > 0)
+		syncEditors?.markDirty(workspacePendingWritePaths(result.writes));
+	snapshotState.replaceWorkspaceSnapshot(optimisticSnapshot);
+	return recordWorkspaceEditHistory({
+		edit,
+		options,
+		previousSnapshot,
+		resultSnapshot: optimisticSnapshot,
+		setWorkspaceHistory,
+	});
+}
+
+function startWorkspaceEditPersistence(services: StartWorkspacePersistence) {
+	const {
+		analytics,
+		edit,
+		generation,
+		optimisticSnapshot,
+		previousSnapshot,
+		repository,
+		repositoryRequest,
+		result,
+		setFailedWrite,
+		snapshotState,
+		syncEditors,
+		versions,
+	} = services;
+	const version = ++versions.latest.current;
+	const paths = writePathKeys(result.writes);
+	for (const path of paths) versions.byPath.current.set(path, version);
+	const isCurrentWrite = () =>
+		generation === syncEditors?.generation() &&
+		paths.every((path) => versions.byPath.current.get(path) === version);
+	void persistWorkspaceWrites({
+		repository,
+		repositoryRequest,
+		isCurrentWrite,
+		rollback: isOptimisticNoteListEdit(edit)
+			? { edit, previous: previousSnapshot, optimistic: optimisticSnapshot }
+			: undefined,
+		setFailedWrite,
+		setWorkspaceSnapshot: snapshotState.setWorkspaceSnapshot,
+		workspaceSnapshotRef: snapshotState.workspaceSnapshotRef,
+		writes: result.writes,
+		clearFailure: () =>
+			clearWorkspaceWriteFailure(
+				snapshotState.workspaceSnapshotRef,
+				snapshotState.setWorkspaceSnapshot,
+			),
+		onSaved: () =>
+			trackSuccessfulMobileEdit(edit, result.writes.length, analytics.capture),
+	});
 }
 
 export function applyWorkspaceEditToWritableSnapshot(
-  snapshot: MobileWorkspaceSnapshot,
-  edit: MobileWorkspaceEdit,
-  source?: ReadOnlyWorkspaceRequest['source'],
+	snapshot: MobileWorkspaceSnapshot,
+	edit: MobileWorkspaceEdit,
+	source?: ReadOnlyWorkspaceRequest["source"],
 ) {
-  if (isMobileNoteHydration(edit)) return applyMobileWorkspaceEditWithWrites(snapshot, edit)
-  if (snapshot.sync.kind === 'noVault' || snapshot.sync.kind === 'readOnly') return { snapshot, writes: [] }
-  if (mobileEditNeedsNoteRead(edit, snapshot, source)) return { snapshot, writes: [] }
-  return withDefaultNoteType(applyMobileWorkspaceEditWithWrites(snapshot, edit))
-}
-
-function useWorkspaceHistoryControls({
-  applyWorkspaceEdit,
-  setWorkspaceHistory,
-  workspaceHistory,
-}: {
-  applyWorkspaceEdit: ReturnType<typeof usePreparedWorkspaceEdits>['apply']
-  setWorkspaceHistory: WorkspaceHistorySetter
-  workspaceHistory: WorkspaceHistory
-}) {
-  const historyPending = useRef(false)
-  const applyWorkspaceHistoryEntry = useCallback(async (entry: MobileWorkspaceHistoryEntry, direction: 'redo' | 'undo') => {
-    const edits = direction === 'undo' ? entry.undoEdits : entry.redoEdits
-    return applyWorkspaceEdit({ type: 'bulkEdit', edits }, { recordHistory: false })
-  }, [applyWorkspaceEdit])
-  const undoWorkspaceEdit = useCallback(async () => {
-    const entry = latestWorkspaceHistoryEntry(workspaceHistory.past)
-    if (!entry || historyPending.current) return
-    historyPending.current = true
-    try {
-      if (!await applyWorkspaceHistoryEntry(entry, 'undo')) return
-      setWorkspaceHistory({
-        future: [entry, ...workspaceHistory.future],
-        past: workspaceHistory.past.slice(0, -1),
-      })
-    } finally {
-      historyPending.current = false
-    }
-  }, [applyWorkspaceHistoryEntry, setWorkspaceHistory, workspaceHistory])
-  const redoWorkspaceEdit = useCallback(async () => {
-    const entry = workspaceHistory.future[0]
-    if (!entry || historyPending.current) return
-    historyPending.current = true
-    try {
-      if (!await applyWorkspaceHistoryEntry(entry, 'redo')) return
-      setWorkspaceHistory({
-        future: workspaceHistory.future.slice(1),
-        past: [...workspaceHistory.past, entry],
-      })
-    } finally {
-      historyPending.current = false
-    }
-  }, [applyWorkspaceHistoryEntry, setWorkspaceHistory, workspaceHistory])
-
-  return {
-    canRedoWorkspaceEdit: workspaceHistory.future.length > 0,
-    canUndoWorkspaceEdit: workspaceHistory.past.length > 0,
-    redoWorkspaceEdit,
-    undoWorkspaceEdit,
-  }
-}
-
-function latestWorkspaceHistoryEntry(entries: MobileWorkspaceHistoryEntry[]) {
-  return entries.at(-1) ?? null
-}
-
-function recordWorkspaceEditHistory({
-  edit,
-  options,
-  previousSnapshot,
-  resultSnapshot,
-  setWorkspaceHistory,
-}: {
-  edit: MobileWorkspaceEdit
-  options: WorkspaceEditOptions
-  previousSnapshot: MobileWorkspaceSnapshot
-  resultSnapshot: MobileWorkspaceSnapshot
-  setWorkspaceHistory: WorkspaceHistorySetter
-}) {
-  if (options.recordHistory === false) return
-
-  setWorkspaceHistory((history) => recordMobileWorkspaceHistory(
-    history,
-    mobileWorkspaceHistoryEntry(previousSnapshot, resultSnapshot, edit),
-  ))
-}
-
-async function persistWorkspaceWrites({
-  onSaved,
-  repository,
-  repositoryRequest,
-  setWorkspaceSnapshot,
-  workspaceSnapshotRef,
-  writes,
-}: {
-  onSaved: () => void
-  repository: ReadOnlyWorkspaceRepository
-  repositoryRequest?: ReadOnlyWorkspaceRequest
-  setWorkspaceSnapshot: WorkspaceSnapshotSetter
-  workspaceSnapshotRef: WorkspaceSnapshotRef
-  writes: MobileWorkspaceWrite[]
-}) {
-  try {
-    await repository.persistWrites(writes, repositoryRequest)
-    onSaved()
-  } catch (error) {
-    captureMobileError(error, 'persistence')
-    markWorkspaceWriteFailed(workspaceSnapshotRef, setWorkspaceSnapshot)
-  }
-}
-
-function markWorkspaceWriteFailed(
-  workspaceSnapshotRef: WorkspaceSnapshotRef,
-  setWorkspaceSnapshot: WorkspaceSnapshotSetter,
-) {
-  setWorkspaceSnapshot((current) => {
-    const failedSnapshot = snapshotWithWriteFailure(current)
-    workspaceSnapshotRef.current = failedSnapshot
-    return failedSnapshot
-  })
-}
-
-function snapshotWithWriteFailure(snapshot: MobileWorkspaceSnapshot): MobileWorkspaceSnapshot {
-  if (snapshot.sync.kind === 'writeFailed') return snapshot
-
-  return {
-    ...snapshot,
-    sync: { kind: 'writeFailed' },
-  }
+	if (isMobileNoteHydration(edit))
+		return applyMobileWorkspaceEditWithWrites(snapshot, edit);
+	if (snapshot.sync.kind === "noVault" || snapshot.sync.kind === "readOnly")
+		return { snapshot, writes: [] };
+	if (mobileEditNeedsNoteRead(edit, snapshot, source))
+		return { snapshot, writes: [] };
+	return withDefaultNoteType(
+		applyMobileWorkspaceEditWithWrites(snapshot, edit),
+	);
 }

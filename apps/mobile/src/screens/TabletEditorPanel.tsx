@@ -1,6 +1,5 @@
 import { type ReactElement, useCallback, useEffect, useRef, useState } from 'react'
 import {
-  Alert,
   type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -25,9 +24,10 @@ import { mobileNoteActionMode } from '../workspace/mobileNoteActionMode'
 import type { MobileNoteReadState } from '../workspace/mobileNoteRead'
 import { mobileSpreadsheetNeedsFallback } from '../workspace/mobileSpreadsheetFormat'
 import type { MobileTableOfContentsTarget } from '../workspace/mobileTableOfContents'
-import { mobileNoteIdForWikilinkTarget } from '../workspace/mobileWikilinks'
+import { createMobileTaskToggleHandler } from '../workspace/mobileTaskCheckbox'
 import type { MobileEditorBlock, MobileNote } from '../workspace/mobileWorkspaceModel'
 import { useMobilePullToSync } from '../workspace/useMobilePullToSync'
+import { useMobileWikilinkNavigation } from '../workspace/useMobileWikilinkNavigation'
 import { EditorPanelToolbar } from './EditorPanelToolbar'
 import type {
   EditorContentProps,
@@ -72,15 +72,9 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
   const { onScroll, onTargetLayout, setScrollViewNode } = useTableOfContentsScroll(tableOfContentsTarget, onTableOfContentsScrollProof)
   const importAttachment = useMobileAttachmentImporter(vaultRootUri)
   const openLink = useMobileAttachmentLinkOpener(vaultRootUri)
-  const navigateWikilink = useCallback(
-    (target: string) => {
-      if (!mobileNoteIdForWikilinkTarget(notes, target)) {
-        Alert.alert(mobileText('noteList.empty.noMatching'))
-        return
-      }
-      onNavigateWikilink(target)
-    },
-    [notes, onNavigateWikilink],
+  const { navigateWikilink, notice: missingWikilinkNotice } = useMobileWikilinkNavigation(
+    notes,
+    onNavigateWikilink,
   )
   const layoutProbe = useMobileLayoutProbe(layoutProbeEnabled)
   const changeEditingMode = useCallback(() => {
@@ -136,6 +130,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
         refreshControl={refreshControl}
       />
       {layoutProbeEnabled ? <MobileLayoutProbeReadout metrics={layoutProbe.metrics} testID="editor-layout-metrics" /> : null}
+      {missingWikilinkNotice}
     </MobilePanel>
   )
 }
@@ -447,8 +442,11 @@ function EditorContent({
       renderTitleBlock={shouldRenderReadTitleBlock(note, readBlocks)}
       tableOfContentsTitle={note.title}
       onTableOfContentsTargetLayout={onTableOfContentsTargetLayout}
-      onOpenLink={onOpenLink}
-      onNavigateWikilink={onNavigateWikilink}
+      interactions={{
+        onOpenLink,
+        onNavigateWikilink,
+        onToggleTask: createMobileTaskToggleHandler(note.rawContent, note.id, onUpdateContent),
+      }}
     />
   )
 }

@@ -1,10 +1,19 @@
 import { type ReactNode, useCallback, useMemo, useRef } from "react";
-import { View } from "react-native";
+import { type StyleProp, Vibration, View, type ViewStyle } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Swipeable, {
 	type SwipeableMethods,
 } from "react-native-gesture-handler/ReanimatedSwipeable";
-import { runOnJS, useSharedValue } from "react-native-reanimated";
+import Animated, {
+	FadeInDown,
+	FadeOutUp,
+	LinearTransition,
+	runOnJS,
+	SlideInLeft,
+	SlideOutLeft,
+	useReducedMotion,
+	useSharedValue,
+} from "react-native-reanimated";
 import { useMobileAnalytics } from "../../analytics/useMobileAnalytics";
 import { useMobileColors } from "../../ui/theme/useMobileTheme";
 import type { MobileNote } from "../../workspace/mobileWorkspaceModel";
@@ -17,8 +26,9 @@ import {
 export type MobileNoteRowActions = {
 	onArchive: (noteIds: string[], archived: boolean) => void;
 	onDelete: (noteIds: string[]) => void;
-	onOrganize?: (noteIds: string[]) => void;
+	onOrganize: (noteIds: string[]) => void;
 	onToggleFavorite: (noteId: string) => void;
+	primarySwipeAction?: "archive" | "organize";
 };
 
 type Props = {
@@ -29,8 +39,49 @@ type Props = {
 };
 
 export function MobileSwipeableNoteRow(props: Props) {
-	if (!props.actions || props.disabled) return props.children;
-	return <SwipeableNoteRow {...props} actions={props.actions} />;
+	const row =
+		!props.actions || props.disabled ? (
+			props.children
+		) : (
+			<SwipeableNoteRow {...props} actions={props.actions} />
+		);
+	return <MobileListMotion variant="row">{row}</MobileListMotion>;
+}
+
+export function MobileListMotion({
+	children,
+	testID,
+	variant = "surface",
+	style,
+	pointerEvents,
+}: {
+	children: ReactNode;
+	testID?: string;
+	variant?: "row" | "surface";
+	style?: StyleProp<ViewStyle>;
+	pointerEvents?: "auto" | "none" | "box-none" | "box-only";
+}) {
+	const reduceMotion = useReducedMotion();
+	if (reduceMotion)
+		return (
+			<View pointerEvents={pointerEvents} style={style} testID={testID}>
+				{children}
+			</View>
+		);
+
+	const row = variant === "row";
+	return (
+		<Animated.View
+			entering={row ? SlideInLeft.duration(220) : FadeInDown.duration(180)}
+			exiting={row ? SlideOutLeft.duration(220) : FadeOutUp.duration(140)}
+			layout={LinearTransition.duration(180)}
+			pointerEvents={pointerEvents}
+			style={style}
+			testID={testID}
+		>
+			{children}
+		</Animated.View>
+	);
 }
 
 function useSwipeableNoteActions(
@@ -41,9 +92,10 @@ function useSwipeableNoteActions(
 	const swipeable = useRef<SwipeableMethods>(null);
 	const perform = useCallback(
 		(action: MobileNoteSwipeAction | "delete") => {
-			swipeable.current?.close();
+			if (action === "favorite") swipeable.current?.close();
 			if (action === "favorite") actions.onToggleFavorite(note.id);
 			if (action === "archive") actions.onArchive([note.id], !note.archived);
+			if (action === "organize") actions.onOrganize([note.id]);
 			if (action === "delete") actions.onDelete([note.id]);
 			analytics.capture({ name: "mobile_note_swipe_used", action });
 		},
@@ -60,6 +112,8 @@ function SwipeableNoteRow({
 	const mobileColors = useMobileColors();
 	const { perform, swipeable } = useSwipeableNoteActions(actions, note);
 	const width = useSharedValue(0);
+	const committed = useSharedValue(false);
+	const hapticPlayed = useSharedValue(false);
 	// Swipeable owns dragging/snapping. This simultaneous observer only commits a full swipe on release.
 	const fullSwipe = useMemo(
 		() =>
@@ -67,11 +121,33 @@ function SwipeableNoteRow({
 				.activeOffsetX(-16)
 				.failOffsetX(16)
 				.failOffsetY([-12, 12])
+				.onStart(() => {
+					committed.set(false);
+					hapticPlayed.set(false);
+				})
+				.onUpdate((event) => {
+					const action = fullSwipeNoteAction(
+						event.translationX,
+						width.get(),
+						actions.primarySwipeAction,
+					);
+					if (action && !hapticPlayed.get()) {
+						hapticPlayed.set(true);
+						runOnJS(emitSwipeHaptic)();
+					}
+				})
 				.onEnd((event) => {
-					const action = fullSwipeNoteAction(event.translationX, width.get());
-					if (action) runOnJS(perform)(action);
+					const action = fullSwipeNoteAction(
+						event.translationX,
+						width.get(),
+						actions.primarySwipeAction,
+					);
+					if (action && !committed.get()) {
+						committed.set(true);
+						runOnJS(perform)(action);
+					}
 				}),
-		[perform, width],
+		[actions.primarySwipeAction, committed, hapticPlayed, perform, width],
 	);
 	const actionProps = {
 		archived: note.archived,
@@ -80,6 +156,8 @@ function SwipeableNoteRow({
 		onArchive: () => perform("archive"),
 		onDelete: () => perform("delete"),
 		onFavorite: () => perform("favorite"),
+		onOrganize: () => perform("organize"),
+		primarySwipeAction: actions.primarySwipeAction,
 		width,
 	};
 	return (
@@ -106,4 +184,8 @@ function SwipeableNoteRow({
 			</View>
 		</GestureDetector>
 	);
+}
+
+function emitSwipeHaptic() {
+	Vibration.vibrate(10);
 }
