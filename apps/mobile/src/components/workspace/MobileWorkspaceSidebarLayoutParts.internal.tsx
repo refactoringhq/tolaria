@@ -11,16 +11,19 @@ export function MobileSidebarSectionsScroll({
 	children,
 	controlsHeight,
 	layoutProbe,
+	scrollsToTop = false,
 	styles,
 }: {
 	children: ReactNode;
 	controlsHeight: number;
 	layoutProbe: ReturnType<typeof useMobileLayoutProbe>;
+	scrollsToTop?: boolean;
 	styles: SidebarLayoutStyles;
 }) {
 	return (
 		<ScrollView
 			{...layoutProbe.probe("sidebar.scroll")}
+			scrollsToTop={scrollsToTop}
 			testID="sidebar-scroll"
 			style={styles.scroll}
 			contentContainerStyle={[

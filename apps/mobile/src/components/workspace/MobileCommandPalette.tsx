@@ -1,27 +1,27 @@
-import { useMobileStyles } from '../../ui/theme/useMobileTheme'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
+  type NativeSyntheticEvent,
   Pressable,
   ScrollView,
-  View,
-  type NativeSyntheticEvent,
   type TextInputKeyPressEventData,
+  View,
 } from 'react-native'
-import { Text } from '../ui/text'
-import { Input } from '../ui/input'
 import { mobileText } from '../../i18n/mobileText'
+import { optionalNativeMobileKeyCommandsModule } from '../../native/mobileNativeKeyCommands'
 import { MobileButton } from '../../ui/MobileButton'
 import { MobileKeyboardAvoidingView } from '../../ui/MobileKeyboardAvoidingView'
 import { MobilePanel, MobileToolbar, MobileToolbarSpacer, MobileToolbarTitle } from '../../ui/MobilePanel'
-
+import { useMobileStyles } from '../../ui/theme/useMobileTheme'
 import {
+  type MobileCommandPaletteCommand,
   mobileCommandGroupLabel,
   mobileCommandPaletteResults,
-  type MobileCommandPaletteCommand,
 } from '../../workspace/mobileCommandPalette'
-import { createCommandPaletteStyles as createThemeStyles } from './MobileCommandPaletteStyles'
-import { optionalNativeMobileKeyCommandsModule } from '../../native/mobileNativeKeyCommands'
 import { useMobileModalDismiss } from '../../workspace/useMobileModalDismiss'
+import { Input } from '../ui/input'
+import { Text } from '../ui/text'
+import { createCommandPaletteStyles as createThemeStyles } from './MobileCommandPaletteStyles'
+import { mobileSearchResultsScrollProps } from './mobileSearchResultsScrollProps'
 
 type MobileCommandPaletteProps = {
   commands: MobileCommandPaletteCommand[]
@@ -31,6 +31,47 @@ type MobileCommandPaletteProps = {
 export function MobileCommandPalette({ commands, onClose }: MobileCommandPaletteProps) {
   useMobileModalDismiss(onClose)
   const { surfaceStyles, mobileColors, styles } = useMobileStyles(createThemeStyles)
+  const controller = useCommandPaletteController(commands, onClose)
+
+  return (
+    <MobileKeyboardAvoidingView style={surfaceStyles.overlay} testID="mobile-command-palette">
+      <Pressable accessibilityLabel={mobileText('common.cancel')} style={surfaceStyles.backdrop} testID="mobile-command-palette-backdrop" onPress={onClose} />
+      <View style={surfaceStyles.paletteContainer} pointerEvents="box-none">
+        <MobilePanel accessibilityViewIsModal style={surfaceStyles.palette} testID="mobile-command-palette-panel">
+          <MobileToolbar testID="mobile-command-palette-toolbar">
+            <MobileToolbarTitle title={mobileText('menu.view.commandPalette')} />
+            <MobileToolbarSpacer />
+            <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={onClose} />
+          </MobileToolbar>
+          <Input
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoFocus
+            clearButtonMode="while-editing"
+            placeholder={mobileText('command.palettePlaceholder')}
+            placeholderTextColor={mobileColors.textFaint}
+            spellCheck={false}
+            style={styles.input}
+            testID="mobile-command-palette-input"
+            value={controller.query}
+            onChangeText={controller.handleQueryChange}
+            onKeyPress={controller.handleKeyPress}
+            onSubmitEditing={controller.selectActiveCommand}
+          />
+          <CommandResults
+            groups={controller.results.groups}
+            selectedIndex={controller.selectedIndex}
+            onHover={controller.setSelectedIndex}
+            onSelect={controller.selectCommand}
+          />
+          <CommandFooter />
+        </MobilePanel>
+      </View>
+    </MobileKeyboardAvoidingView>
+  )
+}
+
+function useCommandPaletteController(commands: MobileCommandPaletteCommand[], onClose: () => void) {
   const [query, setQuery] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const results = useMemo(() => mobileCommandPaletteResults(commands, query), [commands, query])
@@ -60,43 +101,7 @@ export function MobileCommandPalette({ commands, onClose }: MobileCommandPalette
     // Native arrows/Escape arrive through UIKeyCommand; Return uses onSubmitEditing.
     if (!optionalNativeMobileKeyCommandsModule()) handleKey(event.nativeEvent.key)
   }
-
-  return (
-    <MobileKeyboardAvoidingView style={surfaceStyles.overlay} testID="mobile-command-palette">
-      <Pressable accessibilityLabel={mobileText('common.cancel')} style={surfaceStyles.backdrop} testID="mobile-command-palette-backdrop" onPress={onClose} />
-      <View style={surfaceStyles.paletteContainer} pointerEvents="box-none">
-        <MobilePanel accessibilityViewIsModal style={surfaceStyles.palette} testID="mobile-command-palette-panel">
-          <MobileToolbar testID="mobile-command-palette-toolbar">
-            <MobileToolbarTitle title={mobileText('menu.view.commandPalette')} />
-            <MobileToolbarSpacer />
-            <MobileButton label={mobileText('common.cancel')} variant="ghost" onPress={onClose} />
-          </MobileToolbar>
-          <Input
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoFocus
-            clearButtonMode="while-editing"
-            placeholder={mobileText('command.palettePlaceholder')}
-            placeholderTextColor={mobileColors.textFaint}
-            spellCheck={false}
-            style={styles.input}
-            testID="mobile-command-palette-input"
-            value={query}
-            onChangeText={handleQueryChange}
-            onKeyPress={handleKeyPress}
-            onSubmitEditing={selectActiveCommand}
-          />
-          <CommandResults
-            groups={results.groups}
-            selectedIndex={selectedIndex}
-            onHover={setSelectedIndex}
-            onSelect={selectCommand}
-          />
-          <CommandFooter />
-        </MobilePanel>
-      </View>
-    </MobileKeyboardAvoidingView>
-  )
+  return { handleKeyPress, handleQueryChange, query, results, selectActiveCommand, selectCommand, selectedIndex, setSelectedIndex }
 }
 
 function useNativePaletteKeys(onKey: (key: string) => void) {
@@ -140,7 +145,7 @@ function CommandResults({
   return (
     <ScrollView
       contentContainerStyle={styles.results}
-      keyboardShouldPersistTaps="handled"
+      {...mobileSearchResultsScrollProps()}
       style={styles.resultsScroll}
     >
       {indexedGroups.map((group) => (

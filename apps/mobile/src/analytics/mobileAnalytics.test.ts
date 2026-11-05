@@ -48,6 +48,10 @@ describe("consent-bound mobile analytics", () => {
 		);
 	});
 
+	it("records task toggle state without note content", () => {
+		expectEvent({ name: "mobile_note_task_toggled", state: "checked" }, { state: "checked" });
+	});
+
 	it("records deep-link outcomes without vault or note identifiers", () => {
 		expectEvent(
 			{ name: "mobile_deep_link_opened", outcome: "opened" },

@@ -1,9 +1,12 @@
+import { CheckSquare, Square } from 'phosphor-react-native'
+import { type LayoutChangeEvent, Pressable, type TextStyle, View } from 'react-native'
+import { useMobileAnalytics } from '../../analytics/useMobileAnalytics'
 import type { MobileMetrics } from '../../ui/mobileMetrics'
 import { useMobileStyles } from '../../ui/theme/useMobileTheme'
-import { CheckSquare, Square } from 'phosphor-react-native'
-import { type LayoutChangeEvent, type TextStyle, View } from 'react-native'
-import { Text } from '../ui/text'
-import { createEditorBlockStyles as createThemeStyles } from './mobileEditorBlockStyles'
+import {
+  mobileTableOfContentsTargetIdsForBlocks,
+  mobileTableOfContentsTitleTargetId,
+} from '../../workspace/mobileTableOfContents'
 import type {
   MobileEditorBlock,
   MobileEditorInline,
@@ -11,10 +14,8 @@ import type {
   MobileEditorOrderedListItem,
   MobileEditorTaskItem,
 } from '../../workspace/mobileWorkspaceModel'
-import {
-  mobileTableOfContentsTargetIdsForBlocks,
-  mobileTableOfContentsTitleTargetId,
-} from '../../workspace/mobileTableOfContents'
+import { Text } from '../ui/text'
+import { createEditorBlockStyles as createThemeStyles } from './mobileEditorBlockStyles'
 
 type MobileEditorBlocksProps = {
   blocks: MobileEditorBlock[]
@@ -22,8 +23,13 @@ type MobileEditorBlocksProps = {
   renderTitleBlock?: boolean
   tableOfContentsTitle?: string
   onTableOfContentsTargetLayout?: (targetId: string, event: LayoutChangeEvent) => void
+  interactions: MobileEditorBlockInteractions
+}
+
+export type MobileEditorBlockInteractions = {
   onOpenLink?: (href: string) => void
   onNavigateWikilink: (target: string) => void
+  onToggleTask?: (sourceLine: number) => void
 }
 
 type EditorListProps =
@@ -31,18 +37,21 @@ type EditorListProps =
     items: MobileEditorListItem[]
     onOpenLink?: (href: string) => void
     onNavigateWikilink: (target: string) => void
+    onToggleTask?: (sourceLine: number) => void
     variant: 'bullet'
   }
   | {
     items: MobileEditorOrderedListItem[]
     onOpenLink?: (href: string) => void
     onNavigateWikilink: (target: string) => void
+    onToggleTask?: (sourceLine: number) => void
     variant: 'ordered'
   }
   | {
     items: MobileEditorTaskItem[]
     onOpenLink?: (href: string) => void
     onNavigateWikilink: (target: string) => void
+    onToggleTask?: (sourceLine: number) => void
     variant: 'task'
   }
 
@@ -54,8 +63,7 @@ export function MobileEditorBlocks({
   renderTitleBlock = true,
   tableOfContentsTitle = '',
   onTableOfContentsTargetLayout,
-  onOpenLink,
-  onNavigateWikilink,
+  interactions,
 }: MobileEditorBlocksProps) {
   if (blocks.length === 0) {
     return <FallbackBullets bullets={fallbackBullets} />
@@ -84,8 +92,9 @@ export function MobileEditorBlocks({
             key={`${block.kind}-${index}`}
             tableOfContentsTargetId={tableOfContentsTargetIds[index]}
             onTableOfContentsTargetLayout={onTableOfContentsTargetLayout}
-            onOpenLink={onOpenLink}
-            onNavigateWikilink={onNavigateWikilink}
+            onOpenLink={interactions.onOpenLink}
+            onNavigateWikilink={interactions.onNavigateWikilink}
+            onToggleTask={interactions.onToggleTask}
           />
         )
       })}
@@ -114,32 +123,63 @@ function EditorBlock({
   onTableOfContentsTargetLayout,
   onOpenLink,
   onNavigateWikilink,
+  onToggleTask,
 }: {
   block: MobileEditorBlock
   tableOfContentsTargetId?: string
   onTableOfContentsTargetLayout?: (targetId: string, event: LayoutChangeEvent) => void
   onOpenLink?: (href: string) => void
   onNavigateWikilink: (target: string) => void
+  onToggleTask?: (sourceLine: number) => void
 }) {
-  const themeStyles = useMobileStyles(createThemeStyles)
-  const { dividerStyles } = themeStyles
   if (block.kind === 'paragraph') return <EditorParagraph block={block} onOpenLink={onOpenLink} onNavigateWikilink={onNavigateWikilink} />
-  if (block.kind === 'heading') {
-    return (
-      <EditorHeading
-        block={block}
-        tableOfContentsTargetId={tableOfContentsTargetId}
-        onTableOfContentsTargetLayout={onTableOfContentsTargetLayout}
-      />
-    )
-  }
+  if (block.kind === 'heading') return <EditorHeading block={block} tableOfContentsTargetId={tableOfContentsTargetId} onTableOfContentsTargetLayout={onTableOfContentsTargetLayout} />
+  if (isListBlock(block)) return <EditorListBlock block={block} onOpenLink={onOpenLink} onNavigateWikilink={onNavigateWikilink} onToggleTask={onToggleTask} />
+  return <EditorOtherBlock block={block} onOpenLink={onOpenLink} onNavigateWikilink={onNavigateWikilink} />
+}
+
+type EditorListBlockProps = {
+  block: Extract<MobileEditorBlock, { kind: 'bullets' | 'orderedList' | 'tasks' }>
+  onOpenLink?: (href: string) => void
+  onNavigateWikilink: (target: string) => void
+  onToggleTask?: (sourceLine: number) => void
+}
+
+function isListBlock(block: MobileEditorBlock): block is EditorListBlockProps['block'] {
+  return block.kind === 'bullets' || block.kind === 'orderedList' || block.kind === 'tasks'
+}
+
+function EditorListBlock({ block, onOpenLink, onNavigateWikilink, onToggleTask }: EditorListBlockProps) {
+  if (block.kind === 'tasks') return taskListBlock(block, onOpenLink, onNavigateWikilink, onToggleTask)
   if (block.kind === 'bullets') return <EditorList items={block.items} variant="bullet" onOpenLink={onOpenLink} onNavigateWikilink={onNavigateWikilink} />
-  if (block.kind === 'orderedList') return <EditorList items={block.items} variant="ordered" onOpenLink={onOpenLink} onNavigateWikilink={onNavigateWikilink} />
-  if (block.kind === 'tasks') return <EditorList items={block.items} variant="task" onOpenLink={onOpenLink} onNavigateWikilink={onNavigateWikilink} />
+  return <EditorList items={block.items} variant="ordered" onOpenLink={onOpenLink} onNavigateWikilink={onNavigateWikilink} />
+}
+
+type EditorOtherBlockProps = {
+  block: Extract<MobileEditorBlock, { kind: 'quote' | 'codeBlock' | 'divider' | 'table' }>
+  onOpenLink?: (href: string) => void
+  onNavigateWikilink: (target: string) => void
+}
+
+function EditorOtherBlock({ block, onOpenLink, onNavigateWikilink }: EditorOtherBlockProps) {
   if (block.kind === 'quote') return <EditorQuote content={block.content} onOpenLink={onOpenLink} onNavigateWikilink={onNavigateWikilink} />
   if (block.kind === 'codeBlock') return <EditorCodeBlock code={block.code} language={block.language ?? null} />
-  if (block.kind === 'divider') return <View style={dividerStyles.divider} testID="editor-divider" />
+  if (block.kind === 'divider') return <EditorDivider />
   return <EditorTable headers={block.headers} rows={block.rows} />
+}
+
+function EditorDivider() {
+	const { dividerStyles } = useMobileStyles(createThemeStyles)
+	return <View style={dividerStyles.divider} testID="editor-divider" />
+}
+
+function taskListBlock(
+  block: Extract<MobileEditorBlock, { kind: 'tasks' }>,
+  onOpenLink: ((href: string) => void) | undefined,
+  onNavigateWikilink: (target: string) => void,
+  onToggleTask: ((sourceLine: number) => void) | undefined,
+) {
+  return <EditorList items={block.items} variant="task" onOpenLink={onOpenLink} onNavigateWikilink={onNavigateWikilink} onToggleTask={onToggleTask} />
 }
 
 function EditorParagraph({
@@ -238,6 +278,7 @@ function editorListRow(props: EditorListProps, item: MobileEditorListItem, index
         testID="editor-task-row"
         onOpenLink={props.onOpenLink}
         onNavigateWikilink={props.onNavigateWikilink}
+        onToggleTask={props.onToggleTask}
       />
     )
   }
@@ -290,26 +331,42 @@ function TaskRow({
   item,
   onOpenLink,
   onNavigateWikilink,
+  onToggleTask,
   testID,
 }: {
   item: MobileEditorTaskItem
   onOpenLink?: (href: string) => void
   onNavigateWikilink: (target: string) => void
+  onToggleTask?: (sourceLine: number) => void
   testID: string
 }) {
+  const analytics = useMobileAnalytics()
   const themeStyles = useMobileStyles(createThemeStyles)
   const { listStyles, mobileColors, textStyles } = themeStyles
   const Icon = item.checked ? CheckSquare : Square
+  const sourceLine = (item as MobileEditorTaskItem & { sourceLine?: number }).sourceLine
 
   return (
     <View style={[listStyles.taskRow, listDepthStyle(themeStyles.metrics, item.depth)]} testID={testID}>
-      <View style={listStyles.taskIcon}>
+      <Pressable
+        accessibilityLabel={item.content.map((segment) => segment.text).join('')}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: item.checked }}
+        disabled={!onToggleTask || sourceLine === undefined}
+        onPress={() => {
+          if (sourceLine === undefined) return
+          analytics.capture({ name: 'mobile_note_task_toggled', state: item.checked ? 'unchecked' : 'checked' })
+          onToggleTask?.(sourceLine)
+        }}
+        style={listStyles.taskIcon}
+        testID="editor-task-checkbox"
+      >
         <Icon
           color={item.checked ? mobileColors.primary : mobileColors.textMuted}
           size={themeStyles.metrics.editor.listCheckboxSize}
           weight={item.checked ? 'fill' : 'regular'}
         />
-      </View>
+      </Pressable>
       <InlineText
         content={item.content}
         style={textStyles.body}

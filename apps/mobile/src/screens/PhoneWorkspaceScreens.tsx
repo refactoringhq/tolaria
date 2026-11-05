@@ -34,6 +34,7 @@ function PhoneNoteListScreen({
 	openEditor,
 	openSidebar,
 	phoneLayoutProbe,
+	phoneState,
 }: PhoneWorkspaceStateViewProps) {
 	const { styles, mobileColors } = useMobileStyles(createThemeStyles);
 	const leading = (
@@ -61,6 +62,7 @@ function PhoneNoteListScreen({
 				options={options}
 				leading={leading}
 				openEditor={openEditor}
+				scrollsToTop={phoneState === 'list'}
 			/>
 		</View>
 	);
@@ -71,13 +73,15 @@ function PhoneNoteListContent({
 	options,
 	leading,
 	openEditor,
+	scrollsToTop,
 }: Pick<
 	PhoneWorkspaceStateViewProps,
 	"controller" | "options" | "openEditor"
-> & { leading: ReactNode }) {
+> & { leading: ReactNode; scrollsToTop: boolean }) {
 	return (
 		<MobileNoteListPanel
 			compact
+			scrollsToTop={scrollsToTop}
 			onToggleNoteFavorite={controller.onToggleNoteFavorite}
 			bulkActions={phoneNoteListBulkActions(controller)}
 			displayPropertyKeys={controller.noteListProperties}
@@ -175,6 +179,7 @@ function PhoneSidebarContent({
 	return (
 		<MobileWorkspaceSidebar
 			fullWidth
+			scrollsToTop={false}
 			activeFolderId={controller.activeFolderId}
 			activeItemId={controller.activeItemId}
 			layoutProbe={options.layoutProbe}
@@ -258,6 +263,7 @@ function PhonePropertiesContent({
 	return (
 		<MobilePropertiesPanel
 			compact
+			scrollsToTop={false}
 			fullWidth
 			showToolbar={false}
 			layoutProbe={options.layoutProbe}

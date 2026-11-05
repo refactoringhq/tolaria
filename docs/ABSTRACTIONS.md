@@ -42,6 +42,16 @@ workspace's existing target resolver and supported external schemes through the
 existing link opener. Ordinary taps still place the caret; phone navigation
 keeps the source note available through the editor back control.
 
+## Mobile Read-Only Editor Interactions
+
+Markdown task blocks expose native accessible checkboxes in read-only mode. A
+toggle changes only the checkbox marker at the parsed source line and delegates
+the resulting note body to the existing editor write path, preserving all other
+bytes. Missing wikilinks use a brief, non-blocking accessible notice instead of
+a modal. Only the task-toggle state is sent to PostHog; note content and paths
+are not included. The active phone note list alone receives status-bar
+scroll-to-top ownership so hidden workspace panes do not compete for the gesture.
+
 ## Mobile Native Lifecycle
 
 `apps/mobile/app.config.js` enables Expo SDK 57's supported scene lifecycle

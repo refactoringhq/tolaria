@@ -80,7 +80,12 @@ const expectedDesktopBlocks = [
 
 describe('localVaultMarkdown', () => {
   it('parses desktop markdown blocks used by Tolaria notes', () => {
-    expect(localVaultEditorBlocks(desktopMarkdownFixture)).toMatchObject(expectedDesktopBlocks)
+    const blocks = localVaultEditorBlocks(desktopMarkdownFixture)
+    expect(blocks).toMatchObject(expectedDesktopBlocks)
+    const taskItems = blocks.find((block) => block.kind === 'tasks')?.kind === 'tasks'
+      ? blocks.find((block) => block.kind === 'tasks')?.items as Array<{ sourceLine?: number }>
+      : []
+    expect(taskItems.map((item) => item.sourceLine)).toEqual([8, 9])
   })
 
   it('derives mobile titles, snippets, and fallback bullet text from markdown', () => {
