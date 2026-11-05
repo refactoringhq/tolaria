@@ -60,7 +60,7 @@ describe('SheetEditor stale workbook model recovery', () => {
   it('does not surface stale workbook pointer interactions after native model release', async () => {
     await expectReleasedModelInteractionIsSkipped(
       () => fireEvent.pointerDown(screen.getByTestId('sheet-editor')),
-      '[sheet-editor] Skipped stale workbook interaction:',
+      '[sheet-editor] Skipped stale workbook viewport read:',
     )
   })
 
