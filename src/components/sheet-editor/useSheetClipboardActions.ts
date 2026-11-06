@@ -1,26 +1,26 @@
+import type { Dispatch, MutableRefObject, ClipboardEvent as ReactClipboardEvent, SetStateAction } from 'react'
 import { useCallback, useEffect, useRef } from 'react'
-import type { ClipboardEvent as ReactClipboardEvent, Dispatch, MutableRefObject, SetStateAction } from 'react'
+import { cancelIdle, type IdleHandle, scheduleIdle } from '../../utils/sheetBrowserScheduling'
 import {
   buildTolariaSheetClipboardPayload,
   parseTolariaSheetClipboardPayload,
   rangesIntersect,
   shiftedClipboardCellInput,
   TOLARIA_SHEET_CLIPBOARD_MIME,
-  writeTolariaSheetClipboard,
   type TolariaSheetClipboardPayload,
+  writeTolariaSheetClipboard,
 } from '../../utils/sheetClipboard'
+import type { SheetContextMenuState } from '../../utils/sheetContextMenuState'
 import { dirtyRowsForArea, dirtyRowsForSelectedRange, selectedRangeArea } from '../../utils/sheetSelection'
-import { cancelIdle, scheduleIdle, type IdleHandle } from '../../utils/sheetBrowserScheduling'
 import { SHEET_INDEX } from '../../utils/sheetWorkbook'
 import {
+  type FormulaAutocompleteState,
   isEditableTarget,
   isSheetCommandTarget,
-  type FormulaAutocompleteState,
   type SheetWikilinkAutocompleteState,
 } from './sheetEditorHelpers'
 import type { ScheduleSheetSerializeOptions, SheetWorkbookState } from './sheetEditorTypes'
-import type { SheetContextMenuState } from '../../utils/sheetContextMenuState'
-import { isReleasedWorkbookModelError } from './sheetReleasedModel'
+import { skipIfReleasedWorkbookModel } from './sheetReleasedModel'
 
 const SHEET_PASTE_CHUNK_SIZE = 100
 
@@ -47,21 +47,20 @@ interface UseSheetClipboardActionsOptions {
   writeCellInputAt: (current: SheetWorkbookState, row: number, column: number, input: string) => SheetCellInputResult
 }
 
-function clipboardOperations(
-  payload: TolariaSheetClipboardPayload,
-  targetArea: ReturnType<typeof selectedRangeArea>,
-) {
-  return payload.cells.flatMap((row, rowOffset) => row.map((input, columnOffset) => ({
-    column: targetArea.column + columnOffset,
-    input: shiftedClipboardCellInput(input, {
-      columnOffset,
-      destinationColumn: targetArea.column + columnOffset,
-      destinationRow: targetArea.row + rowOffset,
-      payload,
-      rowOffset,
-    }),
-    row: targetArea.row + rowOffset,
-  })))
+function clipboardOperations(payload: TolariaSheetClipboardPayload, targetArea: ReturnType<typeof selectedRangeArea>) {
+  return payload.cells.flatMap((row, rowOffset) =>
+    row.map((input, columnOffset) => ({
+      column: targetArea.column + columnOffset,
+      input: shiftedClipboardCellInput(input, {
+        columnOffset,
+        destinationColumn: targetArea.column + columnOffset,
+        destinationRow: targetArea.row + rowOffset,
+        payload,
+        rowOffset,
+      }),
+      row: targetArea.row + rowOffset,
+    })),
+  )
 }
 
 function sourceArea(payload: TolariaSheetClipboardPayload) {
@@ -81,17 +80,6 @@ function destinationArea(payload: TolariaSheetClipboardPayload, targetArea: Retu
     column: targetArea.column,
     width: payload.source.width,
     height: payload.source.height,
-  }
-}
-
-function runGuardedPasteWork(operation: () => void): boolean {
-  try {
-    operation()
-    return true
-  } catch (error) {
-    if (!isReleasedWorkbookModelError(error)) throw error
-    console.warn('[sheet-editor] Skipped stale workbook paste:', error)
-    return false
   }
 }
 
@@ -122,44 +110,50 @@ function usePendingExternalFormulaRetry({
   workbookRef,
   writeCellInputAt,
 }: UseSheetClipboardActionsOptions) {
-  return useCallback((pendingCells: PendingExternalFormulaCell[], jobId: number, currentJobId: () => number) => {
-    if (pendingCells.length === 0) return
+  return useCallback(
+    (pendingCells: PendingExternalFormulaCell[], jobId: number, currentJobId: () => number) => {
+      if (pendingCells.length === 0) return
 
-    void Promise.allSettled(pendingCells.flatMap((cell) => cell.pendingLoads)).then(() => {
-      if (currentJobId() !== jobId) return
-      const current = workbookRef.current
-      if (!current) return
+      void Promise.allSettled(pendingCells.flatMap((cell) => cell.pendingLoads)).then(() => {
+        if (currentJobId() !== jobId) return
+        const current = workbookRef.current
+        if (!current) return
 
-      runGuardedPasteWork(() => {
-        current.model.pauseEvaluation()
-        try {
-          for (const cell of pendingCells) {
-            if (current.model.getCellContent(SHEET_INDEX, cell.row, cell.column) !== cell.input) continue
-            writeCellInputAt(current, cell.row, cell.column, cell.input)
+        skipIfReleasedWorkbookModel('paste', false, () => {
+          current.model.pauseEvaluation()
+          try {
+            for (const cell of pendingCells) {
+              if (current.model.getCellContent(SHEET_INDEX, cell.row, cell.column) !== cell.input) continue
+              writeCellInputAt(current, cell.row, cell.column, cell.input)
+            }
+          } finally {
+            current.model.resumeEvaluation()
           }
-        } finally {
-          current.model.resumeEvaluation()
-        }
 
-        current.model.evaluate()
-        refreshWorkbook()
-        scheduleSelectionChromePatch()
-        scheduleSerialize({ bodyRows: pendingCells.map((cell) => cell.row) })
+          current.model.evaluate()
+          refreshWorkbook()
+          scheduleSelectionChromePatch()
+          scheduleSerialize({ bodyRows: pendingCells.map((cell) => cell.row) })
+          return true
+        })
       })
-    })
-  }, [refreshWorkbook, scheduleSelectionChromePatch, scheduleSerialize, workbookRef, writeCellInputAt])
+    },
+    [refreshWorkbook, scheduleSelectionChromePatch, scheduleSerialize, workbookRef, writeCellInputAt],
+  )
 }
 
-function useTolariaClipboardPaste(options: UseSheetClipboardActionsOptions & {
-  cancelPendingPaste: () => void
-  pasteIdleRef: MutableRefObject<IdleHandle | null>
-  pasteJobRef: MutableRefObject<number>
-  retryPendingExternalFormulaCells: (
-    pendingCells: PendingExternalFormulaCell[],
-    jobId: number,
-    currentJobId: () => number,
-  ) => void
-}) {
+function useTolariaClipboardPaste(
+  options: UseSheetClipboardActionsOptions & {
+    cancelPendingPaste: () => void
+    pasteIdleRef: MutableRefObject<IdleHandle | null>
+    pasteJobRef: MutableRefObject<number>
+    retryPendingExternalFormulaCells: (
+      pendingCells: PendingExternalFormulaCell[],
+      jobId: number,
+      currentJobId: () => number,
+    ) => void
+  },
+) {
   const {
     cancelPendingPaste,
     pasteIdleRef,
@@ -170,82 +164,91 @@ function useTolariaClipboardPaste(options: UseSheetClipboardActionsOptions & {
     scheduleSerialize,
     workbookRef,
     writeCellInputAt,
-} = options
-  return useCallback((payload: TolariaSheetClipboardPayload) => {
-    const current = workbookRef.current
-    if (!current) return false
+  } = options
+  return useCallback(
+    (payload: TolariaSheetClipboardPayload) => {
+      const current = workbookRef.current
+      if (!current) return false
 
-    const targetArea = selectedRangeArea(current.model)
-    if (targetArea.sheet !== SHEET_INDEX) return false
+      const targetArea = selectedRangeArea(current.model)
+      if (targetArea.sheet !== SHEET_INDEX) return false
 
-    const operations = clipboardOperations(payload, targetArea)
-    if (operations.length === 0) return false
+      const operations = clipboardOperations(payload, targetArea)
+      if (operations.length === 0) return false
 
-    cancelPendingPaste()
-    const jobId = pasteJobRef.current
-    const pendingCells: PendingExternalFormulaCell[] = []
-    const dirtyRows = dirtyRowsForArea(targetArea)
-    let operationIndex = 0
+      cancelPendingPaste()
+      const jobId = pasteJobRef.current
+      const pendingCells: PendingExternalFormulaCell[] = []
+      const dirtyRows = dirtyRowsForArea(targetArea)
+      let operationIndex = 0
 
-    const finishPaste = () => {
-      const latest = workbookRef.current
-      if (!latest || pasteJobRef.current !== jobId) return
+      const finishPaste = () => {
+        const latest = workbookRef.current
+        if (!latest || pasteJobRef.current !== jobId) return
 
-      runGuardedPasteWork(() => {
-        clearCutSourceIfNeeded(latest, payload, targetArea, dirtyRows)
-        latest.model.evaluate()
+        skipIfReleasedWorkbookModel('paste', false, () => {
+          clearCutSourceIfNeeded(latest, payload, targetArea, dirtyRows)
+          latest.model.evaluate()
+          refreshWorkbook()
+          scheduleSelectionChromePatch()
+          scheduleSerialize({ bodyRows: dirtyRows })
+          retryPendingExternalFormulaCells(pendingCells, jobId, () => pasteJobRef.current)
+          return true
+        })
+      }
+
+      const runChunk = () => {
+        pasteIdleRef.current = null
+        if (pasteJobRef.current !== jobId) return
+
+        const latest = workbookRef.current
+        if (!latest) return
+        const endIndex = Math.min(operationIndex + SHEET_PASTE_CHUNK_SIZE, operations.length)
+        const chunkOperations = operations.slice(operationIndex, endIndex)
+
+        const didPaste = skipIfReleasedWorkbookModel('paste', false, () => {
+          latest.model.pauseEvaluation()
+          try {
+            for (const operation of chunkOperations) {
+              const result = writeCellInputAt(latest, operation.row, operation.column, operation.input)
+              if (result.pendingLoads.length > 0)
+                pendingCells.push({
+                  ...operation,
+                  pendingLoads: result.pendingLoads,
+                })
+            }
+          } finally {
+            latest.model.resumeEvaluation()
+          }
+          return true
+        })
+        if (!didPaste) return
+        operationIndex = endIndex
+
         refreshWorkbook()
         scheduleSelectionChromePatch()
-        scheduleSerialize({ bodyRows: dirtyRows })
-        retryPendingExternalFormulaCells(pendingCells, jobId, () => pasteJobRef.current)
-      })
-    }
-
-    const runChunk = () => {
-      pasteIdleRef.current = null
-      if (pasteJobRef.current !== jobId) return
-
-      const latest = workbookRef.current
-      if (!latest) return
-      const endIndex = Math.min(operationIndex + SHEET_PASTE_CHUNK_SIZE, operations.length)
-      const chunkOperations = operations.slice(operationIndex, endIndex)
-
-      const didPaste = runGuardedPasteWork(() => {
-        latest.model.pauseEvaluation()
-        try {
-          for (const operation of chunkOperations) {
-            const result = writeCellInputAt(latest, operation.row, operation.column, operation.input)
-            if (result.pendingLoads.length > 0) pendingCells.push({ ...operation, pendingLoads: result.pendingLoads })
-          }
-        } finally {
-          latest.model.resumeEvaluation()
+        if (operationIndex < operations.length) {
+          pasteIdleRef.current = scheduleIdle(runChunk)
+          return
         }
-      })
-      if (!didPaste) return
-      operationIndex = endIndex
-
-      refreshWorkbook()
-      scheduleSelectionChromePatch()
-      if (operationIndex < operations.length) {
-        pasteIdleRef.current = scheduleIdle(runChunk)
-        return
+        finishPaste()
       }
-      finishPaste()
-    }
 
-    pasteIdleRef.current = scheduleIdle(runChunk)
-    return true
-  }, [
-    cancelPendingPaste,
-    pasteIdleRef,
-    pasteJobRef,
-    refreshWorkbook,
-    retryPendingExternalFormulaCells,
-    scheduleSelectionChromePatch,
-    scheduleSerialize,
-    workbookRef,
-    writeCellInputAt,
-  ])
+      pasteIdleRef.current = scheduleIdle(runChunk)
+      return true
+    },
+    [
+      cancelPendingPaste,
+      pasteIdleRef,
+      pasteJobRef,
+      refreshWorkbook,
+      retryPendingExternalFormulaCells,
+      scheduleSelectionChromePatch,
+      scheduleSerialize,
+      workbookRef,
+      writeCellInputAt,
+    ],
+  )
 }
 
 function scheduleSelectedRowsSerialization(
@@ -253,41 +256,54 @@ function scheduleSelectedRowsSerialization(
   scheduleSerialize: (options?: ScheduleSheetSerializeOptions) => void,
 ) {
   const current = workbookRef.current
-  scheduleSerialize({ bodyRows: current ? dirtyRowsForSelectedRange(current.model) : 'all' })
+  scheduleSerialize({
+    bodyRows: current ? dirtyRowsForSelectedRange(current.model) : 'all',
+  })
 }
 
 function useTolariaCopyCaptureHandler(workbookRef: MutableRefObject<SheetWorkbookState | null>) {
-  return useCallback((event: ReactClipboardEvent<HTMLDivElement>, action: TolariaSheetClipboardPayload['action']) => {
-    if (isEditableTarget(event.target) || isSheetCommandTarget(event.target)) return false
-    const current = workbookRef.current
-    if (!current) return false
+  return useCallback(
+    (event: ReactClipboardEvent<HTMLDivElement>, action: TolariaSheetClipboardPayload['action']) => {
+      if (isEditableTarget(event.target) || isSheetCommandTarget(event.target)) return false
+      const current = workbookRef.current
+      if (!current) return false
 
-    const payload = buildTolariaSheetClipboardPayload(current.model, current.path, action, current.externalFormulaInputs)
-    if (!payload) return false
+      const payload = buildTolariaSheetClipboardPayload(
+        current.model,
+        current.path,
+        action,
+        current.externalFormulaInputs,
+      )
+      if (!payload) return false
 
-    writeTolariaSheetClipboard(event.clipboardData, payload)
-    event.preventDefault()
-    event.stopPropagation()
-    return true
-  }, [workbookRef])
+      writeTolariaSheetClipboard(event.clipboardData, payload)
+      event.preventDefault()
+      event.stopPropagation()
+      return true
+    },
+    [workbookRef],
+  )
 }
 
 function useSheetCopyCutCaptureHandlers({
   scheduleSerialize,
   workbookRef,
-}: Pick<UseSheetClipboardActionsOptions,
-  | 'scheduleSerialize'
-  | 'workbookRef'
->) {
+}: Pick<UseSheetClipboardActionsOptions, 'scheduleSerialize' | 'workbookRef'>) {
   const handleTolariaSheetCopyCapture = useTolariaCopyCaptureHandler(workbookRef)
 
-  const handleCopyCapture = useCallback((event: ReactClipboardEvent<HTMLDivElement>) => {
-    handleTolariaSheetCopyCapture(event, 'copy')
-  }, [handleTolariaSheetCopyCapture])
+  const handleCopyCapture = useCallback(
+    (event: ReactClipboardEvent<HTMLDivElement>) => {
+      handleTolariaSheetCopyCapture(event, 'copy')
+    },
+    [handleTolariaSheetCopyCapture],
+  )
 
-  const handleCutCapture = useCallback((event: ReactClipboardEvent<HTMLDivElement>) => {
-    if (!handleTolariaSheetCopyCapture(event, 'cut')) scheduleSerialize()
-  }, [handleTolariaSheetCopyCapture, scheduleSerialize])
+  const handleCutCapture = useCallback(
+    (event: ReactClipboardEvent<HTMLDivElement>) => {
+      if (!handleTolariaSheetCopyCapture(event, 'cut')) scheduleSerialize()
+    },
+    [handleTolariaSheetCopyCapture, scheduleSerialize],
+  )
 
   return { handleCopyCapture, handleCutCapture }
 }
@@ -299,51 +315,50 @@ function useSheetPasteCaptureHandler({
   setSheetContextMenu,
   setWikilinkAutocomplete,
   workbookRef,
-}: Pick<UseSheetClipboardActionsOptions,
-  | 'scheduleSerialize'
-  | 'setFormulaAutocomplete'
-  | 'setSheetContextMenu'
-  | 'setWikilinkAutocomplete'
-  | 'workbookRef'
+}: Pick<
+  UseSheetClipboardActionsOptions,
+  'scheduleSerialize' | 'setFormulaAutocomplete' | 'setSheetContextMenu' | 'setWikilinkAutocomplete' | 'workbookRef'
 > & {
   applyTolariaClipboardPaste: (payload: TolariaSheetClipboardPayload) => boolean
 }) {
-  return useCallback((event: ReactClipboardEvent<HTMLDivElement>) => {
-    if (isEditableTarget(event.target) || isSheetCommandTarget(event.target)) {
-      scheduleSelectedRowsSerialization(workbookRef, scheduleSerialize)
-      return
-    }
+  return useCallback(
+    (event: ReactClipboardEvent<HTMLDivElement>) => {
+      if (isEditableTarget(event.target) || isSheetCommandTarget(event.target)) {
+        scheduleSelectedRowsSerialization(workbookRef, scheduleSerialize)
+        return
+      }
 
-    const payload = parseTolariaSheetClipboardPayload(event.clipboardData.getData(TOLARIA_SHEET_CLIPBOARD_MIME))
-    if (!payload || !applyTolariaClipboardPaste(payload)) {
-      scheduleSelectedRowsSerialization(workbookRef, scheduleSerialize)
-      return
-    }
+      const payload = parseTolariaSheetClipboardPayload(event.clipboardData.getData(TOLARIA_SHEET_CLIPBOARD_MIME))
+      if (!payload || !applyTolariaClipboardPaste(payload)) {
+        scheduleSelectedRowsSerialization(workbookRef, scheduleSerialize)
+        return
+      }
 
-    event.preventDefault()
-    event.stopPropagation()
-    setFormulaAutocomplete(null)
-    setWikilinkAutocomplete(null)
-    setSheetContextMenu(null)
-  }, [
-    applyTolariaClipboardPaste,
-    scheduleSerialize,
-    setFormulaAutocomplete,
-    setSheetContextMenu,
-    setWikilinkAutocomplete,
-    workbookRef,
-  ])
+      event.preventDefault()
+      event.stopPropagation()
+      setFormulaAutocomplete(null)
+      setWikilinkAutocomplete(null)
+      setSheetContextMenu(null)
+    },
+    [
+      applyTolariaClipboardPaste,
+      scheduleSerialize,
+      setFormulaAutocomplete,
+      setSheetContextMenu,
+      setWikilinkAutocomplete,
+      workbookRef,
+    ],
+  )
 }
 
-function useClipboardEventHandlers(options: Pick<UseSheetClipboardActionsOptions,
-  | 'scheduleSerialize'
-  | 'setFormulaAutocomplete'
-  | 'setSheetContextMenu'
-  | 'setWikilinkAutocomplete'
-  | 'workbookRef'
-> & {
-  applyTolariaClipboardPaste: (payload: TolariaSheetClipboardPayload) => boolean
-}) {
+function useClipboardEventHandlers(
+  options: Pick<
+    UseSheetClipboardActionsOptions,
+    'scheduleSerialize' | 'setFormulaAutocomplete' | 'setSheetContextMenu' | 'setWikilinkAutocomplete' | 'workbookRef'
+  > & {
+    applyTolariaClipboardPaste: (payload: TolariaSheetClipboardPayload) => boolean
+  },
+) {
   const { handleCopyCapture, handleCutCapture } = useSheetCopyCutCaptureHandlers(options)
   const handlePasteCapture = useSheetPasteCaptureHandler(options)
 
@@ -392,11 +407,7 @@ export function useSheetClipboardActions(options: UseSheetClipboardActionsOption
     writeCellInputAt,
   })
 
-  const {
-    handleCopyCapture,
-    handleCutCapture,
-    handlePasteCapture,
-  } = useClipboardEventHandlers({
+  const { handleCopyCapture, handleCutCapture, handlePasteCapture } = useClipboardEventHandlers({
     applyTolariaClipboardPaste,
     scheduleSerialize,
     setFormulaAutocomplete,
