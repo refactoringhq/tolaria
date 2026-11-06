@@ -2,9 +2,7 @@ import type { ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Text } from "../components/ui/text";
 import { type MobileLayoutProbe, probeProps } from "../qa/mobileLayoutProbe";
-import { desktopToolbarActionParity } from "./desktopParity";
 import type { MobileMetrics } from "./mobileMetrics";
-import { mobilePressedStyle } from "./mobilePressFeedback";
 import type { MobileColors } from "./theme/mobilePalette";
 import { useMobileStyles } from "./theme/useMobileTheme";
 
@@ -47,13 +45,7 @@ export function MobileListRow(props: MobileListRowProps) {
 				accessibilityRole="button"
 				onLongPress={props.onLongPress}
 				onPress={props.onPress}
-				style={({ pressed }) => [
-					rowState.desktopSelected ? styles.baseSelected : styles.base,
-					mobilePressedStyle(
-						pressed,
-						desktopToolbarActionParity.pressedOpacity,
-					),
-				]}
+				style={rowState.desktopSelected ? styles.baseSelected : styles.base}
 			>
 				<ListRowHeader props={props} rowState={rowState} styles={styles} />
 				<Text
