@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { Pressable, View } from "react-native";
 import { type MobileLayoutProbe, probeProps } from "../../qa/mobileLayoutProbe";
 import type { MobileMetrics } from "../../ui/mobileMetrics";
-import { mobilePressedStyle } from "../../ui/mobilePressFeedback";
 import { useMobileStyles } from "../../ui/theme/useMobileTheme";
 import { Text } from "../ui/text";
 import { MobileSidebarCountPill } from "./MobileSidebarCountPill";
@@ -46,14 +45,10 @@ export function SidebarItem(props: SidebarItemProps) {
 			delayLongPress={300}
 			onLongPress={onLongPress}
 			onPress={onPress}
-			style={({ pressed }) => [
+			style={[
 				styles.item,
 				sidebarItemPadding(themeStyles.metrics.sidebar, Boolean(count)),
 				active ? { backgroundColor: activeBackgroundColor } : null,
-				mobilePressedStyle(
-					pressed,
-					themeStyles.metrics.toolbarAction.pressedOpacity,
-				),
 			]}
 			testID={`sidebar-item-${slug}`}
 		>
