@@ -20,6 +20,7 @@ import {
 } from '../qa/nativeTableOfContentsProbe'
 import { MobilePanel } from '../ui/MobilePanel'
 import { useMobileColors, useMobileMetrics, useMobileStyles } from '../ui/theme/useMobileTheme'
+import { useNoteEditorMode } from './useNoteEditorMode'
 import { useMobileAttachmentImporter } from '../workspace/mobileAttachmentImport'
 import { useMobileAttachmentLinkOpener } from '../workspace/mobileAttachmentOpen'
 import { useRegisteredMobileEditorCommands } from '../workspace/mobileEditorCommands'
@@ -34,7 +35,6 @@ import { useMobileWikilinkNavigation } from '../workspace/useMobileWikilinkNavig
 import { MobileEditorToolbar } from './MobileEditorToolbar'
 import type {
   EditorContentProps,
-  EditorEditingMode,
   EditorFileMode,
   EditorPanelBodyProps,
   TableOfContentsScroll,
@@ -75,7 +75,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
     typeDefinitions,
     vaultRootUri = null,
   } = props
-  const [editingMode, setEditingMode] = useState<EditorEditingMode>(initialEditingMode)
+  const { mode: editingMode, toggle: changeEditingMode } = useNoteEditorMode(note?.id, initialEditingMode)
   const { onScroll, onTargetLayout, setScrollViewNode } = useTableOfContentsScroll(
     tableOfContentsTarget,
     onTableOfContentsScrollProof,
@@ -84,9 +84,6 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
   const openLink = useMobileAttachmentLinkOpener(vaultRootUri)
   const { navigateWikilink, notice: missingWikilinkNotice } = useMobileWikilinkNavigation(notes, onNavigateWikilink)
   const layoutProbe = useMobileLayoutProbe(layoutProbeEnabled)
-  const changeEditingMode = useCallback(() => {
-    setEditingMode((current) => (current === 'source' ? 'wysiwyg' : 'source'))
-  }, [])
   const { toggle: toggleSourceMode, failed: modeSwitchFailed } = useEditorModeSwitch(
     note?.id,
     changeEditingMode,
@@ -398,7 +395,6 @@ function EditorContent({
 
     return (
       <MobileWysiwygMarkdownEditor
-        key={`${note.id}:wysiwyg`}
         blocks={blocks}
         bullets={bullets}
         compact={compact}
