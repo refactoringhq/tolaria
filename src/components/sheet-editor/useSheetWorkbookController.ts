@@ -180,10 +180,7 @@ function useSerializeCurrentWorkbook(
         dirtyBodyRowsRef,
         sourceContent,
       })
-      if (nextContent === null) {
-        resetDirtyTracking(dirtyWorkbookGenerationRef, dirtyBodyRowsRef)
-        return false
-      }
+      if (nextContent === null) return false
       if (nextContent === sourceContent) {
         resetDirtyTracking(dirtyWorkbookGenerationRef, dirtyBodyRowsRef)
         return false
