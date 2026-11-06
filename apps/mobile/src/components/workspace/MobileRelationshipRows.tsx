@@ -1,4 +1,3 @@
-import { X } from "phosphor-react-native";
 import { Pressable, View } from "react-native";
 import { mobileText } from "../../i18n/mobileText";
 import type { MobileLayoutProbe } from "../../qa/mobileLayoutProbe";
@@ -17,6 +16,7 @@ import type {
 	MobileRelationship,
 	MobileTypeDefinitions,
 } from "../../workspace/mobileWorkspaceModel";
+import { ChromeSymbol } from "../ui/ChromeSymbol";
 import { Text } from "../ui/text";
 import { createPropertyPanelStyles } from "./MobilePropertiesPanel.styles";
 import {
@@ -221,10 +221,10 @@ function RelationshipRemoveButton(props: {
 				onRemoveRelationship(noteId, relationship.key, value.ref)
 			}
 		>
-			<X
+			<ChromeSymbol
+				name="close"
 				color={noteTypeColor(value.typeTone)}
 				size={desktopRelationshipParity.removeIconSize}
-				weight="bold"
 			/>
 		</Pressable>
 	);

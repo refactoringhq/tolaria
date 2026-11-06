@@ -1,4 +1,3 @@
-import { CloudArrowDown } from "phosphor-react-native";
 import { useState } from "react";
 import { ActivityIndicator, Keyboard, View } from "react-native";
 import { mobileText } from "../../i18n/mobileText";
@@ -11,6 +10,7 @@ import {
 import { gitCloneProgressLabel } from "../../workspace/git/gitCloneProgressLabel";
 import { githubRepositoryUrl } from "../../workspace/git/githubRepositoryUrl";
 import type { useMobileVaults } from "../../workspace/git/useMobileVaults";
+import { ChromeSymbol } from "../ui/ChromeSymbol";
 import { Text } from "../ui/text";
 import { MobileCloneProgress } from "./MobileCloneProgress";
 import { MobileConflictReview } from "./MobileConflictReview";
@@ -161,7 +161,13 @@ function CloneRepository({ manager }: { manager: VaultManager }) {
 			<MobileButton
 				label={mobileText("mobile.vaults.clone")}
 				disabled={manager.busy || !validRepository(url)}
-				icon={<CloudArrowDown size={16} color={mobileColors.textInverse} />}
+				icon={
+					<ChromeSymbol
+						name="cloudDownload"
+						size={16}
+						color={mobileColors.textInverse}
+					/>
+				}
 				variant="primary"
 				onPress={() => {
 					Keyboard.dismiss();

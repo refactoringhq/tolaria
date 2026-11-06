@@ -1,6 +1,4 @@
 import MenuView from "@expo/ui/community/menu";
-import type { AndroidSymbol, SFSymbol } from "expo-symbols";
-import { SymbolView } from "expo-symbols";
 import { FileText } from "phosphor-react-native";
 import type { ReactNode } from "react";
 import {
@@ -24,6 +22,8 @@ import type {
 	MobileSidebarIcon,
 	MobileSidebarItem,
 } from "../../workspace/mobileWorkspaceModel";
+import { ChromeSymbol } from "../ui/ChromeSymbol";
+import type { ChromeSymbolName } from "../ui/chromeSymbolDefinitions";
 import { Text } from "../ui/text";
 import { MobileSidebarCountPill } from "./MobileSidebarCountPill";
 import { mobilePhosphorIconElement } from "./MobileWorkspaceIconResolver";
@@ -200,76 +200,97 @@ function SidebarItemRow(props: SidebarItemProps) {
 		useWindowDimensions().width,
 		Platform.OS === "ios" && Platform.isPad,
 	);
-	const { mobileColors, styles } = themeStyles;
-	const {
-		active = false,
-		activeBackgroundColor = mobileColors.primarySoft,
-		activeColor = mobileColors.primary,
-		count,
-		icon,
-		label,
-		layoutProbe,
-		metricId,
-		onLongPress,
-		onPress,
-		slug,
-	} = props;
 	return (
 		<Pressable
-			{...probeProps(layoutProbe, `${metricId}.row`)}
-			accessibilityLabel={label}
+			{...probeProps(props.layoutProbe, `${props.metricId}.row`)}
+			accessibilityLabel={props.label}
 			accessibilityRole="button"
 			delayLongPress={300}
-			onLongPress={Platform.OS === "web" ? onLongPress : undefined}
-			onPress={onPress}
-			style={[
-				styles.item,
-				sidebarItemPadding(themeStyles.metrics.sidebar, Boolean(count)),
-				phoneViewportStyle(isPhone, themeStyles.phoneItemStyle),
-				Platform.OS === "android" ? { minHeight: 56 } : null,
-				active
-					? {
-							backgroundColor: activeBackgroundColor,
-							...(Platform.OS === "android" ? { borderRadius: 28 } : {}),
-						}
-					: null,
-			]}
-			testID={`sidebar-item-${slug}`}
+			onLongPress={Platform.OS === "web" ? props.onLongPress : undefined}
+			onPress={props.onPress}
+			style={sidebarItemRowStyle(props, themeStyles, isPhone)}
+			testID={`sidebar-item-${props.slug}`}
 		>
-			<View
-				{...probeProps(layoutProbe, `${metricId}.content`)}
-				style={[
-					styles.itemContent,
-					sidebarItemContentHeight(themeStyles.metrics.sidebar, Boolean(count)),
-					phoneViewportStyle(isPhone, themeStyles.phoneItemContentStyle),
-				]}
-			>
-				{icon}
-				<Text
-					{...probeProps(layoutProbe, `${metricId}.label`)}
-					numberOfLines={1}
-					style={[
-						styles.itemText,
-						themeStyles.nativeItemTextStyle,
-						phoneViewportStyle(isPhone, themeStyles.phoneItemTextStyle),
-						active ? { color: activeColor } : null,
-					]}
-					testID={`sidebar-item-${slug}-label`}
-				>
-					{label}
-				</Text>
-				{count && (
-					<MobileSidebarCountPill
-						activeColor={active ? activeColor : undefined}
-						layoutProbe={layoutProbe}
-						metricId={`${metricId}.count`}
-						plain={isPhone}
-						testID={`sidebar-item-${slug}-count`}
-						value={count}
-					/>
-				)}
-			</View>
+			<SidebarItemContent
+				props={props}
+				themeStyles={themeStyles}
+				isPhone={isPhone}
+			/>
 		</Pressable>
+	);
+}
+
+function sidebarItemRowStyle(
+	props: SidebarItemProps,
+	themeStyles: ReturnType<typeof createThemeStyles>,
+	isPhone: boolean,
+) {
+	const active = props.active ?? false;
+	const backgroundColor =
+		props.activeBackgroundColor ?? themeStyles.mobileColors.primarySoft;
+	return [
+		themeStyles.styles.item,
+		sidebarItemPadding(themeStyles.metrics.sidebar, Boolean(props.count)),
+		phoneViewportStyle(isPhone, themeStyles.phoneItemStyle),
+		Platform.OS === "android" ? { minHeight: 56 } : null,
+		active
+			? {
+					backgroundColor,
+					...(Platform.OS === "android" ? { borderRadius: 28 } : {}),
+				}
+			: null,
+	];
+}
+
+function SidebarItemContent({
+	props,
+	themeStyles,
+	isPhone,
+}: {
+	props: SidebarItemProps;
+	themeStyles: ReturnType<typeof createThemeStyles>;
+	isPhone: boolean;
+}) {
+	const active = props.active ?? false;
+	const activeColor = props.activeColor ?? themeStyles.mobileColors.primary;
+	const { styles } = themeStyles;
+	return (
+		<View
+			{...probeProps(props.layoutProbe, `${props.metricId}.content`)}
+			style={[
+				styles.itemContent,
+				sidebarItemContentHeight(
+					themeStyles.metrics.sidebar,
+					Boolean(props.count),
+				),
+				phoneViewportStyle(isPhone, themeStyles.phoneItemContentStyle),
+			]}
+		>
+			{props.icon}
+			<Text
+				{...probeProps(props.layoutProbe, `${props.metricId}.label`)}
+				numberOfLines={1}
+				style={[
+					styles.itemText,
+					themeStyles.nativeItemTextStyle,
+					phoneViewportStyle(isPhone, themeStyles.phoneItemTextStyle),
+					active ? { color: activeColor } : null,
+				]}
+				testID={`sidebar-item-${props.slug}-label`}
+			>
+				{props.label}
+			</Text>
+			{props.count ? (
+				<MobileSidebarCountPill
+					activeColor={active ? activeColor : undefined}
+					layoutProbe={props.layoutProbe}
+					metricId={`${props.metricId}.count`}
+					plain={isPhone}
+					testID={`sidebar-item-${props.slug}-count`}
+					value={props.count}
+				/>
+			) : null}
+		</View>
 	);
 }
 
@@ -290,14 +311,7 @@ function sidebarIcon({
 	const size = themeStyles.metrics.size(15);
 	const systemSymbol = fixedSidebarSymbol(itemId, sectionId);
 	if (systemSymbol)
-		return (
-			<SymbolView
-				fallback={<FileText color={color} size={size} />}
-				name={systemSymbol}
-				size={size}
-				tintColor={color}
-			/>
-		);
+		return <ChromeSymbol name={systemSymbol} size={size} color={color} />;
 	return (
 		mobilePhosphorIconElement(icon, { color, size }) ?? (
 			<FileText color={color} size={size} />
@@ -308,13 +322,13 @@ function sidebarIcon({
 function fixedSidebarSymbol(
 	itemId: string,
 	sectionId: string,
-): { ios: SFSymbol; android: AndroidSymbol } | undefined {
+): ChromeSymbolName | undefined {
 	if (sectionId !== "primary") return undefined;
 	const symbols = {
-		"all-notes": { ios: "doc.text", android: "description" },
-		archive: { ios: "archivebox", android: "archive" },
-		inbox: { ios: "tray", android: "inbox" },
-	} satisfies Record<string, { ios: SFSymbol; android: AndroidSymbol }>;
+		"all-notes": "notes",
+		archive: "archive",
+		inbox: "inbox",
+	} satisfies Record<string, ChromeSymbolName>;
 	return Object.hasOwn(symbols, itemId)
 		? symbols[itemId as keyof typeof symbols]
 		: undefined;

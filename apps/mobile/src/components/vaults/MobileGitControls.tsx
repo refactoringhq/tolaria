@@ -1,4 +1,3 @@
-import { GitCommit } from "phosphor-react-native";
 import { useState } from "react";
 import { View } from "react-native";
 import { useMobileAnalytics } from "../../analytics/useMobileAnalytics";
@@ -60,7 +59,7 @@ function GitControlsSummary({
 	const mobileColors = useMobileColors();
 	return (
 		<View style={styles.row}>
-			<GitCommit color={mobileColors.textMuted} size={18} />
+			<ChromeSymbol name="gitCommit" color={mobileColors.textMuted} size={18} />
 			<Text style={styles.label}>{mobileText("settings.autogit.title")}</Text>
 			<Text style={styles.detail}>
 				{mobileText(autoGit ? "mobile.git.auto" : "mobile.git.manual")}
@@ -106,7 +105,13 @@ function ManualCommitActions({ manager }: { manager: GitControlsManager }) {
 				<MobileButton
 					disabled={disabled}
 					label={mobileText("mobile.git.commitLocal")}
-					icon={<GitCommit size={16} color={mobileColors.text} />}
+					icon={
+						<ChromeSymbol
+							name="gitCommit"
+							size={16}
+							color={mobileColors.text}
+						/>
+					}
 					onPress={() => {
 						void manager.commit(message);
 					}}

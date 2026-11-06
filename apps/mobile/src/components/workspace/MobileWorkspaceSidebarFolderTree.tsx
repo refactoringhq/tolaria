@@ -1,11 +1,4 @@
 import MenuView from "@expo/ui/community/menu";
-import { SymbolView } from "expo-symbols";
-import {
-	CaretDown,
-	CaretRight,
-	Folder,
-	FolderOpen,
-} from "phosphor-react-native";
 import {
 	Platform,
 	PlatformColor,
@@ -24,6 +17,7 @@ import {
 import type { MobileColors } from "../../ui/theme/mobilePalette";
 import { useMobileStyles } from "../../ui/theme/useMobileTheme";
 import type { MobileSidebarFolder } from "../../workspace/mobileWorkspaceModel";
+import { ChromeSymbol } from "../ui/ChromeSymbol";
 import { Text } from "../ui/text";
 
 export type MobileSidebarFolderSelection = {
@@ -314,10 +308,12 @@ function FolderTreeCaret({
 		return <View style={folderTreeStyles.caretSpacer} />;
 	}
 
-	return expanded ? (
-		<CaretDown color={mobileColors.textMuted} size={metrics.size(11)} />
-	) : (
-		<CaretRight color={mobileColors.textMuted} size={metrics.size(11)} />
+	return (
+		<ChromeSymbol
+			color={mobileColors.textMuted}
+			name={expanded ? "caretDown" : "caretRight"}
+			size={metrics.size(11)}
+		/>
 	);
 }
 
@@ -336,42 +332,13 @@ function FolderTreeIcon({
 	const iconColor = active ? mobileColors.primary : mobileColors.textMuted;
 	const iconSize = phoneFolderTreeIconSize(isPhone, metrics);
 
-	const fallback = folderIconFallback(active, expanded, iconColor, iconSize);
 	return (
-		<SymbolView
-			fallback={fallback}
-			name={folderIconSymbol(active, expanded)}
+		<ChromeSymbol
+			color={iconColor}
+			name={active || expanded ? "folderOpen" : "folder"}
 			size={iconSize}
-			tintColor={iconColor}
 		/>
 	);
-}
-
-function folderIconFallback(
-	active: boolean | undefined,
-	expanded: boolean | undefined,
-	color: string,
-	size: number,
-) {
-	if (active || expanded)
-		return (
-			<FolderOpen
-				color={color}
-				size={size}
-				weight={active ? "fill" : "regular"}
-			/>
-		);
-	return <Folder color={color} size={size} />;
-}
-
-function folderIconSymbol(
-	active: boolean | undefined,
-	expanded: boolean | undefined,
-) {
-	return {
-		ios: active || expanded ? "folder.fill" : "folder",
-		android: "folder",
-	} as const;
 }
 
 function phoneFolderTreeIconSize(isPhone: boolean, metrics: MobileMetrics) {

@@ -327,6 +327,25 @@ export const mobileParityInventoryWorkspace = [
 	},
 	{
 		assertions: [
+			"note-more action row rendering and delete confirmation tests",
+		],
+		contracts: ["desktopPanelParity", "desktopToolbarActionParity"],
+		desktopSource:
+			"Desktop note context menu and destructive action confirmation",
+		mobileFile: "src/components/workspace/MobileNoteMoreActionRow.tsx",
+		surface: "Note more action rows",
+	},
+	{
+		assertions: [
+			"native property panel placeholder and type-row interaction tests",
+		],
+		contracts: ["desktopPanelParity", "desktopPropertyParity"],
+		desktopSource: "Desktop note property inspector rows",
+		mobileFile: "src/components/workspace/MobilePropertyPanelRows.tsx",
+		surface: "Property panel row components",
+	},
+	{
+		assertions: [
 			"source-backed code, code-fence metadata, math, Mermaid, leading-space source indentation, and code-indented fence exclusion edit checks",
 		],
 		contracts: ["desktopEditorParity", "desktopToolbarActionParity"],

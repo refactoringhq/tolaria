@@ -1,10 +1,12 @@
-import { MagnifyingGlass } from "phosphor-react-native";
 import type { ReactElement } from "react";
 import { type RefreshControlProps, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { mobileCopy } from "../../i18n/mobileText";
 import { MobileLayoutProbeReadout } from "../../qa/MobileLayoutProbeReadout";
-import type { useMobileLayoutProbe } from "../../qa/mobileLayoutProbe";
+import type {
+	MobileLayoutMetrics,
+	MobileLayoutProbe,
+} from "../../qa/mobileLayoutProbe";
 import { PhoneNoteListCreateAction } from "../../screens/PhoneNoteListCreateAction";
 import { PhoneNoteListFilter } from "../../screens/PhoneNoteListFilter";
 import { PhoneNoteListGlassChrome } from "../../screens/PhoneNoteListGlassChrome";
@@ -19,8 +21,11 @@ import {
 	MobileToolbarSpacer,
 	MobileToolbarTitle,
 } from "../../ui/MobilePanel";
+import type { MobileColors } from "../../ui/theme/mobilePalette";
 import { useMobileStyles } from "../../ui/theme/useMobileTheme";
 import type { MobileNoteListFilter } from "../../workspace/mobileNoteFilters";
+import type { MobileNote } from "../../workspace/mobileWorkspaceModel";
+import { ChromeSymbol } from "../ui/ChromeSymbol";
 import { MobileCreateNoteButton } from "./MobileCreateNoteButton";
 import { SearchPill } from "./MobileNoteListItems";
 import type { MobileNoteListPanelProps } from "./MobileNoteListPanel";
@@ -32,16 +37,27 @@ import {
 	MobileNoteListPanelFilterPills,
 } from "./MobileNoteListPanelParts";
 import { mobileNoteListRowActions } from "./mobileNoteListRows";
-import type { useMobileNoteListBulkSelection } from "./useMobileNoteListSelection";
 
 type ViewProps = MobileNoteListPanelProps & {
 	activeNoteId: string | null;
-	bulkSelection: ReturnType<typeof useMobileNoteListBulkSelection>;
+	bulkSelection: MobileNoteListBulkSelection;
 	compactTitleVisible: boolean;
-	layoutProbeState: ReturnType<typeof useMobileLayoutProbe>;
+	layoutProbeState: { metrics: MobileLayoutMetrics; probe: MobileLayoutProbe };
 	onFilterChange?: (filter: MobileNoteListFilter) => void;
 	onListScroll: (offset: number) => void;
 	refreshControl?: ReactElement<RefreshControlProps>;
+};
+
+type MobileNoteListBulkSelection = {
+	archiveSelected: () => void;
+	beginSelection: (noteId: string) => void;
+	clearSelection: () => void;
+	deleteSelected: () => void;
+	organizeSelected: () => void;
+	pressNote: (noteId: string) => void;
+	rowExtraData: (selectedNoteId: string | null) => string;
+	selectedNoteIds: ReadonlySet<string>;
+	selectedNotes: MobileNote[];
 };
 
 export function MobileNoteListPanelView(props: ViewProps) {
@@ -87,7 +103,7 @@ export function MobileNoteListPanelView(props: ViewProps) {
 function Toolbar(props: {
 	props: ViewProps;
 	styles: ReturnType<typeof createThemeStyles>["styles"];
-	mobileColors: import("../../ui/theme/mobilePalette").MobileColors;
+	mobileColors: MobileColors;
 	title: string;
 }) {
 	if (props.props.phoneChrome) return null;
@@ -107,7 +123,8 @@ function Toolbar(props: {
 					testID={mobileNoteListToolbarChrome.actionTestIds[0]}
 					onPress={props.props.onOpenSearch}
 				>
-					<MagnifyingGlass
+					<ChromeSymbol
+						name="search"
 						color={props.mobileColors.textMuted}
 						size={desktopToolbarActionParity.iconSize}
 					/>

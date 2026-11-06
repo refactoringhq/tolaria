@@ -5,6 +5,10 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { MobileCompactFormattingToolbar } from "./MobileCompactFormattingToolbar";
 import { MobileMarkdownFormattingToolbar } from "./MobileMarkdownFormattingToolbar";
 
+vi.mock("../ui/ChromeSymbol", () => ({
+	ChromeSymbol: ({ name }: { name: string }) => name,
+}));
+
 const keyboard = vi.hoisted(() => ({
 	visible: false,
 	bottom: 34,
@@ -283,6 +287,27 @@ it("marks selected formatting commands in the native menu", async () => {
 			"aria-pressed",
 		),
 	).toBe("true");
+});
+
+it("uses system symbols for phone formatting actions and menu chrome", async () => {
+	const host = await mount(
+		createElement(MobileCompactFormattingToolbar, {
+			actions: ["bold", "heading1", "bulletList", "tableAddRowAfter"],
+			selected: [],
+			inTable: true,
+			onFormat: vi.fn(),
+		}),
+	);
+	expect(requiredElement(host, "editor-format-bold").textContent).toBe("bold");
+	expect(requiredElement(host, "editor-format-menu-headings").textContent).toBe(
+		"heading",
+	);
+	expect(requiredElement(host, "editor-format-menu-lists").textContent).toBe(
+		"list",
+	);
+	expect(requiredElement(host, "editor-format-menu-table").textContent).toBe(
+		"table",
+	);
 });
 
 it("keeps the full tablet strip and does not add phone-only keyboard chrome", async () => {

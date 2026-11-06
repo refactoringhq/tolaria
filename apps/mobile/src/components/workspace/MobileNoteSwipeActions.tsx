@@ -1,4 +1,3 @@
-import { ArchiveIcon, CheckCircle, Star, Trash } from "phosphor-react-native";
 import { StyleSheet, View, type ViewStyle } from "react-native";
 import Animated, {
 	type SharedValue,
@@ -7,8 +6,8 @@ import Animated, {
 import { mobileText } from "../../i18n/mobileText";
 import type { MobileColors } from "../../ui/theme/mobilePalette";
 import { useMobileStyles } from "../../ui/theme/useMobileTheme";
-
 import { Button } from "../ui/button";
+import { ChromeSymbol } from "../ui/ChromeSymbol";
 import {
 	fullSwipeNoteAction,
 	mobileNoteSwipeActionOrder,
@@ -37,16 +36,6 @@ export function MobileNoteSwipeActions(props: ActionProps) {
 	const expansion = useAnimatedStyle<ViewStyle>(() => ({
 		width: Math.max(baseWidth, Math.abs(props.translation.value)),
 	}));
-	const secondaryStyle = useAnimatedStyle<ViewStyle>(() => ({
-		width: fullSwipeNoteAction(
-			props.translation.value,
-			props.width.value,
-			props.primarySwipeAction,
-		)
-			? 0
-			: 72,
-		overflow: "hidden",
-	}));
 	return (
 		<View style={{ width: baseWidth }}>
 			<Animated.View style={[styles.actions, expansion]}>
@@ -54,7 +43,6 @@ export function MobileNoteSwipeActions(props: ActionProps) {
 					props={props}
 					styles={styles}
 					mobileColors={mobileColors}
-					style={secondaryStyle}
 				/>
 				<SwipePrimaryAction
 					props={props}
@@ -71,13 +59,21 @@ function SwipeSecondaryActions({
 	props,
 	styles,
 	mobileColors,
-	style,
 }: {
 	props: ActionProps;
 	styles: ReturnType<typeof createThemeStyles>["styles"];
 	mobileColors: MobileColors;
-	style: ReturnType<typeof useAnimatedStyle<ViewStyle>>;
 }) {
+	const style = useAnimatedStyle<ViewStyle>(() => ({
+		width: fullSwipeNoteAction(
+			props.translation.value,
+			props.width.value,
+			props.primarySwipeAction,
+		)
+			? 0
+			: 72,
+		overflow: "hidden",
+	}));
 	return (
 		<>
 			<Animated.View style={style}>
@@ -91,10 +87,10 @@ function SwipeSecondaryActions({
 					testID={`note-swipe-favorite-${props.noteId}`}
 					onPress={props.onFavorite}
 				>
-					<Star
+					<ChromeSymbol
+						name={props.favorite ? "starFilled" : "star"}
 						color={mobileColors.textInverse}
 						size={24}
-						weight={props.favorite ? "fill" : "regular"}
 					/>
 				</Button>
 			</Animated.View>
@@ -105,7 +101,11 @@ function SwipeSecondaryActions({
 					testID={`note-swipe-delete-${props.noteId}`}
 					onPress={props.onDelete}
 				>
-					<Trash color={mobileColors.textInverse} size={24} />
+					<ChromeSymbol
+						name="delete"
+						color={mobileColors.textInverse}
+						size={24}
+					/>
 				</Button>
 			</Animated.View>
 		</>
@@ -130,7 +130,11 @@ function SwipePrimaryAction({
 			testID={`note-swipe-organize-${props.noteId}`}
 			onPress={props.onOrganize}
 		>
-			<CheckCircle color={mobileColors.textInverse} size={24} />
+			<ChromeSymbol
+				name="organize"
+				color={mobileColors.textInverse}
+				size={24}
+			/>
 		</Button>
 	) : (
 		<ArchiveButton props={props} styles={styles} mobileColors={mobileColors} />
@@ -157,7 +161,7 @@ function ArchiveButton({
 			testID={`note-swipe-archive-${props.noteId}`}
 			onPress={props.onArchive}
 		>
-			<ArchiveIcon color={mobileColors.textInverse} size={24} />
+			<ChromeSymbol name="archive" color={mobileColors.textInverse} size={24} />
 		</Button>
 	);
 }

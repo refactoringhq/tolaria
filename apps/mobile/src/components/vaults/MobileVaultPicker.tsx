@@ -2,12 +2,12 @@ import type { MenuAction } from "@expo/ui/community/menu";
 import MenuView from "@expo/ui/community/menu";
 import type { SFSymbol } from "expo-symbols";
 import { SymbolView } from "expo-symbols";
-import { CaretDown } from "phosphor-react-native";
 import { useContext } from "react";
 import { Pressable, StyleSheet } from "react-native";
 import { mobileText } from "../../i18n/mobileText";
 import { useMobileColors } from "../../ui/theme/useMobileTheme";
 import { MobileVaultPickerContext } from "../../workspace/MobileVaultContext";
+import { ChromeSymbol } from "../ui/ChromeSymbol";
 import { Text } from "../ui/text";
 
 export function MobileVaultPicker({ title }: { title?: string }) {
@@ -40,7 +40,9 @@ export function MobileVaultPicker({ title }: { title?: string }) {
 				{title ?? picker.choices.find((choice) => choice.selected)?.label}
 			</Text>
 			<SymbolView
-				fallback={<CaretDown color={colors.textMuted} size={16} />}
+				fallback={
+					<ChromeSymbol name="caretDown" color={colors.textMuted} size={16} />
+				}
 				name={{ ios: "chevron.down", android: "arrow_drop_down" }}
 				size={16}
 				tintColor={colors.textMuted}

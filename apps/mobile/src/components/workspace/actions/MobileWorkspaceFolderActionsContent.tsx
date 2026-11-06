@@ -1,16 +1,10 @@
-import {
-	ArrowSquareOut,
-	ClipboardText,
-	FilePlus,
-	FolderOpen,
-	Trash,
-} from "phosphor-react-native";
 import { Platform, ScrollView } from "react-native";
 import { mobileText } from "../../../i18n/mobileText";
 import { desktopToolbarActionParity } from "../../../ui/desktopParity";
 import { MobileButton } from "../../../ui/MobileButton";
 import { MobileTextInput } from "../../../ui/MobileTextInput";
 import { useMobileStyles } from "../../../ui/theme/useMobileTheme";
+import { ChromeSymbol } from "../../ui/ChromeSymbol";
 import { showNativeConfirmation } from "../../ui/mobileNativeDialogs";
 import type { MobileWorkspaceActionSheetProps } from "../MobileWorkspaceActionSheet.types";
 import { mobileWorkspaceFormSheetAutoFocus } from "../MobileWorkspaceActionSheetModel";
@@ -24,7 +18,8 @@ function FolderNameAction(props: MobileWorkspaceActionSheetProps) {
 		return (
 			<ActionRow
 				icon={
-					<FolderOpen
+					<ChromeSymbol
+						name="folderOpen"
 						color={mobileColors.textMuted}
 						size={desktopToolbarActionParity.iconSize}
 					/>
@@ -53,7 +48,8 @@ function FolderCreateActions(props: MobileWorkspaceActionSheetProps) {
 		<>
 			<ActionRow
 				icon={
-					<FilePlus
+					<ChromeSymbol
+						name="compose"
 						color={mobileColors.textMuted}
 						size={desktopToolbarActionParity.iconSize}
 					/>
@@ -64,7 +60,8 @@ function FolderCreateActions(props: MobileWorkspaceActionSheetProps) {
 			/>
 			<ActionRow
 				icon={
-					<FolderOpen
+					<ChromeSymbol
+						name="folderOpen"
 						color={mobileColors.textMuted}
 						size={desktopToolbarActionParity.iconSize}
 					/>
@@ -75,7 +72,8 @@ function FolderCreateActions(props: MobileWorkspaceActionSheetProps) {
 			/>
 			<ActionRow
 				icon={
-					<ClipboardText
+					<ChromeSymbol
+						name="clipboard"
 						color={mobileColors.textMuted}
 						size={desktopToolbarActionParity.iconSize}
 					/>
@@ -94,7 +92,8 @@ function FolderPathActions(props: MobileWorkspaceActionSheetProps) {
 		<>
 			<ActionRow
 				icon={
-					<ArrowSquareOut
+					<ChromeSymbol
+						name="externalLink"
 						color={mobileColors.textMuted}
 						size={desktopToolbarActionParity.iconSize}
 					/>
@@ -106,7 +105,8 @@ function FolderPathActions(props: MobileWorkspaceActionSheetProps) {
 			<ActionRow
 				destructive
 				icon={
-					<Trash
+					<ChromeSymbol
+						name="delete"
 						color={mobileColors.red}
 						size={desktopToolbarActionParity.iconSize}
 					/>

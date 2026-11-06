@@ -1,14 +1,5 @@
 import MenuView from "@expo/ui/community/menu";
 import { GlassView } from "expo-glass-effect";
-import {
-	CaretDown,
-	DotsThree,
-	Keyboard as KeyboardIcon,
-	ListBullets,
-	Plus,
-	Table,
-	TextH,
-} from "phosphor-react-native";
 import { Keyboard, ScrollView, StyleSheet, View } from "react-native";
 import { mobileText } from "../../i18n/mobileText";
 import { type MobileLayoutProbe, probeProps } from "../../qa/mobileLayoutProbe";
@@ -16,9 +7,10 @@ import type { MobileMetrics } from "../../ui/mobileMetrics";
 import type { MobileColors } from "../../ui/theme/mobilePalette";
 import { useMobileStyles } from "../../ui/theme/useMobileTheme";
 import { useMobileKeyboardInset } from "../../ui/useMobileBottomInset";
-
 import type { MobileMarkdownFormatAction } from "../../workspace/mobileMarkdownFormatting";
 import { Button } from "../ui/button";
+import { ChromeSymbol } from "../ui/ChromeSymbol";
+import { mobileFormattingChromeSymbol } from "./mobileFormattingChromeSymbols";
 import {
 	type FormattingCommand,
 	formattingCommands,
@@ -43,11 +35,11 @@ type Props = {
 };
 
 const menus = {
-	headings: { icon: TextH, label: "editor.formatting.headings" },
-	lists: { icon: ListBullets, label: "editor.formatting.lists" },
-	insert: { icon: Plus, label: "editor.formatting.insert" },
-	more: { icon: DotsThree, label: "editor.formatting.more" },
-	table: { icon: Table, label: "editor.formatting.table" },
+	headings: { icon: "heading", label: "editor.formatting.headings" },
+	lists: { icon: "list", label: "editor.formatting.lists" },
+	insert: { icon: "plus", label: "editor.formatting.insert" },
+	more: { icon: "more", label: "editor.formatting.more" },
+	table: { icon: "table", label: "editor.formatting.table" },
 } as const;
 const commands = new Map(
 	formattingCommands.map((command) => [command.action, command]),
@@ -108,8 +100,16 @@ export function MobileCompactFormattingToolbar(props: Props) {
 								testID="editor-hide-keyboard-action"
 								onPress={() => (props.onDismissKeyboard ?? Keyboard.dismiss)()}
 							>
-								<KeyboardIcon size={24} color={mobileColors.textMuted} />
-								<CaretDown size={10} color={mobileColors.textMuted} />
+								<ChromeSymbol
+									name="keyboard"
+									size={24}
+									color={mobileColors.textMuted}
+								/>
+								<ChromeSymbol
+									name="caretDown"
+									size={10}
+									color={mobileColors.textMuted}
+								/>
 							</Button>
 						)}
 					</View>
@@ -174,6 +174,8 @@ function PrimaryAction({
 }) {
 	const { styles, mobileColors } = useMobileStyles(createThemeStyles);
 	if (!command) return null;
+	const color = selected ? mobileColors.primary : mobileColors.textMuted;
+	const symbol = mobileFormattingChromeSymbol(command.action);
 	return (
 		<Button
 			accessibilityLabel={command.label}
@@ -184,7 +186,11 @@ function PrimaryAction({
 			testID={command.testID}
 			onPress={() => onFormat(command.action)}
 		>
-			{command.icon(selected ? mobileColors.primary : mobileColors.textMuted)}
+			{symbol ? (
+				<ChromeSymbol name={symbol} size={24} color={color} />
+			) : (
+				command.icon(color)
+			)}
 		</Button>
 	);
 }
@@ -201,7 +207,6 @@ function FormattingMenu({
 	const { styles, mobileColors } = useMobileStyles(createThemeStyles);
 	const menu = menus[group];
 	const selected = actions.some((action) => toolbar.selected.includes(action));
-	const Icon = menu.icon;
 	return (
 		<View {...metricProps(toolbar, `group.${group}`)} style={styles.action}>
 			<MenuView
@@ -238,7 +243,8 @@ function FormattingMenu({
 					])}
 					testID={`editor-format-menu-${group}`}
 				>
-					<Icon
+					<ChromeSymbol
+						name={menu.icon}
 						size={24}
 						color={selected ? mobileColors.primary : mobileColors.textMuted}
 					/>

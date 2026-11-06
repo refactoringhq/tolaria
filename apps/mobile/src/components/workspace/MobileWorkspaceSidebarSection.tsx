@@ -1,11 +1,3 @@
-import { SymbolView } from "expo-symbols";
-import {
-	CaretDown,
-	CaretRight,
-	Eye,
-	FileText,
-	Plus,
-} from "phosphor-react-native";
 import { useState } from "react";
 import { Platform, Pressable, useWindowDimensions, View } from "react-native";
 import { mobileCopy, mobileText } from "../../i18n/mobileText";
@@ -14,6 +6,7 @@ import { MobileIconButton } from "../../ui/MobileIconButton";
 import { isPhoneViewport } from "../../ui/mobileMetrics";
 import { useMobileStyles } from "../../ui/theme/useMobileTheme";
 import type { MobileSidebarSection } from "../../workspace/mobileWorkspaceModel";
+import { ChromeSymbol } from "../ui/ChromeSymbol";
 import { Text } from "../ui/text";
 import { MobileSidebarCountPill } from "./MobileSidebarCountPill";
 import type {
@@ -143,20 +136,10 @@ function SectionTitle(props: {
 					size={themeStyles.metrics.size(13)}
 				/>
 				{sectionId === "views" && (
-					<SymbolView
-						fallback={<FileText color={mobileColors.textMuted} size={13} />}
-						name={{ ios: "square.grid.2x2", android: "grid_view" }}
-						size={13}
-						tintColor={mobileColors.textMuted}
-					/>
+					<ChromeSymbol name="views" size={13} color={mobileColors.textMuted} />
 				)}
 				{sectionId === "favorites" && (
-					<SymbolView
-						fallback={<FileText color={mobileColors.textMuted} size={13} />}
-						name={{ ios: "star", android: "star" }}
-						size={13}
-						tintColor={mobileColors.textMuted}
-					/>
+					<ChromeSymbol name="star" size={13} color={mobileColors.textMuted} />
 				)}
 				<Text
 					{...probeProps(layoutProbe, `${metricId}.label`)}
@@ -181,20 +164,10 @@ function SectionDisclosure({
 	size: number;
 }) {
 	return (
-		<SymbolView
-			fallback={
-				expanded ? (
-					<CaretDown color={color} size={size} />
-				) : (
-					<CaretRight color={color} size={size} />
-				)
-			}
-			name={{
-				ios: expanded ? "chevron.down" : "chevron.right",
-				android: expanded ? "keyboard_arrow_down" : "chevron_right",
-			}}
+		<ChromeSymbol
+			name={expanded ? "caretDown" : "caretRight"}
 			size={size}
-			tintColor={color}
+			color={color}
 		/>
 	);
 }
@@ -227,23 +200,17 @@ function SectionTitleActions(props: Parameters<typeof SectionTitle>[0]) {
 					value={count}
 				/>
 			)}
-			{actions.map(({ accessibilityLabel, Icon, id, onPress }) => (
+			{actions.map(({ accessibilityLabel, id, onPress }) => (
 				<MobileIconButton
 					key={id}
 					accessibilityLabel={accessibilityLabel}
 					testID={`sidebar-section-${id}-${sectionId}`}
 					onPress={onPress}
 				>
-					<SymbolView
-						fallback={
-							<Icon color={mobileColors.textMuted} size={metrics.size(12)} />
-						}
-						name={{
-							ios: id === "visibility" ? "eye" : "plus",
-							android: id === "visibility" ? "visibility" : "add",
-						}}
+					<ChromeSymbol
+						name={id === "visibility" ? "eye" : "plus"}
 						size={metrics.size(14)}
-						tintColor={mobileColors.textMuted}
+						color={mobileColors.textMuted}
 					/>
 				</MobileIconButton>
 			))}
@@ -255,7 +222,6 @@ function sectionTitleActions(props: Parameters<typeof SectionTitle>[0]) {
 	return [
 		{
 			id: "visibility",
-			Icon: Eye,
 			onPress: props.onVisibility,
 			accessibilityLabel:
 				props.visibilityAccessibilityLabel ??
@@ -263,7 +229,6 @@ function sectionTitleActions(props: Parameters<typeof SectionTitle>[0]) {
 		},
 		{
 			id: "create",
-			Icon: Plus,
 			onPress: props.onCreate,
 			accessibilityLabel:
 				props.createAccessibilityLabel ??
