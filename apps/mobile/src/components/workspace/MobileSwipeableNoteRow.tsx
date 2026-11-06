@@ -91,17 +91,53 @@ function useSwipeableNoteActions(
 	const analytics = useMobileAnalytics();
 	const swipeable = useRef<SwipeableMethods>(null);
 	const perform = useCallback(
-		(action: MobileNoteSwipeAction | "delete") => {
-			if (action === "favorite") swipeable.current?.close();
-			if (action === "favorite") actions.onToggleFavorite(note.id);
-			if (action === "archive") actions.onArchive([note.id], !note.archived);
-			if (action === "organize") actions.onOrganize([note.id]);
-			if (action === "delete") actions.onDelete([note.id]);
+		(action: MobileNoteSwipeAction | "delete", committedFullSwipe = false) => {
+			performSwipeAction({
+				action,
+				actions,
+				committedFullSwipe,
+				noteId: note.id,
+				archived: note.archived ?? false,
+				swipeable: swipeable.current,
+			});
 			analytics.capture({ name: "mobile_note_swipe_used", action });
 		},
 		[actions, analytics, note.id, note.archived],
 	);
 	return { perform, swipeable };
+}
+
+function performSwipeAction({
+	action,
+	archived,
+	actions,
+	committedFullSwipe,
+	noteId,
+	swipeable,
+}: {
+	action: MobileNoteSwipeAction | "delete";
+	archived: boolean;
+	actions: MobileNoteRowActions;
+	committedFullSwipe: boolean;
+	noteId: string;
+	swipeable: SwipeableMethods | null;
+}) {
+	if (committedFullSwipe) swipeable?.reset();
+	switch (action) {
+		case "favorite":
+			swipeable?.close();
+			actions.onToggleFavorite(noteId);
+			break;
+		case "archive":
+			actions.onArchive([noteId], !archived);
+			break;
+		case "organize":
+			actions.onOrganize([noteId]);
+			break;
+		case "delete":
+			actions.onDelete([noteId]);
+			break;
+	}
 }
 
 function SwipeableNoteRow({
@@ -144,7 +180,7 @@ function SwipeableNoteRow({
 					);
 					if (action && !committed.get()) {
 						committed.set(true);
-						runOnJS(perform)(action);
+						runOnJS(perform)(action, true);
 					}
 				}),
 		[actions.primarySwipeAction, committed, hapticPlayed, perform, width],
