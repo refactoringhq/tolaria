@@ -4,7 +4,10 @@ import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fixtureNotes } from "../../fixtures/workspaceFixtures";
-import { MobileListMotion, MobileSwipeableNoteRow } from "./MobileSwipeableNoteRow";
+import {
+	MobileListMotion,
+	MobileSwipeableNoteRow,
+} from "./MobileSwipeableNoteRow";
 
 const nativeSwipe = vi.hoisted(() =>
 	vi.fn<(props: Record<string, unknown>) => null>(() => null),
@@ -22,10 +25,23 @@ const input = vi.hoisted(() => ({
 	onArchive: vi.fn(),
 	onOrganize: vi.fn(),
 	animatedProps: undefined as Record<string, unknown> | undefined,
+	swipeableMethods: {
+		close: vi.fn(),
+		openLeft: vi.fn(),
+		openRight: vi.fn(),
+		reset: vi.fn(),
+	},
+	events: [] as string[],
 	vibrate: vi.fn(),
 }));
 vi.mock("react-native-gesture-handler/ReanimatedSwipeable", () => ({
-	default: nativeSwipe,
+	default: (props: Record<string, unknown> & { ref?: unknown }) => {
+		if (props.ref && typeof props.ref === "object") {
+			(props.ref as { current: unknown }).current = input.swipeableMethods;
+		}
+		nativeSwipe(props);
+		return null;
+	},
 }));
 vi.mock("react-native", () => ({
 	Vibration: { vibrate: input.vibrate },
@@ -114,6 +130,12 @@ afterEach(() => {
 	input.onArchive.mockClear();
 	input.onOrganize.mockClear();
 	input.vibrate.mockClear();
+	input.swipeableMethods.close.mockClear();
+	input.swipeableMethods.openLeft.mockClear();
+	input.swipeableMethods.openRight.mockClear();
+	input.swipeableMethods.reset.mockClear();
+	input.events = [];
+	input.onOrganize.mockImplementation(() => input.events.push("organize"));
 	input.animatedProps = undefined;
 	input.reduceMotion = false;
 	input.onStart = undefined;
@@ -153,6 +175,28 @@ describe("note row input ownership", () => {
 		expect(input.onArchive).not.toHaveBeenCalled();
 	});
 
+	it("cancels the reveal spring before committing a full-swipe action", () => {
+		renderRow(false, "organize");
+		setSwipeWidth();
+		input.swipeableMethods.reset.mockImplementation(() =>
+			input.events.push("reset"),
+		);
+		input.onOrganize.mockImplementation(() => input.events.push("organize"));
+		finishSwipe();
+
+		expect(input.events).toEqual(["reset", "organize"]);
+		expect(input.swipeableMethods.reset).toHaveBeenCalledTimes(1);
+	});
+
+	it("keeps a partial swipe revealed without resetting the swipeable", () => {
+		renderRow(false, "organize");
+		setSwipeWidth();
+		input.onEnd?.({ translationX: -120 });
+
+		expect(input.swipeableMethods.reset).not.toHaveBeenCalled();
+		expect(input.onOrganize).not.toHaveBeenCalled();
+	});
+
 	it("animates removal and commits once per completed full swipe", () => {
 		renderRow(false, "organize");
 		expect(input.animatedProps).toMatchObject({
@@ -186,10 +230,10 @@ describe("note row input ownership", () => {
 		try {
 			flushSync(() =>
 				root.render(
-					createElement(
-						MobileListMotion,
-						{ children: "Actions", testID: "surface" },
-					),
+					createElement(MobileListMotion, {
+						children: "Actions",
+						testID: "surface",
+					}),
 				),
 			);
 			expect(input.animatedProps).toMatchObject({
