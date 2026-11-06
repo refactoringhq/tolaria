@@ -39,7 +39,7 @@ function PhoneEditorBody(props: PhoneEditorBodyProps) {
 
   return (
     <TabletEditorPanel
-      key={`phone-editor-${controller.selectedNote?.id ?? 'none'}-${sourceModeRequest}`}
+      key={`phone-editor-${sourceModeRequest}`}
       blocks={controller.editorBlocks}
       bullets={controller.editorBullets}
       compact

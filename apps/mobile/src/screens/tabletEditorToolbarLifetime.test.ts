@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
 import type { MobileNote } from '../workspace/mobileWorkspaceModel'
 import { createWorkspaceSyncEditors, WorkspaceSnapshotRevisionContext, WorkspaceSyncEditorsContext } from '../workspace/workspaceSyncEditors'
+import { PhoneEditorScreen } from './PhoneWorkspaceEditorScreen'
 import { TabletEditorPanel } from './TabletEditorPanel'
 
 const nativeAlert = vi.hoisted(() => ({ alert: vi.fn() }))
@@ -38,7 +39,8 @@ vi.mock('../ui/MobilePanel', () => ({ MobilePanel: Surface, MobileToolbar: Surfa
   MobileToolbarTitle: ({ title, testID }: { title: string; testID?: string }) => createElement('span', { 'data-testid': testID }, title) }))
 vi.mock('../ui/MobileIconButton', () => ({ MobileIconButton: Control }))
 vi.mock('../ui/MobileChip', () => ({ MobileChip: () => null }))
-vi.mock('../qa/mobileLayoutProbe', () => ({ useMobileLayoutProbe: () => ({ probe: () => ({}), metrics: [] }) }))
+vi.mock('../qa/mobileLayoutProbe', () => ({ probeProps: () => ({}),
+  useMobileLayoutProbe: () => ({ probe: () => ({}), metrics: [] }) }))
 vi.mock('../workspace/mobileAttachmentImport', () => ({ useMobileAttachmentImporter: () => vi.fn() }))
 vi.mock('../workspace/mobileAttachmentOpen', () => ({ useMobileAttachmentLinkOpener: () => vi.fn() }))
 vi.mock('../components/workspace/MobileEditorBlocks', () => ({ MobileEditorBlocks: () => createElement('div', { 'data-testid': 'cached-read-only-content' }) }))
@@ -65,6 +67,7 @@ vi.mock('../components/workspace/MobileMarkdownSourceEditor', () => ({
 vi.mock('./TabletEditorPanelChrome', () => ({ EmptyEditorPanel: () => null, MobileFilePreviewFallback: () => null,
   MobileNoteReadFallback: ({ state }: { state: { status: string } }) => createElement('div', { 'data-testid': 'note-read-fallback', 'data-state': state.status }),
   MobileSpreadsheetFallback: () => null }))
+vi.mock('./PhoneWorkspaceChrome', () => ({ PhoneBackButton: () => null, PhoneTopBar: () => null }))
 
 let root: ReturnType<typeof createRoot> | undefined
 beforeEach(() => vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true))
@@ -92,6 +95,32 @@ it('keeps the rich editor mounted and clean when an opened note receives its dis
   expect(h.onUpdateContent).not.toHaveBeenCalled()
   expect(h.diskBytes.get(h.notes[0].id)).toBe('# Authoritative disk content')
   expect(h.button('editor-source-action')).toBe(control)
+})
+
+it('keeps the phone rich editor mounted across note opens without dirtying either note', async () => {
+  const h = createPhoneHarness()
+  const originalDiskBytes = new Map(h.diskBytes)
+  await h.renderPhoneNote(0)
+  const editor = h.host.querySelector('[data-rich-note]')
+  expect(editor?.getAttribute('data-rich-note')).toBe(h.notes[0].id)
+  await h.renderPhoneNote(1)
+
+  expect(h.host.querySelector('[data-rich-note]')).toBe(editor)
+  expect(editor?.getAttribute('data-rich-note')).toBe(h.notes[1].id)
+  expect(h.onUpdateContent).not.toHaveBeenCalled()
+  expect(h.diskBytes).toEqual(originalDiskBytes)
+})
+
+it('resets phone editing mode when moving from source mode to another note', async () => {
+  const h = createPhoneHarness()
+  await h.renderPhoneNote(0)
+  await act(async () => h.button('editor-source-action').click())
+  expect(h.host.querySelector('[data-source-note]')).not.toBeNull()
+
+  await h.renderPhoneNote(1)
+
+  expect(h.host.querySelector('[data-source-note]')).toBeNull()
+  expect(h.host.querySelector('[data-rich-note]')?.getAttribute('data-rich-note')).toBe(h.notes[1].id)
 })
 
 it('replaces a raw document on a new revision without resetting source mode or chrome', async () => {
@@ -213,6 +242,52 @@ function createHarness() {
       root?.render(createElement(WorkspaceSnapshotRevisionContext.Provider, { value: revision }, createElement(WorkspaceSyncEditorsContext.Provider, { value: editors }, createElement(TabletEditorPanel, { blocks: [], bullets: [], compact: false, notes,
         note: notes[index], noteRead, onUpdateContent, onToggleFavorite: vi.fn(), onOpenMoreActions: vi.fn(), onNavigateWikilink: vi.fn(),
         renameFilename: { value: 'renamed.md', notes, onChange: vi.fn(), onSubmit: vi.fn() } }))))
+    }),
+  }
+}
+
+function createPhoneHarness() {
+  const harness = createHarness()
+  const controller = {
+    editorBlocks: [],
+    editorBullets: [],
+    onOpenMoreActions: vi.fn(),
+    onSelectNote: vi.fn(),
+    onToggleFavorite: vi.fn(),
+    onUpdateNoteContent: harness.onUpdateContent,
+    readOnlyForm: { filenameStem: 'note' },
+    selectedNote: harness.notes[0],
+    selectedNoteRead: { status: 'ready' },
+    snapshot: { typeDefinitions: null },
+    vaultRootUri: 'file:///fixture-vault',
+  }
+  return {
+    ...harness,
+    renderPhoneNote: (index: number) => act(async () => {
+      controller.selectedNote = harness.notes[index]
+      root?.render(createElement(WorkspaceSnapshotRevisionContext.Provider, { value: 0 },
+        createElement(WorkspaceSyncEditorsContext.Provider, { value: harness.editors },
+          createElement(PhoneEditorScreen, {
+            controller: controller as never,
+            openEditor: vi.fn(),
+            openSourceEditor: vi.fn(),
+            openCommandPalette: vi.fn(),
+            openList: vi.fn(),
+            openProperties: vi.fn(),
+            openSidebar: vi.fn(),
+            options: { initialEditorEditing: true, initialEditorEditingMode: 'wysiwyg', layoutProbe: false,
+              sourceIdleSave: true, sourceSelectionProbe: false, wysiwygAutocompleteProbe: false,
+              wysiwygExternalLinkProbe: false, wysiwygFormatCommandProbe: false,
+              wysiwygInputTransformProbe: false, wysiwygMarkdownBlockProbe: false,
+              wysiwygMathEditProbe: false, wysiwygTableCommandMutationProbe: false,
+              wysiwygWikilinkInsertProbe: false, wysiwygMutationProbe: false },
+            onRegisterEditorCommands: undefined,
+            phoneLayoutProbe: () => ({}),
+            phoneState: 'editor',
+            sourceModeRequest: 0,
+            suggestionNotes: harness.notes,
+            tableOfContentsTarget: null,
+          }))))
     }),
   }
 }
