@@ -1,4 +1,3 @@
-import { ArrowLeft } from "phosphor-react-native";
 import {
 	KeyboardAvoidingView,
 	Modal,
@@ -7,6 +6,7 @@ import {
 	StyleSheet,
 	View,
 } from "react-native";
+import { ChromeSymbol } from "../components/ui/ChromeSymbol";
 import { Text } from "../components/ui/text";
 import { MobileVaultManager } from "../components/vaults/MobileVaultManager";
 import { mobileText } from "../i18n/mobileText";
@@ -21,7 +21,7 @@ import {
 import type { MobileMetrics } from "../ui/mobileMetrics";
 import { mobileSheetPresentation } from "../ui/mobileSheetPresentation";
 import type { MobileColors } from "../ui/theme/mobilePalette";
-import { useMobileStyles } from "../ui/theme/useMobileTheme";
+import { useMobileColors, useMobileStyles } from "../ui/theme/useMobileTheme";
 import type { useMobileVaults } from "../workspace/git/useMobileVaults";
 import { useMobileModalDismiss } from "../workspace/useMobileModalDismiss";
 import { MobileNativeSettingsForm } from "./MobileNativeSettingsForm";
@@ -34,6 +34,7 @@ export function MobileSettingsSheet({
 	manager: ReturnType<typeof useMobileVaults>;
 }) {
 	const { styles } = useMobileStyles(createThemeStyles);
+	const colors = useMobileColors();
 	const preferences = useMobileSettings();
 	const updates = useMobileUpdateChannel(manager);
 	const close = () => {
@@ -71,7 +72,7 @@ export function MobileSettingsSheet({
 								onPress={close}
 								testID="settings-back"
 							>
-								<ArrowLeft size={20} />
+								<ChromeSymbol name="back" size={20} color={colors.text} />
 							</MobileIconButton>
 						)}
 						<MobileToolbarTitle title={mobileText("settings.title")} />

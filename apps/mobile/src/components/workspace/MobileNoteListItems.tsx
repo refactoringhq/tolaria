@@ -1,5 +1,4 @@
 import MenuView from "@expo/ui/community/menu";
-import { FolderOpen, MagnifyingGlass } from "phosphor-react-native";
 import type { ReactNode } from "react";
 import { Platform, View } from "react-native";
 import { mobileText } from "../../i18n/mobileText";
@@ -19,6 +18,7 @@ import type {
 	MobilePropertyDisplayMode,
 	MobileTypeDefinitions,
 } from "../../workspace/mobileWorkspaceModel";
+import { ChromeSymbol } from "../ui/ChromeSymbol";
 import { Text } from "../ui/text";
 import { createThemeStyles } from "./MobileNoteListPanel.styles";
 import { mobileNoteListEmptyStateChrome } from "./MobileNoteListPanelChrome";
@@ -98,9 +98,9 @@ function NoteRowContents(props: MobileNoteListRowProps) {
 						? () => emitMobileHaptic("selection")
 						: props.onBeginSelection
 							? () => {
-								emitMobileHaptic("selection");
-								props.onBeginSelection?.(note.id);
-							}
+									emitMobileHaptic("selection");
+									props.onBeginSelection?.(note.id);
+								}
 							: undefined
 				}
 				onPress={() => props.onSelectNote(note.id)}
@@ -198,7 +198,9 @@ export function NoteListEmptyState({
 			) : null}
 			{chrome.action === "openVault" && onOpenVault ? (
 				<MobileButton
-					icon={<FolderOpen color={mobileColors.text} size={16} />}
+					icon={
+						<ChromeSymbol name="move" color={mobileColors.text} size={16} />
+					}
 					label={mobileText("status.vault.openLocal")}
 					style={styles.emptyAction}
 					testID="note-list-empty-open-vault"
@@ -213,7 +215,7 @@ export function SearchPill({ searchQuery }: { searchQuery: string }) {
 	const { styles, mobileColors } = useMobileStyles(createThemeStyles);
 	return (
 		<View style={styles.searchPill}>
-			<MagnifyingGlass color={mobileColors.textMuted} size={16} />
+			<ChromeSymbol name="search" color={mobileColors.textMuted} size={16} />
 			<Text numberOfLines={1} style={styles.searchText}>
 				{searchQuery}
 			</Text>

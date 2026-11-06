@@ -1,4 +1,4 @@
-import { ArrowClockwise, GitCommit } from "phosphor-react-native";
+import { GitCommit } from "phosphor-react-native";
 import { useState } from "react";
 import { View } from "react-native";
 import { useMobileAnalytics } from "../../analytics/useMobileAnalytics";
@@ -11,6 +11,7 @@ import {
 	useMobileStyles,
 } from "../../ui/theme/useMobileTheme";
 import type { useMobileVaults } from "../../workspace/git/useMobileVaults";
+import { ChromeSymbol } from "../ui/ChromeSymbol";
 import { Switch } from "../ui/switch";
 import { Text } from "../ui/text";
 import { createVaultManagerStyles } from "./vaultManagerStyles";
@@ -132,7 +133,7 @@ function SyncNowButton({ manager }: { manager: GitControlsManager }) {
 		<MobileButton
 			disabled={manager.busy}
 			label={mobileText("mobile.sync.action")}
-			icon={<ArrowClockwise size={16} color={mobileColors.text} />}
+			icon={<ChromeSymbol name="sync" size={16} color={mobileColors.text} />}
 			onPress={() => {
 				void manager.sync();
 			}}

@@ -1,5 +1,3 @@
-import { SymbolView } from "expo-symbols";
-import { ArrowClockwise } from "phosphor-react-native";
 import { useContext, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { mobileText } from "../../i18n/mobileText";
@@ -9,6 +7,7 @@ import {
 	MobileVaultDisplayContext,
 } from "../../workspace/MobileVaultContext";
 import { Button } from "../ui/button";
+import { ChromeSymbol } from "../ui/ChromeSymbol";
 import { Text } from "../ui/text";
 import { sidebarSyncPresentation } from "./mobileSidebarSyncStatus";
 
@@ -65,14 +64,7 @@ function syncAccessibilityLabel(
 
 function SyncPillIcon({ busy, color }: { busy: boolean; color: string }) {
 	if (busy) return <ActivityIndicator size="small" color={color} />;
-	return (
-		<SymbolView
-			fallback={<ArrowClockwise size={18} color={color} />}
-			name={{ ios: "arrow.clockwise", android: "refresh" }}
-			size={18}
-			tintColor={color}
-		/>
-	);
+	return <ChromeSymbol name="sync" size={18} color={color} />;
 }
 
 function SyncPillCopy({

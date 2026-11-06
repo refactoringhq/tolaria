@@ -1,4 +1,3 @@
-import { ArchiveIcon, CheckCircle, Trash, X } from "phosphor-react-native";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { mobileText } from "../../i18n/mobileText";
@@ -8,6 +7,7 @@ import { mobilePressedStyle } from "../../ui/mobilePressFeedback";
 import type { MobileColors } from "../../ui/theme/mobilePalette";
 import { useMobileStyles } from "../../ui/theme/useMobileTheme";
 import { mobileRadius } from "../../ui/tokens";
+import { ChromeSymbol } from "../ui/ChromeSymbol";
 import { Text } from "../ui/text";
 import { MobileListMotion } from "./MobileSwipeableNoteRow";
 
@@ -113,7 +113,12 @@ function BulkPrimaryActions({
 				testID="note-list-bulk-organize"
 				onPress={onOrganize}
 			>
-				<CheckCircle color={mobileColors.textInverse} size={16} weight="fill" />
+				<ChromeSymbol
+					name="organize"
+					color={mobileColors.textInverse}
+					size={16}
+					weight="bold"
+				/>
 			</BulkActionButton>
 			<BulkActionButton
 				accessibilityLabel={mobileText(
@@ -123,7 +128,11 @@ function BulkPrimaryActions({
 				testID="note-list-bulk-archive"
 				onPress={onArchiveToggle}
 			>
-				<ArchiveIcon color={mobileColors.textInverse} size={16} />
+				<ChromeSymbol
+					name="archive"
+					color={mobileColors.textInverse}
+					size={16}
+				/>
 			</BulkActionButton>
 		</>
 	);
@@ -149,7 +158,11 @@ function BulkSecondaryActions({
 				testID="note-list-bulk-delete"
 				onPress={onDelete}
 			>
-				<Trash color={mobileColors.textInverse} size={16} />
+				<ChromeSymbol
+					name="delete"
+					color={mobileColors.textInverse}
+					size={16}
+				/>
 			</BulkActionButton>
 			<BulkActionButton
 				accessibilityLabel={mobileText("noteList.bulk.clear")}
@@ -158,7 +171,7 @@ function BulkSecondaryActions({
 				testID="note-list-bulk-clear"
 				onPress={onClear}
 			>
-				<X color={mobileColors.textInverse} size={16} />
+				<ChromeSymbol name="close" color={mobileColors.textInverse} size={16} />
 			</BulkActionButton>
 		</>
 	);

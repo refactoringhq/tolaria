@@ -1,5 +1,4 @@
 import { BottomSheet, BottomSheetView } from "@expo/ui/community/bottom-sheet";
-import { CheckCircle } from "phosphor-react-native";
 import { type ReactNode, useEffect } from "react";
 import {
 	Keyboard,
@@ -11,16 +10,17 @@ import {
 	View,
 } from "react-native";
 import { mobileText } from "../../i18n/mobileText";
-import { emitMobileHaptic } from "../../ui/mobileHaptics";
 import { MobileButton } from "../../ui/MobileButton";
 import {
 	MobileToolbar,
 	MobileToolbarSpacer,
 	MobileToolbarTitle,
 } from "../../ui/MobilePanel";
+import { emitMobileHaptic } from "../../ui/mobileHaptics";
 import { useMobileStyles } from "../../ui/theme/useMobileTheme";
 import { useMobileDeviceLayout } from "../../ui/useMobileDeviceLayout";
 import { useMobileModalDismiss } from "../../workspace/useMobileModalDismiss";
+import { ChromeSymbol } from "../ui/ChromeSymbol";
 import { Text } from "../ui/text";
 import { MobileWorkspaceAndroidPrompt } from "./actions/MobileWorkspaceAndroidPrompt";
 import { MobileWorkspaceFolderActionsContent } from "./actions/MobileWorkspaceFolderActionsContent";
@@ -400,10 +400,11 @@ function VisibilitySwitchRow({
 				onChange(!active);
 			}}
 		>
-			<CheckCircle
+			<ChromeSymbol
+				name="organize"
 				color={active ? mobileColors.primary : mobileColors.textFaint}
 				size={16}
-				weight={active ? "fill" : "regular"}
+				weight={active ? "bold" : "regular"}
 			/>
 			<View style={styles.visibilityText}>
 				<Text style={styles.visibilityLabel}>{label}</Text>

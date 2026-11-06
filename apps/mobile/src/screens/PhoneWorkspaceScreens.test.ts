@@ -19,6 +19,9 @@ vi.mock("react-native", () => ({
 	StyleSheet: { create: (styles: object) => styles, hairlineWidth: 1 },
 }));
 vi.mock("phosphor-react-native", () => ({ List: () => null }));
+vi.mock("../components/ui/ChromeSymbol", () => ({
+	ChromeSymbol: () => null,
+}));
 vi.mock("../components/workspace/MobileNoteListPanel", () => ({
 	MobileNoteListPanel: (props: Record<string, unknown>) => {
 		calls.list(props);
@@ -138,7 +141,7 @@ vi.mock("./PhonePropertiesSheet", () => ({
 					createElement("button", {
 						"data-testid": "phone-properties-dismiss",
 						onClick: openEditor,
-							type: "button",
+						type: "button",
 					}),
 				)
 			: null,

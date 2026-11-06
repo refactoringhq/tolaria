@@ -1,5 +1,3 @@
-import { SymbolView } from "expo-symbols";
-import { Command, GearSix } from "phosphor-react-native";
 import type { ReactNode } from "react";
 import { type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -7,6 +5,7 @@ import { mobileText } from "../../i18n/mobileText";
 import { useMobileSettings } from "../../settings/useMobileSettings";
 import { useMobileColors } from "../../ui/theme/useMobileTheme";
 import { Button } from "../ui/button";
+import { ChromeSymbol } from "../ui/ChromeSymbol";
 import { MobileSidebarSyncPill } from "./MobileSidebarSyncPill";
 import { mobilePaneFooterFrame } from "./mobilePaneFooterLayout";
 
@@ -32,12 +31,7 @@ export function MobileSidebarSettings({
 					onPress={onOpenCommandPalette}
 					testID="sidebar-command-palette-action"
 				>
-					<SymbolView
-						fallback={<Command size={22} color={colors.textMuted} />}
-						name={{ ios: "command", android: "keyboard_command_key" }}
-						size={22}
-						tintColor={colors.textMuted}
-					/>
+					<ChromeSymbol name="command" size={22} color={colors.textMuted} />
 				</SidebarButton>
 			)}
 			<SidebarButton
@@ -46,12 +40,7 @@ export function MobileSidebarSettings({
 				onPress={preferences.open}
 				testID="open-mobile-settings"
 			>
-				<SymbolView
-					fallback={<GearSix size={22} color={colors.textMuted} />}
-					name={{ ios: "gearshape", android: "settings" }}
-					size={22}
-					tintColor={colors.textMuted}
-				/>
+				<ChromeSymbol name="settings" size={22} color={colors.textMuted} />
 			</SidebarButton>
 		</View>
 	);

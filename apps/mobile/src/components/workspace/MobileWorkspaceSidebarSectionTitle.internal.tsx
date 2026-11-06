@@ -1,9 +1,10 @@
-import { CaretDown, CaretRight, Eye, Plus } from "phosphor-react-native";
 import { Pressable, useWindowDimensions, View } from "react-native";
 import { mobileText } from "../../i18n/mobileText";
 import { type MobileLayoutProbe, probeProps } from "../../qa/mobileLayoutProbe";
 import { MobileIconButton } from "../../ui/MobileIconButton";
 import { useMobileStyles } from "../../ui/theme/useMobileTheme";
+import { ChromeSymbol } from "../ui/ChromeSymbol";
+import type { ChromeSymbolName } from "../ui/chromeSymbolDefinitions";
 import { Text } from "../ui/text";
 import { MobileSidebarCountPill } from "./MobileSidebarCountPill";
 import { createSidebarStyles } from "./mobileSidebarStyles";
@@ -19,6 +20,13 @@ export type MobileSidebarSectionTitleProps = {
 	onToggle: () => void;
 	sectionId: string;
 	visibilityAccessibilityLabel?: string;
+};
+
+type SectionTitleAction = {
+	id: string;
+	icon: ChromeSymbolName;
+	onPress?: () => void;
+	accessibilityLabel: string;
 };
 
 export function SectionTitle(props: MobileSidebarSectionTitleProps) {
@@ -48,7 +56,7 @@ function SectionTitleToggle(props: MobileSidebarSectionTitleProps) {
 	const themeStyles = useMobileStyles(createSidebarStyles);
 	const { styles, mobileColors, metrics } = themeStyles;
 	const metricId = `sidebar.section.${props.sectionId}`;
-	const Icon = props.expanded ? CaretDown : CaretRight;
+	const symbol: ChromeSymbolName = props.expanded ? "caretDown" : "caretRight";
 	return (
 		<Pressable
 			accessibilityRole="button"
@@ -59,7 +67,11 @@ function SectionTitleToggle(props: MobileSidebarSectionTitleProps) {
 			style={styles.sectionTitleToggle}
 			testID={`sidebar-section-toggle-${props.sectionId}`}
 		>
-			<Icon color={mobileColors.textMuted} size={metrics.size(11)} />
+			<ChromeSymbol
+				name={symbol}
+				color={mobileColors.textMuted}
+				size={metrics.size(11)}
+			/>
 			<Text
 				{...probeProps(props.layoutProbe, `${metricId}.label`)}
 				style={[styles.sectionTitle, themeStyles.nativeSectionTitleTextStyle]}
@@ -94,25 +106,31 @@ function SectionTitleActions(props: MobileSidebarSectionTitleProps) {
 					value={count}
 				/>
 			) : null}
-			{actions.map(({ accessibilityLabel, Icon, id, onPress }) => (
+			{actions.map(({ accessibilityLabel, icon, id, onPress }) => (
 				<MobileIconButton
 					key={id}
 					accessibilityLabel={accessibilityLabel}
 					testID={`sidebar-section-${id}-${sectionId}`}
-					onPress={onPress}
+					onPress={() => onPress?.()}
 				>
-					<Icon color={mobileColors.textMuted} size={metrics.size(12)} />
+					<ChromeSymbol
+						name={icon}
+						color={mobileColors.textMuted}
+						size={metrics.size(12)}
+					/>
 				</MobileIconButton>
 			))}
 		</View>
 	);
 }
 
-function sectionTitleActions(props: MobileSidebarSectionTitleProps) {
-	return [
+function sectionTitleActions(
+	props: MobileSidebarSectionTitleProps,
+): SectionTitleAction[] {
+	const actions: SectionTitleAction[] = [
 		{
 			id: "visibility",
-			Icon: Eye,
+			icon: "eye",
 			onPress: props.onVisibility,
 			accessibilityLabel:
 				props.visibilityAccessibilityLabel ??
@@ -120,11 +138,12 @@ function sectionTitleActions(props: MobileSidebarSectionTitleProps) {
 		},
 		{
 			id: "create",
-			Icon: Plus,
+			icon: "plus",
 			onPress: props.onCreate,
 			accessibilityLabel:
 				props.createAccessibilityLabel ??
 				mobileText("sidebar.action.createView"),
 		},
-	].filter((action) => action.onPress);
+	];
+	return actions.filter((action) => action.onPress);
 }

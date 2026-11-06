@@ -1,5 +1,5 @@
-import { List } from "phosphor-react-native";
 import { View } from "react-native";
+import { ChromeSymbol } from "../components/ui/ChromeSymbol";
 import { MobileNoteListPanel } from "../components/workspace/MobileNoteListPanel";
 import { mobileCopy } from "../i18n/mobileText";
 import { probeProps } from "../qa/mobileLayoutProbe";
@@ -62,7 +62,8 @@ function PhoneNoteListSidebarButton(props: {
 			testID="phone-note-list-sidebar-button"
 			onPress={props.openSidebar}
 		>
-			<List
+			<ChromeSymbol
+				name="list"
 				color={props.mobileColors.textMuted}
 				size={desktopToolbarActionParity.iconSize}
 			/>
