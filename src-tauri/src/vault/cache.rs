@@ -3,7 +3,9 @@ use std::fs;
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 
-use crate::git::{get_all_file_dates_for_workspace, GitDates, GitWorkspace};
+use crate::git::{
+    get_all_file_dates_for_workspace, get_file_dates_for_paths, GitDates, GitWorkspace,
+};
 use std::collections::HashMap;
 #[cfg(test)]
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -32,6 +34,14 @@ use cache_io::{
 /// v15: preserve Type status fields as instance defaults
 const CACHE_VERSION: u32 = 15;
 const CACHE_WRITE_LOCK_STALE_SECS: u64 = 30;
+/// More changed paths than this use the full-history lookup instead, which also
+/// keeps the `git log` command line well under the Windows length limit.
+const TARGETED_GIT_DATE_LOOKUP_MAX_PATHS: usize = 200;
+
+/// Serialises tests that point `LAPUTA_CACHE_DIR` at a temporary directory.
+/// The variable is process-global, so parallel tests would race.
+#[cfg(test)]
+pub(crate) static TEST_CACHE_DIR_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 #[cfg(test)]
 static PANIC_ON_GIT_DATE_LOOKUP: AtomicBool = AtomicBool::new(false);
@@ -94,6 +104,34 @@ fn cache_path(vault: &Path) -> PathBuf {
     cache_dir().join(format!("{}.json", vault_path_hash(vault)))
 }
 
+fn gitignored_snapshot_path(vault: &Path) -> PathBuf {
+    cache_dir().join(format!("{}.gitignored.json", vault_path_hash(vault)))
+}
+
+/// Relative paths the last full listing hid as gitignored. The startup
+/// snapshot uses them instead of running `git check-ignore` over every cached
+/// path; the background listing refreshes them moments later.
+pub fn read_gitignored_snapshot(vault: &Path) -> Option<std::collections::HashSet<String>> {
+    let content = fs::read_to_string(gitignored_snapshot_path(vault)).ok()?;
+    serde_json::from_str(&content).ok()
+}
+
+pub fn write_gitignored_snapshot(vault: &Path, ignored: &[String]) {
+    let path = gitignored_snapshot_path(vault);
+    let tmp_path = path.with_extension("json.tmp");
+    let written = fs::create_dir_all(cache_dir())
+        .and_then(|()| {
+            fs::write(
+                &tmp_path,
+                serde_json::to_vec(ignored).map_err(std::io::Error::other)?,
+            )
+        })
+        .and_then(|()| fs::rename(&tmp_path, &path));
+    if let Err(error) = written {
+        log::warn!("Failed to write {}: {error}", path.display());
+    }
+}
+
 fn legacy_cache_path(vault: &Path) -> PathBuf {
     vault.join(".laputa-cache.json")
 }
@@ -127,6 +165,13 @@ fn load_git_dates(workspace: &GitWorkspace) -> HashMap<String, GitDates> {
     }
 
     get_all_file_dates_for_workspace(workspace)
+}
+
+fn load_git_dates_for(workspace: &GitWorkspace, rel_paths: &[String]) -> HashMap<String, GitDates> {
+    if rel_paths.len() > TARGETED_GIT_DATE_LOOKUP_MAX_PATHS {
+        return load_git_dates(workspace);
+    }
+    get_file_dates_for_paths(workspace, rel_paths)
 }
 
 /// Parse a git status porcelain line into (status_code, file_path).
@@ -338,13 +383,31 @@ fn migrate_legacy_cache(vault: &Path) {
     let _ = fs::remove_file(&legacy);
 }
 
+/// Relative paths of every file the vault scan could have cached, from one
+/// directory walk. Listing each folder once is far cheaper than a metadata call
+/// per cached entry, especially on OneDrive or with antivirus scanning.
+fn existing_relative_paths(vault: &Path) -> std::collections::HashSet<String> {
+    walkdir::WalkDir::new(vault)
+        .follow_links(true)
+        .into_iter()
+        .filter_entry(super::should_visit_vault_entry)
+        .filter_map(Result::ok)
+        .filter(|entry| entry.file_type().is_file())
+        .map(|entry| to_relative_path(&entry.path().to_string_lossy(), vault))
+        .collect()
+}
+
 /// Remove entries for files that no longer exist on disk and deduplicate
 /// by case-folded relative path (handles case-insensitive filesystems like macOS APFS).
 /// Returns `true` if any entries were removed.
 fn prune_stale_entries(vault: &Path, entries: &mut Vec<VaultEntry>) -> bool {
     let before = entries.len();
-    // Remove entries whose files no longer exist on disk
-    entries.retain(|e| std::path::Path::new(&e.path).is_file());
+    // Remove entries whose files no longer exist on disk. Entries the walk did
+    // not list (different spelling of the path, say) fall back to a direct check.
+    let existing = existing_relative_paths(vault);
+    entries.retain(|e| {
+        existing.contains(&to_relative_path(&e.path, vault)) || Path::new(&e.path).is_file()
+    });
     // Deduplicate by case-folded relative path
     let mut seen = std::collections::HashSet::new();
     entries.retain(|e| {
@@ -354,7 +417,7 @@ fn prune_stale_entries(vault: &Path, entries: &mut Vec<VaultEntry>) -> bool {
     entries.len() != before
 }
 
-/// Sort entries by modified_at descending and write the cache.
+/// Prune, sort entries by modified_at descending and write the cache.
 fn finalize_and_cache(
     vault: &Path,
     mut entries: Vec<VaultEntry>,
@@ -362,6 +425,16 @@ fn finalize_and_cache(
     expected_previous: Option<CacheFileFingerprint>,
 ) -> Vec<VaultEntry> {
     prune_stale_entries(vault, &mut entries);
+    sort_and_cache(vault, entries, hash, expected_previous)
+}
+
+/// Sort entries by modified_at descending and write the cache.
+fn sort_and_cache(
+    vault: &Path,
+    mut entries: Vec<VaultEntry>,
+    hash: String,
+    expected_previous: Option<CacheFileFingerprint>,
+) -> Vec<VaultEntry> {
     entries.sort_by_key(|entry| std::cmp::Reverse(entry.modified_at));
     let outcome = write_cache(
         vault,
@@ -397,20 +470,31 @@ fn update_same_commit(
     loaded_cache: LoadedCache,
 ) -> Vec<VaultEntry> {
     let LoadedCache { cache, fingerprint } = loaded_cache;
+    let status = crate::phase_trace::start("cache_uncommitted_files", vault);
     let changed = git_uncommitted_files(workspace);
+    status.finish(changed.len());
     let mut entries = cache.entries;
     if !changed.is_empty() {
-        let git_dates = load_git_dates(workspace);
+        let dates = crate::phase_trace::start("cache_git_dates", vault);
+        let git_dates = load_git_dates_for(workspace, &changed);
+        dates.finish(git_dates.len());
         let changed_set: std::collections::HashSet<String> =
             changed.iter().map(|path| relative_path_key(path)).collect();
         entries.retain(|e| !changed_set.contains(&to_relative_path_key(&e.path, vault)));
+        let parse = crate::phase_trace::start("cache_parse_changed", vault);
         entries.extend(parse_files_at(vault, &changed, &git_dates));
+        parse.finish(changed.len());
     }
+    let prune = crate::phase_trace::start("cache_prune_stale", vault);
     let pruned = prune_stale_entries(vault, &mut entries);
+    prune.finish(entries.len());
     if changed.is_empty() && !pruned {
         return entries;
     }
-    finalize_and_cache(vault, entries, cache.commit_hash, Some(fingerprint))
+    let write = crate::phase_trace::start("cache_write", vault);
+    let entries = sort_and_cache(vault, entries, cache.commit_hash, Some(fingerprint));
+    write.finish(entries.len());
+    entries
 }
 
 /// Handle different-commit cache: incremental update via git diff.
@@ -419,10 +503,10 @@ fn update_different_commit(
     workspace: &GitWorkspace,
     loaded_cache: LoadedCache,
     current_hash: String,
-    git_dates: &HashMap<String, GitDates>,
 ) -> Vec<VaultEntry> {
     let LoadedCache { cache, fingerprint } = loaded_cache;
     let changed_files = git_changed_files(vault, workspace, &cache.commit_hash, &current_hash);
+    let git_dates = load_git_dates_for(workspace, &changed_files);
     let changed_set: std::collections::HashSet<String> = changed_files
         .iter()
         .map(|path| relative_path_key(path))
@@ -433,7 +517,7 @@ fn update_different_commit(
         .into_iter()
         .filter(|e| !changed_set.contains(&to_relative_path_key(&e.path, vault)))
         .collect();
-    entries.extend(parse_files_at(vault, &changed_files, git_dates));
+    entries.extend(parse_files_at(vault, &changed_files, &git_dates));
 
     finalize_and_cache(vault, entries, current_hash, Some(fingerprint))
 }
@@ -499,6 +583,7 @@ pub fn scan_vault_cached(vault_path: &Path) -> Result<Vec<VaultEntry>, String> {
     // Migrate legacy in-vault cache to external location on first run
     migrate_legacy_cache(vault_path);
 
+    let resolve = crate::phase_trace::start("cache_resolve_git", vault_path);
     let Some(workspace) = resolve_git_workspace(vault_path) else {
         return scan_vault(vault_path, &HashMap::new());
     };
@@ -506,8 +591,12 @@ pub fn scan_vault_cached(vault_path: &Path) -> Result<Vec<VaultEntry>, String> {
         Some(h) => h,
         None => return scan_vault(vault_path, &HashMap::new()),
     };
+    resolve.finish(0);
 
-    match load_cache(vault_path) {
+    let load = crate::phase_trace::start("cache_load", vault_path);
+    let loaded = load_cache(vault_path);
+    load.finish(0);
+    match loaded {
         CacheLoadState::Missing => {}
         CacheLoadState::Unreadable(error) => log::warn!("{error}"),
         CacheLoadState::Invalid(error) => {
@@ -527,13 +616,11 @@ pub fn scan_vault_cached(vault_path: &Path) -> Result<Vec<VaultEntry>, String> {
             return if loaded_cache.cache.commit_hash == current_hash {
                 Ok(update_same_commit(vault_path, &workspace, loaded_cache))
             } else {
-                let git_dates = load_git_dates(&workspace);
                 Ok(update_different_commit(
                     vault_path,
                     &workspace,
                     loaded_cache,
                     current_hash,
-                    &git_dates,
                 ))
             };
         }

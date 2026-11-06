@@ -1,6 +1,6 @@
 use super::{FolderNode, VaultEntry};
 use std::collections::HashSet;
-use std::io::Write;
+use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::process::{ChildStdin, Stdio};
 use std::thread::JoinHandle;
@@ -63,8 +63,11 @@ fn has_gitignore_file(vault_path: &Path) -> bool {
 }
 
 fn run_git_check_ignore(vault_path: &Path, relative_paths: &[String]) -> Option<String> {
+    // GIT_FLUSH=0 stops git flushing stdout after every matching path, which on
+    // Windows pipes made a vault with thousands of ignored files take seconds.
     let mut child = crate::hidden_command("git")
         .args(["check-ignore", "--no-index", "--stdin"])
+        .env("GIT_FLUSH", "0")
         .current_dir(vault_path)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -82,20 +85,24 @@ fn run_git_check_ignore(vault_path: &Path, relative_paths: &[String]) -> Option<
     None
 }
 
-fn spawn_ignore_writer(
-    mut stdin: ChildStdin,
-    paths: Vec<String>,
-) -> JoinHandle<std::io::Result<()>> {
+fn spawn_ignore_writer(stdin: ChildStdin, paths: Vec<String>) -> JoinHandle<std::io::Result<()>> {
     std::thread::spawn(move || {
+        let mut stdin = BufWriter::new(stdin);
         for path in paths {
             writeln!(stdin, "{path}")?;
         }
-        Ok(())
+        stdin.flush()
     })
 }
 
 fn ignored_relative_paths(vault_path: &Path, relative_paths: &[String]) -> HashSet<String> {
-    if relative_paths.is_empty() || !has_gitignore_file(vault_path) {
+    if relative_paths.is_empty() {
+        return HashSet::new();
+    }
+    let lookup = crate::phase_trace::start("gitignore_has_file", vault_path);
+    let has_gitignore = has_gitignore_file(vault_path);
+    lookup.finish(usize::from(has_gitignore));
+    if !has_gitignore {
         return HashSet::new();
     }
 
@@ -107,12 +114,15 @@ fn ignored_relative_paths(vault_path: &Path, relative_paths: &[String]) -> HashS
     candidates.sort();
     candidates.dedup();
 
-    run_git_check_ignore(vault_path, &candidates)
+    let check = crate::phase_trace::start("gitignore_check_ignore", vault_path);
+    let ignored: HashSet<String> = run_git_check_ignore(vault_path, &candidates)
         .unwrap_or_default()
         .lines()
         .map(normalize_relative_path)
         .filter(|path| !path.is_empty())
-        .collect()
+        .collect();
+    check.finish(candidates.len());
+    ignored
 }
 
 fn filter_gitignored_items<T>(
@@ -125,7 +135,9 @@ fn filter_gitignored_items<T>(
         return items;
     }
 
+    let relative = crate::phase_trace::start("gitignore_relative_paths", vault_path);
     let relative_paths = items.iter().filter_map(&relative_for).collect::<Vec<_>>();
+    relative.finish(relative_paths.len());
     let ignored = ignored_relative_paths(vault_path, &relative_paths);
     if ignored.is_empty() {
         return items;
@@ -149,6 +161,56 @@ pub fn filter_gitignored_paths(
     filter_gitignored_items(vault_path, paths, hide_enabled, |path| {
         relative_path(vault_path, path)
     })
+}
+
+/// Like [`filter_gitignored_entries`], but also returns the relative paths of
+/// the entries it hid, so startup can reuse them without running git.
+pub fn partition_gitignored_entries(
+    vault_path: &Path,
+    entries: Vec<VaultEntry>,
+    hide_enabled: bool,
+) -> (Vec<VaultEntry>, Vec<String>) {
+    if !hide_enabled || entries.is_empty() {
+        return (entries, Vec::new());
+    }
+    let relative_for = |entry: &VaultEntry| relative_path(vault_path, Path::new(&entry.path));
+    let relative_paths = entries.iter().filter_map(relative_for).collect::<Vec<_>>();
+    let ignored = ignored_relative_paths(vault_path, &relative_paths);
+    if ignored.is_empty() {
+        return (entries, Vec::new());
+    }
+
+    let mut hidden = Vec::new();
+    let visible = entries
+        .into_iter()
+        .filter(|entry| match relative_for(entry) {
+            Some(relative) if ignored.contains(&relative) => {
+                hidden.push(relative);
+                false
+            }
+            _ => true,
+        })
+        .collect();
+    (visible, hidden)
+}
+
+/// Hide entries whose relative paths are in `ignored`, a set remembered from an
+/// earlier [`partition_gitignored_entries`] call.
+pub fn filter_entries_by_ignored_paths(
+    vault_path: &Path,
+    entries: Vec<VaultEntry>,
+    ignored: &HashSet<String>,
+) -> Vec<VaultEntry> {
+    if ignored.is_empty() {
+        return entries;
+    }
+    entries
+        .into_iter()
+        .filter(|entry| {
+            relative_path(vault_path, Path::new(&entry.path))
+                .map_or(true, |relative| !ignored.contains(&relative))
+        })
+        .collect()
 }
 
 pub fn filter_gitignored_entries(

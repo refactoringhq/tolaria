@@ -63,6 +63,62 @@ fn test_warm_same_commit_cache_skips_full_git_date_lookup_when_clean() {
 }
 
 #[test]
+fn test_warm_same_commit_cache_dates_uncommitted_edits_without_full_history() {
+    let (_lock, _cache_tmp, dir) = setup_git_vault();
+    let vault = dir.path();
+
+    create_test_file(vault, "note.md", "# Note\n\nFirst version.");
+    create_test_file(vault, "other.md", "# Other\n");
+    crate::hidden_command("git")
+        .args(["add", "."])
+        .current_dir(vault)
+        .output()
+        .unwrap();
+    crate::hidden_command("git")
+        .args(["commit", "-m", "init"])
+        .env("GIT_AUTHOR_DATE", "2020-01-01T00:00:00+00:00")
+        .env("GIT_COMMITTER_DATE", "2020-01-01T00:00:00+00:00")
+        .current_dir(vault)
+        .output()
+        .unwrap();
+    scan_vault_cached(vault).unwrap();
+    create_test_file(vault, "note.md", "# Note\n\nEdited, not committed.");
+
+    let _dates_guard = panic_on_git_date_lookup();
+    let entries = scan_vault_cached(vault).unwrap();
+
+    let note = entries.iter().find(|entry| entry.title == "Note").unwrap();
+    assert_eq!(note.created_at, Some(1_577_836_800));
+    assert!(note.snippet.contains("Edited"));
+    assert_eq!(entries.len(), 2);
+}
+
+#[test]
+fn test_targeted_git_dates_treat_glob_characters_literally() {
+    let (_lock, _cache_tmp, dir) = setup_git_vault();
+    let vault = dir.path();
+
+    create_test_file(vault, "plan [draft].md", "# Plan\n");
+    crate::hidden_command("git")
+        .args(["add", "."])
+        .current_dir(vault)
+        .output()
+        .unwrap();
+    crate::hidden_command("git")
+        .args(["commit", "-m", "init"])
+        .env("GIT_AUTHOR_DATE", "2020-01-01T00:00:00+00:00")
+        .env("GIT_COMMITTER_DATE", "2020-01-01T00:00:00+00:00")
+        .current_dir(vault)
+        .output()
+        .unwrap();
+    let workspace = resolve_git_workspace(vault).unwrap();
+
+    let dates = get_file_dates_for_paths(&workspace, &["plan [draft].md".to_string()]);
+
+    assert_eq!(dates["plan [draft].md"].created_at, 1_577_836_800);
+}
+
+#[test]
 fn test_snapshot_returns_cached_entries_without_reconciling_deleted_files() {
     let (_lock, _cache_tmp, dir) = setup_git_vault();
     let vault = dir.path();
