@@ -1,17 +1,17 @@
-import { useCallback } from 'react'
 import type { Dispatch, MutableRefObject, PointerEvent as ReactPointerEvent, SetStateAction } from 'react'
+import { useCallback } from 'react'
 import { isSecondaryPointerButton } from '../../utils/pointerButtons'
-import { patchReactSheetPointerEvent } from '../../utils/sheetPointerCoordinates'
 import type { SheetContextMenuState } from '../../utils/sheetContextMenuState'
-import { isReleasedWorkbookModelError } from './sheetReleasedModel'
+import { patchReactSheetPointerEvent } from '../../utils/sheetPointerCoordinates'
 import {
   focusWorkbookRoot,
   isEditableTarget,
-  sheetHasEditableFocus,
   type SheetWikilinkAutocompleteState,
+  sheetHasEditableFocus,
   visibleSheetTextInput,
 } from './sheetEditorHelpers'
 import type { SheetWorkbookState } from './sheetEditorTypes'
+import { skipIfReleasedWorkbookModel } from './sheetReleasedModel'
 
 const SHEET_SCROLL_RESTORE_DELAYS_MS = [0, 32, 96, 192, 240, 384] as const
 
@@ -39,15 +39,17 @@ interface SheetScrollSnapshot {
 }
 
 function isTransientUiPointerTarget(target: EventTarget) {
-  return target instanceof Element
-    && target.closest('.sheet-context-menu, .sheet-formula-autocomplete, .sheet-wikilink-autocomplete')
+  return (
+    target instanceof Element &&
+    target.closest('.sheet-context-menu, .sheet-formula-autocomplete, .sheet-wikilink-autocomplete')
+  )
 }
 
 function frozenSheetViewport(workbookRef: MutableRefObject<SheetWorkbookState | null>) {
   const current = workbookRef.current
   if (!current) return null
   const { model } = current
-  try {
+  return skipIfReleasedWorkbookModel('viewport read', null, () => {
     const sheet = model.getSelectedSheet()
     const hasFrozenPane = model.getFrozenRowsCount(sheet) > 0 || model.getFrozenColumnsCount(sheet) > 0
     if (!hasFrozenPane) return null
@@ -56,11 +58,7 @@ function frozenSheetViewport(workbookRef: MutableRefObject<SheetWorkbookState | 
       leftColumn: view.left_column,
       topRow: view.top_row,
     }
-  } catch (error) {
-    if (!isReleasedWorkbookModelError(error)) throw error
-    console.warn('[sheet-editor] Skipped stale workbook viewport read:', error)
-    return null
-  }
+  })
 }
 
 function sheetScrollSnapshot(
@@ -123,11 +121,7 @@ function focusWorkbookForPointerDown({
   sheetElementRef,
   sheetFocusRequestRef,
   sheetKeyboardCapturedRef,
-}: Pick<UseSheetPointerHandlersOptions,
-  | 'sheetElementRef'
-  | 'sheetFocusRequestRef'
-  | 'sheetKeyboardCapturedRef'
->) {
+}: Pick<UseSheetPointerHandlersOptions, 'sheetElementRef' | 'sheetFocusRequestRef' | 'sheetKeyboardCapturedRef'>) {
   sheetFocusRequestRef.current += 1
   const container = sheetElementRef.current
   if (!container || !sheetKeyboardCapturedRef.current) return
@@ -155,46 +149,55 @@ export function useSheetPointerHandlers(options: UseSheetPointerHandlersOptions)
     workbookRef,
   } = options
 
-  const handlePointerDownCapture = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    if (isTransientUiPointerTarget(event.target)) return
-    if (handleSheetWikilinkPointerDown(event)) return
-    if (stopSecondaryPointer(event)) return
+  const handlePointerDownCapture = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (isTransientUiPointerTarget(event.target)) return
+      if (handleSheetWikilinkPointerDown(event)) return
+      if (stopSecondaryPointer(event)) return
 
-    const scrollSnapshot = sheetScrollSnapshot(sheetElementRef.current, workbookRef)
-    const activeInput = visibleSheetTextInput(sheetElementRef.current)
-    if (!commitSheetTextInput(activeInput)) {
-      commitExternalFormulaEditorInput(activeInput)
-    }
-    patchReactSheetPointerEvent(event, sheetElementRef.current)
-    sheetPointerActiveRef.current = true
-    captureSheetKeyboard({ deferActiveState: true })
-    scheduleSelectionChromePatch()
-    setSheetContextMenu(null)
-    setWikilinkAutocomplete(null)
-    if (shouldRequestWorkbookFocus(event, sheetElementRef)) focusWorkbookForPointerDown(options)
-    restoreSheetScrollAfterPointerDown(scrollSnapshot, workbookRef)
-  }, [
-    captureSheetKeyboard,
-    commitExternalFormulaEditorInput,
-    commitSheetTextInput,
-    handleSheetWikilinkPointerDown,
-    options,
-    scheduleSelectionChromePatch,
-    setSheetContextMenu,
-    setWikilinkAutocomplete,
-    sheetElementRef,
-    sheetPointerActiveRef,
-    workbookRef,
-  ])
+      const scrollSnapshot = sheetScrollSnapshot(sheetElementRef.current, workbookRef)
+      const activeInput = visibleSheetTextInput(sheetElementRef.current)
+      if (!commitSheetTextInput(activeInput)) {
+        commitExternalFormulaEditorInput(activeInput)
+      }
+      patchReactSheetPointerEvent(event, sheetElementRef.current)
+      sheetPointerActiveRef.current = true
+      captureSheetKeyboard({ deferActiveState: true })
+      scheduleSelectionChromePatch()
+      setSheetContextMenu(null)
+      setWikilinkAutocomplete(null)
+      if (shouldRequestWorkbookFocus(event, sheetElementRef)) focusWorkbookForPointerDown(options)
+      restoreSheetScrollAfterPointerDown(scrollSnapshot, workbookRef)
+    },
+    [
+      captureSheetKeyboard,
+      commitExternalFormulaEditorInput,
+      commitSheetTextInput,
+      handleSheetWikilinkPointerDown,
+      options,
+      scheduleSelectionChromePatch,
+      setSheetContextMenu,
+      setWikilinkAutocomplete,
+      sheetElementRef,
+      sheetPointerActiveRef,
+      workbookRef,
+    ],
+  )
 
-  const handlePointerMoveCapture = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    if (sheetPointerActiveRef.current) patchReactSheetPointerEvent(event, sheetElementRef.current)
-  }, [sheetElementRef, sheetPointerActiveRef])
+  const handlePointerMoveCapture = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (sheetPointerActiveRef.current) patchReactSheetPointerEvent(event, sheetElementRef.current)
+    },
+    [sheetElementRef, sheetPointerActiveRef],
+  )
 
-  const handlePointerUpCapture = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    patchReactSheetPointerEvent(event, sheetElementRef.current)
-    scheduleSelectionChromePatch()
-  }, [scheduleSelectionChromePatch, sheetElementRef])
+  const handlePointerUpCapture = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      patchReactSheetPointerEvent(event, sheetElementRef.current)
+      scheduleSelectionChromePatch()
+    },
+    [scheduleSelectionChromePatch, sheetElementRef],
+  )
 
   return {
     handlePointerDownCapture,
