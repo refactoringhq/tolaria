@@ -1,32 +1,32 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
 import type { MutableRefObject } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useSheetWikilinkNavigation } from '../../hooks/useSheetWikilinkNavigation'
 import type { AppLocale } from '../../lib/i18n'
+import type { VaultEntry } from '../../types'
 import { buildRawEditorBaseItems } from '../../utils/rawEditorUtils'
 import type { SheetContextMenuState } from '../../utils/sheetContextMenuState'
 import { SHEET_INDEX } from '../../utils/sheetWorkbook'
 import { buildTypeEntryMap } from '../../utils/typeColors'
-import type { VaultEntry } from '../../types'
 import {
-  sheetCellFromPointer,
   type FormulaAutocompleteState,
   type SheetWikilinkAutocompleteState,
+  sheetCellFromPointer,
 } from './sheetEditorHelpers'
+import { skipIfReleasedWorkbookModel } from './sheetReleasedModel'
+import { useGuardedWorkbookFocus } from './useGuardedWorkbookFocus'
 import { useSheetCellInputCommit } from './useSheetCellInputCommit'
 import { useSheetClipboardActions } from './useSheetClipboardActions'
 import { useSheetContextMenuActions } from './useSheetContextMenuActions'
 import { useSheetContextMenuCapture } from './useSheetContextMenuCapture'
 import { useSheetExternalFormulaResolution } from './useSheetExternalFormulaResolution'
-import { useGuardedWorkbookFocus } from './useGuardedWorkbookFocus'
-import { useSheetInputActivityHandlers } from './useSheetInputActivityHandlers'
 import { useSheetInlineAutocompletes } from './useSheetInlineAutocompletes'
+import { useSheetInputActivityHandlers } from './useSheetInputActivityHandlers'
 import { useSheetKeyboardFocus } from './useSheetKeyboardFocus'
 import { useSheetKeyboardHandlers } from './useSheetKeyboardHandlers'
 import { useSheetKeyboardReleaseOutside } from './useSheetKeyboardReleaseOutside'
 import { useSheetPointerCoordinatePatching } from './useSheetPointerCoordinatePatching'
 import { useSheetPointerHandlers } from './useSheetPointerHandlers'
 import { useSheetSelectionChrome } from './useSheetSelectionChrome'
-import { isReleasedWorkbookModelError } from './sheetReleasedModel'
 import { useSheetWorkbookController } from './useSheetWorkbookController'
 
 interface SheetEditorControllerOptions {
@@ -77,83 +77,83 @@ function useSheetEditorWorkbookRuntime(
   const { content, entries, onContentChange, path, sourceEntry, pendingExternalFormulaCommitRef, sheetElementRef } =
     options
   const {
-        buildLiveExternalFormulaContext,
-        externalFormulaContextForBuild,
-        nativeExternalFormulaInputsForBuild,
-        shouldWaitForInitialExternalFormulaResolution,
-      } = useSheetExternalFormulaResolution({
-        content,
-        entries,
-        path,
-        sourceEntry,
-      })
+    buildLiveExternalFormulaContext,
+    externalFormulaContextForBuild,
+    nativeExternalFormulaInputsForBuild,
+    shouldWaitForInitialExternalFormulaResolution,
+  } = useSheetExternalFormulaResolution({
+    content,
+    entries,
+    path,
+    sourceEntry,
+  })
 
-      const workbookRuntime = useSheetWorkbookController({
-        content,
-        externalFormulaContextForBuild,
-        nativeExternalFormulaInputsForBuild,
-        onContentChange,
-        path,
-        pendingExternalFormulaCommitRef,
-        shouldWaitForInitialExternalFormulaResolution,
-      })
-      const scheduleSelectionChromePatch = useSheetSelectionChrome({
-        refreshWorkbook: workbookRuntime.refreshWorkbook,
-        sheetElementRef,
-        workbook: workbookRuntime.workbook,
-      })
-      const sheetPointerActiveRef = useSheetPointerCoordinatePatching({
-        sheetElementRef,
-      })
+  const workbookRuntime = useSheetWorkbookController({
+    content,
+    externalFormulaContextForBuild,
+    nativeExternalFormulaInputsForBuild,
+    onContentChange,
+    path,
+    pendingExternalFormulaCommitRef,
+    shouldWaitForInitialExternalFormulaResolution,
+  })
+  const scheduleSelectionChromePatch = useSheetSelectionChrome({
+    refreshWorkbook: workbookRuntime.refreshWorkbook,
+    sheetElementRef,
+    workbook: workbookRuntime.workbook,
+  })
+  const sheetPointerActiveRef = useSheetPointerCoordinatePatching({
+    sheetElementRef,
+  })
 
-      return {
-        ...workbookRuntime,
-        buildLiveExternalFormulaContext,
-        scheduleSelectionChromePatch,
-        sheetPointerActiveRef,
-      }
-    }
+  return {
+    ...workbookRuntime,
+    buildLiveExternalFormulaContext,
+    scheduleSelectionChromePatch,
+    sheetPointerActiveRef,
+  }
+}
 
-    type SheetEditorWorkbookRuntime = ReturnType<typeof useSheetEditorWorkbookRuntime>
+type SheetEditorWorkbookRuntime = ReturnType<typeof useSheetEditorWorkbookRuntime>
 
-    function useSheetEditorKeyboardRuntime({
-      scheduleSelectionChromePatch,
-      setFormulaAutocomplete,
-      setSheetContextMenu,
-      setWikilinkAutocomplete,
-      sheetElementRef,
-    }: Pick<SheetEditorWorkbookRuntime, 'scheduleSelectionChromePatch'> &
-      Pick<
-        SheetEditorState,
-        'setFormulaAutocomplete' | 'setSheetContextMenu' | 'setWikilinkAutocomplete' | 'sheetElementRef'
-      >) {
-      return useSheetKeyboardFocus({
-        scheduleSelectionChromePatch,
-        setFormulaAutocomplete,
-        setSheetContextMenu,
-        setWikilinkAutocomplete,
-        sheetElementRef,
-      })
-    }
+function useSheetEditorKeyboardRuntime({
+  scheduleSelectionChromePatch,
+  setFormulaAutocomplete,
+  setSheetContextMenu,
+  setWikilinkAutocomplete,
+  sheetElementRef,
+}: Pick<SheetEditorWorkbookRuntime, 'scheduleSelectionChromePatch'> &
+  Pick<
+    SheetEditorState,
+    'setFormulaAutocomplete' | 'setSheetContextMenu' | 'setWikilinkAutocomplete' | 'sheetElementRef'
+  >) {
+  return useSheetKeyboardFocus({
+    scheduleSelectionChromePatch,
+    setFormulaAutocomplete,
+    setSheetContextMenu,
+    setWikilinkAutocomplete,
+    sheetElementRef,
+  })
+}
 
-    type SheetEditorKeyboardRuntime = ReturnType<typeof useSheetEditorKeyboardRuntime>
+type SheetEditorKeyboardRuntime = ReturnType<typeof useSheetEditorKeyboardRuntime>
 
-    function useSheetEditorContextRuntime(
-      options: Pick<SheetEditorKeyboardRuntime, 'captureSheetKeyboard'> &
-        Pick<
-          SheetEditorWorkbookRuntime,
-          'refreshWorkbook' | 'scheduleSelectionChromePatch' | 'scheduleSerialize' | 'workbookRef'
-        > &
-        Pick<SheetEditorState, 'setSheetContextMenu' | 'sheetElementRef'>,
-    ) {
-      const {
-      captureSheetKeyboard,
-      refreshWorkbook,
-      scheduleSelectionChromePatch,
-      scheduleSerialize,
-      setSheetContextMenu,
-      sheetElementRef,
-      workbookRef,
+function useSheetEditorContextRuntime(
+  options: Pick<SheetEditorKeyboardRuntime, 'captureSheetKeyboard'> &
+    Pick<
+      SheetEditorWorkbookRuntime,
+      'refreshWorkbook' | 'scheduleSelectionChromePatch' | 'scheduleSerialize' | 'workbookRef'
+    > &
+    Pick<SheetEditorState, 'setSheetContextMenu' | 'sheetElementRef'>,
+) {
+  const {
+    captureSheetKeyboard,
+    refreshWorkbook,
+    scheduleSelectionChromePatch,
+    scheduleSerialize,
+    setSheetContextMenu,
+    sheetElementRef,
+    workbookRef,
   } = options
   const contextActions = useSheetContextMenuActions({
     refreshWorkbook,
@@ -261,44 +261,7 @@ function useSheetEditorAutocompleteRuntime(
       | 'wikilinkInputRef'
     >,
 ) {
-  const {
-    commitSelectedCellInput,
-    entries,
-    formulaAutocomplete,
-    formulaInputRef,
-    locale,
-    refreshWorkbook,
-    scheduleSerialize,
-    setFormulaAutocomplete,
-    setWikilinkAutocomplete,
-    sheetElementRef,
-    sourceEntry,
-    typeEntryMap,
-    vaultPath,
-    wikilinkAutocomplete,
-    wikilinkBaseItems,
-    wikilinkInputRef,
-    workbookRef,
-  } = options
-  return useSheetInlineAutocompletes({
-    commitSelectedCellInput,
-    entries,
-    formulaAutocomplete,
-    formulaInputRef,
-    locale,
-    refreshWorkbook,
-    scheduleSerialize,
-    setFormulaAutocomplete,
-    setWikilinkAutocomplete,
-    sheetElementRef,
-    sourceEntry,
-    typeEntryMap,
-    vaultPath,
-    wikilinkAutocomplete,
-    wikilinkBaseItems,
-    wikilinkInputRef,
-    workbookRef,
-  })
+  return useSheetInlineAutocompletes(options)
 }
 
 type SheetEditorAutocompleteRuntime = ReturnType<typeof useSheetEditorAutocompleteRuntime>
@@ -465,14 +428,7 @@ type SheetEditorClipboardRuntime = ReturnType<typeof useSheetEditorClipboardRunt
 type SheetEditorContextRuntime = ReturnType<typeof useSheetEditorContextRuntime>
 
 function guardSheetInteraction<Args extends unknown[]>(handler: (...args: Args) => void) {
-  return (...args: Args) => {
-    try {
-      handler(...args)
-    } catch (error) {
-      if (!isReleasedWorkbookModelError(error)) throw error
-      console.warn('[sheet-editor] Skipped stale workbook interaction:', error)
-    }
-  }
+  return (...args: Args) => skipIfReleasedWorkbookModel('interaction', undefined, () => handler(...args))
 }
 
 function useSheetEditorInteractionHandlers(
@@ -500,32 +456,32 @@ function useSheetEditorInteractionHandlers(
   } = options
   return useMemo(
     () => ({
-    onBlurCapture: guardSheetInteraction(handleBlurCapture),
-    onCopyCapture: guardSheetInteraction(handleCopyCapture),
-    onCutCapture: guardSheetInteraction(handleCutCapture),
-    onContextMenuCapture: guardSheetInteraction(handleContextMenuCapture),
-    onInputCapture: guardSheetInteraction(handleInputCapture),
-    onKeyDown: guardSheetInteraction(handleSheetKeyDown),
-    onKeyDownCapture: guardSheetInteraction(handleKeyDownCapture),
-    onKeyUpCapture: guardSheetInteraction(handleKeyUpCapture),
-    onPasteCapture: guardSheetInteraction(handlePasteCapture),
-    onPointerDownCapture: guardSheetInteraction(handlePointerDownCapture),
-    onPointerMoveCapture: guardSheetInteraction(handlePointerMoveCapture),
-    onPointerUpCapture: guardSheetInteraction(handlePointerUpCapture),
+      onBlurCapture: guardSheetInteraction(handleBlurCapture),
+      onCopyCapture: guardSheetInteraction(handleCopyCapture),
+      onCutCapture: guardSheetInteraction(handleCutCapture),
+      onContextMenuCapture: guardSheetInteraction(handleContextMenuCapture),
+      onInputCapture: guardSheetInteraction(handleInputCapture),
+      onKeyDown: guardSheetInteraction(handleSheetKeyDown),
+      onKeyDownCapture: guardSheetInteraction(handleKeyDownCapture),
+      onKeyUpCapture: guardSheetInteraction(handleKeyUpCapture),
+      onPasteCapture: guardSheetInteraction(handlePasteCapture),
+      onPointerDownCapture: guardSheetInteraction(handlePointerDownCapture),
+      onPointerMoveCapture: guardSheetInteraction(handlePointerMoveCapture),
+      onPointerUpCapture: guardSheetInteraction(handlePointerUpCapture),
     }),
     [
-    handleBlurCapture,
-    handleContextMenuCapture,
-    handleCopyCapture,
-    handleCutCapture,
-    handleInputCapture,
-    handleKeyDownCapture,
-    handleKeyUpCapture,
-    handlePasteCapture,
-    handlePointerDownCapture,
-    handlePointerMoveCapture,
-    handlePointerUpCapture,
-    handleSheetKeyDown,
+      handleBlurCapture,
+      handleContextMenuCapture,
+      handleCopyCapture,
+      handleCutCapture,
+      handleInputCapture,
+      handleKeyDownCapture,
+      handleKeyUpCapture,
+      handlePasteCapture,
+      handlePointerDownCapture,
+      handlePointerMoveCapture,
+      handlePointerUpCapture,
+      handleSheetKeyDown,
     ],
   )
 }
@@ -535,10 +491,10 @@ export function useSheetEditorController(options: SheetEditorControllerOptions) 
   const { setFormulaAutocomplete } = state
   const selectFormulaAutocompleteIndex = useCallback(
     (index: number) => {
-    setFormulaAutocomplete((current) => {
-      if (!current) return null
-      return { ...current, selectedIndex: index }
-    })
+      setFormulaAutocomplete((current) => {
+        if (!current) return null
+        return { ...current, selectedIndex: index }
+      })
     },
     [setFormulaAutocomplete],
   )

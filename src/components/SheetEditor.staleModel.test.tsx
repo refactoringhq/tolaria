@@ -1,6 +1,11 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createClipboardData, getIronCalcMock, resetSheetEditorTestState } from './SheetEditor.testUtils'
+import {
+  createClipboardData,
+  getIronCalcMock,
+  markWorkbookDirtyForTest,
+  resetSheetEditorTestState,
+} from './SheetEditor.testUtils'
 import { SheetEditor } from './SheetEditor'
 import { TOLARIA_SHEET_CLIPBOARD_MIME } from '../utils/sheetClipboard'
 
@@ -55,6 +60,47 @@ describe('SheetEditor stale workbook model recovery', () => {
       () => fireEvent.input(screen.getByLabelText<HTMLInputElement>('Formula')),
       '[sheet-editor] Skipped stale workbook selection read:',
     )
+  })
+
+  it('keeps pending edits dirty when serialization hits a transient released-model error', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const onContentChange = vi.fn()
+    const flushContentRef = { current: null as ((path: string) => void) | null }
+    const { unmount } = render(
+      <SheetEditor
+        content={sheetContent}
+        flushContentRef={flushContentRef}
+        onContentChange={onContentChange}
+        path={sheetPath}
+      />,
+    )
+    await screen.findByTestId('ironcalc-workbook')
+    const model = ironCalcMock.state.lastModel
+    expect(model).not.toBeNull()
+    if (!model) throw new Error('Expected the sheet workbook model to be loaded')
+    model.setUserInput(0, 1, 1, 'Updated Metric')
+    markWorkbookDirtyForTest()
+    vi.spyOn(model, 'getCellContent').mockImplementationOnce(() => {
+      throw new Error('null pointer passed to rust')
+    })
+
+    try {
+      act(() => flushContentRef.current?.(sheetPath))
+      expect(onContentChange).not.toHaveBeenCalled()
+      expect(warn).toHaveBeenCalledWith(
+        '[sheet-editor] Skipped stale workbook serialization:',
+        expect.any(Error),
+      )
+
+      act(() => flushContentRef.current?.(sheetPath))
+      expect(onContentChange).toHaveBeenCalledWith(
+        sheetPath,
+        '---\ntype: Sheet\n---\nUpdated Metric,January',
+      )
+    } finally {
+      unmount()
+      warn.mockRestore()
+    }
   })
 
   it('does not surface stale workbook pointer interactions after native model release', async () => {
