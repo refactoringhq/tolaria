@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import {
 	createMobileAnalytics,
+	type MobileAnalyticsBody,
 	type MobileAnalyticsEvent,
 } from "./mobileAnalytics";
 
 function setup() {
 	const send = vi
-		.fn<(_body: unknown, _signal: AbortSignal) => Promise<void>>()
+		.fn<(_body: MobileAnalyticsBody, _signal: AbortSignal) => Promise<void>>()
 		.mockResolvedValue(undefined);
 	const createId = vi.fn(() => "anonymous-session");
 	return {
@@ -49,7 +50,10 @@ describe("consent-bound mobile analytics", () => {
 	});
 
 	it("records task toggle state without note content", () => {
-		expectEvent({ name: "mobile_note_task_toggled", state: "checked" }, { state: "checked" });
+		expectEvent(
+			{ name: "mobile_note_task_toggled", state: "checked" },
+			{ state: "checked" },
+		);
 	});
 
 	it("records deep-link outcomes without vault or note identifiers", () => {
@@ -64,6 +68,60 @@ describe("consent-bound mobile analytics", () => {
 			{ name: "mobile_editor_tool_opened", tool: "find" },
 			{ tool: "find" },
 		);
+	});
+
+	it("records bounded onboarding event categories", () => {
+		expectEvent(
+			{ name: "mobile_vault_created", kind: "folder" },
+			{ kind: "folder" },
+		);
+		expectEvent(
+			{
+				name: "mobile_github_sign_in_completed",
+				outcome: "failed",
+				failure_kind: "network",
+			},
+			{ outcome: "failed", failure_kind: "network" },
+		);
+		expectEvent(
+			{
+				name: "mobile_git_clone_completed",
+				outcome: "success",
+				duration_bucket: "30-120s",
+			},
+			{ outcome: "success", duration_bucket: "30-120s" },
+		);
+	});
+
+	it("excludes raw onboarding error and repository data", () => {
+		const event: MobileAnalyticsEvent & {
+			repositoryUrl: string;
+			path: string;
+			username: string;
+			error: string;
+		} = {
+			name: "mobile_git_clone_completed",
+			outcome: "failed",
+			duration_bucket: "<10s",
+			failure_kind: "unknown",
+			repositoryUrl: "https://github.com/private/repo",
+			path: "/private/notes.md",
+			username: "private-user",
+			error: "raw response",
+		};
+		const { analytics, send } = setup();
+		analytics.setEnabled(true);
+		analytics.capture(event);
+		const properties = send.mock.calls[0]?.[0].properties;
+		expect(properties).toMatchObject({
+			outcome: "failed",
+			duration_bucket: "<10s",
+			failure_kind: "unknown",
+		});
+		expect(properties).not.toHaveProperty("repositoryUrl");
+		expect(properties).not.toHaveProperty("path");
+		expect(properties).not.toHaveProperty("username");
+		expect(properties).not.toHaveProperty("error");
 	});
 	it("does no work and creates no identifier before consent", () => {
 		const { analytics, send, createId } = setup();

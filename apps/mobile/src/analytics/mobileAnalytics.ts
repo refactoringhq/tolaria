@@ -32,6 +32,27 @@ export type MobileAnalyticsEvent =
 				| "commit_made";
 	  }
 	| { name: "mobile_git_clone_cancel_requested" }
+	| { name: "mobile_vault_created"; kind: "local" | "git" | "folder" }
+	| {
+			name: "mobile_github_sign_in_completed";
+			outcome: "success" | "cancelled";
+	  }
+	| {
+			name: "mobile_github_sign_in_completed";
+			outcome: "failed";
+			failure_kind: "network" | "denied" | "timeout" | "unknown";
+	  }
+	| {
+			name: "mobile_git_clone_completed";
+			outcome: "success" | "cancelled";
+			duration_bucket: "<10s" | "10-30s" | "30-120s" | "2-10m" | ">10m";
+	  }
+	| {
+			name: "mobile_git_clone_completed";
+			outcome: "failed";
+			duration_bucket: "<10s" | "10-30s" | "30-120s" | "2-10m" | ">10m";
+			failure_kind: "network" | "denied" | "timeout" | "unknown";
+	  }
 	| {
 			name: "mobile_folder_open_failed";
 			stage: "picker" | "import" | "catalog" | "prepare";
@@ -146,7 +167,57 @@ function eventProperties(event: MobileAnalyticsEvent): Record<string, string> {
 	if (event.name === "mobile_folder_open_failed") return { stage: event.stage };
 	if (event.name === "mobile_update_channel_selected")
 		return { channel: event.channel, outcome: event.outcome };
+	if (isOnboardingEvent(event)) return onboardingEventProperties(event);
 	return workspaceEventProperties(event);
+}
+
+type OnboardingEvent = Extract<
+	MobileAnalyticsEvent,
+	{
+		name:
+			| "mobile_vault_created"
+			| "mobile_github_sign_in_completed"
+			| "mobile_git_clone_completed";
+	}
+>;
+
+function isOnboardingEvent(
+	event: MobileAnalyticsEvent,
+): event is OnboardingEvent {
+	return (
+		event.name === "mobile_vault_created" ||
+		event.name === "mobile_github_sign_in_completed" ||
+		event.name === "mobile_git_clone_completed"
+	);
+}
+
+function onboardingEventProperties(
+	event: OnboardingEvent,
+): Record<string, string> {
+	if (event.name === "mobile_vault_created") return { kind: event.kind };
+	if (event.name === "mobile_github_sign_in_completed")
+		return signInEventProperties(event);
+	return cloneEventProperties(event);
+}
+
+function signInEventProperties(
+	event: Extract<OnboardingEvent, { name: "mobile_github_sign_in_completed" }>,
+): Record<string, string> {
+	return event.outcome === "failed"
+		? { outcome: event.outcome, failure_kind: event.failure_kind }
+		: { outcome: event.outcome };
+}
+
+function cloneEventProperties(
+	event: Extract<OnboardingEvent, { name: "mobile_git_clone_completed" }>,
+): Record<string, string> {
+	return event.outcome === "failed"
+		? {
+				outcome: event.outcome,
+				failure_kind: event.failure_kind,
+				duration_bucket: event.duration_bucket,
+			}
+		: { outcome: event.outcome, duration_bucket: event.duration_bucket };
 }
 
 function workspaceEventProperties(
