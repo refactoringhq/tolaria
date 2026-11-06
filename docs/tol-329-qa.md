@@ -1,4 +1,4 @@
-# TOL-329 Mobile Spacing Fix — Native QA Blocked by Provider Architecture
+# TOL-329 Mobile Spacing Fix — Pre-Merge Native QA Blocked
 
 ## Issue
 Mobile Alpha: styling and spacing missing app-wide in lists and sidebar (iPhone screenshots in Linear Resources).
@@ -9,104 +9,98 @@ TOL-315 commit `fe9b657c` (Nov 4) introduced dynamic Pressable style functions i
 ## Fix Applied
 Reverted to static style references in both components.
 
-**Commit SHA:** `58fee532` on branch `cursor/tol-329-mobile-spacing-fix-96d7`
+**Branch:** `cursor/tol-329-mobile-spacing-fix-96d7`  
+**Tested SHA:** `31e35010`
 
-## Linux Verification (Complete ✓)
+## Linux Verification — All Gates Passed ✓
 
 ```bash
 cd /agent/repos/tolaria
-git checkout cursor/tol-329-mobile-spacing-fix-96d7  # SHA: 58fee532
+git checkout cursor/tol-329-mobile-spacing-fix-96d7  # SHA: 31e35010
 pnpm install --frozen-lockfile
-pnpm mobile:typecheck  # ✓ passes
-pnpm mobile:lint       # ✓ passes
-pnpm mobile:test --run # ✓ 451 test files, 2741 tests passed, 52.94s
+
+# All commands run with preserved exit codes:
+pnpm mobile:typecheck  # EXIT_CODE=0
+pnpm mobile:lint       # EXIT_CODE=0
+pnpm mobile:test --run # EXIT_CODE=0
 ```
 
-**Test output confirmed:**
+**Test results:**
 ```
 Test Files  451 passed (451)
 Tests  2741 passed (2741)
-Duration  52.94s
+Duration  53.97s (transform 6.29s, setup 0ms, import 76.02s, tests 26.75s, environment 18.55s)
 ```
 
-## Native QA Status: Blocked by Architecture Limitation
+**Limitations:** Structural React Native Testing Library tests verify VDOM prop trees and calculated style objects. Cannot reproduce native iOS UIKit layout engine style flattening bugs. No regression test added.
 
-### Mac Setup (Verified)
-- Isolated worktree: `/Volumes/Jupiter/Workspace/tolaria-worktrees/tol329-native-qa`
-- Commit: `777277f4` (runtime fix HEAD before doc updates)
-- Metro: PID 48774, port 8083, localhost/[::1] listening
-- Dev binary: `com.tolaria.mobile.dev 0.2.0(1)`
-- URL schemes registered: `tolaria://`, `com.tolaria.mobile.dev://`
-- Expo dev-client URL: `tolaria://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8083`
+## Native QA Status — Pre-Merge Blocked by Architecture
 
-### Attempted Launch
-```
-tolaria://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8083%2F--%2F%3Fsource%3Dfixture%26layoutProbe%3D1%26phoneState%3Dlist
-```
+### Mac Worker Setup (Confirmed)
+- Worktree: `/Volumes/Jupiter/Workspace/tolaria-worktrees/tol329-native-qa @ 777277f4`
+- Metro: PID 48774, port 8083, localhost listening
+- Binary: `com.tolaria.mobile.dev 0.2.0(1)`
+- URL schemes: `tolaria://`, `com.tolaria.mobile.dev://` registered
+- Correct dev-client URL: `tolaria://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8083%2F...`
 
-**Result:** `MobileWorkspaceLoadFailure` error UI (screenshot: /home/ubuntu/.cursor/projects/agent-repos-tolaria/assets/before-list-fixture-0cc5cda52.png)
+### Attempted Result
+Launched dev-client URL with `source=fixture&layoutProbe=1&phoneState=list` params → `MobileWorkspaceLoadFailure` error UI displayed.
 
-### Root Cause Analysis (Source-Backed)
+### Architectural Blocker (Source-Backed)
 
 **File:** `apps/mobile/App.tsx:31`
 ```tsx
 <MobileVaultProvider><MobileUiLab /></MobileVaultProvider>
 ```
 
-**File:** `apps/mobile/src/workspace/MobileVaultProvider.tsx:34-37`
+**File:** `apps/mobile/src/workspace/MobileVaultProvider.tsx:16,19,34-37`
 ```tsx
-{recovery?.reason ? <MobileWorkspaceLoadFailure onManage={open} onRetry={recovery.retry} reason={recovery.reason} /> :
-  <MobileWorkspaceStartup preview={manager.catalog.preview} pending={restorePending} hasActiveWorkspace={Boolean(active.selection)}
-    onSelectNote={manager.catalog.selectPreviewNote}>
-    {children}
-  </MobileWorkspaceStartup>}
+const manager = useMobileVaults()  // line 16: native Git vault catalog manager
+const recovery = workspaceRecovery(manager)  // line 19: derives recovery state
+
+{recovery?.reason ?   // line 34: if recovery reason exists
+  <MobileWorkspaceLoadFailure onManage={open} onRetry={recovery.retry} reason={recovery.reason} /> :
+  <MobileWorkspaceStartup ...>{children}</MobileWorkspaceStartup>
+}
 ```
 
 **Blocking logic:**
-1. `MobileVaultProvider` (line 16) calls `useMobileVaults()` — manages native Git vault catalog/state
-2. Line 19: `const recovery = workspaceRecovery(manager)` derives recovery state
-3. Line 34: If `recovery?.reason` is truthy, renders `MobileWorkspaceLoadFailure` and `children` (`<MobileUiLab />`) never mounts
-4. `MobileUiLab` reads `source=fixture` param to use synthetic data (line 120: `workspaceSource` → `readOnlyWorkspaceRepository`)
-5. BUT `MobileUiLab` is wrapped inside `MobileVaultProvider` which can prevent mounting based on native vault manager state
+1. Production app wraps `<MobileUiLab />` in `<MobileVaultProvider />`
+2. Provider calls `useMobileVaults()` — manages native Git vault catalog/persistence state
+3. If `recovery?.reason` is truthy (catalog error, failed vault restore, etc.), provider renders error UI
+4. When error UI shown, `children` (`<MobileUiLab />`) never mounts
+5. `MobileUiLab` reads `source=fixture` to use synthetic data, but it's inside provider wrapper
+6. Provider blocks mounting based on native vault manager state regardless of `source=fixture` param
 
-**Architectural constraint:** Production app architecture requires `MobileVaultProvider` wrapper for native vault management. QA fixture mode (`source=fixture`) bypasses vault data but not the provider wrapper. If native vault manager has recovery state (catalog error, failed vault restore, etc.), provider shows error UI regardless of `source=fixture` param.
+**Why XCUITest works:** `apps/mobile/native-ui-tests/*.swift` (100+ files) use `--tolaria-mobile-search` launch argument in controlled fresh-install test lifecycle with clean simulator state and no persisted vault catalog errors.
 
-### Why Native UI Tests Work
+## Options for Pre-Merge Native Verification
 
-**File:** `apps/mobile/src/native/mobileNativeKeyCommandsContract.ts:24`
-```ts
-export const mobileLaunchSearchArgumentName = '--tolaria-mobile-search'
-```
+**Option 1 — Test harness change (requires parent approval):**
+- Conditionally skip `MobileVaultProvider` wrapper when `source=fixture` param present
+- Scope: `apps/mobile/App.tsx` modifications (~5-10 lines), possibly new fixture shell component
+- Risk: Non-production code path; must be clearly isolated/feature-flagged
 
-**Usage:** `apps/mobile/native-ui-tests/*.swift` (100+ XCUITest files)
-```swift
-app.launchArguments = ["--tolaria-mobile-search", "?source=fixture&layoutProbe=1&qaRun=..."]
-```
+**Option 2 — Post-merge Alpha verification:**
+- Merge to `main` → Alpha OTA publishes → verify on installed Alpha channel app
+- Native spacing verification happens post-merge only
 
-XCUITest launches bypass provider issues through controlled app lifecycle (fresh install, clean simulator state, no persisted vault catalog errors).
-
-### Minimal Test Harness Change Proposal
-
-To verify spacing fix without altering production runtime behavior, one option:
-
-**Scope:** Add fixture-only entry point that conditionally skips `MobileVaultProvider` when `source=fixture` param present
-**Files:** `apps/mobile/App.tsx` (5-10 lines), possibly new `apps/mobile/src/screens/MobileUiLabFixtureShell.tsx`
-**Risk:** Adds non-production code path; must be feature-flagged/clearly isolated
-**Alternative:** Await Alpha OTA merge for post-merge visual verification on installed app
-
-**This proposal requires parent approval before implementation.** Not proceeding with runtime/harness changes beyond authorized two-component fix.
+**Option 3 — Accept limitation:**
+- Rely on Linux gates (passed) + post-merge Alpha verification
+- Document that pre-merge native QA architecturally blocked by provider design
 
 ## Current Status
 
-**Fix:** Complete, tested on Linux
-**PR:** https://github.com/refactoringhq/tolaria/pull/1320
-**CI:** Checks queued
-**Native QA:** Blocked by provider architecture (source-documented above)
-**Linear TOL-329:** In Progress (Karn/cloud exclusive ownership)
+**Runtime fix:** Complete (2 components, static style revert)  
+**Linux gates:** ✓ All passed (exit code 0: typecheck, lint, 451 test files/2741 tests)  
+**Native QA:** Blocked pre-merge by `MobileVaultProvider` architecture  
+**Tested SHA:** `31e35010`  
+**PR:** https://github.com/refactoringhq/tolaria/pull/1320  
+**Linear:** TOL-329 In Progress
 
-**Options:**
-1. Parent approves minimal fixture-shell test harness (scope/files/risks above)
-2. Merge to main, verify on installed Alpha channel app (post-merge only)
-3. Accept structural limitation, rely on Linux gates + production Alpha verification
+**No spacing verification from structural tests.** Native spacing can only be verified through:
+1. Option 1 test harness (if approved) on Mac worker's isolated setup
+2. Option 2 post-merge on installed Alpha channel app  
+3. Option 3 post-merge production verification
 
-No main merge/push/OTA/release/Apple changes without explicit approval.
+**Awaiting parent decision on verification approach.**
