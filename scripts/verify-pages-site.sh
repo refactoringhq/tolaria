@@ -3,6 +3,7 @@
 # must be the landing page (not a VitePress page or a 404), and the docs,
 # release pages and updater manifests must all be present.
 # Usage: verify-pages-site.sh <site-dir> [landing-index.html]
+# Deployment trigger: v2026-11-06 stable manifest repair
 set -euo pipefail
 
 [[ $# -ge 1 && $# -le 2 ]] || { echo "Usage: $0 <site-dir> [landing-index.html]" >&2; exit 2; }
