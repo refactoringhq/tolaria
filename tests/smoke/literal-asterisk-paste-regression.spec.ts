@@ -1,6 +1,6 @@
-import fs from 'fs'
-import path from 'path'
-import { test, expect, type Page } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
+import fs from 'node:fs'
+import path from 'node:path'
 import { createFixtureVaultCopy, openFixtureVault, removeFixtureVaultCopy } from '../helpers/fixtureVault'
 
 let tempVaultDir: string
@@ -62,6 +62,39 @@ test('rich editor paste preserves literal SQL wildcard asterisks', async ({ page
   await expect.poll(() => fs.readFileSync(notePath, 'utf8'), { timeout: 10_000 }).toContain(sqlSnippet)
   expect(fs.readFileSync(notePath, 'utf8')).not.toContain('SELECT  FROM OPENQUERY')
 })
+
+test("pasting file-like text can be undone and redone", async ({ page }) => {
+	await openNote(page, "Literal Asterisk Paste");
+
+	const targetParagraph = page
+		.locator('.bn-editor [data-content-type="paragraph"]')
+		.filter({ hasText: "Paste target" })
+		.first();
+	await targetParagraph.click();
+	await page.keyboard.press("End");
+	await page.keyboard.press("Enter");
+
+	for (const pastedText of [
+		"example.py",
+		"notes.md",
+		"script.js",
+		"example.com",
+	]) {
+		await pasteText(page, pastedText);
+
+		await expect(page.locator(".bn-editor")).toContainText(pastedText, { timeout: 5_000 });
+		await page.keyboard.press(process.platform === "darwin" ? "Meta+Z" : "Control+Z");
+		await expect(page.locator(".bn-editor")).not.toContainText(pastedText);
+		await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+Z" : "Control+Shift+Z");
+		await expect(page.locator(".bn-editor")).toContainText(pastedText);
+		await page.keyboard.press(process.platform === "darwin" ? "Meta+Z" : "Control+Z");
+		await expect(page.locator(".bn-editor")).not.toContainText(pastedText);
+	}
+
+	await page.keyboard.type("ordinary text");
+	await page.keyboard.press(process.platform === "darwin" ? "Meta+Z" : "Control+Z");
+	await expect(page.locator(".bn-editor")).not.toContainText("ordinary text");
+});
 
 test('rich editor paste preserves Markdown links with inline-code labels @smoke', async ({ page }) => {
   const pageErrors: string[] = []
