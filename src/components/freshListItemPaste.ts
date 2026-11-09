@@ -24,6 +24,7 @@ type FreshListItemPasteOptions = {
 
 const LIST_ITEM_SELECTOR =
 	'[data-content-type="bulletListItem"], [data-content-type="checkListItem"]';
+const QUOTE_SELECTOR = '[data-content-type="quote"]';
 const MARKDOWN_INLINE_SIGNAL_RE =
 	/(?:\*\*|__)\S[\s\S]*?\S(?:\*\*|__)|(?<!\w)\*(?!\s)\S[^*\n]*\*(?!\w)|~~\S[\s\S]*?\S~~|`[^`\n]+`|\[[^\]\n]+\]\([^)]+\)/u;
 
@@ -85,6 +86,12 @@ function isEmptyListItemPaste(event: ClipboardEvent<HTMLDivElement>): boolean {
 	);
 }
 
+function isQuotePaste(event: ClipboardEvent<HTMLDivElement>): boolean {
+	const target = eventTargetElement(event.target);
+	const quote = target?.closest<HTMLElement>(QUOTE_SELECTOR);
+	return Boolean(quote && event.currentTarget.contains(quote));
+}
+
 function hasClipboardContent(
 	event: ClipboardEvent<HTMLDivElement>,
 	plainText: string,
@@ -109,13 +116,24 @@ function freshListItemContent(
 		: null;
 }
 
+function quotePasteContent(
+	editable: boolean,
+	event: ClipboardEvent<HTMLDivElement>,
+): string | null {
+	if (!editable || !isQuotePaste(event)) return null;
+	const text = event.clipboardData.getData("text/plain");
+	return text.length > 0 ? text : null;
+}
+
 export function handleFreshListItemPlainTextPaste({
 	editable,
 	editor,
 	event,
 	runEditorAction,
 }: FreshListItemPasteOptions): boolean {
-	const content = freshListItemContent(editable, event, editor);
+	const content =
+		quotePasteContent(editable, event) ??
+		freshListItemContent(editable, event, editor);
 	if (content === null) return false;
 
 	event.preventDefault();
