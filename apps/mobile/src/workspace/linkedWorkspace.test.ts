@@ -1,13 +1,8 @@
 import { expect, it, vi } from 'vitest'
 import { vaultSyncStatus } from '../components/vaults/useVaultSyncPresentation'
 import { persistWorkspaceOperations } from './git/workspaceWriteQueue'
-import {
-  isWorkspaceLinked,
-  syncLinkedWorkspace,
-  syncLinkedWorkspaceWithEditors,
-} from './linkedWorkspace'
+import { isWorkspaceLinked, syncLinkedWorkspace } from './linkedWorkspace'
 import type { NativeWorkspaceAccessModule } from './nativeWorkspaceAccess'
-import { createWorkspaceSyncEditors } from './workspaceSyncEditors'
 
 function nativeModule(
   sync: NonNullable<NativeWorkspaceAccessModule['syncLinkedWorkspace']>,
@@ -44,32 +39,6 @@ it('waits for local saves before reconciling and preserves the native conflict r
   await write
   expect(order).toEqual(['save', 'sync'])
   expect(result.conflict).toBe(true)
-})
-
-it('saves the active editor before linked sync and refreshes it after changes', async () => {
-  const events: string[] = []
-  const editors = createWorkspaceSyncEditors()
-  editors.register(async () => {
-    events.push('editor')
-    void persistWorkspaceOperations('linked-editor-sync', [
-      async () => {
-        events.push('disk')
-      },
-    ])
-    return () => events.push('resume')
-  }, 'note-one')
-  const refresh = vi.fn(() => {
-    events.push('refresh')
-  })
-  const native = nativeModule(async () => {
-    events.push('sync')
-    return { linked: true, changed: true, conflict: false }
-  })
-
-  await syncLinkedWorkspaceWithEditors('linked-editor-sync', editors, refresh, native)
-
-  expect(events).toEqual(['editor', 'disk', 'sync', 'refresh'])
-  expect(refresh).toHaveBeenCalledExactlyOnceWith('note-one')
 })
 
 it('reports inaccessible folders without claiming a successful sync', async () => {

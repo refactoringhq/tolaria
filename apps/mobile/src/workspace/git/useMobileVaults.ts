@@ -3,7 +3,7 @@ import { AppState } from 'react-native'
 import { useMobileAnalytics } from '../../analytics/useMobileAnalytics'
 import { useMobileSettings } from '../../settings/useMobileSettings'
 import { FolderOpenFailure, folderOpenMessage } from '../folderOpenFailure'
-import { isWorkspaceLinked, syncLinkedWorkspaceWithEditors } from '../linkedWorkspace'
+import { isWorkspaceLinked, syncLinkedWorkspace } from '../linkedWorkspace'
 import { syncFailureKind } from '../syncFailure'
 import type { VaultSyncState } from '../syncLedgerModel'
 import { useLinkedFolderSync } from '../useLinkedFolderSync'
@@ -115,8 +115,7 @@ type MobileVaultState = ReturnType<typeof useMobileVaultState>
 function useMobileVaultActions(state: MobileVaultState) {
   const perform = useVaultPerformer(state)
   const syncFolder = (root: string) => syncLinkedFolder({
-    active: state.active, editors: state.editors, notices: state.notices, setError: state.setError,
-    setStatus: state.setStatus, syncHistory: state.syncHistory, workspaceRefresh: state.workspaceRefresh,
+    notices: state.notices, setError: state.setError, setStatus: state.setStatus, syncHistory: state.syncHistory,
   }, root)
   const syncTask = createMobileVaultSyncTask({
     active: state.active,
@@ -346,10 +345,11 @@ async function executeVaultTask(context: VaultOperationContext, { task, networkS
   })
 }
 
-async function syncLinkedFolder(context: Pick<VaultOperationContext, 'active' | 'editors' | 'notices' | 'setError' | 'setStatus' | 'syncHistory' | 'workspaceRefresh'>, root: string) {
+// Runs inside performVaultOperation, whose saved-vault barrier already paused the
+// editors and refreshes them when this returns a change; pausing again is rejected.
+async function syncLinkedFolder(context: Pick<VaultOperationContext, 'notices' | 'setError' | 'setStatus' | 'syncHistory'>, root: string) {
   const pendingCheckpoint = context.syncHistory.pendingCheckpoint()
-  const result = await syncLinkedWorkspaceWithEditors(root, context.editors, (selectedNoteId) =>
-    context.workspaceRefresh.refresh(context.active, context.active, selectedNoteId))
+  const result = await syncLinkedWorkspace(root)
   if (!result.conflict) context.syncHistory.acknowledgePending(pendingCheckpoint)
   context.setStatus(result.conflict ? 'diverged' : 'synced')
   context.syncHistory.setProblem(result.conflict ? 'conflict' : null)
