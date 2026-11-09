@@ -43,6 +43,7 @@ function createFixture({ text = '```ts', blockType = 'paragraph' } = {}) {
     getTextCursorPosition: vi.fn(() => ({ block })),
     isEditable: true,
     updateBlock: vi.fn(),
+    setTextCursorPosition: vi.fn(),
   }
   const dom = document.createElement('div')
   vi.spyOn(dom, 'addEventListener').mockImplementation((type, listener) => {
@@ -74,6 +75,7 @@ describe('createRichEditorCodeBlockShortcutExtension', () => {
       props: { language: 'typescript' },
       content: [],
     })
+    expect(fixture.editor.setTextCursorPosition).toHaveBeenCalledWith('block-1', 'start')
     expect(event.preventDefault).toHaveBeenCalled()
     expect(trackEvent).toHaveBeenCalledWith('editor_code_block_created', { source: 'markdown_fence' })
     fixture.controller.abort()
@@ -103,7 +105,9 @@ describe('createRichEditorCodeBlockShortcutExtension', () => {
     wrapper.appendChild(document.createElement('pre')).appendChild(code)
     document.body.appendChild(wrapper)
     const cursor = document.createRange()
-    cursor.setStart(code.firstChild!, 1)
+    const codeText = code.firstChild
+    if (!codeText) throw new Error('Expected code block text')
+    cursor.setStart(codeText, 1)
     cursor.collapse(true)
     document.getSelection()?.removeAllRanges()
     document.getSelection()?.addRange(cursor)
