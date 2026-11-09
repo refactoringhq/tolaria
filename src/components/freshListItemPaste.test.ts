@@ -9,17 +9,19 @@ function makePasteFixture({
 	html = "",
 	text,
 	existingText = "",
+	targetType = "bulletListItem",
 	parsedContent = formattedInline,
 }: {
 	html?: string;
 	text: string;
 	existingText?: string;
+	targetType?: string;
 	parsedContent?: unknown[];
 }) {
 	const root = document.createElement("div");
 	const item = document.createElement("div");
 	const inline = document.createElement("div");
-	item.setAttribute("data-content-type", "bulletListItem");
+	item.setAttribute("data-content-type", targetType);
 	inline.textContent = existingText;
 	item.appendChild(inline);
 	root.appendChild(item);
@@ -54,6 +56,47 @@ function makePasteFixture({
 describe("handleFreshListItemPlainTextPaste", () => {
 	afterEach(() => {
 		document.body.innerHTML = "";
+	});
+
+	it.each([
+		{
+			html: "",
+			text: "Pasted quote text",
+			existingText: "",
+			name: "empty quote",
+		},
+		{
+			html: "<p><strong>Rich</strong> paste</p>",
+			text: "Rich paste",
+			existingText: "Existing quote",
+			name: "quote with text and rich clipboard",
+		},
+		{
+			html: "",
+			text: "First line\nSecond line",
+			existingText: "",
+			name: "multi-line quote",
+		},
+	])("keeps paste inside a $name", ({ html, text, existingText }) => {
+		const fixture = makePasteFixture({
+			html,
+			text,
+			existingText,
+			targetType: "quote",
+		});
+
+		expect(
+			handleFreshListItemPlainTextPaste({
+				editable: true,
+				editor: fixture.editor,
+				event: fixture.event,
+				runEditorAction: fixture.runEditorAction,
+			}),
+		).toBe(true);
+		expect(fixture.editor.insertInlineContent).toHaveBeenCalledWith(text, {
+			updateSelection: true,
+		});
+		expect(fixture.event.preventDefault).toHaveBeenCalled();
 	});
 
 	it("leaves HTML paste to the normal rich paste handler", () => {
