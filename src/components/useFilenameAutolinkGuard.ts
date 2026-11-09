@@ -118,6 +118,7 @@ export function useFilenameAutolinkGuard(editor: ReturnType<typeof useCreateBloc
       }
 
       tr.setMeta(FILENAME_AUTOLINK_GUARD_META, true)
+      tr.setMeta('addToHistory', false)
       applyingGuard = true
       tiptap.view.dispatch(tr)
       applyingGuard = false
