@@ -106,3 +106,90 @@ test("Markdown paste into an empty bullet renders bold and saves Markdown @smoke
 		.toContain(`- ${markdown}`);
 	await expect(items).toHaveCount(2);
 });
+
+test("pasting multiline text into a fresh quote stays quoted after save @smoke", async ({
+	page,
+}) => {
+	const source = "First quoted line\nSecond quoted line";
+	const trailingParagraph = page
+		.locator('.bn-editor [data-content-type="paragraph"]')
+		.last();
+	await trailingParagraph.click();
+	await page.keyboard.press("End");
+	await page.keyboard.press("Enter");
+	await page.keyboard.type("> ");
+
+	const quote = page.locator('.bn-editor [data-content-type="quote"]').last();
+	await expect(quote).toBeVisible();
+	const clipboardReady = await page.evaluate(async (value) => {
+		try {
+			await navigator.clipboard.writeText(value);
+			return true;
+		} catch {
+			return false;
+		}
+	}, source);
+	if (clipboardReady) {
+		await page.keyboard.press(
+			process.platform === "darwin" ? "Meta+V" : "Control+V",
+		);
+	} else {
+		await page.evaluate((value) => {
+			const clipboardData = new DataTransfer();
+			clipboardData.setData("text/plain", value);
+			const target =
+				window.getSelection()?.anchorNode?.parentElement ??
+				document.activeElement;
+			target?.dispatchEvent(
+				new ClipboardEvent("paste", {
+					bubbles: true,
+					cancelable: true,
+					clipboardData,
+				}),
+			);
+		}, source);
+	}
+
+	await expect(quote).toContainText("First quoted line");
+	await expect(quote).toContainText("Second quoted line");
+	await expect(
+		page.locator('.bn-editor [data-content-type="paragraph"]').last(),
+	).not.toContainText("First quoted line");
+	await page.keyboard.press("Control+s");
+	await expect
+		.poll(() => savedMarkdown.at(-1), { timeout: 10_000 })
+		.toContain("> First quoted line\n> Second quoted line");
+});
+
+test("rich HTML paste keeps its text inside a quote", async ({ page }) => {
+	const trailingParagraph = page
+		.locator('.bn-editor [data-content-type="paragraph"]')
+		.last();
+	await trailingParagraph.click();
+	await page.keyboard.press("End");
+	await page.keyboard.press("Enter");
+	await page.keyboard.type("> ");
+
+	const quote = page.locator('.bn-editor [data-content-type="quote"]').last();
+	await expect(quote).toBeVisible();
+	await page.evaluate(() => {
+		const clipboardData = new DataTransfer();
+		clipboardData.setData("text/html", "<p><strong>Rich quote</strong></p>");
+		clipboardData.setData("text/plain", "Rich quote");
+		const target = document.querySelector(
+			'.bn-editor [data-content-type="quote"] blockquote',
+		);
+		target?.dispatchEvent(
+			new ClipboardEvent("paste", {
+				bubbles: true,
+				cancelable: true,
+				clipboardData,
+			}),
+		);
+	});
+
+	await expect(quote).toContainText("Rich quote");
+	await expect(
+		page.locator('.bn-editor [data-content-type="paragraph"]').last(),
+	).not.toContainText("Rich quote");
+});
