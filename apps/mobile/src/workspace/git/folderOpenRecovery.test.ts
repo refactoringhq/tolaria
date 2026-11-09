@@ -79,7 +79,7 @@ vi.mock('../useVaultNotices', () => ({
 }))
 vi.mock('../linkedWorkspace', () => ({
   isWorkspaceLinked: () => state.linked,
-  syncLinkedWorkspaceWithEditors: (...args: unknown[]) => state.syncLinked(...args),
+  syncLinkedWorkspace: (...args: unknown[]) => state.syncLinked(...args),
 }))
 vi.mock('./usePreparedVaultRefresh', () => ({
   usePreparedVaultRefresh: () => ({ failed: false, refresh: state.refresh }),
