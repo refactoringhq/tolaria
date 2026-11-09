@@ -87,8 +87,8 @@ const CommitAuthorIdentity = ({ identity, locale }: { identity: GitAuthorIdentit
   return (
     <div className="space-y-1 text-xs" data-testid="commit-author-identity" hidden={hidden} aria-hidden={hidden}>
       <div className="flex items-center justify-between gap-3">
-        <span className="font-medium text-muted-foreground">{translate(locale, 'git.author.label')}</span>
-        <span className="truncate text-right font-mono text-[11px]">{formatOptionalAuthorIdentity(identity)}</span>
+        <span className="shrink-0 font-medium text-muted-foreground">{translate(locale, 'git.author.label')}</span>
+        <span className="min-w-0 truncate text-right font-mono text-[11px]">{formatOptionalAuthorIdentity(identity)}</span>
       </div>
       {warningText && <p className="text-[11px] leading-4 text-amber-700 dark:text-amber-300">{warningText}</p>}
     </div>
@@ -179,9 +179,9 @@ function CommitDialogActions(
     shortcutHint,
   } = options
   return (
-    <DialogFooter className="flex-row items-center justify-between sm:justify-between">
+    <DialogFooter className="flex-row flex-wrap items-center justify-between gap-y-3 sm:justify-between">
       <span className="text-[11px] text-muted-foreground">{shortcutHint}</span>
-      <div className="flex gap-2">
+      <div className="ml-auto flex gap-2">
         <CommitMessageGenerateButton
           isGeneratingMessage={isGeneratingMessage}
           locale={locale}
@@ -244,7 +244,7 @@ function CommitDialogView({ options }: { options: CommitDialogViewOptions }) {
   const { actionLabel, authorIdentity, copy, inputRef, isGeneratingMessage, locale, message, modifiedCount, onClose, onGenerateMessage, onGeneratedMessage, onKeyDown, onMessageChange, onOpenChange, onRepositoryChange, onSubmit, open, repositories, selectedRepositoryPath } = options
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="sm:max-w-[420px]">
+      <DialogContent showCloseButton={false} className="grid-cols-[minmax(0,1fr)] sm:max-w-[480px]">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>{copy.title}</DialogTitle>
