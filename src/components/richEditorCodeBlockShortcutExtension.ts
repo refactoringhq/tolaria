@@ -1,8 +1,8 @@
 import { createExtension } from '@blocknote/core'
 import { trackEvent } from '../lib/telemetry'
 import { isMac } from '../utils/platform'
-import { createTolariaCodeBlockOptions } from './codeBlockOptions'
 import { createCodeBlockLineNumberPlugin } from './codeBlockLineNumbers'
+import { createTolariaCodeBlockOptions } from './codeBlockOptions'
 import {
   consumeKeyboardEvent,
   createCaptureKeydownMount,
@@ -30,6 +30,7 @@ type ShortcutEditor = {
   getTextCursorPosition: () => { block?: RichEditorBlock }
   isEditable?: boolean
   prosemirrorView?: RichEditorView
+  setTextCursorPosition?: (targetBlock: string, placement?: 'start' | 'end') => void
   updateBlock: (id: string, update: never) => unknown
 }
 type CodeBlockCreationSource = 'keyboard_shortcut' | 'markdown_fence'
@@ -117,6 +118,7 @@ function turnIntoCodeBlock({
   editor.updateBlock(block.id, {
     ...update,
   } as never)
+  editor.setTextCursorPosition?.(block.id, 'start')
   editor.focus()
   trackEvent('editor_code_block_created', { source })
   return true
