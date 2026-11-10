@@ -3,6 +3,7 @@ import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MobileWorkspaceEditNotice } from "../components/workspace/MobileWorkspaceEditNotice";
 import type { MobileLayoutProbe } from "../qa/mobileLayoutProbe";
+import { mobileMotionFrameProbeEnabled } from "../qa/mobileMotionFrameLog";
 import { useMobileStyles } from "../ui/theme/useMobileTheme";
 import type { useHorizontalSwipe } from "../ui/useHorizontalSwipe";
 import type { useMobileEditorCommandRegistry } from "../workspace/mobileEditorCommands";
@@ -68,7 +69,11 @@ export function PhoneWorkspaceRoot(props: PhoneWorkspaceRootProps) {
 function PhoneWorkspaceContent(props: PhoneWorkspaceRootProps) {
 	return (
 		<PhoneWorkspaceTransition
+			motionProbeEnabled={
+				props.options.layoutProbe && mobileMotionFrameProbeEnabled
+			}
 			panelRail={props.panelRail}
+			phoneState={props.phoneState}
 			swipeHandlers={
 				props.panelRail.enabled ? undefined : props.transitionSwipeHandlers
 			}
