@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useMemo, useRef } from "react";
+import { Fragment, type ReactNode, useCallback, useMemo, useRef } from "react";
 import { type StyleProp, Vibration, View, type ViewStyle } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Swipeable, {
@@ -9,12 +9,14 @@ import Animated, {
 	FadeOutUp,
 	LinearTransition,
 	runOnJS,
+	type SharedValue,
 	SlideInLeft,
 	SlideOutLeft,
 	useReducedMotion,
 	useSharedValue,
 } from "react-native-reanimated";
 import { useMobileAnalytics } from "../../analytics/useMobileAnalytics";
+import { useMobileMotionFrameProbe } from "../../qa/mobileMotionFrameProbe";
 import { useMobileColors } from "../../ui/theme/useMobileTheme";
 import type { MobileNote } from "../../workspace/mobileWorkspaceModel";
 import { MobileNoteSwipeActions } from "./MobileNoteSwipeActions";
@@ -209,10 +211,16 @@ function SwipeableNoteRow({
 					overshootLeft={false}
 					simultaneousWithExternalGesture={fullSwipe}
 					renderRightActions={(_, translation) => (
-						<MobileNoteSwipeActions
-							{...actionProps}
-							translation={translation}
-						/>
+						<Fragment>
+							<MobileNoteSwipeActions
+								{...actionProps}
+								translation={translation}
+							/>
+							<SwipeTranslationMotionProbe
+								noteId={note.id}
+								translation={translation}
+							/>
+						</Fragment>
 					)}
 				>
 					{children}
@@ -220,6 +228,17 @@ function SwipeableNoteRow({
 			</View>
 		</GestureDetector>
 	);
+}
+
+function SwipeTranslationMotionProbe({
+	noteId,
+	translation,
+}: {
+	noteId: string;
+	translation: SharedValue<number>;
+}) {
+	useMobileMotionFrameProbe(`organize-swipe.${noteId}`, translation);
+	return null;
 }
 
 function emitSwipeHaptic() {

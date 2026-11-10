@@ -1,80 +1,89 @@
-import type { ReactNode } from 'react'
-import { StyleSheet } from 'react-native'
-import { Button } from '../components/ui/button'
-import { cn } from '../components/ui/utils'
-import { useMobileStyles } from './theme/useMobileTheme'
-import type { MobileColors } from './theme/mobilePalette'
-import type { MobileMetrics } from './mobileMetrics'
+import type { ReactNode } from "react";
+import { type LayoutChangeEvent, StyleSheet } from "react-native";
+import { Button } from "../components/ui/button";
+import { cn } from "../components/ui/utils";
+import type { MobileMetrics } from "./mobileMetrics";
+import type { MobileColors } from "./theme/mobilePalette";
+import { useMobileStyles } from "./theme/useMobileTheme";
 
-type MobileIconButtonDensity = 'default' | 'leading' | 'toolbar'
+type MobileIconButtonDensity = "default" | "leading" | "toolbar";
 
 export function MobileIconButton({
-  accessibilityLabel,
-  children,
-  density = 'toolbar',
-  onPress,
-  selected = false,
-  testID,
+	accessibilityLabel,
+	children,
+	density = "toolbar",
+	onPress,
+	onLayout,
+	selected = false,
+	testID,
 }: {
-  accessibilityLabel: string
-  children: ReactNode
-  density?: MobileIconButtonDensity
-  onPress?: () => void
-  selected?: boolean
-  testID?: string
+	accessibilityLabel: string;
+	children: ReactNode;
+	density?: MobileIconButtonDensity;
+	onPress?: () => void;
+	onLayout?: (event: LayoutChangeEvent) => void;
+	selected?: boolean;
+	testID?: string;
 }) {
-  const { styles, hitSlop } = useMobileStyles(createIconButtonStyles)
-  const presentation = getButtonPresentation(selected)
-  return (
-    <Button
-      accessibilityLabel={accessibilityLabel}
-      className={presentation.className}
-      hitSlop={hitSlop}
-      onPress={onPress}
-      size="icon"
-      style={StyleSheet.flatten(styles[density])}
-      testID={testID}
-      variant={presentation.variant}
-    >
-      {children}
-    </Button>
-  )
+	const { styles, hitSlop } = useMobileStyles(createIconButtonStyles);
+	const presentation = getButtonPresentation(selected);
+	return (
+		<Button
+			accessibilityLabel={accessibilityLabel}
+			className={presentation.className}
+			hitSlop={hitSlop}
+			onPress={onPress}
+			onLayout={onLayout}
+			size="icon"
+			style={StyleSheet.flatten(styles[density])}
+			testID={testID}
+			variant={presentation.variant}
+		>
+			{children}
+		</Button>
+	);
 }
 
 function getButtonPresentation(selected: boolean) {
-  if (selected) {
-    return { className: 'active:opacity-70 bg-accent', variant: 'secondary' as const }
-  }
-  return { className: cn('active:opacity-70', 'bg-transparent'), variant: 'ghost' as const }
+	if (selected) {
+		return {
+			className: "active:opacity-70 bg-accent",
+			variant: "secondary" as const,
+		};
+	}
+	return {
+		className: cn("active:opacity-70", "bg-transparent"),
+		variant: "ghost" as const,
+	};
 }
 
 function createIconButtonStyles(_colors: MobileColors, metrics: MobileMetrics) {
-  const desktopToolbarActionParity = metrics.toolbarAction
-  const compactButton = {
-    alignItems: 'center' as const,
-    flexDirection: 'row' as const,
-    width: metrics.size(36),
-    height: metrics.size(36),
-  }
-  const styles = StyleSheet.create({
-  default: {
-    ...compactButton,
-    justifyContent: 'center',
-    borderRadius: 6,
-  },
-  leading: {
-    ...compactButton,
-    justifyContent: 'flex-start',
-    borderRadius: 6,
-  },
-  toolbar: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: desktopToolbarActionParity.iconButtonSize,
-    height: desktopToolbarActionParity.iconButtonSize,
-    borderRadius: desktopToolbarActionParity.borderRadius,
-    flexDirection: 'row',
-  },
-  })
-  return { styles, hitSlop: desktopToolbarActionParity.hitSlop }
+	const desktopToolbarActionParity = metrics.toolbarAction;
+	const compactButton = {
+		alignItems: "center" as const,
+		flexDirection: "row" as const,
+		width: metrics.size(36),
+		height: metrics.size(36),
+	};
+	const styles = StyleSheet.create({
+		default: {
+			...compactButton,
+			justifyContent: "center",
+			borderRadius: 6,
+		},
+		leading: {
+			...compactButton,
+			justifyContent: "flex-start",
+			borderRadius: 6,
+		},
+		toolbar: {
+			alignItems: "center",
+			justifyContent: "center",
+			width: desktopToolbarActionParity.iconButtonSize,
+			height: desktopToolbarActionParity.iconButtonSize,
+			borderRadius: desktopToolbarActionParity.borderRadius,
+			flexDirection: "row",
+		},
+	});
+	return { styles, hitSlop: desktopToolbarActionParity.hitSlop };
 }
