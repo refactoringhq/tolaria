@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { workspaceScenarioForId } from '../fixtures/workspaceFixtures'
 import { applyMobileWorkspaceEditWithWrites, type MobileWorkspaceEdit } from '../workspace/mobileWorkspaceEditing'
 import type { MobileNote } from '../workspace/mobileWorkspaceModel'
@@ -62,6 +62,22 @@ describe('tablet workspace edit selection', () => {
 
     expect(selectedDefault).toBe(true)
     expect(selectedNoteIds).toEqual([result.snapshot.selectedNoteId])
+  })
+
+  it('tracks only a newly-created empty-title note as a discardable draft', () => {
+    const snapshot = workspaceScenarioForId('default')
+    const edit: MobileWorkspaceEdit = { title: '', type: 'createNote' }
+    const result = applyMobileWorkspaceEditWithWrites(snapshot, edit)
+    const markPristineNewNote = vi.fn()
+
+    selectAfterWorkspaceEdit({
+      edit,
+      navigation: inertNavigation({ markPristineNewNote }),
+      result,
+      setSelectedNoteId: () => {},
+    })
+
+    expect(markPristineNewNote).toHaveBeenCalledWith(result.snapshot.selectedNoteId)
   })
 
   it('selects the next rendered Inbox note after organizing the selected note', () => {
@@ -234,6 +250,7 @@ function inboxNote(source: MobileNote, overrides: Pick<MobileNote, 'id' | 'title
 }
 
 type InertNavigationForTest = {
+  markPristineNewNote?: (noteId: string) => void
   selectDefaultSidebarItem: () => void
   selectFolder: () => void
   selectSavedView: () => void
