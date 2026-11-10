@@ -45,6 +45,7 @@ run("ruby", [
 	project,
 ]);
 const resultBundle = join(output, `motion-${Date.now()}.xcresult`);
+const focusedCheck = process.env.TOLARIA_MOTION_CHECK;
 run(
 	"xcrun",
 	[
@@ -66,6 +67,8 @@ run("xcodebuild", [
 	join(output, "derived"),
 	"-resultBundlePath",
 	resultBundle,
+	"-collect-test-diagnostics",
+	"never",
 	"-parallel-testing-enabled",
 	"NO",
 	"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests",
@@ -79,6 +82,7 @@ const analysis = run(
 	[
 		fileURLToPath(new URL("./analyze-motion-frame-log.mjs", import.meta.url)),
 		logPath,
+		...(focusedCheck === "new-note" ? ["--new-note-only"] : []),
 	],
 	{ capture: true },
 );

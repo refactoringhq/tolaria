@@ -15,8 +15,10 @@ type RootPropsInput = {
 	navigationState: ReturnType<typeof usePhoneWorkspaceChromeNavigation>;
 	onOpenNativeVault?: () => void;
 	options: PhoneWorkspaceEditorOptions;
+	onEditorBodyReady: () => void;
 	panelState: ReturnType<typeof usePhoneWorkspaceChromePanels>;
 	phoneState: PhoneWorkspaceState;
+	prepareNewNoteEditor: boolean;
 };
 
 export function buildPhoneWorkspaceChromeRootProps(
@@ -32,8 +34,10 @@ export function buildPhoneWorkspaceChromeRootProps(
 		navigation: input.navigationState.navigation,
 		openCommandPalette: input.commandState.commandPalette.open,
 		options: input.options,
+		onEditorBodyReady: input.onEditorBodyReady,
 		phoneLayoutProbe: input.panelState.phoneLayoutProbe.probe,
 		phoneState: input.phoneState,
+		prepareNewNoteEditor: input.prepareNewNoteEditor,
 		selectTableOfContentsTarget: input.panelState.tableOfContents.select,
 		sourceModeRequest: input.navigationState.sourceModeRequest,
 		suggestionNotes: input.panelState.suggestionNotes,

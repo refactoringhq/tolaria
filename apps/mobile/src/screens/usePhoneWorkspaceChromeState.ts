@@ -58,6 +58,19 @@ type PanelStateProps = {
 	setPhoneState: (state: PhoneWorkspaceState) => void;
 };
 
+type ChromeAuxiliaryStateInput = {
+	controller: PhoneWorkspaceController;
+	layoutProbe: boolean;
+	navigationState: ReturnType<typeof usePhoneWorkspaceChromeNavigation>;
+	onOpenNativeVault?: () => void;
+	phoneState: PhoneWorkspaceState;
+	props: Pick<CommandStateProps, "initialCommandPaletteOpen"> & {
+		commandPaletteProbe?: boolean;
+		keyboardShortcutProbe?: boolean;
+	};
+	setPhoneState: (state: PhoneWorkspaceState) => void;
+};
+
 export function usePhoneWorkspaceChromeNavigation({
 	controller,
 	layoutProbe,
@@ -211,4 +224,34 @@ export function usePhoneWorkspaceChromePanels({
 		tableOfContents,
 		transitionSwipeHandlers,
 	};
+}
+
+export function usePhoneWorkspaceChromeAuxiliaryState({
+	controller,
+	layoutProbe,
+	navigationState,
+	onOpenNativeVault,
+	phoneState,
+	props,
+	setPhoneState,
+}: ChromeAuxiliaryStateInput) {
+	const commandState = usePhoneWorkspaceChromeCommands({
+		commandPaletteProbe: props.commandPaletteProbe ?? false,
+		controller,
+		initialCommandPaletteOpen: props.initialCommandPaletteOpen,
+		keyboardShortcutProbe: props.keyboardShortcutProbe ?? false,
+		navigation: navigationState.navigation,
+		onOpenNativeVault,
+		phoneState,
+		selectNextNote: navigationState.selectNextNote,
+		selectPreviousNote: navigationState.selectPreviousNote,
+	});
+	const panelState = usePhoneWorkspaceChromePanels({
+		controller,
+		layoutProbe,
+		navigation: navigationState.navigation,
+		phoneState,
+		setPhoneState,
+	});
+	return { commandState, panelState };
 }

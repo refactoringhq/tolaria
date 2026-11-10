@@ -20,10 +20,17 @@ export function useMobileMotionFrameProbe(
 		"worklet";
 		const current = value.get();
 		const last = previous.get();
+		const initialized = Number.isFinite(last);
 		const changed = didFrameValueChange(current, last);
 		const wasActive = active.get();
 		const idleCount = changed || !wasActive ? 0 : idleFrames.get() + 1;
-		const moving = shouldLogFrame(enabled, changed, wasActive, idleCount);
+		const moving = shouldLogFrame({
+			changed,
+			enabled,
+			idleCount,
+			initialized,
+			wasActive,
+		});
 		idleFrames.set(idleCount);
 		active.set(moving);
 		if (moving)
@@ -42,14 +49,21 @@ function didFrameValueChange(current: number, previous: number) {
 	return Number.isFinite(previous) && Math.abs(current - previous) > 0.01;
 }
 
-function shouldLogFrame(
-	enabled: boolean,
-	changed: boolean,
-	wasActive: boolean,
-	idleCount: number,
-) {
+function shouldLogFrame({
+	enabled,
+	initialized,
+	changed,
+	wasActive,
+	idleCount,
+}: {
+	enabled: boolean;
+	initialized: boolean;
+	changed: boolean;
+	wasActive: boolean;
+	idleCount: number;
+}) {
 	"worklet";
-	return enabled && (changed || (wasActive && idleCount < 3));
+	return enabled && (!initialized || changed || (wasActive && idleCount < 3));
 }
 
 function logMotionFrame(

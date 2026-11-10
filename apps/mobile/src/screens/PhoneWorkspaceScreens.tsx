@@ -341,6 +341,7 @@ export function PhoneWorkspaceScreens(props: PhoneWorkspaceStateViewProps) {
 			</PhoneScreenLayer>
 			<PhoneScreenLayer
 				active={props.phoneState === "editor"}
+				eager={props.prepareNewNoteEditor}
 				retain
 				frame={phoneRailFrame("editor", width)}
 				testID="phone-editor-slot"
