@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { SidebarSelection, VaultEntry } from "../../types";
 
 interface DeletionFocusOptions {
@@ -16,14 +16,18 @@ interface ListSnapshot {
 	selection: SidebarSelection;
 }
 
+interface DeletionFocusOptionsWithAvailability extends DeletionFocusOptions {
+	available: Set<string>;
+}
+
 function replacementAfterRemoval(
 	previous: ListSnapshot,
-	options: DeletionFocusOptions,
+	options: DeletionFocusOptionsWithAvailability,
 ): VaultEntry | undefined {
 	if (options.loading || previous.selection !== options.selection) return;
-	const available = new Set(options.entries.map((entry) => entry.path));
 	const removedIndex = previous.visible.findIndex(
-		(entry) => previous.available.has(entry.path) && !available.has(entry.path),
+		(entry) =>
+			previous.available.has(entry.path) && !options.available.has(entry.path),
 	);
 	if (removedIndex < 0) return;
 	// A replacement path belongs to creation/rename selection, not deletion.
@@ -36,16 +40,25 @@ function replacementAfterRemoval(
 		...previous.visible.slice(0, removedIndex).reverse(),
 	];
 	const replacement = candidates.find(
-		(entry) => visible.has(entry.path) && available.has(entry.path),
+		(entry) => visible.has(entry.path) && options.available.has(entry.path),
 	);
 	return replacement ? visible.get(replacement.path) : undefined;
 }
 
 export function useNoteListDeletionFocus({
-	entries, visible, selection, loading, openNote, focusList,
+	entries,
+	visible,
+	selection,
+	loading,
+	openNote,
+	focusList,
 }: DeletionFocusOptions): void {
 	const previous = useRef<ListSnapshot | null>(null);
 	const focusFrame = useRef<number | null>(null);
+	const available = useMemo(
+		() => new Set(entries.map((entry) => entry.path)),
+		[entries],
+	);
 
 	useEffect(
 		() => () => {
@@ -56,10 +69,18 @@ export function useNoteListDeletionFocus({
 
 	useEffect(() => {
 		const replacement = previous.current
-			? replacementAfterRemoval(previous.current, { entries, visible, selection, loading, openNote, focusList })
+			? replacementAfterRemoval(previous.current, {
+					entries,
+					visible,
+					selection,
+					loading,
+					openNote,
+					focusList,
+					available,
+				})
 			: undefined;
 		previous.current = {
-			available: new Set(entries.map((entry) => entry.path)),
+			available,
 			visible: visible,
 			selection: selection,
 		};
@@ -68,5 +89,5 @@ export function useNoteListDeletionFocus({
 		openNote(replacement);
 		if (focusFrame.current !== null) cancelAnimationFrame(focusFrame.current);
 		focusFrame.current = requestAnimationFrame(focusList);
-	}, [entries, visible, selection, loading, openNote, focusList]);
+	}, [entries, visible, selection, loading, openNote, focusList, available]);
 }
