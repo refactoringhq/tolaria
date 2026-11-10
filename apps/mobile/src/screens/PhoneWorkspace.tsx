@@ -18,9 +18,8 @@ import type { MobileActionSheetQaTarget } from "./tabletWorkspaceTypes";
 import { useInitialActionSheetQaTarget } from "./useInitialActionSheetQaTarget";
 import { usePhoneWorkspaceChromeController } from "./usePhoneWorkspaceChromeController";
 import {
-	usePhoneWorkspaceChromeCommands,
+	usePhoneWorkspaceChromeAuxiliaryState,
 	usePhoneWorkspaceChromeNavigation,
-	usePhoneWorkspaceChromePanels,
 } from "./usePhoneWorkspaceChromeState";
 import { useTabletWorkspaceController } from "./useTabletWorkspaceController";
 
@@ -88,15 +87,18 @@ export function PhoneWorkspace(props: PhoneWorkspaceProps) {
 
 function PhoneWorkspaceChrome(props: PhoneWorkspaceChromeProps) {
 	const {
-		commandPaletteProbe = false,
 		controller: baseController,
 		initialState = "list",
-		keyboardShortcutProbe = false,
 		onOpenNativeVault,
 	} = props;
 	const options = phoneWorkspaceEditorOptions(props);
-	const { controller, phoneState, setPhoneState } =
-		usePhoneWorkspaceChromeController({ baseController, initialState });
+	const {
+		controller,
+		onEditorBodyReady,
+		phoneState,
+		prepareNewNoteEditor,
+		setPhoneState,
+	} = usePhoneWorkspaceChromeController({ baseController, initialState });
 	const navigationState = usePhoneWorkspaceChromeNavigation({
 		controller,
 		layoutProbe: options.layoutProbe,
@@ -104,22 +106,13 @@ function PhoneWorkspaceChrome(props: PhoneWorkspaceChromeProps) {
 		props,
 		setPhoneState,
 	});
-	const commandState = usePhoneWorkspaceChromeCommands({
-		commandPaletteProbe,
-		controller,
-		initialCommandPaletteOpen: props.initialCommandPaletteOpen,
-		keyboardShortcutProbe,
-		navigation: navigationState.navigation,
-		onOpenNativeVault,
-		phoneState,
-		selectNextNote: navigationState.selectNextNote,
-		selectPreviousNote: navigationState.selectPreviousNote,
-	});
-	const panelState = usePhoneWorkspaceChromePanels({
+	const { commandState, panelState } = usePhoneWorkspaceChromeAuxiliaryState({
 		controller,
 		layoutProbe: options.layoutProbe,
-		navigation: navigationState.navigation,
+		navigationState,
+		onOpenNativeVault,
 		phoneState,
+		props,
 		setPhoneState,
 	});
 	const rootProps = buildPhoneWorkspaceChromeRootProps({
@@ -128,8 +121,10 @@ function PhoneWorkspaceChrome(props: PhoneWorkspaceChromeProps) {
 		navigationState,
 		onOpenNativeVault,
 		options,
+		onEditorBodyReady,
 		panelState,
 		phoneState,
+		prepareNewNoteEditor,
 	});
 	return <PhoneWorkspaceRoot {...rootProps} />;
 }

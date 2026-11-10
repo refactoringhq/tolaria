@@ -31,8 +31,10 @@ type PhoneWorkspaceRootProps = {
 	navigation: PhoneWorkspaceNavigation;
 	openCommandPalette: () => void;
 	options: PhoneWorkspaceEditorOptions;
+	onEditorBodyReady: () => void;
 	phoneLayoutProbe: MobileLayoutProbe;
 	phoneState: PhoneWorkspaceState;
+	prepareNewNoteEditor: boolean;
 	selectTableOfContentsTarget: (target: MobileTableOfContentsTarget) => void;
 	sourceModeRequest: number;
 	suggestionNotes: MobileNote[];
@@ -89,6 +91,8 @@ function PhoneWorkspaceContent(props: PhoneWorkspaceRootProps) {
 				openSidebar={props.navigation.openSidebar}
 				phoneLayoutProbe={props.phoneLayoutProbe}
 				phoneState={props.phoneState}
+				prepareNewNoteEditor={props.prepareNewNoteEditor}
+				onEditorBodyReady={props.onEditorBodyReady}
 				onRegisterEditorCommands={props.editorCommandRegistry.register}
 				sourceModeRequest={props.sourceModeRequest}
 				suggestionNotes={props.suggestionNotes}

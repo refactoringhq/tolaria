@@ -5,6 +5,7 @@ const path = process.argv[2];
 if (!path)
 	throw new Error("Usage: analyze-motion-frame-log.mjs <simulator-log.txt>");
 const source = readFileSync(path, "utf8");
+const newNoteOnly = process.argv.includes("--new-note-only");
 const frames = readFrames(source);
 const events = readEvents(source);
 const checks = Object.fromEntries(
@@ -12,6 +13,11 @@ const checks = Object.fromEntries(
 );
 const firstListFrame = analyzeFirstListFrame(events);
 const noteBody = analyzeNoteBody(events);
+const newNoteEntry = analyzeNewNoteEntry(
+	events,
+	frames.get("phone.rail.offset") ?? [],
+	firstListFrame.listFrame?.width ?? 0,
+);
 const fabPosition = analyzeFabTransitions(
 	events,
 	frames.get("phone.rail.offset") ?? [],
@@ -33,6 +39,7 @@ const report = {
 		0,
 	),
 	noteBody,
+	newNoteEntry,
 	firstListFrame,
 	fabPosition,
 	notTested: [
@@ -40,12 +47,16 @@ const report = {
 	],
 };
 process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+
 if (
-	!["phone.rail.offset", "organize-swipe.workflow-orchestration"].every(
-		(id) => checks[id]?.sampleCount > 1,
-	) ||
-	!firstListFrame.controlsLaidOut ||
-	noteBody.renderEvents === 0
+	newNoteOnly
+		? !newNoteEntry.passed
+		: !["phone.rail.offset", "organize-swipe.workflow-orchestration"].every(
+				(id) => checks[id]?.sampleCount > 1,
+			) ||
+			!firstListFrame.controlsLaidOut ||
+			noteBody.renderEvents === 0 ||
+			!newNoteEntry.passed
 )
 	process.exitCode = 1;
 
@@ -162,6 +173,120 @@ function analyzeNoteBody(events) {
 		renderEvents: noteRenders.length,
 		oneBodyChange: fingerprintChanges === 1,
 	};
+}
+
+function analyzeNewNoteEntry(events, railSamples, viewportWidth) {
+	const preparations = events.filter(
+		(event) => event.event === "new-note-editor-prepare",
+	);
+	const entries = preparations.map((preparation, index) =>
+		analyzeNewNotePreparation({
+			nextPreparationAt: preparations[index + 1]?.at,
+			preparation,
+			preparationAt: preparation.at,
+			events,
+			railSamples,
+			viewportWidth,
+		}),
+	);
+	const completeEntries = entries.filter(isCompleteNewNoteEntry);
+	return {
+		bodyReadyBeforeEditor: completeEntries.length > 0,
+		completedEntries: completeEntries.length,
+		entries,
+		passed: completeEntries.length > 0,
+		preparations: preparations.length,
+		viewportWidth,
+	};
+}
+
+function analyzeNewNotePreparation({
+	nextPreparationAt,
+	preparation,
+	preparationAt,
+	events,
+	railSamples,
+	viewportWidth,
+}) {
+	const endAt = nextPreparationAt ?? Infinity;
+	const bodyReady = findNewNoteBodyReady(events, preparation.at, endAt);
+	const editor = findNewNoteEditor(events, bodyReady, endAt);
+	return {
+		...newNoteTimeline(bodyReady, editor),
+		...analyzeNewNoteRailMotion(
+			editor,
+			preparationAt,
+			railSamples,
+			viewportWidth,
+		),
+	};
+}
+
+function findNewNoteBodyReady(events, startAt, endAt) {
+	return firstEventAfter(
+		events,
+		startAt,
+		endAt,
+		(event) => event.event === "new-note-editor-body-ready",
+	);
+}
+
+function findNewNoteEditor(events, bodyReady, endAt) {
+	if (!bodyReady) return undefined;
+	return firstEventAfter(events, bodyReady.at, endAt, isEditorState);
+}
+
+function newNoteTimeline(bodyReady, editor) {
+	return {
+		bodyReadyAt: bodyReady?.at ?? null,
+		bodyReadyBeforeEditor: Boolean(bodyReady && editor),
+		bodyToEditorMs: elapsedBodyToEditor(bodyReady, editor),
+		editorAt: editor?.at ?? null,
+	};
+}
+
+function elapsedBodyToEditor(bodyReady, editor) {
+	if (!bodyReady || !editor) return null;
+	return round(editor.at - bodyReady.at);
+}
+
+function firstEventAfter(events, startAt, endAt, predicate) {
+	return events.find(
+		(event) => event.at > startAt && event.at < endAt && predicate(event),
+	);
+}
+
+function analyzeNewNoteRailMotion(
+	editor,
+	preparationAt,
+	railSamples,
+	viewportWidth,
+) {
+	const startingSample = railSamples
+		.filter((sample) => sample.timestampMs <= preparationAt)
+		.at(-1);
+	const motionSamples = railSamples.filter(
+		(sample) =>
+			sample.timestampMs >= (editor?.at ?? Infinity) &&
+			sample.timestampMs <= (editor?.at ?? -Infinity) + 600,
+	);
+	const railPositions = [
+		startingSample?.value,
+		...motionSamples.map((sample) => sample.value),
+	].filter(Number.isFinite);
+	const railTravelPx =
+		railPositions.length > 1
+			? Math.abs(railPositions.at(-1) - railPositions[0])
+			: 0;
+	return {
+		railFrameCount: motionSamples.length,
+		railSlidesIn: railTravelPx >= viewportWidth * 0.8,
+		railTravelPx: round(railTravelPx),
+	};
+}
+
+function isCompleteNewNoteEntry(entry) {
+	return entry.bodyReadyBeforeEditor && entry.railSlidesIn;
 }
 
 function noteOpenRenders(events, noteRenders) {
