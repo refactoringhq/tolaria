@@ -27,9 +27,9 @@ The migration from GitHub Actions is staged:
   provisioned and a full shadow release has produced every platform artifact.
 - Codecov uploads run in validation but do not fail the job while `codecov_required` is `false`.
   Codecov rejects tokenless uploads to the protected `main` branch, so add `CODECOV_TOKEN` to the
-  `tolaria-ci` context and set `codecov_required` to `true` before GitHub Actions `ci.yml` is
-  retired.
-- Disable a GitHub Actions workflow only after the matching CircleCI jobs are green on `main`.
+  `tolaria-ci` context and set `codecov_required` to `true` to restore coverage uploads on `main`.
+  GitHub Actions `ci.yml` no longer runs on main pushes; it remains for pull requests and
+  `workflow_dispatch`.
 - Validation is split into independent jobs so the slowest job (`static-gates`, mostly the
   Codacy scan) sets the wall clock: about 4-5 minutes per main push on the Free plan (Docker
   large), down from about 16. Vitest coverage runs as `frontend_coverage_shards` CircleCI
@@ -46,9 +46,9 @@ The migration from GitHub Actions is staged:
 
 | GitHub Actions workflow | CircleCI replacement | Status |
 | --- | --- | --- |
-| `ci.yml` frontend static quality + tests | `validation/static-gates` (Codacy, CodeScene, docs), `validation/frontend-lint-build`, `validation/frontend-coverage` (6 containers) + `validation/frontend-coverage-report` | Shadow |
-| `ci.yml` Rust tests, coverage, Clippy, rustfmt | `validation/rust-coverage`, `validation/rust-lint` | Shadow |
-| `ci.yml` Linux build verification (PRs) | `validation/linux-build-verification` (non-main branches) | Shadow |
+| `ci.yml` frontend static quality + tests | `validation/static-gates` (Codacy, CodeScene, docs), `validation/frontend-lint-build`, `validation/frontend-coverage` (6 containers) + `validation/frontend-coverage-report` | Authoritative on main (`ci.yml` remains for PRs and manual runs) |
+| `ci.yml` Rust tests, coverage, Clippy, rustfmt | `validation/rust-coverage`, `validation/rust-lint` | Authoritative on main (`ci.yml` remains for PRs and manual runs) |
+| `ci.yml` Linux build verification (PRs) | `validation/linux-build-verification` (non-main branches) | Authoritative on non-main branches (`ci.yml` still covers PRs) |
 | none (pre-push only) | `validation/playwright-smoke` | New |
 | none | `performance/performance-regression` | Opt-in (`run_performance_gate`); thresholds need CI baselines |
 | `release.yml` + `release-build-artifacts.yml` | `alpha-release` | Gated off |
@@ -66,6 +66,7 @@ Create three restricted CircleCI contexts.
 | --- | --- |
 | `CODESCENE_PAT` | Read the CodeScene project analysis. |
 | `CODESCENE_PROJECT_ID` | Select the Tolaria CodeScene project. |
+| `CODECOV_TOKEN` | Upload coverage from `main`. Required before `codecov_required` can be set to `true`. |
 
 ### `tolaria-release`
 
