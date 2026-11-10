@@ -1,151 +1,187 @@
-import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso'
-import type { VaultEntry } from '../../types'
-import type { SortOption, SortDirection, SortConfig, RelationshipGroup } from '../../utils/noteListHelpers'
-import { translate, type AppLocale } from '../../lib/i18n'
-import { PinnedCard } from './PinnedCard'
-import { RelationshipGroupSection } from './RelationshipGroupSection'
-import { EmptyMessage } from './TrashWarningBanner'
+import { createContext, useContext } from "react";
+import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
+import { type AppLocale, translate } from "../../lib/i18n";
+import type { VaultEntry } from "../../types";
+import type {
+	RelationshipGroup,
+	SortConfig,
+	SortDirection,
+	SortOption,
+} from "../../utils/noteListHelpers";
+import { PinnedCard } from "./PinnedCard";
+import { RelationshipGroupSection } from "./RelationshipGroupSection";
+import { EmptyMessage } from "./TrashWarningBanner";
 
 function resolveEmptyText({
-  isChangesView,
-  changesError,
-  isArchivedView,
-  isInboxView,
-  query,
-  locale,
+	isChangesView,
+	changesError,
+	isArchivedView,
+	isInboxView,
+	query,
+	locale,
 }: {
-  isChangesView: boolean
-  changesError: string | null | undefined
-  isArchivedView: boolean
-  isInboxView: boolean
-  query: string
-  locale: AppLocale
+	isChangesView: boolean;
+	changesError: string | null | undefined;
+	isArchivedView: boolean;
+	isInboxView: boolean;
+	query: string;
+	locale: AppLocale;
 }): string {
-  if (isChangesView && changesError)
-    return translate(locale, 'noteList.empty.changesError', {
-      error: changesError,
-    })
-  if (isChangesView) return translate(locale, 'noteList.empty.noChanges')
-  if (isArchivedView) return translate(locale, 'noteList.empty.noArchived')
-  if (isInboxView)
-    return query ? translate(locale, 'noteList.empty.noMatching') : translate(locale, 'noteList.empty.allOrganized')
-  return query ? translate(locale, 'noteList.empty.noMatching') : translate(locale, 'noteList.empty.noNotes')
+	if (isChangesView && changesError)
+		return translate(locale, "noteList.empty.changesError", {
+			error: changesError,
+		});
+	if (isChangesView) return translate(locale, "noteList.empty.noChanges");
+	if (isArchivedView) return translate(locale, "noteList.empty.noArchived");
+	if (isInboxView)
+		return query
+			? translate(locale, "noteList.empty.noMatching")
+			: translate(locale, "noteList.empty.allOrganized");
+	return query
+		? translate(locale, "noteList.empty.noMatching")
+		: translate(locale, "noteList.empty.noNotes");
 }
 
 export function EntityView(options: {
-  entity: VaultEntry
-  groups: RelationshipGroup[]
-  query: string
-  collapsedGroups: Set<string>
-  sortPrefs: Record<string, SortConfig>
-  onToggleGroup: (label: string) => void
-  onSortChange: (label: string, opt: SortOption, dir: SortDirection) => void
-  renderItem: (entry: VaultEntry, options?: { forceSelected?: boolean }) => React.ReactNode
-  locale?: AppLocale
+	entity: VaultEntry;
+	groups: RelationshipGroup[];
+	query: string;
+	collapsedGroups: Set<string>;
+	sortPrefs: Record<string, SortConfig>;
+	onToggleGroup: (label: string) => void;
+	onSortChange: (label: string, opt: SortOption, dir: SortDirection) => void;
+	renderItem: (
+		entry: VaultEntry,
+		options?: { forceSelected?: boolean },
+	) => React.ReactNode;
+	locale?: AppLocale;
 }) {
-  const {
-    entity,
-    groups,
-    query,
-    collapsedGroups,
-    sortPrefs,
-    onToggleGroup,
-    onSortChange,
-    renderItem,
-    locale = 'en',
-  } = options
-  return (
-    <div className="h-full overflow-y-auto">
-      <PinnedCard entry={entity} renderItem={renderItem} />
-      {groups.length === 0 ? (
-        <EmptyMessage
-          text={
-            query
-              ? translate(locale, 'noteList.empty.noMatchingItems')
-              : translate(locale, 'noteList.empty.noRelatedItems')
-      }
-        />
-      ) : (
-        groups.map((group) => (
-          <RelationshipGroupSection
-            key={group.label}
-            group={group}
-            isCollapsed={collapsedGroups.has(group.label)}
-            sortPrefs={sortPrefs}
-            locale={locale}
-            onToggle={() => onToggleGroup(group.label)}
-            handleSortChange={onSortChange}
-            renderItem={renderItem}
-          />
-        ))
-      )}
-    </div>
-  )
+	const {
+		entity,
+		groups,
+		query,
+		collapsedGroups,
+		sortPrefs,
+		onToggleGroup,
+		onSortChange,
+		renderItem,
+		locale = "en",
+	} = options;
+	return (
+		<div className="h-full overflow-y-auto">
+			<PinnedCard entry={entity} renderItem={renderItem} />
+			{groups.length === 0 ? (
+				<EmptyMessage
+					text={
+						query
+							? translate(locale, "noteList.empty.noMatchingItems")
+							: translate(locale, "noteList.empty.noRelatedItems")
+					}
+				/>
+			) : (
+				groups.map((group) => (
+					<RelationshipGroupSection
+						key={group.label}
+						group={group}
+						isCollapsed={collapsedGroups.has(group.label)}
+						sortPrefs={sortPrefs}
+						locale={locale}
+						onToggle={() => onToggleGroup(group.label)}
+						handleSortChange={onSortChange}
+						renderItem={renderItem}
+					/>
+				))
+			)}
+		</div>
+	);
 }
 
 // The bottom filter pills float over the list, so scrollable content needs
 // matching clearance or the last note stays hidden underneath them.
 function BottomOverlaySpacer() {
-  return <div aria-hidden="true" data-testid="note-list-bottom-overlay-spacer" className="h-14" />
+	return (
+		<div
+			aria-hidden="true"
+			data-testid="note-list-bottom-overlay-spacer"
+			className="h-14"
+		/>
+	);
 }
 
-const BOTTOM_OVERLAY_COMPONENTS = { Footer: BottomOverlaySpacer }
+const BOTTOM_OVERLAY_COMPONENTS = { Footer: BottomOverlaySpacer };
 // Virtuoso crashes on an explicit `components={undefined}`, so fall back to
 // a stable empty object when no clearance is needed.
-const NO_EXTRA_COMPONENTS = {}
+const NO_EXTRA_COMPONENTS = {};
 
 interface ListViewProps {
-  isArchivedView?: boolean
-  isChangesView?: boolean
-  isInboxView?: boolean
-  changesError?: string | null
-  searched: VaultEntry[]
-  query: string
-  renderItem: (entry: VaultEntry) => React.ReactNode
-  virtuosoRef?: React.RefObject<VirtuosoHandle | null>
-  locale?: AppLocale
-  hasBottomOverlay?: boolean
+	isArchivedView?: boolean;
+	isChangesView?: boolean;
+	isInboxView?: boolean;
+	changesError?: string | null;
+	searched: VaultEntry[];
+	query: string;
+	renderItem: (entry: VaultEntry) => React.ReactNode;
+	virtuosoRef?: React.RefObject<VirtuosoHandle | null>;
+	locale?: AppLocale;
+	hasBottomOverlay?: boolean;
+}
+
+const ListItemRendererContext = createContext<
+	ListViewProps["renderItem"] | null
+>(null);
+
+function VirtualizedNoteItem({ entry }: { entry: VaultEntry }) {
+	const renderItem = useContext(ListItemRendererContext);
+	return renderItem?.(entry) ?? null;
+}
+
+function renderVirtualItem(_index: number, entry: VaultEntry) {
+	return <VirtualizedNoteItem key={entry.path} entry={entry} />;
 }
 
 export function ListView(props: ListViewProps) {
-  const {
-    isArchivedView,
-    isChangesView,
-    isInboxView,
-    changesError,
-    searched,
-    query,
-    renderItem,
-    virtuosoRef,
-    locale = 'en',
-    hasBottomOverlay,
-  } = props
-  const emptyText = resolveEmptyText({
-    isChangesView: !!isChangesView,
-    changesError: changesError ?? null,
-    isArchivedView: !!isArchivedView,
-    isInboxView: !!isInboxView,
-    query,
-    locale,
-  })
+	const {
+		isArchivedView,
+		isChangesView,
+		isInboxView,
+		changesError,
+		searched,
+		query,
+		renderItem,
+		virtuosoRef,
+		locale = "en",
+		hasBottomOverlay,
+	} = props;
+	const emptyText = resolveEmptyText({
+		isChangesView: !!isChangesView,
+		changesError: changesError ?? null,
+		isArchivedView: !!isArchivedView,
+		isInboxView: !!isInboxView,
+		query,
+		locale,
+	});
 
-  if (searched.length === 0) {
-    return (
-      <div className="h-full overflow-y-auto">
-        <EmptyMessage text={emptyText} />
-        {hasBottomOverlay && <BottomOverlaySpacer />}
-      </div>
-    )
-  }
+	if (searched.length === 0) {
+		return (
+			<div className="h-full overflow-y-auto">
+				<EmptyMessage text={emptyText} />
+				{hasBottomOverlay && <BottomOverlaySpacer />}
+			</div>
+		);
+	}
 
-  return (
-    <Virtuoso
-      ref={virtuosoRef}
-      style={{ height: '100%' }}
-      data={searched}
-      overscan={200}
-      components={hasBottomOverlay ? BOTTOM_OVERLAY_COMPONENTS : NO_EXTRA_COMPONENTS}
-      itemContent={(_index, entry) => renderItem(entry)}
-    />
-  )
+	return (
+		<ListItemRendererContext.Provider value={renderItem}>
+			<Virtuoso
+				ref={virtuosoRef}
+				style={{ height: "100%" }}
+				data={searched}
+				overscan={200}
+				components={
+					hasBottomOverlay ? BOTTOM_OVERLAY_COMPONENTS : NO_EXTRA_COMPONENTS
+				}
+				itemContent={renderVirtualItem}
+			/>
+		</ListItemRendererContext.Provider>
+	);
 }
