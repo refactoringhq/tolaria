@@ -82,6 +82,7 @@ vi.mock("react-native-gesture-handler", () => ({
 	},
 }));
 vi.mock("react-native-reanimated", () => ({
+	useFrameCallback: () => null,
 	default: {
 		View: ({ children, ...props }: { children: ReactNode }) => {
 			input.animatedProps = props;
@@ -113,7 +114,7 @@ vi.mock("react-native-reanimated", () => ({
 			},
 		});
 	},
-	runOnJS: (callback: unknown) => callback,
+	runOnJS: (callback: (...args: unknown[]) => void) => callback,
 }));
 vi.mock("../../ui/theme/useMobileTheme", () => ({
 	useMobileColors: () => ({ card: "#fff" }),

@@ -1,26 +1,65 @@
-import type { ReactNode } from 'react'
-import { StyleSheet, View, type ViewProps } from 'react-native'
-import Reanimated, { useAnimatedStyle } from 'react-native-reanimated'
-import { GestureDetector } from 'react-native-gesture-handler'
-import type { usePhonePanelRail } from './usePhonePanelRail'
-import { phoneWorkspaceSidebarDrawerWidth } from './phoneWorkspaceTransitions'
-import { usePhoneViewportWidth } from './usePhoneViewportWidth'
+import { type ReactNode, useEffect } from "react";
+import { StyleSheet, View, type ViewProps } from "react-native";
+import { GestureDetector } from "react-native-gesture-handler";
+import Reanimated, { useAnimatedStyle } from "react-native-reanimated";
+import { logMobileMotionEvent } from "../qa/mobileMotionFrameLog";
+import { useMobileMotionFrameProbe } from "../qa/mobileMotionFrameProbe";
+import type { PhoneWorkspaceState } from "./phoneWorkspaceTransitions";
+import { phoneWorkspaceSidebarDrawerWidth } from "./phoneWorkspaceTransitions";
+import type { usePhonePanelRail } from "./usePhonePanelRail";
+import { usePhoneViewportWidth } from "./usePhoneViewportWidth";
 
-type Props = { children: ReactNode; panelRail: ReturnType<typeof usePhonePanelRail>; swipeHandlers?: ViewProps }
+type Props = {
+	children: ReactNode;
+	motionProbeEnabled?: boolean;
+	panelRail: ReturnType<typeof usePhonePanelRail>;
+	phoneState?: PhoneWorkspaceState;
+	swipeHandlers?: ViewProps;
+};
 
-export function PhoneWorkspaceTransition({ children, panelRail, swipeHandlers }: Props) {
-  const width = usePhoneViewportWidth()
-  const { offset } = panelRail
-  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ translateX: offset.get() }] }))
-  const stage = <View {...swipeHandlers} className={panelRail.enabled ? undefined : '!overflow-clip'} style={styles.stage} testID="phone-transition-stage">
-    <Reanimated.View style={[styles.rail, { width: phoneWorkspaceSidebarDrawerWidth(width) + 3 * width }, animatedStyle]}>
-      {children}
-    </Reanimated.View>
-  </View>
-  return panelRail.enabled ? <GestureDetector gesture={panelRail.gesture}>{stage}</GestureDetector> : stage
+export function PhoneWorkspaceTransition({
+	children,
+	motionProbeEnabled = false,
+	panelRail,
+	phoneState,
+	swipeHandlers,
+}: Props) {
+	const width = usePhoneViewportWidth();
+	const { offset } = panelRail;
+	useMobileMotionFrameProbe("phone.rail.offset", offset, motionProbeEnabled);
+	useEffect(() => {
+		if (motionProbeEnabled && phoneState)
+			logMobileMotionEvent("phone-state", { state: phoneState });
+	}, [motionProbeEnabled, phoneState]);
+	const animatedStyle = useAnimatedStyle(() => ({
+		transform: [{ translateX: offset.get() }],
+	}));
+	const stage = (
+		<View
+			{...swipeHandlers}
+			className={panelRail.enabled ? undefined : "!overflow-clip"}
+			style={styles.stage}
+			testID="phone-transition-stage"
+		>
+			<Reanimated.View
+				style={[
+					styles.rail,
+					{ width: phoneWorkspaceSidebarDrawerWidth(width) + 3 * width },
+					animatedStyle,
+				]}
+			>
+				{children}
+			</Reanimated.View>
+		</View>
+	);
+	return panelRail.enabled ? (
+		<GestureDetector gesture={panelRail.gesture}>{stage}</GestureDetector>
+	) : (
+		stage
+	);
 }
 
 const styles = StyleSheet.create({
-  rail: { flex: 1 },
-  stage: { flex: 1, overflow: 'hidden' },
-})
+	rail: { flex: 1 },
+	stage: { flex: 1, overflow: "hidden" },
+});
