@@ -2,7 +2,7 @@
 import { act, createElement, useLayoutEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { usePhonePanelDragSurface } from './phoneWorkspaceScreenSupport'
+import { usePhonePanelDragSurface, usePhoneWorkspaceNavigation } from './phoneWorkspaceScreenSupport'
 import type { PhoneWorkspaceState } from './phoneWorkspaceTransitions'
 
 const viewport = vi.hoisted(() => ({
@@ -45,6 +45,32 @@ it('updates the gesture bounds when rotation removes the horizontal safe areas',
   expect(surface.accepts({ x: 8, y: 160 })).toBe(true)
   expect(surface.accepts({ x: 394, y: 160 })).toBe(true)
   expect(surface.accepts({ x: 70, y: 160 })).toBe(false)
+})
+
+it('discards an eligible new-note draft when returning to the list', async () => {
+	const events: string[] = []
+	const discard = vi.fn(() => events.push('discard'))
+	const setPhoneState = vi.fn((state: PhoneWorkspaceState) => events.push(state))
+	let openList: (() => void) | undefined
+	function Probe() {
+		const navigation = usePhoneWorkspaceNavigation({
+			controller: { onDiscardPristineNewNote: discard } as never,
+			setPhoneState,
+			setSourceModeRequest: vi.fn(),
+		})
+		useLayoutEffect(() => {
+			openList = navigation.openList
+		}, [navigation.openList])
+		return null
+	}
+	const root = createRoot(document.createElement('div'))
+	roots.push(root)
+	await act(async () => root.render(createElement(Probe)))
+
+	await act(async () => openList?.())
+
+	expect(discard).toHaveBeenCalledOnce()
+	expect(events).toEqual(['discard', 'list'])
 })
 
 async function mountSurface(state: PhoneWorkspaceState) {
