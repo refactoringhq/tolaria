@@ -26,7 +26,7 @@ const LIST_ITEM_SELECTOR =
 	'[data-content-type="bulletListItem"], [data-content-type="checkListItem"]';
 const QUOTE_SELECTOR = '[data-content-type="quote"]';
 const MARKDOWN_INLINE_SIGNAL_RE =
-	/(?:\*\*|__)\S[\s\S]*?\S(?:\*\*|__)|(?<!\w)\*(?!\s)\S[^*\n]*\*(?!\w)|~~\S[\s\S]*?\S~~|`[^`\n]+`|\[[^\]\n]+\]\([^)]+\)/u;
+	/(?:\*\*|__)\S[\s\S]*?\S(?:\*\*|__)|(?:^|[^\w])\*(?!\s)\S[^*\n]*\*(?!\w)|~~\S[\s\S]*?\S~~|`[^`\n]+`|\[[^\]\n]+\]\([^)]+\)/u;
 
 function singleParagraphContent(blocks: PasteBlock[]): unknown[] | null {
 	if (blocks.length !== 1) return null;
