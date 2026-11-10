@@ -1,5 +1,6 @@
 import {
 	type SuggestionMenuProps,
+	useBlockNoteEditor,
 	useComponentsContext,
 	useDictionary,
 } from "@blocknote/react";
@@ -13,11 +14,13 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import type { TolariaSlashMenuItem } from "./tolariaEditorFormattingConfig";
-import {
-	type OpenSubmenu,
-	useSubmenuPosition,
-} from "./tolariaSlashMenuPosition";
 import { Button } from "./ui/button";
+
+interface OpenSubmenu {
+	key: string;
+	left: number;
+	top: number;
+}
 
 type SubmenuKeyboardAction =
 	| { kind: "close" }
@@ -38,13 +41,20 @@ function nextWrappedIndex(
 	return (index + delta + length) % length;
 }
 
+function openSubmenuAction(
+	key: string,
+	canOpen: boolean,
+): SubmenuKeyboardAction | null {
+	return key === "ArrowRight" && canOpen ? { kind: "open" } : null;
+}
+
 function closeSubmenuAction(key: string): SubmenuKeyboardAction | null {
 	return ["ArrowLeft", "Escape"].includes(key) ? { kind: "close" } : null;
 }
 
 function moveSubmenuAction(key: string): SubmenuKeyboardAction | null {
-	const delta = key === "ArrowDown" ? 1 : key === "ArrowUp" ? -1 : null;
-	return delta === null ? null : { delta, kind: "move" };
+	if (key === "ArrowDown") return { delta: 1, kind: "move" };
+	return key === "ArrowUp" ? { delta: -1, kind: "move" } : null;
 }
 
 function selectSubmenuAction(key: string): SubmenuKeyboardAction | null {
@@ -64,7 +74,8 @@ function submenuKeyboardAction({
 	isOpen: boolean;
 	key: string;
 }): SubmenuKeyboardAction | null {
-	if (key === "ArrowRight" && canOpen) return { kind: "open" };
+	const openAction = openSubmenuAction(key, canOpen);
+	if (openAction) return openAction;
 	if (!isOpen) return null;
 	return (
 		[
@@ -124,8 +135,8 @@ export function TolariaSlashMenu({
 }: SuggestionMenuProps<TolariaSlashMenuItem>) {
 	const Components = useComponentsContext();
 	const dictionary = useDictionary();
+	const editor = useBlockNoteEditor();
 	const itemElements = useRef(new Map<string, Element>());
-	const submenuElement = useRef<HTMLDivElement>(null);
 	const [openSubmenu, setOpenSubmenu] = useState<OpenSubmenu | null>(null);
 	const [submenuIndex, setSubmenuIndex] = useState(0);
 	const submenuItems = submenuForKey(items, openSubmenu?.key);
@@ -138,17 +149,11 @@ export function TolariaSlashMenu({
 		const bounds = itemElements.current.get(item.key)?.getBoundingClientRect();
 		if (!bounds) return;
 		setSubmenuIndex(0);
-		setOpenSubmenu({ key: item.key, left: bounds.right, top: bounds.top });
+		setOpenSubmenu({ key: item.key, left: bounds.right + 4, top: bounds.top });
 	}, []);
 
-	useSubmenuPosition({
-		itemElements,
-		openSubmenu,
-		setOpenSubmenu,
-		submenuElement,
-	});
-
 	useLayoutEffect(() => {
+		const element = editor.domElement;
 		const handleKeyDown = (event: KeyboardEvent) => {
 			const selectedItem =
 				selectedIndex === undefined ? undefined : items.at(selectedIndex);
@@ -172,9 +177,10 @@ export function TolariaSlashMenu({
 			});
 		};
 
-		document.addEventListener("keydown", handleKeyDown, true);
-		return () => document.removeEventListener("keydown", handleKeyDown, true);
+		element?.addEventListener("keydown", handleKeyDown, true);
+		return () => element?.removeEventListener("keydown", handleKeyDown, true);
 	}, [
+		editor.domElement,
 		items,
 		onItemClick,
 		openItemSubmenu,
@@ -253,7 +259,6 @@ export function TolariaSlashMenu({
 							items.find((item) => item.key === openSubmenu.key)?.title
 						}
 						className="tolaria-slash-menu__submenu"
-						ref={submenuElement}
 						role="menu"
 						style={{ left: openSubmenu.left, top: openSubmenu.top }}
 					>

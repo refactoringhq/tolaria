@@ -82,55 +82,6 @@ describe("TolariaSlashMenu", () => {
 		expect(onItemClick).toHaveBeenCalledWith(item.submenuItems?.[1]);
 	});
 
-	it("keeps the submenu flush to its row and inside a small viewport", () => {
-		vi.stubGlobal("innerWidth", 300);
-		vi.stubGlobal("innerHeight", 600);
-		vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(
-			function (this: Element) {
-				if (this.classList.contains("tolaria-slash-menu__submenu")) {
-					return {
-						x: 0,
-						y: 0,
-						left: 0,
-						top: 0,
-						right: 150,
-						bottom: 240,
-						width: 150,
-						height: 240,
-						toJSON: () => ({}),
-					} as DOMRect;
-				}
-				return {
-					x: 180,
-					y: 550,
-					left: 180,
-					top: 550,
-					right: 260,
-					bottom: 580,
-					width: 80,
-					height: 30,
-					toJSON: () => ({}),
-				} as DOMRect;
-			},
-		);
-		const item = calloutItem();
-		render(
-			<TolariaSlashMenu
-				items={[item]}
-				loadingState="loaded"
-				selectedIndex={0}
-				onItemClick={vi.fn()}
-			/>,
-		);
-
-		fireEvent.mouseEnter(screen.getByRole("button", { name: "Callout" }));
-
-		const submenu = screen.getByRole("menu", { name: "Callout" });
-		expect(submenu).toHaveStyle({ left: "30px", top: "352px" });
-		vi.restoreAllMocks();
-		vi.unstubAllGlobals();
-	});
-
 	it("supports right-arrow entry and keyboard selection inside the submenu", () => {
 		const item = calloutItem();
 		const onItemClick = vi.fn();
@@ -150,7 +101,7 @@ describe("TolariaSlashMenu", () => {
 		expect(onItemClick).toHaveBeenCalledWith(item.submenuItems?.[1]);
 	});
 
-	it("keeps vertical arrow keys inside an open submenu", () => {
+	it("does not open the submenu for key presses outside the editor", () => {
 		render(
 			<TolariaSlashMenu
 				items={[calloutItem()]}
@@ -159,42 +110,11 @@ describe("TolariaSlashMenu", () => {
 				onItemClick={vi.fn()}
 			/>,
 		);
-		const parentMenuKeyDown = vi.fn();
-		editorElement.addEventListener("keydown", parentMenuKeyDown);
 
-		fireEvent.keyDown(editorElement, { key: "ArrowRight" });
-		fireEvent.keyDown(editorElement, { key: "ArrowDown" });
+		fireEvent.keyDown(document, { key: "ArrowRight" });
 
-		expect(screen.getByRole("menuitem", { name: "Note" })).toHaveAttribute(
-			"aria-selected",
-			"false",
-		);
-		expect(screen.getByRole("menuitem", { name: "Tip" })).toHaveAttribute(
-			"aria-selected",
-			"true",
-		);
-		expect(parentMenuKeyDown).not.toHaveBeenCalled();
-		editorElement.removeEventListener("keydown", parentMenuKeyDown);
-	});
-
-	it("handles arrow keys when focus is on a submenu item", () => {
-		render(
-			<TolariaSlashMenu
-				items={[calloutItem()]}
-				loadingState="loaded"
-				selectedIndex={0}
-				onItemClick={vi.fn()}
-			/>,
-		);
-		fireEvent.keyDown(editorElement, { key: "ArrowRight" });
-
-		fireEvent.keyDown(screen.getByRole("menuitem", { name: "Note" }), {
-			key: "ArrowDown",
-		});
-
-		expect(screen.getByRole("menuitem", { name: "Tip" })).toHaveAttribute(
-			"aria-selected",
-			"true",
-		);
+		expect(
+			screen.queryByRole("menu", { name: "Callout" }),
+		).not.toBeInTheDocument();
 	});
 });
