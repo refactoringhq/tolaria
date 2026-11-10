@@ -41,6 +41,7 @@ import {
 	selectedViewCommandActions,
 } from "./tabletWorkspaceViewActions";
 import { useMobileNoteRead } from "./useMobileNoteRead";
+import { createWorkspaceBackAction } from "./workspaceBackRefresh";
 
 type TabletWorkspaceControllerRequest = {
 	repository: ReadOnlyWorkspaceRepository;
@@ -64,6 +65,13 @@ export function useTabletWorkspaceController(
 	const navigation = useTabletWorkspaceNavigation(
 		workspaceSnapshot,
 		searchQuery,
+	);
+	const goBack = createWorkspaceBackAction(
+		navigation.goBack,
+		() => navigation.canGoBack,
+		repositoryRequest?.source === "native"
+			? pipeline.reloadWorkspaceSnapshot
+			: undefined,
 	);
 	const { defaultNoteWidth, selectedNote } = resolvedControllerNote(
 		workspaceSnapshot,
@@ -89,18 +97,21 @@ export function useTabletWorkspaceController(
 		updateReadOnlyForm,
 		workspaceSnapshot,
 	});
+	const presentation = controllerPresentation({
+		context: workspaceActions.context,
+		pipeline,
+		defaultNoteWidth,
+		selectedNoteRead: workspaceActions.selectedNoteRead,
+		searchQuery,
+		setSearchQuery,
+		openActionSheetQaTarget: workspaceActions.openActionSheetQaTarget,
+	});
 	return {
 		...workspaceActions.actions,
 		...navigation,
-		...controllerPresentation({
-			context: workspaceActions.context,
-			pipeline,
-			defaultNoteWidth,
-			selectedNoteRead: workspaceActions.selectedNoteRead,
-			searchQuery,
-			setSearchQuery,
-			openActionSheetQaTarget: workspaceActions.openActionSheetQaTarget,
-		}),
+		...presentation,
+		goBack,
+		onGoBack: goBack,
 	};
 }
 
