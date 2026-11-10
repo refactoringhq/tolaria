@@ -1,8 +1,4 @@
 import type {
-  MobileSavedView,
-  MobileWorkspaceSnapshot,
-} from '../workspace/mobileWorkspaceModel'
-import type {
   applyMobileWorkspaceEditWithWrites,
   MobileWorkspaceEdit,
   MobileWorkspaceEditResult,
@@ -13,6 +9,11 @@ import {
   mobileFolderPathContains,
   renamedFolderPath,
 } from '../workspace/mobileWorkspaceFolders'
+import type {
+  MobileSavedView,
+  MobileWorkspaceSnapshot,
+} from '../workspace/mobileWorkspaceModel'
+import { markPristineCreatedNote } from './markPristineCreatedNote'
 import {
   notesForSidebarSelection,
   type TabletSidebarSelection,
@@ -31,6 +32,7 @@ type EditSelectionContext = {
 }
 
 type EditSelectionNavigation = {
+  markPristineNewNote?: (noteId: string) => void
   selectDefaultSidebarItem: (sourceSnapshot: MobileWorkspaceSnapshot) => void
   selectFolder: (selection: { id: string; name: string }, sourceSnapshot?: MobileWorkspaceSnapshot) => void
   selectSavedView: (view: MobileSavedView, sourceSnapshot?: MobileWorkspaceSnapshot) => void
@@ -64,6 +66,8 @@ function selectAfterCreatedNote({ edit, navigation, result, setSelectedNoteId }:
   if (edit.type !== 'createNote' && edit.type !== 'createRelationshipTarget') return false
   const createdNoteId = result.snapshot.selectedNoteId
   if (!createdNoteId) return true
+
+  markPristineCreatedNote(edit, result, navigation.markPristineNewNote)
 
   const visibleNotes = notesForSidebarSelection(result.snapshot, navigation.sidebarSelection)
   if (!visibleNotes.some((note) => note.id === createdNoteId)) {

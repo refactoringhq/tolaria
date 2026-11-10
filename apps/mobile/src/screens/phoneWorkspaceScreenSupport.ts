@@ -46,7 +46,11 @@ export function usePhoneWorkspaceNavigation({
 	setPhoneState,
 	setSourceModeRequest,
 }: NavigationOptions) {
-	const openList = useCallback(() => setPhoneState("list"), [setPhoneState]);
+	const discardPristineNewNote = controller.onDiscardPristineNewNote;
+	const openList = useCallback(() => {
+		discardPristineNewNote?.();
+		setPhoneState("list");
+	}, [discardPristineNewNote, setPhoneState]);
 	const openSidebar = useCallback(
 		() => setPhoneState("sidebar"),
 		[setPhoneState],

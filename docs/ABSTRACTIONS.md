@@ -42,6 +42,14 @@ workspace's existing target resolver and supported external schemes through the
 existing link opener. Ordinary taps still place the caret; phone navigation
 keeps the source note available through the editor back control.
 
+## Mobile Empty-Note Back Discard
+
+`usePristineNewNoteNavigation` tracks only notes created by the current
+workspace action. On phone Back, it rechecks the selected note's editable body
+and routes an untouched blank draft through the normal `deleteNote` write path
+before returning to the list. Existing blank notes and drafts with content are
+preserved.
+
 ## Mobile Read-Only Editor Interactions
 
 Markdown task blocks expose native accessible checkboxes in read-only mode. A

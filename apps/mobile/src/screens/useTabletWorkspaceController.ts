@@ -40,7 +40,7 @@ import {
 	selectedViewCommandActions,
 } from "./tabletWorkspaceViewActions";
 import { useMobileNoteRead } from "./useMobileNoteRead";
-import { useWorkspaceBackRefreshNavigation } from "./workspaceBackRefresh";
+import { usePristineNewNoteNavigation } from "./usePristineNewNoteNavigation";
 
 type TabletWorkspaceControllerRequest = {
 	repository: ReadOnlyWorkspaceRepository;
@@ -61,17 +61,16 @@ export function useTabletWorkspaceController(
 		updateReadOnlyForm,
 	} = useTabletWorkspaceActionState();
 	const [searchQuery, setSearchQuery] = useState("");
-	const navigation = useWorkspaceBackRefreshNavigation(
+	const { navigation, onDiscardPristineNewNote } = usePristineNewNoteNavigation(
 		workspaceSnapshot,
 		searchQuery,
 		request.repositoryRequest?.source === "native"
 			? pipeline.reloadWorkspaceSnapshot
 			: undefined,
+		pipeline.applyWorkspaceEdit,
 	);
-	const { defaultNoteWidth, selectedNote } = resolvedControllerNote(
-		workspaceSnapshot,
-		navigation.selectedNote,
-	);
+	const controllerNote = resolvedControllerNote(workspaceSnapshot, navigation.selectedNote);
+	const { defaultNoteWidth, selectedNote } = controllerNote;
 	const workspaceActions = useTabletWorkspaceControllerActions({
 		applyWorkspaceEdit: pipeline.applyWorkspaceEdit,
 		navigation,
@@ -93,7 +92,7 @@ export function useTabletWorkspaceController(
 		setSearchQuery,
 	);
 	return combineWorkspaceControllerResult(
-		workspaceActions.actions,
+		{ ...workspaceActions.actions, onDiscardPristineNewNote },
 		navigation,
 		presentation,
 	);
