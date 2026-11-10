@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { handleFreshListItemPlainTextPaste } from "./freshListItemPaste";
 
@@ -56,6 +57,28 @@ function makePasteFixture({
 describe("handleFreshListItemPlainTextPaste", () => {
 	afterEach(() => {
 		document.body.innerHTML = "";
+	});
+
+	it("builds the editor paste handler without unsupported Safari lookbehind", async () => {
+		const BrowserUint8Array = globalThis.Uint8Array;
+		globalThis.Uint8Array = new TextEncoder().encode("")
+			.constructor as Uint8ArrayConstructor;
+		let output = "";
+		try {
+			const { build } = await import("esbuild");
+			const bundle = await build({
+				bundle: true,
+				entryPoints: [resolve("src/components/freshListItemPaste.ts")],
+				format: "iife",
+				target: "esnext",
+				write: false,
+			});
+			output = bundle.outputFiles[0]?.text ?? "";
+		} finally {
+			globalThis.Uint8Array = BrowserUint8Array;
+		}
+
+		expect(output).not.toContain("(?<!");
 	});
 
 	it.each([
@@ -140,6 +163,34 @@ describe("handleFreshListItemPlainTextPaste", () => {
 		);
 		expect(fixture.event.preventDefault).toHaveBeenCalled();
 	});
+
+	it.each([
+		{ text: "*Italic*", parsesMarkdown: true },
+		{ text: "word*literal*", parsesMarkdown: false },
+	])(
+		"preserves single-asterisk Markdown boundaries for $text",
+		({ text, parsesMarkdown }) => {
+			const fixture = makePasteFixture({ text });
+
+			handleFreshListItemPlainTextPaste({
+				editable: true,
+				editor: fixture.editor,
+				event: fixture.event,
+				runEditorAction: fixture.runEditorAction,
+			});
+
+			if (parsesMarkdown) {
+				expect(fixture.editor.tryParseMarkdownToBlocks).toHaveBeenCalledWith(
+					text,
+				);
+			} else {
+				expect(fixture.editor.tryParseMarkdownToBlocks).not.toHaveBeenCalled();
+				expect(fixture.editor.insertInlineContent).toHaveBeenCalledWith(text, {
+					updateSelection: true,
+				});
+			}
+		},
+	);
 
 	it("keeps plain text insertion on the existing path", () => {
 		const fixture = makePasteFixture({ text: "Plain paste" });
