@@ -14,7 +14,7 @@ Il workflow `ci.yml` esegue i seguenti check automatici:
 - Threshold configurabile in `vitest.config.ts`
 
 ### 3. Code Health (CodeScene)
-- Delta analysis su ogni PR/push
+- Delta analysis su ogni PR e su `workflow_dispatch`
 - Fail se il code health diminuisce
 - Richiede secrets configurati (vedi sotto)
 
@@ -121,11 +121,12 @@ codescene delta-analysis --base-revision origin/main
 
 ## Workflow Triggers
 
-- **Push**: su `main`
 - **Pull Request**: verso `main`
 - **Manuale**: `workflow_dispatch`
 
-Nota: l'upload a Codecov gira su push a `main` e sulle PR dello stesso repository. Le PR da fork saltano l'upload per evitare problemi di permessi OIDC.
+`ci.yml` non gira più su ogni push a `main`. CircleCI è la CI su `main`. Questo workflow resta per le PR (anche da fork) e per le esecuzioni manuali.
+
+Nota: l'upload a Codecov da questo workflow gira sulle PR dello stesso repository e su `workflow_dispatch`. Le PR da fork saltano l'upload per evitare problemi di permessi OIDC. Gli upload su `main` dipendono da CircleCI e richiedono `CODECOV_TOKEN` nel context `tolaria-ci`.
 
 ## Status Checks
 
