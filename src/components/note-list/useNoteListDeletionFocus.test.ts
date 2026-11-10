@@ -25,6 +25,31 @@ function setup(visible = notes) {
 }
 
 describe("note list focus after deletion", () => {
+	it("reuses the vault path index when callback identities change", () => {
+		const entries = [...notes];
+		const map = vi.spyOn(entries, "map");
+		const openNote = vi.fn();
+		const initialFocusList = vi.fn();
+		const initialProps = {
+			entries,
+			visible: entries,
+			selection: allSelection,
+			loading: false,
+			focusList: initialFocusList,
+		};
+		const hook = renderHook(
+			(props) => useNoteListDeletionFocus({ ...props, openNote }),
+			{ initialProps },
+		);
+
+		hook.rerender({
+			...initialProps,
+			focusList: vi.fn(),
+		});
+
+		expect(map).toHaveBeenCalledOnce();
+	});
+
 	it("opens the next note using the filtered, sorted visible order", () => {
 		const hook = setup([notes[3], notes[1], notes[0]]);
 		hook.rerender({
