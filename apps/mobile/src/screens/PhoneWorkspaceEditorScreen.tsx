@@ -17,6 +17,7 @@ import { TabletEditorPanel } from "./TabletEditorPanel";
 
 type PhoneEditorBodyProps = {
 	controller: PhoneWorkspaceController;
+	onEditorBodyReady?: () => void;
 	notes: MobileNote[];
 	onNavigateWikilink: (target: string) => void;
 	onBackFromWikilink: () => void;
@@ -30,6 +31,7 @@ type PhoneEditorBodyProps = {
 function PhoneEditorBody(props: PhoneEditorBodyProps) {
 	const {
 		controller,
+		onEditorBodyReady,
 		hasWikilinkHistory,
 		notes,
 		onNavigateWikilink,
@@ -59,6 +61,7 @@ function PhoneEditorBody(props: PhoneEditorBodyProps) {
 			layoutProbe={options.layoutProbe}
 			note={controller.selectedNote}
 			noteRead={controller.selectedNoteRead}
+			onEditorBodyReady={onEditorBodyReady}
 			notes={notes}
 			onNavigateWikilink={onNavigateWikilink}
 			onOpenMoreActions={controller.onOpenMoreActions}
@@ -149,6 +152,7 @@ export function PhoneEditorScreen(props: PhoneWorkspaceStateViewProps) {
 			{!controller.selectedNote && <PhoneTopBar title="" onBack={openList} />}
 			<PhoneEditorBody
 				controller={controller}
+				onEditorBodyReady={props.onEditorBodyReady}
 				hasWikilinkHistory={wikilinkNavigation.hasHistory}
 				notes={suggestionNotes}
 				onNavigateWikilink={wikilinkNavigation.navigate}

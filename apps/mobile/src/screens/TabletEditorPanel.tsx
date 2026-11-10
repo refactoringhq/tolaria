@@ -12,12 +12,10 @@ import {
 	type RefreshControlProps,
 	ScrollView,
 } from "react-native";
-import { Text } from "../components/ui/text";
 import { MobileEditorBlocks } from "../components/workspace/MobileEditorBlocks";
 import { MobileFilePreview } from "../components/workspace/MobileFilePreview";
 import { MobileMarkdownSourceEditor } from "../components/workspace/MobileMarkdownSourceEditor";
 import { MobileWysiwygMarkdownEditor } from "../components/workspace/MobileWysiwygMarkdownEditor";
-import { mobileText } from "../i18n/mobileText";
 import { MobileLayoutProbeReadout } from "../qa/MobileLayoutProbeReadout";
 import { useMobileLayoutProbe } from "../qa/mobileLayoutProbe";
 import {
@@ -26,11 +24,7 @@ import {
 } from "../qa/nativeTableOfContentsProbe";
 import { useMobileMotionBodyRender } from "../qa/useMobileMotionBodyRender";
 import { MobilePanel } from "../ui/MobilePanel";
-import {
-	useMobileColors,
-	useMobileMetrics,
-	useMobileStyles,
-} from "../ui/theme/useMobileTheme";
+import { useMobileMetrics, useMobileStyles } from "../ui/theme/useMobileTheme";
 import { useMobileAttachmentImporter } from "../workspace/mobileAttachmentImport";
 import { useMobileAttachmentLinkOpener } from "../workspace/mobileAttachmentOpen";
 import { useRegisteredMobileEditorCommands } from "../workspace/mobileEditorCommands";
@@ -54,6 +48,7 @@ import type {
 	TabletEditorPanelProps,
 } from "./TabletEditorPanel.types";
 import {
+	EditorModeFailure,
 	EmptyEditorPanel,
 	MobileFilePreviewFallback,
 	MobileNoteReadFallback,
@@ -219,25 +214,9 @@ function createEditorContentProps(
 		wysiwygTableCommandMutationProbe:
 			props.wysiwygTableCommandMutationProbe ?? false,
 		wysiwygMutationProbe: props.wysiwygMutationProbe ?? false,
+		onEditorBodyReady: props.onEditorBodyReady,
 		wysiwygWikilinkInsertProbe: props.wysiwygWikilinkInsertProbe ?? false,
 	};
-}
-
-function EditorModeFailure({ failed }: { failed: boolean }) {
-	const colors = useMobileColors();
-	const metrics = useMobileMetrics();
-	return failed ? (
-		<Text
-			accessibilityRole="alert"
-			style={{
-				color: colors.danger,
-				fontSize: metrics.type.body,
-				padding: metrics.space.md,
-			}}
-		>
-			{mobileText("mobile.editor.readFailed")}
-		</Text>
-	) : null;
 }
 
 function EditorPanelBody(
@@ -328,10 +307,11 @@ function noteReadFallbackState(
 	noteRead: MobileNoteReadState | undefined,
 	note: MobileNote,
 ) {
-	if (!noteRead || noteRead.status === "ready") return null;
-	return noteRead.status === "error" || note.rawContent === undefined
-		? noteRead
-		: null;
+	if (!noteRead) return null;
+	const hasUsableContent =
+		noteRead.status === "ready" ||
+		(noteRead.status === "loading" && note.rawContent !== undefined);
+	return hasUsableContent ? null : noteRead;
 }
 
 function useTableOfContentsScroll(
@@ -406,6 +386,7 @@ function EditorContent({
 	note,
 	notes,
 	plainText,
+	onEditorBodyReady,
 	onImportAttachment,
 	onNavigateWikilink,
 	onOpenLink,
@@ -431,7 +412,7 @@ function EditorContent({
 	useMobileMotionBodyRender(compact, note.id, note.rawContent);
 
 	if (editing) {
-		if (plainText || editingMode === "source") {
+		if (usesSourceEditor(plainText, editingMode)) {
 			return (
 				<MobileMarkdownSourceEditor
 					key={`${note.id}:${plainText ? "text" : "source"}`}
@@ -461,6 +442,7 @@ function EditorContent({
 				onNavigateWikilink={onNavigateWikilink}
 				onImportAttachment={onImportAttachment}
 				onOpenLink={onOpenLink}
+				onEditorBodyReady={onEditorBodyReady}
 				onRegisterEditorCommands={onRegisterEditorCommands}
 				onTableOfContentsScrollProof={onTableOfContentsScrollProof}
 				onUpdateContent={onUpdateContent}
@@ -501,6 +483,13 @@ function EditorContent({
 			}}
 		/>
 	);
+}
+
+function usesSourceEditor(
+	plainText: boolean,
+	editingMode: EditorContentProps["editingMode"],
+) {
+	return plainText || editingMode === "source";
 }
 
 function shouldRenderReadTitleBlock(

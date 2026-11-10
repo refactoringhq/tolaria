@@ -33,6 +33,7 @@ export type MobileWysiwygMarkdownEditorProps = {
 	onRegisterEditorCommands?: RegisterMobileEditorCommands;
 	onTableOfContentsScrollProof?: (proof: NativeTableOfContentsProof) => void;
 	onUpdateContent: (noteId: string, content: string) => void;
+	onEditorBodyReady?: () => void;
 	tableOfContentsTarget?: MobileTableOfContentsTarget | null;
 	vaultRootUri?: string | null;
 	typeDefinitions: MobileTypeDefinitions | null | undefined;
@@ -115,6 +116,7 @@ export type NativeTentapEditorSurfaceProps = {
 	onOpenExternalLinkSheet: () => void;
 	onOpenToolbarWikilinkPicker: () => void;
 	onRegisterEditorCommands?: RegisterMobileEditorCommands;
+	onEditorBodyReady?: () => void;
 	pickerState: NativeWysiwygPickerState | null;
 	sourceNote: MobileNote;
 	typeDefinitions: MobileTypeDefinitions | null | undefined;

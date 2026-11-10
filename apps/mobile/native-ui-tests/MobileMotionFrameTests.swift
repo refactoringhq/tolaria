@@ -1,6 +1,32 @@
 import XCTest
 
 final class MobileMotionFrameTests: XCTestCase {
+  func testNewNoteHeaderAndBodyEnterTogether() {
+    continueAfterFailure = false
+    XCUIDevice.shared.orientation = .portrait
+    let app = launchMotionFixture(source: "host")
+    let create = element(app, "note-list-create-action")
+    XCTAssertTrue(create.waitForExistence(timeout: 30), "Create action did not appear")
+
+    create.tap()
+    let toolbar = element(app, "editor-toolbar")
+    let body = app.webViews.firstMatch
+    var samples: [[String: Any]] = []
+    for _ in 0..<180 where !(toolbar.exists && body.exists) {
+      let timestamp = ProcessInfo.processInfo.systemUptime
+      if toolbar.exists { samples.append(frameSample("header", toolbar, timestamp)) }
+      if body.exists { samples.append(frameSample("body", body, timestamp)) }
+      RunLoop.current.run(until: Date().addingTimeInterval(1.0 / 60.0))
+    }
+
+    XCTAssertTrue(toolbar.waitForExistence(timeout: 8), "New-note header did not mount")
+    XCTAssertTrue(body.waitForExistence(timeout: 8), "New-note body did not mount")
+    let timestamp = ProcessInfo.processInfo.systemUptime
+    samples.append(frameSample("header", toolbar, timestamp))
+    samples.append(frameSample("body", body, timestamp))
+    attachSamples(samples)
+  }
+
   func testListChromeEditorReturnSidebarCloseAndOrganizeSwipeAreReachable() {
     continueAfterFailure = false
     XCUIDevice.shared.orientation = .portrait
@@ -34,9 +60,9 @@ final class MobileMotionFrameTests: XCTestCase {
     attachFrame("organize-swipe", app)
   }
 
-  private func launchMotionFixture() -> XCUIApplication {
+  private func launchMotionFixture(source: String = "fixture") -> XCUIApplication {
     let app = XCUIApplication(bundleIdentifier: "com.tolaria.mobile.dev")
-    let search = "?source=fixture&phoneState=list&editorMode=wysiwyg&layoutProbe=1&qaRun=tol339-motion"
+    let search = "?source=\(source)&phoneState=list&editorMode=wysiwyg&layoutProbe=1&qaRun=tol339-motion"
     app.launchArguments = ["--tolaria-mobile-search", search]
     app.launchEnvironment["TOLARIA_MOBILE_SEARCH"] = search
     app.launch()
@@ -53,5 +79,33 @@ final class MobileMotionFrameTests: XCTestCase {
     attachment.lifetime = .keepAlways
     add(attachment)
     XCTAssertTrue(app.state == .runningForeground)
+  }
+
+  private func frameSample(
+    _ element: String,
+    _ target: XCUIElement,
+    _ timestamp: TimeInterval
+  ) -> [String: Any] {
+    let frame = target.frame
+    return [
+      "element": element,
+      "atUptime": timestamp,
+      "x": frame.minX,
+      "y": frame.minY,
+      "width": frame.width,
+      "height": frame.height
+    ]
+  }
+
+  private func attachSamples(_ samples: [[String: Any]]) {
+    do {
+      let data = try JSONSerialization.data(withJSONObject: samples, options: [.sortedKeys])
+      let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
+      attachment.name = "new-note-header-body-frame-samples"
+      attachment.lifetime = .keepAlways
+      add(attachment)
+    } catch {
+      XCTFail("Could not serialize new-note frame samples: \(error)")
+    }
   }
 }
