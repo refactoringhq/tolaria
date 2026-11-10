@@ -814,13 +814,14 @@ jobs:
       - install_frontend_dependencies
       - restore_cache:
           keys:
-            - playwright-v1-{{ checksum "pnpm-lock.yaml" }}
+            - web-gates-playwright-v1-{{ checksum "pnpm-lock.yaml" }}
+            - web-gates-playwright-v1-
             - playwright-v1-
       - run:
           name: Install Playwright browsers
           command: pnpm exec playwright install --with-deps chromium webkit
       - save_cache:
-          key: playwright-v1-{{ checksum "pnpm-lock.yaml" }}
+          key: web-gates-playwright-v1-{{ checksum "pnpm-lock.yaml" }}
           paths:
             - ~/.cache/ms-playwright
       - run:
