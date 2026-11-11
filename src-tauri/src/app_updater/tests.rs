@@ -6,10 +6,11 @@ use super::{
 use serde_json::json;
 
 #[test]
-fn system_packages_use_the_package_manager_while_appimages_keep_self_updates() {
-    assert!(requires_package_manager_update(true, false));
-    assert!(!requires_package_manager_update(true, true));
-    assert!(!requires_package_manager_update(false, false));
+fn only_deb_and_rpm_owned_linux_installs_use_package_manager_updates() {
+    assert!(requires_package_manager_update(true, false, true));
+    assert!(!requires_package_manager_update(true, true, true));
+    assert!(!requires_package_manager_update(true, false, false));
+    assert!(!requires_package_manager_update(false, false, true));
 }
 
 #[test]

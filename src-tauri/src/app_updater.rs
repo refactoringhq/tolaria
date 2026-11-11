@@ -1,5 +1,7 @@
 use chrono::Datelike;
 use serde::{Deserialize, Serialize};
+use std::path::Path;
+use std::process::{Command, Stdio};
 use std::time::Duration;
 use tauri::{ipc::Channel, AppHandle, Runtime, Url};
 use tauri_plugin_updater::UpdaterExt;
@@ -16,14 +18,38 @@ const UPDATER_USER_AGENT: &str = concat!("Tolaria/", env!("CARGO_PKG_VERSION"));
 pub const SYSTEM_PACKAGE_UPDATE_MESSAGE: &str = "system-package-updates-use-package-manager";
 
 fn system_package_update_required() -> bool {
-    requires_package_manager_update(
-        cfg!(target_os = "linux"),
-        std::env::var_os("APPIMAGE").is_some(),
-    )
+    let is_linux = cfg!(target_os = "linux");
+    let is_appimage = std::env::var_os("APPIMAGE").is_some();
+    let is_system_package = is_linux
+        && !is_appimage
+        && std::fs::read_link("/proc/self/exe")
+            .is_ok_and(|executable| package_manager_owns_executable(&executable));
+    requires_package_manager_update(is_linux, is_appimage, is_system_package)
 }
 
-fn requires_package_manager_update(is_linux: bool, is_appimage: bool) -> bool {
-    is_linux && !is_appimage
+fn package_manager_owns_executable(executable: &Path) -> bool {
+    ["dpkg-query", "rpm"].into_iter().any(|manager| {
+        let mut command = Command::new(manager);
+        if manager == "dpkg-query" {
+            command.arg("--search");
+        } else {
+            command.arg("-qf");
+        }
+        command
+            .arg(executable)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .is_ok_and(|status| status.success())
+    })
+}
+
+fn requires_package_manager_update(
+    is_linux: bool,
+    is_appimage: bool,
+    is_system_package: bool,
+) -> bool {
+    is_linux && !is_appimage && is_system_package
 }
 
 #[derive(Debug, Clone, Serialize)]
