@@ -1,8 +1,13 @@
 import { ArrowClockwise, FileText, WarningCircle } from "phosphor-react-native";
+import { memo } from "react";
 import { ScrollView, View } from "react-native";
 import { Text } from "../components/ui/text";
+import { MobileEditorBlocks } from "../components/workspace/MobileEditorBlocks";
+import { MobileMarkdownSourceEditor } from "../components/workspace/MobileMarkdownSourceEditor";
 import { MobileTypeIcon } from "../components/workspace/MobileWorkspaceIcons";
+import { MobileWysiwygMarkdownEditor } from "../components/workspace/MobileWysiwygMarkdownEditor";
 import { mobileText } from "../i18n/mobileText";
+import { useMobileMotionBodyRender } from "../qa/useMobileMotionBodyRender";
 import { desktopToolbarActionParity } from "../ui/desktopParity";
 import { MobileButton } from "../ui/MobileButton";
 import {
@@ -16,10 +21,13 @@ import {
 	useMobileStyles,
 } from "../ui/theme/useMobileTheme";
 import type { MobileNoteReadState } from "../workspace/mobileNoteRead";
+import { createMobileTaskToggleHandler } from "../workspace/mobileTaskCheckbox";
 import type {
+	MobileEditorBlock,
 	MobileNote,
 	MobileTypeDefinitions,
 } from "../workspace/mobileWorkspaceModel";
+import type { EditorContentProps } from "./TabletEditorPanel.types";
 import { createEditorPanelStyles } from "./TabletEditorPanelStyles";
 
 export function MobileNoteReadFallback({
@@ -177,3 +185,164 @@ export function EditorModeFailure({ failed }: { failed: boolean }) {
 		</Text>
 	);
 }
+
+export const TabletEditorContent = memo(function TabletEditorContent(
+	props: EditorContentProps,
+) {
+	useMobileMotionBodyRender(
+		props.compact,
+		props.note.id,
+		props.note.rawContent ??
+			JSON.stringify({ blocks: props.blocks, bullets: props.bullets }),
+		props,
+	);
+	if (props.editing) return <EditingContent props={props} />;
+	return <ReadOnlyContent props={props} />;
+}, areEditorContentPropsEqual);
+
+function EditingContent({ props }: { props: EditorContentProps }) {
+	return usesSourceEditor(props.plainText, props.editingMode) ? (
+		<SourceEditorContent props={props} />
+	) : (
+		<WysiwygEditorContent props={props} />
+	);
+}
+
+function SourceEditorContent({ props }: { props: EditorContentProps }) {
+	const {
+		blocks,
+		bullets,
+		compact,
+		note,
+		notes,
+		onImportAttachment,
+		onRegisterEditorCommands,
+		onUpdateContent,
+		plainText,
+		sourceIdleSave,
+		sourceSelectionProbe,
+	} = props;
+	return (
+		<MobileMarkdownSourceEditor
+			key={`${note.id}:${plainText ? "text" : "source"}`}
+			blocks={blocks}
+			bullets={bullets}
+			compact={compact}
+			note={note}
+			notes={notes}
+			onImportAttachment={onImportAttachment}
+			onRegisterEditorCommands={onRegisterEditorCommands}
+			onUpdateContent={onUpdateContent}
+			idleSave={sourceIdleSave}
+			plainText={plainText}
+			sourceSelectionProbe={sourceSelectionProbe}
+		/>
+	);
+}
+
+function WysiwygEditorContent({ props }: { props: EditorContentProps }) {
+	return <MobileWysiwygMarkdownEditor {...createWysiwygEditorProps(props)} />;
+}
+
+function createWysiwygEditorProps(props: EditorContentProps) {
+	return {
+		blocks: props.blocks,
+		bullets: props.bullets,
+		compact: props.compact,
+		layoutProbe: props.layoutProbe,
+		note: props.note,
+		notes: props.notes,
+		onNavigateWikilink: props.onNavigateWikilink,
+		onImportAttachment: props.onImportAttachment,
+		onOpenLink: props.onOpenLink,
+		onEditorBodyReady: props.onEditorBodyReady,
+		onRegisterEditorCommands: props.onRegisterEditorCommands,
+		onTableOfContentsScrollProof: props.onTableOfContentsScrollProof,
+		onUpdateContent: props.onUpdateContent,
+		tableOfContentsTarget: props.tableOfContentsTarget,
+		typeDefinitions: props.typeDefinitions,
+		vaultRootUri: props.vaultRootUri,
+		wysiwygAutocompleteProbe: props.wysiwygAutocompleteProbe,
+		wysiwygExternalLinkProbe: props.wysiwygExternalLinkProbe,
+		wysiwygFormatCommandProbe: props.wysiwygFormatCommandProbe,
+		wysiwygInputTransformProbe: props.wysiwygInputTransformProbe,
+		wysiwygMarkdownBlockProbe: props.wysiwygMarkdownBlockProbe,
+		wysiwygMathEditProbe: props.wysiwygMathEditProbe,
+		wysiwygTableCommandMutationProbe: props.wysiwygTableCommandMutationProbe,
+		wysiwygWikilinkInsertProbe: props.wysiwygWikilinkInsertProbe,
+		wysiwygMutationProbe: props.wysiwygMutationProbe,
+	};
+}
+
+function ReadOnlyContent({ props }: { props: EditorContentProps }) {
+	const {
+		blocks,
+		bullets,
+		note,
+		onNavigateWikilink,
+		onOpenLink,
+		onTableOfContentsTargetLayout,
+		onUpdateContent,
+	} = props;
+	const readBlocks = note.editorBlocks ?? blocks;
+	const readBullets = note.editorBullets ?? bullets;
+	return (
+		<MobileEditorBlocks
+			blocks={readBlocks}
+			fallbackBullets={readBullets}
+			renderTitleBlock={shouldRenderReadTitleBlock(note, readBlocks)}
+			tableOfContentsTitle={note.title}
+			onTableOfContentsTargetLayout={onTableOfContentsTargetLayout}
+			interactions={{
+				onOpenLink,
+				onNavigateWikilink,
+				onToggleTask: createMobileTaskToggleHandler(
+					note.rawContent,
+					note.id,
+					onUpdateContent,
+				),
+			}}
+		/>
+	);
+}
+
+function areEditorContentPropsEqual(
+	previous: EditorContentProps,
+	next: EditorContentProps,
+) {
+	const keys = Object.keys(next) as (keyof EditorContentProps)[];
+	return keys.every((key) =>
+		key === "note"
+			? sameEditorNote(previous.note, next.note)
+			: previous[key] === next[key],
+	);
+}
+
+function sameEditorNote(previous: MobileNote, next: MobileNote) {
+	return (
+		previous.id === next.id &&
+		previous.rawContent === next.rawContent &&
+		previous.editorBlocks === next.editorBlocks &&
+		previous.editorBullets === next.editorBullets &&
+		previous.title === next.title &&
+		previous.type === next.type
+	);
+}
+
+function usesSourceEditor(
+	plainText: boolean,
+	editingMode: EditorContentProps["editingMode"],
+) {
+	return plainText || editingMode === "source";
+}
+
+function shouldRenderReadTitleBlock(
+	note: MobileNote,
+	blocks: MobileEditorBlock[],
+) {
+	if (blocks.length === 0) return false;
+	if (generatedUntitledTitlePattern.test(note.title)) return false;
+	return note.title.trim().length > 0;
+}
+
+const generatedUntitledTitlePattern = /^Untitled\s+\S+\s+\d+$/u;
