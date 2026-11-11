@@ -8,6 +8,15 @@ const source = readFileSync(path, "utf8");
 const newNoteOnly = process.argv.includes("--new-note-only");
 const frames = readFrames(source);
 const events = readEvents(source);
+const expectedBuildId = process.env.EXPO_PUBLIC_TOLARIA_MOTION_BUILD_ID ?? null;
+const observedBuildIds = [
+	...[...frames.values()].flat().map((sample) => sample.buildId),
+	...events.map((event) => event.buildId),
+].filter(Boolean);
+const buildIdMatches = expectedBuildId
+	? new Set(observedBuildIds).size === 1 &&
+		observedBuildIds[0] === expectedBuildId
+	: null;
 const checks = Object.fromEntries(
 	[...frames].map(([id, samples]) => [id, analyze(samples)]),
 );
@@ -22,16 +31,12 @@ const fabPosition = analyzeFabTransitions(
 	events,
 	frames.get("phone.rail.offset") ?? [],
 );
+const noteBodyOnly = process.argv.includes("--note-body-only");
+const launchOnly = process.argv.includes("--launch-only");
 const report = {
-	buildIds: [
-		...new Set(
-			[...frames.values()]
-				.flat()
-				.map((sample) => sample.buildId)
-				.concat(events.map((event) => event.buildId))
-				.filter(Boolean),
-		),
-	],
+	buildIds: [...new Set(observedBuildIds)],
+	buildIdMatches,
+	expectedBuildId,
 	checks,
 	eventCounts: countEvents(events),
 	frameCount: [...frames.values()].reduce(
@@ -42,21 +47,25 @@ const report = {
 	newNoteEntry,
 	firstListFrame,
 	fabPosition,
-	notTested: [
-		"Artificially delayed vault loading; the app has no deterministic debug delay seam.",
-	],
+	notTested: [],
 };
 process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
 
 if (
-	newNoteOnly
-		? !newNoteEntry.passed
-		: !["phone.rail.offset", "organize-swipe.workflow-orchestration"].every(
-				(id) => checks[id]?.sampleCount > 1,
-			) ||
-			!firstListFrame.controlsLaidOut ||
-			noteBody.renderEvents === 0 ||
-			!newNoteEntry.passed
+	launchOnly
+		? !firstListFrame.controlsWithinFirstFrame || buildIdMatches !== true
+		: noteBodyOnly
+			? !noteBody.passed || buildIdMatches === false
+			: newNoteOnly
+				? !newNoteEntry.passed || buildIdMatches === false
+				: !["phone.rail.offset", "organize-swipe.workflow-orchestration"].every(
+						(id) => checks[id]?.sampleCount > 1,
+					) ||
+					!firstListFrame.controlsWithinFirstFrame ||
+					!noteBody.passed ||
+					buildIdMatches === false ||
+					noteBody.renderEvents === 0 ||
+					!newNoteEntry.passed
 )
 	process.exitCode = 1;
 
@@ -163,15 +172,31 @@ function analyzeNoteBody(events) {
 		(event) => event.contentFingerprint,
 	);
 	const fingerprintChanges = countFingerprintChanges(contentRenders);
+	const openFingerprintChanges = countFingerprintChanges(openContentRenders);
+	const openNoteIds = [...new Set(openRenders.map((event) => event.noteId))];
+	const openMissingFingerprints = openRenders.filter(
+		(event) => !event.contentFingerprint,
+	).length;
+	const passed =
+		openRenders.length > 0 &&
+		openRenders.length === 1 &&
+		openContentRenders.length === 1 &&
+		openFingerprintChanges === 1 &&
+		openMissingFingerprints === 0 &&
+		openNoteIds.length === 1;
 	return {
 		contentRenders: contentRenders.length,
 		exactlyOneRender: noteRenders.length === 1,
 		fingerprintChanges,
+		openFingerprintChanges,
 		openContentRenders: openContentRenders.length,
 		openExactlyOneRender: openRenders.length === 1,
+		openMissingFingerprints,
+		openNoteIds,
 		openRenderEvents: openRenders.length,
+		passed,
 		renderEvents: noteRenders.length,
-		oneBodyChange: fingerprintChanges === 1,
+		oneBodyChange: passed,
 	};
 }
 
