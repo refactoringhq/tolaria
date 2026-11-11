@@ -930,6 +930,7 @@ files:
     update.checking: a07813cc05571f23ce8dd7039583d7da
     update.error.check: bd0a71f91dc93d5dfc4b7102a31e49eb
     update.error.download: d7fde6036c55373b5cd605d721ca2fb2
+    update.error.package: 0a809a41413d5e51585744e65fc25a52
     update.releaseNotes: 5dd03e8d039863e563e049be198c3fd3
     update.updateNow: 99b1054c0f320be9f109c877a5efd0b2
     update.dismiss: c8a59e7135a20b362f9c768b09454fdb

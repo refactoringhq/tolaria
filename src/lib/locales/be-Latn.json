@@ -879,6 +879,7 @@
   "update.checking": "Pravierka abnaŭlienniaŭ...",
   "update.error.check": "Nie ŭdalosia praveryć najaŭnasć abnaŭlienniaŭ",
   "update.error.download": "Nie ŭdalosia spampavać abnaŭliennie",
+  "update.error.package": "Abnaŭlice hetuju ŭstanovku praz menedžar paketaŭ Linux. Apacoŭny paket znajdzice na staroncy vydaŭ.",
   "update.releaseNotes": "Što novaha",
   "update.updateNow": "Abnavić zaraz",
   "update.dismiss": "Schavać",

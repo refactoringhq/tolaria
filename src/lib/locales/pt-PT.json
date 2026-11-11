@@ -928,6 +928,7 @@
   "update.checking": "A procurar atualizações...",
   "update.error.check": "Não foi possível verificar se há atualizações",
   "update.error.download": "Não foi possível transferir a atualização",
+  "update.error.package": "Atualize esta instalação com o seu gestor de pacotes Linux. Consulte a página de versões para obter o pacote mais recente.",
   "update.releaseNotes": "Notas de lançamento",
   "update.updateNow": "Atualizar agora",
   "update.dismiss": "Ignorar",
