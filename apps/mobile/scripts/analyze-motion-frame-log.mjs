@@ -58,8 +58,12 @@ if (
 			? !noteBody.passed || buildIdMatches === false
 			: newNoteOnly
 				? !newNoteEntry.passed || buildIdMatches === false
-				: !["phone.rail.offset", "organize-swipe.workflow-orchestration"].every(
-						(id) => checks[id]?.sampleCount > 1,
+				: !checks["phone.rail.offset"]?.sampleCount ||
+					checks["phone.rail.offset"].sampleCount <= 1 ||
+					!Object.entries(checks).some(
+						([id, check]) =>
+							id.startsWith("organize-swipe.workflow-orchestration") &&
+							check.sampleCount > 1,
 					) ||
 					!firstListFrame.controlsWithinFirstFrame ||
 					!noteBody.passed ||
