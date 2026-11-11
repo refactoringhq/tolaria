@@ -1,103 +1,124 @@
-import { useCallback, useMemo, useState } from 'react'
-import { Platform, type LayoutChangeEvent } from 'react-native'
-import { postNativeQaEvent, setNativeQaSinkUrl } from './nativeQaSink'
+import { useCallback, useMemo, useRef, useState } from "react";
+import { type LayoutChangeEvent, Platform } from "react-native";
+import { mobileMotionFrameProbeEnabled } from "./mobileMotionFrameLog";
+import { postNativeQaEvent, setNativeQaSinkUrl } from "./nativeQaSink";
 
 export type MobileLayoutMetric = {
-  height: number
-  id: string
-  platform: string
-  width: number
-  x: number
-  y: number
-}
+	height: number;
+	id: string;
+	platform: string;
+	width: number;
+	x: number;
+	y: number;
+};
 
-export type MobileLayoutMetrics = Record<string, MobileLayoutMetric>
-export type MobileLayoutProbe = (id: string) => { onLayout: (event: LayoutChangeEvent) => void } | Record<string, never>
+export type MobileLayoutMetrics = Record<string, MobileLayoutMetric>;
+export type MobileLayoutProbe = (
+	id: string,
+) => { onLayout: (event: LayoutChangeEvent) => void } | Record<string, never>;
 
 type LayoutProbeGlobal = typeof globalThis & {
-  __TOLARIA_MOBILE_LAYOUT_METRICS__?: MobileLayoutMetrics
-}
+	__TOLARIA_MOBILE_LAYOUT_METRICS__?: MobileLayoutMetrics;
+};
 
-const emptyProbeProps = {}
+const emptyProbeProps = {};
 export function setMobileLayoutMetricSinkUrl(url: string | null) {
-  setNativeQaSinkUrl(url)
+	setNativeQaSinkUrl(url);
 }
 
 export function useMobileLayoutProbe(enabled: boolean) {
-  const [metrics, setMetrics] = useState<MobileLayoutMetrics>({})
+	const [metrics, setMetrics] = useState<MobileLayoutMetrics>({});
+	const latestMetrics = useRef<MobileLayoutMetrics>({});
 
-  const recordLayout = useCallback((id: string, event: LayoutChangeEvent) => {
-    if (!enabled) return
+	const recordLayout = useCallback(
+		(id: string, event: LayoutChangeEvent) => {
+			if (!enabled) return;
 
-    const metric = metricFromLayout(id, event)
-    setMetrics((current) => {
-      if (sameMetric(current[id], metric)) return current
-      publishMetric(metric)
-      return { ...current, [id]: metric }
-    })
-  }, [enabled])
+			const metric = metricFromLayout(id, event);
+			if (sameMetric(latestMetrics.current[id], metric)) return;
 
-  const probe = useCallback<MobileLayoutProbe>((id) => {
-    if (!enabled) return emptyProbeProps
+			latestMetrics.current = { ...latestMetrics.current, [id]: metric };
+			publishMetric(metric);
+			if (!mobileMotionFrameProbeEnabled) setMetrics(latestMetrics.current);
+		},
+		[enabled],
+	);
 
-    return {
-      onLayout: (event) => recordLayout(id, event),
-    }
-  }, [enabled, recordLayout])
+	const probe = useCallback<MobileLayoutProbe>(
+		(id) => {
+			if (!enabled) return emptyProbeProps;
 
-  return useMemo(() => ({ metrics, probe }), [metrics, probe])
+			return {
+				onLayout: (event) => recordLayout(id, event),
+			};
+		},
+		[enabled, recordLayout],
+	);
+
+	return useMemo(() => ({ metrics, probe }), [metrics, probe]);
 }
 
 export function metricReadout(metrics: MobileLayoutMetrics) {
-  const ids = Object.keys(metrics).sort()
-  if (ids.length === 0) return ''
+	const ids = Object.keys(metrics).sort();
+	if (ids.length === 0) return "";
 
-  return ids
-    .map((id) => {
-      const metric = metrics[id]
-      return `${id}:${metric.x},${metric.y},${metric.width},${metric.height}`
-    })
-    .join('|')
+	return ids
+		.map((id) => {
+			const metric = metrics[id];
+			return `${id}:${metric.x},${metric.y},${metric.width},${metric.height}`;
+		})
+		.join("|");
 }
 
-export function probeProps(layoutProbe: MobileLayoutProbe | undefined, id: string) {
-  return layoutProbe?.(id) ?? {}
+export function probeProps(
+	layoutProbe: MobileLayoutProbe | undefined,
+	id: string,
+) {
+	return layoutProbe?.(id) ?? {};
 }
 
-function metricFromLayout(id: string, event: LayoutChangeEvent): MobileLayoutMetric {
-  const { height, width, x, y } = event.nativeEvent.layout
+function metricFromLayout(
+	id: string,
+	event: LayoutChangeEvent,
+): MobileLayoutMetric {
+	const { height, width, x, y } = event.nativeEvent.layout;
 
-  return {
-    height: roundMetric(height),
-    id,
-    platform: Platform.OS,
-    width: roundMetric(width),
-    x: roundMetric(x),
-    y: roundMetric(y),
-  }
+	return {
+		height: roundMetric(height),
+		id,
+		platform: Platform.OS,
+		width: roundMetric(width),
+		x: roundMetric(x),
+		y: roundMetric(y),
+	};
 }
 
 function publishMetric(metric: MobileLayoutMetric) {
-  const target = globalThis as LayoutProbeGlobal
-  target.__TOLARIA_MOBILE_LAYOUT_METRICS__ = {
-    ...target.__TOLARIA_MOBILE_LAYOUT_METRICS__,
-    [metric.id]: metric,
-  }
+	const target = globalThis as LayoutProbeGlobal;
+	target.__TOLARIA_MOBILE_LAYOUT_METRICS__ = {
+		...target.__TOLARIA_MOBILE_LAYOUT_METRICS__,
+		[metric.id]: metric,
+	};
 
-  if (Platform.OS !== 'web') {
-    console.info(`TOLARIA_MOBILE_LAYOUT_METRIC ${JSON.stringify(metric)}`)
-    postNativeQaEvent(metric)
-  }
+	if (Platform.OS !== "web") {
+		console.info(`TOLARIA_MOBILE_LAYOUT_METRIC ${JSON.stringify(metric)}`);
+		postNativeQaEvent(metric);
+	}
 }
 
 function roundMetric(value: number) {
-  return Math.round(value * 10) / 10
+	return Math.round(value * 10) / 10;
 }
 
-function sameMetric(current: MobileLayoutMetric | undefined, next: MobileLayoutMetric) {
-  return Boolean(current)
-    && current?.height === next.height
-    && current.width === next.width
-    && current.x === next.x
-    && current.y === next.y
+function sameMetric(
+	current: MobileLayoutMetric | undefined,
+	next: MobileLayoutMetric,
+) {
+	return (
+		Boolean(current) &&
+		current?.height === next.height &&
+		current.width === next.width &&
+		current.x === next.x &&
+		current.y === next.y
+	);
 }
