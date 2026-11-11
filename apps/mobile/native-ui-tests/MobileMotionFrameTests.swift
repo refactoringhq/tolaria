@@ -1,10 +1,28 @@
 import XCTest
 
 final class MobileMotionFrameTests: XCTestCase {
+  func testLargeVaultLaunchKeepsListChromeReachable() {
+    continueAfterFailure = false
+    XCUIDevice.shared.orientation = .portrait
+    let app = attachToMotionFixture()
+    let list = element(app, "phone-note-list-screen")
+    XCTAssertTrue(list.waitForExistence(timeout: 60), "List did not appear after the large-vault launch")
+    XCTAssertTrue(
+      element(app, "note-row-note-6000.md").waitForExistence(timeout: 8),
+      "The generated large-vault note did not load"
+    )
+
+    let hamburger = element(app, "phone-note-list-sidebar-button")
+    let create = element(app, "note-list-create-action")
+    XCTAssertTrue(hamburger.exists && hamburger.isHittable, "Hamburger missing or not tappable after large-vault launch")
+    XCTAssertTrue(create.exists && create.isHittable, "FAB missing or not tappable after large-vault launch")
+    attachFrame("large-vault-first-list-frame", app)
+  }
+
   func testNewNoteHeaderAndBodyEnterTogether() {
     continueAfterFailure = false
     XCUIDevice.shared.orientation = .portrait
-    let app = launchMotionFixture(source: "host")
+    let app = attachToMotionFixture()
     let create = element(app, "note-list-create-action")
     XCTAssertTrue(create.waitForExistence(timeout: 30), "Create action did not appear")
 
@@ -30,7 +48,7 @@ final class MobileMotionFrameTests: XCTestCase {
   func testListChromeEditorReturnSidebarCloseAndOrganizeSwipeAreReachable() {
     continueAfterFailure = false
     XCUIDevice.shared.orientation = .portrait
-    let app = launchMotionFixture()
+    let app = attachToMotionFixture()
 
     let list = element(app, "phone-note-list-screen")
     XCTAssertTrue(list.waitForExistence(timeout: 30), "Initial list frame did not appear")
@@ -60,12 +78,10 @@ final class MobileMotionFrameTests: XCTestCase {
     attachFrame("organize-swipe", app)
   }
 
-  private func launchMotionFixture(source: String = "fixture") -> XCUIApplication {
+  private func attachToMotionFixture() -> XCUIApplication {
     let app = XCUIApplication(bundleIdentifier: "com.tolaria.mobile.dev")
-    let search = "?source=\(source)&phoneState=list&editorMode=wysiwyg&layoutProbe=1&qaRun=tol339-motion"
-    app.launchArguments = ["--tolaria-mobile-search", search]
-    app.launchEnvironment["TOLARIA_MOBILE_SEARCH"] = search
-    app.launch()
+    app.activate()
+    XCTAssertTrue(app.state == .runningForeground, "The scripted motion fixture is not foregrounded")
     return app
   }
 

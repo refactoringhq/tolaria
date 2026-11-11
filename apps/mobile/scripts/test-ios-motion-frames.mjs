@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -44,6 +44,19 @@ run("ruby", [
 	),
 	project,
 ]);
+const motionSearch =
+	process.env.TOLARIA_MOTION_SEARCH ??
+	"?source=fixture&phoneState=list&editorMode=wysiwyg&layoutProbe=1&qaRun=tol339-motion";
+const logStartOffset = statSync(metroLogPath).size;
+run("xcrun", [
+	"simctl",
+	"launch",
+	"--terminate-running-process",
+	device,
+	"com.tolaria.mobile.dev",
+	"--tolaria-mobile-search",
+	motionSearch,
+]);
 const resultBundle = join(output, `motion-${Date.now()}.xcresult`);
 const focusedCheck = process.env.TOLARIA_MOTION_CHECK;
 run(
@@ -71,25 +84,38 @@ run("xcodebuild", [
 	"never",
 	"-parallel-testing-enabled",
 	"NO",
-	"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests",
+	...(focusedCheck === "new-note"
+		? [
+				"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNewNoteHeaderAndBodyEnterTogether",
+			]
+		: focusedCheck === "launch"
+			? [
+					"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testLargeVaultLaunchKeepsListChromeReachable",
+				]
+			: [
+					"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testListChromeEditorReturnSidebarCloseAndOrganizeSwipeAreReachable",
+					"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNewNoteHeaderAndBodyEnterTogether",
+				]),
 	"CODE_SIGNING_ALLOWED=NO",
 	"test",
 ]);
 const logPath = join(output, "simulator-motion.log");
-writeFileSync(logPath, readFileSync(metroLogPath));
+writeFileSync(logPath, readFileSync(metroLogPath).subarray(logStartOffset));
 const analysis = run(
 	"node",
 	[
 		fileURLToPath(new URL("./analyze-motion-frame-log.mjs", import.meta.url)),
 		logPath,
 		...(focusedCheck === "new-note" ? ["--new-note-only"] : []),
+		...(focusedCheck === "launch" ? ["--launch-only"] : []),
 	],
-	{ capture: true },
+	{ allowFailure: true, capture: true },
 );
 writeFileSync(join(output, "motion-analysis.json"), analysis.stdout);
 process.stdout.write(
 	`${analysis.stdout}\nArtifacts: ${output}\nResult bundle: ${resultBundle}\n`,
 );
+if (analysis.status !== 0) process.exitCode = analysis.status;
 
 function run(command, args, options = {}) {
 	const result = spawnSync(command, args, {
