@@ -928,6 +928,7 @@
   "update.checking": "更新を確認しています...",
   "update.error.check": "アップデートを確認できませんでした",
   "update.error.download": "アップデートをダウンロードできませんでした",
+  "update.error.package": "お使いのLinuxパッケージマネージャーでこのインストールを更新してください。最新のパッケージについては、リリースページをご覧ください。",
   "update.releaseNotes": "リリースノート",
   "update.updateNow": "今すぐ更新",
   "update.dismiss": "却下",
