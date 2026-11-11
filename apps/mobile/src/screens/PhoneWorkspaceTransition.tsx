@@ -4,6 +4,7 @@ import { GestureDetector } from "react-native-gesture-handler";
 import Reanimated, { useAnimatedStyle } from "react-native-reanimated";
 import { logMobileMotionEvent } from "../qa/mobileMotionFrameLog";
 import { useMobileMotionFrameProbe } from "../qa/mobileMotionFrameProbe";
+import { PhoneWorkspaceMotionContext } from "./PhoneWorkspaceMotionContext";
 import type { PhoneWorkspaceState } from "./phoneWorkspaceTransitions";
 import { phoneWorkspaceSidebarDrawerWidth } from "./phoneWorkspaceTransitions";
 import type { usePhonePanelRail } from "./usePhonePanelRail";
@@ -52,10 +53,20 @@ export function PhoneWorkspaceTransition({
 			</Reanimated.View>
 		</View>
 	);
-	return panelRail.enabled ? (
-		<GestureDetector gesture={panelRail.gesture}>{stage}</GestureDetector>
-	) : (
-		stage
+	const motion = {
+		isListActive: phoneState === "list",
+		listPageOrigin: phoneWorkspaceSidebarDrawerWidth(width),
+		probeEnabled: motionProbeEnabled,
+		railOffset: offset,
+	};
+	return (
+		<PhoneWorkspaceMotionContext.Provider value={motion}>
+			{panelRail.enabled ? (
+				<GestureDetector gesture={panelRail.gesture}>{stage}</GestureDetector>
+			) : (
+				stage
+			)}
+		</PhoneWorkspaceMotionContext.Provider>
 	);
 }
 

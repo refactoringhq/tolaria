@@ -67,6 +67,9 @@ function createAnimationModules(worklets: AnimationWorklet[]) {
 		"./phoneWorkspaceTransitions": {
 			phoneWorkspaceSidebarDrawerWidth: () => 304,
 		},
+		"./PhoneWorkspaceMotionContext": {
+			PhoneWorkspaceMotionContext: { Provider: "MotionProvider" },
+		},
 		"./usePhoneViewportWidth": { usePhoneViewportWidth: () => 390 },
 		"react-native-css-interop/jsx-runtime": { jsx: () => null },
 	};

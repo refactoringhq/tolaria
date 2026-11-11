@@ -1025,6 +1025,10 @@ panels. `phoneNativePanGesture` recognizes intent and settles with Reanimated;
 an epoch rejects interrupted completion callbacks. `phonePanelRail` owns pure
 geometry, bounds and snap selection. `PhoneWorkspaceTransition` clips the rail
 without creating preview copies or replaying a route entrance after settlement.
+Its motion context gives the list FAB the active rail offset and viewport origin,
+so the button counter-translates during rail motion instead of traveling with the
+off-screen editor/sidebar page. The opt-in frame probe records viewport-position
+samples for this control.
 The native detector has exclusive gesture ownership: the legacy JavaScript
 PanResponder is attached only for the web fallback, never to the native stage.
 Opt-in layout probes can record recognition, numeric offsets and settlement
