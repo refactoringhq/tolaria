@@ -79,6 +79,17 @@ describe("UpdateBanner", () => {
 		);
 	});
 
+	it("shows package manager guidance for system-wide Linux installs", () => {
+		renderBanner({ state: "error", kind: "package" });
+		expect(screen.getByTestId("update-banner")).toHaveTextContent(
+			"Update this installation with your Linux package manager",
+		);
+		expect(screen.getByTestId("update-banner")).toHaveTextContent(
+			"See the releases page",
+		);
+		expect(screen.queryByTestId("update-now-btn")).not.toBeInTheDocument();
+	});
+
 	it("lets the user dismiss an updater error", () => {
 		const { actions } = renderBanner({ state: "error", kind: "check" });
 

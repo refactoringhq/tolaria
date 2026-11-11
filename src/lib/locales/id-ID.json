@@ -928,6 +928,7 @@
   "update.checking": "Memeriksa pembaruan...",
   "update.error.check": "Tidak dapat memeriksa pembaruan",
   "update.error.download": "Tidak dapat mengunduh pembaruan",
+  "update.error.package": "Perbarui instalasi ini dengan manajer paket Linux Anda. Lihat halaman rilis untuk paket terbaru.",
   "update.releaseNotes": "Catatan Rilis",
   "update.updateNow": "Perbarui Sekarang",
   "update.dismiss": "Tutup",

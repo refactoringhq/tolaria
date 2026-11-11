@@ -928,6 +928,7 @@
   "update.checking": "Nach Updates suchen …",
   "update.error.check": "Es konnte nicht nach Updates gesucht werden",
   "update.error.download": "Das Update konnte nicht heruntergeladen werden",
+  "update.error.package": "Aktualisieren Sie diese Installation mit Ihrem Linux-Paketmanager. Informationen zum neuesten Paket finden Sie auf der Seite „Releases“.",
   "update.releaseNotes": "Versionshinweise",
   "update.updateNow": "Jetzt aktualisieren",
   "update.dismiss": "Ausblenden",

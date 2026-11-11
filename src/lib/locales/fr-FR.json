@@ -928,6 +928,7 @@
   "update.checking": "Recherche de mises à jour en cours…",
   "update.error.check": "Impossible de vérifier les mises à jour",
   "update.error.download": "Impossible de télécharger la mise à jour",
+  "update.error.package": "Mettez à jour cette installation à l’aide de votre gestionnaire de paquets Linux. Consultez la page des versions pour obtenir le dernier package.",
   "update.releaseNotes": "Notes de version",
   "update.updateNow": "Mettre à jour maintenant",
   "update.dismiss": "Ignorer",

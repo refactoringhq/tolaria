@@ -1,9 +1,17 @@
 use super::{
-    latest_alpha_release_metadata_url, should_install_update,
+    latest_alpha_release_metadata_url, requires_package_manager_update, should_install_update,
     should_recover_poisoned_calendar_version, AppUpdateDownloadEvent, AppUpdateMetadata,
     GitHubAsset, GitHubRelease, ReleaseChannel,
 };
 use serde_json::json;
+
+#[test]
+fn only_deb_and_rpm_owned_linux_installs_use_package_manager_updates() {
+    assert!(requires_package_manager_update(true, false, true));
+    assert!(!requires_package_manager_update(true, true, true));
+    assert!(!requires_package_manager_update(true, false, false));
+    assert!(!requires_package_manager_update(false, false, true));
+}
 
 #[test]
 fn release_channel_defaults_to_stable() {

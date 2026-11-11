@@ -928,6 +928,7 @@
   "update.checking": "Checking for updates...",
   "update.error.check": "Could not check for updates",
   "update.error.download": "Could not download the update",
+  "update.error.package": "Update this installation with your Linux package manager. See the releases page for the latest package.",
   "update.releaseNotes": "Release Notes",
   "update.updateNow": "Update Now",
   "update.dismiss": "Dismiss",
