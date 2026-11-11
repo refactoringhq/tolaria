@@ -13,6 +13,18 @@ const RELEASES_BASE_URL: &str = "https://refactoringhq.github.io/tolaria";
 const POISONED_STABLE_RECOVERY_FLOOR: &str = "2026.8.19";
 const UPDATER_HTTP_TIMEOUT: Duration = Duration::from_secs(5);
 const UPDATER_USER_AGENT: &str = concat!("Tolaria/", env!("CARGO_PKG_VERSION"));
+pub const SYSTEM_PACKAGE_UPDATE_MESSAGE: &str = "system-package-updates-use-package-manager";
+
+fn system_package_update_required() -> bool {
+    requires_package_manager_update(
+        cfg!(target_os = "linux"),
+        std::env::var_os("APPIMAGE").is_some(),
+    )
+}
+
+fn requires_package_manager_update(is_linux: bool, is_appimage: bool) -> bool {
+    is_linux && !is_appimage
+}
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -291,6 +303,9 @@ pub async fn check_for_app_update<R: Runtime>(
     app_handle: AppHandle<R>,
     release_channel: Option<String>,
 ) -> Result<Option<AppUpdateMetadata>, String> {
+    if system_package_update_required() {
+        return Err(SYSTEM_PACKAGE_UPDATE_MESSAGE.to_string());
+    }
     timeout_updater_check(
         || async {
             let channel = ReleaseChannel::from_settings_value(release_channel.as_deref());
@@ -314,6 +329,9 @@ pub async fn download_and_install_app_update<R: Runtime>(
     expected_version: String,
     on_event: Channel<AppUpdateDownloadEvent>,
 ) -> Result<(), String> {
+    if system_package_update_required() {
+        return Err(SYSTEM_PACKAGE_UPDATE_MESSAGE.to_string());
+    }
     let channel = ReleaseChannel::from_settings_value(release_channel.as_deref());
     let updater = build_updater(&app_handle, updater_endpoint(channel).await?)?;
     let update = refreshed_update(updater, &expected_version).await?;

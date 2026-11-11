@@ -928,6 +928,7 @@
   "update.checking": "正在检查更新……",
   "update.error.check": "无法检查更新",
   "update.error.download": "无法下载更新",
+  "update.error.package": "使用您的 Linux 包管理器更新此安装。请参阅发布页面，了解最新软件包。",
   "update.releaseNotes": "发行说明",
   "update.updateNow": "立即更新",
   "update.dismiss": "关闭",

@@ -928,6 +928,7 @@
   "update.checking": "Sprawdzanie aktualizacji...",
   "update.error.check": "Nie udało się sprawdzić dostępności aktualizacji",
   "update.error.download": "Nie udało się pobrać aktualizacji",
+  "update.error.package": "Zaktualizuj tę instalację za pomocą menedżera pakietów systemu Linux. Najnowszy pakiet znajdziesz na stronie wydań.",
   "update.releaseNotes": "Informacje o wydaniu",
   "update.updateNow": "Aktualizuj teraz",
   "update.dismiss": "Odrzuć",
