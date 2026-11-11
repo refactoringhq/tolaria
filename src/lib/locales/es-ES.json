@@ -928,6 +928,7 @@
   "update.checking": "Buscando actualizaciones...",
   "update.error.check": "No se han podido buscar actualizaciones",
   "update.error.download": "No se ha podido descargar la actualización",
+  "update.error.package": "Actualiza esta instalación con tu gestor de paquetes de Linux. Consulta la página de versiones para ver el paquete más reciente.",
   "update.releaseNotes": "Notas de la versión",
   "update.updateNow": "Actualizar ahora",
   "update.dismiss": "Omitir",

@@ -3,6 +3,7 @@ import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MobileWorkspaceEditNotice } from "../components/workspace/MobileWorkspaceEditNotice";
 import type { MobileLayoutProbe } from "../qa/mobileLayoutProbe";
+import { mobileMotionFrameProbeEnabled } from "../qa/mobileMotionFrameLog";
 import { useMobileStyles } from "../ui/theme/useMobileTheme";
 import type { useHorizontalSwipe } from "../ui/useHorizontalSwipe";
 import type { useMobileEditorCommandRegistry } from "../workspace/mobileEditorCommands";
@@ -30,8 +31,10 @@ type PhoneWorkspaceRootProps = {
 	navigation: PhoneWorkspaceNavigation;
 	openCommandPalette: () => void;
 	options: PhoneWorkspaceEditorOptions;
+	onEditorBodyReady: () => void;
 	phoneLayoutProbe: MobileLayoutProbe;
 	phoneState: PhoneWorkspaceState;
+	prepareNewNoteEditor: boolean;
 	selectTableOfContentsTarget: (target: MobileTableOfContentsTarget) => void;
 	sourceModeRequest: number;
 	suggestionNotes: MobileNote[];
@@ -68,7 +71,11 @@ export function PhoneWorkspaceRoot(props: PhoneWorkspaceRootProps) {
 function PhoneWorkspaceContent(props: PhoneWorkspaceRootProps) {
 	return (
 		<PhoneWorkspaceTransition
+			motionProbeEnabled={
+				props.options.layoutProbe && mobileMotionFrameProbeEnabled
+			}
 			panelRail={props.panelRail}
+			phoneState={props.phoneState}
 			swipeHandlers={
 				props.panelRail.enabled ? undefined : props.transitionSwipeHandlers
 			}
@@ -84,6 +91,8 @@ function PhoneWorkspaceContent(props: PhoneWorkspaceRootProps) {
 				openSidebar={props.navigation.openSidebar}
 				phoneLayoutProbe={props.phoneLayoutProbe}
 				phoneState={props.phoneState}
+				prepareNewNoteEditor={props.prepareNewNoteEditor}
+				onEditorBodyReady={props.onEditorBodyReady}
 				onRegisterEditorCommands={props.editorCommandRegistry.register}
 				sourceModeRequest={props.sourceModeRequest}
 				suggestionNotes={props.suggestionNotes}

@@ -7,6 +7,7 @@ import { MobileWorkspaceSidebar } from "../components/workspace/MobileWorkspaceS
 import { mobileNoteListPrimarySwipeAction } from "../components/workspace/mobileNoteListRows";
 import { mobileCopy, mobileText } from "../i18n/mobileText";
 import { probeProps } from "../qa/mobileLayoutProbe";
+import { logMobileMotionEvent } from "../qa/mobileMotionFrameLog";
 import { desktopToolbarActionParity } from "../ui/desktopParity";
 import { MobileIconButton } from "../ui/MobileIconButton";
 import { useMobileStyles } from "../ui/theme/useMobileTheme";
@@ -41,6 +42,15 @@ function PhoneNoteListScreen({
 		<MobileIconButton
 			accessibilityLabel={mobileCopy.showSidebar}
 			density="leading"
+			onLayout={({ nativeEvent: { layout } }) =>
+				logMobileMotionEvent("chrome-layout", {
+					height: layout.height,
+					width: layout.width,
+					x: layout.x,
+					y: layout.y,
+					control: "hamburger",
+				})
+			}
 			testID="phone-note-list-sidebar-button"
 			onPress={openSidebar}
 		>
@@ -54,6 +64,14 @@ function PhoneNoteListScreen({
 	return (
 		<View
 			{...probeProps(phoneLayoutProbe, "phone.list.screen")}
+			onLayout={({ nativeEvent: { layout } }) =>
+				logMobileMotionEvent("first-list-frame", {
+					height: layout.height,
+					width: layout.width,
+					x: layout.x,
+					y: layout.y,
+				})
+			}
 			style={styles.screen}
 			testID="phone-note-list-screen"
 		>
@@ -62,7 +80,7 @@ function PhoneNoteListScreen({
 				options={options}
 				leading={leading}
 				openEditor={openEditor}
-				scrollsToTop={phoneState === 'list'}
+				scrollsToTop={phoneState === "list"}
 			/>
 		</View>
 	);
@@ -323,6 +341,7 @@ export function PhoneWorkspaceScreens(props: PhoneWorkspaceStateViewProps) {
 			</PhoneScreenLayer>
 			<PhoneScreenLayer
 				active={props.phoneState === "editor"}
+				eager={props.prepareNewNoteEditor}
 				retain
 				frame={phoneRailFrame("editor", width)}
 				testID="phone-editor-slot"

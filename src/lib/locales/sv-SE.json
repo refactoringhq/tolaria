@@ -928,6 +928,7 @@
   "update.checking": "Söker efter uppdateringar...",
   "update.error.check": "Det gick inte att söka efter uppdateringar",
   "update.error.download": "Det gick inte att ladda ner uppdateringen",
+  "update.error.package": "Uppdatera den här installationen med din Linux-pakethanterare. Se sidan för utgåvor för att hitta det senaste paketet.",
   "update.releaseNotes": "Versionsinformation",
   "update.updateNow": "Uppdatera nu",
   "update.dismiss": "Avfärda",

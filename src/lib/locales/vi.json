@@ -928,6 +928,7 @@
   "update.checking": "Checking for updates...",
   "update.error.check": "Không thể kiểm tra các bản cập nhật",
   "update.error.download": "Không thể tải xuống bản cập nhật",
+  "update.error.package": "Cập nhật bản cài đặt này bằng trình quản lý gói Linux của bạn. Vui lòng xem trang bản phát hành để biết gói mới nhất.",
   "update.releaseNotes": "Ghi chú phát hành",
   "update.updateNow": "Cập nhật ngay",
   "update.dismiss": "Bỏ qua",

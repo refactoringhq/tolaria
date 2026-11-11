@@ -43,11 +43,12 @@ export type UpdateStatus =
 	| ({ state: "available"; notes: string | undefined } & UpdateVersionInfo)
 	| ({ state: "downloading"; progress: number } & UpdateVersionInfo)
 	| ({ state: "ready" } & UpdateVersionInfo)
-	| { state: "error"; kind: "check" | "download" };
+	| { state: "error"; kind: "check" | "download" | "package" };
 
 export type UpdateCheckResult =
 	| { kind: "up-to-date" }
 	| ({ kind: "available" } & UpdateVersionInfo)
+	| { kind: "package" }
 	| { kind: "error" };
 
 export interface UpdateActions {
@@ -135,10 +136,16 @@ function reportUpdateCheckFailure(
 	checkId: number,
 	currentCheckId: number,
 	setStatus: Dispatch<SetStateAction<UpdateStatus>>,
-): void {
-	if (checkId !== currentCheckId) return;
+	error: unknown,
+): UpdateCheckResult {
+	if (checkId !== currentCheckId) return { kind: "error" };
+	if (String(error).includes("system-package-updates-use-package-manager")) {
+		setStatus({ state: "error", kind: "package" });
+		return { kind: "package" };
+	}
 	console.warn("[updater] Failed to check for updates");
 	setStatus({ state: "error", kind: "check" });
+	return { kind: "error" };
 }
 
 function useAutomaticUpdateCheck(
@@ -152,6 +159,33 @@ function useAutomaticUpdateCheck(
 	}, [automaticChecksEnabled, checkForUpdates]);
 }
 
+async function downloadUpdate({
+	update,
+	releaseChannel,
+	setStatus,
+}: {
+	update: AppUpdateMetadata | null;
+	releaseChannel: string | null | undefined;
+	setStatus: Dispatch<SetStateAction<UpdateStatus>>;
+}): Promise<void> {
+	if (!update) return;
+	const versionInfo = createVersionInfo(update.version);
+	setStatus({ state: "downloading", ...versionInfo, progress: 0 });
+	try {
+		await downloadAndInstallAppUpdate(
+			releaseChannel,
+			update.version,
+			createDownloadProgressHandler(versionInfo, setStatus),
+		);
+		setStatus((prev) =>
+			prev.state === "downloading" ? { state: "ready", ...versionInfo } : prev,
+		);
+	} catch {
+		console.warn("[updater] Download failed");
+		setStatus({ state: "error", kind: "download" });
+	}
+}
+
 export function useUpdater(
 	releaseChannel: string | null | undefined,
 	automaticChecksEnabled = true,
@@ -159,9 +193,14 @@ export function useUpdater(
 	const [status, setStatus] = useState<UpdateStatus>({ state: "idle" });
 	const updateRef = useRef<AppUpdateMetadata | null>(null);
 	const checkSequence = useRef(0);
+	const packageUpdateRef = useRef(false);
 
 	const checkForUpdates = useCallback(async (): Promise<UpdateCheckResult> => {
 		if (!isTauri()) return { kind: "up-to-date" };
+		if (packageUpdateRef.current) {
+			setStatus({ state: "error", kind: "package" });
+			return { kind: "package" };
+		}
 
 		const checkId = ++checkSequence.current;
 		setStatus({ state: "checking" });
@@ -178,38 +217,26 @@ export function useUpdater(
 				updateRef,
 				setStatus,
 			});
-		} catch {
-			reportUpdateCheckFailure(checkId, checkSequence.current, setStatus);
-			return { kind: "error" };
+		} catch (error) {
+			const result = reportUpdateCheckFailure(
+				checkId,
+				checkSequence.current,
+				setStatus,
+				error,
+			);
+			if (result.kind === "package") packageUpdateRef.current = true;
+			return result;
 		}
 	}, [releaseChannel]);
 
 	useAutomaticUpdateCheck(automaticChecksEnabled, checkForUpdates);
 
 	const startDownload = useCallback(async () => {
-		const update = updateRef.current;
-		if (!update) return;
-
-		const versionInfo = createVersionInfo(update.version);
-		setStatus({ state: "downloading", ...versionInfo, progress: 0 });
-
-		try {
-			await downloadAndInstallAppUpdate(
-				releaseChannel,
-				update.version,
-				createDownloadProgressHandler(versionInfo, setStatus),
-			);
-
-			// If Finished wasn't emitted via callback, set ready after await resolves
-			setStatus((prev) =>
-				prev.state === "downloading"
-					? { state: "ready", ...versionInfo }
-					: prev,
-			);
-		} catch {
-			console.warn("[updater] Download failed");
-			setStatus({ state: "error", kind: "download" });
-		}
+		await downloadUpdate({
+			update: updateRef.current,
+			releaseChannel,
+			setStatus,
+		});
 	}, [releaseChannel]);
 
 	const openReleaseNotes = useCallback(() => {

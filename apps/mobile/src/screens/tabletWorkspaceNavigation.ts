@@ -1,34 +1,36 @@
-import { useCallback, useMemo, useState } from 'react'
-import type { MobileNote, MobileSavedView, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
-import { evaluateMobileSavedView } from '../workspace/mobileSavedViews'
-import { isMobileMarkdownNote, type MobileNoteListFilter } from '../workspace/mobileNoteFilters'
-import { flattenMobileNeighborhoodNotes } from '../workspace/mobileNeighborhood'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type {
   MobileSidebarFolderSelection,
   MobileSidebarItemSelection,
 } from '../components/workspace/MobileWorkspaceSidebar'
+import { flattenMobileNeighborhoodNotes } from '../workspace/mobileNeighborhood'
+import { isMobileMarkdownNote, type MobileNoteListFilter } from '../workspace/mobileNoteFilters'
+import { evaluateMobileSavedView } from '../workspace/mobileSavedViews'
+import type { MobileNote, MobileSavedView, MobileWorkspaceSnapshot } from '../workspace/mobileWorkspaceModel'
+import { shouldDiscardPristineNewNote } from './pristineNewNoteDiscard'
 import {
-  initialSelectedNoteId,
-  initialSidebarSelection,
-  notesForSidebarSelection,
-  noteListFilterCountsForSelection,
-  neighborhoodForSelection,
-  workspaceNotes,
-  favoriteNeighborhoodSelectionForSidebarItem,
-  noteListPropertiesForSelection,
-  filterNotesBySearch,
-  tabletNavigationScopePresentation,
-  selectedMobileNote,
   editorBlocksForSelection,
   editorBulletsForSelection,
-} from './tabletWorkspaceNavigationSelectors'
-export {
-  snapshotWithFavoriteOverrides,
-  notesForSidebarSelection,
-  noteListFilterCountsForSelection,
   favoriteNeighborhoodSelectionForSidebarItem,
-  noteListPropertiesForSelection,
   filterNotesBySearch,
+  initialSelectedNoteId,
+  initialSidebarSelection,
+  neighborhoodForSelection,
+  noteListFilterCountsForSelection,
+  noteListPropertiesForSelection,
+  notesForSidebarSelection,
+  selectedMobileNote,
+  tabletNavigationScopePresentation,
+  workspaceNotes,
+} from './tabletWorkspaceNavigationSelectors'
+
+export {
+  favoriteNeighborhoodSelectionForSidebarItem,
+  filterNotesBySearch,
+  noteListFilterCountsForSelection,
+  noteListPropertiesForSelection,
+  notesForSidebarSelection,
+  snapshotWithFavoriteOverrides,
 } from './tabletWorkspaceNavigationSelectors'
 
 export type NoteCount = number
@@ -182,17 +184,18 @@ function tabletSidebarSelectionKey(selection: TabletSidebarSelection) {
 }
 
 export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, searchQuery: SearchQuery) {
-  const [sidebarSelection, setSidebarSelection] = useState<TabletSidebarSelection>(() =>
-    initialSidebarSelection(snapshot),
+  const selection = useTabletWorkspaceSelectionState(snapshot)
+  const {
+    noteListFilter,
+    selectedNoteId,
+    setNoteListFilter,
+    setSelectedNoteId,
+    setSidebarSelection,
+    sidebarSelection,
+  } = selection
+  const { noteListProperties, noteListFilterCounts, noteListNeighborhood, notes } = useTabletWorkspaceVisibleNotes(
+    snapshot, sidebarSelection, noteListFilter, searchQuery,
   )
-  const [noteListFilter, setNoteListFilter] = useState<MobileNoteListFilter>('open')
-  const [selectedNoteId, setSelectedNoteId] = useState<NoteId | null>(initialSelectedNoteId(snapshot))
-  const { noteListProperties, noteListFilterCounts } = useNavigationScopeProperties(snapshot, sidebarSelection)
-  const { noteListNeighborhood, notes } = useNavigationVisibleNotes({
-    noteListFilter, noteListProperties,
-    searchQuery, sidebarSelection,
-    snapshot,
-  })
   const selectedNote = selectedMobileNote(snapshot, notes, selectedNoteId)
   const navigationHistory = useTabletNavigationHistoryState({
     noteListFilter,
@@ -212,6 +215,36 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
     snapshot,
   })
 
+  return tabletWorkspaceNavigationResult({
+    navigationHistory,
+    searchQuery,
+    selectedNote,
+    selection,
+    selectionActions,
+    snapshot,
+    visibleNotes: { noteListProperties, noteListNeighborhood, noteListFilterCounts, notes },
+  })
+}
+
+function tabletWorkspaceNavigationResult({
+  navigationHistory,
+  searchQuery,
+  selectedNote,
+  selection,
+  selectionActions,
+  snapshot,
+  visibleNotes,
+}: {
+  navigationHistory: ReturnType<typeof useTabletNavigationHistoryState>
+  searchQuery: SearchQuery
+  selectedNote: MobileNote | null
+  selection: ReturnType<typeof useTabletWorkspaceSelectionState>
+  selectionActions: ReturnType<typeof useTabletNavigationSelectionActions>
+  snapshot: MobileWorkspaceSnapshot
+  visibleNotes: ReturnType<typeof useTabletWorkspaceVisibleNotes>
+}) {
+  const { noteListFilter, selectedNoteId, setSelectedNoteId, sidebarSelection } = selection
+  const { noteListProperties, noteListNeighborhood, noteListFilterCounts, notes } = visibleNotes
   return {
     ...tabletNavigationScopePresentation(snapshot, sidebarSelection, notes, searchQuery),
     canGoBack: navigationHistory.canGoBack,
@@ -219,6 +252,7 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
     editorBlocks: editorBlocksForSelection(snapshot, selectedNote),
     editorBullets: editorBulletsForSelection(snapshot, selectedNote),
     goBack: navigationHistory.goBack,
+    markPristineNewNote: selection.markPristineNewNote,
     goForward: navigationHistory.goForward,
     noteListProperties,
     noteListNeighborhood,
@@ -229,8 +263,54 @@ export function useTabletWorkspaceNavigation(snapshot: MobileWorkspaceSnapshot, 
     selectedNote,
     selectedNoteId: selectedNote?.id ?? selectedNoteId,
     setSelectedNoteId,
+    takePristineNewNoteToDiscard: selection.takePristineNewNoteToDiscard,
     ...selectionActions,
   }
+}
+
+function useTabletWorkspaceSelectionState(snapshot: MobileWorkspaceSnapshot) {
+  const [sidebarSelection, setSidebarSelection] = useState<TabletSidebarSelection>(() =>
+    initialSidebarSelection(snapshot),
+  )
+  const [noteListFilter, setNoteListFilter] = useState<MobileNoteListFilter>('open')
+  const [selectedNoteId, setSelectedNoteId] = useState<NoteId | null>(initialSelectedNoteId(snapshot))
+  const pristineNewNoteId = useRef<NoteId | null>(null)
+  const markPristineNewNote = useCallback((noteId: NoteId) => {
+    pristineNewNoteId.current = noteId
+  }, [])
+  const takePristineNewNoteToDiscard = useCallback(() => {
+    const candidateId = pristineNewNoteId.current
+    pristineNewNoteId.current = null
+    const currentNote = (snapshot.allNotes ?? snapshot.notes).find((note) => note.id === selectedNoteId) ?? null
+    return shouldDiscardPristineNewNote(candidateId, selectedNoteId, currentNote) ? candidateId : null
+  }, [selectedNoteId, snapshot])
+  return {
+    markPristineNewNote,
+    noteListFilter,
+    selectedNoteId,
+    setNoteListFilter,
+    setSelectedNoteId,
+    setSidebarSelection,
+    sidebarSelection,
+    takePristineNewNoteToDiscard,
+  }
+}
+
+function useTabletWorkspaceVisibleNotes(
+  snapshot: MobileWorkspaceSnapshot,
+  sidebarSelection: TabletSidebarSelection,
+  noteListFilter: MobileNoteListFilter,
+  searchQuery: SearchQuery,
+) {
+  const { noteListProperties, noteListFilterCounts } = useNavigationScopeProperties(snapshot, sidebarSelection)
+  const { noteListNeighborhood, notes } = useNavigationVisibleNotes({
+    noteListFilter,
+    noteListProperties,
+    searchQuery,
+    sidebarSelection,
+    snapshot,
+  })
+  return { noteListProperties, noteListFilterCounts, noteListNeighborhood, notes }
 }
 
 function useNavigationScopeProperties(snapshot: MobileWorkspaceSnapshot, sidebarSelection: TabletSidebarSelection) {

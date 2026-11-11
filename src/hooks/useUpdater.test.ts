@@ -329,6 +329,30 @@ describe("useUpdater", () => {
 		expect(result.current.status).toEqual({ state: "error", kind: "check" });
 	});
 
+	it("explains package-managed Linux updates without retrying the updater", async () => {
+		vi.mocked(isTauri).mockReturnValue(true);
+		installInvokeHandlers({
+			checkResult: new Error("system-package-updates-use-package-manager"),
+		});
+		const hook = renderUpdater("stable");
+		let firstResult: unknown;
+		await act(async () => {
+			firstResult = await hook.result.current.actions.checkForUpdates();
+		});
+		expect(firstResult).toEqual({ kind: "package" });
+		expect(hook.result.current.status).toEqual({
+			state: "error",
+			kind: "package",
+		});
+		mockInvoke.mockClear();
+		await act(async () => {
+			expect(await hook.result.current.actions.checkForUpdates()).toEqual({
+				kind: "package",
+			});
+		});
+		expect(mockInvoke).not.toHaveBeenCalled();
+	});
+
 	it("dismiss resets the banner state", async () => {
 		vi.mocked(isTauri).mockReturnValue(true);
 		installInvokeHandlers({ checkResult: makeUpdate() });

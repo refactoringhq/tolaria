@@ -928,6 +928,7 @@
   "update.checking": "Kontrolujú sa aktualizácie...",
   "update.error.check": "Nepodarilo sa skontrolovať aktualizácie",
   "update.error.download": "Nepodarilo sa stiahnuť aktualizáciu",
+  "update.error.package": "Aktualizujte túto inštaláciu pomocou svojho správcu balíkov pre Linux. Najnovší balík nájdete na stránke s vydaniami.",
   "update.releaseNotes": "Poznámky k vydaniu",
   "update.updateNow": "Aktualizovať teraz",
   "update.dismiss": "Zrušiť",

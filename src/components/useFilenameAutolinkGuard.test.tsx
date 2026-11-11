@@ -108,6 +108,7 @@ describe('useFilenameAutolinkGuard', () => {
 
     expect(fixture.descendants).toHaveBeenCalledTimes(1)
     expect(fixture.tr.removeMark).toHaveBeenCalledWith(4, 12, 'link-mark')
+    expect(fixture.tr.setMeta).toHaveBeenCalledWith('addToHistory', false)
     expect(fixture.tr.setMeta).toHaveBeenCalledWith('tolaria-filename-autolink-guard', true)
     expect(fixture.dispatch).toHaveBeenCalledWith(fixture.tr)
 

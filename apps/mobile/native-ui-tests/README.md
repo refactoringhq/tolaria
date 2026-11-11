@@ -1,5 +1,65 @@
 # Native Mobile Interaction Tests
 
+## Phone motion-frame harness (TOL-339)
+
+The debug-only motion probe emits `TOLARIA_MOTION_FRAME` samples from Reanimated's
+UI frame callback while the phone panel rail or an organize-swipe row is moving.
+Records include the monotonic frame timestamp, frame delta, sampled translation,
+probe id, and build id; React editor renders log a content fingerprint only, never
+note text. List, hamburger, and FAB layout records are emitted at layout time.
+
+Start Metro with the probe enabled and the tested SHA/build label, install or open
+the development app against that Metro, then run the native interaction test:
+
+```sh
+EXPO_PUBLIC_TOLARIA_MOTION_FRAME_PROBE=1 \
+EXPO_PUBLIC_TOLARIA_MOTION_BUILD_ID=<tested-sha-or-build-id> \
+npx -y pnpm@10.33.0 --dir apps/mobile start --port 8081 2>&1 | tee /tmp/tolaria-motion-metro.log
+
+TOLARIA_MOTION_LOG_PATH=/tmp/tolaria-motion-metro.log \
+EXPO_PUBLIC_TOLARIA_MOTION_FRAME_PROBE=1 \
+EXPO_PUBLIC_TOLARIA_MOTION_BUILD_ID=<tested-sha-or-build-id> \
+node apps/mobile/scripts/test-ios-motion-frames.mjs <booted-iphone-udid> /tmp/tolaria-motion-qa
+```
+
+Pipe that Metro process output to a file and set `TOLARIA_MOTION_LOG_PATH` to
+that file when invoking the runner; React Native debug-console records are
+emitted by Metro rather than the simulator unified log. The runner saves the
+captured records and XCUITest result bundle, then
+reports sample counts, maximum frame gaps, reverse movement, editor fingerprint
+changes, and first-list-frame layout evidence. It launches the app through its
+registered bundle id (not `exp://`) and analyzes only Metro records appended
+after that launch, so earlier runs cannot contaminate measurements. The note-open
+check requires exactly one content-bearing editor-body render; repeated renders
+with an unchanged fingerprint still fail the check.
+
+Use `TOLARIA_MOTION_CHECK=note-open` to run only the note-open interaction. The
+runner preserves the Metro log, analysis JSON, and XCUITest result bundle even
+when a native assertion fails, so the measured evidence remains available.
+
+For the large-vault launch check, register and select a disposable 6,000-note
+vault under the app container's `Documents/Local Vaults/<lowercase-id>` path,
+then run:
+
+```sh
+TOLARIA_MOTION_CHECK=launch \
+TOLARIA_MOTION_SEARCH='?source=native&layoutProbe=1&phoneState=list&qaRun=tol339-large-vault' \
+TOLARIA_MOTION_LOG_PATH=/tmp/tolaria-motion-metro.log \
+EXPO_PUBLIC_TOLARIA_MOTION_FRAME_PROBE=1 \
+EXPO_PUBLIC_TOLARIA_MOTION_BUILD_ID=<tested-sha-or-build-id> \
+node apps/mobile/scripts/test-ios-motion-frames.mjs <booted-iphone-udid> /tmp/tolaria-motion-large-vault
+```
+
+The launch mode asserts that a generated note is present and both hamburger and
+FAB are hittable; the analyzer checks their layout against the first list frame
+and requires the expected build id. A green native test also asserts
+the hamburger and FAB are hittable at the first accessible list frame, returns
+from an existing note, closes the sidebar, and starts a full row swipe. Treat a
+missing log series as a failed harness run, not a zero-motion pass. A simulator
+without either a large fixture or a controlled slow-vault-load seam cannot
+certify the delayed-load case; record that case as Not tested rather than
+inferring it from a normal launch.
+
 `MobileModalEscapeTests` exercises hardware Escape on a focused unsaved workspace
 form, Settings, the vault manager and the command palette. Run it on both phone
 and tablet simulators with disposable fixtures; cancellation must not create the

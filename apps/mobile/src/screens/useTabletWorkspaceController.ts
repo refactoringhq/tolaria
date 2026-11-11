@@ -27,7 +27,6 @@ import {
 	relationshipWorkspaceActions,
 	retargetWorkspaceActions,
 } from "./tabletWorkspaceFieldActions";
-import { useTabletWorkspaceNavigation } from "./tabletWorkspaceNavigation";
 import { useWorkspaceEditPipeline } from "./tabletWorkspacePersistence";
 import { openMobileActionSheetQaTarget } from "./tabletWorkspaceQaTargets";
 import { selectedFolderCommandActions } from "./tabletWorkspaceSelectedFolderActions";
@@ -41,6 +40,7 @@ import {
 	selectedViewCommandActions,
 } from "./tabletWorkspaceViewActions";
 import { useMobileNoteRead } from "./useMobileNoteRead";
+import { usePristineNewNoteNavigation } from "./usePristineNewNoteNavigation";
 
 type TabletWorkspaceControllerRequest = {
 	repository: ReadOnlyWorkspaceRepository;
@@ -51,57 +51,110 @@ type TabletWorkspaceControllerRequest = {
 export function useTabletWorkspaceController(
 	request: TabletWorkspaceControllerRequest,
 ) {
-	const { repository, repositoryRequest } = request;
 	const pipeline = useWorkspaceEditPipeline(request);
-	const { applyWorkspaceEdit, workspaceSnapshot } = pipeline;
-	const [openAction, setOpenAction] = useState<MobileWorkspaceAction | null>(
-		null,
-	);
-	useMobileSearchEvent(openAction === "search");
-	const { readOnlyForm, resetForm, updateReadOnlyForm } =
-		useReadOnlyFormState();
+	const { workspaceSnapshot } = pipeline;
+	const {
+		openAction,
+		readOnlyForm,
+		resetForm,
+		setOpenAction,
+		updateReadOnlyForm,
+	} = useTabletWorkspaceActionState();
 	const [searchQuery, setSearchQuery] = useState("");
-	const navigation = useTabletWorkspaceNavigation(
+	const { navigation, onDiscardPristineNewNote } = usePristineNewNoteNavigation(
 		workspaceSnapshot,
 		searchQuery,
+		request.repositoryRequest?.source === "native"
+			? pipeline.reloadWorkspaceSnapshot
+			: undefined,
+		pipeline.applyWorkspaceEdit,
 	);
-	const { defaultNoteWidth, selectedNote } = resolvedControllerNote(
-		workspaceSnapshot,
-		navigation.selectedNote,
-	);
-	const selectionActions = useTabletWorkspaceSelectionActions({
-		applyWorkspaceEdit,
-		navigation,
-		resetForm,
-		selectedNote,
-		setOpenAction,
-	});
-	const workspaceActions = useTabletWorkspaceActions({
-		...selectionActions,
+	const controllerNote = resolvedControllerNote(workspaceSnapshot, navigation.selectedNote);
+	const { defaultNoteWidth, selectedNote } = controllerNote;
+	const workspaceActions = useTabletWorkspaceControllerActions({
 		applyWorkspaceEdit: pipeline.applyWorkspaceEdit,
 		navigation,
 		openAction,
 		readOnlyForm,
-		repository,
-		repositoryRequest,
+		repository: request.repository,
+		repositoryRequest: request.repositoryRequest,
+		resetForm,
 		selectedNote,
 		setOpenAction,
 		updateReadOnlyForm,
 		workspaceSnapshot,
 	});
-	return {
-		...workspaceActions.actions,
-		...navigation,
-		...controllerPresentation({
-			context: workspaceActions.context,
-			pipeline,
-			defaultNoteWidth,
-			selectedNoteRead: workspaceActions.selectedNoteRead,
-			searchQuery,
-			setSearchQuery,
-			openActionSheetQaTarget: workspaceActions.openActionSheetQaTarget,
-		}),
-	};
+	const presentation = tabletControllerPresentation(
+		workspaceActions,
+		pipeline,
+		defaultNoteWidth,
+		searchQuery,
+		setSearchQuery,
+	);
+	return combineWorkspaceControllerResult(
+		{ ...workspaceActions.actions, onDiscardPristineNewNote },
+		navigation,
+		presentation,
+	);
+}
+
+function combineWorkspaceControllerResult<
+	TActions extends object,
+	TNavigation extends object,
+	TPresentation extends object,
+>(actions: TActions, navigation: TNavigation, presentation: TPresentation) {
+	return { ...actions, ...navigation, ...presentation };
+}
+
+type TabletWorkspaceControllerActionsInput = Pick<
+	TabletWorkspaceActionsInput,
+	| "applyWorkspaceEdit"
+	| "navigation"
+	| "openAction"
+	| "readOnlyForm"
+	| "repository"
+	| "repositoryRequest"
+	| "selectedNote"
+	| "setOpenAction"
+	| "updateReadOnlyForm"
+	| "workspaceSnapshot"
+> & { resetForm: ReturnType<typeof useReadOnlyFormState>["resetForm"] };
+
+function useTabletWorkspaceControllerActions(
+	input: TabletWorkspaceControllerActionsInput,
+) {
+	const selectionActions = useTabletWorkspaceSelectionActions(input);
+	return useTabletWorkspaceActions({ ...input, ...selectionActions });
+}
+
+function useTabletWorkspaceActionState() {
+	const [openAction, setOpenAction] = useState<MobileWorkspaceAction | null>(
+		null,
+	);
+	useMobileSearchEvent(openAction === "search");
+	return { ...useReadOnlyFormState(), openAction, setOpenAction };
+}
+
+function tabletControllerPresentation(
+	workspaceActions: ReturnType<typeof useTabletWorkspaceActions>,
+	pipeline: ReturnType<typeof useWorkspaceEditPipeline>,
+	defaultNoteWidth: Parameters<
+		typeof controllerPresentation
+	>[0]["defaultNoteWidth"],
+	searchQuery: string,
+	setSearchQuery: Parameters<
+		typeof controllerPresentation
+	>[0]["setSearchQuery"],
+) {
+	return controllerPresentation({
+		context: workspaceActions.context,
+		pipeline,
+		defaultNoteWidth,
+		selectedNoteRead: workspaceActions.selectedNoteRead,
+		searchQuery,
+		setSearchQuery,
+		openActionSheetQaTarget: workspaceActions.openActionSheetQaTarget,
+	});
 }
 
 type TabletWorkspaceActionsInput = {

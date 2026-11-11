@@ -1,5 +1,5 @@
 import { RichText } from "@10play/tentap-editor";
-import { createElement, useCallback } from "react";
+import { createElement, useCallback, useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import { probeProps } from "../../qa/mobileLayoutProbe";
 import { MobileKeyboardAvoidingView } from "../../ui/MobileKeyboardAvoidingView";
@@ -71,6 +71,10 @@ function EditorSurfaceSession(props: SurfaceSessionProps) {
 		props.previewMarkdown,
 		props.appearance,
 	);
+	const onEditorBodyReady = props.onEditorBodyReady;
+	useEffect(() => {
+		if (fileSource.ready) onEditorBodyReady?.();
+	}, [fileSource.ready, onEditorBodyReady]);
 	const actions = useRegisteredNativeSurfaceActions(
 		props,
 		fileSource,

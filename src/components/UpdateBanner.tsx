@@ -18,6 +18,7 @@ import { openExternalUrl } from "../utils/url";
 import { Button } from "./ui/button";
 
 const COMMUNITY_BANNER_DISMISSED_KEY = "tolaria.community-banner.dismissed";
+const RELEASE_NOTES_URL = "https://tolaria.md/releases/";
 
 interface UpdateBannerProps {
 	status: UpdateStatus;
@@ -214,6 +215,46 @@ function renderReadyContent(
 	);
 }
 
+function renderErrorContent(
+	status: Extract<VisibleUpdateStatus, { state: "error" }>,
+	actions: UpdateActions,
+	locale: AppLocale,
+) {
+	const messageKey =
+		status.kind === "package"
+			? "update.error.package"
+			: status.kind === "check"
+				? "update.error.check"
+				: "update.error.download";
+	return (
+		<>
+			<span>{translate(locale, messageKey)}</span>
+			{status.kind === "package" && (
+				<Button
+					type="button"
+					variant="link"
+					size="xs"
+					onClick={() => openExternalUrl(RELEASE_NOTES_URL)}
+					style={{ color: "var(--text-inverse)", padding: 0, height: "auto" }}
+				>
+					{translate(locale, "update.releaseNotes")} <ExternalLink size={11} />
+				</Button>
+			)}
+			<Button
+				type="button"
+				variant="ghost"
+				size="icon-xs"
+				data-testid="update-dismiss"
+				onClick={actions.dismiss}
+				style={dismissButtonStyle}
+				aria-label={translate(locale, "update.dismiss")}
+			>
+				<X size={14} />
+			</Button>
+		</>
+	);
+}
+
 function renderBannerContent(
 	status: VisibleUpdateStatus,
 	actions: UpdateActions,
@@ -229,29 +270,7 @@ function renderBannerContent(
 		case "ready":
 			return renderReadyContent(status, locale);
 		case "error":
-			return (
-				<>
-					<span>
-						{translate(
-							locale,
-							status.kind === "check"
-								? "update.error.check"
-								: "update.error.download",
-						)}
-					</span>
-					<Button
-						type="button"
-						variant="ghost"
-						size="icon-xs"
-						data-testid="update-dismiss"
-						onClick={actions.dismiss}
-						style={dismissButtonStyle}
-						aria-label={translate(locale, "update.dismiss")}
-					>
-						<X size={14} />
-					</Button>
-				</>
-			);
+			return renderErrorContent(status, actions, locale);
 	}
 }
 
