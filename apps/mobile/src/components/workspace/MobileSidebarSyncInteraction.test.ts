@@ -76,6 +76,10 @@ it('keeps the local-change marker next to the source and removes it after a chec
   expect(host.querySelector('[data-testid="sidebar-sync-pending-local"]')).toBeNull()
   await render({ ...defaults, historyAvailable: false })
   expect(host.querySelector('[data-testid="sidebar-sync-pending-local"]')).toBeNull()
+  expect(host.querySelector<HTMLElement>('[data-testid="sidebar-sync-state"]')?.style.color).toBe('rgb(119, 119, 119)')
+  expect(host.querySelector('[data-testid="sidebar-sync-last-success"]')).toBeNull()
+  await click('sidebar-sync-action')
+  expect(defaults.sync).toHaveBeenCalledExactlyOnceWith()
 })
 it('keeps a failure on the second line and the last successful time in the accessible details', async () => {
   await render({ ...defaults, status: 'failed' })

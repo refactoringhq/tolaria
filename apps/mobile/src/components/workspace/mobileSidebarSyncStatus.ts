@@ -17,7 +17,7 @@ export function sidebarSyncPresentation(controls: Controls | null, display: Disp
   const state = syncStateLabel(controls, label)
   const lastSync = lastKnownSync(controls, connection, now)
   return { destination: mobileText(destinationLabels[connection]), state, lastSync,
-    detail: visibleDetail({ status, state, lastSync, controls, now }), problem: ['failed', 'saveFailed', 'diverged', 'unavailable'].includes(status),
+    detail: visibleDetail({ status, state, lastSync, controls, now }), problem: ['failed', 'saveFailed', 'diverged'].includes(status),
     pendingLocalChanges: pendingLocalChanges(controls, connection),
     action: syncAction(controls, status, autoGit), disabled: controls.busy, busy: controls.busy }
 }

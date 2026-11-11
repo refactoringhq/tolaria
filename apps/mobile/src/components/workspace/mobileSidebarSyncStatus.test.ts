@@ -75,7 +75,8 @@ describe('sidebar sync presentation', () => {
   })
   it('never invents a successful sync from unavailable history', () => {
     expect(sidebarSyncPresentation({ ...controls, historyAvailable: false, status: 'synced' }, display, true, now)).toMatchObject({
-      state: 'Status unavailable', lastSync: null, action: 'sync', problem: true,
+      state: 'Status unavailable', detail: 'Status unavailable', lastSync: null,
+      pendingLocalChanges: false, action: 'sync', problem: false,
     })
     expect(sidebarSyncPresentation({ ...controls, historyAvailable: false }, display, true, now)?.disabled).toBe(false)
   })
