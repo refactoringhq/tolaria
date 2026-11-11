@@ -30,6 +30,7 @@ const newNoteEntry = analyzeNewNoteEntry(
 const fabPosition = analyzeFabTransitions(
 	events,
 	frames.get("phone.rail.offset") ?? [],
+	frames.get("phone.fab.viewport.x") ?? [],
 );
 const noteBodyOnly = process.argv.includes("--note-body-only");
 const launchOnly = process.argv.includes("--launch-only");
@@ -358,7 +359,7 @@ function latestBefore(events, timestamp) {
 		.at(-1);
 }
 
-function analyzeFabTransitions(events, samples) {
+function analyzeFabTransitions(events, samples, viewportSamples) {
 	const fab = events.find((event) => event.event === "fab-layout");
 	const states = events.filter((event) => event.event === "phone-state");
 	return states
@@ -366,7 +367,13 @@ function analyzeFabTransitions(events, samples) {
 		.map((current, index) => ({ previous: states[index], current }))
 		.filter(isReturnToList)
 		.map(({ previous, current }) =>
-			measureFabTransition(previous, current, samples, fab?.x ?? 0),
+			measureFabTransition({
+				current,
+				fabX: fab?.x ?? 0,
+				previous,
+				samples,
+				viewportSamples,
+			}),
 		);
 }
 
@@ -376,11 +383,25 @@ function isReturnToList({ previous, current }) {
 	return previous.state === "sidebar";
 }
 
-function measureFabTransition(previous, current, samples, fabX) {
-	const positions = samples
+function measureFabTransition({
+	previous,
+	current,
+	samples,
+	fabX,
+	viewportSamples,
+}) {
+	const measuredPositions = viewportSamples
 		.filter((sample) => sample.timestampMs >= previous.at)
-		.filter((sample) => sample.timestampMs <= current.at + 250)
-		.map((sample) => sample.value + fabX);
+		.filter((sample) => sample.timestampMs <= current.at + 250);
+	const samplesToUse =
+		measuredPositions.length > 1
+			? measuredPositions
+			: samples
+					.filter((sample) => sample.timestampMs >= previous.at)
+					.filter((sample) => sample.timestampMs <= current.at + 250);
+	const positions = samplesToUse.map((sample) =>
+		measuredPositions.length > 1 ? sample.value : sample.value + fabX,
+	);
 	const delta = positions.length
 		? Math.max(...positions) - Math.min(...positions)
 		: null;
@@ -389,6 +410,8 @@ function measureFabTransition(previous, current, samples, fabX) {
 		maxPositionDelta: delta === null ? null : round(delta),
 		name: `${previous.state}-to-list`,
 		passed: positions.length > 1 && delta !== null && delta <= 1.5,
+		positionSource:
+			measuredPositions.length > 1 ? "fab-viewport-frame" : "rail-plus-layout",
 		sampleCount: positions.length,
 		to: current.state,
 	};
