@@ -1,50 +1,23 @@
-import {
-	type ReactElement,
-	useCallback,
-	useEffect,
-	useRef,
-	useState,
-} from "react";
-import {
-	type LayoutChangeEvent,
-	type NativeScrollEvent,
-	type NativeSyntheticEvent,
-	type RefreshControlProps,
-	ScrollView,
-} from "react-native";
-import { MobileEditorBlocks } from "../components/workspace/MobileEditorBlocks";
+import type { ReactElement } from "react";
+import { type RefreshControlProps, ScrollView } from "react-native";
 import { MobileFilePreview } from "../components/workspace/MobileFilePreview";
-import { MobileMarkdownSourceEditor } from "../components/workspace/MobileMarkdownSourceEditor";
-import { MobileWysiwygMarkdownEditor } from "../components/workspace/MobileWysiwygMarkdownEditor";
 import { MobileLayoutProbeReadout } from "../qa/MobileLayoutProbeReadout";
 import { useMobileLayoutProbe } from "../qa/mobileLayoutProbe";
-import {
-	type NativeTableOfContentsProof,
-	nativeTableOfContentsScrollProof,
-} from "../qa/nativeTableOfContentsProbe";
-import { useMobileMotionBodyRender } from "../qa/useMobileMotionBodyRender";
 import { MobilePanel } from "../ui/MobilePanel";
-import { useMobileMetrics, useMobileStyles } from "../ui/theme/useMobileTheme";
+import { useMobileStyles } from "../ui/theme/useMobileTheme";
 import { useMobileAttachmentImporter } from "../workspace/mobileAttachmentImport";
 import { useMobileAttachmentLinkOpener } from "../workspace/mobileAttachmentOpen";
 import { useRegisteredMobileEditorCommands } from "../workspace/mobileEditorCommands";
 import { mobileNoteActionMode } from "../workspace/mobileNoteActionMode";
 import type { MobileNoteReadState } from "../workspace/mobileNoteRead";
 import { mobileSpreadsheetNeedsFallback } from "../workspace/mobileSpreadsheetFormat";
-import type { MobileTableOfContentsTarget } from "../workspace/mobileTableOfContents";
-import { createMobileTaskToggleHandler } from "../workspace/mobileTaskCheckbox";
-import type {
-	MobileEditorBlock,
-	MobileNote,
-} from "../workspace/mobileWorkspaceModel";
+import type { MobileNote } from "../workspace/mobileWorkspaceModel";
 import { useMobilePullToSync } from "../workspace/useMobilePullToSync";
 import { useMobileWikilinkNavigation } from "../workspace/useMobileWikilinkNavigation";
 import { MobileEditorToolbar } from "./MobileEditorToolbar";
 import type {
-	EditorContentProps,
 	EditorFileMode,
 	EditorPanelBodyProps,
-	TableOfContentsScroll,
 	TabletEditorPanelProps,
 } from "./TabletEditorPanel.types";
 import {
@@ -53,14 +26,31 @@ import {
 	MobileFilePreviewFallback,
 	MobileNoteReadFallback,
 	MobileSpreadsheetFallback,
+	TabletEditorContent,
 } from "./TabletEditorPanelChrome";
+import { createEditorContentProps } from "./TabletEditorPanelPropsBuilder";
 import { createEditorPanelStyles } from "./TabletEditorPanelStyles";
 import { useEditorModeSwitch } from "./useEditorModeSwitch";
 import { useNoteEditorMode } from "./useNoteEditorMode";
+import { useStableMobileEditorCallback } from "./useStableMobileEditorCallback";
+import { useTableOfContentsScroll } from "./useTableOfContentsScroll";
 
 export type { EditorEditingMode } from "./TabletEditorPanel.types";
 
-export function TabletEditorPanel(props: TabletEditorPanelProps) {
+type EditorPanelBodyViewProps = EditorPanelBodyProps & {
+	refreshControl?: ReactElement<RefreshControlProps>;
+};
+
+type EditorPanelBodyRendererProps = EditorPanelBodyViewProps & {
+	panelStyles: ReturnType<typeof createEditorPanelStyles>["panelStyles"];
+	themeStyles: ReturnType<typeof createEditorPanelStyles>;
+};
+
+type EditorPanelBodyRenderer = (
+	props: EditorPanelBodyRendererProps,
+) => ReactElement | null;
+
+export const TabletEditorPanel = (props: TabletEditorPanelProps) => {
 	const themeStyles = useMobileStyles(createEditorPanelStyles);
 	const { panelStyles } = themeStyles;
 	const refreshControl = useMobilePullToSync();
@@ -71,7 +61,7 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
 		layoutProbe: layoutProbeEnabled = false,
 		leading,
 		trailing,
-		note,
+		note: inputNote,
 		noteRead,
 		notes,
 		onNavigateWikilink,
@@ -84,8 +74,10 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
 		typeDefinitions,
 		vaultRootUri = null,
 	} = props;
+	const stableNote = inputNote;
+	const updateContent = useStableMobileEditorCallback(props.onUpdateContent);
 	const { mode: editingMode, toggle: changeEditingMode } = useNoteEditorMode(
-		note?.id,
+		stableNote?.id,
 		initialEditingMode,
 	);
 	const { onScroll, onTargetLayout, setScrollViewNode } =
@@ -99,18 +91,19 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
 		useMobileWikilinkNavigation(notes, onNavigateWikilink);
 	const layoutProbe = useMobileLayoutProbe(layoutProbeEnabled);
 	const { toggle: toggleSourceMode, failed: modeSwitchFailed } =
-		useEditorModeSwitch(note?.id, changeEditingMode);
+		useEditorModeSwitch(stableNote?.id, changeEditingMode);
 	useRegisteredMobileEditorCommands(onRegisterEditorCommands, {
 		toggleRawEditor:
-			note && editorFileMode(note) === "markdown"
+			stableNote && editorFileMode(stableNote) === "markdown"
 				? toggleSourceMode
 				: undefined,
 	});
 
-	if (!note) {
+	if (!stableNote) {
 		return <EmptyEditorPanel />;
 	}
 
+	const note = stableNote;
 	const fileMode = editorFileMode(note);
 	const plainText = fileMode === "text";
 	const effectiveEditing = canEditCurrentNote(
@@ -120,7 +113,12 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
 	);
 	const effectiveEditingMode = plainText ? "source" : editingMode;
 	const contentProps = createEditorContentProps(
-		{ ...props, onNavigateWikilink: navigateWikilink },
+		{
+			...props,
+			note,
+			onNavigateWikilink: navigateWikilink,
+			onUpdateContent: updateContent,
+		},
 		note,
 		{
 			editing: effectiveEditing,
@@ -173,112 +171,95 @@ export function TabletEditorPanel(props: TabletEditorPanelProps) {
 			) : null}
 		</MobilePanel>
 	);
-}
+};
 
-function createEditorContentProps(
-	props: TabletEditorPanelProps,
-	note: MobileNote,
-	options: Pick<
-		EditorContentProps,
-		| "editing"
-		| "editingMode"
-		| "layoutProbe"
-		| "onImportAttachment"
-		| "onOpenLink"
-		| "onTableOfContentsTargetLayout"
-		| "plainText"
-	>,
-): EditorContentProps {
-	return {
-		blocks: props.blocks,
-		bullets: props.bullets,
-		compact: props.compact,
-		...options,
-		note,
-		notes: props.notes,
-		onNavigateWikilink: props.onNavigateWikilink,
-		onRegisterEditorCommands: props.onRegisterEditorCommands,
-		onTableOfContentsScrollProof: props.onTableOfContentsScrollProof,
-		onUpdateContent: props.onUpdateContent,
-		sourceIdleSave: props.sourceIdleSave ?? true,
-		sourceSelectionProbe: props.sourceSelectionProbe ?? false,
-		tableOfContentsTarget: props.tableOfContentsTarget,
-		typeDefinitions: props.typeDefinitions,
-		vaultRootUri: props.vaultRootUri ?? null,
-		wysiwygAutocompleteProbe: props.wysiwygAutocompleteProbe ?? false,
-		wysiwygExternalLinkProbe: props.wysiwygExternalLinkProbe ?? false,
-		wysiwygFormatCommandProbe: props.wysiwygFormatCommandProbe ?? false,
-		wysiwygInputTransformProbe: props.wysiwygInputTransformProbe ?? false,
-		wysiwygMarkdownBlockProbe: props.wysiwygMarkdownBlockProbe ?? false,
-		wysiwygMathEditProbe: props.wysiwygMathEditProbe ?? false,
-		wysiwygTableCommandMutationProbe:
-			props.wysiwygTableCommandMutationProbe ?? false,
-		wysiwygMutationProbe: props.wysiwygMutationProbe ?? false,
-		onEditorBodyReady: props.onEditorBodyReady,
-		wysiwygWikilinkInsertProbe: props.wysiwygWikilinkInsertProbe ?? false,
-	};
-}
-
-function EditorPanelBody(
-	props: EditorPanelBodyProps & {
-		refreshControl?: ReactElement<RefreshControlProps>;
-	},
-) {
-	const {
-		compact,
-		contentProps,
-		fileMode,
-		note,
-		noteRead,
-		onScroll,
-		onScrollViewRef,
-		refreshControl,
-	} = props;
+function EditorPanelBody(props: EditorPanelBodyViewProps) {
 	const themeStyles = useMobileStyles(createEditorPanelStyles);
-	const { panelStyles } = themeStyles;
-	const readFallback = noteReadFallbackState(noteRead, note);
-	if (readFallback)
-		return <MobileNoteReadFallback note={note} state={readFallback} />;
-	if (fileMode === "binary") {
-		return (
-			<MobileFilePreview
-				note={note}
-				vaultRootUri={contentProps.vaultRootUri}
-				fallback={
-					<ScrollView
-						contentContainerStyle={panelStyles.filePreviewContent}
-						scrollsToTop={false}
-						testID="editor-scroll"
-					>
-						<MobileFilePreviewFallback
-							note={note}
-							typeDefinitions={contentProps.typeDefinitions}
-						/>
-					</ScrollView>
-				}
-			/>
-		);
-	}
+	return selectEditorPanelBodyRenderer(props)({
+		...props,
+		panelStyles: themeStyles.panelStyles,
+		themeStyles,
+	});
+}
 
-	if (mobileSpreadsheetNeedsFallback(note, contentProps.editingMode)) {
-		return <MobileSpreadsheetFallback />;
-	}
+function selectEditorPanelBodyRenderer(
+	props: EditorPanelBodyViewProps,
+): EditorPanelBodyRenderer {
+	if (noteReadFallbackState(props.noteRead, props.note))
+		return renderNoteReadBody;
+	if (props.fileMode === "binary") return renderBinaryFileBody;
+	if (
+		mobileSpreadsheetNeedsFallback(props.note, props.contentProps.editingMode)
+	)
+		return renderSpreadsheetFallbackBody;
+	return props.contentProps.editing
+		? renderEditableNoteBody
+		: renderReadOnlyNoteBody;
+}
 
-	if (contentProps.editing) {
-		return (
-			<ScrollView
-				contentContainerStyle={{ flexGrow: 1 }}
-				nestedScrollEnabled
-				refreshControl={refreshControl}
-				scrollsToTop={false}
-				style={panelStyles.editorHost}
-				testID="editor-scroll"
-			>
-				<EditorContent {...contentProps} />
-			</ScrollView>
-		);
-	}
+function renderNoteReadBody({ note, noteRead }: EditorPanelBodyRendererProps) {
+	const state = noteReadFallbackState(noteRead, note);
+	return state ? <MobileNoteReadFallback note={note} state={state} /> : null;
+}
 
+function renderBinaryFileBody({
+	note,
+	contentProps,
+	panelStyles,
+}: EditorPanelBodyRendererProps) {
+	return (
+		<MobileFilePreview
+			note={note}
+			vaultRootUri={contentProps.vaultRootUri}
+			fallback={
+				<ScrollView
+					contentContainerStyle={panelStyles.filePreviewContent}
+					scrollsToTop={false}
+					testID="editor-scroll"
+				>
+					<MobileFilePreviewFallback
+						note={note}
+						typeDefinitions={contentProps.typeDefinitions}
+					/>
+				</ScrollView>
+			}
+		/>
+	);
+}
+
+function renderSpreadsheetFallbackBody() {
+	return <MobileSpreadsheetFallback />;
+}
+
+function renderEditableNoteBody({
+	contentProps,
+	panelStyles,
+	refreshControl,
+}: EditorPanelBodyRendererProps) {
+	return (
+		<ScrollView
+			contentContainerStyle={{ flexGrow: 1 }}
+			nestedScrollEnabled
+			refreshControl={refreshControl}
+			scrollsToTop={false}
+			style={panelStyles.editorHost}
+			testID="editor-scroll"
+		>
+			<TabletEditorContent {...contentProps} />
+		</ScrollView>
+	);
+}
+
+function renderReadOnlyNoteBody({
+	compact,
+	contentProps,
+	note,
+	onScroll,
+	onScrollViewRef,
+	panelStyles,
+	refreshControl,
+	themeStyles,
+}: EditorPanelBodyRendererProps) {
 	return (
 		<ScrollView
 			contentContainerStyle={readModeContentStyle(themeStyles, note, compact)}
@@ -290,7 +271,7 @@ function EditorPanelBody(
 			style={panelStyles.editorHost}
 			testID="editor-scroll"
 		>
-			<EditorContent {...contentProps} />
+			<TabletEditorContent {...contentProps} />
 		</ScrollView>
 	);
 }
@@ -313,199 +294,6 @@ function noteReadFallbackState(
 		(noteRead.status === "loading" && note.rawContent !== undefined);
 	return hasUsableContent ? null : noteRead;
 }
-
-function useTableOfContentsScroll(
-	target: MobileTableOfContentsTarget | null,
-	onProof?: (proof: NativeTableOfContentsProof) => void,
-): TableOfContentsScroll {
-	const metrics = useMobileMetrics();
-	const [layoutVersion, setLayoutVersion] = useState(0);
-	const [scrollViewVersion, setScrollViewVersion] = useState(0);
-	const scrollViewRef = useRef<ScrollView | null>(null);
-	const scrollYRef = useRef(0);
-	const targetOffsetsRef = useRef<Record<string, number>>({});
-	const setScrollViewNode = useCallback((node: ScrollView | null) => {
-		scrollViewRef.current = node;
-		setScrollViewVersion((current) => current + 1);
-	}, []);
-	const onScroll = useCallback(
-		(event: NativeSyntheticEvent<NativeScrollEvent>) => {
-			scrollYRef.current = event.nativeEvent.contentOffset.y;
-		},
-		[],
-	);
-	const onTargetLayout = useCallback(
-		(targetId: string, event: LayoutChangeEvent) => {
-			targetOffsetsRef.current[targetId] = event.nativeEvent.layout.y;
-			setLayoutVersion((current) => current + 1);
-		},
-		[],
-	);
-
-	useEffect(() => {
-		if (!target) return;
-
-		const y = targetOffsetsRef.current[target.id];
-		if (typeof y !== "number") return;
-		const scrollView = scrollViewRef.current;
-		if (!scrollView) return;
-
-		const beforeY = scrollYRef.current;
-		const expectedY = Math.max(0, y - metrics.editor.contentPaddingVertical);
-		scrollView.scrollTo({
-			animated: true,
-			y: expectedY,
-		});
-
-		if (!onProof) return;
-
-		const proofTimeout = setTimeout(() => {
-			onProof(
-				nativeTableOfContentsScrollProof({
-					afterY: scrollYRef.current,
-					beforeY,
-					expectedY,
-					targetId: target.id,
-				}),
-			);
-		}, 900);
-
-		return () => clearTimeout(proofTimeout);
-	}, [layoutVersion, onProof, scrollViewVersion, target, metrics]);
-
-	return { onScroll, onTargetLayout, setScrollViewNode };
-}
-
-function EditorContent({
-	blocks,
-	bullets,
-	compact,
-	editing,
-	editingMode,
-	layoutProbe,
-	note,
-	notes,
-	plainText,
-	onEditorBodyReady,
-	onImportAttachment,
-	onNavigateWikilink,
-	onOpenLink,
-	onRegisterEditorCommands,
-	onTableOfContentsScrollProof,
-	onTableOfContentsTargetLayout,
-	onUpdateContent,
-	sourceIdleSave,
-	sourceSelectionProbe = false,
-	tableOfContentsTarget = null,
-	typeDefinitions,
-	vaultRootUri = null,
-	wysiwygAutocompleteProbe = false,
-	wysiwygExternalLinkProbe = false,
-	wysiwygFormatCommandProbe = false,
-	wysiwygInputTransformProbe = false,
-	wysiwygMarkdownBlockProbe = false,
-	wysiwygMathEditProbe = false,
-	wysiwygTableCommandMutationProbe = false,
-	wysiwygWikilinkInsertProbe = false,
-	wysiwygMutationProbe = false,
-}: EditorContentProps) {
-	useMobileMotionBodyRender(
-		compact,
-		note.id,
-		note.rawContent ?? JSON.stringify({ blocks, bullets }),
-	);
-
-	if (editing) {
-		if (usesSourceEditor(plainText, editingMode)) {
-			return (
-				<MobileMarkdownSourceEditor
-					key={`${note.id}:${plainText ? "text" : "source"}`}
-					blocks={blocks}
-					bullets={bullets}
-					compact={compact}
-					note={note}
-					notes={notes}
-					onImportAttachment={onImportAttachment}
-					onRegisterEditorCommands={onRegisterEditorCommands}
-					onUpdateContent={onUpdateContent}
-					idleSave={sourceIdleSave}
-					plainText={plainText}
-					sourceSelectionProbe={sourceSelectionProbe}
-				/>
-			);
-		}
-
-		return (
-			<MobileWysiwygMarkdownEditor
-				blocks={blocks}
-				bullets={bullets}
-				compact={compact}
-				layoutProbe={layoutProbe}
-				note={note}
-				notes={notes}
-				onNavigateWikilink={onNavigateWikilink}
-				onImportAttachment={onImportAttachment}
-				onOpenLink={onOpenLink}
-				onEditorBodyReady={onEditorBodyReady}
-				onRegisterEditorCommands={onRegisterEditorCommands}
-				onTableOfContentsScrollProof={onTableOfContentsScrollProof}
-				onUpdateContent={onUpdateContent}
-				tableOfContentsTarget={tableOfContentsTarget}
-				typeDefinitions={typeDefinitions}
-				vaultRootUri={vaultRootUri}
-				wysiwygAutocompleteProbe={wysiwygAutocompleteProbe}
-				wysiwygExternalLinkProbe={wysiwygExternalLinkProbe}
-				wysiwygFormatCommandProbe={wysiwygFormatCommandProbe}
-				wysiwygInputTransformProbe={wysiwygInputTransformProbe}
-				wysiwygMarkdownBlockProbe={wysiwygMarkdownBlockProbe}
-				wysiwygMathEditProbe={wysiwygMathEditProbe}
-				wysiwygTableCommandMutationProbe={wysiwygTableCommandMutationProbe}
-				wysiwygWikilinkInsertProbe={wysiwygWikilinkInsertProbe}
-				wysiwygMutationProbe={wysiwygMutationProbe}
-			/>
-		);
-	}
-
-	const readBlocks = note.editorBlocks ?? blocks;
-	const readBullets = note.editorBullets ?? bullets;
-
-	return (
-		<MobileEditorBlocks
-			blocks={readBlocks}
-			fallbackBullets={readBullets}
-			renderTitleBlock={shouldRenderReadTitleBlock(note, readBlocks)}
-			tableOfContentsTitle={note.title}
-			onTableOfContentsTargetLayout={onTableOfContentsTargetLayout}
-			interactions={{
-				onOpenLink,
-				onNavigateWikilink,
-				onToggleTask: createMobileTaskToggleHandler(
-					note.rawContent,
-					note.id,
-					onUpdateContent,
-				),
-			}}
-		/>
-	);
-}
-
-function usesSourceEditor(
-	plainText: boolean,
-	editingMode: EditorContentProps["editingMode"],
-) {
-	return plainText || editingMode === "source";
-}
-
-function shouldRenderReadTitleBlock(
-	note: MobileNote,
-	blocks: MobileEditorBlock[],
-) {
-	if (blocks.length === 0) return false;
-	if (generatedUntitledTitlePattern.test(note.title)) return false;
-	return note.title.trim().length > 0;
-}
-
-const generatedUntitledTitlePattern = /^Untitled\s+\S+\s+\d+$/u;
 
 function editorFileMode(note: MobileNote): EditorFileMode {
 	const actionMode = mobileNoteActionMode(note);
