@@ -15,9 +15,17 @@ export function logMobileMotionEvent(
 
 export function logMobileMotionBodyRender(
 	compact: boolean,
-	noteId: string,
-	rawContent: string | undefined,
-	render: number,
+	{
+		noteId,
+		rawContent,
+		render,
+		changedInputs,
+	}: {
+		noteId: string;
+		rawContent: string | undefined;
+		render: number;
+		changedInputs: string[];
+	},
 ) {
 	if (!compact) return;
 	logMobileMotionEvent("note-body-render", {
@@ -25,6 +33,7 @@ export function logMobileMotionBodyRender(
 		contentLength: rawContent?.length ?? 0,
 		noteId,
 		render,
+		changedInputs: changedInputs.join(","),
 	});
 }
 

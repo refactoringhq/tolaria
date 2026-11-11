@@ -124,8 +124,8 @@ vi.mock("../components/workspace/MobileWysiwygMarkdownEditor", () => ({
 	}: {
 		note: MobileNote;
 		onNavigateWikilink: (target: string) => void;
-	}) =>
-		createElement(
+	}) => {
+		return createElement(
 			"div",
 			{
 				"data-rich-note": note.id,
@@ -136,7 +136,8 @@ vi.mock("../components/workspace/MobileWysiwygMarkdownEditor", () => ({
 				"data-testid": "navigate-missing-wikilink",
 				onClick: () => onNavigateWikilink("missing"),
 			}),
-		),
+		);
+	},
 }));
 vi.mock("../components/workspace/MobileMarkdownSourceEditor", () => ({
 	MobileMarkdownSourceEditor: ({ note }: { note: MobileNote }) =>
@@ -145,7 +146,8 @@ vi.mock("../components/workspace/MobileMarkdownSourceEditor", () => ({
 			"data-note-content": note.rawContent,
 		}),
 }));
-vi.mock("./TabletEditorPanelChrome", () => ({
+vi.mock("./TabletEditorPanelChrome", async (importOriginal) => ({
+	...(await importOriginal<typeof import("./TabletEditorPanelChrome")>()),
 	EmptyEditorPanel: () => null,
 	MobileFilePreviewFallback: () => null,
 	MobileNoteReadFallback: ({ state }: { state: { status: string } }) =>
@@ -163,7 +165,9 @@ vi.mock("./PhoneWorkspaceChrome", () => ({
 }));
 
 let root: ReturnType<typeof createRoot> | undefined;
-beforeEach(() => vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true));
+beforeEach(() => {
+	vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+});
 afterEach(async () => {
 	await act(async () => root?.unmount());
 	vi.unstubAllGlobals();
