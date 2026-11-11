@@ -69,36 +69,44 @@ run(
 	],
 	{ allowFailure: true },
 );
-run("xcodebuild", [
-	"-project",
-	join(project, "TabletPanelGestureTests.xcodeproj"),
-	"-scheme",
-	"TabletPanelGestureTests",
-	"-destination",
-	`id=${device}`,
-	"-derivedDataPath",
-	join(output, "derived"),
-	"-resultBundlePath",
-	resultBundle,
-	"-collect-test-diagnostics",
-	"never",
-	"-parallel-testing-enabled",
-	"NO",
-	...(focusedCheck === "new-note"
-		? [
-				"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNewNoteHeaderAndBodyEnterTogether",
-			]
-		: focusedCheck === "launch"
+const nativeTests = run(
+	"xcodebuild",
+	[
+		"-project",
+		join(project, "TabletPanelGestureTests.xcodeproj"),
+		"-scheme",
+		"TabletPanelGestureTests",
+		"-destination",
+		`id=${device}`,
+		"-derivedDataPath",
+		join(output, "derived"),
+		"-resultBundlePath",
+		resultBundle,
+		"-collect-test-diagnostics",
+		"never",
+		"-parallel-testing-enabled",
+		"NO",
+		...(focusedCheck === "note-open"
 			? [
-					"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testLargeVaultLaunchKeepsListChromeReachable",
-				]
-			: [
 					"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testListChromeEditorReturnSidebarCloseAndOrganizeSwipeAreReachable",
-					"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNewNoteHeaderAndBodyEnterTogether",
-				]),
-	"CODE_SIGNING_ALLOWED=NO",
-	"test",
-]);
+				]
+			: focusedCheck === "new-note"
+				? [
+						"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNewNoteHeaderAndBodyEnterTogether",
+					]
+				: focusedCheck === "launch"
+					? [
+							"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testLargeVaultLaunchKeepsListChromeReachable",
+						]
+					: [
+							"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testListChromeEditorReturnSidebarCloseAndOrganizeSwipeAreReachable",
+							"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNewNoteHeaderAndBodyEnterTogether",
+						]),
+		"CODE_SIGNING_ALLOWED=NO",
+		"test",
+	],
+	{ allowFailure: true },
+);
 const logPath = join(output, "simulator-motion.log");
 writeFileSync(logPath, readFileSync(metroLogPath).subarray(logStartOffset));
 const analysis = run(
@@ -106,6 +114,7 @@ const analysis = run(
 	[
 		fileURLToPath(new URL("./analyze-motion-frame-log.mjs", import.meta.url)),
 		logPath,
+		...(focusedCheck === "note-open" ? ["--note-body-only"] : []),
 		...(focusedCheck === "new-note" ? ["--new-note-only"] : []),
 		...(focusedCheck === "launch" ? ["--launch-only"] : []),
 	],
@@ -115,7 +124,8 @@ writeFileSync(join(output, "motion-analysis.json"), analysis.stdout);
 process.stdout.write(
 	`${analysis.stdout}\nArtifacts: ${output}\nResult bundle: ${resultBundle}\n`,
 );
-if (analysis.status !== 0) process.exitCode = analysis.status;
+if (nativeTests.status !== 0) process.exitCode = nativeTests.status;
+else if (analysis.status !== 0) process.exitCode = analysis.status;
 
 function run(command, args, options = {}) {
 	const result = spawnSync(command, args, {

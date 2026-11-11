@@ -129,6 +129,46 @@ test("full run fails when chrome is not laid out within the first frame", (t) =>
 	assert.equal(runAnalyzer(path, "--full").status, 1);
 });
 
+test("full run recognizes organize swipe frame ids with a file extension", (t) => {
+	const directory = mkdtempSync(join(tmpdir(), "tolaria-motion-log-"));
+	t.after(() => rmSync(directory, { recursive: true, force: true }));
+	const path = join(directory, "simulator.log");
+	writeFileSync(
+		path,
+		[
+			event("first-list-frame", 1, { width: 402 }),
+			event("chrome-layout", 2, { control: "hamburger" }),
+			event("fab-layout", 2, { x: 1 }),
+			event("phone-state", 10, { state: "list" }),
+			event("phone-state", 20, { state: "editor" }),
+			event("note-body-render", 22, {
+				noteId: "workflow-orchestration.md",
+				contentFingerprint: "a",
+				contentLength: 12,
+			}),
+			event("phone-state", 40, { state: "list" }),
+			frame(41, 0),
+			frame(57, -350),
+			event("new-note-editor-prepare", 60),
+			event("new-note-editor-body-ready", 61),
+			event("phone-state", 62, { state: "editor" }),
+			frame(63, 0),
+			frame(79, -350),
+			...Array.from(
+				{ length: 2 },
+				(_, index) =>
+					`TOLARIA_MOTION_FRAME ${JSON.stringify({ id: "phone.rail.offset", timestampMs: 100 + index * 16, value: index * 10 })}`,
+			),
+			...Array.from(
+				{ length: 2 },
+				(_, index) =>
+					`TOLARIA_MOTION_FRAME ${JSON.stringify({ id: "organize-swipe.workflow-orchestration.md", timestampMs: 200 + index * 16, value: index * 10 })}`,
+			),
+		].join("\n"),
+	);
+	assert.equal(runAnalyzer(path, "--full", "fixture-build").status, 0);
+});
+
 test("large-vault launch check requires first-frame controls and the expected build", (t) => {
 	const directory = mkdtempSync(join(tmpdir(), "tolaria-motion-log-"));
 	t.after(() => rmSync(directory, { recursive: true, force: true }));
