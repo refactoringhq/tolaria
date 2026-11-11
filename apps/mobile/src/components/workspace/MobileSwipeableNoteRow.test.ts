@@ -176,7 +176,7 @@ describe("note row input ownership", () => {
 		expect(input.onArchive).not.toHaveBeenCalled();
 	});
 
-	it("cancels the reveal spring before committing a full-swipe action", () => {
+	it("does not reset the swipeable before committing a full-swipe action", () => {
 		renderRow(false, "organize");
 		setSwipeWidth();
 		input.swipeableMethods.reset.mockImplementation(() =>
@@ -185,8 +185,8 @@ describe("note row input ownership", () => {
 		input.onOrganize.mockImplementation(() => input.events.push("organize"));
 		finishSwipe();
 
-		expect(input.events).toEqual(["reset", "organize"]);
-		expect(input.swipeableMethods.reset).toHaveBeenCalledTimes(1);
+		expect(input.events).toEqual(["organize"]);
+		expect(input.swipeableMethods.reset).not.toHaveBeenCalled();
 	});
 
 	it("keeps a partial swipe revealed without resetting the swipeable", () => {
