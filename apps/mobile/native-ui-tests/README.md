@@ -33,6 +33,10 @@ after that launch, so earlier runs cannot contaminate measurements. The note-ope
 check requires exactly one content-bearing editor-body render; repeated renders
 with an unchanged fingerprint still fail the check.
 
+Use `TOLARIA_MOTION_CHECK=note-open` to run only the note-open interaction. The
+runner preserves the Metro log, analysis JSON, and XCUITest result bundle even
+when a native assertion fails, so the measured evidence remains available.
+
 For the large-vault launch check, register and select a disposable 6,000-note
 vault under the app container's `Documents/Local Vaults/<lowercase-id>` path,
 then run:
