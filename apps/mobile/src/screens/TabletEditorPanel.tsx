@@ -409,7 +409,11 @@ function EditorContent({
 	wysiwygWikilinkInsertProbe = false,
 	wysiwygMutationProbe = false,
 }: EditorContentProps) {
-	useMobileMotionBodyRender(compact, note.id, note.rawContent);
+	useMobileMotionBodyRender(
+		compact,
+		note.id,
+		note.rawContent ?? JSON.stringify({ blocks, bullets }),
+	);
 
 	if (editing) {
 		if (usesSourceEditor(plainText, editingMode)) {
