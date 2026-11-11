@@ -58,7 +58,7 @@ final class MobileMotionFrameTests: XCTestCase {
     XCTAssertTrue(create.exists && create.isHittable, "FAB missing or not tappable on the first list frame")
     attachFrame("first-list-frame", app)
 
-    element(app, "note-row-workflow-orchestration").tap()
+    element(app, "note-row-workflow-orchestration.md").tap()
     XCTAssertTrue(element(app, "phone-editor-screen").waitForExistence(timeout: 8))
     XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 8), "Note body did not mount")
     MobilePanelNavigation.back(app)
@@ -71,7 +71,7 @@ final class MobileMotionFrameTests: XCTestCase {
     XCTAssertTrue(list.waitForExistence(timeout: 8))
     XCTAssertTrue(create.isHittable, "FAB did not return after sidebar close")
 
-    let row = element(app, "note-row-workflow-orchestration")
+    let row = element(app, "note-row-workflow-orchestration.md")
     XCTAssertTrue(row.waitForExistence(timeout: 8))
     row.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5))
       .press(forDuration: 0.05, thenDragTo: row.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.5)))
