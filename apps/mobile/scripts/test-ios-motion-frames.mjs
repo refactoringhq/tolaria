@@ -48,16 +48,6 @@ const motionSearch =
 	process.env.TOLARIA_MOTION_SEARCH ??
 	"?source=fixture&phoneState=list&editorMode=wysiwyg&layoutProbe=1&qaRun=tol339-motion";
 const logStartOffset = statSync(metroLogPath).size;
-run("xcrun", [
-	"simctl",
-	"launch",
-	"--terminate-running-process",
-	device,
-	"com.tolaria.mobile.dev",
-	"--tolaria-mobile-search",
-	motionSearch,
-]);
-const resultBundle = join(output, `motion-${Date.now()}.xcresult`);
 const focusedCheck = process.env.TOLARIA_MOTION_CHECK;
 run(
 	"xcrun",
@@ -69,45 +59,68 @@ run(
 	],
 	{ allowFailure: true },
 );
+
+const xcodebuildArgs = [
+	"-project",
+	join(project, "TabletPanelGestureTests.xcodeproj"),
+	"-scheme",
+	"TabletPanelGestureTests",
+	"-destination",
+	`id=${device}`,
+	"-derivedDataPath",
+	join(output, "derived"),
+	"-collect-test-diagnostics",
+	"never",
+	"-parallel-testing-enabled",
+	"NO",
+	...(focusedCheck === "note-open"
+		? [
+				"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNoteOpenBodyRenderCountViaEditorEntryRoute",
+			]
+		: focusedCheck === "note-open-route"
+			? [
+					"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNoteOpenBodyRenderCountViaEditorEntryRoute",
+				]
+			: focusedCheck === "new-note"
+				? [
+						"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNewNoteHeaderAndBodyEnterTogether",
+					]
+				: focusedCheck === "startup"
+					? [
+							"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testCachedStartupKeepsFirstFrameChromeUsable",
+						]
+					: focusedCheck === "startup-create"
+						? [
+								"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testCachedStartupCreateActionAcceptsFirstFrameTapWhilePreparationRuns",
+							]
+						: focusedCheck === "launch"
+							? [
+									"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testLargeVaultLaunchKeepsListChromeReachable",
+								]
+							: [
+									"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testListChromeEditorReturnSidebarCloseAndOrganizeSwipeAreReachable",
+									"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNewNoteHeaderAndBodyEnterTogether",
+								]),
+	"CODE_SIGNING_ALLOWED=NO",
+];
+run("xcodebuild", [...xcodebuildArgs, "build-for-testing"]);
+run("xcrun", [
+	"simctl",
+	"launch",
+	"--terminate-running-process",
+	device,
+	"com.tolaria.mobile.dev",
+	"--tolaria-mobile-search",
+	motionSearch,
+]);
+const resultBundle = join(output, `motion-${Date.now()}.xcresult`);
 const nativeTests = run(
 	"xcodebuild",
 	[
-		"-project",
-		join(project, "TabletPanelGestureTests.xcodeproj"),
-		"-scheme",
-		"TabletPanelGestureTests",
-		"-destination",
-		`id=${device}`,
-		"-derivedDataPath",
-		join(output, "derived"),
+		...xcodebuildArgs,
 		"-resultBundlePath",
 		resultBundle,
-		"-collect-test-diagnostics",
-		"never",
-		"-parallel-testing-enabled",
-		"NO",
-		...(focusedCheck === "note-open"
-			? [
-					"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testListChromeEditorReturnSidebarCloseAndOrganizeSwipeAreReachable",
-				]
-			: focusedCheck === "note-open-route"
-				? [
-						"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNoteOpenBodyRenderCountViaEditorLaunchRoute",
-					]
-				: focusedCheck === "new-note"
-					? [
-							"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNewNoteHeaderAndBodyEnterTogether",
-						]
-					: focusedCheck === "launch"
-						? [
-								"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testLargeVaultLaunchKeepsListChromeReachable",
-							]
-						: [
-								"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testListChromeEditorReturnSidebarCloseAndOrganizeSwipeAreReachable",
-								"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNewNoteHeaderAndBodyEnterTogether",
-							]),
-		"CODE_SIGNING_ALLOWED=NO",
-		"test",
+		"test-without-building",
 	],
 	{ allowFailure: true },
 );
@@ -119,10 +132,12 @@ const analysis = run(
 		fileURLToPath(new URL("./analyze-motion-frame-log.mjs", import.meta.url)),
 		logPath,
 		...(["note-open", "note-open-route"].includes(focusedCheck)
-			? ["--note-body-only"]
+			? ["--note-body-entry-only"]
 			: []),
 		...(focusedCheck === "new-note" ? ["--new-note-only"] : []),
 		...(focusedCheck === "launch" ? ["--launch-only"] : []),
+		...(focusedCheck === "startup" ? ["--startup-only"] : []),
+		...(focusedCheck === "startup-create" ? ["--startup-create-only"] : []),
 	],
 	{ allowFailure: true, capture: true },
 );

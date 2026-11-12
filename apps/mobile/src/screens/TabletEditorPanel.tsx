@@ -185,8 +185,7 @@ function EditorPanelBody(props: EditorPanelBodyViewProps) {
 function selectEditorPanelBodyRenderer(
 	props: EditorPanelBodyViewProps,
 ): EditorPanelBodyRenderer {
-	if (noteReadFallbackState(props.noteRead, props.note))
-		return renderNoteReadBody;
+	if (noteReadFallbackState(props.noteRead)) return renderNoteReadBody;
 	if (props.fileMode === "binary") return renderBinaryFileBody;
 	if (
 		mobileSpreadsheetNeedsFallback(props.note, props.contentProps.editingMode)
@@ -198,7 +197,7 @@ function selectEditorPanelBodyRenderer(
 }
 
 function renderNoteReadBody({ note, noteRead }: EditorPanelBodyRendererProps) {
-	const state = noteReadFallbackState(noteRead, note);
+	const state = noteReadFallbackState(noteRead);
 	return state ? <MobileNoteReadFallback note={note} state={state} /> : null;
 }
 
@@ -284,15 +283,9 @@ function canEditCurrentNote(
 	return fileMode !== "binary" && editing && noteRead?.status !== "loading";
 }
 
-function noteReadFallbackState(
-	noteRead: MobileNoteReadState | undefined,
-	note: MobileNote,
-) {
-	if (!noteRead) return null;
-	const hasUsableContent =
-		noteRead.status === "ready" ||
-		(noteRead.status === "loading" && note.rawContent !== undefined);
-	return hasUsableContent ? null : noteRead;
+function noteReadFallbackState(noteRead: MobileNoteReadState | undefined) {
+	if (!noteRead || noteRead.status === "ready") return null;
+	return noteRead;
 }
 
 function editorFileMode(note: MobileNote): EditorFileMode {

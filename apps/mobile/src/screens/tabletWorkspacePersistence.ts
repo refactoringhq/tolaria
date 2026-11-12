@@ -10,6 +10,7 @@ import {
 } from "react";
 import { trackSuccessfulMobileEdit } from "../analytics/mobileSuccessfulEdit";
 import { useMobileAnalytics } from "../analytics/useMobileAnalytics";
+import { logMobileMotionEvent } from "../qa/mobileMotionFrameLog";
 import { MobileVaultPickerContext } from "../workspace/MobileVaultContext";
 import { withDefaultNoteType } from "../workspace/mobileDefaultNoteType";
 import { requestCreatedNoteFocus } from "../workspace/mobileEditorFocus";
@@ -27,6 +28,7 @@ import {
 	type MobileWorkspaceEdit,
 } from "../workspace/mobileWorkspaceEditing";
 import type { MobileWorkspaceSnapshot } from "../workspace/mobileWorkspaceModel";
+import { requestForStaleNativeCreate } from "../workspace/mobileWorkspaceSnapshotEdits";
 import type {
 	ReadOnlyWorkspaceRepository,
 	ReadOnlyWorkspaceRequest,
@@ -266,11 +268,48 @@ function useWorkspaceEditApplier({
 
 function applyWorkspaceEditNow(services: ApplyWorkspaceEditServices) {
 	const previousSnapshot = services.snapshotState.workspaceSnapshotRef.current;
-	if (
-		!isWorkspaceEditGenerationCurrent(services.generation, services.syncEditors)
-	)
+	const generation = services.syncEditors?.generation();
+	const rebasedRequest = requestForStaleNativeCreate(
+		services.edit,
+		previousSnapshot,
+		services.repositoryRequest,
+	);
+	const staleGeneration = !isWorkspaceEditGenerationCurrent(
+		services.generation,
+		services.syncEditors,
+	);
+	logWorkspaceEditGeneration(
+		services,
+		previousSnapshot,
+		generation,
+		staleGeneration,
+	);
+	if (staleGeneration && !rebasedRequest)
 		return { snapshot: previousSnapshot, writes: [] };
-	return applyCurrentWorkspaceEdit(services, previousSnapshot);
+	return applyCurrentWorkspaceEdit(
+		staleGeneration
+			? { ...services, generation, repositoryRequest: rebasedRequest }
+			: services,
+		previousSnapshot,
+	);
+}
+
+function logWorkspaceEditGeneration(
+	services: ApplyWorkspaceEditServices,
+	snapshot: MobileWorkspaceSnapshot,
+	generation: number | undefined,
+	staleGeneration: boolean,
+) {
+	logMobileMotionEvent("workspace-edit-generation", {
+		currentGeneration: generation ?? -1,
+		editGeneration: services.generation ?? -1,
+		editType: services.edit.type,
+		nativeSource: services.repositoryRequest?.source === "native",
+		snapshotSource: snapshot.source?.kind ?? "unknown",
+		staleGeneration,
+		vaultPathMatches:
+			snapshot.source?.vaultPath === services.repositoryRequest?.vaultRootUri,
+	});
 }
 
 function applyCurrentWorkspaceEdit(
@@ -283,6 +322,13 @@ function applyCurrentWorkspaceEdit(
 		services.edit,
 		services.repositoryRequest?.source,
 	);
+	if (services.edit.type === "createNote")
+		logMobileMotionEvent("workspace-create-result", {
+			previousNoteCount: previousSnapshot.notes.length,
+			nextNoteCount: optimisticSnapshot.notes.length,
+			selectedNote: optimisticSnapshot.selectedNoteId ?? "",
+			writeCount: result.writes.length,
+		});
 	publishAndPersistOptimisticEdit(
 		services,
 		previousSnapshot,

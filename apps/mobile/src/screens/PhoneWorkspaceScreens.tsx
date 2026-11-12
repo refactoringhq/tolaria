@@ -1,5 +1,11 @@
 import { List } from "phosphor-react-native";
-import { Fragment, type ReactNode, useCallback } from "react";
+import {
+	Fragment,
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useRef,
+} from "react";
 import { View } from "react-native";
 import { MobileNoteListPanel } from "../components/workspace/MobileNoteListPanel";
 import { MobilePropertiesPanel } from "../components/workspace/MobilePropertiesPanel";
@@ -38,6 +44,20 @@ function PhoneNoteListScreen({
 	phoneState,
 }: PhoneWorkspaceStateViewProps) {
 	const { styles, mobileColors } = useMobileStyles(createThemeStyles);
+	const renderCount = useRef(0);
+	const mountNoteCount = useRef(controller.notes.length);
+	useEffect(() => {
+		logMobileMotionEvent("phone-note-list-mount", {
+			noteCount: mountNoteCount.current,
+		});
+	}, []);
+	useEffect(() => {
+		renderCount.current += 1;
+		logMobileMotionEvent("phone-note-list-render", {
+			noteCount: controller.notes.length,
+			render: renderCount.current,
+		});
+	});
 	const leading = (
 		<MobileIconButton
 			accessibilityLabel={mobileCopy.showSidebar}
@@ -66,6 +86,7 @@ function PhoneNoteListScreen({
 			{...probeProps(phoneLayoutProbe, "phone.list.screen")}
 			onLayout={({ nativeEvent: { layout } }) =>
 				logMobileMotionEvent("first-list-frame", {
+					chromeMounted: true,
 					height: layout.height,
 					width: layout.width,
 					x: layout.x,
