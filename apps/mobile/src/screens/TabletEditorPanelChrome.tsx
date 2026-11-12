@@ -31,17 +31,19 @@ import type { EditorContentProps } from "./TabletEditorPanel.types";
 import { createEditorPanelStyles } from "./TabletEditorPanelStyles";
 
 export function MobileNoteReadFallback({
-	note,
+	compact = false,
 	state,
 }: {
-	note: MobileNote;
+	compact?: boolean;
 	state: MobileNoteReadState;
 }) {
 	const themeStyles = useMobileStyles(createEditorPanelStyles);
 	const { panelStyles } = themeStyles;
 	const mobileColors = useMobileColors();
 	if (state.status !== "error")
-		return <MobileNoteReadLoading note={note} panelStyles={panelStyles} />;
+		return (
+			<MobileNoteReadLoading compact={compact} panelStyles={panelStyles} />
+		);
 	return (
 		<View style={panelStyles.emptyState} testID="note-read-error">
 			<View
@@ -64,34 +66,54 @@ export function MobileNoteReadFallback({
 }
 
 function MobileNoteReadLoading({
-	note,
+	compact,
 	panelStyles,
 }: {
-	note: MobileNote;
+	compact: boolean;
 	panelStyles: ReturnType<typeof createEditorPanelStyles>["panelStyles"];
 }) {
+	const colors = useMobileColors();
+	const metrics = useMobileMetrics();
+	const line = (width: `${number}%`, testID: string) => (
+		<View
+			key={testID}
+			style={{
+				backgroundColor: colors.border,
+				borderRadius: 3,
+				height: metrics.editor.bodyLineHeight,
+				marginBottom: metrics.editor.paragraphSpacing,
+				width,
+			}}
+			testID={testID}
+		/>
+	);
 	return (
 		<ScrollView
-			contentContainerStyle={[panelStyles.content, { flexGrow: 1 }]}
+			contentContainerStyle={[
+				panelStyles.content,
+				compact && panelStyles.contentCompact,
+				{ flexGrow: 1 },
+			]}
 			style={panelStyles.editorHost}
-			testID="note-read-loading"
+			testID="note-read-skeleton"
 		>
-			<Text
-				style={[
-					panelStyles.filePreviewTitle,
-					{ textAlign: "left", width: "100%" },
-				]}
-			>
-				{note.title}
-			</Text>
-			<Text
-				style={[
-					panelStyles.filePreviewDescription,
-					{ textAlign: "left", width: "100%" },
-				]}
-			>
-				{note.snippet}
-			</Text>
+			<View accessible={false} style={{ width: "100%" }}>
+				<View
+					style={{
+						backgroundColor: colors.border,
+						borderRadius: 3,
+						height: metrics.editor.h1LineHeight,
+						marginBottom: metrics.editor.h1MarginBottom,
+						width: "68%",
+					}}
+					testID="note-read-skeleton-title"
+				/>
+				{line("100%", "note-read-skeleton-line-1")}
+				{line("92%", "note-read-skeleton-line-2")}
+				{line("76%", "note-read-skeleton-line-3")}
+				{line("96%", "note-read-skeleton-line-4")}
+				{line("58%", "note-read-skeleton-line-5")}
+			</View>
 		</ScrollView>
 	);
 }
