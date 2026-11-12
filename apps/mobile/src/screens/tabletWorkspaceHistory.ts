@@ -50,6 +50,8 @@ export function mobileWorkspaceHistoryEntry(
 	sourceEdit?: MobileWorkspaceEdit,
 ): MobileWorkspaceHistoryEntry | null {
 	if (sourceEdit && !historyRecordsEdit(sourceEdit)) return null;
+	if (sourceEdit?.type === "createNote")
+		return createdNoteHistoryEntry(previousSnapshot, nextSnapshot, sourceEdit);
 	const pathHistoryEntry = mobileWorkspacePathHistoryEntry(
 		previousSnapshot,
 		nextSnapshot,
@@ -69,14 +71,74 @@ export function mobileWorkspaceHistoryEntry(
 	);
 	if (primaryListHistoryEntry) return primaryListHistoryEntry;
 
-	const edits = emptyHistoryEntry();
-	recordFolderHistory(edits, previousSnapshot, nextSnapshot);
-	recordViewHistory(edits, previousSnapshot, nextSnapshot);
-	recordTypeDefinitionHistory(edits, previousSnapshot, nextSnapshot);
-	recordWorkspaceNoteHistory(edits, previousSnapshot, nextSnapshot);
+	return snapshotHistoryEntry(previousSnapshot, nextSnapshot, sourceEdit);
+}
 
-	if (edits.undoEdits.length === 0) return null;
-	return withFeedbackAction(edits, sourceEdit);
+function snapshotHistoryEntry(
+	previousSnapshot: MobileWorkspaceSnapshot,
+	nextSnapshot: MobileWorkspaceSnapshot,
+	sourceEdit: MobileWorkspaceEdit | undefined,
+): MobileWorkspaceHistoryEntry | null {
+	const entry = emptyHistoryEntry();
+	recordFolderHistory(entry, previousSnapshot, nextSnapshot);
+	recordViewHistory(entry, previousSnapshot, nextSnapshot);
+	recordTypeDefinitionHistory(entry, previousSnapshot, nextSnapshot);
+	recordWorkspaceNoteHistory(entry, previousSnapshot, nextSnapshot);
+	if (entry.undoEdits.length === 0) return null;
+	return withFeedbackAction(entry, sourceEdit);
+}
+
+function createdNoteHistoryEntry(
+	previousSnapshot: MobileWorkspaceSnapshot,
+	nextSnapshot: MobileWorkspaceSnapshot,
+	sourceEdit: Extract<MobileWorkspaceEdit, { type: "createNote" }>,
+): MobileWorkspaceHistoryEntry | null {
+	const created = newlySelectedNote(previousSnapshot, nextSnapshot);
+	if (!created) return null;
+	const { note, noteId } = created;
+	const entry = emptyHistoryEntry();
+	entry.undoEdits.push({ noteId, type: "deleteNote" });
+	entry.redoEdits.push({
+		allNoteIndex: nextSnapshot.allNotes?.findIndex(
+			(candidate) => candidate.id === noteId,
+		),
+		note,
+		noteIndex: nextSnapshot.notes.findIndex(
+			(candidate) => candidate.id === noteId,
+		),
+		type: "restoreNote",
+	});
+	recordTypeDefinitionHistory(entry, previousSnapshot, nextSnapshot);
+	return withFeedbackAction(entry, sourceEdit);
+}
+
+function newlySelectedNote(
+	previousSnapshot: MobileWorkspaceSnapshot,
+	nextSnapshot: MobileWorkspaceSnapshot,
+) {
+	const noteId = nextSnapshot.selectedNoteId;
+	if (!noteId) return null;
+	if (sameSelectedNote(previousSnapshot, noteId)) return null;
+	if (noteExistsInSnapshot(previousSnapshot, noteId)) return null;
+	const note = findSnapshotNote(nextSnapshot, noteId);
+	return note ? { note, noteId } : null;
+}
+
+function sameSelectedNote(snapshot: MobileWorkspaceSnapshot, noteId: string) {
+	return snapshot.selectedNoteId === noteId;
+}
+
+function noteExistsInSnapshot(
+	snapshot: MobileWorkspaceSnapshot,
+	noteId: string,
+) {
+	const notes = snapshot.allNotes ?? snapshot.notes;
+	return notes.some((note) => note.id === noteId);
+}
+
+function findSnapshotNote(snapshot: MobileWorkspaceSnapshot, noteId: string) {
+	const notes = snapshot.allNotes ?? snapshot.notes;
+	return notes.find((note) => note.id === noteId);
 }
 
 function withFeedbackAction(

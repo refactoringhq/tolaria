@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
+import {
+	analyzeFirstListFrame,
+	analyzeStartup,
+} from "./analyze-startup-motion.mjs";
 
 const path = process.argv[2];
 if (!path)
@@ -22,6 +26,7 @@ const checks = Object.fromEntries(
 );
 const firstListFrame = analyzeFirstListFrame(events);
 const noteBody = analyzeNoteBody(events);
+const noteBodyEntry = analyzeNoteBodyEntry(events);
 const newNoteEntry = analyzeNewNoteEntry(
 	events,
 	frames.get("phone.rail.offset") ?? [],
@@ -33,7 +38,11 @@ const fabPosition = analyzeFabTransitions(
 	frames.get("phone.fab.viewport.x") ?? [],
 );
 const noteBodyOnly = process.argv.includes("--note-body-only");
+const noteBodyEntryOnly = process.argv.includes("--note-body-entry-only");
 const launchOnly = process.argv.includes("--launch-only");
+const startupOnly = process.argv.includes("--startup-only");
+const startupCreateOnly = process.argv.includes("--startup-create-only");
+const startupCreate = analyzeStartupCreate(events, firstListFrame);
 const report = {
 	buildIds: [...new Set(observedBuildIds)],
 	buildIdMatches,
@@ -45,8 +54,11 @@ const report = {
 		0,
 	),
 	noteBody,
+	noteBodyEntry,
 	newNoteEntry,
 	firstListFrame,
+	startup: analyzeStartup(events, expectedBuildId, analyzeFirstListFrame),
+	startupCreate,
 	fabPosition,
 	notTested: [],
 };
@@ -55,24 +67,77 @@ process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
 if (
 	launchOnly
 		? !firstListFrame.controlsWithinFirstFrame || buildIdMatches !== true
-		: noteBodyOnly
-			? !noteBody.passed || buildIdMatches === false
-			: newNoteOnly
-				? !newNoteEntry.passed || buildIdMatches === false
-				: !checks["phone.rail.offset"]?.sampleCount ||
-					checks["phone.rail.offset"].sampleCount <= 1 ||
-					!Object.entries(checks).some(
-						([id, check]) =>
-							id.startsWith("organize-swipe.workflow-orchestration") &&
-							check.sampleCount > 1,
-					) ||
-					!firstListFrame.controlsWithinFirstFrame ||
-					!noteBody.passed ||
-					buildIdMatches === false ||
-					noteBody.renderEvents === 0 ||
-					!newNoteEntry.passed
+		: startupOnly
+			? !report.startup.passed || buildIdMatches !== true
+			: startupCreateOnly
+				? !startupCreate.passed || buildIdMatches !== true
+				: noteBodyOnly
+					? !noteBody.passed || buildIdMatches === false
+					: noteBodyEntryOnly
+						? !noteBodyEntry.passed || buildIdMatches === false
+						: newNoteOnly
+							? !newNoteEntry.passed || buildIdMatches === false
+							: !checks["phone.rail.offset"]?.sampleCount ||
+								checks["phone.rail.offset"].sampleCount <= 1 ||
+								!Object.entries(checks).some(
+									([id, check]) =>
+										id.startsWith("organize-swipe.workflow-orchestration") &&
+										check.sampleCount > 1,
+								) ||
+								!firstListFrame.controlsWithinFirstFrame ||
+								!noteBody.passed ||
+								buildIdMatches === false ||
+								noteBody.renderEvents === 0 ||
+								!newNoteEntry.passed
 )
 	process.exitCode = 1;
+
+function analyzeStartupCreate(events, firstFrame) {
+	const prepared = events.find(
+		(event) => event.event === "native-workspace-prepared",
+	);
+	const create = events.find(
+		(event) => event.event === "new-note-editor-prepare",
+	);
+	const editor = events.find(
+		(event) => event.event === "phone-state" && event.state === "editor",
+	);
+	const frameAt = firstFrame.listFrame?.at;
+	const createAfterFrame = Boolean(create && frameAt && create.at > frameAt);
+	const editorBeforePreparation = occurredBefore(editor, prepared);
+	const preparationPending = hasPendingPreparation(prepared);
+	const report = {
+		controlsWithinFirstFrame: firstFrame.controlsWithinFirstFrame,
+		createAfterFirstFrame: createAfterFrame,
+		editorBeforePreparation,
+		createAccepted: Boolean(create?.canCreateNote),
+		editorAt: editor?.at ?? null,
+		preparedAt: prepared?.at ?? null,
+		preparationPending,
+	};
+	return { ...report, passed: startupCreatePassed(report) };
+}
+
+function occurredBefore(event, otherEvent) {
+	return Boolean(event && (!otherEvent || event.at < otherEvent.at));
+}
+
+function hasPendingPreparation(prepared) {
+	return (
+		Number(process.env.TOLARIA_MOTION_EXPECT_PREPARATION_DELAY_MS ?? 0) > 0 &&
+		!prepared
+	);
+}
+
+function startupCreatePassed(report) {
+	return Boolean(
+		report.controlsWithinFirstFrame &&
+			report.createAfterFirstFrame &&
+			report.createAccepted &&
+			report.editorAt &&
+			(!report.preparationPending || report.editorBeforePreparation),
+	);
+}
 
 function readFrames(log) {
 	const frames = new Map();
@@ -94,10 +159,27 @@ function readEvents(log) {
 function payloads(log, marker) {
 	const results = [];
 	for (const line of log.split(/\r?\n/u)) {
-		const index = line.indexOf(marker);
-		if (index >= 0) results.push(line.slice(index + marker.length).trim());
+		const message = loggedMessage(line, marker);
+		if (message) results.push(message);
 	}
 	return results;
+}
+
+function loggedMessage(line, marker) {
+	const message = envelopeMessage(line, marker) ?? line;
+	const index = message.indexOf(marker);
+	return index < 0 ? null : message.slice(index + marker.length).trim();
+}
+
+function envelopeMessage(line, marker) {
+	try {
+		const envelope = JSON.parse(line);
+		return envelope.data?.find(
+			(value) => typeof value === "string" && value.includes(marker),
+		);
+	} catch {
+		return null;
+	}
 }
 
 function analyze(samples) {
@@ -140,31 +222,6 @@ function countEvents(events) {
 	);
 }
 
-function analyzeFirstListFrame(events) {
-	const list = events.find((event) => event.event === "first-list-frame");
-	const controls = events.filter((event) => event.event === "chrome-layout");
-	const hamburger = controls.find((event) => event.control === "hamburger");
-	const fab = events.find((event) => event.event === "fab-layout");
-	const controlLayoutDelayMs =
-		list && hamburger && fab
-			? round(Math.max(hamburger.at, fab.at) - list.at)
-			: null;
-	return {
-		controlsLaidOut: controlLayoutDelayMs !== null,
-		controlsWithinFirstFrame:
-			controlLayoutDelayMs !== null && controlLayoutDelayMs <= 1000 / 60,
-		controlLayoutDelayMs,
-		listFrame: list ?? null,
-		controls: controls.map(({ control, height, width, x, y }) => ({
-			control,
-			height,
-			width,
-			x,
-			y,
-		})),
-	};
-}
-
 function analyzeNoteBody(events) {
 	const noteRenders = events.filter(
 		(event) => event.event === "note-body-render",
@@ -202,6 +259,19 @@ function analyzeNoteBody(events) {
 		passed,
 		renderEvents: noteRenders.length,
 		oneBodyChange: passed,
+	};
+}
+
+function analyzeNoteBodyEntry(events) {
+	const renders = events.filter(
+		(event) => event.event === "note-body-render" && event.contentFingerprint,
+	);
+	const noteIds = [...new Set(renders.map((event) => event.noteId))];
+	return {
+		passed: renders.length === 1 && noteIds.length === 1,
+		renderCount: renders.length,
+		noteIds,
+		contentFingerprint: renders[0]?.contentFingerprint ?? null,
 	};
 }
 
