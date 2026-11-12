@@ -38,7 +38,10 @@ export function MobileCreateNoteButton({
 			style={StyleSheet.absoluteFill}
 			testID="note-list-create-motion"
 		>
-			<Reanimated.View style={[StyleSheet.absoluteFill, positionStyle]}>
+			<Reanimated.View
+				pointerEvents="box-none"
+				style={[StyleSheet.absoluteFill, positionStyle]}
+			>
 				<Button
 					accessibilityLabel={mobileCopy.createNote}
 					className="shadow-md active:opacity-80"
