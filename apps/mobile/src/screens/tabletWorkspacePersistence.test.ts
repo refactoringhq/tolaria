@@ -1,9 +1,38 @@
 import { describe, expect, it } from "vitest";
 import { workspaceScenarioForId } from "../fixtures/workspaceFixtures";
+import { requestForStaleNativeCreate } from "../workspace/mobileWorkspaceSnapshotEdits";
 import { rollbackFailedNoteListWrites } from "./mobileWorkspaceFlagWriteRollback";
 import { applyWorkspaceEditToWritableSnapshot } from "./tabletWorkspacePersistence";
 
 describe("applyWorkspaceEditToWritableSnapshot", () => {
+	it("rebases a delayed native create onto the currently active vault", () => {
+		const snapshot = {
+			...workspaceScenarioForId("default"),
+			source: {
+				kind: "localVault" as const,
+				label: "QA vault",
+				totalNotes: 1,
+				visibleNotes: 1,
+				vaultPath: "file:///qa-vault",
+			},
+		};
+		const createNote = { type: "createNote" as const, title: "" };
+
+		expect(
+			requestForStaleNativeCreate(createNote, snapshot, {
+				source: "native",
+				vaultRootUri: "file:///old-vault",
+			}),
+		).toMatchObject({ source: "native", vaultRootUri: "file:///qa-vault" });
+		expect(
+			requestForStaleNativeCreate(
+				{ type: "toggleFavorite", noteId: "note.md" },
+				snapshot,
+				{ source: "native", vaultRootUri: "file:///qa-vault" },
+			),
+		).toBeUndefined();
+	});
+
 	it("does not create transient content before a native vault is selected", () => {
 		const snapshot = {
 			...workspaceScenarioForId("empty"),

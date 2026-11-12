@@ -319,15 +319,15 @@ it("retains the rich editor until its last document read completes", async () =>
 	expect(resume).toHaveBeenCalledOnce();
 });
 
-it("keeps a cached note visible and read-only while its exact disk read waits behind sync", async () => {
+it("waits for disk validation before mounting the cached note body", async () => {
 	const harness = createHarness();
 	await harness.select(0, 0, { status: "loading", retry: vi.fn() });
 	expect(
 		harness.host.querySelector('[data-testid="cached-read-only-content"]'),
-	).not.toBeNull();
+	).toBeNull();
 	expect(
 		harness.host.querySelector('[data-testid="note-read-fallback"]'),
-	).toBeNull();
+	).not.toBeNull();
 	expect(harness.host.querySelector("[data-rich-note]")).toBeNull();
 	expect(harness.host.querySelector("[data-source-note]")).toBeNull();
 });

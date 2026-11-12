@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useMobileAnalytics } from "../../analytics/useMobileAnalytics";
+import { logMobileMotionEvent } from "../../qa/mobileMotionFrameLog";
+import { waitForMotionStartupDelay } from "../mobileMotionStartupDelay";
 import { mobileWorkspaceDeepLinkSlug } from "../mobileWorkspaceAlias";
 import type { NativeWorkspaceSelection } from "../nativeWorkspacePicker";
 import { readNativeWorkspaceStartupPreview } from "../nativeWorkspaceStartupPreview";
@@ -36,6 +38,12 @@ export type CatalogState = {
 export type UpdateCatalog = (
 	update: (previous: CatalogState) => CatalogState,
 ) => void;
+type CatalogRestoreContext = {
+	isActive: () => boolean;
+	stage: { value: "catalog" | "selection" };
+	update: UpdateCatalog;
+	cancellation: AbortController;
+};
 
 export function useManagedVaultCatalog() {
 	const analytics = useMobileAnalytics();
@@ -100,53 +108,82 @@ function restoreCatalogState(
 ) {
 	let active = true;
 	const cancellation = new AbortController();
-	let stage: "catalog" | "selection" = "catalog";
+	const stage = { value: "catalog" as "catalog" | "selection" };
+	const context = {
+		isActive: () => active,
+		stage,
+		update,
+		cancellation,
+	};
 	void initializeLocalVaultCatalog(onStarterCreated)
-		.then(async (catalog) => {
-			if (!active) return;
-			update((previous) => ({ ...previous, ...catalogLists(catalog) }));
-			stage = "selection";
-			const restored = await restoreCatalogSelection(catalog);
-			if (!active) return;
-			// Existing binaries share one Expo async queue: cache IO must precede indexing.
-			const preview = await readNativeWorkspaceStartupPreview(
-				restored.selection,
-				cancellation.signal,
-				undefined,
-				true,
-			).catch(() => null);
-			if (!active) return;
-			update((previous) => ({
-				...previous,
-				preview: preview ?? previous.preview,
-			}));
-			const selection = await prepareNativeWorkspace(
-				restored.selection,
-				cancellation.signal,
-			);
-			if (active) {
-				cancellation.abort();
-				update((previous) => ({
-					...previous,
-					restored: {
-						...restored,
-						selection: selectedAfterPreparation(selection, previous.preview),
-					},
-					preview: null,
-				}));
-			}
-		})
+		.then((catalog) => restoreCatalogStages(catalog, context))
 		.then(
 			() => finishCatalogRestoration(active, update),
 			() => {
 				cancellation.abort();
-				finishCatalogRestoration(active, update, stage);
+				finishCatalogRestoration(active, update, stage.value);
 			},
 		);
 	return () => {
 		active = false;
 		cancellation.abort();
 	};
+}
+
+async function restoreCatalogStages(
+	catalog: ManagedGitVaultCatalog,
+	context: CatalogRestoreContext,
+) {
+	if (!context.isActive()) return;
+	context.update((previous) => ({ ...previous, ...catalogLists(catalog) }));
+	context.stage.value = "selection";
+	const restored = await restoreCatalogSelection(catalog);
+	await restoreCatalogPreview(restored, context);
+}
+
+async function restoreCatalogPreview(
+	restored: ActiveVault,
+	context: CatalogRestoreContext,
+) {
+	if (!context.isActive()) return;
+	const preview = await readNativeWorkspaceStartupPreview(
+		restored.selection,
+		context.cancellation.signal,
+		undefined,
+		true,
+	).catch(() => null);
+	if (!context.isActive()) return;
+	context.update((previous) => ({
+		...previous,
+		preview: preview ?? previous.preview,
+	}));
+	await waitForMotionStartupDelay(context.cancellation.signal);
+	if (!context.isActive()) return;
+	const selection = await prepareNativeWorkspace(
+		restored.selection,
+		context.cancellation.signal,
+	);
+	commitPreparedSelection(selection, restored, context);
+}
+
+function commitPreparedSelection(
+	selection: NativeWorkspaceSelection | null,
+	restored: ActiveVault,
+	context: CatalogRestoreContext,
+) {
+	if (!context.isActive()) return;
+	logMobileMotionEvent("native-workspace-prepared", {
+		alias: selection?.vaultAlias ?? null,
+	});
+	context.cancellation.abort();
+	context.update((previous) => ({
+		...previous,
+		restored: {
+			...restored,
+			selection: selectedAfterPreparation(selection, previous.preview),
+		},
+		preview: null,
+	}));
 }
 
 function finishCatalogRestoration(
