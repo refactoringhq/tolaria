@@ -1,6 +1,25 @@
 import XCTest
 
 final class MobileMotionFrameTests: XCTestCase {
+  func testNoteOpenBodyRenderCountViaEditorLaunchRoute() {
+    continueAfterFailure = false
+    XCUIDevice.shared.orientation = .portrait
+    let app = attachToMotionFixture()
+    XCTAssertTrue(element(app, "phone-note-list-screen").waitForExistence(timeout: 30))
+
+    app.terminate()
+    app.launchArguments = ["--tolaria-mobile-search", "?source=fixture&phoneState=editor&editorMode=wysiwyg&selectedNoteId=workflow-orchestration&layoutProbe=1&qaRun=tol247-note-open"]
+    app.launch()
+    XCTAssertTrue(element(app, "phone-editor-screen").waitForExistence(timeout: 30), "Editor launch route did not open the selected fixture note")
+    XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 30), "Editor body did not mount")
+    attachFrame("note-open-editor-launch", app)
+
+    app.terminate()
+    app.launchArguments = ["--tolaria-mobile-search", "?source=fixture&phoneState=list&editorMode=wysiwyg&layoutProbe=1&qaRun=tol247-return-to-list"]
+    app.launch()
+    XCTAssertTrue(element(app, "phone-note-list-screen").waitForExistence(timeout: 30), "List launch route did not return after editor render capture")
+  }
+
   func testLargeVaultLaunchKeepsListChromeReachable() {
     continueAfterFailure = false
     XCUIDevice.shared.orientation = .portrait

@@ -93,11 +93,10 @@ function useSwipeableNoteActions(
 	const analytics = useMobileAnalytics();
 	const swipeable = useRef<SwipeableMethods>(null);
 	const perform = useCallback(
-		(action: MobileNoteSwipeAction | "delete", committedFullSwipe = false) => {
+		(action: MobileNoteSwipeAction | "delete") => {
 			performSwipeAction({
 				action,
 				actions,
-				committedFullSwipe,
 				noteId: note.id,
 				archived: note.archived ?? false,
 				swipeable: swipeable.current,
@@ -113,18 +112,15 @@ function performSwipeAction({
 	action,
 	archived,
 	actions,
-	committedFullSwipe,
 	noteId,
 	swipeable,
 }: {
 	action: MobileNoteSwipeAction | "delete";
 	archived: boolean;
 	actions: MobileNoteRowActions;
-	committedFullSwipe: boolean;
 	noteId: string;
 	swipeable: SwipeableMethods | null;
 }) {
-	if (committedFullSwipe) swipeable?.reset();
 	switch (action) {
 		case "favorite":
 			swipeable?.close();
@@ -182,7 +178,7 @@ function SwipeableNoteRow({
 					);
 					if (action && !committed.get()) {
 						committed.set(true);
-						runOnJS(perform)(action, true);
+						runOnJS(perform)(action);
 					}
 				}),
 		[actions.primarySwipeAction, committed, hapticPlayed, perform, width],

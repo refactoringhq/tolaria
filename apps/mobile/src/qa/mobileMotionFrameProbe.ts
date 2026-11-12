@@ -34,7 +34,7 @@ export function useMobileMotionFrameProbe(
 		idleFrames.set(idleCount);
 		active.set(moving);
 		if (moving)
-			runOnJS(logMotionFrame)(
+			runOnJS(logMobileMotionFrame)(
 				id,
 				frame.timestamp,
 				frame.timeSincePreviousFrame ?? 0,
@@ -66,7 +66,7 @@ function shouldLogFrame({
 	return enabled && (!initialized || changed || (wasActive && idleCount < 3));
 }
 
-function logMotionFrame(
+export function logMobileMotionFrame(
 	id: string,
 	timestampMs: number,
 	deltaMs: number,

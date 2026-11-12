@@ -90,18 +90,22 @@ const nativeTests = run(
 			? [
 					"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testListChromeEditorReturnSidebarCloseAndOrganizeSwipeAreReachable",
 				]
-			: focusedCheck === "new-note"
+			: focusedCheck === "note-open-route"
 				? [
-						"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNewNoteHeaderAndBodyEnterTogether",
+						"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNoteOpenBodyRenderCountViaEditorLaunchRoute",
 					]
-				: focusedCheck === "launch"
+				: focusedCheck === "new-note"
 					? [
-							"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testLargeVaultLaunchKeepsListChromeReachable",
-						]
-					: [
-							"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testListChromeEditorReturnSidebarCloseAndOrganizeSwipeAreReachable",
 							"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNewNoteHeaderAndBodyEnterTogether",
-						]),
+						]
+					: focusedCheck === "launch"
+						? [
+								"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testLargeVaultLaunchKeepsListChromeReachable",
+							]
+						: [
+								"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testListChromeEditorReturnSidebarCloseAndOrganizeSwipeAreReachable",
+								"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNewNoteHeaderAndBodyEnterTogether",
+							]),
 		"CODE_SIGNING_ALLOWED=NO",
 		"test",
 	],
@@ -114,7 +118,9 @@ const analysis = run(
 	[
 		fileURLToPath(new URL("./analyze-motion-frame-log.mjs", import.meta.url)),
 		logPath,
-		...(focusedCheck === "note-open" ? ["--note-body-only"] : []),
+		...(["note-open", "note-open-route"].includes(focusedCheck)
+			? ["--note-body-only"]
+			: []),
 		...(focusedCheck === "new-note" ? ["--new-note-only"] : []),
 		...(focusedCheck === "launch" ? ["--launch-only"] : []),
 	],
