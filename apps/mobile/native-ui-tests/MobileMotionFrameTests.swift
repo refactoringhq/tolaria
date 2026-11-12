@@ -1,23 +1,16 @@
 import XCTest
 
 final class MobileMotionFrameTests: XCTestCase {
-  func testNoteOpenBodyRenderCountViaEditorLaunchRoute() {
+  func testNoteOpenBodyRenderCountViaEditorEntryRoute() {
     continueAfterFailure = false
     XCUIDevice.shared.orientation = .portrait
     let app = attachToMotionFixture()
-    XCTAssertTrue(element(app, "phone-note-list-screen").waitForExistence(timeout: 30))
-
-    app.terminate()
-    app.launchArguments = ["--tolaria-mobile-search", "?source=fixture&phoneState=editor&editorMode=wysiwyg&selectedNoteId=workflow-orchestration&layoutProbe=1&qaRun=tol247-note-open"]
-    app.launch()
-    XCTAssertTrue(element(app, "phone-editor-screen").waitForExistence(timeout: 30), "Editor launch route did not open the selected fixture note")
+    XCTAssertTrue(
+      element(app, "phone-editor-screen").waitForExistence(timeout: 30),
+      "The note-entry route did not open the editor"
+    )
     XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 30), "Editor body did not mount")
-    attachFrame("note-open-editor-launch", app)
-
-    app.terminate()
-    app.launchArguments = ["--tolaria-mobile-search", "?source=fixture&phoneState=list&editorMode=wysiwyg&layoutProbe=1&qaRun=tol247-return-to-list"]
-    app.launch()
-    XCTAssertTrue(element(app, "phone-note-list-screen").waitForExistence(timeout: 30), "List launch route did not return after editor render capture")
+    attachFrame("note-open-editor-entry", app)
   }
 
   func testLargeVaultLaunchKeepsListChromeReachable() {
@@ -33,9 +26,80 @@ final class MobileMotionFrameTests: XCTestCase {
 
     let hamburger = element(app, "phone-note-list-sidebar-button")
     let create = element(app, "note-list-create-action")
-    XCTAssertTrue(hamburger.exists && hamburger.isHittable, "Hamburger missing or not tappable after large-vault launch")
+    XCTAssertTrue(
+      hamburger.exists && hamburger.isHittable,
+      "Hamburger missing or not tappable after large-vault launch"
+    )
     XCTAssertTrue(create.exists && create.isHittable, "FAB missing or not tappable after large-vault launch")
     attachFrame("large-vault-first-list-frame", app)
+  }
+
+  func testCachedStartupKeepsFirstFrameChromeUsable() {
+    continueAfterFailure = false
+    XCUIDevice.shared.orientation = .portrait
+    let app = attachToMotionFixture()
+    let list = element(app, "phone-note-list-screen")
+    let hamburger = element(app, "phone-note-list-sidebar-button")
+    let create = element(app, "note-list-create-action")
+    XCTAssertTrue(
+      list.waitForExistence(timeout: 8),
+      "Cached preview did not keep the list mounted during delayed preparation"
+    )
+    XCTAssertTrue(
+      hamburger.exists && hamburger.isHittable,
+      "Hamburger was not usable on the cached-preview first frame"
+    )
+    XCTAssertTrue(
+      create.exists && create.isHittable,
+      "Create action was not usable on the cached-preview first frame"
+    )
+    attachFrame("cached-startup-first-frame", app)
+
+    hamburger.tap()
+    XCTAssertTrue(
+      element(app, "phone-sidebar-screen").waitForExistence(timeout: 3),
+      "Hamburger did not open the sidebar during preparation"
+    )
+    element(app, "sidebar-item-inbox").tap()
+    XCTAssertTrue(list.waitForExistence(timeout: 3), "Selecting Inbox did not return to the list")
+    create.tap()
+    XCTAssertTrue(
+      element(app, "phone-editor-screen").waitForExistence(timeout: 70),
+      "Create action did not open the editor during preparation"
+    )
+  }
+
+  func testCachedStartupCreateActionAcceptsFirstFrameTapWhilePreparationRuns() {
+    continueAfterFailure = false
+    XCUIDevice.shared.orientation = .portrait
+    let app = attachToMotionFixture()
+    let list = element(app, "phone-note-list-screen")
+    let create = element(app, "note-list-create-action")
+    XCTAssertTrue(list.waitForExistence(timeout: 8), "List did not appear during delayed preparation")
+    XCTAssertTrue(create.exists && create.isHittable, "Create action was not usable on the first list frame")
+    attachFrame("cached-startup-create-first-frame", app)
+
+    create.tap()
+    let editor = element(app, "phone-editor-screen")
+    XCTAssertTrue(
+      editor.waitForExistence(timeout: 8),
+      "Create action did not mount the editor during preparation"
+    )
+    let editorBody = app.webViews.firstMatch
+    XCTAssertTrue(
+      editorBody.waitForExistence(timeout: 8),
+      "Create action did not make the editor body reachable during preparation"
+    )
+    let editorBodyIsReachable = XCTNSPredicateExpectation(
+      predicate: NSPredicate(format: "isHittable == true"),
+      object: editorBody
+    )
+    XCTAssertEqual(
+      XCTWaiter.wait(for: [editorBodyIsReachable], timeout: 8),
+      .completed,
+      "Create action did not expose an interactive editor body during preparation"
+    )
+    attachFrame("cached-startup-create-action-tapped", app)
   }
 
   func testNewNoteHeaderAndBodyEnterTogether() {
@@ -77,7 +141,9 @@ final class MobileMotionFrameTests: XCTestCase {
     XCTAssertTrue(create.exists && create.isHittable, "FAB missing or not tappable on the first list frame")
     attachFrame("first-list-frame", app)
 
-    element(app, "note-row-workflow-orchestration.md").tap()
+    let note = element(app, "note-row-note-6000.md")
+    XCTAssertTrue(note.waitForExistence(timeout: 10), "Cached/generated note row did not appear")
+    note.tap()
     XCTAssertTrue(element(app, "phone-editor-screen").waitForExistence(timeout: 8))
     XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 8), "Note body did not mount")
     MobilePanelNavigation.back(app)

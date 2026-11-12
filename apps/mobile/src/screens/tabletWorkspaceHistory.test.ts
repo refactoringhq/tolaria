@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { workspaceScenarioForId } from "../fixtures/workspaceFixtures";
+import * as mobileDocumentContent from "../workspace/mobileDocumentContent";
 import { mobileNoteEditableContent } from "../workspace/mobileDocumentContent";
 import {
 	applyMobileWorkspaceEdit,
@@ -242,6 +243,42 @@ describe("tablet workspace editing history", () => {
 		expect(
 			noteById(redoneSnapshot, "mobile-structural-history.md").rawContent,
 		).toBe("---\ntitle: Mobile Structural History\ntype: Note\n---\n");
+	});
+
+	it("records creation history without serializing unrelated large-vault notes", () => {
+		const previousSnapshot = workspaceScenarioForId("default");
+		const seed = previousSnapshot.allNotes?.[0] ?? previousSnapshot.notes[0];
+		const notes = Array.from({ length: 6_000 }, (_, index) => ({
+			...seed,
+			id: `large-vault-${index}.md`,
+			path: `large-vault-${index}.md`,
+			rawContent: undefined,
+		}));
+		const largeSnapshot = {
+			...previousSnapshot,
+			allNotes: notes,
+			notes,
+		};
+		const nextSnapshot = applyMobileWorkspaceEdit(largeSnapshot, {
+			title: "New during reload",
+			type: "createNote",
+		});
+		const serializeNote = vi.spyOn(
+			mobileDocumentContent,
+			"mobileNoteEditableContent",
+		);
+
+		const entry = mobileWorkspaceHistoryEntry(largeSnapshot, nextSnapshot, {
+			title: "New during reload",
+			type: "createNote",
+		});
+
+		expect(serializeNote).not.toHaveBeenCalled();
+		expect(entry?.undoEdits).toContainEqual({
+			noteId: nextSnapshot.selectedNoteId,
+			type: "deleteNote",
+		});
+		serializeNote.mockRestore();
 	});
 
 	it("undoes and redoes relationship target creation as one command", () => {

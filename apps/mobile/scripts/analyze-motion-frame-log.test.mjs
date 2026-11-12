@@ -95,6 +95,19 @@ test("note-open check passes exactly one content-bearing body render", (t) => {
 	assert.equal(runAnalyzer(path, "--note-body-only", "stale-build").status, 1);
 });
 
+test("note-entry check requires exactly one content-bearing render", (t) => {
+	const path = createNoteOpenLog(t, [contentRender("entry")]);
+	assert.equal(
+		runAnalyzer(path, "--note-body-entry-only", "fixture-build").status,
+		0,
+	);
+	writeNoteOpenLog(path, [contentRender("entry"), contentRender("entry", 2)]);
+	assert.equal(
+		runAnalyzer(path, "--note-body-entry-only", "fixture-build").status,
+		1,
+	);
+});
+
 test("full run fails when chrome is not laid out within the first frame", (t) => {
 	const directory = mkdtempSync(join(tmpdir(), "tolaria-motion-log-"));
 	t.after(() => rmSync(directory, { recursive: true, force: true }));
@@ -195,6 +208,124 @@ test("large-vault launch check requires first-frame controls and the expected bu
 	assert.equal(runAnalyzer(path, "--launch-only", "fixture-build").status, 1);
 });
 
+test("launch check reads motion events from Expo JSON log envelopes", (t) => {
+	const directory = mkdtempSync(join(tmpdir(), "tolaria-motion-log-"));
+	t.after(() => rmSync(directory, { recursive: true, force: true }));
+	const path = join(directory, "simulator.log");
+	const envelope = (name, at, extra = {}) =>
+		JSON.stringify({
+			data: [
+				`TOLARIA_MOTION_EVENT ${JSON.stringify({ buildId: "fixture-build", event: name, at, ...extra })}`,
+			],
+		});
+	writeFileSync(
+		path,
+		[
+			envelope("first-list-frame", 10, { width: 402, height: 812 }),
+			envelope("chrome-layout", 11, {
+				control: "hamburger",
+				width: 43,
+				height: 43,
+			}),
+			envelope("fab-layout", 12, { width: 48, height: 48 }),
+		].join("\n"),
+	);
+	assert.equal(runAnalyzer(path, "--launch-only", "fixture-build").status, 0);
+});
+
+test("delayed cached startup keeps one list mounted with chrome before preparation", (t) => {
+	const directory = mkdtempSync(join(tmpdir(), "tolaria-motion-log-"));
+	t.after(() => rmSync(directory, { recursive: true, force: true }));
+	const path = join(directory, "simulator.log");
+	writeFileSync(path, delayedStartupLog(1));
+	const result = runAnalyzer(path, "--startup-only", "fixture-build");
+	assert.equal(result.status, 0, result.stderr);
+	const report = JSON.parse(result.stdout);
+	assert.equal(report.startup.listMountsBeforePreparation, 1);
+	assert.equal(report.startup.listPresentationsBeforePreparation, 1);
+	assert.equal(report.startup.totalListPresentations, 1);
+	assert.equal(report.startup.preparationDelayMs, 79);
+	assert.equal(report.startup.controlsWithinFirstFrame, true);
+
+	writeFileSync(path, delayedStartupLog(2));
+	assert.equal(runAnalyzer(path, "--startup-only", "fixture-build").status, 1);
+});
+
+test("startup create check verifies the first-frame action is accepted during delayed preparation", (t) => {
+	const directory = mkdtempSync(join(tmpdir(), "tolaria-motion-log-"));
+	t.after(() => rmSync(directory, { recursive: true, force: true }));
+	const path = join(directory, "simulator.log");
+	writeFileSync(
+		path,
+		[
+			event("first-list-frame", 1, { width: 402, height: 812 }),
+			event("chrome-layout", 2, {
+				control: "hamburger",
+				width: 44,
+				height: 44,
+			}),
+			event("fab-layout", 2, { width: 48, height: 48 }),
+			event("new-note-editor-prepare", 10, { canCreateNote: true }),
+			event("phone-state", 20, { state: "editor" }),
+		].join("\n"),
+	);
+	const result = runAnalyzer(
+		path,
+		"--startup-create-only",
+		"fixture-build",
+		10000,
+	);
+	assert.equal(result.status, 0, result.stderr);
+	assert.equal(JSON.parse(result.stdout).startupCreate.createAccepted, true);
+	assert.equal(
+		JSON.parse(result.stdout).startupCreate.preparationPending,
+		true,
+	);
+
+	writeFileSync(path, pathEventsWithoutEditorPreparation());
+	assert.equal(
+		runAnalyzer(path, "--startup-create-only", "fixture-build", 10000).status,
+		1,
+	);
+});
+
+test("startup create check fails when the first-frame tap never reaches the editor", (t) => {
+	const directory = mkdtempSync(join(tmpdir(), "tolaria-motion-log-"));
+	t.after(() => rmSync(directory, { recursive: true, force: true }));
+	const path = join(directory, "simulator.log");
+	writeFileSync(
+		path,
+		[
+			event("first-list-frame", 1, { width: 402, height: 812 }),
+			event("chrome-layout", 2, {
+				control: "hamburger",
+				width: 44,
+				height: 44,
+			}),
+			event("fab-layout", 2, { width: 48, height: 48 }),
+			event("new-note-editor-prepare", 3, { canCreateNote: true }),
+			event("native-workspace-prepared", 100),
+		].join("\n"),
+	);
+	const result = runAnalyzer(path, "--startup-create-only", "fixture-build");
+	assert.equal(result.status, 1);
+	assert.equal(JSON.parse(result.stdout).startupCreate.editorAt, null);
+});
+
+function pathEventsWithoutEditorPreparation() {
+	return [
+		event("first-list-frame", 1, { width: 402, height: 812 }),
+		event("chrome-layout", 2, {
+			control: "hamburger",
+			width: 44,
+			height: 44,
+		}),
+		event("fab-layout", 2, { width: 48, height: 48 }),
+		event("native-workspace-prepared", 80),
+		event("phone-state", 81, { state: "editor" }),
+	].join("\n");
+}
+
 function noteOpenLog(renders) {
 	return [
 		event("phone-state", 1, { state: "list" }),
@@ -203,6 +334,28 @@ function noteOpenLog(renders) {
 			event("note-body-render", 3 + index, render),
 		),
 		event("phone-state", 8, { state: "list" }),
+	].join("\n");
+}
+
+function delayedStartupLog(mountCount) {
+	const mounts = Array.from({ length: mountCount }, (_, index) =>
+		event("phone-note-list-mount", index + 2, { noteCount: 6000 }),
+	);
+	return [
+		event("startup-preview-consumed", 1, {
+			hasHamburger: true,
+			hasCreateAction: true,
+		}),
+		...mounts,
+		event("first-list-frame", 4, { width: 402, height: 812 }),
+		event("chrome-layout", 5, {
+			control: "hamburger",
+			width: 44,
+			height: 44,
+		}),
+		event("fab-layout", 5, { width: 48, height: 48 }),
+		event("phone-note-list-render", 6, { noteCount: 6000, render: 1 }),
+		event("native-workspace-prepared", 80),
 	].join("\n");
 }
 
@@ -230,13 +383,21 @@ function frame(timestampMs, value) {
 	return `TOLARIA_MOTION_FRAME ${JSON.stringify({ id: "phone.rail.offset", timestampMs, value })}`;
 }
 
-function runAnalyzer(path, check = "--new-note-only", expectedBuildId) {
+function runAnalyzer(
+	path,
+	check = "--new-note-only",
+	expectedBuildId,
+	expectedDelay,
+) {
 	return spawnSync(process.execPath, [analyzer, path, check], {
 		encoding: "utf8",
 		env: {
 			...process.env,
 			...(expectedBuildId
 				? { EXPO_PUBLIC_TOLARIA_MOTION_BUILD_ID: expectedBuildId }
+				: {}),
+			...(expectedDelay
+				? { TOLARIA_MOTION_EXPECT_PREPARATION_DELAY_MS: String(expectedDelay) }
 				: {}),
 		},
 	});
