@@ -448,6 +448,7 @@
   "ai.panel.placeholder.ready": "Fråga {agent}",
   "ai.panel.send": "Skicka meddelande",
   "ai.panel.stop": "Stoppa svar",
+  "ai.panel.jumpToLatest": "Hoppa till senaste",
   "ai.panel.stoppedResponse": "Stoppad.",
   "ai.error.claude.notAuthenticated": "Claude CLI är inte autentiserat. Kör \"claude auth login\" i din terminal.",
   "ai.error.claude.tooManyRedirects": "Claude Code kunde inte ansluta till sin leverantör eftersom API-begäran omdirigerades för många gånger. Kör 'claude auth status' i Terminal och sedan 'claude auth login' om det behövs. Om du använder en anpassad leverantör eller proxy, kontrollera ANTHROPIC_BASE_URL, HTTPS_PROXY, HTTP_PROXY och företagets SSO-/proxyinställningar och starta sedan om Tolaria.",

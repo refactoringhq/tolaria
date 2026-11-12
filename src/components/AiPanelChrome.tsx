@@ -1,11 +1,12 @@
 import { memo, useCallback, useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
-import { Sparkle, X, PaperPlaneRight, Plus, Link, Stop } from '@phosphor-icons/react'
+import { Sparkle, X, PaperPlaneRight, Plus, Link, Stop, ArrowDown } from '@phosphor-icons/react'
 import { AiMessage } from './AiMessage'
 import { Button } from '@/components/ui/button'
 import { ActionTooltip } from '@/components/ui/action-tooltip'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { WikilinkChatInput } from './WikilinkChatInput'
 import { extractInlineWikilinkReferences } from './inlineWikilinkText'
+import { useStickToBottom } from '../hooks/useStickToBottom'
 import { aiAgentPermissionModeLabels, type AiAgentPermissionMode } from '../lib/aiAgentPermissionMode'
 import { createTranslator, type AppLocale } from '../lib/i18n'
 import type { AiAgentMessage } from '../hooks/useCliAiAgent'
@@ -428,7 +429,11 @@ export const AiPanelMessageHistory = memo(function AiPanelMessageHistory(options
     hasContext,
   } = options
   const containerRef = useRef<HTMLDivElement>(null)
-  const endRef = useRef<HTMLDivElement>(null)
+  const t = createTranslator(locale)
+  const { isPinned, scrollToBottom } = useStickToBottom(containerRef, {
+    turnKey: messages.at(-1)?.id ?? messages.length,
+    contentKey: messages,
+  })
 
   const updateScrollState = useCallback(() => {
     const element = containerRef.current
@@ -438,34 +443,47 @@ export const AiPanelMessageHistory = memo(function AiPanelMessageHistory(options
   useEffect(() => {
     void isActive
     void messages
-    endRef.current?.scrollIntoView({ behavior: 'smooth' })
-    if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(updateScrollState)
-    else updateScrollState()
+    updateScrollState()
   }, [messages, isActive, updateScrollState])
 
   return (
-    <div ref={containerRef} className="flex-1 overflow-y-auto" style={{ padding: 12 }} onScroll={updateScrollState}>
-      {messages.length === 0 && !isActive && (
-        <AiPanelEmptyState
-          agentLabel={agentLabel}
-          agentReadiness={agentReadiness}
-          locale={locale}
-          hasContext={hasContext}
-        />
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      <div ref={containerRef} className="flex-1 overflow-y-auto" style={{ padding: 12 }} onScroll={updateScrollState}>
+        {messages.length === 0 && !isActive && (
+          <AiPanelEmptyState
+            agentLabel={agentLabel}
+            agentReadiness={agentReadiness}
+            locale={locale}
+            hasContext={hasContext}
+          />
+        )}
+        {messages.map((message, index) => (
+          <AiMessage
+            key={message.id ?? index}
+            {...message}
+            locale={locale}
+            messageId={message.id}
+            onFork={onForkMessage}
+            onOpenNote={onOpenNote}
+            onNavigateWikilink={onNavigateWikilink}
+            onRegenerate={onRegenerateMessage}
+          />
+        ))}
+      </div>
+      {!isPinned && (
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-sm"
+          className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full border-border bg-background text-muted-foreground shadow-sm hover:bg-accent hover:text-foreground dark:border-border dark:bg-background dark:hover:bg-accent [.dark_&]:text-foreground"
+          onClick={scrollToBottom}
+          aria-label={t('ai.panel.jumpToLatest')}
+          title={t('ai.panel.jumpToLatest')}
+          data-testid="ai-jump-to-latest"
+        >
+          <ArrowDown size={14} />
+        </Button>
       )}
-      {messages.map((message, index) => (
-        <AiMessage
-          key={message.id ?? index}
-          {...message}
-          locale={locale}
-          messageId={message.id}
-          onFork={onForkMessage}
-          onOpenNote={onOpenNote}
-          onNavigateWikilink={onNavigateWikilink}
-          onRegenerate={onRegenerateMessage}
-        />
-      ))}
-      <div ref={endRef} />
     </div>
   )
 })

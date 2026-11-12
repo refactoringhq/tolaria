@@ -448,6 +448,7 @@
   "ai.panel.placeholder.ready": "Tanyai {agent}",
   "ai.panel.send": "Kirim pesan",
   "ai.panel.stop": "Hentikan respons",
+  "ai.panel.jumpToLatest": "Lompat ke yang terbaru",
   "ai.panel.stoppedResponse": "Dihentikan.",
   "ai.error.claude.notAuthenticated": "Claude CLI belum diautentikasi. Jalankan 'claude auth login' di terminal Anda.",
   "ai.error.claude.tooManyRedirects": "Claude Code tidak dapat terhubung ke penyedia karena permintaan API terlalu sering dialihkan. Di Terminal, jalankan 'claude auth status', lalu 'claude auth login' jika perlu. Jika Anda menggunakan penyedia atau proxy khusus, periksa ANTHROPIC_BASE_URL, HTTPS_PROXY, HTTP_PROXY, dan pengaturan SSO/proxy perusahaan, lalu mulai ulang Tolaria.",

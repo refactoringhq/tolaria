@@ -448,6 +448,7 @@
   "ai.panel.placeholder.ready": "{agent} fragen",
   "ai.panel.send": "Nachricht senden",
   "ai.panel.stop": "Antwort stoppen",
+  "ai.panel.jumpToLatest": "Zum Neuesten springen",
   "ai.panel.stoppedResponse": "Gestoppt.",
   "ai.error.claude.notAuthenticated": "Die Claude-CLI ist nicht authentifiziert. Führen Sie „claude auth login“ in Ihrem Terminal aus.",
   "ai.error.claude.tooManyRedirects": "Claude Code konnte keine Verbindung zu seinem Provider herstellen, da die API-Anfrage zu oft umgeleitet wurde. Führe in Terminal „claude auth status“ aus und dann bei Bedarf „claude auth login“. Wenn du einen benutzerdefinierten Provider oder Proxy verwendest, überprüfe ANTHROPIC_BASE_URL, HTTPS_PROXY, HTTP_PROXY und die Einstellungen für Unternehmens-SSO/Proxy und starte Tolaria dann neu.",

@@ -448,6 +448,7 @@
   "ai.panel.placeholder.ready": "Perguntar ao {agent}",
   "ai.panel.send": "Enviar mensagem",
   "ai.panel.stop": "Resposta de paragem",
+  "ai.panel.jumpToLatest": "Ir para o mais recente",
   "ai.panel.stoppedResponse": "Parado.",
   "ai.error.claude.notAuthenticated": "A CLI do Claude não está autenticada. Execute \"claude auth login\" no seu terminal.",
   "ai.error.claude.tooManyRedirects": "O Claude Code não conseguiu ligar-se ao seu fornecedor porque o pedido de API foi redirecionado demasiadas vezes. No Terminal, execute 'claude auth status' e, se necessário, 'claude auth login'. Se utilizar um fornecedor ou proxy personalizado, verifique ANTHROPIC_BASE_URL, HTTPS_PROXY, HTTP_PROXY e as definições de SSO/proxy da empresa e, em seguida, reinicie a Tolaria.",
