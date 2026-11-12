@@ -196,9 +196,14 @@ function selectEditorPanelBodyRenderer(
 		: renderReadOnlyNoteBody;
 }
 
-function renderNoteReadBody({ note, noteRead }: EditorPanelBodyRendererProps) {
+function renderNoteReadBody({
+	compact,
+	noteRead,
+}: EditorPanelBodyRendererProps) {
 	const state = noteReadFallbackState(noteRead);
-	return state ? <MobileNoteReadFallback note={note} state={state} /> : null;
+	return state ? (
+		<MobileNoteReadFallback compact={compact} state={state} />
+	) : null;
 }
 
 function renderBinaryFileBody({
