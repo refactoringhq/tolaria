@@ -29,6 +29,8 @@ type ActionProps = {
 	onOrganize: () => void;
 	primarySwipeAction?: "archive" | "organize";
 	fullSwipeCommitted: SharedValue<boolean>;
+	fullSwipePreview: boolean;
+	fullSwipeRevealed: SharedValue<boolean>;
 	translation: SharedValue<number>;
 	width: SharedValue<number>;
 };
@@ -40,16 +42,51 @@ export function MobileNoteSwipeActions(props: ActionProps) {
 	);
 	const organizeIsPrimary = actionOrder.at(-1) === "organize";
 	const baseWidth = actionOrder.length * 72;
+	const { expansion, secondaryStyle } = useSwipeActionWidths(props, baseWidth);
+	return (
+		<View style={{ width: baseWidth }}>
+			<Animated.View
+				style={[styles.actions, expansion]}
+				testID={`note-swipe-actions-${props.noteId}`}
+			>
+				{props.fullSwipePreview ? null : (
+					<SwipeSecondaryActions
+						props={props}
+						styles={styles}
+						mobileColors={mobileColors}
+						style={secondaryStyle}
+					/>
+				)}
+				<SwipePrimaryAction
+					props={props}
+					styles={styles}
+					mobileColors={mobileColors}
+					organizeIsPrimary={organizeIsPrimary}
+					fullSwipePreview={props.fullSwipePreview}
+				/>
+			</Animated.View>
+		</View>
+	);
+}
+
+function useSwipeActionWidths(props: ActionProps, baseWidth: number) {
 	const secondaryWidth = useDerivedValue<number>(() =>
-		mobileNoteSwipeSecondaryActionWidth(
-			props.translation.get(),
-			props.width.get(),
-			props.primarySwipeAction,
-			props.fullSwipeCommitted.get(),
-		),
+		props.fullSwipeRevealed.get()
+			? 0
+			: mobileNoteSwipeSecondaryActionWidth(
+					props.translation.get(),
+					props.width.get(),
+					props.primarySwipeAction,
+					props.fullSwipeCommitted.get(),
+				),
+	);
+	const actionWidth = useDerivedValue<number>(() =>
+		props.fullSwipeRevealed.get()
+			? props.width.get()
+			: Math.max(baseWidth, Math.abs(props.translation.get())),
 	);
 	const expansion = useAnimatedStyle<ViewStyle>(() => ({
-		width: Math.max(baseWidth, Math.abs(props.translation.value)),
+		width: actionWidth.get(),
 	}));
 	const secondaryStyle = useAnimatedStyle<ViewStyle>(() => ({
 		width: secondaryWidth.get(),
@@ -59,24 +96,11 @@ export function MobileNoteSwipeActions(props: ActionProps) {
 		`organize-swipe.secondary-width.${props.noteId}`,
 		secondaryWidth,
 	);
-	return (
-		<View style={{ width: baseWidth }}>
-			<Animated.View style={[styles.actions, expansion]}>
-				<SwipeSecondaryActions
-					props={props}
-					styles={styles}
-					mobileColors={mobileColors}
-					style={secondaryStyle}
-				/>
-				<SwipePrimaryAction
-					props={props}
-					styles={styles}
-					mobileColors={mobileColors}
-					organizeIsPrimary={organizeIsPrimary}
-				/>
-			</Animated.View>
-		</View>
+	useMobileMotionFrameProbe(
+		`organize-swipe.action-width.${props.noteId}`,
+		actionWidth,
 	);
+	return { expansion, secondaryStyle };
 }
 
 function SwipeSecondaryActions({
@@ -129,23 +153,27 @@ function SwipePrimaryAction({
 	styles,
 	mobileColors,
 	organizeIsPrimary,
+	fullSwipePreview,
 }: {
 	props: ActionProps;
 	styles: ReturnType<typeof createThemeStyles>["styles"];
 	mobileColors: MobileColors;
 	organizeIsPrimary: boolean;
+	fullSwipePreview: boolean;
 }) {
 	return organizeIsPrimary ? (
 		<Button
-			accessibilityLabel={mobileText("noteList.bulk.organize")}
+			accessibilityLabel={mobileText("command.note.markOrganized")}
 			style={[styles.action, styles.archive]}
 			testID={`note-swipe-organize-${props.noteId}`}
 			onPress={props.onOrganize}
 		>
 			<CheckCircle color={mobileColors.textInverse} size={18} />
-			<Text style={styles.organizeLabel}>
-				{mobileText("noteList.bulk.organize")}
-			</Text>
+			{fullSwipePreview ? null : (
+				<Text style={styles.organizeLabel}>
+					{mobileText("noteList.bulk.organize")}
+				</Text>
+			)}
 		</Button>
 	) : (
 		<ArchiveButton props={props} styles={styles} mobileColors={mobileColors} />

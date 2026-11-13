@@ -195,6 +195,34 @@ final class MobileMotionFrameTests: XCTestCase {
     attachFrame("organize-swipe-after", app)
   }
 
+  func testOrganizeFullSwipeShowsOnlyFullWidthCheckBeforeCollapse() {
+    continueAfterFailure = false
+    XCUIDevice.shared.orientation = .portrait
+    let app = attachToMotionFixture()
+    XCTAssertTrue(element(app, "phone-note-list-screen").waitForExistence(timeout: 60))
+    let rows = visibleNoteRows(in: app)
+    guard rows.count > 1 else {
+      XCTFail("Could not locate an Inbox row for the full-reveal assertion")
+      return
+    }
+    let row = rows[0]
+    let rowQuery = element(app, row.identifier)
+    let following = element(app, rows[1].identifier)
+    let initialFollowingY = following.frame.minY
+    performFullLeftSwipe(on: row, hold: 0.35)
+
+    XCTAssertTrue(
+      rowQuery.waitForNonExistence(timeout: 5),
+      "The full-swiped row did not collapse after the check-only reveal"
+    )
+    XCTAssertLessThan(
+      following.frame.minY,
+      initialFollowingY - 20,
+      "The following row did not close the gap after Organize"
+    )
+    attachFrame("organize-swipe-full-green-then-collapse", app)
+  }
+
   private func attachToMotionFixture() -> XCUIApplication {
     let app = XCUIApplication(bundleIdentifier: "com.tolaria.mobile.dev")
     app.activate()
@@ -270,12 +298,12 @@ private extension MobileMotionFrameTests {
     attachSamples(rowSamples, named: "organize-swipe-native-row-geometry")
   }
 
-  func performFullLeftSwipe(on row: XCUIElement) {
+  func performFullLeftSwipe(on row: XCUIElement, hold: TimeInterval = 0.35) {
     row.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).press(
       forDuration: 0.05,
       thenDragTo: row.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.5)),
       withVelocity: XCUIGestureVelocity(rawValue: 300),
-      thenHoldForDuration: 0.35
+      thenHoldForDuration: hold
     )
   }
 

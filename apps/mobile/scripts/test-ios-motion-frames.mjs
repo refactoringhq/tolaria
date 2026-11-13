@@ -99,7 +99,7 @@ const xcodebuildArgs = [
 								]
 							: focusedCheck === "organize-swipe"
 								? [
-										"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testOrganizeSwipeDismissesOnlyAfterFullReveal",
+										"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testOrganizeFullSwipeShowsOnlyFullWidthCheckBeforeCollapse",
 									]
 								: [
 										"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testListChromeEditorReturnSidebarCloseAndOrganizeSwipeAreReachable",
