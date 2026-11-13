@@ -78,26 +78,14 @@ const wryFinding = {
 	message: "Inherited vendored Wry unsafe-usage finding.",
 };
 const wryApprovalStartsAt = Date.parse("2026-11-13T16:37:00Z");
-const wryApprovalExpiresAt = Date.parse("2026-11-16T16:37:00Z");
 
-test("approves only the exact Luca-approved Wry finding during its three-day window", () => {
+test("blocks the Wry unsafe finding after its stale approval is removed", () => {
 	assert.deepEqual(
 		partitionApprovedReports([wryFinding], root, { now: wryApprovalStartsAt }),
 		{
-			approved: [wryFinding],
-			blocking: [],
+			approved: [],
+			blocking: [wryFinding],
 		},
-	);
-	assert.deepEqual(
-		partitionApprovedReports([wryFinding], root, {
-			now: wryApprovalStartsAt - 1,
-		}).blocking,
-		[wryFinding],
-	);
-	assert.deepEqual(
-		partitionApprovedReports([wryFinding], root, { now: wryApprovalExpiresAt })
-			.blocking,
-		[wryFinding],
 	);
 });
 
