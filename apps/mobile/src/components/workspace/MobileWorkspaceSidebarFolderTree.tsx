@@ -7,7 +7,6 @@ import {
 import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { type MobileLayoutProbe, probeProps } from "../../qa/mobileLayoutProbe";
 import type { MobileMetrics } from "../../ui/mobileMetrics";
-import { mobilePressedStyle } from "../../ui/mobilePressFeedback";
 import type { MobileColors } from "../../ui/theme/mobilePalette";
 import { useMobileStyles } from "../../ui/theme/useMobileTheme";
 
@@ -73,9 +72,7 @@ function FolderTreeRowButton({
 			accessibilityRole="button"
 			onLongPress={actions.onLongPress}
 			onPress={actions.onPress}
-			style={({ pressed }) =>
-				folderTreeRowStyle(pressed, active, props, themeStyles)
-			}
+			style={folderTreeRowStyle(active, props, themeStyles)}
 		>
 			<FolderTreeRowContent
 				active={active}
@@ -89,7 +86,6 @@ function FolderTreeRowButton({
 }
 
 function folderTreeRowStyle(
-	pressed: boolean,
 	active: boolean,
 	props: FolderTreeRowProps,
 	themeStyles: ReturnType<typeof createThemeStyles>,
@@ -100,7 +96,6 @@ function folderTreeRowStyle(
 		nativeFolderTreeRowStyle,
 		active ? folderTreeStyles.rowActive : null,
 		folderTreeIndent(metrics.sidebar, props.depth),
-		mobilePressedStyle(pressed, metrics.toolbarAction.pressedOpacity),
 	];
 }
 
