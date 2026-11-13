@@ -35,6 +35,13 @@ describe("workspaceFixtures", () => {
 		expect(workspaceScenarioForId("missing")).toBe(workspaceScenarios.default);
 	});
 
+	it.each(["constructor", "toString", "__proto__", "hasOwnProperty"])(
+		"falls back to the default scenario for inherited key %s",
+		(id) => {
+			expect(workspaceScenarioForId(id)).toBe(workspaceScenarios.default);
+		},
+	);
+
 	it("provides a search and duplicate-relationship visual fixture", () => {
 		expect(workspaceScenarios["search-and-properties"].notes[0]).toMatchObject({
 			id: "newsletter-calendar-view-proposal.md",

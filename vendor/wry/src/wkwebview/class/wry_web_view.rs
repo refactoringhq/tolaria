@@ -110,12 +110,12 @@ define_class!(
   #[cfg(target_os = "macos")]
   impl WryWebView {
     #[unsafe(method(otherMouseDown:))]
-    fn other_mouse_down(&self, event: &NSEvent) {
+    unsafe fn other_mouse_down(&self, event: &NSEvent) {
       synthetic_mouse_events::other_mouse_down(self, event)
     }
 
     #[unsafe(method(otherMouseUp:))]
-    fn other_mouse_up(&self, event: &NSEvent) {
+    unsafe fn other_mouse_up(&self, event: &NSEvent) {
       synthetic_mouse_events::other_mouse_up(self, event)
     }
   }
