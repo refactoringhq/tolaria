@@ -1,50 +1,26 @@
-import { useCreateBlockNote } from "@blocknote/react";
-import { useCallback, useEffect, useRef } from "react";
+import {
+	type Dispatch,
+	type MutableRefObject,
+	type SetStateAction,
+	useCallback,
+	useEffect,
+	useRef,
+} from "react";
 import { type CommitDiffRequest, useDiffMode } from "../hooks/useDiffMode";
 import { useEditorFocus } from "../hooks/useEditorFocus";
 import { useEditorTabSwap } from "../hooks/useEditorTabSwap";
-import {
-	emptyImageUploadResult,
-	type ImageImportError,
-	isUnsupportedImageFormatError,
-	type UploadImageFileResult,
-	uploadImageFile,
-} from "../hooks/useImageDrop";
-import { localPresenceUser } from "../lib/presenceIdentity";
-import { RUNTIME_STYLE_NONCE } from "../lib/runtimeStyleNonce";
-import { markStartupPhase } from "../lib/startupPerformance";
+import type { ImageImportError } from "../hooks/useImageDrop";
 import type { NoteStatus, VaultEntry } from "../types";
-import { installRichEditorMarkdownSerializer } from "../utils/richEditorMarkdown";
-import { renderCollabCursor } from "./collabCursor";
 import {
 	type CollabEditorBinding,
 	useLiveTitleReporter,
 } from "./collabEditorBinding";
 import {
-	applyBlockNoteLocale,
-	createBlockNoteDictionary,
-} from "./editorLocalization";
-import {
 	type PendingRawExitContent,
 	resolvePendingRawExitContent,
 	resolveRawModeContent,
 } from "./editorRawModeSync";
-import { schema } from "./editorSchema";
-import { createImeCompositionKeyGuardExtension } from "./imeCompositionKeyGuardExtension";
-import { createMarkdownHighlightShortcutExtension } from "./markdownHighlightShortcutExtension";
-import { RICH_EDITOR_BLOCKNOTE_PERFORMANCE_OPTIONS } from "./richEditorBlockNoteOptions";
-import { createRichEditorBlockSelectionExtension } from "./richEditorBlockSelectionExtension";
-import { createRichEditorCodeBlockArrowNavigationExtension } from "./richEditorCodeBlockArrowNavigationExtension";
-import { createRichEditorCodeBlockShortcutExtension } from "./richEditorCodeBlockShortcutExtension";
-import { createRichEditorCodeBlockTabExtension } from "./richEditorCodeBlockTabExtension";
-import { installRichEditorDispatchPerformanceProbe } from "./richEditorDispatchPerformance";
-import { createRichEditorEmptyListNavigationExtension } from "./richEditorEmptyListNavigationExtension";
-import { createRichEditorMarkdownInputTransformExtension } from "./richEditorInputTransformExtension";
-import { createRichEditorListTabExtension } from "./richEditorListTabExtension";
-import { handleRemoteRichEditorPaste } from "./richEditorPaste";
-import { createRichEditorTextDirectionExtension } from "./richEditorTextDirection";
-import { createRichEditorTransformErrorRecoveryExtension } from "./richEditorTransformErrorRecoveryExtension";
-import { createTodoBlockShortcutExtension } from "./todoBlockShortcutExtension";
+import { useEditorInstance } from "./useEditorInstance";
 import { useFilenameAutolinkGuard } from "./useFilenameAutolinkGuard";
 import { useLiveRawContentSource } from "./useLiveRawContentSource";
 import { useRawModeWithFlush } from "./useRawModeWithFlush";
@@ -52,11 +28,6 @@ import {
 	useRichEditorContentReadiness,
 	useRichEditorSheetSwapState,
 } from "./useRichEditorSheetTransition";
-
-const RICH_EDITOR_BIDI_DOM_ATTRIBUTES = {
-	blockContent: { dir: "auto" },
-	inlineContent: { dir: "auto" },
-};
 
 export interface Tab {
 	entry: VaultEntry;
@@ -120,19 +91,6 @@ interface EditorSetupParams {
 
 const NO_SWAP_TABS: Tab[] = [];
 
-/** The collaboration option of a bound editor: BlockNote edits the live document. */
-function blockNoteCollaboration(binding: CollabEditorBinding) {
-	if (binding.kind !== "bound") return undefined;
-	return {
-		fragment: binding.doc.fragment,
-		provider: binding.doc.provider,
-		user: localPresenceUser(binding.doc.doc.clientID),
-		// A name shows while its person types or moves, then folds back to the caret.
-		showCursorLabels: "activity" as const,
-		renderCursor: renderCollabCursor,
-	};
-}
-
 type EditorTabSwapOptions = Parameters<typeof useEditorTabSwap>[0];
 
 /**
@@ -190,15 +148,244 @@ function useEditorContentSource({
 	};
 }
 
-function handleEditorImageUploadFailure(
-	file: File,
-	error: unknown,
-	onImageImportError: ImageImportErrorHandler | undefined,
-): UploadImageFileResult {
-	if (!isUnsupportedImageFormatError(error)) throw error;
+interface EditorContentStateOptions {
+	tabs: Tab[];
+	activeTabPath: string | null;
+	vaultPath?: string;
+	collabBinding: CollabEditorBinding;
+	onContentChange?: (path: string, content: string) => void;
+	editor: ReturnType<typeof useEditorInstance>;
+	flushPendingEditorChangeRef: MutableRefObject<(() => boolean) | null>;
+}
 
-	onImageImportError?.(error);
-	return emptyImageUploadResult(file);
+function usePendingRawExitContent({
+	collabBinding,
+	activeTabPath,
+	tabs,
+	pendingRawExitContent,
+	setPendingRawExitContent,
+}: {
+	collabBinding: CollabEditorBinding;
+	activeTabPath: string | null;
+	tabs: Tab[];
+	pendingRawExitContent: PendingRawExitContent | null;
+	setPendingRawExitContent: Dispatch<
+		SetStateAction<PendingRawExitContent | null>
+	>;
+}) {
+	useEffect(() => {
+		setPendingRawExitContent((current) =>
+			resolvePendingRawExitContent({
+				activeTabPath,
+				tabs,
+				pendingRawExitContent: current,
+			}),
+		);
+	}, [activeTabPath, setPendingRawExitContent, tabs]);
+	useDropLiveRawExitContent(
+		collabBinding,
+		pendingRawExitContent,
+		setPendingRawExitContent,
+	);
+}
+
+interface EditorTabContentOptions {
+	collabBinding: CollabEditorBinding;
+	sheetState: ReturnType<typeof useRichEditorSheetSwapState>;
+	activeTab: Tab | null;
+	editor: ReturnType<typeof useEditorInstance>;
+	onContentChange?: (path: string, content: string) => void;
+	rawMode: boolean;
+	vaultPath?: string;
+	flushPendingEditorChangeRef: MutableRefObject<(() => boolean) | null>;
+}
+
+function useEditorTabContent(options: EditorTabContentOptions) {
+	const {
+		collabBinding,
+		sheetState,
+		activeTab,
+		editor,
+		onContentChange,
+		rawMode,
+		vaultPath,
+		flushPendingEditorChangeRef,
+	} = options;
+	const editorState = useEditorContentSource({
+		collabBinding,
+		tabs: sheetState.tabsForEditorSwap,
+		activeTabPath: sheetState.richEditorActiveTabPath,
+		activeTab,
+		activeTabIsSheet: sheetState.activeTabIsSheet,
+		editor,
+		onContentChange,
+		rawMode,
+		vaultPath,
+	});
+	useEffect(() => {
+		flushPendingEditorChangeRef.current = editorState.flushPendingEditorChange;
+		return () => {
+			if (
+				flushPendingEditorChangeRef.current ===
+				editorState.flushPendingEditorChange
+			) {
+				flushPendingEditorChangeRef.current = null;
+			}
+		};
+	}, [editorState.flushPendingEditorChange, flushPendingEditorChangeRef]);
+	useEditorFocus(editor, editorState.editorMountedRef);
+	return editorState;
+}
+
+function useRawEditorState(options: EditorContentStateOptions) {
+	const {
+		tabs,
+		activeTabPath,
+		vaultPath,
+		collabBinding,
+		onContentChange,
+		editor,
+		flushPendingEditorChangeRef,
+	} = options;
+	const activeTab =
+		tabs.find((tab) => tab.entry.path === activeTabPath) ?? null;
+	const { contentChange: rawContentChange, entryContent: rawEntryContent } =
+		useLiveRawContentSource({
+			binding: collabBinding,
+			editor,
+			onContentChange,
+			vaultPath,
+		});
+	const rawState = useRawModeWithFlush(
+		editor,
+		activeTabPath,
+		activeTab?.content ?? null,
+		rawContentChange,
+		vaultPath,
+		flushPendingEditorChangeRef,
+		rawEntryContent,
+	);
+	return {
+		activeTab,
+		rawContentChange,
+		rawState,
+		rawModeContent: resolveRawModeContent({
+			activeTab,
+			rawModeContentOverride: rawState.rawModeContentOverride,
+		}),
+	};
+}
+
+function useEditorContentState(options: EditorContentStateOptions) {
+	const {
+		tabs,
+		activeTabPath,
+		vaultPath,
+		collabBinding,
+		onContentChange,
+		editor,
+		flushPendingEditorChangeRef,
+	} = options;
+	const { activeTab, rawContentChange, rawState, rawModeContent } =
+		useRawEditorState(options);
+	usePendingRawExitContent({
+		collabBinding,
+		activeTabPath,
+		tabs,
+		pendingRawExitContent: rawState.pendingRawExitContent,
+		setPendingRawExitContent: rawState.setPendingRawExitContent,
+	});
+	const sheetState = useRichEditorSheetSwapState({
+		activeTab,
+		activeTabPath,
+		tabs,
+		pendingRawExitContent: rawState.pendingRawExitContent,
+	});
+	const editorState = useEditorTabContent({
+		collabBinding,
+		sheetState,
+		activeTab,
+		editor,
+		onContentChange,
+		rawMode: rawState.rawMode,
+		vaultPath,
+		flushPendingEditorChangeRef,
+	});
+	return {
+		activeTab,
+		rawContentChange,
+		rawLatestContentRef: rawState.rawLatestContentRef,
+		rawModeContent,
+		rawMode: rawState.rawMode,
+		handleToggleRaw: rawState.handleToggleRaw,
+		...editorState,
+	};
+}
+
+function useEditorContentAndDiff(
+	options: EditorSetupParams & {
+		editor: ReturnType<typeof useEditorInstance>;
+		flushPendingEditorChangeRef: MutableRefObject<(() => boolean) | null>;
+	},
+) {
+	const contentState = useEditorContentState(options);
+	const diffState = useEditorDiffControls({
+		activeTabPath: options.activeTabPath,
+		onLoadDiff: options.onLoadDiff,
+		onLoadDiffAtCommit: options.onLoadDiffAtCommit,
+		pendingCommitDiffRequest: options.pendingCommitDiffRequest,
+		onPendingCommitDiffHandled: options.onPendingCommitDiffHandled,
+		rawMode: contentState.rawMode,
+		handleToggleRaw: contentState.handleToggleRaw,
+		rawToggleRef: options.rawToggleRef,
+		diffToggleRef: options.diffToggleRef,
+	});
+	return { contentState, diffState };
+}
+
+function editorTabStatus(
+	activeTabPath: string | null,
+	activeTab: Tab | null,
+	getNoteStatus: EditorSetupParams["getNoteStatus"],
+	diffMode: boolean,
+) {
+	const activeStatus = activeTab
+		? (getNoteStatus?.(activeTab.entry.path) ?? "clean")
+		: "clean";
+	return {
+		activeStatus,
+		isLoadingNewTab: activeTabPath !== null && !activeTab,
+		showDiffToggle: !!(activeTab && (diffMode || activeStatus === "modified")),
+	};
+}
+
+interface EditorDiffControlsOptions {
+	activeTabPath: string | null;
+	onLoadDiff?: (path: string) => Promise<string>;
+	onLoadDiffAtCommit?: (path: string, commitHash: string) => Promise<string>;
+	pendingCommitDiffRequest?: CommitDiffRequest | null;
+	onPendingCommitDiffHandled?: (requestId: number) => void;
+	rawMode: boolean;
+	handleToggleRaw: () => void;
+	rawToggleRef?: React.MutableRefObject<() => void>;
+	diffToggleRef?: React.MutableRefObject<() => void>;
+}
+
+function useEditorDiffControls({
+	rawMode,
+	handleToggleRaw,
+	...diffOptions
+}: EditorDiffControlsOptions) {
+	const diff = useDiffMode(diffOptions);
+	const exclusive = useEditorModeExclusion({
+		diffMode: diff.diffMode,
+		rawMode,
+		handleToggleDiff: diff.handleToggleDiff,
+		handleToggleRaw,
+		rawToggleRef: diffOptions.rawToggleRef,
+		diffToggleRef: diffOptions.diffToggleRef,
+	});
+	return { ...diff, ...exclusive };
 }
 
 export function useEditorSetup(options: EditorSetupParams) {
@@ -208,10 +395,6 @@ export function useEditorSetup(options: EditorSetupParams) {
 		vaultPath,
 		collabBinding,
 		onContentChange,
-		onLoadDiff,
-		onLoadDiffAtCommit,
-		pendingCommitDiffRequest,
-		onPendingCommitDiffHandled,
 		getNoteStatus,
 		rawToggleRef,
 		diffToggleRef,
@@ -228,200 +411,32 @@ export function useEditorSetup(options: EditorSetupParams) {
 		onImageImportErrorRef.current = onImageImportError;
 	}, [activeTabPath, onImageImportError, vaultPath]);
 
-	const collaboration = blockNoteCollaboration(collabBinding);
-	const editor = useCreateBlockNote({
-		...RICH_EDITOR_BLOCKNOTE_PERFORMANCE_OPTIONS,
-		schema,
-		domAttributes: RICH_EDITOR_BIDI_DOM_ATTRIBUTES,
-		dictionary: createBlockNoteDictionary(options.locale),
-		collaboration,
-		uploadFile: async (file: File) => {
-			try {
-				return await uploadImageFile(file, vaultPathRef.current);
-			} catch (error) {
-				return handleEditorImageUploadFailure(
-					file,
-					error,
-					onImageImportErrorRef.current,
-				);
-			}
-		},
-		pasteHandler: (context) => {
-			const pastePath = activeTabPathRef.current;
-			return handleRemoteRichEditorPaste(context, {
-				canApply: () => activeTabPathRef.current === pastePath,
-				vaultPath: vaultPathRef.current,
-				onImportResult: ({ failedCount, totalCount }) => {
-					if (failedCount > 0) {
-						onImageImportErrorRef.current?.({
-							failedCount,
-							kind: "remote-download",
-							totalCount,
-						});
-					}
-				},
-			});
-		},
-		tabBehavior: "prefer-indent",
-		_tiptapOptions: { injectNonce: RUNTIME_STYLE_NONCE },
-		extensions: [
-			createRichEditorTransformErrorRecoveryExtension(),
-			createImeCompositionKeyGuardExtension(),
-			createRichEditorCodeBlockArrowNavigationExtension(),
-			createRichEditorEmptyListNavigationExtension(),
-			createRichEditorCodeBlockTabExtension(),
-			createRichEditorListTabExtension(),
-			createRichEditorCodeBlockShortcutExtension(),
-			createMarkdownHighlightShortcutExtension(),
-			createTodoBlockShortcutExtension(),
-			createRichEditorMarkdownInputTransformExtension(),
-			createRichEditorTextDirectionExtension(),
-			createRichEditorBlockSelectionExtension(),
-		],
+	const editor = useEditorInstance({
+		collabBinding,
+		locale: options.locale,
+		vaultPathRef,
+		activeTabPathRef,
+		onImageImportErrorRef,
 	});
-	applyBlockNoteLocale(editor, options.locale);
-	installRichEditorMarkdownSerializer(editor);
-	useEffect(() => {
-		installRichEditorDispatchPerformanceProbe(
-			editor,
-			() => activeTabPathRef.current,
-		);
-	}, [editor]);
 	useFilenameAutolinkGuard(editor);
-	const activeTab = tabs.find((t) => t.entry.path === activeTabPath) ?? null;
-	// Raw mode reads and edits a bound note's live document (TOL-221).
-	const { contentChange: rawContentChange, entryContent: rawEntryContent } =
-		useLiveRawContentSource({
-			binding: collabBinding,
-			editor,
-			onContentChange,
-			vaultPath,
-		});
-	const {
-		rawMode,
-		handleToggleRaw,
-		rawLatestContentRef,
-		pendingRawExitContent,
-		setPendingRawExitContent,
-		rawModeContentOverride,
-	} = useRawModeWithFlush(
-		editor,
+	const { contentState, diffState } = useEditorContentAndDiff({
+		tabs,
 		activeTabPath,
-		activeTab?.content ?? null,
-		rawContentChange,
 		vaultPath,
-		flushPendingEditorChangeRef,
-		rawEntryContent,
-	);
-	const rawModeContent = resolveRawModeContent({
-		activeTab,
-		rawModeContentOverride,
-	});
-
-	useEffect(() => {
-		setPendingRawExitContent((current) =>
-			resolvePendingRawExitContent({
-				activeTabPath,
-				tabs,
-				pendingRawExitContent: current,
-			}),
-		);
-	}, [activeTabPath, setPendingRawExitContent, tabs]);
-	useDropLiveRawExitContent(
 		collabBinding,
-		pendingRawExitContent,
-		setPendingRawExitContent,
-	);
-
-	const { activeTabIsSheet, richEditorActiveTabPath, tabsForEditorSwap } =
-		useRichEditorSheetSwapState({
-			activeTab,
-			activeTabPath,
-			tabs,
-			pendingRawExitContent,
-		});
-
-	const {
-		handleEditorChange,
-		flushPendingEditorChange,
-		editorMountedRef,
-		richEditorContentReady,
-	} = useEditorContentSource({
-		collabBinding,
-		tabs: tabsForEditorSwap,
-		activeTabPath: richEditorActiveTabPath,
-		activeTab,
-		activeTabIsSheet,
-		editor,
 		onContentChange,
-		rawMode,
-		vaultPath,
+		editor,
+		flushPendingEditorChangeRef,
+		rawToggleRef,
+		diffToggleRef,
 	});
-	useEffect(() => {
-		if (richEditorContentReady) markStartupPhase("editor_interactive");
-	}, [richEditorContentReady]);
-	useEffect(() => {
-		flushPendingEditorChangeRef.current = flushPendingEditorChange;
-		return () => {
-			if (flushPendingEditorChangeRef.current === flushPendingEditorChange) {
-				flushPendingEditorChangeRef.current = null;
-			}
-		};
-	}, [flushPendingEditorChange]);
-	useEditorFocus(editor, editorMountedRef);
 
-	const {
-		diffMode,
-		diffContent,
-		diffLoading,
-		handleToggleDiff,
-		handleViewCommitDiff,
-	} = useDiffMode({
+	const status = editorTabStatus(
 		activeTabPath,
-		onLoadDiff,
-		onLoadDiffAtCommit,
-		pendingCommitDiffRequest,
-		onPendingCommitDiffHandled,
-	});
-
-	const { handleToggleDiffExclusive, handleToggleRawExclusive } =
-		useEditorModeExclusion({
-			diffMode,
-			rawMode,
-			handleToggleDiff,
-			handleToggleRaw,
-			rawToggleRef,
-			diffToggleRef,
-		});
-
-	const isLoadingNewTab = activeTabPath !== null && !activeTab;
-	const activeStatus = activeTab
-		? (getNoteStatus?.(activeTab.entry.path) ?? "clean")
-		: "clean";
-	const showDiffToggle = !!(
-		activeTab &&
-		(diffMode || activeStatus === "modified")
+		contentState.activeTab,
+		getNoteStatus,
+		diffState.diffMode,
 	);
 
-	return {
-		editor,
-		activeTab,
-		rawContentChange,
-		rawLatestContentRef,
-		rawModeContent,
-		rawMode,
-		diffMode,
-		diffContent,
-		diffLoading,
-		handleToggleDiffExclusive,
-		handleToggleRawExclusive,
-		handleEditorChange,
-		flushPendingEditorChange,
-		handleViewCommitDiff,
-		isLoadingNewTab,
-		activeStatus,
-		showDiffToggle,
-		sheetFlushRef,
-		richEditorContentReady,
-	};
+	return { editor, ...contentState, ...diffState, ...status, sheetFlushRef };
 }
