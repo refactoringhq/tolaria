@@ -1,6 +1,11 @@
 import type { VaultEntry } from '../types'
 
-export type VaultAiGuidanceFileState = 'checking' | 'managed' | 'missing' | 'broken' | 'custom'
+export type VaultAiGuidanceFileState =
+  | 'checking'
+  | 'managed'
+  | 'missing'
+  | 'broken'
+  | 'custom'
 
 export interface VaultAiGuidanceStatus {
   agentsState: VaultAiGuidanceFileState
@@ -27,7 +32,9 @@ export function createCheckingVaultAiGuidanceStatus(): VaultAiGuidanceStatus {
   }
 }
 
-function normalizeFileState(value: string | null | undefined): VaultAiGuidanceFileState {
+function normalizeFileState(
+  value: string | null | undefined,
+): VaultAiGuidanceFileState {
   switch (value) {
     case 'managed':
     case 'missing':
@@ -50,26 +57,37 @@ export function normalizeVaultAiGuidanceStatus(
   }
 }
 
-export function isVaultAiGuidanceStatusChecking(status: VaultAiGuidanceStatus): boolean {
-  return status.agentsState === 'checking'
-    || status.claudeState === 'checking'
-    || status.geminiState === 'checking'
+export function isVaultAiGuidanceStatusChecking(
+  status: VaultAiGuidanceStatus,
+): boolean {
+  return (
+    status.agentsState === 'checking' ||
+    status.claudeState === 'checking' ||
+    status.geminiState === 'checking'
+  )
 }
 
-export function vaultAiGuidanceNeedsRestore(status: VaultAiGuidanceStatus): boolean {
-  if (!status.canRestore || isVaultAiGuidanceStatusChecking(status)) return false
-  return status.agentsState === 'missing'
-    || status.agentsState === 'broken'
-    || status.claudeState === 'missing'
-    || status.claudeState === 'broken'
-    || status.geminiState === 'missing'
-    || status.geminiState === 'broken'
+export function vaultAiGuidanceNeedsRestore(
+  status: VaultAiGuidanceStatus,
+): boolean {
+  if (!status.canRestore || isVaultAiGuidanceStatusChecking(status))
+    return false
+  return (
+    status.agentsState === 'missing' ||
+    status.agentsState === 'broken' ||
+    status.geminiState === 'missing' ||
+    status.geminiState === 'broken'
+  )
 }
 
-export function vaultAiGuidanceUsesCustomFiles(status: VaultAiGuidanceStatus): boolean {
-  return status.agentsState === 'custom'
-    || status.claudeState === 'custom'
-    || status.geminiState === 'custom'
+export function vaultAiGuidanceUsesCustomFiles(
+  status: VaultAiGuidanceStatus,
+): boolean {
+  return (
+    status.agentsState === 'custom' ||
+    status.claudeState === 'custom' ||
+    status.geminiState === 'custom'
+  )
 }
 
 function isMissingOrBroken(state: VaultAiGuidanceFileState): boolean {
@@ -82,12 +100,11 @@ function formatGuidanceFileList(names: string[]): string {
   return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`
 }
 
-function getBrokenGuidanceSummary(status: VaultAiGuidanceStatus): string | null {
+function getBrokenGuidanceSummary(
+  status: VaultAiGuidanceStatus,
+): string | null {
   if (isMissingOrBroken(status.agentsState)) {
     return 'Tolaria guidance missing or broken'
-  }
-  if (isMissingOrBroken(status.claudeState)) {
-    return 'Claude compatibility shim missing or broken'
   }
   if (status.geminiState === 'missing') {
     return 'Gemini guidance can be created'
@@ -98,7 +115,9 @@ function getBrokenGuidanceSummary(status: VaultAiGuidanceStatus): string | null 
   return null
 }
 
-function getCustomGuidanceSummary(status: VaultAiGuidanceStatus): string | null {
+function getCustomGuidanceSummary(
+  status: VaultAiGuidanceStatus,
+): string | null {
   const customNames = [
     status.agentsState === 'custom' ? 'AGENTS.md' : null,
     status.claudeState === 'custom' ? 'CLAUDE.md' : null,
@@ -113,7 +132,9 @@ function getCustomGuidanceSummary(status: VaultAiGuidanceStatus): string | null 
   return null
 }
 
-export function getVaultAiGuidanceSummary(status: VaultAiGuidanceStatus): string {
+export function getVaultAiGuidanceSummary(
+  status: VaultAiGuidanceStatus,
+): string {
   if (isVaultAiGuidanceStatusChecking(status)) return 'Checking vault guidance…'
   const brokenSummary = getBrokenGuidanceSummary(status)
   if (brokenSummary) return brokenSummary

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { VaultEntry } from '../types'
 import {
   buildVaultAiGuidanceRefreshKey,
   createCheckingVaultAiGuidanceStatus,
@@ -7,9 +8,11 @@ import {
   vaultAiGuidanceNeedsRestore,
   vaultAiGuidanceUsesCustomFiles,
 } from './vaultAiGuidance'
-import type { VaultEntry } from '../types'
 
-function makeEntry(filename: string, overrides: Partial<VaultEntry> = {}): VaultEntry {
+function makeEntry(
+  filename: string,
+  overrides: Partial<VaultEntry> = {},
+): VaultEntry {
   return {
     path: `/vault/${filename}`,
     filename,
@@ -57,12 +60,14 @@ describe('vaultAiGuidance helpers', () => {
   })
 
   it('normalizes raw backend payloads', () => {
-    expect(normalizeVaultAiGuidanceStatus({
-      agents_state: 'managed',
-      claude_state: 'broken',
-      gemini_state: 'missing',
-      can_restore: true,
-    })).toEqual({
+    expect(
+      normalizeVaultAiGuidanceStatus({
+        agents_state: 'managed',
+        claude_state: 'broken',
+        gemini_state: 'missing',
+        can_restore: true,
+      }),
+    ).toEqual({
       agentsState: 'managed',
       claudeState: 'broken',
       geminiState: 'missing',
@@ -85,9 +90,35 @@ describe('vaultAiGuidance helpers', () => {
     })
 
     expect(vaultAiGuidanceNeedsRestore(restoreable)).toBe(true)
-    expect(getVaultAiGuidanceSummary(restoreable)).toBe('Tolaria guidance missing or broken')
+    expect(getVaultAiGuidanceSummary(restoreable)).toBe(
+      'Tolaria guidance missing or broken',
+    )
     expect(vaultAiGuidanceUsesCustomFiles(custom)).toBe(true)
     expect(getVaultAiGuidanceSummary(custom)).toBe('Using custom AGENTS.md')
+
+    const missingClaudeShim = normalizeVaultAiGuidanceStatus({
+      agents_state: 'managed',
+      claude_state: 'missing',
+      gemini_state: 'managed',
+      can_restore: true,
+    })
+    expect(vaultAiGuidanceNeedsRestore(missingClaudeShim)).toBe(false)
+    expect(getVaultAiGuidanceSummary(missingClaudeShim)).toBe(
+      'Tolaria guidance ready',
+    )
+    for (const agentsState of ['missing', 'broken'] as const) {
+      const status = normalizeVaultAiGuidanceStatus({
+        agents_state: agentsState,
+        claude_state: 'missing',
+        gemini_state: 'managed',
+        can_restore: true,
+      })
+
+      expect(vaultAiGuidanceNeedsRestore(status)).toBe(true)
+      expect(getVaultAiGuidanceSummary(status)).toBe(
+        'Tolaria guidance missing or broken',
+      )
+    }
   })
 
   it('summarizes optional Gemini guidance states', () => {
@@ -105,7 +136,9 @@ describe('vaultAiGuidance helpers', () => {
     })
 
     expect(vaultAiGuidanceNeedsRestore(missing)).toBe(true)
-    expect(getVaultAiGuidanceSummary(missing)).toBe('Gemini guidance can be created')
+    expect(getVaultAiGuidanceSummary(missing)).toBe(
+      'Gemini guidance can be created',
+    )
     expect(vaultAiGuidanceUsesCustomFiles(custom)).toBe(true)
     expect(getVaultAiGuidanceSummary(custom)).toBe('Using custom GEMINI.md')
   })
@@ -118,6 +151,8 @@ describe('vaultAiGuidance helpers', () => {
       makeEntry('AGENTS.md', { modifiedAt: 15, fileSize: 40 }),
     ])
 
-    expect(key).toBe('/vault/AGENTS.md:15:40|/vault/CLAUDE.md:20:30|/vault/GEMINI.md:25:35')
+    expect(key).toBe(
+      '/vault/AGENTS.md:15:40|/vault/CLAUDE.md:20:30|/vault/GEMINI.md:25:35',
+    )
   })
 })
