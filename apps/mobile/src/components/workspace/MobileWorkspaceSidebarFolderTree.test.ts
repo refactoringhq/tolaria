@@ -115,7 +115,8 @@ function expectRowGeometry(rows: Array<HTMLElement | null>) {
 function expectChevronAlignment(rows: Array<HTMLElement | null>) {
 	const expandableCaret = rows[0]?.firstElementChild
 		?.firstElementChild as HTMLElement;
-	const leafCaret = rows[2]?.firstElementChild?.firstElementChild as HTMLElement;
+	const leafCaret = rows[2]?.firstElementChild
+		?.firstElementChild as HTMLElement;
 	const iconSize = mobileMetrics[1.2].size(11);
 	expect(Number(expandableCaret.dataset.size)).toBe(iconSize);
 	expect(Number(leafCaret.dataset.width)).toBe(iconSize);
