@@ -49,6 +49,18 @@ No proof, no push. Collect proof before pushing; it goes inline in Ready for QA:
 
 Risky areas also need a review of the diff by a fresh-context agent (a new session with no shared history) before push, and you fix what it finds. Risky areas are note save/serialization, sync/Git, the updater, and release/CI workflows. Luca never reviews code.
 
+### UI and motion evidence before In Review
+
+For any card that changes visible UI or motion, passing metrics or tests are not enough. Before moving the card to In Review, the coding agent itself must:
+
+- Capture key frames from a real render (for motion: about 25%, 50%, 75%, 100%, and the end state).
+- Open and look at those frames itself.
+- Compare each frame against the card's spec, point by point, and write PASS or FAIL for each point on the card.
+- Embed the end-state frame on the card.
+- Not move the card to In Review if any point fails or cannot be shown from a frame.
+
+Luca and Karn are last-resort reviewers, not the default.
+
 ### Done gate (full CI)
 
 Move a card to In Review only when every job in the CircleCI `validation` workflow on main for your commit is green, with none pending (web-gates and publish-mobile-alpha included). The same goes for "no change needed": check the current main. If main is red for another reason, keep the card In Progress with Status "Waiting for main to go green". If your commit broke main, fix it in one push or revert within ~30 min.
