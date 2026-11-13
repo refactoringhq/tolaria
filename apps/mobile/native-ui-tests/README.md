@@ -111,7 +111,7 @@ software keyboard; a hardware-keyboard accessory bar alone deliberately fails th
 test. Forms are cancelled and editor changes stay in the isolated fixture.
 
 For a standalone build with an embedded current-source bundle, Metro is not
-required: generate the project with `create-project.rb` and run `xcodebuild test`
+required: generate the project with `create_project.rb` and run `xcodebuild test`
 against the installed bundle. Retain the `.xcresult`, and identify the tested
 source/bundle in the batch evidence. Do not count a browser capture as this test.
 
