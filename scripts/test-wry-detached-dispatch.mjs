@@ -1,36 +1,33 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
-const source = await readFile(
-	new URL(
-		"../vendor/wry/src/wkwebview/synthetic_mouse_events.rs",
-		import.meta.url,
-	),
+const source = readFileSync(
+	"vendor/wry/src/wkwebview/synthetic_mouse_events.rs",
 	"utf8",
 );
 const templateMatch = source.match(/r#"\(\(\) => \{\{([\s\S]*?)\}\}\)\(\)"#,/);
 assert.ok(templateMatch, "Wry mouse event JavaScript template is present");
 
 const template = `(() => {${templateMatch[1]}})()`;
+const substitutions = new Map([
+	["event_name", "mouseup"],
+	["button", "3"],
+	["buttons", "0"],
+	["detail", "1"],
+	["ctrl_key", "false"],
+	["meta_key", "false"],
+	["shift_key", "false"],
+	["alt_key", "false"],
+	["x", "10"],
+	["y", "20"],
+]);
 const script = template
 	.replaceAll("{{", "{")
 	.replaceAll("}}", "}")
 	.replace(
 		/\{(event_name|button|buttons|detail|ctrl_key|meta_key|shift_key|alt_key|x|y)\}/g,
-		(_, name) =>
-			({
-				event_name: "mouseup",
-				button: "3",
-				buttons: "0",
-				detail: "1",
-				ctrl_key: "false",
-				meta_key: "false",
-				shift_key: "false",
-				alt_key: "false",
-				x: "10",
-				y: "20",
-			})[name],
+		(_, name) => substitutions.get(name),
 	);
 
 const navigation = [];
