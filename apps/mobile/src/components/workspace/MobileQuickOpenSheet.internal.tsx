@@ -116,7 +116,6 @@ export function QuickOpenResultRow({
 }) {
 	const { styles } = useMobileStyles(createThemeStyles);
 	const [pressed, setPressed] = useState(false);
-	const snippet = mobileQuickOpenSnippetParts(note.snippet, query);
 	return (
 		<Pressable
 			accessibilityRole="button"
@@ -143,30 +142,45 @@ export function QuickOpenResultRow({
 					typeDefinitions={typeDefinitions}
 				/>
 			</View>
-			<View style={styles.resultText}>
-				<Text
-					numberOfLines={1}
-					style={styles.resultTitle}
-					testID={`workspace-search-result-title-${note.id}`}
-				>
-					{note.title}
-				</Text>
-				<Text
-					numberOfLines={1}
-					style={styles.resultSnippet}
-					testID={`workspace-search-result-snippet-${note.id}`}
-				>
-					{snippet.map((part, index) => (
-						<Text
-							key={`${part.text}-${index}`}
-							style={part.matched ? styles.matchedTerm : null}
-						>
-							{part.text}
-						</Text>
-					))}
-				</Text>
-			</View>
+			<QuickOpenResultText note={note} query={query} styles={styles} />
 		</Pressable>
+	);
+}
+
+function QuickOpenResultText({
+	note,
+	query,
+	styles,
+}: {
+	note: MobileNote;
+	query: string;
+	styles: ReturnType<typeof createThemeStyles>["styles"];
+}) {
+	const snippet = mobileQuickOpenSnippetParts(note.snippet, query);
+	return (
+		<View style={styles.resultText}>
+			<Text
+				numberOfLines={1}
+				style={styles.resultTitle}
+				testID={`workspace-search-result-title-${note.id}`}
+			>
+				{note.title}
+			</Text>
+			<Text
+				numberOfLines={1}
+				style={styles.resultSnippet}
+				testID={`workspace-search-result-snippet-${note.id}`}
+			>
+				{snippet.map((part, index) => (
+					<Text
+						key={`${part.text}-${index}`}
+						style={part.matched ? styles.matchedTerm : null}
+					>
+						{part.text}
+					</Text>
+				))}
+			</Text>
+		</View>
 	);
 }
 
