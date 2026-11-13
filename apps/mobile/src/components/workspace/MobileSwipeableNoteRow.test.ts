@@ -20,7 +20,11 @@ const input = vi.hoisted(() => ({
 		| undefined,
 	onStart: undefined as (() => void) | undefined,
 	onLayout: undefined as
-		| ((event: { nativeEvent: { layout: { width: number } } }) => void)
+		| ((event: {
+				nativeEvent: {
+					layout: { x: number; y: number; width: number; height: number };
+				};
+		  }) => void)
 		| undefined,
 	onArchive: vi.fn(),
 	onOrganize: vi.fn(),
@@ -32,17 +36,23 @@ const input = vi.hoisted(() => ({
 		reset: vi.fn(),
 	},
 	events: [] as string[],
+	timingCallbacks: [] as Array<(finished: boolean) => void>,
 	vibrate: vi.fn(),
 }));
 vi.mock("react-native-gesture-handler/ReanimatedSwipeable", () => ({
 	default: (props: Record<string, unknown> & { ref?: unknown }) => {
-		if (props.ref && typeof props.ref === "object") {
-			(props.ref as { current: unknown }).current = input.swipeableMethods;
-		}
+		assignSwipeableRef(props.ref);
 		nativeSwipe(props);
 		return null;
 	},
 }));
+
+function assignSwipeableRef(value: unknown) {
+	if (!value) return;
+	if (typeof value !== "object") return;
+	(value as { current: unknown }).current = input.swipeableMethods;
+}
+
 vi.mock("react-native", () => ({
 	Vibration: { vibrate: input.vibrate },
 	View: ({
@@ -82,10 +92,19 @@ vi.mock("react-native-gesture-handler", () => ({
 	},
 }));
 vi.mock("react-native-reanimated", () => ({
+	useAnimatedReaction: () => null,
+	useAnimatedStyle: (style: () => unknown) => style(),
+	useDerivedValue: (value: () => number) => ({ get: value }),
 	useFrameCallback: () => null,
+	useAnimatedRef: () => ({ current: null }),
+	measure: () => null,
+	makeMutable: (initial: unknown) => {
+		let value = initial;
+		return { get: () => value, set: (next: unknown) => (value = next) };
+	},
 	default: {
 		View: ({ children, ...props }: { children: ReactNode }) => {
-			input.animatedProps = props;
+			recordAnimationProps(props);
 			return children;
 		},
 	},
@@ -105,17 +124,33 @@ vi.mock("react-native-reanimated", () => ({
 		duration: (duration: number) => ({ kind: "enter", duration }),
 	},
 	useReducedMotion: () => input.reduceMotion,
-	useSharedValue: (initial: number) => {
+	useSharedValue: (initial: unknown) => {
 		let value = initial;
 		return Object.freeze({
 			get: () => value,
-			set: (next: number) => {
+			set: (next: unknown) => {
 				value = next;
 			},
 		});
 	},
+	withTiming: (
+		value: number,
+		_config: unknown,
+		callback?: (finished: boolean) => void,
+	) => {
+		if (callback) input.timingCallbacks.push(callback);
+		return value;
+	},
 	runOnJS: (callback: (...args: unknown[]) => void) => callback,
 }));
+
+function recordAnimationProps(props: Record<string, unknown>) {
+	if (animationProps.some((key) => props[key] !== undefined))
+		input.animatedProps = props;
+}
+
+const animationProps = ["entering", "exiting", "layout"];
+
 vi.mock("../../ui/theme/useMobileTheme", () => ({
 	useMobileColors: () => ({ card: "#fff" }),
 }));
@@ -136,6 +171,7 @@ afterEach(() => {
 	input.swipeableMethods.openRight.mockClear();
 	input.swipeableMethods.reset.mockClear();
 	input.events = [];
+	input.timingCallbacks = [];
 	input.onOrganize.mockImplementation(() => input.events.push("organize"));
 	input.animatedProps = undefined;
 	input.reduceMotion = false;
@@ -160,20 +196,42 @@ describe("note row input ownership", () => {
 
 	it("uses the measured width to commit a full swipe with compiler-safe shared values", () => {
 		renderRow();
-		input.onLayout?.({ nativeEvent: { layout: { width: 300 } } });
-		input.onEnd?.({ translationX: -290 });
+		input.onLayout?.({
+			nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 96 } },
+		});
+		input.onUpdate?.({ translationX: -290 });
+		finishSwipe();
 		expect(input.onArchive).toHaveBeenCalledWith(
 			[fixtureNotes[0].id],
 			!fixtureNotes[0].archived,
 		);
 	});
 
-	it("organizes on a full swipe when Inbox is the active list", () => {
+	it("commits the full-swipe action after the row exit and collapse", () => {
 		renderRow(false, "organize");
-		input.onLayout?.({ nativeEvent: { layout: { width: 300 } } });
-		input.onEnd?.({ translationX: -290 });
+		input.onLayout?.({
+			nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 96 } },
+		});
+		input.onUpdate?.({ translationX: -290 });
+		expect(input.onOrganize).not.toHaveBeenCalled();
+		finishSwipe();
 		expect(input.onOrganize).toHaveBeenCalledWith([fixtureNotes[0].id]);
 		expect(input.onArchive).not.toHaveBeenCalled();
+	});
+
+	it("keeps the Organize pane visible until the row has collapsed", () => {
+		renderRow(false, "organize");
+		setSwipeWidth();
+		beginSwipe();
+		crossSwipeThreshold();
+		input.onEnd?.({ translationX: -290 });
+		expect(input.onOrganize).not.toHaveBeenCalled();
+		expect(input.timingCallbacks).toHaveLength(1);
+		input.timingCallbacks.shift()?.(true);
+		expect(input.onOrganize).not.toHaveBeenCalled();
+		expect(input.timingCallbacks).toHaveLength(1);
+		input.timingCallbacks.shift()?.(true);
+		expect(input.onOrganize).toHaveBeenCalledWith([fixtureNotes[0].id]);
 	});
 
 	it("does not reset the swipeable before committing a full-swipe action", () => {
@@ -183,8 +241,9 @@ describe("note row input ownership", () => {
 			input.events.push("reset"),
 		);
 		input.onOrganize.mockImplementation(() => input.events.push("organize"));
+		beginSwipe();
+		crossSwipeThreshold();
 		finishSwipe();
-
 		expect(input.events).toEqual(["organize"]);
 		expect(input.swipeableMethods.reset).not.toHaveBeenCalled();
 	});
@@ -250,7 +309,10 @@ describe("note row input ownership", () => {
 
 	it("does not favorite or archive on a full right swipe", () => {
 		renderRow();
-		input.onLayout?.({ nativeEvent: { layout: { width: 300 } } });
+		input.onLayout?.({
+			nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 96 } },
+		});
+		input.onUpdate?.({ translationX: 290 });
 		input.onEnd?.({ translationX: 290 });
 		expect(input.onArchive).not.toHaveBeenCalled();
 	});
@@ -290,7 +352,9 @@ function renderRow(
 }
 
 function setSwipeWidth() {
-	input.onLayout?.({ nativeEvent: { layout: { width: 300 } } });
+	input.onLayout?.({
+		nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 96 } },
+	});
 }
 
 function beginSwipe() {
@@ -303,4 +367,5 @@ function crossSwipeThreshold() {
 
 function finishSwipe() {
 	input.onEnd?.({ translationX: -290 });
+	while (input.timingCallbacks.length) input.timingCallbacks.shift()?.(true);
 }

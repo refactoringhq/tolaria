@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
+import { analyzeOrganizeSwipe } from "./analyze-organize-swipe.mjs";
 import {
 	analyzeFirstListFrame,
 	analyzeStartup,
@@ -42,7 +43,17 @@ const noteBodyEntryOnly = process.argv.includes("--note-body-entry-only");
 const launchOnly = process.argv.includes("--launch-only");
 const startupOnly = process.argv.includes("--startup-only");
 const startupCreateOnly = process.argv.includes("--startup-create-only");
+const organizeSwipeOnly = process.argv.includes("--organize-swipe-only");
+const nativeRowDismissalPassed = process.argv.includes(
+	"--native-row-dismissal-passed",
+);
 const startupCreate = analyzeStartupCreate(events, firstListFrame);
+const organizeSwipe = analyzeOrganizeSwipe(
+	frames,
+	events,
+	organizeSwipeOnly ? process.argv.at(-1) : null,
+	nativeRowDismissalPassed,
+);
 const report = {
 	buildIds: [...new Set(observedBuildIds)],
 	buildIdMatches,
@@ -56,6 +67,7 @@ const report = {
 	noteBody,
 	noteBodyEntry,
 	newNoteEntry,
+	organizeSwipe,
 	firstListFrame,
 	startup: analyzeStartup(events, expectedBuildId, analyzeFirstListFrame),
 	startupCreate,
@@ -77,18 +89,20 @@ if (
 						? !noteBodyEntry.passed || buildIdMatches === false
 						: newNoteOnly
 							? !newNoteEntry.passed || buildIdMatches === false
-							: !checks["phone.rail.offset"]?.sampleCount ||
-								checks["phone.rail.offset"].sampleCount <= 1 ||
-								!Object.entries(checks).some(
-									([id, check]) =>
-										id.startsWith("organize-swipe.workflow-orchestration") &&
-										check.sampleCount > 1,
-								) ||
-								!firstListFrame.controlsWithinFirstFrame ||
-								!noteBody.passed ||
-								buildIdMatches === false ||
-								noteBody.renderEvents === 0 ||
-								!newNoteEntry.passed
+							: organizeSwipeOnly
+								? !organizeSwipe.passed || buildIdMatches !== true
+								: !checks["phone.rail.offset"]?.sampleCount ||
+									checks["phone.rail.offset"].sampleCount <= 1 ||
+									!Object.entries(checks).some(
+										([id, check]) =>
+											id.startsWith("organize-swipe.workflow-orchestration") &&
+											check.sampleCount > 1,
+									) ||
+									!firstListFrame.controlsWithinFirstFrame ||
+									!noteBody.passed ||
+									buildIdMatches === false ||
+									noteBody.renderEvents === 0 ||
+									!newNoteEntry.passed
 )
 	process.exitCode = 1;
 

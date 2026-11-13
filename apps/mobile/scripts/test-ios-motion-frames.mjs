@@ -97,10 +97,14 @@ const xcodebuildArgs = [
 							? [
 									"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testLargeVaultLaunchKeepsListChromeReachable",
 								]
-							: [
-									"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testListChromeEditorReturnSidebarCloseAndOrganizeSwipeAreReachable",
-									"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNewNoteHeaderAndBodyEnterTogether",
-								]),
+							: focusedCheck === "organize-swipe"
+								? [
+										"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testOrganizeSwipeDismissesOnlyAfterFullReveal",
+									]
+								: [
+										"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testListChromeEditorReturnSidebarCloseAndOrganizeSwipeAreReachable",
+										"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testNewNoteHeaderAndBodyEnterTogether",
+									]),
 	"CODE_SIGNING_ALLOWED=NO",
 ];
 run("xcodebuild", [...xcodebuildArgs, "build-for-testing"]);
@@ -124,6 +128,17 @@ const nativeTests = run(
 	],
 	{ allowFailure: true },
 );
+if (focusedCheck === "organize-swipe") {
+	run("xcrun", [
+		"xcresulttool",
+		"export",
+		"attachments",
+		"--path",
+		resultBundle,
+		"--output-path",
+		join(output, "attachments"),
+	]);
+}
 const logPath = join(output, "simulator-motion.log");
 writeFileSync(logPath, readFileSync(metroLogPath).subarray(logStartOffset));
 const analysis = run(
@@ -138,6 +153,11 @@ const analysis = run(
 		...(focusedCheck === "launch" ? ["--launch-only"] : []),
 		...(focusedCheck === "startup" ? ["--startup-only"] : []),
 		...(focusedCheck === "startup-create" ? ["--startup-create-only"] : []),
+		...(focusedCheck === "organize-swipe" ? ["--organize-swipe-only"] : []),
+		...(focusedCheck === "organize-swipe" && nativeTests.status === 0
+			? ["--native-row-dismissal-passed"]
+			: []),
+		...(focusedCheck === "organize-swipe" ? [join(output, "attachments")] : []),
 	],
 	{ allowFailure: true, capture: true },
 );
