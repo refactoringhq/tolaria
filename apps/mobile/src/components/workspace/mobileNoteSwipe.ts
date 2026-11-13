@@ -20,3 +20,15 @@ export function fullSwipeNoteAction(
 	if (width <= 0 || distance > -width * mobileNoteSwipeThreshold) return null;
 	return primaryAction;
 }
+
+export function mobileNoteSwipeSecondaryActionWidth(
+	translation: number,
+	width: number,
+	primaryAction: MobileSwipePrimaryAction = "archive",
+	committed = false,
+) {
+	"worklet";
+	return committed || fullSwipeNoteAction(translation, width, primaryAction)
+		? 0
+		: 72;
+}
