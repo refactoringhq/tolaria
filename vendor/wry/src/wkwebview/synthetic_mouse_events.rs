@@ -6,53 +6,53 @@ use objc2_foundation::NSString;
 
 use super::WryWebView;
 
-pub(crate) fn other_mouse_down(this: &WryWebView, event: &NSEvent) {
-  unsafe {
-    if event.r#type() == NSEventType::OtherMouseDown {
-      let button_number = event.buttonNumber();
-      match button_number {
-        // back button
-        3 => {
-          let js = create_js_mouse_event(this, event, true, true);
-          this.evaluateJavaScript_completionHandler(&NSString::from_str(&js), None);
-          return;
-        }
-        // forward button
-        4 => {
-          let js = create_js_mouse_event(this, event, true, false);
-          this.evaluateJavaScript_completionHandler(&NSString::from_str(&js), None);
-          return;
-        }
-        _ => {}
+/// # Safety
+/// `event` must be the valid event delivered by AppKit to this web view callback.
+pub(crate) unsafe fn other_mouse_down(this: &WryWebView, event: &NSEvent) {
+  if event.r#type() == NSEventType::OtherMouseDown {
+    let button_number = event.buttonNumber();
+    match button_number {
+      // back button
+      3 => {
+        let js = create_js_mouse_event(this, event, true, true);
+        this.evaluateJavaScript_completionHandler(&NSString::from_str(&js), None);
+        return;
       }
+      // forward button
+      4 => {
+        let js = create_js_mouse_event(this, event, true, false);
+        this.evaluateJavaScript_completionHandler(&NSString::from_str(&js), None);
+        return;
+      }
+      _ => {}
     }
-
-    this.mouseDown(event);
   }
+
+  this.mouseDown(event);
 }
-pub(crate) fn other_mouse_up(this: &WryWebView, event: &NSEvent) {
-  unsafe {
-    if event.r#type() == NSEventType::OtherMouseUp {
-      let button_number = event.buttonNumber();
-      match button_number {
-        // back button
-        3 => {
-          let js = create_js_mouse_event(this, event, false, true);
-          this.evaluateJavaScript_completionHandler(&NSString::from_str(&js), None);
-          return;
-        }
-        // forward button
-        4 => {
-          let js = create_js_mouse_event(this, event, false, false);
-          this.evaluateJavaScript_completionHandler(&NSString::from_str(&js), None);
-          return;
-        }
-        _ => {}
+/// # Safety
+/// `event` must be the valid event delivered by AppKit to this web view callback.
+pub(crate) unsafe fn other_mouse_up(this: &WryWebView, event: &NSEvent) {
+  if event.r#type() == NSEventType::OtherMouseUp {
+    let button_number = event.buttonNumber();
+    match button_number {
+      // back button
+      3 => {
+        let js = create_js_mouse_event(this, event, false, true);
+        this.evaluateJavaScript_completionHandler(&NSString::from_str(&js), None);
+        return;
       }
+      // forward button
+      4 => {
+        let js = create_js_mouse_event(this, event, false, false);
+        this.evaluateJavaScript_completionHandler(&NSString::from_str(&js), None);
+        return;
+      }
+      _ => {}
     }
-
-    this.mouseUp(event);
   }
+
+  this.mouseUp(event);
 }
 
 unsafe fn create_js_mouse_event(
