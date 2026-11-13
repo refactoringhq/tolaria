@@ -368,7 +368,7 @@ export const workspaceScenarios: Record<
 };
 
 export function workspaceScenarioForId(id: string | null | undefined) {
-	if (!id || !(id in workspaceScenarios)) {
+	if (!id || !Object.hasOwn(workspaceScenarios, id)) {
 		return workspaceScenarios[defaultWorkspaceScenarioId];
 	}
 
