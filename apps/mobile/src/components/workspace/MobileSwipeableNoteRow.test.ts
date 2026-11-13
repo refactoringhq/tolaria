@@ -55,6 +55,7 @@ function assignSwipeableRef(value: unknown) {
 }
 
 vi.mock("react-native", () => ({
+	StyleSheet: { create: (styles: unknown) => styles },
 	Vibration: { vibrate: input.vibrate },
 	View: ({
 		children,
@@ -67,6 +68,7 @@ vi.mock("react-native", () => ({
 		return children;
 	},
 }));
+vi.mock("phosphor-react-native", () => ({ CheckCircle: () => null }));
 vi.mock("react-native-gesture-handler", () => ({
 	GestureDetector: ({ children }: { children: ReactNode }) => children,
 	Gesture: {
@@ -146,6 +148,7 @@ vi.mock("react-native-reanimated", () => ({
 		if (callback) input.timingCallbacks.push(callback);
 		return value;
 	},
+	withDelay: (_delay: number, animation: unknown) => animation,
 	runOnJS: (callback: (...args: unknown[]) => void) => callback,
 }));
 

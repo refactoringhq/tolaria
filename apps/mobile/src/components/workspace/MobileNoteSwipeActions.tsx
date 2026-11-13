@@ -1,6 +1,6 @@
 import { ArchiveIcon, CheckCircle, Star, Trash } from "phosphor-react-native";
 import type { ComponentProps } from "react";
-import { StyleSheet, Text, View, type ViewStyle } from "react-native";
+import { StyleSheet, Text, type ViewStyle } from "react-native";
 import Animated, {
 	type SharedValue,
 	useAnimatedStyle,
@@ -44,7 +44,9 @@ export function MobileNoteSwipeActions(props: ActionProps) {
 	const baseWidth = actionOrder.length * 72;
 	const { expansion, secondaryStyle } = useSwipeActionWidths(props, baseWidth);
 	return (
-		<View style={{ width: baseWidth }}>
+		<Animated.View
+			style={[props.fullSwipePreview && styles.fullSwipeReveal, expansion]}
+		>
 			<Animated.View
 				style={[styles.actions, expansion]}
 				testID={`note-swipe-actions-${props.noteId}`}
@@ -65,7 +67,7 @@ export function MobileNoteSwipeActions(props: ActionProps) {
 					fullSwipePreview={props.fullSwipePreview}
 				/>
 			</Animated.View>
-		</View>
+		</Animated.View>
 	);
 }
 
@@ -164,7 +166,11 @@ function SwipePrimaryAction({
 	return organizeIsPrimary ? (
 		<Button
 			accessibilityLabel={mobileText("command.note.markOrganized")}
-			style={[styles.action, styles.archive]}
+			style={[
+				styles.action,
+				fullSwipePreview && styles.fullSwipePrimaryAction,
+				styles.archive,
+			]}
 			testID={`note-swipe-organize-${props.noteId}`}
 			onPress={props.onOrganize}
 		>
@@ -207,10 +213,18 @@ function ArchiveButton({
 
 function createThemeStyles(mobileColors: MobileColors) {
 	const styles = StyleSheet.create({
+		fullSwipeReveal: {
+			position: "absolute",
+			left: 0,
+			top: 0,
+			bottom: 0,
+			right: 0,
+		},
 		actions: {
 			position: "absolute",
 			top: 0,
 			bottom: 0,
+			left: 0,
 			right: 0,
 			flexDirection: "row",
 		},
@@ -227,6 +241,7 @@ function createThemeStyles(mobileColors: MobileColors) {
 			fontSize: 10,
 			fontWeight: "600",
 		},
+		fullSwipePrimaryAction: { width: "100%" },
 		favorite: { backgroundColor: mobileColors.primary },
 		archive: { backgroundColor: mobileColors.green },
 		delete: { backgroundColor: mobileColors.danger },

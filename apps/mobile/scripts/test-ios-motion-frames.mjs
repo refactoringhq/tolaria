@@ -24,6 +24,8 @@ if (!process.env.EXPO_PUBLIC_TOLARIA_MOTION_BUILD_ID) {
 const output = resolve(
 	requestedOutput ?? join(tmpdir(), "tolaria-motion-frame-qa"),
 );
+const appBundleIdentifier =
+	process.env.TOLARIA_MOTION_APP_BUNDLE_ID ?? "com.tolaria.mobile.dev";
 const project = join(output, "project");
 const metroLogPath = process.env.TOLARIA_MOTION_LOG_PATH;
 if (!metroLogPath)
@@ -35,18 +37,19 @@ run("xcrun", [
 	"simctl",
 	"get_app_container",
 	device,
-	"com.tolaria.mobile.dev",
+	appBundleIdentifier,
 	"app",
-]);
-run("ruby", [
-	fileURLToPath(
-		new URL("../native-ui-tests/create-project.rb", import.meta.url),
-	),
-	project,
 ]);
 const motionSearch =
 	process.env.TOLARIA_MOTION_SEARCH ??
 	"?source=fixture&phoneState=list&editorMode=wysiwyg&layoutProbe=1&qaRun=tol339-motion";
+process.env.TOLARIA_MOTION_SEARCH = motionSearch;
+run("ruby", [
+	fileURLToPath(
+		new URL("../native-ui-tests/create_project.rb", import.meta.url),
+	),
+	project,
+]);
 const logStartOffset = statSync(metroLogPath).size;
 const focusedCheck = process.env.TOLARIA_MOTION_CHECK;
 run(
@@ -99,7 +102,7 @@ const xcodebuildArgs = [
 								]
 							: focusedCheck === "organize-swipe"
 								? [
-										"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testOrganizeFullSwipeShowsOnlyFullWidthCheckBeforeCollapse",
+										"-only-testing:TabletPanelGestureTests/MobileOrganizeRevealFrameTests/testOrganizeFullSwipeShowsOnlyFullWidthCheckBeforeCollapse",
 									]
 								: [
 										"-only-testing:TabletPanelGestureTests/MobileMotionFrameTests/testListChromeEditorReturnSidebarCloseAndOrganizeSwipeAreReachable",
@@ -108,15 +111,6 @@ const xcodebuildArgs = [
 	"CODE_SIGNING_ALLOWED=NO",
 ];
 run("xcodebuild", [...xcodebuildArgs, "build-for-testing"]);
-run("xcrun", [
-	"simctl",
-	"launch",
-	"--terminate-running-process",
-	device,
-	"com.tolaria.mobile.dev",
-	"--tolaria-mobile-search",
-	motionSearch,
-]);
 const resultBundle = join(output, `motion-${Date.now()}.xcresult`);
 const nativeTests = run(
 	"xcodebuild",
