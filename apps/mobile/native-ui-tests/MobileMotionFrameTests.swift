@@ -163,6 +163,38 @@ final class MobileMotionFrameTests: XCTestCase {
     attachFrame("organize-swipe", app)
   }
 
+  func testOrganizeSwipeDismissesOnlyAfterFullReveal() {
+    continueAfterFailure = false
+    XCUIDevice.shared.orientation = .portrait
+    let app = attachToMotionFixture()
+    let list = element(app, "phone-note-list-screen")
+    XCTAssertTrue(list.waitForExistence(timeout: 60), "Large QA vault list did not appear")
+    XCTAssertTrue(element(app, "phone-note-list-sidebar-button").isHittable)
+    XCTAssertTrue(element(app, "note-list-create-action").isHittable)
+    attachFrame("organize-swipe-before", app)
+
+    let rows = visibleNoteRows(in: app)
+    guard let row = rows.first, rows.count > 1 else {
+      XCTFail("Could not locate two visible Inbox rows for the organize swipe")
+      return
+    }
+    let rowQuery = element(app, row.identifier)
+    let followingRowIdentifier = rows[1].identifier
+    let initialFollowingY = element(app, followingRowIdentifier).frame.minY
+    recordOrganizeSwipeFrames(row, app, followingRowIdentifier)
+    XCTAssertTrue(
+      rowQuery.waitForNonExistence(timeout: 5),
+      "Organize action did not dismiss the full-swiped row"
+    )
+    let followingRowAfter = element(app, followingRowIdentifier)
+    XCTAssertLessThan(
+      followingRowAfter.frame.minY,
+      initialFollowingY - 20,
+      "The next row did not move into the organized row's space"
+    )
+    attachFrame("organize-swipe-after", app)
+  }
+
   private func attachToMotionFixture() -> XCUIApplication {
     let app = XCUIApplication(bundleIdentifier: "com.tolaria.mobile.dev")
     app.activate()
@@ -198,15 +230,64 @@ final class MobileMotionFrameTests: XCTestCase {
     ]
   }
 
-  private func attachSamples(_ samples: [[String: Any]]) {
+  private func attachSamples(_ samples: [[String: Any]], named name: String = "new-note-header-body-frame-samples") {
     do {
       let data = try JSONSerialization.data(withJSONObject: samples, options: [.sortedKeys])
       let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
-      attachment.name = "new-note-header-body-frame-samples"
+      attachment.name = name
       attachment.lifetime = .keepAlways
       add(attachment)
     } catch {
       XCTFail("Could not serialize new-note frame samples: \(error)")
     }
+  }
+}
+
+private extension MobileMotionFrameTests {
+  func visibleNoteRows(in app: XCUIApplication) -> [XCUIElement] {
+    app.descendants(matching: .any)
+      .matching(NSPredicate(format: "identifier BEGINSWITH %@", "note-row-"))
+      .allElementsBoundByIndex
+      .filter { $0.isHittable }
+      .sorted { $0.frame.minY < $1.frame.minY }
+  }
+
+  func recordOrganizeSwipeFrames(
+    _ row: XCUIElement,
+    _ app: XCUIApplication,
+    _ followingRowIdentifier: String
+  ) {
+    let rowQuery = element(app, row.identifier)
+    var rowSamples: [[String: Any]] = []
+    performFullLeftSwipe(on: row)
+    for frame in 0..<24 {
+      appendVisibleRowSamples(rowQuery, app, followingRowIdentifier, &rowSamples)
+      if frame.isMultiple(of: 2) {
+        attachFrame(String(format: "organize-swipe-frame-%02d", frame), app)
+      }
+      RunLoop.current.run(until: Date().addingTimeInterval(1.0 / 60.0))
+    }
+    attachSamples(rowSamples, named: "organize-swipe-native-row-geometry")
+  }
+
+  func performFullLeftSwipe(on row: XCUIElement) {
+    row.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).press(
+      forDuration: 0.05,
+      thenDragTo: row.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.5)),
+      withVelocity: XCUIGestureVelocity(rawValue: 300),
+      thenHoldForDuration: 0.35
+    )
+  }
+
+  func appendVisibleRowSamples(
+    _ row: XCUIElement,
+    _ app: XCUIApplication,
+    _ followingRowIdentifier: String,
+    _ samples: inout [[String: Any]]
+  ) {
+    let timestamp = ProcessInfo.processInfo.systemUptime * 1000
+    if row.exists { samples.append(frameSample("row", row, timestamp)) }
+    let following = element(app, followingRowIdentifier)
+    if following.exists { samples.append(frameSample("following", following, timestamp)) }
   }
 }

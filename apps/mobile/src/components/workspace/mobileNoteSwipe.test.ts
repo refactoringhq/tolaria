@@ -3,6 +3,7 @@ import { mobileNoteListPrimarySwipeAction } from "./mobileNoteListRows";
 import {
 	fullSwipeNoteAction,
 	mobileNoteSwipeActionOrder,
+	mobileNoteSwipeSecondaryActionWidth,
 } from "./mobileNoteSwipe";
 
 describe("note row full swipe", () => {
@@ -47,5 +48,15 @@ describe("note row full swipe", () => {
 		expect(fullSwipeNoteAction(450, 600)).toBeNull();
 		expect(fullSwipeNoteAction(-450, 600)).toBe("archive");
 		expect(fullSwipeNoteAction(450, 0)).toBeNull();
+	});
+
+	it("keeps secondary actions hidden after a full swipe settles to the shorter action tray", () => {
+		expect(mobileNoteSwipeSecondaryActionWidth(-260, 340, "organize")).toBe(0);
+		expect(
+			mobileNoteSwipeSecondaryActionWidth(-216, 340, "organize", true),
+		).toBe(0);
+		expect(
+			mobileNoteSwipeSecondaryActionWidth(-216, 340, "organize", false),
+		).toBe(72);
 	});
 });
