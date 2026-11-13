@@ -185,12 +185,6 @@ const wryApprovals = [
 		rule: "codacy.tools-configs.rust.lang.security.unsafe-usage.unsafe-usage",
 		sha256: "f7ee208069b3d4d045540c46b842c71f0fa2bba905b20463e67679471f58ad20",
 	},
-	{
-		path: "vendor/wry/src/wkwebview/synthetic_mouse_events.rs",
-		lines: [10, 34],
-		rule: "codacy.tools-configs.rust.lang.security.unsafe-usage.unsafe-usage",
-		sha256: "dfb97e2256b747a92385a2acd3421b8ec3501b6f977052dd9211007d1c67858f",
-	},
 ];
 
 const approvals = [
