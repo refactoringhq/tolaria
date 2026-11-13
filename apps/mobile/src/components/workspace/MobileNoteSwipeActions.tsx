@@ -1,18 +1,23 @@
 import { ArchiveIcon, CheckCircle, Star, Trash } from "phosphor-react-native";
-import { StyleSheet, View, type ViewStyle } from "react-native";
+import type { ComponentProps } from "react";
+import { StyleSheet, Text, View, type ViewStyle } from "react-native";
 import Animated, {
 	type SharedValue,
 	useAnimatedStyle,
+	useDerivedValue,
 } from "react-native-reanimated";
 import { mobileText } from "../../i18n/mobileText";
+import { useMobileMotionFrameProbe } from "../../qa/mobileMotionFrameProbe";
 import type { MobileColors } from "../../ui/theme/mobilePalette";
 import { useMobileStyles } from "../../ui/theme/useMobileTheme";
 
 import { Button } from "../ui/button";
 import {
-	fullSwipeNoteAction,
 	mobileNoteSwipeActionOrder,
+	mobileNoteSwipeSecondaryActionWidth,
 } from "./mobileNoteSwipe";
+
+type SwipeActionStyle = ComponentProps<typeof Animated.View>["style"];
 
 type ActionProps = {
 	archived?: boolean;
@@ -23,6 +28,7 @@ type ActionProps = {
 	onFavorite: () => void;
 	onOrganize: () => void;
 	primarySwipeAction?: "archive" | "organize";
+	fullSwipeCommitted: SharedValue<boolean>;
 	translation: SharedValue<number>;
 	width: SharedValue<number>;
 };
@@ -34,19 +40,25 @@ export function MobileNoteSwipeActions(props: ActionProps) {
 	);
 	const organizeIsPrimary = actionOrder.at(-1) === "organize";
 	const baseWidth = actionOrder.length * 72;
+	const secondaryWidth = useDerivedValue<number>(() =>
+		mobileNoteSwipeSecondaryActionWidth(
+			props.translation.get(),
+			props.width.get(),
+			props.primarySwipeAction,
+			props.fullSwipeCommitted.get(),
+		),
+	);
 	const expansion = useAnimatedStyle<ViewStyle>(() => ({
 		width: Math.max(baseWidth, Math.abs(props.translation.value)),
 	}));
 	const secondaryStyle = useAnimatedStyle<ViewStyle>(() => ({
-		width: fullSwipeNoteAction(
-			props.translation.value,
-			props.width.value,
-			props.primarySwipeAction,
-		)
-			? 0
-			: 72,
+		width: secondaryWidth.get(),
 		overflow: "hidden",
 	}));
+	useMobileMotionFrameProbe(
+		`organize-swipe.secondary-width.${props.noteId}`,
+		secondaryWidth,
+	);
 	return (
 		<View style={{ width: baseWidth }}>
 			<Animated.View style={[styles.actions, expansion]}>
@@ -76,7 +88,7 @@ function SwipeSecondaryActions({
 	props: ActionProps;
 	styles: ReturnType<typeof createThemeStyles>["styles"];
 	mobileColors: MobileColors;
-	style: ReturnType<typeof useAnimatedStyle<ViewStyle>>;
+	style: SwipeActionStyle;
 }) {
 	return (
 		<>
@@ -130,7 +142,10 @@ function SwipePrimaryAction({
 			testID={`note-swipe-organize-${props.noteId}`}
 			onPress={props.onOrganize}
 		>
-			<CheckCircle color={mobileColors.textInverse} size={24} />
+			<CheckCircle color={mobileColors.textInverse} size={18} />
+			<Text style={styles.organizeLabel}>
+				{mobileText("noteList.bulk.organize")}
+			</Text>
 		</Button>
 	) : (
 		<ArchiveButton props={props} styles={styles} mobileColors={mobileColors} />
@@ -178,6 +193,11 @@ function createThemeStyles(mobileColors: MobileColors) {
 			padding: 0,
 			alignItems: "center",
 			justifyContent: "center",
+		},
+		organizeLabel: {
+			color: mobileColors.textInverse,
+			fontSize: 10,
+			fontWeight: "600",
 		},
 		favorite: { backgroundColor: mobileColors.primary },
 		archive: { backgroundColor: mobileColors.green },
