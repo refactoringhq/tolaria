@@ -1,9 +1,14 @@
-import { act, fireEvent, render as rtlRender, screen } from '@testing-library/react'
+import {
+  act,
+  fireEvent,
+  render as rtlRender,
+  screen,
+} from '@testing-library/react'
 import type { ComponentProps, ReactElement } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { AiAgentsBadge } from './AiAgentsBadge'
 import type { AiModelProvider } from '../../lib/aiTargets'
+import { AiAgentsBadge } from './AiAgentsBadge'
 
 vi.mock('../../utils/url', async () => {
   const actual = await vi.importActual('../../utils/url')
@@ -29,19 +34,21 @@ const openAiProvider: AiModelProvider = {
   api_key_storage: 'local_file',
   api_key_env_var: 'OPENAI_API_KEY',
   headers: null,
-  models: [{
-    id: 'gpt-5.5',
-    display_name: null,
-    context_window: null,
-    max_output_tokens: null,
-    capabilities: {
-      streaming: true,
-      tools: false,
-      vision: true,
-      json_mode: true,
-      reasoning: true,
+  models: [
+    {
+      id: 'gpt-5.5',
+      display_name: null,
+      context_window: null,
+      max_output_tokens: null,
+      capabilities: {
+        streaming: true,
+        tools: false,
+        vision: true,
+        json_mode: true,
+        reasoning: true,
+      },
     },
-  }],
+  ],
 }
 
 function render(ui: ReactElement) {
@@ -102,7 +109,9 @@ describe('AiAgentsBadge', () => {
     fireEvent.click(screen.getByTestId('status-ai-agents'))
 
     expect(onOpenWorkspace).toHaveBeenCalledOnce()
-    expect(screen.queryByTestId('status-ai-agents-menu')).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('status-ai-agents-menu'),
+    ).not.toBeInTheDocument()
   })
 
   it('selects only the active model target when an API model is the default target', () => {
@@ -113,9 +122,15 @@ describe('AiAgentsBadge', () => {
     })
     openAiAgentsMenu()
 
-    expect(screen.getByText(/Default AI target: OpenAI.*gpt-5\.5/)).toBeInTheDocument()
-    expect(screen.getByRole('menuitemradio', { name: /Claude Code/ })).toHaveAttribute('aria-checked', 'false')
-    expect(screen.getByRole('menuitemradio', { name: /OpenAI.*gpt-5\.5/ })).toHaveAttribute('aria-checked', 'true')
+    expect(
+      screen.getByText(/Default AI target: OpenAI.*gpt-5\.5/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('menuitemradio', { name: /Claude Code/ }),
+    ).toHaveAttribute('aria-checked', 'false')
+    expect(
+      screen.getByRole('menuitemradio', { name: /OpenAI.*gpt-5\.5/ }),
+    ).toHaveAttribute('aria-checked', 'true')
   })
 
   it('does not show install actions for missing local agents', () => {
@@ -137,7 +152,9 @@ describe('AiAgentsBadge', () => {
     expect(screen.queryByText('Install Codex')).not.toBeInTheDocument()
     expect(screen.queryByText('Install OpenCode')).not.toBeInTheDocument()
     expect(screen.queryByText('Install Pi')).not.toBeInTheDocument()
-    expect(screen.queryByText('Install Antigravity CLI')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Install Antigravity CLI'),
+    ).not.toBeInTheDocument()
     expect(screen.queryByText('Install Kiro')).not.toBeInTheDocument()
     expect(screen.queryByText('Install Hermes Agent')).not.toBeInTheDocument()
   })
@@ -156,7 +173,9 @@ describe('AiAgentsBadge', () => {
     })
     openAiAgentsMenu()
 
-    expect(screen.getByTestId('status-ai-guidance-summary')).toHaveTextContent('Tolaria guidance missing or broken')
+    expect(screen.getByTestId('status-ai-guidance-summary')).toHaveTextContent(
+      'Tolaria guidance missing or broken',
+    )
     act(() => {
       fireEvent.click(screen.getByTestId('status-ai-guidance-restore'))
     })
@@ -168,8 +187,8 @@ describe('AiAgentsBadge', () => {
 
     renderBadge({
       guidanceStatus: {
-        agentsState: 'managed',
-        claudeState: 'broken',
+        agentsState: 'broken',
+        claudeState: 'missing',
         geminiState: 'managed',
         canRestore: true,
       },
