@@ -16,12 +16,31 @@ test("organize swipe requires full reveal, stable motion, held action, and dismi
 	writeGeometry(fixture.attachments, [96, 72, 36, 0], [140, 116, 80, 44]);
 	assert.equal(run(fixture.log, fixture.attachments, false).status, 1);
 	const result = run(fixture.log, fixture.attachments, true);
-	assert.equal(result.status, 0, result.stderr);
+	assert.equal(result.status, 0, result.stderr + result.stdout);
 	const report = JSON.parse(result.stdout).organizeSwipe;
 	assert.equal(report.crossedFullThreshold, true);
 	assert.equal(report.positionMotion.maxReverseDelta, 0);
 	assert.equal(report.secondaryActionHeldHidden, true);
+	assert.equal(report.fullWidthCheckReveal, true);
+	assert.ok(report.actionWidthSamples > 0);
 	assert.equal(report.rowDismissalVerifiedByXCUITest, true);
+});
+
+test("organize swipe fails closed without a full-width check-only reveal", (t) => {
+	const fixture = createFixture(t);
+	writeFileSync(
+		fixture.log,
+		acceptedSwipeLog().replace(
+			"organize-swipe-full-reveal",
+			"organize-swipe-partial-reveal",
+		),
+	);
+	writeGeometry(fixture.attachments, [96, 72, 36, 0], [140, 116, 80, 44]);
+	const report = JSON.parse(
+		run(fixture.log, fixture.attachments, true).stdout,
+	).organizeSwipe;
+	assert.equal(report.fullWidthCheckReveal, false);
+	assert.equal(report.passed, false);
 });
 
 test("current-main style traces fail on measured rebound without a swipe-open event", (t) => {
@@ -127,6 +146,15 @@ function acceptedSwipeLog() {
 				value,
 			),
 		),
+		frame("organize-swipe.action-width.note-1.md", 245, 400),
+		event("organize-swipe-full-reveal", 246, {
+			action: "organize",
+			actionWidth: 400,
+			checkOnly: true,
+			noteId: "note-1.md",
+			rowWidth: 400,
+			secondaryActionsVisible: false,
+		}),
 		event("swipe-action-commit", 250, {
 			action: "organize",
 			noteId: "note-1.md",

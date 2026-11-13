@@ -17,12 +17,24 @@ export function analyzeOrganizeSwipe(
 	const secondaryActionHeldHidden = staysHiddenAfterReveal(
 		measurements.secondary,
 	);
+	const fullReveal = events.find(
+		(event) =>
+			event.event === "organize-swipe-full-reveal" && event.noteId === id,
+	);
+	const actionWidth = frames.get(`organize-swipe.action-width.${id}`) ?? [];
+	const fullWidthCheckReveal = hasFullWidthCheckReveal(
+		fullReveal,
+		actionWidth,
+		rowWidth(opened, events),
+	);
 	return createOrganizeReport({
 		opened,
 		measurements,
 		motion,
 		rowMotion,
 		secondaryActionHeldHidden,
+		fullWidthCheckReveal,
+		actionWidthSamples: actionWidth.length,
 		nativeRowDismissalPassed,
 	});
 }
@@ -60,6 +72,8 @@ function createOrganizeReport({
 	motion,
 	rowMotion,
 	secondaryActionHeldHidden,
+	fullWidthCheckReveal,
+	actionWidthSamples,
 	nativeRowDismissalPassed,
 }) {
 	const { position, gesture, secondary, crossedFullThreshold } = measurements;
@@ -72,6 +86,8 @@ function createOrganizeReport({
 		position,
 		positionMotion: motion,
 		secondaryActionHeldHidden,
+		fullWidthCheckReveal,
+		actionWidthSamples,
 		secondaryWidthSamples: secondary.length,
 		rowDismissalVerifiedByXCUITest: nativeRowDismissalPassed,
 		intermediateRowCollapseMeasured:
@@ -83,34 +99,41 @@ function createOrganizeReport({
 			motion,
 			rowMotion,
 			secondaryActionHeldHidden,
+			fullWidthCheckReveal,
+			actionWidthSamples,
 			nativeRowDismissalPassed,
 		}),
 		gestureSamples: gesture.length,
 	};
 }
 
-function allChecksPassed({
-	opened,
-	position,
-	crossedFullThreshold,
-	motion,
-	rowMotion,
-	secondaryActionHeldHidden,
-	nativeRowDismissalPassed,
-}) {
+function allChecksPassed(checks) {
 	return [
-		Boolean(opened),
-		crossedFullThreshold,
-		position.length > 1,
-		motion.monotonic,
-		rowMotion.heightCollapsed,
-		rowMotion.heightMonotonic,
-		rowMotion.gapClosed,
-		rowMotion.gapMotionMonotonic,
-		rowMotion.visualPositionMonotonic,
-		secondaryActionHeldHidden,
-		nativeRowDismissalPassed,
+		Boolean(checks.opened),
+		checks.crossedFullThreshold,
+		checks.position.length > 1,
+		checks.motion.monotonic,
+		checks.rowMotion.heightCollapsed,
+		checks.rowMotion.heightMonotonic,
+		checks.rowMotion.gapClosed,
+		checks.rowMotion.gapMotionMonotonic,
+		checks.rowMotion.visualPositionMonotonic,
+		checks.secondaryActionHeldHidden,
+		checks.fullWidthCheckReveal,
+		checks.actionWidthSamples > 0,
+		checks.nativeRowDismissalPassed,
 	].every(Boolean);
+}
+
+function hasFullWidthCheckReveal(event, samples, expectedWidth) {
+	return Boolean(
+		event?.action === "organize" &&
+			event.checkOnly === true &&
+			event.secondaryActionsVisible === false &&
+			expectedWidth > 0 &&
+			Math.abs(event.actionWidth - expectedWidth) <= 1 &&
+			samples.some((sample) => sample.value >= expectedWidth - 1),
+	);
 }
 
 function readGeometryAttachments(directory) {
