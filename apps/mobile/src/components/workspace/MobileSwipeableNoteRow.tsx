@@ -1,3 +1,4 @@
+import { CheckCircle } from "phosphor-react-native";
 import {
 	type ComponentProps,
 	type ReactNode,
@@ -7,7 +8,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { Vibration, View } from "react-native";
+import { StyleSheet, Vibration, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Swipeable, {
 	type SwipeableMethods,
@@ -19,6 +20,7 @@ import Animated, {
 	useAnimatedStyle,
 	useDerivedValue,
 	useSharedValue,
+	withDelay,
 	withTiming,
 } from "react-native-reanimated";
 import { useMobileAnalytics } from "../../analytics/useMobileAnalytics";
@@ -38,6 +40,14 @@ import {
 } from "./mobileNoteSwipe";
 
 export { MobileListMotion } from "./MobileListMotion.internal";
+
+const revealHoldMs =
+	process.env.NODE_ENV === "development"
+		? Math.max(
+				0,
+				Number(process.env.EXPO_PUBLIC_TOLARIA_MOTION_REVEAL_HOLD_MS ?? 0),
+			)
+		: 0;
 
 export type MobileNoteRowActions = {
 	onArchive: (noteIds: string[], archived: boolean) => void;
@@ -228,6 +238,8 @@ function SwipeableNoteRow({
 			fullSwipe={fullSwipe}
 			gestureTranslation={gestureTranslation}
 			mobileCardColor={mobileColors.card}
+			fullSwipeColor={mobileColors.green}
+			fullSwipePreview={fullSwipePreview}
 			noteId={note.id}
 			swipeable={swipeable}
 			swipeTranslation={swipeTranslation}
@@ -241,6 +253,8 @@ function SwipeableRowSurface({
 	actionProps,
 	childOffsetStyle,
 	children,
+	fullSwipeColor,
+	fullSwipePreview,
 	fullSwipe,
 	gestureTranslation,
 	mobileCardColor,
@@ -253,6 +267,8 @@ function SwipeableRowSurface({
 	actionProps: Omit<SwipeActionProps, "translation">;
 	childOffsetStyle: ComponentProps<typeof Animated.View>["style"];
 	children: ReactNode;
+	fullSwipeColor: string;
+	fullSwipePreview: boolean;
 	fullSwipe: ReturnType<typeof useFullSwipeCommitGesture>;
 	gestureTranslation: SharedValue<number>;
 	mobileCardColor: string;
@@ -288,10 +304,36 @@ function SwipeableRowSurface({
 				>
 					<Animated.View style={childOffsetStyle}>{children}</Animated.View>
 				</Swipeable>
+				{fullSwipePreview && (
+					<View
+						accessibilityElementsHidden
+						importantForAccessibility="no-hide-descendants"
+						pointerEvents="none"
+						style={[
+							styles.fullSwipeReveal,
+							{ backgroundColor: fullSwipeColor },
+						]}
+					>
+						<CheckCircle color="#FFFFFF" size={24} weight="regular" />
+					</View>
+				)}
 			</View>
 		</GestureDetector>
 	);
 }
+
+const styles = StyleSheet.create({
+	fullSwipeReveal: {
+		alignItems: "center",
+		bottom: 0,
+		justifyContent: "center",
+		left: 0,
+		position: "absolute",
+		right: 0,
+		top: 0,
+		zIndex: 2,
+	},
+});
 
 function SwipeableRowActions({
 	actionProps,
@@ -430,23 +472,21 @@ function useFullSwipeCommitGesture(config: FullSwipeGestureConfig) {
 					const currentOffset = swipeTranslation.get();
 					heldFullSwipeOffset.set(currentOffset);
 					holdingFullSwipeOffset.set(true);
-					fullSwipeExitOffset.set(
-						withTiming(
-							event.translationX - currentOffset,
-							{ duration: 120 },
-							(exited) => {
-								if (!exited) return;
-								exitProgress.set(
-									withTiming(1, { duration: 180 }, (collapsed) => {
-										if (collapsed) {
-											runOnJS(stopMobileMotionGeometryCapture)();
-											runOnJS(commitSwipeAction)(action);
-										}
-									}),
-								);
-							},
-						),
+					const exitAnimation = withTiming(
+						-width.get() - currentOffset,
+						{ duration: 120 },
+						(exited) => {
+							if (!exited) return;
+							const collapse = withTiming(1, { duration: 180 }, (collapsed) => {
+								if (collapsed) {
+									runOnJS(stopMobileMotionGeometryCapture)();
+									runOnJS(commitSwipeAction)(action);
+								}
+							});
+							exitProgress.set(withDelay(revealHoldMs, collapse));
+						},
 					);
+					fullSwipeExitOffset.set(exitAnimation);
 					committed.set(true);
 				})
 				.onFinalize(() => {
