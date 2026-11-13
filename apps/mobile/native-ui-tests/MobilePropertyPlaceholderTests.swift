@@ -47,6 +47,56 @@ final class MobilePropertyPlaceholderTests: XCTestCase {
     }
   }
 
+  func testSearchAndRelationshipChipsKeepTheirIntendedLayout() {
+    let app = launchSearchFixture(phoneState: "list&commandPalette=1")
+    let command = element(app, "mobile-command-palette-command-file-quick-open")
+    XCTAssertTrue(command.waitForExistence(timeout: 10))
+    command.tap()
+    let input = element(app, "workspace-search-input")
+    XCTAssertTrue(input.waitForExistence(timeout: 5))
+    input.tap()
+    input.typeText("luca")
+    let result = element(app, "workspace-search-result-newsletter-calendar-view-proposal.md")
+    XCTAssertTrue(result.waitForExistence(timeout: 10))
+    capture("tol350-search-results")
+    let rowId = "newsletter-calendar-view-proposal.md"
+    let title = element(app, "workspace-search-result-title-\(rowId)")
+    let snippet = element(app, "workspace-search-result-snippet-\(rowId)")
+    let icon = element(app, "workspace-search-result-icon-\(rowId)")
+    XCTAssertTrue(title.exists)
+    XCTAssertTrue(snippet.exists)
+    XCTAssertTrue(icon.exists)
+    XCTAssertEqual(icon.frame.midY, title.frame.midY, accuracy: 3)
+    XCTAssertGreaterThan(title.frame.minX, result.frame.minX + 16)
+    XCTAssertEqual(title.frame.minX, snippet.frame.minX, accuracy: 2)
+
+    let properties = launchSearchFixture(phoneState: "properties")
+    let panel = element(properties, "properties-panel")
+    XCTAssertTrue(panel.waitForExistence(timeout: 15))
+    capture("tol350-properties-related-chips")
+    XCTAssertFalse(element(properties, "relationship-placeholder-suggested-related-to").exists,
+      "A spaced existing relationship must not produce a duplicate canonical suggestion")
+    let weekly = element(properties, "relationship-row-refactoring-weekly-sponsorships")
+    let calendar = element(properties, "relationship-row-sponsorships-calendar")
+    XCTAssertTrue(weekly.waitForExistence(timeout: 5))
+    XCTAssertTrue(calendar.waitForExistence(timeout: 5))
+    XCTAssertLessThan(weekly.frame.width, panel.frame.width * 0.85)
+    XCTAssertLessThan(calendar.frame.width, panel.frame.width * 0.85)
+    let weeklyRemove = element(properties, "relationship-row-refactoring-weekly-sponsorships-remove")
+    XCTAssertEqual(weekly.frame.midY, weeklyRemove.frame.midY, accuracy: 2)
+  }
+
+  private func launchSearchFixture(phoneState: String) -> XCUIApplication {
+    continueAfterFailure = false
+    let app = XCUIApplication(bundleIdentifier: "com.tolaria.mobile.dev")
+    app.terminate()
+    let search = "?source=fixture&scenario=search-and-properties&phoneState=\(phoneState)&qaRun=tol350-styling"
+    app.launchArguments = ["--tolaria-mobile-search", search]
+    app.launchEnvironment["TOLARIA_MOBILE_SEARCH"] = search
+    app.launch()
+    return app
+  }
+
   private func launchProperties() -> XCUIApplication {
     continueAfterFailure = false
     let app = XCUIApplication(bundleIdentifier: "com.tolaria.mobile.dev")
@@ -71,5 +121,12 @@ final class MobilePropertyPlaceholderTests: XCTestCase {
 
   private func element(_ app: XCUIApplication, _ identifier: String) -> XCUIElement {
     app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+  }
+
+  private func capture(_ name: String) {
+    let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+    screenshot.name = name
+    screenshot.lifetime = .keepAlways
+    add(screenshot)
   }
 }
