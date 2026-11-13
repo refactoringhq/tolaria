@@ -53,3 +53,6 @@ objc2-foundation = "0.3.2"
 png = "0.17.16"
 
 [dev-dependencies]
+
+[patch.crates-io]
+wry = { path = "../vendor/wry" }
