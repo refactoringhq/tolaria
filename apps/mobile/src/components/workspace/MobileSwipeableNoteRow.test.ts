@@ -19,6 +19,7 @@ const input = vi.hoisted(() => ({
 		| ((event: { translationX: number }) => void)
 		| undefined,
 	onStart: undefined as (() => void) | undefined,
+	onFinalize: undefined as (() => void) | undefined,
 	onLayout: undefined as
 		| ((event: {
 				nativeEvent: {
@@ -80,6 +81,10 @@ vi.mock("react-native-gesture-handler", () => ({
 				failOffsetY: () => pan,
 				onEnd: (handler: typeof input.onEnd) => {
 					input.onEnd = handler;
+					return pan;
+				},
+				onFinalize: (handler: typeof input.onFinalize) => {
+					input.onFinalize = handler;
 					return pan;
 				},
 				onUpdate: (handler: typeof input.onUpdate) => {
@@ -176,6 +181,7 @@ afterEach(() => {
 	input.animatedProps = undefined;
 	input.reduceMotion = false;
 	input.onStart = undefined;
+	input.onFinalize = undefined;
 	input.onUpdate = undefined;
 	input.onEnd = undefined;
 });

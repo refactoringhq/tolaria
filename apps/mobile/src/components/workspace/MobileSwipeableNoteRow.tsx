@@ -2,8 +2,10 @@ import {
 	type ComponentProps,
 	type ReactNode,
 	useCallback,
+	useEffect,
 	useMemo,
 	useRef,
+	useState,
 } from "react";
 import { Vibration, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -142,9 +144,23 @@ function SwipeableNoteRow({
 }) {
 	const mobileColors = useMobileColors();
 	const { perform, swipeable } = useSwipeableNoteActions(actions, note);
+	const [fullSwipePreview, setFullSwipePreview] = useState(false);
 	const width = useSharedValue(0);
+	useEffect(() => {
+		if (!fullSwipePreview || actions.primarySwipeAction !== "organize") return;
+		const rowWidth = width.get();
+		logMobileMotionEvent("organize-swipe-full-reveal", {
+			action: "organize",
+			actionWidth: rowWidth,
+			checkOnly: true,
+			noteId: note.id,
+			rowWidth,
+			secondaryActionsVisible: false,
+		});
+	}, [actions.primarySwipeAction, fullSwipePreview, note.id, width]);
 	const gestureTranslation = useSharedValue(0);
 	const swipeTranslation = useSharedValue(0);
+	const fullSwipeRevealed = useSharedValue(false);
 	const heldFullSwipeOffset = useSharedValue(0);
 	const holdingFullSwipeOffset = useSharedValue(false);
 	const fullSwipeExitOffset = useSharedValue(0);
@@ -168,10 +184,12 @@ function SwipeableNoteRow({
 		exitProgress,
 		geometryCapture: mobileMotionGeometryCaptureActive,
 		gestureTranslation,
+		fullSwipeRevealed,
 		hapticPlayed,
 		heldFullSwipeOffset,
 		holdingFullSwipeOffset,
 		primarySwipeAction: actions.primarySwipeAction,
+		setFullSwipePreview,
 		commitSwipeAction,
 		swipeTranslation,
 		width,
@@ -192,6 +210,8 @@ function SwipeableNoteRow({
 		archived: note.archived,
 		favorite: note.favorite,
 		fullSwipeCommitted: committed,
+		fullSwipePreview,
+		fullSwipeRevealed,
 		noteId: note.id,
 		onArchive: () => perform("archive"),
 		onDelete: () => perform("delete"),
@@ -334,10 +354,12 @@ type FullSwipeGestureConfig = {
 	exitProgress: SharedValue<number>;
 	geometryCapture: SharedValue<boolean>;
 	gestureTranslation: SharedValue<number>;
+	fullSwipeRevealed: SharedValue<boolean>;
 	hapticPlayed: SharedValue<boolean>;
 	heldFullSwipeOffset: SharedValue<number>;
 	holdingFullSwipeOffset: SharedValue<boolean>;
 	primarySwipeAction?: "archive" | "organize";
+	setFullSwipePreview: (revealed: boolean) => void;
 	commitSwipeAction: (action: MobileNoteSwipeAction) => void;
 	swipeTranslation: SharedValue<number>;
 	width: SharedValue<number>;
@@ -350,10 +372,12 @@ function useFullSwipeCommitGesture(config: FullSwipeGestureConfig) {
 		exitProgress,
 		geometryCapture,
 		gestureTranslation,
+		fullSwipeRevealed,
 		hapticPlayed,
 		heldFullSwipeOffset,
 		holdingFullSwipeOffset,
 		primarySwipeAction,
+		setFullSwipePreview,
 		commitSwipeAction,
 		swipeTranslation,
 		width,
@@ -366,6 +390,8 @@ function useFullSwipeCommitGesture(config: FullSwipeGestureConfig) {
 				.failOffsetY([-12, 12])
 				.onStart(() => {
 					gestureTranslation.set(0);
+					fullSwipeRevealed.set(false);
+					runOnJS(setFullSwipePreview)(false);
 					holdingFullSwipeOffset.set(false);
 					fullSwipeExitOffset.set(0);
 					exitProgress.set(0);
@@ -380,6 +406,11 @@ function useFullSwipeCommitGesture(config: FullSwipeGestureConfig) {
 						width.get(),
 						primarySwipeAction,
 					);
+					const revealed = Boolean(action);
+					if (revealed !== fullSwipeRevealed.get()) {
+						fullSwipeRevealed.set(revealed);
+						runOnJS(setFullSwipePreview)(revealed);
+					}
 					if (action && !hapticPlayed.get()) {
 						hapticPlayed.set(true);
 						runOnJS(emitSwipeHaptic)();
@@ -393,6 +424,8 @@ function useFullSwipeCommitGesture(config: FullSwipeGestureConfig) {
 						primarySwipeAction,
 					);
 					if (!action || committed.get()) return;
+					fullSwipeRevealed.set(true);
+					runOnJS(setFullSwipePreview)(true);
 					geometryCapture.set(true);
 					const currentOffset = swipeTranslation.get();
 					heldFullSwipeOffset.set(currentOffset);
@@ -415,6 +448,11 @@ function useFullSwipeCommitGesture(config: FullSwipeGestureConfig) {
 						),
 					);
 					committed.set(true);
+				})
+				.onFinalize(() => {
+					if (committed.get()) return;
+					fullSwipeRevealed.set(false);
+					runOnJS(setFullSwipePreview)(false);
 				}),
 		[
 			committed,
@@ -423,10 +461,12 @@ function useFullSwipeCommitGesture(config: FullSwipeGestureConfig) {
 			exitProgress,
 			geometryCapture,
 			gestureTranslation,
+			fullSwipeRevealed,
 			hapticPlayed,
 			heldFullSwipeOffset,
 			holdingFullSwipeOffset,
 			primarySwipeAction,
+			setFullSwipePreview,
 			swipeTranslation,
 			width,
 		],
