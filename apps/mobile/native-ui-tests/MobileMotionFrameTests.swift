@@ -195,38 +195,12 @@ final class MobileMotionFrameTests: XCTestCase {
     attachFrame("organize-swipe-after", app)
   }
 
-  func testOrganizeFullSwipeShowsOnlyFullWidthCheckBeforeCollapse() {
-    continueAfterFailure = false
-    XCUIDevice.shared.orientation = .portrait
-    let app = attachToMotionFixture()
-    XCTAssertTrue(element(app, "phone-note-list-screen").waitForExistence(timeout: 60))
-    let rows = visibleNoteRows(in: app)
-    guard rows.count > 1 else {
-      XCTFail("Could not locate an Inbox row for the full-reveal assertion")
-      return
-    }
-    let row = rows[0]
-    let rowQuery = element(app, row.identifier)
-    let following = element(app, rows[1].identifier)
-    let initialFollowingY = following.frame.minY
-    performFullLeftSwipe(on: row, hold: 0.35)
-
-    XCTAssertTrue(
-      rowQuery.waitForNonExistence(timeout: 5),
-      "The full-swiped row did not collapse after the check-only reveal"
-    )
-    XCTAssertLessThan(
-      following.frame.minY,
-      initialFollowingY - 20,
-      "The following row did not close the gap after Organize"
-    )
-    attachFrame("organize-swipe-full-green-then-collapse", app)
-  }
-
   private func attachToMotionFixture() -> XCUIApplication {
-    let app = XCUIApplication(bundleIdentifier: "com.tolaria.mobile.dev")
-    app.activate()
-    XCTAssertTrue(app.state == .runningForeground, "The scripted motion fixture is not foregrounded")
+    let app = XCUIApplication(bundleIdentifier: MotionHarnessConfiguration.appBundleIdentifier)
+    app.launchArguments = ["--tolaria-mobile-search", MotionHarnessConfiguration.launchSearch]
+    app.launchEnvironment["TOLARIA_MOBILE_SEARCH"] = MotionHarnessConfiguration.launchSearch
+    app.launch()
+    XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10), "The scripted motion fixture did not launch")
     return app
   }
 
@@ -268,6 +242,92 @@ final class MobileMotionFrameTests: XCTestCase {
     } catch {
       XCTFail("Could not serialize new-note frame samples: \(error)")
     }
+  }
+}
+
+final class MobileOrganizeRevealFrameTests: XCTestCase {
+  func testOrganizeFullSwipeShowsOnlyFullWidthCheckBeforeCollapse() {
+    continueAfterFailure = false
+    XCUIDevice.shared.orientation = .portrait
+    let app = XCUIApplication(bundleIdentifier: MotionHarnessConfiguration.appBundleIdentifier)
+    app.launchArguments = ["--tolaria-mobile-search", MotionHarnessConfiguration.launchSearch]
+    app.launchEnvironment["TOLARIA_MOBILE_SEARCH"] = MotionHarnessConfiguration.launchSearch
+    app.launch()
+    XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+    let list = element(app, "phone-note-list-screen")
+    XCTAssertTrue(list.waitForExistence(timeout: 60), "The note list did not load")
+    let rows = visibleNoteRows(in: app)
+    guard rows.count > 1 else {
+      XCTFail("Could not locate two visible Inbox rows for the full-reveal assertion")
+      return
+    }
+    let row = rows[0]
+    let initialRowFrame = row.frame
+    let following = element(app, rows[1].identifier)
+    let initialFollowingY = following.frame.minY
+    let noteId = row.identifier.replacingOccurrences(of: "note-row-", with: "")
+    performFullLeftSwipe(on: row)
+    assertFullSwipeReveal(app, initialRowFrame: initialRowFrame, noteId: noteId)
+    XCTAssertTrue(element(app, row.identifier).waitForNonExistence(timeout: 5))
+    XCTAssertLessThan(following.frame.minY, initialFollowingY - 20)
+    attachFrame("organize-swipe-collapse", app)
+  }
+
+  private func assertFullSwipeReveal(
+    _ app: XCUIApplication,
+    initialRowFrame: CGRect,
+    noteId: String
+  ) {
+    RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+    let screenshot = XCUIScreen.main.screenshot()
+    let attachment = XCTAttachment(screenshot: screenshot)
+    attachment.name = "organize-swipe-100-full-row"
+    attachment.lifetime = .keepAlways
+    add(attachment)
+    let frameReport = "row=\(initialRowFrame)"
+    let frameAttachment = XCTAttachment(string: frameReport)
+    frameAttachment.name = "organize-swipe-frame-coordinates"
+    frameAttachment.lifetime = .keepAlways
+    add(frameAttachment)
+    let pixels = MotionScreenshotPixels.measureGreenRow(screenshot.image, rowFrame: initialRowFrame)
+    XCTAssertGreaterThanOrEqual(
+      pixels.greenCoverage,
+      0.99,
+      "Green pixel coverage was \(pixels.greenCoverage) for \(frameReport)"
+    )
+    XCTAssertGreaterThan(pixels.checkPixels, 5, "Centered check icon was absent or clipped")
+    XCTAssertFalse(element(app, "note-swipe-favorite-\(noteId)").exists)
+    XCTAssertFalse(element(app, "note-swipe-delete-\(noteId)").exists)
+    XCTAssertFalse(app.staticTexts["Organize selected notes"].exists)
+  }
+
+  private func element(_ app: XCUIApplication, _ identifier: String) -> XCUIElement {
+    app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+  }
+
+  private func visibleNoteRows(in app: XCUIApplication) -> [XCUIElement] {
+    app.descendants(matching: .any)
+      .matching(NSPredicate(format: "identifier BEGINSWITH %@", "note-row-"))
+      .allElementsBoundByIndex
+      .filter { $0.isHittable }
+      .sorted { $0.frame.minY < $1.frame.minY }
+  }
+
+  private func performFullLeftSwipe(on row: XCUIElement) {
+    row.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).press(
+      forDuration: 0.05,
+      thenDragTo: row.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.5)),
+      withVelocity: XCUIGestureVelocity(rawValue: 300),
+      thenHoldForDuration: 0.05
+    )
+  }
+
+  private func attachFrame(_ name: String, _ app: XCUIApplication) {
+    let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+    attachment.name = name
+    attachment.lifetime = .keepAlways
+    add(attachment)
+    XCTAssertEqual(app.state, .runningForeground)
   }
 }
 
