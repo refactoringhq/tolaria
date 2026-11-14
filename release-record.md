@@ -166,13 +166,13 @@ The existing iPhone 16 Pro simulator is booted with Device Hub open, and Metro s
 
 # TOL-359 Release Record
 
-## Change
+## TOL-359 Change
 
 - Defer a Settings dismissal requested while a vault operation is busy; once it becomes idle, close both the vault manager and preferences so the modal does not remain presented after resolving a conflict.
 - Present conflict review directly in the modal surface instead of nesting it in the Settings scroll view. Use an iOS page sheet with native swipe dismissal while retaining the Android modal fallback.
 - Added XCUITest coverage for Keep mine, Keep theirs, Keep both followed by Close, Keep both followed by swipe-down, and Cancel followed by swipe-down. Dismissal assertions wait three seconds, verify Settings stays absent, and require the sidebar Settings control to remain hittable.
 
-## Validation
+## TOL-359 Validation
 
 - Focused release-build iPhone simulator tests passed on the existing Tolaria QA simulator: all three resolution choices closed Settings; Keep both swipe-down and Cancel swipe-down closed Settings; the app/list remained foregrounded and interactive after the settle period. The disposable sync-conflict fixture was restored; the original vault had zero files and configuration hashes changed.
 - Root gates passed before the final native assertion refinement: `lint`, `tsc --noEmit`, `test` (6,397 passed, 1 skipped), `test:coverage` (89.72% lines), `cargo test`, and Rust coverage (85.70%). Mobile gates passed: lint, typecheck, and 2,798 tests across 465 files. The normal pre-push hook will rerun the complete suite for the final commit.
@@ -180,7 +180,7 @@ The existing iPhone 16 Pro simulator is booted with Device Hub open, and Metro s
 - Localization: no UI copy changes. PostHog: no event needed; this fixes dismissal behavior in an existing settings flow. Refactoring: extracted modal, content, and dismissal hook. ADRs/docs: none. Demo-vault dirt: none.
 - Pending at commit: final pre-push gates, CircleCI on the pushed SHA, exact-SHA Codacy dashboard analysis, and post-push CodeScene project scores.
 
-## Not Tested
+## Not Tested — TOL-359
 
 - A clean, continuous user-flow screen recording with reviewed keyframes could not be captured: the simulator host reported an existing recording session. XCUITest result screenshots and assertions verify the settled states, but they do not replace the requested continuous recording evidence.
 - iPad and Android behavior, plus physical-device behavior, were not tested.

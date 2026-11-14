@@ -85,35 +85,63 @@ function MobileSettingsModal({
 				"landscape-right",
 			]}
 		>
-			<KeyboardAvoidingView
-				behavior={Platform.OS === "ios" ? "padding" : undefined}
-				style={Platform.OS === "ios" ? styles.sheetBackdrop : styles.backdrop}
-			>
-				<MobilePanel
-					style={Platform.OS === "ios" ? styles.sheetPanel : styles.panel}
-					accessibilityViewIsModal
-					testID="mobile-settings"
-				>
-					<MobileToolbar>
-						<MobileToolbarTitle title={mobileText("settings.title")} />
-						<MobileToolbarSpacer />
-						<MobileIconButton
-							accessibilityLabel={mobileText("settings.close")}
-							testID="mobile-settings-close"
-							onPress={close}
-						>
-							<X size={18} color={mobileColors.textMuted} />
-						</MobileIconButton>
-					</MobileToolbar>
-					<MobileSettingsContent
-						manager={manager}
-						preferences={preferences}
-						updates={updates}
-						styles={styles}
-					/>
-				</MobilePanel>
-			</KeyboardAvoidingView>
+			<MobileSettingsPanel
+				manager={manager}
+				preferences={preferences}
+				updates={updates}
+				close={close}
+				styles={styles}
+				mobileColors={mobileColors}
+			/>
 		</Modal>
+	);
+}
+
+function MobileSettingsPanel({
+	manager,
+	preferences,
+	updates,
+	close,
+	styles,
+	mobileColors,
+}: {
+	manager: ReturnType<typeof useMobileVaults>;
+	preferences: ReturnType<typeof useMobileSettings>;
+	updates: ReturnType<typeof useMobileUpdateChannel>;
+	close: () => void;
+	styles: ReturnType<typeof createThemeStyles>["styles"];
+	mobileColors: MobileColors;
+}) {
+	const isIOS = Platform.OS === "ios";
+	return (
+		<KeyboardAvoidingView
+			behavior={isIOS ? "padding" : undefined}
+			style={isIOS ? styles.sheetBackdrop : styles.backdrop}
+		>
+			<MobilePanel
+				style={isIOS ? styles.sheetPanel : styles.panel}
+				accessibilityViewIsModal
+				testID="mobile-settings"
+			>
+				<MobileToolbar>
+					<MobileToolbarTitle title={mobileText("settings.title")} />
+					<MobileToolbarSpacer />
+					<MobileIconButton
+						accessibilityLabel={mobileText("settings.close")}
+						testID="mobile-settings-close"
+						onPress={close}
+					>
+						<X size={18} color={mobileColors.textMuted} />
+					</MobileIconButton>
+				</MobileToolbar>
+				<MobileSettingsContent
+					manager={manager}
+					preferences={preferences}
+					updates={updates}
+					styles={styles}
+				/>
+			</MobilePanel>
+		</KeyboardAvoidingView>
 	);
 }
 
