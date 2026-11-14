@@ -49,13 +49,11 @@ export function inlineMarkdownToHtml(
 		inlineMathToken,
 		readInlineMathMarkdownSpan,
 	);
-	const markdownWithInlineBreaks = options.allowBreakTags
-		? markdownWithoutInlineMath.replace(/<br\s*\/?>/giu, (tag) => {
-				const token = escapedMarkdownToken(escapedMarkdownChars.length);
-				escapedMarkdownChars.push(tag);
-				return token;
-			})
-		: markdownWithoutInlineMath;
+	const markdownWithInlineBreaks = preserveInlineBreakTags(
+		markdownWithoutInlineMath,
+		escapedMarkdownChars,
+		options.allowBreakTags,
+	);
 	const escapedMarkdown = escapeHtml(markdownWithInlineBreaks);
 
 	const html = linkifyInlineMarkdown(escapedMarkdown)
@@ -77,6 +75,20 @@ export function inlineMarkdownToHtml(
 		),
 		escapedMarkdownChars,
 	);
+}
+
+function preserveInlineBreakTags(
+	markdown: MarkdownLine,
+	protectedTokens: HtmlSnippet[],
+	allowed: boolean | undefined,
+): MarkdownLine {
+	if (!allowed) return markdown;
+
+	return markdown.replace(/<br\s*\/?>/giu, (tag) => {
+		const token = escapedMarkdownToken(protectedTokens.length);
+		protectedTokens.push(tag);
+		return token;
+	});
 }
 
 export function inlineMarkdownTokens(
