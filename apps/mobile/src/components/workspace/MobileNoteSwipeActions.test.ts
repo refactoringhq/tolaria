@@ -99,7 +99,7 @@ afterEach(async () => {
 	vi.unstubAllGlobals();
 });
 
-async function renderActions(fullSwipePreview = false) {
+async function renderActions(translation = -80, committed = false) {
 	await act(async () => {
 		root.render(
 			createElement(MobileNoteSwipeActions, {
@@ -110,10 +110,8 @@ async function renderActions(fullSwipePreview = false) {
 				onFavorite: () => undefined,
 				onOrganize: () => undefined,
 				primarySwipeAction: "organize",
-				fullSwipeCommitted: shared(false),
-				fullSwipePreview,
-				fullSwipeRevealed: shared(false),
-				translation: shared(-80),
+				fullSwipeCommitted: shared(committed),
+				translation: shared(translation),
 				width: shared(340),
 			}),
 		);
@@ -122,7 +120,7 @@ async function renderActions(fullSwipePreview = false) {
 
 describe("MobileNoteSwipeActions organize action", () => {
 	it("shows only the check icon, with the label kept for accessibility", async () => {
-		await renderActions(false);
+		await renderActions();
 		const organize = host.querySelector(
 			'[data-testid="note-swipe-organize-note-1"]',
 		);
@@ -137,8 +135,8 @@ describe("MobileNoteSwipeActions organize action", () => {
 		expect(host.textContent).not.toContain("Organize selected notes");
 	});
 
-	it("stays icon-only during the full-row organize reveal", async () => {
-		await renderActions(true);
+	it("stays icon-only when the organize action covers the full row", async () => {
+		await renderActions(-340, true);
 		const organize = host.querySelector(
 			'[data-testid="note-swipe-organize-note-1"]',
 		);
