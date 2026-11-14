@@ -838,7 +838,7 @@ function AppearanceSettingsSection({
   setThemeMode,
 }: Pick<SettingsBodyProps, 't' | 'themeMode' | 'setThemeMode'>) {
   return (
-    <SettingsRow label={t('settings.theme.label')} description={t('settings.appearance.description')}>
+    <SettingsRow label={t('settings.theme.label')} description={t('settings.appearance.description')} controlWidth="wide">
       <ThemeModeControl value={themeMode} onChange={setThemeMode} t={t} />
     </SettingsRow>
   )
@@ -855,7 +855,7 @@ function ThemeModeControl({
 }) {
   return (
     <div
-      className="inline-flex w-full rounded-md border border-border bg-muted p-1"
+      className="grid w-full grid-cols-4 gap-0.5 rounded-md border border-border bg-muted p-1"
       role="radiogroup"
       aria-label={t('settings.theme.label')}
       data-testid="settings-theme-mode"
@@ -899,13 +899,13 @@ function ThemeModeButton({
       data-testid={`settings-theme-${value}`}
       className={
         selected
-          ? 'h-7 flex-1 border border-border bg-background text-foreground shadow-xs hover:bg-background'
-          : 'h-7 flex-1 text-muted-foreground hover:text-foreground'
+          ? 'h-7 min-w-0 border border-border bg-background px-1.5 text-foreground shadow-xs hover:bg-background'
+          : 'h-7 min-w-0 px-1.5 text-muted-foreground hover:text-foreground'
       }
       onClick={() => onSelect(value)}
     >
       {children}
-      {label}
+      <span className="truncate">{label}</span>
     </Button>
   )
 }
