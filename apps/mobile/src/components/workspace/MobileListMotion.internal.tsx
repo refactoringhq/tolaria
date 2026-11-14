@@ -26,7 +26,6 @@ type MotionProps = {
 	motionProbeId?: string;
 	exitProgress?: SharedValue<number>;
 	rowHeight?: SharedValue<number>;
-	disableLayoutTransition?: boolean;
 };
 
 export function MobileListMotion(props: MotionProps) {
@@ -39,7 +38,6 @@ export function MobileListMotion(props: MotionProps) {
 		motionProbeId,
 		exitProgress,
 		rowHeight,
-		disableLayoutTransition,
 	} = props;
 	const reduceMotion = useReducedMotion();
 	const geometryRef = useAnimatedRef<Animated.View>();
@@ -50,13 +48,12 @@ export function MobileListMotion(props: MotionProps) {
 		[exitProgress, rowHeight],
 	);
 	const row = variant === "row";
-	const skipTransition = reduceMotion || disableLayoutTransition;
 	return (
 		<Animated.View
 			ref={geometryRef}
-			entering={skipTransition ? undefined : getEnteringAnimation(false, row)}
-			exiting={skipTransition ? undefined : getExitingAnimation(false, row)}
-			layout={skipTransition ? undefined : LinearTransition.duration(180)}
+			entering={getEnteringAnimation(reduceMotion, row)}
+			exiting={getExitingAnimation(reduceMotion, row)}
+			layout={reduceMotion ? undefined : LinearTransition.duration(180)}
 			onLayout={onLayout}
 			pointerEvents={pointerEvents}
 			style={[style, exitStyle]}
