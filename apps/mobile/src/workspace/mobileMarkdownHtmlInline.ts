@@ -65,6 +65,29 @@ export function inlineMarkdownToHtml(
 		.replace(/_([^_]+)_/g, "<em>$1</em>")
 		.replace(/~~([^~]+)~~/g, "<s>$1</s>");
 
+	return restoreMarkdownTokens({
+		html,
+		inlineMathSpans,
+		inlineImageSpans,
+		codeSpans,
+		escapedMarkdownChars,
+	});
+}
+
+function restoreMarkdownTokens(tokens: {
+	html: HtmlSnippet;
+	inlineMathSpans: HtmlSnippet[];
+	inlineImageSpans: HtmlSnippet[];
+	codeSpans: HtmlSnippet[];
+	escapedMarkdownChars: HtmlSnippet[];
+}): HtmlSnippet {
+	const {
+		html,
+		inlineMathSpans,
+		inlineImageSpans,
+		codeSpans,
+		escapedMarkdownChars,
+	} = tokens;
 	return restoreEscapedMarkdownTokens(
 		restoreCodeSpanTokens(
 			restoreInlineImageTokens(
