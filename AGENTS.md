@@ -27,7 +27,7 @@ Luca reads the comments, never the code. Each card gets at most three kinds of c
    - `**Ready for QA: <short title>**`
    - `**What changed:**` 1–2 sentences, for the user.
    - `**Try it:**` 2–4 steps.
-   - `**Proof:**` uploaded inline (see Proof before push).
+   - `**Proof:**` reference to attached screenshots and other proof (see Proof before push). For UI changes, attach screenshots to the issue's Resources/attachments and link them here.
    - `**Tested:**` one plain line.
    - `**Not tested:**` what wasn't tested, if anything (e.g. the macOS app from a Linux box).
 3. **Needs you**: only when Luca has a decision to make. Give the question, the options and your recommendation in a few lines, and add `needs-luca`.
@@ -36,13 +36,13 @@ A failed QA, red CI or rework is a reply in the Ready for QA thread: `Didn't pas
 
 Never post start, claim or resume notices, heartbeats or no-progress checkpoints, retry or backoff counts, run IDs, commit hashes, file paths, log dirs, CodeScene, Codacy or coverage scores, raw logs, or UTC times. The full release record (checklist below) is an attached `release-record.md` file, not comment text.
 
-Uploading: call the Linear `fileUpload` mutation, `PUT` the file to `uploadUrl` with the returned headers, then embed `assetUrl` (`![after](assetUrl)` for images, a link otherwise). On the Linux agent boxes the runner does this from the agent's `ready-for-qa.md`, `proof/` and `release-record.md`.
+Uploading: call the Linear `fileUpload` mutation, `PUT` the file to `uploadUrl` with the returned headers, then either attach to the issue's Resources (for screenshots and other proof files) or embed `assetUrl` inline in comments (`![after](assetUrl)` for images, a link otherwise) as appropriate. On the Linux agent boxes the runner does this from the agent's `ready-for-qa.md`, `proof/` and `release-record.md`.
 
 ### Proof before push
 
 No proof, no push. Collect proof before pushing; it goes inline in Ready for QA:
 
-- UI change: before/after screenshots, or a short clip for interactions.
+- UI change: before/after screenshots, or a short clip for interactions. For features or fixes that change the interface, attach an actual implemented changed-screen screenshot to the Linear issue Resources (attachments) using safe fixture content, and link it in the Proof section. Caption the platform (macOS/Windows/Linux/iPhone/iPad/Android), relevant loaded state/theme/zoom, and the build commit. Before/after comparisons are useful when they show the change clearly; they are not mandatory for every UI change. Screenshots complement automated tests and never replace quality gates. If the required visual state cannot be reliably captured (simulator limitations, device unavailable, UI won't render the needed state), push once all runnable tests and CI are green, move the card to In Review, and list exactly what visual checks remain unverified under **Not tested** and on the Status line — do not bounce the card to Open or revert solely because visual proof is missing.
 - Editor or serialization change: before/after `.md` round-trip files plus the regression test.
 - Bug fix: the regression test's output failing before the fix and passing after.
 - CI or infra change: a link to the green CircleCI run.
@@ -116,7 +116,7 @@ Keep the scheduled prompt limited to queue orchestration; this file owns coding 
 1. Reuse the routine's attached worktree and inspect current work. Resume its own identified unfinished claim before taking another issue; keep execution serial under the claim protocol above.
 2. Otherwise paginate **Tolaria Mobile** To Rework, then Open; order by priority (unspecified last), then oldest creation time. Skip work assigned or delegated to others (including cards assigned to Luca for owner action), unmet dependencies, and cards whose Status line records a failed attempt less than 1 h ago (after a 2nd consecutive failure wait 2 h, after a 3rd 4 h, then 8 h). Do not pull Backlog or In Review into implementation. Follow the claim protocol above.
 3. Implement the selected issue under this file's rules, including Linear comments, proof before push and the done gate. On a blocker, failure or session exit, edit the Status line with the plain reason (keep evidence and the checkpoint location in `release-record.md` or the worktree, not in comments; post "Needs you" only for a decision), then move the card back to Open (or to In Review if verified work landed on main) before claiming the next one. If code for the card is already on main but a check ran and showed it broken, `git revert` it from main (push, CI green) before moving the card back to Open; broken code never stays on main (see Done gate). If the simulator/device just can't recreate the state, push once everything you can run is green and move the card to In Review with the unverified parts listed (see Done gate); never leave a blocked card In Progress. Continue independent eligible work without mixing partial changes or extending exceptions.
-4. Put verified implementation In Review with one Ready for QA comment (proof inline, iPhone/iPad/Android screenshots or clips for UI) and `release-record.md` attached, not self-approved Done. Report meaningful milestones or actionable blockers; stay quiet when the queue or status is unchanged. Resume remaining work on the next hourly run. Keep only one active mobile queue routine.
+4. Put verified implementation In Review with one Ready for QA comment (with screenshots/clips attached to issue Resources for UI changes) and `release-record.md` attached, not self-approved Done. For mobile UI work, attach iPhone/iPad/Android platform screenshots as appropriate. Report meaningful milestones or actionable blockers; stay quiet when the queue or status is unchanged. Resume remaining work on the next hourly run. Keep only one active mobile queue routine.
 
 ### TDD (mandatory)
 
@@ -220,7 +220,7 @@ bash ~/.openclaw/skills/tolaria-qa/scripts/screenshot.sh /tmp/qa-native.png
 
 Use computer-use/browser-control interaction for native UI QA when either tool is present in the current environment: click, hover, drag, select, scroll, and type the way a real user would with the mouse and trackpad. For every UI feature, test the primary mouse-driven path first, then verify each keyboard shortcut or keyboard-first workflow implemented or modified by the task. If neither interaction tool is present, run the scripted focus, screenshot, and shortcut checks and document that limitation.
 
-Use `osascript` for app focus, keyboard shortcuts, and keyboard-specific checks. **⚠️ WKWebView:** if an `osascript keystroke` fails to enter editor text, use computer use for the native editor interaction and rely on Playwright for deterministic text-input coverage. Keep the screenshots as proof for Ready for QA and the details in the release record (or the final handoff when no Linear issue exists).
+Use `osascript` for app focus, keyboard shortcuts, and keyboard-specific checks. **⚠️ WKWebView:** if an `osascript keystroke` fails to enter editor text, use computer use for the native editor interaction and rely on Playwright for deterministic text-input coverage. Attach the screenshots to Linear issue Resources for Ready for QA and keep the details in the release record (or the final handoff when no Linear issue exists).
 
 ### Linux agent boxes (Hetzner / remote)
 
@@ -228,7 +228,7 @@ These rules apply when the agent runs on a Linux box (no macOS desktop, no `osas
 
 **Mac-specific desktop work is done here too (Luca, 2026-10-23).** Every Tolaria Desktop card goes to the agent-openai box, including macOS/Windows-native surfaces (updater, Homebrew, macOS menus and Cmd/Option shortcut wiring, native dialogs, signing, Windows installers). When part of a change can't be built or tested on Linux, implement it carefully anyway, unit-test the logic you can, and list exactly what was not tested on Linux (and how to check it on a Mac or Windows machine) under Not tested in Ready for QA. That is not a reason to skip or block the card.
 
-**QA on Linux = the Linux Tolaria build with a throwaway vault.** There is no macOS native QA on these boxes. Build the Linux app (`CI=true pnpm tauri build --debug --no-bundle`) and drive it under Xvfb with a throwaway copy of `demo-vault-v2/` — on the agent boxes use the installed `tolaria-qa` CLI (`tolaria-qa help`: `start`, `click`, `key ctrl+…`, `xtype`, `shot`, `smoke`, `stop`). Never open, create, or modify `~/Laputa` or any real user vault. Test the primary mouse path first, then each keyboard shortcut you added or changed (`Ctrl` on Linux where macOS uses `Cmd`). Phase 1 Playwright still applies. Screenshots are proof for Ready for QA; what was clicked or typed goes in the release record.
+**QA on Linux = the Linux Tolaria build with a throwaway vault.** There is no macOS native QA on these boxes. Build the Linux app (`CI=true pnpm tauri build --debug --no-bundle`) and drive it under Xvfb with a throwaway copy of `demo-vault-v2/` — on the agent boxes use the installed `tolaria-qa` CLI (`tolaria-qa help`: `start`, `click`, `key ctrl+…`, `xtype`, `shot`, `smoke`, `stop`). Never open, create, or modify `~/Laputa` or any real user vault. Test the primary mouse path first, then each keyboard shortcut you added or changed (`Ctrl` on Linux where macOS uses `Cmd`). Phase 1 Playwright still applies. Attach screenshots to Linear issue Resources for Ready for QA; what was clicked or typed goes in the release record.
 
 **Before pushing to main:** the full check suite passes; then `git fetch origin && git rebase origin/main` (stop on conflicts you cannot resolve safely), re-run the checks (including the Linux build and a Linux app smoke) on the rebased HEAD, then `git push origin main` so the pre-push hook runs against the latest `origin/main`. Never `--no-verify` without a recorded repository-owner exception.
 
