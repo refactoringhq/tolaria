@@ -222,7 +222,6 @@ function SwipeableNoteRow({
 	const actionProps = {
 		archived: note.archived,
 		favorite: note.favorite,
-		fullSwipeCommitted: committed,
 		noteId: note.id,
 		onArchive: () => perform("archive"),
 		onDelete: () => perform("delete"),
@@ -279,7 +278,6 @@ function SwipeableRowSurface({
 			<View onLayout={(event) => width.set(event.nativeEvent.layout.width)}>
 				<Swipeable
 					ref={swipeable}
-					childrenContainerStyle={{ backgroundColor: mobileCardColor }}
 					enableTrackpadTwoFingerGesture={false}
 					friction={1}
 					overshootFriction={1}
@@ -298,7 +296,14 @@ function SwipeableRowSurface({
 						/>
 					)}
 				>
-					<Animated.View style={childOffsetStyle}>{children}</Animated.View>
+					{/* The card colour lives on the offset view, not on Swipeable's
+					    container: after a full swipe that container is still springing
+					    and would paint a strip over the green action. */}
+					<Animated.View
+						style={[{ backgroundColor: mobileCardColor }, childOffsetStyle]}
+					>
+						{children}
+					</Animated.View>
 				</Swipeable>
 			</View>
 		</GestureDetector>
@@ -320,9 +325,19 @@ function SwipeableRowActions({
 	translation: SharedValue<number>;
 	visualTranslation: SharedValue<number>;
 }) {
+	// The card renders at Swipeable's live offset plus our held-offset
+	// correction (visual minus the synced swipe offset). Size the actions from
+	// that same sum so they fill exactly what the card reveals, even while
+	// Swipeable's release spring is still settling after a commit.
+	const renderedTranslation = useDerivedValue(
+		() => translation.get() + visualTranslation.get() - swipeTranslation.get(),
+	);
 	return (
 		<>
-			<MobileNoteSwipeActions {...actionProps} />
+			<MobileNoteSwipeActions
+				{...actionProps}
+				translation={renderedTranslation}
+			/>
 			<SwipeTranslationMotionProbe
 				gestureTranslation={gestureTranslation}
 				noteId={noteId}

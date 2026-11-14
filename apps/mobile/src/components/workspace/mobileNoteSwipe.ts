@@ -43,11 +43,11 @@ export function mobileNoteSwipeSecondaryActionWidth(
 	translation: number,
 	width: number,
 	primaryAction: MobileSwipePrimaryAction = "archive",
-	committed = false,
 ) {
 	"worklet";
 	void primaryAction;
-	if (committed) return 0;
+	// A committed full swipe keeps following the exit translation to the row
+	// edge, so the trailing buttons finish shrinking instead of vanishing.
 	const revealed = mobileNoteSwipeRevealedWidth(translation);
 	const tray = mobileNoteSwipeTrayWidth();
 	if (revealed <= tray) return mobileNoteSwipeButtonWidth;
@@ -63,16 +63,13 @@ export function mobileNoteSwipePrimaryActionWidth(
 	translation: number,
 	width: number,
 	primaryAction: MobileSwipePrimaryAction = "archive",
-	committed = false,
 ) {
 	"worklet";
-	if (committed && width > 0) return width;
 	const revealed = mobileNoteSwipeRevealedWidth(translation);
 	const secondary = mobileNoteSwipeSecondaryActionWidth(
 		translation,
 		width,
 		primaryAction,
-		committed,
 	);
 	const maxWidth =
 		width > 0 ? width : Math.max(mobileNoteSwipeTrayWidth(), revealed);

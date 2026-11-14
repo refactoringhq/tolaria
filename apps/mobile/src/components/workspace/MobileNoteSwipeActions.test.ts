@@ -99,7 +99,7 @@ afterEach(async () => {
 	vi.unstubAllGlobals();
 });
 
-async function renderActions(translation = -80, committed = false) {
+async function renderActions(translation = -80) {
 	await act(async () => {
 		root.render(
 			createElement(MobileNoteSwipeActions, {
@@ -110,7 +110,6 @@ async function renderActions(translation = -80, committed = false) {
 				onFavorite: () => undefined,
 				onOrganize: () => undefined,
 				primarySwipeAction: "organize",
-				fullSwipeCommitted: shared(committed),
 				translation: shared(translation),
 				width: shared(340),
 			}),
@@ -136,7 +135,7 @@ describe("MobileNoteSwipeActions organize action", () => {
 	});
 
 	it("stays icon-only when the organize action covers the full row", async () => {
-		await renderActions(-340, true);
+		await renderActions(-340);
 		const organize = host.querySelector(
 			'[data-testid="note-swipe-organize-note-1"]',
 		);

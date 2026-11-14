@@ -198,6 +198,13 @@ describe("note row input ownership", () => {
 		expect(props.renderRightActions).toEqual(expect.any(Function));
 	});
 
+	it("keeps the card colour off Swipeable's container so its release spring cannot cover the green action", () => {
+		const props = renderRow(false, "organize") as {
+			childrenContainerStyle?: unknown;
+		};
+		expect(props.childrenContainerStyle).toBeUndefined();
+	});
+
 	it("does not install swipe actions on a disabled row", () => {
 		renderRow(true);
 		expect(nativeSwipe).not.toHaveBeenCalled();

@@ -54,9 +54,6 @@ describe("note row full swipe", () => {
 	it("keeps the trailing buttons at their rest width until the tray is fully open", () => {
 		expect(mobileNoteSwipeSecondaryActionWidth(-120, 340, "organize")).toBe(72);
 		expect(mobileNoteSwipeSecondaryActionWidth(-216, 340, "organize")).toBe(72);
-		expect(
-			mobileNoteSwipeSecondaryActionWidth(-216, 340, "organize", true),
-		).toBe(0);
 	});
 
 	it("shrinks trailing buttons continuously so the primary action can track the drag", () => {
@@ -88,8 +85,24 @@ describe("note row full swipe", () => {
 		}
 		expect(widths[0]).toBe(0);
 		expect(widths.at(-1)).toBe(340);
-		expect(
-			mobileNoteSwipePrimaryActionWidth(-80, 340, "organize", true),
-		).toBe(340);
+	});
+
+	it("finishes a committed swipe by following the exit offset, without popping the trailing buttons", () => {
+		// Release past the threshold, then the exit animation carries the row to
+		// the edge in small steps. Each step must stay small for both widths.
+		let previousSecondary = mobileNoteSwipeSecondaryActionWidth(-280, 340, "organize");
+		let previousPrimary = mobileNoteSwipePrimaryActionWidth(-280, 340, "organize");
+		expect(previousSecondary).toBeGreaterThan(0);
+		for (let offset = 284; offset <= 340; offset += 4) {
+			const secondary = mobileNoteSwipeSecondaryActionWidth(-offset, 340, "organize");
+			const primary = mobileNoteSwipePrimaryActionWidth(-offset, 340, "organize");
+			expect(previousSecondary - secondary).toBeLessThanOrEqual(12);
+			expect(secondary).toBeLessThanOrEqual(previousSecondary);
+			expect(primary - previousPrimary).toBeLessThanOrEqual(24);
+			previousSecondary = secondary;
+			previousPrimary = primary;
+		}
+		expect(previousSecondary).toBe(0);
+		expect(previousPrimary).toBe(340);
 	});
 });

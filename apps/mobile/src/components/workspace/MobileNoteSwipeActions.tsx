@@ -31,7 +31,6 @@ type ActionProps = {
 	onFavorite: () => void;
 	onOrganize: () => void;
 	primarySwipeAction?: "archive" | "organize";
-	fullSwipeCommitted: SharedValue<boolean>;
 	translation: SharedValue<number>;
 	width: SharedValue<number>;
 };
@@ -74,7 +73,6 @@ function useSwipeActionWidths(props: ActionProps, actionCount: number) {
 			props.translation.get(),
 			props.width.get(),
 			props.primarySwipeAction,
-			props.fullSwipeCommitted.get(),
 		),
 	);
 	const primaryWidth = useDerivedValue<number>(() =>
@@ -82,7 +80,6 @@ function useSwipeActionWidths(props: ActionProps, actionCount: number) {
 			props.translation.get(),
 			props.width.get(),
 			props.primarySwipeAction,
-			props.fullSwipeCommitted.get(),
 		),
 	);
 	const containerStyle = useAnimatedStyle<ViewStyle>(() => ({
