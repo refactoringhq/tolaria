@@ -1,6 +1,6 @@
 import { ArchiveIcon, CheckCircle, Star, Trash } from "phosphor-react-native";
 import type { ComponentProps } from "react";
-import { StyleSheet, Text, type ViewStyle } from "react-native";
+import { StyleSheet, type ViewStyle } from "react-native";
 import Animated, {
 	type SharedValue,
 	useAnimatedStyle,
@@ -174,12 +174,7 @@ function SwipePrimaryAction({
 			testID={`note-swipe-organize-${props.noteId}`}
 			onPress={props.onOrganize}
 		>
-			<CheckCircle color={mobileColors.textInverse} size={18} />
-			{fullSwipePreview ? null : (
-				<Text style={styles.organizeLabel}>
-					{mobileText("noteList.bulk.organize")}
-				</Text>
-			)}
+			<CheckCircle color={mobileColors.textInverse} size={24} />
 		</Button>
 	) : (
 		<ArchiveButton props={props} styles={styles} mobileColors={mobileColors} />
@@ -235,11 +230,6 @@ function createThemeStyles(mobileColors: MobileColors) {
 			padding: 0,
 			alignItems: "center",
 			justifyContent: "center",
-		},
-		organizeLabel: {
-			color: mobileColors.textInverse,
-			fontSize: 10,
-			fontWeight: "600",
 		},
 		fullSwipePrimaryAction: { width: "100%" },
 		favorite: { backgroundColor: mobileColors.primary },
