@@ -1,6 +1,6 @@
 import { ArchiveIcon, CheckCircle, Star, Trash } from "phosphor-react-native";
 import type { ComponentProps } from "react";
-import { StyleSheet, Text, type ViewStyle } from "react-native";
+import { StyleSheet, type ViewStyle } from "react-native";
 import Animated, {
 	type SharedValue,
 	useAnimatedStyle,
@@ -14,7 +14,10 @@ import { useMobileStyles } from "../../ui/theme/useMobileTheme";
 import { Button } from "../ui/button";
 import {
 	mobileNoteSwipeActionOrder,
+	mobileNoteSwipeButtonWidth,
+	mobileNoteSwipePrimaryActionWidth,
 	mobileNoteSwipeSecondaryActionWidth,
+	mobileNoteSwipeTrayWidth,
 } from "./mobileNoteSwipe";
 
 type SwipeActionStyle = ComponentProps<typeof Animated.View>["style"];
@@ -28,9 +31,6 @@ type ActionProps = {
 	onFavorite: () => void;
 	onOrganize: () => void;
 	primarySwipeAction?: "archive" | "organize";
-	fullSwipeCommitted: SharedValue<boolean>;
-	fullSwipePreview: boolean;
-	fullSwipeRevealed: SharedValue<boolean>;
 	translation: SharedValue<number>;
 	width: SharedValue<number>;
 };
@@ -41,57 +41,59 @@ export function MobileNoteSwipeActions(props: ActionProps) {
 		props.primarySwipeAction ?? "archive",
 	);
 	const organizeIsPrimary = actionOrder.at(-1) === "organize";
-	const baseWidth = actionOrder.length * 72;
-	const { expansion, secondaryStyle } = useSwipeActionWidths(props, baseWidth);
+	const { containerStyle, secondaryStyle, primaryStyle } =
+		useSwipeActionWidths(props, actionOrder.length);
 	return (
-		<Animated.View
-			style={[props.fullSwipePreview && styles.fullSwipeReveal, expansion]}
-		>
+		<Animated.View style={containerStyle}>
 			<Animated.View
-				style={[styles.actions, expansion]}
+				style={styles.actions}
 				testID={`note-swipe-actions-${props.noteId}`}
 			>
-				{props.fullSwipePreview ? null : (
-					<SwipeSecondaryActions
-						props={props}
-						styles={styles}
-						mobileColors={mobileColors}
-						style={secondaryStyle}
-					/>
-				)}
+				<SwipeSecondaryActions
+					props={props}
+					styles={styles}
+					mobileColors={mobileColors}
+					style={secondaryStyle}
+				/>
 				<SwipePrimaryAction
 					props={props}
 					styles={styles}
 					mobileColors={mobileColors}
 					organizeIsPrimary={organizeIsPrimary}
-					fullSwipePreview={props.fullSwipePreview}
+					style={primaryStyle}
 				/>
 			</Animated.View>
 		</Animated.View>
 	);
 }
 
-function useSwipeActionWidths(props: ActionProps, baseWidth: number) {
+function useSwipeActionWidths(props: ActionProps, actionCount: number) {
 	const secondaryWidth = useDerivedValue<number>(() =>
-		props.fullSwipeRevealed.get()
-			? 0
-			: mobileNoteSwipeSecondaryActionWidth(
-					props.translation.get(),
-					props.width.get(),
-					props.primarySwipeAction,
-					props.fullSwipeCommitted.get(),
-				),
+		mobileNoteSwipeSecondaryActionWidth(
+			props.translation.get(),
+			props.width.get(),
+			props.primarySwipeAction,
+		),
 	);
-	const actionWidth = useDerivedValue<number>(() =>
-		props.fullSwipeRevealed.get()
-			? props.width.get()
-			: Math.max(baseWidth, Math.abs(props.translation.get())),
+	const primaryWidth = useDerivedValue<number>(() =>
+		mobileNoteSwipePrimaryActionWidth(
+			props.translation.get(),
+			props.width.get(),
+			props.primarySwipeAction,
+		),
 	);
-	const expansion = useAnimatedStyle<ViewStyle>(() => ({
-		width: actionWidth.get(),
+	const containerStyle = useAnimatedStyle<ViewStyle>(() => ({
+		width:
+			props.width.get() > 0
+				? props.width.get()
+				: mobileNoteSwipeTrayWidth(actionCount),
 	}));
 	const secondaryStyle = useAnimatedStyle<ViewStyle>(() => ({
 		width: secondaryWidth.get(),
+		overflow: "hidden",
+	}));
+	const primaryStyle = useAnimatedStyle<ViewStyle>(() => ({
+		width: Math.max(mobileNoteSwipeButtonWidth, primaryWidth.get()),
 		overflow: "hidden",
 	}));
 	useMobileMotionFrameProbe(
@@ -100,9 +102,9 @@ function useSwipeActionWidths(props: ActionProps, baseWidth: number) {
 	);
 	useMobileMotionFrameProbe(
 		`organize-swipe.action-width.${props.noteId}`,
-		actionWidth,
+		primaryWidth,
 	);
-	return { expansion, secondaryStyle };
+	return { containerStyle, secondaryStyle, primaryStyle };
 }
 
 function SwipeSecondaryActions({
@@ -155,34 +157,33 @@ function SwipePrimaryAction({
 	styles,
 	mobileColors,
 	organizeIsPrimary,
-	fullSwipePreview,
+	style,
 }: {
 	props: ActionProps;
 	styles: ReturnType<typeof createThemeStyles>["styles"];
 	mobileColors: MobileColors;
 	organizeIsPrimary: boolean;
-	fullSwipePreview: boolean;
+	style: SwipeActionStyle;
 }) {
-	return organizeIsPrimary ? (
-		<Button
-			accessibilityLabel={mobileText("command.note.markOrganized")}
-			style={[
-				styles.action,
-				fullSwipePreview && styles.fullSwipePrimaryAction,
-				styles.archive,
-			]}
-			testID={`note-swipe-organize-${props.noteId}`}
-			onPress={props.onOrganize}
-		>
-			<CheckCircle color={mobileColors.textInverse} size={18} />
-			{fullSwipePreview ? null : (
-				<Text style={styles.organizeLabel}>
-					{mobileText("noteList.bulk.organize")}
-				</Text>
+	return (
+		<Animated.View style={style}>
+			{organizeIsPrimary ? (
+				<Button
+					accessibilityLabel={mobileText("command.note.markOrganized")}
+					style={[styles.action, styles.archive]}
+					testID={`note-swipe-organize-${props.noteId}`}
+					onPress={props.onOrganize}
+				>
+					<CheckCircle color={mobileColors.textInverse} size={24} />
+				</Button>
+			) : (
+				<ArchiveButton
+					props={props}
+					styles={styles}
+					mobileColors={mobileColors}
+				/>
 			)}
-		</Button>
-	) : (
-		<ArchiveButton props={props} styles={styles} mobileColors={mobileColors} />
+		</Animated.View>
 	);
 }
 
@@ -213,20 +214,12 @@ function ArchiveButton({
 
 function createThemeStyles(mobileColors: MobileColors) {
 	const styles = StyleSheet.create({
-		fullSwipeReveal: {
-			position: "absolute",
-			left: 0,
-			top: 0,
-			bottom: 0,
-			right: 0,
-		},
 		actions: {
-			position: "absolute",
-			top: 0,
-			bottom: 0,
-			left: 0,
-			right: 0,
 			flexDirection: "row",
+			justifyContent: "flex-end",
+			alignItems: "stretch",
+			height: "100%",
+			width: "100%",
 		},
 		action: {
 			flex: 1,
@@ -236,12 +229,6 @@ function createThemeStyles(mobileColors: MobileColors) {
 			alignItems: "center",
 			justifyContent: "center",
 		},
-		organizeLabel: {
-			color: mobileColors.textInverse,
-			fontSize: 10,
-			fontWeight: "600",
-		},
-		fullSwipePrimaryAction: { width: "100%" },
 		favorite: { backgroundColor: mobileColors.primary },
 		archive: { backgroundColor: mobileColors.green },
 		delete: { backgroundColor: mobileColors.danger },
