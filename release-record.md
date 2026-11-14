@@ -136,3 +136,27 @@ The existing iPhone 16 Pro simulator is booted with Device Hub open, and Metro s
 - CircleCI exact-SHA checks all green, including `mobile-ota-quality`, `frontend-coverage`, `playwright-smoke`, `frontend-lint-build`, `web-build`, `static-gates`, and `publish-mobile-alpha`. The OTA publish job succeeded; no separate update ID/receipt was captured.
 - Native/device QA and device performance profiling were not run. Specifically unverified: 9,000-note sync timing/stall impact of this reduction, physical provider/iCloud delivery, iPad automatic-sync UI, and final signed-binary acceptance. No simulator or vault data was touched.
 - Localization: no UI copy changes. PostHog: no event needed because this is an internal sync-cost correction to an existing action. Refactoring: `gitVault.ts` and `gitRemote.ts` integration path. ADRs: none. Docs: `docs/ABSTRACTIONS.md`. Demo-vault dirt: none.
+
+---
+
+# TOL-356 Release Record
+
+## Change
+
+- Preserve Markdown `<br>` tag variants inside table cells as WebView line breaks while continuing to escape raw HTML elsewhere and inside inline/fenced code.
+- Add regression coverage for `<br>`, `<br/>`, `<br />`, and `<BR>`, plus escaping and the source-preserving editor serialization path.
+- Attach `TOL-356 rendered Markdown table proof`, a WebKit render of the actual converter output. This is not an in-app iOS screenshot.
+
+## Validation
+
+- TDD: the table-cell regression failed before the converter change and passes after it. Focused mobile test: 41 passed. Full mobile suite: 462 files / 2,782 tests passed.
+- `mobile:lint`, `mobile:typecheck`, root `lint`, root TypeScript check, and root `test` passed. Root Vitest: 678 files / 6,397 passed, 1 skipped. Server tests: 48 files / 1,033 passed, 2 skipped; server line coverage 95.82%. Root frontend coverage: 89.72% lines. Rust tests: 1,197 passed, 2 ignored; Rust line coverage 86.00% (gate >=85%).
+- Biome check on all 3 changed TypeScript paths passed. `git diff --check` passed; demo-vault dirt check is clean.
+- Local Codacy scans completed for all changed code/test paths with ESLint, Lizard, Opengrep OSS, and Trivy; zero findings. Biome was checked separately. Dashboard pre-edit baseline for each path was zero.
+- CodeScene final scores: all 3 changed files are 10.0. Pre-commit safeguard and `origin/main` change-set review passed (3 code files, no issues). Project Hotspot/Average post-push scores and exact-SHA dashboard/CI verification are pending.
+- Localization: no UI copy changes. PostHog: no event needed because this is a rendering correction to existing content. Refactoring: shared inline token restoration. ADRs/docs: none. Demo vaults: clean.
+
+## Not Tested
+
+- Tolaria's native iOS WebView was not relaunched against this checkout: the existing QA simulator app was attached to a stale Metro port, and preserving the shared simulator/Metro state was safer than redirecting it. The attached WebKit image verifies converter output only.
+- Byte-identical save after editing a note containing break tags was covered through the source-preserving serializer regression, but not by an on-device edit-and-save flow.
