@@ -73,6 +73,26 @@ fn arg_value_after<'a>(args: &'a [String], name: &str) -> Option<&'a str> {
     args.get(index + 1).map(String::as_str)
 }
 
+fn invocation_arg_lists(invocation: &ClaudeInvocation) -> impl Iterator<Item = &[String]> + '_ {
+    std::iter::once(invocation.args.as_slice())
+        .chain(invocation.fallback_args.iter().map(Vec::as_slice))
+}
+
+fn arg_lists_with_strict_mcp_config(invocation: &ClaudeInvocation) -> usize {
+    invocation_arg_lists(invocation)
+        .filter(|args| args.iter().any(|arg| arg == "--strict-mcp-config"))
+        .count()
+}
+
+fn arg_lists_with_tolaria_mcp_config(invocation: &ClaudeInvocation) -> usize {
+    invocation_arg_lists(invocation)
+        .filter(|args| {
+            arg_value_after(args, "--mcp-config")
+                .is_some_and(|config| config.contains("\"tolaria\""))
+        })
+        .count()
+}
+
 #[test]
 fn chat_args_basic() {
     let args = chat_args(&chat_request!("hello", None, None));
@@ -266,7 +286,6 @@ fn agent_args_allow_bash_in_power_user_mode_without_dangerous_bypass() {
     ))
     .unwrap();
 
-    assert_args_contain!(args, ["--strict-mcp-config"]);
     assert_args_contain!(args, ["Read,Edit,MultiEdit,Write,Glob,Grep,LS,Skill,Bash"]);
     assert_args_lack!(args, ["--dangerously-skip-permissions"]);
 }
@@ -281,6 +300,50 @@ fn agent_args_preapprove_bash_for_power_user_runs() {
     .unwrap();
 
     assert_eq!(arg_value_after(&args, "--allowedTools"), Some("Bash"));
+}
+
+#[test]
+fn agent_args_inherit_user_mcp_servers_in_power_user_mode() {
+    let args = agent_args(&agent_request(
+        "Check my tickets",
+        None,
+        AiAgentPermissionMode::PowerUser,
+    ))
+    .unwrap();
+
+    assert_args_lack!(args, ["--strict-mcp-config"]);
+    let config: serde_json::Value =
+        serde_json::from_str(arg_value_after(&args, "--mcp-config").unwrap()).unwrap();
+    assert!(config["mcpServers"]["tolaria"].is_object());
+}
+
+#[test]
+fn agent_fallbacks_inherit_user_mcp_servers_in_power_user_mode() {
+    let req = agent_request("Check my tickets", None, AiAgentPermissionMode::PowerUser);
+    let invocation = agent_with_windows_limit(&req, false).unwrap();
+
+    assert_eq!(arg_lists_with_strict_mcp_config(&invocation), 0);
+    assert_eq!(arg_lists_with_tolaria_mcp_config(&invocation), 3);
+}
+
+#[test]
+fn oversized_windows_power_user_invocations_inherit_user_mcp_servers() {
+    let long_message = "x".repeat(WINDOWS_COMMAND_LINE_STDIN_THRESHOLD);
+    let req = agent_request(&long_message, None, AiAgentPermissionMode::PowerUser);
+    let invocation = agent_with_windows_limit(&req, true).unwrap();
+
+    assert!(invocation.stdin_text.is_some());
+    assert_eq!(arg_lists_with_strict_mcp_config(&invocation), 0);
+    assert_eq!(arg_lists_with_tolaria_mcp_config(&invocation), 3);
+}
+
+#[test]
+fn agent_fallbacks_keep_strict_mcp_config_in_safe_mode() {
+    let req = agent_request("Rename the note", None, AiAgentPermissionMode::Safe);
+    let invocation = agent_with_windows_limit(&req, false).unwrap();
+
+    assert_eq!(arg_lists_with_strict_mcp_config(&invocation), 3);
+    assert_eq!(arg_lists_with_tolaria_mcp_config(&invocation), 3);
 }
 
 #[test]
