@@ -448,6 +448,7 @@
   "ai.panel.placeholder.ready": "Zapytać {agent}",
   "ai.panel.send": "Adpravić paviedamliennie",
   "ai.panel.stop": "Spynić adkaz",
+  "ai.panel.jumpToLatest": "Pierajsci da apošniaha",
   "ai.panel.stoppedResponse": "Spyniena.",
   "ai.error.claude.notAuthenticated": "CLI Claude nie aŭtentyfikavany. Vykanajcie kamandu «claude auth login» u terminale.",
   "ai.error.claude.tooManyRedirects": "Claude Code nia zmoh padklučycca da svajho pastaŭščyka, tamu što zapyt API pieranakiroŭvaŭsia zanadta šmat razoŭ. U Terminal zapusćicie `claude auth status`, a zatym, pry nieabchodnasci, `claude auth login`. Kali vy vykarystoŭvajecie karystalnicki pravajdar abo proksi, pravierycie nalady ANTHROPIC_BASE_URL, HTTPS_PROXY, HTTP_PROXY i karparatyŭnaha SSO/proksi, a zatym pierazapusćicie Tolaria.",

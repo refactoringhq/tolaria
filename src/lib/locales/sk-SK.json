@@ -448,6 +448,7 @@
   "ai.panel.placeholder.ready": "Opýtajte sa {agent}",
   "ai.panel.send": "Odoslať správu",
   "ai.panel.stop": "Zastaviť odpoveď",
+  "ai.panel.jumpToLatest": "Prejsť na najnovšie",
   "ai.panel.stoppedResponse": "Zastavené.",
   "ai.error.claude.notAuthenticated": "Rozhranie príkazového riadka Claude CLI nie je overené. V termináli spustite príkaz „claude auth login“.",
   "ai.error.claude.tooManyRedirects": "Claude Code sa nemohol pripojiť k svojmu poskytovateľovi, pretože požiadavka API bola presmerovaná príliš veľa ráz. V Termináli spustite „claude auth status“ a v prípade potreby potom „claude auth login“. Ak používate vlastného poskytovateľa alebo proxy, skontrolujte ANTHROPIC_BASE_URL, HTTPS_PROXY, HTTP_PROXY a firemné nastavenia SSO/proxy a potom reštartujte Tolaria.",

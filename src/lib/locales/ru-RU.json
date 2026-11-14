@@ -448,6 +448,7 @@
   "ai.panel.placeholder.ready": "Спросить {agent}",
   "ai.panel.send": "Отправить сообщение",
   "ai.panel.stop": "Остановить ответ",
+  "ai.panel.jumpToLatest": "Перейти к последнему",
   "ai.panel.stoppedResponse": "Остановлено.",
   "ai.error.claude.notAuthenticated": "CLI Claude не прошел аутентификацию. Выполните команду 'claude auth login' в терминале.",
   "ai.error.claude.tooManyRedirects": "Claude Code не смог подключиться к своему провайдеру, поскольку запрос API перенаправлялся слишком много раз. В Терминале выполните команду 'claude auth status', а затем, при необходимости, 'claude auth login'. Если вы используете пользовательского провайдера или прокси, проверьте ANTHROPIC_BASE_URL, HTTPS_PROXY, HTTP_PROXY и корпоративные настройки SSO/прокси, а затем перезапустите Tolaria.",

@@ -450,6 +450,7 @@ files:
     ai.panel.placeholder.ready: 31f5265c2e0432a7ca10d08e5c6f3114
     ai.panel.send: 747c6a3564774149c989884e0c581d53
     ai.panel.stop: 4c7fadd610e7adf3e0ab80fa4459ad96
+    ai.panel.jumpToLatest: 5b0903f616040d48342b00d8a6f3e93d
     ai.panel.stoppedResponse: d223fbbd5ade7a06a14ea75105df4f9d
     ai.error.claude.notAuthenticated: 7384f901818c66d6fa6c2744597f7c53
     ai.error.claude.tooManyRedirects: 590099fedac46db892be91909814b0c7

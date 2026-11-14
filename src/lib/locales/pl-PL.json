@@ -448,6 +448,7 @@
   "ai.panel.placeholder.ready": "Zapytaj {agent}",
   "ai.panel.send": "Wyślij wiadomość",
   "ai.panel.stop": "Zatrzymaj odpowiedź",
+  "ai.panel.jumpToLatest": "Przejdź do najnowszych",
   "ai.panel.stoppedResponse": "Zatrzymano.",
   "ai.error.claude.notAuthenticated": "Interfejs wiersza poleceń Claude CLI nie jest uwierzytelniony. W terminalu uruchom polecenie „claude auth login”.",
   "ai.error.claude.tooManyRedirects": "Claude Code nie mógł połączyć się ze swoim dostawcą, ponieważ żądanie API było przekierowywane zbyt wiele razy. W Terminalu uruchom „claude auth status”, a następnie w razie potrzeby „claude auth login”. Jeśli korzystasz z niestandardowego dostawcy lub proxy, sprawdź ANTHROPIC_BASE_URL, HTTPS_PROXY, HTTP_PROXY i ustawienia korporacyjnego SSO/proxy, a następnie uruchom ponownie Tolaria.",
