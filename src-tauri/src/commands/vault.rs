@@ -291,12 +291,13 @@ mod tests {
         assert_save_view_cmd_rejects_invalid_filename("con.yml");
     }
 
-    #[tokio::test]
-    async fn test_reload_vault_invalidates_cache_and_rescans() {
+    #[test]
+    fn test_reload_vault_invalidates_cache_and_rescans() {
         let dir = tempfile::TempDir::new().unwrap();
         let vault_path = dir.path();
         initialize_test_git_repository(vault_path);
 
+        let _cache_dir_lock = crate::vault::TEST_CACHE_DIR_LOCK.lock().unwrap();
         let cache_dir = tempfile::TempDir::new().unwrap();
         std::env::set_var(
             "LAPUTA_CACHE_DIR",
@@ -319,7 +320,12 @@ mod tests {
             .output()
             .unwrap();
 
-        let entries = list_vault(vault_path.into()).await.unwrap();
+        let entries = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(list_vault(vault_path.into()))
+            .unwrap();
         assert!(!entries[0].archived);
 
         std::fs::write(
