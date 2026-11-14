@@ -6,17 +6,13 @@ import {
 } from "./mobileDisplayMath";
 import type {
 	HtmlSnippet,
-	ListKind,
 	MarkdownBody,
 	MarkdownLine,
-	MarkdownLineMatcher,
 	MarkdownLines,
 	PlainText,
 	ReadHtmlBlockResult,
-	ReadListSourceLinesResult,
 	ReadParagraphResult,
 	ReadQuoteResult,
-	ReadSourceLinesResult,
 } from "./mobileDocumentContent.types";
 import { escapeAttribute, escapeHtml } from "./mobileHtmlEncoding";
 import {
@@ -24,26 +20,21 @@ import {
 	readMobileMarkdownCodeFence,
 } from "./mobileMarkdownCodeFence";
 import { inlineMarkdownToHtml } from "./mobileMarkdownHtmlInline";
+import {
+	readIndentedListSourceBlock,
+	readIrregularOrderedDotListSourceBlock,
+	readList,
+	readListHardBreakSourceBlock,
+	readMatchingSourceLines,
+	readOrderedParenListSourceBlock,
+	sourceLinesParagraphBlock,
+} from "./mobileMarkdownHtmlLists";
 import { mobileMarkdownImageHtml } from "./mobileMarkdownImage";
 import {
-	type MobileMarkdownListItem,
-	mobileMarkdownListHtml,
-} from "./mobileMarkdownListHtml";
-import {
 	explicitMarkdownHardBreak,
-	isBackslashListHardBreakSourceLine,
 	isCodeIndentedLine,
 	isHorizontalRule,
-	isIndentedListSourceLine,
 	isIndentedTextSourceLine,
-	isIrregularOrderedDotListSource,
-	isListContinuationSourceLine,
-	isListHardBreakSourceLine,
-	isOrderedParenListSourceLine,
-	isOutdentedListSourceLine,
-	leadingWhitespaceLength,
-	listLine,
-	orderedDotListSourceLineNumber,
 } from "./mobileMarkdownSourceLines";
 import {
 	type MobileMarkdownTable,
@@ -54,6 +45,8 @@ import {
 	readUnsupportedHtmlBlock,
 	unsupportedHtmlBlockToParagraphHtml,
 } from "./mobileUnsupportedHtmlMarkdown";
+
+export { readListSourceLines } from "./mobileMarkdownHtmlLists";
 
 type MarkdownLineIndex = number;
 
@@ -159,11 +152,29 @@ export function readIndentedCodeFenceSourceBlock(
 	lines: MarkdownLines,
 	startIndex: MarkdownLineIndex,
 ): ReadHtmlBlockResult | null {
-	const opening = isCodeIndentedLine(lines[startIndex] ?? "")
-		? readMobileMarkdownCodeFence(lines[startIndex] ?? "")
-		: null;
+	const opening = readIndentedCodeFenceOpening(lines, startIndex);
 	if (!opening) return null;
 
+	const nextIndex = findCodeFenceSourceEnd(lines, startIndex, opening);
+	return sourceLinesParagraphBlock(
+		lines.slice(startIndex, nextIndex),
+		nextIndex,
+	);
+}
+
+function readIndentedCodeFenceOpening(
+	lines: MarkdownLines,
+	startIndex: MarkdownLineIndex,
+): ReturnType<typeof readMobileMarkdownCodeFence> {
+	const line = lines[startIndex] ?? "";
+	return isCodeIndentedLine(line) ? readMobileMarkdownCodeFence(line) : null;
+}
+
+function findCodeFenceSourceEnd(
+	lines: MarkdownLines,
+	startIndex: MarkdownLineIndex,
+	opening: NonNullable<ReturnType<typeof readMobileMarkdownCodeFence>>,
+): number {
 	let index = startIndex + 1;
 	while (
 		index < lines.length &&
@@ -171,12 +182,7 @@ export function readIndentedCodeFenceSourceBlock(
 	) {
 		index += 1;
 	}
-
-	const nextIndex = index < lines.length ? index + 1 : index;
-	return sourceLinesParagraphBlock(
-		lines.slice(startIndex, nextIndex),
-		nextIndex,
-	);
+	return index < lines.length ? index + 1 : index;
 }
 
 export function leadingMarkdownBlockIndent(line: MarkdownLine): number {
@@ -426,20 +432,6 @@ export function quoteParagraphHtml(lines: MarkdownLines): HtmlSnippet {
 	return `<p>${paragraphLinesToHtml(lines)}</p>`;
 }
 
-export function readIndentedListSourceBlock(
-	lines: MarkdownLines,
-	startIndex: MarkdownLineIndex,
-): ReadHtmlBlockResult | null {
-	const source = readMatchingSourceLines(
-		lines,
-		startIndex,
-		isIndentedListSourceLine,
-	);
-	return source
-		? sourceLinesParagraphBlock(source.lines, source.nextIndex)
-		: null;
-}
-
 export function readIndentedTextSourceBlock(
 	lines: MarkdownLines,
 	startIndex: MarkdownLineIndex,
@@ -452,207 +444,6 @@ export function readIndentedTextSourceBlock(
 	return source
 		? sourceLinesParagraphBlock(source.lines, source.nextIndex)
 		: null;
-}
-
-export function readListHardBreakSourceBlock(
-	lines: MarkdownLines,
-	startIndex: MarkdownLineIndex,
-): ReadHtmlBlockResult | null {
-	const source = readListSourceLines(lines, startIndex);
-	if (!source?.hasHardBreak || !hasUnsupportedListHardBreakSource(source))
-		return null;
-
-	return sourceLinesParagraphBlock(source.lines, source.nextIndex);
-}
-
-export function hasUnsupportedListHardBreakSource(
-	source: ReadListSourceLinesResult,
-): boolean {
-	return source.lines.some(isBackslashListHardBreakSourceLine);
-}
-
-export function readListSourceLines(
-	lines: MarkdownLines,
-	startIndex: MarkdownLineIndex,
-): ReadListSourceLinesResult | null {
-	const firstLine = lines[startIndex] ?? "";
-	const first = listLine(firstLine);
-	if (!first) return null;
-
-	const baseIndent = leadingWhitespaceLength(firstLine);
-	const source: ReadListSourceLinesResult = {
-		baseIndent,
-		hasContinuation: false,
-		hasHardBreak: false,
-		lines: [],
-		nextIndex: startIndex,
-	};
-
-	while (source.nextIndex < lines.length) {
-		const sourceLine = readListSourceLine(
-			lines[source.nextIndex] ?? "",
-			baseIndent,
-		);
-		if (!sourceLine) break;
-		appendSourceLine(source, sourceLine);
-	}
-
-	return source;
-}
-
-export function appendSourceLine(
-	source: ReadListSourceLinesResult,
-	line: NonNullable<ReturnType<typeof readListSourceLine>>,
-): void {
-	source.hasContinuation ||= line.hasContinuation;
-	source.hasHardBreak ||= line.hasHardBreak;
-	source.lines.push(line.line);
-	source.nextIndex += 1;
-}
-
-export function readListSourceLine(
-	line: MarkdownLine,
-	baseIndent: number,
-): {
-	hasContinuation: boolean;
-	hasHardBreak: boolean;
-	line: MarkdownLine;
-} | null {
-	if (!line.trim() || isOutdentedListSourceLine(line, baseIndent)) return null;
-
-	const hasContinuation = isListContinuationSourceLine(line, baseIndent);
-	if (!listLine(line) && !hasContinuation) return null;
-
-	return {
-		hasContinuation,
-		hasHardBreak: isListHardBreakSourceLine(line),
-		line,
-	};
-}
-
-export function readOrderedParenListSourceBlock(
-	lines: MarkdownLines,
-	startIndex: MarkdownLineIndex,
-): ReadHtmlBlockResult | null {
-	const source = readMatchingSourceLines(
-		lines,
-		startIndex,
-		isOrderedParenListSourceLine,
-	);
-	return source
-		? sourceLinesParagraphBlock(source.lines, source.nextIndex)
-		: null;
-}
-
-export function readIrregularOrderedDotListSourceBlock(
-	lines: MarkdownLines,
-	startIndex: MarkdownLineIndex,
-): ReadHtmlBlockResult | null {
-	const source = readOrderedDotListSourceLines(lines, startIndex);
-	if (!source || !isIrregularOrderedDotListSource(source.lines)) return null;
-
-	return sourceLinesParagraphBlock(source.lines, source.nextIndex);
-}
-
-export function readOrderedDotListSourceLines(
-	lines: MarkdownLines,
-	startIndex: MarkdownLineIndex,
-): ReadSourceLinesResult | null {
-	return readMatchingSourceLines(
-		lines,
-		startIndex,
-		(line) => orderedDotListSourceLineNumber(line) !== null,
-	);
-}
-
-export function readMatchingSourceLines(
-	lines: MarkdownLines,
-	startIndex: MarkdownLineIndex,
-	matches: MarkdownLineMatcher,
-): ReadSourceLinesResult | null {
-	if (!matches(lines[startIndex] ?? "")) return null;
-
-	const sourceLines: string[] = [];
-	let index = startIndex;
-	while (index < lines.length) {
-		const line = lines[index] ?? "";
-		if (!matches(line)) break;
-		sourceLines.push(line);
-		index += 1;
-	}
-
-	return { lines: sourceLines, nextIndex: index };
-}
-
-export function sourceLinesParagraphBlock(
-	sourceLines: MarkdownLines,
-	nextIndex: MarkdownLineIndex,
-): ReadHtmlBlockResult {
-	return {
-		html: `<p>${sourceLines.map(escapeHtml).join("<br>")}</p>`,
-		nextIndex,
-	};
-}
-
-export function readList(
-	lines: MarkdownLines,
-	startIndex: MarkdownLineIndex,
-): ReadHtmlBlockResult | null {
-	const first = listLine(lines[startIndex] ?? "");
-	if (!first) return null;
-
-	const items: MobileMarkdownListItem[] = [];
-	let index = startIndex;
-	const kind: ListKind = first.kind;
-
-	while (
-		index < lines.length &&
-		appendNextListLine(items, lines[index] ?? "", first)
-	) {
-		index += 1;
-	}
-
-	return {
-		html: mobileMarkdownListHtml(kind, items, inlineMarkdownToHtml),
-		nextIndex: index,
-	};
-}
-
-export function appendNextListLine(
-	items: MobileMarkdownListItem[],
-	line: MarkdownLine,
-	first: MobileMarkdownListItem,
-): boolean {
-	const current = listLine(line);
-	if (!current) return appendListContinuation(items, line);
-	if (endsCurrentList(current, first)) return false;
-	items.push(current);
-	return true;
-}
-
-export function endsCurrentList(
-	current: MobileMarkdownListItem,
-	first: MobileMarkdownListItem,
-): boolean {
-	return (
-		current.depth < first.depth ||
-		(current.depth === first.depth && current.kind !== first.kind)
-	);
-}
-
-export function appendListContinuation(
-	items: MobileMarkdownListItem[],
-	line: MarkdownLine,
-): boolean {
-	const item = items[items.length - 1];
-	if (!item || !isListContinuationSourceLine(line, listIndentLength(item)))
-		return false;
-	item.paragraphs = [...(item.paragraphs ?? []), line.trim()];
-	return true;
-}
-
-export function listIndentLength(item: MobileMarkdownListItem): number {
-	return item.depth * 2;
 }
 
 export function readParagraph(
