@@ -4,18 +4,11 @@ export type MobileNoteSwipeAction =
 	| "favorite"
 	| MobileSwipePrimaryAction;
 export const mobileNoteSwipeThreshold = 0.68;
-export const mobileNoteSwipeButtonWidth = 72;
 
 export function mobileNoteSwipeActionOrder(
 	primaryAction: MobileSwipePrimaryAction,
 ): MobileNoteSwipeAction[] {
 	return ["favorite", "delete", primaryAction];
-}
-
-export function mobileNoteSwipeTrayWidth(
-	actionCount = mobileNoteSwipeActionOrder("organize").length,
-) {
-	return actionCount * mobileNoteSwipeButtonWidth;
 }
 
 export function fullSwipeNoteAction(
@@ -28,11 +21,6 @@ export function fullSwipeNoteAction(
 	return primaryAction;
 }
 
-export function mobileNoteSwipeRevealedWidth(translation: number) {
-	"worklet";
-	return Math.abs(Math.min(0, translation));
-}
-
 export function mobileNoteSwipeSecondaryActionWidth(
 	translation: number,
 	width: number,
@@ -40,41 +28,7 @@ export function mobileNoteSwipeSecondaryActionWidth(
 	committed = false,
 ) {
 	"worklet";
-	void primaryAction;
-	if (committed) return 0;
-	const revealed = mobileNoteSwipeRevealedWidth(translation);
-	const tray = mobileNoteSwipeTrayWidth();
-	if (revealed <= tray) return mobileNoteSwipeButtonWidth;
-	const expand = Math.max(width, tray) - tray;
-	if (expand <= 0) return 0;
-	return Math.max(
-		0,
-		mobileNoteSwipeButtonWidth * (1 - Math.min(1, (revealed - tray) / expand)),
-	);
-}
-
-export function mobileNoteSwipePrimaryActionWidth(
-	translation: number,
-	width: number,
-	primaryAction: MobileSwipePrimaryAction = "archive",
-	committed = false,
-) {
-	"worklet";
-	if (committed && width > 0) return width;
-	const revealed = mobileNoteSwipeRevealedWidth(translation);
-	const secondary = mobileNoteSwipeSecondaryActionWidth(
-		translation,
-		width,
-		primaryAction,
-		committed,
-	);
-	const maxWidth =
-		width > 0 ? width : Math.max(mobileNoteSwipeTrayWidth(), revealed);
-	return Math.min(
-		maxWidth,
-		Math.max(
-			Math.min(mobileNoteSwipeButtonWidth, revealed),
-			revealed - 2 * secondary,
-		),
-	);
+	return committed || fullSwipeNoteAction(translation, width, primaryAction)
+		? 0
+		: 72;
 }
