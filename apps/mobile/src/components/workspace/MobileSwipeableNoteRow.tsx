@@ -1,14 +1,12 @@
-import { CheckCircle } from "phosphor-react-native";
 import {
 	type ComponentProps,
 	type ReactNode,
 	useCallback,
-	useEffect,
 	useMemo,
 	useRef,
 	useState,
 } from "react";
-import { StyleSheet, Vibration, View } from "react-native";
+import { Vibration, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Swipeable, {
 	type SwipeableMethods,
@@ -69,6 +67,7 @@ type SwipeActionProps = ComponentProps<typeof MobileNoteSwipeActions>;
 export function MobileSwipeableNoteRow(props: Props) {
 	const exitProgress = useSharedValue(0);
 	const rowHeight = useSharedValue(0);
+	const [dismissing, setDismissing] = useState(false);
 	const row =
 		!props.actions || props.disabled ? (
 			props.children
@@ -77,10 +76,12 @@ export function MobileSwipeableNoteRow(props: Props) {
 				{...props}
 				actions={props.actions}
 				exitProgress={exitProgress}
+				onDismissing={setDismissing}
 			/>
 		);
 	return (
 		<MobileListMotion
+			disableLayoutTransition={dismissing}
 			exitProgress={props.actions && !props.disabled ? exitProgress : undefined}
 			motionProbeId={props.note.id}
 			rowHeight={rowHeight}
@@ -148,34 +149,23 @@ function SwipeableNoteRow({
 	children,
 	note,
 	exitProgress,
+	onDismissing,
 }: Props & {
 	actions: MobileNoteRowActions;
 	exitProgress: SharedValue<number>;
+	onDismissing: (dismissing: boolean) => void;
 }) {
 	const mobileColors = useMobileColors();
 	const { perform, swipeable } = useSwipeableNoteActions(actions, note);
-	const [fullSwipePreview, setFullSwipePreview] = useState(false);
 	const width = useSharedValue(0);
-	useEffect(() => {
-		if (!fullSwipePreview || actions.primarySwipeAction !== "organize") return;
-		const rowWidth = width.get();
-		logMobileMotionEvent("organize-swipe-full-reveal", {
-			action: "organize",
-			actionWidth: rowWidth,
-			checkOnly: true,
-			noteId: note.id,
-			rowWidth,
-			secondaryActionsVisible: false,
-		});
-	}, [actions.primarySwipeAction, fullSwipePreview, note.id, width]);
 	const gestureTranslation = useSharedValue(0);
 	const swipeTranslation = useSharedValue(0);
-	const fullSwipeRevealed = useSharedValue(false);
 	const heldFullSwipeOffset = useSharedValue(0);
 	const holdingFullSwipeOffset = useSharedValue(false);
 	const fullSwipeExitOffset = useSharedValue(0);
 	const committed = useSharedValue(false);
 	const hapticPlayed = useSharedValue(false);
+	const loggedFullReveal = useSharedValue(false);
 	const commitSwipeAction = useCallback(
 		(action: MobileNoteSwipeAction) => {
 			logMobileMotionEvent("swipe-action-commit", {
@@ -187,6 +177,18 @@ function SwipeableNoteRow({
 		},
 		[note.id, perform, width],
 	);
+	const logFullReveal = useCallback(() => {
+		if (actions.primarySwipeAction !== "organize") return;
+		const rowWidth = width.get();
+		logMobileMotionEvent("organize-swipe-full-reveal", {
+			action: "organize",
+			actionWidth: rowWidth,
+			checkOnly: true,
+			noteId: note.id,
+			rowWidth,
+			secondaryActionsVisible: false,
+		});
+	}, [actions.primarySwipeAction, note.id, width]);
 	// Swipeable owns dragging/snapping. This simultaneous observer only commits a full swipe on release.
 	const fullSwipe = useFullSwipeCommitGesture({
 		committed,
@@ -194,12 +196,13 @@ function SwipeableNoteRow({
 		exitProgress,
 		geometryCapture: mobileMotionGeometryCaptureActive,
 		gestureTranslation,
-		fullSwipeRevealed,
 		hapticPlayed,
 		heldFullSwipeOffset,
 		holdingFullSwipeOffset,
+		loggedFullReveal,
 		primarySwipeAction: actions.primarySwipeAction,
-		setFullSwipePreview,
+		onDismissing,
+		logFullReveal,
 		commitSwipeAction,
 		swipeTranslation,
 		width,
@@ -220,14 +223,13 @@ function SwipeableNoteRow({
 		archived: note.archived,
 		favorite: note.favorite,
 		fullSwipeCommitted: committed,
-		fullSwipePreview,
-		fullSwipeRevealed,
 		noteId: note.id,
 		onArchive: () => perform("archive"),
 		onDelete: () => perform("delete"),
 		onFavorite: () => perform("favorite"),
 		onOrganize: () => perform("organize"),
 		primarySwipeAction: actions.primarySwipeAction,
+		translation: visualTranslation,
 		width,
 	};
 	return (
@@ -238,8 +240,6 @@ function SwipeableNoteRow({
 			fullSwipe={fullSwipe}
 			gestureTranslation={gestureTranslation}
 			mobileCardColor={mobileColors.card}
-			fullSwipeColor={mobileColors.green}
-			fullSwipePreview={fullSwipePreview}
 			noteId={note.id}
 			swipeable={swipeable}
 			swipeTranslation={swipeTranslation}
@@ -253,8 +253,6 @@ function SwipeableRowSurface({
 	actionProps,
 	childOffsetStyle,
 	children,
-	fullSwipeColor,
-	fullSwipePreview,
 	fullSwipe,
 	gestureTranslation,
 	mobileCardColor,
@@ -264,11 +262,9 @@ function SwipeableRowSurface({
 	visualTranslation,
 	width,
 }: {
-	actionProps: Omit<SwipeActionProps, "translation">;
+	actionProps: SwipeActionProps;
 	childOffsetStyle: ComponentProps<typeof Animated.View>["style"];
 	children: ReactNode;
-	fullSwipeColor: string;
-	fullSwipePreview: boolean;
 	fullSwipe: ReturnType<typeof useFullSwipeCommitGesture>;
 	gestureTranslation: SharedValue<number>;
 	mobileCardColor: string;
@@ -293,7 +289,7 @@ function SwipeableRowSurface({
 					simultaneousWithExternalGesture={fullSwipe}
 					renderRightActions={(_, translation) => (
 						<SwipeableRowActions
-							actionProps={{ ...actionProps, translation }}
+							actionProps={actionProps}
 							gestureTranslation={gestureTranslation}
 							noteId={noteId}
 							swipeTranslation={swipeTranslation}
@@ -304,36 +300,10 @@ function SwipeableRowSurface({
 				>
 					<Animated.View style={childOffsetStyle}>{children}</Animated.View>
 				</Swipeable>
-				{fullSwipePreview && (
-					<View
-						accessibilityElementsHidden
-						importantForAccessibility="no-hide-descendants"
-						pointerEvents="none"
-						style={[
-							styles.fullSwipeReveal,
-							{ backgroundColor: fullSwipeColor },
-						]}
-					>
-						<CheckCircle color="#FFFFFF" size={24} weight="regular" />
-					</View>
-				)}
 			</View>
 		</GestureDetector>
 	);
 }
-
-const styles = StyleSheet.create({
-	fullSwipeReveal: {
-		alignItems: "center",
-		bottom: 0,
-		justifyContent: "center",
-		left: 0,
-		position: "absolute",
-		right: 0,
-		top: 0,
-		zIndex: 2,
-	},
-});
 
 function SwipeableRowActions({
 	actionProps,
@@ -396,12 +366,13 @@ type FullSwipeGestureConfig = {
 	exitProgress: SharedValue<number>;
 	geometryCapture: SharedValue<boolean>;
 	gestureTranslation: SharedValue<number>;
-	fullSwipeRevealed: SharedValue<boolean>;
 	hapticPlayed: SharedValue<boolean>;
 	heldFullSwipeOffset: SharedValue<number>;
 	holdingFullSwipeOffset: SharedValue<boolean>;
+	loggedFullReveal: SharedValue<boolean>;
 	primarySwipeAction?: "archive" | "organize";
-	setFullSwipePreview: (revealed: boolean) => void;
+	onDismissing: (dismissing: boolean) => void;
+	logFullReveal: () => void;
 	commitSwipeAction: (action: MobileNoteSwipeAction) => void;
 	swipeTranslation: SharedValue<number>;
 	width: SharedValue<number>;
@@ -414,86 +385,104 @@ function useFullSwipeCommitGesture(config: FullSwipeGestureConfig) {
 		exitProgress,
 		geometryCapture,
 		gestureTranslation,
-		fullSwipeRevealed,
 		hapticPlayed,
 		heldFullSwipeOffset,
 		holdingFullSwipeOffset,
+		loggedFullReveal,
 		primarySwipeAction,
-		setFullSwipePreview,
+		onDismissing,
+		logFullReveal,
 		commitSwipeAction,
 		swipeTranslation,
 		width,
 	} = config;
 	return useMemo(
-		() =>
-			Gesture.Pan()
+		() => {
+			const commitIfNeeded = (translationX: number) => {
+				"worklet";
+				const action = fullSwipeNoteAction(
+					translationX,
+					width.get(),
+					primarySwipeAction,
+				);
+				if (!action || committed.get()) return;
+				committed.set(true);
+				geometryCapture.set(true);
+				if (!loggedFullReveal.get()) {
+					loggedFullReveal.set(true);
+					runOnJS(logFullReveal)();
+				}
+				runOnJS(onDismissing)(true);
+				const currentOffset = swipeTranslation.get();
+				heldFullSwipeOffset.set(currentOffset);
+				holdingFullSwipeOffset.set(true);
+				const exitAnimation = withTiming(
+					-width.get() - currentOffset,
+					{ duration: 120 },
+					(exited) => {
+						if (!exited) return;
+						const collapse = withTiming(
+							1,
+							{ duration: 180 },
+							(collapsed) => {
+								if (collapsed) {
+									runOnJS(stopMobileMotionGeometryCapture)();
+									runOnJS(commitSwipeAction)(action);
+								}
+							},
+						);
+						exitProgress.set(withDelay(revealHoldMs, collapse));
+					},
+				);
+				fullSwipeExitOffset.set(exitAnimation);
+			};
+			return Gesture.Pan()
 				.activeOffsetX(-16)
 				.failOffsetX(16)
 				.failOffsetY([-12, 12])
 				.onStart(() => {
+					// Ignore only while a commit collapse is in flight so the row
+					// cannot bounce back open. A later swipe on a reused row is ok.
+					if (committed.get() && exitProgress.get() < 1) return;
+					committed.set(false);
 					gestureTranslation.set(0);
-					fullSwipeRevealed.set(false);
-					runOnJS(setFullSwipePreview)(false);
 					holdingFullSwipeOffset.set(false);
 					fullSwipeExitOffset.set(0);
 					exitProgress.set(0);
 					geometryCapture.set(false);
-					committed.set(false);
 					hapticPlayed.set(false);
+					loggedFullReveal.set(false);
 				})
 				.onUpdate((event) => {
+					if (committed.get()) return;
 					gestureTranslation.set(event.translationX);
 					const action = fullSwipeNoteAction(
 						event.translationX,
 						width.get(),
 						primarySwipeAction,
 					);
-					const revealed = Boolean(action);
-					if (revealed !== fullSwipeRevealed.get()) {
-						fullSwipeRevealed.set(revealed);
-						runOnJS(setFullSwipePreview)(revealed);
-					}
 					if (action && !hapticPlayed.get()) {
 						hapticPlayed.set(true);
 						runOnJS(emitSwipeHaptic)();
 					}
+					if (
+						width.get() > 0 &&
+						event.translationX <= -width.get() &&
+						!loggedFullReveal.get()
+					) {
+						loggedFullReveal.set(true);
+						runOnJS(logFullReveal)();
+					}
 				})
 				.onEnd((event) => {
 					"worklet";
-					const action = fullSwipeNoteAction(
-						event.translationX,
-						width.get(),
-						primarySwipeAction,
-					);
-					if (!action || committed.get()) return;
-					fullSwipeRevealed.set(true);
-					runOnJS(setFullSwipePreview)(true);
-					geometryCapture.set(true);
-					const currentOffset = swipeTranslation.get();
-					heldFullSwipeOffset.set(currentOffset);
-					holdingFullSwipeOffset.set(true);
-					const exitAnimation = withTiming(
-						-width.get() - currentOffset,
-						{ duration: 120 },
-						(exited) => {
-							if (!exited) return;
-							const collapse = withTiming(1, { duration: 180 }, (collapsed) => {
-								if (collapsed) {
-									runOnJS(stopMobileMotionGeometryCapture)();
-									runOnJS(commitSwipeAction)(action);
-								}
-							});
-							exitProgress.set(withDelay(revealHoldMs, collapse));
-						},
-					);
-					fullSwipeExitOffset.set(exitAnimation);
-					committed.set(true);
+					commitIfNeeded(event.translationX);
 				})
 				.onFinalize(() => {
-					if (committed.get()) return;
-					fullSwipeRevealed.set(false);
-					runOnJS(setFullSwipePreview)(false);
-				}),
+					"worklet";
+					commitIfNeeded(gestureTranslation.get());
+				});
+		},
 		[
 			committed,
 			commitSwipeAction,
@@ -501,12 +490,13 @@ function useFullSwipeCommitGesture(config: FullSwipeGestureConfig) {
 			exitProgress,
 			geometryCapture,
 			gestureTranslation,
-			fullSwipeRevealed,
 			hapticPlayed,
 			heldFullSwipeOffset,
 			holdingFullSwipeOffset,
+			logFullReveal,
+			loggedFullReveal,
+			onDismissing,
 			primarySwipeAction,
-			setFullSwipePreview,
 			swipeTranslation,
 			width,
 		],
