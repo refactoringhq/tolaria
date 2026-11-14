@@ -4,11 +4,24 @@ export type MobileNoteSwipeAction =
 	| "favorite"
 	| MobileSwipePrimaryAction;
 export const mobileNoteSwipeThreshold = 0.68;
+export const mobileNoteSwipeButtonWidth = 72;
 
 export function mobileNoteSwipeActionOrder(
 	primaryAction: MobileSwipePrimaryAction,
 ): MobileNoteSwipeAction[] {
 	return ["favorite", "delete", primaryAction];
+}
+
+// Every action row has favorite, delete and one primary action.
+export const mobileNoteSwipeActionCount = 3;
+
+// Worklets call this on the UI thread, so it must stay a worklet and must not
+// call plain JS helpers. A non-worklet call there crashes the app on launch.
+export function mobileNoteSwipeTrayWidth(actionCount?: number) {
+	"worklet";
+	return (
+		(actionCount ?? mobileNoteSwipeActionCount) * mobileNoteSwipeButtonWidth
+	);
 }
 
 export function fullSwipeNoteAction(
@@ -21,14 +34,50 @@ export function fullSwipeNoteAction(
 	return primaryAction;
 }
 
+export function mobileNoteSwipeRevealedWidth(translation: number) {
+	"worklet";
+	return Math.abs(Math.min(0, translation));
+}
+
 export function mobileNoteSwipeSecondaryActionWidth(
 	translation: number,
 	width: number,
 	primaryAction: MobileSwipePrimaryAction = "archive",
-	committed = false,
 ) {
 	"worklet";
-	return committed || fullSwipeNoteAction(translation, width, primaryAction)
-		? 0
-		: 72;
+	void primaryAction;
+	// A committed full swipe keeps following the exit translation to the row
+	// edge, so the trailing buttons finish shrinking instead of vanishing.
+	const revealed = mobileNoteSwipeRevealedWidth(translation);
+	const tray = mobileNoteSwipeTrayWidth();
+	if (revealed <= tray) return mobileNoteSwipeButtonWidth;
+	const expand = Math.max(width, tray) - tray;
+	if (expand <= 0) return 0;
+	return Math.max(
+		0,
+		mobileNoteSwipeButtonWidth * (1 - Math.min(1, (revealed - tray) / expand)),
+	);
+}
+
+export function mobileNoteSwipePrimaryActionWidth(
+	translation: number,
+	width: number,
+	primaryAction: MobileSwipePrimaryAction = "archive",
+) {
+	"worklet";
+	const revealed = mobileNoteSwipeRevealedWidth(translation);
+	const secondary = mobileNoteSwipeSecondaryActionWidth(
+		translation,
+		width,
+		primaryAction,
+	);
+	const maxWidth =
+		width > 0 ? width : Math.max(mobileNoteSwipeTrayWidth(), revealed);
+	return Math.min(
+		maxWidth,
+		Math.max(
+			Math.min(mobileNoteSwipeButtonWidth, revealed),
+			revealed - 2 * secondary,
+		),
+	);
 }
