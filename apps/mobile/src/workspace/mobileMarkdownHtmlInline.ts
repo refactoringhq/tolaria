@@ -1,141 +1,200 @@
-import { escapeHtml, escapeAttribute } from './mobileHtmlEncoding'
-import { linkifyInlineMarkdown } from './mobileMarkdownLinkHtml'
-import { readMobileMarkdownImageAt, type MobileMarkdownImage } from './mobileMarkdownImage'
-import { readMobileInlineMathAt } from './mobileInlineMath'
-import type { HtmlSnippet, MarkdownLine, PlainText, InlineMarkdownSpan, InlineMarkdownTokenReader } from './mobileDocumentContent.types'
+import type {
+	HtmlSnippet,
+	InlineMarkdownSpan,
+	InlineMarkdownTokenReader,
+	MarkdownLine,
+	PlainText,
+} from "./mobileDocumentContent.types";
+import { escapeAttribute, escapeHtml } from "./mobileHtmlEncoding";
+import { readMobileInlineMathAt } from "./mobileInlineMath";
+import {
+	type MobileMarkdownImage,
+	readMobileMarkdownImageAt,
+} from "./mobileMarkdownImage";
+import { linkifyInlineMarkdown } from "./mobileMarkdownLinkHtml";
 
-export function inlineMarkdownToHtml(markdown: MarkdownLine): string {
-  const codeSpans: string[] = []
-  const escapedMarkdownChars: string[] = []
-  const inlineImageSpans: string[] = []
-  const inlineMathSpans: string[] = []
-  const markdownWithoutCodeSpans = markdown.replace(/`([^`]+)`/g, (_match, code: PlainText) => {
-    const token = codeSpanToken(codeSpans.length)
-    codeSpans.push(`<code>${escapeHtml(code)}</code>`)
-    return token
-  })
-  const markdownWithoutInlineImages = inlineImageMarkdownTokens(markdownWithoutCodeSpans, inlineImageSpans)
-  const protectedMarkdown = markdownWithoutInlineImages.replace(
-    /\\([\\`*_[\]{}()#+\-.!|<>~])/g,
-    (_match, char: PlainText) => {
-      const token = escapedMarkdownToken(escapedMarkdownChars.length)
-      escapedMarkdownChars.push(escapeHtml(char))
-      return token
-    },
-  )
-  const markdownWithoutInlineMath = inlineMathMarkdownTokens(protectedMarkdown, inlineMathSpans)
-  const escapedMarkdown = escapeHtml(markdownWithoutInlineMath)
+export function inlineMarkdownToHtml(
+	markdown: MarkdownLine,
+	options: { allowBreakTags?: boolean } = {},
+): string {
+	const codeSpans: string[] = [];
+	const escapedMarkdownChars: string[] = [];
+	const inlineImageSpans: string[] = [];
+	const inlineMathSpans: string[] = [];
+	const markdownWithoutCodeSpans = markdown.replace(
+		/`([^`]+)`/g,
+		(_match, code: PlainText) => {
+			const token = codeSpanToken(codeSpans.length);
+			codeSpans.push(`<code>${escapeHtml(code)}</code>`);
+			return token;
+		},
+	);
+	const markdownWithoutInlineImages = inlineMarkdownTokens(
+		markdownWithoutCodeSpans,
+		inlineImageSpans,
+		inlineImageToken,
+		readInlineImageMarkdownSpan,
+	);
+	const protectedMarkdown = markdownWithoutInlineImages.replace(
+		/\\([\\`*_[\]{}()#+\-.!|<>~])/g,
+		(_match, char: PlainText) => {
+			const token = escapedMarkdownToken(escapedMarkdownChars.length);
+			escapedMarkdownChars.push(escapeHtml(char));
+			return token;
+		},
+	);
+	const markdownWithoutInlineMath = inlineMarkdownTokens(
+		protectedMarkdown,
+		inlineMathSpans,
+		inlineMathToken,
+		readInlineMathMarkdownSpan,
+	);
+	const markdownWithInlineBreaks = options.allowBreakTags
+		? markdownWithoutInlineMath.replace(/<br\s*\/?>/giu, (tag) => {
+				const token = escapedMarkdownToken(escapedMarkdownChars.length);
+				escapedMarkdownChars.push(tag);
+				return token;
+			})
+		: markdownWithoutInlineMath;
+	const escapedMarkdown = escapeHtml(markdownWithInlineBreaks);
 
-  const html = linkifyInlineMarkdown(escapedMarkdown)
-    .replace(/==([^=]+)==/g, '<mark>$1</mark>')
-    .replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/__([^_]+)__/g, '<strong>$1</strong>')
-    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-    .replace(/_([^_]+)_/g, '<em>$1</em>')
-    .replace(/~~([^~]+)~~/g, '<s>$1</s>')
+	const html = linkifyInlineMarkdown(escapedMarkdown)
+		.replace(/==([^=]+)==/g, "<mark>$1</mark>")
+		.replace(/\*\*\*([^*]+)\*\*\*/g, "<strong><em>$1</em></strong>")
+		.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+		.replace(/__([^_]+)__/g, "<strong>$1</strong>")
+		.replace(/\*([^*]+)\*/g, "<em>$1</em>")
+		.replace(/_([^_]+)_/g, "<em>$1</em>")
+		.replace(/~~([^~]+)~~/g, "<s>$1</s>");
 
-  return restoreEscapedMarkdownTokens(
-    restoreCodeSpanTokens(
-      restoreInlineImageTokens(restoreInlineMathTokens(html, inlineMathSpans), inlineImageSpans),
-      codeSpans,
-    ),
-    escapedMarkdownChars,
-  )
-}
-
-export function inlineImageMarkdownTokens(markdown: MarkdownLine, spans: HtmlSnippet[]): MarkdownLine {
-  return inlineMarkdownTokens(markdown, spans, inlineImageToken, readInlineImageMarkdownSpan)
-}
-
-export function inlineMathMarkdownTokens(markdown: MarkdownLine, spans: HtmlSnippet[]): MarkdownLine {
-  return inlineMarkdownTokens(markdown, spans, inlineMathToken, readInlineMathMarkdownSpan)
+	return restoreEscapedMarkdownTokens(
+		restoreCodeSpanTokens(
+			restoreInlineImageTokens(
+				restoreInlineMathTokens(html, inlineMathSpans),
+				inlineImageSpans,
+			),
+			codeSpans,
+		),
+		escapedMarkdownChars,
+	);
 }
 
 export function inlineMarkdownTokens(
-  markdown: MarkdownLine,
-  spans: HtmlSnippet[],
-  tokenForIndex: (index: number) => string,
-  readSpan: InlineMarkdownTokenReader,
+	markdown: MarkdownLine,
+	spans: HtmlSnippet[],
+	tokenForIndex: (index: number) => string,
+	readSpan: InlineMarkdownTokenReader,
 ): MarkdownLine {
-  let result = ''
-  let index = 0
+	let result = "";
+	let index = 0;
 
-  while (index < markdown.length) {
-    const span = readSpan(markdown, index)
-    if (!span) {
-      result += markdown.charAt(index)
-      index += 1
-      continue
-    }
+	while (index < markdown.length) {
+		const span = readSpan(markdown, index);
+		if (!span) {
+			result += markdown.charAt(index);
+			index += 1;
+			continue;
+		}
 
-    const token = tokenForIndex(spans.length)
-    spans.push(span.html)
-    result += token
-    index = span.endIndex
-  }
+		const token = tokenForIndex(spans.length);
+		spans.push(span.html);
+		result += token;
+		index = span.endIndex;
+	}
 
-  return result
+	return result;
 }
 
-export function readInlineImageMarkdownSpan(markdown: MarkdownLine, index: number): InlineMarkdownSpan | null {
-  const image = isEscapedInlineImageStart(markdown, index)
-    ? null
-    : readMobileMarkdownImageAt(markdown, index)
-  return image ? { endIndex: image.endIndex, html: inlineImageHtml(image.image) } : null
+export function readInlineImageMarkdownSpan(
+	markdown: MarkdownLine,
+	index: number,
+): InlineMarkdownSpan | null {
+	const image = isEscapedInlineImageStart(markdown, index)
+		? null
+		: readMobileMarkdownImageAt(markdown, index);
+	return image
+		? { endIndex: image.endIndex, html: inlineImageHtml(image.image) }
+		: null;
 }
 
-export function isEscapedInlineImageStart(markdown: MarkdownLine, index: number): boolean {
-  return markdown[index] === '!' && index > 0 && markdown[index - 1] === '\\'
+export function isEscapedInlineImageStart(
+	markdown: MarkdownLine,
+	index: number,
+): boolean {
+	return markdown[index] === "!" && index > 0 && markdown[index - 1] === "\\";
 }
 
 export function inlineImageHtml(image: MobileMarkdownImage): HtmlSnippet {
-  const title = image.title ? ` title="${escapeAttribute(image.title)}"` : ''
-  return `<img src="${escapeAttribute(image.src)}" alt="${escapeAttribute(image.alt)}"${title}>`
+	const title = image.title ? ` title="${escapeAttribute(image.title)}"` : "";
+	return `<img src="${escapeAttribute(image.src)}" alt="${escapeAttribute(image.alt)}"${title}>`;
 }
 
-export function readInlineMathMarkdownSpan(markdown: MarkdownLine, index: number): InlineMarkdownSpan | null {
-  const math = readMobileInlineMathAt({ index, text: markdown })
-  return math ? { endIndex: math.end + 1, html: inlineMathHtml(math.latex) } : null
+export function readInlineMathMarkdownSpan(
+	markdown: MarkdownLine,
+	index: number,
+): InlineMarkdownSpan | null {
+	const math = readMobileInlineMathAt({ index, text: markdown });
+	return math
+		? { endIndex: math.end + 1, html: inlineMathHtml(math.latex) }
+		: null;
 }
 
 export function inlineMathHtml(latex: PlainText): HtmlSnippet {
-  const escapedLatex = escapeAttribute(latex)
-  return `<span class="math math--inline" data-latex="${escapedLatex}" data-type="mathInline">$${escapeHtml(latex)}$</span>`
+	const escapedLatex = escapeAttribute(latex);
+	return `<span class="math math--inline" data-latex="${escapedLatex}" data-type="mathInline">$${escapeHtml(latex)}$</span>`;
 }
 
 export function codeSpanToken(index: number): string {
-  return `\u0000CODESPAN${index}\u0000`
+	return `\u0000CODESPAN${index}\u0000`;
 }
 
 export function escapedMarkdownToken(index: number): string {
-  return `\u0000ESCAPEDMARKDOWN${index}\u0000`
+	return `\u0000ESCAPEDMARKDOWN${index}\u0000`;
 }
 
 export function inlineMathToken(index: number): string {
-  return `\u0000INLINEMATH${index}\u0000`
+	return `\u0000INLINEMATH${index}\u0000`;
 }
 
 export function inlineImageToken(index: number): string {
-  return `\u0000INLINEIMAGE${index}\u0000`
+	return `\u0000INLINEIMAGE${index}\u0000`;
 }
 
-export function restoreCodeSpanTokens(html: HtmlSnippet, codeSpans: HtmlSnippet[]): HtmlSnippet {
-  return codeSpans.reduce((current, codeSpan, index) => (
-    current.replaceAll(codeSpanToken(index), codeSpan)
-  ), html)
+export function restoreCodeSpanTokens(
+	html: HtmlSnippet,
+	codeSpans: HtmlSnippet[],
+): HtmlSnippet {
+	return restoreInlineTokens(html, codeSpans, codeSpanToken);
 }
 
-export function restoreEscapedMarkdownTokens(html: HtmlSnippet, escapedMarkdownChars: HtmlSnippet[]): HtmlSnippet {
-  return escapedMarkdownChars.reduce((current, escapedChar, index) => (
-    current.replaceAll(escapedMarkdownToken(index), escapedChar)
-  ), html)
+export function restoreEscapedMarkdownTokens(
+	html: HtmlSnippet,
+	escapedMarkdownChars: HtmlSnippet[],
+): HtmlSnippet {
+	return restoreInlineTokens(html, escapedMarkdownChars, escapedMarkdownToken);
 }
 
-export function restoreInlineMathTokens(html: HtmlSnippet, spans: HtmlSnippet[]): HtmlSnippet {
-  return spans.reduce((current, span, index) => current.replaceAll(inlineMathToken(index), span), html)
+export function restoreInlineMathTokens(
+	html: HtmlSnippet,
+	spans: HtmlSnippet[],
+): HtmlSnippet {
+	return restoreInlineTokens(html, spans, inlineMathToken);
 }
 
-export function restoreInlineImageTokens(html: HtmlSnippet, spans: HtmlSnippet[]): HtmlSnippet {
-  return spans.reduce((current, span, index) => current.replaceAll(inlineImageToken(index), span), html)
+export function restoreInlineImageTokens(
+	html: HtmlSnippet,
+	spans: HtmlSnippet[],
+): HtmlSnippet {
+	return restoreInlineTokens(html, spans, inlineImageToken);
+}
+
+function restoreInlineTokens(
+	html: HtmlSnippet,
+	spans: HtmlSnippet[],
+	tokenForIndex: (index: number) => string,
+): HtmlSnippet {
+	return spans.reduce(
+		(current, span, index) => current.replaceAll(tokenForIndex(index), span),
+		html,
+	);
 }
