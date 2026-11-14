@@ -150,13 +150,14 @@ The existing iPhone 16 Pro simulator is booted with Device Hub open, and Metro s
 ## Validation
 
 - TDD: the table-cell regression failed before the converter change and passes after it. Focused mobile test: 41 passed. Full mobile suite: 462 files / 2,782 tests passed.
-- `mobile:lint`, `mobile:typecheck`, root `lint`, root TypeScript check, and root `test` passed. Root Vitest: 678 files / 6,397 passed, 1 skipped. Server tests: 48 files / 1,033 passed, 2 skipped; server line coverage 95.82%. Root frontend coverage: 89.72% lines. Rust tests: 1,197 passed, 2 ignored; Rust line coverage 86.00% (gate >=85%).
-- Biome check on all 3 changed TypeScript paths passed. `git diff --check` passed; demo-vault dirt check is clean.
-- Local Codacy scans completed for all changed code/test paths with ESLint, Lizard, Opengrep OSS, and Trivy; zero findings. Biome was checked separately. Dashboard pre-edit baseline for each path was zero.
-- CodeScene final scores: all 3 changed files are 10.0. Pre-commit safeguard and `origin/main` change-set review passed (3 code files, no issues). Project Hotspot/Average post-push scores and exact-SHA dashboard/CI verification are pending.
-- Localization: no UI copy changes. PostHog: no event needed because this is a rendering correction to existing content. Refactoring: shared inline token restoration. ADRs/docs: none. Demo vaults: clean.
+- `mobile:lint`, `mobile:typecheck`, root `lint`, root TypeScript check, and root tests passed. Root coverage: 6,397 passed, 1 skipped; frontend line coverage 89.72%. Server tests: 48 files / 1,033 passed, 2 skipped; server line coverage 95.82%. Rust tests: 1,197 passed, 2 ignored; Rust line coverage 86.89% (gate >=85%). Curated Playwright smoke: 40/40 passed.
+- Biome check on the changed TypeScript paths passed. `git diff --check` passed; demo-vault dirt check is clean.
+- Local Codacy scans completed on all four changed code/test paths with ESLint, Lizard, Opengrep OSS, and Trivy; zero findings. Biome was checked separately. Exact-SHA dashboard analysis for `a3414a3400b25abc899702258154d3276144e251` completed with no analyzer problems and zero findings on the four paths.
+- CodeScene final scores: all changed code files are 10.0. Pre-commit safeguard and `origin/main` change-set review passed. Project Hotspot 10.0; Average 9.982370033568255. All CircleCI validation jobs passed, including mobile OTA publication.
+- Localization: no UI copy changes. PostHog: no event needed because this is a rendering correction to existing content. Refactoring: extracted list parsing/rendering and inline token restoration helpers. ADRs/docs: none. Demo vaults: clean.
 
 ## Not Tested
 
-- Tolaria's native iOS WebView was not relaunched against this checkout: the existing QA simulator app was attached to a stale Metro port, and preserving the shared simulator/Metro state was safer than redirecting it. The attached WebKit image verifies converter output only.
-- Byte-identical save after editing a note containing break tags was covered through the source-preserving serializer regression, but not by an on-device edit-and-save flow.
+- Tolaria's native iOS WebView rendering was not verified; the attached WebKit image verifies converter output only.
+- Native edit-and-save round-trip on iOS was not exercised. Source-preserving serializer regression coverage passed.
+- GitHub signed release-artifact workflow's aarch64 job failed during Apple notarization with HTTP 403 because a required Apple developer agreement is missing or expired. CircleCI validation and alpha OTA publication both passed.
