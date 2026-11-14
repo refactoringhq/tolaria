@@ -316,6 +316,28 @@ describe("note row input ownership", () => {
 		}
 	});
 
+	it("still commits a full organize swipe if only the gesture finalize runs", () => {
+		renderRow(false, "organize");
+		setSwipeWidth();
+		beginSwipe();
+		crossSwipeThreshold();
+		input.onFinalize?.();
+		while (input.timingCallbacks.length) input.timingCallbacks.shift()?.(true);
+		expect(input.onOrganize).toHaveBeenCalledWith([fixtureNotes[0].id]);
+	});
+
+	it("does not reopen a collapsing organize swipe if another gesture starts", () => {
+		renderRow(false, "organize");
+		setSwipeWidth();
+		beginSwipe();
+		crossSwipeThreshold();
+		input.onEnd?.({ translationX: -290 });
+		expect(input.onOrganize).not.toHaveBeenCalled();
+		beginSwipe();
+		while (input.timingCallbacks.length) input.timingCallbacks.shift()?.(true);
+		expect(input.onOrganize).toHaveBeenCalledTimes(1);
+	});
+
 	it("does not favorite or archive on a full right swipe", () => {
 		renderRow();
 		input.onLayout?.({
