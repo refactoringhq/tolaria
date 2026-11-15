@@ -49,6 +49,21 @@ describe("consent-bound mobile analytics", () => {
 		);
 	});
 
+	it("records link menu actions without note targets or URLs", () => {
+		expectEvent(
+			{ name: "mobile_note_link_options_opened", kind: "external" },
+			{ kind: "external" },
+		);
+		expectEvent(
+			{ name: "mobile_note_link_copied", kind: "wikilink" },
+			{ kind: "wikilink" },
+		);
+		expectEvent(
+			{ name: "mobile_note_link_shared", kind: "external" },
+			{ kind: "external" },
+		);
+	});
+
 	it("records task toggle state without note content", () => {
 		expectEvent(
 			{ name: "mobile_note_task_toggled", state: "checked" },
