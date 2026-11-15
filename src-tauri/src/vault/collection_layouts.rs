@@ -92,7 +92,7 @@ fn write_layout_yaml(path: &Path, yaml: &str) -> Result<(), String> {
         .write_all(yaml.as_bytes())
         .map_err(|error| format!("Failed to write layout file: {error}"))?;
     staged
-        .persist(&path)
+        .persist(path)
         .map(|_| ())
         .map_err(|error| format!("Failed to replace layout file: {}", error.error))
 }
