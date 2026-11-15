@@ -102,14 +102,17 @@ describe('CollectionLayoutBody', () => {
     })
   })
 
-  it('preserves Kanban View settings while List is active and restores them after reopening', () => {
+  it('preserves Kanban View settings across repeated List and Kanban switches', () => {
     const view = savedView({ type: 'kanban', groupBy: 'status', properties: ['owner'], columnOrder: ['Done', 'Doing'] })
     const selection: SidebarSelection = { kind: 'view', filename: view.filename }
-    const updateView = vi.fn()
+    let currentView = view
+    const updateView = vi.fn((_filename, patch: Partial<ViewFile['definition']>) => {
+      currentView = { ...currentView, definition: { ...currentView.definition, ...patch } }
+    })
     const visibleEntries = [makeEntry({ path: '/vault/a.md', title: 'Alpha', status: 'Doing', properties: { owner: 'Luca', priority: 'High' } })]
     const initialProps = props(selection, {
       presentation: presentationFromViewDefinition(view.definition),
-      views: [view],
+      views: [currentView],
       onUpdateViewDefinition: updateView,
       visibleEntries,
     })
@@ -117,7 +120,7 @@ describe('CollectionLayoutBody', () => {
     const firstMount = render(<CollectionLayoutBody {...initialProps} />)
     fireEvent.change(screen.getByRole('combobox', { name: 'Layout' }), { target: { value: 'list' } })
 
-    const savedPresentation = updateView.mock.calls[0]?.[1]?.presentation
+    const savedPresentation = currentView.definition.presentation
     expect(savedPresentation).toEqual(expect.objectContaining({
       type: 'list',
       properties: ['priority'],
@@ -147,6 +150,31 @@ describe('CollectionLayoutBody', () => {
       properties: ['owner'],
       columnOrder: ['Done', 'Doing'],
     }))
+
+    // A second List → Kanban → List cycle must retain the saved settings too.
+    fireEvent.change(screen.getByRole('combobox', { name: 'Layout' }), { target: { value: 'list' } })
+    const secondListPresentation = currentView.definition.presentation
+    expect(secondListPresentation).toEqual(expect.objectContaining({
+      type: 'list',
+      kanbanConfig: { groupBy: 'status', properties: ['owner'], columnOrder: ['Done', 'Doing'] },
+    }))
+    const secondListView: ViewFile = { ...currentView, definition: { ...currentView.definition, presentation: secondListPresentation } }
+    const secondMount = render(<CollectionLayoutBody {...props(selection, {
+      presentation: presentationFromViewDefinition(secondListView.definition),
+      views: [secondListView],
+      onUpdateViewDefinition: updateView,
+      visibleEntries,
+    })} />)
+    const reopenedLayout = screen.getAllByRole('combobox', { name: 'Layout' }).at(-1)
+    if (!reopenedLayout) throw new Error('Reopened View layout selector was not rendered')
+    fireEvent.change(reopenedLayout, { target: { value: 'kanban' } })
+    expect(screen.getAllByRole('combobox', { name: 'Group by' }).at(-1)).toHaveValue('status')
+    const reopenedCardFields = screen.getAllByText('Card fields').at(-1)
+    if (!reopenedCardFields) throw new Error('Reopened View card fields control was not rendered')
+    fireEvent.click(reopenedCardFields)
+    expect(screen.getAllByRole('checkbox', { name: 'owner' }).at(-1)).toBeChecked()
+    expect(screen.getAllByRole('checkbox', { name: 'priority' }).at(-1)).not.toBeChecked()
+    secondMount.unmount()
   })
 
   it('switches layouts through the keyboard and command event', () => {
