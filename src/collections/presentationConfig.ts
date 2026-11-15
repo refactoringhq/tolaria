@@ -1,7 +1,9 @@
 import type { ViewDefinition } from '../types'
 import {
+  COLLECTION_PRESENTATION_KANBAN,
   COLLECTION_PRESENTATION_LIST,
   type CollectionPresentationConfig,
+  type KanbanCollectionPresentationConfig,
   type ListCollectionPresentationConfig,
 } from './collectionTypes'
 
@@ -27,6 +29,15 @@ function listPresentation(source: UnknownRecord, fallback: ListCollectionPresent
   }
 }
 
+function kanbanPresentation(source: UnknownRecord): KanbanCollectionPresentationConfig {
+  return {
+    type: COLLECTION_PRESENTATION_KANBAN,
+    groupBy: nullableString(source.groupBy),
+    properties: stringArray(source.properties),
+    columnOrder: stringArray(source.columnOrder),
+  }
+}
+
 export function defaultListPresentation(): ListCollectionPresentationConfig {
   return { type: COLLECTION_PRESENTATION_LIST, sort: null, properties: [] }
 }
@@ -39,6 +50,7 @@ export function presentationFromViewDefinition(definition: ViewDefinition): Coll
   }
   const rawPresentation = Reflect.get(definition as unknown as UnknownRecord, 'presentation')
   if (!isRecord(rawPresentation)) return fallback
-  if (rawPresentation.type !== COLLECTION_PRESENTATION_LIST) return fallback
-  return listPresentation(rawPresentation, fallback)
+  if (rawPresentation.type === COLLECTION_PRESENTATION_KANBAN) return kanbanPresentation(rawPresentation)
+  if (rawPresentation.type === COLLECTION_PRESENTATION_LIST) return listPresentation(rawPresentation, fallback)
+  return fallback
 }

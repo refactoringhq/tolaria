@@ -1,9 +1,9 @@
-import { describe, it, expect, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { useCommandRegistry, buildTypeCommands, extractVaultTypes, pluralizeType, groupSortKey } from './useCommandRegistry'
-import type { CommandAction } from './useCommandRegistry'
+import { describe, expect, it, vi } from 'vitest'
 import { NEW_AI_CHAT_EVENT, OPEN_AI_CHAT_EVENT } from '../utils/aiPromptBridge'
 import { formatShortcutDisplay } from './appCommandCatalog'
+import type { CommandAction } from './useCommandRegistry'
+import { buildTypeCommands, extractVaultTypes, groupSortKey, pluralizeType, useCommandRegistry } from './useCommandRegistry'
 
 function makeConfig(overrides: Record<string, unknown> = {}) {
   return {
@@ -362,6 +362,18 @@ describe('useCommandRegistry', () => {
     const { result } = renderHook(() => useCommandRegistry(config))
     const cmd = findCommand(result.current, 'customize-note-list-columns')
     expect(cmd!.enabled).toBe(false)
+  })
+
+  it('provides a command-palette action to toggle the collection layout', () => {
+    const dispatch = vi.spyOn(window, 'dispatchEvent')
+    const { result } = renderHook(() => useCommandRegistry(makeConfig()))
+    const command = findCommand(result.current, 'toggle-collection-layout')
+
+    expect(command?.enabled).toBe(true)
+    expect(command?.label).toBe('Toggle Note List Layout')
+    command?.execute()
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'laputa:toggle-collection-layout' }))
+    dispatch.mockRestore()
   })
 
   it('shows Cmd+E on toggle organized and removes it from archive note', () => {

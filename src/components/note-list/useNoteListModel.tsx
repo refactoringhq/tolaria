@@ -1,26 +1,28 @@
-import { useEffect, useMemo, useCallback } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
+import { collectionFromSelection } from '../../collections/collectionFromSelection'
+import { useDateDisplayFormat } from '../../hooks/useAppPreferences'
+import type { MultiSelectState } from '../../hooks/useMultiSelect'
+import type { ImmediateCreateOptions } from '../../hooks/useNoteCreation'
+import { prefetchNoteContent } from '../../hooks/useTabManagement'
+import type { AppLocale } from '../../lib/i18n'
 import type {
-  VaultEntry,
-  SidebarSelection,
+  InboxPeriod,
   ModifiedFile,
   NoteStatus,
-  InboxPeriod,
+  SidebarSelection,
+  VaultEntry,
   ViewDefinition,
   ViewFile,
 } from '../../types'
-import type { AppLocale } from '../../lib/i18n'
-import type { NoteListFilter, RelationshipGroup } from '../../utils/noteListHelpers'
-import { countByFilter, countAllByFilter, countAllNotesByFilter } from '../../utils/noteListHelpers'
 import type { AllNotesFileVisibility } from '../../utils/allNotesFileVisibility'
 import type { GitRepositoryOption } from '../../utils/gitRepositories'
-import type { ImmediateCreateOptions } from '../../hooks/useNoteCreation'
+import type { NoteListFilter, RelationshipGroup } from '../../utils/noteListHelpers'
+import { countAllByFilter, countAllNotesByFilter, countByFilter } from '../../utils/noteListHelpers'
+import { addNoteListSearchToggleListener, dispatchNoteListSearchAvailability } from '../../utils/noteListSearchEvents'
 import { NoteItem } from '../NoteItem'
-import { prefetchNoteContent } from '../../hooks/useTabManagement'
-import type { MultiSelectState } from '../../hooks/useMultiSelect'
-import { isDeletedNoteEntry, resolveHeaderTitle, type DeletedNoteEntry } from './noteListUtils'
+import { useChangesContextMenu } from './NoteListChangesMenu'
+import { useNoteListContextMenu } from './NoteListContextMenu'
 import { useNoteListFullTextSearch } from './noteListFullTextSearch'
-import { filterEntriesByNoteListQuery, filterGroupsByNoteListQuery } from './noteListSearch'
-import { useNoteListSearchState } from './useNoteListSearchState'
 import {
   useChangeStatusResolver,
   useListPropertyPicker,
@@ -31,16 +33,12 @@ import {
   useTypeEntryMap,
   useVisibleNotesSync,
 } from './noteListHooks'
-import { useChangesContextMenu } from './NoteListChangesMenu'
-import { useNoteListContextMenu } from './NoteListContextMenu'
-import { addNoteListSearchToggleListener, dispatchNoteListSearchAvailability } from '../../utils/noteListSearchEvents'
-import { useDateDisplayFormat } from '../../hooks/useAppPreferences'
+import { filterEntriesByNoteListQuery, filterGroupsByNoteListQuery } from './noteListSearch'
+import { type DeletedNoteEntry, isDeletedNoteEntry, resolveHeaderTitle } from './noteListUtils'
+import { useNoteListPreload } from './useNoteListPreload'
+import { useNoteListSearchState } from './useNoteListSearchState'
 
 type EntitySelection = Extract<SidebarSelection, { kind: 'entity' }>
-const LIKELY_NEXT_PRELOAD_LIMIT = 6
-const ADJACENT_PRELOAD_RADIUS = 3
-const LIKELY_NEXT_PRELOAD_START_DELAY_MS = 350
-const LIKELY_NEXT_PRELOAD_STEP_DELAY_MS = 180
 
 function resolveViewFlags(selection: SidebarSelection) {
   const isSectionGroup = selection.kind === 'sectionGroup'
@@ -58,51 +56,6 @@ function resolveViewFlags(selection: SidebarSelection) {
     isChangesView,
     showFilterPills,
   }
-}
-
-function likelyNextPreloadEntries(entries: VaultEntry[], selectedNotePath: string | null): VaultEntry[] {
-  const selectedIndex = entries.findIndex((entry) => entry.path === selectedNotePath)
-  const start = Math.max(0, selectedIndex - ADJACENT_PRELOAD_RADIUS)
-  const end =
-    selectedIndex >= 0
-    ? Math.min(entries.length, selectedIndex + ADJACENT_PRELOAD_RADIUS + 1)
-    : Math.min(entries.length, LIKELY_NEXT_PRELOAD_LIMIT)
-  return entries
-    .slice(start, end)
-    .map((entry, offset) => ({ entry, index: start + offset }))
-    .sort((left, right) => {
-      if (selectedIndex < 0) return 0
-      return Math.abs(left.index - selectedIndex) - Math.abs(right.index - selectedIndex)
-    })
-    .map(({ entry }) => entry)
-    .filter((entry) => entry.path !== selectedNotePath && !isDeletedNoteEntry(entry) && entry.fileKind !== 'binary')
-    .slice(0, LIKELY_NEXT_PRELOAD_LIMIT)
-}
-
-function useLikelyNextPreload(entries: VaultEntry[], selectedNotePath: string | null) {
-  useEffect(() => {
-    const candidates = likelyNextPreloadEntries(entries, selectedNotePath)
-    if (candidates.length === 0) return
-
-    let stepTimer: number | null = null
-    let candidateIndex = 0
-    const startTimer = window.setTimeout(() => {
-      const preloadNext = () => {
-        const entry = candidates.at(candidateIndex)
-        if (!entry) return
-        const parsedBlockPreload = candidateIndex === 0
-        candidateIndex += 1
-        prefetchNoteContent(entry, { parsedBlockPreload })
-        stepTimer = window.setTimeout(preloadNext, LIKELY_NEXT_PRELOAD_STEP_DELAY_MS)
-      }
-      preloadNext()
-    }, LIKELY_NEXT_PRELOAD_START_DELAY_MS)
-
-    return () => {
-      window.clearTimeout(startTimer)
-      if (stepTimer !== null) window.clearTimeout(stepTimer)
-    }
-  }, [entries, selectedNotePath])
 }
 
 function useBulkActions(
@@ -246,7 +199,7 @@ function useNoteListContent(options: UseNoteListContentParams) {
     searched,
     searchedGroups,
   })
-  useLikelyNextPreload(searched, selectedNotePath)
+  useNoteListPreload(searched, selectedNotePath)
   return {
     ...sort,
     ...properties,
@@ -406,12 +359,16 @@ export interface NoteListProps {
   views?: ViewFile[]
   visibleNotesRef?: React.MutableRefObject<VaultEntry[]>
   allNotesFileVisibility?: AllNotesFileVisibility
+  vaultPath?: string
   locale?: AppLocale
 }
 
-function buildNoteListLayoutModel(params: {
+type NoteListLayoutModelParams = {
   selection: SidebarSelection
+  vaultPath?: NoteListProps['vaultPath']
   views?: ViewFile[]
+  onUpdateViewDefinition?: NoteListProps['onUpdateViewDefinition']
+  onUpdateTypeSort?: NoteListProps['onUpdateTypeSort']
   sidebarCollapsed?: boolean
   loading: boolean
   modifiedFilesError?: string | null
@@ -430,7 +387,9 @@ function buildNoteListLayoutModel(params: {
     renderItem: (entry: VaultEntry, options?: { forceSelected?: boolean }) => React.ReactNode
     entitySelection: EntitySelection | null
   }
-}) {
+}
+
+function noteListHeaderModel(params: NoteListLayoutModelParams) {
   const flags = resolveViewFlags(params.selection)
   return {
     ...flags,
@@ -454,6 +413,12 @@ function buildNoteListLayoutModel(params: {
     toggleSearch: params.content.toggleSearch,
     setSearch: params.content.setSearch,
     handleSearchKeyDown: params.content.handleSearchKeyDown,
+  }
+}
+
+function noteListInteractionModel(params: NoteListLayoutModelParams) {
+  const { gitRepositories = [], selectedGitRepositoryPath = '' } = params
+  return {
     handleListKeyDown: params.interaction.handleListKeyDown,
     noteListPanelRef: params.interaction.noteListKeyboard.panelRef,
     handleNoteListPanelBlurCapture: params.interaction.noteListKeyboard.handlePanelBlurCapture,
@@ -472,11 +437,17 @@ function buildNoteListLayoutModel(params: {
     typeEntryMap: params.content.typeEntryMap,
     handleClickNote: params.interaction.handleClickNote,
     isArchivedView: params.content.isArchivedView,
-    gitRepositories: params.gitRepositories ?? [],
-    selectedGitRepositoryPath: params.selectedGitRepositoryPath ?? '',
+    gitRepositories,
+    selectedGitRepositoryPath,
     onGitRepositoryChange: params.onGitRepositoryChange,
     modifiedFilesError: params.modifiedFilesError,
     visibleEntries: params.content.visibleEntries,
+    selection: params.selection,
+    presentation: collectionFromSelection(params.selection, { views: params.views }).presentation,
+    vaultPath: params.vaultPath,
+    onUpdateViewDefinition: params.onUpdateViewDefinition,
+    views: params.views,
+    onUpdateTypeSort: params.onUpdateTypeSort,
     searched: params.content.searched,
     query: params.content.query,
     noteListFilter: params.noteListFilter,
@@ -493,6 +464,13 @@ function buildNoteListLayoutModel(params: {
       </>
     ),
     dialogNode: params.interaction.changesContextMenu.dialogNode,
+  }
+}
+
+function buildNoteListLayoutModel(params: NoteListLayoutModelParams) {
+  return {
+    ...noteListHeaderModel(params),
+    ...noteListInteractionModel(params),
   }
 }
 

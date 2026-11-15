@@ -2,6 +2,17 @@ version: 1.1.0
 files:
   e6ab9bf36c30b9d72bc97897e0d89a16:
     command.noMatches: a2a97d96e196148e04c51c47d985e327
+    layout.label: ebd9bec4d70abc789d439c1f136b0538
+    layout.list: 4ee29ca12c7d126654bd0e5275de6135
+    layout.kanban: 39b32dd45982038aa5704ca2728334ee
+    layout.groupBy: be87d8c3de2675bbc53f9442af9d8feb
+    layout.cardFields: a79bf3d07790a40b0b40f8a9585d0dd5
+    layout.noValue: 4073be4cbc7d01e4d4ae11641bf84cdf
+    layout.hideCardFields: e5710349a0086940e2bf5b2b71dd7fa5
+    layout.showStatus: f37d70f5f6d783f4d4994e8ea5b6b1cc
+    layout.noPropertyValues: 74ec1a0f19708fb813362281328f491a
+    layout.moveColumnLeft: e14a804ffe2fb1168115f6ecd727e07a
+    layout.moveColumnRight: ccde83448018d2ffc82d7924b0a2a23d
     command.palettePlaceholder: 6d6b61b4c08ed382ad7ba406a9ba395d
     command.footerNavigate: e3808db59d29bcfc91532d6539c4f9ae
     command.footerSelect: 6d73339906ed42e20f6be91bf7f5f4a9
@@ -192,6 +203,7 @@ files:
     command.view.editorNoteList: b9604b1609eb6f581cd9570dca72d3f0
     command.view.fullLayout: 1cebdf839eee2b1713828731aaa3b507
     command.view.toggleProperties: 54f12756a363401243d82cbd0466117e
+    command.view.toggleNoteListLayout: 8616daa1ff557a6f4f4f4a8132eacd3d
     command.view.toggleDiff: 148a10ef6f04f897e73289f529ecae86
     command.view.toggleRaw: 9b622257cd6345ceaf58e42b1410899b
     command.view.noteWidthNormal: d29ab88a55ae178bf4b5257201e51801
@@ -1320,20 +1332,6 @@ files:
     mobile.sync.action: d8e87c0927539672f54462c837be0b7f
     mobile.sync.failedAt: 3f2a955506277e0a541b9dbf8c4283e0
     mobile.properties.addRelationships: 56cd8370bfb1fdb0d0286f625fab354b
-    mobile.workspace.action.deleted: 5fe6005bf6e415c950c011fb65f12b8f
-    mobile.workspace.action.archived: 7d69b3cb4cada18ae61811304f8fbcb5
-    mobile.workspace.action.unarchived: 20fce42367f95d35f0f9ae163848cc58
-    mobile.workspace.action.organized: 91bb171bba89e5ac053d8a5ad90d55d7
-    mobile.workspace.action.unorganized: 7336041546af6d3a34581fac9d822f7f
-    mobile.workspace.action.relationshipRemoved: f9790beb288de958c9aa78147ea2117d
-    mobile.workspace.action.multiple: 9cb9aa460595ca3f9a5b1992a792bd09
-    mobile.workspace.actionFailure.deleted: 99c0ddcab7780a693734a7f85bb3f8f3
-    mobile.workspace.actionFailure.archived: fe39ec7529df67fcf0dc10dca14e408d
-    mobile.workspace.actionFailure.unarchived: 875581b2728987fd0ce570c9754e7128
-    mobile.workspace.actionFailure.organized: 9705c6beb9b61192dca2e1a941bf234c
-    mobile.workspace.actionFailure.unorganized: 33df835c54ec9bac04ad3fdc245e792b
-    mobile.workspace.actionFailure.relationshipRemoved: a39d152cf9b483d106e48617f610cef0
-    mobile.workspace.actionFailure.multiple: b6352ef2b1623ff79cbc7cb6e74f2bc7
     feedback.community.title: 531631ae7d07851aa53abf507b9a5020
     feedback.community.description: d1fa9eb431f008ec1f02b24e28ec6351
     feedback.community.cta: 5c7ef8c320c94884cd78974ecc493846
@@ -1386,3 +1384,17 @@ files:
     sharing.readOnly.banner: 375ea827f2615ccd503376bfe4123367
     sharing.revoked.title: a701366b384b7c3f2ee9fecd6d80ae7e
     sharing.revoked.description: f49060d7f6f4c8292b73e0f2279aeeff
+    mobile.workspace.action.deleted: 5fe6005bf6e415c950c011fb65f12b8f
+    mobile.workspace.action.archived: 7d69b3cb4cada18ae61811304f8fbcb5
+    mobile.workspace.action.unarchived: 20fce42367f95d35f0f9ae163848cc58
+    mobile.workspace.action.organized: 91bb171bba89e5ac053d8a5ad90d55d7
+    mobile.workspace.action.unorganized: 7336041546af6d3a34581fac9d822f7f
+    mobile.workspace.action.relationshipRemoved: f9790beb288de958c9aa78147ea2117d
+    mobile.workspace.action.multiple: 9cb9aa460595ca3f9a5b1992a792bd09
+    mobile.workspace.actionFailure.deleted: 99c0ddcab7780a693734a7f85bb3f8f3
+    mobile.workspace.actionFailure.archived: fe39ec7529df67fcf0dc10dca14e408d
+    mobile.workspace.actionFailure.unarchived: 875581b2728987fd0ce570c9754e7128
+    mobile.workspace.actionFailure.organized: 9705c6beb9b61192dca2e1a941bf234c
+    mobile.workspace.actionFailure.unorganized: 33df835c54ec9bac04ad3fdc245e792b
+    mobile.workspace.actionFailure.relationshipRemoved: a39d152cf9b483d106e48617f610cef0
+    mobile.workspace.actionFailure.multiple: b6352ef2b1623ff79cbc7cb6e74f2bc7

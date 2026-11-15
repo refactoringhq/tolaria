@@ -190,6 +190,7 @@
   "command.view.editorNoteList": "Redaktar + Spis natatak",
   "command.view.fullLayout": "Poŭny vyhliad",
   "command.view.toggleProperties": "Pakazać/schavać paneĺ ulascivasciej",
+  "command.view.toggleNoteListLayout": "Pakazać/schavać makiet spisu natatak",
   "command.view.toggleDiff": "Ukliučyć/vykliučyć režym paraŭnannia (Diff)",
   "command.view.toggleRaw": "Redaktar zychodnaha koda",
   "command.view.noteWidthNormal": "Zvyčajnaja šyrynia natatki",
@@ -1383,5 +1384,16 @@
   "mobile.workspace.actionFailure.organized": "Nie ŭdalosia ŭparadkavać natatku. Vaša natatka zastalasia niazminnaj.",
   "mobile.workspace.actionFailure.unorganized": "Nie ŭdalosia pieramiascić natatku ŭ papku «Uvachodnyja». Vaša natatka zastalasia niazminnaj.",
   "mobile.workspace.actionFailure.relationshipRemoved": "Nie ŭdalosia vydalić suviaź. Vaša natatka zastalasia biez zmienaŭ.",
-  "mobile.workspace.actionFailure.multiple": "Nie ŭdalosia zachavać hetyja zmieny. Vašy natatki zastalisia biez zmienaŭ."
+  "mobile.workspace.actionFailure.multiple": "Nie ŭdalosia zachavać hetyja zmieny. Vašy natatki zastalisia biez zmienaŭ.",
+  "layout.label": "Maket",
+  "layout.list": "Spis",
+  "layout.kanban": "Kanban",
+  "layout.groupBy": "Hrupavać pa",
+  "layout.cardFields": "Pali kartki",
+  "layout.noValue": "Bez značeńnia",
+  "layout.hideCardFields": "Schavać pali kartki",
+  "layout.showStatus": "Pakazać stan na kartkach",
+  "layout.noPropertyValues": "Niama natatkaŭ sa značeńniem {property}. Vybierycie ŭlastyvaść sa značeńniami, kab pakazać kalonki doski.",
+  "layout.moveColumnLeft": "Pasuń kalonku {column} uleva",
+  "layout.moveColumnRight": "Pasuń kalonku {column} uprava"
 }

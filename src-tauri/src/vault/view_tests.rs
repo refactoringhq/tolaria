@@ -20,6 +20,7 @@ mod tests {
             order: None,
             sort: None,
             list_properties_display: Vec::new(),
+            presentation: None,
             filters: FilterGroup::All(vec![FilterNode::Condition(FilterCondition {
                 field: "type".to_string(),
                 op: FilterOp::Equals,
@@ -56,6 +57,31 @@ filters:
             }
             _ => panic!("Expected All group"),
         }
+    }
+
+    #[test]
+    fn test_round_trip_kanban_presentation_config() {
+        let yaml = r#"
+name: Active Projects
+sort: modified:desc
+filters:
+  all: []
+presentation:
+  type: kanban
+  groupBy: status
+  properties:
+    - owner
+  columnOrder:
+    - Doing
+    - Todo
+"#;
+        let definition: ViewDefinition = serde_yaml::from_str(yaml).unwrap();
+        let serialized = serde_yaml::to_string(&definition).unwrap();
+        let restored: ViewDefinition = serde_yaml::from_str(&serialized).unwrap();
+
+        assert_eq!(restored.presentation, definition.presentation);
+        assert!(serialized.contains("type: kanban"));
+        assert!(serialized.contains("groupBy: status"));
     }
 
     #[test]
