@@ -1,5 +1,6 @@
 mod attachment_rename;
 mod cache;
+mod collection_layouts;
 mod config_seed;
 mod entry;
 mod file;
@@ -30,6 +31,9 @@ mod views;
 
 pub use attachment_rename::{rename_attachment, AttachmentRenameRequest, AttachmentRenameResult};
 pub use cache::{invalidate_cache, read_vault_snapshot, refresh_vault_cache, scan_vault_cached};
+pub use collection_layouts::{
+    delete_collection_layout, save_collection_layout, scan_collection_layouts,
+};
 pub use config_seed::{
     get_ai_guidance_status, migrate_agents_md, repair_config_files, restore_ai_guidance_files,
     seed_config_files, AiGuidanceFileState, VaultAiGuidanceStatus,

@@ -386,6 +386,9 @@ macro_rules! app_invoke_handler {
             commands::list_views,
             commands::save_view_cmd,
             commands::delete_view_cmd,
+            commands::list_collection_layouts,
+            commands::save_collection_layout_cmd,
+            commands::delete_collection_layout_cmd,
             vault_watcher::start_vault_watcher,
             vault_watcher::stop_vault_watcher
         ]
