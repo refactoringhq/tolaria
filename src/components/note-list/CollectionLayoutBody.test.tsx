@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { presentationFromViewDefinition } from '../../collections/presentationConfig'
+import { updateFrontmatterContent } from '../../lib/frontmatterText'
 import { makeEntry } from '../../test-utils/noteListTestUtils'
 import type { SidebarSelection, ViewFile } from '../../types'
 import { CollectionLayoutBody } from './CollectionLayoutBody'
@@ -59,6 +60,23 @@ describe('CollectionLayoutBody', () => {
       presentation: expect.objectContaining({ type: 'list' }),
     })))
     view.unmount()
+  })
+
+  it('moves a card through the frontmatter writer without changing the rest of the note', () => {
+    const original = '---\ntitle: Alpha\nstatus: Doing\nowner: Ada\ntags:\n  - project\n---\n\nSee [[Roadmap|the roadmap]].\n'
+    let updated = original
+    const entry = makeEntry({ path: '/vault/a.md', title: 'Alpha', status: 'Doing', properties: { owner: 'Ada' } })
+    render(<CollectionLayoutBody {...props({ kind: 'filter', filter: 'all' }, {
+      visibleEntries: [entry],
+      onUpdateTypeSort: (_path: string, key: string, value: string | number | boolean | string[] | null) => {
+        updated = updateFrontmatterContent(original, key, value)
+      },
+    })} />)
+    fireEvent.change(screen.getByRole('combobox', { name: 'Layout' }), { target: { value: 'kanban' } })
+    fireEvent.pointerDown(screen.getByRole('button', { name: /Alpha/ }), { button: 0, pointerId: 1, clientX: 10, clientY: 10 })
+    fireEvent.pointerUp(screen.getByRole('region', { name: 'No value, 0 notes' }), { pointerId: 1, clientX: 200, clientY: 10 })
+
+    expect(updated).toBe('---\ntitle: Alpha\nstatus: null\nowner: Ada\ntags:\n  - project\n---\n\nSee [[Roadmap|the roadmap]].\n')
   })
 
   it('preserves Kanban View settings while List is active and restores them after reopening', () => {
