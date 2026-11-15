@@ -1,8 +1,9 @@
 import type { FilterGroup, SidebarSelection, VaultEntry, ViewFile } from '../types'
 
 export const COLLECTION_PRESENTATION_LIST = 'list'
+export const COLLECTION_PRESENTATION_KANBAN = 'kanban'
 
-export type CollectionPresentationType = typeof COLLECTION_PRESENTATION_LIST
+export type CollectionPresentationType = typeof COLLECTION_PRESENTATION_LIST | typeof COLLECTION_PRESENTATION_KANBAN
 
 export interface ListCollectionPresentationConfig {
   type: typeof COLLECTION_PRESENTATION_LIST
@@ -10,7 +11,14 @@ export interface ListCollectionPresentationConfig {
   properties: string[]
 }
 
-export type CollectionPresentationConfig = ListCollectionPresentationConfig
+export interface KanbanCollectionPresentationConfig {
+  type: typeof COLLECTION_PRESENTATION_KANBAN
+  groupBy: string | null
+  properties: string[]
+  columnOrder: string[]
+}
+
+export type CollectionPresentationConfig = ListCollectionPresentationConfig | KanbanCollectionPresentationConfig
 
 export type CollectionOrigin = 'builtin' | 'type' | 'folder' | 'saved-view' | 'neighborhood'
 

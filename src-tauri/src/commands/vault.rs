@@ -2,6 +2,7 @@ mod attachment_cmds;
 mod boundary;
 mod file_cmds;
 mod frontmatter_cmds;
+mod layout_cmds;
 mod lifecycle_cmds;
 mod rename_cmds;
 mod scan_cmds;
@@ -11,6 +12,7 @@ pub use attachment_cmds::*;
 pub(super) use boundary::VaultBoundary;
 pub use file_cmds::*;
 pub use frontmatter_cmds::*;
+pub use layout_cmds::*;
 pub use lifecycle_cmds::*;
 pub use rename_cmds::*;
 pub use scan_cmds::*;
@@ -65,6 +67,7 @@ mod tests {
             order: None,
             sort: None,
             list_properties_display: vec![],
+            presentation: None,
             filters: crate::vault::FilterGroup::All(vec![]),
         }
     }

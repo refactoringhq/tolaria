@@ -57,6 +57,7 @@ fn evaluate_archived_entry_policy_matches_shared_contract() {
             order: None,
             sort: None,
             list_properties_display: Vec::new(),
+            presentation: None,
             filters,
         };
         let matching_titles = evaluate_view(&definition, &entries)

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { ViewDefinition, ViewFile } from '../types'
 import { makeEntry } from '../test-utils/noteListTestUtils'
+import type { ViewDefinition, ViewFile } from '../types'
 import { collectionFromSelection } from './collectionFromSelection'
+import { getCollectionLayout, getCollectionLayouts } from './layoutRegistry'
 
 function emptyFilters(): ViewDefinition['filters'] {
   return { all: [] }
@@ -23,6 +24,11 @@ function makeView(definition: Partial<ViewDefinition> = {}): ViewFile {
 }
 
 describe('collectionFromSelection', () => {
+  it('registers List and Kanban through the shared layout contract', () => {
+    expect(getCollectionLayouts().map((layout) => layout.type)).toEqual(['list', 'kanban'])
+    expect(getCollectionLayout('kanban').requiredProperties({ groupBy: 'status' })).toEqual(['status'])
+  })
+
   it('maps built-in filters to list-presented collections', () => {
     const collection = collectionFromSelection({ kind: 'filter', filter: 'all' })
 
@@ -95,6 +101,21 @@ describe('collectionFromSelection', () => {
       type: 'list',
       sort: 'title:asc',
       properties: ['Owner'],
+    })
+  })
+
+  it('preserves nested Kanban layout settings for saved views', () => {
+    const view = makeView({
+      presentation: { type: 'kanban', groupBy: 'status', properties: ['owner'], columnOrder: ['Doing', 'Todo'] },
+    } as Partial<ViewDefinition>)
+
+    const collection = collectionFromSelection(
+      { kind: 'view', filename: view.filename },
+      { views: [view] },
+    )
+
+    expect(collection.presentation).toEqual({
+      type: 'kanban', groupBy: 'status', properties: ['owner'], columnOrder: ['Doing', 'Todo'],
     })
   })
 })
