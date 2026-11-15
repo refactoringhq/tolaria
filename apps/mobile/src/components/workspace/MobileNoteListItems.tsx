@@ -26,7 +26,7 @@ import {
 	type MobileNoteRowActions,
 	MobileSwipeableNoteRow,
 } from "./MobileSwipeableNoteRow";
-import { MobileTypeIcon } from "./MobileWorkspaceIcons";
+import { MobileNoteIcon, MobileTypeIcon } from "./MobileWorkspaceIcons";
 import { noteTypeSoftColor } from "./mobileWorkspaceTone";
 
 export type MobileNoteListRowProps = {
@@ -88,6 +88,7 @@ function noteListRowContent(
 			selectedBackgroundColor={noteTypeSoftColor(note.typeTone, colors)}
 			subtitle={note.snippet}
 			testID={`note-row-${note.id}`}
+			titleLeading={<NoteTitleIcon color={colors.text} note={note} />}
 			title={note.title}
 			trailing={
 				<MobileTypeIcon
@@ -102,6 +103,17 @@ function noteListRowContent(
 				onBeginSelection ? () => onBeginSelection(note.id) : undefined
 			}
 			onPress={() => onSelectNote(note.id)}
+		/>
+	);
+}
+
+function NoteTitleIcon({ color, note }: { color: string; note: MobileNote }) {
+	return (
+		<MobileNoteIcon
+			color={color}
+			icon={note.icon}
+			size={15}
+			testID={`note-title-icon-${note.id}`}
 		/>
 	);
 }
