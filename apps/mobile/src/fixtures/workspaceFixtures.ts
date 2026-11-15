@@ -70,7 +70,60 @@ export type WorkspaceScenarioId =
 	| "long-title"
 	| "markdown-heavy"
 	| "property-heavy"
+	| "relationship-chip-parity"
 	| "search-and-properties";
+
+const relationshipChipParityNote: MobileNote = {
+	...searchAndPropertiesNote,
+	id: "qa-relationship-chip-parity",
+	path: "QA/Podcast Interview.md",
+	title: "Podcast Interview",
+	relationships: [
+		{
+			key: "Belongs to",
+			kind: "custom",
+			label: "Belongs to",
+			values: [{ title: "Run Podcast", type: "Project", typeTone: "purple" }],
+		},
+		{
+			key: "Related to",
+			kind: "custom",
+			label: "Related to",
+			values: [{ title: "Melissa Perri", type: "Person", typeTone: "orange" }],
+		},
+		{
+			key: "Has",
+			kind: "custom",
+			label: "Has",
+			values: [
+				{
+					title:
+						"An Extraordinarily Long Content Calendar Commitment for Upcoming Podcast Launches",
+					type: "Essay",
+					typeTone: "green",
+				},
+			],
+		},
+	],
+};
+
+const relationshipChipBacklinkNote: MobileNote = {
+	...searchAndPropertiesNote,
+	id: "qa-relationship-chip-backlink",
+	outgoingLinks: ["Podcast Interview"],
+	path: "QA/Melissa Perri.md",
+	title: "Melissa Perri",
+	relationships: [
+		{
+			key: "Related to",
+			kind: "custom",
+			label: "Related to",
+			values: [
+				{ title: "Podcast Interview", type: "Procedure", typeTone: "purple" },
+			],
+		},
+	],
+};
 
 const defaultSidebarSections: FixtureSidebarSection[] = [
 	{
@@ -350,6 +403,18 @@ export const workspaceScenarios: Record<
 		selectedNoteId: propertyHeavyNote.id,
 		sidebarSections: defaultSidebarSections,
 		sync: { kind: "conflict" },
+		typeDefinitions: fixtureTypeDefinitions,
+		views: fixtureViews,
+	},
+	"relationship-chip-parity": {
+		editorBlocks: fixtureEditorBlocks,
+		editorBullets: fixtureEditorBullets,
+		id: "relationship-chip-parity",
+		noteListSubtitle: "2 open notes",
+		notes: [relationshipChipParityNote, relationshipChipBacklinkNote],
+		selectedNoteId: relationshipChipParityNote.id,
+		sidebarSections: defaultSidebarSections,
+		sync: { kind: "synced", minutesAgo: 0 },
 		typeDefinitions: fixtureTypeDefinitions,
 		views: fixtureViews,
 	},
