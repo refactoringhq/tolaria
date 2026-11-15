@@ -74,54 +74,81 @@ function createEmptyStateStyles(
 }
 
 function createRelationshipStyles(metrics: MobileMetrics) {
-	const {
-		property: desktopPropertyParity,
-		relationship: desktopRelationshipParity,
-		space: mobileSpace,
-	} = metrics;
+	const { relationship: desktopRelationshipParity, space: mobileSpace } =
+		metrics;
+	const rowHeight = metrics.size(
+		mobileInspectorReferenceRowLayoutContract.minHeight,
+	);
 	return StyleSheet.create({
 		remove: {
-			minHeight: 44,
-			minWidth: 44,
+			width: 20,
+			height: 20,
 			alignItems: "center",
 			justifyContent: "center",
 			borderRadius: mobileRadius.pill,
 		},
-		row: {
-			minHeight: Math.max(44, desktopPropertyParity.rowMinHeight),
-			alignItems: "center",
-			flexDirection: "row",
-			gap: mobileSpace.sm,
-			borderRadius: desktopRelationshipParity.rowRadius,
-			paddingHorizontal: desktopRelationshipParity.rowPaddingHorizontal,
-			paddingRight: 0,
-			paddingVertical: desktopRelationshipParity.rowPaddingVertical,
-			alignSelf: "flex-start",
-			maxWidth: "100%",
-		},
-		background: {
-			position: "absolute",
-			top: 2,
-			bottom: 2,
-			left: 0,
-			right: 0,
-			borderRadius: desktopRelationshipParity.rowRadius,
-		},
-		openTarget: {
-			minHeight: 44,
-			minWidth: 0,
-			flexShrink: 1,
-			alignItems: "center",
-			flexDirection: "row",
-			gap: desktopRelationshipParity.rowGap,
-		},
+		...createRelationshipRowStyles(
+			metrics,
+			rowHeight,
+			desktopRelationshipParity.rowGap,
+		),
+		openTarget: createRelationshipOpenTargetStyle(
+			desktopRelationshipParity.rowGap,
+		),
 		text: {
+			minWidth: 0,
+			flex: 1,
 			flexShrink: 1,
-			fontSize: desktopRelationshipParity.textFontSize,
-			fontWeight: desktopRelationshipParity.textFontWeight,
+			fontSize: metrics.size(
+				mobileInspectorReferenceRowLayoutContract.textFontSize,
+			),
+			fontWeight: mobileInspectorReferenceRowLayoutContract.textFontWeight,
 		},
 		values: { alignItems: "flex-start", gap: mobileSpace.xs },
 	});
+}
+
+function createRelationshipRowStyles(
+	metrics: MobileMetrics,
+	rowHeight: number,
+	rowGap: number,
+) {
+	return {
+		row: {
+			minHeight: rowHeight,
+			minWidth: 0,
+			alignItems: "center" as const,
+			flexDirection: "row" as const,
+			gap: rowGap,
+			borderRadius: mobileInspectorReferenceRowLayoutContract.radius,
+			paddingHorizontal: metrics.size(
+				mobileInspectorReferenceRowLayoutContract.paddingHorizontal,
+			),
+			paddingVertical: metrics.size(
+				mobileInspectorReferenceRowLayoutContract.paddingVertical,
+			),
+			width: "100%" as const,
+		},
+		background: {
+			position: "absolute" as const,
+			top: 0,
+			bottom: 0,
+			left: 0,
+			right: 0,
+			borderRadius: mobileInspectorReferenceRowLayoutContract.radius,
+		},
+	};
+}
+
+function createRelationshipOpenTargetStyle(rowGap: number) {
+	return {
+		minWidth: 0,
+		flex: 1,
+		flexShrink: 1,
+		alignItems: "center" as const,
+		flexDirection: "row" as const,
+		gap: rowGap,
+	};
 }
 
 function createReferenceStyles(

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildMobileInspectorReferenceGroups } from "../workspace/mobileNeighborhood";
 import type {
 	FixtureSidebarFolder,
 	WorkspaceScenario,
@@ -58,6 +59,22 @@ describe("workspaceFixtures", () => {
 				},
 			],
 		});
+	});
+
+	it("provides a relationship-chip parity screenshot fixture", () => {
+		const scenario = workspaceScenarios["relationship-chip-parity"];
+		const note = scenario.notes[0];
+		expect(
+			note.relationships.map((relationship) => relationship.label),
+		).toEqual(["Belongs to", "Related to", "Has"]);
+		expect(note.relationships[2]?.values[0]?.title).toContain(
+			"Extraordinarily Long",
+		);
+		expect(
+			buildMobileInspectorReferenceGroups(note, scenario.notes).find(
+				(group) => group.label === "Backlinks",
+			)?.notes[0]?.title,
+		).toBe("Melissa Perri");
 	});
 
 	it("keeps fixture folder ids aligned with vault-relative paths", () => {
