@@ -75,12 +75,13 @@ folders (ADR 0223). Git retains both parents; coordinated folder publication
 retains private original snapshots and an interruption journal. Comparisons are
 version-checked again before applying any choices.
 
-Mobile WYSIWYG links use a long-press context-menu gesture so ordinary taps remain
-available for caret placement. The editor WebView sends a typed link action over
-the existing TenTap bridge; native routing resolves `tolaria://wikilink/` targets
-through the workspace resolver and opens supported URL schemes through the
-existing attachment-link opener. Phone link navigation keeps a source-note back
-stack; this path does not edit or serialize either note.
+Mobile WYSIWYG links preserve ordinary taps for caret placement. A native-injected
+WebView listener routes Cmd/Ctrl-click through the existing TenTap message bridge
+and turns a long-press context menu into native Open, Copy link, and (for external
+URLs) Share actions. Native routing resolves `tolaria://wikilink/` targets through
+the workspace resolver and opens supported URL schemes through the existing
+attachment-link opener. Phone link navigation keeps a source-note back stack; this
+path does not edit or serialize either note.
 
 New iOS folder selections retain a Files-provider bookmark alongside an offline
 working copy (ADR 0217). Native, coordinated three-way reconciliation writes
