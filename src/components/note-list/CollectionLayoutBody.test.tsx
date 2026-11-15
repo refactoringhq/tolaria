@@ -1,6 +1,8 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { presentationFromViewDefinition } from '../../collections/presentationConfig'
+import type { NoteActionsConfig } from '../../hooks/useNoteActions'
+import { useNoteActions } from '../../hooks/useNoteActions'
 import { updateFrontmatterContent } from '../../lib/frontmatterText'
 import { makeEntry } from '../../test-utils/noteListTestUtils'
 import type { SidebarSelection, ViewFile } from '../../types'
@@ -34,6 +36,7 @@ function savedView(presentation: ViewFile['definition']['presentation']): ViewFi
 
 describe('CollectionLayoutBody', () => {
   beforeEach(() => invoke.mockReset().mockResolvedValue({}))
+  afterEach(() => vi.unstubAllGlobals())
 
   it('keeps each collection on List until that collection selects another layout', () => {
     const rendered = render(<CollectionLayoutBody {...props({ kind: 'filter', filter: 'all' })} />)
@@ -64,19 +67,39 @@ describe('CollectionLayoutBody', () => {
 
   it('moves a card through the frontmatter writer without changing the rest of the note', () => {
     const original = '---\ntitle: Alpha\nstatus: Doing\nowner: Ada\ntags:\n  - project\n---\n\nSee [[Roadmap|the roadmap]].\n'
-    let updated = original
+    let persistedContent = original
+    const updateEntry = vi.fn()
     const entry = makeEntry({ path: '/vault/a.md', title: 'Alpha', status: 'Doing', properties: { owner: 'Ada' } })
+    const actionConfig: NoteActionsConfig = {
+      addEntry: vi.fn(),
+      removeEntry: vi.fn(),
+      entries: [entry],
+      setToastMessage: vi.fn(),
+      updateEntry,
+      vaultPath: '/vault',
+    }
+    vi.stubGlobal('isTauri', true)
+    invoke.mockImplementation(async (command, rawArgs) => {
+      if (command !== 'update_frontmatter') return {}
+      const args = rawArgs as { key: string; value: string | number | boolean | string[] | null }
+      persistedContent = updateFrontmatterContent(persistedContent, args.key, args.value)
+      return persistedContent
+    })
+    const { result } = renderHook(() => useNoteActions(actionConfig))
     render(<CollectionLayoutBody {...props({ kind: 'filter', filter: 'all' }, {
       visibleEntries: [entry],
-      onUpdateTypeSort: (_path: string, key: string, value: string | number | boolean | string[] | null) => {
-        updated = updateFrontmatterContent(original, key, value)
-      },
+      onUpdateTypeSort: (path: string, key: string, value: string | number | boolean | string[] | null) =>
+        result.current.handleUpdateFrontmatter(path, key, value),
     })} />)
     fireEvent.change(screen.getByRole('combobox', { name: 'Layout' }), { target: { value: 'kanban' } })
     fireEvent.pointerDown(screen.getByRole('button', { name: /Alpha/ }), { button: 0, pointerId: 1, clientX: 10, clientY: 10 })
     fireEvent.pointerUp(screen.getByRole('region', { name: 'No value, 0 notes' }), { pointerId: 1, clientX: 200, clientY: 10 })
 
-    expect(updated).toBe('---\ntitle: Alpha\nstatus: null\nowner: Ada\ntags:\n  - project\n---\n\nSee [[Roadmap|the roadmap]].\n')
+    return waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith('update_frontmatter', { path: '/vault/a.md', key: 'status', value: null })
+      expect(updateEntry).toHaveBeenCalledWith('/vault/a.md', { status: null })
+      expect(persistedContent).toBe('---\ntitle: Alpha\nstatus: null\nowner: Ada\ntags:\n  - project\n---\n\nSee [[Roadmap|the roadmap]].\n')
+    })
   })
 
   it('preserves Kanban View settings while List is active and restores them after reopening', () => {
