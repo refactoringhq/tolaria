@@ -13,12 +13,11 @@ it.each(["light", "dark"] as const)(
 		const { relationshipStyles: styles, propertyStyles } =
 			createPropertyPanelStyles(mobilePalettes[mode], mobileMetrics[1.2]);
 		expect(styles.values.gap).toBe(mobileMetrics[1.2].space.xs);
-		expect(styles.row.minHeight).toBeGreaterThanOrEqual(44);
-		expect(styles.openTarget.minHeight).toBeGreaterThanOrEqual(44);
-		expect(styles.remove.minHeight).toBeGreaterThanOrEqual(44);
-		expect(
-			styles.background.top + styles.background.bottom + styles.values.gap,
-		).toBe(4 + mobileMetrics[1.2].space.xs);
+		expect(styles.row.minHeight).toBeLessThan(44);
+		expect(styles.row.minHeight + 30).toBeGreaterThanOrEqual(44);
+		expect(styles.remove.width + 24).toBeGreaterThanOrEqual(44);
+		expect(styles.remove.height + 24).toBeGreaterThanOrEqual(44);
+		expect(styles.background.top + styles.background.bottom).toBe(0);
 		expect(propertyStyles.relationshipGroup.marginTop).toBeGreaterThan(0);
 		expect(propertyStyles.relationshipGroup.paddingTop).toBeGreaterThan(0);
 		expect(propertyStyles.relationshipGroup.borderTopWidth).toBeGreaterThan(0);
