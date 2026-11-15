@@ -1,4 +1,5 @@
 import { BulkActionBar } from '../BulkActionBar'
+import { CollectionLayoutBody } from './CollectionLayoutBody'
 import { FilterPills } from './FilterPills'
 import { NoteListHeader } from './NoteListHeader'
 import { EntityView, ListView } from './NoteListViews'
@@ -160,7 +161,7 @@ function NoteListContent(
   )
 }
 
-function NoteListBody(
+export function NoteListBody(
   options: Pick<
   NoteListLayoutProps,
   | 'handleListKeyDown'
@@ -398,8 +399,17 @@ export function NoteListLayout({
       onBlurCapture={handleNoteListPanelBlurCapture}
       onFocusCapture={handleNoteListPanelFocusCapture}
     >
-      <NoteListLayoutHeader {...contentProps} />
-      <NoteListBody {...contentProps} />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <CollectionLayoutBody
+          {...contentProps}
+          listContent={
+            <>
+              <NoteListLayoutHeader {...contentProps} />
+              <NoteListBody {...contentProps} />
+            </>
+          }
+        />
+      </div>
       <NoteListFooter {...contentProps} />
     </div>
   )

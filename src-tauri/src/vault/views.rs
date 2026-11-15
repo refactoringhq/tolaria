@@ -35,6 +35,8 @@ pub struct ViewDefinition {
     )]
     pub list_properties_display: Vec<String>,
     pub filters: FilterGroup,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub presentation: Option<serde_yaml::Value>,
 }
 
 #[derive(Debug, Clone)]

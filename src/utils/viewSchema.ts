@@ -29,6 +29,13 @@ export interface ViewDefinition {
   sort: string | null
   listPropertiesDisplay?: string[]
   filters: FilterGroup
+  presentation?: {
+    type: 'list' | 'kanban'
+    sort?: string | null
+    groupBy?: string | null
+    properties?: string[]
+    columnOrder?: string[]
+  }
 }
 
 export interface ViewFileCore {

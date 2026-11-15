@@ -1,146 +1,120 @@
+import { invoke } from '@tauri-apps/api/core'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Sidebar } from './components/Sidebar'
-import { NoteList } from './components/NoteList'
-import { LazyEditor } from './components/LazyEditor'
-import { ResizeHandle } from './components/ResizeHandle'
-import { CreateTypeDialog } from './components/CreateTypeDialog'
-import { CreateViewDialog } from './components/CreateViewDialog'
-import { QuickOpenPalette } from './components/QuickOpenPalette'
-import { CommandPalette } from './components/CommandPalette'
-import { SearchPanel } from './components/SearchPanel'
-import { Toast } from './components/Toast'
-import { CommitDialog } from './components/CommitDialog'
-import { PulseView } from './components/PulseView'
-import { StatusBar } from './components/StatusBar'
-import { AppAiWorkspaceSurface } from './components/AppAiWorkspaceSurface'
+import { createRemoteVaultBackend, type RemoteBindings } from '../packages/collab-client/src/remoteVaultBackend'
 import { AiWorkspaceFloatingButton } from './components/AiWorkspaceFloatingButton'
 import { AiWorkspaceWindowApp } from './components/AiWorkspaceWindowApp'
-import { SettingsPanel } from './components/SettingsPanel'
+import { AppAiWorkspaceSurface } from './components/AppAiWorkspaceSurface'
 import { CloneVaultModal } from './components/CloneVaultModal'
+import { CommandPalette } from './components/CommandPalette'
+import { CommitDialog } from './components/CommitDialog'
+import { ConfirmDeleteDialog } from './components/ConfirmDeleteDialog'
+import { ConflictResolverModal } from './components/ConflictResolverModal'
+import { CreateTypeDialog } from './components/CreateTypeDialog'
+import { CreateViewDialog } from './components/CreateViewDialog'
+import { DeleteProgressNotice } from './components/DeleteProgressNotice'
 import { FeedbackDialog } from './components/FeedbackDialog'
+import { GitSetupDialog } from './components/GitRequiredModal'
+import { LazyEditor } from './components/LazyEditor'
 import { McpSetupDialog } from './components/McpSetupDialog'
+import { NoteList } from './components/NoteList'
+import type { NoteListMultiSelectionCommands } from './components/note-list/multiSelectionCommands'
+import { openNoteListPropertiesPicker } from './components/note-list/noteListPropertiesEvents'
 import { NoteRetargetingDialogs } from './components/note-retargeting/NoteRetargetingDialogs'
-import { StartupShellFallback } from './components/StartupShellFallback'
+import { focusNoteIconPropertyEditor } from './components/noteIconPropertyEvents'
+import { PulseView } from './components/PulseView'
+import { QuickOpenPalette } from './components/QuickOpenPalette'
+import { RenameDetectedBanner } from './components/RenameDetectedBanner'
+import { ResizeHandle } from './components/ResizeHandle'
+import { SearchPanel } from './components/SearchPanel'
+import { SettingsPanel } from './components/SettingsPanel'
+import { Sidebar } from './components/Sidebar'
 import { StartupScreen } from './components/StartupScreen'
+import { StartupShellFallback } from './components/StartupShellFallback'
+import { StatusBar } from './components/StatusBar'
+import { SETTINGS_SECTION_IDS } from './components/settingsSectionIds'
+import { Toast } from './components/Toast'
+import { UpdateBanner } from './components/UpdateBanner'
+import { TOLARIA_DOCS_URL } from './constants/feedback'
+import { useActiveNoteLocation } from './hooks/useActiveNoteLocation'
+import { useAiActivity } from './hooks/useAiActivity'
 import { useAiAgentsOnboarding } from './hooks/useAiAgentsOnboarding'
 import { useAiAgentsStatus } from './hooks/useAiAgentsStatus'
-import { useVaultAiGuidanceStatus } from './hooks/useVaultAiGuidanceStatus'
-import { useAutoGit } from './hooks/useAutoGit'
-import { useVaultLoader } from './hooks/useVaultLoader'
-import { useRecentVaultWrites, useVaultWatcher } from './hooks/useVaultWatcher'
-import { useSettings } from './hooks/useSettings'
-import { useNoteWidthMode } from './hooks/useNoteWidthMode'
-import { useNoteActions } from './hooks/useNoteActions'
-import { useCommitFlow } from './hooks/useCommitFlow'
-import { useGitRepositories } from './hooks/useGitRepositories'
-import { useEntryActions } from './hooks/useEntryActions'
+import { useAiWorkspacePublishedContext } from './hooks/useAiWorkspacePublishedContext'
+import { useAiWorkspaceWindowBridgeEvents } from './hooks/useAiWorkspaceWindowBridgeEvents'
+import { useAppAiWorkspaceBridge } from './hooks/useAppAiWorkspaceBridge'
+import { useAppCommandAiActions } from './hooks/useAppCommandAiActions'
 import { useAppCommands } from './hooks/useAppCommands'
-import { triggerCommitEntryAction } from './utils/commitEntryAction'
-import { generateCommitMessage } from './utils/commitMessage'
-import { useDialogs } from './hooks/useDialogs'
-import { useVaultSwitcher } from './hooks/useVaultSwitcher'
-import { useGitHistory } from './hooks/useGitHistory'
-import { useUpdater, restartApp } from './hooks/useUpdater'
-import { useAutoSync } from './hooks/useAutoSync'
-import { useConflictResolver } from './hooks/useConflictResolver'
-import { useVaultConfig } from './hooks/useVaultConfig'
-import { useOnboarding } from './hooks/useOnboarding'
-import { useGettingStartedClone } from './hooks/useGettingStartedClone'
-import { useNetworkStatus } from './hooks/useNetworkStatus'
 import { useAppNavigation } from './hooks/useAppNavigation'
-import { useAiActivity } from './hooks/useAiActivity'
-import { useBulkActions } from './hooks/useBulkActions'
-import { useDeleteActions } from './hooks/useDeleteActions'
-import { useFolderActions } from './hooks/useFolderActions'
-import { useFileActions } from './hooks/useFileActions'
-import { useDeepLinks } from './hooks/useDeepLinks'
-import { useNoteGitUrls } from './hooks/useNoteGitUrls'
-import { useLayoutPanels } from './hooks/useLayoutPanels'
-import { useActiveNoteLocation } from './hooks/useActiveNoteLocation'
-import { useConflictFlow } from './hooks/useConflictFlow'
+import { AppPreferencesProvider, useAppPreferences } from './hooks/useAppPreferences'
 import { useAppSave } from './hooks/useAppSave'
-import { useNoteRetargetingUi } from './hooks/useNoteRetargetingUi'
-import { useVaultBridge } from './hooks/useVaultBridge'
-import { useSavedViewOrdering } from './hooks/useSavedViewOrdering'
 import { useAppViewActions } from './hooks/useAppViewActions'
 import { useAppWindowControls } from './hooks/useAppWindowControls'
-import { useAiWorkspacePublishedContext } from './hooks/useAiWorkspacePublishedContext'
+import { useAutoGit } from './hooks/useAutoGit'
+import { useAutoGitWork } from './hooks/useAutoGitWork'
+import { useAutoSync } from './hooks/useAutoSync'
+import { useBulkActions } from './hooks/useBulkActions'
+import { useCommitFlow } from './hooks/useCommitFlow'
+import { useConflictFlow } from './hooks/useConflictFlow'
+import { useConflictResolver } from './hooks/useConflictResolver'
+import { useDeepLinks } from './hooks/useDeepLinks'
+import { useDeleteActions } from './hooks/useDeleteActions'
+import { useDialogs } from './hooks/useDialogs'
+import { useEntryActions } from './hooks/useEntryActions'
+import { useFileActions } from './hooks/useFileActions'
+import { useFolderActions } from './hooks/useFolderActions'
+import { useGettingStartedClone } from './hooks/useGettingStartedClone'
+import { useGitFileWorkflows } from './hooks/useGitFileWorkflows'
+import { useGitHistory } from './hooks/useGitHistory'
+import { useGitRepositories } from './hooks/useGitRepositories'
+import { useGitSetupState } from './hooks/useGitSetupState'
+import { useInboxOrganizeAdvance } from './hooks/useInboxOrganizeAdvance'
+import { useLayoutPanels } from './hooks/useLayoutPanels'
+import { useMcpSetupDialogController } from './hooks/useMcpSetupDialogController'
 import {
   useNeighborhoodEntry,
   useNeighborhoodEscape,
   useNeighborhoodHistoryBack,
   useSelectionSanitizer,
 } from './hooks/useNeighborhoodSelection'
-import { ConflictResolverModal } from './components/ConflictResolverModal'
-import { ConfirmDeleteDialog } from './components/ConfirmDeleteDialog'
-import { DeleteProgressNotice } from './components/DeleteProgressNotice'
-import { UpdateBanner } from './components/UpdateBanner'
-import { invoke } from '@tauri-apps/api/core'
-import type { VaultBackend } from './lib/vaultBackend/types'
-import { createRemoteVaultBackend, type RemoteBindings } from '../packages/collab-client/src/remoteVaultBackend'
-import { isTauri, mockInvoke } from './mock-tauri'
-import { resolvePlatformCapabilities } from './lib/platformCapabilities'
-import type { AiWorkspaceConversationSetting, GitSetupPreference, SidebarSelection, InboxPeriod, VaultEntry, WorkspaceIdentity } from './types'
-import { initializeNoteProperties } from './utils/initializeNoteProperties'
-import type { NoteListFilter } from './utils/noteListHelpers'
-import { openNoteInNewWindow } from './utils/openNoteWindow'
-import { viewMatchesSelection } from './utils/viewIdentity'
-import { isAiWorkspaceWindow, isNoteWindow, getNoteWindowParams, type NoteWindowParams } from './utils/windowMode'
-import { GitSetupDialog } from './components/GitRequiredModal'
-import { RenameDetectedBanner } from './components/RenameDetectedBanner'
-import { openNoteListPropertiesPicker } from './components/note-list/noteListPropertiesEvents'
-import type { NoteListMultiSelectionCommands } from './components/note-list/multiSelectionCommands'
-import { focusNoteIconPropertyEditor } from './components/noteIconPropertyEvents'
-import { trackEvent } from './lib/telemetry'
-import { areAutomaticUpdateChecksEnabled } from './lib/automaticUpdateChecks'
-import { areAiFeaturesEnabled } from './lib/aiFeatures'
-import { resolveAiTargetReadiness, type AiTarget } from './lib/aiTargets'
+import { useNetworkStatus } from './hooks/useNetworkStatus'
+import { useNoteActions } from './hooks/useNoteActions'
+import { useNoteGitUrls } from './hooks/useNoteGitUrls'
+import { useNoteRetargetingUi } from './hooks/useNoteRetargetingUi'
+import { useNoteWidthMode } from './hooks/useNoteWidthMode'
+import { syncVaultAssetScope, useNoteWindowLifecycle } from './hooks/useNoteWindowLifecycle'
+import { useOnboarding } from './hooks/useOnboarding'
+import { useSavedViewOrdering } from './hooks/useSavedViewOrdering'
+import { useSettings } from './hooks/useSettings'
+import { useStartupScreenState } from './hooks/useStartupScreenState'
+import { useStartupStateMilestones } from './hooks/useStartupStateMilestones'
+import { restartApp, useUpdater } from './hooks/useUpdater'
+import { useVaultAiGuidanceStatus } from './hooks/useVaultAiGuidanceStatus'
+import { useVaultBridge } from './hooks/useVaultBridge'
+import { useVaultConfig } from './hooks/useVaultConfig'
+import { useVaultLoader } from './hooks/useVaultLoader'
+import { useVaultOpenedTelemetry } from './hooks/useVaultOpenedTelemetry'
+import { useVaultRefreshHandlers } from './hooks/useVaultRefreshHandlers'
+import { useVaultRenameDetection } from './hooks/useVaultRenameDetection'
+import { useVaultSwitcher } from './hooks/useVaultSwitcher'
+import { useRecentVaultWrites, useVaultWatcher } from './hooks/useVaultWatcher'
+import { useVisibleWorkspaceEntries, useWorkspaceGraphState } from './hooks/useWorkspaceGraphState'
 import { isAiAgentInstalled } from './lib/aiAgents'
+import { areAiFeaturesEnabled } from './lib/aiFeatures'
+import { type AiTarget, resolveAiTargetReadiness } from './lib/aiTargets'
+import { areAutomaticUpdateChecksEnabled } from './lib/automaticUpdateChecks'
 import { areGitFeaturesEnabled } from './lib/gitSettings'
-import { useAppCommandAiActions } from './hooks/useAppCommandAiActions'
-import { TOLARIA_DOCS_URL } from './constants/feedback'
-import { openExternalUrl } from './utils/url'
-import { createVaultFolder } from './utils/vaultFolderCreation'
 import {
   translate,
 } from './lib/i18n'
+import { resolvePlatformCapabilities } from './lib/platformCapabilities'
 import { normalizeReleaseChannel } from './lib/releaseChannel'
+import { trackEvent } from './lib/telemetry'
 import {
   buildVaultAiGuidanceRefreshKey,
 } from './lib/vaultAiGuidance'
-import { hasNoteIconValue } from './utils/noteIcon'
-import {
-  INBOX_SELECTION,
-  isExplicitOrganizationEnabled,
-  sanitizeSelectionForOrganization,
-} from './utils/organizationWorkflow'
-import { requestPlainTextPaste } from './utils/plainTextPaste'
-import { SETTINGS_SECTION_IDS } from './components/settingsSectionIds'
-import {
-  vaultPathForEntry,
-} from './utils/workspaces'
-import { activeGitRepositories } from './utils/gitRepositories'
-import { entrySupportsPreviewSourceToggle } from './utils/filePreview'
-import { isMarkdownEntry } from './utils/typeDefinitions'
-import type { RichEditorBlockTypeDefinition } from './utils/richEditorBlockTypes'
-import { resolveTypeDeleteRequest, typeDeleteBlockedMessageKey } from './utils/typeDeletion'
-import { useVisibleWorkspaceEntries, useWorkspaceGraphState } from './hooks/useWorkspaceGraphState'
-import { useGitSetupState } from './hooks/useGitSetupState'
-import { AppPreferencesProvider, useAppPreferences } from './hooks/useAppPreferences'
-import { useInboxOrganizeAdvance } from './hooks/useInboxOrganizeAdvance'
-import { syncVaultAssetScope, useNoteWindowLifecycle } from './hooks/useNoteWindowLifecycle'
-import { useVaultRenameDetection } from './hooks/useVaultRenameDetection'
-import { useVaultRefreshHandlers } from './hooks/useVaultRefreshHandlers'
-import { useVaultOpenedTelemetry } from './hooks/useVaultOpenedTelemetry'
-import { useStartupScreenState } from './hooks/useStartupScreenState'
-import { useStartupStateMilestones } from './hooks/useStartupStateMilestones'
-import { useGitFileWorkflows } from './hooks/useGitFileWorkflows'
-import { useAutoGitWork } from './hooks/useAutoGitWork'
-import { useAppAiWorkspaceBridge } from './hooks/useAppAiWorkspaceBridge'
-import { useAiWorkspaceWindowBridgeEvents } from './hooks/useAiWorkspaceWindowBridgeEvents'
-import { useMcpSetupDialogController } from './hooks/useMcpSetupDialogController'
-import { shouldReplaceSyncedTabEntry } from './utils/tabEntrySync'
-import { persistEditorStateBeforeMutation } from './utils/editorMutationFlush'
+import type { VaultBackend } from './lib/vaultBackend/types'
+import { isTauri, mockInvoke } from './mock-tauri'
+import type { AiWorkspaceConversationSetting, GitSetupPreference, InboxPeriod, SidebarSelection, VaultEntry, WorkspaceIdentity } from './types'
 import {
   activeVaultModifiedFiles,
   aiWorkspaceWindowContextForPath,
@@ -150,6 +124,32 @@ import {
   runNativeTextHistoryCommand,
   shouldPreferOnboardingVaultPath,
 } from './utils/appOrchestration'
+import { triggerCommitEntryAction } from './utils/commitEntryAction'
+import { generateCommitMessage } from './utils/commitMessage'
+import { persistEditorStateBeforeMutation } from './utils/editorMutationFlush'
+import { entrySupportsPreviewSourceToggle } from './utils/filePreview'
+import { activeGitRepositories } from './utils/gitRepositories'
+import { initializeNoteProperties } from './utils/initializeNoteProperties'
+import { hasNoteIconValue } from './utils/noteIcon'
+import type { NoteListFilter } from './utils/noteListHelpers'
+import { openNoteInNewWindow } from './utils/openNoteWindow'
+import {
+  INBOX_SELECTION,
+  isExplicitOrganizationEnabled,
+  sanitizeSelectionForOrganization,
+} from './utils/organizationWorkflow'
+import { requestPlainTextPaste } from './utils/plainTextPaste'
+import type { RichEditorBlockTypeDefinition } from './utils/richEditorBlockTypes'
+import { shouldReplaceSyncedTabEntry } from './utils/tabEntrySync'
+import { isMarkdownEntry } from './utils/typeDefinitions'
+import { resolveTypeDeleteRequest, typeDeleteBlockedMessageKey } from './utils/typeDeletion'
+import { openExternalUrl } from './utils/url'
+import { createVaultFolder } from './utils/vaultFolderCreation'
+import { viewMatchesSelection } from './utils/viewIdentity'
+import { getNoteWindowParams, isAiWorkspaceWindow, isNoteWindow, type NoteWindowParams } from './utils/windowMode'
+import {
+  vaultPathForEntry,
+} from './utils/workspaces'
 import './App.css'
 
 // Type declarations for mock content storage and test overrides
@@ -199,9 +199,18 @@ function MainApp({ noteWindowParams }: { noteWindowParams: NoteWindowParams | nu
   }, [platformCapabilities.perNoteEditors])
   const [selection, setSelection] = useState<SidebarSelection>(DEFAULT_SELECTION)
   const [noteListFilter, setNoteListFilter] = useState<NoteListFilter>('open')
+  const [collectionLayout, setCollectionLayout] = useState<'list' | 'kanban'>('list')
   const [pendingNoteListPdfExportPath, setPendingNoteListPdfExportPath] = useState<string | null>(null)
   const selectionRef = useRef<SidebarSelection>(DEFAULT_SELECTION)
   const neighborhoodHistoryRef = useRef<SidebarSelection[]>([])
+  useEffect(() => {
+    const handleLayoutState = (event: Event) => {
+      if (!(event instanceof CustomEvent)) return
+      if (event.detail === 'list' || event.detail === 'kanban') setCollectionLayout(event.detail)
+    }
+    window.addEventListener('laputa:collection-layout-state', handleLayoutState)
+    return () => window.removeEventListener('laputa:collection-layout-state', handleLayoutState)
+  }, [])
   const inboxPeriod: InboxPeriod = 'all'
   const handleSetSelection = useCallback((sel: SidebarSelection, options?: { preserveNeighborhoodHistory?: boolean }) => {
     if (!options?.preserveNeighborhoodHistory && sel.kind !== 'entity') {
@@ -1664,7 +1673,7 @@ function MainApp({ noteWindowParams }: { noteWindowParams: NoteWindowParams | nu
   return (
     <AppPreferencesProvider appLocale={appLocale} dateDisplayFormat={dateDisplayFormat}>
       <div className="app-shell">
-        <div className="app">
+        <div className="app" data-collection-layout={collectionLayout} data-collection-note-open={activeTab ? 'true' : 'false'}>
           {sidebarVisible && (
             <>
               <div className={`app__sidebar${settings.theme_mode === 'hybrid' ? ' dark' : ''}`} data-theme={settings.theme_mode === 'hybrid' ? 'dark' : undefined} style={{ width: layout.sidebarWidth }}>
@@ -1679,7 +1688,7 @@ function MainApp({ noteWindowParams }: { noteWindowParams: NoteWindowParams | nu
                 {effectiveSelection.kind === 'filter' && effectiveSelection.filter === 'pulse' ? (
                   <PulseView vaultPath={gitSurfaces.historyRepositoryPath} onOpenNote={handlePulseOpenNote} refreshKey={gitHistoryRefreshKey} sidebarCollapsed={!sidebarVisible} onExpandSidebar={() => handleSetViewMode('all')} repositories={gitRepositories} selectedRepositoryPath={gitSurfaces.historyRepositoryPath} onRepositoryChange={gitSurfaces.setHistoryRepositoryPath} locale={appLocale} />
                 ) : (
-                  <NoteList entries={visibleEntries} selection={effectiveSelection} selectedNote={activeTab?.entry ?? null} loading={isVaultContentLoading} noteListFilter={noteListFilter} onNoteListFilterChange={setNoteListFilter} inboxPeriod={inboxPeriod} modifiedFiles={noteListModifiedFiles} modifiedFilesError={noteListModifiedFilesError} gitRepositories={gitRepositories} selectedGitRepositoryPath={gitSurfaces.changesRepositoryPath} onGitRepositoryChange={gitSurfaces.setChangesRepositoryPath} getNoteStatus={vault.getNoteStatus} sidebarCollapsed={!sidebarVisible} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={handleReplaceActiveTabWithQueuedDiff} onEnterNeighborhood={handleEnterNeighborhood} onCreateNote={notes.handleCreateNoteImmediate} onBulkOrganize={explicitOrganizationEnabled ? bulkActions.handleBulkOrganize : undefined} onBulkArchive={bulkActions.handleBulkArchive} onBulkDeletePermanently={deleteActions.handleBulkDeletePermanently} onUpdateTypeSort={notes.handleUpdateFrontmatter} onUpdateViewDefinition={handleUpdateViewDefinition} updateEntry={vault.updateEntry} onOpenInNewWindow={handleOpenEntryInNewWindow} onRenameFilename={appSave.handleFilenameRename} onExportPdf={handleExportNotePdfFromList} onToggleFavorite={entryActions.handleToggleFavorite} onToggleOrganized={explicitOrganizationEnabled ? entryActions.handleToggleOrganized : undefined} onRevealFile={fileActions.revealFile} onCopyFilePath={fileActions.copyFilePath} canCopyGitUrl={noteGitUrls.canCopyEntryGitUrl} onCopyGitUrl={noteGitUrls.copyEntryGitUrl} onDiscardFile={handleDiscardFile} onOpenDeletedNote={handleOpenDeletedNote} allNotesNoteListProperties={vaultConfig.allNotes?.noteListProperties ?? null} onUpdateAllNotesNoteListProperties={handleUpdateAllNotesNoteListProperties} inboxNoteListProperties={vaultConfig.inbox?.noteListProperties ?? null} onUpdateInboxNoteListProperties={handleUpdateInboxNoteListProperties} views={vault.views} visibleNotesRef={visibleNotesRef} allNotesFileVisibility={allNotesFileVisibility} multiSelectionCommandRef={multiSelectionCommandRef} locale={appLocale} />
+                  <NoteList entries={visibleEntries} selection={effectiveSelection} selectedNote={activeTab?.entry ?? null} loading={isVaultContentLoading} noteListFilter={noteListFilter} onNoteListFilterChange={setNoteListFilter} inboxPeriod={inboxPeriod} modifiedFiles={noteListModifiedFiles} modifiedFilesError={noteListModifiedFilesError} gitRepositories={gitRepositories} selectedGitRepositoryPath={gitSurfaces.changesRepositoryPath} onGitRepositoryChange={gitSurfaces.setChangesRepositoryPath} getNoteStatus={vault.getNoteStatus} sidebarCollapsed={!sidebarVisible} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={handleReplaceActiveTabWithQueuedDiff} onEnterNeighborhood={handleEnterNeighborhood} onCreateNote={notes.handleCreateNoteImmediate} onBulkOrganize={explicitOrganizationEnabled ? bulkActions.handleBulkOrganize : undefined} onBulkArchive={bulkActions.handleBulkArchive} onBulkDeletePermanently={deleteActions.handleBulkDeletePermanently} onUpdateTypeSort={notes.handleUpdateFrontmatter} onUpdateViewDefinition={handleUpdateViewDefinition} updateEntry={vault.updateEntry} onOpenInNewWindow={handleOpenEntryInNewWindow} onRenameFilename={appSave.handleFilenameRename} onExportPdf={handleExportNotePdfFromList} onToggleFavorite={entryActions.handleToggleFavorite} onToggleOrganized={explicitOrganizationEnabled ? entryActions.handleToggleOrganized : undefined} onRevealFile={fileActions.revealFile} onCopyFilePath={fileActions.copyFilePath} canCopyGitUrl={noteGitUrls.canCopyEntryGitUrl} onCopyGitUrl={noteGitUrls.copyEntryGitUrl} onDiscardFile={handleDiscardFile} onOpenDeletedNote={handleOpenDeletedNote} allNotesNoteListProperties={vaultConfig.allNotes?.noteListProperties ?? null} onUpdateAllNotesNoteListProperties={handleUpdateAllNotesNoteListProperties} inboxNoteListProperties={vaultConfig.inbox?.noteListProperties ?? null} onUpdateInboxNoteListProperties={handleUpdateInboxNoteListProperties} views={vault.views} vaultPath={resolvedPath} visibleNotesRef={visibleNotesRef} allNotesFileVisibility={allNotesFileVisibility} multiSelectionCommandRef={multiSelectionCommandRef} locale={appLocale} />
                 )}
               </div>
               <ResizeHandle onResize={layout.handleNoteListResize} />
