@@ -10,6 +10,7 @@ import {
 	createMobileEditorDocumentRequests,
 	type MobileEditorDocumentReadMessage,
 } from "./mobileEditorDocumentRequests";
+import { mobileEditorLinkIntent } from "./mobileEditorLinkInteraction.native";
 import { mobileWysiwygLinkActionType } from "./mobileWysiwygLinkRouting";
 
 type SendCoreMessage = Parameters<
@@ -25,6 +26,7 @@ export function isJsonReadableEditorBridge(
 export function createMobileEditorDocumentBridge(
 	extensions: typeof TenTapStartKit,
 	onLinkTap?: (href: string) => void,
+	onLinkLongPress?: (href: string) => void,
 ) {
 	const requests = createMobileEditorDocumentRequests();
 	let ready = false;
@@ -44,7 +46,8 @@ export function createMobileEditorDocumentBridge(
 		}),
 		onEditorMessage: (message, editor) => {
 			if (message.type === CoreEditorActionType.EditorReady) ready = true;
-			if (handleMobileLinkMessage(message, onLinkTap)) return true;
+			if (handleMobileLinkMessage(message, onLinkTap, onLinkLongPress))
+				return true;
 			return (
 				requests.receive(message) ||
 				(CoreBridge.onEditorMessage?.(message, editor) ?? false)
@@ -61,11 +64,18 @@ export function createMobileEditorDocumentBridge(
 function handleMobileLinkMessage(
 	message: { type: string; payload?: unknown },
 	onLinkTap?: (href: string) => void,
+	onLinkLongPress?: (href: string) => void,
 ): boolean {
 	if (message.type !== "action" || !isRecord(message.payload)) return false;
 	if (message.payload.type !== mobileWysiwygLinkActionType) return false;
 	const payload = message.payload.payload;
-	if (isRecord(payload) && typeof payload.href === "string") onLinkTap?.(payload.href);
+	if (isRecord(payload) && typeof payload.href === "string") {
+		const handler =
+			mobileEditorLinkIntent(payload.intent) === "options"
+				? onLinkLongPress
+				: onLinkTap;
+		handler?.(payload.href);
+	}
 	return true;
 }
 
