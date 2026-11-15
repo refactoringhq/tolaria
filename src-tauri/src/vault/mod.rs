@@ -29,7 +29,12 @@ mod view_value_conversions;
 mod views;
 
 pub use attachment_rename::{rename_attachment, AttachmentRenameRequest, AttachmentRenameResult};
-pub use cache::{invalidate_cache, read_vault_snapshot, refresh_vault_cache, scan_vault_cached};
+#[cfg(test)]
+pub(crate) use cache::TEST_CACHE_DIR_LOCK;
+pub use cache::{
+    invalidate_cache, read_gitignored_snapshot, read_vault_snapshot, refresh_vault_cache,
+    scan_vault_cached, write_gitignored_snapshot,
+};
 pub use config_seed::{
     get_ai_guidance_status, migrate_agents_md, repair_config_files, restore_ai_guidance_files,
     seed_config_files, AiGuidanceFileState, VaultAiGuidanceStatus,
@@ -38,7 +43,10 @@ pub use entry::{FolderNode, VaultEntry};
 pub use file::{create_note_content, get_note_content, note_content_matches, save_note_content};
 pub use folders::{delete_folder, rename_folder, FolderRenameResult};
 pub use getting_started::{create_getting_started_vault, default_vault_path, vault_exists};
-pub use ignored::{filter_gitignored_entries, filter_gitignored_folders, filter_gitignored_paths};
+pub use ignored::{
+    filter_entries_by_ignored_paths, filter_gitignored_entries, filter_gitignored_folders,
+    filter_gitignored_paths, partition_gitignored_entries,
+};
 pub use image::{copy_image_to_vault, save_image};
 pub use migration::migrate_is_a_to_type;
 pub use remote_image::download_remote_image;

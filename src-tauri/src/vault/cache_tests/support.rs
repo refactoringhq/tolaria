@@ -1,11 +1,8 @@
 use super::super::*;
 use std::io::Write;
-use std::sync::Mutex;
 pub(super) use tempfile::TempDir;
 
-/// Serialize all cache tests that mutate the LAPUTA_CACHE_DIR env var.
-/// `std::env::set_var` is process-global, so parallel tests would race.
-pub(super) static ENV_LOCK: Mutex<()> = Mutex::new(());
+pub(super) use super::super::TEST_CACHE_DIR_LOCK as ENV_LOCK;
 
 /// Set up a temporary cache directory for test isolation.
 /// Caller MUST hold `ENV_LOCK` for the duration of the test.
