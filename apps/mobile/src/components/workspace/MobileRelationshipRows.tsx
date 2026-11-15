@@ -173,6 +173,7 @@ function RelationshipValueTarget(props: {
 				relationshipStyles.openTarget,
 				mobilePressedStyle(pressed, desktopToolbarActionParity.pressedOpacity),
 			]}
+			hitSlop={{ top: 15, bottom: 15 }}
 			testID={`relationship-row-${rowSegment}-open`}
 			onPress={() => value.id && onSelectNote(value.id)}
 			onLongPress={() => value.id && onEnterNeighborhood?.(value.id)}
@@ -209,7 +210,7 @@ function RelationshipRemoveButton(props: {
 		<Pressable
 			accessibilityLabel={mobileText("common.remove")}
 			accessibilityRole="button"
-			hitSlop={8}
+			hitSlop={12}
 			style={({ pressed }) => [
 				relationshipStyles.remove,
 				mobilePressedStyle(pressed, desktopToolbarActionParity.pressedOpacity),
@@ -242,7 +243,7 @@ function RelationshipValueLabel(props: {
 	return (
 		<>
 			<MobileTypeIcon
-				size={desktopRelationshipParity.iconSize}
+				size={mobileInspectorReferenceRowLayoutContract.iconSize}
 				tone={value.typeTone}
 				type={value.type}
 				typeDefinitions={typeDefinitions}
