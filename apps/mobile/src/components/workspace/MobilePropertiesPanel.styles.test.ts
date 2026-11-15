@@ -1,11 +1,53 @@
 import { expect, it, vi } from "vitest";
+import { MobilePropertyRow } from "../../ui/MobilePropertyRow";
 import { mobileMetrics } from "../../ui/mobileMetrics";
 import { mobilePalettes } from "../../ui/theme/mobilePalette";
 import { createPropertyPanelStyles } from "./MobilePropertiesPanel.styles";
 
 vi.mock("react-native", () => ({
+	Pressable: "Pressable",
 	StyleSheet: { create: (styles: unknown) => styles, hairlineWidth: 0.5 },
+	View: "View",
 }));
+vi.mock("../../ui/theme/useMobileTheme", () => ({
+	useMobileStyles: () => ({
+		styles: {
+			label: {},
+			row: {},
+			value: {},
+			valueText: {},
+		},
+	}),
+}));
+vi.mock("../ui/text", () => ({ Text: "Text" }));
+
+it.each([1, 1.2] as const)(
+	"widens phone and tablet property panels by about 30% at scale %s",
+	(scale) => {
+		const { panelStyles } = createPropertyPanelStyles(
+			mobilePalettes.light,
+			mobileMetrics[scale],
+		);
+		expect(panelStyles.panel.width).toBe(390);
+		expect(panelStyles.panelCompact.width).toBe(364);
+	},
+);
+
+it("keeps property labels and string values to one ellipsized line", () => {
+	const row = MobilePropertyRow({ label: "Recording Date", value: "Nov 15" });
+	const content = row.props.children.props.children;
+	const [label, value] = content;
+	const valueText = value.props.children;
+
+	expect(label.props).toMatchObject({
+		numberOfLines: 1,
+		ellipsizeMode: "tail",
+	});
+	expect(valueText.props).toMatchObject({
+		numberOfLines: 1,
+		ellipsizeMode: "tail",
+	});
+});
 
 it.each([1, 1.2] as const)(
 	"keeps real relationship touch targets at scale %s without enlarging the type styling",
