@@ -1,9 +1,10 @@
-import { APP_COMMAND_IDS, getAppCommandShortcutDisplay } from '../appCommandCatalog'
-import type { CommandAction } from './types'
-import type { ViewMode } from '../useViewMode'
 import type { NoteWidthMode } from '../../types'
 import { requestNewAiChat } from '../../utils/aiPromptBridge'
 import { DEFAULT_NOTE_WIDTH_MODE } from '../../utils/noteWidth'
+import { isMac } from '../../utils/platform'
+import { APP_COMMAND_IDS, getAppCommandShortcutDisplay } from '../appCommandCatalog'
+import type { ViewMode } from '../useViewMode'
+import type { CommandAction } from './types'
 
 const NOTE_WIDTH_COMMAND_LABELS: Record<NoteWidthMode, string> = {
   normal: 'Use Normal Note Width',
@@ -140,6 +141,7 @@ export function buildViewCommands(config: ViewCommandsConfig): CommandAction[] {
     { id: 'view-editor', label: 'Editor Only', group: 'View', shortcut: getAppCommandShortcutDisplay(APP_COMMAND_IDS.viewEditorOnly), keywords: ['layout', 'focus'], enabled: true, execute: () => onSetViewMode('editor-only') },
     { id: 'view-editor-list', label: 'Editor + Note List', group: 'View', shortcut: getAppCommandShortcutDisplay(APP_COMMAND_IDS.viewEditorList), keywords: ['layout'], enabled: true, execute: () => onSetViewMode('editor-list') },
     { id: 'view-all', label: 'Full Layout', group: 'View', shortcut: getAppCommandShortcutDisplay(APP_COMMAND_IDS.viewAll), keywords: ['layout', 'sidebar'], enabled: true, execute: () => onSetViewMode('all') },
+    { id: 'toggle-collection-layout', label: 'Toggle Note List Layout', group: 'View', shortcut: isMac() ? '⌘⇧G' : 'Ctrl+Shift+G', keywords: ['layout', 'list', 'kanban', 'board', 'collection'], enabled: true, execute: () => window.dispatchEvent(new Event('laputa:toggle-collection-layout')) },
     { id: 'toggle-inspector', label: 'Toggle Properties Panel', group: 'View', shortcut: getAppCommandShortcutDisplay(APP_COMMAND_IDS.viewToggleProperties), keywords: ['properties', 'inspector', 'panel', 'right', 'sidebar'], enabled: true, execute: onToggleInspector },
     { id: 'toggle-diff', label: 'Toggle Diff Mode', group: 'View', keywords: ['diff', 'changes', 'git', 'compare', 'version'], enabled: hasActiveNote && activeNoteModified, execute: () => onToggleDiff?.() },
     { id: 'toggle-raw-editor', label: 'Toggle Raw Editor', group: 'View', keywords: ['raw', 'source', 'markdown', 'frontmatter', 'code', 'textarea'], enabled: hasActiveNote && !!onToggleRawEditor, execute: () => onToggleRawEditor?.() },

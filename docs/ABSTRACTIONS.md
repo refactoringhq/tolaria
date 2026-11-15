@@ -15,6 +15,10 @@ to note length. Browser fixtures retain their JSON save API. See ADR 0278.
 
 Key abstractions and domain models in Tolaria.
 
+## Desktop Note Collection Layouts
+
+`src/collections/layoutRegistry.tsx` registers the List and Kanban renderers through a shared type and required-property contract. Both consume the resolved note entries; Kanban writes a dropped card's group value through the normal note frontmatter update handler. Saved Views retain layout config under their optional `presentation` YAML mapping; built-in, type, and folder layouts use vault-root `layouts/*.yml` files keyed by collection identity. Missing config keeps the List default. See ADR 0301.
+
 ## Mobile Note-List Creation
 
 `MobileNoteListPanel` keeps a round create action anchored inside the list body,

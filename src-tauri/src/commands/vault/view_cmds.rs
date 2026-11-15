@@ -49,6 +49,7 @@ mod tests {
             order: None,
             sort: Some("modified:desc".to_string()),
             list_properties_display: vec!["Priority".to_string()],
+            presentation: None,
             filters: FilterGroup::All(vec![FilterNode::Condition(FilterCondition {
                 field: "type".to_string(),
                 op: FilterOp::Equals,
