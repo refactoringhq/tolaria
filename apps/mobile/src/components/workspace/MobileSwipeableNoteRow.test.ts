@@ -198,6 +198,13 @@ describe("note row input ownership", () => {
 		expect(props.renderRightActions).toEqual(expect.any(Function));
 	});
 
+	it("keeps the card colour off Swipeable's container so its release spring cannot cover the green action", () => {
+		const props = renderRow(false, "organize") as {
+			childrenContainerStyle?: unknown;
+		};
+		expect(props.childrenContainerStyle).toBeUndefined();
+	});
+
 	it("does not install swipe actions on a disabled row", () => {
 		renderRow(true);
 		expect(nativeSwipe).not.toHaveBeenCalled();
@@ -314,6 +321,28 @@ describe("note row input ownership", () => {
 		} finally {
 			root.unmount();
 		}
+	});
+
+	it("still commits a full organize swipe if only the gesture finalize runs", () => {
+		renderRow(false, "organize");
+		setSwipeWidth();
+		beginSwipe();
+		crossSwipeThreshold();
+		input.onFinalize?.();
+		while (input.timingCallbacks.length) input.timingCallbacks.shift()?.(true);
+		expect(input.onOrganize).toHaveBeenCalledWith([fixtureNotes[0].id]);
+	});
+
+	it("does not reopen a collapsing organize swipe if another gesture starts", () => {
+		renderRow(false, "organize");
+		setSwipeWidth();
+		beginSwipe();
+		crossSwipeThreshold();
+		input.onEnd?.({ translationX: -290 });
+		expect(input.onOrganize).not.toHaveBeenCalled();
+		beginSwipe();
+		while (input.timingCallbacks.length) input.timingCallbacks.shift()?.(true);
+		expect(input.onOrganize).toHaveBeenCalledTimes(1);
 	});
 
 	it("does not favorite or archive on a full right swipe", () => {
