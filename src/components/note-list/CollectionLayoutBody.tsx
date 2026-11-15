@@ -6,21 +6,46 @@ import { getCollectionLayout } from '../../collections/layoutRegistry'
 import { translate } from '../../lib/i18n'
 import { trackEvent } from '../../lib/telemetry'
 import type { SidebarSelection, VaultEntry, ViewDefinition, ViewFile } from '../../types'
-import { viewMatchesSelection } from '../../utils/viewIdentity'
 import type { useNoteListModel } from './useNoteListModel'
 
 type Model = ReturnType<typeof useNoteListModel>
 type Props = Pick<Model, 'presentation' | 'selection' | 'visibleEntries' | 'views' | 'onUpdateViewDefinition' | 'handleClickNote' | 'onUpdateTypeSort' | 'locale' | 'vaultPath'> & { listContent: ReactNode }
 type LayoutOverride = { layout: 'list' | 'kanban'; groupBy: string; properties: string[]; columnOrder: string[] }
+type StoredKanbanConfig = { groupBy: string | null; properties: string[]; columnOrder: string[] }
+type ViewPresentationWithKanbanConfig = NonNullable<ViewDefinition['presentation']> & { kanbanConfig?: StoredKanbanConfig }
 
 function viewFor(selection: SidebarSelection, views: ViewFile[] | undefined) {
-  return selection.kind === 'view' ? views?.find((view) => viewMatchesSelection(view, selection)) : undefined
+  if (selection.kind !== 'view' || !views) return undefined
+  return views.find((view) => view.filename === selection.filename && (view.rootPath ?? '') === (selection.rootPath ?? ''))
+}
+
+function storedKanbanConfig(existing: ViewPresentationWithKanbanConfig): StoredKanbanConfig {
+  return {
+    groupBy: existing.groupBy ?? null,
+    properties: existing.properties ?? [],
+    columnOrder: existing.columnOrder ?? [],
+  }
+}
+
+function mergedViewPresentation(
+  existing: ViewPresentationWithKanbanConfig | undefined,
+  next: ViewDefinition['presentation'],
+): ViewPresentationWithKanbanConfig {
+  const merged = { ...existing, ...next } as ViewPresentationWithKanbanConfig
+  if (next?.type === COLLECTION_PRESENTATION_LIST && existing?.type === COLLECTION_PRESENTATION_KANBAN) {
+    merged.kanbanConfig = storedKanbanConfig(existing)
+  } else if (next?.type === COLLECTION_PRESENTATION_KANBAN) {
+    delete merged.kanbanConfig
+  }
+  return merged
 }
 
 function saveViewPresentation(props: Props, presentation: ViewDefinition['presentation']) {
+  if (props.selection.kind !== 'view') return
   const view = viewFor(props.selection, props.views)
-  if (!view || props.selection.kind !== 'view') return
-  props.onUpdateViewDefinition?.(view.filename, { presentation }, props.selection.rootPath)
+  if (!view) return
+  const existing = view.definition.presentation as ViewPresentationWithKanbanConfig | undefined
+  props.onUpdateViewDefinition?.(view.filename, { presentation: mergedViewPresentation(existing, presentation) }, props.selection.rootPath)
 }
 
 function persistKanban(props: Props, groupBy: string, properties: string[], columnOrder: string[]) {
@@ -154,6 +179,29 @@ function persistLoadedConfig(configs: Record<string, unknown>, key: string, setS
   if (saved) setStoredConfigs((previous) => new Map(previous).set(key, saved))
 }
 
+function stringOrEmpty(value?: string[] | null): string[] {
+  return value ?? []
+}
+
+function viewKanbanConfig(presentation: ViewPresentationWithKanbanConfig | undefined): StoredKanbanConfig | undefined {
+  if (presentation?.type === COLLECTION_PRESENTATION_KANBAN) return storedKanbanConfig(presentation)
+  return presentation?.kanbanConfig
+}
+
+function persistedViewLayout(props: Props): LayoutOverride | undefined {
+  const view = viewFor(props.selection, props.views)
+  if (!view) return undefined
+  const presentation = view?.definition.presentation as ViewPresentationWithKanbanConfig | undefined
+  const config = viewKanbanConfig(presentation)
+  if (!config) return undefined
+  return {
+    layout: props.presentation.type,
+    groupBy: config.groupBy ?? 'status',
+    properties: stringOrEmpty(config.properties),
+    columnOrder: stringOrEmpty(config.columnOrder),
+  }
+}
+
 function usePersistedLayoutConfig(props: Props, key: string) {
   const [storedConfigs, setStoredConfigs] = useState<Map<string, LayoutOverride>>(() => new Map())
   const vaultPath = configVaultPath(props)
@@ -166,10 +214,7 @@ function usePersistedLayoutConfig(props: Props, key: string) {
     }).catch(() => undefined)
     return () => { current = false }
   }, [canLoadVaultConfig, key, vaultPath])
-  const persistedViewConfig = props.selection.kind === 'view' && props.presentation.type === COLLECTION_PRESENTATION_KANBAN
-    ? { layout: 'kanban' as const, groupBy: props.presentation.groupBy ?? 'status', properties: props.presentation.properties, columnOrder: props.presentation.columnOrder }
-    : undefined
-  return storedConfigs.get(key) ?? persistedViewConfig
+  return storedConfigs.get(key) ?? persistedViewLayout(props)
 }
 
 function useLayoutActions(
