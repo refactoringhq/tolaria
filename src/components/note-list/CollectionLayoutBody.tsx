@@ -140,39 +140,43 @@ function effectiveLayout(props: Props, saved: LayoutOverride | undefined): Layou
 }
 
 function setCollectionOverride(
-  setter: React.Dispatch<React.SetStateAction<Record<string, LayoutOverride>>>,
+  setter: React.Dispatch<React.SetStateAction<Map<string, LayoutOverride>>>,
   key: string,
   current: LayoutOverride,
   patch: Partial<LayoutOverride>,
 ) {
-  setter((overrides) => ({ ...overrides, [key]: { ...current, ...patch } }))
+  setter((overrides) => new Map(overrides).set(key, { ...current, ...patch }))
+}
+
+function persistLoadedConfig(configs: Record<string, unknown>, key: string, setStoredConfigs: React.Dispatch<React.SetStateAction<Map<string, LayoutOverride>>>) {
+  const savedValue = Object.entries(configs).find(([collection]) => collection === key)?.[1]
+  const saved = readStoredConfig(savedValue)
+  if (saved) setStoredConfigs((previous) => new Map(previous).set(key, saved))
 }
 
 function usePersistedLayoutConfig(props: Props, key: string) {
-  const [storedConfigs, setStoredConfigs] = useState<Record<string, LayoutOverride>>({})
+  const [storedConfigs, setStoredConfigs] = useState<Map<string, LayoutOverride>>(() => new Map())
   const vaultPath = configVaultPath(props)
   const canLoadVaultConfig = props.selection.kind !== 'view' && props.selection.kind !== 'entity'
   useEffect(() => {
     if (!vaultPath || !canLoadVaultConfig) return
     let current = true
     void invoke<Record<string, unknown>>('list_collection_layouts', { vaultPath }).then((configs) => {
-      if (!current) return
-      const saved = readStoredConfig(configs[key])
-      if (saved) setStoredConfigs((previous) => ({ ...previous, [key]: saved }))
+      if (current) persistLoadedConfig(configs, key, setStoredConfigs)
     }).catch(() => undefined)
     return () => { current = false }
   }, [canLoadVaultConfig, key, vaultPath])
   const persistedViewConfig = props.selection.kind === 'view' && props.presentation.type === COLLECTION_PRESENTATION_KANBAN
     ? { layout: 'kanban' as const, groupBy: props.presentation.groupBy ?? 'status', properties: props.presentation.properties, columnOrder: props.presentation.columnOrder }
     : undefined
-  return storedConfigs[key] ?? persistedViewConfig
+  return storedConfigs.get(key) ?? persistedViewConfig
 }
 
 function useLayoutActions(
   props: Props,
   key: string,
   current: LayoutOverride,
-  setOverrides: React.Dispatch<React.SetStateAction<Record<string, LayoutOverride>>>,
+  setOverrides: React.Dispatch<React.SetStateAction<Map<string, LayoutOverride>>>,
 ) {
   const { layout, groupBy, properties: cardProperties, columnOrder } = current
   const saveKanban = (nextGroupBy: string, nextProperties: string[]) => {
@@ -205,11 +209,7 @@ function useLayoutShortcut(
       ? COLLECTION_PRESENTATION_KANBAN
       : COLLECTION_PRESENTATION_LIST)
     const onKeyDown = (event: KeyboardEvent) => {
-      const target = event.target
-      const isEditing = target instanceof HTMLElement && (
-        target.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)
-      )
-      if (isEditing || !(event.ctrlKey || event.metaKey) || !event.shiftKey || event.key.toLowerCase() !== 'g') return
+      if (!isLayoutToggleShortcut(event)) return
       event.preventDefault()
       toggle()
     }
@@ -222,11 +222,21 @@ function useLayoutShortcut(
   }, [changeLayout, layout])
 }
 
+function isLayoutToggleShortcut(event: KeyboardEvent): boolean {
+  const target = event.target instanceof HTMLElement ? event.target : null
+  if (target && (target.isContentEditable || isFormField(target.tagName))) return false
+  return (event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'g'
+}
+
+function isFormField(tagName: string): boolean {
+  return tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA'
+}
+
 function useLayoutConfig(props: Props) {
   const key = collectionLayoutKey(props.selection)
-  const [overrides, setOverrides] = useState<Record<string, LayoutOverride>>({})
+  const [overrides, setOverrides] = useState<Map<string, LayoutOverride>>(() => new Map())
   const persisted = usePersistedLayoutConfig(props, key)
-  const current = effectiveLayout(props, overrides[key] ?? persisted)
+  const current = effectiveLayout(props, overrides.get(key) ?? persisted)
   const { layout, groupBy, properties: cardProperties, columnOrder } = current
   const groups = useMemo(() => availableGroupProperties(props.visibleEntries), [props.visibleEntries])
   const cardFields = useMemo(

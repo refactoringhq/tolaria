@@ -14,8 +14,13 @@ interface KanbanLayoutProps {
   locale: AppLocale
 }
 
+function propertyValueFor(entry: VaultEntry, property: string): VaultPropertyValue | undefined {
+  if (property === 'status') return entry.status
+  return Object.entries(entry.properties).find(([key]) => key === property)?.[1]
+}
+
 function valueFor(entry: VaultEntry, property: string): string {
-  const value = property === 'status' ? entry.status : entry.properties[property]
+  const value = propertyValueFor(entry, property)
   if (Array.isArray(value)) return value.join(', ')
   return value === null || value === undefined ? '' : String(value)
 }
@@ -38,8 +43,14 @@ function orderColumns(values: string[], savedOrder: string[]) {
 function moveColumn(columns: string[], index: number, direction: -1 | 1, onChange: (order: string[]) => void) {
   const target = index + direction
   if (target < 0 || target >= columns.length) return
-  const next = [...columns]
-  ;[next[index], next[target]] = [next[target], next[index]]
+  const currentValue = columns.find((_, position) => position === index)
+  const targetValue = columns.find((_, position) => position === target)
+  if (currentValue === undefined || targetValue === undefined) return
+  const next = columns.map((value, position) => {
+    if (position === index) return targetValue
+    if (position === target) return currentValue
+    return value
+  })
   onChange(next)
 }
 
@@ -60,7 +71,7 @@ function KanbanCard({ entry, properties, onOpen, onPointerStart }: { entry: Vaul
     >
       <span className="block truncate text-sm font-medium">{entry.title}</span>
       {properties.map((property) => {
-        const value: VaultPropertyValue | undefined = property === 'status' ? entry.status : entry.properties[property]
+        const value = propertyValueFor(entry, property)
         if (value === null || value === undefined || value === '') return null
         return <span key={property} className="mt-2 block truncate text-xs text-muted-foreground">{property}: {Array.isArray(value) ? value.join(', ') : String(value)}</span>
       })}
