@@ -1,4 +1,4 @@
-import { createTranslator, type AppLocale, type TranslationKey } from '../../lib/i18n'
+import { type AppLocale, createTranslator, type TranslationKey } from '../../lib/i18n'
 import type { CommandAction, CommandGroup } from './types'
 
 type Translate = ReturnType<typeof createTranslator>
@@ -102,17 +102,15 @@ function localizeUndoRedoCommand(command: CommandAction, t: Translate): string |
   return null
 }
 
+const NOTE_TOGGLE_LABEL_KEYS: Record<string, Record<string, TranslationKey>> = {
+  'archive-note': { default: 'command.note.archiveNote', 'Unarchive Note': 'command.note.unarchiveNote' },
+  'toggle-favorite': { default: 'command.note.addFavorite', 'Remove from Favorites': 'command.note.removeFavorite' },
+  'toggle-organized': { default: 'command.note.markOrganized', 'Mark as Unorganized': 'command.note.markUnorganized' },
+}
+
 function noteToggleLabelKey(command: CommandAction): TranslationKey | null {
-  switch (command.id) {
-    case 'archive-note':
-      return command.label === 'Unarchive Note' ? 'command.note.unarchiveNote' : 'command.note.archiveNote'
-    case 'toggle-favorite':
-      return command.label === 'Remove from Favorites' ? 'command.note.removeFavorite' : 'command.note.addFavorite'
-    case 'toggle-organized':
-      return command.label === 'Mark as Unorganized' ? 'command.note.markUnorganized' : 'command.note.markOrganized'
-    default:
-      return null
-  }
+  const keys = NOTE_TOGGLE_LABEL_KEYS[command.id]
+  return keys?.[command.label] ?? keys?.default ?? null
 }
 
 function localizeNoteStateCommand(command: CommandAction, t: Translate): string | null {
@@ -152,6 +150,7 @@ type CommandLocalizer = (command: CommandAction, t: Translate) => string
 type NullableCommandLocalizer = (command: CommandAction, t: Translate) => string | null
 
 const VIEW_STATE_LOCALIZERS: readonly [string, CommandLocalizer][] = [
+  ['toggle-collection-layout', (_, t) => t('command.view.toggleNoteListLayout')],
   ['zoom-in', (command, t) =>
     t('command.view.zoomIn', { zoom: parenthesizedSuffix(command.label)?.replace('%', '') ?? '' })],
   ['zoom-out', (command, t) =>
