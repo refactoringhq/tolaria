@@ -9,6 +9,7 @@ import { useMobileStyles } from "./theme/useMobileTheme";
 type MobileListRowProps = {
 	chips?: ReactNode;
 	leading?: ReactNode;
+	titleLeading?: ReactNode;
 	layoutProbe?: MobileLayoutProbe;
 	meta?: string;
 	metricId?: string;
@@ -76,6 +77,7 @@ function ListRowHeader({
 			style={styles.header}
 		>
 			{props.leading}
+			{props.titleLeading}
 			<Text
 				{...rowProbeProps(props.layoutProbe, props.metricId, "title")}
 				numberOfLines={1}
