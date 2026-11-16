@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { AiPanelMessageHistory } from './AiPanelChrome'
+import { shouldFollowTranscript } from './aiPanelScroll'
 
 const aiMessageRender = vi.hoisted(() => vi.fn())
 
@@ -51,5 +52,10 @@ describe('AiPanelChrome performance', () => {
 
     expect(screen.getByTestId('draft')).toHaveTextContent('typing')
     expect(aiMessageRender).not.toHaveBeenCalled()
+  })
+
+  it('follows transcript updates only when the viewport is near the end', () => {
+    expect(shouldFollowTranscript({ scrollTop: 10, scrollHeight: 1_000, clientHeight: 300 })).toBe(false)
+    expect(shouldFollowTranscript({ scrollTop: 676, scrollHeight: 1_000, clientHeight: 300 })).toBe(true)
   })
 })

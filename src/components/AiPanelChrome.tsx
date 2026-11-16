@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 import { Sparkle, X, PaperPlaneRight, Plus, Link, Stop } from '@phosphor-icons/react'
 import { AiMessage } from './AiMessage'
+import { shouldFollowTranscript } from './aiPanelScroll'
 import { Button } from '@/components/ui/button'
 import { ActionTooltip } from '@/components/ui/action-tooltip'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -428,20 +429,28 @@ export const AiPanelMessageHistory = memo(function AiPanelMessageHistory(options
     hasContext,
   } = options
   const containerRef = useRef<HTMLDivElement>(null)
-  const endRef = useRef<HTMLDivElement>(null)
+  const shouldFollowMessagesRef = useRef(true)
+  const onScrollStateChangeRef = useRef(onScrollStateChange)
+
+  useEffect(() => {
+    onScrollStateChangeRef.current = onScrollStateChange
+  }, [onScrollStateChange])
 
   const updateScrollState = useCallback(() => {
     const element = containerRef.current
-    onScrollStateChange?.((element?.scrollTop ?? 0) > 1)
-  }, [onScrollStateChange])
+    if (!element) return
+    shouldFollowMessagesRef.current = shouldFollowTranscript(element)
+    onScrollStateChangeRef.current?.(element.scrollTop > 1)
+  }, [])
 
   useEffect(() => {
-    void isActive
-    void messages
-    endRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const element = containerRef.current
+    if (element && shouldFollowMessagesRef.current) {
+      element.scrollTop = element.scrollHeight
+    }
     if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(updateScrollState)
     else updateScrollState()
-  }, [messages, isActive, updateScrollState])
+  }, [messages, updateScrollState])
 
   return (
     <div ref={containerRef} className="flex-1 overflow-y-auto" style={{ padding: 12 }} onScroll={updateScrollState}>
@@ -465,7 +474,6 @@ export const AiPanelMessageHistory = memo(function AiPanelMessageHistory(options
           onRegenerate={onRegenerateMessage}
         />
       ))}
-      <div ref={endRef} />
     </div>
   )
 })
