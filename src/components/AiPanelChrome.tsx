@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 import { Sparkle, X, PaperPlaneRight, Plus, Link, Stop } from '@phosphor-icons/react'
 import { AiMessage } from './AiMessage'
+import { shouldFollowTranscript } from './aiPanelScroll'
 import { Button } from '@/components/ui/button'
 import { ActionTooltip } from '@/components/ui/action-tooltip'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -438,7 +439,7 @@ export const AiPanelMessageHistory = memo(function AiPanelMessageHistory(options
   const updateScrollState = useCallback(() => {
     const element = containerRef.current
     if (!element) return
-    shouldFollowMessagesRef.current = element.scrollHeight - element.scrollTop - element.clientHeight <= 24
+    shouldFollowMessagesRef.current = shouldFollowTranscript(element)
     onScrollStateChangeRef.current?.(element.scrollTop > 1)
   }, [])
 

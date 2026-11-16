@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { AiPanelMessageHistory } from './AiPanelChrome'
+import { shouldFollowTranscript } from './aiPanelScroll'
 
 const aiMessageRender = vi.hoisted(() => vi.fn())
 
@@ -53,37 +54,8 @@ describe('AiPanelChrome performance', () => {
     expect(aiMessageRender).not.toHaveBeenCalled()
   })
 
-  it('keeps the transcript position when a message changes after scrolling upward', () => {
-    const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
-    const messages = [{
-      userMessage: 'Explain the note',
-      actions: [],
-      response: 'First answer',
-      id: 'msg-stable',
-    }]
-    const historyProps = {
-      agentLabel: 'Claude Code',
-      agentReadiness: 'ready' as const,
-      isActive: false,
-      onOpenNote: noop,
-      onNavigateWikilink: noop,
-      hasContext: true,
-    }
-    const { container, rerender } = render(<AiPanelMessageHistory {...historyProps} messages={messages} />)
-    scrollIntoView.mockClear()
-
-    const scroller = container.firstElementChild as HTMLElement
-    Object.defineProperties(scroller, {
-      clientHeight: { configurable: true, value: 300 },
-      scrollHeight: { configurable: true, value: 1_000 },
-    })
-    scroller.scrollTop = 10
-    fireEvent.scroll(scroller)
-
-    rerender(<AiPanelMessageHistory {...historyProps} messages={[{ ...messages[0], response: 'Updated answer' }]} />)
-
-    expect(scroller.scrollTop).toBe(10)
-    expect(scrollIntoView).not.toHaveBeenCalled()
-    scrollIntoView.mockRestore()
+  it('follows transcript updates only when the viewport is near the end', () => {
+    expect(shouldFollowTranscript({ scrollTop: 10, scrollHeight: 1_000, clientHeight: 300 })).toBe(false)
+    expect(shouldFollowTranscript({ scrollTop: 676, scrollHeight: 1_000, clientHeight: 300 })).toBe(true)
   })
 })
