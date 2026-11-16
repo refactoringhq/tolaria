@@ -40,6 +40,8 @@ mod pi_config;
 mod pi_discovery;
 mod pi_events;
 pub mod search;
+#[cfg(desktop)]
+mod session_end;
 pub mod settings;
 pub mod telemetry;
 pub mod vault;
@@ -409,6 +411,8 @@ fn handle_run_event(app_handle: &tauri::AppHandle, event: &tauri::RunEvent) {
         let state: tauri::State<'_, desktop_runtime::WsBridgeChild> = app_handle.state();
         desktop_runtime::stop_ws_bridge_on_exit(&state);
     }
+
+    session_end::handle_run_event(app_handle, event);
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -430,6 +434,7 @@ pub fn run() {
             Vec::new(),
         )))
         .manage(window_state::MainWindowFrameState::default())
+        .manage(session_end::ExitLifecycle::default())
         .manage(vault_watcher::VaultWatcherState::new());
 
     with_invoke_handler(builder)
