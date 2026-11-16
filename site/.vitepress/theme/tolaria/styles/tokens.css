@@ -23,7 +23,7 @@
 
   --tl-font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --tl-font-heading: "Inter Tight", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --tl-font-display: "Inter Tight", ui-sans-serif, system-ui, sans-serif; /* bold display type, same as the public landing */
+  --tl-font-display: "Refactoring Sans", "Inter Tight", ui-sans-serif, system-ui, sans-serif;
   --tl-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
   /* motion: transform + opacity only, one curve */
