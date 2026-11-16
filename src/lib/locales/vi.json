@@ -1206,6 +1206,8 @@
   "filePreview.file": "Tệp",
   "filePreview.previewUnavailable": "Không có bản xem trước",
   "filePreview.previewUnavailableDescription": "Tolaria không có tính năng xem trước trong ứng dụng cho loại tệp này.",
+  "filePreview.largeDocumentTitle": "Tệp này quá lớn để mở một cách an toàn",
+  "filePreview.largeDocumentDescription": "Để đảm bảo Tolaria luôn phản hồi nhanh, tệp này không được hiển thị ở chế độ xem trước hoặc chế độ Raw. Tệp gốc chưa bị thay đổi.",
   "filePreview.textFile": "Tệp văn bản",
   "inspector.properties.valueKind": "Loại giá trị",
   "inspector.properties.valueKind.text": "Văn bản",
