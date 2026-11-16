@@ -15,6 +15,8 @@ export interface KanbanCardContext {
   allEntries: VaultEntry[]
   typeEntryMap: Record<string, VaultEntry>
   displayPropsOverride?: string[] | null
+  /** Localized screen-reader role description for a card. */
+  cardRole: string
   onOpen: (entry: VaultEntry, event: MouseEvent) => void
 }
 
@@ -59,7 +61,7 @@ export const KanbanCard = memo(function KanbanCard({ entry, context, selected, j
       variant="ghost"
       {...attributes}
       {...listeners}
-      aria-roledescription="card"
+      aria-roledescription={context.cardRole}
       aria-label={entry.title}
       className={cn(KANBAN_CARD_SLOT_CLASSNAME, isDragging && 'kanban-card-slot--placeholder')}
       onClick={(event) => context.onOpen(entry, event)}

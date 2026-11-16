@@ -67,4 +67,23 @@ describe('KanbanLayout', () => {
     expect(board).toHaveClass('kanban-scroll', 'overflow-x-auto')
     expect(screen.getAllByTestId('kanban-column').map((column) => column.dataset.kanbanColumn)).toEqual(['', 'Doing'])
   })
+
+  it('announces the board, columns and cards in English with note counts', () => {
+    const twoDoing = [...entries, makeEntry({ path: '/vault/c.md', title: 'Gamma', status: 'Doing' })]
+    renderBoard({ entries: twoDoing, allEntries: twoDoing })
+    expect(screen.getByTestId('kanban-board')).toHaveAccessibleName('Kanban grouped by status')
+    expect(screen.getByRole('region', { name: 'Doing, 2 notes' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'No value, 1 note' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Doing' })).toHaveAttribute('aria-roledescription', 'column')
+    expect(screen.getByRole('button', { name: 'Gamma' })).toHaveAttribute('aria-roledescription', 'card')
+  })
+
+  it('announces the board, columns and cards in the active locale', () => {
+    renderBoard({ locale: 'it-IT' })
+    expect(screen.getByTestId('kanban-board')).toHaveAccessibleName('Kanban raggruppato per status')
+    expect(screen.getByRole('region', { name: 'Doing, 1 nota' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Nessun valore, 1 nota' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Doing' })).toHaveAttribute('aria-roledescription', 'colonna')
+    expect(screen.getByRole('button', { name: 'Alpha' })).toHaveAttribute('aria-roledescription', 'scheda')
+  })
 })

@@ -1396,5 +1396,10 @@
   "layout.noValue": "Bez značeńnia",
   "layout.noPropertyValues": "Niama natatkaŭ sa značeńniem {property}. Vybierycie ŭlastyvaść sa značeńniami, kab pakazać kalonki doski.",
   "layout.useList": "Pakazać u vyhliadzie spisu",
-  "layout.closePanel": "Zakryć natatku"
+  "layout.closePanel": "Zakryć natatku",
+  "layout.boardLabel": "Kanban, zhrupavany pa {property}",
+  "layout.columnLabelOne": "{column}, 1 natatka",
+  "layout.columnLabelMany": "{column}, {count} natatak",
+  "layout.columnRole": "kalonka",
+  "layout.cardRole": "kartka"
 }
