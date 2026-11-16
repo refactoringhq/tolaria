@@ -52,4 +52,38 @@ describe('AiPanelChrome performance', () => {
     expect(screen.getByTestId('draft')).toHaveTextContent('typing')
     expect(aiMessageRender).not.toHaveBeenCalled()
   })
+
+  it('keeps the transcript position when a message changes after scrolling upward', () => {
+    const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
+    const messages = [{
+      userMessage: 'Explain the note',
+      actions: [],
+      response: 'First answer',
+      id: 'msg-stable',
+    }]
+    const historyProps = {
+      agentLabel: 'Claude Code',
+      agentReadiness: 'ready' as const,
+      isActive: false,
+      onOpenNote: noop,
+      onNavigateWikilink: noop,
+      hasContext: true,
+    }
+    const { container, rerender } = render(<AiPanelMessageHistory {...historyProps} messages={messages} />)
+    scrollIntoView.mockClear()
+
+    const scroller = container.firstElementChild as HTMLElement
+    Object.defineProperties(scroller, {
+      clientHeight: { configurable: true, value: 300 },
+      scrollHeight: { configurable: true, value: 1_000 },
+    })
+    scroller.scrollTop = 10
+    fireEvent.scroll(scroller)
+
+    rerender(<AiPanelMessageHistory {...historyProps} messages={[{ ...messages[0], response: 'Updated answer' }]} />)
+
+    expect(scroller.scrollTop).toBe(10)
+    expect(scrollIntoView).not.toHaveBeenCalled()
+    scrollIntoView.mockRestore()
+  })
 })

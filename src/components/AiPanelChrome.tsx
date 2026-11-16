@@ -428,20 +428,28 @@ export const AiPanelMessageHistory = memo(function AiPanelMessageHistory(options
     hasContext,
   } = options
   const containerRef = useRef<HTMLDivElement>(null)
-  const endRef = useRef<HTMLDivElement>(null)
+  const shouldFollowMessagesRef = useRef(true)
+  const onScrollStateChangeRef = useRef(onScrollStateChange)
+
+  useEffect(() => {
+    onScrollStateChangeRef.current = onScrollStateChange
+  }, [onScrollStateChange])
 
   const updateScrollState = useCallback(() => {
     const element = containerRef.current
-    onScrollStateChange?.((element?.scrollTop ?? 0) > 1)
-  }, [onScrollStateChange])
+    if (!element) return
+    shouldFollowMessagesRef.current = element.scrollHeight - element.scrollTop - element.clientHeight <= 24
+    onScrollStateChangeRef.current?.(element.scrollTop > 1)
+  }, [])
 
   useEffect(() => {
-    void isActive
-    void messages
-    endRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const element = containerRef.current
+    if (element && shouldFollowMessagesRef.current) {
+      element.scrollTop = element.scrollHeight
+    }
     if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(updateScrollState)
     else updateScrollState()
-  }, [messages, isActive, updateScrollState])
+  }, [messages, updateScrollState])
 
   return (
     <div ref={containerRef} className="flex-1 overflow-y-auto" style={{ padding: 12 }} onScroll={updateScrollState}>
@@ -465,7 +473,6 @@ export const AiPanelMessageHistory = memo(function AiPanelMessageHistory(options
           onRegenerate={onRegenerateMessage}
         />
       ))}
-      <div ref={endRef} />
     </div>
   )
 })
