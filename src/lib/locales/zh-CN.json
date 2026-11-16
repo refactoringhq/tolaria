@@ -1206,6 +1206,8 @@
   "filePreview.file": "文件",
   "filePreview.previewUnavailable": "无法预览",
   "filePreview.previewUnavailableDescription": "Tolaria 没有针对此文件类型的应用内预览。",
+  "filePreview.largeDocumentTitle": "此文件过大，无法安全打开",
+  "filePreview.largeDocumentDescription": "为了保持 Tolaria 的响应速度，此文件不会在预览模式或原始模式下显示。原始文件未发生更改。",
   "filePreview.textFile": "文本文件",
   "inspector.properties.valueKind": "值类型",
   "inspector.properties.valueKind.text": "文本",

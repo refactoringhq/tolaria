@@ -1206,6 +1206,8 @@
   "filePreview.file": "File",
   "filePreview.previewUnavailable": "Preview unavailable",
   "filePreview.previewUnavailableDescription": "Tolaria does not have an in-app preview for this file type.",
+  "filePreview.largeDocumentTitle": "This file is too large to open safely",
+  "filePreview.largeDocumentDescription": "To keep Tolaria responsive, this file is not shown in preview or Raw mode. The original file has not been changed.",
   "filePreview.textFile": "Text file",
   "inspector.properties.valueKind": "Value type",
   "inspector.properties.valueKind.text": "Text",

@@ -1206,6 +1206,8 @@
   "filePreview.file": "Arquivo",
   "filePreview.previewUnavailable": "Pré-visualização indisponível",
   "filePreview.previewUnavailableDescription": "O Tolaria não tem uma visualização no aplicativo para este tipo de arquivo.",
+  "filePreview.largeDocumentTitle": "Este arquivo é grande demais para ser aberto com segurança",
+  "filePreview.largeDocumentDescription": "Para manter o Tolaria responsivo, este arquivo não é exibido no modo de visualização nem no modo Raw. O arquivo original não foi alterado.",
   "filePreview.textFile": "Arquivo de texto",
   "inspector.properties.valueKind": "Tipo de valor",
   "inspector.properties.valueKind.text": "Texto",
