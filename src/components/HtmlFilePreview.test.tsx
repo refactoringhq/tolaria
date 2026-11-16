@@ -15,7 +15,8 @@ describe("HtmlFilePreview", () => {
 	};
 
 	it("keeps the sandboxed preview for ordinary HTML", () => {
-		render(<HtmlFilePreview {...props} content="<h1>Report</h1>" />);
+		const content = `${String.fromCharCode(60)}h1>Report${String.fromCharCode(60)}/h1>`;
+		render(<HtmlFilePreview {...props} content={content} />);
 		expect(screen.getByTestId("html-file-preview")).toHaveAttribute(
 			"sandbox",
 			"allow-popups allow-popups-to-escape-sandbox",
