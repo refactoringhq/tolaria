@@ -14,12 +14,12 @@
 @utility press {
   &:active:not(:disabled) { transform: scale(0.98); }
 }
-/* Display type: Inter Tight bold (the brand display face is private; builds that may use it set these vars at runtime) */
+/* Display type uses Refactoring Sans from ./fonts.css; the brand token --font-display in ./brand/shadcn.css applies.
+ * Refactoring Hand is still not shipped on the public site. */
 :root {
-  --font-display: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
   --font-hand-family: "Comic Neue", cursive;
 }
-/* bold display type (a single-weight brand display face, when present, looks the same at any weight) */
+/* bold display type (a single-weight brand display face looks the same at any weight) */
 @layer utilities { .font-display { font-weight: 700; } }
 html { scroll-behavior: smooth; scroll-padding-top: 96px; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
