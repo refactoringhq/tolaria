@@ -342,6 +342,16 @@ EOF
 
 The frontmatter ensures release notes are already organized when the Tolaria repo is opened as a vault, avoiding inbox clutter.
 
+**Landing New pill (required for every stable):**
+The "New" pill on the blue hero at [tolaria.md](https://tolaria.md) is hardcoded; it does not update itself from the release notes. When cutting a stable, update it in the same commit as `release-notes/<tag>.md`:
+- Set `RELEASE` in `site/landing/src/content.ts` (`tag`, `version`, `date`). `LINKS.releaseNotes` and the `DOWNLOADS` URLs are derived from `RELEASE.tag`.
+- Rewrite both pill strings in `site/landing/src/App.tsx` (short `sm:hidden`, longer `sm:inline`) to the 1–2 biggest user-facing changes of that stable, short enough for a pill. Never "Tolaria vX is out". If the release is fixes-only and has no strong headline, still point the link at the new tag and ask Luca whether to change the copy.
+- Review other landing copy that cites the release (the Appearance feature blurb interpolates `${RELEASE.tag}`). Do not advertise unreleased alpha features.
+- The headline is editorial. Do not auto-extract it from `release-notes/*.md` (copy has to fit the pill, and future-dated `v2027-*.md` notes must not be treated as latest).
+- Pushing that commit to `main` triggers `.github/workflows/deploy-docs.yml` (`site/**` and `release-notes/**`). The workflow builds with `bash scripts/build-pages-site.sh`, which compiles `@tolaria/landing` and places it at `/` of the GitHub Pages site (custom domain tolaria.md). Confirm the Deploy docs run succeeds. No separate deploy command is needed.
+
+This step is part of the `tolaria-release` procedure in the brian repo. Do not ship a stable and leave the live pill on the previous release.
+
 ### macOS / Tauri gotchas
 
 - `Option+N` → special chars on macOS. Use `e.code` or `Cmd+N`
