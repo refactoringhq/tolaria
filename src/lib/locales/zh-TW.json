@@ -1207,6 +1207,8 @@
   "filePreview.file": "檔案",
   "filePreview.previewUnavailable": "無法預覽",
   "filePreview.previewUnavailableDescription": "Tolaria 沒有此檔案類型的應用程式內預覽功能。",
+  "filePreview.largeDocumentTitle": "此檔案過大，無法安全開啟",
+  "filePreview.largeDocumentDescription": "為了維持 Tolaria 的回應速度，此檔案不會在預覽模式或原始模式中顯示。原始檔案未經變更。",
   "filePreview.textFile": "文字檔案",
   "inspector.properties.valueKind": "值類型",
   "inspector.properties.valueKind.text": "文字",

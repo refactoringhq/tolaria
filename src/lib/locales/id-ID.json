@@ -1207,6 +1207,8 @@
   "filePreview.file": "File",
   "filePreview.previewUnavailable": "Pratinjau tidak tersedia",
   "filePreview.previewUnavailableDescription": "Tolaria tidak memiliki pratinjau dalam aplikasi untuk jenis file ini.",
+  "filePreview.largeDocumentTitle": "File ini terlalu besar untuk dibuka dengan aman",
+  "filePreview.largeDocumentDescription": "Agar Tolaria tetap responsif, file ini tidak ditampilkan dalam mode Pratinjau atau Raw. File asli tidak diubah.",
   "filePreview.textFile": "File teks",
   "inspector.properties.valueKind": "Jenis nilai",
   "inspector.properties.valueKind.text": "Teks",

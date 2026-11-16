@@ -1209,6 +1209,8 @@ files:
     filePreview.file: 0b27918290ff5323bea1e3b78a9cf04e
     filePreview.previewUnavailable: e49849dafe86101d18db2e35e40ce18a
     filePreview.previewUnavailableDescription: a2c2dc6e43116031e882ab247e4390c3
+    filePreview.largeDocumentTitle: 572ed414cfcbc2b2f68037517b05acd9
+    filePreview.largeDocumentDescription: 9e3a2d405e86cbda7d8058c177533674
     filePreview.textFile: de62d185f177767c1b06714ed2d5a0da
     inspector.properties.valueKind: 4475920d50a2c224b86ebf6e79d38dc7
     inspector.properties.valueKind.text: 9dffbf69ffba8bc38bc4e01abf4b1675

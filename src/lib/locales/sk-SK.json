@@ -1207,6 +1207,8 @@
   "filePreview.file": "Súbor",
   "filePreview.previewUnavailable": "Náhľad nie je k dispozícii",
   "filePreview.previewUnavailableDescription": "Tolaria nemá v aplikácii náhľad pre tento typ súboru.",
+  "filePreview.largeDocumentTitle": "Tento súbor je príliš veľký na to, aby sa dal bezpečne otvoriť",
+  "filePreview.largeDocumentDescription": "Aby bola aplikácia Tolaria aj naďalej svižná, tento súbor sa nezobrazuje v režime náhľadu ani v režime Raw. Pôvodný súbor nebol zmenený.",
   "filePreview.textFile": "Textový súbor",
   "inspector.properties.valueKind": "Typ hodnoty",
   "inspector.properties.valueKind.text": "Text",

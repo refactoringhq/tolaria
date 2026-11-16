@@ -802,6 +802,8 @@
   "fileActions.error.openFile": "Nie ŭdalosia adkryć fajl: {detail}",
   "fileActions.error.pathMissing": "Šliach nie isnuje: {path}",
   "fileActions.error.revealPath": "Nie ŭdalosia pakazać šliach: {detail}",
+  "filePreview.largeDocumentTitle": "Hety fajł zanadta vialiki, kab biaśpiečna adkryć",
+  "filePreview.largeDocumentDescription": "Kab Tolaria zastavalaś žvavaj, hety fajł nie pakazvajecca ŭ režymie prahladu ci Raw. Aryhinalny fajł nie źmienieny.",
   "filePreview.copyDeepLink": "Kapijavać spasylku",
   "deepLinks.copied": "Deep-link skapijavany",
   "deepLinks.error.ambiguousVault": "Deep-link adpaviadaje niekaĺkim schoviščam. Pierajmienujcie alias adnaho schovišča ŭ Naladach.",

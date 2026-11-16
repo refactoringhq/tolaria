@@ -1,8 +1,11 @@
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { useEffect, useMemo, useRef } from "react";
+import { useAppLocale } from "../hooks/useAppPreferences";
 import { trackEvent } from "../lib/telemetry";
 import { htmlFilePreviewSrcDoc } from "../utils/htmlFilePreview";
+import { isLargeTextDocument } from "../utils/largeTextDocument";
 import { focusNoteListContainer } from "../utils/neighborhoodHistory";
+import { LargeDocumentFallback } from "./LargeDocumentFallback";
 import { Button } from "./ui/button";
 
 interface HtmlFilePreviewProps {
@@ -27,17 +30,21 @@ export function HtmlFilePreview({
 	title,
 	vaultPath,
 }: HtmlFilePreviewProps) {
+	const locale = useAppLocale();
 	const focusTargetRef = useRef<HTMLButtonElement | null>(null);
 	const frameRef = useRef<HTMLIFrameElement | null>(null);
+	const tooLarge = isLargeTextDocument(content);
 	const srcDoc = useMemo(
 		() =>
-			htmlFilePreviewSrcDoc({
-				content,
-				convertFileSrc,
-				filePath: path,
-				vaultPath,
-			}),
-		[content, path, vaultPath],
+			tooLarge
+				? ""
+				: htmlFilePreviewSrcDoc({
+						content,
+						convertFileSrc,
+						filePath: path,
+						vaultPath,
+					}),
+		[content, path, tooLarge, vaultPath],
 	);
 
 	useEffect(() => {
@@ -73,16 +80,20 @@ export function HtmlFilePreview({
 					focusNoteListContainer(document);
 				}}
 			/>
-			<iframe
-				ref={frameRef}
-				className="h-full min-h-[320px] w-full border-0 bg-background"
-				data-testid="html-file-preview"
-				referrerPolicy="no-referrer"
-				sandbox="allow-popups allow-popups-to-escape-sandbox"
-				srcDoc={srcDoc}
-				tabIndex={-1}
-				title={title}
-			/>
+			{tooLarge ? (
+				<LargeDocumentFallback locale={locale} />
+			) : (
+				<iframe
+					ref={frameRef}
+					className="h-full min-h-[320px] w-full border-0 bg-background"
+					data-testid="html-file-preview"
+					referrerPolicy="no-referrer"
+					sandbox="allow-popups allow-popups-to-escape-sandbox"
+					srcDoc={srcDoc}
+					tabIndex={-1}
+					title={title}
+				/>
+			)}
 		</section>
 	);
 }
