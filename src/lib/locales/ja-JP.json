@@ -1206,6 +1206,8 @@
   "filePreview.file": "ファイル",
   "filePreview.previewUnavailable": "プレビューは利用できません",
   "filePreview.previewUnavailableDescription": "Tolariaには、このファイルタイプのアプリ内プレビュー機能がありません。",
+  "filePreview.largeDocumentTitle": "このファイルは大きすぎて安全に開けません",
+  "filePreview.largeDocumentDescription": "Tolariaの応答性を維持するため、このファイルはプレビューモードやRawモードでは表示されません。元のファイルは変更されていません。",
   "filePreview.textFile": "テキストファイル",
   "inspector.properties.valueKind": "値の型",
   "inspector.properties.valueKind.text": "テキスト",

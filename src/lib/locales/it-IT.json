@@ -1206,6 +1206,8 @@
   "filePreview.file": "File",
   "filePreview.previewUnavailable": "Anteprima non disponibile",
   "filePreview.previewUnavailableDescription": "Tolaria non dispone di un'anteprima in-app per questo tipo di file.",
+  "filePreview.largeDocumentTitle": "Questo file è troppo grande per essere aperto in sicurezza",
+  "filePreview.largeDocumentDescription": "Per mantenere Tolaria reattiva, questo file non viene visualizzato in modalità Anteprima o Raw. Il file originale non è stato modificato.",
   "filePreview.textFile": "File di testo",
   "inspector.properties.valueKind": "Tipo di valore",
   "inspector.properties.valueKind.text": "Testo",

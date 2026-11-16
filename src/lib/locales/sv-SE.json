@@ -1206,6 +1206,8 @@
   "filePreview.file": "Fil",
   "filePreview.previewUnavailable": "Förhandsgranskning ej tillgänglig",
   "filePreview.previewUnavailableDescription": "Tolaria har ingen förhandsgranskning i appen för den här filtypen.",
+  "filePreview.largeDocumentTitle": "Den här filen är för stor för att öppnas på ett säkert sätt",
+  "filePreview.largeDocumentDescription": "För att Tolaria ska förbli responsiv visas inte den här filen i förhandsgransknings- eller Raw-läge. Den ursprungliga filen har inte ändrats.",
   "filePreview.textFile": "Textfil",
   "inspector.properties.valueKind": "Värdetyp",
   "inspector.properties.valueKind.text": "Text",
