@@ -1,6 +1,6 @@
 // Every fact on the page lives here, with its source. Sources: the Tolaria maintainers' fact sheet (2026-10-26), the
-// public GitHub repo + release v2026-10-26, and the live tolaria.md page. Don't add claims that aren't in one of those.
-export const RELEASE = { tag: "v2026-10-26", version: "2026.10.26", date: "26 Oct 2026" } // GitHub release, published 2026-10-26 11:53 CET
+// public GitHub repo + release v2026-11-10, and the live tolaria.md page. Don't add claims that aren't in one of those.
+export const RELEASE = { tag: "v2026-11-10", version: "2026.11.10", date: "10 Nov 2026" } // GitHub release, published 2026-11-10 13:11 CET
 // Same-site paths on tolaria.md (the landing is served at / next to the docs); absolute URLs in the preview build.
 const SITE = __TOLARIA_MD__ ? "" : "https://tolaria.md"
 const dl = (file: string) => `https://github.com/refactoringhq/tolaria/releases/download/${RELEASE.tag}/${file}`
