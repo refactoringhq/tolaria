@@ -1,3 +1,4 @@
+import './KanbanLayout.css'
 import { useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { DndContext, DragOverlay, type DropAnimation, defaultDropAnimationSideEffects } from '@dnd-kit/core'
@@ -39,7 +40,9 @@ function activeColumnSize(active: KanbanActiveItem, grouped: Map<string, unknown
   return grouped.get(active.group)?.length ?? 0
 }
 
-export function KanbanLayout({ entries, allEntries, groupBy, properties, columnOrder, onColumnOrderChange, onOpen, onMove, locale, typeEntryMap, displayPropsOverride, selectedNotePath }: KanbanLayoutProps) {
+export function KanbanLayout(props: KanbanLayoutProps) {
+  const { entries, allEntries, groupBy, properties, onOpen, locale, typeEntryMap, displayPropsOverride, selectedNotePath } = props
+  const { columnOrder, onColumnOrderChange, onMove } = props
   const [pending, setPending] = usePendingMoves(entries, groupBy)
   const grouped = useMemo(() => groupEntries(entries, groupBy, pending), [entries, groupBy, pending])
   const columns = useMemo(() => orderColumns(grouped.keys(), columnOrder), [columnOrder, grouped])

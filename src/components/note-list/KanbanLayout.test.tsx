@@ -52,12 +52,13 @@ describe('KanbanLayout', () => {
     expect(chips).not.toHaveTextContent('person-ada')
   })
 
-  it('opens a card on click and on Enter', () => {
+  it('opens a card on click from a native, keyboard-focusable button', () => {
     const props = renderBoard()
-    fireEvent.click(screen.getByRole('button', { name: 'Alpha' }))
+    const alphaCard = screen.getByRole('button', { name: 'Alpha' })
+    expect(alphaCard.tagName).toBe('BUTTON')
+    fireEvent.click(alphaCard)
     expect(props.onOpen).toHaveBeenCalledWith(entries[0], expect.anything())
-    fireEvent.keyDown(screen.getByRole('button', { name: 'Beta' }), { key: 'Enter' })
-    expect(props.onOpen).toHaveBeenLastCalledWith(entries[1], expect.anything())
+    expect(screen.getByRole('button', { name: 'No value' }).tagName).toBe('BUTTON')
   })
 
   it('hides board and column scrollbars without disabling scrolling', () => {

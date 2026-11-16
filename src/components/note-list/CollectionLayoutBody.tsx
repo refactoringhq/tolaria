@@ -29,7 +29,8 @@ function MissingGroupProperty({ property, locale, onUseList }: { property: strin
   )
 }
 
-export function CollectionLayoutBody({ layout, listContent, entries, allEntries, locale, typeEntryMap, displayPropsOverride, selectedNotePath, onOpen, onMove }: CollectionLayoutBodyProps) {
+export function CollectionLayoutBody(props: CollectionLayoutBodyProps) {
+  const { layout, listContent, locale, onOpen, onMove } = props
   const renderer = getCollectionLayout(layout.layout)
   const missingProperty = renderer.requiredProperties({ groupBy: layout.groupBy })
     .find((property) => !layout.groups.includes(property))
@@ -38,16 +39,16 @@ export function CollectionLayoutBody({ layout, listContent, entries, allEntries,
   }
   return renderer.render({
     listContent,
-    entries,
-    allEntries,
+    entries: props.entries,
+    allEntries: props.allEntries,
     groupBy: layout.groupBy,
     properties: layout.properties,
     columnOrder: layout.columnOrder,
     onColumnOrderChange: layout.changeColumnOrder,
     locale,
-    typeEntryMap,
-    displayPropsOverride,
-    selectedNotePath,
+    typeEntryMap: props.typeEntryMap,
+    displayPropsOverride: props.displayPropsOverride,
+    selectedNotePath: props.selectedNotePath,
     onOpen: (entry, event) => {
       layout.panel.reopen()
       onOpen(entry, event)

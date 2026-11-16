@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Virtuoso } from 'react-virtuoso'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { AppLocale } from '../../lib/i18n'
 import type { VaultEntry } from '../../types'
@@ -42,16 +43,18 @@ export const KanbanColumn = memo(function KanbanColumn({ group, cards, context, 
       data-kanban-column={group}
       data-testid="kanban-column"
     >
-      <div
+      <Button
         ref={setActivatorNodeRef}
+        type="button"
+        variant="ghost"
         {...attributes}
         {...listeners}
         aria-roledescription="column"
         aria-label={title}
-        className="flex h-10 shrink-0 cursor-grab items-center rounded-t-xl px-3 outline-none focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
+        className="h-10 w-full shrink-0 cursor-grab justify-start rounded-t-xl rounded-b-none px-3 hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
       >
         <KanbanColumnHeader title={title} count={cards.length} />
-      </div>
+      </Button>
       <div className="min-h-0 flex-1 px-2 pb-2">
         <Virtuoso
           data={cards}

@@ -8,6 +8,11 @@ describe('collectionLayoutConfig', () => {
     expect(isWritableGroupKey('', [''])).toBe(false)
     expect(isWritableGroupKey(' status', [' status'])).toBe(false)
     expect(isWritableGroupKey('status\nowner: x', ['status\nowner: x'])).toBe(false)
+    expect(isWritableGroupKey('Due date', ['Due date'])).toBe(true)
+    expect(isWritableGroupKey('belongs_to', ['belongs_to'])).toBe(true)
+    for (const yamlSyntax of ['owner: x', '[status]', '{status}', '#status', 'status # note', '&anchor', '*alias', "'status'", '"status"', 'a|b', 'a>b', '-status']) {
+      expect(isWritableGroupKey(yamlSyntax, [yamlSyntax])).toBe(false)
+    }
     for (const lineBreak of ['\u0085', '\u2028', '\u2029']) {
       const key = `status${lineBreak}owner: x`
       expect(isWritableGroupKey(key, [key])).toBe(false)

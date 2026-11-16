@@ -1,10 +1,14 @@
-import { memo, type KeyboardEvent, type MouseEvent } from 'react'
+import { memo, type MouseEvent } from 'react'
 import { useDraggable } from '@dnd-kit/core'
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import type { VaultEntry } from '../../types'
 import { PropertyChips } from '../note-item/PropertyChips'
 import { cardDisplayProperties, cardId } from './kanbanModel'
+
+/** A ghost Button reset to a block-level card slot, so the whole card is one native, focusable control. */
+const KANBAN_CARD_SLOT_CLASSNAME = 'kanban-card-slot block h-auto w-full whitespace-normal rounded-lg p-0 text-left font-normal hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring'
 
 export interface KanbanCardContext {
   cardProperties: string[]
@@ -39,12 +43,6 @@ export function KanbanCardFace({ entry, context, className }: KanbanCardFaceProp
   )
 }
 
-function clickOnEnter(event: KeyboardEvent<HTMLDivElement>) {
-  if (event.key !== 'Enter') return
-  event.preventDefault()
-  event.currentTarget.click()
-}
-
 interface KanbanCardProps {
   entry: VaultEntry
   context: KanbanCardContext
@@ -55,22 +53,20 @@ interface KanbanCardProps {
 export const KanbanCard = memo(function KanbanCard({ entry, context, selected, justDropped }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: cardId(entry.path), data: { entry } })
   return (
-    <div
+    <Button
       ref={setNodeRef}
+      type="button"
+      variant="ghost"
       {...attributes}
       {...listeners}
       aria-roledescription="card"
       aria-label={entry.title}
-      className={cn('kanban-card-slot rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring', isDragging && 'kanban-card-slot--placeholder')}
+      className={cn(KANBAN_CARD_SLOT_CLASSNAME, isDragging && 'kanban-card-slot--placeholder')}
       onClick={(event) => context.onOpen(entry, event)}
-      onKeyDown={(event) => {
-        listeners?.onKeyDown?.(event)
-        clickOnEnter(event)
-      }}
       data-testid="kanban-card"
       data-selected={selected ? 'true' : undefined}
     >
       <KanbanCardFace entry={entry} context={context} className={cn(selected && 'kanban-card--selected', justDropped && 'kanban-card--dropped')} />
-    </div>
+    </Button>
   )
 })

@@ -168,31 +168,24 @@ function addEntryKeys(keys: Set<string>, entry: VaultEntry, accept: (value: unkn
 
 export function availableGroupProperties(entries: VaultEntry[]): string[] {
   const keys = new Set<string>()
-  entries.forEach((entry) => addEntryKeys(keys, entry, isScalarProperty))
+  for (const entry of entries) addEntryKeys(keys, entry, isScalarProperty)
   return [...keys]
 }
 
 export function availableCardProperties(entries: VaultEntry[], configured: string[]): string[] {
   const keys = new Set(configured)
-  entries.forEach((entry) => addEntryKeys(keys, entry, () => true))
+  for (const entry of entries) addEntryKeys(keys, entry, () => true)
   return [...keys].sort((left, right) => left.localeCompare(right))
 }
 
+/** Property names a Kanban drop may write: letters, digits, `_`, spaces, `.` and `-`, starting with a letter, digit or `_`. */
+const WRITABLE_GROUP_KEY = /^[\p{L}\p{N}_][\p{L}\p{N}_ .-]*$/u
+
 /**
  * Kanban drops write the group-by key into note frontmatter. The key comes from layout YAML, so it is only
- * writable when it is a single-line key that the board's notes already carry.
+ * writable when it matches a plain property-name grammar and the board's notes already carry it.
  */
 export function isWritableGroupKey(key: string, groups: readonly string[]): boolean {
-  if (key === '' || key.trim() !== key || hasControlCharacter(key)) return false
+  if (key.trim() !== key || !WRITABLE_GROUP_KEY.test(key)) return false
   return groups.includes(key)
-}
-
-/** NEL, LINE SEPARATOR and PARAGRAPH SEPARATOR also break lines in YAML. */
-const YAML_UNICODE_LINE_BREAKS = new Set([0x85, 0x2028, 0x2029])
-
-function hasControlCharacter(text: string): boolean {
-  return [...text].some((character) => {
-    const code = character.charCodeAt(0)
-    return code < 32 || code === 127 || YAML_UNICODE_LINE_BREAKS.has(code)
-  })
 }

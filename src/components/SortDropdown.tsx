@@ -208,16 +208,7 @@ function useSortDropdownState({
   }
 }
 
-function SortDropdownTrigger({
-  triggerRef,
-  open,
-  current,
-  groupLabel,
-  direction,
-  locale,
-  iconOnly,
-  onToggle,
-}: {
+function SortDropdownTrigger(options: {
   triggerRef: React.RefObject<HTMLButtonElement | null>
   open: boolean
   current: SortOption
@@ -227,6 +218,7 @@ function SortDropdownTrigger({
   iconOnly: boolean
   onToggle: () => void
 }) {
+  const { triggerRef, open, current, groupLabel, direction, locale, iconOnly, onToggle } = options
   const DirectionIcon = direction === 'asc' ? ArrowUp : ArrowDown
   const currentLabel = getLocalizedSortOptionLabel(current, locale)
   const title = translate(locale, 'noteList.sort.by', { label: currentLabel })
