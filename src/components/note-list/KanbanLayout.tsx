@@ -1,140 +1,84 @@
-import { useMemo, useRef } from 'react'
-import { Virtuoso } from 'react-virtuoso'
-import { type AppLocale, translate } from '../../lib/i18n'
-import type { VaultEntry, VaultPropertyValue } from '../../types'
+import './KanbanLayout.css'
+import { useMemo } from 'react'
+import { createPortal } from 'react-dom'
+import { DndContext, DragOverlay, type DropAnimation, defaultDropAnimationSideEffects } from '@dnd-kit/core'
+import { horizontalListSortingStrategy, SortableContext } from '@dnd-kit/sortable'
+import type { CollectionLayoutRendererProps } from '../../collections/layoutRegistry'
+import type { AppLocale } from '../../lib/i18n'
+import { KanbanCardFace, type KanbanCardContext } from './KanbanCard'
+import { KanbanColumn, KanbanColumnHeader } from './KanbanColumn'
+import { columnId, columnTitle, groupEntries, orderColumns } from './kanbanModel'
+import { type KanbanActiveItem, kanbanCollisionDetection, useKanbanDrag, useKanbanSensors, usePendingMoves } from './useKanbanDrag'
 
-interface KanbanLayoutProps {
-  entries: VaultEntry[]
-  groupBy: string
-  properties: string[]
-  columnOrder: string[]
-  onColumnOrderChange: (order: string[]) => void
-  onOpen: (entry: VaultEntry, event: React.MouseEvent) => void
-  onMove: (entry: VaultEntry, value: string | null) => void
-  locale: AppLocale
+type KanbanLayoutProps = Omit<CollectionLayoutRendererProps, 'listContent'>
+
+const SETTLE_DROP_ANIMATION: DropAnimation = {
+  duration: 220,
+  easing: 'cubic-bezier(0.2, 0.9, 0.3, 1)',
+  sideEffects: defaultDropAnimationSideEffects({
+    className: { dragOverlay: 'kanban-overlay--dropping' },
+    styles: { active: { opacity: '0' } },
+  }),
 }
 
-function propertyValueFor(entry: VaultEntry, property: string): VaultPropertyValue | undefined {
-  if (property === 'status') return entry.status
-  return Object.entries(entry.properties).find(([key]) => key === property)?.[1]
-}
-
-function valueFor(entry: VaultEntry, property: string): string {
-  const value = propertyValueFor(entry, property)
-  if (Array.isArray(value)) return value.join(', ')
-  return value === null || value === undefined ? '' : String(value)
-}
-
-function groupEntries(entries: VaultEntry[], property: string) {
-  const groups = new Map<string, VaultEntry[]>()
-  for (const entry of entries) {
-    const value = valueFor(entry, property)
-    const group = groups.get(value) ?? []
-    group.push(entry)
-    groups.set(value, group)
+function KanbanDragPreview({ active, context, locale, cardCount }: { active: KanbanActiveItem; context: KanbanCardContext; locale: AppLocale; cardCount: number }) {
+  if (active?.kind === 'card') {
+    return <div className="kanban-drag-lift"><KanbanCardFace entry={active.entry} context={context} className="kanban-card--lifted" /></div>
   }
-  return groups
-}
-
-function orderColumns(values: string[], savedOrder: string[]) {
-  return [...savedOrder.filter((value) => values.includes(value)), ...values.filter((value) => !savedOrder.includes(value))]
-}
-
-function moveColumn(columns: string[], index: number, direction: -1 | 1, onChange: (order: string[]) => void) {
-  const target = index + direction
-  if (target < 0 || target >= columns.length) return
-  const currentValue = columns.find((_, position) => position === index)
-  const targetValue = columns.find((_, position) => position === target)
-  if (currentValue === undefined || targetValue === undefined) return
-  const next = columns.map((value, position) => {
-    if (position === index) return targetValue
-    if (position === target) return currentValue
-    return value
-  })
-  onChange(next)
-}
-
-function droppedGroup(target: EventTarget | null): string | null | undefined {
-  if (!(target instanceof Element)) return undefined
-  const column = target.closest<HTMLElement>('[data-kanban-column]')
-  return column ? column.dataset.kanbanColumn || null : undefined
-}
-
-function KanbanCard({ entry, properties, onOpen, onPointerStart }: { entry: VaultEntry; properties: string[]; onOpen: (entry: VaultEntry, event: React.MouseEvent) => void; onPointerStart: (entry: VaultEntry, event: React.PointerEvent) => void }) {
-  return (
-    <button
-      type="button"
-      onPointerDown={(event) => onPointerStart(entry, event)}
-      onClick={(event) => onOpen(entry, event)}
-      className="block w-full rounded-md border border-border bg-card p-3 text-left shadow-sm hover:border-primary"
-      data-testid="kanban-card"
-    >
-      <span className="block truncate text-sm font-medium">{entry.title}</span>
-      {properties.map((property) => {
-        const value = propertyValueFor(entry, property)
-        if (value === null || value === undefined || value === '') return null
-        return <span key={property} className="mt-2 block truncate text-xs text-muted-foreground">{property}: {Array.isArray(value) ? value.join(', ') : String(value)}</span>
-      })}
-    </button>
-  )
-}
-
-function KanbanColumn({ group, cards, properties, onOpen, locale, onMoveColumn, onMoveStart }: {
-  group: string
-  cards: VaultEntry[]
-  properties: string[]
-  onOpen: (entry: VaultEntry, event: React.MouseEvent) => void
-  locale: AppLocale
-  onMoveColumn: (direction: -1 | 1) => void
-  onMoveStart: (entry: VaultEntry, event: React.PointerEvent) => void
-}) {
-  const title = group || translate(locale, 'layout.noValue')
-  return (
-    <section
-      className="flex h-full w-64 min-w-64 flex-col overflow-hidden rounded-md bg-muted/40"
-      aria-label={`${title}, ${cards.length} notes`}
-      data-kanban-column={group}
-    >
-      <h4 className="flex items-center border-b border-border px-3 py-2 text-sm font-semibold"><span>{title}<span className="ml-2 text-muted-foreground">{cards.length}</span></span><span className="ml-auto flex gap-1"><button type="button" aria-label={translate(locale, 'layout.moveColumnLeft', { column: title })} className="rounded px-1 hover:bg-muted" onClick={() => onMoveColumn(-1)}>←</button><button type="button" aria-label={translate(locale, 'layout.moveColumnRight', { column: title })} className="rounded px-1 hover:bg-muted" onClick={() => onMoveColumn(1)}>→</button></span></h4>
-      <div className="min-h-0 flex-1 overflow-hidden p-2">
-        <Virtuoso
-          data={cards}
-          style={{ height: '100%' }}
-          computeItemKey={(_, entry) => entry.path}
-          itemContent={(_, entry) => (
-            <div className="pb-2">
-            <KanbanCard entry={entry} properties={properties} onOpen={onOpen} onPointerStart={onMoveStart} />
-            </div>
-          )}
-        />
+  if (active?.kind === 'column') {
+    return (
+      <div className="kanban-drag-lift flex h-10 w-[272px] items-center rounded-xl bg-muted px-3 shadow-lg">
+        <KanbanColumnHeader title={columnTitle(active.group, locale)} count={cardCount} />
       </div>
-    </section>
-  )
+    )
+  }
+  return null
 }
 
-export function KanbanLayout({ entries, groupBy, properties, columnOrder, onColumnOrderChange, onOpen, onMove, locale }: KanbanLayoutProps) {
-  const groupedEntries = useMemo(() => groupEntries(entries, groupBy), [entries, groupBy])
-  const pendingDrag = useRef<{ entry: VaultEntry; x: number; y: number } | null>(null)
-  const suppressClick = useRef(false)
-  const values = [...[...groupedEntries.keys()].filter(Boolean).sort((left, right) => left.localeCompare(right)), '']
-  const columns = orderColumns(values, columnOrder)
-  const onMoveStart = (entry: VaultEntry, event: React.PointerEvent) => {
-    if (event.button !== 0) return
-    pendingDrag.current = { entry, x: event.clientX, y: event.clientY }
-  }
-  const onPointerUp = (event: React.PointerEvent<HTMLElement>) => {
-    const drag = pendingDrag.current
-    pendingDrag.current = null
-    if (!drag || Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 6) return
-    const group = droppedGroup(event.target)
-    if (group === undefined) return
-    suppressClick.current = true
-    onMove(drag.entry, group)
-  }
+function activeColumnSize(active: KanbanActiveItem, grouped: Map<string, unknown[]>): number {
+  if (active?.kind !== 'column') return 0
+  return grouped.get(active.group)?.length ?? 0
+}
+
+export function KanbanLayout(props: KanbanLayoutProps) {
+  const { entries, allEntries, groupBy, properties, onOpen, locale, typeEntryMap, displayPropsOverride, selectedNotePath } = props
+  const { columnOrder, onColumnOrderChange, onMove } = props
+  const [pending, setPending] = usePendingMoves(entries, groupBy)
+  const grouped = useMemo(() => groupEntries(entries, groupBy, pending), [entries, groupBy, pending])
+  const columns = useMemo(() => orderColumns(grouped.keys(), columnOrder), [columnOrder, grouped])
+  const sensors = useKanbanSensors()
+  const drag = useKanbanDrag({ groupBy, columns, pending, setPending, onMove, onColumnOrderChange })
+  const context = useMemo<KanbanCardContext>(
+    () => ({ cardProperties: properties, allEntries, typeEntryMap, displayPropsOverride, onOpen }),
+    [allEntries, displayPropsOverride, onOpen, properties, typeEntryMap],
+  )
+  const activeColumnCount = activeColumnSize(drag.active, grouped)
+  const cardTarget = drag.crossColumnDrop ? drag.overGroup : undefined
 
   return (
-    <section className="flex h-full min-h-0 gap-3 overflow-x-auto p-3" data-testid="kanban-board" aria-label={`Kanban grouped by ${groupBy}`} onPointerUp={onPointerUp} onPointerCancel={() => { pendingDrag.current = null }} onClickCapture={(event) => { if (!suppressClick.current) return; suppressClick.current = false; event.preventDefault(); event.stopPropagation() }}>
-      {columns.map((group, index) => <KanbanColumn key={group || '__empty'} group={group} cards={groupedEntries.get(group) ?? []} properties={properties} onOpen={onOpen} locale={locale} onMoveColumn={(direction) => moveColumn(columns, index, direction, onColumnOrderChange)} onMoveStart={onMoveStart} />)}
-    </section>
+    <DndContext sensors={sensors} collisionDetection={kanbanCollisionDetection} onDragStart={drag.onDragStart} onDragOver={drag.onDragOver} onDragEnd={drag.onDragEnd} onDragCancel={drag.onDragCancel}>
+      <section className="kanban-scroll flex min-h-0 flex-1 gap-3 overflow-x-auto overflow-y-hidden p-3" data-testid="kanban-board" aria-label={`Kanban: ${groupBy}`}>
+        <SortableContext items={columns.map(columnId)} strategy={horizontalListSortingStrategy}>
+          {columns.map((group) => (
+            <KanbanColumn
+              key={group || '__empty'}
+              group={group}
+              cards={grouped.get(group) ?? []}
+              context={context}
+              locale={locale}
+              selectedNotePath={selectedNotePath}
+              droppedPath={drag.droppedPath}
+              isCardTarget={cardTarget === group}
+            />
+          ))}
+        </SortableContext>
+      </section>
+      {createPortal(
+        <DragOverlay dropAnimation={drag.crossColumnDrop ? null : SETTLE_DROP_ANIMATION} zIndex={12000}>
+          <KanbanDragPreview active={drag.active} context={context} locale={locale} cardCount={activeColumnCount} />
+        </DragOverlay>,
+        document.body,
+      )}
+    </DndContext>
   )
 }
