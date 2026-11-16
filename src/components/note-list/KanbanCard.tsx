@@ -8,7 +8,7 @@ import { PropertyChips } from '../note-item/PropertyChips'
 import { cardDisplayProperties, cardId } from './kanbanModel'
 
 /** A ghost Button reset to a block-level card slot, so the whole card is one native, focusable control. */
-const KANBAN_CARD_SLOT_CLASSNAME = 'kanban-card-slot block h-auto w-full whitespace-normal rounded-lg p-0 text-left font-normal hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring'
+const KANBAN_CARD_SLOT_CLASSNAME = 'kanban-card-slot block h-auto w-full whitespace-normal rounded-lg p-0 text-left font-normal hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring [&_svg]:!size-[11px]'
 
 export interface KanbanCardContext {
   cardProperties: string[]
