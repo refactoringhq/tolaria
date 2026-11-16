@@ -1,7 +1,11 @@
 import { BulkActionBar } from '../BulkActionBar'
 import { CollectionLayoutBody } from './CollectionLayoutBody'
+import { type CollectionLayoutState, useCollectionLayout } from './useCollectionLayout'
+import { CollectionLayoutHeaderControls } from './CollectionLayoutControls'
+import { KanbanEditorPanelClose } from './KanbanEditorPanel'
+import { layoutPropertyPicker } from './kanbanCardFieldsPicker'
 import { FilterPills } from './FilterPills'
-import { NoteListHeader } from './NoteListHeader'
+import { NOTE_LIST_ACTION_BUTTON_CLASSNAME, NoteListHeader } from './NoteListHeader'
 import { EntityView, ListView } from './NoteListViews'
 import type { useNoteListModel } from './useNoteListModel'
 
@@ -290,9 +294,10 @@ function NoteListLayoutHeader(
   | 'toggleSearch'
   | 'setSearch'
   | 'handleSearchKeyDown'
-  >,
+  > & { layoutControls?: React.ReactNode },
 ) {
   const {
+    layoutControls,
     title,
     typeDocument,
     isEntityView,
@@ -336,6 +341,7 @@ function NoteListLayoutHeader(
       isSearching={isSearching}
       searchInputRef={searchInputRef}
       propertyPicker={propertyPicker}
+      layoutControls={layoutControls}
       onSortChange={handleSortChange}
       onCreateNote={handleCreateNote}
       onOpenType={onOpenType}
@@ -385,12 +391,29 @@ function NoteListFooter(
   )
 }
 
+function LayoutHeaderControls({ layout, locale }: { layout: CollectionLayoutState; locale: NoteListLayoutProps['locale'] }) {
+  if (!layout.enabled) return null
+  return (
+    <CollectionLayoutHeaderControls
+      layout={layout.layout}
+      groupBy={layout.groupBy}
+      groups={layout.groups}
+      locale={locale}
+      triggerClassName={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
+      onLayoutChange={layout.changeLayout}
+      onGroupByChange={layout.changeGroupBy}
+    />
+  )
+}
+
 export function NoteListLayout({
   noteListPanelRef,
   handleNoteListPanelBlurCapture,
   handleNoteListPanelFocusCapture,
   ...contentProps
 }: NoteListLayoutProps) {
+  const layout = useCollectionLayout(contentProps)
+  const { locale } = contentProps
   return (
     <div
       ref={noteListPanelRef}
@@ -398,19 +421,30 @@ export function NoteListLayout({
       style={{ height: '100%' }}
       onBlurCapture={handleNoteListPanelBlurCapture}
       onFocusCapture={handleNoteListPanelFocusCapture}
+      data-collection-layout={layout.layout}
+      data-kanban-panel={layout.panel.open ? 'open' : 'closed'}
     >
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <CollectionLayoutBody
+        <NoteListLayoutHeader
           {...contentProps}
-          listContent={
-            <>
-              <NoteListLayoutHeader {...contentProps} />
-              <NoteListBody {...contentProps} />
-            </>
-          }
+          propertyPicker={layoutPropertyPicker(layout, contentProps.propertyPicker, locale)}
+          layoutControls={<LayoutHeaderControls layout={layout} locale={locale} />}
+        />
+        <CollectionLayoutBody
+          layout={layout}
+          listContent={<NoteListBody {...contentProps} />}
+          entries={contentProps.visibleEntries}
+          allEntries={contentProps.allEntries}
+          locale={locale}
+          typeEntryMap={contentProps.typeEntryMap}
+          displayPropsOverride={contentProps.displayPropsOverride}
+          selectedNotePath={contentProps.selectedNotePath}
+          onOpen={contentProps.handleClickNote}
+          onMove={(entry, property, value) => contentProps.onUpdateTypeSort?.(entry.path, property, value)}
         />
       </div>
       <NoteListFooter {...contentProps} />
+      <KanbanEditorPanelClose open={layout.panel.open} locale={locale} onClose={layout.panel.close} />
     </div>
   )
 }

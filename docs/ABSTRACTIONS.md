@@ -19,6 +19,8 @@ Key abstractions and domain models in Tolaria.
 
 `src/collections/layoutRegistry.tsx` registers the List and Kanban renderers through a shared type and required-property contract. Both consume the resolved note entries; Kanban writes a dropped card's group value through the normal note frontmatter update handler. Saved Views retain layout config under their optional `presentation` YAML mapping; built-in, type, and folder layouts use vault-root `layouts/*.yml` files keyed by collection identity. Missing config keeps the List default. See ADR 0301.
 
+A registration also declares its label key, icon and extra header controls (`groupBy` for Kanban). `useCollectionLayout` (`src/components/note-list/useCollectionLayout.ts`) resolves the effective settings, persists only real changes and tracks the Kanban editor panel; `CollectionLayoutBody` renders the registered layout. Kanban is split into `kanbanModel.ts` (grouping, column order, optimistic moves), `useKanbanDrag.ts` (dnd-kit sensors and drop handling), `KanbanColumn`, `KanbanCard` (reuses `PropertyChips`) and `KanbanEditorPanelClose`. See ADR 0302.
+
 ## Mobile Note-List Creation
 
 `MobileNoteListPanel` keeps a round create action anchored inside the list body,

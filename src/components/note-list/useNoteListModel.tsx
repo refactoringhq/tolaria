@@ -364,7 +364,9 @@ export interface NoteListProps {
 }
 
 type NoteListLayoutModelParams = {
+  entries: VaultEntry[]
   selection: SidebarSelection
+  selectedNote: VaultEntry | null
   vaultPath?: NoteListProps['vaultPath']
   views?: ViewFile[]
   onUpdateViewDefinition?: NoteListProps['onUpdateViewDefinition']
@@ -435,6 +437,9 @@ function noteListInteractionModel(params: NoteListLayoutModelParams) {
     toggleGroup: params.interaction.toggleGroup,
     renderItem: params.interaction.renderItem,
     typeEntryMap: params.content.typeEntryMap,
+    displayPropsOverride: params.content.displayPropsOverride,
+    allEntries: params.entries,
+    selectedNotePath: params.selectedNote?.path ?? null,
     handleClickNote: params.interaction.handleClickNote,
     isArchivedView: params.content.isArchivedView,
     gitRepositories,

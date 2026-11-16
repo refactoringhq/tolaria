@@ -68,15 +68,6 @@ body.mac-chrome.mac-chrome-fullscreen {
   flex: 1;
 }
 
-.app[data-collection-layout="kanban"][data-collection-note-open="false"] .app__note-list {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.app[data-collection-layout="kanban"][data-collection-note-open="false"] .app__editor {
-  display: none;
-}
-
 /* Phone web layout (TOL-193): one pane at a time, inside the safe area and above the keyboard. */
 html[data-phone-pane] .app-shell {
   position: fixed;
