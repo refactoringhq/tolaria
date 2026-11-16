@@ -95,6 +95,12 @@ export function columnTitle(group: ColumnValue, locale: AppLocale): string {
   return group || translate(locale, 'layout.noValue')
 }
 
+export function columnLabel(title: string, count: number, locale: AppLocale): string {
+  return count === 1
+    ? translate(locale, 'layout.columnLabelOne', { column: title })
+    : translate(locale, 'layout.columnLabelMany', { column: title, count })
+}
+
 export function withoutPendingMove(pending: PendingMoves, path: NotePath, value: ColumnValue): PendingMoves {
   if (pending.get(path) !== value) return pending
   const next = new Map(pending)

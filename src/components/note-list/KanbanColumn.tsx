@@ -4,10 +4,10 @@ import { CSS } from '@dnd-kit/utilities'
 import { Virtuoso } from 'react-virtuoso'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import type { AppLocale } from '../../lib/i18n'
+import { type AppLocale, translate } from '../../lib/i18n'
 import type { VaultEntry } from '../../types'
 import { KanbanCard, type KanbanCardContext } from './KanbanCard'
-import { columnId, columnTitle } from './kanbanModel'
+import { columnId, columnLabel, columnTitle } from './kanbanModel'
 
 export interface KanbanColumnProps {
   group: string
@@ -39,7 +39,7 @@ export const KanbanColumn = memo(function KanbanColumn({ group, cards, context, 
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       className={cn('kanban-column flex min-h-0 w-[272px] min-w-[272px] flex-col rounded-xl bg-muted/50', isCardTarget && 'kanban-column--target', isDragging && 'kanban-column--placeholder')}
-      aria-label={`${title}, ${cards.length}`}
+      aria-label={columnLabel(title, cards.length, locale)}
       data-kanban-column={group}
       data-testid="kanban-column"
     >
@@ -49,7 +49,7 @@ export const KanbanColumn = memo(function KanbanColumn({ group, cards, context, 
         variant="ghost"
         {...attributes}
         {...listeners}
-        aria-roledescription="column"
+        aria-roledescription={translate(locale, 'layout.columnRole')}
         aria-label={title}
         className="h-10 w-full shrink-0 cursor-grab justify-start rounded-t-xl rounded-b-none px-3 hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
       >
