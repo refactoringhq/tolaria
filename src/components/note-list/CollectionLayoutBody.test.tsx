@@ -52,6 +52,7 @@ function Harness({ onMove = vi.fn(), onOpen = vi.fn(), ...overrides }: HarnessPr
         layout={layout}
         listContent={<div data-testid="classic-list">Classic list</div>}
         entries={source.visibleEntries}
+        allEntries={source.visibleEntries}
         locale="en"
         typeEntryMap={{}}
         onOpen={(entry) => onOpen(entry)}
@@ -97,6 +98,19 @@ describe('collection layouts', () => {
 
     rendered.rerender(<Harness selection={{ kind: 'filter', filter: 'archived' }} />)
     expect(screen.getByTestId('classic-list')).toBeInTheDocument()
+  })
+
+  it('does not write layout files when a menu choice changes nothing', async () => {
+    const saves = () => invoke.mock.calls.filter(([command]) => command === 'save_collection_layout_cmd')
+    render(<Harness />)
+    await chooseMenuOption('layout-menu-button', 'layout-option-list')
+    expect(saves()).toHaveLength(0)
+
+    fireEvent.keyDown(window, { key: 'g', ctrlKey: true, shiftKey: true })
+    await chooseMenuOption('group-by-menu-button', 'group-by-option-status')
+
+    expect(screen.getByTestId('kanban-board')).toBeInTheDocument()
+    expect(saves()).toHaveLength(1)
   })
 
   it('loads and saves non-View layout config through the owning vault', async () => {

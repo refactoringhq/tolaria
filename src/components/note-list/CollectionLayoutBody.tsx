@@ -4,12 +4,14 @@ import { getCollectionLayout } from '../../collections/layoutRegistry'
 import { type AppLocale, translate } from '../../lib/i18n'
 import type { VaultEntry } from '../../types'
 import { Button } from '@/components/ui/button'
+import { isWritableGroupKey } from './collectionLayoutConfig'
 import type { CollectionLayoutState } from './useCollectionLayout'
 
 interface CollectionLayoutBodyProps {
   layout: CollectionLayoutState
   listContent: ReactNode
   entries: VaultEntry[]
+  allEntries: VaultEntry[]
   locale: AppLocale
   typeEntryMap: Record<string, VaultEntry>
   displayPropsOverride?: string[] | null
@@ -27,7 +29,7 @@ function MissingGroupProperty({ property, locale, onUseList }: { property: strin
   )
 }
 
-export function CollectionLayoutBody({ layout, listContent, entries, locale, typeEntryMap, displayPropsOverride, selectedNotePath, onOpen, onMove }: CollectionLayoutBodyProps) {
+export function CollectionLayoutBody({ layout, listContent, entries, allEntries, locale, typeEntryMap, displayPropsOverride, selectedNotePath, onOpen, onMove }: CollectionLayoutBodyProps) {
   const renderer = getCollectionLayout(layout.layout)
   const missingProperty = renderer.requiredProperties({ groupBy: layout.groupBy })
     .find((property) => !layout.groups.includes(property))
@@ -37,6 +39,7 @@ export function CollectionLayoutBody({ layout, listContent, entries, locale, typ
   return renderer.render({
     listContent,
     entries,
+    allEntries,
     groupBy: layout.groupBy,
     properties: layout.properties,
     columnOrder: layout.columnOrder,
@@ -49,6 +52,8 @@ export function CollectionLayoutBody({ layout, listContent, entries, locale, typ
       layout.panel.reopen()
       onOpen(entry, event)
     },
-    onMove: (entry, value) => onMove(entry, layout.groupBy, value),
+    onMove: (entry, value) => {
+      if (isWritableGroupKey(layout.groupBy, layout.groups)) onMove(entry, layout.groupBy, value)
+    },
   })
 }

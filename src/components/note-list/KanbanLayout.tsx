@@ -39,15 +39,15 @@ function activeColumnSize(active: KanbanActiveItem, grouped: Map<string, unknown
   return grouped.get(active.group)?.length ?? 0
 }
 
-export function KanbanLayout({ entries, groupBy, properties, columnOrder, onColumnOrderChange, onOpen, onMove, locale, typeEntryMap, displayPropsOverride, selectedNotePath }: KanbanLayoutProps) {
+export function KanbanLayout({ entries, allEntries, groupBy, properties, columnOrder, onColumnOrderChange, onOpen, onMove, locale, typeEntryMap, displayPropsOverride, selectedNotePath }: KanbanLayoutProps) {
   const [pending, setPending] = usePendingMoves(entries, groupBy)
   const grouped = useMemo(() => groupEntries(entries, groupBy, pending), [entries, groupBy, pending])
   const columns = useMemo(() => orderColumns(grouped.keys(), columnOrder), [columnOrder, grouped])
   const sensors = useKanbanSensors()
   const drag = useKanbanDrag({ groupBy, columns, pending, setPending, onMove, onColumnOrderChange })
   const context = useMemo<KanbanCardContext>(
-    () => ({ cardProperties: properties, allEntries: entries, typeEntryMap, displayPropsOverride, onOpen }),
-    [displayPropsOverride, entries, onOpen, properties, typeEntryMap],
+    () => ({ cardProperties: properties, allEntries, typeEntryMap, displayPropsOverride, onOpen }),
+    [allEntries, displayPropsOverride, onOpen, properties, typeEntryMap],
   )
   const activeColumnCount = activeColumnSize(drag.active, grouped)
   const cardTarget = drag.crossColumnDrop ? drag.overGroup : undefined

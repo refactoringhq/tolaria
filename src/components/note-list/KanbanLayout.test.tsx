@@ -11,6 +11,7 @@ const entries = [
 function renderBoard(overrides: Partial<Parameters<typeof KanbanLayout>[0]> = {}) {
   const props = {
     entries,
+    allEntries: entries,
     groupBy: 'status',
     properties: ['owner'],
     columnOrder: [],
@@ -40,6 +41,15 @@ describe('KanbanLayout', () => {
     const alphaCard = screen.getByRole('button', { name: 'Alpha' })
     expect(within(alphaCard).getByTestId('property-chips')).toHaveTextContent('Ada')
     expect(alphaCard).toHaveAttribute('data-selected', 'true')
+  })
+
+  it('resolves linked card fields against the whole vault, like list rows', () => {
+    const person = makeEntry({ path: '/vault/person-ada.md', filename: 'person-ada.md', title: 'Ada Lovelace', isA: 'Person' })
+    const linked = makeEntry({ path: '/vault/c.md', title: 'Gamma', status: 'Doing', relationships: { owner: ['[[person-ada]]'] } })
+    renderBoard({ entries: [linked], allEntries: [linked, person] })
+    const chips = within(screen.getByRole('button', { name: 'Gamma' })).getByTestId('property-chips')
+    expect(chips).toHaveTextContent('Ada Lovelace')
+    expect(chips).not.toHaveTextContent('person-ada')
   })
 
   it('opens a card on click and on Enter', () => {

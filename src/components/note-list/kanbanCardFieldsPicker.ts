@@ -1,6 +1,6 @@
 import { COLLECTION_PRESENTATION_KANBAN } from '../../collections/collectionTypes'
 import { type AppLocale, translate } from '../../lib/i18n'
-import type { ListPropertiesPopoverProps } from './ListPropertiesPopover'
+import type { NoteListPropertyPicker } from './noteListHooks'
 
 interface CardFieldsSource {
   layout: string
@@ -15,9 +15,9 @@ interface CardFieldsSource {
  */
 export function layoutPropertyPicker(
   layout: CardFieldsSource,
-  listPicker: ListPropertiesPopoverProps | null | undefined,
+  listPicker: NoteListPropertyPicker | null,
   locale: AppLocale,
-): ListPropertiesPopoverProps | null | undefined {
+): NoteListPropertyPicker | null {
   if (layout.layout !== COLLECTION_PRESENTATION_KANBAN) return listPicker
   const inherited = listPicker?.currentDisplay ?? []
   const available = new Set([...(listPicker?.availableProperties ?? []), ...layout.cardFields])

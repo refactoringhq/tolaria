@@ -25,7 +25,8 @@ interface HeaderMenuProps {
 
 function HeaderRadioMenu({ label, triggerClassName, testId, icon, value, onValueChange, children }: HeaderMenuProps) {
   return (
-    <DropdownMenu>
+    // Non-modal like the Linux menu bar: the modal scroll lock shifts the whole WebKitGTK window while open.
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button type="button" variant="ghost" size="icon-xs" className={triggerClassName} title={label} aria-label={label} data-testid={testId}>
           {icon}

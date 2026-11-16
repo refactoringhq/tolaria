@@ -8,6 +8,8 @@ import { COLLECTION_PRESENTATION_KANBAN, COLLECTION_PRESENTATION_LIST, type Coll
 export interface CollectionLayoutRendererProps {
   listContent: ReactNode
   entries: VaultEntry[]
+  /** Every vault entry, so card property chips resolve links exactly like list rows. */
+  allEntries: VaultEntry[]
   groupBy: string
   properties: string[]
   columnOrder: string[]

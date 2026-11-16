@@ -434,6 +434,7 @@ export function NoteListLayout({
           layout={layout}
           listContent={<NoteListBody {...contentProps} />}
           entries={contentProps.visibleEntries}
+          allEntries={contentProps.allEntries}
           locale={locale}
           typeEntryMap={contentProps.typeEntryMap}
           displayPropsOverride={contentProps.displayPropsOverride}

@@ -84,18 +84,23 @@ function useKanbanPanel(key: string, layout: CollectionPresentationType, selecte
   return { open, close, reopen }
 }
 
+function sameLayoutSettings(left: LayoutSettings, right: LayoutSettings): boolean {
+  return JSON.stringify(left) === JSON.stringify(right)
+}
+
 function useLayoutActions(source: CollectionLayoutSource, key: string, current: LayoutSettings, setOverrides: SetSettingsMap) {
   const enabled = supportsLayouts(source.selection)
   const update = useCallback((patch: Partial<LayoutSettings>) => {
     const next = { ...current, ...patch }
+    if (sameLayoutSettings(current, next)) return
     setOverrides((overrides) => new Map(overrides).set(key, next))
     persistLayoutSettings(source, next)
-    return next
   }, [current, key, setOverrides, source])
   const changeLayout = useCallback((layout: CollectionPresentationType) => {
+    if (layout === current.layout) return
     update({ layout })
     trackEvent('collection_layout_changed', { layout, collection: source.selection.kind })
-  }, [source.selection.kind, update])
+  }, [current.layout, source.selection.kind, update])
   useLayoutShortcut(enabled, current.layout, changeLayout)
   return {
     changeLayout,
