@@ -15,7 +15,7 @@ import { GitRepositorySelect } from '../GitRepositorySelect'
 import type { GitRepositoryOption } from '../../utils/gitRepositories'
 import { isMac, MACOS_TRAFFIC_LIGHT_SAFE_PADDING } from '../../utils/platform'
 
-const NOTE_LIST_ACTION_BUTTON_CLASSNAME = `${TOUCH_TARGET_CLASSNAME} !h-auto !w-auto !min-w-0 !rounded-none !p-0 !text-muted-foreground hover:!bg-transparent hover:!text-foreground focus-visible:!bg-transparent data-[state=open]:!bg-transparent data-[state=open]:!text-foreground [&_svg]:!size-4`
+export const NOTE_LIST_ACTION_BUTTON_CLASSNAME = `${TOUCH_TARGET_CLASSNAME} !h-auto !w-auto !min-w-0 !rounded-none !p-0 !text-muted-foreground hover:!bg-transparent hover:!text-foreground focus-visible:!bg-transparent data-[state=open]:!bg-transparent data-[state=open]:!text-foreground [&_svg]:!size-4`
 const NOTE_LIST_EXPAND_BUTTON_CLASSNAME = `${TOUCH_TARGET_CLASSNAME} !h-6 !w-6 !min-w-0 !rounded !p-0 !text-muted-foreground hover:!bg-accent hover:!text-foreground focus-visible:!bg-accent [&_svg]:!size-4`
 const NOTE_LIST_SEARCH_DEBOUNCE_MS = 180
 const PROPERTY_TRIGGER_TITLE_KEYS: Record<string, TranslationKey> = {
@@ -50,6 +50,8 @@ interface NoteListHeaderProps {
   isSearching: boolean
   searchInputRef: React.RefObject<HTMLInputElement | null>
   propertyPicker?: ListPropertiesPopoverProps | null
+  /** Layout menus (List/Kanban and layout-specific settings) shown before the sort control. */
+  layoutControls?: React.ReactNode
   gitRepositories?: GitRepositoryOption[]
   selectedGitRepositoryPath?: string
   locale?: AppLocale
@@ -170,6 +172,7 @@ function HeaderActions(options: Pick<
   | 'listDirection'
   | 'customProperties'
   | 'propertyPicker'
+  | 'layoutControls'
   | 'locale'
   | 'onSortChange'
   | 'onCreateNote'
@@ -183,6 +186,7 @@ function HeaderActions(options: Pick<
     listDirection,
     customProperties,
     propertyPicker,
+    layoutControls,
     locale,
     onSortChange,
     onCreateNote,
@@ -208,7 +212,8 @@ function HeaderActions(options: Pick<
   }, [])
   return (
     <div className="ml-3 flex shrink-0 items-center justify-end gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-      {!isEntityView && <SortDropdown groupLabel="__list__" current={listSort} direction={listDirection} customProperties={customProperties} locale={locale} onChange={onSortChange} />}
+      {layoutControls}
+      {!isEntityView && <SortDropdown groupLabel="__list__" current={listSort} direction={listDirection} customProperties={customProperties} locale={locale} iconOnly onChange={onSortChange} />}
       <Button type="button" variant="ghost" size="icon-xs" className={NOTE_LIST_ACTION_BUTTON_CLASSNAME} onClick={onToggleSearch} title={translate(locale, 'noteList.searchAction')} aria-label={translate(locale, 'noteList.searchAction')}>
         <MagnifyingGlass size={16} />
       </Button>
@@ -317,7 +322,7 @@ function SearchRow({ search, isSearching, searchInputRef, locale, onSearchChange
 
 export function NoteListHeader(options: NoteListHeaderProps) {
   const { title, typeDocument, isEntityView, isChangesView = false, listSort, listDirection, customProperties } = options
-  const { sidebarCollapsed, searchVisible, search, isSearching, searchInputRef, propertyPicker } = options
+  const { sidebarCollapsed, searchVisible, search, isSearching, searchInputRef, propertyPicker, layoutControls } = options
   const { gitRepositories = [], selectedGitRepositoryPath = '', locale = 'en' } = options
   const { onSortChange, onCreateNote, onOpenType, onToggleSearch, onSearchChange, onSearchKeyDown, onGitRepositoryChange } = options
   const { dragRegionRef } = useDragRegion<HTMLDivElement>()
@@ -341,6 +346,7 @@ export function NoteListHeader(options: NoteListHeaderProps) {
           listDirection={listDirection}
           customProperties={customProperties}
           propertyPicker={propertyPicker}
+          layoutControls={layoutControls}
           locale={locale}
           onSortChange={onSortChange}
           onCreateNote={onCreateNote}
