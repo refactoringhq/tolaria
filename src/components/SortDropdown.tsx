@@ -215,6 +215,7 @@ function SortDropdownTrigger({
   groupLabel,
   direction,
   locale,
+  iconOnly,
   onToggle,
 }: {
   triggerRef: React.RefObject<HTMLButtonElement | null>
@@ -223,10 +224,12 @@ function SortDropdownTrigger({
   groupLabel: string
   direction: SortDirection
   locale: AppLocale
+  iconOnly: boolean
   onToggle: () => void
 }) {
   const DirectionIcon = direction === 'asc' ? ArrowUp : ArrowDown
   const currentLabel = getLocalizedSortOptionLabel(current, locale)
+  const title = translate(locale, 'noteList.sort.by', { label: currentLabel })
 
   return (
     <button
@@ -240,13 +243,14 @@ function SortDropdownTrigger({
         event.stopPropagation()
         onToggle()
       }}
-      title={translate(locale, 'noteList.sort.by', { label: currentLabel })}
+      title={title}
+      aria-label={iconOnly ? title : undefined}
       aria-haspopup="menu"
       aria-expanded={open}
       data-testid={`sort-button-${groupLabel}`}
     >
-      <DirectionIcon size={12} data-testid={`sort-direction-icon-${groupLabel}`} />
-      <span className="text-[10px] font-medium">{currentLabel}</span>
+      <DirectionIcon size={iconOnly ? 16 : 12} data-testid={`sort-direction-icon-${groupLabel}`} />
+      {!iconOnly && <span className="text-[10px] font-medium">{currentLabel}</span>}
     </button>
   )
 }
@@ -314,11 +318,13 @@ interface SortDropdownProps {
   direction: SortDirection
   customProperties?: string[]
   locale?: AppLocale
+  /** Shows only the direction arrow; the sort property stays in the tooltip and menu. */
+  iconOnly?: boolean
   onChange: (groupLabel: string, option: SortOption, direction: SortDirection) => void
 }
 
 export function SortDropdown(options: SortDropdownProps) {
-  const { groupLabel, current, direction, customProperties, locale = 'en', onChange } = options
+  const { groupLabel, current, direction, customProperties, locale = 'en', iconOnly = false, onChange } = options
   const sortItems = useMemo(() => buildSortItems(locale, customProperties), [customProperties, locale])
   const { open, toggleMenu, containerRef, menuRef, triggerRef, sortButtonRefs, handleSelect, handleMenuKeyDown } =
     useSortDropdownState({
@@ -337,6 +343,7 @@ export function SortDropdown(options: SortDropdownProps) {
         groupLabel={groupLabel}
         direction={direction}
         locale={locale}
+        iconOnly={iconOnly}
         onToggle={toggleMenu}
       />
       <SortDropdownMenu

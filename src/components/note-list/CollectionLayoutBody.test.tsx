@@ -5,26 +5,70 @@ import type { NoteActionsConfig } from '../../hooks/useNoteActions'
 import { useNoteActions } from '../../hooks/useNoteActions'
 import { updateFrontmatterContent } from '../../lib/frontmatterText'
 import { makeEntry } from '../../test-utils/noteListTestUtils'
-import type { SidebarSelection, ViewFile } from '../../types'
+import type { SidebarSelection, VaultEntry, ViewFile } from '../../types'
 import { CollectionLayoutBody } from './CollectionLayoutBody'
+import { type CollectionLayoutSource, supportsLayouts, useCollectionLayout } from './useCollectionLayout'
+import { CollectionLayoutHeaderControls } from './CollectionLayoutControls'
+import { layoutPropertyPicker } from './kanbanCardFieldsPicker'
 
 const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }))
 vi.mock('@tauri-apps/api/core', () => ({ invoke }))
+vi.mock('./KanbanLayout', () => ({
+  KanbanLayout: ({ entries, onMove, onOpen }: { entries: VaultEntry[]; onMove: (entry: VaultEntry, value: string | null) => void; onOpen: (entry: VaultEntry, event: React.MouseEvent) => void }) => (
+    <div data-testid="kanban-board">
+      <button type="button" onClick={() => onMove(entries[0], null)}>drop first card in No value</button>
+      <button type="button" onClick={(event) => onOpen(entries[0], event)}>open first card</button>
+    </div>
+  ),
+}))
 
-function props(selection: SidebarSelection = { kind: 'filter', filter: 'all' }, overrides: Record<string, unknown> = {}) {
-  return {
+type HarnessProps = Partial<CollectionLayoutSource> & {
+  onMove?: (entry: VaultEntry, property: string, value: string | null) => void
+  onOpen?: (entry: VaultEntry) => void
+}
+
+const alpha = makeEntry({ path: '/vault/a.md', title: 'Alpha', status: 'Doing', properties: { owner: 'Ada', priority: 'High' } })
+
+function Harness({ onMove = vi.fn(), onOpen = vi.fn(), ...overrides }: HarnessProps) {
+  const source: CollectionLayoutSource = {
     presentation: { type: 'list', sort: null, properties: [] },
-    selection,
-    visibleEntries: [makeEntry({ path: '/vault/a.md', title: 'Alpha', status: 'Doing' })],
+    selection: { kind: 'filter', filter: 'all' },
+    visibleEntries: [alpha],
     views: [],
     onUpdateViewDefinition: () => undefined,
-    handleClickNote: () => undefined,
-    onUpdateTypeSort: () => undefined,
     vaultPath: '/vault',
-    locale: 'en',
-    listContent: <div data-testid="classic-list">Classic list</div>,
+    selectedNotePath: null,
     ...overrides,
-  } as never
+  }
+  const layout = useCollectionLayout(source)
+  const picker = layoutPropertyPicker(layout, { scope: 'all', availableProperties: ['priority'], currentDisplay: ['priority'], onSave: vi.fn(), triggerTitle: 'Customize columns' }, 'en')
+  return (
+    <div data-collection-layout={layout.layout} data-kanban-panel={layout.panel.open ? 'open' : 'closed'} data-testid="layout-root">
+      <CollectionLayoutHeaderControls layout={layout.layout} groupBy={layout.groupBy} groups={layout.groups} locale="en" onLayoutChange={layout.changeLayout} onGroupByChange={layout.changeGroupBy} />
+      <output data-testid="card-fields">{picker?.currentDisplay.join(',')}</output>
+      <button type="button" onClick={() => picker?.onSave(['owner'])}>show owner on cards</button>
+      <button type="button" onClick={layout.panel.close}>close panel</button>
+      <CollectionLayoutBody
+        layout={layout}
+        listContent={<div data-testid="classic-list">Classic list</div>}
+        entries={source.visibleEntries}
+        locale="en"
+        typeEntryMap={{}}
+        onOpen={(entry) => onOpen(entry)}
+        onMove={onMove}
+      />
+    </div>
+  )
+}
+
+async function chooseMenuOption(triggerTestId: string, optionTestId: string) {
+  const trigger = screen.getAllByTestId(triggerTestId).at(-1)
+  if (!trigger) throw new Error(`Missing ${triggerTestId}`)
+  act(() => {
+    trigger.focus()
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+  })
+  fireEvent.click(await screen.findByTestId(optionTestId))
 }
 
 function savedView(presentation: ViewFile['definition']['presentation']): ViewFile {
@@ -34,46 +78,140 @@ function savedView(presentation: ViewFile['definition']['presentation']): ViewFi
   }
 }
 
-describe('CollectionLayoutBody', () => {
+describe('collection layouts', () => {
   beforeEach(() => invoke.mockReset().mockResolvedValue({}))
   afterEach(() => vi.unstubAllGlobals())
 
-  it('keeps each collection on List until that collection selects another layout', () => {
-    const rendered = render(<CollectionLayoutBody {...props({ kind: 'filter', filter: 'all' })} />)
-    expect(screen.getByTestId('classic-list').parentElement).toHaveClass('flex', 'min-h-0', 'flex-1')
-    fireEvent.change(screen.getByRole('combobox', { name: 'Layout' }), { target: { value: 'kanban' } })
-    expect(screen.getByTestId('kanban-board')).toBeInTheDocument()
-
-    rendered.rerender(<CollectionLayoutBody {...props({ kind: 'filter', filter: 'archived' })} />)
+  it('shows List by default and switches one collection to Kanban from the header menu', async () => {
+    const rendered = render(<Harness />)
     expect(screen.getByTestId('classic-list')).toBeInTheDocument()
-    expect(screen.queryByTestId('kanban-board')).not.toBeInTheDocument()
+    expect(screen.getByTestId('layout-menu-button')).toHaveAccessibleName('Layout: List')
+    expect(screen.queryByTestId('group-by-menu-button')).not.toBeInTheDocument()
+
+    await chooseMenuOption('layout-menu-button', 'layout-option-kanban')
+
+    expect(screen.getByTestId('kanban-board')).toBeInTheDocument()
+    expect(screen.getByTestId('layout-menu-button')).toHaveAccessibleName('Layout: Kanban')
+    expect(screen.getByTestId('group-by-menu-button')).toHaveAccessibleName('Group by status')
+    expect(screen.getByTestId('group-by-menu-button')).not.toHaveTextContent(/\S/)
+
+    rendered.rerender(<Harness selection={{ kind: 'filter', filter: 'archived' }} />)
+    expect(screen.getByTestId('classic-list')).toBeInTheDocument()
   })
 
   it('loads and saves non-View layout config through the owning vault', async () => {
     invoke.mockResolvedValueOnce({ 'builtin:all': { type: 'kanban', groupBy: 'status', properties: ['owner'] } })
-    const view = render(<CollectionLayoutBody {...props({ kind: 'filter', filter: 'all' })} />)
+    render(<Harness />)
     await waitFor(() => expect(screen.getByTestId('kanban-board')).toBeInTheDocument())
-    expect(screen.getByRole('combobox', { name: 'Group by' })).toHaveValue('status')
+    expect(screen.getByTestId('card-fields')).toHaveTextContent('owner')
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'Layout' }), { target: { value: 'list' } })
+    await chooseMenuOption('group-by-menu-button', 'group-by-option-priority')
 
-    await waitFor(() => expect(invoke).toHaveBeenCalledWith('save_collection_layout_cmd', expect.objectContaining({
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith('save_collection_layout_cmd', {
       vaultPath: '/vault',
       collection: 'builtin:all',
-      presentation: expect.objectContaining({ type: 'list' }),
-    })))
-    view.unmount()
+      presentation: { type: 'kanban', groupBy: 'priority', columnOrder: [], properties: ['owner'] },
+    }))
+  })
+
+  it('preserves Kanban View settings across repeated List and Kanban switches', async () => {
+    const view = savedView({ type: 'kanban', groupBy: 'status', properties: ['owner'], columnOrder: ['Done', 'Doing'] })
+    const selection: SidebarSelection = { kind: 'view', filename: view.filename }
+    let currentView = view
+    const updateView = vi.fn((_filename: string, patch: Partial<ViewFile['definition']>) => {
+      currentView = { ...currentView, definition: { ...currentView.definition, ...patch } }
+    })
+    const viewProps = () => ({
+      selection,
+      presentation: presentationFromViewDefinition(currentView.definition),
+      views: [currentView],
+      onUpdateViewDefinition: updateView,
+    })
+
+    const first = render(<Harness {...viewProps()} />)
+    await chooseMenuOption('layout-menu-button', 'layout-option-list')
+    expect(currentView.definition.presentation).toEqual(expect.objectContaining({
+      type: 'list',
+      properties: ['priority'],
+      kanbanConfig: { groupBy: 'status', properties: ['owner'], columnOrder: ['Done', 'Doing'] },
+    }))
+    first.unmount()
+
+    for (let cycle = 0; cycle < 2; cycle += 1) {
+      const mount = render(<Harness {...viewProps()} />)
+      await chooseMenuOption('layout-menu-button', 'layout-option-kanban')
+      expect(screen.getByTestId('group-by-menu-button')).toHaveAccessibleName('Group by status')
+      expect(screen.getByTestId('card-fields')).toHaveTextContent('owner')
+      expect(currentView.definition.presentation).toEqual(expect.objectContaining({ type: 'kanban', groupBy: 'status', properties: ['owner'], columnOrder: ['Done', 'Doing'] }))
+      await chooseMenuOption('layout-menu-button', 'layout-option-list')
+      mount.unmount()
+    }
+  })
+
+  it('uses list properties as card fields until the board has its own', () => {
+    render(<Harness />)
+    fireEvent.keyDown(window, { key: 'g', ctrlKey: true, shiftKey: true })
+    expect(screen.getByTestId('card-fields')).toHaveTextContent('priority')
+    fireEvent.click(screen.getByText('show owner on cards'))
+    expect(screen.getByTestId('card-fields')).toHaveTextContent('owner')
+    expect(invoke).toHaveBeenCalledWith('save_collection_layout_cmd', expect.objectContaining({
+      presentation: expect.objectContaining({ type: 'kanban', properties: ['owner'] }),
+    }))
+  })
+
+  it('switches layouts through the keyboard and command event', () => {
+    render(<Harness />)
+    fireEvent.keyDown(window, { key: 'g', ctrlKey: true, shiftKey: true })
+    expect(screen.getByTestId('kanban-board')).toBeInTheDocument()
+
+    act(() => window.dispatchEvent(new Event('laputa:toggle-collection-layout')))
+
+    expect(screen.getByTestId('classic-list')).toBeInTheDocument()
+  })
+
+  it('keeps Neighborhood and Changes lists on List', () => {
+    expect(supportsLayouts({ kind: 'entity', entry: alpha })).toBe(false)
+    expect(supportsLayouts({ kind: 'filter', filter: 'changes' })).toBe(false)
+    render(<Harness selection={{ kind: 'filter', filter: 'changes' }} />)
+    fireEvent.keyDown(window, { key: 'g', ctrlKey: true, shiftKey: true })
+    expect(screen.getByTestId('classic-list')).toBeInTheDocument()
+  })
+
+  it('starts Kanban with the editor panel closed and opens it for the clicked card', () => {
+    const onOpen = vi.fn()
+    const rendered = render(<Harness selectedNotePath="/vault/a.md" onOpen={onOpen} />)
+    fireEvent.keyDown(window, { key: 'g', ctrlKey: true, shiftKey: true })
+    expect(screen.getByTestId('layout-root')).toHaveAttribute('data-kanban-panel', 'closed')
+
+    fireEvent.click(screen.getByText('open first card'))
+    expect(onOpen).toHaveBeenCalledWith(alpha)
+    expect(screen.getByTestId('layout-root')).toHaveAttribute('data-kanban-panel', 'open')
+
+    fireEvent.click(screen.getByText('close panel'))
+    expect(screen.getByTestId('layout-root')).toHaveAttribute('data-kanban-panel', 'closed')
+
+    rendered.rerender(<Harness selectedNotePath="/vault/b.md" onOpen={onOpen} />)
+    expect(screen.getByTestId('layout-root')).toHaveAttribute('data-kanban-panel', 'open')
+  })
+
+  it('explains a missing group property and offers List instead', () => {
+    render(<Harness visibleEntries={[makeEntry({ path: '/vault/x.md', title: 'X' })]} />)
+    fireEvent.keyDown(window, { key: 'g', ctrlKey: true, shiftKey: true })
+    expect(screen.getByTestId('kanban-missing-property')).toHaveTextContent('No notes have a value for status')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show as List' }))
+
+    expect(screen.getByTestId('classic-list')).toBeInTheDocument()
   })
 
   it('moves a card through the frontmatter writer without changing the rest of the note', () => {
     const original = '---\ntitle: Alpha\nstatus: Doing\nowner: Ada\ntags:\n  - project\n---\n\nSee [[Roadmap|the roadmap]].\n'
     let persistedContent = original
     const updateEntry = vi.fn()
-    const entry = makeEntry({ path: '/vault/a.md', title: 'Alpha', status: 'Doing', properties: { owner: 'Ada' } })
     const actionConfig: NoteActionsConfig = {
       addEntry: vi.fn(),
       removeEntry: vi.fn(),
-      entries: [entry],
+      entries: [alpha],
       setToastMessage: vi.fn(),
       updateEntry,
       vaultPath: '/vault',
@@ -86,104 +224,14 @@ describe('CollectionLayoutBody', () => {
       return persistedContent
     })
     const { result } = renderHook(() => useNoteActions(actionConfig))
-    render(<CollectionLayoutBody {...props({ kind: 'filter', filter: 'all' }, {
-      visibleEntries: [entry],
-      onUpdateTypeSort: (path: string, key: string, value: string | number | boolean | string[] | null) =>
-        result.current.handleUpdateFrontmatter(path, key, value),
-    })} />)
-    fireEvent.change(screen.getByRole('combobox', { name: 'Layout' }), { target: { value: 'kanban' } })
-    fireEvent.pointerDown(screen.getByRole('button', { name: /Alpha/ }), { button: 0, pointerId: 1, clientX: 10, clientY: 10 })
-    fireEvent.pointerUp(screen.getByRole('region', { name: 'No value, 0 notes' }), { pointerId: 1, clientX: 200, clientY: 10 })
+    render(<Harness onMove={(entry, key, value) => result.current.handleUpdateFrontmatter(entry.path, key, value)} />)
+    fireEvent.keyDown(window, { key: 'g', ctrlKey: true, shiftKey: true })
+    fireEvent.click(screen.getByText('drop first card in No value'))
 
     return waitFor(() => {
       expect(invoke).toHaveBeenCalledWith('update_frontmatter', { path: '/vault/a.md', key: 'status', value: null })
       expect(updateEntry).toHaveBeenCalledWith('/vault/a.md', { status: null })
       expect(persistedContent).toBe('---\ntitle: Alpha\nstatus: null\nowner: Ada\ntags:\n  - project\n---\n\nSee [[Roadmap|the roadmap]].\n')
     })
-  })
-
-  it('preserves Kanban View settings across repeated List and Kanban switches', () => {
-    const view = savedView({ type: 'kanban', groupBy: 'status', properties: ['owner'], columnOrder: ['Done', 'Doing'] })
-    const selection: SidebarSelection = { kind: 'view', filename: view.filename }
-    let currentView = view
-    const updateView = vi.fn((_filename, patch: Partial<ViewFile['definition']>) => {
-      currentView = { ...currentView, definition: { ...currentView.definition, ...patch } }
-    })
-    const visibleEntries = [makeEntry({ path: '/vault/a.md', title: 'Alpha', status: 'Doing', properties: { owner: 'Luca', priority: 'High' } })]
-    const initialProps = props(selection, {
-      presentation: presentationFromViewDefinition(view.definition),
-      views: [currentView],
-      onUpdateViewDefinition: updateView,
-      visibleEntries,
-    })
-
-    const firstMount = render(<CollectionLayoutBody {...initialProps} />)
-    fireEvent.change(screen.getByRole('combobox', { name: 'Layout' }), { target: { value: 'list' } })
-
-    const savedPresentation = currentView.definition.presentation
-    expect(savedPresentation).toEqual(expect.objectContaining({
-      type: 'list',
-      properties: ['priority'],
-      kanbanConfig: { groupBy: 'status', properties: ['owner'], columnOrder: ['Done', 'Doing'] },
-    }))
-
-    firstMount.unmount()
-    const reopenedView: ViewFile = {
-      ...view,
-      definition: { ...view.definition, presentation: savedPresentation },
-    }
-    render(<CollectionLayoutBody {...props(selection, {
-      presentation: presentationFromViewDefinition(reopenedView.definition),
-      views: [reopenedView],
-      onUpdateViewDefinition: updateView,
-      visibleEntries,
-    })} />)
-    fireEvent.change(screen.getByRole('combobox', { name: 'Layout' }), { target: { value: 'kanban' } })
-
-    expect(screen.getByRole('combobox', { name: 'Group by' })).toHaveValue('status')
-    fireEvent.click(screen.getByText('Card fields'))
-    expect(screen.getByRole('checkbox', { name: 'owner' })).toBeChecked()
-    expect(screen.getByRole('checkbox', { name: 'priority' })).not.toBeChecked()
-    expect(updateView.mock.calls[1]?.[1]?.presentation).toEqual(expect.objectContaining({
-      type: 'kanban',
-      groupBy: 'status',
-      properties: ['owner'],
-      columnOrder: ['Done', 'Doing'],
-    }))
-
-    // A second List → Kanban → List cycle must retain the saved settings too.
-    fireEvent.change(screen.getByRole('combobox', { name: 'Layout' }), { target: { value: 'list' } })
-    const secondListPresentation = currentView.definition.presentation
-    expect(secondListPresentation).toEqual(expect.objectContaining({
-      type: 'list',
-      kanbanConfig: { groupBy: 'status', properties: ['owner'], columnOrder: ['Done', 'Doing'] },
-    }))
-    const secondListView: ViewFile = { ...currentView, definition: { ...currentView.definition, presentation: secondListPresentation } }
-    const secondMount = render(<CollectionLayoutBody {...props(selection, {
-      presentation: presentationFromViewDefinition(secondListView.definition),
-      views: [secondListView],
-      onUpdateViewDefinition: updateView,
-      visibleEntries,
-    })} />)
-    const reopenedLayout = screen.getAllByRole('combobox', { name: 'Layout' }).at(-1)
-    if (!reopenedLayout) throw new Error('Reopened View layout selector was not rendered')
-    fireEvent.change(reopenedLayout, { target: { value: 'kanban' } })
-    expect(screen.getAllByRole('combobox', { name: 'Group by' }).at(-1)).toHaveValue('status')
-    const reopenedCardFields = screen.getAllByText('Card fields').at(-1)
-    if (!reopenedCardFields) throw new Error('Reopened View card fields control was not rendered')
-    fireEvent.click(reopenedCardFields)
-    expect(screen.getAllByRole('checkbox', { name: 'owner' }).at(-1)).toBeChecked()
-    expect(screen.getAllByRole('checkbox', { name: 'priority' }).at(-1)).not.toBeChecked()
-    secondMount.unmount()
-  })
-
-  it('switches layouts through the keyboard and command event', () => {
-    render(<CollectionLayoutBody {...props({ kind: 'filter', filter: 'all' })} />)
-    fireEvent.keyDown(window, { key: 'g', ctrlKey: true, shiftKey: true })
-    expect(screen.getByTestId('kanban-board')).toBeInTheDocument()
-
-    act(() => window.dispatchEvent(new Event('laputa:toggle-collection-layout')))
-
-    expect(screen.getByTestId('classic-list')).toBeInTheDocument()
   })
 })

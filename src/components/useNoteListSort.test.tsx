@@ -138,7 +138,7 @@ describe('useNoteListSort (via NoteList)', () => {
       makeEntry({ path: '/b.md', title: 'Beta', modifiedAt: 3000, properties: {} }),
     ])
     expectVisibleNoteOrder(['Alpha', 'Beta'])
-    expect(screen.getByTestId('sort-button-__list__')).toHaveTextContent('priority')
+    expect(screen.getByTestId('sort-button-__list__')).toHaveAccessibleName('Sort by priority')
   })
 
   it('uses property sort when property exists in entries', () => {

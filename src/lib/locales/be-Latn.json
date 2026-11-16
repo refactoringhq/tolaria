@@ -1389,12 +1389,12 @@
   "layout.label": "Maket",
   "layout.list": "Spis",
   "layout.kanban": "Kanban",
+  "layout.current": "Maket: {layout}",
   "layout.groupBy": "Hrupavać pa",
+  "layout.groupByProperty": "Hrupavać pa {property}",
   "layout.cardFields": "Pali kartki",
   "layout.noValue": "Bez značeńnia",
-  "layout.hideCardFields": "Schavać pali kartki",
-  "layout.showStatus": "Pakazać stan na kartkach",
   "layout.noPropertyValues": "Niama natatkaŭ sa značeńniem {property}. Vybierycie ŭlastyvaść sa značeńniami, kab pakazać kalonki doski.",
-  "layout.moveColumnLeft": "Pasuń kalonku {column} uleva",
-  "layout.moveColumnRight": "Pasuń kalonku {column} uprava"
+  "layout.useList": "Pakazać u vyhliadzie spisu",
+  "layout.closePanel": "Zakryć natatku"
 }
