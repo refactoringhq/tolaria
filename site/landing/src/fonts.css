@@ -1,5 +1,8 @@
-/* Web fonts (SIL Open Font License 1.1, licences in public/fonts/OFL-*.txt). Inter 4 (roman + italic) and Inter Tight
- * are variable (400-700). Display type uses Inter Tight bold (see index.css). */
+/* Web fonts. Inter 4 (roman + italic) and Inter Tight are variable (400-700), SIL OFL 1.1
+ * (licences in public/fonts/OFL-*.txt). Refactoring Sans ExtraBold is the brand display face,
+ * vendored from refactoringhq/brand (public/fonts/RefactoringSans-ExtraBold.woff2; same file
+ * lucaron.in apps ship). It is a single static face declared over the whole weight range, so
+ * any font-weight class picks it without faux bold. */
 @font-face {
   font-family: "Inter";
   src: url("/fonts/InterVariable.woff2") format("woff2");
@@ -18,6 +21,13 @@
   font-family: "Inter Tight";
   src: url("/fonts/InterTight-Variable.woff2") format("woff2");
   font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Refactoring Sans";
+  src: url("/fonts/RefactoringSans-ExtraBold.woff2") format("woff2");
+  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
