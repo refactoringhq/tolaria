@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 import { DndContext, DragOverlay, type DropAnimation, defaultDropAnimationSideEffects } from '@dnd-kit/core'
 import { horizontalListSortingStrategy, SortableContext } from '@dnd-kit/sortable'
 import type { CollectionLayoutRendererProps } from '../../collections/layoutRegistry'
-import type { AppLocale } from '../../lib/i18n'
+import { type AppLocale, translate } from '../../lib/i18n'
 import { KanbanCardFace, type KanbanCardContext } from './KanbanCard'
 import { KanbanColumn, KanbanColumnHeader } from './KanbanColumn'
 import { columnId, columnTitle, groupEntries, orderColumns } from './kanbanModel'
@@ -49,15 +49,15 @@ export function KanbanLayout(props: KanbanLayoutProps) {
   const sensors = useKanbanSensors()
   const drag = useKanbanDrag({ groupBy, columns, pending, setPending, onMove, onColumnOrderChange })
   const context = useMemo<KanbanCardContext>(
-    () => ({ cardProperties: properties, allEntries, typeEntryMap, displayPropsOverride, onOpen }),
-    [allEntries, displayPropsOverride, onOpen, properties, typeEntryMap],
+    () => ({ cardProperties: properties, allEntries, typeEntryMap, displayPropsOverride, cardRole: translate(locale, 'layout.cardRole'), onOpen }),
+    [allEntries, displayPropsOverride, locale, onOpen, properties, typeEntryMap],
   )
   const activeColumnCount = activeColumnSize(drag.active, grouped)
   const cardTarget = drag.crossColumnDrop ? drag.overGroup : undefined
 
   return (
     <DndContext sensors={sensors} collisionDetection={kanbanCollisionDetection} onDragStart={drag.onDragStart} onDragOver={drag.onDragOver} onDragEnd={drag.onDragEnd} onDragCancel={drag.onDragCancel}>
-      <section className="kanban-scroll flex min-h-0 flex-1 gap-3 overflow-x-auto overflow-y-hidden p-3" data-testid="kanban-board" aria-label={`Kanban: ${groupBy}`}>
+      <section className="kanban-scroll flex min-h-0 flex-1 gap-3 overflow-x-auto overflow-y-hidden p-3" data-testid="kanban-board" aria-label={translate(locale, 'layout.boardLabel', { property: groupBy })}>
         <SortableContext items={columns.map(columnId)} strategy={horizontalListSortingStrategy}>
           {columns.map((group) => (
             <KanbanColumn

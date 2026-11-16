@@ -13,6 +13,11 @@ files:
     layout.noPropertyValues: 74ec1a0f19708fb813362281328f491a
     layout.useList: 00c0d72b10cfdfb0b10200a16a1d0326
     layout.closePanel: ab7d21e78e36541208056d780c43d0a9
+    layout.boardLabel: 94a244743460574a422961c9188e4b42
+    layout.columnLabelOne: 774e8fc479a155b3df04e1f08b889658
+    layout.columnLabelMany: 7663940eefdbe928dbd6d132c460f983
+    layout.columnRole: 1afd32818d1c9525f82aff4c09efd254
+    layout.cardRole: 5dd2199ad68327cc76d583b057aee7d5
     command.palettePlaceholder: 6d6b61b4c08ed382ad7ba406a9ba395d
     command.footerNavigate: e3808db59d29bcfc91532d6539c4f9ae
     command.footerSelect: 6d73339906ed42e20f6be91bf7f5f4a9
