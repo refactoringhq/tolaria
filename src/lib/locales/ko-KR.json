@@ -1206,6 +1206,8 @@
   "filePreview.file": "파일",
   "filePreview.previewUnavailable": "미리 보기 불가",
   "filePreview.previewUnavailableDescription": "Tolaria에는 이 파일 유형에 대한 앱 내 미리 보기 기능이 없습니다.",
+  "filePreview.largeDocumentTitle": "이 파일은 너무 커서 안전하게 열 수 없습니다.",
+  "filePreview.largeDocumentDescription": "Tolaria의 응답성을 유지하기 위해 이 파일은 미리 보기 또는 Raw 모드에서 표시되지 않습니다. 원본 파일은 변경되지 않았습니다.",
   "filePreview.textFile": "텍스트 파일",
   "inspector.properties.valueKind": "값 유형",
   "inspector.properties.valueKind.text": "텍스트",

@@ -1206,6 +1206,8 @@
   "filePreview.file": "Файл",
   "filePreview.previewUnavailable": "Предварительный просмотр недоступен",
   "filePreview.previewUnavailableDescription": "В Tolaria нет предварительного просмотра в приложении для этого типа файлов.",
+  "filePreview.largeDocumentTitle": "Этот файл слишком большой, чтобы его можно было безопасно открыть",
+  "filePreview.largeDocumentDescription": "Чтобы Tolaria оставалась отзывчивой, этот файл не отображается в режиме предварительного просмотра или в режиме Raw. Исходный файл не был изменен.",
   "filePreview.textFile": "Текстовый файл",
   "inspector.properties.valueKind": "Тип значения",
   "inspector.properties.valueKind.text": "Текст",

@@ -1206,6 +1206,8 @@
   "filePreview.file": "Файл",
   "filePreview.previewUnavailable": "Перадпрагляд недаступны",
   "filePreview.previewUnavailableDescription": "У Tolaria няма папярэдняга прагляду ў дадатку для гэтага тыпу файлаў.",
+  "filePreview.largeDocumentTitle": "Гэты файл занадта вялікі, каб яго можна было бяспечна адкрыць",
+  "filePreview.largeDocumentDescription": "Каб захаваць хуткадзеянне Tolaria, гэты файл не адлюстроўваецца ў рэжыме папярэдняга прагляду або ў рэжыме Raw. Арыгінальны файл не быў зменены.",
   "filePreview.textFile": "Тэкставы файл",
   "inspector.properties.valueKind": "Тып значэння",
   "inspector.properties.valueKind.text": "Тэкст",

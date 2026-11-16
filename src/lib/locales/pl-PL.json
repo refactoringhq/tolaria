@@ -1206,6 +1206,8 @@
   "filePreview.file": "Plik",
   "filePreview.previewUnavailable": "Podgląd niedostępny",
   "filePreview.previewUnavailableDescription": "Tolaria nie ma podglądu w aplikacji dla tego typu pliku.",
+  "filePreview.largeDocumentTitle": "Ten plik jest zbyt duży, aby można go było bezpiecznie otworzyć",
+  "filePreview.largeDocumentDescription": "Aby zapewnić responsywność Tolarii, ten plik nie jest wyświetlany w trybie podglądu ani w trybie Raw. Oryginalny plik nie został zmieniony.",
   "filePreview.textFile": "Plik tekstowy",
   "inspector.properties.valueKind": "Typ wartości",
   "inspector.properties.valueKind.text": "Tekst",

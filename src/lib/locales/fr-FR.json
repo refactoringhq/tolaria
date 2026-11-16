@@ -1206,6 +1206,8 @@
   "filePreview.file": "Fichier",
   "filePreview.previewUnavailable": "Aperçu non disponible",
   "filePreview.previewUnavailableDescription": "Tolaria ne dispose pas d'aperçu dans l'application pour ce type de fichier.",
+  "filePreview.largeDocumentTitle": "Ce fichier est trop volumineux pour être ouvert en toute sécurité",
+  "filePreview.largeDocumentDescription": "Pour préserver la réactivité de Tolaria, ce fichier n’est pas affiché en mode Aperçu ni en mode Brut. Le fichier d’origine n’a pas été modifié.",
   "filePreview.textFile": "Fichier texte",
   "inspector.properties.valueKind": "Type de valeur",
   "inspector.properties.valueKind.text": "Texte",

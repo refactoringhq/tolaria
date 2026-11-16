@@ -1,37 +1,39 @@
-import { useRef, useState, useCallback, useEffect } from 'react'
 import type { EditorView } from '@codemirror/view'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCodeMirror } from '../hooks/useCodeMirror'
+import { useCodeMirrorReadOnly } from '../hooks/useCodeMirrorReadOnly'
+import type { AppLocale } from '../lib/i18n'
 import { trackEvent } from '../lib/telemetry'
+import type { VaultEntry } from '../types'
+import { isLargeTextDocument } from '../utils/largeTextDocument'
+import {
+  activatePlainTextPasteTarget,
+  type PlainTextPasteTarget,
+  registerPlainTextPasteTarget,
+} from '../utils/plainTextPaste'
+import { rawEditorLanguageIdForPath } from '../utils/rawEditorLanguage'
 import {
   detectYamlError,
   getRawEditorDropdownPosition,
   type RawEditorAutocompleteState,
 } from '../utils/rawEditorUtils'
-import { useCodeMirror } from '../hooks/useCodeMirror'
-import { useCodeMirrorReadOnly } from '../hooks/useCodeMirrorReadOnly'
-import type { VaultEntry } from '../types'
-import type { AppLocale } from '../lib/i18n'
-import { RawEditorFindBar, type RawEditorFindRequest } from './RawEditorFindBar'
-import {
-  activatePlainTextPasteTarget,
-  registerPlainTextPasteTarget,
-  type PlainTextPasteTarget,
-} from '../utils/plainTextPaste'
-import { rawEditorLanguageIdForPath } from '../utils/rawEditorLanguage'
 import {
   clipboardRemoteImages,
   importRemoteImages,
+  type RemoteImageImportResult,
   rawRemoteImagePasteText,
   replaceImportedRemoteImages,
-  type RemoteImageImportResult,
 } from '../utils/remoteImagePaste'
+import { LargeDocumentFallback } from './LargeDocumentFallback'
+import { RawEditorAutocompleteDropdown } from './RawEditorAutocompleteDropdown'
+import { RawEditorFindBar, type RawEditorFindRequest } from './RawEditorFindBar'
 import {
   RAW_EDITOR_DROPDOWN_MAX_HEIGHT,
-  useRawEditorAutocompleteController,
-  useRawEditorWikilinkInsertion,
   type RawEditorPendingChangeRefs,
   type RawEditorSetAutocomplete,
+  useRawEditorAutocompleteController,
+  useRawEditorWikilinkInsertion,
 } from './rawEditorAutocomplete'
-import { RawEditorAutocompleteDropdown } from './RawEditorAutocompleteDropdown'
 
 export interface RawEditorViewProps {
   content: string
@@ -510,6 +512,13 @@ function useRawEditorEffects(
 }
 
 export function RawEditorView(options: RawEditorViewProps) {
+  if (isLargeTextDocument(options.content)) {
+    return <LargeDocumentFallback locale={options.locale} />
+  }
+  return <ActiveRawEditorView {...options} />
+}
+
+function ActiveRawEditorView(options: RawEditorViewProps) {
   const state = useRawEditorState(options)
   useCodeMirrorReadOnly(state.viewRef, options.readOnly === true)
   const { handleRemoteImagePaste } = useRawEditorEffects(options, state)
