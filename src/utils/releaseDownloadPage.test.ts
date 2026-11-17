@@ -6,6 +6,14 @@ import {
   resolveStableDownloadTargets,
 } from './releaseDownloadPage'
 
+function githubExpression(path: string): string {
+  return ['$', '{{ ', path, ' }}'].join('')
+}
+
+function shellVariable(name: string): string {
+  return ['$', '{', name, '}'].join('')
+}
+
 describe('release workflow macOS artifact names', () => {
   function countOccurrences(input: string, value: string): number {
     return input.split(value).length - 1
@@ -17,25 +25,16 @@ describe('release workflow macOS artifact names', () => {
       `${process.cwd()}/.github/workflows/release-stable.yml`,
       'utf8',
     )
+    const alphaVersion = githubExpression('needs.version.outputs.version')
+    const stableVersion = shellVariable('VERSION')
 
-    expect(alphaWorkflow).toContain(
-      'Tolaria_${{ needs.version.outputs.version }}_macOS_Silicon.app.tar.gz',
-    )
-    expect(alphaWorkflow).toContain(
-      'Tolaria_${{ needs.version.outputs.version }}_macOS_Intel.app.tar.gz',
-    )
-    expect(stableWorkflow).toContain(
-      'Tolaria_${{ needs.version.outputs.version }}_macOS_Silicon.app.tar.gz',
-    )
-    expect(stableWorkflow).toContain(
-      'Tolaria_${{ needs.version.outputs.version }}_macOS_Intel.app.tar.gz',
-    )
-    expect(stableWorkflow).toContain(
-      'Tolaria_${{ needs.version.outputs.version }}_macOS_Silicon.dmg',
-    )
-    expect(stableWorkflow).toContain(
-      'Tolaria_${{ needs.version.outputs.version }}_macOS_Intel.dmg',
-    )
+    expect(alphaWorkflow).toContain(`Tolaria_${alphaVersion}_macOS_Silicon.app.tar.gz`)
+    expect(alphaWorkflow).toContain(`Tolaria_${alphaVersion}_macOS_Intel.app.tar.gz`)
+    expect(stableWorkflow).toContain(`VERSION: ${alphaVersion}`)
+    expect(stableWorkflow).toContain(`Tolaria_${stableVersion}_macOS_Silicon.app.tar.gz`)
+    expect(stableWorkflow).toContain(`Tolaria_${stableVersion}_macOS_Intel.app.tar.gz`)
+    expect(stableWorkflow).toContain(`Tolaria_${stableVersion}_macOS_Silicon.dmg`)
+    expect(stableWorkflow).toContain(`Tolaria_${stableVersion}_macOS_Intel.dmg`)
   })
 
   it('passes the computed build version to Sentry release env for packaged apps', () => {
@@ -43,7 +42,7 @@ describe('release workflow macOS artifact names', () => {
       `${process.cwd()}/.github/workflows/release-build-artifacts.yml`,
       'utf8',
     )
-    const releaseEnv = 'VITE_SENTRY_RELEASE: ${{ inputs.version }}'
+    const releaseEnv = `VITE_SENTRY_RELEASE: ${githubExpression('inputs.version')}`
 
     expect(countOccurrences(artifactWorkflow, releaseEnv)).toBe(3)
   })
@@ -79,7 +78,7 @@ describe('release workflow macOS artifact names', () => {
     expect(artifactWorkflow).toContain('--config src-tauri/tauri.windows-signing.conf.json')
     expect(artifactWorkflow).toContain('pnpm tauri build --target x86_64-pc-windows-msvc --bundles nsis')
     expect(artifactWorkflow).toContain(
-      "if: ${{ steps.windows-signing.outputs.authenticode_available == 'true' }}",
+      `if: ${githubExpression("steps.windows-signing.outputs.authenticode_available == 'true'")}`,
     )
     expect(artifactWorkflow).toContain('Validate Windows Authenticode signatures')
     expect(artifactWorkflow).toContain('Get-AuthenticodeSignature')
@@ -193,40 +192,40 @@ describe('buildStableDownloadRedirectPage', () => {
   })
 })
 
+const incompleteLatestPayload = {
+  platforms: {
+    'darwin-aarch64': {
+      download_url: 'https://example.com/Tolaria-aarch64.dmg',
+    },
+  },
+}
+const stableReleasesPayload = [
+  {
+    prerelease: false,
+    assets: [
+      {
+        name: 'Tolaria_x64.dmg',
+        browser_download_url: 'https://example.com/Tolaria-x64.dmg',
+      },
+      {
+        name: 'Tolaria-setup.exe',
+        browser_download_url: 'https://example.com/Tolaria-setup.exe',
+      },
+      {
+        name: 'Tolaria.AppImage',
+        browser_download_url: 'https://example.com/Tolaria.AppImage',
+      },
+      {
+        name: 'Tolaria.rpm',
+        browser_download_url: 'https://example.com/Tolaria.rpm',
+      },
+    ],
+  },
+]
+
 describe('resolveStableDownloadTargets', () => {
   it('falls back to stable release assets when latest.json is incomplete', () => {
-    const latestPayload = {
-      platforms: {
-        'darwin-aarch64': {
-          download_url: 'https://example.com/Tolaria-aarch64.dmg',
-        },
-      },
-    }
-    const releasesPayload = [
-      {
-        prerelease: false,
-        assets: [
-          {
-            name: 'Tolaria_x64.dmg',
-            browser_download_url: 'https://example.com/Tolaria-x64.dmg',
-          },
-          {
-            name: 'Tolaria-setup.exe',
-            browser_download_url: 'https://example.com/Tolaria-setup.exe',
-          },
-          {
-            name: 'Tolaria.AppImage',
-            browser_download_url: 'https://example.com/Tolaria.AppImage',
-          },
-          {
-            name: 'Tolaria.rpm',
-            browser_download_url: 'https://example.com/Tolaria.rpm',
-          },
-        ],
-      },
-    ]
-
-    expect(extractStableDownloadTargetsFromReleases(releasesPayload)).toMatchObject({
+    expect(extractStableDownloadTargetsFromReleases(stableReleasesPayload)).toMatchObject({
       'darwin-x86_64': {
         url: 'https://example.com/Tolaria-x64.dmg',
       },
@@ -241,7 +240,7 @@ describe('resolveStableDownloadTargets', () => {
         url: 'https://example.com/Tolaria-setup.exe',
       },
     })
-    expect(resolveStableDownloadTargets(latestPayload, releasesPayload)).toMatchObject({
+    expect(resolveStableDownloadTargets(incompleteLatestPayload, stableReleasesPayload)).toMatchObject({
       'darwin-aarch64': {
         url: 'https://example.com/Tolaria-aarch64.dmg',
       },
