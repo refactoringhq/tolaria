@@ -89,16 +89,18 @@ function sameLayoutSettings(left: LayoutSettings, right: LayoutSettings): boolea
   return JSON.stringify(left) === JSON.stringify(right)
 }
 
-type ColumnListKey = 'collapsedColumns' | 'hiddenColumns'
-
-const COLUMN_VISIBILITY_ACTIONS: Record<ColumnListKey, readonly [added: string, removed: string]> = {
-  collapsedColumns: ['collapse', 'expand'],
-  hiddenColumns: ['hide', 'show'],
+interface ColumnToggleActions {
+  added: string
+  removed: string
 }
 
-function columnVisibilityAction(current: LayoutSettings, key: ColumnListKey, group: string): string {
-  const [added, removed] = COLUMN_VISIBILITY_ACTIONS[key]
-  return current[key].includes(group) ? removed : added
+const COLLAPSE_ACTIONS: ColumnToggleActions = { added: 'collapse', removed: 'expand' }
+const HIDE_ACTIONS: ColumnToggleActions = { added: 'hide', removed: 'show' }
+
+/** Toggles a column in a collapsed or hidden list and reports which way it went (never the column name). */
+function toggledColumnList(list: readonly string[], group: string, actions: ColumnToggleActions): string[] {
+  trackEvent('kanban_column_visibility_changed', { action: list.includes(group) ? actions.removed : actions.added })
+  return toggleColumnValue(list, group)
 }
 
 function useLayoutActions(source: CollectionLayoutSource, key: string, current: LayoutSettings, setOverrides: SetSettingsMap) {
@@ -114,18 +116,14 @@ function useLayoutActions(source: CollectionLayoutSource, key: string, current: 
     update({ layout })
     trackEvent('collection_layout_changed', { layout, collection: source.selection.kind })
   }, [current.layout, source.selection.kind, update])
-  const toggleColumn = (key: ColumnListKey, group: string) => {
-    trackEvent('kanban_column_visibility_changed', { action: columnVisibilityAction(current, key, group) })
-    update({ [key]: toggleColumnValue(current[key], group) })
-  }
   useLayoutShortcut(enabled, current.layout, changeLayout)
   return {
     changeLayout,
     changeGroupBy: (groupBy: string) => update({ groupBy }),
     changeCardProperties: (properties: string[] | null) => update({ properties: properties ?? [] }),
     changeColumnOrder: (columnOrder: string[]) => update({ columnOrder }),
-    toggleColumnCollapsed: (group: string) => toggleColumn('collapsedColumns', group),
-    toggleColumnHidden: (group: string) => toggleColumn('hiddenColumns', group),
+    toggleColumnCollapsed: (group: string) => update({ collapsedColumns: toggledColumnList(current.collapsedColumns, group, COLLAPSE_ACTIONS) }),
+    toggleColumnHidden: (group: string) => update({ hiddenColumns: toggledColumnList(current.hiddenColumns, group, HIDE_ACTIONS) }),
   }
 }
 
