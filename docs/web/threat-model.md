@@ -92,6 +92,15 @@ The `vaultPath()` function validates all client-supplied paths with strict rules
 - Sent via `Authorization: Bearer <token>` header
 - Never logged or exposed in errors
 
+**Agent tokens (protocol 1.11, ADR 0304):** `apps/server/src/agentTokens.ts`, `agentTokenFile.ts`, `agentTokenAdmin.ts`
+- `tat1.<id>.<secret>`: 64-bit public id, 256-bit secret. The token file (`TOLARIA_SERVER_TOKENS_FILE`, default `<data dir>/tokens.json`, mode `0600`, local disk only, refused inside the vault clone) keeps only SHA-256 of the secret, compared with `timingSafeEqual`
+- Grants are `viewer` or `editor`, on the vault or on single notes; never `owner`
+- **What a leaked token gives:** exactly its grants, until it expires or is revoked: reading what its scope covers (REST, MCP, change feed, websocket) and, for `editor`, committing changes there, which are pushed to the vault's git remote and name the token as co-author. It cannot reach other notes, revoke anything, or learn the owner token. Its requests count against its own rate-limit bucket
+- **Revoking:** `pnpm run server:token revoke <name or id>` on the box (`docker exec … apps/server/scripts/token.ts revoke …` in the image). The server re-reads the file within about a second, refuses the token from then on and closes its open websockets and change feeds. A leaked editor token's commits stay in git history: review them with `git log --grep "tokens.tolaria.invalid"` (or the author you gave it) and revert what is unwanted
+- **What a leaked token file gives:** the names, grants and hashes; not usable credentials, since a 256-bit secret cannot be recovered from its hash. Write access to the file is equivalent to minting tokens, so it must stay owned by the server's user
+- Secrets and hashes are never logged, in error messages, or in `list` output; the id is public and may appear in logs and commit trailers
+- There is no management API: an attacker with only network access cannot create or widen tokens
+
 **Collaboration tickets:**
 - 32 bytes of random data (base64url encoded) = 256 bits of entropy
 - Single-use: consumed on first WebSocket connection
@@ -398,3 +407,4 @@ These security concerns span the boundary between the open-source server (this r
 
 - 2026-10-23: Initial threat model created (TOL-200 Part A review)
 - 2026-10-24: Remote image import guard added to the SSRF section (TOL-204)
+- 2026-11-17: Agent tokens added to Ticket and Token Security

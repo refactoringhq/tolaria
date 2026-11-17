@@ -1,8 +1,8 @@
-# Tolaria remote protocol, version 1.9
+# Tolaria remote protocol, version 1.11
 
 The HTTP protocol between a Tolaria client and a server that hosts one vault as a git repository. It is written so that anyone can implement a compatible server (self-hosting) or client. The reference implementation is `apps/server`; the wire types are in `packages/protocol/src/index.ts` and are the source of truth when this document and the code disagree.
 
-Status: spikes S3 (TOL-5) and S4 (TOL-8). The file API and the collaboration channel below are implemented and tested. Version 1.1 added the collaboration channel; it changed nothing in the file API of 1.0. Version 1.2 added the change feed (`GET /v1/changes`); it changed nothing in 1.1's file or collaboration API. Version 1.3 added remote image import (`POST /v1/attachments/imports`) and the `remote_unavailable` error code; it changed nothing else. Version 1.4 added the wikilink rewrite of `POST /v1/rename` (`rewriteLinks`, `title`, `oldTitle`); a rename without them works as in 1.0. Version 1.5 changed which side of a collaboration fork becomes the conflict copy: the live document keeps its edits and `meta.conflictCopy` names the copy of the incoming file (see "What the server does with a document"); nothing else changed. Version 1.6 added rate limits and websocket limits: the `rate_limited` error code with `Retry-After`, the `429` refusal of a websocket upgrade, and the `4408` close code of an idle connection (see "Limits"); a client within the limits sees no change. Version 1.7 added folder renames (`POST /v1/folders/rename`, capability `folders.rename`); nothing else changed. Version 1.8 added creating and deleting folders (`POST /v1/folders`, capability `folders.create`; `POST /v1/folders/delete`, capability `folders.delete`); nothing else changed. Version 1.9 added access tickets (capability `access.tickets`, see "Access tickets"): a front end that holds the token gives other users a role on the vault or on single notes, the `forbidden` error code, `POST /v1/access/revocations`, the `4403` close code, and `access` in `GET /v1/vault`; a client with the token sees no change. Version 1.10 added the optional `author` of an access ticket (capability `access.authors`): the commits a subject's changes cause name it in a `Co-authored-by` trailer; a ticket without it, and the token, see no change.
+Status: spikes S3 (TOL-5) and S4 (TOL-8). The file API and the collaboration channel below are implemented and tested. Version 1.1 added the collaboration channel; it changed nothing in the file API of 1.0. Version 1.2 added the change feed (`GET /v1/changes`); it changed nothing in 1.1's file or collaboration API. Version 1.3 added remote image import (`POST /v1/attachments/imports`) and the `remote_unavailable` error code; it changed nothing else. Version 1.4 added the wikilink rewrite of `POST /v1/rename` (`rewriteLinks`, `title`, `oldTitle`); a rename without them works as in 1.0. Version 1.5 changed which side of a collaboration fork becomes the conflict copy: the live document keeps its edits and `meta.conflictCopy` names the copy of the incoming file (see "What the server does with a document"); nothing else changed. Version 1.6 added rate limits and websocket limits: the `rate_limited` error code with `Retry-After`, the `429` refusal of a websocket upgrade, and the `4408` close code of an idle connection (see "Limits"); a client within the limits sees no change. Version 1.7 added folder renames (`POST /v1/folders/rename`, capability `folders.rename`); nothing else changed. Version 1.8 added creating and deleting folders (`POST /v1/folders`, capability `folders.create`; `POST /v1/folders/delete`, capability `folders.delete`); nothing else changed. Version 1.9 added access tickets (capability `access.tickets`, see "Access tickets"): a front end that holds the token gives other users a role on the vault or on single notes, the `forbidden` error code, `POST /v1/access/revocations`, the `4403` close code, and `access` in `GET /v1/vault`; a client with the token sees no change. Version 1.10 added the optional `author` of an access ticket (capability `access.authors`): the commits a subject's changes cause name it in a `Co-authored-by` trailer; a ticket without it, and the token, see no change. Version 1.11 added agent tokens (capability `access.tokens`, see "Agent tokens"): long-lived, named credentials with `viewer` or `editor` grants that the person running the server creates and revokes on the box; a client with the token or a ticket sees no change.
 
 ## Design rules
 
@@ -43,12 +43,14 @@ Capabilities:
 | `collab.tickets` | `POST /v1/collab/tickets` issues websocket tickets (since 1.1). |
 | `access.tickets` | Access tickets are accepted as the bearer credential and `POST /v1/access/revocations` is served (since 1.9). |
 | `access.authors` | The `author` of an access ticket is named in the commits its subject's changes cause (since 1.10). |
+| `access.tokens` | Agent tokens (`tat1.`) are accepted as the bearer credential (since 1.11). |
 
 ## Authentication and transport
 
 - Every route except `GET /healthz` requires `Authorization: Bearer <token>`. A missing or wrong token gets `401 unauthorized` with `WWW-Authenticate: Bearer`.
 - The reference server reads the token from `TOLARIA_SERVER_TOKEN` and does not start without it. It speaks plain HTTP and binds `127.0.0.1`; anything else needs an explicit opt-in and a TLS-terminating proxy in front.
 - One token gives full access to the one vault: it is the owner's credential. Accounts and their records are outside this protocol; since 1.9 a front end that holds the token can give other users limited access with access tickets (below).
+- Since 1.11 the bearer credential may also be an agent token (below): a long-lived credential with limited access, for a client configured once with a fixed header, such as an MCP client.
 - `GET /healthz` answers `200 {"status":"ok"}` and reveals nothing about the vault.
 
 ## Access tickets (since 1.9)
@@ -105,9 +107,24 @@ This covers file writes, imports, renames, deletes and folder changes, and the w
 
 `grants` is what the subject still holds (default none) and `before` a time on the minting clock (default the server's now). From then on the subject's tickets with `iat <= before` and the collab tickets issued for them are refused, and each of its open websockets and change feeds that `grants` no longer covers is closed (websockets with `4403`): a write socket of a subject that keeps only `viewer` closes, its read sockets stay. Answer, `200`: `{ "closed": <count> }`. The front end calls this after it removes or reduces a share, then mints new tickets from its records; a client that reconnects gets what the subject still holds.
 
+## Agent tokens (since 1.11)
+
+An agent token is sent instead of the token, as `Authorization: Bearer <agent token>`, on every route, `/mcp`, the collaboration websocket and the change feed. It is for a client configured once with a fixed header, such as an agent's MCP configuration, which an access ticket of at most 10 minutes cannot serve. The person running the server creates and revokes agent tokens on the box; there is no route that manages them.
+
+Format: `tat1.<id>.<secret>`, both base64url without padding: `<id>` is 8 random bytes (11 characters), public, and `<secret>` 32 random bytes (43 characters), shown once when the token is created. The prefix is `AGENT_TOKEN_PREFIX` in `packages/protocol`; it does not start with the ticket prefix `ta1.`.
+
+| What a token has | Rule |
+|---|---|
+| Subject | `token:<id>`. Rate limits and websocket limits count per token, as for a ticket subject. `GET /v1/vault` reports it in `access.subject`. |
+| Grants | 1 to 100 `{ scope, role }` with the rules of a ticket's grants, except that `role` is `viewer` or `editor`, never `owner`: a token cannot call `POST /v1/access/revocations`. |
+| Expiry | None, or a time after which it is refused. |
+| Author | Who it is in git, named in a `Co-authored-by` trailer of the commits its changes cause, as for a ticket's `author` (1.10). The reference server's default is the token's name with an address under `tokens.tolaria.invalid`. |
+
+A token that is unknown, has the wrong secret, has expired or was revoked gets `401 unauthorized`; the answer does not say which. Revoking a token also closes its open websockets (`4403`) and change feeds. The reference server applies a revocation within about a second (`apps/server/README.md`, "Tokens for agents").
+
 ## Limits
 
-Since 1.6 the server limits what one account (one token) may use, so one client cannot exhaust the vault's container. Since 1.9 each subject of access tickets is an account of its own, so a shared user cannot use up the owner's budget. Front-line limits at the edge are separate and not part of this protocol.
+Since 1.6 the server limits what one account (one token) may use, so one client cannot exhaust the vault's container. Since 1.9 each subject of access tickets is an account of its own, so a shared user cannot use up the owner's budget. Since 1.11 so is each agent token. Front-line limits at the edge are separate and not part of this protocol.
 
 | Limit | Default | When exceeded |
 |---|---|---|
@@ -485,7 +502,7 @@ Measured cadence and the reasons are in `docs/web/s4-spike-report.md`.
 
 There is no session and no stream: the server never sends `Mcp-Session-Id`, and `GET /mcp` and `DELETE /mcp` answer `405` with `Allow: POST`. A request with an `MCP-Protocol-Version` header the server does not know gets `400`.
 
-**Auth and limits.** As for every `/v1` route: the bearer token or an access ticket, the per-account rate limit and the body size limit. Failures are HTTP errors with the usual bodies (`401` with `WWW-Authenticate: Bearer`, `429` with `Retry-After`, `413`). There is no OAuth.
+**Auth and limits.** As for every `/v1` route: the bearer token, an access ticket or an agent token (since 1.11, the credential meant for an MCP client's fixed header), the per-account rate limit and the body size limit. Failures are HTTP errors with the usual bodies (`401` with `WWW-Authenticate: Bearer`, `429` with `Retry-After`, `413`). There is no OAuth.
 
 **Methods.** `initialize` (answered with the client's `protocolVersion` when the server knows it, otherwise `2025-06-18`; capabilities `{ "tools": {} }`), `notifications/initialized`, `ping`, `tools/list`, `tools/call`. Anything else is `-32601`.
 
@@ -508,7 +525,7 @@ There is no session and no stream: the server never sends `Mcp-Session-Id`, and 
 | `update_note` | `path`, `content`, `expectedEtag?` | Replaces an existing note. With `expectedEtag`, a note that changed since is refused and nothing is written; without it, the write replaces the current revision |
 | `append_to_note` | `path`, `content` | Appends `content` to the current bytes of an existing note, frontmatter untouched, under the vault lock after the pull |
 
-Read tools filter by the access exactly like their REST routes: a path outside every grant is "does not exist". `create_note` needs `editor` on the vault; `update_note` and `append_to_note` need `editor` on the note. Commits caused by a ticket carry its `Co-authored-by` trailer.
+Read tools filter by the access exactly like their REST routes: a path outside every grant is "does not exist". `create_note` needs `editor` on the vault; `update_note` and `append_to_note` need `editor` on the note. Commits caused by a ticket or an agent token carry its `Co-authored-by` trailer.
 
 Write results are `{ outcome, path, etag, commit, pushed }` as JSON text. A refusal of the vault (access, path, missing note, stale `expectedEtag`) is a tool result with `isError: true` and a message, not a JSON-RPC error. A write that lands as a conflict copy (the note changed on the git remote between the pull and the push, or a `create_note` whose path only arrived with the pull) is also `isError: true`: the text names the copy's path and the version that kept the requested path.
 

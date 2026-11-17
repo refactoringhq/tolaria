@@ -26,6 +26,7 @@ Use `pnpm run server`: bare `pnpm server` is a pnpm built-in command.
 | `TOLARIA_VAULT_BRANCH` | the remote's default | Branch to serve |
 | `TOLARIA_VAULT_FETCH_INTERVAL_MS` | `30000` | Pull from the remote this often, so desktop pushes reach open documents. `0` pulls only before a write or on `POST /v1/sync` |
 | `TOLARIA_SERVER_DATA_DIR` | `./data` | Holds `vault/` (the clone) and `state/` (doc index) |
+| `TOLARIA_SERVER_TOKENS_FILE` | `<data dir>/tokens.json` | The agent token file ("Tokens for agents"). Local disk only, never in the blob store; the server refuses to start when it is inside the vault directory. Missing means no agent tokens |
 | `TOLARIA_BLOBSTORE` | `local` | Blob store for doc index and Yjs snapshots: `local` (disk under `state/`) or `r2` (S3-compatible) |
 | `TOLARIA_R2_BUCKET` | none | R2 bucket name (required when `TOLARIA_BLOBSTORE=r2` or `TOLARIA_INDEX_SNAPSHOTS=r2`) |
 | `TOLARIA_R2_ENDPOINT` | none | R2 endpoint URL (required when `TOLARIA_BLOBSTORE=r2` or `TOLARIA_INDEX_SNAPSHOTS=r2`) |
@@ -57,25 +58,52 @@ Other users get access through access tickets (protocol 1.9, ADR 0296): a front 
 
 Git credentials for a private remote come from the environment the server runs in (SSH agent or a credential helper), never from the URL.
 
-## Connect an MCP client
+## Tokens for agents
 
-`POST /mcp` serves MCP over stateless Streamable HTTP (ADR 0303, "MCP endpoint" in the protocol): agents get `search_notes`, `get_vault_context`, `list_vaults`, `get_note`, `create_note`, `update_note` and `append_to_note`. Any client that can send an `Authorization` header works; there is no OAuth. With Claude Code:
+An agent token is a long-lived credential for one agent or device, with `viewer` or `editor` on the whole vault or on single notes, that you can revoke on its own (protocol 1.11, ADR 0304). Manage them on the box, with or without the server running:
 
 ```bash
+pnpm run server:token add --name phone --role viewer
+pnpm run server:token add --name research-agent --role editor --note projects/alpha.md --note inbox/ideas.md
+pnpm run server:token add --name ci --role viewer --expires-in 30d
+pnpm run server:token list
+pnpm run server:token revoke phone
+```
+
+The command reads `TOLARIA_SERVER_DATA_DIR` and `TOLARIA_SERVER_TOKENS_FILE` as the server does, so run it with the same environment. `add` prints the token (`tat1.…`) once; only a SHA-256 of its secret is kept, in a file of mode `0600`. `--note` may repeat; without it the role covers the whole vault. `--expires-in` takes minutes, hours or days (`45m`, `12h`, `30d`). Commits a token causes name it in a `Co-authored-by` trailer: its name at `<id>@tokens.tolaria.invalid` unless you give `--author-name` and `--author-email`. `list` shows id, name, role, scope, created and expires, never a secret. `revoke` takes a name or an id. At most 100 tokens; names are unique, 1 to 64 characters.
+
+The server checks the file at most once a second, so an added token works and a revoked or expired one is refused within about a second, and a revoked token's open websockets and change feeds are closed. A token never has `owner`: it cannot revoke tickets, and the owner token stays the only full credential.
+
+In the container image:
+
+```bash
+docker exec <container> node --experimental-strip-types apps/server/scripts/token.ts add --name phone --role viewer
+```
+
+The image sets `TOLARIA_SERVER_DATA_DIR=/app/data`, so the file is `/app/data/tokens.json` unless `TOLARIA_SERVER_TOKENS_FILE` is set; keep `/app/data` on a volume so tokens survive a new container.
+
+## Connect an MCP client
+
+`POST /mcp` serves MCP over stateless Streamable HTTP (ADR 0303, "MCP endpoint" in the protocol): agents get `search_notes`, `get_vault_context`, `list_vaults`, `get_note`, `create_note`, `update_note` and `append_to_note`. Any client that can send an `Authorization` header works; there is no OAuth.
+
+Give each agent its own agent token with the least it needs, not the owner token: a `viewer` token is a read-only connection, a token on single notes sees and edits only those (`create_note` needs `editor` on the whole vault), and you can revoke it without touching anything else. With Claude Code:
+
+```bash
+pnpm run server:token add --name claude-laptop --role viewer   # prints tat1.…
 claude mcp add --transport http tolaria https://vault.example.com/mcp \
-  --header "Authorization: Bearer $TOLARIA_SERVER_TOKEN"
+  --header "Authorization: Bearer tat1.…"
 ```
 
 Or in a client's JSON configuration:
 
 ```json
 { "mcpServers": { "tolaria": { "type": "http", "url": "https://vault.example.com/mcp",
-  "headers": { "Authorization": "Bearer <token or access ticket>" } } } }
+  "headers": { "Authorization": "Bearer <agent token>" } } } }
 ```
 
 Every agent write is one commit on the server, pushed to the vault's git remote like any other save, so the desktop and mobile apps get it on their next pull. The agent sees their pushes once the server has pulled: every `TOLARIA_VAULT_FETCH_INTERVAL_MS` and before every write.
 
-The token gives the agent the owner's full access. To give it less, send an access ticket instead: a `viewer` ticket makes a read-only connection, and a ticket on single notes limits what it can see and edit. A ticket lives at most 10 minutes, so a client with a fixed header can only use one briefly; a long-running agent needs something that mints fresh ones, or the token.
+The owner token and access tickets work here too. The owner token gives the agent full access and can only be withdrawn by changing it for every client; a ticket lives at most 10 minutes, so it suits a front end that mints them, not a fixed header.
 
 ## Try it against a throwaway vault
 
