@@ -79,7 +79,7 @@ function validGrant(value: unknown): value is AccessGrant {
   return (value.role === 'viewer' || value.role === 'editor') && isPathScope(value.scope)
 }
 
-function validGrants(value: unknown): value is AccessGrant[] {
+export function validGrants(value: unknown): value is AccessGrant[] {
   return Array.isArray(value) && value.length > 0 && value.length <= ACCESS_TICKET_MAX_GRANTS && value.every(validGrant)
 }
 

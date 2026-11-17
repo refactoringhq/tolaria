@@ -2,7 +2,7 @@
 // No runtime dependencies and no Node or DOM APIs: the server and the web client import it as-is.
 
 /** `major.minor`. Minor versions only add; a different major is a different protocol. */
-export const PROTOCOL_VERSION = '1.10'
+export const PROTOCOL_VERSION = '1.11'
 export const PROTOCOL_MAJOR = 1
 /** Sent by the server on every response; clients may send it to assert the major they speak. */
 export const PROTOCOL_HEADER = 'tolaria-protocol-version'
@@ -127,6 +127,14 @@ export interface AccessGrant {
   role: AccessRole
 }
 
+/**
+ * Agent tokens (since 1.11): long-lived credentials the person running the server creates on the
+ * box, each with a name, `viewer` or `editor` grants and an optional expiry, revocable one by
+ * one. `tat1.<id>.<secret>`: `id` is 8 random bytes and `secret` 32, both base64url. Sent as the
+ * bearer credential like the token and access tickets.
+ */
+export const AGENT_TOKEN_PREFIX = 'tat1.'
+
 /** Longest `author.name` and `author.email` of an access ticket (since 1.10). */
 export const ACCESS_AUTHOR_MAX_NAME_LENGTH = 100
 export const ACCESS_AUTHOR_MAX_EMAIL_LENGTH = 254
@@ -191,6 +199,7 @@ export const FILE_CAPABILITIES = [
   'folders.delete',
   'access.tickets',
   'access.authors',
+  'access.tokens',
 ] as const
 /** Advertised only by servers that serve the collaboration channel. */
 export const COLLAB_CAPABILITIES = ['collab.yjs', 'collab.awareness', 'collab.tickets'] as const
