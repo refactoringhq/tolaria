@@ -20,9 +20,9 @@ RUN corepack enable && \
 # Production stage: minimal runtime image
 FROM node:22-bookworm-slim
 
-# Install git (required for vault operations)
+# git for vault operations; an ssh client and CA certificates so git reaches a private remote over SSH or HTTPS
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git && \
+    apt-get install -y --no-install-recommends git openssh-client ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 # Run as the image's built-in non-root `node` user (UID 1000); adding another UID 1000 user fails
