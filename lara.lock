@@ -18,6 +18,11 @@ files:
     layout.columnLabelMany: 7663940eefdbe928dbd6d132c460f983
     layout.columnRole: 1afd32818d1c9525f82aff4c09efd254
     layout.cardRole: 5dd2199ad68327cc76d583b057aee7d5
+    layout.collapseColumn: 14dec9a2113cfd0fd6c9f6528ad25c90
+    layout.expandColumn: fbc2f6aa211e2eebe6927688b39dafd1
+    layout.hideColumn: a6a275268775b705be350b64a85089c6
+    layout.showColumn: 0824b42050584f99fb755b9c2595976c
+    layout.hiddenColumns: f354a31c1adce1922564e25c077c828c
     command.palettePlaceholder: 6d6b61b4c08ed382ad7ba406a9ba395d
     command.footerNavigate: e3808db59d29bcfc91532d6539c4f9ae
     command.footerSelect: 6d73339906ed42e20f6be91bf7f5f4a9

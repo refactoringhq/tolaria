@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { ArrowUp, ArrowDown } from '@phosphor-icons/react'
 import { translate, type AppLocale, type TranslationKey } from '../lib/i18n'
@@ -208,6 +209,14 @@ function useSortDropdownState({
   }
 }
 
+const LABELED_SORT_TRIGGER_CLASSNAME = 'h-auto gap-0.5 rounded px-1 py-0.5 has-[>svg]:px-1 text-muted-foreground transition-colors hover:bg-accent dark:hover:bg-accent hover:text-foreground'
+
+/** Icon-only triggers take the note-list header's shared button class; labeled ones keep the compact group-header pill. */
+function sortTriggerClassName(open: boolean, iconButtonClassName: string | undefined) {
+  if (iconButtonClassName !== undefined) return iconButtonClassName
+  return cn(LABELED_SORT_TRIGGER_CLASSNAME, open && 'bg-accent text-foreground')
+}
+
 function SortDropdownTrigger(options: {
   triggerRef: React.RefObject<HTMLButtonElement | null>
   open: boolean
@@ -215,22 +224,22 @@ function SortDropdownTrigger(options: {
   groupLabel: string
   direction: SortDirection
   locale: AppLocale
-  iconOnly: boolean
+  iconButtonClassName?: string
   onToggle: () => void
 }) {
-  const { triggerRef, open, current, groupLabel, direction, locale, iconOnly, onToggle } = options
+  const { triggerRef, open, current, groupLabel, direction, locale, iconButtonClassName, onToggle } = options
   const DirectionIcon = direction === 'asc' ? ArrowUp : ArrowDown
   const currentLabel = getLocalizedSortOptionLabel(current, locale)
   const title = translate(locale, 'noteList.sort.by', { label: currentLabel })
+  const iconOnly = iconButtonClassName !== undefined
 
   return (
-    <button
+    <Button
       ref={triggerRef}
       type="button"
-      className={cn(
-        'flex items-center gap-0.5 rounded px-1 py-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
-        open && 'bg-accent text-foreground',
-      )}
+      variant="ghost"
+      size={iconOnly ? 'icon-xs' : 'xs'}
+      className={sortTriggerClassName(open, iconButtonClassName)}
       onClick={(event) => {
         event.stopPropagation()
         onToggle()
@@ -243,7 +252,7 @@ function SortDropdownTrigger(options: {
     >
       <DirectionIcon size={iconOnly ? 16 : 12} data-testid={`sort-direction-icon-${groupLabel}`} />
       {!iconOnly && <span className="text-[10px] font-medium">{currentLabel}</span>}
-    </button>
+    </Button>
   )
 }
 
@@ -310,13 +319,13 @@ interface SortDropdownProps {
   direction: SortDirection
   customProperties?: string[]
   locale?: AppLocale
-  /** Shows only the direction arrow; the sort property stays in the tooltip and menu. */
-  iconOnly?: boolean
+  /** Renders the trigger as an icon-only header Button with this class; the sort property stays in the tooltip and menu. */
+  iconButtonClassName?: string
   onChange: (groupLabel: string, option: SortOption, direction: SortDirection) => void
 }
 
 export function SortDropdown(options: SortDropdownProps) {
-  const { groupLabel, current, direction, customProperties, locale = 'en', iconOnly = false, onChange } = options
+  const { groupLabel, current, direction, customProperties, locale = 'en', iconButtonClassName, onChange } = options
   const sortItems = useMemo(() => buildSortItems(locale, customProperties), [customProperties, locale])
   const { open, toggleMenu, containerRef, menuRef, triggerRef, sortButtonRefs, handleSelect, handleMenuKeyDown } =
     useSortDropdownState({
@@ -327,7 +336,7 @@ export function SortDropdown(options: SortDropdownProps) {
   })
 
   return (
-    <div ref={containerRef} className="relative" style={{ zIndex: open ? 10 : 0 }}>
+    <div ref={containerRef} className="relative flex" style={{ zIndex: open ? 10 : 0 }}>
       <SortDropdownTrigger
         triggerRef={triggerRef}
         open={open}
@@ -335,7 +344,7 @@ export function SortDropdown(options: SortDropdownProps) {
         groupLabel={groupLabel}
         direction={direction}
         locale={locale}
-        iconOnly={iconOnly}
+        iconButtonClassName={iconButtonClassName}
         onToggle={toggleMenu}
       />
       <SortDropdownMenu

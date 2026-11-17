@@ -42,6 +42,31 @@ export function orderColumns(groupValues: Iterable<ColumnValue>, savedOrder: Col
   return [...savedOrder.filter((value) => values.includes(value)), ...values.filter((value) => !savedOrder.includes(value))]
 }
 
+/** Adds or removes a column value from a collapsed or hidden list. */
+export function toggleColumnValue(values: readonly ColumnValue[], group: ColumnValue): ColumnValue[] {
+  return values.includes(group) ? values.filter((value) => value !== group) : [...values, group]
+}
+
+export function visibleColumns(columns: readonly ColumnValue[], hidden: readonly ColumnValue[]): ColumnValue[] {
+  return columns.filter((group) => !hidden.includes(group))
+}
+
+export interface HiddenColumnSummary {
+  group: ColumnValue
+  count: number
+}
+
+/** Hidden columns that still have a value on the board, in board order, with their note counts. */
+export function hiddenColumnSummaries(
+  columns: readonly ColumnValue[],
+  hidden: readonly ColumnValue[],
+  grouped: ReadonlyMap<ColumnValue, readonly unknown[]>,
+): HiddenColumnSummary[] {
+  return columns
+    .filter((group) => hidden.includes(group))
+    .map((group) => ({ group, count: grouped.get(group)?.length ?? 0 }))
+}
+
 export function moveColumn(columns: ColumnValue[], from: ColumnValue, to: ColumnValue): ColumnValue[] {
   const fromIndex = columns.indexOf(from)
   const toIndex = columns.indexOf(to)
