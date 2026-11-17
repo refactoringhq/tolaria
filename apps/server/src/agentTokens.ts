@@ -77,12 +77,18 @@ function isTime(value: unknown): value is number {
   return Number.isSafeInteger(value) && (value as number) >= 0
 }
 
+function matches(pattern: RegExp, value: unknown): boolean {
+  return typeof value === 'string' && pattern.test(value)
+}
+
+function hasTimes({ createdAt, expiresAt }: Record<string, unknown>): boolean {
+  return isTime(createdAt) && (expiresAt === null || isTime(expiresAt))
+}
+
 function isTokenRecord(value: unknown): value is AgentTokenRecord {
-  if (!isRecord(value)) return false
-  const { id, name, hash, grants, createdAt, expiresAt, author } = value
-  const shaped = typeof id === 'string' && ID.test(id) && typeof hash === 'string' && HASH.test(hash)
-  const timed = isTime(createdAt) && (expiresAt === null || isTime(expiresAt))
-  return shaped && timed && isTokenName(name) && isTokenGrants(grants) && isCoAuthor(author)
+  if (!isRecord(value) || !hasTimes(value)) return false
+  const { id, name, hash, grants, author } = value
+  return matches(ID, id) && matches(HASH, hash) && isTokenName(name) && isTokenGrants(grants) && isCoAuthor(author)
 }
 
 /** The rule a list of tokens breaks, or null: at most 100, ids and names each used once. */

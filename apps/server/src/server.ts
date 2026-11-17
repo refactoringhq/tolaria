@@ -7,7 +7,9 @@ import { ConnectionCounter, type ConnectionLimits, DEFAULT_CONNECTION_LIMITS } f
 import { CollabHub } from './collab/hub.ts'
 import { TicketBook } from './collab/tickets.ts'
 import { attachCollab } from './collab/upgrade.ts'
+import { Access } from './access.ts'
 import { Revocations } from './accessRevocations.ts'
+import { type AgentTokens, RELOAD_INTERVAL_MS } from './agentTokenFile.ts'
 import { type Credential, Credentials } from './credentials.ts'
 import { DocIndex } from './docIndex.ts'
 import { VaultError } from './errors.ts'
@@ -35,6 +37,8 @@ export interface ServerOptions {
   rateLimit?: RateLimit
   /** Whether `POST /mcp` is served; true unless `false` (`TOLARIA_MCP=0`). */
   mcp?: boolean
+  /** Agent tokens accepted besides the token and access tickets (since 1.11); none without. */
+  tokens?: AgentTokens
 }
 
 export interface CollabOptions {
@@ -65,7 +69,7 @@ const READY = new WeakMap<Server, boolean>()
 const HEALTH_PATH = '/healthz'
 
 function checkAccess(request: IncomingMessage, credential: Credential | null): Credential {
-  if (!credential) throw new VaultError(401, 'unauthorized', 'a valid bearer token or access ticket is required')
+  if (!credential) throw new VaultError(401, 'unauthorized', 'a valid bearer token, access ticket or agent token is required')
   const version = singleHeader(request.headers, PROTOCOL_HEADER)
   if (version !== undefined && !isSupportedProtocolVersion(version)) {
     throw new VaultError(400, 'unsupported_protocol_version', `this server does not speak protocol ${version}`)
@@ -146,7 +150,7 @@ export async function createVaultServer(options: ServerOptions): Promise<Server>
     mcp: options.mcp !== false,
   }
   const limiter = new RateLimiter(options.rateLimit ?? DEFAULT_RATE_LIMIT)
-  const credentials = new Credentials(options.token, revocations)
+  const credentials = new Credentials(options.token, revocations, { tokens: options.tokens })
 
   const server = createServer((request: IncomingMessage, response: ServerResponse) => {
     answer(request, response, { services, options, server, limiter, credentials })
@@ -158,6 +162,7 @@ export async function createVaultServer(options: ServerOptions): Promise<Server>
         }
       })
   })
+  if (options.tokens) followTokens(server, options.tokens, revocations)
   READY.set(server, true)
   options.onReady?.()
   if (tickets) {
@@ -167,6 +172,20 @@ export async function createVaultServer(options: ServerOptions): Promise<Server>
     setupShutdown(server, { vault, changes, log })
   }
   return server
+}
+
+/**
+ * A token removed from the file or expired loses its open websockets and change feeds, as a
+ * revoked ticket subject does. The file is also checked once a second without requests, so
+ * connections close even on a server nobody calls.
+ */
+function followTokens(server: Server, tokens: AgentTokens, revocations: Revocations): void {
+  tokens.onWithdrawn((subject) => {
+    revocations.revoke(subject, { remaining: new Access(subject, [], 0), before: Date.now() })
+  })
+  const timer = setInterval(() => tokens.refresh(), RELOAD_INTERVAL_MS)
+  timer.unref()
+  server.once('close', () => clearInterval(timer))
 }
 
 interface CollabParts {

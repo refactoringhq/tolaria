@@ -1,8 +1,9 @@
 import { isIP } from 'node:net'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 import { COLLAB_MAX_MESSAGE_BYTES } from '../../../packages/protocol/src/index.ts'
 import { type ConnectionLimits, DEFAULT_CONNECTION_LIMITS } from './collab/connectionLimits.ts'
 import { DEFAULT_FLUSH_POLICY, type FlushPolicy } from './collab/flush.ts'
+import { dataDirOf, envSetting, tokensFileOf, vaultDirOf } from './dataPaths.ts'
 import { DEFAULT_RATE_LIMIT, type RateLimit } from './rateLimit.ts'
 import type { R2Config } from './store.ts'
 
@@ -21,6 +22,8 @@ export interface ServerConfig {
   vaultDir: string
   /** Directory of server state that is not in git (doc index, later Y.Doc snapshots). */
   stateDir: string
+  /** The agent token file (`TOLARIA_SERVER_TOKENS_FILE`); never inside `vaultDir`. */
+  tokensFile: string
   maxBodyBytes: number
   /** Requests per account (the token), over every route but `/healthz`. */
   rateLimit: RateLimit
@@ -51,10 +54,7 @@ const MAX_RATE = 1_000_000
 const MAX_CONNECTIONS = 100_000
 const LOOPBACK_NAMES = new Set(['localhost', '::1'])
 
-function setting(env: Env, name: string): string | undefined {
-  const value = env[name]?.trim()
-  return value ? value : undefined
-}
+const setting = envSetting
 
 function positiveInteger(env: Env, name: string, fallback: number, max: number): number {
   const raw = setting(env, name)
@@ -194,7 +194,7 @@ function indexSnapshotSettings(env: Env): ServerConfig['indexSnapshots'] {
 /** Reads the configuration from the environment. Throws with a message fit for the operator. */
 export function loadConfig(env: Env): ServerConfig {
   const token = requiredToken(env)
-  const dataDir = resolve(setting(env, 'TOLARIA_SERVER_DATA_DIR') ?? 'data')
+  const dataDir = dataDirOf(env)
   const stateDir = join(dataDir, 'state')
   return {
     token,
@@ -203,8 +203,9 @@ export function loadConfig(env: Env): ServerConfig {
     remoteUrl: setting(env, 'TOLARIA_VAULT_REMOTE_URL'),
     branch: setting(env, 'TOLARIA_VAULT_BRANCH'),
     fetchIntervalMs: fetchIntervalMs(env),
-    vaultDir: join(dataDir, 'vault'),
+    vaultDir: vaultDirOf(dataDir),
     stateDir,
+    tokensFile: tokensFileOf(env, dataDir),
     maxBodyBytes: positiveInteger(env, 'TOLARIA_SERVER_MAX_BODY_BYTES', DEFAULT_MAX_BODY_BYTES, 2 ** 31),
     rateLimit: rateLimitSettings(env),
     collab: collabSettings(env),

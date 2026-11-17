@@ -20,7 +20,8 @@ export interface AgentTokensOptions {
 /** What identifies one version of the file without reading it; null when there is no file. */
 function stamp(file: string): string | null {
   const stats = statSync(file, { throwIfNoEntry: false })
-  return stats ? `${stats.ino}:${stats.size}:${stats.mtimeMs}` : null
+  if (!stats) return null
+  return [stats.ino, stats.size, stats.mtimeMs].join(':')
 }
 
 function read(file: string): AgentTokenSet {
