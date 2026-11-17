@@ -473,6 +473,47 @@ A `read` session receives everything and may publish awareness; sync step 2 and 
 
 Measured cadence and the reasons are in `docs/web/s4-spike-report.md`.
 
+## MCP endpoint
+
+`POST /mcp` lets an MCP client (an agent) search, read, create and edit notes through the server (ADR 0303). It is not versioned with the `/v1` protocol and does not use `Tolaria-Protocol-Version`; it speaks MCP revisions `2025-06-18` and `2025-03-26`. A server started with `TOLARIA_MCP=0` answers `404`.
+
+**Transport.** The stateless form of MCP Streamable HTTP. The body is one JSON-RPC 2.0 message:
+
+- a request is answered `200` with `content-type: application/json` and its JSON-RPC response;
+- a notification (`notifications/initialized`) or a response is answered `202` with no body;
+- an array (the batching `2025-03-26` allowed) is refused: `400` with JSON-RPC error `-32600`.
+
+There is no session and no stream: the server never sends `Mcp-Session-Id`, and `GET /mcp` and `DELETE /mcp` answer `405` with `Allow: POST`. A request with an `MCP-Protocol-Version` header the server does not know gets `400`.
+
+**Auth and limits.** As for every `/v1` route: the bearer token or an access ticket, the per-account rate limit and the body size limit. Failures are HTTP errors with the usual bodies (`401` with `WWW-Authenticate: Bearer`, `429` with `Retry-After`, `413`). There is no OAuth.
+
+**Methods.** `initialize` (answered with the client's `protocolVersion` when the server knows it, otherwise `2025-06-18`; capabilities `{ "tools": {} }`), `notifications/initialized`, `ping`, `tools/list`, `tools/call`. Anything else is `-32601`.
+
+| JSON-RPC error | When |
+|---|---|
+| `-32700` | the body is not JSON (HTTP `400`) |
+| `-32600` | not a JSON-RPC 2.0 message, a batch, or `params` that is not an object (HTTP `400`) |
+| `-32601` | unknown method |
+| `-32602` | unknown tool, a missing required argument or one of the wrong type |
+
+**Tools.** Names and arguments follow the desktop MCP server; there is no `vaultPath` (the server has one vault, and unknown arguments are ignored). Paths are vault-relative and checked like `/v1/files` paths; note tools take `.md` paths only.
+
+| Tool | Arguments | Does |
+|---|---|---|
+| `search_notes` | `query`, `limit?` (default 10, at most 200) | `GET /v1/search`; one `**title** (path)` line and a snippet per hit |
+| `get_vault_context` | none | Vault name, branch, note count, types, top-level folders, up to 20 recently committed notes, and `agentInstructions` (the root `AGENTS.md`) when it exists and is readable |
+| `list_vaults` | none | The one vault, with `hasAgentInstructions` |
+| `get_note` | `path` | `{ path, frontmatter, content, etag }`; `etag` is the git blob id, as in `/v1/files` |
+| `create_note` | `path`, `content?`, `title?`, `type?` | `PUT` with `If-None-Match: *`. A path already in the server's clone is refused without writing. Without `content` the note is `type` (default `Note`) frontmatter and a `# title` heading |
+| `update_note` | `path`, `content`, `expectedEtag?` | Replaces an existing note. With `expectedEtag`, a note that changed since is refused and nothing is written; without it, the write replaces the current revision |
+| `append_to_note` | `path`, `content` | Appends `content` to the current bytes of an existing note, frontmatter untouched, under the vault lock after the pull |
+
+Read tools filter by the access exactly like their REST routes: a path outside every grant is "does not exist". `create_note` needs `editor` on the vault; `update_note` and `append_to_note` need `editor` on the note. Commits caused by a ticket carry its `Co-authored-by` trailer.
+
+Write results are `{ outcome, path, etag, commit, pushed }` as JSON text. A refusal of the vault (access, path, missing note, stale `expectedEtag`) is a tool result with `isError: true` and a message, not a JSON-RPC error. A write that lands as a conflict copy (the note changed on the git remote between the pull and the push, or a `create_note` whose path only arrived with the pull) is also `isError: true`: the text names the copy's path and the version that kept the requested path.
+
+A write to a note that is open as a live document is the same vault commit as a `PUT`, so the document reconciles with it as with any other file change (see "What the server does with a document"): the people editing it keep their typing, and an overlapping agent edit is saved as a conflict copy named in `meta.conflictCopy`. That copy is made after the tool has answered, so the tool reports `updated`.
+
 ## Differences from the surface sketched in S1
 
 `docs/web/s1-tauri-inventory.md` listed the server surface before this spike. What differs, and why:

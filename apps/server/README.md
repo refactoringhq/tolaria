@@ -1,6 +1,6 @@
 # Tolaria server
 
-The Tolaria remote: a small service that hosts one vault as a git working clone and exposes the file API and the collaboration channel of the [Tolaria remote protocol](../../docs/web/protocol.md). Spikes S3 (TOL-5) and S4 (TOL-8); see the spike reports for [files](../../docs/web/s3-spike-report.md) and [collaboration](../../docs/web/s4-spike-report.md).
+The Tolaria remote: a small service that hosts one vault as a git working clone and exposes the file API and the collaboration channel of the [Tolaria remote protocol](../../docs/web/protocol.md), plus an MCP endpoint for agents. Spikes S3 (TOL-5) and S4 (TOL-8); see the spike reports for [files](../../docs/web/s3-spike-report.md) and [collaboration](../../docs/web/s4-spike-report.md).
 
 Every save is one git commit, made after pulling from the vault's git remote and followed by a push. A write that is based on an outdated revision is saved as a conflict copy; nothing is overwritten silently.
 
@@ -40,6 +40,7 @@ Use `pnpm run server`: bare `pnpm server` is a pnpm built-in command.
 | `TOLARIA_SERVER_ALLOW_NON_LOOPBACK` | unset | Set to `1` to bind a non-loopback address. The server speaks plain HTTP: only do this behind a TLS-terminating proxy |
 | `TOLARIA_SERVER_MAX_BODY_BYTES` | `26214400` | Largest accepted request body, and websocket message up to 16 MiB unless `TOLARIA_COLLAB_MAX_MESSAGE_BYTES` is set |
 | `TOLARIA_COLLAB` | on | Set to `0` to leave the collaboration channel unserved |
+| `TOLARIA_MCP` | on | Set to `0` to leave the MCP endpoint (`POST /mcp`) unserved |
 | `TOLARIA_COLLAB_IDLE_MS` | `5000` | Write an edited document this long after its last edit |
 | `TOLARIA_COLLAB_MAX_WAIT_MS` | `60000` | Write it at the latest this long after its first unwritten edit |
 | `TOLARIA_COLLAB_LINGER_MS` | `30000` | Keep a document without clients open this long |
@@ -55,6 +56,26 @@ The limits (ADR 0292, "Limits" in the protocol) are sized so the web app, collab
 Other users get access through access tickets (protocol 1.9, ADR 0296): a front end that holds the token signs, per request, a short-lived ticket giving one user `viewer`, `editor` or `owner` on the vault or `viewer`/`editor` on single notes, and sends it as the bearer credential. The server verifies the HMAC with a key derived from `TOLARIA_SERVER_TOKEN`, so no other setting is needed; it enforces the ticket on every route and on the websocket, and `POST /v1/access/revocations` (owner only) refuses a user's older tickets and closes the connections their remaining grants no longer cover. `signAccessTicket` in `src/accessTickets.ts` mints one for a self-hosted proxy or a test.
 
 Git credentials for a private remote come from the environment the server runs in (SSH agent or a credential helper), never from the URL.
+
+## Connect an MCP client
+
+`POST /mcp` serves MCP over stateless Streamable HTTP (ADR 0303, "MCP endpoint" in the protocol): agents get `search_notes`, `get_vault_context`, `list_vaults`, `get_note`, `create_note`, `update_note` and `append_to_note`. Any client that can send an `Authorization` header works; there is no OAuth. With Claude Code:
+
+```bash
+claude mcp add --transport http tolaria https://vault.example.com/mcp \
+  --header "Authorization: Bearer $TOLARIA_SERVER_TOKEN"
+```
+
+Or in a client's JSON configuration:
+
+```json
+{ "mcpServers": { "tolaria": { "type": "http", "url": "https://vault.example.com/mcp",
+  "headers": { "Authorization": "Bearer <token or access ticket>" } } } }
+```
+
+Every agent write is one commit on the server, pushed to the vault's git remote like any other save, so the desktop and mobile apps get it on their next pull. The agent sees their pushes once the server has pulled: every `TOLARIA_VAULT_FETCH_INTERVAL_MS` and before every write.
+
+The token gives the agent the owner's full access. To give it less, send an access ticket instead: a `viewer` ticket makes a read-only connection, and a ticket on single notes limits what it can see and edit. A ticket lives at most 10 minutes, so a client with a fixed header can only use one briefly; a long-running agent needs something that mints fresh ones, or the token.
 
 ## Try it against a throwaway vault
 
