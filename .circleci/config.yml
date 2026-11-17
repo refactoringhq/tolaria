@@ -1032,7 +1032,7 @@ jobs:
         type: enum
         enum: [aarch64-apple-darwin, x86_64-apple-darwin]
     macos:
-      xcode: 16.4.0
+      xcode: 26.4.1
     resource_class: m4pro.medium
     environment:
       NODE_OPTIONS: --max-old-space-size=4096
@@ -1098,11 +1098,28 @@ jobs:
             source /tmp/tolaria-release/release.env
             export TAURI_SIGNING_PRIVATE_KEY_PASSWORD="$TAURI_KEY_PASSWORD"
             export VITE_SENTRY_RELEASE="$VERSION"
+            # Tauri 2.12.1 invokes actool with a closed stdin; Icon Composer
+            # inputs can make actool crash unless it receives /dev/null.
+            icon_tools="$(mktemp -d)"
+            cat > "$icon_tools/actool" <<'ACTOOL'
+            #!/bin/bash
+            exec xcrun actool "$@" </dev/null
+            ACTOOL
+            chmod +x "$icon_tools/actool"
+            export PATH="$icon_tools:$PATH"
             if [[ "<< parameters.channel >>" == "alpha" ]]; then
               pnpm tauri build --target "<< parameters.target >>" --bundles app
             else
               pnpm tauri build --target "<< parameters.target >>"
             fi
+            app_path="$(find "src-tauri/target/<< parameters.target >>/release/bundle/macos" -maxdepth 1 -type d -name '*.app' -print -quit)"
+            test -n "$app_path"
+            test -s "$app_path/Contents/Assets.car"
+            icon_name="$(plutil -extract CFBundleIconName raw "$app_path/Contents/Info.plist")"
+            test -n "$icon_name"
+            assetutil="$(xcrun --find assetutil)"
+            "$assetutil" --info "$app_path/Contents/Assets.car" > /tmp/tolaria-assets-info.json
+            node scripts/check-macos-icon-catalog.mjs "$icon_name" /tmp/tolaria-assets-info.json
       - run:
           name: Collect macOS artifacts
           command: |
