@@ -65,7 +65,7 @@ while IFS= read -r workflow; do
   publishers+=("$workflow")
 done < <(grep -lE 'actions/(deploy-pages|upload-pages-artifact)@' .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null || true)
 
-for expected in .github/workflows/deploy-docs.yml .github/workflows/release.yml; do
+for expected in .github/workflows/deploy-docs.yml .github/workflows/release.yml .github/workflows/deploy-stable-pages.yml; do
   if [[ " ${publishers[*]} " == *" $expected "* ]]; then pass "$expected is a known Pages publisher"; else fail "$expected is a known Pages publisher"; fi
 done
 
@@ -78,6 +78,27 @@ for publisher in "${publishers[@]}"; do
     fail "$publisher must build Pages with scripts/build-pages-site.sh (not assemble-pages-site.sh or its own steps)"
   fi
 done
+
+# TOL-304: a Pages deploy from a run dispatched with GITHUB_TOKEN reported
+# success but never went live, so stable releases kept the old updater manifest.
+if grep -q 'gh workflow run deploy-docs' .github/workflows/release-stable.yml; then
+  fail "release-stable.yml must not dispatch deploy-docs.yml (its deployments did not go live)"
+else
+  pass "release-stable.yml does not dispatch deploy-docs.yml"
+fi
+stable_pages=.github/workflows/deploy-stable-pages.yml
+if grep -q 'workflows: \["Release (Stable)"\]' "$stable_pages" 2>/dev/null \
+  && grep -q 'bash scripts/verify-live-update-manifest.sh https://tolaria.md/stable/latest.json ' "$stable_pages"; then
+  pass "stable releases deploy Pages and verify the live stable manifest"
+else
+  fail "$stable_pages must deploy after Release (Stable) and verify the live stable/latest.json"
+fi
+
+if bash scripts/verify-live-update-manifest.test.sh; then
+  pass "live updater manifest check"
+else
+  fail "live updater manifest check"
+fi
 
 if (( failures > 0 )); then
   echo "$failures Pages site check(s) failed" >&2

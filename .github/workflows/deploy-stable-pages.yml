@@ -1,0 +1,91 @@
+name: Deploy stable pages
+
+# Publishes tolaria.md (docs, release pages and updater manifests) after each
+# stable release and proves the live stable/latest.json carries the new
+# version. It runs on main because the github-pages environment only accepts
+# main, and it deploys directly instead of dispatching deploy-docs.yml with
+# GITHUB_TOKEN: those deployments reported success while the previous site
+# stayed live (TOL-304). The final step fails the run if that happens again.
+on:
+  workflow_run:
+    workflows: ["Release (Stable)"]
+    types: [completed]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    name: Deploy docs and stable updater manifest
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: latest
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download the released stable manifest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          if [[ ! "$TAG" =~ ^(v20|stable-v)[A-Za-z0-9._-]+$ ]]; then
+            echo "::error::Release (Stable) ran for an unexpected ref: $TAG" >&2
+            exit 1
+          fi
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern stable-latest.json --output "$RUNNER_TEMP/stable-latest.json"
+
+      - name: Build docs and release pages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/build-pages-site.sh _site
+
+      - name: Check the site carries the released stable manifest
+        run: |
+          if [[ "$(jq -cS . _site/stable/latest.json)" != "$(jq -cS . "$RUNNER_TEMP/stable-latest.json")" ]]; then
+            echo "::error::Built stable/latest.json does not match the release's stable-latest.json" >&2
+            exit 1
+          fi
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./_site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Verify the live stable manifest
+        run: |
+          bash scripts/verify-live-update-manifest.sh https://tolaria.md/stable/latest.json \
+            "$RUNNER_TEMP/stable-latest.json" "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
