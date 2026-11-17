@@ -70,6 +70,8 @@ jobs:
         uses: actions/download-artifact@v4
 
       - name: Normalize macOS release artifact names
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
         run: |
           normalize_macos_artifacts() {
             local arch="$1"
@@ -111,23 +113,25 @@ jobs:
           }
 
           normalize_macos_artifacts aarch64 \
-            "updater-aarch64/Tolaria_${{ needs.version.outputs.version }}_macOS_Silicon.app.tar.gz" \
-            "dmg-aarch64/Tolaria_${{ needs.version.outputs.version }}_macOS_Silicon.dmg"
+            "updater-aarch64/Tolaria_${VERSION}_macOS_Silicon.app.tar.gz" \
+            "dmg-aarch64/Tolaria_${VERSION}_macOS_Silicon.dmg"
           normalize_macos_artifacts x86_64 \
-            "updater-x86_64/Tolaria_${{ needs.version.outputs.version }}_macOS_Intel.app.tar.gz" \
-            "dmg-x86_64/Tolaria_${{ needs.version.outputs.version }}_macOS_Intel.dmg"
+            "updater-x86_64/Tolaria_${VERSION}_macOS_Intel.app.tar.gz" \
+            "dmg-x86_64/Tolaria_${VERSION}_macOS_Intel.dmg"
 
       - name: Generate release notes
+        env:
+          TAG: ${{ needs.version.outputs.tag }}
         run: |
-          NOTES_FILE="release-notes/${{ needs.version.outputs.tag }}.md"
+          NOTES_FILE="release-notes/${TAG}.md"
           if [ -f "$NOTES_FILE" ]; then
             awk 'NR==1&&/^---$/{f=1;next} f&&/^---$/{f=0;next} !f' "$NOTES_FILE" > release_notes.md
           else
-            PREV_TAG=$(git for-each-ref --sort=-creatordate --format='%(refname:short)' refs/tags/v20* refs/tags/stable-v* | grep -vx "${{ needs.version.outputs.tag }}" | head -n 1 || echo "")
+            PREV_TAG=$(git for-each-ref --sort=-creatordate --format='%(refname:short)' refs/tags/v20* refs/tags/stable-v* | grep -vx "$TAG" | head -n 1 || echo "")
             if [ -z "$PREV_TAG" ]; then
               NOTES=$(git log --oneline --no-merges -20)
             else
-              NOTES=$(git log --oneline --no-merges "${PREV_TAG}..${{ needs.version.outputs.tag }}")
+              NOTES=$(git log --oneline --no-merges "${PREV_TAG}..${TAG}")
             fi
             {
               echo "## What's Changed"
@@ -142,13 +146,14 @@ jobs:
             echo ""
             echo "**Includes macOS (Apple Silicon and Intel), Windows x64, and Linux x64 bundles**"
             echo ""
-            echo "*Built from \`$(git rev-parse --short ${{ needs.version.outputs.tag }})\` on $(date -u +%Y-%m-%d)*"
+            echo "*Built from \`$(git rev-parse --short "$TAG")\` on $(date -u +%Y-%m-%d)*"
           } >> release_notes.md
 
       - name: Build stable-latest.json
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          TAG: ${{ needs.version.outputs.tag }}
         run: |
-          VERSION="${{ needs.version.outputs.version }}"
-          TAG="${{ needs.version.outputs.tag }}"
           REPO="${GITHUB_REPOSITORY}"
           REPO_NAME="${REPO#*/}"
           PAGES_URL="https://refactoringhq.github.io/${REPO_NAME}/"
@@ -190,35 +195,45 @@ jobs:
           WINDOWS_UPDATER=$(basename "$WINDOWS_UPDATER_FILE")
           WINDOWS_DOWNLOAD=$(basename "$(find_required "windows-x86_64-bundles/*/*-setup.exe" "windows-x86_64-bundles/*/*.msi" "windows-x86_64-bundles/*/*.nsis.zip" "windows-x86_64-bundles/*/*.msi.zip" "windows-x86_64-bundles/*-setup.exe" "windows-x86_64-bundles/*.msi" "windows-x86_64-bundles/*.nsis.zip" "windows-x86_64-bundles/*.msi.zip")")
 
-          cat > stable-latest.json << EOF
-          {
-            "version": "${VERSION}",
-            "notes": "Stable release. See ${PAGES_URL} for full release notes.",
-            "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "platforms": {
-              "darwin-aarch64": {
-                "signature": "${ARM_SIG}",
-                "url": "https://github.com/${REPO}/releases/download/${TAG}/${ARM_TARBALL}",
-                "dmg_url": "https://github.com/${REPO}/releases/download/${TAG}/${ARM_DMG}"
-              },
-              "darwin-x86_64": {
-                "signature": "${INTEL_SIG}",
-                "url": "https://github.com/${REPO}/releases/download/${TAG}/${INTEL_TARBALL}",
-                "dmg_url": "https://github.com/${REPO}/releases/download/${TAG}/${INTEL_DMG}"
-              },
-              "linux-x86_64": {
-                "signature": "${LINUX_SIG}",
-                "url": "https://github.com/${REPO}/releases/download/${TAG}/${LINUX_UPDATER}",
-                "download_url": "https://github.com/${REPO}/releases/download/${TAG}/${LINUX_DOWNLOAD}"
-              },
-              "windows-x86_64": {
-                "signature": "${WINDOWS_SIG}",
-                "url": "https://github.com/${REPO}/releases/download/${TAG}/${WINDOWS_UPDATER}",
-                "download_url": "https://github.com/${REPO}/releases/download/${TAG}/${WINDOWS_DOWNLOAD}"
-              }
-            }
+          require_url_safe() {
+            if [[ ! "$1" =~ ^[A-Za-z0-9._+-]+$ ]]; then
+              echo "::error::Unexpected characters in release name: $1" >&2
+              return 1
+            fi
           }
-          EOF
+          for name in "$TAG" "$ARM_TARBALL" "$ARM_DMG" "$INTEL_TARBALL" "$INTEL_DMG" \
+            "$LINUX_UPDATER" "$LINUX_DOWNLOAD" "$WINDOWS_UPDATER" "$WINDOWS_DOWNLOAD"; do
+            require_url_safe "$name"
+          done
+
+          BASE_URL="https://github.com/${REPO}/releases/download/${TAG}"
+          jq -n \
+            --arg version "$VERSION" \
+            --arg notes "Stable release. See ${PAGES_URL} for full release notes." \
+            --arg pub_date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg arm_signature "$ARM_SIG" \
+            --arg arm_updater "${BASE_URL}/${ARM_TARBALL}" \
+            --arg arm_dmg "${BASE_URL}/${ARM_DMG}" \
+            --arg intel_signature "$INTEL_SIG" \
+            --arg intel_updater "${BASE_URL}/${INTEL_TARBALL}" \
+            --arg intel_dmg "${BASE_URL}/${INTEL_DMG}" \
+            --arg linux_signature "$LINUX_SIG" \
+            --arg linux_updater "${BASE_URL}/${LINUX_UPDATER}" \
+            --arg linux_download "${BASE_URL}/${LINUX_DOWNLOAD}" \
+            --arg windows_signature "$WINDOWS_SIG" \
+            --arg windows_updater "${BASE_URL}/${WINDOWS_UPDATER}" \
+            --arg windows_download "${BASE_URL}/${WINDOWS_DOWNLOAD}" \
+            '{
+              version: $version,
+              notes: $notes,
+              pub_date: $pub_date,
+              platforms: {
+                "darwin-aarch64": {signature: $arm_signature, url: $arm_updater, dmg_url: $arm_dmg},
+                "darwin-x86_64": {signature: $intel_signature, url: $intel_updater, dmg_url: $intel_dmg},
+                "linux-x86_64": {signature: $linux_signature, url: $linux_updater, download_url: $linux_download},
+                "windows-x86_64": {signature: $windows_signature, url: $windows_updater, download_url: $windows_download}
+              }
+            }' > stable-latest.json
           echo "stable-latest.json:"; cat stable-latest.json
 
       - name: Publish GitHub Release
@@ -277,6 +292,7 @@ jobs:
       - name: Dispatch docs deployment from main
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.version.outputs.tag }}
         run: |
-          gh workflow run deploy-docs.yml --repo ${{ github.repository }} --ref main
-          echo "Triggered deploy-docs.yml on main after publishing ${{ needs.version.outputs.tag }}."
+          gh workflow run deploy-docs.yml --repo "$GITHUB_REPOSITORY" --ref main
+          echo "Triggered deploy-docs.yml on main after publishing ${TAG}."
