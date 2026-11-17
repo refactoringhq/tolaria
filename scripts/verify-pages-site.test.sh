@@ -82,7 +82,7 @@ done
 # TOL-304: a Pages deploy from a run dispatched with GITHUB_TOKEN reported
 # success but never went live, so stable releases kept the old updater manifest.
 if grep -q 'gh workflow run deploy-docs' .github/workflows/release-stable.yml; then
-  fail "release-stable.yml must not dispatch deploy-docs.yml (its deployment never goes live)"
+  fail "release-stable.yml must not dispatch deploy-docs.yml (its deployments did not go live)"
 else
   pass "release-stable.yml does not dispatch deploy-docs.yml"
 fi

@@ -28,7 +28,8 @@ cat "$response.json"
 FAKE
 chmod +x "$work/bin/curl"
 
-echo '{"version":"2026.11.17","platforms":{}}' > "$work/expected.json"
+released='{"version":"2026.11.17","platforms":{"linux-x86_64":{"signature":"new"}}}'
+echo "$released" > "$work/expected.json"
 
 stage() {
   local dir="$work/$1"
@@ -60,8 +61,8 @@ expect_failure() {
 }
 
 dir=$(stage live)
-echo '{"version":"2026.11.17"}' > "$dir/responses/last.json"
-expect_ok "passes when the live manifest already has the released version" "$dir"
+echo '{"platforms":{"linux-x86_64":{"signature":"new"}},"version":"2026.11.17"}' > "$dir/responses/last.json"
+expect_ok "passes when the live manifest already matches the released one" "$dir"
 if grep -qx 'https://tolaria.md/stable/latest.json?cb=run-42-1' "$dir/requests.log"; then
   pass "busts the CDN cache with the run id"
 else
@@ -71,7 +72,7 @@ fi
 dir=$(stage catches-up)
 echo '{"version":"2026.10.30"}' > "$dir/responses/1.json"
 touch "$dir/responses/2.fail"
-echo '{"version":"2026.11.17"}' > "$dir/responses/last.json"
+echo "$released" > "$dir/responses/last.json"
 expect_ok "keeps polling through stale and failed responses until the new version is live" "$dir"
 
 dir=$(stage stale)
@@ -79,6 +80,11 @@ echo '{"version":"2026.10.30"}' > "$dir/responses/last.json"
 expect_failure "fails when the live manifest stays on the previous version (TOL-304)" "$dir" \
   "still serves 2026.10.30, expected 2026.11.17"
 if [[ $(wc -l < "$dir/requests.log") -eq 3 ]]; then pass "gives up after the configured attempts"; else fail "gives up after the configured attempts"; fi
+
+dir=$(stage re-signed)
+echo '{"version":"2026.11.17","platforms":{"linux-x86_64":{"signature":"old"}}}' > "$dir/responses/last.json"
+expect_failure "fails when the live manifest has the same version but stale signatures" "$dir" \
+  "does not match the released manifest"
 
 dir=$(stage garbage)
 echo 'not json' > "$dir/responses/last.json"

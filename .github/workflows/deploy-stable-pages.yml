@@ -3,8 +3,9 @@ name: Deploy stable pages
 # Publishes tolaria.md (docs, release pages and updater manifests) after each
 # stable release and proves the live stable/latest.json carries the new
 # version. It runs on main because the github-pages environment only accepts
-# main, and it deploys directly instead of dispatching deploy-docs.yml: that
-# GITHUB_TOKEN dispatch reported success but never went live (TOL-304).
+# main, and it deploys directly instead of dispatching deploy-docs.yml with
+# GITHUB_TOKEN: those deployments reported success while the previous site
+# stayed live (TOL-304). The final step fails the run if that happens again.
 on:
   workflow_run:
     workflows: ["Release (Stable)"]
@@ -70,8 +71,7 @@ jobs:
 
       - name: Check the site carries the released stable manifest
         run: |
-          if ! jq -e --slurpfile released "$RUNNER_TEMP/stable-latest.json" \
-            '.version == $released[0].version' _site/stable/latest.json > /dev/null; then
+          if [[ "$(jq -cS . _site/stable/latest.json)" != "$(jq -cS . "$RUNNER_TEMP/stable-latest.json")" ]]; then
             echo "::error::Built stable/latest.json does not match the release's stable-latest.json" >&2
             exit 1
           fi
