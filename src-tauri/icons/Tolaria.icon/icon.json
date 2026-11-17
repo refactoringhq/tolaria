@@ -1,0 +1,27 @@
+{
+	"fill": "none",
+	"groups": [
+		{
+			"name": "Tolaria",
+			"layers": [
+				{
+					"name": "Tolaria artwork",
+					"image-name-specializations": [
+						{
+							"value": "Tolaria-Light.png"
+						},
+						{
+							"appearance": "dark",
+							"value": "Tolaria-Dark.png"
+						}
+					],
+					"glass": false,
+					"hidden": false
+				}
+			]
+		}
+	],
+	"supported-platforms": {
+		"squares": "shared"
+	}
+}
