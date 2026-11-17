@@ -117,3 +117,7 @@ videos/.remotion/
 
 # Hidden source maps of the web build, uploaded to Sentry by the deploy (TOL-232)
 apps/web/sourcemaps/
+
+# Per-machine Claude Code settings; a tracked copy makes headless `claude -p` print
+# a trust warning ahead of its JSON output (TOL-304 review runs)
+.claude/settings.local.json
