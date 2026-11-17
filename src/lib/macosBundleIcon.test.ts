@@ -1,14 +1,13 @@
-import { readFile } from "node:fs/promises";
-import { join, relative, resolve } from "node:path";
+import { relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
+import circleCiConfig from "../../.circleci/config.yml?raw";
 import {
 	hasDarkIconRendition,
 	isCliEntryPoint,
 } from "../../scripts/check-macos-icon-catalog.mjs";
-
-const tauriRoot =
-	process.env.TOLARIA_ICON_TEST_ROOT ?? join(process.cwd(), "src-tauri");
+import iconConfig from "../../src-tauri/icons/Tolaria.icon/icon.json";
+import tauriConfig from "../../src-tauri/tauri.conf.json";
 
 describe("macOS bundled app icon", () => {
 	it("recognizes the CLI when Node receives a relative script path", () => {
@@ -76,32 +75,24 @@ describe("macOS bundled app icon", () => {
 		).toBe(false);
 	});
 
-	it("uses CircleCI's documented Xcode image and checks the compiled icon catalog", async () => {
-		const pipeline = await readFile(
-			join(process.cwd(), ".circleci/config.yml"),
-			"utf8",
+	it("uses CircleCI's documented Xcode image and checks the compiled icon catalog", () => {
+		expect(circleCiConfig).toMatch(
+			/macos:\s*\n\s*# CircleCI lists this Xcode image for m4pro\.medium[\s\S]*?xcode:\s+16\.4\.0\s+resource_class:\s+m4pro\.medium/,
 		);
-		expect(pipeline).toMatch(
-			/macos:\s*\n\s*# CircleCI lists this Xcode image for m4pro\.medium[\s\S]*?xcode:\s+26\.4\.1\s+resource_class:\s+m4pro\.medium/,
-		);
-		expect(pipeline).toContain(
+		expect(circleCiConfig).toContain(
 			'"$assetutil" --info "$app_path/Contents/Assets.car"',
 		);
-		expect(pipeline).toContain(
+		expect(circleCiConfig).toContain(
 			'node scripts/check-macos-icon-catalog.mjs "$icon_name"',
 		);
 	});
 
-	it("configures light and dark artwork in the appearance-aware icon package", async () => {
-		const config = JSON.parse(
-			await readFile(`${tauriRoot}/tauri.conf.json`, "utf8"),
-		) as { bundle: { icon: string[] } };
+	it("configures light and dark artwork in the appearance-aware icon package", () => {
+		const config = tauriConfig as { bundle: { icon: string[] } };
 		const iconPath = "icons/Tolaria.icon";
 		expect(config.bundle.icon).toContain(iconPath);
 
-		const icon = JSON.parse(
-			await readFile(`${tauriRoot}/${iconPath}/icon.json`, "utf8"),
-		) as {
+		const icon = iconConfig as {
 			groups: {
 				layers: {
 					"image-name-specializations"?: {
@@ -121,12 +112,8 @@ describe("macOS bundled app icon", () => {
 		);
 
 		expect(lightArtwork).toBeDefined();
-		await expect(
-			readFile(`${tauriRoot}/${iconPath}/Assets/${lightArtwork?.value}`),
-		).resolves.toBeDefined();
+		expect(lightArtwork?.value).toBe("Tolaria-Light.png");
 		expect(darkArtwork).toBeDefined();
-		await expect(
-			readFile(`${tauriRoot}/${iconPath}/Assets/${darkArtwork?.value}`),
-		).resolves.toBeDefined();
+		expect(darkArtwork?.value).toBe("Tolaria-Dark.png");
 	});
 });

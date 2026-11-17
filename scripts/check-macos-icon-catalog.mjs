@@ -1,4 +1,3 @@
-import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -32,8 +31,12 @@ function isLightRendition(record) {
 }
 
 function matchesSameRendition(light, dark) {
-	return ["Idiom", "PixelWidth", "PixelHeight", "Scale", "Subtype"].every(
-		(key) => light[key] === dark[key],
+	return (
+		light.Idiom === dark.Idiom &&
+		light.PixelWidth === dark.PixelWidth &&
+		light.PixelHeight === dark.PixelHeight &&
+		light.Scale === dark.Scale &&
+		light.Subtype === dark.Subtype
 	);
 }
 
@@ -53,13 +56,13 @@ export function hasDarkIconRendition(records, iconName) {
 }
 
 if (isCliEntryPoint(process.argv[1], import.meta.url)) {
-	const [, , iconName, infoPath] = process.argv;
-	if (!iconName || !infoPath) {
-		throw new Error(
-			"Usage: check-macos-icon-catalog.mjs <icon-name> <assetutil-info.json>",
-		);
+	const iconName = process.argv[2];
+	if (!iconName) {
+		throw new Error("Usage: check-macos-icon-catalog.mjs <icon-name>");
 	}
-	const records = JSON.parse(await readFile(infoPath, "utf8"));
+	const input = [];
+	for await (const chunk of process.stdin) input.push(chunk);
+	const records = JSON.parse(Buffer.concat(input).toString("utf8"));
 	if (!hasDarkIconRendition(records, iconName)) {
 		throw new Error(
 			`Compiled app icon ${iconName} has no dark icon image rendition`,

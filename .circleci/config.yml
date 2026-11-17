@@ -1034,7 +1034,7 @@ jobs:
     macos:
       # CircleCI lists this Xcode image for m4pro.medium in its macOS image table:
       # https://circleci.com/docs/guides/execute/using-macos/
-      xcode: 26.4.1
+      xcode: 16.4.0
     resource_class: m4pro.medium
     environment:
       NODE_OPTIONS: --max-old-space-size=4096
@@ -1121,7 +1121,7 @@ jobs:
             test -n "$icon_name"
             assetutil="$(xcrun --find assetutil)"
             "$assetutil" --info "$app_path/Contents/Assets.car" > /tmp/tolaria-assets-info.json
-            node scripts/check-macos-icon-catalog.mjs "$icon_name" /tmp/tolaria-assets-info.json
+            node scripts/check-macos-icon-catalog.mjs "$icon_name" < /tmp/tolaria-assets-info.json
       - run:
           name: Collect macOS artifacts
           command: |
