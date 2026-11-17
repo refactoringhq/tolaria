@@ -21,7 +21,10 @@ describe('collectionLayoutConfig', () => {
 
   it('reads stored layout files defensively', () => {
     expect(readStoredLayout({ type: 'kanban', groupBy: 7, properties: ['owner', 3], columnOrder: 'Done' })).toEqual({
-      layout: 'kanban', groupBy: 'status', properties: ['owner'], columnOrder: [],
+      layout: 'kanban', groupBy: 'status', properties: ['owner'], columnOrder: [], collapsedColumns: [], hiddenColumns: [],
+    })
+    expect(readStoredLayout({ type: 'kanban', collapsedColumns: ['Done', 4, ''], hiddenColumns: 'Doing' })).toMatchObject({
+      collapsedColumns: ['Done', ''], hiddenColumns: [],
     })
     expect(readStoredLayout({ type: 'calendar' })).toBeUndefined()
     expect(readStoredLayout(['kanban'])).toBeUndefined()
