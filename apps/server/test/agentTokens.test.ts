@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -196,6 +196,19 @@ describe('the live token set', () => {
     expect(logs).toHaveLength(1)
     expect(logs[0]).toContain(file)
     expect(logs[0]).not.toContain(phone.record.hash)
+  })
+
+  // Root bypasses file modes, so the file cannot be made unreadable for it.
+  it.skipIf(process.getuid?.() === 0)('says a reload failed because the file cannot be read, not that it is malformed', async () => {
+    const phone = mint('phone')
+    await writeFile(file, serializeTokens([phone.record]))
+    const tokens = load()
+    // What `server:token add` run as another user leaves behind: a file the server may not read.
+    await writeFile(file, serializeTokens([phone.record, mint('ci').record]))
+    await chmod(file, 0o000)
+    clock += 1000
+    expect(tokens.of(phone.credential)).not.toBeNull()
+    expect(logs).toEqual([`tokens: ${file} cannot be read: EACCES; keeping the tokens read before`])
   })
 
   it('withdraws every token when the file is deleted', async () => {

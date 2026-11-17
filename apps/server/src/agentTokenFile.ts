@@ -33,6 +33,13 @@ function read(file: string): AgentTokenSet {
   }
 }
 
+/** Why a reload failed, naming only the file: its content holds hashes. */
+function reloadFailure(file: string, error: unknown): string {
+  const { code } = error as NodeJS.ErrnoException
+  if (typeof code !== 'string') return `tokens: ${file} is malformed; keeping the tokens read before`
+  return `tokens: ${file} cannot be read: ${code}; keeping the tokens read before`
+}
+
 export class AgentTokens {
   private readonly file: string
   private readonly now: () => number
@@ -94,10 +101,9 @@ export class AgentTokens {
       for (const token of previous.records()) {
         if (!this.set.has(token.id)) this.withdraw(token.id)
       }
-    } catch {
-      // Only the file's name: its content holds hashes.
+    } catch (error) {
       this.failedVersion = version
-      this.log(`tokens: ${this.file} is malformed; keeping the tokens read before`)
+      this.log(reloadFailure(this.file, error))
     }
   }
 
