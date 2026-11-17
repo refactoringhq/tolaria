@@ -115,7 +115,7 @@ describe('collectionFromSelection', () => {
     )
 
     expect(collection.presentation).toEqual({
-      type: 'kanban', groupBy: 'status', properties: ['owner'], columnOrder: ['Doing', 'Todo'],
+      type: 'kanban', groupBy: 'status', properties: ['owner'], columnOrder: ['Doing', 'Todo'], collapsedColumns: [], hiddenColumns: [],
     })
   })
 })
