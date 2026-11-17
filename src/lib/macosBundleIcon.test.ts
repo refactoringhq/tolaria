@@ -76,12 +76,14 @@ describe("macOS bundled app icon", () => {
 		).toBe(false);
 	});
 
-	it("uses a verified Xcode 26 image and checks the compiled icon catalog", async () => {
+	it("uses CircleCI's documented Xcode image and checks the compiled icon catalog", async () => {
 		const pipeline = await readFile(
 			join(process.cwd(), ".circleci/config.yml"),
 			"utf8",
 		);
-		expect(pipeline).toMatch(/xcode:\s+26\.4\.1\b/);
+		expect(pipeline).toMatch(
+			/macos:\s*\n\s*# CircleCI lists this Xcode image for m4pro\.medium[\s\S]*?xcode:\s+26\.4\.1\s+resource_class:\s+m4pro\.medium/,
+		);
 		expect(pipeline).toContain(
 			'"$assetutil" --info "$app_path/Contents/Assets.car"',
 		);

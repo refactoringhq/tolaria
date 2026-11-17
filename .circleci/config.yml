@@ -1032,6 +1032,8 @@ jobs:
         type: enum
         enum: [aarch64-apple-darwin, x86_64-apple-darwin]
     macos:
+      # CircleCI lists this Xcode image for m4pro.medium in its macOS image table:
+      # https://circleci.com/docs/guides/execute/using-macos/
       xcode: 26.4.1
     resource_class: m4pro.medium
     environment:
