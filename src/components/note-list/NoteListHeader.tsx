@@ -1,22 +1,19 @@
+import { CircleNotch as Loader2, MagnifyingGlass, Plus, X } from '@phosphor-icons/react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { CircleNotch as Loader2, MagnifyingGlass, Plus, SidebarSimple, X } from '@phosphor-icons/react'
-import type { VaultEntry } from '../../types'
-import type { SortOption, SortDirection } from '../../utils/noteListHelpers'
-import { translate, type AppLocale, type TranslationKey } from '../../lib/i18n'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { APP_COMMAND_EVENT_NAME, APP_COMMAND_IDS } from '../../hooks/appCommandDispatcher'
-import { trackEvent } from '../../lib/telemetry'
-import { TOUCH_TARGET_CLASSNAME } from '../../lib/touchInput'
 import { useDragRegion } from '../../hooks/useDragRegion'
+import { type AppLocale, type TranslationKey, translate } from '../../lib/i18n'
+import { TOUCH_TARGET_CLASSNAME } from '../../lib/touchInput'
+import type { VaultEntry } from '../../types'
+import type { GitRepositoryOption } from '../../utils/gitRepositories'
+import type { SortDirection, SortOption } from '../../utils/noteListHelpers'
+import { isMac, MACOS_TRAFFIC_LIGHT_SAFE_PADDING } from '../../utils/platform'
+import { GitRepositorySelect } from '../GitRepositorySelect'
 import { SortDropdown } from '../SortDropdown'
 import { ListPropertiesPopover, type ListPropertiesPopoverProps } from './ListPropertiesPopover'
-import { GitRepositorySelect } from '../GitRepositorySelect'
-import type { GitRepositoryOption } from '../../utils/gitRepositories'
-import { isMac, MACOS_TRAFFIC_LIGHT_SAFE_PADDING } from '../../utils/platform'
 
 export const NOTE_LIST_ACTION_BUTTON_CLASSNAME = `${TOUCH_TARGET_CLASSNAME} !h-auto !w-auto !min-w-0 !rounded-none !p-0 !text-muted-foreground hover:!bg-transparent hover:!text-foreground focus-visible:!bg-transparent data-[state=open]:!bg-transparent data-[state=open]:!text-foreground [&_svg]:!size-4`
-const NOTE_LIST_EXPAND_BUTTON_CLASSNAME = `${TOUCH_TARGET_CLASSNAME} !h-6 !w-6 !min-w-0 !rounded !p-0 !text-muted-foreground hover:!bg-accent hover:!text-foreground focus-visible:!bg-accent [&_svg]:!size-4`
 const NOTE_LIST_SEARCH_DEBOUNCE_MS = 180
 const PROPERTY_TRIGGER_TITLE_KEYS: Record<string, TranslationKey> = {
   'Customize columns': 'noteList.properties.customizeColumns',
@@ -64,32 +61,6 @@ interface NoteListHeaderProps {
   onGitRepositoryChange?: (path: string) => void
 }
 
-function dispatchExpandSidebarFromHeader() {
-  trackEvent('sidebar_expanded_from_note_list_header')
-  window.dispatchEvent(new CustomEvent(APP_COMMAND_EVENT_NAME, {
-    detail: APP_COMMAND_IDS.viewAll,
-  }))
-}
-
-function ExpandSidebarButton({ locale }: { locale: AppLocale }) {
-  const expandSidebarLabel = translate(locale, 'sidebar.action.expand')
-
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon-xs"
-      className={NOTE_LIST_EXPAND_BUTTON_CLASSNAME}
-      onClick={dispatchExpandSidebarFromHeader}
-      title={expandSidebarLabel}
-      aria-label={expandSidebarLabel}
-      data-no-drag
-    >
-      <SidebarSimple size={16} weight="regular" />
-    </Button>
-  )
-}
-
 function HeaderTitle({
   title,
   typeDocument,
@@ -122,15 +93,10 @@ function HeaderTitle({
 function HeaderLeading({
   title,
   typeDocument,
-  sidebarCollapsed,
-  locale,
   onOpenType,
-}: Pick<NoteListHeaderProps, 'title' | 'typeDocument' | 'sidebarCollapsed' | 'locale' | 'onOpenType'> & {
-  locale: AppLocale
-}) {
+}: Pick<NoteListHeaderProps, 'title' | 'typeDocument' | 'onOpenType'>) {
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-2">
-      {sidebarCollapsed && <ExpandSidebarButton locale={locale} />}
+    <div className="flex min-w-0 flex-1 items-center gap-2 [html[data-touch-input]_&]:!basis-full">
       <HeaderTitle title={title} typeDocument={typeDocument} onOpenType={onOpenType} />
     </div>
   )
@@ -211,7 +177,7 @@ function HeaderActions(options: Pick<
     window.setTimeout(() => createNoteRef.current(), 0)
   }, [])
   return (
-    <div className="ml-3 flex shrink-0 items-center justify-end gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+    <div className="ml-3 flex shrink-0 items-center justify-end gap-2 [html[data-touch-input]_&]:!ml-0 [html[data-touch-input]_&]:!w-full [html[data-touch-input]_&]:!justify-end" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
       {layoutControls}
       {!isEntityView && <SortDropdown groupLabel="__list__" current={listSort} direction={listDirection} customProperties={customProperties} locale={locale} iconOnly onChange={onSortChange} />}
       <Button type="button" variant="ghost" size="icon-xs" className={NOTE_LIST_ACTION_BUTTON_CLASSNAME} onClick={onToggleSearch} title={translate(locale, 'noteList.searchAction')} aria-label={translate(locale, 'noteList.searchAction')}>
@@ -332,12 +298,10 @@ export function NoteListHeader(options: NoteListHeaderProps) {
 
   return (
     <>
-      <div ref={dragRegionRef} className="flex h-[52px] shrink-0 items-center justify-between border-b border-border px-4" style={{ cursor: 'default', paddingLeft: collapsedSidebarPadding }}>
+      <div ref={dragRegionRef} className="flex h-[52px] shrink-0 items-center justify-between border-b border-border px-4 [html[data-touch-input]_&]:!h-auto [html[data-touch-input]_&]:!min-h-[92px] [html[data-touch-input]_&]:!flex-wrap [html[data-touch-input]_&]:!justify-start [html[data-touch-input]_&]:!content-center [html[data-touch-input]_&]:!gap-0 [html[data-touch-input]_&]:!px-1.5" style={{ cursor: 'default', paddingLeft: collapsedSidebarPadding }}>
         <HeaderLeading
           title={title}
           typeDocument={typeDocument}
-          sidebarCollapsed={sidebarCollapsed}
-          locale={locale}
           onOpenType={onOpenType}
         />
         <HeaderActions
