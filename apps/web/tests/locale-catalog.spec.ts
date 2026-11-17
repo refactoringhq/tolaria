@@ -34,11 +34,16 @@ test.describe("French browser", () => {
 		const catalogs = await openRemoteVault(page);
 
 		// The note list's title: on screen in every layout, the phone's included (TOL-193).
-		await expect(
-			page.getByText("Boîte de réception", { exact: true }).filter({ visible: true }).first(),
-		).toBeVisible({
-			timeout: 10_000,
-		});
+		const inboxTitle = page
+			.getByText("Boîte de réception", { exact: true })
+			.filter({ visible: true })
+			.first();
+		await expect(inboxTitle).toBeVisible({ timeout: 10_000 });
+		await expect
+			.poll(() =>
+				inboxTitle.evaluate((element) => element.scrollWidth <= element.clientWidth),
+			)
+			.toBe(true);
 		expect(catalogs.some((path) => path.includes("/fr-FR-"))).toBe(true);
 	});
 });
@@ -51,11 +56,16 @@ test.describe("English browser", () => {
 	}) => {
 		const catalogs = await openRemoteVault(page);
 
-		await expect(
-			page.getByText("Inbox", { exact: true }).filter({ visible: true }).first(),
-		).toBeVisible({
-			timeout: 10_000,
-		});
+		const inboxTitle = page
+			.getByText("Inbox", { exact: true })
+			.filter({ visible: true })
+			.first();
+		await expect(inboxTitle).toBeVisible({ timeout: 10_000 });
+		await expect
+			.poll(() =>
+				inboxTitle.evaluate((element) => element.scrollWidth <= element.clientWidth),
+			)
+			.toBe(true);
 		expect(catalogs).toEqual([]);
 	});
 });

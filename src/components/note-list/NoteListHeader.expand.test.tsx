@@ -1,12 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { APP_COMMAND_EVENT_NAME, APP_COMMAND_IDS } from '../../hooks/appCommandDispatcher'
-import { trackEvent } from '../../lib/telemetry'
 import { NoteListHeader } from './NoteListHeader'
-
-vi.mock('../../lib/telemetry', () => ({
-  trackEvent: vi.fn(),
-}))
 
 const baseProps = {
   title: 'Inbox',
@@ -31,32 +25,14 @@ function renderHeader(overrides: Partial<Parameters<typeof NoteListHeader>[0]> =
   return render(<NoteListHeader {...baseProps} {...overrides} />)
 }
 
-describe('NoteListHeader expand sidebar button', () => {
-  beforeEach(() => {
-    vi.mocked(trackEvent).mockClear()
-  })
+describe('NoteListHeader title space', () => {
+  beforeEach(() => vi.clearAllMocks())
 
-  it('keeps the expand-sidebar button hidden when the sidebar is open', () => {
-    renderHeader({ sidebarCollapsed: false })
+  it('keeps the list title visible when the sidebar is collapsed', () => {
+    renderHeader({ sidebarCollapsed: true })
 
+    expect(screen.getByRole('heading', { name: 'Inbox' })).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Expand sidebar' })).not.toBeInTheDocument()
-  })
-
-  it('dispatches the full-layout app command from the collapsed note-list header', () => {
-    const commandListener = vi.fn()
-    window.addEventListener(APP_COMMAND_EVENT_NAME, commandListener)
-
-    try {
-      renderHeader({ sidebarCollapsed: true })
-
-      fireEvent.click(screen.getByRole('button', { name: 'Expand sidebar' }))
-
-      expect(commandListener).toHaveBeenCalledTimes(1)
-      expect((commandListener.mock.calls[0]?.[0] as CustomEvent<string>).detail).toBe(APP_COMMAND_IDS.viewAll)
-      expect(trackEvent).toHaveBeenCalledWith('sidebar_expanded_from_note_list_header')
-    } finally {
-      window.removeEventListener(APP_COMMAND_EVENT_NAME, commandListener)
-    }
   })
 
   it('uses the latest create callback after focus-driven state updates settle', async () => {
