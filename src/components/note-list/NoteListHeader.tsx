@@ -1,9 +1,11 @@
-import { CircleNotch as Loader2, MagnifyingGlass, Plus, X } from '@phosphor-icons/react'
+import { CircleNotch as Loader2, MagnifyingGlass, Plus, SidebarSimple, X } from '@phosphor-icons/react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { APP_COMMAND_EVENT_NAME, APP_COMMAND_IDS } from '../../hooks/appCommandDispatcher'
 import { useDragRegion } from '../../hooks/useDragRegion'
 import { type AppLocale, type TranslationKey, translate } from '../../lib/i18n'
+import { trackEvent } from '../../lib/telemetry'
 import { TOUCH_TARGET_CLASSNAME } from '../../lib/touchInput'
 import type { VaultEntry } from '../../types'
 import type { GitRepositoryOption } from '../../utils/gitRepositories'
@@ -13,6 +15,7 @@ import { GitRepositorySelect } from '../GitRepositorySelect'
 import { SortDropdown } from '../SortDropdown'
 import { ListPropertiesPopover, type ListPropertiesPopoverProps } from './ListPropertiesPopover'
 
+const NOTE_LIST_EXPAND_BUTTON_CLASSNAME = `${TOUCH_TARGET_CLASSNAME} !h-6 !w-6 !min-w-0 !rounded !p-0 !text-muted-foreground hover:!bg-accent hover:!text-foreground focus-visible:!bg-accent [&_svg]:!size-4`
 export const NOTE_LIST_ACTION_BUTTON_CLASSNAME = `${TOUCH_TARGET_CLASSNAME} !h-auto !w-auto !min-w-0 !rounded-none !p-0 !text-muted-foreground hover:!bg-transparent hover:!text-foreground focus-visible:!bg-transparent data-[state=open]:!bg-transparent data-[state=open]:!text-foreground [&_svg]:!size-4`
 const NOTE_LIST_SEARCH_DEBOUNCE_MS = 180
 const PROPERTY_TRIGGER_TITLE_KEYS: Record<string, TranslationKey> = {
@@ -61,6 +64,32 @@ interface NoteListHeaderProps {
   onGitRepositoryChange?: (path: string) => void
 }
 
+function dispatchExpandSidebarFromHeader() {
+  trackEvent('sidebar_expanded_from_note_list_header')
+  window.dispatchEvent(new CustomEvent(APP_COMMAND_EVENT_NAME, {
+    detail: APP_COMMAND_IDS.viewAll,
+  }))
+}
+
+function ExpandSidebarButton({ locale }: { locale: AppLocale }) {
+  const expandSidebarLabel = translate(locale, 'sidebar.action.expand')
+
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-xs"
+      className={NOTE_LIST_EXPAND_BUTTON_CLASSNAME}
+      onClick={dispatchExpandSidebarFromHeader}
+      title={expandSidebarLabel}
+      aria-label={expandSidebarLabel}
+      data-no-drag
+    >
+      <SidebarSimple size={16} weight="regular" />
+    </Button>
+  )
+}
+
 function HeaderTitle({
   title,
   typeDocument,
@@ -93,10 +122,13 @@ function HeaderTitle({
 function HeaderLeading({
   title,
   typeDocument,
+  sidebarCollapsed,
+  locale,
   onOpenType,
-}: Pick<NoteListHeaderProps, 'title' | 'typeDocument' | 'onOpenType'>) {
+}: Pick<NoteListHeaderProps, 'title' | 'typeDocument' | 'sidebarCollapsed' | 'locale' | 'onOpenType'> & { locale: AppLocale }) {
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2 [html[data-touch-input]_&]:!basis-full">
+      {sidebarCollapsed && <ExpandSidebarButton locale={locale} />}
       <HeaderTitle title={title} typeDocument={typeDocument} onOpenType={onOpenType} />
     </div>
   )
@@ -302,6 +334,8 @@ export function NoteListHeader(options: NoteListHeaderProps) {
         <HeaderLeading
           title={title}
           typeDocument={typeDocument}
+          sidebarCollapsed={sidebarCollapsed}
+          locale={locale}
           onOpenType={onOpenType}
         />
         <HeaderActions
