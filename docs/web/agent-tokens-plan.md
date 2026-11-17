@@ -86,7 +86,7 @@ pnpm run server:token revoke phone
 - `list` prints id, name, role, scope summary, created, expires. Never a secret or a hash.
 - `revoke` takes a name or an id.
 - Bad input exits non-zero with one plain line. Put the logic in `apps/server/src/` so it is unit-tested; the script only parses arguments and prints.
-- Document the Docker form (`docker exec … node --experimental-strip-types apps/server/scripts/token.ts …`) and check that the script is present in the image the `Dockerfile` builds.
+- Document the Docker form (`docker exec … tolaria-token …`, a launcher for the bundled command) and check that it is present in the image the `Dockerfile` builds.
 
 ### Things to get right
 

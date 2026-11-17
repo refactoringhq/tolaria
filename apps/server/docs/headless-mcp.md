@@ -152,7 +152,7 @@ Create one token per agent, with the least access it needs ([Tokens for agents](
 
 ```bash
 # Docker, in apps/server/deploy
-docker compose exec tolaria node --experimental-strip-types apps/server/scripts/token.ts add --name claude-laptop --role editor
+docker compose exec tolaria tolaria-token add --name claude-laptop --role editor
 
 # systemd, in /opt/tolaria
 sudo -u tolaria env TOLARIA_SERVER_DATA_DIR=/var/lib/tolaria/data pnpm run server:token add --name claude-laptop --role editor
@@ -169,7 +169,7 @@ curl -s http://127.0.0.1:8787/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-The answer lists `search_notes`, `get_note`, `create_note` and the other tools. `list` and `revoke` take the same prefix as `add`.
+The answer lists `search_notes`, `get_note`, `create_note` and the other tools. `list` and `revoke` take the same prefix as `add` (`docker compose exec tolaria tolaria-token list`).
 
 Connect a client with the URL from step 4 (`https://…/mcp`). With Claude Code:
 
@@ -255,7 +255,7 @@ sudo tar czf tolaria-data.tgz -C /var/lib/tolaria data
 - **A new token gets `401` on its very first request**: the server reads the token file again at most once a second. Retry.
 - **The service does not start: `EACCES: permission denied, open '/var/lib/tolaria/data/tokens.json'`**, or the running server logs `tokens.json cannot be read: EACCES`: the token command ran as root and left the file owned by root. Run `sudo chown tolaria:tolaria /var/lib/tolaria/data/tokens.json`, and run the command with `sudo -u tolaria` from then on.
 - **A write answers `"pushed": false`**: the push is queued and runs about two seconds later. If the commit never reaches the remote, look for `push failed` in the log; usually the deploy key has no write access.
-- **`ExperimentalWarning` lines in the log**: Node's notices about the features the server uses. Harmless.
+- **`ExperimentalWarning` lines in the log** (systemd and launchd): Node's notices about the features the server uses. Harmless.
 
 ## Limits
 

@@ -79,10 +79,10 @@ The server checks the file at most once a second, so an added token works and a 
 In the container image:
 
 ```bash
-docker exec <container> node --experimental-strip-types apps/server/scripts/token.ts add --name phone --role viewer
+docker exec <container> tolaria-token add --name phone --role viewer
 ```
 
-The image sets `TOLARIA_SERVER_DATA_DIR=/app/data`, so the file is `/app/data/tokens.json` unless `TOLARIA_SERVER_TOKENS_FILE` is set; keep `/app/data` on a volume so tokens survive a new container.
+`tolaria-token` takes the same arguments as `pnpm run server:token` (`list`, `revoke` likewise). The image sets `TOLARIA_SERVER_DATA_DIR=/app/data`, so the file is `/app/data/tokens.json` unless `TOLARIA_SERVER_TOKENS_FILE` is set; keep `/app/data` on a volume so tokens survive a new container.
 
 ## Connect an MCP client
 
@@ -131,6 +131,6 @@ From the repository root:
 | `pnpm build` | Typechecks this directory with the rest of the repository (`tsc -b`) |
 | `pnpm lint` | ESLint |
 
-The file service uses Node's standard library, the system `git`, and the wire types in `packages/protocol`. The collaboration channel adds `ws`, `yjs`, `y-protocols`, `lib0`, `jsdom` and, through `packages/markdown-yjs`, BlockNote and the markdown pipeline in `src/`. That shared code is written for a bundler, so `scripts/run.ts` bundles an entry point with esbuild before running it. The three Yjs packages are not declared in `package.json` yet; `yjsResolution.ts` explains how they are resolved and why (see the S4 spike report, "Dependencies").
+The file service uses Node's standard library, the system `git`, and the wire types in `packages/protocol`. The collaboration channel adds `ws`, `yjs`, `y-protocols`, `lib0`, `jsdom` and, through `packages/markdown-yjs`, BlockNote and the markdown pipeline in `src/`. That shared code is written for a bundler, so `scripts/run.ts` bundles an entry point with esbuild before running it, leaving every package in `node_modules`. The container image runs bundles built ahead of time by `scripts/build-image.ts`: every package is bundled except `jsdom`, which reads its own files at load time and is shipped as a package with its dependencies. Both use the esbuild settings in `scripts/bundle.ts`. The three Yjs packages are not declared in `package.json` yet; `yjsResolution.ts` explains how they are resolved and why (see the S4 spike report, "Dependencies").
 
 Like `apps/web`, this is a directory of the root package, not a pnpm workspace package, so the lockfile is untouched. The desktop app does not import it and its bundle is unchanged by it.

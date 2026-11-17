@@ -297,3 +297,4 @@ proposed → active → superseded
 | [0300](0300-optimistic-mobile-workspace-writes-with-per-path-locks-and-rollback.md) | Optimistic mobile workspace writes use per-path locks and selective rollback (complements [0285](0285-mobile-disk-authoritative-note-editing-and-index-reconciliation.md)) | active |
 | [0303](0303-remote-serves-mcp-over-stateless-http.md) | The Tolaria remote serves MCP over stateless Streamable HTTP, hand-written, behind its existing credentials | active |
 | [0304](0304-agent-tokens-in-a-local-hashed-file.md) | Agents get long-lived scoped tokens, kept hashed in a local file and managed by a command on the box | active |
+| [0305](0305-server-image-runs-prebuilt-bundles.md) | The server's container image runs bundles built at image build time, with only jsdom shipped as a package | active |
