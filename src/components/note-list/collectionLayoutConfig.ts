@@ -13,7 +13,12 @@ export interface LayoutSettings {
   groupBy: string
   properties: string[]
   columnOrder: string[]
+  collapsedColumns: string[]
+  hiddenColumns: string[]
 }
+
+/** The Kanban-only part of the layout settings that a View keeps while it shows as List. */
+type KanbanColumnSettings = Pick<LayoutSettings, 'properties' | 'columnOrder' | 'collapsedColumns' | 'hiddenColumns'>
 
 export interface LayoutPersistenceTarget {
   selection: SidebarSelection
@@ -23,7 +28,7 @@ export interface LayoutPersistenceTarget {
   onUpdateViewDefinition?: (filename: string, patch: Partial<ViewDefinition>, rootPath?: string) => void
 }
 
-type StoredKanbanConfig = { groupBy: string | null; properties: string[]; columnOrder: string[] }
+type StoredKanbanConfig = KanbanColumnSettings & { groupBy: string | null }
 type ViewPresentation = NonNullable<ViewDefinition['presentation']> & { kanbanConfig?: StoredKanbanConfig }
 
 const DEFAULT_GROUP_BY = 'status'
@@ -34,12 +39,17 @@ export function viewFor(target: LayoutPersistenceTarget): ViewFile | undefined {
   return views.find((view) => view.filename === selection.filename && (view.rootPath ?? '') === (selection.rootPath ?? ''))
 }
 
-function storedKanbanConfig(existing: ViewPresentation): StoredKanbanConfig {
+function kanbanColumnSettings(source: Partial<KanbanColumnSettings>): KanbanColumnSettings {
   return {
-    groupBy: existing.groupBy ?? null,
-    properties: existing.properties ?? [],
-    columnOrder: existing.columnOrder ?? [],
+    properties: stringArray(source.properties),
+    columnOrder: stringArray(source.columnOrder),
+    collapsedColumns: stringArray(source.collapsedColumns),
+    hiddenColumns: stringArray(source.hiddenColumns),
   }
+}
+
+function storedKanbanConfig(existing: ViewPresentation): StoredKanbanConfig {
+  return { groupBy: existing.groupBy ?? null, ...kanbanColumnSettings(existing) }
 }
 
 function mergedViewPresentation(existing: ViewPresentation | undefined, next: ViewDefinition['presentation']): ViewPresentation {
@@ -74,19 +84,13 @@ function saveVaultLayoutFile(target: LayoutPersistenceTarget, settings: LayoutSe
   void invoke('save_collection_layout_cmd', {
     vaultPath,
     collection: collectionLayoutKey(target.selection),
-    presentation: {
-      type: settings.layout,
-      groupBy: settings.groupBy,
-      columnOrder: settings.columnOrder,
-      properties: settings.properties,
-    },
+    presentation: { type: settings.layout, groupBy: settings.groupBy, ...kanbanColumnSettings(settings) },
   }).catch(() => undefined)
 }
 
 function viewPresentationFor(view: ViewFile, settings: LayoutSettings): ViewDefinition['presentation'] {
   if (settings.layout === COLLECTION_PRESENTATION_KANBAN) {
-    const { groupBy, properties, columnOrder } = settings
-    return { type: COLLECTION_PRESENTATION_KANBAN, groupBy, properties, columnOrder }
+    return { type: COLLECTION_PRESENTATION_KANBAN, groupBy: settings.groupBy, ...kanbanColumnSettings(settings) }
   }
   return { type: COLLECTION_PRESENTATION_LIST, sort: view.definition.sort, properties: view.definition.listPropertiesDisplay }
 }
@@ -115,8 +119,7 @@ export function readStoredLayout(value: unknown): LayoutSettings | undefined {
   return {
     layout: value.type,
     groupBy: typeof value.groupBy === 'string' ? value.groupBy : DEFAULT_GROUP_BY,
-    properties: stringArray(value.properties),
-    columnOrder: stringArray(value.columnOrder),
+    ...kanbanColumnSettings(value),
   }
 }
 
@@ -132,20 +135,18 @@ export function persistedViewLayout(target: LayoutPersistenceTarget): LayoutSett
   return {
     layout: target.presentation.type,
     groupBy: config.groupBy ?? DEFAULT_GROUP_BY,
-    properties: config.properties ?? [],
-    columnOrder: config.columnOrder ?? [],
+    ...kanbanColumnSettings(config),
   }
 }
 
 function presentationLayout(presentation: CollectionPresentationConfig): LayoutSettings {
   if (presentation.type !== COLLECTION_PRESENTATION_KANBAN) {
-    return { layout: presentation.type, groupBy: DEFAULT_GROUP_BY, properties: [], columnOrder: [] }
+    return { layout: presentation.type, groupBy: DEFAULT_GROUP_BY, ...kanbanColumnSettings({}) }
   }
   return {
     layout: COLLECTION_PRESENTATION_KANBAN,
     groupBy: presentation.groupBy ?? DEFAULT_GROUP_BY,
-    properties: presentation.properties,
-    columnOrder: presentation.columnOrder,
+    ...kanbanColumnSettings(presentation),
   }
 }
 

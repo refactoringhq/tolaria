@@ -15,8 +15,8 @@ import { GitRepositorySelect } from '../GitRepositorySelect'
 import { SortDropdown } from '../SortDropdown'
 import { ListPropertiesPopover, type ListPropertiesPopoverProps } from './ListPropertiesPopover'
 
-const NOTE_LIST_EXPAND_BUTTON_CLASSNAME = `${TOUCH_TARGET_CLASSNAME} !h-6 !w-6 !min-w-0 !rounded !p-0 !text-muted-foreground hover:!bg-accent hover:!text-foreground focus-visible:!bg-accent [&_svg]:!size-4`
-export const NOTE_LIST_ACTION_BUTTON_CLASSNAME = `${TOUCH_TARGET_CLASSNAME} !h-auto !w-auto !min-w-0 !rounded-none !p-0 !text-muted-foreground hover:!bg-transparent hover:!text-foreground focus-visible:!bg-transparent data-[state=open]:!bg-transparent data-[state=open]:!text-foreground [&_svg]:!size-4`
+/** One treatment for every note-list header icon button: a 24px ghost square with the same hover, open and focus fill. */
+export const NOTE_LIST_ACTION_BUTTON_CLASSNAME = `${TOUCH_TARGET_CLASSNAME} !h-6 !w-6 !min-w-0 !rounded-md !p-0 !text-muted-foreground hover:!bg-accent hover:!text-foreground focus-visible:!bg-accent focus-visible:!text-foreground data-[state=open]:!bg-accent data-[state=open]:!text-foreground aria-expanded:!bg-accent aria-expanded:!text-foreground [&_svg]:!size-4`
 const NOTE_LIST_SEARCH_DEBOUNCE_MS = 180
 const PROPERTY_TRIGGER_TITLE_KEYS: Record<string, TranslationKey> = {
   'Customize columns': 'noteList.properties.customizeColumns',
@@ -79,7 +79,7 @@ function ExpandSidebarButton({ locale }: { locale: AppLocale }) {
       type="button"
       variant="ghost"
       size="icon-xs"
-      className={NOTE_LIST_EXPAND_BUTTON_CLASSNAME}
+      className={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
       onClick={dispatchExpandSidebarFromHeader}
       title={expandSidebarLabel}
       aria-label={expandSidebarLabel}
@@ -209,9 +209,9 @@ function HeaderActions(options: Pick<
     window.setTimeout(() => createNoteRef.current(), 0)
   }, [])
   return (
-    <div className="ml-3 flex shrink-0 items-center justify-end gap-2 [html[data-touch-input]_&]:!ml-0 [html[data-touch-input]_&]:!w-full [html[data-touch-input]_&]:!justify-end" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+    <div className="ml-3 flex shrink-0 items-center justify-end gap-1 [html[data-touch-input]_&]:!ml-0 [html[data-touch-input]_&]:!w-full [html[data-touch-input]_&]:!justify-end" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
       {layoutControls}
-      {!isEntityView && <SortDropdown groupLabel="__list__" current={listSort} direction={listDirection} customProperties={customProperties} locale={locale} iconOnly onChange={onSortChange} />}
+      {!isEntityView && <SortDropdown groupLabel="__list__" current={listSort} direction={listDirection} customProperties={customProperties} locale={locale} iconButtonClassName={NOTE_LIST_ACTION_BUTTON_CLASSNAME} onChange={onSortChange} />}
       <Button type="button" variant="ghost" size="icon-xs" className={NOTE_LIST_ACTION_BUTTON_CLASSNAME} onClick={onToggleSearch} title={translate(locale, 'noteList.searchAction')} aria-label={translate(locale, 'noteList.searchAction')}>
         <MagnifyingGlass size={16} />
       </Button>
