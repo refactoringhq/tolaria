@@ -336,7 +336,7 @@ export function SortDropdown(options: SortDropdownProps) {
   })
 
   return (
-    <div ref={containerRef} className="relative" style={{ zIndex: open ? 10 : 0 }}>
+    <div ref={containerRef} className="relative flex" style={{ zIndex: open ? 10 : 0 }}>
       <SortDropdownTrigger
         triggerRef={triggerRef}
         open={open}

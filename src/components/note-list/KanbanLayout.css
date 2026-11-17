@@ -83,17 +83,17 @@
 :where(.dark, [data-theme="dark"]) .kanban-column,
 :where(.dark, [data-theme="dark"]) .kanban-hidden-columns {
   background-color: var(--surface-panel);
-  box-shadow: inset 0 0 0 1px var(--border-subtle);
+  box-shadow: inset 0 0 0 1px var(--border-default);
 }
 
 :where(.dark, [data-theme="dark"]) .kanban-card {
-  background-color: var(--state-hover);
+  background-color: var(--surface-button);
   border-color: var(--border-strong);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
 }
 
 :where(.dark, [data-theme="dark"]) .kanban-card-slot:hover .kanban-card {
-  background-color: var(--surface-button);
+  background-color: color-mix(in srgb, var(--surface-button) 92%, var(--text-primary));
   border-color: var(--text-faint);
 }
 
