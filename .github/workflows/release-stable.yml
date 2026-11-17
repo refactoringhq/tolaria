@@ -160,10 +160,11 @@ jobs:
 
           find_required() {
             local patterns=("$@")
+            local match
             for pattern in "${patterns[@]}"; do
-              set -- $pattern
-              if [ -e "$1" ]; then
-                printf '%s\n' "$1"
+              match=$(compgen -G "$pattern" | head -n 1 || true)
+              if [ -n "$match" ]; then
+                printf '%s\n' "$match"
                 return 0
               fi
             done
@@ -279,20 +280,6 @@ jobs:
             windows-x86_64-bundles/*/*.zip.sig
             stable-latest.json
 
-  # ─────────────────────────────────────────────────────────────
-  # Phase 4: Trigger the main-branch GitHub Pages deployment
-  # ─────────────────────────────────────────────────────────────
-  pages:
-    name: Update docs and release pages
-    needs: [version, release]
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-    steps:
-      - name: Dispatch docs deployment from main
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.version.outputs.tag }}
-        run: |
-          gh workflow run deploy-docs.yml --repo "$GITHUB_REPOSITORY" --ref main
-          echo "Triggered deploy-docs.yml on main after publishing ${TAG}."
+
+  # Phase 4 (GitHub Pages) runs in deploy-stable-pages.yml once this workflow
+  # succeeds: the github-pages environment only deploys from main.
