@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { useState } from 'react'
+import { useState, type ComponentProps } from 'react'
 import { expect, vi } from 'vitest'
 import { NoteList } from '../components/NoteList'
 import type { ViewFile } from '../types'
@@ -27,6 +27,8 @@ export function makeBookTypeEntries(
     }),
   ]
 }
+
+type NoteListProps = ComponentProps<typeof NoteList>
 
 const noop = () => undefined
 const NOTE_LIST_SEARCH_SETTLE_TIMEOUT_MS = 3_000
@@ -71,7 +73,7 @@ export function renderManagedViewNoteList({
   entries,
   view = makeViewDefinition(),
 }: {
-  entries: Parameters<typeof renderNoteList>[0]['entries']
+  entries: NoteListProps['entries']
   view?: ViewFile
 }) {
   const built = buildNoteListProps({
@@ -114,9 +116,10 @@ export function installFullTextSearchMocks({
   const originalContentHandler = handlers.get_note_content
   const originalSearchHandler = handlers.search_vault
 
-  function searchVaultResponse(args: Record<string, unknown> = {}) {
-    const results = resultsByVault[String(args.vaultPath)] ?? []
-    return { elapsed_ms: 7, mode: args.mode, query: args.query, results }
+  function searchVaultResponse(args?: unknown) {
+    const request = (args ?? {}) as Record<string, unknown>
+    const results = resultsByVault[String(request.vaultPath)] ?? []
+    return { elapsed_ms: 7, mode: request.mode, query: request.query, results }
   }
 
   function rejectNoteContentRead(): never {
@@ -147,7 +150,7 @@ export function renderBookNoteList({
 }: {
   displayProps?: string[]
   entryOverrides?: Parameters<typeof makeEntry>[0]
-  selection?: Parameters<typeof renderNoteList>[0]['selection']
+  selection?: NoteListProps['selection']
   allNotesNoteListProperties?: string[] | null
   onUpdateAllNotesNoteListProperties?: () => void
   inboxNoteListProperties?: string[] | null
