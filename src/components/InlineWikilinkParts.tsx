@@ -6,6 +6,7 @@ import { NoteTitleIcon } from './NoteTitleIcon'
 import { getTypeIcon } from './note-item/typeIcon'
 import type { InlineWikilinkChip, InlineWikilinkSegment } from './inlineWikilinkText'
 import type { InlineWikilinkSuggestion } from './inlineWikilinkSuggestions'
+import { normalizeInlineWikilinkValue } from './inlineWikilinkTokens'
 import { cn } from '@/lib/utils'
 
 function withNativeEvent<T extends Event>(event: T): T & { nativeEvent: T } {
@@ -166,6 +167,7 @@ export function InlineWikilinkEditorField(options: {
   placeholderClassName?: string
   editorClassName?: string
   editorStyle?: CSSProperties
+  onBlur: () => void
   onCompositionEnd: (editor: HTMLDivElement) => void
   onCompositionStart: () => void
   onCompositionUpdate: () => void
@@ -176,6 +178,7 @@ export function InlineWikilinkEditorField(options: {
   onPaste: (event: React.ClipboardEvent<HTMLDivElement>) => void
   onSelectionChange: () => void
   segments: InlineWikilinkSegment[]
+  liveValueEmpty: boolean
   typeEntryMap: Record<string, VaultEntry>
 }) {
   const {
@@ -187,6 +190,7 @@ export function InlineWikilinkEditorField(options: {
     placeholderClassName,
     editorClassName,
     editorStyle,
+    onBlur,
     onCompositionEnd,
     onCompositionStart,
     onCompositionUpdate,
@@ -197,17 +201,24 @@ export function InlineWikilinkEditorField(options: {
     onPaste,
     onSelectionChange,
     segments,
+    liveValueEmpty,
     typeEntryMap,
   } = options
   const editorRef = useRef<HTMLDivElement | null>(null)
   const placeholderRef = useRef<HTMLDivElement | null>(null)
   // A chip or newline at the very end leaves no text after it, so pre-wrap
   // would render no final line; the zero-width anchor keeps that line visible.
+  // The anchor also keeps the block wrapper below from ever being empty.
+  // Windows IMEs (Sogou Pinyin on WebView2, #1329) refuse to start a
+  // composition when the editable root has no block-level child, so composer
+  // content always renders inside a <p> block — the structure the main
+  // ProseMirror editor exposes (<p><br></p>) and accepts composition in.
   const needsTrailingCaretAnchor = segments[segments.length - 1]?.kind === 'chip'
     || value.endsWith('\n')
   useImperativeHandle(inputRef, () => editorRef.current as HTMLDivElement, [])
   useInlineWikilinkPlaceholder(editorRef, placeholder)
   useInlineWikilinkEditorEvents(editorRef, {
+    onBlur,
     onCompositionEnd,
     onCompositionStart,
     onCompositionUpdate,
@@ -221,7 +232,7 @@ export function InlineWikilinkEditorField(options: {
 
   return (
     <div className="relative">
-      {value.length === 0 && placeholder && (
+      {liveValueEmpty && placeholder && (
         <div
           ref={placeholderRef}
           className={cn(
@@ -250,8 +261,10 @@ export function InlineWikilinkEditorField(options: {
           wordBreak: 'break-word',
         }}
       >
-        {segments.map((segment) => renderInlineWikilinkSegment(segment, typeEntryMap))}
-        {needsTrailingCaretAnchor ? '\u200B' : null}
+        <p className="m-0">
+          {segments.map((segment) => renderInlineWikilinkSegment(segment, typeEntryMap))}
+          {value.length === 0 ? <br /> : needsTrailingCaretAnchor ? '\u200B' : null}
+        </p>
       </div>
     </div>
   )
@@ -259,6 +272,7 @@ export function InlineWikilinkEditorField(options: {
 
 type InlineWikilinkEditorHandlers = Pick<
   Parameters<typeof InlineWikilinkEditorField>[0],
+  | 'onBlur'
   | 'onCompositionEnd'
   | 'onCompositionStart'
   | 'onCompositionUpdate'
@@ -286,7 +300,7 @@ function compositionPlaceholderHandlers(
       handlers.onCompositionUpdate()
     },
     onCompositionEnd: (editor: HTMLDivElement) => {
-      setPlaceholderHidden((editor.textContent ?? '').length > 0)
+      setPlaceholderHidden(normalizeInlineWikilinkValue(editor.textContent ?? '').length > 0)
       handlers.onCompositionEnd(editor)
     },
   }
@@ -331,6 +345,7 @@ function inlineWikilinkEditorListenerMap(
   options: InlineWikilinkEditorHandlers,
 ): Array<[keyof HTMLElementEventMap, EventListener]> {
   const {
+    onBlur,
     onCompositionEnd,
     onCompositionStart,
     onCompositionUpdate,
@@ -343,6 +358,7 @@ function inlineWikilinkEditorListenerMap(
   } = options
   const handleSelectionChange = () => onSelectionChange()
   return [
+    ['blur', () => onBlur()],
     ['compositionstart', () => onCompositionStart()],
     ['compositionupdate', () => onCompositionUpdate()],
     ['compositionend', (event) => onCompositionEnd(event.currentTarget as HTMLDivElement)],
