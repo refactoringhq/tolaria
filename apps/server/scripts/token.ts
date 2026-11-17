@@ -6,8 +6,8 @@
 //   pnpm run server:token revoke <name or id>
 //
 // It edits the token file (TOLARIA_SERVER_TOKENS_FILE, or tokens.json in TOLARIA_SERVER_DATA_DIR)
-// directly; a running server picks the change up within about a second. Runs under plain
-// `node --experimental-strip-types`, so it works in the server's container image as it is.
+// directly; a running server picks the change up within about a second. The container image
+// runs it bundled, as `tolaria-token` (scripts/build-image.ts).
 import { parseArgs } from 'node:util'
 import { addAgentToken, formatTokenList, listAgentTokens, revokeAgentToken } from '../src/agentTokenAdmin.ts'
 import { dataDirOf, tokensFileOf } from '../src/dataPaths.ts'

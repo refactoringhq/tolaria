@@ -1,7 +1,11 @@
-# Build stage: prepare dependencies and build
+# Build from the repository root: docker build -f apps/server/Dockerfile .
+#
+# Build stage: install the repository's dependencies, then bundle the server and the token
+# command (apps/server/scripts/build-image.ts). Only the bundles and the few packages that
+# cannot be bundled reach the runtime image.
 FROM node:22-bookworm-slim AS build
 
-# Install git (required for vault operations)
+# git, which install scripts (husky's prepare) may call
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git && \
     rm -rf /var/lib/apt/lists/*
@@ -17,7 +21,11 @@ RUN corepack enable && \
     corepack prepare pnpm@10.33.0 --activate && \
     pnpm install --frozen-lockfile
 
-# Production stage: minimal runtime image
+# /out/dist: main.mjs and token.mjs with source maps; /out/node_modules: jsdom and its dependencies;
+# /out/bin/tolaria-token: the token command's launcher
+RUN node --experimental-strip-types apps/server/scripts/build-image.ts /out
+
+# Production stage: Node, git and the bundles
 FROM node:22-bookworm-slim
 
 # git for vault operations; an ssh client and CA certificates so git reaches a private remote over SSH or HTTPS
@@ -29,13 +37,10 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Copy built application and dependencies from build stage
-COPY --from=build --chown=node:node /app/node_modules ./node_modules
-COPY --from=build --chown=node:node /app/apps/server ./apps/server
-COPY --from=build --chown=node:node /app/packages ./packages
-# packages/markdown-yjs and packages/collab-client import shared code from the app's src/
-COPY --from=build --chown=node:node /app/src ./src
-COPY --from=build --chown=node:node /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
+# The code stays owned by root: the server only reads it
+COPY --from=build /out/node_modules ./node_modules
+COPY --from=build /out/dist ./dist
+COPY --from=build /out/bin/tolaria-token /usr/local/bin/tolaria-token
 
 # Create data directory with correct ownership
 RUN mkdir -p /app/data && chown node:node /app/data
@@ -57,5 +62,6 @@ ENV TOLARIA_SERVER_DATA_DIR=/app/data \
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
     CMD node -e "require('http').get('http://localhost:8787/healthz', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"
 
-# Run the server directly under node (same command as `pnpm server`), so node is PID 1 and gets SIGTERM
-CMD ["node", "--experimental-strip-types", "apps/server/scripts/run.ts", "apps/server/src/main.ts"]
+# Run the prebuilt bundle directly under node, so node is PID 1 and gets SIGTERM.
+# Stack traces name the original source files and lines through the source map.
+CMD ["node", "--enable-source-maps", "dist/main.mjs"]
