@@ -541,7 +541,7 @@ describe('NoteList rendering', () => {
     expect(screen.getByTitle('Create new note')).toBeInTheDocument()
   })
 
-  it('uses breadcrumbs-like button styling for note-list header actions', () => {
+  it('gives every note-list header action the same ghost button treatment and spacing', () => {
     renderBookNoteList({
       entryOverrides: { properties: { Priority: 'High' } },
       selection: { kind: 'filter', filter: 'inbox' },
@@ -549,6 +549,8 @@ describe('NoteList rendering', () => {
     })
 
     const buttons = [
+      screen.getByTestId('layout-menu-button'),
+      screen.getByTestId('sort-button-__list__'),
       screen.getByTitle('Search notes'),
       screen.getByTitle('Customize Inbox columns'),
       screen.getByTitle('Create new note'),
@@ -556,18 +558,22 @@ describe('NoteList rendering', () => {
 
     for (const button of buttons) {
       expect(button).toHaveAttribute('data-variant', 'ghost')
+      expect(button).toHaveAttribute('data-size', 'icon-xs')
       expect(button).toHaveClass(
-        '!h-auto',
-        '!w-auto',
-        '!min-w-0',
-        '!rounded-none',
+        '!h-6',
+        '!w-6',
+        '!rounded-md',
         '!p-0',
         '!text-muted-foreground',
-        'hover:!bg-transparent',
+        'hover:!bg-accent',
         'hover:!text-foreground',
+        'focus-visible:!bg-accent',
+        'data-[state=open]:!bg-accent',
+        'aria-expanded:!bg-accent',
       )
       expect(button).not.toHaveAttribute('tabindex', '-1')
     }
+    expect(screen.getByTitle('Create new note').parentElement).toHaveClass('gap-1')
   })
 
   it('keeps the note-list search input full width and shows inline search controls while loading', async () => {

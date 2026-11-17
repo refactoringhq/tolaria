@@ -73,6 +73,30 @@
   box-shadow: 0 2px 6px -2px rgb(0 0 0 / 0.12);
 }
 
+/* Dark mode layers the board like Linear and GitHub Projects: a recessed board, raised lanes, and cards
+   lifted above their lane with a stronger edge. `:where()` keeps these at class specificity so the
+   selected, target and drag states below still win. Light mode keeps its utility classes. */
+:where(.dark, [data-theme="dark"]) .kanban-board {
+  background-color: var(--surface-sidebar);
+}
+
+:where(.dark, [data-theme="dark"]) .kanban-column,
+:where(.dark, [data-theme="dark"]) .kanban-hidden-columns {
+  background-color: var(--surface-panel);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+}
+
+:where(.dark, [data-theme="dark"]) .kanban-card {
+  background-color: var(--state-hover);
+  border-color: var(--border-strong);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+:where(.dark, [data-theme="dark"]) .kanban-card-slot:hover .kanban-card {
+  background-color: var(--surface-button);
+  border-color: var(--text-faint);
+}
+
 .kanban-card.kanban-card--selected {
   border-color: var(--primary);
 }
@@ -90,6 +114,18 @@
 .kanban-column--target {
   background-color: color-mix(in srgb, var(--primary) 9%, var(--muted));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+.kanban-hidden-columns {
+  background-color: color-mix(in srgb, var(--muted) 50%, transparent);
+}
+
+.kanban-column-strip__title {
+  min-height: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  writing-mode: vertical-rl;
 }
 
 .kanban-column--placeholder {

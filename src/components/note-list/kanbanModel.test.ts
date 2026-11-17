@@ -7,10 +7,13 @@ import {
   columnId,
   groupEntries,
   groupValueFor,
+  hiddenColumnSummaries,
   isCardId,
   moveColumn,
   orderColumns,
   settlePendingMoves,
+  toggleColumnValue,
+  visibleColumns,
 } from './kanbanModel'
 
 const alpha = makeEntry({ path: '/vault/a.md', title: 'Alpha', status: 'Doing', properties: { owner: 'Ada', tags: ['x', 'y'] } })
@@ -64,5 +67,23 @@ describe('kanbanModel', () => {
     expect(columnFromId(42)).toBeUndefined()
     expect(isCardId(cardId('/vault/a.md'))).toBe(true)
     expect(isCardId(columnId('Doing'))).toBe(false)
+  })
+
+  it('toggles a column value in a collapsed or hidden list, including the "No value" column', () => {
+    expect(toggleColumnValue(['Doing'], 'Done')).toEqual(['Doing', 'Done'])
+    expect(toggleColumnValue(['Doing', 'Done'], 'Doing')).toEqual(['Done'])
+    expect(toggleColumnValue([], '')).toEqual([''])
+    expect(toggleColumnValue([''], '')).toEqual([])
+  })
+
+  it('leaves hidden columns out of the board and lists them in board order with their counts', () => {
+    const grouped = groupEntries([alpha, beta, gamma], 'status')
+    const columns = orderColumns(grouped.keys(), ['Done'])
+    expect(visibleColumns(columns, ['Doing', 'Archived'])).toEqual(['Done', ''])
+    expect(hiddenColumnSummaries(columns, ['', 'Done', 'Archived'], grouped)).toEqual([
+      { group: 'Done', count: 1 },
+      { group: '', count: 1 },
+    ])
+    expect(hiddenColumnSummaries(columns, [], grouped)).toEqual([])
   })
 })

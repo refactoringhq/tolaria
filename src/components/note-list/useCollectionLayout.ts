@@ -20,6 +20,7 @@ import {
   persistLayoutSettings,
   readStoredLayout,
 } from './collectionLayoutConfig'
+import { toggleColumnValue } from './kanbanModel'
 
 export interface CollectionLayoutSource extends LayoutPersistenceTarget {
   visibleEntries: VaultEntry[]
@@ -88,6 +89,18 @@ function sameLayoutSettings(left: LayoutSettings, right: LayoutSettings): boolea
   return JSON.stringify(left) === JSON.stringify(right)
 }
 
+type ColumnListKey = 'collapsedColumns' | 'hiddenColumns'
+
+const COLUMN_VISIBILITY_ACTIONS: Record<ColumnListKey, readonly [added: string, removed: string]> = {
+  collapsedColumns: ['collapse', 'expand'],
+  hiddenColumns: ['hide', 'show'],
+}
+
+function columnVisibilityAction(current: LayoutSettings, key: ColumnListKey, group: string): string {
+  const [added, removed] = COLUMN_VISIBILITY_ACTIONS[key]
+  return current[key].includes(group) ? removed : added
+}
+
 function useLayoutActions(source: CollectionLayoutSource, key: string, current: LayoutSettings, setOverrides: SetSettingsMap) {
   const enabled = supportsLayouts(source.selection)
   const update = useCallback((patch: Partial<LayoutSettings>) => {
@@ -101,12 +114,18 @@ function useLayoutActions(source: CollectionLayoutSource, key: string, current: 
     update({ layout })
     trackEvent('collection_layout_changed', { layout, collection: source.selection.kind })
   }, [current.layout, source.selection.kind, update])
+  const toggleColumn = (key: ColumnListKey, group: string) => {
+    trackEvent('kanban_column_visibility_changed', { action: columnVisibilityAction(current, key, group) })
+    update({ [key]: toggleColumnValue(current[key], group) })
+  }
   useLayoutShortcut(enabled, current.layout, changeLayout)
   return {
     changeLayout,
     changeGroupBy: (groupBy: string) => update({ groupBy }),
     changeCardProperties: (properties: string[] | null) => update({ properties: properties ?? [] }),
     changeColumnOrder: (columnOrder: string[]) => update({ columnOrder }),
+    toggleColumnCollapsed: (group: string) => toggleColumn('collapsedColumns', group),
+    toggleColumnHidden: (group: string) => toggleColumn('hiddenColumns', group),
   }
 }
 

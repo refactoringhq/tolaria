@@ -1,5 +1,5 @@
 import type { MouseEvent, ReactNode } from 'react'
-import { Kanban, ListBullets, type Icon } from '@phosphor-icons/react'
+import { Kanban, Rows, type Icon } from '@phosphor-icons/react'
 import { KanbanLayout } from '../components/note-list/KanbanLayout'
 import type { AppLocale, TranslationKey } from '../lib/i18n'
 import type { VaultEntry } from '../types'
@@ -14,6 +14,10 @@ export interface CollectionLayoutRendererProps {
   properties: string[]
   columnOrder: string[]
   onColumnOrderChange: (order: string[]) => void
+  collapsedColumns: string[]
+  hiddenColumns: string[]
+  onToggleColumnCollapsed: (group: string) => void
+  onToggleColumnHidden: (group: string) => void
   locale: AppLocale
   typeEntryMap: Record<string, VaultEntry>
   displayPropsOverride?: string[] | null
@@ -36,7 +40,7 @@ const registrations: CollectionLayoutRegistration[] = [
   {
     type: COLLECTION_PRESENTATION_LIST,
     labelKey: 'layout.list',
-    icon: ListBullets,
+    icon: Rows,
     controls: [],
     requiredProperties: () => [],
     render: ({ listContent }) => listContent,

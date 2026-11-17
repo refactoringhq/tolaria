@@ -35,6 +35,8 @@ function kanbanPresentation(source: UnknownRecord): KanbanCollectionPresentation
     groupBy: nullableString(source.groupBy),
     properties: stringArray(source.properties),
     columnOrder: stringArray(source.columnOrder),
+    collapsedColumns: stringArray(source.collapsedColumns),
+    hiddenColumns: stringArray(source.hiddenColumns),
   }
 }
 

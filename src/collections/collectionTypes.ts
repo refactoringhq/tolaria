@@ -16,6 +16,10 @@ export interface KanbanCollectionPresentationConfig {
   groupBy: string | null
   properties: string[]
   columnOrder: string[]
+  /** Column values shown as a narrow vertical strip. */
+  collapsedColumns: string[]
+  /** Column values left off the board; listed under "Hidden columns". */
+  hiddenColumns: string[]
 }
 
 export type CollectionPresentationConfig = ListCollectionPresentationConfig | KanbanCollectionPresentationConfig
