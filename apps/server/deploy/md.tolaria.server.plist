@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Tolaria remote as a launchd user agent. Walkthrough: ../docs/headless-mcp.md
+     Replace USERNAME with your user name, then copy to ~/Library/LaunchAgents/. -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>md.tolaria.server</string>
+  <key>WorkingDirectory</key>
+  <string>/Users/USERNAME/tolaria</string>
+  <key>ProgramArguments</key>
+  <array>
+    <!-- launchd cannot read an env file, so a shell loads it and then becomes node. -->
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>set -a; . "$HOME/.config/tolaria/tolaria.env"; set +a; exec node --experimental-strip-types apps/server/scripts/run.ts apps/server/src/main.ts</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <!-- launchd starts with a bare PATH: list the directory that holds node (`command -v node`). -->
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <key>TOLARIA_SERVER_DATA_DIR</key>
+    <string>/Users/USERNAME/Library/Application Support/Tolaria Server</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/Users/USERNAME/Library/Logs/tolaria-server.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/USERNAME/Library/Logs/tolaria-server.log</string>
+</dict>
+</plist>

@@ -8,6 +8,8 @@ A note can also be opened as a live Yjs document on `/v1/collab/docs/<docId>`. E
 
 ## Run
 
+To set it up from start to finish on a server or a Mac in the background, with Docker, systemd or launchd, and connect an agent, follow [Run Tolaria's MCP on a box with no GUI](docs/headless-mcp.md).
+
 Node 22.14 or newer and `git` on the `PATH`. From the repository root:
 
 ```bash
