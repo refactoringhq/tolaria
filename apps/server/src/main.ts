@@ -68,6 +68,7 @@ async function main(): Promise<void> {
     maxBodyBytes: config.maxBodyBytes,
     rateLimit: config.rateLimit,
     collab: config.collab ?? false,
+    mcp: config.mcp,
     log,
     changes,
     onReady: () => log('server ready'),

@@ -302,3 +302,11 @@ describe('limit settings', () => {
     expect(() => loadConfig({ TOLARIA_SERVER_TOKEN: TOKEN, [name]: value })).toThrowError(`${name} must be an integer`)
   })
 })
+
+describe('the MCP endpoint setting', () => {
+  it('serves /mcp unless TOLARIA_MCP=0', () => {
+    expect(loadConfig({ TOLARIA_SERVER_TOKEN: TOKEN }).mcp).toBe(true)
+    expect(loadConfig({ TOLARIA_SERVER_TOKEN: TOKEN, TOLARIA_MCP: '1' }).mcp).toBe(true)
+    expect(loadConfig({ TOLARIA_SERVER_TOKEN: TOKEN, TOLARIA_MCP: '0' }).mcp).toBe(false)
+  })
+})

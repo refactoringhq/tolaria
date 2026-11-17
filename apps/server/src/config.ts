@@ -33,6 +33,8 @@ export interface ServerConfig {
    * under `prefix` (one per vault). Null: indexes are only kept in the blob store.
    */
   indexSnapshots: { r2: R2Config; prefix: string } | null
+  /** Whether `POST /mcp` is served; `TOLARIA_MCP=0` switches it off. */
+  mcp: boolean
   /** Whether the R2 endpoints may be private or loopback addresses (development only); see `storeEndpoint.ts`. */
   allowPrivateR2Endpoint: boolean
 }
@@ -206,6 +208,7 @@ export function loadConfig(env: Env): ServerConfig {
     maxBodyBytes: positiveInteger(env, 'TOLARIA_SERVER_MAX_BODY_BYTES', DEFAULT_MAX_BODY_BYTES, 2 ** 31),
     rateLimit: rateLimitSettings(env),
     collab: collabSettings(env),
+    mcp: setting(env, 'TOLARIA_MCP') !== '0',
     blobStore: blobStoreSettings(env, stateDir),
     indexSnapshots: indexSnapshotSettings(env),
     allowPrivateR2Endpoint: allowPrivateR2Endpoint(env),

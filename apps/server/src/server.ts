@@ -33,6 +33,8 @@ export interface ServerOptions {
   onReady?: () => void
   /** Requests per account on every route but `/healthz` and websocket upgrades; `DEFAULT_RATE_LIMIT` by default. */
   rateLimit?: RateLimit
+  /** Whether `POST /mcp` is served; true unless `false` (`TOLARIA_MCP=0`). */
+  mcp?: boolean
 }
 
 export interface CollabOptions {
@@ -132,7 +134,17 @@ export async function createVaultServer(options: ServerOptions): Promise<Server>
   vault.onChange((vaultChanges) => search.apply(vaultChanges))
   const tickets = options.collab === false ? undefined : new TicketBook()
   const revocations = new Revocations()
-  const services: Services = { vault, docs, index, search, collab: tickets !== undefined, tickets, changes, revocations }
+  const services: Services = {
+    vault,
+    docs,
+    index,
+    search,
+    collab: tickets !== undefined,
+    tickets,
+    changes,
+    revocations,
+    mcp: options.mcp !== false,
+  }
   const limiter = new RateLimiter(options.rateLimit ?? DEFAULT_RATE_LIMIT)
   const credentials = new Credentials(options.token, revocations)
 

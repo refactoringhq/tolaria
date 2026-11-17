@@ -24,6 +24,8 @@ import type { TicketBook } from './collab/tickets.ts'
 import type { DocIndex } from './docIndex.ts'
 import { VaultError } from './errors.ts'
 import { entityTag, errorReply, quoted, type Reply, singleHeader } from './httpIo.ts'
+import { MCP_PATH, mcpEndpoint } from './mcp/route.ts'
+import { invalidRequest, readFileAs, searchAs, writeFileAs } from './operations.ts'
 import { isNote, type VaultPath, vaultPath } from './paths.ts'
 import { type RemoteImageFetcher, remoteImageFetcher } from './remoteImage.ts'
 import type { RenameOptions } from './renameTransaction.ts'
@@ -44,6 +46,8 @@ export interface Services {
   changes: ChangeEmitter
   /** Revoked access tickets and the open connections admitted on access tickets. */
   revocations: Revocations
+  /** True when `POST /mcp` is served (`TOLARIA_MCP`). */
+  mcp: boolean
   /** Downloads images for `POST /v1/attachments/imports`; public hosts only unless a test swaps it. */
   remoteImages?: RemoteImageFetcher
 }
@@ -63,17 +67,11 @@ type Handler = (request: ApiRequest, services: Services, path: VaultPath) => Pro
 type Methods = Map<string, Handler>
 
 const DEFAULT_SEARCH_LIMIT = 50
-const MAX_SEARCH_LIMIT = 200
-const MAX_QUERY_CHARS = 200
 const WRITE_STATUS = new Map<string, number>([
   ['created', 201],
   ['recreated', 201],
   ['conflict', 409],
 ])
-
-function invalidRequest(message: string): VaultError {
-  return new VaultError(400, 'invalid_request', message)
-}
 
 function withDocId<T extends { path: string }>(result: T, docs: DocIndex): T & { docId?: string } {
   const docId = docs.docId(result.path)
@@ -104,8 +102,7 @@ async function listFiles({ url, access }: ApiRequest, { vault, docs }: Services)
 }
 
 async function readFile({ headers, access }: ApiRequest, { vault, docs }: Services, path: VaultPath): Promise<Reply> {
-  access.requireRead(path)
-  const { bytes, etag } = await vault.read(path)
+  const { bytes, etag } = await readFileAs(vault, access, path)
   const replyHeaders: Record<string, string> = {
     etag: quoted(etag),
     'content-type': isNote(path) ? 'text/markdown; charset=utf-8' : 'application/octet-stream',
@@ -145,7 +142,7 @@ function writeReply({ timings, ...result }: TimedWriteResult, docs: DocIndex): R
 async function writeFile(request: ApiRequest, { vault, docs }: Services, path: VaultPath): Promise<Reply> {
   request.access.requireWrite(path)
   const precondition = writePrecondition(request.headers)
-  return writeReply(await vault.write(path, await request.body(), precondition, request.access.coAuthors()), docs)
+  return writeReply(await writeFileAs(vault, request.access, { path, bytes: await request.body(), precondition }), docs)
 }
 
 async function deleteFile({ headers, access }: ApiRequest, { vault }: Services, path: VaultPath): Promise<Reply> {
@@ -225,19 +222,12 @@ function searchLimit(raw: string | null): number {
   if (raw === null) return DEFAULT_SEARCH_LIMIT
   const limit = Number(raw)
   if (!Number.isInteger(limit) || limit < 1) throw invalidRequest('limit must be a positive integer')
-  return Math.min(limit, MAX_SEARCH_LIMIT)
-}
-
-function searchQuery(query: string): string {
-  const oneLine = !query.includes('\n') && query.length <= MAX_QUERY_CHARS
-  if (oneLine && query.trim() !== '') return query
-  throw invalidRequest(`q must be one line of 1 to ${MAX_QUERY_CHARS} characters`)
+  return limit
 }
 
 async function search({ url, access }: ApiRequest, { search }: Services): Promise<Reply> {
-  const query = searchQuery(url.searchParams.get('q') ?? '')
-  const found = await search.search(query, searchLimit(url.searchParams.get('limit')))
-  return { status: 200, body: { ...found, results: access.visible(found.results, (result) => result.path) } }
+  const limit = searchLimit(url.searchParams.get('limit'))
+  return { status: 200, body: await searchAs(search, access, url.searchParams.get('q') ?? '', limit) }
 }
 
 async function sync({ access }: ApiRequest, { vault }: Services): Promise<Reply> {
@@ -381,8 +371,10 @@ interface Resolved {
 }
 
 const NO_PATH = '' as VaultPath
+const MCP_METHODS: Methods = new Map([['POST', mcpEndpoint]])
 
-function resolveRoute(pathname: string): Resolved | null {
+function resolveRoute(pathname: string, { mcp }: Services): Resolved | null {
+  if (pathname === MCP_PATH) return mcp ? { methods: MCP_METHODS, path: NO_PATH } : null
   const exact = EXACT_ROUTES.get(pathname)
   if (exact) return { methods: exact, path: NO_PATH }
   if (pathname.startsWith(`${ROUTES.files}/`)) {
@@ -394,7 +386,7 @@ function resolveRoute(pathname: string): Resolved | null {
 
 /** Finds the handler for a request and runs it. Throws `VaultError` for anything it refuses. */
 export async function route(request: ApiRequest, services: Services): Promise<Reply> {
-  const resolved = resolveRoute(request.url.pathname)
+  const resolved = resolveRoute(request.url.pathname, services)
   if (!resolved) throw new VaultError(404, 'not_found', `no route for ${request.url.pathname}`)
   const handler = resolved.methods.get(request.method)
   if (handler) return handler(request, services, resolved.path)
