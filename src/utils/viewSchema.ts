@@ -35,6 +35,8 @@ export interface ViewDefinition {
     groupBy?: string | null
     properties?: string[]
     columnOrder?: string[]
+    collapsedColumns?: string[]
+    hiddenColumns?: string[]
   }
 }
 

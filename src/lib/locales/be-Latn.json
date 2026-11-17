@@ -1401,5 +1401,10 @@
   "layout.columnLabelOne": "{column}, 1 natatka",
   "layout.columnLabelMany": "{column}, {count} natatak",
   "layout.columnRole": "kalonka",
-  "layout.cardRole": "kartka"
+  "layout.cardRole": "kartka",
+  "layout.collapseColumn": "Zharnuć {column}",
+  "layout.expandColumn": "Razharnuć {column}",
+  "layout.hideColumn": "Schavać {column}",
+  "layout.showColumn": "Pakazać {column}",
+  "layout.hiddenColumns": "Schavanyja kalonki"
 }

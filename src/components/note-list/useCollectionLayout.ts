@@ -20,6 +20,7 @@ import {
   persistLayoutSettings,
   readStoredLayout,
 } from './collectionLayoutConfig'
+import { toggleColumnValue } from './kanbanModel'
 
 export interface CollectionLayoutSource extends LayoutPersistenceTarget {
   visibleEntries: VaultEntry[]
@@ -88,6 +89,20 @@ function sameLayoutSettings(left: LayoutSettings, right: LayoutSettings): boolea
   return JSON.stringify(left) === JSON.stringify(right)
 }
 
+interface ColumnToggleActions {
+  added: string
+  removed: string
+}
+
+const COLLAPSE_ACTIONS: ColumnToggleActions = { added: 'collapse', removed: 'expand' }
+const HIDE_ACTIONS: ColumnToggleActions = { added: 'hide', removed: 'show' }
+
+/** Toggles a column in a collapsed or hidden list and reports which way it went (never the column name). */
+function toggledColumnList(list: readonly string[], group: string, actions: ColumnToggleActions): string[] {
+  trackEvent('kanban_column_visibility_changed', { action: list.includes(group) ? actions.removed : actions.added })
+  return toggleColumnValue(list, group)
+}
+
 function useLayoutActions(source: CollectionLayoutSource, key: string, current: LayoutSettings, setOverrides: SetSettingsMap) {
   const enabled = supportsLayouts(source.selection)
   const update = useCallback((patch: Partial<LayoutSettings>) => {
@@ -107,6 +122,8 @@ function useLayoutActions(source: CollectionLayoutSource, key: string, current: 
     changeGroupBy: (groupBy: string) => update({ groupBy }),
     changeCardProperties: (properties: string[] | null) => update({ properties: properties ?? [] }),
     changeColumnOrder: (columnOrder: string[]) => update({ columnOrder }),
+    toggleColumnCollapsed: (group: string) => update({ collapsedColumns: toggledColumnList(current.collapsedColumns, group, COLLAPSE_ACTIONS) }),
+    toggleColumnHidden: (group: string) => update({ hiddenColumns: toggledColumnList(current.hiddenColumns, group, HIDE_ACTIONS) }),
   }
 }
 
