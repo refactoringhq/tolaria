@@ -3,6 +3,7 @@ import { CollectionLayoutBody } from './CollectionLayoutBody'
 import { type CollectionLayoutState, useCollectionLayout } from './useCollectionLayout'
 import { CollectionLayoutHeaderControls } from './CollectionLayoutControls'
 import { KanbanEditorPanelClose } from './KanbanEditorPanel'
+import { useKanbanPanelOutsideClose } from './useKanbanPanelOutsideClose'
 import { layoutPropertyPicker } from './kanbanCardFieldsPicker'
 import { FilterPills } from './FilterPills'
 import { NOTE_LIST_ACTION_BUTTON_CLASSNAME, NoteListHeader } from './NoteListHeader'
@@ -414,6 +415,7 @@ export function NoteListLayout({
 }: NoteListLayoutProps) {
   const layout = useCollectionLayout(contentProps)
   const { locale } = contentProps
+  useKanbanPanelOutsideClose({ rootRef: noteListPanelRef, ...layout.panel })
   return (
     <div
       ref={noteListPanelRef}
