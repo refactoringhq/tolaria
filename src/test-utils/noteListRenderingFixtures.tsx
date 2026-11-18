@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { useState, type ComponentProps } from 'react'
+import { type ComponentProps, createElement, useState } from 'react'
 import { expect, vi } from 'vitest'
 import { NoteList } from '../components/NoteList'
 import type { ViewFile } from '../types'
@@ -69,15 +69,15 @@ function patchViewDefinition(views: ViewFile[], filename: string, patch: ViewDef
   })
 }
 
-export function renderManagedViewNoteList({
-  entries,
-  view = makeViewDefinition(),
-}: {
+interface ManagedViewNoteListOptions {
   entries: NoteListProps['entries']
   view?: ViewFile
-}) {
+}
+
+export function renderManagedViewNoteList(options: ManagedViewNoteListOptions) {
+  const view = options.view ?? makeViewDefinition()
   const built = buildNoteListProps({
-    entries,
+    entries: options.entries,
     selection: { kind: 'view', filename: view.filename },
     views: [view],
   })
@@ -89,13 +89,10 @@ export function renderManagedViewNoteList({
       setViews((currentViews) => patchViewDefinition(currentViews, filename, patch))
     }
 
-    return <NoteList {...built.props} views={views} onUpdateViewDefinition={updateViewDefinition} />
+    return createElement(NoteList, { ...built.props, views, onUpdateViewDefinition: updateViewDefinition })
   }
 
-  return {
-    ...render(<ManagedViewNoteList />),
-    ...built,
-  }
+  return { ...render(<ManagedViewNoteList />), ...built }
 }
 
 export interface NoteListSearchMockResult {
@@ -139,15 +136,7 @@ export function installFullTextSearchMocks({
   return { getNoteContent, restore, searchVault }
 }
 
-export function renderBookNoteList({
-  displayProps = ['Priority'],
-  entryOverrides = {},
-  selection = allSelection,
-  allNotesNoteListProperties,
-  onUpdateAllNotesNoteListProperties = noop,
-  inboxNoteListProperties,
-  onUpdateInboxNoteListProperties = noop,
-}: {
+interface BookNoteListOptions {
   displayProps?: string[]
   entryOverrides?: Parameters<typeof makeEntry>[0]
   selection?: NoteListProps['selection']
@@ -155,14 +144,16 @@ export function renderBookNoteList({
   onUpdateAllNotesNoteListProperties?: () => void
   inboxNoteListProperties?: string[] | null
   onUpdateInboxNoteListProperties?: () => void
-} = {}) {
+}
+
+export function renderBookNoteList(options: BookNoteListOptions = {}) {
+  const { displayProps = ['Priority'], entryOverrides = {}, selection = allSelection, ...listProperties } = options
   return renderNoteList({
     entries: makeBookTypeEntries(displayProps, entryOverrides),
     selection,
-    allNotesNoteListProperties,
-    onUpdateAllNotesNoteListProperties,
-    inboxNoteListProperties,
-    onUpdateInboxNoteListProperties,
+    onUpdateAllNotesNoteListProperties: noop,
+    onUpdateInboxNoteListProperties: noop,
+    ...listProperties,
   })
 }
 
