@@ -13,7 +13,7 @@ const GITHUB_RELEASES_API_URL: &str =
     "https://api.github.com/repos/refactoringhq/tolaria/releases?per_page=100";
 const RELEASES_BASE_URL: &str = "https://refactoringhq.github.io/tolaria";
 const POISONED_STABLE_RECOVERY_FLOOR: &str = "2026.8.19";
-const UPDATER_HTTP_TIMEOUT: Duration = Duration::from_secs(5);
+const UPDATER_HTTP_TIMEOUT: Duration = Duration::from_secs(120);
 const UPDATER_USER_AGENT: &str = concat!("Tolaria/", env!("CARGO_PKG_VERSION"));
 pub const SYSTEM_PACKAGE_UPDATE_MESSAGE: &str = "system-package-updates-use-package-manager";
 
@@ -248,7 +248,15 @@ fn build_updater<R: Runtime>(
     app_handle: &AppHandle<R>,
     endpoint: Url,
 ) -> Result<tauri_plugin_updater::Updater, String> {
-    app_handle
+    build_updater_with_timeout(app_handle, endpoint, UPDATER_HTTP_TIMEOUT)
+}
+
+fn build_updater_with_timeout<R: Runtime>(
+    app_handle: &AppHandle<R>,
+    endpoint: Url,
+    request_timeout: Duration,
+) -> Result<tauri_plugin_updater::Updater, String> {
+    let builder = app_handle
         .updater_builder()
         .version_comparator(|current, release| {
             let remote_is_semver_newer = release.version > current;
@@ -259,8 +267,11 @@ fn build_updater<R: Runtime>(
                 chrono::Utc::now().date_naive(),
             )
         })
+        .timeout(request_timeout)
         .endpoints(vec![endpoint])
-        .map_err(|e| format!("Failed to configure updater endpoint: {e}"))?
+        .map_err(|e| format!("Failed to configure updater endpoint: {e}"))?;
+
+    builder
         .build()
         .map_err(|e| format!("Failed to build updater: {e}"))
 }
