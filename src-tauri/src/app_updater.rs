@@ -13,7 +13,7 @@ const GITHUB_RELEASES_API_URL: &str =
     "https://api.github.com/repos/refactoringhq/tolaria/releases?per_page=100";
 const RELEASES_BASE_URL: &str = "https://refactoringhq.github.io/tolaria";
 const POISONED_STABLE_RECOVERY_FLOOR: &str = "2026.8.19";
-const UPDATER_HTTP_TIMEOUT: Duration = Duration::from_secs(5);
+const UPDATER_HTTP_TIMEOUT: Duration = Duration::from_secs(120);
 const UPDATER_USER_AGENT: &str = concat!("Tolaria/", env!("CARGO_PKG_VERSION"));
 pub const SYSTEM_PACKAGE_UPDATE_MESSAGE: &str = "system-package-updates-use-package-manager";
 
@@ -259,6 +259,7 @@ fn build_updater<R: Runtime>(
                 chrono::Utc::now().date_naive(),
             )
         })
+        .timeout(UPDATER_HTTP_TIMEOUT)
         .endpoints(vec![endpoint])
         .map_err(|e| format!("Failed to configure updater endpoint: {e}"))?
         .build()

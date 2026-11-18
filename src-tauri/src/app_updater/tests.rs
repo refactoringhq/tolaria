@@ -1,9 +1,15 @@
 use super::{
     latest_alpha_release_metadata_url, requires_package_manager_update, should_install_update,
     should_recover_poisoned_calendar_version, AppUpdateDownloadEvent, AppUpdateMetadata,
-    GitHubAsset, GitHubRelease, ReleaseChannel,
+    GitHubAsset, GitHubRelease, ReleaseChannel, UPDATER_HTTP_TIMEOUT,
 };
 use serde_json::json;
+use std::time::Duration;
+
+#[test]
+fn updater_http_timeout_allows_slow_checks_and_downloads() {
+    assert_eq!(UPDATER_HTTP_TIMEOUT, Duration::from_secs(120));
+}
 
 #[test]
 fn only_deb_and_rpm_owned_linux_installs_use_package_manager_updates() {
