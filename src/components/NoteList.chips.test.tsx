@@ -167,34 +167,34 @@ describe('NoteList type sections', () => {
   })
 })
 
+function expectHeaderPaddingLeft(container: HTMLElement, paddingLeft: string) {
+  expect(container.querySelector('.h-\\[52px\\]')).toHaveProperty('style.paddingLeft', paddingLeft)
+}
+
 describe('NoteList traffic-light padding', () => {
   it('adds left padding for macOS traffic lights when the sidebar is collapsed', () => {
     withUserAgent(MAC_USER_AGENT, () => {
       const { container } = renderNoteList({ sidebarCollapsed: true })
-      const header = container.querySelector('.h-\\[52px\\]') as HTMLElement
-      expect(header.style.paddingLeft).toBe('var(--tolaria-macos-traffic-light-padding, 90px)')
+      expectHeaderPaddingLeft(container, 'var(--tolaria-macos-traffic-light-padding, 90px)')
     })
   })
 
   it('does not add macOS traffic-light padding on Windows when the sidebar is collapsed', () => {
     withUserAgent(WINDOWS_USER_AGENT, () => {
       const { container } = renderNoteList({ sidebarCollapsed: true })
-      const header = container.querySelector('.h-\\[52px\\]') as HTMLElement
-      expect(header.style.paddingLeft).toBe('')
+      expectHeaderPaddingLeft(container, '')
     })
   })
 
   it('does not add extra left padding when the sidebar is expanded', () => {
     withUserAgent(MAC_USER_AGENT, () => {
       const { container } = renderNoteList({ sidebarCollapsed: false })
-      const header = container.querySelector('.h-\\[52px\\]') as HTMLElement
-      expect(header.style.paddingLeft).toBe('')
+      expectHeaderPaddingLeft(container, '')
     })
   })
 
   it('defaults to no extra padding when sidebarCollapsed is omitted', () => {
     const { container } = renderNoteList()
-    const header = container.querySelector('.h-\\[52px\\]') as HTMLElement
-    expect(header.style.paddingLeft).toBe('')
+    expectHeaderPaddingLeft(container, '')
   })
 })
