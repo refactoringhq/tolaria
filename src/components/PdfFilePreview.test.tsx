@@ -75,6 +75,43 @@ describe('PdfFilePreview', () => {
     expect(screen.getAllByLabelText('report.pdf')).toHaveLength(3)
   })
 
+  it('caps the page list when a PDF reports an absurd page count', async () => {
+    const { document } = mockDocument(Number.MAX_SAFE_INTEGER)
+    loadPdfDocumentMock.mockResolvedValue(document)
+
+    const { container } = render(
+      <PdfFilePreview fallback={<div>fallback</div>} onError={vi.fn()} source="asset://huge.pdf" title="huge.pdf" />,
+    )
+
+    await waitFor(() => expect(container.querySelectorAll('[data-pdf-page]')).toHaveLength(2_000))
+  })
+
+  it('keeps a crafted extreme-aspect page within the canvas pixel budget', async () => {
+    const { document, page } = mockDocument(1)
+    page.getViewport.mockImplementation(({ scale }: { scale: number }) => ({ height: 1_000_000 * scale, width: 800 * scale }))
+    loadPdfDocumentMock.mockResolvedValue(document)
+
+    render(<PdfFilePreview fallback={<div>fallback</div>} onError={vi.fn()} source="asset://tall.pdf" title="tall.pdf" />)
+
+    await waitFor(() => expect(page.render).toHaveBeenCalled())
+    const canvas = screen.getByLabelText('tall.pdf', { selector: 'canvas' }) as HTMLCanvasElement
+    expect(canvas.width * canvas.height).toBeLessThanOrEqual(16_777_216)
+    expect(page.cleanup).toHaveBeenCalled()
+  })
+
+  it('falls back when a page reports an invalid size', async () => {
+    const onError = vi.fn()
+    const { document, page } = mockDocument(1)
+    page.getViewport.mockImplementation(() => ({ height: Number.NaN, width: 800 }))
+    loadPdfDocumentMock.mockResolvedValue(document)
+
+    render(<PdfFilePreview fallback={<div>fallback</div>} onError={onError} source="asset://bad.pdf" title="bad.pdf" />)
+
+    await waitFor(() => expect(onError).toHaveBeenCalledTimes(1))
+    expect(page.render).not.toHaveBeenCalled()
+    expect(page.cleanup).toHaveBeenCalled()
+  })
+
   it('destroys the loaded document when the preview closes', async () => {
     const { document } = mockDocument(1)
     loadPdfDocumentMock.mockResolvedValue(document)

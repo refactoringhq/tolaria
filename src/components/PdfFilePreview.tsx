@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
-import { loadPdfDocument, pdfCanvasContext, type PdfDocument, type PdfRenderTask } from '../utils/pdfPreviewRuntime'
+import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react'
+import { useNearViewportOnce } from '../hooks/useNearViewportOnce'
+import { loadPdfDocument, type PdfDocument, type PdfRenderTask, pdfCanvasContext } from '../utils/pdfPreviewRuntime'
 
 interface PdfFilePreviewProps {
   fallback: ReactNode
@@ -28,6 +29,10 @@ interface PdfPageRenderState {
 const DEFAULT_PAGE_WIDTH = 800
 const MAX_PAGE_WIDTH = 1_200
 const PAGE_HORIZONTAL_PADDING = 48
+// A crafted PDF can claim any page count; preview at most this many pages.
+const MAX_PREVIEW_PAGES = 2_000
+// Stay within the smallest common webview canvas limit (4096 x 4096).
+const MAX_CANVAS_PIXELS = 16_777_216
 
 function usePreviewWidth(previewRef: RefObject<HTMLDivElement | null>): number {
   const [width, setWidth] = useState(DEFAULT_PAGE_WIDTH)
@@ -47,26 +52,8 @@ function usePreviewWidth(previewRef: RefObject<HTMLDivElement | null>): number {
   return width
 }
 
-function usePageVisibility(pageRef: RefObject<HTMLDivElement | null>, eager: boolean): boolean {
-  const [visible, setVisible] = useState(eager)
-
-  useEffect(() => {
-    const element = pageRef.current
-    if (visible || !element) return undefined
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return
-        setVisible(true)
-        observer.disconnect()
-      },
-      { rootMargin: '600px 0px' },
-    )
-    observer.observe(element)
-    return () => observer.disconnect()
-  }, [pageRef, visible])
-
-  return visible
+function previewPageCount(pageCount = 0): number {
+  return Number.isSafeInteger(pageCount) ? Math.min(Math.max(pageCount, 0), MAX_PREVIEW_PAGES) : 0
 }
 
 function renderScale(pageWidth: number, availableWidth: number): number {
@@ -74,8 +61,14 @@ function renderScale(pageWidth: number, availableWidth: number): number {
   return targetWidth / pageWidth
 }
 
+function canvasOutputScale(viewport: { height: number; width: number }): number {
+  const area = viewport.width * viewport.height
+  if (!Number.isFinite(area) || area <= 0) throw new Error('Invalid PDF page size')
+  return Math.min(Math.max(window.devicePixelRatio, 1), Math.sqrt(MAX_CANVAS_PIXELS / area))
+}
+
 function configureCanvas(canvas: HTMLCanvasElement, viewport: { height: number; width: number }): number {
-  const outputScale = Math.max(window.devicePixelRatio, 1)
+  const outputScale = canvasOutputScale(viewport)
   canvas.width = Math.floor(viewport.width * outputScale)
   canvas.height = Math.floor(viewport.height * outputScale)
   canvas.style.width = `${Math.floor(viewport.width)}px`
@@ -86,18 +79,21 @@ function configureCanvas(canvas: HTMLCanvasElement, viewport: { height: number; 
 async function paintPdfPage(options: PdfPageRenderOptions, state: PdfPageRenderState): Promise<void> {
   const { availableWidth, canvas, document, pageNumber } = options
   const page = await document.getPage(pageNumber)
-  if (state.cancelled) return
-
-  const baseViewport = page.getViewport({ scale: 1 })
-  const viewport = page.getViewport({ scale: renderScale(baseViewport.width, availableWidth) })
-  const outputScale = configureCanvas(canvas, viewport)
-  state.task = page.render({
-    canvas,
-    canvasContext: pdfCanvasContext(canvas),
-    transform: [outputScale, 0, 0, outputScale, 0, 0],
-    viewport,
-  })
-  await state.task.promise.finally(() => page.cleanup())
+  try {
+    if (state.cancelled) return
+    const baseViewport = page.getViewport({ scale: 1 })
+    const viewport = page.getViewport({ scale: renderScale(baseViewport.width, availableWidth) })
+    const outputScale = configureCanvas(canvas, viewport)
+    state.task = page.render({
+      canvas,
+      canvasContext: pdfCanvasContext(canvas),
+      transform: [outputScale, 0, 0, outputScale, 0, 0],
+      viewport,
+    })
+    await state.task.promise
+  } finally {
+    page.cleanup()
+  }
 }
 
 function startPdfPageRender(options: PdfPageRenderOptions): () => void {
@@ -114,7 +110,7 @@ function startPdfPageRender(options: PdfPageRenderOptions): () => void {
 function PdfPageCanvas({ availableWidth, document, onError, pageNumber, title }: PdfPageCanvasProps) {
   const pageRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const visible = usePageVisibility(pageRef, pageNumber === 1)
+  const visible = useNearViewportOnce(pageRef, { eager: pageNumber === 1 })
 
   useEffect(() => {
     if (!visible) return undefined
@@ -130,15 +126,14 @@ function PdfPageCanvas({ availableWidth, document, onError, pageNumber, title }:
   )
 }
 
-export function PdfFilePreview({ fallback, onError, source, title }: PdfFilePreviewProps) {
-  const previewRef = useRef<HTMLDivElement>(null)
+interface PdfDocumentState {
+  document: PdfDocument | null
+  failed: boolean
+}
+
+function usePdfDocument(source: string, onError: () => void): PdfDocumentState {
   const [document, setDocument] = useState<PdfDocument | null>(null)
   const [failed, setFailed] = useState(false)
-  const availableWidth = usePreviewWidth(previewRef)
-  const pageNumbers = useMemo(
-    () => Array.from({ length: document?.numPages ?? 0 }, (_, index) => index + 1),
-    [document?.numPages],
-  )
 
   useEffect(() => {
     let active = true
@@ -160,6 +155,18 @@ export function PdfFilePreview({ fallback, onError, source, title }: PdfFilePrev
       if (loadedDocument) void loadedDocument.destroy()
     }
   }, [onError, source])
+
+  return { document, failed }
+}
+
+export function PdfFilePreview({ fallback, onError, source, title }: PdfFilePreviewProps) {
+  const previewRef = useRef<HTMLDivElement>(null)
+  const { document, failed } = usePdfDocument(source, onError)
+  const availableWidth = usePreviewWidth(previewRef)
+  const pageNumbers = useMemo(
+    () => Array.from({ length: previewPageCount(document?.numPages) }, (_, index) => index + 1),
+    [document?.numPages],
+  )
 
   if (failed) return fallback
 
