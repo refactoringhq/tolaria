@@ -1,14 +1,68 @@
 use super::{
-    latest_alpha_release_metadata_url, requires_package_manager_update, should_install_update,
-    should_recover_poisoned_calendar_version, AppUpdateDownloadEvent, AppUpdateMetadata,
-    GitHubAsset, GitHubRelease, ReleaseChannel, UPDATER_HTTP_TIMEOUT,
+    build_updater_with_timeout, latest_alpha_release_metadata_url, requires_package_manager_update,
+    should_install_update, should_recover_poisoned_calendar_version,
+    timeout::timeout_updater_check, AppUpdateDownloadEvent, AppUpdateMetadata, GitHubAsset,
+    GitHubRelease, ReleaseChannel, UPDATER_HTTP_TIMEOUT,
 };
 use serde_json::json;
-use std::time::Duration;
+use std::{
+    io::{Read, Write},
+    net::TcpListener,
+    thread,
+    time::Duration,
+};
 
-#[test]
-fn updater_http_timeout_allows_slow_checks_and_downloads() {
-    assert_eq!(UPDATER_HTTP_TIMEOUT, Duration::from_secs(120));
+#[tokio::test]
+async fn updater_builder_applies_its_timeout_to_the_update_check_request() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let endpoint = format!("http://{}/latest.json", listener.local_addr().unwrap())
+        .parse()
+        .unwrap();
+    let server = thread::spawn(move || {
+        let (mut connection, _) = listener.accept().unwrap();
+        let mut request = [0; 1024];
+        let _ = connection.read(&mut request);
+        thread::sleep(Duration::from_millis(100));
+        connection
+            .write_all(b"HTTP/1.1 204 No Content\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+            .unwrap();
+    });
+    let mut context = tauri::test::mock_context(tauri::test::noop_assets());
+    context
+        .config_mut()
+        .plugins
+        .0
+        .insert("updater".into(), json!({ "pubkey": "test-only-key" }));
+    let app = tauri::test::mock_builder()
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .build(context)
+        .unwrap();
+    let updater =
+        build_updater_with_timeout(app.handle(), endpoint, Duration::from_millis(20)).unwrap();
+
+    let result = tokio::time::timeout(Duration::from_millis(500), updater.check())
+        .await
+        .expect("the server response should arrive before the test guard");
+
+    assert!(
+        result.is_err(),
+        "the configured request timeout should abort the delayed check"
+    );
+    server.join().unwrap();
+}
+
+#[tokio::test]
+async fn updater_check_completes_when_the_response_takes_longer_than_five_seconds() {
+    let result = timeout_updater_check(
+        || async {
+            tokio::time::sleep(Duration::from_millis(5_100)).await;
+            Ok::<_, ()>(())
+        },
+        UPDATER_HTTP_TIMEOUT,
+    )
+    .await;
+
+    assert_eq!(result, Ok(Ok(())));
 }
 
 #[test]

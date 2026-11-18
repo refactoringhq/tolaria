@@ -248,7 +248,15 @@ fn build_updater<R: Runtime>(
     app_handle: &AppHandle<R>,
     endpoint: Url,
 ) -> Result<tauri_plugin_updater::Updater, String> {
-    app_handle
+    build_updater_with_timeout(app_handle, endpoint, UPDATER_HTTP_TIMEOUT)
+}
+
+fn build_updater_with_timeout<R: Runtime>(
+    app_handle: &AppHandle<R>,
+    endpoint: Url,
+    request_timeout: Duration,
+) -> Result<tauri_plugin_updater::Updater, String> {
+    let builder = app_handle
         .updater_builder()
         .version_comparator(|current, release| {
             let remote_is_semver_newer = release.version > current;
@@ -259,9 +267,11 @@ fn build_updater<R: Runtime>(
                 chrono::Utc::now().date_naive(),
             )
         })
-        .timeout(UPDATER_HTTP_TIMEOUT)
+        .timeout(request_timeout)
         .endpoints(vec![endpoint])
-        .map_err(|e| format!("Failed to configure updater endpoint: {e}"))?
+        .map_err(|e| format!("Failed to configure updater endpoint: {e}"))?;
+
+    builder
         .build()
         .map_err(|e| format!("Failed to build updater: {e}"))
 }
