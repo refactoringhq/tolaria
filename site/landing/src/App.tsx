@@ -91,7 +91,7 @@ function Hero() {
         <div className="min-w-0">
           <a href={LINKS.releaseNotes} {...ext} className={`rise group inline-flex items-center gap-2 rounded-full bg-primary-foreground/15 py-1 pr-3 pl-1 text-sm font-medium backdrop-blur-md transition-[transform,background-color] duration-300 ease-out-weighted hover:bg-primary-foreground/25 ${focusRing}`} style={{ ["--i" as string]: 0 }}>
             <span className="rounded-full bg-primary-foreground px-2 text-xs font-semibold text-app-ink">New</span>
-            <span className="sm:hidden">Hybrid look and Skills</span><span className="hidden sm:inline">Hybrid look and Skills in the AI panel</span>
+            <span className="sm:hidden">Kanban layouts</span><span className="hidden sm:inline">Kanban layouts for your notes</span>
             <ArrowRightIcon weight="bold" className="size-4 transition-transform duration-500 ease-out-weighted group-hover:translate-x-0.5" />
           </a>
           <h1 className="mt-5 font-display text-4xl text-balance sm:text-5xl lg:text-6xl">
@@ -160,7 +160,7 @@ const FEATURES = [
   { k: "Relationships", title: "Relationships as first-class citizens", body: "Connect notes with properties like Belongs to and Has notes. Types are lenses for finding notes, not schemas: no required fields, no validation.", demo: RelationsDemo },
   { k: "Version control", title: "A Git client, built in", body: "Commit, push, and browse history from within the app, with version history for every single note. Sync across devices with the tool you already trust for code.", demo: GitDemo },
   { k: "AI", title: "Local agents and direct models", body: "Run coding agents such as Claude Code, Codex, GitHub Copilot, OpenCode, and Pi on your vault, with Vault Safe or Power User permissions, or chat with local and API models over your notes. Claude Code can now use your Skills.", demo: AiDemo },
-  { k: "Appearance", title: "Make it yours", body: `Light, dark, or the new Hybrid look from ${RELEASE.tag}: a dark sidebar with light note content. Pick it in Settings, Appearance, along with language, note width, and layout.`, demo: ThemeDemo, href: LINKS.releaseNotes },
+  { k: "Appearance", title: "Make it yours", body: `Light, dark, or the Hybrid look: a dark sidebar with light note content. Pick it in Settings, Appearance, along with language, note width, and layout.`, demo: ThemeDemo, href: "https://github.com/refactoringhq/tolaria/releases/tag/v2026-10-26" },
 ]
 
 // Bento: Editor + Relationships pair up, Git is the wide card (demo beside the copy, mirrored), then AI + Appearance.
