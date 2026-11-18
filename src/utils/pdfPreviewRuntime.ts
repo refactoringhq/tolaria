@@ -16,7 +16,21 @@ export function pdfCanvasContext(canvas: HTMLCanvasElement): CanvasRenderingCont
   return context
 }
 
+// Previews load only app-generated sources: vault assets, in-memory blobs, or the app's own origin.
+const LOCAL_PDF_PROTOCOLS = new Set(['asset:', 'blob:', 'data:'])
+const ASSET_ORIGIN = 'http://asset.localhost'
+
+function isAppPdfSource(url: URL): boolean {
+  if (LOCAL_PDF_PROTOCOLS.has(url.protocol)) return true
+  return url.origin === ASSET_ORIGIN || url.origin === window.location.origin
+}
+
+function assertSupportedPdfSource(source: string): void {
+  if (!isAppPdfSource(new URL(source, window.location.href))) throw new Error('Unsupported PDF source')
+}
+
 export async function loadPdfDocument(source: string): Promise<PdfDocument> {
+  assertSupportedPdfSource(source)
   const pdfjs = await import('pdfjs-dist')
   pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
   const loadingTask = pdfjs.getDocument({ url: source })
