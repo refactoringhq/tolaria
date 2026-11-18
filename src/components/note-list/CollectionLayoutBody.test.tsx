@@ -1,4 +1,5 @@
 import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
+import { useRef } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { presentationFromViewDefinition } from '../../collections/presentationConfig'
 import type { NoteActionsConfig } from '../../hooks/useNoteActions'
@@ -10,6 +11,7 @@ import { CollectionLayoutBody } from './CollectionLayoutBody'
 import { type CollectionLayoutSource, supportsLayouts, useCollectionLayout } from './useCollectionLayout'
 import { CollectionLayoutHeaderControls } from './CollectionLayoutControls'
 import { layoutPropertyPicker } from './kanbanCardFieldsPicker'
+import { useKanbanPanelOutsideClose } from './useKanbanPanelOutsideClose'
 
 const { invoke, trackEvent } = vi.hoisted(() => ({ invoke: vi.fn(), trackEvent: vi.fn() }))
 vi.mock('@tauri-apps/api/core', () => ({ invoke }))
@@ -54,9 +56,11 @@ function Harness({ onMove = vi.fn(), onOpen = vi.fn(), ...overrides }: HarnessPr
     ...overrides,
   }
   const layout = useCollectionLayout(source)
+  const rootRef = useRef<HTMLDivElement>(null)
+  useKanbanPanelOutsideClose({ rootRef, ...layout.panel })
   const picker = layoutPropertyPicker(layout, { scope: 'all', availableProperties: ['priority'], currentDisplay: ['priority'], onSave: vi.fn(), triggerTitle: 'Customize columns' }, 'en')
   return (
-    <div data-collection-layout={layout.layout} data-kanban-panel={layout.panel.open ? 'open' : 'closed'} data-testid="layout-root">
+    <div data-collection-layout={layout.layout} data-kanban-panel={layout.panel.open ? 'open' : 'closed'} data-testid="layout-root" ref={rootRef}>
       <CollectionLayoutHeaderControls layout={layout.layout} groupBy={layout.groupBy} groups={layout.groups} locale="en" onLayoutChange={layout.changeLayout} onGroupByChange={layout.changeGroupBy} />
       <output data-testid="card-fields">{picker?.currentDisplay.join(',')}</output>
       <button type="button" onClick={() => picker?.onSave(['owner'])}>show owner on cards</button>
@@ -244,6 +248,18 @@ describe('collection layouts', () => {
 
     rendered.rerender(<Harness selectedNotePath="/vault/b.md" onOpen={onOpen} />)
     expect(screen.getByTestId('layout-root')).toHaveAttribute('data-kanban-panel', 'open')
+  })
+
+  it('closes the Kanban editor panel from a click on empty board space', () => {
+    render(<Harness selectedNotePath="/vault/a.md" />)
+    fireEvent.keyDown(window, { key: 'g', ctrlKey: true, shiftKey: true })
+    fireEvent.click(screen.getByText('open first card'))
+    expect(screen.getByTestId('layout-root')).toHaveAttribute('data-kanban-panel', 'open')
+
+    const board = screen.getByTestId('kanban-board')
+    fireEvent.pointerDown(board)
+    fireEvent.click(board)
+    expect(screen.getByTestId('layout-root')).toHaveAttribute('data-kanban-panel', 'closed')
   })
 
   it('explains a missing group property and offers List instead', () => {
