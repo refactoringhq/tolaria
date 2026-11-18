@@ -56,6 +56,18 @@ describe('useKanbanPanelOutsideClose', () => {
     expect(close).not.toHaveBeenCalled()
   })
 
+  it('closes on the press when the header starts a window drag that swallows the click', () => {
+    const close = vi.fn()
+    render(<Board open close={close} />)
+    const header = screen.getByTestId('header')
+    header.addEventListener('mousedown', (event) => event.preventDefault())
+    fireEvent.pointerDown(header)
+    fireEvent.mouseDown(header)
+    fireEvent.mouseDown(screen.getByRole('button', { name: 'Sort' }))
+    fireEvent.mouseDown(screen.getByTestId('lane'))
+    expect(close).toHaveBeenCalledOnce()
+  })
+
   it('ignores portaled menus and a panel that is already closed', () => {
     const close = vi.fn()
     const { rerender } = render(<Board open close={close} />)

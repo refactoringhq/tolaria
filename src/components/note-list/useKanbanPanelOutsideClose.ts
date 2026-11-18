@@ -28,6 +28,42 @@ function travelled(start: PressStart, event: MouseEvent): number {
   return Math.hypot(event.clientX - start.x, event.clientY - start.y)
 }
 
+type PressRef = { current: PressStart | null }
+
+interface PanelListenerContext {
+  root: HTMLElement
+  press: PressRef
+  close: () => void
+}
+
+/** The header is a window-drag region: its mousedown starts a native drag that swallows the click. */
+function startsWindowDrag(root: HTMLElement, event: MouseEvent): boolean {
+  return event.button === 0 && event.defaultPrevented && dismissesPanel(root, event.target)
+}
+
+function isDismissingClick(root: HTMLElement, start: PressStart | null, event: MouseEvent): boolean {
+  if (!start?.dismisses || travelled(start, event) > MAX_CLICK_TRAVEL_PX) return false
+  return dismissesPanel(root, event.target)
+}
+
+function panelListeners({ root, press, close }: PanelListenerContext) {
+  return {
+    pointerdown: (event: PointerEvent) => {
+      press.current = { x: event.clientX, y: event.clientY, dismisses: dismissesPanel(root, event.target) }
+    },
+    mousedown: (event: MouseEvent) => {
+      if (!startsWindowDrag(root, event)) return
+      press.current = null
+      close()
+    },
+    click: (event: MouseEvent) => {
+      const start = press.current
+      press.current = null
+      if (isDismissingClick(root, start, event)) close()
+    },
+  }
+}
+
 /**
  * Closes the Kanban editor panel when the user clicks empty board space, a lane background or the
  * note-list header, like the close button. Cards, controls, menus, drags and portals keep it open.
@@ -38,20 +74,14 @@ export function useKanbanPanelOutsideClose({ rootRef, open, close }: KanbanPanel
   useEffect(() => {
     const root = rootRef.current
     if (!open || !root) return
-    const onPointerDown = (event: PointerEvent) => {
-      press.current = { x: event.clientX, y: event.clientY, dismisses: dismissesPanel(root, event.target) }
-    }
-    const onClick = (event: MouseEvent) => {
-      const start = press.current
-      press.current = null
-      if (!start?.dismisses || travelled(start, event) > MAX_CLICK_TRAVEL_PX) return
-      if (dismissesPanel(root, event.target)) close()
-    }
-    root.addEventListener('pointerdown', onPointerDown)
-    root.addEventListener('click', onClick)
+    const listeners = panelListeners({ root, press, close })
+    root.addEventListener('pointerdown', listeners.pointerdown)
+    root.addEventListener('mousedown', listeners.mousedown)
+    root.addEventListener('click', listeners.click)
     return () => {
-      root.removeEventListener('pointerdown', onPointerDown)
-      root.removeEventListener('click', onClick)
+      root.removeEventListener('pointerdown', listeners.pointerdown)
+      root.removeEventListener('mousedown', listeners.mousedown)
+      root.removeEventListener('click', listeners.click)
     }
   }, [close, open, rootRef])
 }
