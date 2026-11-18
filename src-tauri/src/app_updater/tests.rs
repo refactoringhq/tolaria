@@ -9,25 +9,76 @@ use std::{
     io::{Read, Write},
     net::TcpListener,
     thread,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
-fn delayed_response_server(delay: Duration) -> (String, thread::JoinHandle<()>) {
+fn delayed_response_server(
+    delay: Duration,
+    accept_timeout: Duration,
+) -> (String, thread::JoinHandle<Result<(), String>>) {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    listener.set_nonblocking(true).unwrap();
     let endpoint = format!("http://{}/latest.json", listener.local_addr().unwrap())
         .parse()
         .unwrap();
     let server = thread::spawn(move || {
-        let (mut connection, _) = listener.accept().unwrap();
-        let mut request = [0; 1024];
-        let _ = connection.read(&mut request);
-        thread::sleep(delay);
+        let mut connection = accept_updater_request(&listener, accept_timeout)?;
         connection
-            .write_all(b"HTTP/1.1 204 No Content\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
-            .unwrap();
+            .set_read_timeout(Some(Duration::from_secs(1)))
+            .map_err(|error| format!("failed to set request read timeout: {error}"))?;
+        connection
+            .set_write_timeout(Some(Duration::from_secs(1)))
+            .map_err(|error| format!("failed to set response write timeout: {error}"))?;
+        let mut request = [0; 1024];
+        connection
+            .read(&mut request)
+            .map_err(|error| format!("failed to read updater request: {error}"))?;
+        thread::sleep(delay.min(Duration::from_secs(10)));
+        let _ = connection.write_all(
+            b"HTTP/1.1 204 No Content\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+        );
+        Ok(())
     });
 
     (endpoint, server)
+}
+
+fn accept_updater_request(
+    listener: &TcpListener,
+    timeout: Duration,
+) -> Result<std::net::TcpStream, String> {
+    let deadline = Instant::now() + timeout;
+    loop {
+        if Instant::now() >= deadline {
+            return Err("timed out waiting for updater request".to_string());
+        }
+
+        if let Some(connection) = try_accept_updater_request(listener)? {
+            return Ok(connection);
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+}
+
+fn try_accept_updater_request(
+    listener: &TcpListener,
+) -> Result<Option<std::net::TcpStream>, String> {
+    match listener.accept() {
+        Ok((connection, _)) => Ok(Some(connection)),
+        Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => Ok(None),
+        Err(error) => Err(format!("failed to accept updater request: {error}")),
+    }
+}
+
+#[test]
+fn updater_test_server_stops_waiting_when_no_request_arrives() {
+    let (_endpoint, server) = delayed_response_server(Duration::ZERO, Duration::from_millis(20));
+    let result = server.join().expect("server thread should exit cleanly");
+
+    assert_eq!(
+        result,
+        Err("timed out waiting for updater request".to_string())
+    );
 }
 
 fn mock_updater_app() -> tauri::App<tauri::test::MockRuntime> {
@@ -46,7 +97,8 @@ fn mock_updater_app() -> tauri::App<tauri::test::MockRuntime> {
 
 #[tokio::test]
 async fn updater_builder_applies_its_timeout_to_the_update_check_request() {
-    let (endpoint, server) = delayed_response_server(Duration::from_millis(100));
+    let (endpoint, server) =
+        delayed_response_server(Duration::from_millis(100), Duration::from_secs(2));
     let endpoint = endpoint.parse().unwrap();
     let app = mock_updater_app();
     let updater =
@@ -60,12 +112,16 @@ async fn updater_builder_applies_its_timeout_to_the_update_check_request() {
         result.is_err(),
         "the configured request timeout should abort the delayed check"
     );
-    server.join().unwrap();
+    server
+        .join()
+        .expect("server thread should exit")
+        .expect("server should receive the updater request");
 }
 
 #[tokio::test]
 async fn production_updater_check_completes_after_five_seconds() {
-    let (endpoint, server) = delayed_response_server(Duration::from_millis(5_100));
+    let (endpoint, server) =
+        delayed_response_server(Duration::from_millis(5_100), Duration::from_secs(2));
     let endpoint = endpoint.parse().unwrap();
     let app = mock_updater_app();
     let updater = build_updater(app.handle(), endpoint).unwrap();
@@ -79,7 +135,10 @@ async fn production_updater_check_completes_after_five_seconds() {
         "production updater check should survive a 5.1s response delay"
     );
     assert_eq!(UPDATER_HTTP_TIMEOUT, Duration::from_secs(120));
-    server.join().unwrap();
+    server
+        .join()
+        .expect("server thread should exit")
+        .expect("server should receive the updater request");
 }
 
 #[test]
