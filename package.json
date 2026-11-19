@@ -34,6 +34,7 @@
     "test:server": "vitest run --config apps/server/vitest.config.ts --coverage",
     "server": "node --experimental-strip-types apps/server/scripts/run.ts apps/server/src/main.ts",
     "server:seed": "node --experimental-strip-types apps/server/scripts/seed-test-remote.ts",
+    "server:token": "node --experimental-strip-types apps/server/scripts/token.ts",
     "server:bench": "node --experimental-strip-types apps/server/scripts/run.ts apps/server/scripts/bench.ts",
     "server:collab-bench": "node --experimental-strip-types apps/server/scripts/run.ts apps/server/scripts/collab-bench.ts",
     "test:dev-mock": "node --experimental-strip-types --test scripts/vault-api-plugin.test.mjs",

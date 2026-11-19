@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
+import { AgentTokens } from './agentTokenFile.ts'
 import { loadConfig } from './config.ts'
+import { assertOutsideVault } from './dataPaths.ts'
 import { ChangeEmitter } from './changeEmitter.ts'
 import { codeFingerprint, SnapshotSeededStore } from './indexSnapshots.ts'
 import { INDEX_KEY as SEARCH_INDEX_KEY } from './searchIndex.ts'
@@ -45,6 +47,8 @@ async function createStore(config: ReturnType<typeof loadConfig>): Promise<{ sto
 
 async function main(): Promise<void> {
   const config = loadConfig(process.env)
+  const tokens = AgentTokens.load(config.tokensFile, { log })
+  log(`agent tokens: ${tokens.size} in ${config.tokensFile}`)
   await checkStoreEndpoints(config)
   const changes = new ChangeEmitter(log)
   const { store, snapshots } = await createStore(config)
@@ -61,6 +65,7 @@ async function main(): Promise<void> {
     },
   })
   log('vault initialized')
+  assertOutsideVault(config.tokensFile, config.vaultDir)
   const server = await createVaultServer({
     vault,
     store,
@@ -68,6 +73,8 @@ async function main(): Promise<void> {
     maxBodyBytes: config.maxBodyBytes,
     rateLimit: config.rateLimit,
     collab: config.collab ?? false,
+    mcp: config.mcp,
+    tokens,
     log,
     changes,
     onReady: () => log('server ready'),

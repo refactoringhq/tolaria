@@ -1,0 +1,26 @@
+# Tolaria remote under systemd. Walkthrough: ../docs/headless-mcp.md
+# Install: /etc/systemd/system/tolaria.service, then: systemctl enable --now tolaria
+[Unit]
+Description=Tolaria remote (vault server with MCP)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=tolaria
+Group=tolaria
+WorkingDirectory=/opt/tolaria
+EnvironmentFile=/etc/tolaria/tolaria.env
+Environment=TOLARIA_SERVER_DATA_DIR=/var/lib/tolaria/data
+# The path `command -v node` prints for the tolaria user; Node 22.14 or newer.
+ExecStart=/usr/bin/node --experimental-strip-types apps/server/scripts/run.ts apps/server/src/main.ts
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+# The data directory and ssh keys (/var/lib/tolaria), and node_modules/.tmp, where the server bundles itself at start.
+ReadWritePaths=/var/lib/tolaria /opt/tolaria/node_modules
+
+[Install]
+WantedBy=multi-user.target

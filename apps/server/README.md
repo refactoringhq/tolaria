@@ -1,12 +1,14 @@
 # Tolaria server
 
-The Tolaria remote: a small service that hosts one vault as a git working clone and exposes the file API and the collaboration channel of the [Tolaria remote protocol](../../docs/web/protocol.md). Spikes S3 (TOL-5) and S4 (TOL-8); see the spike reports for [files](../../docs/web/s3-spike-report.md) and [collaboration](../../docs/web/s4-spike-report.md).
+The Tolaria remote: a small service that hosts one vault as a git working clone and exposes the file API and the collaboration channel of the [Tolaria remote protocol](../../docs/web/protocol.md), plus an MCP endpoint for agents. Spikes S3 (TOL-5) and S4 (TOL-8); see the spike reports for [files](../../docs/web/s3-spike-report.md) and [collaboration](../../docs/web/s4-spike-report.md).
 
 Every save is one git commit, made after pulling from the vault's git remote and followed by a push. A write that is based on an outdated revision is saved as a conflict copy; nothing is overwritten silently.
 
 A note can also be opened as a live Yjs document on `/v1/collab/docs/<docId>`. Edits are written to the note's markdown file on a cadence, with untouched lines byte-identical, and a commit pulled from git is merged into the live document or forked into a conflict copy.
 
 ## Run
+
+To set it up from start to finish on a server or a Mac in the background, with Docker, systemd or launchd, and connect an agent, follow [Run Tolaria's MCP on a box with no GUI](docs/headless-mcp.md).
 
 Node 22.14 or newer and `git` on the `PATH`. From the repository root:
 
@@ -26,6 +28,7 @@ Use `pnpm run server`: bare `pnpm server` is a pnpm built-in command.
 | `TOLARIA_VAULT_BRANCH` | the remote's default | Branch to serve |
 | `TOLARIA_VAULT_FETCH_INTERVAL_MS` | `30000` | Pull from the remote this often, so desktop pushes reach open documents. `0` pulls only before a write or on `POST /v1/sync` |
 | `TOLARIA_SERVER_DATA_DIR` | `./data` | Holds `vault/` (the clone) and `state/` (doc index) |
+| `TOLARIA_SERVER_TOKENS_FILE` | `<data dir>/tokens.json` | The agent token file ("Tokens for agents"). Local disk only, never in the blob store; the server refuses to start when it is inside the vault directory. Missing means no agent tokens |
 | `TOLARIA_BLOBSTORE` | `local` | Blob store for doc index and Yjs snapshots: `local` (disk under `state/`) or `r2` (S3-compatible) |
 | `TOLARIA_R2_BUCKET` | none | R2 bucket name (required when `TOLARIA_BLOBSTORE=r2` or `TOLARIA_INDEX_SNAPSHOTS=r2`) |
 | `TOLARIA_R2_ENDPOINT` | none | R2 endpoint URL (required when `TOLARIA_BLOBSTORE=r2` or `TOLARIA_INDEX_SNAPSHOTS=r2`) |
@@ -40,6 +43,7 @@ Use `pnpm run server`: bare `pnpm server` is a pnpm built-in command.
 | `TOLARIA_SERVER_ALLOW_NON_LOOPBACK` | unset | Set to `1` to bind a non-loopback address. The server speaks plain HTTP: only do this behind a TLS-terminating proxy |
 | `TOLARIA_SERVER_MAX_BODY_BYTES` | `26214400` | Largest accepted request body, and websocket message up to 16 MiB unless `TOLARIA_COLLAB_MAX_MESSAGE_BYTES` is set |
 | `TOLARIA_COLLAB` | on | Set to `0` to leave the collaboration channel unserved |
+| `TOLARIA_MCP` | on | Set to `0` to leave the MCP endpoint (`POST /mcp`) unserved |
 | `TOLARIA_COLLAB_IDLE_MS` | `5000` | Write an edited document this long after its last edit |
 | `TOLARIA_COLLAB_MAX_WAIT_MS` | `60000` | Write it at the latest this long after its first unwritten edit |
 | `TOLARIA_COLLAB_LINGER_MS` | `30000` | Keep a document without clients open this long |
@@ -55,6 +59,53 @@ The limits (ADR 0292, "Limits" in the protocol) are sized so the web app, collab
 Other users get access through access tickets (protocol 1.9, ADR 0296): a front end that holds the token signs, per request, a short-lived ticket giving one user `viewer`, `editor` or `owner` on the vault or `viewer`/`editor` on single notes, and sends it as the bearer credential. The server verifies the HMAC with a key derived from `TOLARIA_SERVER_TOKEN`, so no other setting is needed; it enforces the ticket on every route and on the websocket, and `POST /v1/access/revocations` (owner only) refuses a user's older tickets and closes the connections their remaining grants no longer cover. `signAccessTicket` in `src/accessTickets.ts` mints one for a self-hosted proxy or a test.
 
 Git credentials for a private remote come from the environment the server runs in (SSH agent or a credential helper), never from the URL.
+
+## Tokens for agents
+
+An agent token is a long-lived credential for one agent or device, with `viewer` or `editor` on the whole vault or on single notes, that you can revoke on its own (protocol 1.11, ADR 0304). Manage them on the box, with or without the server running:
+
+```bash
+pnpm run server:token add --name phone --role viewer
+pnpm run server:token add --name research-agent --role editor --note projects/alpha.md --note inbox/ideas.md
+pnpm run server:token add --name ci --role viewer --expires-in 30d
+pnpm run server:token list
+pnpm run server:token revoke phone
+```
+
+The command reads `TOLARIA_SERVER_DATA_DIR` and `TOLARIA_SERVER_TOKENS_FILE` as the server does, so run it with the same environment. `add` prints the token (`tat1.…`) once; only a SHA-256 of its secret is kept, in a file of mode `0600`. `--note` may repeat; without it the role covers the whole vault. `--expires-in` takes minutes, hours or days (`45m`, `12h`, `30d`). Commits a token causes name it in a `Co-authored-by` trailer: its name at `<id>@tokens.tolaria.invalid` unless you give `--author-name` and `--author-email`. `list` shows id, name, role, scope, created and expires, never a secret. `revoke` takes a name or an id. At most 100 tokens; names are unique, 1 to 64 characters.
+
+The server checks the file at most once a second, so an added token works and a revoked or expired one is refused within about a second, and a revoked token's open websockets and change feeds are closed. A token never has `owner`: it cannot revoke tickets, and the owner token stays the only full credential.
+
+In the container image:
+
+```bash
+docker exec <container> tolaria-token add --name phone --role viewer
+```
+
+`tolaria-token` takes the same arguments as `pnpm run server:token` (`list`, `revoke` likewise). The image sets `TOLARIA_SERVER_DATA_DIR=/app/data`, so the file is `/app/data/tokens.json` unless `TOLARIA_SERVER_TOKENS_FILE` is set; keep `/app/data` on a volume so tokens survive a new container.
+
+## Connect an MCP client
+
+`POST /mcp` serves MCP over stateless Streamable HTTP (ADR 0303, "MCP endpoint" in the protocol): agents get `search_notes`, `get_vault_context`, `list_vaults`, `get_note`, `create_note`, `update_note` and `append_to_note`. Any client that can send an `Authorization` header works; there is no OAuth.
+
+Give each agent its own agent token with the least it needs, not the owner token: a `viewer` token is a read-only connection, a token on single notes sees and edits only those (`create_note` needs `editor` on the whole vault), and you can revoke it without touching anything else. With Claude Code:
+
+```bash
+pnpm run server:token add --name claude-laptop --role viewer   # prints tat1.…
+claude mcp add --transport http tolaria https://vault.example.com/mcp \
+  --header "Authorization: Bearer tat1.…"
+```
+
+Or in a client's JSON configuration:
+
+```json
+{ "mcpServers": { "tolaria": { "type": "http", "url": "https://vault.example.com/mcp",
+  "headers": { "Authorization": "Bearer <agent token>" } } } }
+```
+
+Every agent write is one commit on the server, pushed to the vault's git remote like any other save, so the desktop and mobile apps get it on their next pull. The agent sees their pushes once the server has pulled: every `TOLARIA_VAULT_FETCH_INTERVAL_MS` and before every write.
+
+The owner token and access tickets work here too. The owner token gives the agent full access and can only be withdrawn by changing it for every client; a ticket lives at most 10 minutes, so it suits a front end that mints them, not a fixed header.
 
 ## Try it against a throwaway vault
 
@@ -80,6 +131,6 @@ From the repository root:
 | `pnpm build` | Typechecks this directory with the rest of the repository (`tsc -b`) |
 | `pnpm lint` | ESLint |
 
-The file service uses Node's standard library, the system `git`, and the wire types in `packages/protocol`. The collaboration channel adds `ws`, `yjs`, `y-protocols`, `lib0`, `jsdom` and, through `packages/markdown-yjs`, BlockNote and the markdown pipeline in `src/`. That shared code is written for a bundler, so `scripts/run.ts` bundles an entry point with esbuild before running it. The three Yjs packages are not declared in `package.json` yet; `yjsResolution.ts` explains how they are resolved and why (see the S4 spike report, "Dependencies").
+The file service uses Node's standard library, the system `git`, and the wire types in `packages/protocol`. The collaboration channel adds `ws`, `yjs`, `y-protocols`, `lib0`, `jsdom` and, through `packages/markdown-yjs`, BlockNote and the markdown pipeline in `src/`. That shared code is written for a bundler, so `scripts/run.ts` bundles an entry point with esbuild before running it, leaving every package in `node_modules`. The container image runs bundles built ahead of time by `scripts/build-image.ts`: every package is bundled except `jsdom`, which reads its own files at load time and is shipped as a package with its dependencies. Both use the esbuild settings in `scripts/bundle.ts`. The three Yjs packages are not declared in `package.json` yet; `yjsResolution.ts` explains how they are resolved and why (see the S4 spike report, "Dependencies").
 
 Like `apps/web`, this is a directory of the root package, not a pnpm workspace package, so the lockfile is untouched. The desktop app does not import it and its bundle is unchanged by it.

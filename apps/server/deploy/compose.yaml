@@ -1,0 +1,21 @@
+# Tolaria remote in Docker. Walkthrough: ../docs/headless-mcp.md
+# Run from this directory: docker compose up -d --build
+# Agent tokens: docker compose exec tolaria tolaria-token add --name <name> --role viewer|editor
+name: tolaria
+services:
+  tolaria:
+    build:
+      context: ../../.. # the repository root: the build stage bundles the server from packages/ and src/ too
+      dockerfile: apps/server/Dockerfile
+    image: tolaria-server:local
+    restart: unless-stopped
+    env_file: tolaria.env
+    ports:
+      # Loopback only: the server speaks plain HTTP. Put a proxy or Tailscale in front.
+      - "127.0.0.1:8787:8787"
+    volumes:
+      - tolaria-data:/app/data # the clone, the doc index and tokens.json
+      - ./ssh:/home/node/.ssh:ro # deploy key and known_hosts for an SSH remote
+
+volumes:
+  tolaria-data:

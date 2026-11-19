@@ -41,6 +41,15 @@ describe('loadConfig', () => {
     })
   })
 
+  it('keeps agent tokens in the data directory unless told otherwise, and refuses a token file inside the vault', () => {
+    expect(loadConfig({ TOLARIA_SERVER_TOKEN: TOKEN }).tokensFile).toBe(resolve('data', 'tokens.json'))
+    const moved = loadConfig({ TOLARIA_SERVER_TOKEN: TOKEN, TOLARIA_SERVER_TOKENS_FILE: '/etc/tolaria/tokens.json' })
+    expect(moved.tokensFile).toBe('/etc/tolaria/tokens.json')
+    expect(() =>
+      loadConfig({ TOLARIA_SERVER_TOKEN: TOKEN, TOLARIA_SERVER_DATA_DIR: '/srv/t', TOLARIA_SERVER_TOKENS_FILE: '/srv/t/vault/../vault/tokens.json' }),
+    ).toThrowError(/inside the vault/)
+  })
+
   it.each(['abc', '0', '-1', '80.5', '70000'])('rejects the port %j', (port) => {
     expect(() => loadConfig({ TOLARIA_SERVER_TOKEN: TOKEN, TOLARIA_SERVER_PORT: port })).toThrowError(
       /TOLARIA_SERVER_PORT must be an integer/,
@@ -300,5 +309,13 @@ describe('limit settings', () => {
     ['TOLARIA_COLLAB_MAX_MESSAGE_BYTES', String(16 * 1024 * 1024 + 1)],
   ])('refuses %s=%s', (name, value) => {
     expect(() => loadConfig({ TOLARIA_SERVER_TOKEN: TOKEN, [name]: value })).toThrowError(`${name} must be an integer`)
+  })
+})
+
+describe('the MCP endpoint setting', () => {
+  it('serves /mcp unless TOLARIA_MCP=0', () => {
+    expect(loadConfig({ TOLARIA_SERVER_TOKEN: TOKEN }).mcp).toBe(true)
+    expect(loadConfig({ TOLARIA_SERVER_TOKEN: TOKEN, TOLARIA_MCP: '1' }).mcp).toBe(true)
+    expect(loadConfig({ TOLARIA_SERVER_TOKEN: TOKEN, TOLARIA_MCP: '0' }).mcp).toBe(false)
   })
 })

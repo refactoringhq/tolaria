@@ -412,6 +412,12 @@ export class Vault {
     return result.stdout.split('\0').filter(Boolean)
   }
 
+  /** The paths the last `commits` commits touched, newest first and each once; some may be gone since. */
+  async recentPaths(commits: number): Promise<string[]> {
+    const result = await this.repo.run(['log', `-${commits}`, '--format=', '--name-only', '-z', 'HEAD'])
+    return [...new Set(result.stdout.split('\0').filter(Boolean))]
+  }
+
   /**
    * The file changes from `commit` to the head, for bringing an index saved at `commit` up to
    * date. Null when that is not worth it or not possible: `commit` is not in this clone (for
