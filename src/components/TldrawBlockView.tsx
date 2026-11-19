@@ -1,11 +1,5 @@
-import {
-	type CSSProperties,
-	lazy,
-	Suspense,
-	useEffect,
-	useRef,
-	useState,
-} from "react";
+import { type CSSProperties, lazy, Suspense, useRef } from "react";
+import { useNearViewportOnce } from "../hooks/useNearViewportOnce";
 import {
 	type TldrawBlockMutationEditor,
 	type TldrawBlockProps,
@@ -21,28 +15,39 @@ interface TldrawBlockViewProps {
 	block: { id: string; props: TldrawBlockProps };
 	editor: TldrawBlockMutationEditor;
 }
+function LoadedTldrawWhiteboard(props: TldrawBlockViewProps) {
+	const updateProps = (
+		nextProps: (currentProps: TldrawBlockProps) => TldrawBlockProps,
+	) =>
+		updateTldrawBlockPropsSafely({
+			blockId: props.block.id,
+			editor: props.editor,
+			nextProps,
+		});
+
+	return (
+		<TldrawWhiteboard
+			boardId={props.block.props.boardId}
+			height={props.block.props.height}
+			snapshot={props.block.props.snapshot}
+			width={props.block.props.width}
+			onSnapshotChange={(snapshot) => {
+				updateProps((currentProps) => ({ ...currentProps, snapshot }));
+			}}
+			onSizeChange={(size) => {
+				updateProps((currentProps) => ({
+					...currentProps,
+					height: size.height,
+					width: size.width,
+				}));
+			}}
+		/>
+	);
+}
+
 export function TldrawBlockView(props: TldrawBlockViewProps) {
 	const placeholderRef = useRef<HTMLDivElement>(null);
-	const [isNearViewport, setIsNearViewport] = useState(
-		() => typeof IntersectionObserver === "undefined",
-	);
-
-	useEffect(() => {
-		const placeholder = placeholderRef.current;
-		if (!placeholder) return;
-		if (typeof IntersectionObserver === "undefined") return;
-
-		const observer = new IntersectionObserver(
-			(entries) => {
-				if (!entries.some((entry) => entry.isIntersecting)) return;
-				setIsNearViewport(true);
-				observer.disconnect();
-			},
-			{ rootMargin: "600px 0px" },
-		);
-		observer.observe(placeholder);
-		return () => observer.disconnect();
-	}, []);
+	const isNearViewport = useNearViewportOnce(placeholderRef);
 
 	const placeholderStyle = {
 		"--tldraw-whiteboard-height": `${props.block.props.height || "520"}px`,
@@ -50,51 +55,21 @@ export function TldrawBlockView(props: TldrawBlockViewProps) {
 			? `${props.block.props.width}px`
 			: "100%",
 	} as CSSProperties;
+	const placeholder = (
+		<div
+			className="tldraw-whiteboard tldraw-whiteboard--loading"
+			style={placeholderStyle}
+		/>
+	);
 
 	return (
 		<div ref={placeholderRef} style={{ width: "100%", minWidth: 0 }}>
 			{isNearViewport ? (
-				<Suspense
-					fallback={
-						<div
-							className="tldraw-whiteboard tldraw-whiteboard--loading"
-							style={placeholderStyle}
-						/>
-					}
-				>
-					<TldrawWhiteboard
-						boardId={props.block.props.boardId}
-						height={props.block.props.height}
-						snapshot={props.block.props.snapshot}
-						width={props.block.props.width}
-						onSnapshotChange={(snapshot) => {
-							updateTldrawBlockPropsSafely({
-								blockId: props.block.id,
-								editor: props.editor,
-								nextProps: (currentProps) => ({
-									...currentProps,
-									snapshot,
-								}),
-							});
-						}}
-						onSizeChange={(size) => {
-							updateTldrawBlockPropsSafely({
-								blockId: props.block.id,
-								editor: props.editor,
-								nextProps: (currentProps) => ({
-									...currentProps,
-									height: size.height,
-									width: size.width,
-								}),
-							});
-						}}
-					/>
+				<Suspense fallback={placeholder}>
+					<LoadedTldrawWhiteboard {...props} />
 				</Suspense>
 			) : (
-				<div
-					className="tldraw-whiteboard tldraw-whiteboard--loading"
-					style={placeholderStyle}
-				/>
+				placeholder
 			)}
 		</div>
 	);

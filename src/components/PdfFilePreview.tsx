@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
-import { loadPdfDocument, pdfCanvasContext, type PdfDocument, type PdfRenderTask } from '../utils/pdfPreviewRuntime'
+import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react'
+import { useNearViewportOnce } from '../hooks/useNearViewportOnce'
+import { isSupportedPdfSource, loadPdfDocument, type PdfDocument, type PdfPage, type PdfRenderTask, pdfCanvasContext } from '../utils/pdfPreviewRuntime'
 
 interface PdfFilePreviewProps {
   fallback: ReactNode
@@ -20,6 +21,11 @@ interface PdfPageRenderOptions extends Omit<PdfPageCanvasProps, 'title'> {
   canvas: HTMLCanvasElement
 }
 
+interface PdfPageSize {
+  height: number
+  width: number
+}
+
 interface PdfPageRenderState {
   cancelled: boolean
   task: PdfRenderTask | null
@@ -28,6 +34,12 @@ interface PdfPageRenderState {
 const DEFAULT_PAGE_WIDTH = 800
 const MAX_PAGE_WIDTH = 1_200
 const PAGE_HORIZONTAL_PADDING = 48
+// A crafted PDF can claim any page count; preview at most this many pages.
+const MAX_PREVIEW_PAGES = 2_000
+// A crafted PDF can claim any page size; cap the laid-out height and each canvas edge.
+const MAX_PAGE_HEIGHT = 16_384
+// The smallest common webview canvas edge; capping both edges also bounds the area.
+const MAX_CANVAS_EDGE = 4_096
 
 function usePreviewWidth(previewRef: RefObject<HTMLDivElement | null>): number {
   const [width, setWidth] = useState(DEFAULT_PAGE_WIDTH)
@@ -47,35 +59,25 @@ function usePreviewWidth(previewRef: RefObject<HTMLDivElement | null>): number {
   return width
 }
 
-function usePageVisibility(pageRef: RefObject<HTMLDivElement | null>, eager: boolean): boolean {
-  const [visible, setVisible] = useState(eager)
-
-  useEffect(() => {
-    const element = pageRef.current
-    if (visible || !element) return undefined
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return
-        setVisible(true)
-        observer.disconnect()
-      },
-      { rootMargin: '600px 0px' },
-    )
-    observer.observe(element)
-    return () => observer.disconnect()
-  }, [pageRef, visible])
-
-  return visible
+function previewPageCount(pageCount = 0): number {
+  return Number.isSafeInteger(pageCount) ? Math.min(Math.max(pageCount, 0), MAX_PREVIEW_PAGES) : 0
 }
 
-function renderScale(pageWidth: number, availableWidth: number): number {
+function renderScale(page: PdfPageSize, availableWidth: number): number {
   const targetWidth = Math.min(Math.max(availableWidth - PAGE_HORIZONTAL_PADDING, 1), MAX_PAGE_WIDTH)
-  return targetWidth / pageWidth
+  return Math.min(targetWidth / page.width, MAX_PAGE_HEIGHT / page.height)
 }
 
-function configureCanvas(canvas: HTMLCanvasElement, viewport: { height: number; width: number }): number {
-  const outputScale = Math.max(window.devicePixelRatio, 1)
+function canvasOutputScale(viewport: PdfPageSize): number {
+  const longestEdge = Math.max(viewport.width, viewport.height)
+  if (!Number.isFinite(longestEdge) || !(Math.min(viewport.width, viewport.height) > 0)) {
+    throw new Error('Invalid PDF page size')
+  }
+  return Math.min(Math.max(window.devicePixelRatio, 1), MAX_CANVAS_EDGE / longestEdge)
+}
+
+function configureCanvas(canvas: HTMLCanvasElement, viewport: PdfPageSize): number {
+  const outputScale = canvasOutputScale(viewport)
   canvas.width = Math.floor(viewport.width * outputScale)
   canvas.height = Math.floor(viewport.height * outputScale)
   canvas.style.width = `${Math.floor(viewport.width)}px`
@@ -83,13 +85,11 @@ function configureCanvas(canvas: HTMLCanvasElement, viewport: { height: number; 
   return outputScale
 }
 
-async function paintPdfPage(options: PdfPageRenderOptions, state: PdfPageRenderState): Promise<void> {
-  const { availableWidth, canvas, document, pageNumber } = options
-  const page = await document.getPage(pageNumber)
+async function drawPdfPage(page: PdfPage, options: PdfPageRenderOptions, state: PdfPageRenderState): Promise<void> {
   if (state.cancelled) return
-
+  const { availableWidth, canvas } = options
   const baseViewport = page.getViewport({ scale: 1 })
-  const viewport = page.getViewport({ scale: renderScale(baseViewport.width, availableWidth) })
+  const viewport = page.getViewport({ scale: renderScale(baseViewport, availableWidth) })
   const outputScale = configureCanvas(canvas, viewport)
   state.task = page.render({
     canvas,
@@ -97,7 +97,13 @@ async function paintPdfPage(options: PdfPageRenderOptions, state: PdfPageRenderS
     transform: [outputScale, 0, 0, outputScale, 0, 0],
     viewport,
   })
-  await state.task.promise.finally(() => page.cleanup())
+  await state.task.promise
+}
+
+// Clean the page up on every path, including a rejected or invalid render.
+async function paintPdfPage(options: PdfPageRenderOptions, state: PdfPageRenderState): Promise<void> {
+  const page = await options.document.getPage(options.pageNumber)
+  return drawPdfPage(page, options, state).finally(() => page.cleanup())
 }
 
 function startPdfPageRender(options: PdfPageRenderOptions): () => void {
@@ -114,7 +120,7 @@ function startPdfPageRender(options: PdfPageRenderOptions): () => void {
 function PdfPageCanvas({ availableWidth, document, onError, pageNumber, title }: PdfPageCanvasProps) {
   const pageRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const visible = usePageVisibility(pageRef, pageNumber === 1)
+  const visible = useNearViewportOnce(pageRef, { eager: pageNumber === 1 })
 
   useEffect(() => {
     if (!visible) return undefined
@@ -130,36 +136,56 @@ function PdfPageCanvas({ availableWidth, document, onError, pageNumber, title }:
   )
 }
 
-export function PdfFilePreview({ fallback, onError, source, title }: PdfFilePreviewProps) {
-  const previewRef = useRef<HTMLDivElement>(null)
-  const [document, setDocument] = useState<PdfDocument | null>(null)
-  const [failed, setFailed] = useState(false)
-  const availableWidth = usePreviewWidth(previewRef)
-  const pageNumbers = useMemo(
-    () => Array.from({ length: document?.numPages ?? 0 }, (_, index) => index + 1),
-    [document?.numPages],
-  )
+interface PdfDocumentState {
+  document: PdfDocument | null
+  failed: boolean
+}
+
+interface PdfSourceState extends PdfDocumentState {
+  source: string
+}
+
+const LOADING_DOCUMENT: PdfDocumentState = { document: null, failed: false }
+
+// State is keyed by source and cleared with its document, so a reload never shows a stale or destroyed result.
+function usePdfDocument(source: string, onError: () => void): PdfDocumentState {
+  const [state, setState] = useState<PdfSourceState | null>(null)
 
   useEffect(() => {
     let active = true
     let loadedDocument: PdfDocument | null = null
-    void loadPdfDocument(source)
+    const load = isSupportedPdfSource(source) ? loadPdfDocument(source) : Promise.reject(new Error('Unsupported PDF source'))
+    void load
       .then((nextDocument) => {
         loadedDocument = nextDocument
-        if (active) setDocument(nextDocument)
+        if (active) setState({ document: nextDocument, failed: false, source })
         else void nextDocument.destroy()
       })
       .catch(() => {
         if (!active) return
-        setFailed(true)
+        setState({ document: null, failed: true, source })
         onError()
       })
 
     return () => {
       active = false
-      if (loadedDocument) void loadedDocument.destroy()
+      if (!loadedDocument) return
+      void loadedDocument.destroy()
+      setState(null)
     }
   }, [onError, source])
+
+  return state?.source === source ? state : LOADING_DOCUMENT
+}
+
+export function PdfFilePreview({ fallback, onError, source, title }: PdfFilePreviewProps) {
+  const previewRef = useRef<HTMLDivElement>(null)
+  const { document, failed } = usePdfDocument(source, onError)
+  const availableWidth = usePreviewWidth(previewRef)
+  const pageNumbers = useMemo(
+    () => Array.from({ length: previewPageCount(document?.numPages) }, (_, index) => index + 1),
+    [document?.numPages],
+  )
 
   if (failed) return fallback
 
