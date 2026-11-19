@@ -26,7 +26,7 @@ const calendar: CalendarLayoutBindings = {
   dateOptions: ['due', 'end'],
   canReschedule: true,
   onSettingsChange: vi.fn(),
-  onReschedule: vi.fn().mockResolvedValue(undefined),
+  onWriteDate: vi.fn().mockResolvedValue(undefined),
   onCreate: vi.fn(),
   onUseList: vi.fn(),
 }

@@ -31,9 +31,8 @@ export function calendarBindings({ layout, write, create }: CalendarBindingSourc
     dateOptions: layout.dateOptions,
     canReschedule,
     onSettingsChange: layout.changeCalendar,
-    onReschedule: async (entry, writes) => {
-      if (!canReschedule) return
-      for (const { property, value } of writes) await write(entry, property, value)
+    onWriteDate: async (entry, { property, value }) => {
+      if (canReschedule) await write(entry, property, value)
     },
     onCreate: (day) => {
       if (!canReschedule || !dateProperty || !create) return

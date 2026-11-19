@@ -1,12 +1,12 @@
-import { act, fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { useCallback, useEffect, useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { presentationFromViewDefinition } from '../../../collections/presentationConfig'
 import { SET_COLLECTION_LAYOUT_EVENT } from '../../../collections/collectionTypes'
-import type { NoteActionsConfig } from '../../../hooks/useNoteActions'
 import { useNoteActions } from '../../../hooks/useNoteActions'
 import { updateFrontmatterContent } from '../../../lib/frontmatterText'
 import { makeEntry } from '../../../test-utils/noteListTestUtils'
-import type { SidebarSelection, ViewFile } from '../../../types'
+import type { SidebarSelection, VaultEntry, ViewFile } from '../../../types'
 import { CollectionLayoutBody, type WriteNoteProperty } from '../CollectionLayoutBody'
 import { CollectionLayoutHeaderControls } from '../CollectionLayoutControls'
 import type { InitialNoteProperties } from '../noteListCreate'
@@ -147,11 +147,8 @@ describe('calendar collection layout', () => {
     expect(screen.getByTestId('calendar-board')).toBeInTheDocument()
   })
 
-  it('reschedules a range through the frontmatter writer, moving both dates and nothing else', async () => {
+  it('reschedules a range through the frontmatter writer: both dates move on disk and in memory, nothing else changes', async () => {
     const files = new Map([[launch.path, '---\ntitle: Launch\nstart: 2026-11-19\nend: 2026-11-21\nowner: Ada\n---\n\nBody [[Roadmap]].\n']])
-    const actionConfig: NoteActionsConfig = {
-      addEntry: vi.fn(), removeEntry: vi.fn(), entries: [launch, someday], setToastMessage: vi.fn(), updateEntry: vi.fn(), vaultPath: '/vault',
-    }
     vi.stubGlobal('isTauri', true)
     invoke.mockImplementation(async (command, rawArgs) => {
       if (command !== 'update_frontmatter') return {}
@@ -160,16 +157,34 @@ describe('calendar collection layout', () => {
       files.set(args.path, next)
       return next
     })
-    const { result } = renderHook(() => useNoteActions(actionConfig))
-    render(<Harness presentation={{ type: 'calendar', dateProperty: 'start', endDateProperty: 'end', view: 'month', showWeekends: true, properties: [] }} onMove={(entry, key, value) => result.current.handleUpdateFrontmatter(entry.path, key, value)} />)
+    const latest: { entries: VaultEntry[] } = { entries: [] }
+    function LiveVault() {
+      const [entries, setEntries] = useState<VaultEntry[]>([launch, someday])
+      useEffect(() => {
+        latest.entries = entries
+      }, [entries])
+      const updateEntry = useCallback((path: string, patch: Partial<VaultEntry>) => {
+        setEntries((current) => current.map((entry) => (entry.path === path ? { ...entry, ...patch } : entry)))
+      }, [])
+      const actions = useNoteActions({ addEntry: vi.fn(), removeEntry: vi.fn(), entries, setToastMessage: vi.fn(), updateEntry, vaultPath: '/vault' })
+      return (
+        <Harness
+          visibleEntries={entries}
+          presentation={{ type: 'calendar', dateProperty: 'start', endDateProperty: 'end', view: 'month', showWeekends: true, properties: [] }}
+          onMove={(entry, key, value) => actions.handleUpdateFrontmatter(entry.path, key, value)}
+        />
+      )
+    }
+    render(<LiveVault />)
 
     act(() => {
       dndHandlers.current?.onDragStart(dragEvent(launch.path, '2026-11-19'))
-      dndHandlers.current?.onDragOver(dragEvent(launch.path, '2026-11-20'))
+      dndHandlers.current?.onDragOver(dragEvent(launch.path, '2026-11-19'))
     })
-    act(() => dndHandlers.current?.onDragEnd(dragEvent(launch.path, '2026-11-26')))
+    act(() => dndHandlers.current?.onDragEnd(dragEvent(launch.path, '2026-11-24')))
 
-    await waitFor(() => expect(files.get(launch.path)).toBe('---\ntitle: Launch\nstart: 2026-11-25\nend: 2026-11-27\nowner: Ada\n---\n\nBody [[Roadmap]].\n'))
+    await waitFor(() => expect(files.get(launch.path)).toBe('---\ntitle: Launch\nstart: 2026-11-24\nend: 2026-11-26\nowner: Ada\n---\n\nBody [[Roadmap]].\n'))
+    await waitFor(() => expect(latest.entries.find((entry) => entry.path === launch.path)?.properties).toMatchObject({ start: '2026-11-24', end: '2026-11-26' }))
     expect(trackEvent).toHaveBeenCalledWith('calendar_note_rescheduled', { source: 'grid', range: 1 })
   })
 

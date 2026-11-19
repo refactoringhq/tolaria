@@ -47,7 +47,8 @@ export interface CalendarLayoutBindings {
   /** False for read-only sources (created/modified dates) and keys a drop must not write. */
   canReschedule: boolean
   onSettingsChange: (patch: Partial<CalendarSettings>) => void
-  onReschedule: (entry: VaultEntry, writes: DateWrite[]) => Promise<void>
+  /** Writes one date property; a range move calls it once per date, in order. */
+  onWriteDate: (entry: VaultEntry, write: DateWrite) => Promise<void>
   onCreate: (day: DayKey) => void
   onUseList: () => void
 }

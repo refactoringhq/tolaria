@@ -5,6 +5,7 @@ import { DndContext, DragOverlay, pointerWithin } from '@dnd-kit/core'
 import type { CalendarViewMode } from '../../../collections/collectionTypes'
 import type { CalendarLayoutBindings, CollectionLayoutSharedProps } from '../../../collections/layoutRegistry'
 import { type AppLocale, translate } from '../../../lib/i18n'
+import type { VaultEntry } from '../../../types'
 import { trackEvent } from '../../../lib/telemetry'
 import { useKanbanSensors } from '../useKanbanDrag'
 import { calendarTitle, type DayKey, isWeekend, localDayKey, shiftAnchor, visibleWeeks, weekStartForLocale } from './calendarDates'
@@ -16,6 +17,7 @@ import { type CalendarItem, type CalendarSources, itemsInRange, partitionEntries
 import { CalendarToolbar } from './CalendarToolbar'
 import { type CalendarNavigation, useCalendarShortcuts } from './useCalendarShortcuts'
 import { CalendarTray } from './CalendarTray'
+import { type LatestDateWriter, type LatestDateWriterRef, writeDatesInOrder } from './sequentialDateWrites'
 import { type CalendarActiveDrag, type CalendarDrop, useCalendarDrag, usePendingDates } from './useCalendarDrag'
 
 export interface CalendarLayoutProps extends CollectionLayoutSharedProps {
@@ -76,12 +78,21 @@ function useItemContext(props: CalendarBoardProps): CalendarItemContext {
   }), [allEntries, calendar.canReschedule, displayPropsOverride, locale, onOpen, properties, typeEntryMap])
 }
 
-function useDropHandler(calendar: CalendarLayoutBindings, sources: CalendarSources) {
+/** The newest entries and date writer, so a range's second write never uses a writer from before the first. */
+function useLatestDateWriter(entries: VaultEntry[], calendar: CalendarLayoutBindings): LatestDateWriterRef {
+  const latest = useRef<LatestDateWriter>({ entries, writeDate: calendar.onWriteDate })
+  useLayoutEffect(() => {
+    latest.current = { entries, writeDate: calendar.onWriteDate }
+  })
+  return latest
+}
+
+function useDropHandler(latest: LatestDateWriterRef, sources: CalendarSources) {
   return useCallback(({ item, next, fromTray }: CalendarDrop) => {
     trackEvent('calendar_note_rescheduled', { source: fromTray ? 'tray' : 'grid', range: item.start !== item.end ? 1 : 0 })
     const scheduled = fromTray ? { ...item, start: next.start, end: next.start } : item
-    void calendar.onReschedule(item.entry, rescheduleWrites(scheduled, next, sources))
-  }, [calendar, sources])
+    void writeDatesInOrder(item.entry, rescheduleWrites(scheduled, next, sources), latest)
+  }, [latest, sources])
 }
 
 function DragPreview({ active, context }: { active: CalendarActiveDrag | null; context: CalendarItemContext }) {
@@ -105,7 +116,8 @@ function CalendarBoard(props: CalendarBoardProps) {
   const visibleItems = useMemo<CalendarItem[]>(() => itemsInRange(partition.items, weeks[0][0], lastShownDay(weeks)), [partition.items, weeks])
   const context = useItemContext(props)
   const laneHeight = laneHeightFor(visibleItems.some((item) => hasCardFields(item.entry, context)))
-  const drag = useCalendarDrag({ setPending, onDrop: useDropHandler(calendar, sources) })
+  const latestWriter = useLatestDateWriter(entries, calendar)
+  const drag = useCalendarDrag({ setPending, onDrop: useDropHandler(latestWriter, sources) })
   const onCreate = useLatestCallback(calendar.onCreate)
   const gridState: CalendarGridState = {
     today: localDayKey(new Date()),
