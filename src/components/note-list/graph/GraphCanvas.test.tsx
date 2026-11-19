@@ -228,12 +228,11 @@ describe('GraphCanvas', () => {
   })
 
   it('hides a lower-ranked label that would cover a higher-ranked one', () => {
-    const widths = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(80)
     renderCanvas()
+    for (const chipHtml of screen.getAllByTestId('graph-label')) chipHtml.dataset.width = '80'
     placeNodes({ [launch.path]: { x: 100, y: 50 }, [ada.path]: { x: 110, y: 52 } })
     const visibility = screen.getAllByTestId('graph-label').map((chipHtml) => chipHtml.style.visibility)
     expect(visibility.sort()).toEqual(['hidden', 'visible'])
-    widths.mockRestore()
   })
 
   it('recolors on a theme switch without rebuilding the renderer', async () => {

@@ -40,14 +40,12 @@ interface LabelBox {
   bottom: number
 }
 
-const labelWidths = new WeakMap<HTMLElement, number>()
-
-/** Label text never changes after mount, so each chip is measured once instead of every frame. */
+/** Label text never changes after mount, so each chip is measured once (kept in its dataset), not every frame. */
 function labelWidth(label: HTMLElement): number {
-  const known = labelWidths.get(label)
-  if (known !== undefined) return known
+  const known = Number(label.dataset.width)
+  if (label.dataset.width !== undefined && Number.isFinite(known)) return known
   const width = label.offsetWidth
-  labelWidths.set(label, width)
+  label.dataset.width = String(width)
   return width
 }
 
