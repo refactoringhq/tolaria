@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/react";
 import {
 	type Dispatch,
 	type SetStateAction,
@@ -17,7 +18,21 @@ import { formatCalendarVersionForDisplay } from "../utils/calendarVersion";
 import { openExternalUrl } from "../utils/url";
 
 const RELEASE_NOTES_URL = "https://tolaria.md/releases/";
-const UPDATER_CHECK_TIMEOUT_MS = 10_000;
+const UPDATER_CHECK_TIMEOUT_MS = 120_000;
+
+function reportUpdaterFailure(
+	action: "check" | "download",
+	error: unknown,
+): void {
+	const details = error instanceof Error ? error.message : String(error);
+	const message = `[updater] ${action === "check" ? "Failed to check for updates" : "Download failed"}: ${details}`;
+	console.warn(message, error);
+	Sentry.addBreadcrumb({
+		category: "updater",
+		level: "warning",
+		message,
+	});
+}
 
 function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
 	let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -143,7 +158,7 @@ function reportUpdateCheckFailure(
 		setStatus({ state: "error", kind: "package" });
 		return { kind: "package" };
 	}
-	console.warn("[updater] Failed to check for updates");
+	reportUpdaterFailure("check", error);
 	setStatus({ state: "error", kind: "check" });
 	return { kind: "error" };
 }
@@ -180,8 +195,8 @@ async function downloadUpdate({
 		setStatus((prev) =>
 			prev.state === "downloading" ? { state: "ready", ...versionInfo } : prev,
 		);
-	} catch {
-		console.warn("[updater] Download failed");
+	} catch (error) {
+		reportUpdaterFailure("download", error);
 		setStatus({ state: "error", kind: "download" });
 	}
 }
