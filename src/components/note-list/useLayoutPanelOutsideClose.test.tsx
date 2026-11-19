@@ -2,11 +2,11 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { describe, expect, it, vi } from 'vitest'
-import { useKanbanPanelOutsideClose } from './useKanbanPanelOutsideClose'
+import { useLayoutPanelOutsideClose } from './useLayoutPanelOutsideClose'
 
 function Board({ open, close, onCard }: { open: boolean; close: () => void; onCard?: () => void }) {
   const rootRef = useRef<HTMLDivElement>(null)
-  useKanbanPanelOutsideClose({ rootRef, open, close })
+  useLayoutPanelOutsideClose({ rootRef, open, close })
   return (
     <div data-testid="root" ref={rootRef}>
       <header data-testid="header">
@@ -27,7 +27,7 @@ function click(element: Element, from = { x: 10, y: 10 }, to = from) {
   fireEvent.click(element, { clientX: to.x, clientY: to.y })
 }
 
-describe('useKanbanPanelOutsideClose', () => {
+describe('useLayoutPanelOutsideClose', () => {
   it('closes the open panel from empty board, lane and header space', () => {
     const close = vi.fn()
     render(<Board open close={close} />)

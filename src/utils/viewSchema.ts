@@ -30,7 +30,7 @@ export interface ViewDefinition {
   listPropertiesDisplay?: string[]
   filters: FilterGroup
   presentation?: {
-    type: 'list' | 'kanban' | 'calendar'
+    type: 'list' | 'kanban' | 'calendar' | 'graph'
     sort?: string | null
     groupBy?: string | null
     properties?: string[]
@@ -41,6 +41,11 @@ export interface ViewDefinition {
     endDateProperty?: string | null
     view?: 'month' | 'week'
     showWeekends?: boolean
+    showWikiLinks?: boolean
+    hiddenRelationships?: string[]
+    hiddenTypes?: string[]
+    showOrphans?: boolean
+    showLabels?: boolean
   }
 }
 

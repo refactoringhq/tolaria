@@ -23,12 +23,16 @@ describe('collectionLayoutConfig', () => {
     expect(readStoredLayout({ type: 'kanban', groupBy: 7, properties: ['owner', 3], columnOrder: 'Done' })).toEqual({
       layout: 'kanban', groupBy: 'status', properties: ['owner'], columnOrder: [], collapsedColumns: [], hiddenColumns: [],
       calendar: { dateProperty: null, endDateProperty: null, view: 'month', showWeekends: true },
+      graph: { showWikiLinks: true, hiddenRelationships: [], hiddenTypes: [], showOrphans: true, showLabels: true },
     })
     expect(readStoredLayout({ type: 'kanban', collapsedColumns: ['Done', 4, ''], hiddenColumns: 'Doing' })).toMatchObject({
       collapsedColumns: ['Done', ''], hiddenColumns: [],
     })
     expect(readStoredLayout({ type: 'calendar', dateProperty: 'due', view: 'year', showWeekends: 'no' })).toMatchObject({
       layout: 'calendar', calendar: { dateProperty: 'due', endDateProperty: null, view: 'month', showWeekends: true },
+    })
+    expect(readStoredLayout({ type: 'graph', showWikiLinks: false, hiddenRelationships: ['owner', 2], showOrphans: 'no', showLabels: false })).toMatchObject({
+      layout: 'graph', graph: { showWikiLinks: false, hiddenRelationships: ['owner'], hiddenTypes: [], showOrphans: true, showLabels: false },
     })
     expect(readStoredLayout({ type: 'timeline' })).toBeUndefined()
     expect(readStoredLayout(['kanban'])).toBeUndefined()

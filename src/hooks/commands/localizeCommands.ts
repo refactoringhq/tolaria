@@ -54,6 +54,7 @@ const STATIC_LABEL_KEYS: Partial<Record<string, TranslationKey>> = {
   'show-collection-as-list': 'command.view.showAsList',
   'show-collection-as-kanban': 'command.view.showAsKanban',
   'show-collection-as-calendar': 'command.view.showAsCalendar',
+  'show-collection-as-graph': 'command.view.showAsGraph',
   'toggle-inspector': 'command.view.toggleProperties',
   'toggle-diff': 'command.view.toggleDiff',
   'toggle-raw-editor': 'command.view.toggleRaw',

@@ -1,0 +1,113 @@
+/* Graph layout (TOL-385): a WebGL canvas with an HTML label layer and corner zoom controls. */
+.graph-layout {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0;
+  overflow: hidden;
+  background: var(--background);
+}
+
+.graph-canvas {
+  position: relative;
+  min-height: 0;
+  flex: 1 1 0;
+  overflow: hidden;
+}
+
+.graph-stage {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+}
+
+.graph-stage:active {
+  cursor: grabbing;
+}
+
+.graph-labels {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.graph-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  max-width: 180px;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--background) 82%, transparent);
+  color: var(--foreground);
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+  visibility: hidden;
+  will-change: transform;
+}
+
+.graph-label[data-selected="true"] {
+  background: var(--background);
+  box-shadow: 0 0 0 1.5px var(--primary);
+  font-weight: 600;
+}
+
+.graph-label__icon {
+  flex: none;
+}
+
+.graph-label__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.graph-zoom-controls {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  box-shadow: 0 4px 12px -6px rgb(0 0 0 / 0.25);
+}
+
+.graph-legend-edge {
+  display: inline-block;
+  width: 16px;
+  flex: none;
+  border-top: 2px solid var(--muted-foreground);
+}
+
+.graph-legend-edge--dashed {
+  border-top-style: dashed;
+  opacity: 0.6;
+}
+
+.graph-legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 999px;
+}
+
+.graph-filter-menu {
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.graph-filter-menu::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}

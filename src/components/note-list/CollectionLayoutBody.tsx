@@ -1,6 +1,6 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { COLLECTION_PRESENTATION_LIST } from '../../collections/collectionTypes'
-import { type CollectionLayoutRendererProps, getCollectionLayout } from '../../collections/layoutRegistry'
+import { type CollectionLayoutRendererProps, getCollectionLayout, type GraphLayoutBindings } from '../../collections/layoutRegistry'
 import { type AppLocale, translate } from '../../lib/i18n'
 import type { VaultEntry } from '../../types'
 import { Button } from '@/components/ui/button'
@@ -35,6 +35,17 @@ function MissingGroupProperty({ property, locale, onUseList }: { property: strin
   )
 }
 
+function graphBindings(layout: CollectionLayoutState): GraphLayoutBindings {
+  return {
+    settings: layout.graph,
+    data: layout.graphData,
+    panelOpen: layout.panel.open,
+    onSettingsChange: layout.changeGraph,
+    onBackgroundClick: layout.panel.close,
+    onUseList: () => layout.changeLayout(COLLECTION_PRESENTATION_LIST),
+  }
+}
+
 function rendererProps(props: CollectionLayoutBodyProps): CollectionLayoutRendererProps {
   const { layout, onMove } = props
   return {
@@ -63,6 +74,7 @@ function rendererProps(props: CollectionLayoutBodyProps): CollectionLayoutRender
       },
     },
     calendar: calendarBindings({ layout, write: onMove, create: props.onCreate }),
+    graph: graphBindings(layout),
   }
 }
 
