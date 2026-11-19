@@ -34,15 +34,25 @@ export function snapshotGraph(graph: Graph, iterations: number): GraphLayoutSnap
   return { ids, positions, edges, iterations }
 }
 
+function numberAt(values: readonly number[], index: number): number {
+  return values.at(index) ?? 0
+}
+
+/** The two note ids of the edge at `edge` (an even index into the interleaved edge list). */
+function edgeEnds(snapshot: GraphLayoutSnapshot, edge: number): [string, string] | null {
+  const source = snapshot.ids.at(numberAt(snapshot.edges, edge))
+  const target = snapshot.ids.at(numberAt(snapshot.edges, edge + 1))
+  return source && target && source !== target ? [source, target] : null
+}
+
 export function graphFromSnapshot(snapshot: GraphLayoutSnapshot): Graph {
   const graph = new Graph({ type: 'undirected', multi: false })
   snapshot.ids.forEach((id, position) => {
-    graph.addNode(id, { x: snapshot.positions.at(position * 2) ?? 0, y: snapshot.positions.at(position * 2 + 1) ?? 0 })
+    graph.addNode(id, { x: numberAt(snapshot.positions, position * 2), y: numberAt(snapshot.positions, position * 2 + 1) })
   })
   for (let edge = 0; edge < snapshot.edges.length; edge += 2) {
-    const source = snapshot.ids.at(snapshot.edges.at(edge) ?? -1)
-    const target = snapshot.ids.at(snapshot.edges.at(edge + 1) ?? -1)
-    if (source && target && source !== target && !graph.hasEdge(source, target)) graph.addEdge(source, target)
+    const ends = edgeEnds(snapshot, edge)
+    if (ends && !graph.hasEdge(...ends)) graph.addEdge(...ends)
   }
   return graph
 }

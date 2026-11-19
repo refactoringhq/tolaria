@@ -7,6 +7,12 @@ import { type GraphNodeModel, LABEL_BUDGET, labelledNodes, type VisibleGraph } f
 
 type Handler = (payload: { node: string }) => void
 
+interface Press {
+  sigmaEvent: 'downNode' | 'downStage'
+  node?: string
+  release: { clientX: number; clientY: number }
+}
+
 interface FakeRenderer {
   graph: Graph
   handlers: Map<string, Set<Handler>>
@@ -81,12 +87,6 @@ function renderCanvas(overrides: Partial<Parameters<typeof GraphCanvas>[0]> = {}
     ...overrides,
   }
   return { props, ...render(<GraphCanvas {...props} />) }
-}
-
-interface Press {
-  sigmaEvent: 'downNode' | 'downStage'
-  node?: string
-  release: { clientX: number; clientY: number }
 }
 
 /** A press on the stage that sigma reports on a node or on empty space, released at `release`. */
