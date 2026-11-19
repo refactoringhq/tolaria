@@ -1,0 +1,266 @@
+/* Calendar layout (TOL-381): a month or week grid that, like Kanban, takes over the note-list and editor
+   area. Theme tokens only, so light and dark mode follow the app palette. */
+.calendar-board {
+  background-color: var(--surface-panel);
+}
+
+.calendar-scroll {
+  scrollbar-width: none;
+}
+
+.calendar-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.calendar-grid {
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  background-color: var(--surface-panel);
+}
+
+.calendar-weekdays {
+  display: grid;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.calendar-weekday {
+  padding: 6px 8px;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.calendar-weeks {
+  display: grid;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.calendar-week {
+  position: relative;
+  min-height: 0;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.calendar-week:last-child {
+  border-bottom: none;
+}
+
+.calendar-week__days {
+  display: grid;
+  height: 100%;
+}
+
+.calendar-day {
+  min-width: 0;
+  min-height: 0;
+  border-right: 1px solid var(--border-default);
+  transition: background-color 120ms ease, box-shadow 120ms ease;
+}
+
+.calendar-day:last-child {
+  border-right: none;
+}
+
+.calendar-day--weekend {
+  background-color: color-mix(in srgb, var(--muted) 60%, transparent);
+}
+
+.calendar-day--outside {
+  background-color: color-mix(in srgb, var(--muted) 30%, transparent);
+}
+
+.calendar-day.calendar-day--target {
+  background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+.calendar-day__header {
+  display: flex;
+  height: 30px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px 0 8px;
+}
+
+.calendar-day__number {
+  display: inline-flex;
+  min-width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border-radius: 999px;
+  color: var(--foreground);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.calendar-day--outside .calendar-day__number {
+  color: var(--text-faint);
+}
+
+.calendar-day__number--today {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 600;
+}
+
+.calendar-day__add {
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.calendar-day:hover .calendar-day__add,
+.calendar-day__add:focus-visible {
+  opacity: 1;
+}
+
+/* Item lanes sit over the day cells; only the items take pointer events, so empty space reaches the day. */
+.calendar-week__lanes {
+  position: absolute;
+  inset: 30px 0 0;
+  display: grid;
+  align-content: start;
+  padding: 0 4px;
+  column-gap: 4px;
+  pointer-events: none;
+}
+
+.calendar-week__lanes > * {
+  pointer-events: auto;
+}
+
+.calendar-item-slot {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.calendar-item {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--calendar-item-accent) 28%, var(--border-default));
+  border-left: 3px solid var(--calendar-item-accent);
+  border-radius: 6px;
+  background-color: color-mix(in srgb, var(--calendar-item-accent) 10%, var(--surface-card));
+  transition: border-color 120ms ease, box-shadow 160ms ease, background-color 120ms ease;
+}
+
+.calendar-item-slot:hover .calendar-item {
+  background-color: color-mix(in srgb, var(--calendar-item-accent) 16%, var(--surface-card));
+  box-shadow: 0 1px 4px -1px rgb(0 0 0 / 0.14);
+}
+
+.calendar-item--continues-before {
+  border-left-width: 1px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.calendar-item--continues-after {
+  border-right-style: dashed;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.calendar-item.calendar-item--selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.calendar-item-slot--placeholder .calendar-item {
+  opacity: 0.35;
+  border-style: dashed;
+}
+
+.calendar-item__fields {
+  font-size: 11px;
+}
+
+.calendar-item__fields [data-testid="property-chips"] {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.calendar-drag-lift {
+  width: 200px;
+  height: 26px;
+  cursor: grabbing;
+  transform: rotate(2deg) scale(1.03);
+  animation: calendar-lift 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.calendar-drag-lift .calendar-item {
+  box-shadow: 0 14px 28px -10px rgb(0 0 0 / 0.35), 0 4px 10px -4px rgb(0 0 0 / 0.18);
+}
+
+.calendar-item--dropped {
+  animation: calendar-drop 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.calendar-tray {
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  background-color: color-mix(in srgb, var(--muted) 50%, transparent);
+}
+
+/* Dark mode layers the calendar like Linear: a recessed board, raised day cells, and items with a
+   stronger edge; weekends and outside days sink a step. `:where()` keeps the state rules above in charge. */
+:where(.dark, [data-theme="dark"]) .calendar-board {
+  background-color: var(--surface-sidebar);
+}
+
+:where(.dark, [data-theme="dark"]) .calendar-grid,
+:where(.dark, [data-theme="dark"]) .calendar-tray {
+  background-color: var(--surface-panel);
+  border-color: var(--border-strong);
+}
+
+:where(.dark, [data-theme="dark"]) .calendar-day,
+:where(.dark, [data-theme="dark"]) .calendar-week,
+:where(.dark, [data-theme="dark"]) .calendar-weekdays {
+  border-color: var(--border-default);
+}
+
+:where(.dark, [data-theme="dark"]) .calendar-day--weekend,
+:where(.dark, [data-theme="dark"]) .calendar-day--outside {
+  background-color: var(--surface-sidebar);
+}
+
+:where(.dark, [data-theme="dark"]) .calendar-item {
+  border-color: color-mix(in srgb, var(--calendar-item-accent) 40%, var(--border-strong));
+  border-left-color: var(--calendar-item-accent);
+  background-color: color-mix(in srgb, var(--calendar-item-accent) 18%, var(--surface-button));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+}
+
+@keyframes calendar-lift {
+  from {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+@keyframes calendar-drop {
+  from {
+    transform: scale(1.03);
+    box-shadow: 0 14px 28px -10px rgb(0 0 0 / 0.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar-drag-lift,
+  .calendar-item--dropped {
+    animation: none;
+    transition: none;
+  }
+}

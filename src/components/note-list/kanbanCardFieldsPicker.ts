@@ -1,4 +1,4 @@
-import { COLLECTION_PRESENTATION_KANBAN } from '../../collections/collectionTypes'
+import { COLLECTION_PRESENTATION_LIST } from '../../collections/collectionTypes'
 import { type AppLocale, translate } from '../../lib/i18n'
 import type { NoteListPropertyPicker } from './noteListHooks'
 
@@ -16,15 +16,15 @@ const EMPTY_LIST_PICKER: Pick<NoteListPropertyPicker, 'scope' | 'availableProper
 }
 
 /**
- * In Kanban, the note-list visible-properties control edits the card fields. Until the board has its own
- * fields, cards show the same properties as list rows.
+ * In Kanban and Calendar, the note-list visible-properties control edits the card fields. Until the layout
+ * has its own fields, cards show the same properties as list rows.
  */
 export function layoutPropertyPicker(
   layout: CardFieldsSource,
   listPicker: NoteListPropertyPicker | null,
   locale: AppLocale,
 ): NoteListPropertyPicker | null {
-  if (layout.layout !== COLLECTION_PRESENTATION_KANBAN) return listPicker
+  if (layout.layout === COLLECTION_PRESENTATION_LIST) return listPicker
   const list = listPicker ?? EMPTY_LIST_PICKER
   return {
     scope: list.scope,

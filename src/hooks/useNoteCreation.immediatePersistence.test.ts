@@ -64,6 +64,20 @@ describe('immediate note persistence', () => {
     )
   })
 
+  it('starts a calendar note with its day prefilled in frontmatter and on the entry', async () => {
+    vi.mocked(isTauri).mockReturnValue(true)
+    vi.mocked(invoke).mockResolvedValueOnce(undefined)
+    const { result } = renderHook(() => useNoteCreation(makeConfig(), { openTabWithContent }))
+
+    act(() => { result.current.handleCreateNoteImmediate('Project', { creationPath: 'calendar_day', properties: { due: '2026-11-24' } }) })
+    await waitFor(() => { expect(addEntry).toHaveBeenCalledOnce() })
+
+    expect(vi.mocked(invoke)).toHaveBeenCalledWith('create_note_content', expect.objectContaining({
+      content: expect.stringMatching(/^---\ntype: Project\ndue: 2026-11-24\n---/),
+    }))
+    expect(addEntry.mock.calls[0][0].properties).toMatchObject({ due: '2026-11-24' })
+  })
+
   it('does not open an optimistic note when disk creation fails', async () => {
     vi.mocked(isTauri).mockReturnValue(true)
     vi.mocked(invoke).mockRejectedValueOnce(new Error('disk full'))

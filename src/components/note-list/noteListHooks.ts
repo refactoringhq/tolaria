@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import type { VaultEntry, SidebarSelection, ModifiedFile, NoteStatus, ViewDefinition, ViewFile } from '../../types'
-import type { ImmediateCreateOptions } from '../../hooks/useNoteCreation'
+import { createNoteForSelection, type CreateNoteForList, type InitialNoteProperties } from './noteListCreate'
 import {
   type SortOption,
   type SortDirection,
@@ -588,13 +588,15 @@ function hasScalarListPropertyValue(value: string | null): boolean {
   return value !== null && value.trim() !== ''
 }
 
+function addEntryPropertyKeys(keys: Set<string>, entry: VaultEntry): void {
+  if (hasScalarListPropertyValue(entry.status)) keys.add('status')
+  for (const key of Object.keys(entry.properties ?? {})) keys.add(key)
+  for (const key of Object.keys(entry.relationships ?? {})) keys.add(key)
+}
+
 function collectAvailableProperties(entries: VaultEntry[]): string[] {
   const keys = new Set<string>()
-  for (const entry of entries) {
-    if (hasScalarListPropertyValue(entry.status)) keys.add('status')
-    for (const key of Object.keys(entry.properties ?? {})) keys.add(key)
-    for (const key of Object.keys(entry.relationships ?? {})) keys.add(key)
-  }
+  for (const entry of entries) addEntryPropertyKeys(keys, entry)
   return [...keys].sort((a, b) => a.localeCompare(b))
 }
 
@@ -981,36 +983,7 @@ interface UseNoteListInteractionsParams {
   onAutoTriggerDiff?: () => void
   onDiscardFile?: (relativePath: string) => Promise<void>
   openContextMenuForEntry: (entry: VaultEntry, point: { x: number; y: number }) => void
-  onCreateNote: (type?: string, options?: ImmediateCreateOptions) => void
-}
-
-function createNoteRequestForSelection(selection: SidebarSelection): {
-  options?: ImmediateCreateOptions
-  type?: string
-} {
-  if (selection.kind === 'sectionGroup') return { type: selection.type }
-  if (selection.kind === 'folder') {
-    return {
-      options: {
-        creationPath: 'folder_header',
-        folderPath: selection.path,
-        vaultPath: selection.rootPath,
-      },
-    }
-  }
-  return {}
-}
-
-function createNoteForSelection(
-  onCreateNote: (type?: string, options?: ImmediateCreateOptions) => void,
-  selection: SidebarSelection,
-): void {
-  const request = createNoteRequestForSelection(selection)
-  if (request.options) {
-    onCreateNote(request.type, request.options)
-    return
-  }
-  onCreateNote(request.type)
+  onCreateNote: CreateNoteForList
 }
 
 function resolveChangesContextMenuEntry(
@@ -1209,8 +1182,8 @@ export function useNoteListInteractions(options: UseNoteListInteractionsParams) 
     handleKeyDown: noteListKeyboard.handleKeyDown,
   })
 
-  const handleCreateNote = useCallback(() => {
-    createNoteForSelection(onCreateNote, selection)
+  const handleCreateNote = useCallback((properties?: InitialNoteProperties) => {
+    createNoteForSelection(onCreateNote, selection, properties)
   }, [onCreateNote, selection])
 
   const toggleGroup = useCallback((label: string) => {
