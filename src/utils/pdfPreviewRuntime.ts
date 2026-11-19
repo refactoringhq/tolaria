@@ -1,6 +1,7 @@
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import type { PDFPageProxy, PageViewport, RenderTask } from 'pdfjs-dist/types/src/pdf'
 
+export type PdfPage = PDFPageProxy
 export type PdfViewport = PageViewport
 export type PdfRenderTask = RenderTask
 
@@ -16,13 +17,13 @@ export function pdfCanvasContext(canvas: HTMLCanvasElement): CanvasRenderingCont
   return context
 }
 
-// Previews load only app-generated sources: vault assets, in-memory blobs, or the app's own origin.
-const LOCAL_PDF_PROTOCOLS = new Set(['asset:', 'blob:', 'data:'])
-const ASSET_ORIGIN = 'http://asset.localhost'
+// Previews load only app-generated sources: vault asset URLs, or blobs this app created.
+const ASSET_ORIGINS = new Set(['http://asset.localhost', 'https://asset.localhost'])
 
 function isAppPdfSource(url: URL): boolean {
-  if (LOCAL_PDF_PROTOCOLS.has(url.protocol)) return true
-  return url.origin === ASSET_ORIGIN || url.origin === window.location.origin
+  if (url.protocol === 'asset:') return true
+  if (url.protocol === 'blob:') return url.origin === window.location.origin
+  return ASSET_ORIGINS.has(url.origin)
 }
 
 function assertSupportedPdfSource(source: string): void {

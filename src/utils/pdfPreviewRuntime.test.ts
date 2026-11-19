@@ -23,8 +23,8 @@ describe("loadPdfDocument", () => {
 	it.each([
 		"asset://localhost/vault/report.pdf",
 		"http://asset.localhost/vault/report.pdf",
-		"blob:http://localhost/123",
-		"/vault/report.pdf",
+		"https://asset.localhost/vault/report.pdf",
+		`blob:${window.location.origin}/123`,
 	])("loads %s", async (source) => {
 		const document = await loadPdfDocument(source);
 		expect(getDocumentMock).toHaveBeenCalledWith({ url: source });
@@ -36,6 +36,9 @@ describe("loadPdfDocument", () => {
 		"javascript:alert(1)",
 		"https://example.com/report.pdf",
 		"http://evil.localhost/report.pdf",
+		"data:application/pdf;base64,JVBERi0xLjQK",
+		"blob:https://example.com/123",
+		"/vault/report.pdf",
 	])("rejects %s without fetching it", async (source) => {
 		await expect(loadPdfDocument(source)).rejects.toThrow(
 			"Unsupported PDF source",

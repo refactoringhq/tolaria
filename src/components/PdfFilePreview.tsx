@@ -1,6 +1,6 @@
 import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react'
 import { useNearViewportOnce } from '../hooks/useNearViewportOnce'
-import { loadPdfDocument, type PdfDocument, type PdfRenderTask, pdfCanvasContext } from '../utils/pdfPreviewRuntime'
+import { loadPdfDocument, type PdfDocument, type PdfPage, type PdfRenderTask, pdfCanvasContext } from '../utils/pdfPreviewRuntime'
 
 interface PdfFilePreviewProps {
   fallback: ReactNode
@@ -21,6 +21,11 @@ interface PdfPageRenderOptions extends Omit<PdfPageCanvasProps, 'title'> {
   canvas: HTMLCanvasElement
 }
 
+interface PdfPageSize {
+  height: number
+  width: number
+}
+
 interface PdfPageRenderState {
   cancelled: boolean
   task: PdfRenderTask | null
@@ -31,8 +36,10 @@ const MAX_PAGE_WIDTH = 1_200
 const PAGE_HORIZONTAL_PADDING = 48
 // A crafted PDF can claim any page count; preview at most this many pages.
 const MAX_PREVIEW_PAGES = 2_000
-// Stay within the smallest common webview canvas limit (4096 x 4096).
-const MAX_CANVAS_PIXELS = 16_777_216
+// A crafted PDF can claim any page size; cap the laid-out height and each canvas edge.
+const MAX_PAGE_HEIGHT = 16_384
+// The smallest common webview canvas edge; capping both edges also bounds the area.
+const MAX_CANVAS_EDGE = 4_096
 
 function usePreviewWidth(previewRef: RefObject<HTMLDivElement | null>): number {
   const [width, setWidth] = useState(DEFAULT_PAGE_WIDTH)
@@ -56,18 +63,20 @@ function previewPageCount(pageCount = 0): number {
   return Number.isSafeInteger(pageCount) ? Math.min(Math.max(pageCount, 0), MAX_PREVIEW_PAGES) : 0
 }
 
-function renderScale(pageWidth: number, availableWidth: number): number {
+function renderScale(page: PdfPageSize, availableWidth: number): number {
   const targetWidth = Math.min(Math.max(availableWidth - PAGE_HORIZONTAL_PADDING, 1), MAX_PAGE_WIDTH)
-  return targetWidth / pageWidth
+  return Math.min(targetWidth / page.width, MAX_PAGE_HEIGHT / page.height)
 }
 
-function canvasOutputScale(viewport: { height: number; width: number }): number {
-  const area = viewport.width * viewport.height
-  if (!Number.isFinite(area) || area <= 0) throw new Error('Invalid PDF page size')
-  return Math.min(Math.max(window.devicePixelRatio, 1), Math.sqrt(MAX_CANVAS_PIXELS / area))
+function canvasOutputScale(viewport: PdfPageSize): number {
+  const longestEdge = Math.max(viewport.width, viewport.height)
+  if (!Number.isFinite(longestEdge) || !(Math.min(viewport.width, viewport.height) > 0)) {
+    throw new Error('Invalid PDF page size')
+  }
+  return Math.min(Math.max(window.devicePixelRatio, 1), MAX_CANVAS_EDGE / longestEdge)
 }
 
-function configureCanvas(canvas: HTMLCanvasElement, viewport: { height: number; width: number }): number {
+function configureCanvas(canvas: HTMLCanvasElement, viewport: PdfPageSize): number {
   const outputScale = canvasOutputScale(viewport)
   canvas.width = Math.floor(viewport.width * outputScale)
   canvas.height = Math.floor(viewport.height * outputScale)
@@ -76,24 +85,25 @@ function configureCanvas(canvas: HTMLCanvasElement, viewport: { height: number; 
   return outputScale
 }
 
+async function drawPdfPage(page: PdfPage, options: PdfPageRenderOptions, state: PdfPageRenderState): Promise<void> {
+  if (state.cancelled) return
+  const { availableWidth, canvas } = options
+  const baseViewport = page.getViewport({ scale: 1 })
+  const viewport = page.getViewport({ scale: renderScale(baseViewport, availableWidth) })
+  const outputScale = configureCanvas(canvas, viewport)
+  state.task = page.render({
+    canvas,
+    canvasContext: pdfCanvasContext(canvas),
+    transform: [outputScale, 0, 0, outputScale, 0, 0],
+    viewport,
+  })
+  await state.task.promise
+}
+
+// Clean the page up on every path, including a rejected or invalid render.
 async function paintPdfPage(options: PdfPageRenderOptions, state: PdfPageRenderState): Promise<void> {
-  const { availableWidth, canvas, document, pageNumber } = options
-  const page = await document.getPage(pageNumber)
-  try {
-    if (state.cancelled) return
-    const baseViewport = page.getViewport({ scale: 1 })
-    const viewport = page.getViewport({ scale: renderScale(baseViewport.width, availableWidth) })
-    const outputScale = configureCanvas(canvas, viewport)
-    state.task = page.render({
-      canvas,
-      canvasContext: pdfCanvasContext(canvas),
-      transform: [outputScale, 0, 0, outputScale, 0, 0],
-      viewport,
-    })
-    await state.task.promise
-  } finally {
-    page.cleanup()
-  }
+  const page = await options.document.getPage(options.pageNumber)
+  return drawPdfPage(page, options, state).finally(() => page.cleanup())
 }
 
 function startPdfPageRender(options: PdfPageRenderOptions): () => void {
@@ -131,9 +141,15 @@ interface PdfDocumentState {
   failed: boolean
 }
 
+interface PdfSourceState extends PdfDocumentState {
+  source: string
+}
+
+const LOADING_DOCUMENT: PdfDocumentState = { document: null, failed: false }
+
+// State is keyed by source, so a new source starts loading instead of showing the old result.
 function usePdfDocument(source: string, onError: () => void): PdfDocumentState {
-  const [document, setDocument] = useState<PdfDocument | null>(null)
-  const [failed, setFailed] = useState(false)
+  const [state, setState] = useState<PdfSourceState | null>(null)
 
   useEffect(() => {
     let active = true
@@ -141,12 +157,12 @@ function usePdfDocument(source: string, onError: () => void): PdfDocumentState {
     void loadPdfDocument(source)
       .then((nextDocument) => {
         loadedDocument = nextDocument
-        if (active) setDocument(nextDocument)
+        if (active) setState({ document: nextDocument, failed: false, source })
         else void nextDocument.destroy()
       })
       .catch(() => {
         if (!active) return
-        setFailed(true)
+        setState({ document: null, failed: true, source })
         onError()
       })
 
@@ -156,7 +172,7 @@ function usePdfDocument(source: string, onError: () => void): PdfDocumentState {
     }
   }, [onError, source])
 
-  return { document, failed }
+  return state?.source === source ? state : LOADING_DOCUMENT
 }
 
 export function PdfFilePreview({ fallback, onError, source, title }: PdfFilePreviewProps) {
