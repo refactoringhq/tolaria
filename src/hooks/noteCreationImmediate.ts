@@ -11,6 +11,7 @@ import {
 import { normalizeVaultRelativePath } from "../utils/notePathIdentity";
 import { slugifyNoteStem as slugify } from "../utils/noteSlug";
 import type { ResolvedEntry } from "./noteCreationCore";
+import type { TypeInstanceDefault } from "./noteCreationDefaults";
 import {
 	addEntryWithMock,
 	applyTypeDefaults,
@@ -43,6 +44,7 @@ interface ImmediateCreateDeps {
 }
 
 type ImmediateCreationPath =
+	| "calendar_day"
 	| "cmd_n"
 	| "cmd_sheet"
 	| "folder_command_palette"
@@ -55,6 +57,8 @@ export interface ImmediateCreateOptions {
 	format?: NoteFormat;
 	folderPath?: string;
 	vaultPath?: string;
+	/** Frontmatter the new note starts with; it wins over the type's instance defaults. */
+	properties?: Record<string, string>;
 }
 
 interface ImmediateCreateRequest extends ImmediateCreateOptions {
@@ -140,6 +144,21 @@ function immediateNoteRelativePath(slug: string, folderPath?: string): string {
 	return folder ? `${folder}/${slug}.md` : `${slug}.md`;
 }
 
+/** Prefilled properties (a calendar day, for example) replace the type's default for the same key. */
+function withInitialProperties(
+	typeDefaults: TypeInstanceDefault[],
+	properties: Record<string, string> = {},
+): TypeInstanceDefault[] {
+	const initial = Object.entries(properties).map(
+		([key, value]): TypeInstanceDefault => ({ key, value, kind: "property" }),
+	);
+	const keys = new Set(Object.keys(properties));
+	return [
+		...initial,
+		...typeDefaults.filter((defaultValue) => !keys.has(defaultValue.key)),
+	];
+}
+
 function resolveImmediateEntry(
 	deps: ImmediateCreateDeps,
 	request: ImmediateCreateRequest,
@@ -157,10 +176,10 @@ function resolveImmediateEntry(
 		noteFormat === NOTE_FORMAT_SHEET
 			? null
 			: resolveTemplate({ entries: deps.entries, typeName: noteType });
-	const defaults = resolveTypeInstanceDefaults({
-		entries: deps.entries,
-		typeName: noteType,
-	});
+	const defaults = withInitialProperties(
+		resolveTypeInstanceDefaults({ entries: deps.entries, typeName: noteType }),
+		request.properties,
+	);
 	const creationVaultPath = resolveImmediateCreationVaultPath(deps, request);
 	const entry = {
 		...buildNewEntry({

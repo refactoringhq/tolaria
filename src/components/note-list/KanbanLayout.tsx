@@ -3,7 +3,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { DndContext, DragOverlay, type DropAnimation, defaultDropAnimationSideEffects } from '@dnd-kit/core'
 import { horizontalListSortingStrategy, SortableContext } from '@dnd-kit/sortable'
-import type { CollectionLayoutRendererProps } from '../../collections/layoutRegistry'
+import type { CollectionLayoutSharedProps, KanbanLayoutBindings } from '../../collections/layoutRegistry'
 import { type AppLocale, translate } from '../../lib/i18n'
 import { KanbanCardFace, type KanbanCardContext } from './KanbanCard'
 import { KanbanColumn, type KanbanColumnActions, KanbanColumnHeader } from './KanbanColumn'
@@ -11,7 +11,7 @@ import { KanbanHiddenColumns } from './KanbanHiddenColumns'
 import { columnId, columnTitle, groupEntries, hiddenColumnSummaries, orderColumns, visibleColumns } from './kanbanModel'
 import { type KanbanActiveItem, kanbanCollisionDetection, useKanbanDrag, useKanbanSensors, usePendingMoves } from './useKanbanDrag'
 
-type KanbanLayoutProps = Omit<CollectionLayoutRendererProps, 'listContent'>
+type KanbanLayoutProps = CollectionLayoutSharedProps & KanbanLayoutBindings
 
 const SETTLE_DROP_ANIMATION: DropAnimation = {
   duration: 220,

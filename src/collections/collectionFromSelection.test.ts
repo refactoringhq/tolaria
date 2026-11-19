@@ -3,6 +3,7 @@ import { makeEntry } from '../test-utils/noteListTestUtils'
 import type { ViewDefinition, ViewFile } from '../types'
 import { collectionFromSelection } from './collectionFromSelection'
 import { getCollectionLayout, getCollectionLayouts } from './layoutRegistry'
+import { presentationFromViewDefinition } from './presentationConfig'
 
 function emptyFilters(): ViewDefinition['filters'] {
   return { all: [] }
@@ -24,9 +25,19 @@ function makeView(definition: Partial<ViewDefinition> = {}): ViewFile {
 }
 
 describe('collectionFromSelection', () => {
-  it('registers List and Kanban through the shared layout contract', () => {
-    expect(getCollectionLayouts().map((layout) => layout.type)).toEqual(['list', 'kanban'])
+  it('registers List, Kanban and Calendar through the shared layout contract', () => {
+    expect(getCollectionLayouts().map((layout) => layout.type)).toEqual(['list', 'kanban', 'calendar'])
     expect(getCollectionLayout('kanban').requiredProperties({ groupBy: 'status' })).toEqual(['status'])
+    expect(getCollectionLayout('calendar').controls).toEqual(['dateProperty'])
+    expect(getCollectionLayout('calendar').requiredProperties({ dateProperty: 'start', endDateProperty: 'end' })).toEqual(['start', 'end'])
+    expect(getCollectionLayout('calendar').requiredProperties({ dateProperty: '$created', endDateProperty: null })).toEqual([])
+  })
+
+  it('reads a saved calendar View presentation', () => {
+    expect(presentationFromViewDefinition({
+      name: 'Plan', icon: null, color: null, sort: null, filters: { all: [] },
+      presentation: { type: 'calendar', dateProperty: 'due', endDateProperty: 'end', view: 'week', showWeekends: false, properties: ['owner'] },
+    })).toEqual({ type: 'calendar', dateProperty: 'due', endDateProperty: 'end', view: 'week', showWeekends: false, properties: ['owner'] })
   })
 
   it('maps built-in filters to list-presented collections', () => {

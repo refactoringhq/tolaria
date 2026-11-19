@@ -30,13 +30,17 @@ export interface ViewDefinition {
   listPropertiesDisplay?: string[]
   filters: FilterGroup
   presentation?: {
-    type: 'list' | 'kanban'
+    type: 'list' | 'kanban' | 'calendar'
     sort?: string | null
     groupBy?: string | null
     properties?: string[]
     columnOrder?: string[]
     collapsedColumns?: string[]
     hiddenColumns?: string[]
+    dateProperty?: string | null
+    endDateProperty?: string | null
+    view?: 'month' | 'week'
+    showWeekends?: boolean
   }
 }
 

@@ -1,11 +1,16 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { COLLECTION_PRESENTATION_LIST } from '../../collections/collectionTypes'
-import { getCollectionLayout } from '../../collections/layoutRegistry'
+import { type CollectionLayoutRendererProps, getCollectionLayout } from '../../collections/layoutRegistry'
 import { type AppLocale, translate } from '../../lib/i18n'
 import type { VaultEntry } from '../../types'
 import { Button } from '@/components/ui/button'
+import { calendarBindings } from './calendar/calendarBindings'
 import { isWritableGroupKey } from './collectionLayoutConfig'
+import type { InitialNoteProperties } from './noteListCreate'
 import type { CollectionLayoutState } from './useCollectionLayout'
+
+/** Writes one frontmatter property; resolves once the write settled. */
+export type WriteNoteProperty = (entry: VaultEntry, property: string, value: string | null) => unknown
 
 interface CollectionLayoutBodyProps {
   layout: CollectionLayoutState
@@ -17,7 +22,8 @@ interface CollectionLayoutBodyProps {
   displayPropsOverride?: string[] | null
   selectedNotePath?: string | null
   onOpen: (entry: VaultEntry, event: MouseEvent) => void
-  onMove: (entry: VaultEntry, property: string, value: string | null) => void
+  onMove: WriteNoteProperty
+  onCreate?: (properties: InitialNoteProperties) => void
 }
 
 function MissingGroupProperty({ property, locale, onUseList }: { property: string; locale: AppLocale; onUseList: () => void }) {
@@ -29,36 +35,47 @@ function MissingGroupProperty({ property, locale, onUseList }: { property: strin
   )
 }
 
-export function CollectionLayoutBody(props: CollectionLayoutBodyProps) {
-  const { layout, listContent, locale, onOpen, onMove } = props
-  const renderer = getCollectionLayout(layout.layout)
-  const missingProperty = renderer.requiredProperties({ groupBy: layout.groupBy })
-    .find((property) => !layout.groups.includes(property))
-  if (missingProperty) {
-    return <MissingGroupProperty property={missingProperty} locale={locale} onUseList={() => layout.changeLayout(COLLECTION_PRESENTATION_LIST)} />
-  }
-  return renderer.render({
-    listContent,
+function rendererProps(props: CollectionLayoutBodyProps): CollectionLayoutRendererProps {
+  const { layout, onMove } = props
+  return {
+    listContent: props.listContent,
     entries: props.entries,
     allEntries: props.allEntries,
-    groupBy: layout.groupBy,
     properties: layout.properties,
-    columnOrder: layout.columnOrder,
-    onColumnOrderChange: layout.changeColumnOrder,
-    collapsedColumns: layout.collapsedColumns,
-    hiddenColumns: layout.hiddenColumns,
-    onToggleColumnCollapsed: layout.toggleColumnCollapsed,
-    onToggleColumnHidden: layout.toggleColumnHidden,
-    locale,
+    locale: props.locale,
     typeEntryMap: props.typeEntryMap,
     displayPropsOverride: props.displayPropsOverride,
     selectedNotePath: props.selectedNotePath,
     onOpen: (entry, event) => {
       layout.panel.reopen()
-      onOpen(entry, event)
+      props.onOpen(entry, event)
     },
-    onMove: (entry, value) => {
-      if (isWritableGroupKey(layout.groupBy, layout.groups)) onMove(entry, layout.groupBy, value)
+    kanban: {
+      groupBy: layout.groupBy,
+      columnOrder: layout.columnOrder,
+      onColumnOrderChange: layout.changeColumnOrder,
+      collapsedColumns: layout.collapsedColumns,
+      hiddenColumns: layout.hiddenColumns,
+      onToggleColumnCollapsed: layout.toggleColumnCollapsed,
+      onToggleColumnHidden: layout.toggleColumnHidden,
+      onMove: (entry, value) => {
+        if (isWritableGroupKey(layout.groupBy, layout.groups)) onMove(entry, layout.groupBy, value)
+      },
     },
-  })
+    calendar: calendarBindings({ layout, write: onMove, create: props.onCreate }),
+  }
+}
+
+export function CollectionLayoutBody(props: CollectionLayoutBodyProps) {
+  const { layout, locale } = props
+  const renderer = getCollectionLayout(layout.layout)
+  const missingProperty = renderer.requiredProperties({
+    groupBy: layout.groupBy,
+    dateProperty: layout.dateProperty,
+    endDateProperty: layout.calendar.endDateProperty,
+  }).find((property) => !layout.groups.includes(property))
+  const rendered = rendererProps(props)
+  if (missingProperty === undefined) return renderer.render(rendered)
+  if (renderer.renderMissing) return renderer.renderMissing(rendered, missingProperty)
+  return <MissingGroupProperty property={missingProperty} locale={locale} onUseList={() => layout.changeLayout(COLLECTION_PRESENTATION_LIST)} />
 }

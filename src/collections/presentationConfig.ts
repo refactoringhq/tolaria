@@ -1,5 +1,8 @@
 import type { ViewDefinition } from '../types'
 import {
+  type CalendarCollectionPresentationConfig,
+  type CalendarSettings,
+  COLLECTION_PRESENTATION_CALENDAR,
   COLLECTION_PRESENTATION_KANBAN,
   COLLECTION_PRESENTATION_LIST,
   type CollectionPresentationConfig,
@@ -40,6 +43,34 @@ function kanbanPresentation(source: UnknownRecord): KanbanCollectionPresentation
   }
 }
 
+export const DEFAULT_CALENDAR_SETTINGS: CalendarSettings = {
+  dateProperty: null,
+  endDateProperty: null,
+  view: 'month',
+  showWeekends: true,
+}
+
+const CALENDAR_SETTING_KEYS = ['dateProperty', 'endDateProperty', 'view', 'showWeekends'] as const
+
+/** True when a stored presentation carries any calendar setting, even while it shows another layout. */
+export function hasCalendarSettings(source: UnknownRecord): boolean {
+  return CALENDAR_SETTING_KEYS.some((key) => key in source)
+}
+
+/** Reads calendar settings defensively: anything unexpected falls back to the default. */
+export function calendarSettingsFrom(source: UnknownRecord): CalendarSettings {
+  return {
+    dateProperty: nullableString(source.dateProperty),
+    endDateProperty: nullableString(source.endDateProperty),
+    view: source.view === 'week' ? 'week' : 'month',
+    showWeekends: source.showWeekends !== false,
+  }
+}
+
+function calendarPresentation(source: UnknownRecord): CalendarCollectionPresentationConfig {
+  return { type: COLLECTION_PRESENTATION_CALENDAR, ...calendarSettingsFrom(source), properties: stringArray(source.properties) }
+}
+
 export function defaultListPresentation(): ListCollectionPresentationConfig {
   return { type: COLLECTION_PRESENTATION_LIST, sort: null, properties: [] }
 }
@@ -53,6 +84,7 @@ export function presentationFromViewDefinition(definition: ViewDefinition): Coll
   const rawPresentation = Reflect.get(definition as unknown as UnknownRecord, 'presentation')
   if (!isRecord(rawPresentation)) return fallback
   if (rawPresentation.type === COLLECTION_PRESENTATION_KANBAN) return kanbanPresentation(rawPresentation)
+  if (rawPresentation.type === COLLECTION_PRESENTATION_CALENDAR) return calendarPresentation(rawPresentation)
   if (rawPresentation.type === COLLECTION_PRESENTATION_LIST) return listPresentation(rawPresentation, fallback)
   return fallback
 }
