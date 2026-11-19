@@ -676,6 +676,13 @@ files:
     noteList.searchPlaceholder: 4857cd2689a0a40eb4a77cdc745c518e
     noteList.mobileSearchPlaceholder: 13348442cc6a27032d2b4aa28b75a5d3
     noteList.searchAction: 5012120fc480c67686dd22ee2f9493cd
+    noteList.tooltip.layout: a7a6670e8ae5e850d9e36e6cd8414351
+    noteList.tooltip.sort: c382335c1d1c38616b82825e51662951
+    noteList.tooltip.groupBy: ab63d5b038f99c97b46b27f3445e257f
+    noteList.tooltip.search: 5012120fc480c67686dd22ee2f9493cd
+    noteList.tooltip.properties: 5bf2a26f6cc6ad155a7fefc7dbaf6d04
+    noteList.tooltip.newNote: 2e4b0bda9d9da3e0caaddb7ebc758ddc
+    noteList.tooltip.graphFilters: 6836237b5b80b9ad3d271d616672d8a6
     noteList.clearSearch: 9983381c21069a3d6e4432e0aaea0079
     noteList.recentSearches: 8173dbf786c0d6bc93bdb6f54d6889d3
     noteList.recentlyOpened: c1c9cdb573086d9ba74d34dba49eb3ef

@@ -10,7 +10,7 @@ import {
 let tempVaultDir: string;
 
 async function showNoteListSearch(page: Page) {
-	await page.getByTitle("Search notes").click();
+	await page.getByRole("button", { name: "Search notes" }).click();
 	await expect(page.getByPlaceholder("Search notes...")).toBeVisible();
 }
 

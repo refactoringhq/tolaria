@@ -26,7 +26,7 @@ test("new-note title updates settle while sidebar tooltips and the note list rer
 		if (message.type() === "error") collect(message.text());
 	});
 
-	await page.locator('button[title="Create new note"]').click();
+	await page.locator('button[aria-label="New note"]').click();
 	const editor = page.locator(".bn-editor");
 	await expect(editor).toBeVisible();
 	await expect(editor).toBeFocused();
