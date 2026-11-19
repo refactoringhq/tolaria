@@ -13,6 +13,7 @@ import type { CalendarSettings, CollectionPresentationType } from '../../collect
 import { getCollectionLayout, getCollectionLayouts } from '../../collections/layoutRegistry'
 import { type AppLocale, translate } from '../../lib/i18n'
 import { CalendarDateMenu } from './calendar/CalendarDateMenu'
+import { GraphFilterMenu, type GraphFilterMenuProps } from './graph/GraphFilterMenu'
 
 interface HeaderMenuProps {
   label: string
@@ -62,8 +63,8 @@ export function LayoutMenu({ layout, locale, triggerClassName, onChange }: Layou
       onValueChange={(value) => onChange(getCollectionLayout(value as CollectionPresentationType).type)}
     >
       <DropdownMenuLabel className="text-xs text-muted-foreground">{translate(locale, 'layout.label')}</DropdownMenuLabel>
-      {getCollectionLayouts().map(({ type, labelKey, icon: Icon }) => (
-        <DropdownMenuRadioItem key={type} value={type} data-testid={`layout-option-${type}`}>
+      {getCollectionLayouts().map(({ type, labelKey, descriptionKey, icon: Icon }) => (
+        <DropdownMenuRadioItem key={type} value={type} title={translate(locale, descriptionKey)} data-testid={`layout-option-${type}`}>
           <Icon size={14} />
           {translate(locale, labelKey)}
         </DropdownMenuRadioItem>
@@ -108,11 +109,15 @@ export interface CalendarHeaderControls {
   onChange: (patch: Partial<CalendarSettings>) => void
 }
 
+export type GraphHeaderControls = Omit<GraphFilterMenuProps, 'locale' | 'triggerClassName'>
+
 export interface CollectionLayoutHeaderControlsProps {
   layout: CollectionPresentationType
   groupBy: string
   groups: string[]
   calendar: CalendarHeaderControls
+  /** Graph legend and filters; absent where the list can't show a graph. */
+  graph?: GraphHeaderControls
   locale: AppLocale
   triggerClassName?: string
   onLayoutChange: (layout: CollectionPresentationType) => void
@@ -120,13 +125,14 @@ export interface CollectionLayoutHeaderControlsProps {
 }
 
 export function CollectionLayoutHeaderControls(props: CollectionLayoutHeaderControlsProps) {
-  const { layout, groupBy, groups, calendar, locale, triggerClassName, onLayoutChange, onGroupByChange } = props
+  const { layout, groupBy, groups, calendar, graph, locale, triggerClassName, onLayoutChange, onGroupByChange } = props
   const { controls } = getCollectionLayout(layout)
   return (
     <>
       <LayoutMenu layout={layout} locale={locale} triggerClassName={triggerClassName} onChange={onLayoutChange} />
       {controls.includes('groupBy') && <GroupByMenu groupBy={groupBy} groups={groups} locale={locale} triggerClassName={triggerClassName} onChange={onGroupByChange} />}
       {controls.includes('dateProperty') && <CalendarDateMenu {...calendar} locale={locale} triggerClassName={triggerClassName} />}
+      {controls.includes('graphFilters') && graph && <GraphFilterMenu {...graph} locale={locale} triggerClassName={triggerClassName} />}
     </>
   )
 }

@@ -41,3 +41,13 @@ Use **sigma.js + graphology**, with a WebGL renderer, and compute initial positi
 ## Acceptance measurements
 
 Record first-render time, time to interactive, frame rate during pan/zoom/hover, main-thread blocking and memory on a generated 30,000-note / 100,000-edge fixture. The graph renderer must cull off-screen work, keep labels at a low zoom level of detail, and maintain a responsive app while layout settles. Do not claim the target is met without a real app recording and measurements.
+
+## Step 1 implementation notes (TOL-385)
+
+What step 1 built, and where it refines the decisions above (see ADR 0304):
+
+- **Renderer.** sigma.js 4 + graphology, lazy-loaded with the first graph. Both edge kinds go through one sigma dashed edge layer: relationship edges fill their gaps with the edge color, wiki-link edges leave them transparent at a lower alpha. Node labels and icons are a small HTML overlay (the 150 best-connected notes plus the open one), not sigma's own labels, so they can reuse the list's note and type icons.
+- **Layout worker.** graphology's bundled ForceAtlas2 worker starts from a blob URL, which the app CSP (`worker-src 'self'`) blocks. Step 1 runs ForceAtlas2 in its own Vite module worker instead and streams positions back every 10 iterations, then stops.
+- **Edges.** The vault adds a synthetic `Type` relationship for every typed note; the graph skips it because the node color already shows the type. `belongsTo` / `relatedTo` only add edges when the `relationships` map lacks their keys, so the same link is not counted twice. A pair whose relationship keys are all hidden by the filter falls back to its wiki link.
+- **Release gate.** Graph only shows on the alpha channel or with `ff_graph_layout=true`; a saved `type: graph` config opens as List while the flag is off and is not rewritten.
+- **Not yet measured.** The 30,000-note / 100,000-edge acceptance measurements belong to step 3. Step 1 only claims that the demo vault and a list of about 1,000 notes render without freezing.

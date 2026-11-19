@@ -5,18 +5,18 @@ import { type AppLocale, translate } from '../../lib/i18n'
 
 const EDITOR_PANEL_SELECTOR = '.app__editor'
 
-interface KanbanEditorPanelCloseProps {
+interface LayoutEditorPanelCloseProps {
   open: boolean
   locale: AppLocale
   onClose: () => void
 }
 
 /**
- * The Kanban board slides the app editor in as a right-hand panel. Its close button sits in the
+ * Non-list layouts (Kanban, Calendar, Graph) slide the app editor in as a right-hand panel. Its close button sits in the
  * panel's breadcrumb row, before the first crumb, so the board owns the panel without the editor
  * knowing about layouts.
  */
-export function KanbanEditorPanelClose({ open, locale, onClose }: KanbanEditorPanelCloseProps) {
+export function LayoutEditorPanelClose({ open, locale, onClose }: LayoutEditorPanelCloseProps) {
   const panel = open ? document.querySelector<HTMLElement>(EDITOR_PANEL_SELECTOR) : null
   if (!panel) return null
   const label = translate(locale, 'layout.closePanel')
