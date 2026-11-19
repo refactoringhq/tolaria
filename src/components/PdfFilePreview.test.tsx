@@ -7,7 +7,8 @@ const { loadPdfDocumentMock, pdfCanvasContextMock } = vi.hoisted(() => ({
   pdfCanvasContextMock: vi.fn(() => ({} as CanvasRenderingContext2D)),
 }))
 
-vi.mock('../utils/pdfPreviewRuntime', () => ({
+vi.mock('../utils/pdfPreviewRuntime', async (importOriginal) => ({
+  isSupportedPdfSource: (await importOriginal<typeof import('../utils/pdfPreviewRuntime')>()).isSupportedPdfSource,
   loadPdfDocument: loadPdfDocumentMock,
   pdfCanvasContext: pdfCanvasContextMock,
 }))
@@ -25,6 +26,11 @@ function mockDocument(pageCount = 2) {
     numPages: pageCount,
   }
   return { document, page, renderTask }
+}
+
+function canvasEdges(element: HTMLElement): number[] {
+  if (!(element instanceof HTMLCanvasElement)) return []
+  return [element.width, element.height, Number.parseFloat(element.style.height)]
 }
 
 describe('PdfFilePreview', () => {
@@ -51,6 +57,7 @@ describe('PdfFilePreview', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+    loadPdfDocumentMock.mockReset()
     vi.unstubAllGlobals()
   })
 
@@ -75,12 +82,93 @@ describe('PdfFilePreview', () => {
     expect(screen.getAllByLabelText('report.pdf')).toHaveLength(3)
   })
 
+  it('caps the page list when a PDF reports an absurd page count', async () => {
+    const { document } = mockDocument(Number.MAX_SAFE_INTEGER)
+    loadPdfDocumentMock.mockResolvedValue(document)
+
+    const { container } = render(
+      <PdfFilePreview fallback={<div>fallback</div>} onError={vi.fn()} source="asset://localhost/huge.pdf" title="huge.pdf" />,
+    )
+
+    await waitFor(() => expect(container.querySelectorAll('[data-pdf-page]')).toHaveLength(2_000))
+  })
+
+  it.each([
+    ['tall', 800, 1_000_000],
+    ['wide', 1_000_000, 800],
+  ])('keeps a crafted %s page within the canvas edge budget', async (shape, width, height) => {
+    const { document, page } = mockDocument(1)
+    page.getViewport.mockImplementation(({ scale }: { scale: number }) => ({ height: height * scale, width: width * scale }))
+    loadPdfDocumentMock.mockResolvedValue(document)
+
+    render(<PdfFilePreview fallback={<div>fallback</div>} onError={vi.fn()} source="asset://localhost/page.pdf" title={shape} />)
+
+    await waitFor(() => expect(page.render).toHaveBeenCalled())
+    const [canvasWidth, canvasHeight, layoutHeight] = canvasEdges(screen.getByLabelText(shape, { selector: 'canvas' }))
+    expect(canvasWidth).toBeGreaterThan(0)
+    expect(canvasWidth).toBeLessThanOrEqual(4_096)
+    expect(canvasHeight).toBeLessThanOrEqual(4_096)
+    expect(layoutHeight).toBeLessThanOrEqual(16_384)
+    expect(page.cleanup).toHaveBeenCalled()
+  })
+
+  it('falls back when a page reports an invalid size', async () => {
+    const onError = vi.fn()
+    const { document, page } = mockDocument(1)
+    page.getViewport.mockImplementation(() => ({ height: Number.NaN, width: 800 }))
+    loadPdfDocumentMock.mockResolvedValue(document)
+
+    render(<PdfFilePreview fallback={<div>fallback</div>} onError={onError} source="asset://localhost/bad.pdf" title="bad.pdf" />)
+
+    await waitFor(() => expect(onError).toHaveBeenCalledTimes(1))
+    expect(page.render).not.toHaveBeenCalled()
+    expect(page.cleanup).toHaveBeenCalled()
+  })
+
+  it('loads the new source after a failed one without remounting', async () => {
+    const { document } = mockDocument(1)
+    loadPdfDocumentMock.mockRejectedValueOnce(new Error('broken')).mockResolvedValueOnce(document)
+    const props = { fallback: <div>fallback</div>, onError: vi.fn(), title: 'report.pdf' }
+
+    const preview = render(<PdfFilePreview {...props} source="asset://localhost/broken.pdf" />)
+    expect(await screen.findByText('fallback')).toBeInTheDocument()
+
+    preview.rerender(<PdfFilePreview {...props} source="asset://localhost/report.pdf" />)
+
+    await waitFor(() => expect(document.getPage).toHaveBeenCalledWith(1))
+    expect(screen.queryByText('fallback')).not.toBeInTheDocument()
+  })
+
+  it('stops offering a destroyed document while the same source reloads', async () => {
+    const { document } = mockDocument(1)
+    loadPdfDocumentMock.mockResolvedValueOnce(document).mockReturnValueOnce(new Promise(() => {}))
+    const props = { fallback: <div>fallback</div>, source: 'asset://localhost/report.pdf', title: 'report.pdf' }
+
+    const preview = render(<PdfFilePreview {...props} onError={vi.fn()} />)
+    await waitFor(() => expect(document.getPage).toHaveBeenCalledWith(1))
+
+    preview.rerender(<PdfFilePreview {...props} onError={vi.fn()} />)
+
+    expect(document.destroy).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(screen.getByTestId('pdf-file-preview')).toHaveAttribute('aria-busy', 'true'))
+  })
+
+  it('falls back without loading PDF.js for a source the app did not create', async () => {
+    const onError = vi.fn()
+
+    render(<PdfFilePreview fallback={<div>fallback</div>} onError={onError} source="https://example.com/a.pdf" title="a.pdf" />)
+
+    expect(await screen.findByText('fallback')).toBeInTheDocument()
+    expect(onError).toHaveBeenCalledTimes(1)
+    expect(loadPdfDocumentMock).not.toHaveBeenCalled()
+  })
+
   it('destroys the loaded document when the preview closes', async () => {
     const { document } = mockDocument(1)
     loadPdfDocumentMock.mockResolvedValue(document)
 
     const preview = render(
-      <PdfFilePreview fallback={<div>fallback</div>} onError={vi.fn()} source="asset://report.pdf" title="report.pdf" />,
+      <PdfFilePreview fallback={<div>fallback</div>} onError={vi.fn()} source="asset://localhost/report.pdf" title="report.pdf" />,
     )
     await waitFor(() => expect(document.getPage).toHaveBeenCalledWith(1))
 
@@ -97,7 +185,7 @@ describe('PdfFilePreview', () => {
       <PdfFilePreview
         fallback={<div>PDF preview failed</div>}
         onError={onError}
-        source="asset://broken.pdf"
+        source="asset://localhost/broken.pdf"
         title="broken.pdf"
       />,
     )
