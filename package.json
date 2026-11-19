@@ -217,7 +217,7 @@
       "@hono/node-server": "2.0.12",
       "body-parser": "2.4.0",
       "express-rate-limit": "8.2.2",
-      "hono": "4.13.11",
+      "hono": "4.13.16",
       "ip-address": "10.7.4",
       "mermaid>uuid": "11.1.1",
       "path-to-regexp": "8.4.0",
@@ -236,7 +236,8 @@
       "postcss": "8.5.25",
       "protobufjs": "7.6.5",
       "linkify-it": "5.0.2",
-      "qs": "6.16.0",
+      "qs": "6.16.1",
+      "node-forge": "1.4.3",
       "rollup": "4.59.0",
       "undici": "7.30.1",
       "form-data": "4.0.6",
@@ -320,7 +321,8 @@
       "@blocknote/code-block@0.46.2": "patches/@blocknote__code-block@0.46.2.patch",
       "@tiptap/extension-code@3.19.0": "patches/@tiptap__extension-code@3.19.0.patch",
       "@10play/tentap-editor@1.0.1": "patches/@10play__tentap-editor@1.0.1.patch",
-      "prosemirror-view@1.42.3": "patches/prosemirror-view@1.42.3.patch"
+      "prosemirror-view@1.42.3": "patches/prosemirror-view@1.42.3.patch",
+      "eslint-plugin-security-node@1.1.4": "patches/eslint-plugin-security-node@1.1.4.patch"
     }
   }
 }
