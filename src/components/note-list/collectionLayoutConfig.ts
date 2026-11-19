@@ -3,12 +3,21 @@ import { collectionLayoutKey } from '../../collections/collectionLayoutKey'
 import {
   type CalendarSettings,
   COLLECTION_PRESENTATION_CALENDAR,
+  COLLECTION_PRESENTATION_GRAPH,
   COLLECTION_PRESENTATION_KANBAN,
   COLLECTION_PRESENTATION_LIST,
   type CollectionPresentationConfig,
   type CollectionPresentationType,
+  type GraphSettings,
 } from '../../collections/collectionTypes'
-import { calendarSettingsFrom, DEFAULT_CALENDAR_SETTINGS, hasCalendarSettings } from '../../collections/presentationConfig'
+import {
+  calendarSettingsFrom,
+  DEFAULT_CALENDAR_SETTINGS,
+  DEFAULT_GRAPH_SETTINGS,
+  graphSettingsFrom,
+  hasCalendarSettings,
+  hasGraphSettings,
+} from '../../collections/presentationConfig'
 import type { SidebarSelection, VaultEntry, ViewDefinition, ViewFile } from '../../types'
 
 export interface LayoutSettings {
@@ -19,6 +28,7 @@ export interface LayoutSettings {
   collapsedColumns: string[]
   hiddenColumns: string[]
   calendar: CalendarSettings
+  graph: GraphSettings
 }
 
 /** The Kanban-only part of the layout settings that a View keeps while it shows as List. */
@@ -88,18 +98,24 @@ function saveVaultLayoutFile(target: LayoutPersistenceTarget, settings: LayoutSe
   void invoke('save_collection_layout_cmd', {
     vaultPath,
     collection: collectionLayoutKey(target.selection),
-    presentation: { type: settings.layout, groupBy: settings.groupBy, ...kanbanColumnSettings(settings), ...storedCalendarSettings(settings) },
+    presentation: { type: settings.layout, groupBy: settings.groupBy, ...kanbanColumnSettings(settings), ...storedCalendarSettings(settings), ...storedGraphSettings(settings) },
   }).catch(() => undefined)
 }
 
-function isDefaultCalendar(calendar: CalendarSettings): boolean {
-  return JSON.stringify(calendar) === JSON.stringify(DEFAULT_CALENDAR_SETTINGS)
+function sameSettings<T>(left: T, right: T): boolean {
+  return JSON.stringify(left) === JSON.stringify(right)
 }
 
 /** Calendar settings are only written once the list has used or configured a calendar. */
 function storedCalendarSettings(settings: LayoutSettings): Partial<CalendarSettings> {
-  if (settings.layout !== COLLECTION_PRESENTATION_CALENDAR && isDefaultCalendar(settings.calendar)) return {}
+  if (settings.layout !== COLLECTION_PRESENTATION_CALENDAR && sameSettings(settings.calendar, DEFAULT_CALENDAR_SETTINGS)) return {}
   return { ...settings.calendar }
+}
+
+/** Graph filters are only written once the list has used or configured a graph. */
+function storedGraphSettings(settings: LayoutSettings): Partial<GraphSettings> {
+  if (settings.layout !== COLLECTION_PRESENTATION_GRAPH && sameSettings(settings.graph, DEFAULT_GRAPH_SETTINGS)) return {}
+  return { ...settings.graph }
 }
 
 function viewPresentationFor(view: ViewFile, settings: LayoutSettings): ViewDefinition['presentation'] {
@@ -109,6 +125,7 @@ function viewPresentationFor(view: ViewFile, settings: LayoutSettings): ViewDefi
   if (settings.layout === COLLECTION_PRESENTATION_CALENDAR) {
     return { type: COLLECTION_PRESENTATION_CALENDAR, ...settings.calendar, properties: settings.properties }
   }
+  if (settings.layout === COLLECTION_PRESENTATION_GRAPH) return { type: COLLECTION_PRESENTATION_GRAPH, ...settings.graph }
   return { type: COLLECTION_PRESENTATION_LIST, sort: view.definition.sort, properties: view.definition.listPropertiesDisplay }
 }
 
@@ -123,7 +140,12 @@ function isConfigRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }
 
-const LAYOUT_TYPES: readonly unknown[] = [COLLECTION_PRESENTATION_LIST, COLLECTION_PRESENTATION_KANBAN, COLLECTION_PRESENTATION_CALENDAR]
+const LAYOUT_TYPES: readonly unknown[] = [
+  COLLECTION_PRESENTATION_LIST,
+  COLLECTION_PRESENTATION_KANBAN,
+  COLLECTION_PRESENTATION_CALENDAR,
+  COLLECTION_PRESENTATION_GRAPH,
+]
 
 function isLayoutType(value: unknown): value is CollectionPresentationType {
   return LAYOUT_TYPES.includes(value)
@@ -140,6 +162,7 @@ export function readStoredLayout(value: unknown): LayoutSettings | undefined {
     groupBy: typeof value.groupBy === 'string' ? value.groupBy : DEFAULT_GROUP_BY,
     ...kanbanColumnSettings(value),
     calendar: calendarSettingsFrom(value),
+    graph: graphSettingsFrom(value),
   }
 }
 
@@ -158,21 +181,29 @@ export function persistedViewLayout(target: LayoutPersistenceTarget): LayoutSett
   const presentation = viewFor(target)?.definition.presentation as ViewPresentation | undefined
   const config = viewKanbanConfig(presentation)
   const record: Record<string, unknown> = { ...presentation }
-  if (!config && !hasCalendarSettings(record)) return undefined
+  if (!config && !hasCalendarSettings(record) && !hasGraphSettings(record)) return undefined
   return {
     layout: target.presentation.type,
     groupBy: config?.groupBy ?? DEFAULT_GROUP_BY,
     ...kanbanColumnSettings(config ?? {}),
     properties: viewCardProperties(presentation, config),
     calendar: calendarSettingsFrom(record),
+    graph: graphSettingsFrom(record),
   }
 }
 
 function presentationLayout(presentation: CollectionPresentationConfig): LayoutSettings {
-  const base = { layout: presentation.type, groupBy: DEFAULT_GROUP_BY, ...kanbanColumnSettings({}), calendar: DEFAULT_CALENDAR_SETTINGS }
+  const base = {
+    layout: presentation.type,
+    groupBy: DEFAULT_GROUP_BY,
+    ...kanbanColumnSettings({}),
+    calendar: DEFAULT_CALENDAR_SETTINGS,
+    graph: DEFAULT_GRAPH_SETTINGS,
+  }
   if (presentation.type === COLLECTION_PRESENTATION_CALENDAR) {
     return { ...base, properties: presentation.properties, calendar: calendarSettingsFrom({ ...presentation }) }
   }
+  if (presentation.type === COLLECTION_PRESENTATION_GRAPH) return { ...base, graph: graphSettingsFrom({ ...presentation }) }
   if (presentation.type !== COLLECTION_PRESENTATION_KANBAN) return base
   return { ...base, groupBy: presentation.groupBy ?? DEFAULT_GROUP_BY, ...kanbanColumnSettings(presentation) }
 }

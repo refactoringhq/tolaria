@@ -4,12 +4,14 @@ import { collectionLayoutKey } from '../../collections/collectionLayoutKey'
 import {
   type CalendarSettings,
   COLLECTION_PRESENTATION_CALENDAR,
+  COLLECTION_PRESENTATION_GRAPH,
   COLLECTION_PRESENTATION_KANBAN,
   COLLECTION_PRESENTATION_LIST,
   type CollectionPresentationType,
+  type GraphSettings,
   SET_COLLECTION_LAYOUT_EVENT,
 } from '../../collections/collectionTypes'
-import { getCollectionLayouts } from '../../collections/layoutRegistry'
+import { getCollectionLayout, getCollectionLayouts } from '../../collections/layoutRegistry'
 import { trackEvent } from '../../lib/telemetry'
 import type { SidebarSelection, VaultEntry } from '../../types'
 import {
@@ -25,10 +27,13 @@ import {
   readStoredLayout,
 } from './collectionLayoutConfig'
 import { availableDateProperties, resolveDateProperty } from './calendar/calendarModel'
+import { buildGraphData } from './graph/graphModel'
 import { toggleColumnValue } from './kanbanModel'
 
 export interface CollectionLayoutSource extends LayoutPersistenceTarget {
   visibleEntries: VaultEntry[]
+  /** Every vault note, so graph links resolve aliases and titles exactly like the editor. */
+  allEntries?: VaultEntry[]
   selectedNotePath?: string | null
 }
 
@@ -162,6 +167,10 @@ function useLayoutActions({ source, key, current, setOverrides, resolvedDateProp
     toggleColumnCollapsed: (group: string) => update({ collapsedColumns: toggledColumnList(current.collapsedColumns, group, COLLAPSE_ACTIONS) }),
     toggleColumnHidden: (group: string) => update({ hiddenColumns: toggledColumnList(current.hiddenColumns, group, HIDE_ACTIONS) }),
     changeCalendar: (patch: Partial<CalendarSettings>) => update({ calendar: pinnedCalendar(current.calendar, resolvedDateProperty, patch) }),
+    changeGraph: (patch: Partial<GraphSettings>) => {
+      update({ graph: { ...current.graph, ...patch } })
+      trackEvent('graph_filter_changed', { filter: Object.keys(patch).join(',') })
+    },
   }
 }
 
@@ -169,6 +178,15 @@ function useLayoutActions({ source, key, current, setOverrides, resolvedDateProp
 function useCalendarDates(entries: VaultEntry[], calendar: CalendarSettings) {
   const dateOptions = useMemo(() => availableDateProperties(entries), [entries])
   return { dateOptions, dateProperty: resolveDateProperty(calendar.dateProperty, dateOptions) }
+}
+
+/** Links between the list's notes, only computed while the list shows as a graph. */
+function useGraphData(source: CollectionLayoutSource, layout: CollectionPresentationType) {
+  const { visibleEntries, allEntries } = source
+  return useMemo(
+    () => layout === COLLECTION_PRESENTATION_GRAPH ? buildGraphData(visibleEntries, allEntries ?? visibleEntries) : null,
+    [allEntries, layout, visibleEntries],
+  )
 }
 
 /** Neighborhood and Changes lists have their own structure, so they always render as List. */
@@ -179,7 +197,9 @@ export function supportsLayouts(selection: SidebarSelection): boolean {
 
 function resolveCurrentLayout(source: CollectionLayoutSource, saved: LayoutSettings | undefined): LayoutSettings {
   const current = effectiveLayout(source.presentation, saved)
-  return supportsLayouts(source.selection) ? current : { ...current, layout: COLLECTION_PRESENTATION_LIST }
+  // A saved layout whose feature flag is off (or that this build doesn't know) shows as List; the file stays untouched.
+  const layout = supportsLayouts(source.selection) ? getCollectionLayout(current.layout).type : COLLECTION_PRESENTATION_LIST
+  return { ...current, layout }
 }
 
 export function useCollectionLayout(source: CollectionLayoutSource) {
@@ -195,7 +215,8 @@ export function useCollectionLayout(source: CollectionLayoutSource) {
   const calendarDates = useCalendarDates(source.visibleEntries, current.calendar)
   const actions = useLayoutActions({ source, key, current, setOverrides, resolvedDateProperty: calendarDates.dateProperty })
   const panel = useKanbanPanel(key, current.layout, source.selectedNotePath ?? null)
-  return { ...current, enabled: supportsLayouts(source.selection), groups, cardFields, panel, ...calendarDates, ...actions }
+  const graphData = useGraphData(source, current.layout)
+  return { ...current, enabled: supportsLayouts(source.selection), groups, cardFields, panel, graphData, ...calendarDates, ...actions }
 }
 
 export type CollectionLayoutState = ReturnType<typeof useCollectionLayout>

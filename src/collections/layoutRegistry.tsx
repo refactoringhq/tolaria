@@ -1,17 +1,22 @@
 import type { MouseEvent, ReactNode } from 'react'
-import { CalendarBlank, Kanban, Rows, type Icon } from '@phosphor-icons/react'
+import { CalendarBlank, Graph, Kanban, Rows, type Icon } from '@phosphor-icons/react'
 import { KanbanLayout } from '../components/note-list/KanbanLayout'
 import { CalendarLayout, CalendarMissingProperty } from '../components/note-list/calendar/CalendarLayout'
 import type { DayKey } from '../components/note-list/calendar/calendarDates'
 import { type DateWrite, isTimestampProperty } from '../components/note-list/calendar/calendarModel'
+import { GraphLayout } from '../components/note-list/graph/GraphLayout'
+import type { GraphData } from '../components/note-list/graph/graphModel'
+import { type FeatureFlagName, readFeatureFlag } from '../hooks/useFeatureFlag'
 import type { AppLocale, TranslationKey } from '../lib/i18n'
 import type { VaultEntry } from '../types'
 import {
   type CalendarSettings,
   COLLECTION_PRESENTATION_CALENDAR,
+  COLLECTION_PRESENTATION_GRAPH,
   COLLECTION_PRESENTATION_KANBAN,
   COLLECTION_PRESENTATION_LIST,
   type CollectionPresentationType,
+  type GraphSettings,
 } from './collectionTypes'
 
 /** What every layout gets: the list's notes, how to draw a card, and how to open a note. */
@@ -53,19 +58,34 @@ export interface CalendarLayoutBindings {
   onUseList: () => void
 }
 
+export interface GraphLayoutBindings {
+  settings: GraphSettings
+  /** Links between the list's notes; null while another layout is showing. */
+  data: GraphData | null
+  /** True while the editor panel covers the right side of the canvas. */
+  panelOpen: boolean
+  onSettingsChange: (patch: Partial<GraphSettings>) => void
+  /** A click on empty canvas: closes the editor panel like a click outside a board. */
+  onBackgroundClick: () => void
+  onUseList: () => void
+}
+
 export interface CollectionLayoutRendererProps extends CollectionLayoutSharedProps {
   listContent: ReactNode
   kanban: KanbanLayoutBindings
   calendar: CalendarLayoutBindings
+  graph: GraphLayoutBindings
 }
 
 export type LayoutRequirementConfig = Partial<Pick<CalendarSettings, 'dateProperty' | 'endDateProperty'>> & { groupBy?: string }
 
-export type CollectionLayoutControl = 'groupBy' | 'dateProperty'
+export type CollectionLayoutControl = 'groupBy' | 'dateProperty' | 'graphFilters'
 
 export interface CollectionLayoutRegistration {
   type: CollectionPresentationType
   labelKey: TranslationKey
+  /** Tooltip for the layout menu item, the same words as its command-palette entry. */
+  descriptionKey: TranslationKey
   icon: Icon
   /** Header controls this layout adds next to the shared note-list actions. */
   controls: readonly CollectionLayoutControl[]
@@ -73,6 +93,8 @@ export interface CollectionLayoutRegistration {
   render: (props: CollectionLayoutRendererProps) => ReactNode
   /** Replaces the generic "no notes have this property" state with a layout-specific one. */
   renderMissing?: (props: CollectionLayoutRendererProps, property: string) => ReactNode
+  /** A layout still in development shows only while this flag is on; saved configs fall back to List. */
+  featureFlag?: FeatureFlagName
 }
 
 function sharedLayoutProps(props: CollectionLayoutRendererProps): CollectionLayoutSharedProps {
@@ -89,6 +111,7 @@ const registrations: CollectionLayoutRegistration[] = [
   {
     type: COLLECTION_PRESENTATION_LIST,
     labelKey: 'layout.list',
+    descriptionKey: 'command.view.showAsList',
     icon: Rows,
     controls: [],
     requiredProperties: () => [],
@@ -97,6 +120,7 @@ const registrations: CollectionLayoutRegistration[] = [
   {
     type: COLLECTION_PRESENTATION_KANBAN,
     labelKey: 'layout.kanban',
+    descriptionKey: 'command.view.showAsKanban',
     icon: Kanban,
     controls: ['groupBy'],
     requiredProperties: (config) => typeof config.groupBy === 'string' ? [config.groupBy] : [],
@@ -105,18 +129,35 @@ const registrations: CollectionLayoutRegistration[] = [
   {
     type: COLLECTION_PRESENTATION_CALENDAR,
     labelKey: 'layout.calendar',
+    descriptionKey: 'command.view.showAsCalendar',
     icon: CalendarBlank,
     controls: ['dateProperty'],
     requiredProperties: calendarRequiredProperties,
     render: (props) => <CalendarLayout {...sharedLayoutProps(props)} calendar={props.calendar} />,
     renderMissing: ({ calendar, locale }, property) => <CalendarMissingProperty calendar={calendar} locale={locale} property={property} />,
   },
+  {
+    type: COLLECTION_PRESENTATION_GRAPH,
+    labelKey: 'layout.graph',
+    descriptionKey: 'command.view.showAsGraph',
+    icon: Graph,
+    controls: ['graphFilters'],
+    requiredProperties: () => [],
+    render: (props) => <GraphLayout {...sharedLayoutProps(props)} graph={props.graph} />,
+    featureFlag: 'graph_layout',
+  },
 ]
 
-export function getCollectionLayouts(): readonly CollectionLayoutRegistration[] {
-  return registrations
+function isAvailable(layout: CollectionLayoutRegistration): boolean {
+  return layout.featureFlag === undefined || readFeatureFlag(layout.featureFlag)
 }
 
+/** The layouts the user can pick: flagged layouts only while their flag is on. */
+export function getCollectionLayouts(): readonly CollectionLayoutRegistration[] {
+  return registrations.filter(isAvailable)
+}
+
+/** The registration for a layout type; an unknown or flagged-off type falls back to List. */
 export function getCollectionLayout(type: CollectionPresentationType): CollectionLayoutRegistration {
-  return registrations.find((layout) => layout.type === type) ?? registrations[0]
+  return getCollectionLayouts().find((layout) => layout.type === type) ?? registrations[0]
 }

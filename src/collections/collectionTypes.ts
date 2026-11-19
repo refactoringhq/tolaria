@@ -3,11 +3,13 @@ import type { FilterGroup, SidebarSelection, VaultEntry, ViewFile } from '../typ
 export const COLLECTION_PRESENTATION_LIST = 'list'
 export const COLLECTION_PRESENTATION_KANBAN = 'kanban'
 export const COLLECTION_PRESENTATION_CALENDAR = 'calendar'
+export const COLLECTION_PRESENTATION_GRAPH = 'graph'
 
 export type CollectionPresentationType =
   | typeof COLLECTION_PRESENTATION_LIST
   | typeof COLLECTION_PRESENTATION_KANBAN
   | typeof COLLECTION_PRESENTATION_CALENDAR
+  | typeof COLLECTION_PRESENTATION_GRAPH
 
 export type CalendarViewMode = 'month' | 'week'
 
@@ -46,10 +48,27 @@ export interface CalendarCollectionPresentationConfig extends CalendarSettings {
   properties: string[]
 }
 
+/** The graph legend filters a list keeps, even while it shows another layout. */
+export interface GraphSettings {
+  showWikiLinks: boolean
+  /** Relationship keys whose edges are left off the graph. */
+  hiddenRelationships: string[]
+  /** Note types left off the graph; an empty string stands for notes without a type. */
+  hiddenTypes: string[]
+  /** Notes without a visible edge. */
+  showOrphans: boolean
+  showLabels: boolean
+}
+
+export interface GraphCollectionPresentationConfig extends GraphSettings {
+  type: typeof COLLECTION_PRESENTATION_GRAPH
+}
+
 export type CollectionPresentationConfig =
   | ListCollectionPresentationConfig
   | KanbanCollectionPresentationConfig
   | CalendarCollectionPresentationConfig
+  | GraphCollectionPresentationConfig
 
 export type CollectionOrigin = 'builtin' | 'type' | 'folder' | 'saved-view' | 'neighborhood'
 

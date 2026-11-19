@@ -1,9 +1,9 @@
 import { BulkActionBar } from '../BulkActionBar'
 import { CollectionLayoutBody } from './CollectionLayoutBody'
 import { type CollectionLayoutState, useCollectionLayout } from './useCollectionLayout'
-import { CollectionLayoutHeaderControls } from './CollectionLayoutControls'
-import { KanbanEditorPanelClose } from './KanbanEditorPanel'
-import { useKanbanPanelOutsideClose } from './useKanbanPanelOutsideClose'
+import { CollectionLayoutHeaderControls, type GraphHeaderControls } from './CollectionLayoutControls'
+import { LayoutEditorPanelClose } from './LayoutEditorPanel'
+import { useLayoutPanelOutsideClose } from './useLayoutPanelOutsideClose'
 import { layoutPropertyPicker } from './kanbanCardFieldsPicker'
 import { FilterPills } from './FilterPills'
 import { NOTE_LIST_ACTION_BUTTON_CLASSNAME, NoteListHeader } from './NoteListHeader'
@@ -392,7 +392,13 @@ function NoteListFooter(
   )
 }
 
-function LayoutHeaderControls({ layout, locale }: { layout: CollectionLayoutState; locale: NoteListLayoutProps['locale'] }) {
+function graphHeaderControls(layout: CollectionLayoutState, typeEntryMap: NoteListLayoutProps['typeEntryMap']): GraphHeaderControls | undefined {
+  if (!layout.graphData) return undefined
+  const { relationshipKeys, typeKeys } = layout.graphData
+  return { settings: layout.graph, relationshipKeys, typeKeys, typeEntryMap, onChange: layout.changeGraph }
+}
+
+function LayoutHeaderControls({ layout, locale, typeEntryMap }: { layout: CollectionLayoutState; locale: NoteListLayoutProps['locale']; typeEntryMap: NoteListLayoutProps['typeEntryMap'] }) {
   if (!layout.enabled) return null
   return (
     <CollectionLayoutHeaderControls
@@ -400,6 +406,7 @@ function LayoutHeaderControls({ layout, locale }: { layout: CollectionLayoutStat
       groupBy={layout.groupBy}
       groups={layout.groups}
       calendar={{ settings: layout.calendar, dateProperty: layout.dateProperty, dateOptions: layout.dateOptions, onChange: layout.changeCalendar }}
+      graph={graphHeaderControls(layout, typeEntryMap)}
       locale={locale}
       triggerClassName={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
       onLayoutChange={layout.changeLayout}
@@ -416,7 +423,7 @@ export function NoteListLayout({
 }: NoteListLayoutProps) {
   const layout = useCollectionLayout(contentProps)
   const { locale } = contentProps
-  useKanbanPanelOutsideClose({ rootRef: noteListPanelRef, ...layout.panel })
+  useLayoutPanelOutsideClose({ rootRef: noteListPanelRef, ...layout.panel })
   return (
     <div
       ref={noteListPanelRef}
@@ -431,7 +438,7 @@ export function NoteListLayout({
         <NoteListLayoutHeader
           {...contentProps}
           propertyPicker={layoutPropertyPicker(layout, contentProps.propertyPicker, locale)}
-          layoutControls={<LayoutHeaderControls layout={layout} locale={locale} />}
+          layoutControls={<LayoutHeaderControls layout={layout} locale={locale} typeEntryMap={contentProps.typeEntryMap} />}
         />
         <CollectionLayoutBody
           layout={layout}
@@ -448,7 +455,7 @@ export function NoteListLayout({
         />
       </div>
       <NoteListFooter {...contentProps} />
-      <KanbanEditorPanelClose open={layout.panel.open} locale={locale} onClose={layout.panel.close} />
+      <LayoutEditorPanelClose open={layout.panel.open} locale={locale} onClose={layout.panel.close} />
     </div>
   )
 }

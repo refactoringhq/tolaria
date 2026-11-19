@@ -1,19 +1,19 @@
-/* Non-list layouts (Kanban TOL-362, Calendar TOL-381) take over the note-list and editor area; the
+/* Non-list layouts (Kanban TOL-362, Calendar TOL-381, Graph TOL-385) take over the note-list and editor area; the
    editor slides in from the right as a panel over the layout when a card or item is opened. */
-.app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"])) {
+.app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"], [data-collection-layout="graph"])) {
   position: relative;
 }
 
-.app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"])) .app__note-list {
+.app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"], [data-collection-layout="graph"])) .app__note-list {
   flex: 1 1 0;
   min-width: 0;
 }
 
-.app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"])) .app__note-list + * {
+.app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"], [data-collection-layout="graph"])) .app__note-list + * {
   display: none;
 }
 
-.app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"])) .app__editor {
+.app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"], [data-collection-layout="graph"])) .app__editor {
   position: absolute;
   inset: 0 0 0 auto;
   z-index: 40;
@@ -35,7 +35,7 @@
     visibility 0s;
 }
 
-.app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"])) .app__editor .breadcrumb-bar {
+.app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"], [data-collection-layout="graph"])) .app__editor .breadcrumb-bar {
   --breadcrumb-bar-left-padding: 48px;
 }
 
@@ -165,7 +165,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"])) .app__editor,
+  .app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"], [data-collection-layout="graph"])) .app__editor,
   .kanban-drag-lift,
   .kanban-card--dropped {
     animation: none;
