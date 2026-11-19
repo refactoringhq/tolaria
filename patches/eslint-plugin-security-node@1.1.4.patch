@@ -1,0 +1,12 @@
+diff --git a/lib/rules/detect-unhandled-async-errors.js b/lib/rules/detect-unhandled-async-errors.js
+index 89511de55714863638a1ac726690b4ba652cfe1b..7a7f94378e508fe144644190b5dd1e63db47f1d0 100644
+--- a/lib/rules/detect-unhandled-async-errors.js
++++ b/lib/rules/detect-unhandled-async-errors.js
+@@ -38,6 +38,7 @@ function isIfWithReturn (bodyArg) {
+ 
+ function isTryCatchStatement (bodyArg) {
+   return bodyArg.type === 'TryStatement' &&
++    bodyArg.handler &&
+     bodyArg.handler.type === 'CatchClause' &&
+     bodyArg.handler.param &&
+     /^(e|err|error|Error|anySpecificError)$/.test(bodyArg.handler.param.name)

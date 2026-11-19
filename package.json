@@ -316,7 +316,8 @@
       "@blocknote/code-block@0.46.2": "patches/@blocknote__code-block@0.46.2.patch",
       "@tiptap/extension-code@3.19.0": "patches/@tiptap__extension-code@3.19.0.patch",
       "@10play/tentap-editor@1.0.1": "patches/@10play__tentap-editor@1.0.1.patch",
-      "prosemirror-view@1.42.3": "patches/prosemirror-view@1.42.3.patch"
+      "prosemirror-view@1.42.3": "patches/prosemirror-view@1.42.3.patch",
+      "eslint-plugin-security-node@1.1.4": "patches/eslint-plugin-security-node@1.1.4.patch"
     }
   }
 }

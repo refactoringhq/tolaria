@@ -124,6 +124,9 @@ patchedDependencies:
   '@tiptap/extension-link@3.19.0':
     hash: fbe59b1b8b798ba3fefa371c0729b5aa3458e1ea70a4b86cd5267f9f62529284
     path: patches/@tiptap__extension-link@3.19.0.patch
+  eslint-plugin-security-node@1.1.4:
+    hash: 162f95cbb428f2a990ede857986ade9d6086d2bc147f9d944aa4fee9757b7208
+    path: patches/eslint-plugin-security-node@1.1.4.patch
   prosemirror-tables@1.8.5:
     hash: cd456f0d1d88a3ce11bcf53122a0e0575c0d82810eddd887adae21d6ec570a8b
     path: patches/prosemirror-tables@1.8.5.patch
@@ -405,7 +408,7 @@ importers:
         version: 4.0.1
       eslint-plugin-security-node:
         specifier: ^1.1.4
-        version: 1.1.4
+        version: 1.1.4(patch_hash=162f95cbb428f2a990ede857986ade9d6086d2bc147f9d944aa4fee9757b7208)
       eslint-plugin-xss:
         specifier: ^0.1.12
         version: 0.1.12
@@ -16726,7 +16729,7 @@ snapshots:
     dependencies:
       eslint: 9.39.2(jiti@2.6.1)
 
-  eslint-plugin-security-node@1.1.4: {}
+  eslint-plugin-security-node@1.1.4(patch_hash=162f95cbb428f2a990ede857986ade9d6086d2bc147f9d944aa4fee9757b7208): {}
 
   eslint-plugin-security@4.0.1:
     dependencies:
