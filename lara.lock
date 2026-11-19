@@ -5,6 +5,40 @@ files:
     layout.label: ebd9bec4d70abc789d439c1f136b0538
     layout.list: 4ee29ca12c7d126654bd0e5275de6135
     layout.kanban: 39b32dd45982038aa5704ca2728334ee
+    layout.calendar: 8ff922bbcd8ad41cdfc48d3c5163b2ab
+    calendar.dateProperty: 7adcd66b5fe1377fdc9f3cb8e3776412
+    calendar.dateMenu: 2a9d832baa5148bcda1c372a25000ece
+    calendar.endDate: b7de7e4247d4ab279ef031b7a44c201d
+    calendar.noEndDate: 6adf97f83acf6453d4a6a4b1070f3754
+    calendar.created: 0eceeb45861f9585dd7a97a3e36f85c6
+    calendar.modified: 35e0c8c0b180c95d4e122e55ed62cc64
+    calendar.showWeekends: c8dfe8de612817f8631d6c927c656977
+    calendar.viewLabel: f3bbe0849020dcfb35fe37c121f4f967
+    calendar.month: 7cbb885aa1164b390a0bc050a64e1812
+    calendar.week: d2ce009594dcc60befa6a4e6cbeb71fc
+    calendar.today: 1dd1c5fb7f25cd41b291d43a89e3aefd
+    calendar.todayHint: 47a23c652a2e04c0963f15326ebef11a
+    calendar.previousMonth: 31092a4cf85b77f80fdc80611ba82370
+    calendar.nextMonth: d0b3a5fdac851b5d097b9afd3af92688
+    calendar.previousWeek: cb2c296c5e20016a5ffdaf4fed7e61cf
+    calendar.nextWeek: a6f718c9523a340169d67ba08e64199f
+    calendar.more: ee3a220a25f825b902611b941f4c15d1
+    calendar.addOnDay: cfc97002bcd863800864d4992b993da1
+    calendar.gridLabel: 609fd1842e97b9b5ac740b2446d890fa
+    calendar.tray.title: 6c89d34e72b57d009141ea4f8b238cda
+    calendar.tray.toggle: 6b4961d04b2519eac8714b9b48b6bd67
+    calendar.tray.close: f989ab665501b9a35cc3acd742c1d4d0
+    calendar.tray.empty: dc89daf1475c0faf7210b8893941ddd4
+    calendar.tray.dragHint: 349d99f56e37e1d9910c5701fe2b1b73
+    calendar.tray.invalid: 6f19f4e4ecdcdb0a236cdca6b5fb1042
+    calendar.empty.title: 2e17af2cd235361485646fb860493d68
+    calendar.empty.noDateProperty: 47d404b072de21c45e9b8c06b0c80a76
+    calendar.empty.missingProperty: 6989c342e68a1f0aea8b73d4138ec171
+    calendar.empty.addProperty: 0a3a708e7c3849250c9446b9627a1971
+    calendar.useProperty: 1516fe9a176b5c85271f503dd9aa135b
+    calendar.useCreated: 9ab2dd6f26cb4fdfd038dcf7fdfe073b
+    calendar.useModified: 6c4991aa0200cba076dd7db44eecb1aa
+    calendar.clearEndDate: a37ef33e7e2e4d05e1a073cf3c11e213
     layout.current: af25ac292368a061ee5af1c300ef4491
     layout.groupBy: be87d8c3de2675bbc53f9442af9d8feb
     layout.groupByProperty: 5e966c47c22f541912c31875824828cc
@@ -214,6 +248,9 @@ files:
     command.view.fullLayout: 1cebdf839eee2b1713828731aaa3b507
     command.view.toggleProperties: 54f12756a363401243d82cbd0466117e
     command.view.toggleNoteListLayout: 8616daa1ff557a6f4f4f4a8132eacd3d
+    command.view.showAsList: e8178b8eb11d413ab5274517c8ff9c94
+    command.view.showAsKanban: ea4311ef93611d278090e14b675ccaf6
+    command.view.showAsCalendar: 173ae197736af419e2e1a2662ebfcc68
     command.view.toggleDiff: 148a10ef6f04f897e73289f529ecae86
     command.view.toggleRaw: 9b622257cd6345ceaf58e42b1410899b
     command.view.noteWidthNormal: d29ab88a55ae178bf4b5257201e51801

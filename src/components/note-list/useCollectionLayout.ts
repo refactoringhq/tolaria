@@ -2,10 +2,14 @@ import { invoke } from '@tauri-apps/api/core'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { collectionLayoutKey } from '../../collections/collectionLayoutKey'
 import {
+  type CalendarSettings,
+  COLLECTION_PRESENTATION_CALENDAR,
   COLLECTION_PRESENTATION_KANBAN,
   COLLECTION_PRESENTATION_LIST,
   type CollectionPresentationType,
+  SET_COLLECTION_LAYOUT_EVENT,
 } from '../../collections/collectionTypes'
+import { getCollectionLayouts } from '../../collections/layoutRegistry'
 import { trackEvent } from '../../lib/telemetry'
 import type { SidebarSelection, VaultEntry } from '../../types'
 import {
@@ -20,6 +24,7 @@ import {
   persistLayoutSettings,
   readStoredLayout,
 } from './collectionLayoutConfig'
+import { availableDateProperties, resolveDateProperty } from './calendar/calendarModel'
 import { toggleColumnValue } from './kanbanModel'
 
 export interface CollectionLayoutSource extends LayoutPersistenceTarget {
@@ -55,6 +60,11 @@ function isLayoutToggleShortcut(event: KeyboardEvent): boolean {
   return (event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'g'
 }
 
+function requestedLayout(event: Event): CollectionPresentationType | undefined {
+  if (!(event instanceof CustomEvent)) return undefined
+  return getCollectionLayouts().find((layout) => layout.type === event.detail)?.type
+}
+
 function useLayoutShortcut(enabled: boolean, layout: CollectionPresentationType, changeLayout: (next: CollectionPresentationType) => void) {
   useEffect(() => {
     if (!enabled) return
@@ -64,22 +74,31 @@ function useLayoutShortcut(enabled: boolean, layout: CollectionPresentationType,
       event.preventDefault()
       toggle()
     }
+    const onSetLayout = (event: Event) => {
+      const next = requestedLayout(event)
+      if (next) changeLayout(next)
+    }
     window.addEventListener('laputa:toggle-collection-layout', toggle)
+    window.addEventListener(SET_COLLECTION_LAYOUT_EVENT, onSetLayout)
     window.addEventListener('keydown', onKeyDown)
     return () => {
       window.removeEventListener('laputa:toggle-collection-layout', toggle)
+      window.removeEventListener(SET_COLLECTION_LAYOUT_EVENT, onSetLayout)
       window.removeEventListener('keydown', onKeyDown)
     }
   }, [changeLayout, enabled, layout])
 }
 
-/** Tracks which open note the user dismissed, so the Kanban editor panel starts closed and reopens on a new card. */
+/**
+ * Tracks which open note the user dismissed, so the editor panel of a non-list layout (Kanban, Calendar)
+ * starts closed and reopens on a new card.
+ */
 function useKanbanPanel(key: string, layout: CollectionPresentationType, selectedNotePath: string | null) {
   const [dismissal, setDismissal] = useState({ key, layout, path: selectedNotePath })
   if (dismissal.key !== key || dismissal.layout !== layout) {
     setDismissal({ key, layout, path: selectedNotePath })
   }
-  const open = layout === COLLECTION_PRESENTATION_KANBAN && selectedNotePath !== null && selectedNotePath !== dismissal.path
+  const open = layout !== COLLECTION_PRESENTATION_LIST && selectedNotePath !== null && selectedNotePath !== dismissal.path
   const close = useCallback(() => setDismissal({ key, layout, path: selectedNotePath }), [key, layout, selectedNotePath])
   const reopen = useCallback(() => setDismissal({ key, layout, path: null }), [key, layout])
   return { open, close, reopen }
@@ -103,7 +122,25 @@ function toggledColumnList(list: readonly string[], group: string, actions: Colu
   return toggleColumnValue(list, group)
 }
 
-function useLayoutActions(source: CollectionLayoutSource, key: string, current: LayoutSettings, setOverrides: SetSettingsMap) {
+/** The calendar settings to save: a default date property is pinned, so a later new date key never moves the notes. */
+function pinnedCalendar(calendar: CalendarSettings, resolvedDateProperty: string | null, patch: Partial<CalendarSettings> = {}): CalendarSettings {
+  return { ...calendar, dateProperty: calendar.dateProperty ?? resolvedDateProperty, ...patch }
+}
+
+function layoutPatch(layout: CollectionPresentationType, current: LayoutSettings, resolvedDateProperty: string | null): Partial<LayoutSettings> {
+  if (layout !== COLLECTION_PRESENTATION_CALENDAR) return { layout }
+  return { layout, calendar: pinnedCalendar(current.calendar, resolvedDateProperty) }
+}
+
+interface LayoutActionSource {
+  source: CollectionLayoutSource
+  key: string
+  current: LayoutSettings
+  setOverrides: SetSettingsMap
+  resolvedDateProperty: string | null
+}
+
+function useLayoutActions({ source, key, current, setOverrides, resolvedDateProperty }: LayoutActionSource) {
   const enabled = supportsLayouts(source.selection)
   const update = useCallback((patch: Partial<LayoutSettings>) => {
     const next = { ...current, ...patch }
@@ -113,9 +150,9 @@ function useLayoutActions(source: CollectionLayoutSource, key: string, current: 
   }, [current, key, setOverrides, source])
   const changeLayout = useCallback((layout: CollectionPresentationType) => {
     if (layout === current.layout) return
-    update({ layout })
+    update(layoutPatch(layout, current, resolvedDateProperty))
     trackEvent('collection_layout_changed', { layout, collection: source.selection.kind })
-  }, [current.layout, source.selection.kind, update])
+  }, [current, resolvedDateProperty, source.selection.kind, update])
   useLayoutShortcut(enabled, current.layout, changeLayout)
   return {
     changeLayout,
@@ -124,7 +161,14 @@ function useLayoutActions(source: CollectionLayoutSource, key: string, current: 
     changeColumnOrder: (columnOrder: string[]) => update({ columnOrder }),
     toggleColumnCollapsed: (group: string) => update({ collapsedColumns: toggledColumnList(current.collapsedColumns, group, COLLAPSE_ACTIONS) }),
     toggleColumnHidden: (group: string) => update({ hiddenColumns: toggledColumnList(current.hiddenColumns, group, HIDE_ACTIONS) }),
+    changeCalendar: (patch: Partial<CalendarSettings>) => update({ calendar: pinnedCalendar(current.calendar, resolvedDateProperty, patch) }),
   }
+}
+
+/** The calendar's date property: the configured one, or the best date property the list's notes carry. */
+function useCalendarDates(entries: VaultEntry[], calendar: CalendarSettings) {
+  const dateOptions = useMemo(() => availableDateProperties(entries), [entries])
+  return { dateOptions, dateProperty: resolveDateProperty(calendar.dateProperty, dateOptions) }
 }
 
 /** Neighborhood and Changes lists have their own structure, so they always render as List. */
@@ -148,9 +192,10 @@ export function useCollectionLayout(source: CollectionLayoutSource) {
     () => availableCardProperties(source.visibleEntries, current.properties),
     [current.properties, source.visibleEntries],
   )
-  const actions = useLayoutActions(source, key, current, setOverrides)
+  const calendarDates = useCalendarDates(source.visibleEntries, current.calendar)
+  const actions = useLayoutActions({ source, key, current, setOverrides, resolvedDateProperty: calendarDates.dateProperty })
   const panel = useKanbanPanel(key, current.layout, source.selectedNotePath ?? null)
-  return { ...current, enabled: supportsLayouts(source.selection), groups, cardFields, panel, ...actions }
+  return { ...current, enabled: supportsLayouts(source.selection), groups, cardFields, panel, ...calendarDates, ...actions }
 }
 
 export type CollectionLayoutState = ReturnType<typeof useCollectionLayout>

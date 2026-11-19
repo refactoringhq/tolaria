@@ -399,6 +399,7 @@ function LayoutHeaderControls({ layout, locale }: { layout: CollectionLayoutStat
       layout={layout.layout}
       groupBy={layout.groupBy}
       groups={layout.groups}
+      calendar={{ settings: layout.calendar, dateProperty: layout.dateProperty, dateOptions: layout.dateOptions, onChange: layout.changeCalendar }}
       locale={locale}
       triggerClassName={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
       onLayoutChange={layout.changeLayout}
@@ -443,6 +444,7 @@ export function NoteListLayout({
           selectedNotePath={contentProps.selectedNotePath}
           onOpen={contentProps.handleClickNote}
           onMove={(entry, property, value) => contentProps.onUpdateTypeSort?.(entry.path, property, value)}
+          onCreate={contentProps.handleCreateNote}
         />
       </div>
       <NoteListFooter {...contentProps} />

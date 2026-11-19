@@ -1,11 +1,14 @@
 import { invoke } from '@tauri-apps/api/core'
 import { collectionLayoutKey } from '../../collections/collectionLayoutKey'
 import {
+  type CalendarSettings,
+  COLLECTION_PRESENTATION_CALENDAR,
   COLLECTION_PRESENTATION_KANBAN,
   COLLECTION_PRESENTATION_LIST,
   type CollectionPresentationConfig,
   type CollectionPresentationType,
 } from '../../collections/collectionTypes'
+import { calendarSettingsFrom, DEFAULT_CALENDAR_SETTINGS, hasCalendarSettings } from '../../collections/presentationConfig'
 import type { SidebarSelection, VaultEntry, ViewDefinition, ViewFile } from '../../types'
 
 export interface LayoutSettings {
@@ -15,6 +18,7 @@ export interface LayoutSettings {
   columnOrder: string[]
   collapsedColumns: string[]
   hiddenColumns: string[]
+  calendar: CalendarSettings
 }
 
 /** The Kanban-only part of the layout settings that a View keeps while it shows as List. */
@@ -54,7 +58,7 @@ function storedKanbanConfig(existing: ViewPresentation): StoredKanbanConfig {
 
 function mergedViewPresentation(existing: ViewPresentation | undefined, next: ViewDefinition['presentation']): ViewPresentation {
   const merged = { ...existing, ...next } as ViewPresentation
-  if (next?.type === COLLECTION_PRESENTATION_LIST && existing?.type === COLLECTION_PRESENTATION_KANBAN) {
+  if (next?.type !== COLLECTION_PRESENTATION_KANBAN && existing?.type === COLLECTION_PRESENTATION_KANBAN) {
     merged.kanbanConfig = storedKanbanConfig(existing)
   } else if (next?.type === COLLECTION_PRESENTATION_KANBAN) {
     delete merged.kanbanConfig
@@ -84,13 +88,26 @@ function saveVaultLayoutFile(target: LayoutPersistenceTarget, settings: LayoutSe
   void invoke('save_collection_layout_cmd', {
     vaultPath,
     collection: collectionLayoutKey(target.selection),
-    presentation: { type: settings.layout, groupBy: settings.groupBy, ...kanbanColumnSettings(settings) },
+    presentation: { type: settings.layout, groupBy: settings.groupBy, ...kanbanColumnSettings(settings), ...storedCalendarSettings(settings) },
   }).catch(() => undefined)
+}
+
+function isDefaultCalendar(calendar: CalendarSettings): boolean {
+  return JSON.stringify(calendar) === JSON.stringify(DEFAULT_CALENDAR_SETTINGS)
+}
+
+/** Calendar settings are only written once the list has used or configured a calendar. */
+function storedCalendarSettings(settings: LayoutSettings): Partial<CalendarSettings> {
+  if (settings.layout !== COLLECTION_PRESENTATION_CALENDAR && isDefaultCalendar(settings.calendar)) return {}
+  return { ...settings.calendar }
 }
 
 function viewPresentationFor(view: ViewFile, settings: LayoutSettings): ViewDefinition['presentation'] {
   if (settings.layout === COLLECTION_PRESENTATION_KANBAN) {
     return { type: COLLECTION_PRESENTATION_KANBAN, groupBy: settings.groupBy, ...kanbanColumnSettings(settings) }
+  }
+  if (settings.layout === COLLECTION_PRESENTATION_CALENDAR) {
+    return { type: COLLECTION_PRESENTATION_CALENDAR, ...settings.calendar, properties: settings.properties }
   }
   return { type: COLLECTION_PRESENTATION_LIST, sort: view.definition.sort, properties: view.definition.listPropertiesDisplay }
 }
@@ -106,8 +123,10 @@ function isConfigRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }
 
+const LAYOUT_TYPES: readonly unknown[] = [COLLECTION_PRESENTATION_LIST, COLLECTION_PRESENTATION_KANBAN, COLLECTION_PRESENTATION_CALENDAR]
+
 function isLayoutType(value: unknown): value is CollectionPresentationType {
-  return value === COLLECTION_PRESENTATION_LIST || value === COLLECTION_PRESENTATION_KANBAN
+  return LAYOUT_TYPES.includes(value)
 }
 
 function stringArray(value: unknown): string[] {
@@ -120,6 +139,7 @@ export function readStoredLayout(value: unknown): LayoutSettings | undefined {
     layout: value.type,
     groupBy: typeof value.groupBy === 'string' ? value.groupBy : DEFAULT_GROUP_BY,
     ...kanbanColumnSettings(value),
+    calendar: calendarSettingsFrom(value),
   }
 }
 
@@ -128,26 +148,33 @@ function viewKanbanConfig(presentation: ViewPresentation | undefined): StoredKan
   return presentation?.kanbanConfig
 }
 
+/** Card fields: a calendar View keeps its own at the top level, every other layout uses the Kanban ones. */
+function viewCardProperties(presentation: ViewPresentation | undefined, kanban: StoredKanbanConfig | undefined): string[] {
+  if (presentation?.type === COLLECTION_PRESENTATION_CALENDAR) return stringArray(presentation.properties)
+  return stringArray(kanban?.properties)
+}
+
 export function persistedViewLayout(target: LayoutPersistenceTarget): LayoutSettings | undefined {
-  const view = viewFor(target)
-  const config = viewKanbanConfig(view?.definition.presentation as ViewPresentation | undefined)
-  if (!config) return undefined
+  const presentation = viewFor(target)?.definition.presentation as ViewPresentation | undefined
+  const config = viewKanbanConfig(presentation)
+  const record: Record<string, unknown> = { ...presentation }
+  if (!config && !hasCalendarSettings(record)) return undefined
   return {
     layout: target.presentation.type,
-    groupBy: config.groupBy ?? DEFAULT_GROUP_BY,
-    ...kanbanColumnSettings(config),
+    groupBy: config?.groupBy ?? DEFAULT_GROUP_BY,
+    ...kanbanColumnSettings(config ?? {}),
+    properties: viewCardProperties(presentation, config),
+    calendar: calendarSettingsFrom(record),
   }
 }
 
 function presentationLayout(presentation: CollectionPresentationConfig): LayoutSettings {
-  if (presentation.type !== COLLECTION_PRESENTATION_KANBAN) {
-    return { layout: presentation.type, groupBy: DEFAULT_GROUP_BY, ...kanbanColumnSettings({}) }
+  const base = { layout: presentation.type, groupBy: DEFAULT_GROUP_BY, ...kanbanColumnSettings({}), calendar: DEFAULT_CALENDAR_SETTINGS }
+  if (presentation.type === COLLECTION_PRESENTATION_CALENDAR) {
+    return { ...base, properties: presentation.properties, calendar: calendarSettingsFrom({ ...presentation }) }
   }
-  return {
-    layout: COLLECTION_PRESENTATION_KANBAN,
-    groupBy: presentation.groupBy ?? DEFAULT_GROUP_BY,
-    ...kanbanColumnSettings(presentation),
-  }
+  if (presentation.type !== COLLECTION_PRESENTATION_KANBAN) return base
+  return { ...base, groupBy: presentation.groupBy ?? DEFAULT_GROUP_BY, ...kanbanColumnSettings(presentation) }
 }
 
 export function effectiveLayout(presentation: CollectionPresentationConfig, saved: LayoutSettings | undefined): LayoutSettings {

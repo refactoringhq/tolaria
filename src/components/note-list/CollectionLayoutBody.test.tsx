@@ -61,7 +61,15 @@ function Harness({ onMove = vi.fn(), onOpen = vi.fn(), ...overrides }: HarnessPr
   const picker = layoutPropertyPicker(layout, { scope: 'all', availableProperties: ['priority'], currentDisplay: ['priority'], onSave: vi.fn(), triggerTitle: 'Customize columns' }, 'en')
   return (
     <div data-collection-layout={layout.layout} data-kanban-panel={layout.panel.open ? 'open' : 'closed'} data-testid="layout-root" ref={rootRef}>
-      <CollectionLayoutHeaderControls layout={layout.layout} groupBy={layout.groupBy} groups={layout.groups} locale="en" onLayoutChange={layout.changeLayout} onGroupByChange={layout.changeGroupBy} />
+      <CollectionLayoutHeaderControls
+        layout={layout.layout}
+        groupBy={layout.groupBy}
+        groups={layout.groups}
+        calendar={{ settings: layout.calendar, dateProperty: layout.dateProperty, dateOptions: layout.dateOptions, onChange: layout.changeCalendar }}
+        locale="en"
+        onLayoutChange={layout.changeLayout}
+        onGroupByChange={layout.changeGroupBy}
+      />
       <output data-testid="card-fields">{picker?.currentDisplay.join(',')}</output>
       <button type="button" onClick={() => picker?.onSave(['owner'])}>show owner on cards</button>
       <button type="button" onClick={layout.panel.close}>close panel</button>
