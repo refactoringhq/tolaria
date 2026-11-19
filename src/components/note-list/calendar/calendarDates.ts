@@ -129,9 +129,9 @@ export function calendarTitle(anchor: DayKey, shownWeek: DayKey[], view: Calenda
   return formatter(locale, { month: 'long', year: 'numeric' }).format(utcDate(anchor))
 }
 
-export function weekdayLabels(days: DayKey[], locale: AppLocale): string[] {
+export function weekdayLabels(days: DayKey[], locale: AppLocale): { day: DayKey; label: string }[] {
   const format = formatter(locale, { weekday: 'short' })
-  return days.map((day) => format.format(utcDate(day)))
+  return days.map((day) => ({ day, label: format.format(utcDate(day)) }))
 }
 
 export function dayOfMonth(key: DayKey): number {

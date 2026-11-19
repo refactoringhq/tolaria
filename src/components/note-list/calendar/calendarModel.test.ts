@@ -72,10 +72,11 @@ describe('calendarModel', () => {
     const busy = Array.from({ length: 5 }, (_, index) => makeEntry({ path: `/v/${index}.md`, title: `Busy ${index}`, properties: { start: '2026-11-18' } }))
     const { items } = partitionEntries([...busy, launch], sources, new Map())
     const week = visibleWeeks('2026-11-19', 'week', 1)[0]
-    const layout = layoutWeek(weekSegments(items, week), week.length, 3)
+    const layout = layoutWeek(weekSegments(items, week), week, 3)
     expect(layout.visible.map((segment) => segment.item.entry.title)).toEqual(['Busy 0', 'Busy 1', 'Launch'])
     expect(layout.hiddenCounts).toEqual([0, 0, 3, 0, 0, 0, 0])
-    expect(layoutWeek(weekSegments(items, week), week.length, 10).hiddenCounts.every((count) => count === 0)).toBe(true)
+    expect(layout.overflow).toEqual([{ day: '2026-11-18', column: 2, count: 3 }])
+    expect(layoutWeek(weekSegments(items, week), week, 10).hiddenCounts.every((count) => count === 0)).toBe(true)
     expect(itemsOnDay(items, '2026-11-18')).toHaveLength(5)
   })
 

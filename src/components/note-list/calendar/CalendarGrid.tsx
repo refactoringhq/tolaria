@@ -188,7 +188,7 @@ interface WeekRowProps extends RowState {
 function WeekRowView(props: WeekRowProps) {
   const { week, items, context, laneHeight, locale, maxLanes, selectedNotePath, droppedPath } = props
   const segments = useMemo(() => weekSegments(items, week), [items, week])
-  const { visible, hiddenCounts } = useMemo(() => layoutWeek(segments, week.length, maxLanes), [maxLanes, segments, week.length])
+  const { visible, overflow } = useMemo(() => layoutWeek(segments, week, maxLanes), [maxLanes, segments, week])
   const lanes = { gridTemplateColumns: `repeat(${week.length}, minmax(0, 1fr))`, gridAutoRows: `${laneHeight}px`, rowGap: LANE_GAP_PX, top: DAY_HEADER_PX } as CSSProperties
   return (
     <div className="calendar-week" data-testid="calendar-week">
@@ -209,8 +209,8 @@ function WeekRowView(props: WeekRowProps) {
             continuesAfter={segment.continuesAfter}
           />
         ))}
-        {hiddenCounts.map((count, column) => count > 0 && (
-          <MoreOnDay key={week[column]} day={week[column]} count={count} items={items} context={context} locale={locale} style={{ gridColumn: column + 1, gridRow: maxLanes }} selectedNotePath={selectedNotePath} />
+        {overflow.map(({ day, column, count }) => (
+          <MoreOnDay key={day} day={day} count={count} items={items} context={context} locale={locale} style={{ gridColumn: column + 1, gridRow: maxLanes }} selectedNotePath={selectedNotePath} />
         ))}
       </div>
     </div>
@@ -233,14 +233,14 @@ function rowStateFor(state: CalendarGridState): Omit<RowState, 'previewStart' | 
 export function CalendarGrid({ weeks, items, context, state, laneHeight, locale }: CalendarGridProps) {
   const [gridRef, gridHeight] = useElementHeight()
   const maxLanes = lanesThatFit(gridHeight, weeks.length, laneHeight)
-  const labels = useMemo(() => weekdayLabels(weeks[0], locale), [locale, weeks])
+  const headers = useMemo(() => weekdayLabels(weeks[0], locale), [locale, weeks])
   const rowState = rowStateFor(state)
   return (
     <div className="calendar-grid flex min-h-0 flex-1 flex-col" data-view={state.monthView ? 'month' : 'week'}>
       <div className="calendar-weekdays" style={{ gridTemplateColumns: `repeat(${weeks[0].length}, minmax(0, 1fr))` }}>
-        {weeks[0].map((day, index) => (
+        {headers.map(({ day, label }) => (
           <span key={day} className={cn('calendar-weekday', isWeekend(day) && 'calendar-weekday--weekend')}>
-            {labels[index]}
+            {label}
           </span>
         ))}
       </div>

@@ -53,7 +53,7 @@ describe('calendarDates', () => {
     expect(calendarTitle('2026-11-19', week, 'month', 'it-IT')).toBe('novembre 2026')
     expect(calendarTitle('2026-11-19', week, 'week', 'en')).toMatch(/^Nov 16\s*–\s*22, 2026$/)
     expect(calendarTitle('2026-11-19', week.filter((day) => !isWeekend(day)), 'week', 'en')).toMatch(/^Nov 16\s*–\s*20, 2026$/)
-    expect(weekdayLabels(visibleWeeks('2026-11-19', 'week', 1)[0], 'de-DE')[0]).toMatch(/^Mo/)
+    expect(weekdayLabels(visibleWeeks('2026-11-19', 'week', 1)[0], 'de-DE')[0]).toEqual({ day: '2026-11-16', label: expect.stringMatching(/^Mo/) })
   })
 
   it('marks Saturdays and Sundays as weekend days', () => {

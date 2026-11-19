@@ -50,6 +50,8 @@ export interface WeekLayout {
   visible: CalendarSegment[]
   /** Items per day that did not fit and sit behind "+N more". */
   hiddenCounts: number[]
+  /** The days with a "+N more", with their column and count. */
+  overflow: { day: DayKey; column: number; count: number }[]
 }
 
 export function isTimestampProperty(property: string): boolean {
@@ -63,7 +65,7 @@ function timestampDay(seconds: number | null): string | null {
 export function entryDateValue(entry: VaultEntry, property: string): unknown {
   if (property === CREATED_DATE_PROPERTY) return timestampDay(entry.createdAt)
   if (property === MODIFIED_DATE_PROPERTY) return timestampDay(entry.modifiedAt)
-  return entry.properties[property]
+  return Reflect.get(entry.properties, property)
 }
 
 function endFor(entry: VaultEntry, start: DayKey, endDateProperty: string | null): DayKey {
@@ -158,7 +160,7 @@ export function weekSegments(items: CalendarItem[], week: DayKey[]): CalendarSeg
     const segment = segmentFor(item, week)
     if (!segment) continue
     const lane = firstFreeLane(laneEnds, segment.startColumn)
-    laneEnds[lane] = segment.startColumn + segment.span - 1
+    laneEnds.splice(lane, 1, segment.startColumn + segment.span - 1)
     segments.push({ ...segment, lane })
   }
   return segments
@@ -168,32 +170,36 @@ function coveredColumns(segment: CalendarSegment): number[] {
   return Array.from({ length: segment.span }, (_, index) => segment.startColumn + index)
 }
 
-function laneDepths(segments: CalendarSegment[], days: number): number[] {
-  const depths = new Array<number>(days).fill(0)
+type ColumnCounts = Map<number, number>
+
+function laneDepths(segments: CalendarSegment[]): ColumnCounts {
+  const depths: ColumnCounts = new Map()
   for (const segment of segments) {
-    for (const column of coveredColumns(segment)) depths[column] = Math.max(depths[column], segment.lane + 1)
+    for (const column of coveredColumns(segment)) depths.set(column, Math.max(depths.get(column) ?? 0, segment.lane + 1))
   }
   return depths
 }
 
-function fitsLastLane(segment: CalendarSegment, depths: number[], maxLanes: number): boolean {
-  return coveredColumns(segment).every((column) => depths[column] <= maxLanes)
+function fitsLastLane(segment: CalendarSegment, depths: ColumnCounts, maxLanes: number): boolean {
+  return coveredColumns(segment).every((column) => (depths.get(column) ?? 0) <= maxLanes)
 }
 
 /**
  * Keeps the bars that fit in `maxLanes`. A day that overflows gives its last lane to "+N more", so a bar in
  * that lane only shows when every day it covers fits completely.
  */
-export function layoutWeek(segments: CalendarSegment[], days: number, maxLanes: number): WeekLayout {
-  const depths = laneDepths(segments, days)
-  const hiddenCounts = new Array<number>(days).fill(0)
+export function layoutWeek(segments: CalendarSegment[], week: DayKey[], maxLanes: number): WeekLayout {
+  const depths = laneDepths(segments)
+  const hidden: ColumnCounts = new Map()
   const visible: CalendarSegment[] = []
   for (const segment of segments) {
     const shown = segment.lane < maxLanes - 1 || (segment.lane === maxLanes - 1 && fitsLastLane(segment, depths, maxLanes))
     if (shown) visible.push(segment)
-    else coveredColumns(segment).forEach((column) => { hiddenCounts[column] += 1 })
+    else coveredColumns(segment).forEach((column) => hidden.set(column, (hidden.get(column) ?? 0) + 1))
   }
-  return { visible, hiddenCounts }
+  const hiddenCounts = week.map((_, column) => hidden.get(column) ?? 0)
+  const overflow = week.flatMap((day, column) => (hidden.has(column) ? [{ day, column, count: hidden.get(column) ?? 0 }] : []))
+  return { visible, hiddenCounts, overflow }
 }
 
 export function itemsOnDay(items: CalendarItem[], day: DayKey): CalendarItem[] {
