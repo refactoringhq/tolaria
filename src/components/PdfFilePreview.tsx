@@ -1,6 +1,6 @@
 import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react'
 import { useNearViewportOnce } from '../hooks/useNearViewportOnce'
-import { loadPdfDocument, type PdfDocument, type PdfPage, type PdfRenderTask, pdfCanvasContext } from '../utils/pdfPreviewRuntime'
+import { isSupportedPdfSource, loadPdfDocument, type PdfDocument, type PdfPage, type PdfRenderTask, pdfCanvasContext } from '../utils/pdfPreviewRuntime'
 
 interface PdfFilePreviewProps {
   fallback: ReactNode
@@ -147,14 +147,15 @@ interface PdfSourceState extends PdfDocumentState {
 
 const LOADING_DOCUMENT: PdfDocumentState = { document: null, failed: false }
 
-// State is keyed by source, so a new source starts loading instead of showing the old result.
+// State is keyed by source and cleared with its document, so a reload never shows a stale or destroyed result.
 function usePdfDocument(source: string, onError: () => void): PdfDocumentState {
   const [state, setState] = useState<PdfSourceState | null>(null)
 
   useEffect(() => {
     let active = true
     let loadedDocument: PdfDocument | null = null
-    void loadPdfDocument(source)
+    const load = isSupportedPdfSource(source) ? loadPdfDocument(source) : Promise.reject(new Error('Unsupported PDF source'))
+    void load
       .then((nextDocument) => {
         loadedDocument = nextDocument
         if (active) setState({ document: nextDocument, failed: false, source })
@@ -168,7 +169,9 @@ function usePdfDocument(source: string, onError: () => void): PdfDocumentState {
 
     return () => {
       active = false
-      if (loadedDocument) void loadedDocument.destroy()
+      if (!loadedDocument) return
+      void loadedDocument.destroy()
+      setState(null)
     }
   }, [onError, source])
 

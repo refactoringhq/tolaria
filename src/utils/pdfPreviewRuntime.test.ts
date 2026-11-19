@@ -39,6 +39,12 @@ describe("loadPdfDocument", () => {
 		"data:application/pdf;base64,JVBERi0xLjQK",
 		"blob:https://example.com/123",
 		"/vault/report.pdf",
+		"http://[",
+		"asset://evil.example/report.pdf",
+		"asset:report.pdf",
+		"asset://user@localhost/report.pdf",
+		"asset://localhost:8080/report.pdf",
+		"http://user@asset.localhost/report.pdf",
 	])("rejects %s without fetching it", async (source) => {
 		await expect(loadPdfDocument(source)).rejects.toThrow(
 			"Unsupported PDF source",

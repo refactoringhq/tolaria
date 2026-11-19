@@ -21,13 +21,22 @@ export function pdfCanvasContext(canvas: HTMLCanvasElement): CanvasRenderingCont
 const ASSET_ORIGINS = new Set(['http://asset.localhost', 'https://asset.localhost'])
 
 function isAppPdfSource(url: URL): boolean {
-  if (url.protocol === 'asset:') return true
+  if (url.username || url.password || url.port) return false
+  if (url.protocol === 'asset:') return url.host === 'localhost'
   if (url.protocol === 'blob:') return url.origin === window.location.origin
   return ASSET_ORIGINS.has(url.origin)
 }
 
+export function isSupportedPdfSource(source: string): boolean {
+  try {
+    return isAppPdfSource(new URL(source, window.location.href))
+  } catch {
+    return false
+  }
+}
+
 function assertSupportedPdfSource(source: string): void {
-  if (!isAppPdfSource(new URL(source, window.location.href))) throw new Error('Unsupported PDF source')
+  if (!isSupportedPdfSource(source)) throw new Error('Unsupported PDF source')
 }
 
 export async function loadPdfDocument(source: string): Promise<PdfDocument> {
