@@ -78,7 +78,10 @@ function useItemContext(props: CalendarBoardProps): CalendarItemContext {
   }), [allEntries, calendar.canReschedule, displayPropsOverride, locale, onOpen, properties, typeEntryMap])
 }
 
-/** The newest entries and date writer, so a range's second write never uses a writer from before the first. */
+/**
+ * The newest vault entries and date writer, so a range's second write never uses a writer from before the
+ * first. Every vault entry, not just the list's, so a filtered View that drops the note still sees the write.
+ */
 function useLatestDateWriter(entries: VaultEntry[], calendar: CalendarLayoutBindings): LatestDateWriterRef {
   const latest = useRef<LatestDateWriter>({ entries, writeDate: calendar.onWriteDate })
   useLayoutEffect(() => {
@@ -116,7 +119,7 @@ function CalendarBoard(props: CalendarBoardProps) {
   const visibleItems = useMemo<CalendarItem[]>(() => itemsInRange(partition.items, weeks[0][0], lastShownDay(weeks)), [partition.items, weeks])
   const context = useItemContext(props)
   const laneHeight = laneHeightFor(visibleItems.some((item) => hasCardFields(item.entry, context)))
-  const latestWriter = useLatestDateWriter(entries, calendar)
+  const latestWriter = useLatestDateWriter(props.allEntries, calendar)
   const drag = useCalendarDrag({ setPending, onDrop: useDropHandler(latestWriter, sources) })
   const onCreate = useLatestCallback(calendar.onCreate)
   const gridState: CalendarGridState = {
