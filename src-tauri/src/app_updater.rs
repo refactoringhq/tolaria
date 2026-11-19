@@ -1,5 +1,5 @@
 use chrono::Datelike;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::time::Duration;
@@ -8,13 +8,10 @@ use tauri_plugin_updater::UpdaterExt;
 mod timeout;
 use timeout::timeout_updater_check;
 
-const ALPHA_METADATA_ASSET_NAME: &str = "alpha-latest.json";
-const GITHUB_RELEASES_API_URL: &str =
-    "https://api.github.com/repos/refactoringhq/tolaria/releases?per_page=100";
+const ALPHA_UPDATER_ENDPOINT: &str = "https://tolaria.md/alpha/latest.json";
 const RELEASES_BASE_URL: &str = "https://refactoringhq.github.io/tolaria";
 const POISONED_STABLE_RECOVERY_FLOOR: &str = "2026.8.19";
 const UPDATER_HTTP_TIMEOUT: Duration = Duration::from_secs(120);
-const UPDATER_USER_AGENT: &str = concat!("Tolaria/", env!("CARGO_PKG_VERSION"));
 pub const SYSTEM_PACKAGE_UPDATE_MESSAGE: &str = "system-package-updates-use-package-manager";
 
 fn system_package_update_required() -> bool {
@@ -81,28 +78,6 @@ enum ReleaseChannel {
     Stable,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-struct AlphaReleaseVersion {
-    year: i32,
-    month: u32,
-    day: u32,
-    sequence: u32,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-struct GitHubRelease {
-    tag_name: String,
-    draft: bool,
-    published_at: chrono::DateTime<chrono::Utc>,
-    assets: Vec<GitHubAsset>,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-struct GitHubAsset {
-    name: String,
-    browser_download_url: String,
-}
-
 impl ReleaseChannel {
     fn from_settings_value(value: Option<&str>) -> Self {
         match crate::settings::effective_release_channel(value) {
@@ -118,26 +93,24 @@ impl ReleaseChannel {
         }
     }
 
-    fn updater_endpoint(self) -> Result<Url, String> {
-        let endpoint = format!("{}/{}/latest.json", RELEASES_BASE_URL, self.as_str());
-        Url::parse(&endpoint).map_err(|e| format!("Invalid updater endpoint: {e}"))
-    }
-}
-
-impl AlphaReleaseVersion {
-    fn parse_tag(tag_name: &str) -> Option<Self> {
-        let release = tag_name.strip_prefix("alpha-v")?;
-        let (date, sequence) = release.split_once("-alpha.")?;
-        let sequence = sequence.parse().ok()?;
-        let (year, month, day) = parse_calendar_date(date)?;
-        chrono::NaiveDate::from_ymd_opt(year, month, day)?;
-
-        Some(Self {
-            year,
-            month,
-            day,
-            sequence,
-        })
+    fn updater_endpoints(self) -> Result<Vec<Url>, String> {
+        let endpoint = match self {
+            Self::Alpha => ALPHA_UPDATER_ENDPOINT.to_string(),
+            Self::Stable => format!("{}/{}/latest.json", RELEASES_BASE_URL, self.as_str()),
+        };
+        Url::parse(&endpoint)
+            .map_err(|e| format!("Invalid updater endpoint: {e}"))
+            .map(|primary| {
+                let mut endpoints = vec![primary];
+                if self == Self::Alpha {
+                    if let Ok(fallback) =
+                        Url::parse(&format!("{}/alpha/latest.json", RELEASES_BASE_URL))
+                    {
+                        endpoints.push(fallback);
+                    }
+                }
+                endpoints
+            })
     }
 }
 
@@ -190,70 +163,16 @@ fn should_install_update(
         || should_recover_poisoned_calendar_version(current_version, remote_version, today)
 }
 
-fn latest_alpha_release_metadata_url(releases: &[GitHubRelease]) -> Option<Url> {
-    releases
-        .iter()
-        .filter(|release| !release.draft)
-        .filter_map(alpha_release_metadata_candidate)
-        .max_by_key(|(_, published_at, _)| *published_at)
-        .map(|(_, _, url)| url)
-}
-
-fn alpha_release_metadata_candidate(
-    release: &GitHubRelease,
-) -> Option<(AlphaReleaseVersion, chrono::DateTime<chrono::Utc>, Url)> {
-    let version = AlphaReleaseVersion::parse_tag(&release.tag_name)?;
-    let asset = release
-        .assets
-        .iter()
-        .find(|asset| asset.name == ALPHA_METADATA_ASSET_NAME)?;
-    let url = Url::parse(&asset.browser_download_url).ok()?;
-
-    Some((version, release.published_at, url))
-}
-
-async fn alpha_release_metadata_endpoint() -> Result<Url, String> {
-    let client = reqwest::Client::builder()
-        .timeout(UPDATER_HTTP_TIMEOUT)
-        .user_agent(UPDATER_USER_AGENT)
-        .build()
-        .map_err(|e| format!("Failed to create updater metadata client: {e}"))?;
-
-    let releases = client
-        .get(GITHUB_RELEASES_API_URL)
-        .header(reqwest::header::ACCEPT, "application/vnd.github+json")
-        .send()
-        .await
-        .map_err(|e| format!("Failed to fetch GitHub releases: {e}"))?
-        .error_for_status()
-        .map_err(|e| format!("GitHub releases request failed: {e}"))?
-        .json::<Vec<GitHubRelease>>()
-        .await
-        .map_err(|e| format!("Failed to parse GitHub releases: {e}"))?;
-
-    latest_alpha_release_metadata_url(&releases)
-        .ok_or_else(|| "No alpha updater metadata asset found in GitHub releases".to_string())
-}
-
-async fn updater_endpoint(release_channel: ReleaseChannel) -> Result<Url, String> {
-    match release_channel {
-        ReleaseChannel::Stable => release_channel.updater_endpoint(),
-        ReleaseChannel::Alpha => alpha_release_metadata_endpoint()
-            .await
-            .or_else(|_| release_channel.updater_endpoint()),
-    }
-}
-
 fn build_updater<R: Runtime>(
     app_handle: &AppHandle<R>,
-    endpoint: Url,
+    endpoints: Vec<Url>,
 ) -> Result<tauri_plugin_updater::Updater, String> {
-    build_updater_with_timeout(app_handle, endpoint, UPDATER_HTTP_TIMEOUT)
+    build_updater_with_timeout(app_handle, endpoints, UPDATER_HTTP_TIMEOUT)
 }
 
 fn build_updater_with_timeout<R: Runtime>(
     app_handle: &AppHandle<R>,
-    endpoint: Url,
+    endpoints: Vec<Url>,
     request_timeout: Duration,
 ) -> Result<tauri_plugin_updater::Updater, String> {
     let builder = app_handle
@@ -268,7 +187,7 @@ fn build_updater_with_timeout<R: Runtime>(
             )
         })
         .timeout(request_timeout)
-        .endpoints(vec![endpoint])
+        .endpoints(endpoints)
         .map_err(|e| format!("Failed to configure updater endpoint: {e}"))?;
 
     builder
@@ -346,7 +265,7 @@ pub async fn check_for_app_update<R: Runtime>(
     timeout_updater_check(
         || async {
             let channel = ReleaseChannel::from_settings_value(release_channel.as_deref());
-            let updater = build_updater(&app_handle, updater_endpoint(channel).await?)?;
+            let updater = build_updater(&app_handle, channel.updater_endpoints()?)?;
             let update = updater
                 .check()
                 .await
@@ -370,7 +289,7 @@ pub async fn download_and_install_app_update<R: Runtime>(
         return Err(SYSTEM_PACKAGE_UPDATE_MESSAGE.to_string());
     }
     let channel = ReleaseChannel::from_settings_value(release_channel.as_deref());
-    let updater = build_updater(&app_handle, updater_endpoint(channel).await?)?;
+    let updater = build_updater(&app_handle, channel.updater_endpoints()?)?;
     let update = refreshed_update(updater, &expected_version).await?;
 
     install_update(update, on_event).await

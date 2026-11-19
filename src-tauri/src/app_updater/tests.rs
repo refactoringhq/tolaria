@@ -1,8 +1,7 @@
 use super::{
-    build_updater, build_updater_with_timeout, latest_alpha_release_metadata_url,
-    requires_package_manager_update, should_install_update,
-    should_recover_poisoned_calendar_version, AppUpdateDownloadEvent, AppUpdateMetadata,
-    GitHubAsset, GitHubRelease, ReleaseChannel, UPDATER_HTTP_TIMEOUT,
+    build_updater, build_updater_with_timeout, requires_package_manager_update,
+    should_install_update, should_recover_poisoned_calendar_version, AppUpdateDownloadEvent,
+    AppUpdateMetadata, ReleaseChannel, UPDATER_HTTP_TIMEOUT,
 };
 use serde_json::json;
 use std::{
@@ -102,7 +101,8 @@ async fn updater_builder_applies_its_timeout_to_the_update_check_request() {
     let endpoint = endpoint.parse().unwrap();
     let app = mock_updater_app();
     let updater =
-        build_updater_with_timeout(app.handle(), endpoint, Duration::from_millis(20)).unwrap();
+        build_updater_with_timeout(app.handle(), vec![endpoint], Duration::from_millis(20))
+            .unwrap();
 
     let result = tokio::time::timeout(Duration::from_millis(500), updater.check())
         .await
@@ -124,7 +124,7 @@ async fn production_updater_check_completes_after_five_seconds() {
         delayed_response_server(Duration::from_millis(5_100), Duration::from_secs(2));
     let endpoint = endpoint.parse().unwrap();
     let app = mock_updater_app();
-    let updater = build_updater(app.handle(), endpoint).unwrap();
+    let updater = build_updater(app.handle(), vec![endpoint]).unwrap();
 
     let result = tokio::time::timeout(Duration::from_secs(10), updater.check())
         .await
@@ -184,63 +184,25 @@ fn release_channel_accepts_alpha() {
 #[test]
 fn release_channel_endpoints_match_expected_paths() {
     assert_eq!(
-        ReleaseChannel::Alpha.updater_endpoint().unwrap().as_str(),
-        "https://refactoringhq.github.io/tolaria/alpha/latest.json"
-    );
-    assert_eq!(
-        ReleaseChannel::Stable.updater_endpoint().unwrap().as_str(),
-        "https://refactoringhq.github.io/tolaria/stable/latest.json"
-    );
-}
-
-#[test]
-fn alpha_release_metadata_url_uses_highest_calendar_sequence_tag() {
-    let releases = vec![
-            github_alpha_release(
-                "alpha-v2026.5.8-alpha.0007",
-                "2026-05-08T07:00:00Z",
-                "https://github.com/refactoringhq/tolaria/releases/download/alpha-v2026.5.8-alpha.0007/alpha-latest.json",
-            ),
-            github_alpha_release(
-                "alpha-v2026.5.8-alpha.0017",
-                "2026-05-08T17:00:00Z",
-                "https://github.com/refactoringhq/tolaria/releases/download/alpha-v2026.5.8-alpha.0017/alpha-latest.json",
-            ),
-            github_alpha_release(
-                "alpha-v2026.5.7-alpha.0099",
-                "2026-05-07T23:00:00Z",
-                "https://github.com/refactoringhq/tolaria/releases/download/alpha-v2026.5.7-alpha.0099/alpha-latest.json",
-            ),
-        ];
-
-    assert_eq!(
-            latest_alpha_release_metadata_url(&releases)
-                .unwrap()
-                .as_str(),
-            "https://github.com/refactoringhq/tolaria/releases/download/alpha-v2026.5.8-alpha.0017/alpha-latest.json"
-        );
-}
-
-#[test]
-fn alpha_release_metadata_url_prefers_the_most_recently_published_recovery_release() {
-    let releases = vec![
-        github_alpha_release(
-            "alpha-v2027.8.2-alpha.0001",
-            "2026-08-02T08:00:00Z",
-            "https://example.com/recovery-bridge.json",
-        ),
-        github_alpha_release(
-            "alpha-v2026.8.2-alpha.0001",
-            "2026-08-02T09:00:00Z",
-            "https://example.com/corrected-release.json",
-        ),
-    ];
-
-    assert_eq!(
-        latest_alpha_release_metadata_url(&releases)
+        ReleaseChannel::Alpha
+            .updater_endpoints()
             .unwrap()
-            .as_str(),
-        "https://example.com/corrected-release.json"
+            .iter()
+            .map(|endpoint| endpoint.as_str())
+            .collect::<Vec<_>>(),
+        [
+            "https://tolaria.md/alpha/latest.json",
+            "https://refactoringhq.github.io/tolaria/alpha/latest.json"
+        ]
+    );
+    assert_eq!(
+        ReleaseChannel::Stable
+            .updater_endpoints()
+            .unwrap()
+            .iter()
+            .map(|endpoint| endpoint.as_str())
+            .collect::<Vec<_>>(),
+        ["https://refactoringhq.github.io/tolaria/stable/latest.json"]
     );
 }
 
@@ -284,42 +246,6 @@ fn updater_allows_only_the_targeted_future_calendar_recovery() {
         "2025.8.2-alpha.1",
         today,
     ));
-}
-
-#[test]
-fn alpha_release_metadata_url_ignores_drafts_and_non_alpha_assets() {
-    let releases = vec![
-        GitHubRelease {
-            tag_name: "alpha-v2026.5.8-alpha.0018".into(),
-            draft: true,
-            published_at: "2026-05-08T18:00:00Z".parse().unwrap(),
-            assets: vec![GitHubAsset {
-                name: "alpha-latest.json".into(),
-                browser_download_url: "https://example.com/draft.json".into(),
-            }],
-        },
-        GitHubRelease {
-            tag_name: "stable-v2026.5.8".into(),
-            draft: false,
-            published_at: "2026-05-08T19:00:00Z".parse().unwrap(),
-            assets: vec![GitHubAsset {
-                name: "stable-latest.json".into(),
-                browser_download_url: "https://example.com/stable.json".into(),
-            }],
-        },
-        github_alpha_release(
-            "alpha-v2026.5.8-alpha.0017",
-            "2026-05-08T17:00:00Z",
-            "https://example.com/alpha-latest.json",
-        ),
-    ];
-
-    assert_eq!(
-        latest_alpha_release_metadata_url(&releases)
-            .unwrap()
-            .as_str(),
-        "https://example.com/alpha-latest.json"
-    );
 }
 
 #[test]
@@ -369,21 +295,5 @@ fn download_events_serialize_as_tagged_frontend_events() {
 
     for (event, expected) in events {
         assert_eq!(serde_json::to_value(event).unwrap(), expected);
-    }
-}
-
-fn github_alpha_release(
-    tag_name: &str,
-    published_at: &str,
-    browser_download_url: &str,
-) -> GitHubRelease {
-    GitHubRelease {
-        tag_name: tag_name.into(),
-        draft: false,
-        published_at: published_at.parse().unwrap(),
-        assets: vec![GitHubAsset {
-            name: "alpha-latest.json".into(),
-            browser_download_url: browser_download_url.into(),
-        }],
     }
 }

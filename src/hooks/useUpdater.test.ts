@@ -6,6 +6,11 @@ import {
 } from "../lib/appUpdater";
 import { useUpdater } from "./useUpdater";
 
+const mockAddBreadcrumb = vi.hoisted(() => vi.fn());
+vi.mock("@sentry/react", () => ({
+	addBreadcrumb: (...args: unknown[]) => mockAddBreadcrumb(...args),
+}));
+
 vi.mock("../mock-tauri", () => ({
 	isTauri: vi.fn(() => false),
 }));
@@ -249,7 +254,7 @@ describe("useUpdater", () => {
 		expect(result.current.status).toEqual({ state: "checking" });
 
 		await act(async () => {
-			await vi.advanceTimersByTimeAsync(10_000);
+			await vi.advanceTimersByTimeAsync(120_000);
 			await checkPromise;
 		});
 
@@ -324,8 +329,14 @@ describe("useUpdater", () => {
 			kind: "error",
 		});
 		expect(console.warn).toHaveBeenCalledWith(
-			"[updater] Failed to check for updates",
+			"[updater] Failed to check for updates: network error",
+			new Error("network error"),
 		);
+		expect(mockAddBreadcrumb).toHaveBeenCalledWith({
+			category: "updater",
+			level: "warning",
+			message: "[updater] Failed to check for updates: network error",
+		});
 		expect(result.current.status).toEqual({ state: "error", kind: "check" });
 	});
 
@@ -444,7 +455,15 @@ describe("useUpdater", () => {
 			await result.current.actions.startDownload();
 		});
 
-		expect(console.warn).toHaveBeenCalledWith("[updater] Download failed");
+		expect(console.warn).toHaveBeenCalledWith(
+			"[updater] Download failed: download failed",
+			new Error("download failed"),
+		);
+		expect(mockAddBreadcrumb).toHaveBeenCalledWith({
+			category: "updater",
+			level: "warning",
+			message: "[updater] Download failed: download failed",
+		});
 		expect(result.current.status).toEqual({ state: "error", kind: "download" });
 	});
 });
