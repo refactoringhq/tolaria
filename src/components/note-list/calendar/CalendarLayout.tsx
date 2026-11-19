@@ -123,7 +123,7 @@ function CalendarBoard(props: CalendarBoardProps) {
     <DndContext sensors={useKanbanSensors()} collisionDetection={pointerWithin} onDragStart={drag.onDragStart} onDragOver={drag.onDragOver} onDragEnd={drag.onDragEnd} onDragCancel={drag.onDragCancel}>
       <section className="calendar-board flex min-h-0 flex-1 flex-col" aria-label={translate(locale, 'calendar.gridLabel', { property: dateProperty })} data-testid="calendar-board">
         <CalendarToolbar
-          title={calendarTitle(anchor, settings.view, weekStartForLocale(locale), locale)}
+          title={calendarTitle(anchor, weeks[0], settings.view, locale)}
           view={settings.view}
           locale={locale}
           navigation={navigation}

@@ -120,9 +120,12 @@ function formatWeekRange(days: DayKey[], locale: AppLocale): string {
   return format.formatRange(first, last)
 }
 
-/** The toolbar title: "November 2026" in month view, "Nov 16 – 22, 2026" in week view, localized. */
-export function calendarTitle(anchor: DayKey, view: CalendarView, weekStart: Weekday, locale: AppLocale): string {
-  if (view === 'week') return formatWeekRange(visibleWeeks(anchor, 'week', weekStart)[0], locale)
+/**
+ * The toolbar title: "November 2026" in month view, the shown days in week view ("Nov 16 – 22, 2026",
+ * or "Nov 16 – 20, 2026" without weekends), localized.
+ */
+export function calendarTitle(anchor: DayKey, shownWeek: DayKey[], view: CalendarView, locale: AppLocale): string {
+  if (view === 'week') return formatWeekRange(shownWeek, locale)
   return formatter(locale, { month: 'long', year: 'numeric' }).format(utcDate(anchor))
 }
 

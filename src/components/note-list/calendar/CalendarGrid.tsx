@@ -78,6 +78,19 @@ interface DayCellProps {
   locale: AppLocale
 }
 
+function dayCellProps(day: DayKey, row: RowState, locale: AppLocale): DayCellProps {
+  return {
+    day,
+    isToday: day === row.today,
+    outside: row.month !== null && day.slice(0, 7) !== row.month,
+    target: row.previewStart !== null && row.previewEnd !== null && day >= row.previewStart && day <= row.previewEnd,
+    monthView: row.month !== null,
+    canCreate: row.canCreate,
+    onCreate: row.onCreate,
+    locale,
+  }
+}
+
 function DayNumber({ day, isToday, monthView, locale }: Pick<DayCellProps, 'day' | 'isToday' | 'monthView' | 'locale'>) {
   const label = monthView && dayOfMonth(day) === 1 ? monthDayLabel(day, locale) : String(dayOfMonth(day))
   return (
@@ -97,8 +110,7 @@ function CreateOnDayButton({ day, canCreate, onCreate, locale }: Pick<DayCellPro
   )
 }
 
-const DayCell = memo(function DayCell(props: DayCellProps) {
-  const { day, outside, target } = props
+function DayCellView({ day, isToday, outside, target, monthView, canCreate, onCreate, locale }: DayCellProps) {
   const { setNodeRef } = useDroppable({ id: dayDropId(day) })
   return (
     <div
@@ -108,25 +120,15 @@ const DayCell = memo(function DayCell(props: DayCellProps) {
       data-testid="calendar-day"
     >
       <div className="calendar-day__header">
-        <DayNumber {...props} />
-        <CreateOnDayButton {...props} />
+        <DayNumber day={day} isToday={isToday} monthView={monthView} locale={locale} />
+        <CreateOnDayButton day={day} canCreate={canCreate} onCreate={onCreate} locale={locale} />
       </div>
     </div>
   )
-})
-
-function dayCellProps(day: DayKey, row: RowState, locale: AppLocale): DayCellProps {
-  return {
-    day,
-    isToday: day === row.today,
-    outside: row.month !== null && day.slice(0, 7) !== row.month,
-    target: row.previewStart !== null && row.previewEnd !== null && day >= row.previewStart && day <= row.previewEnd,
-    monthView: row.month !== null,
-    canCreate: row.canCreate,
-    onCreate: row.onCreate,
-    locale,
-  }
 }
+
+const DayCell = memo(DayCellView)
+
 
 interface MoreButtonProps {
   day: DayKey
@@ -183,7 +185,7 @@ interface WeekRowProps extends RowState {
   maxLanes: number
 }
 
-const WeekRow = memo(function WeekRow(props: WeekRowProps) {
+function WeekRowView(props: WeekRowProps) {
   const { week, items, context, laneHeight, locale, maxLanes, selectedNotePath, droppedPath } = props
   const segments = useMemo(() => weekSegments(items, week), [items, week])
   const { visible, hiddenCounts } = useMemo(() => layoutWeek(segments, week.length, maxLanes), [maxLanes, segments, week.length])
@@ -213,7 +215,9 @@ const WeekRow = memo(function WeekRow(props: WeekRowProps) {
       </div>
     </div>
   )
-})
+}
+
+const WeekRow = memo(WeekRowView)
 
 function rowStateFor(state: CalendarGridState): Omit<RowState, 'previewStart' | 'previewEnd'> {
   return {

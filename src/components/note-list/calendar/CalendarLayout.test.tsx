@@ -122,6 +122,7 @@ describe('CalendarLayout', () => {
   it('drops weekend columns when weekends are hidden', () => {
     renderCalendar({ calendar: bindings({ settings: { dateProperty: 'due', endDateProperty: null, view: 'week', showWeekends: false } }) })
     expect(screen.getAllByTestId('calendar-day').map((cell) => cell.dataset.day)).toEqual(['2026-11-16', '2026-11-17', '2026-11-18', '2026-11-19', '2026-11-20'])
+    expect(screen.getByTestId('calendar-title')).toHaveTextContent(/Nov 16\s*–\s*20, 2026/)
   })
 
   it('collapses a busy day into "+N more" and lists every note in its popover', async () => {

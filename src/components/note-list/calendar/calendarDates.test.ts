@@ -48,9 +48,11 @@ describe('calendarDates', () => {
   })
 
   it('titles the view and weekdays with Intl for the active locale', () => {
-    expect(calendarTitle('2026-11-19', 'month', 0, 'en')).toBe('November 2026')
-    expect(calendarTitle('2026-11-19', 'month', 1, 'it-IT')).toBe('novembre 2026')
-    expect(calendarTitle('2026-11-19', 'week', 1, 'en')).toMatch(/^Nov 16\s*–\s*22, 2026$/)
+    const week = visibleWeeks('2026-11-19', 'week', 1)[0]
+    expect(calendarTitle('2026-11-19', week, 'month', 'en')).toBe('November 2026')
+    expect(calendarTitle('2026-11-19', week, 'month', 'it-IT')).toBe('novembre 2026')
+    expect(calendarTitle('2026-11-19', week, 'week', 'en')).toMatch(/^Nov 16\s*–\s*22, 2026$/)
+    expect(calendarTitle('2026-11-19', week.filter((day) => !isWeekend(day)), 'week', 'en')).toMatch(/^Nov 16\s*–\s*20, 2026$/)
     expect(weekdayLabels(visibleWeeks('2026-11-19', 'week', 1)[0], 'de-DE')[0]).toMatch(/^Mo/)
   })
 
