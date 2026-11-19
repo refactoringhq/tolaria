@@ -1,9 +1,10 @@
-import { memo, type MouseEvent } from 'react'
 import { useDraggable } from '@dnd-kit/core'
+import { type MouseEvent, memo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import type { VaultEntry } from '../../types'
+import { NoteTitleIcon } from '../NoteTitleIcon'
 import { PropertyChips } from '../note-item/PropertyChips'
 import { cardDisplayProperties, cardId } from './kanbanModel'
 
@@ -31,7 +32,10 @@ export function KanbanCardFace({ entry, context, className }: KanbanCardFaceProp
   const displayProps = cardDisplayProperties(entry, context.cardProperties, context.typeEntryMap, context.displayPropsOverride)
   return (
     <Card className={cn('kanban-card gap-0 rounded-lg px-3 py-2.5 text-left shadow-xs', className)}>
-      <span className="block truncate text-[13px] font-medium text-foreground">{entry.title}</span>
+      <span className="block truncate text-[13px] font-medium text-foreground" data-testid="kanban-card-title">
+        <NoteTitleIcon icon={entry.icon} size={15} className="mr-1" testId="kanban-card-title-icon" />
+        {entry.title}
+      </span>
       {displayProps.length > 0 && (
         <PropertyChips
           entry={entry}

@@ -20,6 +20,9 @@ type TauriHarnessWindow = Window &
 const TAURI_CONTEXT_MENU_TEST =
 	"embedded tldraw context menu opens from a native right-click path";
 
+// The lazy-load placeholder shares the class, so wait for the mounted board instead.
+const LOADED_WHITEBOARD = ".tldraw-whiteboard:not(.tldraw-whiteboard--loading)";
+
 test.use({ serviceWorkers: "block" });
 
 function requireValue<T>(value: T | null, label: string): T {
@@ -149,7 +152,7 @@ test("tldraw whiteboard fences render as embedded canvases and remain Markdown-d
 }) => {
 	await openNote(page, "Whiteboard Embed");
 
-	await expect(page.locator(".tldraw-whiteboard")).toBeVisible({
+	await expect(page.locator(LOADED_WHITEBOARD)).toBeVisible({
 		timeout: 20_000,
 	});
 	await expect(page.locator(".tldraw-whiteboard .tl-container")).toBeVisible({
@@ -205,7 +208,7 @@ test("embedded tldraw toolbar and style panel icons keep a WebKit paint mask", a
 	await page.setViewportSize({ width: 1440, height: 900 });
 	await openNote(page, "Whiteboard Embed");
 
-	const whiteboard = page.locator(".tldraw-whiteboard");
+	const whiteboard = page.locator(LOADED_WHITEBOARD);
 	await expect(whiteboard).toBeVisible({ timeout: 20_000 });
 
 	await expectPaintedTldrawIcon(
@@ -221,7 +224,7 @@ test("embedded tldraw interactions stay inside the whiteboard", async ({
 }) => {
 	await openNote(page, "Whiteboard Embed");
 
-	const whiteboard = page.locator(".tldraw-whiteboard");
+	const whiteboard = page.locator(LOADED_WHITEBOARD);
 	await expect(whiteboard).toBeVisible({ timeout: 20_000 });
 
 	const boardBox = requireValue(await whiteboard.boundingBox(), "boardBox");
@@ -267,7 +270,7 @@ test("embedded tldraw whiteboards can expand to a full-window workspace", async 
 }) => {
 	await openNote(page, "Whiteboard Embed");
 
-	const whiteboard = page.locator(".tldraw-whiteboard");
+	const whiteboard = page.locator(LOADED_WHITEBOARD);
 	await expect(whiteboard).toBeVisible({ timeout: 20_000 });
 	const embeddedBox = requireValue(
 		await whiteboard.boundingBox(),
@@ -313,7 +316,7 @@ test("embedded tldraw dialogs appear and release focus when closed", async ({
 }) => {
 	await openNote(page, "Whiteboard Embed");
 
-	const whiteboard = page.locator(".tldraw-whiteboard");
+	const whiteboard = page.locator(LOADED_WHITEBOARD);
 	await expect(whiteboard).toBeVisible({ timeout: 20_000 });
 
 	await focusWhiteboardCanvas(page);
@@ -352,7 +355,7 @@ test("embedded tldraw insert embed dialog opens without crashing the note", asyn
 }) => {
 	await openNote(page, "Whiteboard Embed");
 
-	const whiteboard = page.locator(".tldraw-whiteboard");
+	const whiteboard = page.locator(LOADED_WHITEBOARD);
 	await expect(whiteboard).toBeVisible({ timeout: 20_000 });
 
 	await focusWhiteboardCanvas(page);
@@ -375,7 +378,7 @@ test("embedded tldraw insert embed dialog opens without crashing the note", asyn
 test(TAURI_CONTEXT_MENU_TEST, async ({ page }) => {
 	await openNote(page, "Whiteboard Embed");
 
-	const whiteboard = page.locator(".tldraw-whiteboard");
+	const whiteboard = page.locator(LOADED_WHITEBOARD);
 	await expect(whiteboard).toBeVisible({ timeout: 20_000 });
 	const boardBox = requireValue(await whiteboard.boundingBox(), "boardBox");
 
@@ -402,7 +405,7 @@ test("embedded tldraw drawing remains usable while zoomed", async ({
 	await openNote(page, "Whiteboard Embed");
 	await applyZoom(page, 110);
 
-	const whiteboard = page.locator(".tldraw-whiteboard");
+	const whiteboard = page.locator(LOADED_WHITEBOARD);
 	await expect(whiteboard).toBeVisible({ timeout: 20_000 });
 	const canvas = await focusWhiteboardCanvas(page);
 
