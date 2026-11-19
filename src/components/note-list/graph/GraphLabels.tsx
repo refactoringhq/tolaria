@@ -6,7 +6,8 @@ import { getTypeIcon } from '../../note-item/typeIcon'
 import { type GraphNodeModel, labelledNodes } from './graphModel'
 import type { GraphRenderer } from './graphRenderer'
 
-const LABEL_GAP_PX = 4
+const LABEL_GAP_PX = 5
+const LABEL_HEIGHT_PX = 18
 
 interface GraphLabelsProps {
   renderer: GraphRenderer
@@ -32,19 +33,54 @@ const LabelIcon = memo(function LabelIcon({ icon, glyph }: { icon: string | null
   return <Icon width={12} height={12} className="graph-label__icon" style={{ color }} data-testid="graph-label-icon" />
 })
 
-function placeLabels(renderer: GraphRenderer, container: HTMLElement) {
+interface LabelBox {
+  left: number
+  top: number
+  right: number
+  bottom: number
+}
+
+const labelWidths = new WeakMap<HTMLElement, number>()
+
+/** Label text never changes after mount, so each chip is measured once instead of every frame. */
+function labelWidth(label: HTMLElement): number {
+  const known = labelWidths.get(label)
+  if (known !== undefined) return known
+  const width = label.offsetWidth
+  labelWidths.set(label, width)
+  return width
+}
+
+function overlaps(left: LabelBox, right: LabelBox): boolean {
+  return left.left < right.right && right.left < left.right && left.top < right.bottom && right.top < left.bottom
+}
+
+/** Where a node's chip goes: centred under the node, clear of its rendered radius at the current zoom. */
+function labelBox(renderer: GraphRenderer, node: string | undefined, width: number): LabelBox | null {
   const graph = renderer.getGraph()
-  for (const label of container.children) {
-    if (!(label instanceof HTMLElement)) continue
-    const node = label.dataset.node
-    const display = node && graph.hasNode(node) ? renderer.getNodeDisplayData(node) : undefined
-    if (!node || !display) {
-      label.style.visibility = 'hidden'
-      continue
-    }
-    const point = renderer.graphToViewport(graph.getNodeAttributes(node) as { x: number; y: number })
-    label.style.visibility = 'visible'
-    label.style.transform = `translate(${point.x}px, ${point.y + display.size + LABEL_GAP_PX}px) translateX(-50%)`
+  const display = node && graph.hasNode(node) ? renderer.getNodeDisplayData(node) : undefined
+  if (!node || !display) return null
+  const point = renderer.graphToViewport(graph.getNodeAttributes(node) as { x: number; y: number })
+  const zoomScale = renderer.getSetting('zoomToSizeRatioFunction')(renderer.getCamera().ratio)
+  const top = point.y + display.size / zoomScale + LABEL_GAP_PX
+  return { left: point.x - width / 2, top, right: point.x + width / 2, bottom: top + LABEL_HEIGHT_PX }
+}
+
+/** The open note's chip first, then by rank; a chip that would cover an earlier one stays hidden this frame. */
+function orderedLabels(container: HTMLElement): HTMLElement[] {
+  const labels = [...container.children].filter((child): child is HTMLElement => child instanceof HTMLElement)
+  return [...labels.filter((label) => label.dataset.selected === 'true'), ...labels.filter((label) => label.dataset.selected !== 'true')]
+}
+
+function placeLabels(renderer: GraphRenderer, container: HTMLElement) {
+  const placed: LabelBox[] = []
+  for (const label of orderedLabels(container)) {
+    const box = labelBox(renderer, label.dataset.node, labelWidth(label))
+    const visible = box !== null && !placed.some((other) => overlaps(other, box))
+    label.style.visibility = visible ? 'visible' : 'hidden'
+    if (!box || !visible) continue
+    placed.push(box)
+    label.style.transform = `translate(${box.left}px, ${box.top}px)`
   }
 }
 

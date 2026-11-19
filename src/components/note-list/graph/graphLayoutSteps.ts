@@ -37,12 +37,12 @@ export function snapshotGraph(graph: Graph, iterations: number): GraphLayoutSnap
 export function graphFromSnapshot(snapshot: GraphLayoutSnapshot): Graph {
   const graph = new Graph({ type: 'undirected', multi: false })
   snapshot.ids.forEach((id, position) => {
-    graph.addNode(id, { x: snapshot.positions[position * 2], y: snapshot.positions[position * 2 + 1] })
+    graph.addNode(id, { x: snapshot.positions.at(position * 2) ?? 0, y: snapshot.positions.at(position * 2 + 1) ?? 0 })
   })
   for (let edge = 0; edge < snapshot.edges.length; edge += 2) {
-    const source = snapshot.ids[snapshot.edges[edge]]
-    const target = snapshot.ids[snapshot.edges[edge + 1]]
-    if (source !== target && !graph.hasEdge(source, target)) graph.addEdge(source, target)
+    const source = snapshot.ids.at(snapshot.edges.at(edge) ?? -1)
+    const target = snapshot.ids.at(snapshot.edges.at(edge + 1) ?? -1)
+    if (source && target && source !== target && !graph.hasEdge(source, target)) graph.addEdge(source, target)
   }
   return graph
 }
@@ -68,6 +68,6 @@ export function applyPositions(graph: Graph, ids: readonly string[], positions: 
   graph.updateEachNodeAttributes((node, attributes) => {
     const position = index.get(node)
     if (position === undefined) return attributes
-    return { ...attributes, x: positions[position * 2], y: positions[position * 2 + 1] }
+    return { ...attributes, x: positions.at(position * 2) ?? attributes.x, y: positions.at(position * 2 + 1) ?? attributes.y }
   }, { attributes: ['x', 'y'] })
 }

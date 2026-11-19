@@ -115,6 +115,8 @@ describe('graphModel', () => {
     expect(nodeSize(0)).toBe(MIN_NODE_SIZE)
     expect(nodeSize(3)).toBeGreaterThan(nodeSize(1))
     expect(nodeSize(10_000)).toBe(MAX_NODE_SIZE)
+    expect(nodeSize(3, 1_000)).toBeLessThan(nodeSize(3, 30))
+    expect(nodeSize(3, 100_000)).toBeCloseTo(nodeSize(3) * 0.45)
   })
 
   it('reports a list without any connection', () => {

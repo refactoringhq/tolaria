@@ -34,21 +34,36 @@ interface GraphSyncSource {
 
 type GraphOverlayProps = Pick<GraphCanvasProps, 'visible' | 'showLabels' | 'typeEntryMap' | 'selectedNotePath' | 'locale'> & { renderer: GraphRenderer }
 
-/** One sigma renderer per mounted canvas and theme; positions live in the graph and survive a theme switch. */
+function readHighlight(stage: HTMLElement): string {
+  const palette = readGraphPalette(stage, {})
+  palette.dispose()
+  return palette.highlight
+}
+
+/**
+ * One sigma renderer per mounted canvas. A theme switch only re-reads the highlight color and refreshes:
+ * node and edge colors follow through the graph attributes, so the WebGL context is never rebuilt.
+ */
 function useGraphRenderer(stageRef: RefObject<HTMLDivElement | null>, graph: Graph, theme: string) {
   const [renderer, setRenderer] = useState<GraphRenderer | null>(null)
+  const highlightRef = useRef('')
   useEffect(() => {
     const stage = stageRef.current
     if (!stage) return
-    const palette = readGraphPalette(stage, {})
-    palette.dispose()
-    const created = createGraphRenderer(graph, stage, palette.highlight)
+    highlightRef.current = readHighlight(stage)
+    const created = createGraphRenderer(graph, stage, () => highlightRef.current)
     setRenderer(created)
     return () => {
       created.kill()
       setRenderer(null)
     }
-  }, [graph, stageRef, theme])
+  }, [graph, stageRef])
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage || !renderer) return
+    highlightRef.current = readHighlight(stage)
+    renderer.refresh()
+  }, [renderer, stageRef, theme])
   return renderer
 }
 

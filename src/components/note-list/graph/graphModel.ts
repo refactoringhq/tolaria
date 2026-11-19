@@ -8,9 +8,11 @@ export const UNTYPED_GRAPH_KEY = ''
 /** The synthetic `Type` relationship the vault adds from `type:`; the node color already shows it. */
 const TYPE_RELATIONSHIP_KEY = 'Type'
 
-const LEGACY_RELATIONSHIP_KEYS: ReadonlyArray<readonly [keyof Pick<VaultEntry, 'belongsTo' | 'relatedTo'>, string, string]> = [
-  ['belongsTo', 'belongs_to', 'Belongs to'],
-  ['relatedTo', 'related_to', 'Related to'],
+type LegacyRelationship = readonly [(entry: VaultEntry) => string[] | undefined, string, string]
+
+const LEGACY_RELATIONSHIP_KEYS: readonly LegacyRelationship[] = [
+  [(entry) => entry.belongsTo, 'belongs_to', 'Belongs to'],
+  [(entry) => entry.relatedTo, 'related_to', 'Related to'],
 ]
 
 export const MIN_NODE_SIZE = 5
@@ -79,7 +81,7 @@ export function graphTypeKey(entry: VaultEntry): string {
 function legacyReferences(entry: VaultEntry, keys: ReadonlySet<string>): Array<[string, string[]]> {
   return LEGACY_RELATIONSHIP_KEYS
     .filter(([, canonical, legacy]) => !keys.has(canonical) && !keys.has(legacy))
-    .map(([field, canonical]): [string, string[]] => [canonical, entry[field] ?? []])
+    .map(([read, canonical]): [string, string[]] => [canonical, read(entry) ?? []])
     .filter(([, values]) => values.length > 0)
 }
 
@@ -159,8 +161,13 @@ function visibleEdge(pair: GraphPair, settings: GraphSettings): GraphEdgeModel |
   return null
 }
 
-export function nodeSize(degree: number): number {
-  return Math.min(MAX_NODE_SIZE, MIN_NODE_SIZE + Math.sqrt(degree) * 3)
+/** Lists bigger than this draw smaller nodes, so a dense graph stays readable at fit. */
+const FULL_SIZE_NODE_COUNT = 150
+const MIN_SIZE_SCALE = 0.45
+
+export function nodeSize(degree: number, nodeCount = 0): number {
+  const scale = Math.min(1, Math.max(MIN_SIZE_SCALE, Math.sqrt(FULL_SIZE_NODE_COUNT / Math.max(nodeCount, 1))))
+  return Math.min(MAX_NODE_SIZE, MIN_NODE_SIZE + Math.sqrt(degree) * 3) * scale
 }
 
 function countDegrees(edges: readonly GraphEdgeModel[]): Map<string, number> {
@@ -183,12 +190,11 @@ export function visibleGraph(data: GraphData, settings: GraphSettings): VisibleG
     if (edge) edges.push(edge)
   }
   const degrees = countDegrees(edges)
-  const nodes = shown
-    .map((entry) => {
-      const degree = degrees.get(entry.path) ?? 0
-      return { id: entry.path, entry, typeKey: graphTypeKey(entry), degree, size: nodeSize(degree) }
-    })
-    .filter((node) => settings.showOrphans || node.degree > 0)
+  const kept = shown.filter((entry) => settings.showOrphans || degrees.has(entry.path))
+  const nodes = kept.map((entry) => {
+    const degree = degrees.get(entry.path) ?? 0
+    return { id: entry.path, entry, typeKey: graphTypeKey(entry), degree, size: nodeSize(degree, kept.length) }
+  })
   return { nodes, edges }
 }
 

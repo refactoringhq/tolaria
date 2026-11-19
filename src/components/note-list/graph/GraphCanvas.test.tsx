@@ -7,8 +7,17 @@ import { type GraphNodeModel, LABEL_BUDGET, labelledNodes, type VisibleGraph } f
 
 type Handler = (payload: { node: string }) => void
 
+interface FakeRenderer {
+  graph: Graph
+  handlers: Map<string, Set<Handler>>
+  states: Map<string, { isHighlighted: boolean }>
+  kill: () => void
+  refresh: () => void
+  emit: (event: string, payload?: { node: string }) => void
+}
+
 const { renderers, settleGraph, zoomGraph, fitGraph, revealNode } = vi.hoisted(() => ({
-  renderers: [] as Array<{ graph: Graph; handlers: Map<string, Set<Handler>>; states: Map<string, { isHighlighted: boolean }>; kill: () => void; emit: (event: string, payload?: { node: string }) => void }>,
+  renderers: [] as FakeRenderer[],
   settleGraph: vi.fn(() => () => undefined),
   zoomGraph: vi.fn(),
   fitGraph: vi.fn(),
@@ -38,6 +47,9 @@ vi.mock('./graphRenderer', () => {
         off: (event: string, handler: Handler) => handlers.get(event)?.delete(handler),
         getNodeDisplayData: (node: string) => (graph.hasNode(node) ? { size: 6 } : undefined),
         graphToViewport: (point: { x: number; y: number }) => point,
+        getSetting: () => (ratio: number) => Math.sqrt(ratio),
+        getCamera: () => ({ ratio: 1 }),
+        refresh: vi.fn(),
         getNodeState: (node: string) => states.get(node) ?? { isHighlighted: false },
         setNodeState: (node: string, state: { isHighlighted: boolean }) => states.set(node, state),
       }
@@ -74,6 +86,47 @@ function renderCanvas(overrides: Partial<Parameters<typeof GraphCanvas>[0]> = {}
   return { props, ...render(<GraphCanvas {...props} />) }
 }
 
+interface Press {
+  sigmaEvent: 'downNode' | 'downStage'
+  node?: string
+  release: { clientX: number; clientY: number }
+}
+
+/** A press on the stage that sigma reports on a node or on empty space, released at `release`. */
+function pressStage({ sigmaEvent, node = '', release }: Press) {
+  const stage = screen.getByTestId('graph-stage')
+  fireEvent.pointerDown(stage, { clientX: 10, clientY: 10 })
+  act(() => lastRenderer().emit(sigmaEvent, { node }))
+  fireEvent.click(stage, release)
+}
+
+/** Moves nodes in the renderer graph and lets one frame pass. */
+function placeNodes(positions: Record<string, { x: number; y: number }>) {
+  const renderer = lastRenderer()
+  for (const [node, position] of Object.entries(positions)) renderer.graph.mergeNodeAttributes(node, position)
+  act(() => renderer.emit('afterRender'))
+}
+
+/** The app shell with the slid-in editor panel: `panelWidth` wide, flush with the shell's right edge. */
+function mountEditorPanel(panelWidth: number, shellRight: number): HTMLElement {
+  const shell = document.createElement('div')
+  shell.getBoundingClientRect = () => ({ right: shellRight }) as DOMRect
+  const panel = document.createElement('div')
+  panel.className = 'app__editor'
+  Object.defineProperty(panel, 'offsetWidth', { value: panelWidth })
+  shell.appendChild(panel)
+  document.body.appendChild(shell)
+  return shell
+}
+
+async function setTheme(theme: string | null) {
+  await act(async () => {
+    if (theme) document.documentElement.setAttribute('data-theme', theme)
+    else document.documentElement.removeAttribute('data-theme')
+    await Promise.resolve()
+  })
+}
+
 function lastRenderer() {
   const renderer = renderers.at(-1)
   if (!renderer) throw new Error('No renderer')
@@ -99,24 +152,15 @@ describe('GraphCanvas', () => {
 
   it('opens a pressed node with the click event and closes the panel on an empty-canvas click', () => {
     const { props } = renderCanvas()
-    const stage = screen.getByTestId('graph-stage')
-    fireEvent.pointerDown(stage, { clientX: 10, clientY: 10 })
-    act(() => lastRenderer().emit('downNode', { node: ada.path }))
-    fireEvent.click(stage, { clientX: 11, clientY: 10 })
+    pressStage({ sigmaEvent: 'downNode', node: ada.path, release: { clientX: 11, clientY: 10 } })
     expect(props.onOpen).toHaveBeenCalledWith(ada, expect.objectContaining({ type: 'click' }))
-
-    fireEvent.pointerDown(stage, { clientX: 10, clientY: 10 })
-    act(() => lastRenderer().emit('downStage'))
-    fireEvent.click(stage, { clientX: 10, clientY: 10 })
+    pressStage({ sigmaEvent: 'downStage', release: { clientX: 10, clientY: 10 } })
     expect(props.onBackgroundClick).toHaveBeenCalledTimes(1)
   })
 
   it('treats a drag as a pan, never a click', () => {
     const { props } = renderCanvas()
-    const stage = screen.getByTestId('graph-stage')
-    fireEvent.pointerDown(stage, { clientX: 10, clientY: 10 })
-    act(() => lastRenderer().emit('downNode', { node: ada.path }))
-    fireEvent.click(stage, { clientX: 80, clientY: 40 })
+    pressStage({ sigmaEvent: 'downNode', node: ada.path, release: { clientX: 80, clientY: 40 } })
     expect(props.onOpen).not.toHaveBeenCalled()
     expect(props.onBackgroundClick).not.toHaveBeenCalled()
   })
@@ -144,21 +188,12 @@ describe('GraphCanvas', () => {
 
   it('places labels under their node after each frame', () => {
     renderCanvas()
-    const renderer = lastRenderer()
-    renderer.graph.mergeNodeAttributes(launch.path, { x: 100, y: 50 })
-    act(() => renderer.emit('afterRender'))
-    const label = screen.getByText('Launch').closest('[data-testid="graph-label"]') as HTMLElement
-    expect(label.style.transform).toBe('translate(100px, 60px) translateX(-50%)')
+    placeNodes({ [launch.path]: { x: 100, y: 50 } })
+    expect(screen.getByText('Launch').closest('[data-testid="graph-label"]')).toHaveProperty('style.transform', 'translate(100px, 61px)')
   })
 
   it('pans the open note out from under the editor panel once the panel opens', () => {
-    const shell = document.createElement('div')
-    const panel = document.createElement('div')
-    panel.className = 'app__editor'
-    Object.defineProperty(panel, 'offsetWidth', { value: 300 })
-    shell.getBoundingClientRect = () => ({ right: 1000 }) as DOMRect
-    shell.appendChild(panel)
-    document.body.appendChild(shell)
+    const shell = mountEditorPanel(300, 1000)
     const { rerender, props } = renderCanvas({ selectedNotePath: ada.path })
     expect(revealNode).not.toHaveBeenCalled()
     screen.getByTestId('graph-stage').getBoundingClientRect = () => ({ left: 250, width: 750 }) as DOMRect
@@ -170,16 +205,28 @@ describe('GraphCanvas', () => {
   it('zooms, fits and closes the panel from the keyboard while focus is inside the graph', () => {
     const { props } = renderCanvas()
     const canvas = screen.getByRole('application')
-    fireEvent.keyDown(canvas, { key: '+' })
-    fireEvent.keyDown(canvas, { key: '-' })
-    fireEvent.keyDown(canvas, { key: '0' })
-    fireEvent.keyDown(canvas, { key: 'Escape' })
-    fireEvent.keyDown(canvas, { key: '0', ctrlKey: true })
-    fireEvent.keyDown(canvas, { key: 'a' })
+    for (const key of [{ key: '+' }, { key: '-' }, { key: '0' }, { key: 'Escape' }, { key: '0', ctrlKey: true }, { key: 'a' }]) fireEvent.keyDown(canvas, key)
     expect(zoomGraph).toHaveBeenCalledWith(expect.anything(), 'in')
     expect(zoomGraph).toHaveBeenCalledWith(expect.anything(), 'out')
     expect(fitGraph).toHaveBeenCalledTimes(1)
     expect(props.onBackgroundClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('hides a lower-ranked label that would cover a higher-ranked one', () => {
+    const widths = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(80)
+    renderCanvas()
+    placeNodes({ [launch.path]: { x: 100, y: 50 }, [ada.path]: { x: 110, y: 52 } })
+    const visibility = screen.getAllByTestId('graph-label').map((chipHtml) => chipHtml.style.visibility)
+    expect(visibility.sort()).toEqual(['hidden', 'visible'])
+    widths.mockRestore()
+  })
+
+  it('recolors on a theme switch without rebuilding the renderer', async () => {
+    renderCanvas()
+    await setTheme('dark')
+    expect(renderers).toHaveLength(1)
+    expect(lastRenderer().refresh).toHaveBeenCalled()
+    await setTheme(null)
   })
 
   it('kills the renderer on unmount', () => {

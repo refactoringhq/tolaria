@@ -25,16 +25,29 @@ function jitter(id: string): Position {
   return { x: Math.cos(angle) * NEIGHBOR_JITTER, y: Math.sin(angle) * NEIGHBOR_JITTER }
 }
 
-function placedNeighbor(graph: Graph, id: string, edges: readonly GraphEdgeModel[]): Position | null {
-  for (const { source, target } of edges) {
-    const other = source === id ? target : target === id ? source : null
-    if (other && graph.hasNode(other)) return graph.getNodeAttributes(other) as Position
+type Neighbors = Map<string, string[]>
+
+function neighborsOf(edges: readonly GraphEdgeModel[]): Neighbors {
+  const neighbors: Neighbors = new Map()
+  const link = (from: string, to: string) => {
+    const list = neighbors.get(from)
+    if (list) list.push(to)
+    else neighbors.set(from, [to])
   }
-  return null
+  for (const { source, target } of edges) {
+    link(source, target)
+    link(target, source)
+  }
+  return neighbors
 }
 
-function initialPosition(graph: Graph, id: string, edges: readonly GraphEdgeModel[]): Position {
-  const neighbor = placedNeighbor(graph, id, edges)
+function placedNeighbor(graph: Graph, id: string, neighbors: Neighbors): Position | null {
+  const placed = neighbors.get(id)?.find((other) => graph.hasNode(other))
+  return placed ? (graph.getNodeAttributes(placed) as Position) : null
+}
+
+function initialPosition(graph: Graph, id: string, neighbors: Neighbors): Position {
+  const neighbor = placedNeighbor(graph, id, neighbors)
   if (!neighbor) return spiralPosition(graph.order)
   const offset = jitter(id)
   return { x: neighbor.x + offset.x, y: neighbor.y + offset.y }
@@ -60,13 +73,15 @@ function dropMissing(graph: Graph, visible: VisibleGraph): boolean {
 
 function upsertNodes(graph: Graph, visible: VisibleGraph, palette: GraphPalette): boolean {
   let added = false
+  let neighbors: Neighbors | null = null
   for (const node of visible.nodes) {
     const attributes = { label: node.entry.title, size: node.size, color: palette.nodeColor(node.entry), typeKey: node.typeKey }
     if (graph.hasNode(node.id)) {
       graph.mergeNodeAttributes(node.id, attributes)
       continue
     }
-    graph.addNode(node.id, { ...attributes, ...initialPosition(graph, node.id, visible.edges) })
+    neighbors ??= neighborsOf(visible.edges)
+    graph.addNode(node.id, { ...attributes, ...initialPosition(graph, node.id, neighbors) })
     added = true
   }
   return added

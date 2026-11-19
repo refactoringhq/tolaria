@@ -15,7 +15,7 @@ const REVEAL_MARGIN_PX = 48
  * edge color (solid); wiki-link edges leave the gaps transparent (dashed). The open note is "highlighted"
  * and drawn larger with a backdrop ring. Labels are an HTML overlay, so sigma's own labels stay off.
  */
-export function createGraphRenderer(graph: Graph, container: HTMLElement, highlight: string): GraphRenderer {
+export function createGraphRenderer(graph: Graph, container: HTMLElement, highlight: () => string): GraphRenderer {
   return new Sigma(graph, container, {
     primitives: {
       edges: {
@@ -31,7 +31,8 @@ export function createGraphRenderer(graph: Graph, container: HTMLElement, highli
         size: (attributes, state) => Number(attributes.size ?? 6) * (state.isHighlighted ? SELECTED_NODE_GROWTH : 1),
         depth: (_attributes, state) => (state.isHighlighted ? 'topNodes' : 'nodes'),
         backdropVisibility: (_attributes, state) => (state.isHighlighted ? 'visible' : 'hidden'),
-        backdropColor: highlight,
+        // Read on every refresh, so a theme switch recolors the ring without rebuilding the renderer.
+        backdropColor: () => highlight(),
         backdropShadowBlur: 0,
         backdropPadding: 3,
         labelVisibility: 'hidden',
