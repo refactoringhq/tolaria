@@ -215,3 +215,29 @@ test('findings outside the excluded paths still fail the gate', () => {
   })) }] }
   assert.deepEqual(sarifGateFailures(sarif, additions, root).map((failure) => failure.path), expected)
 })
+
+test('the security ESLint scanner reports, not crashes, on try/finally in an async function', () => {
+  const source = [
+    'export async function run(task, done) {',
+    '  try {',
+    '    await task()',
+    '  } finally {',
+    '    done()',
+    '  }',
+    '}',
+  ].join('\n')
+  const eslint = spawnSync(process.execPath, [
+    'node_modules/eslint8/bin/eslint.js',
+    '--config',
+    'eslint.codacy.config.js',
+    '--format',
+    'json',
+    '--stdin',
+    '--stdin-filename',
+    'src/codacy-try-finally.ts',
+  ], { encoding: 'utf8', input: source })
+
+  assert.ok([0, 1].includes(eslint.status), eslint.stderr)
+  const [report] = JSON.parse(eslint.stdout)
+  assert.ok(report.messages.some((message) => message.ruleId === 'security-node/detect-unhandled-async-errors'))
+})

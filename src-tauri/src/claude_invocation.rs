@@ -179,9 +179,9 @@ fn agent_args_with_tool_policy(
         "stream-json".into(),
         "--verbose".into(),
         "--include-partial-messages".into(),
-        "--mcp-config".into(),
-        mcp_config(&req.vault_path, &req.vault_paths)?,
-        "--strict-mcp-config".into(),
+    ]);
+    args.extend(mcp_args(req, &policy)?);
+    args.extend([
         "--permission-mode".into(),
         "acceptEdits".into(),
         policy.tool_flag.into(),
@@ -220,6 +220,17 @@ fn append_non_empty_arg_pair(args: &mut Vec<String>, flag: &str, value: Option<&
 
 fn stdin_prompt(message: &str, system_prompt: Option<&str>) -> String {
     crate::cli_agent_runtime::build_prompt(message, system_prompt)
+}
+
+fn mcp_args(req: &AgentStreamRequest, policy: &AgentToolPolicy) -> Result<Vec<String>, String> {
+    let mut args = vec![
+        "--mcp-config".into(),
+        mcp_config(&req.vault_path, &req.vault_paths)?,
+    ];
+    if !policy.inherit_user_mcp_servers {
+        args.push("--strict-mcp-config".into());
+    }
+    Ok(args)
 }
 
 fn mcp_config(vault_path: &str, vault_paths: &[String]) -> Result<String, String> {
@@ -262,6 +273,7 @@ struct AgentToolPolicy {
     include_session_persistence_flag: bool,
     preapproved_tools: Option<&'static str>,
     disallowed_tools: Option<&'static str>,
+    inherit_user_mcp_servers: bool,
 }
 
 impl AgentToolPolicy {
@@ -272,6 +284,7 @@ impl AgentToolPolicy {
             include_session_persistence_flag: true,
             preapproved_tools: preapproved_agent_tools(permission_mode),
             disallowed_tools: None,
+            inherit_user_mcp_servers: inherits_user_mcp_servers(permission_mode),
         }
     }
 
@@ -289,8 +302,13 @@ impl AgentToolPolicy {
             include_session_persistence_flag: false,
             preapproved_tools: None,
             disallowed_tools: Some(disallowed_agent_tools_compat(permission_mode)),
+            inherit_user_mcp_servers: inherits_user_mcp_servers(permission_mode),
         }
     }
+}
+
+fn inherits_user_mcp_servers(permission_mode: AiAgentPermissionMode) -> bool {
+    permission_mode == AiAgentPermissionMode::PowerUser
 }
 
 fn agent_tools(permission_mode: AiAgentPermissionMode) -> &'static str {
