@@ -188,6 +188,10 @@ function fitsLastLane(segment: CalendarSegment, depths: ColumnCounts, maxLanes: 
  * Keeps the bars that fit in `maxLanes`. A day that overflows gives its last lane to "+N more", so a bar in
  * that lane only shows when every day it covers fits completely.
  */
+function countHidden(hidden: ColumnCounts, segment: CalendarSegment): void {
+  for (const column of coveredColumns(segment)) hidden.set(column, (hidden.get(column) ?? 0) + 1)
+}
+
 export function layoutWeek(segments: CalendarSegment[], week: DayKey[], maxLanes: number): WeekLayout {
   const depths = laneDepths(segments)
   const hidden: ColumnCounts = new Map()
@@ -195,7 +199,7 @@ export function layoutWeek(segments: CalendarSegment[], week: DayKey[], maxLanes
   for (const segment of segments) {
     const shown = segment.lane < maxLanes - 1 || (segment.lane === maxLanes - 1 && fitsLastLane(segment, depths, maxLanes))
     if (shown) visible.push(segment)
-    else coveredColumns(segment).forEach((column) => hidden.set(column, (hidden.get(column) ?? 0) + 1))
+    else countHidden(hidden, segment)
   }
   const hiddenCounts = week.map((_, column) => hidden.get(column) ?? 0)
   const overflow = week.flatMap((day, column) => (hidden.has(column) ? [{ day, column, count: hidden.get(column) ?? 0 }] : []))
