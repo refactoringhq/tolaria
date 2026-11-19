@@ -1,6 +1,6 @@
 import { useDroppable } from '@dnd-kit/core'
 import { Plus } from '@phosphor-icons/react'
-import { type CSSProperties, memo, useEffect, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, memo, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
@@ -10,7 +10,6 @@ import { type CalendarItem, type CalendarSegment, itemsOnDay, layoutWeek, weekSe
 import { CalendarItemButton, type CalendarItemContext } from './CalendarItem'
 import { DAY_HEADER_PX, LANE_GAP_PX, lanesThatFit } from './calendarLanes'
 import { dayDropId } from './useCalendarDrag'
-
 
 export interface CalendarGridState {
   today: DayKey
@@ -34,12 +33,15 @@ interface CalendarGridProps {
   locale: AppLocale
 }
 
+/** Measures before the first paint, so the grid never flashes with a guessed number of lanes. */
 function useElementHeight() {
   const ref = useRef<HTMLDivElement | null>(null)
   const [height, setHeight] = useState(0)
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = ref.current
-    if (!element || typeof ResizeObserver === 'undefined') return
+    if (!element) return
+    setHeight(element.getBoundingClientRect().height)
+    if (typeof ResizeObserver === 'undefined') return
     const observer = new ResizeObserver(([entry]) => setHeight(entry.contentRect.height))
     observer.observe(element)
     return () => observer.disconnect()
@@ -47,19 +49,37 @@ function useElementHeight() {
   return [ref, height] as const
 }
 
-function inRange(day: DayKey, range: CalendarGridState['preview']): boolean {
-  return range !== null && day >= range.start && day <= range.end
+/** Per-row state as primitives, so a memoized row only re-renders when something it shows changes. */
+interface RowState {
+  today: DayKey
+  /** `YYYY-MM` of the month shown; null in week view, where no day is muted. */
+  month: string | null
+  selectedNotePath: string | null
+  droppedPath: string | null
+  previewStart: DayKey | null
+  previewEnd: DayKey | null
+  canCreate: boolean
+  onCreate: (day: DayKey) => void
+}
+
+function previewForWeek(week: DayKey[], preview: CalendarGridState['preview']): Pick<RowState, 'previewStart' | 'previewEnd'> {
+  if (!preview || preview.start > week[week.length - 1] || preview.end < week[0]) return { previewStart: null, previewEnd: null }
+  return { previewStart: preview.start, previewEnd: preview.end }
 }
 
 interface DayCellProps {
   day: DayKey
-  state: CalendarGridState
+  isToday: boolean
+  outside: boolean
+  target: boolean
+  monthView: boolean
+  canCreate: boolean
+  onCreate: (day: DayKey) => void
   locale: AppLocale
 }
 
-function DayNumber({ day, state, locale }: DayCellProps) {
-  const isToday = day === state.today
-  const label = state.monthView && dayOfMonth(day) === 1 ? monthDayLabel(day, locale) : String(dayOfMonth(day))
+function DayNumber({ day, isToday, monthView, locale }: Pick<DayCellProps, 'day' | 'isToday' | 'monthView' | 'locale'>) {
+  const label = monthView && dayOfMonth(day) === 1 ? monthDayLabel(day, locale) : String(dayOfMonth(day))
   return (
     <span className={cn('calendar-day__number', isToday && 'calendar-day__number--today')} aria-current={isToday ? 'date' : undefined}>
       {label}
@@ -67,38 +87,46 @@ function DayNumber({ day, state, locale }: DayCellProps) {
   )
 }
 
-function CreateOnDayButton({ day, state, locale }: DayCellProps) {
-  if (!state.canCreate) return null
+function CreateOnDayButton({ day, canCreate, onCreate, locale }: Pick<DayCellProps, 'day' | 'canCreate' | 'onCreate' | 'locale'>) {
+  if (!canCreate) return null
   const label = translate(locale, 'calendar.addOnDay', { date: fullDayLabel(day, locale) })
   return (
-    <Button type="button" variant="ghost" size="icon-xs" className="calendar-day__add !h-5 !w-5 !min-w-0 !rounded !p-0 text-muted-foreground hover:!bg-accent hover:!text-foreground [&_svg]:!size-3.5" title={label} aria-label={label} onClick={() => state.onCreate(day)} data-testid="calendar-day-add">
+    <Button type="button" variant="ghost" size="icon-xs" className="calendar-day__add !h-5 !w-5 !min-w-0 !rounded !p-0 text-muted-foreground hover:!bg-accent hover:!text-foreground [&_svg]:!size-3.5" title={label} aria-label={label} onClick={() => onCreate(day)} data-testid="calendar-day-add">
       <Plus size={14} />
     </Button>
   )
 }
 
-const DayCell = memo(function DayCell({ day, state, locale }: DayCellProps) {
+const DayCell = memo(function DayCell(props: DayCellProps) {
+  const { day, outside, target } = props
   const { setNodeRef } = useDroppable({ id: dayDropId(day) })
-  const outside = state.monthView && day.slice(0, 7) !== state.anchor.slice(0, 7)
   return (
     <div
       ref={setNodeRef}
-      className={cn(
-        'calendar-day',
-        isWeekend(day) && 'calendar-day--weekend',
-        outside && 'calendar-day--outside',
-        inRange(day, state.preview) && 'calendar-day--target',
-      )}
+      className={cn('calendar-day', isWeekend(day) && 'calendar-day--weekend', outside && 'calendar-day--outside', target && 'calendar-day--target')}
       data-day={day}
       data-testid="calendar-day"
     >
       <div className="calendar-day__header">
-        <DayNumber day={day} state={state} locale={locale} />
-        <CreateOnDayButton day={day} state={state} locale={locale} />
+        <DayNumber {...props} />
+        <CreateOnDayButton {...props} />
       </div>
     </div>
   )
 })
+
+function dayCellProps(day: DayKey, row: RowState, locale: AppLocale): DayCellProps {
+  return {
+    day,
+    isToday: day === row.today,
+    outside: row.month !== null && day.slice(0, 7) !== row.month,
+    target: row.previewStart !== null && row.previewEnd !== null && day >= row.previewStart && day <= row.previewEnd,
+    monthView: row.month !== null,
+    canCreate: row.canCreate,
+    onCreate: row.onCreate,
+    locale,
+  }
+}
 
 interface MoreButtonProps {
   day: DayKey
@@ -146,19 +174,24 @@ function segmentStyle(segment: CalendarSegment): CSSProperties {
   return { gridColumn: `${segment.startColumn + 1} / span ${segment.span}`, gridRow: segment.lane + 1 }
 }
 
-interface WeekRowProps extends Omit<CalendarGridProps, 'weeks'> {
+interface WeekRowProps extends RowState {
   week: DayKey[]
+  items: CalendarItem[]
+  context: CalendarItemContext
+  laneHeight: number
+  locale: AppLocale
   maxLanes: number
 }
 
-const WeekRow = memo(function WeekRow({ week, items, context, state, laneHeight, locale, maxLanes }: WeekRowProps) {
+const WeekRow = memo(function WeekRow(props: WeekRowProps) {
+  const { week, items, context, laneHeight, locale, maxLanes, selectedNotePath, droppedPath } = props
   const segments = useMemo(() => weekSegments(items, week), [items, week])
   const { visible, hiddenCounts } = useMemo(() => layoutWeek(segments, week.length, maxLanes), [maxLanes, segments, week.length])
   const lanes = { gridTemplateColumns: `repeat(${week.length}, minmax(0, 1fr))`, gridAutoRows: `${laneHeight}px`, rowGap: LANE_GAP_PX, top: DAY_HEADER_PX } as CSSProperties
   return (
     <div className="calendar-week" data-testid="calendar-week">
       <div className="calendar-week__days" style={{ gridTemplateColumns: `repeat(${week.length}, minmax(0, 1fr))` }}>
-        {week.map((day) => <DayCell key={day} day={day} state={state} locale={locale} />)}
+        {week.map((day) => <DayCell key={day} {...dayCellProps(day, props, locale)} />)}
       </div>
       <div className="calendar-week__lanes" style={lanes}>
         {visible.map((segment) => (
@@ -167,25 +200,37 @@ const WeekRow = memo(function WeekRow({ week, items, context, state, laneHeight,
             dragId={`calendar-item:${week[0]}:${segment.item.entry.path}`}
             item={segment.item}
             context={context}
-            selected={segment.item.entry.path === state.selectedNotePath}
-            justDropped={segment.item.entry.path === state.droppedPath}
+            selected={segment.item.entry.path === selectedNotePath}
+            justDropped={segment.item.entry.path === droppedPath}
             style={segmentStyle(segment)}
             continuesBefore={segment.continuesBefore}
             continuesAfter={segment.continuesAfter}
           />
         ))}
         {hiddenCounts.map((count, column) => count > 0 && (
-          <MoreOnDay key={week[column]} day={week[column]} count={count} items={items} context={context} locale={locale} style={{ gridColumn: column + 1, gridRow: maxLanes }} selectedNotePath={state.selectedNotePath} />
+          <MoreOnDay key={week[column]} day={week[column]} count={count} items={items} context={context} locale={locale} style={{ gridColumn: column + 1, gridRow: maxLanes }} selectedNotePath={selectedNotePath} />
         ))}
       </div>
     </div>
   )
 })
 
+function rowStateFor(state: CalendarGridState): Omit<RowState, 'previewStart' | 'previewEnd'> {
+  return {
+    today: state.today,
+    month: state.monthView ? state.anchor.slice(0, 7) : null,
+    selectedNotePath: state.selectedNotePath ?? null,
+    droppedPath: state.droppedPath,
+    canCreate: state.canCreate,
+    onCreate: state.onCreate,
+  }
+}
+
 export function CalendarGrid({ weeks, items, context, state, laneHeight, locale }: CalendarGridProps) {
   const [gridRef, gridHeight] = useElementHeight()
   const maxLanes = lanesThatFit(gridHeight, weeks.length, laneHeight)
   const labels = useMemo(() => weekdayLabels(weeks[0], locale), [locale, weeks])
+  const rowState = rowStateFor(state)
   return (
     <div className="calendar-grid flex min-h-0 flex-1 flex-col" data-view={state.monthView ? 'month' : 'week'}>
       <div className="calendar-weekdays" style={{ gridTemplateColumns: `repeat(${weeks[0].length}, minmax(0, 1fr))` }}>
@@ -197,7 +242,17 @@ export function CalendarGrid({ weeks, items, context, state, laneHeight, locale 
       </div>
       <div ref={gridRef} className="calendar-weeks" style={{ gridTemplateRows: `repeat(${weeks.length}, minmax(0, 1fr))` }}>
         {weeks.map((week) => (
-          <WeekRow key={week[0]} week={week} items={items} context={context} state={state} laneHeight={laneHeight} locale={locale} maxLanes={maxLanes} />
+          <WeekRow
+            key={week[0]}
+            week={week}
+            items={items}
+            context={context}
+            laneHeight={laneHeight}
+            locale={locale}
+            maxLanes={maxLanes}
+            {...rowState}
+            {...previewForWeek(week, state.preview)}
+          />
         ))}
       </div>
     </div>

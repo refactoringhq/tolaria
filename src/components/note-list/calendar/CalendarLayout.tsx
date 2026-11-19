@@ -1,5 +1,5 @@
 import './CalendarLayout.css'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { DndContext, DragOverlay, pointerWithin } from '@dnd-kit/core'
 import type { CalendarViewMode } from '../../../collections/collectionTypes'
@@ -31,6 +31,15 @@ function shownWeeks(anchor: DayKey, view: CalendarViewMode, locale: AppLocale, s
   return showWeekends ? weeks : weeks.map((week) => week.filter((day) => !isWeekend(day)))
 }
 
+/** A stable function that always calls the latest handler, so memoized rows and cells skip re-rendering. */
+function useLatestCallback<Args extends unknown[]>(handler: (...args: Args) => void): (...args: Args) => void {
+  const latest = useRef(handler)
+  useLayoutEffect(() => {
+    latest.current = handler
+  })
+  return useCallback((...args: Args) => latest.current(...args), [])
+}
+
 function lastShownDay(weeks: DayKey[][]): DayKey {
   const lastWeek = weeks[weeks.length - 1]
   return lastWeek[lastWeek.length - 1]
@@ -54,7 +63,8 @@ function useCalendarNavigation(calendar: CalendarLayoutBindings) {
 }
 
 function useItemContext(props: CalendarBoardProps): CalendarItemContext {
-  const { properties, allEntries, typeEntryMap, displayPropsOverride, locale, onOpen, calendar } = props
+  const { properties, allEntries, typeEntryMap, displayPropsOverride, locale, calendar } = props
+  const onOpen = useLatestCallback(props.onOpen)
   return useMemo(() => ({
     cardProperties: properties,
     allEntries,
@@ -96,6 +106,7 @@ function CalendarBoard(props: CalendarBoardProps) {
   const context = useItemContext(props)
   const laneHeight = laneHeightFor(visibleItems.some((item) => hasCardFields(item.entry, context)))
   const drag = useCalendarDrag({ setPending, onDrop: useDropHandler(calendar, sources) })
+  const onCreate = useLatestCallback(calendar.onCreate)
   const gridState: CalendarGridState = {
     today: localDayKey(new Date()),
     anchor,
@@ -104,7 +115,7 @@ function CalendarBoard(props: CalendarBoardProps) {
     droppedPath: drag.droppedPath,
     preview: drag.preview,
     canCreate: calendar.canReschedule,
-    onCreate: calendar.onCreate,
+    onCreate,
   }
   const trayCount = partition.unscheduled.length + partition.invalid.length
 
