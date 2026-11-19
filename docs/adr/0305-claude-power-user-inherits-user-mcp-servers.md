@@ -1,6 +1,6 @@
 ---
 type: ADR
-id: "0301"
+id: "0305"
 title: "Claude Code Power User inherits the user's MCP servers"
 status: proposed
 date: 2026-11-09
