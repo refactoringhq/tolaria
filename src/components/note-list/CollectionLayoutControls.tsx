@@ -9,9 +9,10 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import type { CollectionPresentationType } from '../../collections/collectionTypes'
+import type { CalendarSettings, CollectionPresentationType } from '../../collections/collectionTypes'
 import { getCollectionLayout, getCollectionLayouts } from '../../collections/layoutRegistry'
 import { type AppLocale, translate } from '../../lib/i18n'
+import { CalendarDateMenu } from './calendar/CalendarDateMenu'
 
 interface HeaderMenuProps {
   label: string
@@ -100,10 +101,18 @@ export function GroupByMenu({ groupBy, groups, locale, triggerClassName, onChang
   )
 }
 
+export interface CalendarHeaderControls {
+  settings: CalendarSettings
+  dateProperty: string | null
+  dateOptions: string[]
+  onChange: (patch: Partial<CalendarSettings>) => void
+}
+
 export interface CollectionLayoutHeaderControlsProps {
   layout: CollectionPresentationType
   groupBy: string
   groups: string[]
+  calendar: CalendarHeaderControls
   locale: AppLocale
   triggerClassName?: string
   onLayoutChange: (layout: CollectionPresentationType) => void
@@ -111,12 +120,13 @@ export interface CollectionLayoutHeaderControlsProps {
 }
 
 export function CollectionLayoutHeaderControls(props: CollectionLayoutHeaderControlsProps) {
-  const { layout, groupBy, groups, locale, triggerClassName, onLayoutChange, onGroupByChange } = props
-  const showGroupBy = getCollectionLayout(layout).controls.includes('groupBy')
+  const { layout, groupBy, groups, calendar, locale, triggerClassName, onLayoutChange, onGroupByChange } = props
+  const { controls } = getCollectionLayout(layout)
   return (
     <>
       <LayoutMenu layout={layout} locale={locale} triggerClassName={triggerClassName} onChange={onLayoutChange} />
-      {showGroupBy && <GroupByMenu groupBy={groupBy} groups={groups} locale={locale} triggerClassName={triggerClassName} onChange={onGroupByChange} />}
+      {controls.includes('groupBy') && <GroupByMenu groupBy={groupBy} groups={groups} locale={locale} triggerClassName={triggerClassName} onChange={onGroupByChange} />}
+      {controls.includes('dateProperty') && <CalendarDateMenu {...calendar} locale={locale} triggerClassName={triggerClassName} />}
     </>
   )
 }
