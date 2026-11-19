@@ -1,7 +1,6 @@
 import Graph from 'graphology'
 import type { GraphEdgeModel, VisibleGraph } from './graphModel'
 import type { GraphPalette } from './graphPalette'
-import type { GraphRenderer } from './graphRenderer'
 
 const RELATIONSHIP_EDGE_SIZE = 1.6
 const WIKI_LINK_EDGE_SIZE = 1.2
@@ -116,10 +115,12 @@ export function createGraphModel(): Graph {
   return new Graph({ type: 'undirected', multi: false })
 }
 
-/** Marks the note open in the editor panel; every other node loses the mark. */
-export function highlightNode(renderer: GraphRenderer, path: string | null) {
-  renderer.getGraph().forEachNode((node) => {
-    const highlighted = node === path
-    if (renderer.getNodeState(node).isHighlighted !== highlighted) renderer.setNodeState(node, { isHighlighted: highlighted })
-  })
+/**
+ * Marks the note open in the editor panel with a `highlighted` attribute; every other node loses it.
+ * Returns true when a node changed, so the caller can redraw at once.
+ */
+export function highlightNode(graph: Graph, path: string | null): boolean {
+  const changed = graph.filterNodes((node, attributes) => Boolean(attributes.highlighted) !== (node === path))
+  for (const node of changed) graph.mergeNodeAttributes(node, { highlighted: node === path })
+  return changed.length > 0
 }

@@ -10,9 +10,9 @@ type Handler = (payload: { node: string }) => void
 interface FakeRenderer {
   graph: Graph
   handlers: Map<string, Set<Handler>>
-  states: Map<string, { isHighlighted: boolean }>
   kill: () => void
   refresh: () => void
+  scheduleRender: () => void
   emit: (event: string, payload?: { node: string }) => void
 }
 
@@ -33,11 +33,9 @@ vi.mock('./graphRenderer', () => {
     // WebGL is not available in JSDOM: a fake renderer keeps the event and state API the canvas uses.
     createGraphRenderer: (graph: Graph) => {
       const handlers = new Map<string, Set<Handler>>()
-      const states = new Map<string, { isHighlighted: boolean }>()
       const renderer = {
         graph,
         handlers,
-        states,
         kill: vi.fn(),
         emit: (event: string, payload = { node: '' }) => {
           for (const handler of handlers.get(event) ?? []) handler(payload)
@@ -50,8 +48,7 @@ vi.mock('./graphRenderer', () => {
         getSetting: () => (ratio: number) => Math.sqrt(ratio),
         getCamera: () => ({ ratio: 1 }),
         refresh: vi.fn(),
-        getNodeState: (node: string) => states.get(node) ?? { isHighlighted: false },
-        setNodeState: (node: string, state: { isHighlighted: boolean }) => states.set(node, state),
+        scheduleRender: vi.fn(),
       }
       renderers.push(renderer)
       return renderer
@@ -181,9 +178,27 @@ describe('GraphCanvas', () => {
     expect(screen.getAllByTestId('graph-label').map((label) => label.textContent)).toEqual(['🙂Ada', 'Launch'])
     expect(screen.getAllByTestId('graph-label-icon')).toHaveLength(2)
     expect(screen.getByText('Ada').closest('[data-testid="graph-label"]')).toHaveAttribute('data-selected', 'true')
-    expect(lastRenderer().states.get(ada.path)).toEqual({ isHighlighted: true })
-    rerender(<GraphCanvas {...props} selectedNotePath={ada.path} showLabels={false} />)
+    const { graph } = lastRenderer()
+    expect(graph.getNodeAttribute(ada.path, 'highlighted')).toBe(true)
+    vi.mocked(lastRenderer().refresh).mockClear()
+    rerender(<GraphCanvas {...props} selectedNotePath={launch.path} />)
+    expect(lastRenderer().refresh).toHaveBeenCalledTimes(1)
+    expect(graph.getNodeAttribute(ada.path, 'highlighted')).toBe(false)
+    expect(graph.getNodeAttribute(launch.path, 'highlighted')).toBe(true)
+    rerender(<GraphCanvas {...props} visible={{ ...visible }} selectedNotePath={launch.path} />)
+    expect(graph.getNodeAttribute(launch.path, 'highlighted')).toBe(true)
+    rerender(<GraphCanvas {...props} selectedNotePath={launch.path} showLabels={false} />)
     expect(screen.queryByTestId('graph-labels')).not.toBeInTheDocument()
+  })
+
+  it('draws a new ring at once and again on the next animation frame', async () => {
+    const { rerender, props } = renderCanvas({ selectedNotePath: ada.path })
+    const renderer = lastRenderer()
+    vi.mocked(renderer.refresh).mockClear()
+    rerender(<GraphCanvas {...props} selectedNotePath={launch.path} />)
+    expect(renderer.refresh).toHaveBeenCalledTimes(1)
+    await act(() => new Promise((resolve) => requestAnimationFrame(resolve)))
+    expect(renderer.scheduleRender).toHaveBeenCalled()
   })
 
   it('places labels under their node after each frame', () => {

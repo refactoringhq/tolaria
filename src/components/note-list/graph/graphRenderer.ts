@@ -12,8 +12,8 @@ const REVEAL_MARGIN_PX = 48
 
 /**
  * Sigma on WebGL: one dashed edge layer draws both edge kinds. Relationship edges fill their gaps with the
- * edge color (solid); wiki-link edges leave the gaps transparent (dashed). The open note is "highlighted"
- * and drawn larger with a backdrop ring. Labels are an HTML overlay, so sigma's own labels stay off.
+ * edge color (solid); wiki-link edges leave the gaps transparent (dashed). The open note carries a
+ * `highlighted` attribute and is drawn larger with a backdrop ring. Labels are an HTML overlay, so sigma's own labels stay off.
  */
 export function createGraphRenderer(graph: Graph, container: HTMLElement, highlight: () => string): GraphRenderer {
   return new Sigma(graph, container, {
@@ -28,9 +28,8 @@ export function createGraphRenderer(graph: Graph, container: HTMLElement, highli
         x: { attribute: 'x' },
         y: { attribute: 'y' },
         color: { attribute: 'color' },
-        size: (attributes, state) => Number(attributes.size ?? 6) * (state.isHighlighted ? SELECTED_NODE_GROWTH : 1),
-        depth: (_attributes, state) => (state.isHighlighted ? 'topNodes' : 'nodes'),
-        backdropVisibility: (_attributes, state) => (state.isHighlighted ? 'visible' : 'hidden'),
+        size: (attributes) => Number(attributes.size ?? 6) * (attributes.highlighted ? SELECTED_NODE_GROWTH : 1),
+        backdropVisibility: (attributes) => (attributes.highlighted ? 'visible' : 'hidden'),
         // Read on every refresh, so a theme switch recolors the ring without rebuilding the renderer.
         backdropColor: () => highlight(),
         backdropShadowBlur: 0,

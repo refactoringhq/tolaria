@@ -85,6 +85,20 @@ function useGraphSync({ stageRef, graph, visible, typeEntryMap, theme }: GraphSy
   useEffect(() => () => cancelLayout.current?.(), [])
 }
 
+/**
+ * Rings the note open in the editor panel. WebKitGTK can present a WebGL frame one draw late, which left
+ * the ring on the previous note until the next interaction, so the change is drawn now and once more on
+ * the next animation frame.
+ */
+function useOpenNoteHighlight(graph: Graph, renderer: GraphRenderer | null, selectedNotePath: string | null, visible: VisibleGraph) {
+  useEffect(() => {
+    if (!highlightNode(graph, selectedNotePath) || !renderer) return
+    renderer.refresh()
+    const frame = requestAnimationFrame(() => renderer.scheduleRender())
+    return () => cancelAnimationFrame(frame)
+  }, [graph, renderer, selectedNotePath, visible])
+}
+
 /** Labels and zoom controls, drawn over the WebGL canvas once the renderer exists. */
 function GraphOverlays({ renderer, visible, showLabels, typeEntryMap, selectedNotePath, locale }: GraphOverlayProps) {
   return (
@@ -108,9 +122,7 @@ export default function GraphCanvas(props: GraphCanvasProps) {
   const theme = useThemeSignature()
   const renderer = useGraphRenderer(stageRef, graph, theme)
   useGraphSync({ stageRef, graph, visible, typeEntryMap, theme })
-  useEffect(() => {
-    if (renderer) highlightNode(renderer, selectedNotePath)
-  }, [renderer, selectedNotePath, visible])
+  useOpenNoteHighlight(graph, renderer, selectedNotePath, visible)
   useRevealOpenNote({ renderer, stageRef, selectedNotePath, panelOpen })
   const clicks = useCanvasClicks({ renderer, visible, onOpen, onBackgroundClick })
   return (

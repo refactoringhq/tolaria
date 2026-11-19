@@ -17,7 +17,7 @@ async function nodePoint(page: Page, title: string): Promise<{ x: number; y: num
   await expect(label).toBeVisible()
   const box = await label.boundingBox()
   if (!box) throw new Error(`No label for ${title}`)
-  return { x: box.x + box.width / 2, y: box.y - 8 }
+  return { x: box.x + box.width / 2, y: box.y - 10 }
 }
 
 test.describe('Graph layout', () => {
@@ -43,9 +43,9 @@ test.describe('Graph layout', () => {
     await expect(page.getByTestId('kanban-panel-close')).toBeVisible()
     await expect(page.locator('[data-testid="graph-label"][data-selected="true"]')).toContainText('Alpha Project')
 
-    const stage = await page.getByTestId('graph-stage').boundingBox()
-    if (!stage) throw new Error('No graph stage')
-    await page.mouse.click(stage.x + 8, stage.y + 8)
+    const canvas = await page.getByTestId('graph-canvas').boundingBox()
+    if (!canvas) throw new Error('No graph canvas')
+    await page.mouse.click(canvas.x + 8, canvas.y + 8)
     await expect(page.getByTestId('kanban-panel-close')).toHaveCount(0)
   })
 })
