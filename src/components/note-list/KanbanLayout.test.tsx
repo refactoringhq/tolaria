@@ -47,6 +47,18 @@ describe('KanbanLayout', () => {
     expect(alphaCard).toHaveAttribute('data-selected', 'true')
   })
 
+  it('shows the note icon before the title and keeps iconless titles unchanged', () => {
+    const withIcon = makeEntry({ path: '/vault/icon.md', title: 'Icon note', status: 'Doing', icon: '✨' })
+    const withoutIcon = makeEntry({ path: '/vault/plain.md', title: 'Plain note', status: 'Doing' })
+    renderBoard({ entries: [withIcon, withoutIcon], allEntries: [withIcon, withoutIcon] })
+
+    const iconCard = screen.getByRole('button', { name: 'Icon note' })
+    const icon = within(iconCard).getByTestId('kanban-card-title-icon')
+    expect(icon).toHaveTextContent('✨')
+    expect(iconCard.querySelector('[data-testid="kanban-card-title"]')?.firstElementChild).toContainElement(icon)
+    expect(within(screen.getByRole('button', { name: 'Plain note' })).queryByTestId('kanban-card-title-icon')).not.toBeInTheDocument()
+  })
+
   it('resolves linked card fields against the whole vault, like list rows', () => {
     const person = makeEntry({ path: '/vault/person-ada.md', filename: 'person-ada.md', title: 'Ada Lovelace', isA: 'Person' })
     const linked = makeEntry({ path: '/vault/c.md', title: 'Gamma', status: 'Doing', relationships: { owner: ['[[person-ada]]'] } })
