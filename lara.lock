@@ -6,6 +6,7 @@ files:
     layout.list: 4ee29ca12c7d126654bd0e5275de6135
     layout.kanban: 39b32dd45982038aa5704ca2728334ee
     layout.calendar: 8ff922bbcd8ad41cdfc48d3c5163b2ab
+    layout.graph: 4cdbd2bafa8193091ba09509cedf94fd
     calendar.dateProperty: 7adcd66b5fe1377fdc9f3cb8e3776412
     calendar.dateMenu: 2a9d832baa5148bcda1c372a25000ece
     calendar.endDate: b7de7e4247d4ab279ef031b7a44c201d
@@ -39,6 +40,23 @@ files:
     calendar.useCreated: 9ab2dd6f26cb4fdfd038dcf7fdfe073b
     calendar.useModified: 6c4991aa0200cba076dd7db44eecb1aa
     calendar.clearEndDate: a37ef33e7e2e4d05e1a073cf3c11e213
+    graph.noType: 11e3386d0e16c0eb5c6a782bc6f6646d
+    graph.filters.label: ac0f33646f37509ba6c48e5e56a0d64a
+    graph.filters.edges: bd908db5ccb07777ced8023dffc802f4
+    graph.filters.wikiLinks: a632110383678ec9a5c2ff75d0bac224
+    graph.filters.types: f2d346b1bb7c1c85ab6f7f21e3666b9f
+    graph.filters.display: 498f79c4c5bbde77f1bceb6c86fd0f6d
+    graph.filters.orphans: ed0d14c3f05b743de2c6607d96003406
+    graph.filters.labels: 3ad6cb6100190c8f81e99fd52debf7ef
+    graph.zoomIn: 7b91156d64b76a5dda815937fce9119d
+    graph.zoomOut: 52ebc26c2921d5b84fc670dff9891821
+    graph.fit: f63ca3deba069ca98f9c093f7fafa444
+    graph.canvasLabel: b54cbdf241ddb967b5790ea2358b6aca
+    graph.empty.title: 47d6911e6b1cd3f834c69d51c6901a86
+    graph.empty.body: bca5080a63b333292a44d5021a242195
+    graph.empty.filteredTitle: 47bb82327badbdec79f2b5321d56ceff
+    graph.empty.filteredBody: a2af0bd155b517f402099fa214b14e78
+    graph.empty.resetFilters: 8bca92e006f955be7219f997638e7e63
     layout.current: af25ac292368a061ee5af1c300ef4491
     layout.groupBy: be87d8c3de2675bbc53f9442af9d8feb
     layout.groupByProperty: 5e966c47c22f541912c31875824828cc
@@ -251,6 +269,7 @@ files:
     command.view.showAsList: e8178b8eb11d413ab5274517c8ff9c94
     command.view.showAsKanban: ea4311ef93611d278090e14b675ccaf6
     command.view.showAsCalendar: 173ae197736af419e2e1a2662ebfcc68
+    command.view.showAsGraph: 4e356576ee006ae864f41b2b0450b658
     command.view.toggleDiff: 148a10ef6f04f897e73289f529ecae86
     command.view.toggleRaw: 9b622257cd6345ceaf58e42b1410899b
     command.view.noteWidthNormal: d29ab88a55ae178bf4b5257201e51801

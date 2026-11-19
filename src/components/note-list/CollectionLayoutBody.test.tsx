@@ -11,7 +11,7 @@ import { CollectionLayoutBody } from './CollectionLayoutBody'
 import { type CollectionLayoutSource, supportsLayouts, useCollectionLayout } from './useCollectionLayout'
 import { CollectionLayoutHeaderControls } from './CollectionLayoutControls'
 import { layoutPropertyPicker } from './kanbanCardFieldsPicker'
-import { useKanbanPanelOutsideClose } from './useKanbanPanelOutsideClose'
+import { useLayoutPanelOutsideClose } from './useLayoutPanelOutsideClose'
 
 const { invoke, trackEvent } = vi.hoisted(() => ({ invoke: vi.fn(), trackEvent: vi.fn() }))
 vi.mock('@tauri-apps/api/core', () => ({ invoke }))
@@ -57,7 +57,7 @@ function Harness({ onMove = vi.fn(), onOpen = vi.fn(), ...overrides }: HarnessPr
   }
   const layout = useCollectionLayout(source)
   const rootRef = useRef<HTMLDivElement>(null)
-  useKanbanPanelOutsideClose({ rootRef, ...layout.panel })
+  useLayoutPanelOutsideClose({ rootRef, ...layout.panel })
   const picker = layoutPropertyPicker(layout, { scope: 'all', availableProperties: ['priority'], currentDisplay: ['priority'], onSave: vi.fn(), triggerTitle: 'Customize columns' }, 'en')
   return (
     <div data-collection-layout={layout.layout} data-kanban-panel={layout.panel.open ? 'open' : 'closed'} data-testid="layout-root" ref={rootRef}>

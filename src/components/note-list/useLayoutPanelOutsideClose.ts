@@ -1,7 +1,10 @@
 import { type RefObject, useEffect, useRef } from 'react'
 
-/** Controls a click must not dismiss the panel through: cards open notes, buttons and menus act on the board. */
-const KEEP_PANEL_SELECTOR = 'button, a, input, textarea, select, label, [role="button"], [role="menuitem"], [role="option"], [role="dialog"], [role="menu"], [role="listbox"], [contenteditable="true"]'
+/**
+ * Controls a click must not dismiss the panel through: cards open notes, buttons and menus act on the board.
+ * A layout that tells its own canvas clicks apart (Graph: node or empty space) marks it `data-layout-panel-keep`.
+ */
+const KEEP_PANEL_SELECTOR = '[data-layout-panel-keep], button, a, input, textarea, select, label, [role="button"], [role="menuitem"], [role="option"], [role="dialog"], [role="menu"], [role="listbox"], [contenteditable="true"]'
 
 /** A press that travels further than this is a drag or a scroll, never a dismissing click. */
 const MAX_CLICK_TRAVEL_PX = 4
@@ -12,7 +15,7 @@ interface PressStart {
   dismisses: boolean
 }
 
-interface KanbanPanelOutsideCloseOptions {
+interface LayoutPanelOutsideCloseOptions {
   rootRef: RefObject<HTMLElement | null>
   open: boolean
   close: () => void
@@ -65,10 +68,10 @@ function panelListeners({ root, press, close }: PanelListenerContext) {
 }
 
 /**
- * Closes the Kanban editor panel when the user clicks empty board space, a lane background or the
+ * Closes the editor panel of a non-list layout (Kanban, Calendar, Graph) when the user clicks empty board space, a lane background or the
  * note-list header, like the close button. Cards, controls, menus, drags and portals keep it open.
  */
-export function useKanbanPanelOutsideClose({ rootRef, open, close }: KanbanPanelOutsideCloseOptions) {
+export function useLayoutPanelOutsideClose({ rootRef, open, close }: LayoutPanelOutsideCloseOptions) {
   const press = useRef<PressStart | null>(null)
 
   useEffect(() => {

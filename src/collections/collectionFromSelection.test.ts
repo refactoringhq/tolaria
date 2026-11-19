@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { makeEntry } from '../test-utils/noteListTestUtils'
 import type { ViewDefinition, ViewFile } from '../types'
 import { collectionFromSelection } from './collectionFromSelection'
@@ -31,6 +31,30 @@ describe('collectionFromSelection', () => {
     expect(getCollectionLayout('calendar').controls).toEqual(['dateProperty'])
     expect(getCollectionLayout('calendar').requiredProperties({ dateProperty: 'start', endDateProperty: 'end' })).toEqual(['start', 'end'])
     expect(getCollectionLayout('calendar').requiredProperties({ dateProperty: '$created', endDateProperty: null })).toEqual([])
+  })
+
+  describe('graph_layout flag', () => {
+    afterEach(() => localStorage.removeItem('ff_graph_layout'))
+
+    it('leaves Graph out of the layouts while the flag is off and falls back to List', () => {
+      localStorage.setItem('ff_graph_layout', 'false')
+      expect(getCollectionLayouts().map((layout) => layout.type)).toEqual(['list', 'kanban', 'calendar'])
+      expect(getCollectionLayout('graph').type).toBe('list')
+    })
+
+    it('registers Graph with its filters control when the flag is on', () => {
+      localStorage.setItem('ff_graph_layout', 'true')
+      expect(getCollectionLayouts().map((layout) => layout.type)).toEqual(['list', 'kanban', 'calendar', 'graph'])
+      expect(getCollectionLayout('graph')).toMatchObject({ type: 'graph', labelKey: 'layout.graph', controls: ['graphFilters'] })
+      expect(getCollectionLayout('graph').requiredProperties({})).toEqual([])
+    })
+  })
+
+  it('reads a saved graph View presentation, defaulting missing filters', () => {
+    expect(presentationFromViewDefinition({
+      name: 'Map', icon: null, color: null, sort: null, filters: { all: [] },
+      presentation: { type: 'graph', showWikiLinks: false, hiddenTypes: ['Person'] },
+    })).toEqual({ type: 'graph', showWikiLinks: false, hiddenRelationships: [], hiddenTypes: ['Person'], showOrphans: true, showLabels: true })
   })
 
   it('reads a saved calendar View presentation', () => {
