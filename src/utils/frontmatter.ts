@@ -218,9 +218,7 @@ function parseRadixNumber(value: FrontmatterText): number | undefined {
 }
 
 function parseTextItem(value: FrontmatterText): FrontmatterText {
-	if (!isQuotedScalar(value)) return unquote(value);
-	const parsed = parseScalar(value);
-	return typeof parsed === "string" ? parsed : value;
+	return parseQuotedScalar(value);
 }
 
 function isNumericScalar(value: FrontmatterText): boolean {

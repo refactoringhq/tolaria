@@ -37,6 +37,22 @@ describe("parseFrontmatter", () => {
 			const fm = parseFrontmatter('---\nversion: "42"\n---\nBody');
 			expect(fm.version).toBe("42");
 		});
+
+		it("keeps quoted typed-looking inline array items as strings", () => {
+			const fm = parseFrontmatter(
+				"---\nitems: [\"true\", 'false', \"null\", '42']\n---\nBody",
+			);
+
+			expect(fm.items).toEqual(["true", "false", "null", "42"]);
+		});
+
+		it("still parses unquoted inline array items by YAML type", () => {
+			const fm = parseFrontmatter(
+				"---\nitems: [true, false, null, 42]\n---\nBody",
+			);
+
+			expect(fm.items).toEqual([true, false, null, 42]);
+		});
 	});
 
 	describe("YAML 1.2 string-like Yes/No values", () => {
