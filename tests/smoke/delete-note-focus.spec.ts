@@ -51,7 +51,7 @@ test("deletion follows visible order and preserves keyboard navigation @smoke", 
 		.getByTestId("sidebar-top-nav")
 		.getByText("All Notes", { exact: true })
 		.click();
-	await page.getByTitle("Search notes", { exact: true }).click();
+	await page.getByRole("button", { name: "Search notes", exact: true }).click();
 	await page.getByPlaceholder("Search notes...").fill("Focus");
 	const rows = page
 		.getByTestId("note-list-container")
