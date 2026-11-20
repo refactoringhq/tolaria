@@ -8,17 +8,17 @@ import type { SidebarSelection, VaultEntry } from "../types";
 import { NoteList } from "./NoteList";
 
 const localStorageMock = (() => {
-	let store: Record<string, string> = {};
+	const store = new Map<string, string>();
 	return {
-		getItem: vi.fn((key: string) => store[key] ?? null),
+		getItem: vi.fn((key: string) => store.get(key) ?? null),
 		setItem: vi.fn((key: string, value: string) => {
-			store[key] = value;
+			store.set(key, value);
 		}),
 		removeItem: vi.fn((key: string) => {
-			delete store[key];
+			store.delete(key);
 		}),
 		clear: vi.fn(() => {
-			store = {};
+			store.clear();
 		}),
 	};
 })();

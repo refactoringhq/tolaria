@@ -69,13 +69,12 @@ function resolveFocusedIndex(
 	current: SortOption,
 	sortItems: SortItem[],
 ) {
-	const activeHTMLElement = document.activeElement;
-	if (activeHTMLElement instanceof HTMLElement) {
-		const activeIndexText = activeHTMLElement.dataset.sortItemIndex;
-		const activeIndex =
-			activeIndexText === undefined ? -1 : Number(activeIndexText);
+	const focusedElement = document.activeElement;
+	if (focusedElement instanceof HTMLElement) {
+		const activeIndexText = focusedElement.getAttribute("data-sort-item-index");
+		const activeIndex = activeIndexText === null ? -1 : Number(activeIndexText);
 		if (
-			activeHTMLElement.dataset.sortGroupLabel === groupLabel &&
+			focusedElement.getAttribute("data-sort-group-label") === groupLabel &&
 			activeIndex >= 0
 		)
 			return activeIndex;
@@ -302,9 +301,7 @@ function SortDropdownTrigger(options: {
 		</Button>
 	);
 	return iconOnly ? (
-		<ActionTooltip copy={{ label: title }}>
-			<span className="inline-flex">{button}</span>
-		</ActionTooltip>
+		<ActionTooltip copy={{ label: title }}>{button}</ActionTooltip>
 	) : (
 		button
 	);

@@ -75,6 +75,15 @@ describe("NoteListHeader title space", () => {
 		expect(screen.getByRole("dialog")).toBeVisible();
 	});
 
+	it("shows the sort action tooltip on keyboard focus", async () => {
+		renderHeader();
+
+		const sortButton = screen.getByRole("button", { name: "Sort notes" });
+		fireEvent.focus(sortButton);
+
+		expect(await screen.findByRole("tooltip")).toHaveTextContent("Sort notes");
+	});
+
 	it("expands the sidebar from the note-list header", () => {
 		const commandListener = vi.fn();
 		window.addEventListener(APP_COMMAND_EVENT_NAME, commandListener);
