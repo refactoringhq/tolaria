@@ -84,6 +84,19 @@ describe("NoteListHeader title space", () => {
 		expect(await screen.findByRole("tooltip")).toHaveTextContent("Sort notes");
 	});
 
+	it("keeps the stable create-note name for its tooltip and accessible name", async () => {
+		renderHeader();
+
+		const createButton = screen.getByRole("button", {
+			name: "Create new note",
+		});
+		fireEvent.focus(createButton);
+
+		expect(await screen.findByRole("tooltip")).toHaveTextContent(
+			"Create new note",
+		);
+	});
+
 	it("expands the sidebar from the note-list header", () => {
 		const commandListener = vi.fn();
 		window.addEventListener(APP_COMMAND_EVENT_NAME, commandListener);
@@ -118,7 +131,7 @@ describe("NoteListHeader title space", () => {
 		document.body.append(rawEditor);
 		rawInput.focus();
 
-		const createButton = screen.getByRole("button", { name: "New note" });
+		const createButton = screen.getByRole("button", { name: "Create new note" });
 		fireEvent.mouseDown(createButton);
 		fireEvent.click(createButton);
 		rerender(<NoteListHeader {...baseProps} onCreateNote={latestCreate} />);

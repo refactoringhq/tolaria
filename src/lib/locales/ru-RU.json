@@ -679,7 +679,6 @@
   "noteList.tooltip.groupBy": "Группировать по свойству",
   "noteList.tooltip.search": "Поиск заметок",
   "noteList.tooltip.properties": "Показать свойства",
-  "noteList.tooltip.newNote": "Новая заметка",
   "noteList.tooltip.graphFilters": "Фильтровать граф",
   "noteList.clearSearch": "Очистить поиск",
   "noteList.recentSearches": "Недавние поисковые запросы",
