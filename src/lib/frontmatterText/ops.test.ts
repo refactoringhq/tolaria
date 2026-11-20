@@ -135,10 +135,10 @@ describe("updateFrontmatterContent beyond the golden cases", () => {
 		}
 	});
 
-	it("coerces unquoted inline array scalars but preserves quoted strings", () => {
+	it("uses YAML 1.2 inline scalar types and preserves quoted strings", () => {
 		expect(
 			parseFrontmatter("---\nvalues: [yes, 007, 0x10]\n---\n").values,
-		).toEqual([true, 7, 16]);
+		).toEqual(["yes", 7, 16]);
 		expect(
 			parseFrontmatter('---\nvalues: ["yes", "007", "0x10"]\n---\n').values,
 		).toEqual(["yes", "007", "0x10"]);

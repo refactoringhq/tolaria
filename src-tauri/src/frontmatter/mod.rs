@@ -254,6 +254,23 @@ mod tests {
     }
 
     #[test]
+    fn test_desktop_yaml_reader_uses_yaml_12_scalar_types() {
+        let matter = gray_matter::Matter::<gray_matter::engine::YAML>::new();
+        let parsed = matter.parse(
+            "---\nyes_value: yes\nno_value: no\nhex_value: 0x10\noctal_value: 0o17\ntrue_value: true\n---\nBody",
+        );
+        let gray_matter::Pod::Hash(map) = parsed.data.unwrap() else {
+            panic!("Expected frontmatter mapping")
+        };
+
+        assert!(matches!(map.get("yes_value"), Some(gray_matter::Pod::String(value)) if value == "yes"));
+        assert!(matches!(map.get("no_value"), Some(gray_matter::Pod::String(value)) if value == "no"));
+        assert!(matches!(map.get("hex_value"), Some(gray_matter::Pod::Integer(16))));
+        assert!(matches!(map.get("octal_value"), Some(gray_matter::Pod::Integer(15))));
+        assert!(matches!(map.get("true_value"), Some(gray_matter::Pod::Boolean(true))));
+    }
+
+    #[test]
     fn test_roundtrip_yaml_ambiguous_strings() {
         let values = [
             "C:\\notes\\new",

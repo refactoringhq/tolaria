@@ -187,8 +187,8 @@ function parseQuotedScalar(value: FrontmatterText): FrontmatterText {
 
 function parseBooleanScalar(value: FrontmatterText): boolean | undefined {
 	const lower = value.toLowerCase();
-	if (lower === "true" || lower === "yes") return true;
-	if (lower === "false" || lower === "no") return false;
+	if (lower === "true") return true;
+	if (lower === "false") return false;
 	return undefined;
 }
 

@@ -18,6 +18,25 @@ describe("frontmatter Unicode escapes", () => {
 });
 
 describe("frontmatter YAML scalar types", () => {
+	it.each(["yes", "no"])(
+		"parses YAML 1.2 scalar %s as a string like the desktop reader",
+		(scalar) => {
+			const frontmatter = parseFrontmatter(`---\nvalue: ${scalar}\n---\nBody`);
+			expect(frontmatter.value).toBe(scalar);
+		},
+	);
+
+	it.each([
+		["0x10", 16],
+		["0o17", 15],
+	])(
+		"parses YAML radix scalar %s like the desktop reader",
+		(scalar, expected) => {
+			const frontmatter = parseFrontmatter(`---\nvalue: ${scalar}\n---\nBody`);
+			expect(frontmatter.value).toBe(expected);
+		},
+	);
+
 	it("preserves trailing spaces inside a quoted scalar", () => {
 		const frontmatter = parseFrontmatter('---\nvalue: "5 "\n---\nBody');
 		expect(frontmatter.value).toBe("5 ");
@@ -28,7 +47,6 @@ describe("frontmatter YAML scalar types", () => {
 		["Null", null],
 		["NULL", null],
 		["~", null],
-		["0o17", 15],
 	])(
 		"parses unquoted YAML scalar %s with its native type",
 		(scalar, expected) => {
