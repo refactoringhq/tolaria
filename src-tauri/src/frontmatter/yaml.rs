@@ -94,7 +94,7 @@ impl<'a> YamlText<'a> {
                     | '['
                     | ']'
                     | ','
-            ) || (matches!(c, '-' | '?') && self.0.chars().nth(1).is_none_or(char::is_whitespace))
+            ) || (matches!(c, '-' | '?') && self.0.chars().nth(1).map_or(true, char::is_whitespace))
         })
     }
 
