@@ -288,7 +288,7 @@ function HeaderActions(
 			)}
 			<ActionTooltip
 				copy={{
-					label: translate(locale, "noteList.tooltip.newNote"),
+					label: translate(locale, "noteList.createNote"),
 					shortcut: getAppCommandShortcutDisplay(APP_COMMAND_IDS.fileNewNote),
 				}}
 			>
@@ -299,7 +299,7 @@ function HeaderActions(
 					className={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
 					onMouseDown={captureCreateOrigin}
 					onClick={handleCreateNote}
-					aria-label={translate(locale, "noteList.tooltip.newNote")}
+					aria-label={translate(locale, "noteList.createNote")}
 				>
 					<Plus size={16} />
 				</Button>

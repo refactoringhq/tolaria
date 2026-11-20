@@ -20,7 +20,8 @@ for (const newNote of [false, true]) {
 	test(`image file drops insert each image once in a ${newNote ? "new" : "populated"} note @smoke`, async ({
 		page,
 	}) => {
-		if (newNote) await page.locator('button[aria-label="New note"]').click();
+		if (newNote)
+			await page.locator('button[aria-label="Create new note"]').click();
 		else
 			await page
 				.locator('[data-testid="note-list-container"]')

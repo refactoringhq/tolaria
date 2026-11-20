@@ -679,7 +679,6 @@
   "noteList.tooltip.groupBy": "Group by property",
   "noteList.tooltip.search": "Search notes",
   "noteList.tooltip.properties": "Show properties",
-  "noteList.tooltip.newNote": "New note",
   "noteList.tooltip.graphFilters": "Filter graph",
   "noteList.clearSearch": "Clear search",
   "noteList.recentSearches": "Recent searches",

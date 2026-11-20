@@ -41,13 +41,12 @@ async function selectSection(page: Page, label: string): Promise<void> {
 }
 
 async function createNoteFromListHeader(page: Page): Promise<void> {
-	await page.locator('button[aria-label="New note"]').click();
+	await page.locator('button[aria-label="Create new note"]').click();
 }
 
 function untitledRow(page: Page, typeLabel: string) {
-	return page
-		.getByText(new RegExp(`^Untitled ${typeLabel}(?: \\d+)?$`, "i"))
-		.first();
+	// A plain string matches case-insensitively and also covers "Untitled Note 2".
+	return page.getByText(`Untitled ${typeLabel}`).first();
 }
 
 type EmptyHeadingState = {
