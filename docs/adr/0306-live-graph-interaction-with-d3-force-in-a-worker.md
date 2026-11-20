@@ -36,4 +36,4 @@ This ADR supersedes the "Layout runs in a module worker" and label parts of ADR 
 - Running ForceAtlas2 continuously in the worker was rejected: it has no notion of a held node or a target energy, so drag-and-settle would need a hand-made cooling schedule, and it was tuned for a one-shot layout.
 - Keeping `autoRescale` and freezing the bounding box only during a drag was rejected: the whole graph would still rescale while it settles, which reads as the camera moving by itself.
 - Animating emphasis with per-frame React state or one DOM element per node was rejected for the 1,000-node target; graph attributes keep the work inside sigma's batched refresh.
-- Replacing sigma with PixiJS (Obsidian's renderer) was not needed: sigma on WebGL meets the drag and hover targets measured for this card.
+- Replacing sigma with PixiJS (Obsidian's renderer) was not pursued: there is no measured evidence against sigma. On the GPU-less Linux agent box every canvas redraw is bound by software WebGL (a plain pan costs as much as a drag), so the 60 fps target still needs a measurement on a machine with a GPU.

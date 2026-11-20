@@ -72,6 +72,17 @@ Every visible note is eligible for a label (up to 2,000 chips; past that the bes
 
 Hover and focus share one rule: the note and its direct neighbours, and the links among them, stay at full strength; other notes fade to 12 % and other links to 6 %, eased over 200 ms (instant with reduced motion). Fading reads better than hiding because the surrounding structure stays visible for orientation while the neighbourhood is unmistakable. Hover wins over focus. The hovered note blends to the accent color and grows slightly; its label grows 1.4× through a CSS transition.
 
+### Measurements (Linux agent box, 2026-11-20)
+
+Linux Tolaria debug build under Xvfb with software WebGL (no GPU). Frame time is the interval between animation frames while xdotool drove the mouse.
+
+| Graph | Pan | Zoom | Hover | Drag | At rest |
+| -- | -- | -- | -- | -- | -- |
+| 1,033 notes, 3,024 links | median 61 ms, p95 104 ms | median 75 ms, p95 90 ms | median 72 ms, p95 128 ms | median 56 ms, p95 70 ms | 0.0 % CPU (app and web process) |
+| 33 notes (demo vault) | median 26 ms (labels hidden, no simulation) | | | median 27 ms, p95 35 ms | 0.0 % CPU |
+
+Panning the 1,033-note graph with labels hidden costs a median 55 ms, so most of each frame is sigma drawing about 3,000 links in software GL; the label pass adds about 7 ms and dragging adds nothing measurable over a plain pan. The dragged node keeps a constant offset from the pointer (no lag). The 60 fps target (16.7 ms frames) cannot be shown on a box without a GPU and still needs a measurement on a Mac.
+
 ### Later (not built in TOL-394)
 
 - Local graph of the open note with a depth slider and incoming / outgoing / neighbour-to-neighbour toggles, possibly in the right panel.
