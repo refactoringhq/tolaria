@@ -1468,5 +1468,8 @@
   "mobile.workspace.actionFailure.organized": "Не ўдалося ўпарадкаваць нататку. Ваша нататка засталася нязменнай.",
   "mobile.workspace.actionFailure.unorganized": "Не ўдалося перамясціць нататку ў папку «Уваходныя». Ваша нататка засталася нязменнай.",
   "mobile.workspace.actionFailure.relationshipRemoved": "Не ўдалося выдаліць сувязь. Ваша нататка засталася без зменаў.",
-  "mobile.workspace.actionFailure.multiple": "Не ўдалося захаваць гэтыя змены. Вашы нататкі засталіся без зменаў."
+  "mobile.workspace.actionFailure.multiple": "Не ўдалося захаваць гэтыя змены. Вашы нататкі засталіся без зменаў.",
+  "calendar.quarter": "Квартал",
+  "calendar.year": "Год",
+  "calendar.showIcons": "Паказваць значкі нататак"
 }

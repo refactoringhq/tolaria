@@ -1468,5 +1468,8 @@
   "mobile.workspace.actionFailure.organized": "Não foi possível organizar a nota. A sua nota permanece inalterada.",
   "mobile.workspace.actionFailure.unorganized": "Não foi possível mover a nota para a Caixa de entrada. A sua nota permanece inalterada.",
   "mobile.workspace.actionFailure.relationshipRemoved": "Não foi possível remover a relação. A sua nota não foi alterada.",
-  "mobile.workspace.actionFailure.multiple": "Não foi possível guardar estas alterações. As suas notas permanecem inalteradas."
+  "mobile.workspace.actionFailure.multiple": "Não foi possível guardar estas alterações. As suas notas permanecem inalteradas.",
+  "calendar.quarter": "Trimestre",
+  "calendar.year": "Ano",
+  "calendar.showIcons": "Mostrar ícones das notas"
 }

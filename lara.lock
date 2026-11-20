@@ -1471,3 +1471,6 @@ files:
     mobile.workspace.actionFailure.unorganized: 33df835c54ec9bac04ad3fdc245e792b
     mobile.workspace.actionFailure.relationshipRemoved: a39d152cf9b483d106e48617f610cef0
     mobile.workspace.actionFailure.multiple: b6352ef2b1623ff79cbc7cb6e74f2bc7
+    calendar.quarter: b25cde1e74f3d27f678c2e309e06102e
+    calendar.year: 537c66b24ef5c83b7382cdc3f34885f2
+    calendar.showIcons: 04ccea90e9182ecac0a147e36a26803b

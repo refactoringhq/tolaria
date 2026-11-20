@@ -1468,5 +1468,8 @@
   "mobile.workspace.actionFailure.organized": "Không thể sắp xếp ghi chú. Ghi chú của bạn không thay đổi.",
   "mobile.workspace.actionFailure.unorganized": "Không thể di chuyển ghi chú vào Hộp thư đến. Ghi chú của bạn không thay đổi.",
   "mobile.workspace.actionFailure.relationshipRemoved": "Không thể xóa mối quan hệ. Ghi chú của bạn không thay đổi.",
-  "mobile.workspace.actionFailure.multiple": "Không thể lưu các thay đổi này. Các ghi chú của bạn không có gì thay đổi."
+  "mobile.workspace.actionFailure.multiple": "Không thể lưu các thay đổi này. Các ghi chú của bạn không có gì thay đổi.",
+  "calendar.quarter": "Quý",
+  "calendar.year": "Năm",
+  "calendar.showIcons": "Hiện biểu tượng ghi chú"
 }

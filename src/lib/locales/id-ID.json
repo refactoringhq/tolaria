@@ -1468,5 +1468,8 @@
   "mobile.workspace.actionFailure.organized": "Tidak dapat menata catatan. Catatan Anda tidak berubah.",
   "mobile.workspace.actionFailure.unorganized": "Tidak dapat memindahkan catatan ke Inbox. Catatan Anda tidak berubah.",
   "mobile.workspace.actionFailure.relationshipRemoved": "Tidak dapat menghapus relasi. Catatan Anda tidak berubah.",
-  "mobile.workspace.actionFailure.multiple": "Tidak dapat menyimpan perubahan ini. Catatan Anda tidak berubah."
+  "mobile.workspace.actionFailure.multiple": "Tidak dapat menyimpan perubahan ini. Catatan Anda tidak berubah.",
+  "calendar.quarter": "Kuartal",
+  "calendar.year": "Tahun",
+  "calendar.showIcons": "Tampilkan ikon catatan"
 }

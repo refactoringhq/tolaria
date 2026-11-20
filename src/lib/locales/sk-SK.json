@@ -1468,5 +1468,8 @@
   "mobile.workspace.actionFailure.organized": "Nepodarilo sa usporiadať poznámku. Vaša poznámka zostala nezmenená.",
   "mobile.workspace.actionFailure.unorganized": "Nepodarilo sa presunúť poznámku do priečinka Doručené. Vaša poznámka zostala nezmenená.",
   "mobile.workspace.actionFailure.relationshipRemoved": "Nepodarilo sa odstrániť vzťah. Vaša poznámka zostala nezmenená.",
-  "mobile.workspace.actionFailure.multiple": "Tieto zmeny sa nepodarilo uložiť. Vaše poznámky zostali nezmenené."
+  "mobile.workspace.actionFailure.multiple": "Tieto zmeny sa nepodarilo uložiť. Vaše poznámky zostali nezmenené.",
+  "calendar.quarter": "Štvrťrok",
+  "calendar.year": "Rok",
+  "calendar.showIcons": "Zobraziť ikony poznámok"
 }

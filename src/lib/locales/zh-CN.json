@@ -1468,5 +1468,8 @@
   "mobile.workspace.actionFailure.organized": "无法整理笔记。您的笔记未发生变化。",
   "mobile.workspace.actionFailure.unorganized": "无法将笔记移至收件箱。您的笔记未发生变化。",
   "mobile.workspace.actionFailure.relationshipRemoved": "无法移除关系。您的笔记未发生变化。",
-  "mobile.workspace.actionFailure.multiple": "无法保存这些更改。您的笔记未发生变化。"
+  "mobile.workspace.actionFailure.multiple": "无法保存这些更改。您的笔记未发生变化。",
+  "calendar.quarter": "季度",
+  "calendar.year": "年",
+  "calendar.showIcons": "显示笔记图标"
 }

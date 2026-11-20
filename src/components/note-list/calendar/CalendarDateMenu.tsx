@@ -174,6 +174,15 @@ export function CalendarDateMenu(props: CalendarDateMenuProps) {
 				>
 					{translate(locale, "calendar.showWeekends")}
 				</DropdownMenuCheckboxItem>
+				<DropdownMenuCheckboxItem
+					checked={settings.showIcons}
+					onCheckedChange={(checked) =>
+						changeSetting(onChange, { showIcons: checked === true })
+					}
+					data-testid="calendar-show-icons"
+				>
+					{translate(locale, "calendar.showIcons")}
+				</DropdownMenuCheckboxItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);

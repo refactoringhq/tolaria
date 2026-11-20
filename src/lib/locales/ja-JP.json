@@ -1468,5 +1468,8 @@
   "mobile.workspace.actionFailure.organized": "ノートを整理できませんでした。ノートは変更されていません。",
   "mobile.workspace.actionFailure.unorganized": "ノートをインボックスに移動できませんでした。ノートは変更されていません。",
   "mobile.workspace.actionFailure.relationshipRemoved": "リレーションシップを削除できませんでした。ノートは変更されていません。",
-  "mobile.workspace.actionFailure.multiple": "これらの変更を保存できませんでした。ノートは変更されていません。"
+  "mobile.workspace.actionFailure.multiple": "これらの変更を保存できませんでした。ノートは変更されていません。",
+  "calendar.quarter": "四半期",
+  "calendar.year": "年",
+  "calendar.showIcons": "ノートアイコンを表示"
 }
