@@ -1468,5 +1468,8 @@
   "mobile.workspace.actionFailure.organized": "Не вдалося упорядкувати нотатку. Ваша нотатка залишилася без змін.",
   "mobile.workspace.actionFailure.unorganized": "Не вдалося перемістити нотатку до папки «Вхідні». Ваша нотатка залишилася без змін.",
   "mobile.workspace.actionFailure.relationshipRemoved": "Не вдалося видалити зв’язок. Ваша нотатка залишилася без змін.",
-  "mobile.workspace.actionFailure.multiple": "Не вдалося зберегти ці зміни. Ваші нотатки залишилися без змін."
+  "mobile.workspace.actionFailure.multiple": "Не вдалося зберегти ці зміни. Ваші нотатки залишилися без змін.",
+  "calendar.quarter": "Квартал",
+  "calendar.year": "Рік",
+  "calendar.showIcons": "Показувати значки нотаток"
 }

@@ -1468,5 +1468,8 @@
   "mobile.workspace.actionFailure.organized": "無法整理筆記。您的備註未變更。",
   "mobile.workspace.actionFailure.unorganized": "無法將記事移至收件匣。您的備註未變更。",
   "mobile.workspace.actionFailure.relationshipRemoved": "無法移除關係。您的筆記未變更。",
-  "mobile.workspace.actionFailure.multiple": "無法儲存這些變更。您的筆記未變更。"
+  "mobile.workspace.actionFailure.multiple": "無法儲存這些變更。您的筆記未變更。",
+  "calendar.quarter": "季度",
+  "calendar.year": "年",
+  "calendar.showIcons": "顯示筆記圖示"
 }

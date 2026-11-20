@@ -1468,5 +1468,8 @@
   "mobile.workspace.actionFailure.organized": "Impossible d'organiser la note. Votre note est inchangée.",
   "mobile.workspace.actionFailure.unorganized": "Impossible de déplacer la note vers la boîte de réception. Votre note est inchangée.",
   "mobile.workspace.actionFailure.relationshipRemoved": "Impossible de supprimer la relation. Votre note est inchangée.",
-  "mobile.workspace.actionFailure.multiple": "Impossible d'enregistrer ces modifications. Vos notes sont inchangées."
+  "mobile.workspace.actionFailure.multiple": "Impossible d'enregistrer ces modifications. Vos notes sont inchangées.",
+  "calendar.quarter": "Trimestre",
+  "calendar.year": "Année",
+  "calendar.showIcons": "Afficher les icônes des notes"
 }

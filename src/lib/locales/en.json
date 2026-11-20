@@ -1468,5 +1468,8 @@
   "mobile.workspace.actionFailure.organized": "Could not organize note. Your note is unchanged.",
   "mobile.workspace.actionFailure.unorganized": "Could not move note to Inbox. Your note is unchanged.",
   "mobile.workspace.actionFailure.relationshipRemoved": "Could not remove relationship. Your note is unchanged.",
-  "mobile.workspace.actionFailure.multiple": "Could not save these changes. Your notes are unchanged."
+  "mobile.workspace.actionFailure.multiple": "Could not save these changes. Your notes are unchanged.",
+  "calendar.quarter": "Quarter",
+  "calendar.year": "Year",
+  "calendar.showIcons": "Show note icons"
 }

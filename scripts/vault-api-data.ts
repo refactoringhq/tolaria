@@ -377,6 +377,11 @@ function frontmatterPropertyValue(
 ): FrontmatterPropertyValue | undefined {
 	if (value === null) return null;
 	if (isScalarFrontmatterProperty(value)) return value;
+	if (value instanceof Date) {
+		return Number.isNaN(value.getTime())
+			? undefined
+			: value.toISOString().slice(0, 10);
+	}
 	if (typeof value === "string") return wikiLinkFreeString({ value });
 	const singleArrayValue = singleStringArrayValue(value);
 	return singleArrayValue === undefined

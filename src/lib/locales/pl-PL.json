@@ -1468,5 +1468,8 @@
   "mobile.workspace.actionFailure.organized": "Nie udało się uporządkować notatki. Twoja notatka pozostaje bez zmian.",
   "mobile.workspace.actionFailure.unorganized": "Nie udało się przenieść notatki do Skrzynki odbiorczej. Twoja notatka pozostaje bez zmian.",
   "mobile.workspace.actionFailure.relationshipRemoved": "Nie udało się usunąć relacji. Twoja notatka pozostaje bez zmian.",
-  "mobile.workspace.actionFailure.multiple": "Nie udało się zapisać tych zmian. Twoje notatki pozostają bez zmian."
+  "mobile.workspace.actionFailure.multiple": "Nie udało się zapisać tych zmian. Twoje notatki pozostają bez zmian.",
+  "calendar.quarter": "Kwartał",
+  "calendar.year": "Rok",
+  "calendar.showIcons": "Pokaż ikony notatek"
 }

@@ -1468,5 +1468,8 @@
   "mobile.workspace.actionFailure.organized": "노트를 정리할 수 없습니다. 노트가 변경되지 않았습니다.",
   "mobile.workspace.actionFailure.unorganized": "노트를 받은 편지함으로 옮길 수 없습니다. 노트가 변경되지 않았습니다.",
   "mobile.workspace.actionFailure.relationshipRemoved": "관계를 제거할 수 없습니다. 노트가 변경되지 않았습니다.",
-  "mobile.workspace.actionFailure.multiple": "이 변경 사항을 저장할 수 없습니다. 노트가 변경되지 않았습니다."
+  "mobile.workspace.actionFailure.multiple": "이 변경 사항을 저장할 수 없습니다. 노트가 변경되지 않았습니다.",
+  "calendar.quarter": "분기",
+  "calendar.year": "년",
+  "calendar.showIcons": "노트 아이콘 표시"
 }

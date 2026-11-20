@@ -1468,5 +1468,8 @@
   "mobile.workspace.actionFailure.organized": "No se ha podido organizar la nota. Tu nota no ha cambiado.",
   "mobile.workspace.actionFailure.unorganized": "No se ha podido mover la nota a la Bandeja de entrada. Su nota no ha cambiado.",
   "mobile.workspace.actionFailure.relationshipRemoved": "No se ha podido eliminar la relación. Su nota no ha cambiado.",
-  "mobile.workspace.actionFailure.multiple": "No se han podido guardar estos cambios. Tus notas no se han modificado."
+  "mobile.workspace.actionFailure.multiple": "No se han podido guardar estos cambios. Tus notas no se han modificado.",
+  "calendar.quarter": "Trimestre",
+  "calendar.year": "Año",
+  "calendar.showIcons": "Mostrar iconos de notas"
 }
