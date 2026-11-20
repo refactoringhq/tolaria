@@ -212,7 +212,7 @@ function parseUnquotedScalar(
 }
 
 function parseRadixNumber(value: FrontmatterText): number | undefined {
-	if (/^0o[0-7]+$/.test(value)) return Number.parseInt(value.slice(2), 8);
+	if (/^0o[0-7]+$/i.test(value)) return Number.parseInt(value.slice(2), 8);
 	if (/^0x[0-9a-f]+$/i.test(value)) return Number(value);
 	return undefined;
 }

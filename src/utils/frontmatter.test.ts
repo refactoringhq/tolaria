@@ -27,6 +27,12 @@ describe("parseFrontmatter", () => {
 			expect(fm.order).toBe(-1);
 		});
 
+		it("parses uppercase radix prefixes like the desktop YAML reader", () => {
+			const fm = parseFrontmatter("---\nhex: 0X10\noctal: 0O17\n---\nBody");
+			expect(fm.hex).toBe(16);
+			expect(fm.octal).toBe(15);
+		});
+
 		it("does not parse quoted numbers as numbers", () => {
 			const fm = parseFrontmatter('---\nversion: "42"\n---\nBody');
 			expect(fm.version).toBe("42");
