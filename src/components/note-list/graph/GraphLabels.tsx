@@ -4,6 +4,7 @@ import { getTypeColor } from '../../../utils/typeColors'
 import { NoteTitleIcon } from '../../NoteTitleIcon'
 import { getTypeIcon } from '../../note-item/typeIcon'
 import { chipMap, type ChipState, labelOrder, markEmphasis, type PlaceSource, placeFrame } from './graphLabelFrame'
+import type { LabelSide } from './graphLabelPlacement'
 import { forcedLabels, LABEL_DOM_LIMIT, type LabelEmphasis, labelledNodes, rankLabels } from './graphLabelRanking'
 import type { GraphNodeModel } from './graphModel'
 import type { GraphRenderer } from './graphRenderer'
@@ -42,6 +43,7 @@ const LabelIcon = memo(function LabelIcon({ icon, glyph }: { icon: string | null
 export function GraphLabels({ renderer, nodes, typeEntryMap, selectedNotePath, emphasis, textFadeThreshold }: GraphLabelsProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const writtenRef = useRef(new WeakMap<HTMLElement, ChipState | null>())
+  const sidesRef = useRef(new Map<string, LabelSide>())
   const ranked = useMemo(() => rankLabels(nodes), [nodes])
   const forced = useMemo(() => forcedLabels(emphasis, selectedNotePath), [emphasis, selectedNotePath])
   const forcedKey = ranked.length > LABEL_DOM_LIMIT ? forced.join('\n') : ''
@@ -52,7 +54,7 @@ export function GraphLabels({ renderer, nodes, typeEntryMap, selectedNotePath, e
     const container = containerRef.current
     if (!container) return
     const chips = chipMap(container)
-    const source: PlaceSource = { renderer, chips, written: writtenRef.current, order: labelOrder(ranked, forced), forced: new Set(forced), threshold: textFadeThreshold }
+    const source: PlaceSource = { renderer, chips, written: writtenRef.current, order: labelOrder(ranked, forced), forced: new Set(forced), threshold: textFadeThreshold, sides: sidesRef.current }
     markEmphasis(chips, emphasis)
     const place = () => placeFrame(source)
     place()

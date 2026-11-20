@@ -48,9 +48,26 @@ export function labelZoomOpacity(cameraRatio: number, threshold: number): number
   return Math.min(1, Math.max(0, progress))
 }
 
-export function labelBoxFor(candidate: Pick<LabelCandidate, 'x' | 'y' | 'radius' | 'width'>): LabelBox {
-  const top = candidate.y + candidate.radius + LABEL_GAP_PX
-  return { left: candidate.x - candidate.width / 2, top, right: candidate.x + candidate.width / 2, bottom: top + LABEL_HEIGHT_PX }
+/** Where a label sits around its node. Below is the default; forced labels try the others when crowded. */
+export type LabelSide = 'below' | 'above' | 'right' | 'left'
+
+const SIDES: readonly LabelSide[] = ['below', 'above', 'right', 'left']
+
+type LabelAnchor = Pick<LabelCandidate, 'x' | 'y' | 'radius' | 'width'>
+
+function boxAt(left: number, top: number, width: number): LabelBox {
+  return { left, top, right: left + width, bottom: top + LABEL_HEIGHT_PX }
+}
+
+const SIDE_BOXES: Readonly<Record<LabelSide, (anchor: LabelAnchor) => LabelBox>> = {
+  below: ({ x, y, radius, width }) => boxAt(x - width / 2, y + radius + LABEL_GAP_PX, width),
+  above: ({ x, y, radius, width }) => boxAt(x - width / 2, y - radius - LABEL_GAP_PX - LABEL_HEIGHT_PX, width),
+  right: ({ x, y, radius, width }) => boxAt(x + radius + LABEL_GAP_PX, y - LABEL_HEIGHT_PX / 2, width),
+  left: ({ x, y, radius, width }) => boxAt(x - radius - LABEL_GAP_PX - width, y - LABEL_HEIGHT_PX / 2, width),
+}
+
+export function labelBoxFor(candidate: LabelAnchor, side: LabelSide = 'below'): LabelBox {
+  return SIDE_BOXES[side](candidate)
 }
 
 function discBox({ x, y, radius }: NodeDisc): LabelBox {
@@ -98,22 +115,43 @@ class ObstacleGrid {
   }
 }
 
+/** One frame's placement inputs. `sides` remembers each forced label's side between frames, so it doesn't flip. */
+export interface PlacementFrame {
+  viewport: Viewport
+  /** False when zoomed out past the fade: only forced labels show. */
+  allowUnforced: boolean
+  sides: Map<string, LabelSide>
+}
+
+/** A forced label keeps last frame's side while it is free, else takes the first free side, else stays below. */
+function forcedBox(candidate: LabelCandidate, grid: ObstacleGrid, sides: Map<string, LabelSide>): LabelBox {
+  const previous = sides.get(candidate.id) ?? 'below'
+  const order = [previous, ...SIDES.filter((side) => side !== previous)]
+  const side = order.find((option) => !grid.blocked(labelBoxFor(candidate, option), candidate.id)) ?? 'below'
+  sides.set(candidate.id, side)
+  return labelBoxFor(candidate, side)
+}
+
+function unforcedBox(candidate: LabelCandidate, grid: ObstacleGrid, allowUnforced: boolean): LabelBox | null {
+  const box = labelBoxFor(candidate)
+  return allowUnforced && !grid.blocked(box, candidate.id) ? box : null
+}
+
 /**
- * Greedy placement in priority order. Forced labels always show. Every other label needs room: it may not
- * cover a label already placed, nor another note's circle, so a dense centre stays unlabelled until zoom
- * spreads it out. With `allowUnforced` false (zoomed out past the fade), only forced labels show.
+ * Greedy placement in priority order. Forced labels always show, moving around their node to stay clear of
+ * each other. Every other label needs room below its node: it may not cover a label already placed, nor
+ * another note's circle, so a dense centre stays unlabelled until zoom spreads it out.
  */
-export function placeLabels(candidates: readonly LabelCandidate[], discs: readonly NodeDisc[], viewport: Viewport, allowUnforced: boolean): Map<string, LabelBox> {
+export function placeLabels(candidates: readonly LabelCandidate[], discs: readonly NodeDisc[], frame: PlacementFrame): Map<string, LabelBox> {
   const grid = new ObstacleGrid()
   for (const disc of discs) {
     const box = discBox(disc)
-    if (onScreen(box, viewport)) grid.add({ box, owner: disc.id })
+    if (onScreen(box, frame.viewport)) grid.add({ box, owner: disc.id })
   }
   const placed = new Map<string, LabelBox>()
   for (const candidate of candidates) {
-    const box = labelBoxFor(candidate)
-    if (!onScreen(box, viewport)) continue
-    if (!candidate.forced && (!allowUnforced || grid.blocked(box, candidate.id))) continue
+    const box = candidate.forced ? forcedBox(candidate, grid, frame.sides) : unforcedBox(candidate, grid, frame.allowUnforced)
+    if (!box || !onScreen(box, frame.viewport)) continue
     grid.add({ box, owner: null })
     placed.set(candidate.id, box)
   }

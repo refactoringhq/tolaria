@@ -1,4 +1,4 @@
-import { type LabelBox, type LabelCandidate, labelZoomOpacity, placeLabels } from './graphLabelPlacement'
+import { type LabelBox, type LabelCandidate, type LabelSide, labelZoomOpacity, placeLabels } from './graphLabelPlacement'
 import type { LabelEmphasis } from './graphLabelRanking'
 import type { GraphNodeModel } from './graphModel'
 import type { GraphRenderer } from './graphRenderer'
@@ -102,6 +102,8 @@ function writeChip(chip: HTMLElement, box: LabelBox | undefined, opacity: number
 
 export interface PlaceSource extends FrameSource {
   threshold: number
+  /** Each forced label's side last frame. */
+  sides: Map<string, LabelSide>
 }
 
 /** Reads every unmeasured chip's width in one pass, before any write, so the browser lays out once. */
@@ -114,7 +116,7 @@ export function placeFrame(source: PlaceSource) {
   measureChips(chips)
   const opacity = labelZoomOpacity(renderer.getCamera().ratio, source.threshold)
   const candidates = frameCandidates(source, opacity === 0)
-  const placed = placeLabels(candidates, candidates, renderer.getDimensions(), opacity > 0)
+  const placed = placeLabels(candidates, candidates, { viewport: renderer.getDimensions(), allowUnforced: opacity > 0, sides: source.sides })
   for (const [id, chip] of chips) writeChip(chip, placed.get(id), forced.has(id) ? 1 : opacity, written)
 }
 
