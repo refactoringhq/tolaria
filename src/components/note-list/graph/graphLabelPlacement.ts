@@ -55,19 +55,18 @@ const SIDES: readonly LabelSide[] = ['below', 'above', 'right', 'left']
 
 type LabelAnchor = Pick<LabelCandidate, 'x' | 'y' | 'radius' | 'width'>
 
-function boxAt(left: number, top: number, width: number): LabelBox {
-  return { left, top, right: left + width, bottom: top + LABEL_HEIGHT_PX }
-}
-
-const SIDE_BOXES: Readonly<Record<LabelSide, (anchor: LabelAnchor) => LabelBox>> = {
-  below: ({ x, y, radius, width }) => boxAt(x - width / 2, y + radius + LABEL_GAP_PX, width),
-  above: ({ x, y, radius, width }) => boxAt(x - width / 2, y - radius - LABEL_GAP_PX - LABEL_HEIGHT_PX, width),
-  right: ({ x, y, radius, width }) => boxAt(x + radius + LABEL_GAP_PX, y - LABEL_HEIGHT_PX / 2, width),
-  left: ({ x, y, radius, width }) => boxAt(x - radius - LABEL_GAP_PX - width, y - LABEL_HEIGHT_PX / 2, width),
+/** The top-left corner of a label on `side` of its node. */
+function sideCorner({ x, y, radius, width }: LabelAnchor, side: LabelSide): { left: number; top: number } {
+  const clearance = radius + LABEL_GAP_PX
+  if (side === 'above') return { left: x - width / 2, top: y - clearance - LABEL_HEIGHT_PX }
+  if (side === 'right') return { left: x + clearance, top: y - LABEL_HEIGHT_PX / 2 }
+  if (side === 'left') return { left: x - clearance - width, top: y - LABEL_HEIGHT_PX / 2 }
+  return { left: x - width / 2, top: y + clearance }
 }
 
 export function labelBoxFor(candidate: LabelAnchor, side: LabelSide = 'below'): LabelBox {
-  return SIDE_BOXES[side](candidate)
+  const { left, top } = sideCorner(candidate, side)
+  return { left, top, right: left + candidate.width, bottom: top + LABEL_HEIGHT_PX }
 }
 
 function discBox({ x, y, radius }: NodeDisc): LabelBox {
@@ -132,9 +131,24 @@ function forcedBox(candidate: LabelCandidate, grid: ObstacleGrid, sides: Map<str
   return labelBoxFor(candidate, side)
 }
 
-function unforcedBox(candidate: LabelCandidate, grid: ObstacleGrid, allowUnforced: boolean): LabelBox | null {
+/** An unforced label goes below its node, only where nothing is in the way; undefined when it can't show. */
+function unforcedBox(candidate: LabelCandidate, grid: ObstacleGrid): LabelBox | undefined {
   const box = labelBoxFor(candidate)
-  return allowUnforced && !grid.blocked(box, candidate.id) ? box : null
+  if (grid.blocked(box, candidate.id)) return undefined
+  return box
+}
+
+function obstacleGrid(discs: readonly NodeDisc[], viewport: Viewport): ObstacleGrid {
+  const grid = new ObstacleGrid()
+  const boxes = discs.map((disc) => ({ box: discBox(disc), owner: disc.id }))
+  for (const obstacle of boxes.filter(({ box }) => onScreen(box, viewport))) grid.add(obstacle)
+  return grid
+}
+
+function candidateBox(candidate: LabelCandidate, grid: ObstacleGrid, frame: PlacementFrame): LabelBox | undefined {
+  if (candidate.forced) return forcedBox(candidate, grid, frame.sides)
+  if (!frame.allowUnforced) return undefined
+  return unforcedBox(candidate, grid)
 }
 
 /**
@@ -143,17 +157,14 @@ function unforcedBox(candidate: LabelCandidate, grid: ObstacleGrid, allowUnforce
  * another note's circle, so a dense centre stays unlabelled until zoom spreads it out.
  */
 export function placeLabels(candidates: readonly LabelCandidate[], discs: readonly NodeDisc[], frame: PlacementFrame): Map<string, LabelBox> {
-  const grid = new ObstacleGrid()
-  for (const disc of discs) {
-    const box = discBox(disc)
-    if (onScreen(box, frame.viewport)) grid.add({ box, owner: disc.id })
-  }
+  const grid = obstacleGrid(discs, frame.viewport)
   const placed = new Map<string, LabelBox>()
   for (const candidate of candidates) {
-    const box = candidate.forced ? forcedBox(candidate, grid, frame.sides) : unforcedBox(candidate, grid, frame.allowUnforced)
-    if (!box || !onScreen(box, frame.viewport)) continue
-    grid.add({ box, owner: null })
-    placed.set(candidate.id, box)
+    const box = candidateBox(candidate, grid, frame)
+    if (box && onScreen(box, frame.viewport)) {
+      grid.add({ box, owner: null })
+      placed.set(candidate.id, box)
+    }
   }
   return placed
 }

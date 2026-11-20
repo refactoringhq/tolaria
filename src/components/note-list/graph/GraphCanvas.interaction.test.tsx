@@ -69,9 +69,12 @@ describe('GraphCanvas interaction', () => {
     }
   })
 
-  it('can take keyboard focus so its shortcuts are reachable with Tab', () => {
+  it('answers its shortcuts from the Tab-reachable zoom buttons inside it', () => {
     renderCanvas()
-    expect(screen.getByRole('application')).toHaveAttribute('tabindex', '0')
+    const zoomIn = screen.getByTestId('graph-zoom-in')
+    zoomIn.focus()
+    fireEvent.keyDown(zoomIn, { key: '-' })
+    expect(zoomGraph).toHaveBeenCalledWith(expect.anything(), 'out')
   })
 
   it('treats a press that travels as a pan or drag, never a click', () => {

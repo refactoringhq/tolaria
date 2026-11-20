@@ -31,13 +31,10 @@ const REPEL_SCALE = 30
 const CENTER_SCALE = 0.1
 const REPEL_DISTANCE_MAX = 2000
 
+/** d3's default link strength (1 / the smaller degree of the two ends), scaled by the Link force setting. */
 function linkStrength(forces: GraphForces, degrees: readonly number[]) {
-  return (link: LayoutLink) => {
-    const source = link.source as LayoutNode
-    const target = link.target as LayoutNode
-    const fewest = Math.min(degrees[source.index ?? 0] ?? 1, degrees[target.index ?? 0] ?? 1)
-    return forces.linkForce / Math.max(1, fewest)
-  }
+  const degreeOf = (end: LayoutLink['source']) => degrees.at((end as LayoutNode).index ?? 0) ?? 1
+  return (link: LayoutLink) => forces.linkForce / Math.max(1, Math.min(degreeOf(link.source), degreeOf(link.target)))
 }
 
 function edgeLinks(snapshot: GraphLayoutSnapshot): LayoutLink[] {

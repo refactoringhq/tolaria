@@ -140,7 +140,6 @@ export default function GraphCanvas(props: GraphCanvasProps) {
     <div
       className="graph-canvas"
       role="application"
-      tabIndex={0}
       aria-label={translate(locale, 'graph.canvasLabel', { count: visible.nodes.length })}
       data-layout-panel-keep=""
       data-testid="graph-canvas"
