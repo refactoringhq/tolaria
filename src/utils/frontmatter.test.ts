@@ -48,42 +48,50 @@ describe("parseFrontmatter", () => {
 
 		it("still parses unquoted inline array items by YAML type", () => {
 			const fm = parseFrontmatter(
-				"---\nitems: [true, false, null, 42]\n---\nBody",
+				"---\nitems: [true, false, null, 42, yes, no]\n---\nBody",
 			);
 
-			expect(fm.items).toEqual([true, false, null, 42]);
+			expect(fm.items).toEqual([true, false, null, 42, "yes", "no"]);
 		});
 	});
 
-	describe("YAML 1.2 string-like Yes/No values", () => {
-		it("parses Archived: Yes as a string", () => {
+	describe("legacy boolean-like Yes/No values", () => {
+		it("parses unquoted Archived: Yes as true", () => {
 			const fm = parseFrontmatter("---\nArchived: Yes\n---\nBody");
-			expect(fm.Archived).toBe("Yes");
+			expect(fm.Archived).toBe(true);
 		});
 
-		it("parses Archived: No as a string", () => {
+		it("parses unquoted Archived: No as false", () => {
 			const fm = parseFrontmatter("---\nArchived: No\n---\nBody");
-			expect(fm.Archived).toBe("No");
+			expect(fm.Archived).toBe(false);
 		});
 
-		it("parses Trashed: Yes as a string", () => {
+		it("parses unquoted Trashed: Yes as true", () => {
 			const fm = parseFrontmatter("---\nTrashed: Yes\n---\nBody");
-			expect(fm.Trashed).toBe("Yes");
+			expect(fm.Trashed).toBe(true);
 		});
 
-		it("parses Trashed: No as a string", () => {
+		it("parses unquoted Trashed: No as false", () => {
 			const fm = parseFrontmatter("---\nTrashed: No\n---\nBody");
-			expect(fm.Trashed).toBe("No");
+			expect(fm.Trashed).toBe(false);
 		});
 
-		it("parses yes (lowercase) as a string", () => {
+		it("parses unquoted yes (lowercase) as true", () => {
 			const fm = parseFrontmatter("---\nArchived: yes\n---\nBody");
-			expect(fm.Archived).toBe("yes");
+			expect(fm.Archived).toBe(true);
 		});
 
-		it("parses no (lowercase) as a string", () => {
+		it("parses unquoted no (lowercase) as false", () => {
 			const fm = parseFrontmatter("---\nArchived: no\n---\nBody");
-			expect(fm.Archived).toBe("no");
+			expect(fm.Archived).toBe(false);
+		});
+
+		it("keeps quoted yes and no as strings", () => {
+			const fm = parseFrontmatter(
+				"---\nArchived: \"yes\"\nTrashed: 'no'\n---\nBody",
+			);
+			expect(fm.Archived).toBe("yes");
+			expect(fm.Trashed).toBe("no");
 		});
 
 		it("still parses true as true", () => {

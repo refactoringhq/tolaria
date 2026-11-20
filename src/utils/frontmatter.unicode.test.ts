@@ -18,11 +18,14 @@ describe("frontmatter Unicode escapes", () => {
 });
 
 describe("frontmatter YAML scalar types", () => {
-	it.each(["yes", "no"])(
-		"parses YAML 1.2 scalar %s as a string like the desktop reader",
-		(scalar) => {
+	it.each([
+		["yes", true],
+		["no", false],
+	])(
+		"preserves the legacy unquoted scalar %s as a boolean",
+		(scalar, expected) => {
 			const frontmatter = parseFrontmatter(`---\nvalue: ${scalar}\n---\nBody`);
-			expect(frontmatter.value).toBe(scalar);
+			expect(frontmatter.value).toBe(expected);
 		},
 	);
 

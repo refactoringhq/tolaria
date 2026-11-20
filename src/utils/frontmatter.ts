@@ -96,7 +96,7 @@ function parseInlineArray(value: FrontmatterText): ParsedFrontmatterValue {
 
 function parseInlineArrayItem(value: FrontmatterText): ParsedFrontmatterScalar {
 	if (isQuotedScalar(value)) return parseTextItem(value);
-	return parseScalar(value);
+	return parseScalar(value, false);
 }
 
 function splitInlineArrayItems(value: FrontmatterText): FrontmatterText[] {
@@ -185,25 +185,35 @@ function parseQuotedScalar(value: FrontmatterText): FrontmatterText {
 	return value;
 }
 
-function parseBooleanScalar(value: FrontmatterText): boolean | undefined {
+function parseBooleanScalar(
+	value: FrontmatterText,
+	legacyAliases: boolean,
+): boolean | undefined {
 	const lower = value.toLowerCase();
 	if (lower === "true") return true;
 	if (lower === "false") return false;
+	if (!legacyAliases) return undefined;
+	if (lower === "yes") return true;
+	if (lower === "no") return false;
 	return undefined;
 }
 
-function parseScalar(value: FrontmatterText): FrontmatterScalar {
+function parseScalar(
+	value: FrontmatterText,
+	legacyBooleanAliases = true,
+): FrontmatterScalar {
 	const clean = parseQuotedScalar(value);
 	if (isQuotedScalar(value)) return clean;
-	return parseUnquotedScalar(clean, value);
+	return parseUnquotedScalar(clean, value, legacyBooleanAliases);
 }
 
 function parseUnquotedScalar(
 	clean: FrontmatterText,
 	original: FrontmatterText,
+	legacyBooleanAliases: boolean,
 ): ParsedFrontmatterScalar {
 	if (clean === "~" || /^(null|Null|NULL)$/.test(clean)) return null;
-	const booleanValue = parseBooleanScalar(clean);
+	const booleanValue = parseBooleanScalar(clean, legacyBooleanAliases);
 	if (booleanValue !== undefined) return booleanValue;
 	const radixValue = parseRadixNumber(clean);
 	if (radixValue !== undefined) return radixValue;
