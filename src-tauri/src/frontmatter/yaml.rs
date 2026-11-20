@@ -116,6 +116,7 @@ impl<'a> YamlText<'a> {
             self.0.parse::<f64>().is_ok(),
             self.has_indicator_prefix(),
             self.0.contains('\\'),
+            self.0.starts_with('\u{feff}'),
             self.has_yaml_line_break(),
             self.has_comment_indicator(),
         ]
@@ -140,6 +141,7 @@ impl<'a> YamlText<'a> {
                 '\\' => escaped.push_str("\\\\"),
                 '"' => escaped.push_str("\\\""),
                 '\0' => escaped.push_str("\\0"),
+                '\u{feff}' => escaped.push_str("\\uFEFF"),
                 '\n' => escaped.push_str("\\n"),
                 '\r' => escaped.push_str("\\r"),
                 '\t' => escaped.push_str("\\t"),
@@ -332,6 +334,28 @@ mod tests {
         let value = FrontmatterValue::String(input.to_string());
         let emitted = value.to_yaml_value();
         assert_eq!(emitted, "\"before\\0after\"");
+        let parsed: String = serde_yaml::from_str(&emitted).unwrap();
+        assert_eq!(parsed, input);
+    }
+
+    #[test]
+    fn test_to_yaml_value_leading_bom_round_trips_with_yaml_reader() {
+        let input = "\u{feff}value";
+        let value = FrontmatterValue::String(input.to_string());
+        let emitted = value.to_yaml_value();
+        assert_eq!(emitted, "\"\\uFEFFvalue\"");
+        let parsed: String = serde_yaml::from_str(&emitted).unwrap();
+        assert_eq!(parsed, input);
+    }
+
+    #[test]
+    fn test_to_yaml_value_control_characters_round_trip_with_yaml_reader() {
+        let input = (1..=8)
+            .chain(0x0b..=0x0c)
+            .chain(0x0e..=0x1f)
+            .map(char::from)
+            .collect::<String>();
+        let emitted = FrontmatterValue::String(input.clone()).to_yaml_value();
         let parsed: String = serde_yaml::from_str(&emitted).unwrap();
         assert_eq!(parsed, input);
     }

@@ -281,14 +281,61 @@ function parseListItem(
 	return match ? parseScalar(match[1]) : undefined;
 }
 
+function colonAfterQuotedKey(
+	line: FrontmatterLine,
+	closingQuote: number,
+): number {
+	const suffix = line.slice(closingQuote + 1);
+	const separator = suffix.match(/^\s*:/);
+	return separator ? closingQuote + separator[0].length : -1;
+}
+
+function findQuotedKeyColon(line: FrontmatterLine): number {
+	for (let index = 1; index < line.length; index += 1) {
+		if (line[index] === "\\") {
+			index += 1;
+			continue;
+		}
+		if (line[index] === '"') return colonAfterQuotedKey(line, index);
+	}
+	return -1;
+}
+
+function findSingleQuotedKeyColon(line: FrontmatterLine): number {
+	for (let index = 1; index < line.length; index += 1) {
+		if (line[index] !== "'") continue;
+		if (line[index + 1] === "'") {
+			index += 1;
+			continue;
+		}
+		return colonAfterQuotedKey(line, index);
+	}
+	return -1;
+}
+
+function findKeyValueColon(line: FrontmatterLine): number {
+	if (line.startsWith('"')) return findQuotedKeyColon(line);
+	if (line.startsWith("'")) return findSingleQuotedKeyColon(line);
+	return line.indexOf(":");
+}
+
+function parseFrontmatterKey(rawKey: FrontmatterLine): FrontmatterKey {
+	if (rawKey.startsWith('"') && rawKey.endsWith('"')) return unquote(rawKey);
+	if (rawKey.startsWith("'") && rawKey.endsWith("'"))
+		return rawKey.slice(1, -1).replace(/''/g, "'");
+	return rawKey;
+}
+
 function parseKeyValueLine(
 	line: FrontmatterLine,
 ): { key: FrontmatterKey; value: FrontmatterText } | null {
-	const match = line.match(/^["']?([^"':]+)["']?\s*:\s*(.*)$/);
-	if (!match) return null;
+	const colon = findKeyValueColon(line);
+	if (colon < 0) return null;
+	const key = parseFrontmatterKey(line.slice(0, colon).trim());
+	if (key === "") return null;
 	return {
-		key: match[1].trim(),
-		value: match[2].trim(),
+		key,
+		value: line.slice(colon + 1).trim(),
 	};
 }
 

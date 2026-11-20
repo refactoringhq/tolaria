@@ -97,6 +97,7 @@ const QUOTING_RULES: readonly ((text: PlainText) => boolean)[] = [
 	(text) => /^[+-]?\.(?:inf|nan)$/i.test(text),
 	isRustFloat,
 	containsEscapedControl,
+	(text) => text.startsWith("\uFEFF"),
 ];
 
 function containsEscapedControl(text: PlainText): boolean {
@@ -127,6 +128,7 @@ const YAML_QUOTED_ESCAPES: ReadonlyMap<string, string> = new Map([
 	["\\", "\\\\"],
 	['"', '\\"'],
 	["\0", "\\0"],
+	["\uFEFF", "\\uFEFF"],
 	["\n", "\\n"],
 	["\r", "\\r"],
 	["\t", "\\t"],
@@ -150,8 +152,9 @@ export function needsKeyQuoting(key: PlainText): boolean {
 }
 
 export function formatYamlKey(key: PlainText): YamlText {
-	if (needsKeyQuoting(assertSingleLine(assertKey(key)))) return quoted(key);
-	return assertSingleLine(key);
+	const safeKey = assertSingleLine(assertKey(key));
+	if (needsKeyQuoting(safeKey)) return quoted(safeKey);
+	return safeKey;
 }
 
 const I64_MAX = 9223372036854775807n;

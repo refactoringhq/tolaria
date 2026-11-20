@@ -57,14 +57,6 @@ describe("updateFrontmatterContent matches the desktop writer byte for byte", ()
 });
 
 describe("updateFrontmatterContent beyond the golden cases", () => {
-	it("round-trips NUL through a YAML reader", () => {
-		const value = `before${String.fromCharCode(0)}after`;
-		const written = updateFrontmatterContent("", "value", value);
-
-		expect(written).toContain('value: "before\\0after"');
-		expect(parseFrontmatter(written).value).toBe(value);
-	});
-
 	it("round-trips escaped list items through the frontmatter parser", () => {
 		const backslash = String.fromCharCode(92);
 		const value = [
@@ -235,6 +227,44 @@ describe("updateFrontmatterContent beyond the golden cases", () => {
 	])("round-trips string %j with its type", (value) => {
 		const written = updateFrontmatterContent("", "v", value);
 		expect(parseFrontmatter(written).v).toBe(value);
+	});
+});
+
+describe("frontmatter quoted key and scalar round trips", () => {
+	it("decodes doubled apostrophes in a YAML single-quoted key", () => {
+		const parsed = parseFrontmatter("---\n'it''s': value\n---\n");
+
+		expect(parsed["it's"]).toBe("value");
+	});
+
+	it("round-trips a key containing a quote through the frontmatter parser", () => {
+		const key = 'Due "soon"';
+		const written = updateFrontmatterContent("", key, "today");
+
+		expect(parseFrontmatter(written)).toEqual({ [key]: "today" });
+	});
+
+	it("round-trips quotes and backslashes in a key", () => {
+		const key = 'a "quoted" \\\\ key';
+		const written = updateFrontmatterContent("", key, "today");
+
+		expect(parseFrontmatter(written)).toEqual({ [key]: "today" });
+	});
+
+	it("round-trips a leading BOM in a string value", () => {
+		const value = "\uFEFFvalue";
+		const written = updateFrontmatterContent("", "value", value);
+
+		expect(written).toContain('value: "\\uFEFFvalue"');
+		expect(parseFrontmatter(written).value).toBe(value);
+	});
+
+	it("round-trips NUL through a YAML reader", () => {
+		const value = `before${String.fromCharCode(0)}after`;
+		const written = updateFrontmatterContent("", "value", value);
+
+		expect(written).toContain('value: "before\\0after"');
+		expect(parseFrontmatter(written).value).toBe(value);
 	});
 });
 
