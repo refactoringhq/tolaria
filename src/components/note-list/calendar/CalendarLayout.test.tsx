@@ -65,6 +65,7 @@ function renderCalendar({
 	items = entries,
 	locale = "en" as AppLocale,
 	properties = [] as string[],
+	showProperties = true,
 } = {}) {
 	const onOpen = vi.fn();
 	const view = render(
@@ -72,6 +73,7 @@ function renderCalendar({
 			entries={items}
 			allEntries={items}
 			properties={properties}
+			showProperties={showProperties}
 			locale={locale}
 			typeEntryMap={{}}
 			selectedNotePath="/v/review.md"
@@ -144,6 +146,15 @@ describe("CalendarLayout", () => {
 		expect(
 			card.getByTestId("calendar-item-title").lastElementChild,
 		).toHaveClass("min-w-0", "whitespace-normal", "break-words");
+	});
+
+	it("hides card fields when item properties are disabled", () => {
+		renderCalendar({ properties: ["owner"], showProperties: false });
+		expect(
+			within(
+				screen.getAllByRole("button", { name: "Launch" })[0],
+			).queryByTestId("property-chips"),
+		).not.toBeInTheDocument();
 	});
 
 	it("hides note icons when the persisted icon setting is off", () => {

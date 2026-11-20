@@ -34,6 +34,7 @@ export interface ViewDefinition {
 		sort?: string | null;
 		groupBy?: string | null;
 		properties?: string[];
+		showProperties?: boolean;
 		columnOrder?: string[];
 		collapsedColumns?: string[];
 		hiddenColumns?: string[];

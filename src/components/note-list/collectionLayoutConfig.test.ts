@@ -46,6 +46,7 @@ describe("collectionLayoutConfig", () => {
 			layout: "kanban",
 			groupBy: "status",
 			properties: ["owner"],
+			showProperties: true,
 			columnOrder: [],
 			collapsedColumns: [],
 			hiddenColumns: [],
@@ -113,6 +114,21 @@ describe("collectionLayoutConfig", () => {
 				showOrphans: true,
 				showLabels: false,
 			},
+		});
+	});
+
+	it("keeps per-collection item-property visibility when loading saved layouts", () => {
+		expect(
+			readStoredLayout({ type: "kanban", showProperties: false }),
+		).toMatchObject({
+			layout: "kanban",
+			showProperties: false,
+		});
+		expect(
+			readStoredLayout({ type: "calendar", showProperties: false }),
+		).toMatchObject({
+			layout: "calendar",
+			showProperties: false,
 		});
 	});
 
