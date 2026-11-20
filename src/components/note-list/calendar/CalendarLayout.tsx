@@ -26,7 +26,6 @@ import {
 	visibleWeeks,
 	weekStartForLocale,
 } from "./calendarDates";
-import { laneHeightFor } from "./calendarLanes";
 import {
 	type CalendarItem,
 	type CalendarSources,
@@ -228,7 +227,6 @@ function CalendarBoard(props: CalendarBoardProps) {
 		[partition.items, weeks],
 	);
 	const context = useItemContext(props);
-	const laneHeight = laneHeightFor(visibleItems, context);
 	const latestWriter = useLatestDateWriter(props.allEntries, calendar);
 	const drag = useCalendarDrag({
 		setPending,
@@ -290,7 +288,6 @@ function CalendarBoard(props: CalendarBoardProps) {
 							items={visibleItems}
 							context={context}
 							state={gridState}
-							laneHeight={laneHeight}
 							locale={locale}
 						/>
 					)}

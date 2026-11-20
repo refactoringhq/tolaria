@@ -129,12 +129,14 @@
 	opacity: 1;
 }
 
-/* Item lanes sit over the day cells; only the items take pointer events, so empty space reaches the day. */
+/* Item lanes sit over the day cells; only the items take pointer events, so empty space reaches the day.
+   Every card shares one grid row and keeps its natural height, offset down its day's stack (TOL-393). */
 .calendar-week__lanes {
 	position: absolute;
 	inset: 30px 0 0;
 	display: grid;
 	align-content: start;
+	align-items: start;
 	padding: 0 4px;
 	column-gap: 4px;
 	pointer-events: none;
