@@ -47,20 +47,23 @@ function useOpenNoteHighlight(graph: Graph, renderer: GraphRenderer | null, sele
   }, [graph, renderer, selectedNotePath, visible])
 }
 
-/** What ends a focus without a click on the canvas: the open note going away or the editor panel closing. */
-function focusEnds(previous: { selected: string | null; panelOpen: boolean }, selected: string | null, panelOpen: boolean): boolean {
-  return (previous.selected !== null && selected === null) || (previous.panelOpen && !panelOpen)
-}
+/** The panel must stay closed this long to end a focus: opening a note can close and reopen it for a moment. */
+const PANEL_CLOSED_GRACE_MS = 300
 
 /** The clicked note the graph focuses on; it ends with a background click, Escape, or the panel closing. */
 function useFocusedNode(selectedNotePath: string | null, panelOpen: boolean) {
   const [focused, setFocused] = useState<string | null>(null)
-  const [previous, setPrevious] = useState({ selected: selectedNotePath, panelOpen })
-  // Adjusted during render (not in an effect), so the focus never outlives the panel by a frame.
-  if (previous.selected !== selectedNotePath || previous.panelOpen !== panelOpen) {
-    setPrevious({ selected: selectedNotePath, panelOpen })
-    if (focusEnds(previous, selectedNotePath, panelOpen)) setFocused(null)
+  const [previousSelection, setPreviousSelection] = useState(selectedNotePath)
+  // Adjusted during render (not in an effect), so the focus never outlives the open note by a frame.
+  if (selectedNotePath !== previousSelection) {
+    setPreviousSelection(selectedNotePath)
+    if (!selectedNotePath) setFocused(null)
   }
+  useEffect(() => {
+    if (panelOpen || focused === null) return
+    const timer = setTimeout(() => setFocused(null), PANEL_CLOSED_GRACE_MS)
+    return () => clearTimeout(timer)
+  }, [focused, panelOpen])
   return [focused, setFocused] as const
 }
 

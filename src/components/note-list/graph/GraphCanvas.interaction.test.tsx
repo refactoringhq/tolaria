@@ -25,7 +25,7 @@ describe('GraphCanvas interaction', () => {
   })
 
   it('fades everything outside the focused neighbourhood and keeps its labels at any zoom', async () => {
-    renderCanvas({ selectedNotePath: ada.path })
+    renderCanvas({ selectedNotePath: ada.path, panelOpen: true })
     pressStage({ sigmaEvent: 'downNode', node: ada.path, release: { clientX: 10, clientY: 10 } })
     await nextFrames()
     const { graph } = lastRenderer()
@@ -53,11 +53,22 @@ describe('GraphCanvas interaction', () => {
     expect(screen.getByRole('application')).not.toHaveAttribute('data-focused-node')
   })
 
-  it('leaves focus when the editor panel closes while the note stays selected', () => {
-    const { rerender, props } = renderCanvas({ selectedNotePath: ada.path, panelOpen: true })
-    pressStage({ sigmaEvent: 'downNode', node: ada.path, release: { clientX: 10, clientY: 10 } })
-    rerender(<GraphCanvas {...props} panelOpen={false} />)
-    expect(screen.getByRole('application')).not.toHaveAttribute('data-focused-node')
+  it('leaves focus when the editor panel stays closed, but not through a brief close and reopen', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      const { rerender, props } = renderCanvas({ selectedNotePath: ada.path, panelOpen: true })
+      pressStage({ sigmaEvent: 'downNode', node: ada.path, release: { clientX: 10, clientY: 10 } })
+      rerender(<GraphCanvas {...props} panelOpen={false} />)
+      act(() => vi.advanceTimersByTime(100))
+      rerender(<GraphCanvas {...props} panelOpen />)
+      act(() => vi.advanceTimersByTime(1000))
+      expect(screen.getByRole('application')).toHaveAttribute('data-focused-node', ada.path)
+      rerender(<GraphCanvas {...props} panelOpen={false} />)
+      act(() => vi.advanceTimersByTime(400))
+      expect(screen.getByRole('application')).not.toHaveAttribute('data-focused-node')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('can take keyboard focus so its shortcuts are reachable with Tab', () => {
