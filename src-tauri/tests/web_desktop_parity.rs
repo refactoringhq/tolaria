@@ -17,7 +17,7 @@ use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 use serde_json::{Map, Value};
 use tempfile::TempDir;
-use tolaria_lib::frontmatter::{update_frontmatter_content, FrontmatterValue};
+use tolaria_lib::frontmatter::{update_frontmatter_content, FrontmatterScalar, FrontmatterValue};
 use tolaria_lib::vault::{rename_note, save_image, scan_vault, RenameNoteRequest};
 
 type Notes = BTreeMap<String, String>;
@@ -97,7 +97,16 @@ fn frontmatter_value(value: &Value) -> Option<FrontmatterValue> {
         Value::Number(number) => Some(FrontmatterValue::Number(number.as_f64()?)),
         Value::Bool(flag) => Some(FrontmatterValue::Bool(*flag)),
         Value::Array(items) => Some(FrontmatterValue::List(
-            items.iter().map(|item| text(item).to_string()).collect(),
+            items
+                .iter()
+                .map(|item| match item {
+                    Value::String(text) => Some(FrontmatterScalar::String(text.clone())),
+                    Value::Number(number) => Some(FrontmatterScalar::Number(number.as_f64()?)),
+                    Value::Bool(flag) => Some(FrontmatterScalar::Bool(*flag)),
+                    Value::Null => Some(FrontmatterScalar::Null),
+                    _ => None,
+                })
+                .collect::<Option<Vec<_>>>()?,
         )),
         _ => None,
     }
