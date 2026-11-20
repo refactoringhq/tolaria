@@ -1468,5 +1468,8 @@
   "mobile.workspace.actionFailure.organized": "Die Notiz konnte nicht organisiert werden. Ihre Notiz ist unverändert.",
   "mobile.workspace.actionFailure.unorganized": "Die Notiz konnte nicht in die Inbox verschoben werden. Ihre Notiz ist unverändert.",
   "mobile.workspace.actionFailure.relationshipRemoved": "Die Beziehung konnte nicht entfernt werden. Ihre Notiz ist unverändert.",
-  "mobile.workspace.actionFailure.multiple": "Diese Änderungen konnten nicht gespeichert werden. Ihre Notizen bleiben unverändert."
+  "mobile.workspace.actionFailure.multiple": "Diese Änderungen konnten nicht gespeichert werden. Ihre Notizen bleiben unverändert.",
+  "calendar.quarter": "Quartal",
+  "calendar.year": "Jahr",
+  "calendar.showIcons": "Notizsymbole anzeigen"
 }

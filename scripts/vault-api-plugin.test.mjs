@@ -110,6 +110,18 @@ test("dev vault read routes support GET and POST", () =>
 		}
 	}));
 
+test("dev vault listings preserve unquoted ISO dates as date properties", () =>
+	withVault(async ({ api, vault }) => {
+		const scheduled = path.join(vault, "scheduled.md");
+		await api("/api/vault/save", {
+			path: scheduled,
+			content: "---\ndue: 2026-11-20\n---\n# Scheduled\n",
+		});
+		const entry = (await api("/api/vault/entry", { path: scheduled }, "GET"))
+			.body;
+		assert.equal(entry.properties.due, "2026-11-20");
+	}));
+
 test("dev vault note timestamps are seconds", () =>
 	withVault(async ({ api, note }) => {
 		const { body } = await api("/api/vault/entry", { path: note }, "GET");

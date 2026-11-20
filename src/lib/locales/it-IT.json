@@ -1468,5 +1468,8 @@
   "mobile.workspace.actionFailure.organized": "Impossibile organizzare la nota. La tua nota è rimasta invariata.",
   "mobile.workspace.actionFailure.unorganized": "Impossibile spostare la nota nella Inbox. La tua nota è rimasta invariata.",
   "mobile.workspace.actionFailure.relationshipRemoved": "Impossibile rimuovere la relazione. La tua nota è rimasta invariata.",
-  "mobile.workspace.actionFailure.multiple": "Impossibile salvare queste modifiche. Le tue note sono rimaste invariate."
+  "mobile.workspace.actionFailure.multiple": "Impossibile salvare queste modifiche. Le tue note sono rimaste invariate.",
+  "calendar.quarter": "Trimestre",
+  "calendar.year": "Anno",
+  "calendar.showIcons": "Mostra icone delle note"
 }

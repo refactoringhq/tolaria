@@ -1468,5 +1468,8 @@
   "layout.expandColumn": "Razharnuć {column}",
   "layout.hideColumn": "Schavać {column}",
   "layout.showColumn": "Pakazać {column}",
-  "layout.hiddenColumns": "Schavanyja kalonki"
+  "layout.hiddenColumns": "Schavanyja kalonki",
+  "calendar.quarter": "Kvartal",
+  "calendar.year": "Rok",
+  "calendar.showIcons": "Pakazvać znački natatak"
 }

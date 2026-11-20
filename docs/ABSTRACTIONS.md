@@ -2235,3 +2235,6 @@ The editor schema reuses the durable embedded-HTML codec through `embeddedBlockP
 ## Visible note order
 
 `useNoteListModel` obtains one memoized `visibleEntries` array from `useVisibleNotesSync`: the entity followed by searched relationship groups in neighborhood views, or the searched list elsewhere. Keyboard navigation, range selection, and deletion focus consume that same array. App-level consumers receive the same order through `visibleNotesRef`, with deleted-note previews filtered out. Deletion focus snapshots change only when the list inputs or callbacks change; inbox auto-advance keeps its existing next-only rule.
+
+
+Calendar collection views support persisted month, week, quarter and year modes. Quarter and year provide compact date overviews, and `showIcons` controls note icons independently of the selected card properties.

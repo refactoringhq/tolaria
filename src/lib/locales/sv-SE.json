@@ -1468,5 +1468,8 @@
   "mobile.workspace.actionFailure.organized": "Det gick inte att organisera anteckningen. Din anteckning är oförändrad.",
   "mobile.workspace.actionFailure.unorganized": "Det gick inte att flytta anteckningen till inkorgen. Din anteckning är oförändrad.",
   "mobile.workspace.actionFailure.relationshipRemoved": "Det gick inte att ta bort relationen. Din anteckning är oförändrad.",
-  "mobile.workspace.actionFailure.multiple": "Det gick inte att spara dessa ändringar. Dina anteckningar är oförändrade."
+  "mobile.workspace.actionFailure.multiple": "Det gick inte att spara dessa ändringar. Dina anteckningar är oförändrade.",
+  "calendar.quarter": "Kvartal",
+  "calendar.year": "År",
+  "calendar.showIcons": "Visa anteckningsikoner"
 }
