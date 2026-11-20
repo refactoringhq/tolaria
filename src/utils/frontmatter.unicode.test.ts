@@ -18,6 +18,11 @@ describe("frontmatter Unicode escapes", () => {
 });
 
 describe("frontmatter YAML scalar types", () => {
+	it("preserves trailing spaces inside a quoted scalar", () => {
+		const frontmatter = parseFrontmatter('---\nvalue: "5 "\n---\nBody');
+		expect(frontmatter.value).toBe("5 ");
+	});
+
 	it.each([
 		["null", null],
 		["Null", null],

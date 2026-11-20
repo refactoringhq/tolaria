@@ -102,6 +102,39 @@ describe("updateFrontmatterContent beyond the golden cases", () => {
 		]);
 	});
 
+	it("escapes every YAML double-quoted escape sequence in literal strings", () => {
+		const yamlEscapes = [
+			String.raw`\\`,
+			String.raw`\"`,
+			String.raw`\0`,
+			String.raw`\a`,
+			String.raw`\b`,
+			String.raw`\t`,
+			String.raw`\n`,
+			String.raw`\v`,
+			String.raw`\f`,
+			String.raw`\r`,
+			String.raw`\e`,
+			String.raw`\/`,
+			String.raw`\ `,
+			String.raw`\N`,
+			String.raw`\_`,
+			String.raw`\L`,
+			String.raw`\P`,
+			String.raw`\x41`,
+			String.raw`\u0041`,
+			String.raw`\U00000041`,
+		];
+
+		for (const escapeSequence of yamlEscapes) {
+			const value = `prefix ${escapeSequence}: suffix`;
+			const written = updateFrontmatterContent("", "value", value);
+			const escaped = value.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
+			expect(written).toContain(`value: "${escaped}"`);
+			expect(parseFrontmatter(written).value).toBe(value);
+		}
+	});
+
 	it("coerces unquoted inline array scalars but preserves quoted strings", () => {
 		expect(
 			parseFrontmatter("---\nvalues: [yes, 007, 0x10]\n---\n").values,

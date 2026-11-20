@@ -296,4 +296,44 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_roundtrip_yaml_escape_sequences() {
+        let matter = gray_matter::Matter::<gray_matter::engine::YAML>::new();
+        for escape in [
+            "\\\\",
+            "\\\"",
+            "\\0",
+            "\\a",
+            "\\b",
+            "\\t",
+            "\\n",
+            "\\v",
+            "\\f",
+            "\\r",
+            "\\e",
+            "\\/",
+            "\\ ",
+            "\\N",
+            "\\_",
+            "\\L",
+            "\\P",
+            "\\x41",
+            "\\u0041",
+            "\\U00000041",
+        ] {
+            let value = format!("prefix {escape}: suffix");
+            let updated = update_frontmatter_content(
+                "---\ntype: Type\n---\nBody\n",
+                "v",
+                Some(FrontmatterValue::String(value.clone())),
+            )
+            .unwrap();
+            let parsed = matter.parse(&updated).data.unwrap();
+            let gray_matter::Pod::Hash(map) = parsed else {
+                panic!("Expected hash")
+            };
+            assert_eq!(map.get("v").unwrap().as_string().unwrap(), value);
+        }
+    }
 }
