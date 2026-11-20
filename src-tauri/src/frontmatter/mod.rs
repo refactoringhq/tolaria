@@ -263,11 +263,24 @@ mod tests {
             panic!("Expected frontmatter mapping")
         };
 
-        assert!(matches!(map.get("yes_value"), Some(gray_matter::Pod::String(value)) if value == "yes"));
-        assert!(matches!(map.get("no_value"), Some(gray_matter::Pod::String(value)) if value == "no"));
-        assert!(matches!(map.get("hex_value"), Some(gray_matter::Pod::Integer(16))));
-        assert!(matches!(map.get("octal_value"), Some(gray_matter::Pod::Integer(15))));
-        assert!(matches!(map.get("true_value"), Some(gray_matter::Pod::Boolean(true))));
+        assert!(
+            matches!(map.get("yes_value"), Some(gray_matter::Pod::String(value)) if value == "yes")
+        );
+        assert!(
+            matches!(map.get("no_value"), Some(gray_matter::Pod::String(value)) if value == "no")
+        );
+        assert!(matches!(
+            map.get("hex_value"),
+            Some(gray_matter::Pod::Integer(16))
+        ));
+        assert!(matches!(
+            map.get("octal_value"),
+            Some(gray_matter::Pod::Integer(15))
+        ));
+        assert!(matches!(
+            map.get("true_value"),
+            Some(gray_matter::Pod::Boolean(true))
+        ));
     }
 
     #[test]
