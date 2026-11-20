@@ -389,6 +389,47 @@ function frontmatterPropertyValue(
 		: wikiLinkFreeString({ value: singleArrayValue });
 }
 
+type FrontmatterEntryFields = Pick<
+	VaultEntry,
+	| "aliases"
+	| "belongsTo"
+	| "relatedTo"
+	| "status"
+	| "archived"
+	| "trashed"
+	| "relationships"
+	| "icon"
+	| "color"
+	| "order"
+	| "sidebarLabel"
+	| "sort"
+	| "view"
+	| "visible"
+	| "properties"
+>;
+
+function frontmatterEntryFields(
+	fm: Record<string, unknown>,
+): FrontmatterEntryFields {
+	return {
+		aliases: frontmatterStringArray(fm, "aliases"),
+		belongsTo: frontmatterWikiLinks(fm, "belongs_to", "belongs to"),
+		relatedTo: frontmatterWikiLinks(fm, "related_to", "related to"),
+		status: frontmatterString(fm, "status"),
+		archived: frontmatterBool(fm, "archived") ?? false,
+		trashed: frontmatterBool(fm, "trashed") ?? false,
+		relationships: frontmatterRelationships(fm),
+		icon: frontmatterString(fm, "icon"),
+		color: frontmatterString(fm, "color"),
+		order: fm.order != null ? Number(fm.order) : null,
+		sidebarLabel: frontmatterString(fm, "sidebar label", "sidebar_label"),
+		sort: frontmatterString(fm, "sort"),
+		view: frontmatterString(fm, "view"),
+		visible: frontmatterBool(fm, "visible"),
+		properties: frontmatterProperties(fm),
+	};
+}
+
 export function parseMarkdownFile(filePath: string): VaultEntry | null {
 	try {
 		const raw = readUtf8File(filePath);
@@ -406,7 +447,6 @@ export function parseMarkdownFile(filePath: string): VaultEntry | null {
 		});
 		const isA = frontmatterString(fm, "is_a", "is a", "type");
 		const bodyText = markdownBodyText({ content });
-		const snippet = bodyText.slice(0, 200);
 		const template = resolveTypeTemplate({
 			body: content,
 			explicitTemplate: frontmatterString(fm, "template"),
@@ -415,33 +455,19 @@ export function parseMarkdownFile(filePath: string): VaultEntry | null {
 		});
 
 		return {
+			...frontmatterEntryFields(fm),
 			path: filePath,
 			filename,
 			title,
 			isA,
-			aliases: frontmatterStringArray(fm, "aliases"),
-			belongsTo: frontmatterWikiLinks(fm, "belongs_to", "belongs to"),
-			relatedTo: frontmatterWikiLinks(fm, "related_to", "related to"),
-			status: frontmatterString(fm, "status"),
-			archived: frontmatterBool(fm, "archived") ?? false,
-			trashed: frontmatterBool(fm, "trashed") ?? false,
 			trashedAt: null,
 			modifiedAt: Math.floor(stats.mtimeMs / 1000),
 			createdAt: Math.floor(stats.birthtimeMs / 1000),
 			fileSize: stats.size,
-			snippet,
+			snippet: bodyText.slice(0, 200),
 			wordCount: bodyText.split(/\s+/).filter(Boolean).length,
-			relationships: frontmatterRelationships(fm),
-			icon: frontmatterString(fm, "icon"),
-			color: frontmatterString(fm, "color"),
-			order: fm.order != null ? Number(fm.order) : null,
-			sidebarLabel: frontmatterString(fm, "sidebar label", "sidebar_label"),
 			template,
-			sort: frontmatterString(fm, "sort"),
-			view: frontmatterString(fm, "view"),
-			visible: frontmatterBool(fm, "visible"),
 			outgoingLinks: [],
-			properties: frontmatterProperties(fm),
 		};
 	} catch {
 		return null;
