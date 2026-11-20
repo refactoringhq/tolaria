@@ -292,19 +292,19 @@ function colonAfterQuotedKey(
 
 function findQuotedKeyColon(line: FrontmatterLine): number {
 	for (let index = 1; index < line.length; index += 1) {
-		if (line[index] === "\\") {
+		if (line.charAt(index) === "\\") {
 			index += 1;
 			continue;
 		}
-		if (line[index] === '"') return colonAfterQuotedKey(line, index);
+		if (line.charAt(index) === '"') return colonAfterQuotedKey(line, index);
 	}
 	return -1;
 }
 
 function findSingleQuotedKeyColon(line: FrontmatterLine): number {
 	for (let index = 1; index < line.length; index += 1) {
-		if (line[index] !== "'") continue;
-		if (line[index + 1] === "'") {
+		if (line.charAt(index) !== "'") continue;
+		if (line.charAt(index + 1) === "'") {
 			index += 1;
 			continue;
 		}
