@@ -330,7 +330,8 @@ body.mac-chrome
 }
 
 /* Inactive state: hide source text, show bullet dot via ::before */
-.editor .cm-line:not(.cm-heading-line)
+.editor
+	.cm-line:not(.cm-heading-line)
 	.cm-formatting-block:not(.cm-formatting-block-visible) {
 	color: transparent;
 	opacity: 1;
@@ -348,7 +349,8 @@ body.mac-chrome
 }
 
 /* Active state: show source marker (-, *, +, etc.) */
-.editor .cm-line:not(.cm-heading-line)
+.editor
+	.cm-line:not(.cm-heading-line)
 	.cm-formatting-block.cm-formatting-block-visible {
 	color: var(--text-faint);
 	opacity: 1;
@@ -443,9 +445,8 @@ body.mac-chrome
 
 	/* BlockNote and custom blocks can carry their own dark theme colors. Keep
      vector/image colors intact while giving text a consistent paper palette. */
-	body:has(
-			[data-note-pdf-export-root="true"]
-		) [data-note-pdf-export-root="true"]
+	body:has([data-note-pdf-export-root="true"])
+		[data-note-pdf-export-root="true"]
 		:not(svg, svg *),
 	body:has([data-note-pdf-export-root="true"])
 		[data-note-pdf-export-root="true"]
@@ -483,6 +484,9 @@ body.mac-chrome
 		overflow: visible;
 		background: #fff;
 		color: #111;
+		/* BlockNote marks its container .dark, which would print native controls
+       such as task checkboxes with the dark palette. */
+		color-scheme: light;
 	}
 
 	body:has([data-note-pdf-export-root="true"]) .bn-editor {
@@ -501,6 +505,37 @@ body.mac-chrome
 		) {
 		break-inside: avoid;
 		page-break-inside: avoid;
+	}
+
+	/* The editor draws bullets as background gradients, which print dialogs
+     drop by default. Print the same marker sequence as text glyphs. */
+	body:has([data-note-pdf-export-root="true"])
+		.editor__blocknote-container
+		[data-content-type="bulletListItem"]::before {
+		content: "•";
+		background: none;
+		color: #111;
+		-webkit-text-fill-color: #111;
+		font-size: var(--editor-font-size);
+	}
+
+	body:has([data-note-pdf-export-root="true"])
+		.editor__blocknote-container
+		.bn-block-group
+		.bn-block-group
+		[data-content-type="bulletListItem"]::before {
+		content: "◦";
+		background: none;
+	}
+
+	body:has([data-note-pdf-export-root="true"])
+		.editor__blocknote-container
+		.bn-block-group
+		.bn-block-group
+		.bn-block-group
+		[data-content-type="bulletListItem"]::before {
+		content: "▪";
+		background: none;
 	}
 
 	body:has([data-note-pdf-export-root="true"]) :is(img, svg, canvas) {
