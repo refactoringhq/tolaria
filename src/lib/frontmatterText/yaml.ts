@@ -126,6 +126,7 @@ function quoted(text: PlainText): YamlText {
 const YAML_QUOTED_ESCAPES: ReadonlyMap<string, string> = new Map([
 	["\\", "\\\\"],
 	['"', '\\"'],
+	["\0", "\\0"],
 	["\n", "\\n"],
 	["\r", "\\r"],
 	["\t", "\\t"],

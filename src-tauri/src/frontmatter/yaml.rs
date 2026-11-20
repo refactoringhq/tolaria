@@ -139,6 +139,7 @@ impl<'a> YamlText<'a> {
             match ch {
                 '\\' => escaped.push_str("\\\\"),
                 '"' => escaped.push_str("\\\""),
+                '\0' => escaped.push_str("\\0"),
                 '\n' => escaped.push_str("\\n"),
                 '\r' => escaped.push_str("\\r"),
                 '\t' => escaped.push_str("\\t"),
@@ -323,6 +324,16 @@ mod tests {
     fn test_to_yaml_value_multiline_uses_escaped_quotes() {
         let v = FrontmatterValue::String("line 1\nline 2\nline 3".to_string());
         assert_eq!(v.to_yaml_value(), "\"line 1\\nline 2\\nline 3\"");
+    }
+
+    #[test]
+    fn test_to_yaml_value_nul_round_trips_with_yaml_reader() {
+        let input = "before\0after";
+        let value = FrontmatterValue::String(input.to_string());
+        let emitted = value.to_yaml_value();
+        assert_eq!(emitted, "\"before\\0after\"");
+        let parsed: String = serde_yaml::from_str(&emitted).unwrap();
+        assert_eq!(parsed, input);
     }
 
     #[test]

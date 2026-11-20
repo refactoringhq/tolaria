@@ -57,6 +57,14 @@ describe("updateFrontmatterContent matches the desktop writer byte for byte", ()
 });
 
 describe("updateFrontmatterContent beyond the golden cases", () => {
+	it("round-trips NUL through a YAML reader", () => {
+		const value = `before${String.fromCharCode(0)}after`;
+		const written = updateFrontmatterContent("", "value", value);
+
+		expect(written).toContain('value: "before\\0after"');
+		expect(parseFrontmatter(written).value).toBe(value);
+	});
+
 	it("round-trips escaped list items through the frontmatter parser", () => {
 		const backslash = String.fromCharCode(92);
 		const value = [
