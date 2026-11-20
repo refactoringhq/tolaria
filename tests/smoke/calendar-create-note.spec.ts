@@ -56,19 +56,7 @@ test.afterEach(() => {
 	removeFixtureVaultCopy(tempVaultDir);
 });
 
-test("creates a note from an empty calendar day with its date prefilled @smoke", async ({
-	page,
-}) => {
-	const before = new Set(await rootMarkdownFiles(page));
-	const currentDay = dayKey(new Date());
-	const target = new Date();
-	target.setDate(target.getDate() + 1);
-	const targetDay = dayKey(target);
-
-	await page
-		.getByTestId("sidebar-top-nav")
-		.getByText("All Notes", { exact: true })
-		.click();
+async function seededDueValue(page: Page): Promise<unknown> {
 	const vaultList = await page.request.get(
 		`/api/vault/list?path=${encodeURIComponent(tempVaultDir)}`,
 	);
@@ -76,16 +64,49 @@ test("creates a note from an empty calendar day with its date prefilled @smoke",
 		path: string;
 		properties: Record<string, unknown>;
 	}>;
-	expect(
-		vaultEntries.find((entry) => entry.path.endsWith("/note-b.md"))?.properties
-			.due,
-	).toBe(currentDay);
+	return vaultEntries.find((entry) => entry.path.endsWith("/note-b.md"))
+		?.properties.due;
+}
+
+async function openAllNotesCalendar(page: Page): Promise<void> {
+	await page
+		.getByTestId("sidebar-top-nav")
+		.getByText("All Notes", { exact: true })
+		.click();
+	expect(await seededDueValue(page)).toBe(dayKey(new Date()));
 	await page.getByTestId("layout-menu-button").click();
 	await page.getByTestId("layout-option-calendar").click();
 	await expect(page.getByTestId("calendar-toolbar")).toBeVisible({
 		timeout: 5_000,
 	});
+}
 
+async function newRootMarkdownFiles(
+	page: Page,
+	before: Set<string>,
+): Promise<string[]> {
+	const files = await rootMarkdownFiles(page);
+	return files.filter((name) => !before.has(name));
+}
+
+async function noteContent(page: Page, filename: string): Promise<string> {
+	const notePath = path.join(tempVaultDir, filename);
+	const response = await page.request.get(
+		`/api/vault/content?path=${encodeURIComponent(notePath)}`,
+	);
+	const body = (await response.json()) as { content: string };
+	return body.content;
+}
+
+test("creates a note from an empty calendar day with its date prefilled @smoke", async ({
+	page,
+}) => {
+	const before = new Set(await rootMarkdownFiles(page));
+	const target = new Date();
+	target.setDate(target.getDate() + 1);
+	const targetDay = dayKey(target);
+
+	await openAllNotesCalendar(page);
 	await page
 		.locator(`[data-day="${targetDay}"] [data-testid="calendar-day-add"]`)
 		.click();
@@ -93,25 +114,10 @@ test("creates a note from an empty calendar day with its date prefilled @smoke",
 		timeout: 5_000,
 	});
 	await expect
-		.poll(
-			() =>
-				rootMarkdownFiles(page).then((files) =>
-					files.filter((name) => !before.has(name)),
-				),
-			{
-				timeout: 10_000,
-			},
-		)
+		.poll(() => newRootMarkdownFiles(page, before), { timeout: 10_000 })
 		.toHaveLength(1);
 
-	const createdName = (await rootMarkdownFiles(page)).find(
-		(name) => !before.has(name),
-	);
+	const [createdName] = await newRootMarkdownFiles(page, before);
 	expect(createdName).toBeTruthy();
-	const createdPath = path.join(tempVaultDir, createdName as string);
-	const contentResponse = await page.request.get(
-		`/api/vault/content?path=${encodeURIComponent(createdPath)}`,
-	);
-	const content = (await contentResponse.json()) as { content: string };
-	expect(content.content).toContain(`due: ${targetDay}`);
+	expect(await noteContent(page, createdName)).toContain(`due: ${targetDay}`);
 });

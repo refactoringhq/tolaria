@@ -33,13 +33,11 @@ function listPresentation(
 	source: UnknownRecord,
 	fallback: ListCollectionPresentationConfig,
 ): ListCollectionPresentationConfig {
+	const properties = stringArray(source.properties);
 	return {
 		type: COLLECTION_PRESENTATION_LIST,
 		sort: nullableString(source.sort) ?? fallback.sort,
-		properties:
-			stringArray(source.properties).length > 0
-				? stringArray(source.properties)
-				: fallback.properties,
+		properties: properties.length > 0 ? properties : fallback.properties,
 	};
 }
 
