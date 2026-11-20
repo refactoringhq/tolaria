@@ -139,7 +139,7 @@
       ],
       "live": true,
       "changed": {
-        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Active\ntags:\n  - \"planning\"\n  - \"team\"\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-lovelace]], see [[ada-lovelace|Ada]] and [[roadmap|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first."
+        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Active\ntags:\n  - planning\n  - team\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-lovelace]], see [[ada-lovelace|Ada]] and [[roadmap|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first."
       }
     },
     {
@@ -149,7 +149,7 @@
       "value": 2,
       "live": true,
       "changed": {
-        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Active\ntags:\n  - \"planning\"\n  - \"team\"\npriority: 2\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-lovelace]], see [[ada-lovelace|Ada]] and [[roadmap|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first."
+        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Active\ntags:\n  - planning\n  - team\npriority: 2\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-lovelace]], see [[ada-lovelace|Ada]] and [[roadmap|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first."
       }
     },
     {
@@ -159,7 +159,7 @@
       "value": true,
       "live": true,
       "changed": {
-        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Active\ntags:\n  - \"planning\"\n  - \"team\"\npriority: 2\npublished: true\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-lovelace]], see [[ada-lovelace|Ada]] and [[roadmap|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first."
+        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Active\ntags:\n  - planning\n  - team\npriority: 2\npublished: true\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-lovelace]], see [[ada-lovelace|Ada]] and [[roadmap|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first."
       }
     },
     {
@@ -169,7 +169,7 @@
       "value": "[[ada-lovelace]]",
       "live": true,
       "changed": {
-        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Active\ntags:\n  - \"planning\"\n  - \"team\"\npriority: 2\npublished: true\nrelated_to: \"[[ada-lovelace]]\"\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-lovelace]], see [[ada-lovelace|Ada]] and [[roadmap|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first."
+        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Active\ntags:\n  - planning\n  - team\npriority: 2\npublished: true\nrelated_to: \"[[ada-lovelace]]\"\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-lovelace]], see [[ada-lovelace|Ada]] and [[roadmap|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first."
       }
     },
     {
@@ -179,7 +179,7 @@
       "value": "Q4: plan & review",
       "live": true,
       "changed": {
-        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Active\ntags:\n  - \"planning\"\n  - \"team\"\npriority: 2\npublished: true\nrelated_to: \"[[ada-lovelace]]\"\nsummary: \"Q4: plan & review\"\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-lovelace]], see [[ada-lovelace|Ada]] and [[roadmap|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first."
+        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Active\ntags:\n  - planning\n  - team\npriority: 2\npublished: true\nrelated_to: \"[[ada-lovelace]]\"\nsummary: \"Q4: plan & review\"\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-lovelace]], see [[ada-lovelace|Ada]] and [[roadmap|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first."
       }
     },
     {
@@ -189,7 +189,7 @@
       "value": "Done",
       "live": true,
       "changed": {
-        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Done\ntags:\n  - \"planning\"\n  - \"team\"\npriority: 2\npublished: true\nrelated_to: \"[[ada-lovelace]]\"\nsummary: \"Q4: plan & review\"\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-lovelace]], see [[ada-lovelace|Ada]] and [[roadmap|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first."
+        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Done\ntags:\n  - planning\n  - team\npriority: 2\npublished: true\nrelated_to: \"[[ada-lovelace]]\"\nsummary: \"Q4: plan & review\"\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-lovelace]], see [[ada-lovelace|Ada]] and [[roadmap|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first."
       }
     },
     {
@@ -198,7 +198,7 @@
       "key": "priority",
       "live": true,
       "changed": {
-        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Done\ntags:\n  - \"planning\"\n  - \"team\"\npublished: true\nrelated_to: \"[[ada-lovelace]]\"\nsummary: \"Q4: plan & review\"\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-lovelace]], see [[ada-lovelace|Ada]] and [[roadmap|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first."
+        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Done\ntags:\n  - planning\n  - team\npublished: true\nrelated_to: \"[[ada-lovelace]]\"\nsummary: \"Q4: plan & review\"\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-lovelace]], see [[ada-lovelace|Ada]] and [[roadmap|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first."
       }
     },
     {
@@ -211,7 +211,7 @@
       ],
       "live": true,
       "changed": {
-        "ada-lovelace.md": "---\ntitle: Ada Lovelace\ntype: Person\naliases:\n  - \"Countess\"\n  - \"Ada\"\n---\n# Ada Lovelace\n\nFirst programmer. Works on [[roadmap]]."
+        "ada-lovelace.md": "---\ntitle: Ada Lovelace\ntype: Person\naliases:\n  - Countess\n  - Ada\n---\n# Ada Lovelace\n\nFirst programmer. Works on [[roadmap]]."
       }
     },
     {
@@ -253,9 +253,9 @@
       "newTitle": "Ada King",
       "oldTitle": "Ada Lovelace",
       "changed": {
-        "ada-king.md": "---\ntitle: Ada King\ntype: Person\naliases:\n  - \"Countess\"\n  - \"Ada\"\n---\n# Ada Lovelace\n\nFirst programmer. Works on [[roadmap]].",
+        "ada-king.md": "---\ntitle: Ada King\ntype: Person\naliases:\n  - Countess\n  - Ada\n---\n# Ada Lovelace\n\nFirst programmer. Works on [[roadmap]].",
         "roadmap.md": "---\ntitle: Roadmap\ntype: Project\n---\n# Roadmap\n\nOwned by [[ada-king|Ada]].",
-        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Done\ntags:\n  - \"planning\"\n  - \"team\"\npublished: true\nrelated_to: \"[[ada-king]]\"\nsummary: \"Q4: plan & review\"\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-king]], see [[ada-king|Ada]] and [[roadmap|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first.",
+        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Done\ntags:\n  - planning\n  - team\npublished: true\nrelated_to: \"[[ada-king]]\"\nsummary: \"Q4: plan & review\"\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-king]], see [[ada-king|Ada]] and [[roadmap|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first.",
         "welcome.md": "---\ntype: Note\nbelongs_to:\n  - \"[[projects/alpha]]\"\n  - \"[[roadmap]]\"\nOwner: \"[[ada-king|Ada]]\"\n---\n# Welcome\n\nA throwaway vault for tests.\n",
         "ada-lovelace.md": null
       }
@@ -266,9 +266,9 @@
       "newTitle": "Roadmap 2027",
       "oldTitle": "Roadmap",
       "changed": {
-        "ada-king.md": "---\ntitle: Ada King\ntype: Person\naliases:\n  - \"Countess\"\n  - \"Ada\"\n---\n# Ada Lovelace\n\nFirst programmer. Works on [[roadmap-2027]].",
+        "ada-king.md": "---\ntitle: Ada King\ntype: Person\naliases:\n  - Countess\n  - Ada\n---\n# Ada Lovelace\n\nFirst programmer. Works on [[roadmap-2027]].",
         "roadmap-2027.md": "---\ntitle: Roadmap 2027\ntype: Project\n---\n# Roadmap\n\nOwned by [[ada-king|Ada]].",
-        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Done\ntags:\n  - \"planning\"\n  - \"team\"\npublished: true\nrelated_to: \"[[ada-king]]\"\nsummary: \"Q4: plan & review\"\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-king]], see [[ada-king|Ada]] and [[roadmap-2027|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first.",
+        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Done\ntags:\n  - planning\n  - team\npublished: true\nrelated_to: \"[[ada-king]]\"\nsummary: \"Q4: plan & review\"\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-king]], see [[ada-king|Ada]] and [[roadmap-2027|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first.",
         "welcome.md": "---\ntype: Note\nbelongs_to:\n  - \"[[projects/alpha]]\"\n  - \"[[roadmap-2027]]\"\nOwner: \"[[ada-king|Ada]]\"\n---\n# Welcome\n\nA throwaway vault for tests.\n",
         "roadmap.md": null
       }
@@ -279,7 +279,7 @@
       "filename": "my photo.png",
       "alt": "My photo",
       "changed": {
-        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Done\ntags:\n  - \"planning\"\n  - \"team\"\npublished: true\nrelated_to: \"[[ada-king]]\"\nsummary: \"Q4: plan & review\"\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-king]], see [[ada-king|Ada]] and [[roadmap-2027|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first.\n\n![My photo](./attachments/1767225600000-my_photo.png)"
+        "weekly-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Done\ntags:\n  - planning\n  - team\npublished: true\nrelated_to: \"[[ada-king]]\"\nsummary: \"Q4: plan & review\"\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-king]], see [[ada-king|Ada]] and [[roadmap-2027|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first.\n\n![My photo](./attachments/1767225600000-my_photo.png)"
       },
       "stored": "attachments/1767225600000-my_photo.png"
     },
@@ -289,7 +289,7 @@
       "newTitle": "Team Sync",
       "oldTitle": "Team Sync",
       "changed": {
-        "team-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Done\ntags:\n  - \"planning\"\n  - \"team\"\npublished: true\nrelated_to: \"[[ada-king]]\"\nsummary: \"Q4: plan & review\"\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-king]], see [[ada-king|Ada]] and [[roadmap-2027|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first.\n\n![My photo](./attachments/1767225600000-my_photo.png)",
+        "team-sync.md": "---\ntitle: Weekly Sync\ntype: Note\nstatus: Done\ntags:\n  - planning\n  - team\npublished: true\nrelated_to: \"[[ada-king]]\"\nsummary: \"Q4: plan & review\"\n---\n# Team Sync\n\nAgenda for the week.\n\n- Budget\n- Hiring\n  - Backend\n  - Design\n1. Review\n2. Decide\n- [ ] Send minutes\n- [x] Book the room\n\n| Owner | Topic |\n| --- | --- |\n| Ada | Engine |\n| Luca | Notes |\n\n```ts\nconst total = items.reduce((sum, item) => sum + item.cost, 0)\n```\n\nOwner: [[ada-king]], see [[ada-king|Ada]] and [[roadmap-2027|the roadmap]].\n\nSome **bold**, *italic*, `code` and a [link](https://example.com).\n\n## Decisions\n\n> Ship the parity suite first.\n\n![My photo](./attachments/1767225600000-my_photo.png)",
         "weekly-sync.md": null
       }
     }
