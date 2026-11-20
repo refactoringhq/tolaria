@@ -16,3 +16,29 @@ describe("frontmatter Unicode escapes", () => {
 		expect(frontmatter.value).toBe("😀");
 	});
 });
+
+describe("frontmatter YAML scalar types", () => {
+	it.each([
+		["null", null],
+		["Null", null],
+		["NULL", null],
+		["~", null],
+		["0o17", 15],
+	])(
+		"parses unquoted YAML scalar %s with its native type",
+		(scalar, expected) => {
+			const frontmatter = parseFrontmatter(`---\nvalue: ${scalar}\n---\nBody`);
+			expect(frontmatter.value).toBe(expected);
+		},
+	);
+
+	it.each(["null", "~", "0o17"])(
+		"keeps quoted YAML scalar %s as a string",
+		(scalar) => {
+			const frontmatter = parseFrontmatter(
+				`---\nvalue: ${JSON.stringify(scalar)}\n---\nBody`,
+			);
+			expect(frontmatter.value).toBe(scalar);
+		},
+	);
+});

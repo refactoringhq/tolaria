@@ -82,6 +82,8 @@ describe("updateFrontmatterContent beyond the golden cases", () => {
 
 	it("preserves array shape for empty and one-item inline arrays", () => {
 		expect(parseFrontmatter("---\nitems: []\n---\n").items).toEqual([]);
+		expect(parseFrontmatter("---\nitems: [ ]\n---\n").items).toEqual([]);
+		expect(parseFrontmatter("---\nitems: [  ]\n---\n").items).toEqual([]);
 		expect(parseFrontmatter('---\nitems: ["only item"]\n---\n').items).toEqual([
 			"only item",
 		]);
@@ -107,6 +109,33 @@ describe("updateFrontmatterContent beyond the golden cases", () => {
 		expect(
 			parseFrontmatter('---\nvalues: ["yes", "007", "0x10"]\n---\n').values,
 		).toEqual(["yes", "007", "0x10"]);
+	});
+
+	it.each(["0X10", "0O17"])(
+		"quotes radix-like string %s consistently",
+		(value) => {
+			const written = updateFrontmatterContent("", "v", value);
+			expect(parseFrontmatter(written).v).toBe(value);
+			expect(written).toContain(`v: "${value}"`);
+		},
+	);
+
+	it.each(["0x", "0o", "0X", "0O"])(
+		"does not quote invalid radix-looking string %s",
+		(value) => {
+			expect(updateFrontmatterContent("", "v", value)).toBe(
+				`---\nv: ${value}\n---\n`,
+			);
+		},
+	);
+
+	it("round-trips typed scalar arrays without quoting non-strings", () => {
+		const values: FrontmatterTextValue = [true, 15, null, "null"];
+		const written = updateFrontmatterContent("", "values", values);
+		expect(written).toBe(
+			'---\nvalues:\n  - true\n  - 15\n  - null\n  - "null"\n---\n',
+		);
+		expect(parseFrontmatter(written).values).toEqual(values);
 	});
 
 	it("decodes backslashes in quoted scalars and inline array items", () => {

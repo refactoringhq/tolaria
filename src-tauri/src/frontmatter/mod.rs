@@ -9,7 +9,7 @@ use std::path::Path;
 
 pub(crate) use ops::frontmatter_body;
 pub use ops::{extract_frontmatter_title, update_frontmatter_content};
-pub use yaml::{format_yaml_key, FrontmatterValue};
+pub use yaml::{format_yaml_key, FrontmatterScalar, FrontmatterValue};
 
 fn is_markdown_path(path: &Path) -> bool {
     path.extension()
@@ -126,8 +126,8 @@ mod tests {
             content,
             "aliases",
             Some(FrontmatterValue::List(vec![
-                "A".to_string(),
-                "B".to_string(),
+                FrontmatterScalar::String("A".to_string()),
+                FrontmatterScalar::String("B".to_string()),
             ])),
         )
         .unwrap();

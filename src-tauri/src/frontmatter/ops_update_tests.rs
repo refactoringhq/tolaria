@@ -1,4 +1,4 @@
-use super::{update_frontmatter_content, FrontmatterValue};
+use super::{update_frontmatter_content, FrontmatterScalar, FrontmatterValue};
 
 struct UpdateCase<'a> {
     content: &'a str,
@@ -102,8 +102,8 @@ fn test_update_frontmatter_list_and_delete_paths() {
             content: "---\nStatus: Draft\n---\n# Test\n",
             key: "aliases",
             value: Some(FrontmatterValue::List(vec![
-                "Alias1".to_string(),
-                "Alias2".to_string(),
+                FrontmatterScalar::String("Alias1".to_string()),
+                FrontmatterScalar::String("Alias2".to_string()),
             ])),
             expected_present: &["aliases:", "  - \"Alias1\"", "  - \"Alias2\""],
             expected_absent: &[],
@@ -111,7 +111,9 @@ fn test_update_frontmatter_list_and_delete_paths() {
         UpdateCase {
             content: "---\naliases:\n  - Old1\n  - Old2\nStatus: Draft\n---\n# Test\n",
             key: "aliases",
-            value: Some(FrontmatterValue::List(vec!["New1".to_string()])),
+            value: Some(FrontmatterValue::List(vec![FrontmatterScalar::String(
+                "New1".to_string(),
+            )])),
             expected_present: &["  - \"New1\"", "Status: Draft"],
             expected_absent: &["Old1", "Old2"],
         },

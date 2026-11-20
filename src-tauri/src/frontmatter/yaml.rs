@@ -7,8 +7,28 @@ pub enum FrontmatterValue {
     String(String),
     Number(f64),
     Bool(bool),
-    List(Vec<String>),
+    List(Vec<FrontmatterScalar>),
     Null,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum FrontmatterScalar {
+    String(String),
+    Number(f64),
+    Bool(bool),
+    Null,
+}
+
+impl FrontmatterScalar {
+    fn to_yaml_list_item(&self) -> String {
+        match self {
+            Self::String(item) => YamlText(item).as_list_item(),
+            Self::Number(number) => format!("  - {}", format_yaml_number(*number)),
+            Self::Bool(value) => format!("  - {}", if *value { "true" } else { "false" }),
+            Self::Null => "  - null".to_string(),
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -33,8 +53,15 @@ impl<'a> YamlText<'a> {
     }
 
     fn is_radix_number(self) -> bool {
-        (self.0.starts_with("0x") && self.0[2..].chars().all(|c| c.is_ascii_hexdigit()))
-            || (self.0.starts_with("0o") && self.0[2..].chars().all(|c| matches!(c, '0'..='7')))
+        let Some((prefix, digits)) = self.0.as_bytes().split_first_chunk::<2>() else {
+            return false;
+        };
+        let prefix_matches = match prefix {
+            b"0x" | b"0X" => digits.iter().all(u8::is_ascii_hexdigit),
+            b"0o" | b"0O" => digits.iter().all(|digit| matches!(digit, b'0'..=b'7')),
+            _ => return false,
+        };
+        !digits.is_empty() && prefix_matches
     }
 
     fn is_special_float(self) -> bool {
@@ -177,7 +204,7 @@ impl FrontmatterValue {
             FrontmatterValue::List(items) if items.is_empty() => "[]".to_string(),
             FrontmatterValue::List(items) => items
                 .iter()
-                .map(|item| YamlText(item).as_list_item())
+                .map(FrontmatterScalar::to_yaml_list_item)
                 .collect::<Vec<_>>()
                 .join("\n"),
             FrontmatterValue::Null => "null".to_string(),
@@ -235,6 +262,16 @@ mod tests {
     }
 
     #[test]
+    fn test_to_yaml_value_quotes_only_valid_radix_numbers() {
+        for input in ["0x10", "0X10", "0o17", "0O17"] {
+            assert_string_yaml_value(input, &format!("\"{input}\""));
+        }
+        for input in ["0x", "0X", "0o", "0O"] {
+            assert_string_yaml_value(input, input);
+        }
+    }
+
+    #[test]
     fn test_to_yaml_value_string_plain() {
         assert_string_yaml_value("Hello World", "Hello World");
     }
@@ -264,8 +301,22 @@ mod tests {
 
     #[test]
     fn test_to_yaml_value_list_with_colon() {
-        let v = FrontmatterValue::List(vec!["key: value".to_string()]);
+        let v = FrontmatterValue::List(vec![FrontmatterScalar::String("key: value".to_string())]);
         assert_eq!(v.to_yaml_value(), "  - \"key: value\"");
+    }
+
+    #[test]
+    fn test_to_yaml_value_mixed_scalar_list() {
+        let value = FrontmatterValue::List(vec![
+            FrontmatterScalar::Bool(true),
+            FrontmatterScalar::Number(15.0),
+            FrontmatterScalar::Null,
+            FrontmatterScalar::String("null".to_string()),
+        ]);
+        assert_eq!(
+            value.to_yaml_value(),
+            "  - true\n  - 15\n  - null\n  - \"null\""
+        );
     }
 
     #[test]
@@ -306,13 +357,16 @@ mod tests {
     fn test_format_yaml_field_list_layouts() {
         assert_field_lines(
             "_list_properties_display",
-            FrontmatterValue::List(vec!["Belongs to".to_string()]),
+            FrontmatterValue::List(vec![FrontmatterScalar::String("Belongs to".to_string())]),
             &["_list_properties_display:", "  - \"Belongs to\""],
         );
         assert_field_lines("tags", FrontmatterValue::List(vec![]), &["tags: []"]);
         assert_field_lines(
             "tags",
-            FrontmatterValue::List(vec!["Alpha".to_string(), "Beta".to_string()]),
+            FrontmatterValue::List(vec![
+                FrontmatterScalar::String("Alpha".to_string()),
+                FrontmatterScalar::String("Beta".to_string()),
+            ]),
             &["tags:", "  - \"Alpha\"\n  - \"Beta\""],
         );
     }

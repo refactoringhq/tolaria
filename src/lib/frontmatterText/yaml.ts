@@ -7,7 +7,10 @@ import { assertKey, assertPlainScalar, assertSingleLine } from "./unsafeText";
  */
 
 /** What a property can be set to: the shape the desktop `FrontmatterValue` accepts. */
-export type FrontmatterTextValue = string | number | boolean | string[] | null;
+export type FrontmatterTextScalar = string | number | boolean | null;
+export type FrontmatterTextValue =
+	| FrontmatterTextScalar
+	| FrontmatterTextScalar[];
 
 /** A string value or key as the user typed it, before YAML formatting. */
 type PlainText = string;
@@ -185,9 +188,16 @@ function formatYamlString(text: PlainText): YamlText {
 	return needsQuoting(text) ? quoted(text) : assertPlainScalar(text);
 }
 
-function formatYamlList(items: readonly PlainText[]): YamlText {
+function formatYamlList(items: readonly FrontmatterTextScalar[]): YamlText {
 	if (items.length === 0) return "[]";
-	return items.map((item) => `  - ${quoted(item)}`).join("\n");
+	return items.map((item) => `  - ${formatYamlScalar(item)}`).join("\n");
+}
+
+function formatYamlScalar(value: FrontmatterTextScalar): YamlText {
+	if (value === null) return "null";
+	if (typeof value === "number") return formatYamlNumber(value);
+	if (typeof value === "boolean") return value ? "true" : "false";
+	return quoted(value);
 }
 
 export function toYamlValue(value: FrontmatterTextValue): YamlText {
@@ -198,7 +208,9 @@ export function toYamlValue(value: FrontmatterTextValue): YamlText {
 	return formatYamlString(value);
 }
 
-function isNonEmptyList(value: FrontmatterTextValue): value is string[] {
+function isNonEmptyList(
+	value: FrontmatterTextValue,
+): value is FrontmatterTextScalar[] {
 	return Array.isArray(value) && value.length > 0;
 }
 

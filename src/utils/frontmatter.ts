@@ -1,4 +1,7 @@
-import type { FrontmatterValue } from "../components/Inspector";
+import type {
+	FrontmatterScalar,
+	FrontmatterValue,
+} from "../components/Inspector";
 import { canonicalFrontmatterKey } from "./systemMetadata";
 
 export interface ParsedFrontmatter {
@@ -66,7 +69,9 @@ function isUnicodeScalarValue(codePoint: number): boolean {
 	return codePoint <= 0x10ffff && (codePoint < 0xd800 || codePoint > 0xdfff);
 }
 
-function collapseList(items: FrontmatterText[]): FrontmatterValue {
+function collapseList(
+	items: ParsedFrontmatterScalar[],
+): ParsedFrontmatterValue {
 	return items;
 }
 
@@ -81,8 +86,9 @@ function isInlineArrayLiteral(value: FrontmatterText): boolean {
 }
 
 function parseInlineArray(value: FrontmatterText): ParsedFrontmatterValue {
-	if (value === "[]") return [];
-	const items = splitInlineArrayItems(value.slice(1, -1)).map((item) =>
+	const contents = value.slice(1, -1);
+	if (contents.trim() === "") return [];
+	const items = splitInlineArrayItems(contents).map((item) =>
 		parseInlineArrayItem(item.trim()),
 	);
 	return items;
@@ -98,7 +104,11 @@ function splitInlineArrayItems(value: FrontmatterText): FrontmatterText[] {
 	let start = 0;
 	let quote: '"' | "'" | null = null;
 	for (let index = 0; index < value.length; index += 1) {
-		const scan = scanInlineCharacter(value[index], value[index + 1], quote);
+		const scan = scanInlineCharacter(
+			value.charAt(index),
+			value.charAt(index + 1),
+			quote,
+		);
 		quote = scan.quote;
 		if (scan.skipNext) index += 1;
 		if (scan.separator) {
@@ -182,14 +192,29 @@ function parseBooleanScalar(value: FrontmatterText): boolean | undefined {
 	return undefined;
 }
 
-function parseScalar(value: FrontmatterText): FrontmatterValue {
+function parseScalar(value: FrontmatterText): FrontmatterScalar {
 	const clean = parseQuotedScalar(value);
 	if (isQuotedScalar(value)) return clean;
+	return parseUnquotedScalar(clean, value);
+}
+
+function parseUnquotedScalar(
+	clean: FrontmatterText,
+	original: FrontmatterText,
+): ParsedFrontmatterScalar {
+	if (clean === "~" || /^(null|Null|NULL)$/.test(clean)) return null;
 	const booleanValue = parseBooleanScalar(clean);
 	if (booleanValue !== undefined) return booleanValue;
-	if (/^0x[0-9a-f]+$/i.test(clean)) return Number(clean);
-	if (clean === value && isNumericScalar(clean)) return Number(clean);
+	const radixValue = parseRadixNumber(clean);
+	if (radixValue !== undefined) return radixValue;
+	if (clean === original && isNumericScalar(clean)) return Number(clean);
 	return clean;
+}
+
+function parseRadixNumber(value: FrontmatterText): number | undefined {
+	if (/^0o[0-7]+$/.test(value)) return Number.parseInt(value.slice(2), 8);
+	if (/^0x[0-9a-f]+$/i.test(value)) return Number(value);
+	return undefined;
 }
 
 function parseTextItem(value: FrontmatterText): FrontmatterText {
@@ -249,9 +274,11 @@ export function detectFrontmatterState(
 	return hasValidLine ? "valid" : "invalid";
 }
 
-function parseListItem(line: FrontmatterLine): FrontmatterText | null {
+function parseListItem(
+	line: FrontmatterLine,
+): ParsedFrontmatterScalar | undefined {
 	const match = line.match(/^ {2}- (.*)$/);
-	return match ? parseTextItem(match[1]) : null;
+	return match ? parseScalar(match[1]) : undefined;
 }
 
 function parseKeyValueLine(
@@ -315,8 +342,8 @@ function flushList(
 	result: ParsedFrontmatter,
 	collisionKeys: Map<FrontmatterKey, FrontmatterKey>,
 	currentKey: FrontmatterKey | null,
-	currentList: FrontmatterText[],
-): FrontmatterText[] {
+	currentList: ParsedFrontmatterScalar[],
+): ParsedFrontmatterScalar[] {
 	if (currentKey && currentList.length > 0) {
 		assignFrontmatterValue(
 			result,
@@ -338,11 +365,11 @@ export function parseFrontmatter(
 	const result: ParsedFrontmatter = {};
 	const collisionKeys = new Map<FrontmatterKey, FrontmatterKey>();
 	let currentKey: FrontmatterKey | null = null;
-	let currentList: FrontmatterText[] = [];
+	let currentList: ParsedFrontmatterScalar[] = [];
 
 	for (const line of frontmatterBody.split(/\r?\n/)) {
 		const listItem = parseListItem(line);
-		if (listItem !== null && currentKey) {
+		if (listItem !== undefined && currentKey) {
 			currentList.push(listItem);
 			continue;
 		}
