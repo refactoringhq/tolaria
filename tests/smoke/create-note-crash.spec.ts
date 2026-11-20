@@ -44,7 +44,7 @@ test("create note via sidebar + button does not crash", async ({ page }) => {
 	});
 	await page.waitForTimeout(500);
 
-	await page.locator('button[aria-label="New note"]').first().click();
+	await page.locator('button[aria-label="Create new note"]').first().click();
 	await page.waitForTimeout(2000);
 
 	expect(errors).toHaveLength(0);

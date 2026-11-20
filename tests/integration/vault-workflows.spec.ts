@@ -107,7 +107,7 @@ test("create note saves file to disk with correct slug", async ({ page }) => {
 	const beforeFiles = new Set(fs.readdirSync(tempVaultDir));
 
 	// "Create new note" instantly creates "Untitled note" and opens in editor
-	await page.locator('button[aria-label="New note"]').click();
+	await page.locator('button[aria-label="Create new note"]').click();
 	await expect(
 		noteList(page)
 			.getByText(/Untitled Note \d+/)
@@ -118,19 +118,18 @@ test("create note saves file to disk with correct slug", async ({ page }) => {
 	await page.keyboard.press("Meta+s");
 
 	// Poll for the new timestamp-based file to appear on disk.
+	let createdFiles: string[] = [];
 	await expect(async () => {
-		const afterFiles = fs.readdirSync(tempVaultDir);
-		const createdFiles = afterFiles.filter(
-			(name) => !beforeFiles.has(name) && /^untitled-note-\d+\.md$/.test(name),
-		);
+		createdFiles = fs
+			.readdirSync(tempVaultDir)
+			.filter(
+				(name) =>
+					!beforeFiles.has(name) && /^untitled-note-\d+\.md$/.test(name),
+			);
 		expect(createdFiles).toHaveLength(1);
 	}).toPass({ timeout: 5_000 });
 
-	const createdFile = fs
-		.readdirSync(tempVaultDir)
-		.find(
-			(name) => !beforeFiles.has(name) && /^untitled-note-\d+\.md$/.test(name),
-		);
+	const [createdFile] = createdFiles;
 	expect(createdFile).toBeTruthy();
 	if (!createdFile) throw new Error("Created note file was not found");
 

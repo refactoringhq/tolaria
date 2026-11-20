@@ -90,7 +90,7 @@ async function createBookAndVerifyDefaults(page: Page): Promise<void> {
 		.getByText("Books", { exact: true })
 		.first()
 		.click();
-	await page.locator('[aria-label="New note"]').first().click();
+	await page.locator('[aria-label="Create new note"]').first().click();
 	await expect(page.getByTestId("breadcrumb-filename-trigger")).toContainText(
 		/untitled-book-\d+/i,
 		{ timeout: 5_000 },

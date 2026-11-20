@@ -679,7 +679,6 @@
   "noteList.tooltip.groupBy": "按属性分组",
   "noteList.tooltip.search": "搜索笔记",
   "noteList.tooltip.properties": "显示属性",
-  "noteList.tooltip.newNote": "新建笔记",
   "noteList.tooltip.graphFilters": "筛选关系图",
   "noteList.clearSearch": "清除搜索",
   "noteList.recentSearches": "最近的搜索",

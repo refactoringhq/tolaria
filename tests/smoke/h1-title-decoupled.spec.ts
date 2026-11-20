@@ -104,7 +104,7 @@ async function appendWikilinkQuery(page: Page, query: string) {
 test("creating an untitled draft hides the legacy title section in the editor", async ({
 	page,
 }) => {
-	await page.locator('button[aria-label="New note"]').click();
+	await page.locator('button[aria-label="Create new note"]').click();
 
 	await expect(page.getByRole("textbox").last()).toBeVisible({
 		timeout: 5_000,

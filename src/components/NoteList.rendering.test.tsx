@@ -48,13 +48,13 @@ describe("NoteList rendering", () => {
 		const { onCreateNote } = renderNoteList({
 			selection: { kind: "sectionGroup", type: "Project" },
 		});
-		fireEvent.click(screen.getByRole("button", { name: "New note" }));
+		fireEvent.click(screen.getByRole("button", { name: "Create new note" }));
 		expect(onCreateNote).toHaveBeenCalledWith("Project");
 	});
 
 	it("creates an untyped note from all notes", () => {
 		const { onCreateNote } = renderNoteList();
-		fireEvent.click(screen.getByRole("button", { name: "New note" }));
+		fireEvent.click(screen.getByRole("button", { name: "Create new note" }));
 		expect(onCreateNote).toHaveBeenCalledWith(undefined);
 	});
 
@@ -71,7 +71,7 @@ describe("NoteList rendering", () => {
 			screen.getByRole("heading", { name: "2026 Planning" }),
 		).toBeInTheDocument();
 
-		fireEvent.click(screen.getByRole("button", { name: "New note" }));
+		fireEvent.click(screen.getByRole("button", { name: "Create new note" }));
 
 		expect(onCreateNote).toHaveBeenCalledWith(undefined, {
 			creationPath: "folder_header",
@@ -123,7 +123,7 @@ describe("NoteList rendering", () => {
 			screen.getByRole("button", { name: "Search notes" }),
 		).toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: "New note" }),
+			screen.getByRole("button", { name: "Create new note" }),
 		).toBeInTheDocument();
 	});
 
@@ -139,7 +139,7 @@ describe("NoteList rendering", () => {
 			screen.getByTestId("sort-button-__list__"),
 			screen.getByRole("button", { name: "Search notes" }),
 			screen.getByRole("button", { name: "Show properties" }),
-			screen.getByRole("button", { name: "New note" }),
+			screen.getByRole("button", { name: "Create new note" }),
 		];
 
 		for (const button of buttons) {
@@ -160,7 +160,7 @@ describe("NoteList rendering", () => {
 			expect(button).not.toHaveAttribute("tabindex", "-1");
 		}
 		expect(
-			screen.getByRole("button", { name: "New note" }).parentElement,
+			screen.getByRole("button", { name: "Create new note" }).parentElement,
 		).toHaveClass("gap-1");
 	});
 

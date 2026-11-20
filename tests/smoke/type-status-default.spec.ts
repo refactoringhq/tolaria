@@ -28,7 +28,7 @@ test("type-view creation copies semantic status defaults @smoke", async ({
 			.getByText("Initiatives", { exact: true })
 			.first()
 			.click();
-		await page.locator('[aria-label="New note"]').first().click();
+		await page.locator('[aria-label="Create new note"]').first().click();
 		await expect(page.getByTestId("breadcrumb-filename-trigger")).toContainText(
 			/untitled-initiative-\d+/i,
 		);
