@@ -13,6 +13,11 @@
   min-height: 0;
   flex: 1 1 0;
   overflow: hidden;
+  outline: none;
+}
+
+.graph-canvas:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--ring);
 }
 
 .graph-stage {

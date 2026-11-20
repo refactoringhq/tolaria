@@ -222,6 +222,18 @@ describe('GraphCanvas', () => {
     expect(screen.getByRole('application')).not.toHaveAttribute('data-focused-node')
   })
 
+  it('leaves focus when the editor panel closes while the note stays selected', () => {
+    const { rerender, props } = renderCanvas({ selectedNotePath: ada.path, panelOpen: true })
+    pressStage({ sigmaEvent: 'downNode', node: ada.path, release: { clientX: 10, clientY: 10 } })
+    rerender(<GraphCanvas {...props} panelOpen={false} />)
+    expect(screen.getByRole('application')).not.toHaveAttribute('data-focused-node')
+  })
+
+  it('can take keyboard focus so its shortcuts are reachable with Tab', () => {
+    renderCanvas()
+    expect(screen.getByRole('application')).toHaveAttribute('tabindex', '0')
+  })
+
   it('treats a press that travels as a pan or drag, never a click', () => {
     const { props } = renderCanvas()
     pressStage({ sigmaEvent: 'downNode', node: ada.path, release: { clientX: 80, clientY: 40 } })

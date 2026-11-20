@@ -47,14 +47,19 @@ function useOpenNoteHighlight(graph: Graph, renderer: GraphRenderer | null, sele
   }, [graph, renderer, selectedNotePath, visible])
 }
 
+/** What ends a focus without a click on the canvas: the open note going away or the editor panel closing. */
+function focusEnds(previous: { selected: string | null; panelOpen: boolean }, selected: string | null, panelOpen: boolean): boolean {
+  return (previous.selected !== null && selected === null) || (previous.panelOpen && !panelOpen)
+}
+
 /** The clicked note the graph focuses on; it ends with a background click, Escape, or the panel closing. */
-function useFocusedNode(selectedNotePath: string | null) {
+function useFocusedNode(selectedNotePath: string | null, panelOpen: boolean) {
   const [focused, setFocused] = useState<string | null>(null)
-  const [previousSelection, setPreviousSelection] = useState(selectedNotePath)
+  const [previous, setPrevious] = useState({ selected: selectedNotePath, panelOpen })
   // Adjusted during render (not in an effect), so the focus never outlives the panel by a frame.
-  if (selectedNotePath !== previousSelection) {
-    setPreviousSelection(selectedNotePath)
-    if (!selectedNotePath) setFocused(null)
+  if (previous.selected !== selectedNotePath || previous.panelOpen !== panelOpen) {
+    setPrevious({ selected: selectedNotePath, panelOpen })
+    if (focusEnds(previous, selectedNotePath, panelOpen)) setFocused(null)
   }
   return [focused, setFocused] as const
 }
@@ -93,7 +98,7 @@ export default function GraphCanvas(props: GraphCanvasProps) {
   const { layout, stopAutoFit } = useLiveLayout({ graph, renderer, forces: forcesOf(settings) })
   useGraphSync({ stageRef, graph, visible, typeEntryMap, groups: settings.colorGroups, theme, layout })
   useOpenNoteHighlight(graph, renderer, selectedNotePath, visible)
-  const [focused, setFocused] = useFocusedNode(selectedNotePath)
+  const [focused, setFocused] = useFocusedNode(selectedNotePath, panelOpen)
   const hovered = useHoveredNode(renderer)
   const emphasis = useGraphEmphasis({ graph, hovered, focused, visible })
   const revealed = useMemo(() => (emphasis.focused ? [...emphasis.focused] : [selectedNotePath ?? '']), [emphasis.focused, selectedNotePath])
@@ -118,6 +123,7 @@ export default function GraphCanvas(props: GraphCanvasProps) {
     <div
       className="graph-canvas"
       role="application"
+      tabIndex={0}
       aria-label={translate(locale, 'graph.canvasLabel', { count: visible.nodes.length })}
       data-layout-panel-keep=""
       data-testid="graph-canvas"
