@@ -131,7 +131,9 @@ describe("NoteListHeader title space", () => {
 		document.body.append(rawEditor);
 		rawInput.focus();
 
-		const createButton = screen.getByRole("button", { name: "Create new note" });
+		const createButton = screen.getByRole("button", {
+			name: "Create new note",
+		});
 		fireEvent.mouseDown(createButton);
 		fireEvent.click(createButton);
 		rerender(<NoteListHeader {...baseProps} onCreateNote={latestCreate} />);
