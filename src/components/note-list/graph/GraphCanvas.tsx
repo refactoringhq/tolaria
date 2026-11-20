@@ -47,23 +47,21 @@ function useOpenNoteHighlight(graph: Graph, renderer: GraphRenderer | null, sele
   }, [graph, renderer, selectedNotePath, visible])
 }
 
-/** The panel must stay closed this long to end a focus: opening a note can close and reopen it for a moment. */
+/**
+ * The panel must stay closed (or the note unselected) this long to end a focus: opening another note can
+ * close and reopen the panel, or clear the selection, for a moment.
+ */
 const PANEL_CLOSED_GRACE_MS = 300
 
 /** The clicked note the graph focuses on; it ends with a background click, Escape, or the panel closing. */
 function useFocusedNode(selectedNotePath: string | null, panelOpen: boolean) {
   const [focused, setFocused] = useState<string | null>(null)
-  const [previousSelection, setPreviousSelection] = useState(selectedNotePath)
-  // Adjusted during render (not in an effect), so the focus never outlives the open note by a frame.
-  if (selectedNotePath !== previousSelection) {
-    setPreviousSelection(selectedNotePath)
-    if (!selectedNotePath) setFocused(null)
-  }
+  const panelShowsNote = panelOpen && selectedNotePath !== null
   useEffect(() => {
-    if (panelOpen || focused === null) return
+    if (panelShowsNote || focused === null) return
     const timer = setTimeout(() => setFocused(null), PANEL_CLOSED_GRACE_MS)
     return () => clearTimeout(timer)
-  }, [focused, panelOpen])
+  }, [focused, panelShowsNote])
   return [focused, setFocused] as const
 }
 

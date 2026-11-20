@@ -46,11 +46,22 @@ describe('GraphCanvas interaction', () => {
     expect(props.onBackgroundClick).toHaveBeenCalledTimes(1)
   })
 
-  it('leaves focus when the editor panel closes', () => {
-    const { rerender, props } = renderCanvas({ selectedNotePath: ada.path })
-    pressStage({ sigmaEvent: 'downNode', node: ada.path, release: { clientX: 10, clientY: 10 } })
-    rerender(<GraphCanvas {...props} selectedNotePath={null} />)
-    expect(screen.getByRole('application')).not.toHaveAttribute('data-focused-node')
+  it('leaves focus once no note stays open, but not while another note opens in its place', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      const { rerender, props } = renderCanvas({ selectedNotePath: ada.path, panelOpen: true })
+      pressStage({ sigmaEvent: 'downNode', node: launch.path, release: { clientX: 10, clientY: 10 } })
+      rerender(<GraphCanvas {...props} selectedNotePath={null} />)
+      act(() => vi.advanceTimersByTime(50))
+      rerender(<GraphCanvas {...props} selectedNotePath={launch.path} />)
+      act(() => vi.advanceTimersByTime(1000))
+      expect(screen.getByRole('application')).toHaveAttribute('data-focused-node', launch.path)
+      rerender(<GraphCanvas {...props} selectedNotePath={null} />)
+      act(() => vi.advanceTimersByTime(400))
+      expect(screen.getByRole('application')).not.toHaveAttribute('data-focused-node')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('leaves focus when the editor panel stays closed, but not through a brief close and reopen', () => {
