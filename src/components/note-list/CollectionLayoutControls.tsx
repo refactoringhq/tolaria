@@ -24,6 +24,10 @@ import {
 	GraphFilterMenu,
 	type GraphFilterMenuProps,
 } from "./graph/GraphFilterMenu";
+import {
+	GraphSettingsMenu,
+	type GraphSettingsMenuProps,
+} from "./graph/GraphSettingsMenu";
 
 interface HeaderMenuProps {
 	label: string;
@@ -169,7 +173,8 @@ export interface CalendarHeaderControls {
 export type GraphHeaderControls = Omit<
 	GraphFilterMenuProps,
 	"locale" | "triggerClassName"
->;
+> &
+	Pick<GraphSettingsMenuProps, "onPreview">;
 
 export interface CollectionLayoutHeaderControlsProps {
 	layout: CollectionPresentationType;
@@ -228,6 +233,15 @@ export function CollectionLayoutHeaderControls(
 					{...graph}
 					locale={locale}
 					triggerClassName={triggerClassName}
+				/>
+			)}
+			{controls.includes("graphSettings") && graph && (
+				<GraphSettingsMenu
+					settings={graph.settings}
+					locale={locale}
+					triggerClassName={triggerClassName}
+					onChange={graph.onChange}
+					onPreview={graph.onPreview}
 				/>
 			)}
 		</>

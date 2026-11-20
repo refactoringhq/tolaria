@@ -395,7 +395,7 @@ function NoteListFooter(
 function graphHeaderControls(layout: CollectionLayoutState, typeEntryMap: NoteListLayoutProps['typeEntryMap']): GraphHeaderControls | undefined {
   if (!layout.graphData) return undefined
   const { relationshipKeys, typeKeys } = layout.graphData
-  return { settings: layout.graph, relationshipKeys, typeKeys, typeEntryMap, onChange: layout.changeGraph }
+  return { settings: layout.graph, relationshipKeys, typeKeys, typeEntryMap, onChange: layout.changeGraph, onPreview: layout.previewGraph }
 }
 
 function LayoutHeaderControls({ layout, locale, typeEntryMap }: { layout: CollectionLayoutState; locale: NoteListLayoutProps['locale']; typeEntryMap: NoteListLayoutProps['typeEntryMap'] }) {

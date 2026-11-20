@@ -1,6 +1,7 @@
 import type { GraphSettings } from '../../../collections/collectionTypes'
 import type { VaultEntry } from '../../../types'
 import { resolveEntry } from '../../../utils/wikilink'
+import { matchesGraphQuery, parseGraphQuery } from './graphQuery'
 
 /** Type key for notes without a type, used by the type filter. */
 export const UNTYPED_GRAPH_KEY = ''
@@ -20,6 +21,9 @@ export const MAX_NODE_SIZE = 16
 
 export type GraphEdgeKind = 'relationship' | 'wikilink'
 
+/** Which way the links of a pair point, relative to its (sorted) source and target. */
+export type GraphEdgeDirection = 'forward' | 'backward' | 'both'
+
 /** One unordered pair of notes in the list and everything that links them. */
 export interface GraphPair {
   id: string
@@ -27,6 +31,10 @@ export interface GraphPair {
   target: string
   relationships: string[]
   wikiLink: boolean
+  /** A link goes from `source` to `target`. */
+  forward: boolean
+  /** A link goes from `target` to `source`. */
+  backward: boolean
 }
 
 export interface GraphData {
@@ -50,6 +58,7 @@ export interface GraphEdgeModel {
   target: string
   kind: GraphEdgeKind
   labels: string[]
+  direction: GraphEdgeDirection
 }
 
 export interface VisibleGraph {
@@ -99,13 +108,13 @@ function resolveListTarget({ entry, allEntries, listPaths }: LinkSource, referen
   return resolved.path
 }
 
-function pairFor(collector: PairCollector, left: string, right: string): GraphPair {
-  const [source, target] = left < right ? [left, right] : [right, left]
+function pairFor(collector: PairCollector, from: string, to: string): GraphPair {
+  const [source, target] = from < to ? [from, to] : [to, from]
   const id = `${source}\n${target}`
-  const existing = collector.pairs.get(id)
-  if (existing) return existing
-  const pair: GraphPair = { id, source, target, relationships: [], wikiLink: false }
+  const pair = collector.pairs.get(id) ?? { id, source, target, relationships: [], wikiLink: false, forward: false, backward: false }
   collector.pairs.set(id, pair)
+  if (from === source) pair.forward = true
+  else pair.backward = true
   return pair
 }
 
@@ -152,10 +161,15 @@ export function buildGraphData(entries: VaultEntry[], allEntries: VaultEntry[]):
   }
 }
 
+function pairDirection(pair: GraphPair): GraphEdgeDirection {
+  if (pair.forward && pair.backward) return 'both'
+  return pair.backward ? 'backward' : 'forward'
+}
+
 /** A relationship wins over a wiki link for the same pair; hidden relationship keys fall back to the wiki link. */
 function visibleEdge(pair: GraphPair, settings: GraphSettings): GraphEdgeModel | null {
   const labels = pair.relationships.filter((key) => !settings.hiddenRelationships.includes(key))
-  const base = { id: pair.id, source: pair.source, target: pair.target }
+  const base = { id: pair.id, source: pair.source, target: pair.target, direction: pairDirection(pair) }
   if (labels.length > 0) return { ...base, kind: 'relationship', labels }
   if (pair.wikiLink && settings.showWikiLinks) return { ...base, kind: 'wikilink', labels: [] }
   return null
@@ -179,9 +193,10 @@ function countDegrees(edges: readonly GraphEdgeModel[]): Map<string, number> {
   return degrees
 }
 
-/** Applies the legend filters: hidden types drop their notes, then edges, then (optionally) orphans. */
+/** Applies the legend filters: the search and hidden types drop their notes, then edges, then (optionally) orphans. */
 export function visibleGraph(data: GraphData, settings: GraphSettings): VisibleGraph {
-  const shown = data.entries.filter((entry) => !settings.hiddenTypes.includes(graphTypeKey(entry)))
+  const terms = parseGraphQuery(settings.search)
+  const shown = data.entries.filter((entry) => !settings.hiddenTypes.includes(graphTypeKey(entry)) && matchesGraphQuery(entry, terms))
   const shownPaths = new Set(shown.map((entry) => entry.path))
   const edges: GraphEdgeModel[] = []
   for (const pair of data.pairs) {
@@ -201,15 +216,4 @@ export function visibleGraph(data: GraphData, settings: GraphSettings): VisibleG
 /** True when no two notes of the list are linked at all, before any filter. */
 export function hasNoConnections(data: GraphData): boolean {
   return data.pairs.length === 0
-}
-
-/** Labels are DOM, so only the best-connected notes (plus the open one) carry one at step 1 scale. */
-export const LABEL_BUDGET = 150
-
-export function labelledNodes(nodes: readonly GraphNodeModel[], selectedNotePath: string | null): GraphNodeModel[] {
-  const ranked = [...nodes].sort((left, right) => right.degree - left.degree || left.entry.title.localeCompare(right.entry.title))
-  const labelled = ranked.slice(0, LABEL_BUDGET)
-  const selected = nodes.find((node) => node.id === selectedNotePath)
-  if (selected && !labelled.includes(selected)) labelled.push(selected)
-  return labelled
 }

@@ -29,14 +29,17 @@ vi.mock("../../../lib/telemetry", () => ({ trackEvent }));
 vi.mock("./GraphCanvas", () => ({
 	default: ({
 		visible,
-		showLabels,
+		settings,
 		selectedNotePath,
 		onOpen,
 		onBackgroundClick,
 	}: GraphCanvasProps) => (
 		<div
 			data-testid="graph-canvas-stub"
-			data-labels={String(showLabels)}
+			data-labels={String(settings.showLabels)}
+			data-repel={settings.repelForce}
+			data-arrows={String(settings.showArrows)}
+			data-groups={settings.colorGroups.map((group) => `${group.query}:${group.color}`).join("|")}
 			data-selected={selectedNotePath ?? ""}
 		>
 			{visible.nodes.map((node) => (
@@ -134,6 +137,7 @@ function Harness({ onOpen = vi.fn(), ...overrides }: HarnessProps) {
 								typeKeys: graphData.typeKeys,
 								typeEntryMap: {},
 								onChange: layout.changeGraph,
+								onPreview: layout.previewGraph,
 							}
 						: undefined
 				}
@@ -305,6 +309,70 @@ describe("graph collection layout", () => {
 		);
 		expect(trackEvent).toHaveBeenCalledWith("graph_filter_changed", {
 			filter: "showWikiLinks",
+		});
+	});
+
+	it("previews and saves forces, display, search and color groups from the settings panel", async () => {
+		render(<Harness />);
+		act(() =>
+			window.dispatchEvent(
+				new CustomEvent(SET_COLLECTION_LAYOUT_EVENT, { detail: "graph" }),
+			),
+		);
+		const canvas = await screen.findByTestId("graph-canvas-stub");
+		fireEvent.click(screen.getByTestId("graph-settings-button"));
+		await screen.findByTestId("graph-settings-menu");
+		const lastSaved = () =>
+			(savedLayouts().at(-1) as { presentation: Record<string, unknown> })
+				.presentation;
+
+		fireEvent.keyDown(screen.getByRole("slider", { name: "Repel force" }), {
+			key: "ArrowRight",
+		});
+		await waitFor(() => expect(canvas).toHaveAttribute("data-repel", "10.1"));
+		expect(lastSaved()).toMatchObject({ repelForce: 10.1 });
+		fireEvent.click(screen.getByTestId("graph-forces-restore"));
+		await waitFor(() => expect(canvas).toHaveAttribute("data-repel", "10"));
+		expect(lastSaved()).toMatchObject({ repelForce: 10 });
+		fireEvent.click(screen.getByTestId("graph-setting-arrows"));
+		await waitFor(() => expect(canvas).toHaveAttribute("data-arrows", "true"));
+
+		const saves = savedLayouts().length;
+		fireEvent.change(screen.getByTestId("graph-search-input"), {
+			target: { value: "ada" },
+		});
+		await waitFor(() => expect(nodeTitles()).toEqual(["Ada"]));
+		expect(savedLayouts()).toHaveLength(saves);
+		await waitFor(() => expect(lastSaved()).toMatchObject({ search: "ada" }));
+		fireEvent.change(screen.getByTestId("graph-search-input"), {
+			target: { value: "" },
+		});
+		fireEvent.blur(screen.getByTestId("graph-search-input"));
+		await waitFor(() => expect(lastSaved()).toMatchObject({ search: "" }));
+
+		fireEvent.click(screen.getByTestId("graph-group-add"));
+		fireEvent.click(screen.getByTestId("graph-group-add"));
+		const queries = screen.getAllByTestId("graph-group-query");
+		fireEvent.change(queries[0], { target: { value: "type:Person" } });
+		fireEvent.blur(queries[0]);
+		fireEvent.change(queries[1], { target: { value: "Launch" } });
+		fireEvent.blur(queries[1]);
+		await waitFor(() =>
+			expect(canvas.dataset.groups).toMatch(/^type:Person:\w+\|Launch:\w+$/),
+		);
+		fireEvent.click(screen.getAllByTestId("graph-group-color-purple")[0]);
+		fireEvent.click(screen.getAllByTestId("graph-group-down")[0]);
+		await waitFor(() =>
+			expect(canvas.dataset.groups).toMatch(/^Launch:\w+\|type:Person:purple$/),
+		);
+		fireEvent.click(screen.getAllByTestId("graph-group-delete")[0]);
+		await waitFor(() =>
+			expect(canvas).toHaveAttribute("data-groups", "type:Person:purple"),
+		);
+		expect(lastSaved()).toMatchObject({
+			colorGroups: [
+				expect.objectContaining({ query: "type:Person", color: "purple" }),
+			],
 		});
 	});
 

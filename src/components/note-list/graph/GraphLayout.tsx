@@ -34,7 +34,7 @@ export function GraphLayout({ locale, typeEntryMap, selectedNotePath, onOpen, gr
       <Suspense fallback={null}>
         <GraphCanvas
           visible={visible}
-          showLabels={settings.showLabels}
+          settings={settings}
           typeEntryMap={typeEntryMap}
           selectedNotePath={selectedNotePath ?? null}
           panelOpen={graph.panelOpen}

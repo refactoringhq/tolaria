@@ -3,17 +3,18 @@ import type { VaultEntry } from '../../../types'
 import { getTypeColor } from '../../../utils/typeColors'
 import { NoteTitleIcon } from '../../NoteTitleIcon'
 import { getTypeIcon } from '../../note-item/typeIcon'
-import { type GraphNodeModel, labelledNodes } from './graphModel'
+import { chipMap, type ChipState, labelOrder, markEmphasis, type PlaceSource, placeFrame } from './graphLabelFrame'
+import { forcedLabels, LABEL_DOM_LIMIT, type LabelEmphasis, labelledNodes, rankLabels } from './graphLabelRanking'
+import type { GraphNodeModel } from './graphModel'
 import type { GraphRenderer } from './graphRenderer'
-
-const LABEL_GAP_PX = 5
-const LABEL_HEIGHT_PX = 18
 
 interface GraphLabelsProps {
   renderer: GraphRenderer
   nodes: GraphNodeModel[]
   typeEntryMap: Record<string, VaultEntry>
   selectedNotePath: string | null
+  emphasis: LabelEmphasis
+  textFadeThreshold: number
 }
 
 interface TypeGlyph {
@@ -33,82 +34,47 @@ const LabelIcon = memo(function LabelIcon({ icon, glyph }: { icon: string | null
   return <Icon width={12} height={12} className="graph-label__icon" style={{ color }} data-testid="graph-label-icon" />
 })
 
-interface LabelBox {
-  left: number
-  top: number
-  right: number
-  bottom: number
-}
-
-/** Label text never changes after mount, so each chip is measured once (kept in its dataset), not every frame. */
-function labelWidth(label: HTMLElement): number {
-  const known = Number(label.dataset.width)
-  if (label.dataset.width !== undefined && Number.isFinite(known)) return known
-  const width = label.offsetWidth
-  label.dataset.width = String(width)
-  return width
-}
-
-function overlaps(left: LabelBox, right: LabelBox): boolean {
-  return left.left < right.right && right.left < left.right && left.top < right.bottom && right.top < left.bottom
-}
-
-/** Where a node's chip goes: centred under the node, clear of its rendered radius at the current zoom. */
-function labelBox(renderer: GraphRenderer, node: string | undefined, width: number): LabelBox | null {
-  const graph = renderer.getGraph()
-  const display = node && graph.hasNode(node) ? renderer.getNodeDisplayData(node) : undefined
-  if (!node || !display) return null
-  const point = renderer.graphToViewport(graph.getNodeAttributes(node) as { x: number; y: number })
-  const zoomScale = renderer.getSetting('zoomToSizeRatioFunction')(renderer.getCamera().ratio)
-  const top = point.y + display.size / zoomScale + LABEL_GAP_PX
-  return { left: point.x - width / 2, top, right: point.x + width / 2, bottom: top + LABEL_HEIGHT_PX }
-}
-
-/** The open note's chip first, then by rank; a chip that would cover an earlier one stays hidden this frame. */
-function orderedLabels(container: HTMLElement): HTMLElement[] {
-  const labels = [...container.children].filter((child): child is HTMLElement => child instanceof HTMLElement)
-  return [...labels.filter((label) => label.dataset.selected === 'true'), ...labels.filter((label) => label.dataset.selected !== 'true')]
-}
-
-function placeLabels(renderer: GraphRenderer, container: HTMLElement) {
-  const placed: LabelBox[] = []
-  for (const label of orderedLabels(container)) {
-    const box = labelBox(renderer, label.dataset.node, labelWidth(label))
-    const visible = box !== null && !placed.some((other) => overlaps(other, box))
-    label.style.visibility = visible ? 'visible' : 'hidden'
-    if (!box || !visible) continue
-    placed.push(box)
-    label.style.transform = `translate(${box.left}px, ${box.top}px)`
-  }
-}
-
 /**
- * Title chips under the nodes, kept in place after every sigma frame by moving the DOM directly
- * (no React render per frame). The layer ignores the pointer so wheel zoom and drag reach the canvas.
+ * Title chips under the nodes, placed after every sigma frame by moving the DOM directly (no React render
+ * per frame). Labels fade out as the camera zooms out past the threshold, except the hovered, open and
+ * focused notes. The layer ignores the pointer so wheel zoom and drag reach the canvas.
  */
-export function GraphLabels({ renderer, nodes, typeEntryMap, selectedNotePath }: GraphLabelsProps) {
+export function GraphLabels({ renderer, nodes, typeEntryMap, selectedNotePath, emphasis, textFadeThreshold }: GraphLabelsProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const labelled = useMemo(() => labelledNodes(nodes, selectedNotePath), [nodes, selectedNotePath])
+  const writtenRef = useRef(new WeakMap<HTMLElement, ChipState | null>())
+  const ranked = useMemo(() => rankLabels(nodes), [nodes])
+  const forced = useMemo(() => forcedLabels(emphasis, selectedNotePath), [emphasis, selectedNotePath])
+  const forcedKey = ranked.length > LABEL_DOM_LIMIT ? forced.join('\n') : ''
+  // Past the DOM limit the chip list follows the forced notes; below it, hovering never re-renders the chips.
+  const labelled = useMemo(() => labelledNodes(ranked, new Set(forcedKey.split('\n'))), [ranked, forcedKey])
 
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
-    const place = () => placeLabels(renderer, container)
+    const chips = chipMap(container)
+    const source: PlaceSource = { renderer, chips, written: writtenRef.current, order: labelOrder(ranked, forced), forced: new Set(forced), threshold: textFadeThreshold }
+    markEmphasis(chips, emphasis)
+    const place = () => placeFrame(source)
     place()
     renderer.on('afterRender', place)
     return () => {
       renderer.off('afterRender', place)
     }
-  }, [labelled, renderer])
+  }, [emphasis, forced, labelled, ranked, renderer, textFadeThreshold])
+
+  // Hover and focus changes re-place the chips without re-rendering a thousand of them.
+  const chips = useMemo(() => labelled.map(({ id, entry }) => (
+    <div key={id} className="graph-label" data-node={id} data-selected={id === selectedNotePath ? 'true' : undefined} data-testid="graph-label">
+      <span className="graph-label__chip">
+        <LabelIcon icon={entry.icon} glyph={typeGlyph(entry, typeEntryMap)} />
+        <span className="graph-label__title">{entry.title}</span>
+      </span>
+    </div>
+  )), [labelled, selectedNotePath, typeEntryMap])
 
   return (
     <div ref={containerRef} className="graph-labels" aria-hidden="true" data-testid="graph-labels">
-      {labelled.map(({ id, entry }) => (
-        <div key={id} className="graph-label" data-node={id} data-selected={id === selectedNotePath ? 'true' : undefined} data-testid="graph-label">
-          <LabelIcon icon={entry.icon} glyph={typeGlyph(entry, typeEntryMap)} />
-          <span className="graph-label__title">{entry.title}</span>
-        </div>
-      ))}
+      {chips}
     </div>
   )
 }

@@ -147,12 +147,17 @@ interface LayoutActionSource {
 
 function useLayoutActions({ source, key, current, setOverrides, resolvedDateProperty }: LayoutActionSource) {
   const enabled = supportsLayouts(source.selection)
+  const show = useCallback((next: LayoutSettings) => {
+    setOverrides((overrides) => new Map(overrides).set(key, next))
+  }, [key, setOverrides])
+  const save = useCallback((next: LayoutSettings) => {
+    show(next)
+    persistLayoutSettings(source, next)
+  }, [show, source])
   const update = useCallback((patch: Partial<LayoutSettings>) => {
     const next = { ...current, ...patch }
-    if (sameLayoutSettings(current, next)) return
-    setOverrides((overrides) => new Map(overrides).set(key, next))
-    persistLayoutSettings(source, next)
-  }, [current, key, setOverrides, source])
+    if (!sameLayoutSettings(current, next)) save(next)
+  }, [current, save])
   const changeLayout = useCallback((layout: CollectionPresentationType) => {
     if (layout === current.layout) return
     update(layoutPatch(layout, current, resolvedDateProperty))
@@ -167,10 +172,12 @@ function useLayoutActions({ source, key, current, setOverrides, resolvedDateProp
     toggleColumnCollapsed: (group: string) => update({ collapsedColumns: toggledColumnList(current.collapsedColumns, group, COLLAPSE_ACTIONS) }),
     toggleColumnHidden: (group: string) => update({ hiddenColumns: toggledColumnList(current.hiddenColumns, group, HIDE_ACTIONS) }),
     changeCalendar: (patch: Partial<CalendarSettings>) => update({ calendar: pinnedCalendar(current.calendar, resolvedDateProperty, patch) }),
+    // Saved even when a preview already shows the same values (a slider is previewed while dragged, saved on release).
     changeGraph: (patch: Partial<GraphSettings>) => {
-      update({ graph: { ...current.graph, ...patch } })
+      save({ ...current, graph: { ...current.graph, ...patch } })
       trackEvent('graph_filter_changed', { filter: Object.keys(patch).join(',') })
     },
+    previewGraph: (patch: Partial<GraphSettings>) => show({ ...current, graph: { ...current.graph, ...patch } }),
   }
 }
 

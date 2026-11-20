@@ -51,3 +51,33 @@ What step 1 built, and where it refines the decisions above (see ADR 0304):
 - **Edges.** The vault adds a synthetic `Type` relationship for every typed note; the graph skips it because the node color already shows the type. `belongsTo` / `relatedTo` only add edges when the `relationships` map lacks their keys, so the same link is not counted twice. A pair whose relationship keys are all hidden by the filter falls back to its wiki link.
 - **Release gate.** Graph only shows on the alpha channel or with `ff_graph_layout=true`; a saved `type: graph` config opens as List while the flag is off and is not rewritten.
 - **Not yet measured.** The 30,000-note / 100,000-edge acceptance measurements belong to step 3. Step 1 only claims that the demo vault and a list of about 1,000 notes render without freezing.
+
+## Obsidian-level interaction (TOL-394)
+
+TOL-394 sets the Obsidian-parity bar for drag, hover, neighbour focus, zoom-aware labels, forces, display, search and color groups (see ADR 0306). It covers the hover highlight, zoom-based label fade and drag-and-settle that step 2 (TOL-386) also lists; TOL-386 keeps its benchmark, transitions, keyboard and reduced-motion points.
+
+### Reference behaviour (Obsidian graph view)
+
+Obsidian's graph view ([help](https://obsidian.md/help/Plugins/Graph%2Bview)) is a live physics graph: dragging a node pulls its neighbours and the rest of the graph reflows, and the node rejoins the simulation on release. Hovering a node highlights it and its links and dims the rest; the hovered title grows. Labels disappear below a zoom level set by the Text fade threshold. The settings pane has Filters (search, tags, attachments, existing files only, orphans), Groups (query + color, first match wins), Display (arrows, text fade threshold, node size, link thickness, animate) and Forces (center, repel, link force, link distance). Obsidian renders with PixiJS on WebGL and originally simulated with d3-force.
+
+### Live layout choice
+
+The layout is a d3-force simulation (link + Barnes-Hut many-body + a gentle pull to the origin) in a module worker, ticked one frame at a time and stopped once its energy falls below a rest threshold. A fresh layout fast-forwards several ticks per frame until it is roughly in shape; interaction runs one tick per frame. Dragging holds the node at the pointer (`fx`/`fy`) and keeps the energy at 0.3 so the graph follows; on release the node rejoins the simulation (not pinned) and the graph settles within about two seconds (the unit tests assert fewer than 150 ticks). ForceAtlas2 run continuously was the alternative; it has no held-node or target-energy model, so d3-force won. sigma's automatic rescale is off, so the graph can grow while settling without the view jumping and a dragged node stays under the pointer.
+
+### Label rule
+
+Every visible note is eligible for a label (up to 2,000 chips; past that the best-connected plus the forced ones). Priority is hovered > open > focused neighbourhood > link count > title. Each frame, labels are placed greedily on a screen grid: an unforced label needs room, so it may not cover another label or another note's circle (the dense centre stays unlabelled until zoom spreads it out). Opacity follows the camera: full from zoom 0.5 × 2^threshold, gone one halving below it. Hovered, open and focused labels show at every zoom.
+
+### Emphasis
+
+Hover and focus share one rule: the note and its direct neighbours, and the links among them, stay at full strength; other notes fade to 12 % and other links to 6 %, eased over 200 ms (instant with reduced motion). Fading reads better than hiding because the surrounding structure stays visible for orientation while the neighbourhood is unmistakable. Hover wins over focus. The hovered note blends to the accent color and grows slightly; its label grows 1.4× through a CSS transition.
+
+### Later (not built in TOL-394)
+
+- Local graph of the open note with a depth slider and incoming / outgoing / neighbour-to-neighbour toggles, possibly in the right panel.
+- Animate / time-lapse: notes appear in creation order.
+- Pinning a dragged node (modifier or context menu) with a pin marker.
+- Right-click context menu on a node (open in new tab or window, reveal in list, pin).
+- Cmd-hover preview of the note.
+- Keyboard pan with the arrow keys (Shift for faster).
+- Tags and attachments as nodes and unresolved links as ghost nodes are Obsidian-specific and skipped until Tolaria has the same concepts.

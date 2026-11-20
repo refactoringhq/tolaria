@@ -64,6 +64,26 @@ export interface GraphSettings {
 	/** Notes without a visible edge. */
 	showOrphans: boolean;
 	showLabels: boolean;
+	/** Live filter: only notes matching this query stay on the graph. */
+	search: string;
+	/** Query → color rules; the first matching group colors a note, type colors otherwise. */
+	colorGroups: GraphColorGroup[];
+	/** Zoom (as a power of two around the default) below which labels fade out. */
+	textFadeThreshold: number;
+	nodeSizeScale: number;
+	linkThickness: number;
+	showArrows: boolean;
+	centerForce: number;
+	repelForce: number;
+	linkForce: number;
+	linkDistance: number;
+}
+
+/** A graph color group: notes matching `query` take the accent color `color` (a palette key). */
+export interface GraphColorGroup {
+	id: string;
+	query: string;
+	color: string;
 }
 
 export interface GraphCollectionPresentationConfig extends GraphSettings {

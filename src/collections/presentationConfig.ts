@@ -8,10 +8,10 @@ import {
 	COLLECTION_PRESENTATION_LIST,
 	type CollectionPresentationConfig,
 	type GraphCollectionPresentationConfig,
-	type GraphSettings,
 	type KanbanCollectionPresentationConfig,
 	type ListCollectionPresentationConfig,
 } from "./collectionTypes";
+import { graphSettingsFrom } from "./graphSettings";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -101,37 +101,11 @@ function calendarPresentation(
 	};
 }
 
-export const DEFAULT_GRAPH_SETTINGS: GraphSettings = {
-	showWikiLinks: true,
-	hiddenRelationships: [],
-	hiddenTypes: [],
-	showOrphans: true,
-	showLabels: true,
-};
-
-const GRAPH_SETTING_KEYS = [
-	"showWikiLinks",
-	"hiddenRelationships",
-	"hiddenTypes",
-	"showOrphans",
-	"showLabels",
-] as const;
-
-/** True when a stored presentation carries any graph filter, even while it shows another layout. */
-export function hasGraphSettings(source: UnknownRecord): boolean {
-	return GRAPH_SETTING_KEYS.some((key) => key in source);
-}
-
-/** Reads graph filters defensively: anything unexpected falls back to the default. */
-export function graphSettingsFrom(source: UnknownRecord): GraphSettings {
-	return {
-		showWikiLinks: source.showWikiLinks !== false,
-		hiddenRelationships: stringArray(source.hiddenRelationships),
-		hiddenTypes: stringArray(source.hiddenTypes),
-		showOrphans: source.showOrphans !== false,
-		showLabels: source.showLabels !== false,
-	};
-}
+export {
+	DEFAULT_GRAPH_SETTINGS,
+	graphSettingsFrom,
+	hasGraphSettings,
+} from "./graphSettings";
 
 function graphPresentation(
 	source: UnknownRecord,

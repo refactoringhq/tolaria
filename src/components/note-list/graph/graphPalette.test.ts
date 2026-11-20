@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { makeEntry } from '../../../test-utils/noteListTestUtils'
-import { readGraphPalette, rgbChannels, useThemeSignature, withAlpha } from './graphPalette'
+import { mixColors, readGraphPalette, rgbChannels, useThemeSignature, withAlpha } from './graphPalette'
 
 describe('graphPalette', () => {
   it('turns resolved colors into rgba strings WebGL can read', () => {
@@ -21,6 +21,35 @@ describe('graphPalette', () => {
     expect(host.children).toHaveLength(1)
     palette.dispose()
     expect(host.children).toHaveLength(0)
+    host.remove()
+  })
+
+  it('blends two colors for the hover accent', () => {
+    expect(mixColors('rgb(0, 0, 0)', 'rgb(200, 100, 50)', 0)).toBe('rgba(0, 0, 0, 1)')
+    expect(mixColors('rgb(0, 0, 0)', 'rgb(200, 100, 50)', 0.5)).toBe('rgba(100, 50, 25, 1)')
+    expect(mixColors('rgba(0, 0, 0, 0.4)', 'rgb(200, 100, 50)', 1)).toBe('rgba(200, 100, 50, 1)')
+  })
+
+  it('colors a note by its first matching group, else by its type', () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const groups = [
+      { id: 'blank', query: ' ', color: '#00ff00' },
+      { id: 'people', query: 'type:Person', color: '#ff0000' },
+      { id: 'ada', query: 'Ada', color: '#0000ff' },
+    ]
+    const palette = readGraphPalette(host, {}, groups)
+    const plain = readGraphPalette(host, {})
+    const ada = makeEntry({ title: 'Ada', isA: 'Person' })
+    const grace = makeEntry({ title: 'Grace', isA: 'Person', path: '/grace.md' })
+    const project = makeEntry({ title: 'Ada Project', isA: 'Project', path: '/p.md' })
+    expect(palette.nodeColor(ada)).toBe('rgba(255, 0, 0, 1)')
+    expect(palette.nodeColor(grace)).toBe('rgba(255, 0, 0, 1)')
+    expect(palette.nodeColor(project)).toBe('rgba(0, 0, 255, 1)')
+    expect(palette.nodeColor(makeEntry({ title: 'Other', isA: 'Project', path: '/o.md' }))).toBe(plain.nodeColor(project))
+    expect(palette.accent).toMatch(/, 1\)$/)
+    palette.dispose()
+    plain.dispose()
     host.remove()
   })
 
