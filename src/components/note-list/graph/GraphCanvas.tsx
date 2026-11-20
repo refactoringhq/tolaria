@@ -91,22 +91,21 @@ function GraphOverlays({ renderer, visible, settings, typeEntryMap, selectedNote
   )
 }
 
-/** The WebGL graph: sigma draws nodes and edges, React draws labels and the zoom controls on top. */
-export default function GraphCanvas(props: GraphCanvasProps) {
-  const { visible, settings, typeEntryMap, selectedNotePath, panelOpen, locale, onOpen, onBackgroundClick } = props
-  const stageRef = useRef<HTMLDivElement>(null)
-  const [graph] = useState(createGraphModel)
-  const theme = useThemeSignature()
-  const renderer = useGraphRenderer(stageRef, graph, theme, displayOf(settings))
-  const { layout, stopAutoFit } = useLiveLayout({ graph, renderer, forces: forcesOf(settings) })
-  useGraphSync({ stageRef, graph, visible, typeEntryMap, groups: settings.colorGroups, theme, layout })
-  useOpenNoteHighlight(graph, renderer, selectedNotePath, visible)
+interface FocusSource {
+  graph: Graph
+  renderer: GraphRenderer | null
+  visible: VisibleGraph
+  selectedNotePath: string | null
+  panelOpen: boolean
+  onOpen: GraphCanvasProps['onOpen']
+  onBackgroundClick: () => void
+}
+
+/** Hover and click focus: a node click opens and focuses the note; a background click or Escape leaves focus. */
+function useGraphFocus({ graph, renderer, visible, selectedNotePath, panelOpen, onOpen, onBackgroundClick }: FocusSource) {
   const [focused, setFocused] = useFocusedNode(selectedNotePath, panelOpen)
   const hovered = useHoveredNode(renderer)
   const emphasis = useGraphEmphasis({ graph, hovered, focused, visible })
-  const revealed = useMemo(() => (emphasis.focused ? [...emphasis.focused] : [selectedNotePath ?? '']), [emphasis.focused, selectedNotePath])
-  useRevealOpenNote({ renderer, stageRef, revealed, panelOpen })
-  useNodeDrag(renderer, layout, stopAutoFit)
   const leaveFocus = () => {
     setFocused(null)
     onBackgroundClick()
@@ -122,6 +121,23 @@ export default function GraphCanvas(props: GraphCanvasProps) {
     },
     onBackgroundClick: leaveFocus,
   })
+  return { focused, emphasis, clicks, leaveFocus }
+}
+
+/** The WebGL graph: sigma draws nodes and edges, React draws labels and the zoom controls on top. */
+export default function GraphCanvas(props: GraphCanvasProps) {
+  const { visible, settings, typeEntryMap, selectedNotePath, panelOpen, locale } = props
+  const stageRef = useRef<HTMLDivElement>(null)
+  const [graph] = useState(createGraphModel)
+  const theme = useThemeSignature()
+  const renderer = useGraphRenderer(stageRef, graph, theme, displayOf(settings))
+  const { layout, stopAutoFit } = useLiveLayout({ graph, renderer, forces: forcesOf(settings) })
+  useGraphSync({ stageRef, graph, visible, typeEntryMap, groups: settings.colorGroups, theme, layout })
+  useOpenNoteHighlight(graph, renderer, selectedNotePath, visible)
+  const { focused, emphasis, clicks, leaveFocus } = useGraphFocus({ ...props, graph, renderer })
+  const revealed = useMemo(() => (emphasis.focused ? [...emphasis.focused] : [selectedNotePath ?? '']), [emphasis.focused, selectedNotePath])
+  useRevealOpenNote({ renderer, stageRef, revealed, panelOpen })
+  useNodeDrag(renderer, layout, stopAutoFit)
   return (
     <div
       className="graph-canvas"
