@@ -120,8 +120,7 @@ function useItemContext(props: CalendarBoardProps): CalendarItemContext {
 		calendar,
 	} = props;
 	const showIcons = calendar.settings.showIcons;
-	const showProperties =
-		calendar.settings.view === "month" || calendar.settings.view === "week";
+	const showProperties = props.showProperties !== false;
 	const onOpen = useLatestCallback(props.onOpen);
 	return useMemo(
 		() => ({

@@ -13,9 +13,14 @@ import type { NoteActionsConfig } from "../../hooks/useNoteActions";
 import { useNoteActions } from "../../hooks/useNoteActions";
 import { updateFrontmatterContent } from "../../lib/frontmatterText";
 import { makeEntry } from "../../test-utils/noteListTestUtils";
-import type { SidebarSelection, VaultEntry, ViewFile } from "../../types";
+import type { VaultEntry, ViewFile } from "../../types";
 import { CollectionLayoutBody } from "./CollectionLayoutBody";
 import { CollectionLayoutHeaderControls } from "./CollectionLayoutControls";
+import {
+	collectionLayoutAlpha as alpha,
+	chooseLayoutMenuOption as chooseMenuOption,
+	makeSavedCollectionView as savedView,
+} from "./collectionLayoutTestUtils";
 import { layoutPropertyPicker } from "./kanbanCardFieldsPicker";
 import {
 	type CollectionLayoutSource,
@@ -75,13 +80,6 @@ type HarnessProps = Partial<CollectionLayoutSource> & {
 	onMove?: (entry: VaultEntry, property: string, value: string | null) => void;
 	onOpen?: (entry: VaultEntry) => void;
 };
-
-const alpha = makeEntry({
-	path: "/vault/a.md",
-	title: "Alpha",
-	status: "Doing",
-	properties: { owner: "Ada", priority: "High" },
-});
 
 function Harness({
 	onMove = vi.fn(),
@@ -156,30 +154,77 @@ function Harness({
 	);
 }
 
-async function chooseMenuOption(triggerTestId: string, optionTestId: string) {
-	const trigger = screen.getAllByTestId(triggerTestId).at(-1);
-	if (!trigger) throw new Error(`Missing ${triggerTestId}`);
-	act(() => {
-		trigger.focus();
-		fireEvent.keyDown(trigger, { key: "ArrowDown" });
+const savedColumnSettings = {
+	type: "kanban",
+	groupBy: "status",
+	columnOrder: [],
+	properties: [],
+	showProperties: true,
+	collapsedColumns: ["Done", "Doing"],
+	hiddenColumns: [""],
+};
+
+async function saveColumnSettings() {
+	invoke.mockResolvedValueOnce({
+		"builtin:all": {
+			type: "kanban",
+			groupBy: "status",
+			collapsedColumns: ["Done"],
+		},
 	});
-	fireEvent.click(await screen.findByTestId(optionTestId));
+	const first = render(<Harness />);
+	await waitFor(() =>
+		expect(screen.getByTestId("kanban-board")).toHaveAttribute(
+			"data-collapsed-columns",
+			'["Done"]',
+		),
+	);
+	fireEvent.click(screen.getByText("toggle Doing collapsed"));
+	fireEvent.click(screen.getByText("toggle No value hidden"));
+	expect(trackEvent).toHaveBeenCalledWith("kanban_column_visibility_changed", {
+		action: "collapse",
+	});
+	expect(trackEvent).toHaveBeenCalledWith("kanban_column_visibility_changed", {
+		action: "hide",
+	});
+	expect(invoke).toHaveBeenLastCalledWith("save_collection_layout_cmd", {
+		vaultPath: "/vault",
+		collection: "builtin:all",
+		presentation: savedColumnSettings,
+	});
+	first.unmount();
+	return savedColumnSettings;
 }
 
-function savedView(
-	presentation: ViewFile["definition"]["presentation"],
-): ViewFile {
-	return {
-		filename: "active-projects.yml",
-		definition: {
-			name: "Active Projects",
-			icon: null,
-			color: null,
-			sort: "modified",
-			listPropertiesDisplay: ["priority"],
-			filters: { all: [] },
-			presentation,
+function createUpdatingView() {
+	const view = savedView({
+		type: "kanban",
+		groupBy: "status",
+		properties: ["owner"],
+		columnOrder: ["Done", "Doing"],
+		collapsedColumns: ["Done"],
+		hiddenColumns: [""],
+	});
+	let current = view;
+	const update = vi.fn(
+		(_filename: string, patch: Partial<ViewFile["definition"]>) => {
+			current = {
+				...current,
+				definition: { ...current.definition, ...patch },
+			};
 		},
+	);
+	return {
+		get current() {
+			return current;
+		},
+		update,
+		props: () => ({
+			selection: { kind: "view" as const, filename: view.filename },
+			presentation: presentationFromViewDefinition(current.definition),
+			views: [current],
+			onUpdateViewDefinition: update,
+		}),
 	};
 }
 
@@ -257,6 +302,7 @@ describe("collection layouts", () => {
 					groupBy: "priority",
 					columnOrder: [],
 					properties: ["owner"],
+					showProperties: true,
 					collapsedColumns: [],
 					hiddenColumns: [],
 				},
@@ -265,47 +311,7 @@ describe("collection layouts", () => {
 	});
 
 	it("saves collapsed and hidden columns in the vault layout file and restores them on reopen", async () => {
-		invoke.mockResolvedValueOnce({
-			"builtin:all": {
-				type: "kanban",
-				groupBy: "status",
-				collapsedColumns: ["Done"],
-			},
-		});
-		const first = render(<Harness />);
-		await waitFor(() =>
-			expect(screen.getByTestId("kanban-board")).toHaveAttribute(
-				"data-collapsed-columns",
-				'["Done"]',
-			),
-		);
-
-		fireEvent.click(screen.getByText("toggle Doing collapsed"));
-		fireEvent.click(screen.getByText("toggle No value hidden"));
-		expect(trackEvent).toHaveBeenCalledWith(
-			"kanban_column_visibility_changed",
-			{ action: "collapse" },
-		);
-		expect(trackEvent).toHaveBeenCalledWith(
-			"kanban_column_visibility_changed",
-			{ action: "hide" },
-		);
-
-		const saved = {
-			type: "kanban",
-			groupBy: "status",
-			columnOrder: [],
-			properties: [],
-			collapsedColumns: ["Done", "Doing"],
-			hiddenColumns: [""],
-		};
-		expect(invoke).toHaveBeenLastCalledWith("save_collection_layout_cmd", {
-			vaultPath: "/vault",
-			collection: "builtin:all",
-			presentation: saved,
-		});
-		first.unmount();
-
+		const saved = await saveColumnSettings();
 		invoke.mockResolvedValueOnce({ "builtin:all": saved });
 		render(<Harness />);
 		await waitFor(() =>
@@ -330,37 +336,10 @@ describe("collection layouts", () => {
 	});
 
 	it("preserves Kanban View settings across repeated List and Kanban switches", async () => {
-		const view = savedView({
-			type: "kanban",
-			groupBy: "status",
-			properties: ["owner"],
-			columnOrder: ["Done", "Doing"],
-			collapsedColumns: ["Done"],
-			hiddenColumns: [""],
-		});
-		const selection: SidebarSelection = {
-			kind: "view",
-			filename: view.filename,
-		};
-		let currentView = view;
-		const updateView = vi.fn(
-			(_filename: string, patch: Partial<ViewFile["definition"]>) => {
-				currentView = {
-					...currentView,
-					definition: { ...currentView.definition, ...patch },
-				};
-			},
-		);
-		const viewProps = () => ({
-			selection,
-			presentation: presentationFromViewDefinition(currentView.definition),
-			views: [currentView],
-			onUpdateViewDefinition: updateView,
-		});
-
-		const first = render(<Harness {...viewProps()} />);
+		const state = createUpdatingView();
+		const first = render(<Harness {...state.props()} />);
 		await chooseMenuOption("layout-menu-button", "layout-option-list");
-		expect(currentView.definition.presentation).toEqual(
+		expect(state.current.definition.presentation).toEqual(
 			expect.objectContaining({
 				type: "list",
 				properties: ["priority"],
@@ -376,13 +355,13 @@ describe("collection layouts", () => {
 		first.unmount();
 
 		for (let cycle = 0; cycle < 2; cycle += 1) {
-			const mount = render(<Harness {...viewProps()} />);
+			const mount = render(<Harness {...state.props()} />);
 			await chooseMenuOption("layout-menu-button", "layout-option-kanban");
 			expect(screen.getByTestId("group-by-menu-button")).toHaveAccessibleName(
 				"Group by property",
 			);
 			expect(screen.getByTestId("card-fields")).toHaveTextContent("owner");
-			expect(currentView.definition.presentation).toEqual(
+			expect(state.current.definition.presentation).toEqual(
 				expect.objectContaining({
 					type: "kanban",
 					groupBy: "status",

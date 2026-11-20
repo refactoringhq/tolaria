@@ -30,10 +30,8 @@ import type { SortDirection, SortOption } from "../../utils/noteListHelpers";
 import { isMac, MACOS_TRAFFIC_LIGHT_SAFE_PADDING } from "../../utils/platform";
 import { GitRepositorySelect } from "../GitRepositorySelect";
 import { SortDropdown } from "../SortDropdown";
-import {
-	ListPropertiesPopover,
-	type ListPropertiesPopoverProps,
-} from "./ListPropertiesPopover";
+import type { ListPropertiesPopoverProps } from "./ListPropertiesPopover";
+import { NoteListPropertyActions } from "./NoteListPropertyActions";
 
 /** One treatment for every note-list header icon button: a 24px ghost square with the same hover, open and focus fill. */
 export const NOTE_LIST_ACTION_BUTTON_CLASSNAME = `${TOUCH_TARGET_CLASSNAME} !h-6 !w-6 !min-w-0 !rounded-md !p-0 !text-muted-foreground hover:!bg-accent hover:!text-foreground focus-visible:!bg-accent focus-visible:!text-foreground data-[state=open]:!bg-accent data-[state=open]:!text-foreground aria-expanded:!bg-accent aria-expanded:!text-foreground [&_svg]:!size-4`;
@@ -52,6 +50,7 @@ interface NoteListHeaderProps {
 	isSearching: boolean;
 	searchInputRef: React.RefObject<HTMLInputElement | null>;
 	propertyPicker?: ListPropertiesPopoverProps | null;
+	propertyVisibility?: { visible: boolean; onToggle: () => void };
 	/** Layout menus (List/Kanban and layout-specific settings) shown before the sort control. */
 	layoutControls?: React.ReactNode;
 	gitRepositories?: GitRepositoryOption[];
@@ -196,35 +195,59 @@ function RepositorySelectorRow({
 	);
 }
 
-function HeaderActions(
-	options: Pick<
-		NoteListHeaderProps,
-		| "isEntityView"
-		| "listSort"
-		| "listDirection"
-		| "customProperties"
-		| "propertyPicker"
-		| "layoutControls"
-		| "locale"
-		| "onSortChange"
-		| "onCreateNote"
-		| "onToggleSearch"
-	> & {
-		locale: AppLocale;
-	},
-) {
+function LayoutSortActions({ options }: { options: NoteListHeaderProps }) {
 	const {
 		isEntityView,
 		listSort,
 		listDirection,
 		customProperties,
-		propertyPicker,
 		layoutControls,
 		locale,
 		onSortChange,
-		onCreateNote,
-		onToggleSearch,
 	} = options;
+	return (
+		<>
+			{layoutControls}
+			{!isEntityView && (
+				<SortDropdown
+					groupLabel="__list__"
+					current={listSort}
+					direction={listDirection}
+					customProperties={customProperties}
+					locale={locale}
+					iconButtonClassName={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
+					onChange={onSortChange}
+				/>
+			)}
+		</>
+	);
+}
+
+function SearchAction({ options }: { options: NoteListHeaderProps }) {
+	const { locale = "en", onToggleSearch } = options;
+	return (
+		<ActionTooltip
+			copy={{
+				label: translate(locale, "noteList.tooltip.search"),
+				shortcut: isMac() ? "⌘F" : "Ctrl+F",
+			}}
+		>
+			<Button
+				type="button"
+				variant="ghost"
+				size="icon-xs"
+				className={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
+				onClick={onToggleSearch}
+				aria-label={translate(locale, "noteList.tooltip.search")}
+			>
+				<MagnifyingGlass size={16} />
+			</Button>
+		</ActionTooltip>
+	);
+}
+
+function CreateNoteAction({ options }: { options: NoteListHeaderProps }) {
+	const { locale = "en", onCreateNote } = options;
 	const createNoteRef = useRef(onCreateNote);
 	const deferCreateRef = useRef(false);
 	useLayoutEffect(() => {
@@ -245,65 +268,43 @@ function HeaderActions(
 		window.setTimeout(() => createNoteRef.current(), 0);
 	}, []);
 	return (
+		<ActionTooltip
+			copy={{
+				label: translate(locale, "noteList.createNote"),
+				shortcut: getAppCommandShortcutDisplay(APP_COMMAND_IDS.fileNewNote),
+			}}
+		>
+			<Button
+				type="button"
+				variant="ghost"
+				size="icon-xs"
+				className={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
+				onMouseDown={captureCreateOrigin}
+				onClick={handleCreateNote}
+				aria-label={translate(locale, "noteList.createNote")}
+			>
+				<Plus size={16} />
+			</Button>
+		</ActionTooltip>
+	);
+}
+
+function HeaderActions(options: NoteListHeaderProps) {
+	const { propertyPicker, propertyVisibility, locale = "en" } = options;
+	return (
 		<div
 			className="ml-3 flex shrink-0 items-center justify-end gap-1 [html[data-touch-input]_&]:!ml-0 [html[data-touch-input]_&]:!w-full [html[data-touch-input]_&]:!justify-end"
 			style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
 		>
-			{layoutControls}
-			{!isEntityView && (
-				<SortDropdown
-					groupLabel="__list__"
-					current={listSort}
-					direction={listDirection}
-					customProperties={customProperties}
-					locale={locale}
-					iconButtonClassName={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
-					onChange={onSortChange}
-				/>
-			)}
-			<ActionTooltip
-				copy={{
-					label: translate(locale, "noteList.tooltip.search"),
-					shortcut: isMac() ? "⌘F" : "Ctrl+F",
-				}}
-			>
-				<Button
-					type="button"
-					variant="ghost"
-					size="icon-xs"
-					className={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
-					onClick={onToggleSearch}
-					aria-label={translate(locale, "noteList.tooltip.search")}
-				>
-					<MagnifyingGlass size={16} />
-				</Button>
-			</ActionTooltip>
-			{propertyPicker && (
-				<ListPropertiesPopover
-					{...propertyPicker}
-					triggerTitle={translate(locale, "noteList.tooltip.properties")}
-					triggerClassName={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
-					locale={locale}
-				/>
-			)}
-			<ActionTooltip
-				copy={{
-					label: translate(locale, "noteList.createNote"),
-					shortcut: getAppCommandShortcutDisplay(APP_COMMAND_IDS.fileNewNote),
-				}}
-			>
-				<Button
-					type="button"
-					variant="ghost"
-					size="icon-xs"
-					className={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
-					onMouseDown={captureCreateOrigin}
-					onClick={handleCreateNote}
-					aria-label={translate(locale, "noteList.createNote")}
-				>
-					<Plus size={16} />
-				</Button>
-			</ActionTooltip>
+			<LayoutSortActions options={options} />
+			<SearchAction options={options} />
+			<NoteListPropertyActions
+				propertyPicker={propertyPicker}
+				propertyVisibility={propertyVisibility}
+				locale={locale}
+				triggerClassName={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
+			/>
+			<CreateNoteAction options={options} />
 		</div>
 	);
 }
@@ -427,18 +428,9 @@ function HeaderPrimaryRow({
 	const {
 		title,
 		typeDocument,
-		isEntityView,
-		listSort,
-		listDirection,
-		customProperties,
 		sidebarCollapsed,
-		propertyPicker,
-		layoutControls,
 		locale = "en",
-		onSortChange,
-		onCreateNote,
 		onOpenType,
-		onToggleSearch,
 	} = options;
 	const { dragRegionRef } = useDragRegion<HTMLDivElement>();
 
@@ -455,18 +447,7 @@ function HeaderPrimaryRow({
 				locale={locale}
 				onOpenType={onOpenType}
 			/>
-			<HeaderActions
-				isEntityView={isEntityView}
-				listSort={listSort}
-				listDirection={listDirection}
-				customProperties={customProperties}
-				propertyPicker={propertyPicker}
-				layoutControls={layoutControls}
-				locale={locale}
-				onSortChange={onSortChange}
-				onCreateNote={onCreateNote}
-				onToggleSearch={onToggleSearch}
-			/>
+			<HeaderActions {...options} />
 		</div>
 	);
 }
