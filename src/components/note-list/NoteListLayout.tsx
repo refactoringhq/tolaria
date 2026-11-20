@@ -1,461 +1,506 @@
-import { BulkActionBar } from '../BulkActionBar'
-import { CollectionLayoutBody } from './CollectionLayoutBody'
-import { type CollectionLayoutState, useCollectionLayout } from './useCollectionLayout'
-import { CollectionLayoutHeaderControls, type GraphHeaderControls } from './CollectionLayoutControls'
-import { LayoutEditorPanelClose } from './LayoutEditorPanel'
-import { useLayoutPanelOutsideClose } from './useLayoutPanelOutsideClose'
-import { layoutPropertyPicker } from './kanbanCardFieldsPicker'
-import { FilterPills } from './FilterPills'
-import { NOTE_LIST_ACTION_BUTTON_CLASSNAME, NoteListHeader } from './NoteListHeader'
-import { EntityView, ListView } from './NoteListViews'
-import type { useNoteListModel } from './useNoteListModel'
+import { BulkActionBar } from "../BulkActionBar";
+import { CollectionLayoutBody } from "./CollectionLayoutBody";
+import { LayoutHeaderControls } from "./CollectionLayoutHeader";
+import { layoutPropertyVisibility } from "./collectionLayoutHeaderUtils";
+import { FilterPills } from "./FilterPills";
+import { layoutPropertyPicker } from "./kanbanCardFieldsPicker";
+import { LayoutEditorPanelClose } from "./LayoutEditorPanel";
+import { NoteListHeader } from "./NoteListHeader";
+import { EntityView, ListView } from "./NoteListViews";
+import {
+	type CollectionLayoutState,
+	useCollectionLayout,
+} from "./useCollectionLayout";
+import { useLayoutPanelOutsideClose } from "./useLayoutPanelOutsideClose";
+import type { useNoteListModel } from "./useNoteListModel";
 
 type NoteListLayoutProps = ReturnType<typeof useNoteListModel> & {
-  handleBulkOrganize?: () => void
-}
+	handleBulkOrganize?: () => void;
+};
+
+type NoteListContentProps = Omit<
+	NoteListLayoutProps,
+	| "noteListPanelRef"
+	| "handleNoteListPanelBlurCapture"
+	| "handleNoteListPanelFocusCapture"
+>;
 
 const NOTE_LIST_LOADING_ROWS = [
-  { id: 'wide', title: 184, line: 254, selected: false },
-  { id: 'selected', title: 142, line: 220, selected: true },
-  { id: 'short', title: 98, line: 242, selected: false },
-  { id: 'long', title: 212, line: 198, selected: false },
-]
+	{ id: "wide", title: 184, line: 254, selected: false },
+	{ id: "selected", title: 142, line: 220, selected: true },
+	{ id: "short", title: 98, line: 242, selected: false },
+	{ id: "long", title: 212, line: 198, selected: false },
+];
 
 function NoteListLoadingBar({ width }: { width: number }) {
-  return <span aria-hidden="true" className="block h-4 rounded bg-muted" style={{ width }} />
+	return (
+		<span
+			aria-hidden="true"
+			className="block h-4 rounded bg-muted"
+			style={{ width }}
+		/>
+	);
 }
 
-function NoteListLoadingRow({ title, line, selected }: { title: number; line: number; selected: boolean }) {
-  return (
-    <div
-      className="border-b border-border"
-      style={{
-        padding: '12px 12px 10px',
-        background: selected ? 'var(--accent-green-light)' : undefined,
-      }}
-    >
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <NoteListLoadingBar width={title} />
-        <span aria-hidden="true" className="h-4 w-4 shrink-0 rounded bg-muted" />
-      </div>
-      <div className="flex flex-col gap-2">
-        <NoteListLoadingBar width={line} />
-        <NoteListLoadingBar width={Math.round(line * 0.72)} />
-      </div>
-      <div className="mt-3 flex items-center justify-between">
-        <NoteListLoadingBar width={44} />
-        <NoteListLoadingBar width={82} />
-      </div>
-    </div>
-  )
+function NoteListLoadingRow({
+	title,
+	line,
+	selected,
+}: {
+	title: number;
+	line: number;
+	selected: boolean;
+}) {
+	return (
+		<div
+			className="border-b border-border"
+			style={{
+				padding: "12px 12px 10px",
+				background: selected ? "var(--accent-green-light)" : undefined,
+			}}
+		>
+			<div className="mb-3 flex items-start justify-between gap-3">
+				<NoteListLoadingBar width={title} />
+				<span
+					aria-hidden="true"
+					className="h-4 w-4 shrink-0 rounded bg-muted"
+				/>
+			</div>
+			<div className="flex flex-col gap-2">
+				<NoteListLoadingBar width={line} />
+				<NoteListLoadingBar width={Math.round(line * 0.72)} />
+			</div>
+			<div className="mt-3 flex items-center justify-between">
+				<NoteListLoadingBar width={44} />
+				<NoteListLoadingBar width={82} />
+			</div>
+		</div>
+	);
 }
 
 function NoteListLoadingSkeleton() {
-  return (
-    <div data-testid="note-list-loading-skeleton" className="animate-pulse">
-      {NOTE_LIST_LOADING_ROWS.map((row) => (
-        <NoteListLoadingRow key={row.id} {...row} />
-      ))}
-    </div>
-  )
+	return (
+		<div data-testid="note-list-loading-skeleton" className="animate-pulse">
+			{NOTE_LIST_LOADING_ROWS.map((row) => (
+				<NoteListLoadingRow key={row.id} {...row} />
+			))}
+		</div>
+	);
 }
 
 function MultiSelectBar({
-  multiSelect,
-  isArchivedView,
-  handleBulkOrganize,
-  handleBulkArchive,
-  handleBulkDeletePermanently,
-  handleBulkUnarchive,
+	multiSelect,
+	isArchivedView,
+	handleBulkOrganize,
+	handleBulkArchive,
+	handleBulkDeletePermanently,
+	handleBulkUnarchive,
 }: Pick<
-  NoteListLayoutProps,
-  | 'multiSelect'
-  | 'isArchivedView'
-  | 'handleBulkOrganize'
-  | 'handleBulkArchive'
-  | 'handleBulkDeletePermanently'
-  | 'handleBulkUnarchive'
+	NoteListLayoutProps,
+	| "multiSelect"
+	| "isArchivedView"
+	| "handleBulkOrganize"
+	| "handleBulkArchive"
+	| "handleBulkDeletePermanently"
+	| "handleBulkUnarchive"
 >) {
-  if (!multiSelect.isMultiSelecting) return null
+	if (!multiSelect.isMultiSelecting) return null;
 
-  return (
-    <BulkActionBar
-      count={multiSelect.selectedPaths.size}
-      isArchivedView={isArchivedView}
-      onOrganize={handleBulkOrganize}
-      onArchive={handleBulkArchive}
-      onDelete={handleBulkDeletePermanently}
-      onUnarchive={handleBulkUnarchive}
-      onClear={multiSelect.clear}
-    />
-  )
+	return (
+		<BulkActionBar
+			count={multiSelect.selectedPaths.size}
+			isArchivedView={isArchivedView}
+			onOrganize={handleBulkOrganize}
+			onArchive={handleBulkArchive}
+			onDelete={handleBulkDeletePermanently}
+			onUnarchive={handleBulkUnarchive}
+			onClear={multiSelect.clear}
+		/>
+	);
 }
 
 function NoteListContent(
-  options: Pick<
-  NoteListLayoutProps,
-  | 'entitySelection'
-  | 'searchedGroups'
-  | 'query'
-  | 'collapsedGroups'
-  | 'sortPrefs'
-  | 'toggleGroup'
-  | 'handleSortChange'
-  | 'renderItem'
-  | 'isArchivedView'
-  | 'isChangesView'
-  | 'isInboxView'
-  | 'modifiedFilesError'
-  | 'searched'
-  | 'noteListVirtuosoRef'
-  | 'locale'
-  | 'loading'
-  | 'showFilterPills'
-  >,
+	options: Pick<
+		NoteListLayoutProps,
+		| "entitySelection"
+		| "searchedGroups"
+		| "query"
+		| "collapsedGroups"
+		| "sortPrefs"
+		| "toggleGroup"
+		| "handleSortChange"
+		| "renderItem"
+		| "isArchivedView"
+		| "isChangesView"
+		| "isInboxView"
+		| "modifiedFilesError"
+		| "searched"
+		| "noteListVirtuosoRef"
+		| "locale"
+		| "loading"
+		| "showFilterPills"
+	>,
 ) {
-  const {
-    entitySelection,
-    searchedGroups,
-    query,
-    collapsedGroups,
-    sortPrefs,
-    toggleGroup,
-    handleSortChange,
-    renderItem,
-    isArchivedView,
-    isChangesView,
-    isInboxView,
-    modifiedFilesError,
-    searched,
-    noteListVirtuosoRef,
-    locale,
-    loading,
-    showFilterPills,
-  } = options
-  return (
-    <div className="flex-1 overflow-hidden" style={{ minHeight: 0 }}>
-      {loading ? (
-        <NoteListLoadingSkeleton />
-      ) : entitySelection ? (
-        <EntityView
-          entity={entitySelection.entry}
-          groups={searchedGroups}
-          query={query}
-          collapsedGroups={collapsedGroups}
-          sortPrefs={sortPrefs}
-          onToggleGroup={toggleGroup}
-          onSortChange={handleSortChange}
-          renderItem={renderItem}
-          locale={locale}
-        />
-      ) : (
-        <ListView
-          isArchivedView={isArchivedView}
-          isChangesView={isChangesView}
-          isInboxView={isInboxView}
-          changesError={modifiedFilesError}
-          searched={searched}
-          query={query}
-          renderItem={renderItem}
-          virtuosoRef={noteListVirtuosoRef}
-          locale={locale}
-          hasBottomOverlay={showFilterPills}
-        />
-      )}
-    </div>
-  )
+	const {
+		entitySelection,
+		searchedGroups,
+		query,
+		collapsedGroups,
+		sortPrefs,
+		toggleGroup,
+		handleSortChange,
+		renderItem,
+		isArchivedView,
+		isChangesView,
+		isInboxView,
+		modifiedFilesError,
+		searched,
+		noteListVirtuosoRef,
+		locale,
+		loading,
+		showFilterPills,
+	} = options;
+	return (
+		<div className="flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+			{loading ? (
+				<NoteListLoadingSkeleton />
+			) : entitySelection ? (
+				<EntityView
+					entity={entitySelection.entry}
+					groups={searchedGroups}
+					query={query}
+					collapsedGroups={collapsedGroups}
+					sortPrefs={sortPrefs}
+					onToggleGroup={toggleGroup}
+					onSortChange={handleSortChange}
+					renderItem={renderItem}
+					locale={locale}
+				/>
+			) : (
+				<ListView
+					isArchivedView={isArchivedView}
+					isChangesView={isChangesView}
+					isInboxView={isInboxView}
+					changesError={modifiedFilesError}
+					searched={searched}
+					query={query}
+					renderItem={renderItem}
+					virtuosoRef={noteListVirtuosoRef}
+					locale={locale}
+					hasBottomOverlay={showFilterPills}
+				/>
+			)}
+		</div>
+	);
 }
 
 export function NoteListBody(
-  options: Pick<
-  NoteListLayoutProps,
-  | 'handleListKeyDown'
-  | 'noteListContainerRef'
-  | 'handleNoteListBlur'
-  | 'handleNoteListFocus'
-  | 'focusNoteList'
-  | 'noteListVirtuosoRef'
-  | 'entitySelection'
-  | 'searchedGroups'
-  | 'query'
-  | 'collapsedGroups'
-  | 'sortPrefs'
-  | 'toggleGroup'
-  | 'handleSortChange'
-  | 'renderItem'
-  | 'isArchivedView'
-  | 'isChangesView'
-  | 'isInboxView'
-  | 'modifiedFilesError'
-  | 'searched'
-  | 'locale'
-  | 'showFilterPills'
-  | 'noteListFilter'
-  | 'filterCounts'
-  | 'onNoteListFilterChange'
-  | 'loading'
-  >,
+	options: Pick<
+		NoteListLayoutProps,
+		| "handleListKeyDown"
+		| "noteListContainerRef"
+		| "handleNoteListBlur"
+		| "handleNoteListFocus"
+		| "focusNoteList"
+		| "noteListVirtuosoRef"
+		| "entitySelection"
+		| "searchedGroups"
+		| "query"
+		| "collapsedGroups"
+		| "sortPrefs"
+		| "toggleGroup"
+		| "handleSortChange"
+		| "renderItem"
+		| "isArchivedView"
+		| "isChangesView"
+		| "isInboxView"
+		| "modifiedFilesError"
+		| "searched"
+		| "locale"
+		| "showFilterPills"
+		| "noteListFilter"
+		| "filterCounts"
+		| "onNoteListFilterChange"
+		| "loading"
+	>,
 ) {
-  const {
-    handleListKeyDown,
-    noteListContainerRef,
-    handleNoteListBlur,
-    handleNoteListFocus,
-    focusNoteList,
-    noteListVirtuosoRef,
-    entitySelection,
-    searchedGroups,
-    query,
-    collapsedGroups,
-    sortPrefs,
-    toggleGroup,
-    handleSortChange,
-    renderItem,
-    isArchivedView,
-    isChangesView,
-    isInboxView,
-    modifiedFilesError,
-    searched,
-    locale,
-    showFilterPills,
-    noteListFilter,
-    filterCounts,
-    onNoteListFilterChange,
-    loading,
-  } = options
-  return (
-    <div
-      ref={noteListContainerRef}
-      className="relative flex flex-1 flex-col overflow-hidden outline-none"
-      style={{ minHeight: 0 }}
-      role="listbox"
-      aria-label="Notes"
-      tabIndex={0}
-      onBlur={handleNoteListBlur}
-      onKeyDown={handleListKeyDown}
-      onFocus={handleNoteListFocus}
-      onClickCapture={focusNoteList}
-      data-testid="note-list-container"
-    >
-      <NoteListContent
-        entitySelection={entitySelection}
-        searchedGroups={searchedGroups}
-        query={query}
-        collapsedGroups={collapsedGroups}
-        sortPrefs={sortPrefs}
-        toggleGroup={toggleGroup}
-        handleSortChange={handleSortChange}
-        renderItem={renderItem}
-        isArchivedView={isArchivedView}
-        isChangesView={isChangesView}
-        isInboxView={isInboxView}
-        modifiedFilesError={modifiedFilesError}
-        searched={searched}
-        noteListVirtuosoRef={noteListVirtuosoRef}
-        locale={locale}
-        loading={loading}
-        showFilterPills={showFilterPills}
-      />
-      {showFilterPills && (
-        <FilterPills
-          active={noteListFilter}
-          counts={filterCounts}
-          onChange={onNoteListFilterChange}
-          position="bottom"
-          locale={locale}
-        />
-      )}
-    </div>
-  )
+	const {
+		handleListKeyDown,
+		noteListContainerRef,
+		handleNoteListBlur,
+		handleNoteListFocus,
+		focusNoteList,
+		noteListVirtuosoRef,
+		entitySelection,
+		searchedGroups,
+		query,
+		collapsedGroups,
+		sortPrefs,
+		toggleGroup,
+		handleSortChange,
+		renderItem,
+		isArchivedView,
+		isChangesView,
+		isInboxView,
+		modifiedFilesError,
+		searched,
+		locale,
+		showFilterPills,
+		noteListFilter,
+		filterCounts,
+		onNoteListFilterChange,
+		loading,
+	} = options;
+	return (
+		<div
+			ref={noteListContainerRef}
+			className="relative flex flex-1 flex-col overflow-hidden outline-none"
+			style={{ minHeight: 0 }}
+			role="listbox"
+			aria-label="Notes"
+			tabIndex={0}
+			onBlur={handleNoteListBlur}
+			onKeyDown={handleListKeyDown}
+			onFocus={handleNoteListFocus}
+			onClickCapture={focusNoteList}
+			data-testid="note-list-container"
+		>
+			<NoteListContent
+				entitySelection={entitySelection}
+				searchedGroups={searchedGroups}
+				query={query}
+				collapsedGroups={collapsedGroups}
+				sortPrefs={sortPrefs}
+				toggleGroup={toggleGroup}
+				handleSortChange={handleSortChange}
+				renderItem={renderItem}
+				isArchivedView={isArchivedView}
+				isChangesView={isChangesView}
+				isInboxView={isInboxView}
+				modifiedFilesError={modifiedFilesError}
+				searched={searched}
+				noteListVirtuosoRef={noteListVirtuosoRef}
+				locale={locale}
+				loading={loading}
+				showFilterPills={showFilterPills}
+			/>
+			{showFilterPills && (
+				<FilterPills
+					active={noteListFilter}
+					counts={filterCounts}
+					onChange={onNoteListFilterChange}
+					position="bottom"
+					locale={locale}
+				/>
+			)}
+		</div>
+	);
 }
 
 function NoteListLayoutHeader(
-  options: Pick<
-  NoteListLayoutProps,
-  | 'title'
-  | 'typeDocument'
-  | 'isEntityView'
-  | 'isChangesView'
-  | 'listSort'
-  | 'listDirection'
-  | 'customProperties'
-  | 'gitRepositories'
-  | 'selectedGitRepositoryPath'
-  | 'onGitRepositoryChange'
-  | 'locale'
-  | 'sidebarCollapsed'
-  | 'searchVisible'
-  | 'search'
-  | 'isSearching'
-  | 'searchInputRef'
-  | 'propertyPicker'
-  | 'handleSortChange'
-  | 'handleCreateNote'
-  | 'onOpenType'
-  | 'toggleSearch'
-  | 'setSearch'
-  | 'handleSearchKeyDown'
-  > & { layoutControls?: React.ReactNode },
+	options: Pick<
+		NoteListLayoutProps,
+		| "title"
+		| "typeDocument"
+		| "isEntityView"
+		| "isChangesView"
+		| "listSort"
+		| "listDirection"
+		| "customProperties"
+		| "gitRepositories"
+		| "selectedGitRepositoryPath"
+		| "onGitRepositoryChange"
+		| "locale"
+		| "sidebarCollapsed"
+		| "searchVisible"
+		| "search"
+		| "isSearching"
+		| "searchInputRef"
+		| "propertyPicker"
+		| "handleSortChange"
+		| "handleCreateNote"
+		| "onOpenType"
+		| "toggleSearch"
+		| "setSearch"
+		| "handleSearchKeyDown"
+	> & {
+		layoutControls?: React.ReactNode;
+		propertyVisibility?: { visible: boolean; onToggle: () => void };
+	},
 ) {
-  const {
-    layoutControls,
-    title,
-    typeDocument,
-    isEntityView,
-    isChangesView,
-    listSort,
-    listDirection,
-    customProperties,
-    gitRepositories,
-    selectedGitRepositoryPath,
-    onGitRepositoryChange,
-    locale,
-    sidebarCollapsed,
-    searchVisible,
-    search,
-    isSearching,
-    searchInputRef,
-    propertyPicker,
-    handleSortChange,
-    handleCreateNote,
-    onOpenType,
-    toggleSearch,
-    setSearch,
-    handleSearchKeyDown,
-  } = options
-  return (
-    <NoteListHeader
-      title={title}
-      typeDocument={typeDocument}
-      isEntityView={isEntityView}
-      isChangesView={isChangesView}
-      listSort={listSort}
-      listDirection={listDirection}
-      customProperties={customProperties}
-      gitRepositories={gitRepositories}
-      selectedGitRepositoryPath={selectedGitRepositoryPath}
-      onGitRepositoryChange={onGitRepositoryChange}
-      locale={locale}
-      sidebarCollapsed={sidebarCollapsed}
-      searchVisible={searchVisible}
-      search={search}
-      isSearching={isSearching}
-      searchInputRef={searchInputRef}
-      propertyPicker={propertyPicker}
-      layoutControls={layoutControls}
-      onSortChange={handleSortChange}
-      onCreateNote={handleCreateNote}
-      onOpenType={onOpenType}
-      onToggleSearch={toggleSearch}
-      onSearchChange={setSearch}
-      onSearchKeyDown={handleSearchKeyDown}
-    />
-  )
+	const {
+		layoutControls,
+		title,
+		typeDocument,
+		isEntityView,
+		isChangesView,
+		listSort,
+		listDirection,
+		customProperties,
+		gitRepositories,
+		selectedGitRepositoryPath,
+		onGitRepositoryChange,
+		locale,
+		sidebarCollapsed,
+		searchVisible,
+		search,
+		isSearching,
+		searchInputRef,
+		propertyPicker,
+		propertyVisibility,
+		handleSortChange,
+		handleCreateNote,
+		onOpenType,
+		toggleSearch,
+		setSearch,
+		handleSearchKeyDown,
+	} = options;
+	return (
+		<NoteListHeader
+			title={title}
+			typeDocument={typeDocument}
+			isEntityView={isEntityView}
+			isChangesView={isChangesView}
+			listSort={listSort}
+			listDirection={listDirection}
+			customProperties={customProperties}
+			gitRepositories={gitRepositories}
+			selectedGitRepositoryPath={selectedGitRepositoryPath}
+			onGitRepositoryChange={onGitRepositoryChange}
+			locale={locale}
+			sidebarCollapsed={sidebarCollapsed}
+			searchVisible={searchVisible}
+			search={search}
+			isSearching={isSearching}
+			searchInputRef={searchInputRef}
+			propertyPicker={propertyPicker}
+			propertyVisibility={propertyVisibility}
+			layoutControls={layoutControls}
+			onSortChange={handleSortChange}
+			onCreateNote={handleCreateNote}
+			onOpenType={onOpenType}
+			onToggleSearch={toggleSearch}
+			onSearchChange={setSearch}
+			onSearchKeyDown={handleSearchKeyDown}
+		/>
+	);
 }
 
 function NoteListFooter(
-  options: Pick<
-  NoteListLayoutProps,
-  | 'multiSelect'
-  | 'isArchivedView'
-  | 'handleBulkOrganize'
-  | 'handleBulkArchive'
-  | 'handleBulkDeletePermanently'
-  | 'handleBulkUnarchive'
-  | 'contextMenuNode'
-  | 'dialogNode'
-  >,
+	options: Pick<
+		NoteListLayoutProps,
+		| "multiSelect"
+		| "isArchivedView"
+		| "handleBulkOrganize"
+		| "handleBulkArchive"
+		| "handleBulkDeletePermanently"
+		| "handleBulkUnarchive"
+		| "contextMenuNode"
+		| "dialogNode"
+	>,
 ) {
-  const {
-    multiSelect,
-    isArchivedView,
-    handleBulkOrganize,
-    handleBulkArchive,
-    handleBulkDeletePermanently,
-    handleBulkUnarchive,
-    contextMenuNode,
-    dialogNode,
-  } = options
-  return (
-    <>
-      <MultiSelectBar
-        multiSelect={multiSelect}
-        isArchivedView={isArchivedView}
-        handleBulkOrganize={handleBulkOrganize}
-        handleBulkArchive={handleBulkArchive}
-        handleBulkDeletePermanently={handleBulkDeletePermanently}
-        handleBulkUnarchive={handleBulkUnarchive}
-      />
-      {contextMenuNode}
-      {dialogNode}
-    </>
-  )
-}
-
-function graphHeaderControls(layout: CollectionLayoutState, typeEntryMap: NoteListLayoutProps['typeEntryMap']): GraphHeaderControls | undefined {
-  if (!layout.graphData) return undefined
-  const { relationshipKeys, typeKeys } = layout.graphData
-  return { settings: layout.graph, relationshipKeys, typeKeys, typeEntryMap, onChange: layout.changeGraph }
-}
-
-function LayoutHeaderControls({ layout, locale, typeEntryMap }: { layout: CollectionLayoutState; locale: NoteListLayoutProps['locale']; typeEntryMap: NoteListLayoutProps['typeEntryMap'] }) {
-  if (!layout.enabled) return null
-  return (
-    <CollectionLayoutHeaderControls
-      layout={layout.layout}
-      groupBy={layout.groupBy}
-      groups={layout.groups}
-      calendar={{ settings: layout.calendar, dateProperty: layout.dateProperty, dateOptions: layout.dateOptions, onChange: layout.changeCalendar }}
-      graph={graphHeaderControls(layout, typeEntryMap)}
-      locale={locale}
-      triggerClassName={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
-      onLayoutChange={layout.changeLayout}
-      onGroupByChange={layout.changeGroupBy}
-    />
-  )
+	const {
+		multiSelect,
+		isArchivedView,
+		handleBulkOrganize,
+		handleBulkArchive,
+		handleBulkDeletePermanently,
+		handleBulkUnarchive,
+		contextMenuNode,
+		dialogNode,
+	} = options;
+	return (
+		<>
+			<MultiSelectBar
+				multiSelect={multiSelect}
+				isArchivedView={isArchivedView}
+				handleBulkOrganize={handleBulkOrganize}
+				handleBulkArchive={handleBulkArchive}
+				handleBulkDeletePermanently={handleBulkDeletePermanently}
+				handleBulkUnarchive={handleBulkUnarchive}
+			/>
+			{contextMenuNode}
+			{dialogNode}
+		</>
+	);
 }
 
 export function NoteListLayout({
-  noteListPanelRef,
-  handleNoteListPanelBlurCapture,
-  handleNoteListPanelFocusCapture,
-  ...contentProps
+	noteListPanelRef,
+	handleNoteListPanelBlurCapture,
+	handleNoteListPanelFocusCapture,
+	...contentProps
 }: NoteListLayoutProps) {
-  const layout = useCollectionLayout(contentProps)
-  const { locale } = contentProps
-  useLayoutPanelOutsideClose({ rootRef: noteListPanelRef, ...layout.panel })
-  return (
-    <div
-      ref={noteListPanelRef}
-      className="flex flex-col select-none overflow-hidden border-r border-border bg-card text-foreground"
-      style={{ height: '100%' }}
-      onBlurCapture={handleNoteListPanelBlurCapture}
-      onFocusCapture={handleNoteListPanelFocusCapture}
-      data-collection-layout={layout.layout}
-      data-kanban-panel={layout.panel.open ? 'open' : 'closed'}
-    >
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <NoteListLayoutHeader
-          {...contentProps}
-          propertyPicker={layoutPropertyPicker(layout, contentProps.propertyPicker, locale)}
-          layoutControls={<LayoutHeaderControls layout={layout} locale={locale} typeEntryMap={contentProps.typeEntryMap} />}
-        />
-        <CollectionLayoutBody
-          layout={layout}
-          listContent={<NoteListBody {...contentProps} />}
-          entries={contentProps.visibleEntries}
-          allEntries={contentProps.allEntries}
-          locale={locale}
-          typeEntryMap={contentProps.typeEntryMap}
-          displayPropsOverride={contentProps.displayPropsOverride}
-          selectedNotePath={contentProps.selectedNotePath}
-          onOpen={contentProps.handleClickNote}
-          onMove={(entry, property, value) => contentProps.onUpdateTypeSort?.(entry.path, property, value)}
-          onCreate={contentProps.handleCreateNote}
-        />
-      </div>
-      <NoteListFooter {...contentProps} />
-      <LayoutEditorPanelClose open={layout.panel.open} locale={locale} onClose={layout.panel.close} />
-    </div>
-  )
+	const layout = useCollectionLayout(contentProps);
+	const { locale } = contentProps;
+	useLayoutPanelOutsideClose({ rootRef: noteListPanelRef, ...layout.panel });
+	return (
+		<div
+			ref={noteListPanelRef}
+			className="flex flex-col select-none overflow-hidden border-r border-border bg-card text-foreground"
+			style={{ height: "100%" }}
+			onBlurCapture={handleNoteListPanelBlurCapture}
+			onFocusCapture={handleNoteListPanelFocusCapture}
+			data-collection-layout={layout.layout}
+			data-kanban-panel={layout.panel.open ? "open" : "closed"}
+		>
+			<NoteListLayoutContents
+				layout={layout}
+				contentProps={contentProps}
+				locale={locale}
+			/>
+			<NoteListFooter {...contentProps} />
+			<LayoutEditorPanelClose
+				open={layout.panel.open}
+				locale={locale}
+				onClose={layout.panel.close}
+			/>
+		</div>
+	);
+}
+
+function NoteListLayoutContents({
+	layout,
+	contentProps,
+	locale,
+}: {
+	layout: CollectionLayoutState;
+	contentProps: NoteListContentProps;
+	locale: NoteListLayoutProps["locale"];
+}) {
+	return (
+		<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+			<NoteListLayoutHeader
+				{...contentProps}
+				propertyPicker={layoutPropertyPicker(
+					layout,
+					contentProps.propertyPicker,
+					locale,
+				)}
+				propertyVisibility={layoutPropertyVisibility(layout)}
+				layoutControls={
+					<LayoutHeaderControls
+						layout={layout}
+						locale={locale}
+						typeEntryMap={contentProps.typeEntryMap}
+					/>
+				}
+			/>
+			<CollectionLayoutBody
+				layout={layout}
+				listContent={<NoteListBody {...contentProps} />}
+				entries={contentProps.visibleEntries}
+				allEntries={contentProps.allEntries}
+				locale={locale}
+				typeEntryMap={contentProps.typeEntryMap}
+				displayPropsOverride={contentProps.displayPropsOverride}
+				selectedNotePath={contentProps.selectedNotePath}
+				onOpen={contentProps.handleClickNote}
+				onMove={(entry, property, value) =>
+					contentProps.onUpdateTypeSort?.(entry.path, property, value)
+				}
+				onCreate={contentProps.handleCreateNote}
+			/>
+		</div>
+	);
 }
