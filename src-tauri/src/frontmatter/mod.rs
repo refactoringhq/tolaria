@@ -181,13 +181,13 @@ mod tests {
             (
                 "---\ntype: Type\n---\n# Project\n",
                 "## Objective\n\n## Timeline",
-                &["template: |", "  ## Objective", "type: Type"][..],
+                &["template: \"## Objective\\n\\n## Timeline\"", "type: Type"][..],
                 &[][..],
             ),
             (
                 "---\ntype: Type\ntemplate: |\n  ## Old\n  \n  ## Stuff\ncolor: green\n---\n# Project\n",
                 "## New\n\n## Content",
-                &["  ## New", "color: green"][..],
+                &["template: \"## New\\n\\n## Content\"", "color: green"][..],
                 &["## Old"][..],
             ),
         ];
@@ -250,6 +250,50 @@ mod tests {
             assert!(roundtripped.contains("Describe the goal."));
         } else {
             panic!("Expected hash");
+        }
+    }
+
+    #[test]
+    fn test_roundtrip_yaml_ambiguous_strings() {
+        let values = [
+            "C:\\notes\\new",
+            "line one\nline two",
+            "yes",
+            "no",
+            "null",
+            "true",
+            "false",
+            "on",
+            "off",
+            "~",
+            "007",
+            "1.5",
+            "0x10",
+            "#tag",
+            ":value",
+            "- item",
+            "\u{2028}",
+            "\u{2029}",
+            "\u{80}",
+            "\u{9f}",
+        ];
+        let matter = gray_matter::Matter::<gray_matter::engine::YAML>::new();
+        for value in values {
+            let updated = update_frontmatter_content(
+                "---\ntype: Type\n---\nBody\n",
+                "v",
+                Some(FrontmatterValue::String(value.to_string())),
+            )
+            .unwrap();
+            let parsed = matter.parse(&updated).data.unwrap();
+            let gray_matter::Pod::Hash(map) = parsed else {
+                panic!("Expected mapping")
+            };
+            assert_eq!(
+                map.get("v").unwrap().as_string().unwrap(),
+                value,
+                "{value:?}"
+            );
         }
     }
 }

@@ -25,40 +25,109 @@ impl<'a> YamlText<'a> {
         self.0.starts_with('[') || self.0.starts_with('{')
     }
 
-    /// Check whether a YAML string value needs quoting to avoid ambiguity.
-    fn needs_quoting(self) -> bool {
-        self.has_special_chars()
-            || self.starts_as_collection()
-            || matches!(self.0, "true" | "false" | "null")
-            || self.0.parse::<f64>().is_ok()
+    fn is_coercible_word(self) -> bool {
+        matches!(
+            self.0.to_ascii_lowercase().as_str(),
+            "true" | "false" | "null" | "yes" | "no" | "on" | "off" | "~"
+        )
     }
 
-    /// Quote a string value for YAML, escaping internal double quotes.
+    fn is_radix_number(self) -> bool {
+        (self.0.starts_with("0x") && self.0[2..].chars().all(|c| c.is_ascii_hexdigit()))
+            || (self.0.starts_with("0o") && self.0[2..].chars().all(|c| matches!(c, '0'..='7')))
+    }
+
+    fn is_special_float(self) -> bool {
+        matches!(
+            self.0
+                .trim_start_matches(['+', '-'])
+                .to_ascii_lowercase()
+                .as_str(),
+            ".inf" | ".nan"
+        )
+    }
+
+    fn has_indicator_prefix(self) -> bool {
+        self.0.chars().next().is_some_and(|c| {
+            matches!(
+                c,
+                '#' | ':'
+                    | '&'
+                    | '*'
+                    | '!'
+                    | '|'
+                    | '>'
+                    | '\''
+                    | '"'
+                    | '%'
+                    | '@'
+                    | '`'
+                    | '{'
+                    | '}'
+                    | '['
+                    | ']'
+                    | ','
+            ) || (matches!(c, '-' | '?') && self.0.chars().nth(1).is_none_or(char::is_whitespace))
+        })
+    }
+
+    fn has_yaml_line_break(self) -> bool {
+        self.0
+            .chars()
+            .any(|c| c.is_control() || matches!(c, '\u{85}' | '\u{2028}' | '\u{2029}'))
+    }
+
+    /// Check whether a YAML string value needs quoting to avoid ambiguity.
+    fn needs_quoting(self) -> bool {
+        [
+            self.has_special_chars(),
+            self.starts_as_collection(),
+            self.0.trim() != self.0,
+            self.is_coercible_word(),
+            self.is_radix_number(),
+            self.is_special_float(),
+            self.0.parse::<f64>().is_ok(),
+            self.has_indicator_prefix(),
+            self.0.contains('\\'),
+            self.has_yaml_line_break(),
+            self.has_comment_indicator(),
+        ]
+        .into_iter()
+        .any(|needs_quote| needs_quote)
+    }
+
+    fn has_comment_indicator(self) -> bool {
+        self.0
+            .chars()
+            .zip(self.0.chars().skip(1))
+            .any(|(previous, current)| {
+                (previous.is_whitespace() || previous == '\u{feff}') && current == '#'
+            })
+    }
+
+    /// Quote a string value using YAML double-quoted escape sequences.
     fn quoted(self) -> String {
-        format!("\"{}\"", self.0.replace('\"', "\\\""))
+        let mut escaped = String::new();
+        for ch in self.0.chars() {
+            match ch {
+                '\\' => escaped.push_str("\\\\"),
+                '"' => escaped.push_str("\\\""),
+                '\n' => escaped.push_str("\\n"),
+                '\r' => escaped.push_str("\\r"),
+                '\t' => escaped.push_str("\\t"),
+                '\u{85}' => escaped.push_str("\\N"),
+                '\u{2028}' => escaped.push_str("\\L"),
+                '\u{2029}' => escaped.push_str("\\P"),
+                c if c.is_control() => escaped.push_str(&format!("\\u{:04x}", c as u32)),
+                c => escaped.push(c),
+            }
+        }
+        format!("\"{}\"", escaped)
     }
 
     /// Format a single YAML list item as `  - "value"`.
     fn as_list_item(self) -> String {
         format!("  - {}", self.quoted())
-    }
-
-    /// Format a multi-line string as a YAML block scalar (`|`).
-    /// Each line is indented by 2 spaces; empty lines are preserved as blank.
-    fn as_block_scalar(self) -> String {
-        let indented = self
-            .0
-            .lines()
-            .map(|line| {
-                if line.is_empty() {
-                    String::new()
-                } else {
-                    format!("  {}", line)
-                }
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
-        format!("|\n{}", indented)
     }
 
     /// Check whether a YAML key needs quoting (contains spaces, special chars, etc.).
@@ -72,6 +141,10 @@ impl<'a> YamlText<'a> {
 /// Format a key for YAML output (quote if necessary)
 pub fn format_yaml_key(key: &str) -> String {
     let yaml_key = YamlText(key);
+    assert!(
+        !key.chars().any(char::is_control),
+        "frontmatter key must be single line"
+    );
     if yaml_key.needs_key_quoting() {
         yaml_key.quoted()
     } else {
@@ -93,9 +166,7 @@ impl FrontmatterValue {
         match self {
             FrontmatterValue::String(s) => {
                 let yaml_text = YamlText(s);
-                if s.contains('\n') {
-                    yaml_text.as_block_scalar()
-                } else if yaml_text.needs_quoting() {
+                if yaml_text.needs_quoting() {
                     yaml_text.quoted()
                 } else {
                     s.clone()
@@ -198,12 +269,9 @@ mod tests {
     }
 
     #[test]
-    fn test_to_yaml_value_multiline_uses_block_scalar() {
+    fn test_to_yaml_value_multiline_uses_escaped_quotes() {
         let v = FrontmatterValue::String("line 1\nline 2\nline 3".to_string());
-        let yaml = v.to_yaml_value();
-        assert!(yaml.starts_with("|\n"));
-        assert!(yaml.contains("  line 1"));
-        assert!(yaml.contains("  line 2"));
+        assert_eq!(v.to_yaml_value(), "\"line 1\\nline 2\\nline 3\"");
     }
 
     #[test]
@@ -227,13 +295,11 @@ mod tests {
     }
 
     #[test]
-    fn test_format_yaml_field_block_scalar() {
+    fn test_format_yaml_field_multiline() {
         let v = FrontmatterValue::String("## Objective\n\n## Timeline".to_string());
         let lines = format_yaml_field("template", &v);
         assert_eq!(lines.len(), 1);
-        assert!(lines[0].starts_with("template: |\n"));
-        assert!(lines[0].contains("  ## Objective"));
-        assert!(lines[0].contains("  ## Timeline"));
+        assert_eq!(lines[0], "template: \"## Objective\\n\\n## Timeline\"");
     }
 
     #[test]

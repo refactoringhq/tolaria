@@ -293,16 +293,15 @@
       "key": "Hex",
       "op": "update",
       "value": "0x10",
-      "expected": "---\ntitle: T\nHex: 0x10\n---\n# Note\n\nBody text.\n",
-      "web": "refused"
+      "expected": "---\ntitle: T\nHex: \"0x10\"\n---\n# Note\n\nBody text.\n"
     },
     {
-      "name": "does not quote a leading-space number",
+      "name": "quotes a leading-space number to preserve the string",
       "content": "---\ntitle: T\n---\n# Note\n\nBody text.\n",
       "key": "Spaced",
       "op": "update",
       "value": " 5",
-      "expected": "---\ntitle: T\nSpaced:  5\n---\n# Note\n\nBody text.\n"
+      "expected": "---\ntitle: T\nSpaced: \" 5\"\n---\n# Note\n\nBody text.\n"
     },
     {
       "name": "quotes colons and hashes",
@@ -311,6 +310,14 @@
       "op": "update",
       "value": "see: #here",
       "expected": "---\ntitle: T\nLink: \"see: #here\"\n---\n# Note\n\nBody text.\n"
+    },
+    {
+      "name": "quotes a hash after a tab",
+      "content": "---\ntitle: T\n---\n# Note\n\nBody text.\n",
+      "key": "Tag",
+      "op": "update",
+      "value": "x\t#tag",
+      "expected": "---\ntitle: T\nTag: \"x\\t#tag\"\n---\n# Note\n\nBody text.\n"
     },
     {
       "name": "quotes collection-looking strings",
@@ -337,12 +344,12 @@
       "expected": "---\ntitle: T\nSaid: say \"hi\"\n---\n# Note\n\nBody text.\n"
     },
     {
-      "name": "writes multi-line strings as block scalars",
+      "name": "writes multi-line strings with escaped double quotes",
       "content": "---\ntype: Type\n---\n# Project\n",
       "key": "template",
       "op": "update",
       "value": "## Objective\n\nDescribe the goal.\n\n## Timeline",
-      "expected": "---\ntype: Type\ntemplate: |\n  ## Objective\n\n  Describe the goal.\n\n  ## Timeline\n---\n# Project\n"
+      "expected": "---\ntype: Type\ntemplate: \"## Objective\\n\\nDescribe the goal.\\n\\n## Timeline\"\n---\n# Project\n"
     },
     {
       "name": "replaces a block scalar",
@@ -350,7 +357,7 @@
       "key": "template",
       "op": "update",
       "value": "## New\n\n## Content",
-      "expected": "---\ntype: Type\ntemplate: |\n  ## New\n\n  ## Content\ncolor: green\n---\n# Project\n"
+      "expected": "---\ntype: Type\ntemplate: \"## New\\n\\n## Content\"\ncolor: green\n---\n# Project\n"
     },
     {
       "name": "deletes a block scalar",
@@ -365,7 +372,7 @@
       "key": "template",
       "op": "update",
       "value": "line 1\r\nline 2\n",
-      "expected": "---\r\ntype: Type\r\ntemplate: |\n  line 1\n  line 2\r\n---\r\nBody\r\n"
+      "expected": "---\r\ntype: Type\r\ntemplate: \"line 1\\r\\nline 2\\n\"\r\n---\r\nBody\r\n"
     },
     {
       "name": "skips tab-indented continuation lines",
@@ -607,8 +614,7 @@
       "key": "v",
       "op": "update",
       "value": "*ref",
-      "expected": "---\nv: *ref\n---\n",
-      "web": "refused"
+      "expected": "---\nv: \"*ref\"\n---\n"
     },
     {
       "name": "leaves an anchor-looking value unquoted",
@@ -616,8 +622,7 @@
       "key": "v",
       "op": "update",
       "value": "&anchor x",
-      "expected": "---\nv: &anchor x\n---\n",
-      "web": "refused"
+      "expected": "---\nv: \"&anchor x\"\n---\n"
     },
     {
       "name": "leaves a tag-looking value unquoted",
@@ -625,8 +630,7 @@
       "key": "v",
       "op": "update",
       "value": "!secret",
-      "expected": "---\nv: !secret\n---\n",
-      "web": "refused"
+      "expected": "---\nv: \"!secret\"\n---\n"
     },
     {
       "name": "leaves a leading quote unquoted",
@@ -634,8 +638,7 @@
       "key": "v",
       "op": "update",
       "value": "'open",
-      "expected": "---\nv: 'open\n---\n",
-      "web": "refused"
+      "expected": "---\nv: \"'open\"\n---\n"
     },
     {
       "name": "leaves a sequence entry unquoted",
@@ -643,8 +646,7 @@
       "key": "v",
       "op": "update",
       "value": "- item",
-      "expected": "---\nv: - item\n---\n",
-      "web": "refused"
+      "expected": "---\nv: \"- item\"\n---\n"
     },
     {
       "name": "leaves a tilde unquoted",
@@ -652,8 +654,7 @@
       "key": "v",
       "op": "update",
       "value": "~",
-      "expected": "---\nv: ~\n---\n",
-      "web": "refused"
+      "expected": "---\nv: \"~\"\n---\n"
     },
     {
       "name": "leaves capitalized null unquoted",
@@ -661,8 +662,7 @@
       "key": "v",
       "op": "update",
       "value": "NULL",
-      "expected": "---\nv: NULL\n---\n",
-      "web": "refused"
+      "expected": "---\nv: \"NULL\"\n---\n"
     },
     {
       "name": "leaves capitalized booleans unquoted",
@@ -670,8 +670,7 @@
       "key": "v",
       "op": "update",
       "value": "True",
-      "expected": "---\nv: True\n---\n",
-      "web": "refused"
+      "expected": "---\nv: \"True\"\n---\n"
     },
     {
       "name": "leaves YAML infinity unquoted",
@@ -679,8 +678,7 @@
       "key": "v",
       "op": "update",
       "value": "-.inf",
-      "expected": "---\nv: -.inf\n---\n",
-      "web": "refused"
+      "expected": "---\nv: \"-.inf\"\n---\n"
     },
     {
       "name": "leaves YAML octal unquoted",
@@ -688,8 +686,7 @@
       "key": "v",
       "op": "update",
       "value": "0o17",
-      "expected": "---\nv: 0o17\n---\n",
-      "web": "refused"
+      "expected": "---\nv: \"0o17\"\n---\n"
     },
     {
       "name": "keeps a hyphenated word unquoted",
@@ -708,12 +705,12 @@
       "expected": "---\nv: \n---\n"
     },
     {
-      "name": "keeps yes unquoted",
+      "name": "quotes yes to preserve its string type",
       "content": "",
       "key": "v",
       "op": "update",
       "value": "yes",
-      "expected": "---\nv: yes\n---\n"
+      "expected": "---\nv: \"yes\"\n---\n"
     },
     {
       "name": "rejects frontmatter with no closing delimiter",
