@@ -47,7 +47,7 @@ describe("runFrontmatterAndApply with the browser mock backend", () => {
 		});
 
 		expect(content).toBe(
-			'---\ntype: Note\ntags:\n  - "new"\n  - "quoted \\"value\\""\n---\n# Note\n',
+			'---\ntype: Note\ntags:\n  - new\n  - quoted "value"\n---\n# Note\n',
 		);
 		expect(files.write).toHaveBeenCalledWith(PATH, content);
 		expect(apply.updateTab).toHaveBeenCalledWith(PATH, content);

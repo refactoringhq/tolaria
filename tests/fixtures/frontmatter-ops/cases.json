@@ -55,7 +55,7 @@
         "Three",
         "Four"
       ],
-      "expected": "---\r\ntype: Note\r\naliases:\r\n  - \"Three\"\n  - \"Four\"\r\nStatus: Draft\r\n---\r\nBody\r\n"
+      "expected": "---\r\ntype: Note\r\naliases:\r\n  - Three\n  - Four\r\nStatus: Draft\r\n---\r\nBody\r\n"
     },
     {
       "name": "keeps CR line endings",
@@ -82,7 +82,7 @@
         "A",
         "B"
       ],
-      "expected": "---\naliases:\n  - \"A\"\n  - \"B\"\n---\n# Note\n\nBody text.\n"
+      "expected": "---\naliases:\n  - A\n  - B\n---\n# Note\n\nBody text.\n"
     },
     {
       "name": "leaves a note without frontmatter alone on delete",
@@ -172,7 +172,7 @@
       "expected": "---\ntitle: T\n\"état.key\": x\n---\n# Note\n\nBody text.\n"
     },
     {
-      "name": "quotes list items and escapes quotes",
+      "name": "quotes ambiguous list items and keeps safe items plain",
       "content": "---\ntitle: T\n---\n# Note\n\nBody text.\n",
       "key": "tags",
       "op": "update",
@@ -181,7 +181,23 @@
         "a: b",
         "plain"
       ],
-      "expected": "---\ntitle: T\ntags:\n  - \"say \\\"hi\\\"\"\n  - \"a: b\"\n  - \"plain\"\n---\n# Note\n\nBody text.\n"
+      "expected": "---\ntitle: T\ntags:\n  - say \"hi\"\n  - \"a: b\"\n  - plain\n---\n# Note\n\nBody text.\n"
+    },
+    {
+      "name": "quotes a list item with a Unicode-whitespace indicator",
+      "content": "---\ntitle: T\n---\n# Note\n\nBody text.\n",
+      "key": "tags",
+      "op": "update",
+      "value": ["- item"],
+      "expected": "---\ntitle: T\ntags:\n  - \"- item\"\n---\n# Note\n\nBody text.\n"
+    },
+    {
+      "name": "keeps a trailing BOM outside Rust whitespace quoting",
+      "content": "---\ntitle: T\n---\n# Note\n\nBody text.\n",
+      "key": "value",
+      "op": "update",
+      "value": "value﻿",
+      "expected": "---\ntitle: T\nvalue: value﻿\n---\n# Note\n\nBody text.\n"
     },
     {
       "name": "writes an empty list inline",

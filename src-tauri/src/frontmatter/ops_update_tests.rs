@@ -105,7 +105,7 @@ fn test_update_frontmatter_list_and_delete_paths() {
                 FrontmatterScalar::String("Alias1".to_string()),
                 FrontmatterScalar::String("Alias2".to_string()),
             ])),
-            expected_present: &["aliases:", "  - \"Alias1\"", "  - \"Alias2\""],
+            expected_present: &["aliases:", "  - Alias1", "  - Alias2"],
             expected_absent: &[],
         },
         UpdateCase {
@@ -114,7 +114,7 @@ fn test_update_frontmatter_list_and_delete_paths() {
             value: Some(FrontmatterValue::List(vec![FrontmatterScalar::String(
                 "New1".to_string(),
             )])),
-            expected_present: &["  - \"New1\"", "Status: Draft"],
+            expected_present: &["  - New1", "Status: Draft"],
             expected_absent: &["Old1", "Old2"],
         },
         UpdateCase {

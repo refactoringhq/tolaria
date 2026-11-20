@@ -62,9 +62,18 @@ const YAML_KEYWORDS = new Set([
 	"off",
 	"~",
 ]);
+const RUST_WHITESPACE = /^\p{White_Space}$/u;
+
+function isRustWhitespace(text: PlainText): boolean {
+	return text === "" || RUST_WHITESPACE.test(text);
+}
+
+function hasRustTrimWhitespace(text: PlainText): boolean {
+	return /^\p{White_Space}|\p{White_Space}$/u.test(text);
+}
 
 const QUOTING_RULES: readonly ((text: PlainText) => boolean)[] = [
-	(text) => text.trim() !== text,
+	hasRustTrimWhitespace,
 	(text) => text.includes(":") || text.includes("#"),
 	(text) => text.startsWith("[") || text.startsWith("{"),
 	(text) =>
@@ -87,8 +96,7 @@ const QUOTING_RULES: readonly ((text: PlainText) => boolean)[] = [
 			"]",
 			",",
 		].includes(text.charAt(0)) ||
-		(["-", "?"].includes(text.charAt(0)) &&
-			[" ", ""].includes(text.charAt(1))) ||
+		(["-", "?"].includes(text.charAt(0)) && isRustWhitespace(text.charAt(1))) ||
 		/\s#/.test(text),
 	(text) =>
 		YAML_KEYWORDS.has(text.toLowerCase()) ||
@@ -201,7 +209,7 @@ function formatYamlScalar(value: FrontmatterTextScalar): YamlText {
 	if (value === null) return "null";
 	if (typeof value === "number") return formatYamlNumber(value);
 	if (typeof value === "boolean") return value ? "true" : "false";
-	return quoted(value);
+	return formatYamlString(value);
 }
 
 export function toYamlValue(value: FrontmatterTextValue): YamlText {

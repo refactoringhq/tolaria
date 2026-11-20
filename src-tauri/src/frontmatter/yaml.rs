@@ -157,7 +157,12 @@ impl<'a> YamlText<'a> {
 
     /// Format a single YAML list item as `  - "value"`.
     fn as_list_item(self) -> String {
-        format!("  - {}", self.quoted())
+        let value = if self.needs_quoting() {
+            self.quoted()
+        } else {
+            self.0.to_string()
+        };
+        format!("  - {value}")
     }
 
     /// Check whether a YAML key needs quoting (contains spaces, special chars, etc.).
@@ -309,6 +314,12 @@ mod tests {
     }
 
     #[test]
+    fn test_to_yaml_value_list_keeps_plain_string_unquoted() {
+        let value = FrontmatterValue::List(vec![FrontmatterScalar::String("plain".to_string())]);
+        assert_eq!(value.to_yaml_value(), "  - plain");
+    }
+
+    #[test]
     fn test_to_yaml_value_mixed_scalar_list() {
         let value = FrontmatterValue::List(vec![
             FrontmatterScalar::Bool(true),
@@ -393,7 +404,7 @@ mod tests {
         assert_field_lines(
             "_list_properties_display",
             FrontmatterValue::List(vec![FrontmatterScalar::String("Belongs to".to_string())]),
-            &["_list_properties_display:", "  - \"Belongs to\""],
+            &["_list_properties_display:", "  - Belongs to"],
         );
         assert_field_lines("tags", FrontmatterValue::List(vec![]), &["tags: []"]);
         assert_field_lines(
@@ -402,7 +413,7 @@ mod tests {
                 FrontmatterScalar::String("Alpha".to_string()),
                 FrontmatterScalar::String("Beta".to_string()),
             ]),
-            &["tags:", "  - \"Alpha\"\n  - \"Beta\""],
+            &["tags:", "  - Alpha\n  - Beta"],
         );
     }
 }
