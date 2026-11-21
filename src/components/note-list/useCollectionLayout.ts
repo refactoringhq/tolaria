@@ -258,13 +258,6 @@ function useLayoutActions({
 		update({ showProperties });
 		trackPropertyVisibility(showProperties, source.selection.kind);
 	};
-	// Saved even when a preview already shows the same values (a slider is previewed while dragged, saved on release).
-	const changeGraph = (patch: Partial<GraphSettings>) => {
-		save({ ...current, graph: { ...current.graph, ...patch } });
-		trackEvent("graph_filter_changed", {
-			filter: Object.keys(patch).join(","),
-		});
-	};
 	return {
 		changeLayout,
 		changeGroupBy: (groupBy: string) => update({ groupBy }),
@@ -292,9 +285,26 @@ function useLayoutActions({
 			update({
 				calendar: pinnedCalendar(current.calendar, resolvedDateProperty, patch),
 			}),
-		changeGraph,
-		previewGraph: (patch: Partial<GraphSettings>) =>
-			show({ ...current, graph: { ...current.graph, ...patch } }),
+		...graphActions(current, { show, save }),
+	};
+}
+
+type LayoutWriters = ReturnType<typeof useLayoutWriters>;
+
+function graphActions(current: LayoutSettings, { show, save }: LayoutWriters) {
+	const withGraph = (patch: Partial<GraphSettings>): LayoutSettings => ({
+		...current,
+		graph: { ...current.graph, ...patch },
+	});
+	return {
+		// Saved even when a preview already shows the same values (a slider is previewed while dragged, saved on release).
+		changeGraph: (patch: Partial<GraphSettings>) => {
+			save(withGraph(patch));
+			trackEvent("graph_filter_changed", {
+				filter: Object.keys(patch).join(","),
+			});
+		},
+		previewGraph: (patch: Partial<GraphSettings>) => show(withGraph(patch)),
 	};
 }
 
