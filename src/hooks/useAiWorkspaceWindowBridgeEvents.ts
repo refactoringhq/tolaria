@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { isTauri } from "../mock-tauri";
 import {
 	AI_WORKSPACE_FILE_CREATED_EVENT,
@@ -30,12 +30,14 @@ export function useAiWorkspaceWindowBridgeEvents({
 		onOpenNote,
 		onVaultChanged,
 	});
-	handlersRef.current = {
-		onFileCreated,
-		onFileModified,
-		onOpenNote,
-		onVaultChanged,
-	};
+	useLayoutEffect(() => {
+		handlersRef.current = {
+			onFileCreated,
+			onFileModified,
+			onOpenNote,
+			onVaultChanged,
+		};
+	}, [onFileCreated, onFileModified, onOpenNote, onVaultChanged]);
 
 	useEffect(() => {
 		if (!isTauri()) return;
