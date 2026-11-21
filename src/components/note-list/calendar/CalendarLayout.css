@@ -1,7 +1,7 @@
 /* Calendar layout (TOL-381): a month or week grid that, like Kanban, takes over the note-list and editor
    area. Theme tokens only, so light and dark mode follow the app palette. */
 .calendar-board {
-	background-color: var(--surface-panel);
+	background-color: var(--muted);
 }
 
 .calendar-scroll {
@@ -18,7 +18,7 @@
 	overflow: hidden;
 	border: 1px solid var(--border-default);
 	border-radius: 10px;
-	background-color: var(--surface-panel);
+	background-color: var(--muted);
 }
 
 .calendar-weekdays {
@@ -63,7 +63,7 @@
 .calendar-day {
 	min-width: 0;
 	min-height: 0;
-	border-right: 1px solid var(--border-default);
+	border-right: 1px solid var(--border-subtle);
 	transition:
 		background-color 120ms ease,
 		box-shadow 120ms ease;
@@ -74,15 +74,15 @@
 }
 
 .calendar-day--weekend {
-	background-color: var(--muted);
+	background-color: var(--surface-sidebar);
 }
 
 .calendar-day--outside {
-	background-color: var(--muted);
+	background-color: var(--state-hover-subtle);
 }
 
 .calendar-day.calendar-day--target {
-	background-color: var(--state-selected);
+	background-color: var(--state-drag-target);
 	box-shadow: inset 0 0 0 1px var(--border-focus);
 }
 
@@ -150,20 +150,26 @@
 	touch-action: manipulation;
 }
 
+.calendar-item-slot:focus-visible {
+	outline: none;
+	box-shadow: none;
+}
+
 .calendar-item {
 	overflow: visible;
-	border: 1px solid var(--calendar-item-fill);
-	border-radius: 6px;
-	background-color: var(--calendar-item-fill);
+	border: 1px solid var(--border-default);
+	border-radius: 0.5rem;
+	background-color: var(--surface-card);
+	box-shadow: 0 1px 2px var(--shadow-soft);
 	transition:
 		border-color 120ms ease,
 		box-shadow 160ms ease,
-		background-color 120ms ease;
+		transform 160ms ease;
 }
 
 .calendar-item-slot:hover .calendar-item {
-	border-color: var(--calendar-item-accent);
-	box-shadow: 0 1px 4px -1px var(--shadow-soft);
+	border-color: var(--border-strong, var(--border));
+	box-shadow: 0 2px 6px -2px var(--shadow-soft);
 }
 
 .calendar-item--continues-before {
@@ -180,7 +186,7 @@
 
 .calendar-item.calendar-item--selected {
 	border-color: var(--primary);
-	box-shadow: 0 0 0 1px var(--primary);
+	background-color: var(--state-hover-subtle);
 }
 
 .calendar-item-slot--placeholder .calendar-item {
@@ -220,7 +226,7 @@
 	overflow: hidden;
 	border: 1px solid var(--border-default);
 	border-radius: 10px;
-	background-color: var(--muted);
+	background-color: var(--state-hover-subtle);
 }
 
 .calendar-overview {
@@ -323,7 +329,14 @@
 }
 
 :where(.dark, [data-theme="dark"]) .calendar-item {
+	border-color: var(--border-strong);
+	background-color: var(--surface-button);
 	box-shadow: 0 1px 2px var(--shadow-strong);
+}
+
+:where(.dark, [data-theme="dark"]) .calendar-item-slot:hover .calendar-item {
+	background-color: var(--state-hover-strong);
+	border-color: var(--text-faint);
 }
 
 @keyframes calendar-lift {
@@ -348,11 +361,6 @@
 }
 
 /* Quarter/year keep the same navigable calendar surface but compress day cells into a glanceable overview. */
-.calendar-grid[data-view="quarter"],
-.calendar-grid[data-view="year"] {
-	--calendar-item-accent: var(--accent-blue);
-	--calendar-item-fill: var(--accent-blue-light);
-}
 .calendar-grid[data-view="quarter"] .calendar-weeks,
 .calendar-grid[data-view="year"] .calendar-weeks {
 	grid-auto-rows: minmax(0, 1fr);
@@ -364,9 +372,7 @@
 .calendar-grid[data-view="quarter"] .calendar-item,
 .calendar-grid[data-view="year"] .calendar-item {
 	padding: 0 2px;
-	border-radius: 3px;
-	background: transparent;
-	border-color: transparent;
+	border-radius: 0.25rem;
 }
 .calendar-grid[data-view="quarter"] .calendar-item-title,
 .calendar-grid[data-view="year"] .calendar-item-title {

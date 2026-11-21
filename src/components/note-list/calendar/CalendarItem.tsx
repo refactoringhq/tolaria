@@ -3,7 +3,6 @@ import { type CSSProperties, type MouseEvent, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { VaultEntry } from "../../../types";
-import { getTypeColor, getTypeLightColor } from "../../../utils/typeColors";
 import { NoteTitleIcon } from "../../NoteTitleIcon";
 import { PropertyChips } from "../../note-item/PropertyChips";
 import { cardDisplayProperties } from "../kanbanModel";
@@ -11,7 +10,7 @@ import type { CalendarItem } from "./calendarModel";
 
 /** A ghost Button reset to a block slot at its natural height, so an item is one native, focusable control like a Kanban card. */
 const CALENDAR_ITEM_SLOT_CLASSNAME =
-	"calendar-item-slot block h-auto w-full min-w-0 whitespace-normal rounded-md p-0 text-left font-normal hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring [&_svg]:!size-[11px]";
+	"calendar-item-slot block h-auto w-full min-w-0 whitespace-normal rounded-lg p-0 text-left font-normal hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 [&_svg]:!size-[11px]";
 
 export interface CalendarItemContext {
 	cardProperties: string[];
@@ -34,18 +33,6 @@ export interface CalendarItemFaceProps {
 	continuesAfter?: boolean;
 }
 
-function typeAccent(
-	entry: VaultEntry,
-	typeEntryMap: Record<string, VaultEntry>,
-): CSSProperties {
-	const type = entry.isA ?? "Note";
-	const customColor = typeEntryMap[entry.isA ?? ""]?.color;
-	return {
-		"--calendar-item-accent": getTypeColor(type, customColor),
-		"--calendar-item-fill": getTypeLightColor(type, customColor),
-	} as CSSProperties;
-}
-
 function CalendarItemTitle({
 	entry,
 	showIcon,
@@ -55,7 +42,7 @@ function CalendarItemTitle({
 }) {
 	return (
 		<span
-			className="flex min-w-0 items-start gap-1 whitespace-normal break-words text-[12px] font-medium leading-5 text-foreground"
+			className="flex min-w-0 items-start gap-1 whitespace-normal break-words text-[13px] font-medium leading-5 text-foreground"
 			data-testid="calendar-item-title"
 		>
 			{showIcon && (
@@ -113,12 +100,11 @@ export function CalendarItemFace({
 	return (
 		<span
 			className={cn(
-				"calendar-item min-w-0 flex flex-col justify-start gap-0.5 px-2 py-0.5",
+				"calendar-item min-w-0 flex flex-col justify-start gap-0.5 rounded-lg px-3 py-2.5 text-left shadow-xs",
 				continuesBefore && "calendar-item--continues-before",
 				continuesAfter && "calendar-item--continues-after",
 				className,
 			)}
-			style={typeAccent(entry, context.typeEntryMap)}
 		>
 			<CalendarItemTitle entry={entry} showIcon={context.showIcons !== false} />
 			<CalendarItemFields
