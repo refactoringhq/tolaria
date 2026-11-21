@@ -473,9 +473,7 @@ fn remove_mcp_from_config(config_path: &Path) -> Result<bool, String> {
         return Err("mcpServers is not a JSON object".into());
     };
 
-    let removed_primary = servers.remove(MCP_SERVER_NAME).is_some();
-    let removed_legacy = servers.remove(LEGACY_MCP_SERVER_NAME).is_some();
-    if !removed_primary && !removed_legacy {
+    if !remove_managed_mcp_servers(servers) {
         return Ok(false);
     }
 
@@ -489,6 +487,12 @@ fn remove_mcp_from_config(config_path: &Path) -> Result<bool, String> {
         .map_err(|e| format!("Cannot write {}: {e}", config_path.display()))?;
 
     Ok(true)
+}
+
+fn remove_managed_mcp_servers(servers: &mut serde_json::Map<String, serde_json::Value>) -> bool {
+    let removed_primary = servers.remove(MCP_SERVER_NAME).is_some();
+    let removed_legacy = servers.remove(LEGACY_MCP_SERVER_NAME).is_some();
+    removed_primary || removed_legacy
 }
 
 fn mcp_removal_status(removed_configs: &[bool]) -> String {
@@ -715,12 +719,8 @@ mod tests {
     fn mcp_server_dir_candidates_include_runtime_dev_roots_when_build_path_is_stale() {
         let stale_dev_path = Path::new("/Users/runner/work/tolaria/tolaria/mcp-server");
         let current_dir = Path::new("/Users/luca/Workspace/tolaria");
-        let candidates = mcp_server_dir_candidates_for_build(
-            stale_dev_path,
-            &[],
-            Some(current_dir),
-            true,
-        );
+        let candidates =
+            mcp_server_dir_candidates_for_build(stale_dev_path, &[], Some(current_dir), true);
 
         assert!(candidates.contains(&PathBuf::from("/Users/luca/Workspace/tolaria/mcp-server")));
         assert!(candidates.contains(&PathBuf::from(
@@ -770,8 +770,7 @@ mod tests {
     fn debug_build_keeps_source_checkout_first() {
         let dev_path = Path::new("/repo/mcp-server");
         let resource_roots = vec![PathBuf::from("/opt/tolaria/resources")];
-        let candidates =
-            mcp_server_dir_candidates_for_build(dev_path, &resource_roots, None, true);
+        let candidates = mcp_server_dir_candidates_for_build(dev_path, &resource_roots, None, true);
 
         assert_eq!(candidates.first(), Some(&dev_path.to_path_buf()));
     }
