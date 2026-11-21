@@ -13,10 +13,10 @@ const entries = [
 	makeEntry({ path: "/vault/b.md", title: "Beta", status: null }),
 ];
 
-function renderBoard(
+function createBoardProps(
 	overrides: Partial<Parameters<typeof KanbanLayout>[0]> = {},
 ) {
-	const props = {
+	return {
 		entries,
 		allEntries: entries,
 		groupBy: "status",
@@ -34,6 +34,12 @@ function renderBoard(
 		selectedNotePath: "/vault/a.md",
 		...overrides,
 	};
+}
+
+function renderBoard(
+	overrides: Partial<Parameters<typeof KanbanLayout>[0]> = {},
+) {
+	const props = createBoardProps(overrides);
 	render(<KanbanLayout {...props} />);
 	return props;
 }
