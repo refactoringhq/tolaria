@@ -328,7 +328,7 @@ export const ContextMenuOverlay = ({
         type="button"
         variant="ghost"
         size="sm"
-        className={`${SIDEBAR_TYPE_CONTEXT_MENU_BUTTON_CLASSNAME} text-destructive hover:text-destructive`}
+        className={`${SIDEBAR_TYPE_CONTEXT_MENU_BUTTON_CLASSNAME} text-[var(--accent-red)] hover:text-[var(--accent-red)]`}
         onClick={() => onDelete(type)}
       >
         <Trash size={14} />

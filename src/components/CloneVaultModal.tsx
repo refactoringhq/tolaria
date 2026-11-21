@@ -211,7 +211,7 @@ function CloneVaultForm(form: CloneVaultFormState) {
           : 'SSH keys, the git credential manager, `gh auth`, and other system git auth methods all work.'}
       </p>
       {form.cloneError && (
-        <p className="text-xs text-destructive" data-testid="clone-vault-error">{form.cloneError}</p>
+        <p className="text-xs text-[var(--accent-red)]" data-testid="clone-vault-error">{form.cloneError}</p>
       )}
       <DialogFooter className="flex-row items-center justify-end sm:justify-end">
         <Button type="button" variant="outline" onClick={form.handleClose} disabled={form.isCloning} data-testid="clone-vault-cancel">

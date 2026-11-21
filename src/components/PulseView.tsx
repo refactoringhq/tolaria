@@ -93,7 +93,7 @@ const STATUS_COLOR = {
 } as const
 
 const PULSE_ROW_FOCUS_CLASS_NAME =
-  'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/70 focus-visible:ring-inset'
+  'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus-halo focus-visible:ring-inset'
 const PULSE_EDGE_TO_EDGE_ROW_CLASS_NAME = '-mx-4 rounded-none px-4'
 
 function SummaryBadges({ added, modified, deleted }: { added: number; modified: number; deleted: number }) {
@@ -185,7 +185,7 @@ function CommitCard({
             'flex min-w-0 flex-1 items-start justify-between border-none bg-transparent py-2 text-left transition-colors',
             PULSE_ROW_FOCUS_CLASS_NAME,
             PULSE_EDGE_TO_EDGE_ROW_CLASS_NAME,
-            expanded ? 'bg-accent/40' : 'hover:bg-accent/40 focus-visible:bg-accent/40',
+            expanded ? 'bg-muted' : 'hover:bg-muted focus-visible:bg-muted',
           )}
           style={{ gap: 8 }}
           onClick={toggleExpanded}
@@ -205,7 +205,7 @@ function CommitCard({
         </button>
         {commitUrl && (
           <a
-            className="mt-2 flex shrink-0 items-center text-[11px] font-mono text-primary no-underline hover:underline"
+            className="mt-2 flex shrink-0 items-center text-[11px] font-mono text-[var(--accent-blue)] no-underline hover:underline"
             style={{ gap: 3 }}
             href={commitUrl}
             onClick={(e) => {
@@ -259,7 +259,7 @@ function DayGroup({
       <button
         type="button"
         className={cn(
-          'flex w-full cursor-pointer select-none items-center border-0 border-b border-border bg-muted/50 text-left transition-colors hover:bg-muted focus-visible:bg-muted',
+          'flex w-full cursor-pointer select-none items-center border-0 border-b border-border bg-muted text-left transition-colors hover:bg-muted focus-visible:bg-muted',
           PULSE_ROW_FOCUS_CLASS_NAME,
         )}
         style={{ padding: '6px 16px', gap: 6 }}
@@ -335,7 +335,7 @@ function PulseHeader({
             <CaretRight size={14} weight="bold" />
           </button>
         )}
-        <Pulse size={16} className="text-primary" />
+        <Pulse size={16} className="text-[var(--accent-blue)]" />
         <span className="text-[14px] font-semibold text-foreground">{translate(locale, 'pulse.title')}</span>
       </div>
     </div>

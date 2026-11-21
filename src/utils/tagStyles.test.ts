@@ -22,7 +22,7 @@ describe('tagStyles — color overrides', () => {
     const style = getTagStyle('SomeTag')
     // Should have bg and color properties from the accent palette
     expect(style.bg).toMatch(/^var\(--accent-\w+-light\)$/)
-    expect(style.color).toMatch(/^var\(--accent-\w+\)$/)
+    expect(style.color).toMatch(/^var\(--accent-\w+-text\)$/)
   })
 
   it('getTagColorKey returns null when no override set', () => {
@@ -34,13 +34,13 @@ describe('tagStyles — color overrides', () => {
     expect(getTagColorKey('React')).toBe('blue')
     const stored = getVaultConfig().tag_colors as Record<string, string>
     expect(stored).toBeTruthy()
-    expect(stored['React']).toBe('blue')
+    expect(stored.React).toBe('blue')
   })
 
   it('getTagStyle uses override when set', () => {
     setTagColor('React', 'green')
     const style = getTagStyle('React')
-    expect(style.color).toBe('var(--accent-green)')
+    expect(style.color).toBe('var(--accent-green-text)')
     expect(style.bg).toBe('var(--accent-green-light)')
   })
 
@@ -57,8 +57,8 @@ describe('tagStyles — color overrides', () => {
   it('applies different overrides for different tags', () => {
     setTagColor('React', 'blue')
     setTagColor('TypeScript', 'purple')
-    expect(getTagStyle('React').color).toBe('var(--accent-blue)')
-    expect(getTagStyle('TypeScript').color).toBe('var(--accent-purple)')
+    expect(getTagStyle('React').color).toBe('var(--accent-blue-text)')
+    expect(getTagStyle('TypeScript').color).toBe('var(--accent-purple-text)')
   })
 
   it('returns deterministic hash-based color when no override exists', () => {

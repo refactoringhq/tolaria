@@ -41,7 +41,7 @@ describe("renderCollabCursor", () => {
 		expect(
 			cursor.querySelector<HTMLElement>(".bn-collaboration-cursor__caret")
 				?.style.backgroundColor,
-		).toBe("rgb(107, 114, 128)");
+		).toBe("var(--accent-gray)");
 	});
 
 	it("puts the name in a text node, never parsed as markup", () => {

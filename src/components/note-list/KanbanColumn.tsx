@@ -140,7 +140,7 @@ export const KanbanColumn = memo(function KanbanColumn(props: KanbanColumnProps)
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       className={cn(
-        'kanban-column flex min-h-0 shrink-0 flex-col rounded-xl bg-muted/50',
+        'kanban-column flex min-h-0 shrink-0 flex-col rounded-xl bg-muted',
         collapsed ? 'kanban-column--collapsed w-10 min-w-10' : 'w-[272px] min-w-[272px]',
         isCardTarget && 'kanban-column--target',
         isDragging && 'kanban-column--placeholder',

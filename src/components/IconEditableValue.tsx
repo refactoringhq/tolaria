@@ -161,7 +161,7 @@ function IconEditableInput({
               className={cn(
                 'flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[12px] transition-colors',
                 index === highlightedIndex
-                  ? 'bg-primary/10 text-primary'
+                  ? 'bg-[var(--accent-blue-light)] text-[var(--accent-blue)]'
                   : 'text-foreground hover:bg-accent hover:text-foreground',
               )}
               onMouseDown={(event) => event.preventDefault()}

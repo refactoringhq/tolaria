@@ -42,7 +42,7 @@ const editorFindHighlightField = StateField.define<DecorationSet>({
 
 const editorFindHighlightTheme = EditorView.baseTheme({
   '.cm-line.cm-editor-find-line': {
-    backgroundColor: 'color-mix(in srgb, var(--accent-yellow) 18%, transparent)',
+    backgroundColor: 'var(--accent-yellow-light)',
   },
   '.cm-editor-find-match': {
     backgroundColor: 'var(--accent-yellow)',

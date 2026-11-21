@@ -398,7 +398,7 @@ describe("Sidebar", () => {
 					status: null,
 					owner: null,
 					fileSize: 200,
-					color: "cyan",
+					color: "#00ffff",
 				}),
 				buildSidebarEntry({
 					path: "/vault/recipe/pasta.md",
@@ -419,7 +419,7 @@ describe("Sidebar", () => {
 			).toHaveStyle({ color: "var(--accent-green)" });
 			expect(
 				screen.getByLabelText("Toggle Recipes").querySelector("svg"),
-			).toHaveStyle({ color: "rgb(0, 255, 255)" });
+			).toHaveStyle({ color: "var(--accent-teal)" });
 		});
 
 		it("calls onToggleTypeVisibility when toggling a section in the popover", () => {

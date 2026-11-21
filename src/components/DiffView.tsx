@@ -9,7 +9,7 @@ const DIFF_HEADER_PREFIXES = ['diff', 'index', '---', '+++', 'new file']
 function classifyDiffLine(line: string): string {
   if (line.startsWith('+') && !line.startsWith('+++')) return 'bg-[var(--diff-added-bg)] text-[var(--diff-added-text)]'
   if (line.startsWith('-') && !line.startsWith('---')) return 'bg-[var(--diff-removed-bg)] text-[var(--diff-removed-text)]'
-  if (line.startsWith('@@')) return 'bg-[var(--diff-hunk-bg)] text-primary italic'
+  if (line.startsWith('@@')) return 'bg-[var(--diff-hunk-bg)] text-[var(--accent-blue)] italic'
   if (DIFF_HEADER_PREFIXES.some((p) => line.startsWith(p))) return 'bg-muted text-muted-foreground font-semibold'
   return 'text-secondary-foreground'
 }

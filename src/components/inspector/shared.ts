@@ -1,6 +1,6 @@
 import { wikilinkTarget, wikilinkDisplay } from '../../utils/wikilink'
 import type { VaultEntry } from '../../types'
-import { getTypeColor, getTypeLightColor } from '../../utils/typeColors'
+import { getTypeLightColor, getTypeTextColor } from '../../utils/typeColors'
 import { getTypeIcon } from '../NoteItem'
 import { findEntryByTarget } from '../../utils/wikilinkColors'
 
@@ -48,7 +48,7 @@ export function resolveRefProps(ref: string, entries: VaultEntry[], typeEntryMap
 
 function resolveRefAppearance(refType: string | null, typeEntry: VaultEntry | undefined) {
   return {
-    typeColor: getTypeColor(refType, typeEntry?.color),
+    typeColor: getTypeTextColor(refType, typeEntry?.color),
     bgColor: getTypeLightColor(refType, typeEntry?.color),
     TypeIcon: getTypeIcon(refType, typeEntry?.icon),
   }

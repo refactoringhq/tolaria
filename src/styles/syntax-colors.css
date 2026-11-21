@@ -1,0 +1,51 @@
+/* Syntax highlighting and git-diff colors (TOL-406: outside the UI color
+   system by decision; they follow their own GitHub-style conventions).
+   This file is the one other place `pnpm lint:colors` allows raw colors. */
+
+:root,
+[data-theme="light"] {
+  --syntax-heading: #0969DA;
+  --syntax-link: #0969DA;
+  --syntax-monospace: #C9383E;
+  --syntax-monospace-bg: rgba(175, 184, 193, 0.15);
+  --syntax-muted: #636C76;
+  --syntax-frontmatter-key: #C9383E;
+  --syntax-frontmatter-value: #2A7E4F;
+  --syntax-highlight-comment: #6A737D;
+  --syntax-highlight-keyword: #D73A49;
+  --syntax-highlight-string: #032F62;
+  --syntax-highlight-number: #005CC5;
+  --syntax-highlight-title: #6F42C1;
+  --syntax-highlight-type: #E36209;
+  --syntax-highlight-deletion: #B31D28;
+  --syntax-highlight-deletion-bg: #FFEEF0;
+  --diff-added-text: #4CAF50;
+  --diff-added-bg: rgba(76, 175, 80, 0.12);
+  --diff-removed-text: #F44336;
+  --diff-removed-bg: rgba(244, 67, 54, 0.12);
+  --diff-hunk-bg: rgba(33, 150, 243, 0.08);
+}
+
+:root.dark,
+[data-theme="dark"] {
+  --syntax-heading: #83B2FF;
+  --syntax-link: #83B2FF;
+  --syntax-monospace: #FFA6A3;
+  --syntax-monospace-bg: rgba(167, 176, 189, 0.16);
+  --syntax-muted: #9C9488;
+  --syntax-frontmatter-key: #FFA6A3;
+  --syntax-frontmatter-value: #8EDFAE;
+  --syntax-highlight-comment: #8E877D;
+  --syntax-highlight-keyword: #FF9BA0;
+  --syntax-highlight-string: #A9D6FF;
+  --syntax-highlight-number: #8BB7FF;
+  --syntax-highlight-title: #C2AAFF;
+  --syntax-highlight-type: #F3B175;
+  --syntax-highlight-deletion: #FF9C9A;
+  --syntax-highlight-deletion-bg: rgba(255, 138, 134, 0.16);
+  --diff-added-text: #79D89D;
+  --diff-added-bg: rgba(121, 216, 157, 0.14);
+  --diff-removed-text: #FF8A86;
+  --diff-removed-bg: rgba(255, 138, 134, 0.14);
+  --diff-hunk-bg: rgba(120, 164, 255, 0.13);
+}

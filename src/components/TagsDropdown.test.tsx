@@ -14,7 +14,7 @@ describe('TagPill', () => {
     render(<TagPill tag="Unknown" />)
     const pill = screen.getByTitle('Unknown')
     expect(pill.style.backgroundColor).toMatch(/^var\(--accent-\w+-light\)$/)
-    expect(pill.style.color).toMatch(/^var\(--accent-\w+\)$/)
+    expect(pill.style.color).toMatch(/^var\(--accent-\w+-text\)$/)
   })
 
   it('applies truncate for long names', () => {

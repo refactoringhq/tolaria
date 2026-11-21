@@ -567,7 +567,7 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
     }
 
     function SearchResultTypeLabel({ noteType }: { noteType: string | null }) {
-      return noteType ? <span className="shrink-0 text-[11px] text-muted-foreground/70">{noteType}</span> : null
+      return noteType ? <span className="shrink-0 text-[11px] text-text-tertiary">{noteType}</span> : null
     }
 
     function SearchResultSubtitle({ subtitle }: { subtitle: string | null }) {
@@ -578,7 +578,7 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
       return (
         <div className="px-4 py-8 text-center">
           <p className="text-[13px] text-muted-foreground">Search across all note contents</p>
-          <p className="mt-1 text-[11px] text-muted-foreground/60">Enter to open · Esc to close</p>
+          <p className="mt-1 text-[11px] text-text-tertiary">Enter to open · Esc to close</p>
         </div>
       )
     }
@@ -597,7 +597,7 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
 
     function SearchResultsHeader({ count, elapsedMs }: { count: number; elapsedMs: number | null }) {
       return (
-        <div className="border-b border-border/50 px-4 py-1.5">
+        <div className="border-b border-border px-4 py-1.5">
           <span className="text-[11px] text-muted-foreground">
             {count} result{count !== 1 ? 's' : ''}
             {elapsedMs !== null ? ` · ${elapsedMs}ms` : ''}

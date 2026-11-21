@@ -107,7 +107,7 @@ export function SharePeopleList({ vaultId, shares, locale }: SharePeopleListProp
               ))}
             </ul>
           )}
-      {error && <p role="alert" className="m-0 text-xs text-destructive">{error}</p>}
+      {error && <p role="alert" className="m-0 text-xs text-[var(--accent-red)]">{error}</p>}
     </section>
   )
 }

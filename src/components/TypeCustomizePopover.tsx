@@ -174,7 +174,7 @@ function IconSection({
               className={cn(
                 'h-[30px] w-[30px] justify-self-center rounded p-0 transition-colors',
                 selectedIcon === name
-                  ? 'bg-primary/10 text-primary'
+                  ? 'bg-[var(--accent-blue-light)] text-[var(--accent-blue)]'
                   : 'text-muted-foreground hover:bg-accent hover:text-foreground',
               )}
               onClick={() => onSelectIcon(name)}

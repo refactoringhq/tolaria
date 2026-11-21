@@ -212,8 +212,8 @@ function fatalRenderOverlay(): HTMLElement {
     'margin:0',
     'padding:16px',
     'border-radius:8px',
-    'background:#1f1f1f',
-    'color:#fff',
+    'background:var(--gray-950)',
+    'color:var(--white)',
     'font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace',
     'white-space:pre-wrap',
   ].join(';')

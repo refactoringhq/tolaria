@@ -54,7 +54,7 @@ function Avatar({ user, locale }: { user: PresentUser; locale: AppLocale }) {
 			role="img"
 			aria-label={displayName(user, locale)}
 			data-testid="note-presence-avatar"
-			className="inline-flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white ring-2 ring-background"
+			className="inline-flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-text-on-fill ring-2 ring-background"
 			style={{ backgroundColor: user.color }}
 		>
 			{initials(user.name)}

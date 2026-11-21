@@ -82,7 +82,7 @@ function PropertyRow(options: {
         {onDelete && (
           <button
             type="button"
-            className="border-none bg-transparent p-0 text-sm leading-none text-muted-foreground opacity-0 transition-all hover:text-destructive group-hover/prop:opacity-100"
+            className="border-none bg-transparent p-0 text-sm leading-none text-muted-foreground opacity-0 transition-all hover:text-[var(--accent-red)] group-hover/prop:opacity-100"
             onClick={() => onDelete(propKey)}
             title={translate(locale, 'inspector.properties.deleteProperty')}
           >
@@ -188,7 +188,7 @@ function SuggestedPropertySlot({
       <span className={PROPERTY_PANEL_PLACEHOLDER_LABEL_CLASS_NAME}>
         <span className={PROPERTY_PANEL_LABEL_ICON_SLOT_CLASS_NAME} data-testid="suggested-property-icon-slot">
           <SuggestedIcon
-            className="size-3.5 shrink-0 text-muted-foreground/40"
+            className="size-3.5 shrink-0 text-text-muted"
             data-testid={`suggested-property-icon-${displayMode}`}
           />
         </span>
@@ -263,11 +263,11 @@ function TypeDerivedPropertySlot(options: {
       <span className={PROPERTY_PANEL_PLACEHOLDER_LABEL_CLASS_NAME}>
         <span className={PROPERTY_PANEL_LABEL_ICON_SLOT_CLASS_NAME} data-testid="type-derived-property-icon-slot">
           <PlaceholderIcon
-            className="size-3.5 shrink-0 text-muted-foreground/40"
+            className="size-3.5 shrink-0 text-text-muted"
             data-testid={`type-derived-property-icon-${displayMode}`}
           />
         </span>
-        <span className="min-w-0 truncate text-muted-foreground/40">{humanizePropertyKey(propKey)}</span>
+        <span className="min-w-0 truncate text-text-muted">{humanizePropertyKey(propKey)}</span>
       </span>
       <span className={PROPERTY_PANEL_PLACEHOLDER_VALUE_CLASS_NAME}>{'\u2014'}</span>
     </Button>

@@ -15,6 +15,10 @@ to note length. Browser fixtures retain their JSON save API. See ADR 0278.
 
 Key abstractions and domain models in Tolaria.
 
+## Desktop Color System
+
+Raw colors live only in `src/styles/palette.css` (warm `--gray-50…950` and a 50–950 scale per hue on one shared lightness ladder; blue 600 is the brand primary). `src/index.css` maps semantic roles onto palette steps per theme. Each hue exposes three roles: `--accent-<hue>` (icon and accent), `--accent-<hue>-light` (tinted fill) and `--accent-<hue>-text` (label on that fill); `ACCENT_COLORS` in `src/utils/typeColors.ts` carries them as `css`, `cssLight` and `cssText`. `getTypeColor`, `getTypeLightColor` and `getTypeTextColor` resolve a type (or a custom vault color, snapped by `nearestPaletteHue` in `src/utils/paletteHue.ts`) to those roles; status and tag chips use `cssText` for labels. Text on `--fill-primary`, `--fill-destructive` and `--fill-success` is `--text-on-fill` (white). Sidebar count pills take `SIDEBAR_COUNT_PILL_IDLE_CLASS`, with the row carrying `group/sidebar-row`. `src/lib/colorSystem/colorLint.ts` (rules + reasoned allowlist) and `src/lib/colorSystem/contrast.ts` (token resolution and WCAG pairings) back `pnpm lint:colors`. See ADR-0307.
+
 ## Desktop Note Collection Layouts
 
 `src/collections/layoutRegistry.tsx` registers the List, Kanban, Calendar and (flagged) Graph renderers through a shared type and required-property contract. Both consume the resolved note entries; Kanban writes a dropped card's group value through the normal note frontmatter update handler. Saved Views retain layout config under their optional `presentation` YAML mapping; built-in, type, and folder layouts use vault-root `layouts/*.yml` files keyed by collection identity. Missing config keeps the List default. See ADR 0301.

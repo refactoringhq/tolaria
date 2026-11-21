@@ -35,14 +35,14 @@ function FilterPillsInner({ active, counts, onChange, position = 'top', locale =
           aria-selected={active === value}
           className={`inline-flex whitespace-nowrap items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
             active === value
-              ? 'border-foreground/20 bg-foreground/10 text-foreground'
+              ? 'border-[var(--border-strong)] bg-state-hover-strong text-foreground'
               : 'border-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
           }`}
           onClick={() => onChange(value)}
           data-testid={`filter-pill-${value}`}
         >
           {translate(locale, labelKey)}
-          <span className={`text-[10px] tabular-nums ${active === value ? 'text-foreground/70' : 'text-muted-foreground/70'}`}>
+          <span className={`text-[10px] tabular-nums ${active === value ? 'text-muted-foreground' : 'text-text-tertiary'}`}>
             {Reflect.get(counts, value)}
           </span>
         </button>

@@ -9,7 +9,7 @@ export interface TagStyle {
 
 export const DEFAULT_TAG_STYLE: TagStyle = {
   bg: 'var(--accent-blue-light)',
-  color: 'var(--accent-blue)',
+  color: 'var(--accent-blue-text)',
 }
 
 /** Deterministic hash → accent color index for tags without a manual override. */
@@ -20,11 +20,11 @@ function hashTagColor(tag: string): TagStyle {
   }
   const idx = ((hash % ACCENT_COLORS.length) + ACCENT_COLORS.length) % ACCENT_COLORS.length
   const accent = ACCENT_COLORS.at(idx) ?? ACCENT_COLORS[0]
-  return { bg: accent.cssLight, color: accent.css }
+  return { bg: accent.cssLight, color: accent.cssText }
 }
 
 const COLOR_KEY_TO_STYLE: Record<string, TagStyle> = Object.fromEntries(
-  ACCENT_COLORS.map(c => [c.key, { bg: c.cssLight, color: c.css }]),
+  ACCENT_COLORS.map(c => [c.key, { bg: c.cssLight, color: c.cssText }]),
 )
 const COLOR_KEY_STYLE_LOOKUP = new Map(Object.entries(COLOR_KEY_TO_STYLE))
 
