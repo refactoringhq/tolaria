@@ -81,16 +81,25 @@ fn build_time_dev_mcp_server_dir() -> PathBuf {
 fn mcp_server_dir_candidates(dev_path: &Path, resource_roots: &[PathBuf]) -> Vec<PathBuf> {
     let current_dir = std::env::current_dir().ok();
 
-    mcp_server_dir_candidates_for(dev_path, resource_roots, current_dir.as_deref())
+    mcp_server_dir_candidates_for_build(
+        dev_path,
+        resource_roots,
+        current_dir.as_deref(),
+        cfg!(debug_assertions),
+    )
 }
 
-fn mcp_server_dir_candidates_for(
+fn mcp_server_dir_candidates_for_build(
     dev_path: &Path,
     resource_roots: &[PathBuf],
     current_dir: Option<&Path>,
+    prefer_dev_path: bool,
 ) -> Vec<PathBuf> {
     let mut candidates = Vec::new();
-    push_unique_path(&mut candidates, dev_path.to_path_buf());
+
+    if prefer_dev_path {
+        push_unique_path(&mut candidates, dev_path.to_path_buf());
+    }
 
     for root in resource_roots {
         push_resource_root_candidates(&mut candidates, root);
@@ -98,6 +107,10 @@ fn mcp_server_dir_candidates_for(
 
     for root in runtime_development_roots(current_dir) {
         push_development_root_candidates(&mut candidates, &root);
+    }
+
+    if !prefer_dev_path {
+        push_unique_path(&mut candidates, dev_path.to_path_buf());
     }
 
     push_linux_package_candidates(&mut candidates, Path::new("/usr/local"));
@@ -380,24 +393,8 @@ fn upsert_mcp_config(config_path: &Path, entry: &serde_json::Value) -> Result<bo
             .map_err(|e| format!("Cannot create dir {}: {e}", parent.display()))?;
     }
 
-    let mut config: serde_json::Value = if config_path.exists() {
-        let raw = std::fs::read_to_string(config_path)
-            .map_err(|e| format!("Cannot read {}: {e}", config_path.display()))?;
-        serde_json::from_str(&raw)
-            .map_err(|e| format!("Invalid JSON in {}: {e}", config_path.display()))?
-    } else {
-        serde_json::json!({})
-    };
-
-    let servers = config
-        .as_object_mut()
-        .ok_or("Config is not a JSON object")?
-        .entry("mcpServers")
-        .or_insert_with(|| serde_json::json!({}));
-
-    let servers = servers
-        .as_object_mut()
-        .ok_or("mcpServers is not a JSON object")?;
+    let mut config = load_mcp_config(config_path)?;
+    let servers = mcp_servers_object_mut(&mut config)?;
 
     let was_update =
         servers.get(MCP_SERVER_NAME).is_some() || servers.get(LEGACY_MCP_SERVER_NAME).is_some();
@@ -410,6 +407,31 @@ fn upsert_mcp_config(config_path: &Path, entry: &serde_json::Value) -> Result<bo
         .map_err(|e| format!("Cannot write {}: {e}", config_path.display()))?;
 
     Ok(was_update)
+}
+
+fn load_mcp_config(config_path: &Path) -> Result<serde_json::Value, String> {
+    if !config_path.exists() {
+        return Ok(serde_json::json!({}));
+    }
+
+    let raw = std::fs::read_to_string(config_path)
+        .map_err(|e| format!("Cannot read {}: {e}", config_path.display()))?;
+    serde_json::from_str(&raw)
+        .map_err(|e| format!("Invalid JSON in {}: {e}", config_path.display()))
+}
+
+fn mcp_servers_object_mut(
+    config: &mut serde_json::Value,
+) -> Result<&mut serde_json::Map<String, serde_json::Value>, String> {
+    let config_object = config
+        .as_object_mut()
+        .ok_or_else(|| "Config is not a JSON object".to_string())?;
+    let servers = config_object
+        .entry("mcpServers")
+        .or_insert_with(|| serde_json::json!({}));
+    servers
+        .as_object_mut()
+        .ok_or_else(|| "mcpServers is not a JSON object".to_string())
 }
 
 fn remove_mcp_from_configs(config_paths: &[PathBuf]) -> String {
@@ -451,9 +473,7 @@ fn remove_mcp_from_config(config_path: &Path) -> Result<bool, String> {
         return Err("mcpServers is not a JSON object".into());
     };
 
-    let removed_primary = servers.remove(MCP_SERVER_NAME).is_some();
-    let removed_legacy = servers.remove(LEGACY_MCP_SERVER_NAME).is_some();
-    if !removed_primary && !removed_legacy {
+    if !remove_managed_mcp_servers(servers) {
         return Ok(false);
     }
 
@@ -467,6 +487,12 @@ fn remove_mcp_from_config(config_path: &Path) -> Result<bool, String> {
         .map_err(|e| format!("Cannot write {}: {e}", config_path.display()))?;
 
     Ok(true)
+}
+
+fn remove_managed_mcp_servers(servers: &mut serde_json::Map<String, serde_json::Value>) -> bool {
+    let removed_primary = servers.remove(MCP_SERVER_NAME).is_some();
+    let removed_legacy = servers.remove(LEGACY_MCP_SERVER_NAME).is_some();
+    removed_primary || removed_legacy
 }
 
 fn mcp_removal_status(removed_configs: &[bool]) -> String {
@@ -693,7 +719,8 @@ mod tests {
     fn mcp_server_dir_candidates_include_runtime_dev_roots_when_build_path_is_stale() {
         let stale_dev_path = Path::new("/Users/runner/work/tolaria/tolaria/mcp-server");
         let current_dir = Path::new("/Users/luca/Workspace/tolaria");
-        let candidates = mcp_server_dir_candidates_for(stale_dev_path, &[], Some(current_dir));
+        let candidates =
+            mcp_server_dir_candidates_for_build(stale_dev_path, &[], Some(current_dir), true);
 
         assert!(candidates.contains(&PathBuf::from("/Users/luca/Workspace/tolaria/mcp-server")));
         assert!(candidates.contains(&PathBuf::from(
@@ -707,7 +734,7 @@ mod tests {
         let resource_roots = vec![PathBuf::from(
             "/Applications/Tolaria.app/Contents/Resources",
         )];
-        let candidates = mcp_server_dir_candidates_for(dev_path, &resource_roots, None);
+        let candidates = mcp_server_dir_candidates_for_build(dev_path, &resource_roots, None, true);
 
         assert_candidates_include(
             &candidates,
@@ -715,6 +742,37 @@ mod tests {
                 "/Applications/Tolaria.app/Contents/Resources/mcp-server",
             )],
         );
+    }
+
+    #[test]
+    fn release_build_prefers_bundled_server_over_source_checkout() {
+        let dev_path = Path::new("/repo/mcp-server");
+        let resource_roots = vec![PathBuf::from("/opt/tolaria/resources")];
+        let candidates =
+            mcp_server_dir_candidates_for_build(dev_path, &resource_roots, None, false);
+
+        assert_eq!(
+            candidates.first(),
+            Some(&PathBuf::from("/opt/tolaria/resources/mcp-server"))
+        );
+        let bundled_position = candidates
+            .iter()
+            .position(|path| path == &PathBuf::from("/opt/tolaria/resources/mcp-server"))
+            .unwrap();
+        let source_position = candidates
+            .iter()
+            .position(|path| path == &PathBuf::from("/repo/mcp-server"))
+            .unwrap();
+        assert!(bundled_position < source_position);
+    }
+
+    #[test]
+    fn debug_build_keeps_source_checkout_first() {
+        let dev_path = Path::new("/repo/mcp-server");
+        let resource_roots = vec![PathBuf::from("/opt/tolaria/resources")];
+        let candidates = mcp_server_dir_candidates_for_build(dev_path, &resource_roots, None, true);
+
+        assert_eq!(candidates.first(), Some(&dev_path.to_path_buf()));
     }
 
     #[test]
