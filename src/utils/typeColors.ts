@@ -61,13 +61,15 @@ const ACCENT_LOOKUP = new Map(ACCENT_COLORS.map((color) => [color.key, color]))
 const TYPE_HUE_LOOKUP = new Map(Object.entries(TYPE_HUE_MAP))
 
 /** Palette key for a custom color: a named hue, or a CSS color snapped to its nearest palette hue. */
-function resolvePaletteKey(customColorKey?: string | null): string | null {
-  const color = customColorKey?.trim()
-  if (!color) return null
-
+function snapCssColor(color: string): string | null {
   const paletteKey = color.toLowerCase()
   if (ACCENT_LOOKUP.has(paletteKey)) return paletteKey
   return isValidCssColor(color) ? nearestPaletteHue(color) : null
+}
+
+function resolvePaletteKey(customColorKey?: string | null): string | null {
+  const color = customColorKey?.trim()
+  return color ? snapCssColor(color) : null
 }
 
 function resolveTypeAccent(isA: string | null, customColorKey?: string | null): AccentColor {

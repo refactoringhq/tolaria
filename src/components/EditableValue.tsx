@@ -3,14 +3,15 @@ import { normalizeExternalUrl, normalizeUrl, openExternalUrl } from '../utils/ur
 import { getTagStyle } from '../utils/tagStyles'
 import { PROPERTY_CHIP_STYLE } from './propertyChipStyles'
 
-function AutoFocusInput(props: ComponentProps<'input'>) {
-  const ref = useRef<HTMLInputElement>(null)
+/** Opens a URL property value; normalizeExternalUrl only returns http(s) URLs, so other schemes never reach the opener. */
+function openHttpUrlValue(value: string) {
+  const httpUrl = normalizeExternalUrl(normalizeUrl(value))
+  if (!httpUrl) return
+  void openExternalUrl(httpUrl).catch(ignoreOpenerFailure)
+}
 
-  useEffect(() => {
-    ref.current?.focus()
-  }, [])
-
-  return <input ref={ref} {...props} />
+function ignoreOpenerFailure() {
+  // opener failed — ignore silently
 }
 
 export function UrlValue({
@@ -42,13 +43,7 @@ export function UrlValue({
     e.stopPropagation()
     if (openingRef.current) return
     openingRef.current = true
-    // normalizeExternalUrl only returns http(s) URLs, so other schemes never reach the opener.
-    const httpUrl = normalizeExternalUrl(normalizeUrl(value))
-    if (httpUrl) {
-      openExternalUrl(httpUrl).catch(() => {
-        // opener failed — ignore silently
-      })
-    }
+    openHttpUrlValue(value)
     setTimeout(() => { openingRef.current = false }, 500)
   }, [value])
 
@@ -274,4 +269,14 @@ export function TagPillList({
       )}
     </div>
   )
+}
+
+function AutoFocusInput(props: ComponentProps<'input'>) {
+  const ref = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    ref.current?.focus()
+  }, [])
+
+  return <input ref={ref} {...props} />
 }
