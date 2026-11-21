@@ -125,7 +125,7 @@ function SortMenuOptionButton(props: {
 			type="button"
 			role="menuitemradio"
 			aria-checked={isActive}
-			className="flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-1 text-left text-inherit hover:bg-background/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+			className="flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-1 text-left text-inherit hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 			onClick={(event) => {
 				event.stopPropagation();
 				onSelect(value, defaultDirection);

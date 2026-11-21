@@ -3,7 +3,7 @@ import { type CSSProperties, type MouseEvent, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { VaultEntry } from "../../../types";
-import { getTypeColor } from "../../../utils/typeColors";
+import { getTypeColor, getTypeLightColor } from "../../../utils/typeColors";
 import { NoteTitleIcon } from "../../NoteTitleIcon";
 import { PropertyChips } from "../../note-item/PropertyChips";
 import { cardDisplayProperties } from "../kanbanModel";
@@ -38,11 +38,12 @@ function typeAccent(
 	entry: VaultEntry,
 	typeEntryMap: Record<string, VaultEntry>,
 ): CSSProperties {
-	const color = getTypeColor(
-		entry.isA ?? "Note",
-		typeEntryMap[entry.isA ?? ""]?.color,
-	);
-	return { "--calendar-item-accent": color } as CSSProperties;
+	const type = entry.isA ?? "Note";
+	const customColor = typeEntryMap[entry.isA ?? ""]?.color;
+	return {
+		"--calendar-item-accent": getTypeColor(type, customColor),
+		"--calendar-item-fill": getTypeLightColor(type, customColor),
+	} as CSSProperties;
 }
 
 function CalendarItemTitle({

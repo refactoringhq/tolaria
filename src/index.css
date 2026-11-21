@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./styles/palette.css";
+@import "./styles/syntax-colors.css";
 
 /* ============================================================
    Theme Variables — app-owned light/dark contract
@@ -29,104 +31,116 @@
   zoom: var(--tolaria-overlay-zoom-factor, 1);
 }
 
+/* Semantic roles map onto the palette in src/styles/palette.css.
+   Light uses step 600 for icons and accents, 100 for tinted fills and 700
+   for text on those fills. Dark uses 400, 900 and 300. Text on the blue
+   primary and red destructive fills is always white. */
 :root,
 [data-theme="light"] {
   color-scheme: light;
 
   /* --- Semantic surfaces (light mode) --- */
-  --surface-app: #FFFFFF;
-  --surface-sidebar: #F7F6F3;
-  --surface-panel: #FFFFFF;
-  --surface-card: #FFFFFF;
-  --surface-popover: #FFFFFF;
-  --surface-input: #FFFFFF;
-  --surface-button: #EBEBEA;
-  --surface-dialog: #FFFFFF;
-  --surface-editor: #FFFFFF;
-  --surface-overlay: rgba(0, 0, 0, 0.3);
+  --surface-app: var(--white);
+  --surface-sidebar: var(--gray-50);
+  --surface-panel: var(--white);
+  --surface-card: var(--white);
+  --surface-popover: var(--white);
+  --surface-input: var(--white);
+  --surface-button: var(--gray-100);
+  --surface-dialog: var(--white);
+  --surface-editor: var(--white);
+  --surface-overlay: var(--ink-strong);
 
   /* --- Semantic text (light mode) --- */
-  --text-primary: #37352F;
-  --text-secondary: #787774;
-  --text-tertiary: #787774;
-  --text-muted: #B4B4B4;
-  --text-faint: #B4B4B4;
-  --text-heading: #37352F;
-  --text-inverse: #FFFFFF;
+  --text-primary: var(--gray-800);
+  --text-secondary: var(--gray-600);
+  --text-tertiary: var(--gray-600);
+  --text-muted: var(--gray-400);
+  --text-faint: var(--gray-400);
+  --text-heading: var(--gray-800);
+  --text-inverse: var(--white);
+  --text-on-fill: var(--white);
 
   /* --- Semantic borders (light mode) --- */
-  --border-default: #E9E9E7;
-  --border-subtle: #E9E9E7;
-  --border-strong: #D9D9D6;
-  --border-input: #E9E9E7;
-  --border-dialog: #E9E9E7;
-  --border-focus: #155DFF;
+  --border-default: var(--gray-200);
+  --border-subtle: var(--gray-100);
+  --border-strong: var(--gray-300);
+  --border-input: var(--gray-500);
+  --border-dialog: var(--gray-200);
+  --border-focus: var(--blue-600);
 
   /* --- Interaction states (light mode) --- */
-  --state-hover: #EBEBEA;
-  --state-hover-subtle: #F0F0EF;
-  --state-selected: #E8F4FE;
-  --state-selected-strong: #D8ECFE;
-  --editor-selection: var(--state-selected);
-  --state-active: #E8F4FE;
-  --state-focus-ring: #155DFF;
-  --state-drag-target: #155DFF18;
-  --state-disabled: #F0F0EF;
+  --state-hover: var(--gray-100);
+  --state-hover-subtle: var(--gray-50);
+  --state-hover-strong: var(--gray-200);
+  --state-selected: var(--blue-50);
+  --state-selected-strong: var(--blue-100);
+  --editor-selection: var(--blue-100);
+  --state-active: var(--blue-50);
+  --state-focus-ring: var(--blue-600);
+  --state-focus-halo: var(--blue-200);
+  --state-destructive-halo: var(--red-200);
+  --state-drag-target: var(--blue-100);
+  --state-disabled: var(--gray-50);
 
-  /* --- Accent roles (light mode) --- */
-  --accent-blue: #155DFF;
-  --accent-blue-bg: #155DFF18;
-  --accent-blue-hover: #0D4AD6;
-  --accent-blue-light: #155DFF14;
-  --accent-green: #38A169;
-  --accent-green-light: rgba(56, 161, 105, 0.1);
-  --accent-orange: #D9730D;
-  --accent-orange-light: rgba(217, 115, 13, 0.1);
-  --accent-red: #E53E3E;
-  --accent-red-light: rgba(229, 62, 62, 0.1);
-  --accent-purple: #805AD5;
-  --accent-purple-light: rgba(128, 90, 213, 0.1);
-  --accent-yellow: #D69E2E;
-  --accent-yellow-light: rgba(214, 158, 46, 0.1);
-  --accent-teal: #319795;
-  --accent-teal-light: rgba(49, 151, 149, 0.1);
-  --accent-pink: #D53F8C;
-  --accent-pink-light: rgba(213, 63, 140, 0.1);
-  --accent-gray: #718096;
-  --accent-gray-light: rgba(113, 128, 150, 0.1);
+  /* --- Inverse chrome (light mode): controls on foreground-colored bars and tooltips --- */
+  --inverse-subtle: var(--gray-700);
+  --inverse-hover: var(--gray-600);
+  --inverse-muted: var(--gray-400);
+  --inverse-border: var(--gray-600);
+
+  /* --- Count pills (light mode): idle pill = row hover fill, hovered row lifts the pill --- */
+  --count-pill-bg: var(--state-hover);
+  --count-pill-text: var(--gray-600);
+  --count-pill-bg-hover: var(--gray-300);
+  --count-pill-text-hover: var(--gray-800);
+
+  /* --- Accent roles (light mode): icon/accent, tinted fill, text on tinted fill --- */
+  --accent-blue: var(--blue-600);
+  --accent-blue-bg: var(--blue-100);
+  --accent-blue-hover: var(--blue-700);
+  --accent-blue-light: var(--blue-100);
+  --accent-blue-text: var(--blue-700);
+  --accent-blue-light-hover: var(--blue-200);
+  --accent-green: var(--green-600);
+  --accent-green-light: var(--green-100);
+  --accent-green-text: var(--green-700);
+  --accent-orange: var(--orange-600);
+  --accent-orange-light: var(--orange-100);
+  --accent-orange-text: var(--orange-700);
+  --accent-red: var(--red-600);
+  --accent-red-light: var(--red-100);
+  --accent-red-text: var(--red-700);
+  --accent-purple: var(--purple-600);
+  --accent-purple-light: var(--purple-100);
+  --accent-purple-text: var(--purple-700);
+  --accent-yellow: var(--yellow-600);
+  --accent-yellow-light: var(--yellow-100);
+  --accent-yellow-text: var(--yellow-700);
+  --accent-teal: var(--teal-600);
+  --accent-teal-light: var(--teal-100);
+  --accent-teal-text: var(--teal-700);
+  --accent-pink: var(--pink-600);
+  --accent-pink-light: var(--pink-100);
+  --accent-pink-text: var(--pink-700);
+  --accent-gray: var(--gray-600);
+  --accent-gray-light: var(--gray-100);
+  --accent-gray-text: var(--gray-700);
+
+  /* --- Fills that carry white text (light mode) --- */
+  --fill-primary: var(--blue-600);
+  --fill-primary-hover: var(--blue-700);
+  --fill-destructive: var(--red-600);
+  --fill-destructive-hover: var(--red-700);
+  --fill-success: var(--green-600);
+  --fill-success-hover: var(--green-700);
 
   /* --- Feedback roles (light mode) --- */
-  --feedback-info-text: var(--accent-blue);
-  --feedback-info-bg: var(--accent-blue-light);
-  --feedback-success-text: var(--accent-green);
-  --feedback-success-bg: var(--accent-green-light);
-  --feedback-warning-text: #92400E;
-  --feedback-warning-bg: #FEF3C7;
-  --feedback-warning-border: #D97706;
-  --feedback-error-text: var(--accent-red);
-  --feedback-error-bg: var(--accent-red-light);
+  --feedback-warning-text: var(--yellow-700);
+  --feedback-warning-bg: var(--yellow-100);
+  --feedback-warning-border: var(--yellow-600);
 
-  /* --- Syntax and diff roles (light mode) --- */
-  --syntax-heading: #0969DA;
-  --syntax-link: #0969DA;
-  --syntax-monospace: #C9383E;
-  --syntax-monospace-bg: rgba(175, 184, 193, 0.15);
-  --syntax-muted: #636C76;
-  --syntax-frontmatter-key: #C9383E;
-  --syntax-frontmatter-value: #2A7E4F;
-  --syntax-highlight-comment: #6A737D;
-  --syntax-highlight-keyword: #D73A49;
-  --syntax-highlight-string: #032F62;
-  --syntax-highlight-number: #005CC5;
-  --syntax-highlight-title: #6F42C1;
-  --syntax-highlight-type: #E36209;
-  --syntax-highlight-deletion: #B31D28;
-  --syntax-highlight-deletion-bg: #FFEEF0;
-  --diff-added-text: #4CAF50;
-  --diff-added-bg: rgba(76, 175, 80, 0.12);
-  --diff-removed-text: #F44336;
-  --diff-removed-bg: rgba(244, 67, 54, 0.12);
-  --diff-hunk-bg: rgba(33, 150, 243, 0.08);
+  /* --- Editor code blocks (light mode) --- */
   --editor-code-block-background: var(--surface-sidebar);
   --editor-code-block-border: var(--border-subtle);
   --editor-code-block-text: var(--text-primary);
@@ -134,62 +148,15 @@
   --editor-paragraph-spacing: 0.5em;
 
   /* --- Overlays and shadows (light mode) --- */
-  --shadow-overlay: var(--surface-overlay);
-  --shadow-dialog: rgba(0, 0, 0, 0.15);
+  --shadow-dialog: var(--ink-medium);
+  --shadow-soft: var(--ink-soft);
+  --shadow-medium: var(--ink-medium);
+  --shadow-strong: var(--ink-strong);
 
-  /* --- Scrollbars (light mode) ---
-     Semi-transparent warm greys so thumbs stay secondary chrome.
-     Idle stays quiet; hover/active raise affordance without matching borders. */
-  --scrollbar-size: 0.5rem;
-  --scrollbar-thumb: color-mix(in srgb, var(--text-primary) 16%, transparent);
-  --scrollbar-thumb-hover: color-mix(in srgb, var(--text-primary) 28%, transparent);
-  --scrollbar-thumb-active: color-mix(in srgb, var(--text-primary) 38%, transparent);
-  --scrollbar-track: transparent;
-
-  /* --- shadcn theme aliases (light mode) --- */
-  --radius: 0.5rem;
-  --background: var(--surface-app);
-  --foreground: var(--text-primary);
-  --card: var(--surface-card);
-  --card-foreground: var(--text-primary);
-  --popover: var(--surface-popover);
-  --popover-foreground: var(--text-primary);
-  --primary: var(--accent-blue);
-  --primary-foreground: var(--text-inverse);
-  --secondary: var(--state-hover);
-  --secondary-foreground: var(--text-primary);
-  --muted: var(--state-hover-subtle);
-  --muted-foreground: var(--text-secondary);
-  --accent: var(--state-hover);
-  --accent-foreground: var(--text-primary);
-  --destructive: var(--accent-red);
-  --destructive-foreground: var(--text-inverse);
-  --border: var(--border-default);
-  --input: var(--border-input);
-  --ring: var(--state-focus-ring);
-  --sidebar: var(--surface-sidebar);
-  --sidebar-foreground: var(--text-primary);
-  --sidebar-primary: var(--accent-blue);
-  --sidebar-primary-foreground: var(--text-inverse);
-  --sidebar-accent: var(--state-hover);
-  --sidebar-accent-foreground: var(--text-primary);
-  --sidebar-border: var(--border-default);
-  --sidebar-ring: var(--state-focus-ring);
-
-  /* --- Compatibility aliases for existing product code --- */
-  --bg-primary: var(--surface-app);
-  --bg-sidebar: var(--surface-sidebar);
-  --bg-card: var(--surface-card);
-  --bg-hover: var(--state-hover);
-  --bg-hover-subtle: var(--state-hover-subtle);
-  --bg-selected: var(--state-selected);
-  --bg-input: var(--surface-input);
-  --bg-button: var(--surface-button);
-  --bg-dialog: var(--surface-dialog);
-  --border-primary: var(--border-default);
-  --hover: var(--state-hover);
-  --link-color: var(--accent-blue);
-  --link-hover: var(--accent-blue-hover);
+  /* --- Scrollbars (light mode): warm gray steps, idle quiet, hover/active raise affordance --- */
+  --scrollbar-thumb: var(--gray-200);
+  --scrollbar-thumb-hover: var(--gray-300);
+  --scrollbar-thumb-active: var(--gray-400);
 }
 
 :root.dark,
@@ -197,144 +164,170 @@
   color-scheme: dark;
 
   /* --- Semantic surfaces (dark mode) --- */
-  --surface-app: #1F1E1B;
-  --surface-sidebar: #191814;
-  --surface-panel: #23221F;
-  --surface-card: #23221F;
-  --surface-popover: #292823;
-  --surface-input: #1F1E1B;
-  --surface-button: #34322D;
-  --surface-dialog: #272622;
-  --surface-editor: #1F1E1B;
-  --surface-overlay: rgba(8, 8, 7, 0.58);
+  --surface-app: var(--gray-900);
+  --surface-sidebar: var(--gray-950);
+  --surface-panel: var(--gray-900);
+  --surface-card: var(--gray-900);
+  --surface-popover: var(--gray-900);
+  --surface-input: var(--gray-900);
+  --surface-button: var(--gray-800);
+  --surface-dialog: var(--gray-900);
+  --surface-editor: var(--gray-900);
+  --surface-overlay: var(--ink-scrim);
 
   /* --- Semantic text (dark mode) --- */
-  --text-primary: #E6E1D8;
-  --text-secondary: #B8B1A6;
-  --text-tertiary: #9C9488;
-  --text-muted: #7F776D;
-  --text-faint: #625B53;
-  --text-heading: #F1ECE3;
-  --text-inverse: #151411;
+  --text-primary: var(--gray-200);
+  --text-secondary: var(--gray-400);
+  --text-tertiary: var(--gray-500);
+  --text-muted: var(--gray-500);
+  --text-faint: var(--gray-600);
+  --text-heading: var(--gray-100);
+  --text-inverse: var(--gray-950);
+  --text-on-fill: var(--white);
 
   /* --- Semantic borders (dark mode) --- */
-  --border-default: #34322D;
-  --border-subtle: #2A2925;
-  --border-strong: #46433B;
-  --border-input: #3A3832;
-  --border-dialog: #3A3832;
-  --border-focus: #78A4FF;
+  --border-default: var(--gray-800);
+  --border-subtle: var(--gray-800);
+  --border-strong: var(--gray-700);
+  --border-input: var(--gray-500);
+  --border-dialog: var(--gray-800);
+  --border-focus: var(--blue-400);
 
   /* --- Interaction states (dark mode) --- */
-  --state-hover: #2D2B27;
-  --state-hover-subtle: #262520;
-  --state-selected: #1E344C;
-  --state-selected-strong: #25415F;
-  --editor-selection: #3A63A0;
-  --state-active: #203A55;
-  --state-focus-ring: #78A4FF;
-  --state-drag-target: rgba(120, 164, 255, 0.2);
-  --state-disabled: #292824;
+  --state-hover: var(--gray-800);
+  --state-hover-subtle: var(--gray-800);
+  --state-hover-strong: var(--gray-700);
+  --state-selected: var(--blue-900);
+  --state-selected-strong: var(--blue-800);
+  --editor-selection: var(--blue-800);
+  --state-active: var(--blue-900);
+  --state-focus-ring: var(--blue-400);
+  --state-focus-halo: var(--blue-800);
+  --state-destructive-halo: var(--red-800);
+  --state-drag-target: var(--blue-900);
+  --state-disabled: var(--gray-800);
+
+  /* --- Inverse chrome (dark mode) --- */
+  --inverse-subtle: var(--gray-300);
+  --inverse-hover: var(--gray-400);
+  --inverse-muted: var(--gray-600);
+  --inverse-border: var(--gray-400);
+
+  /* --- Count pills (dark mode) --- */
+  --count-pill-bg: var(--state-hover);
+  --count-pill-text: var(--gray-400);
+  --count-pill-bg-hover: var(--state-hover-strong);
+  --count-pill-text-hover: var(--gray-200);
 
   /* --- Accent roles (dark mode) --- */
-  --accent-blue: #78A4FF;
-  --accent-blue-bg: rgba(120, 164, 255, 0.2);
-  --accent-blue-hover: #9BBEFF;
-  --accent-blue-light: rgba(120, 164, 255, 0.16);
-  --accent-green: #79D89D;
-  --accent-green-light: rgba(121, 216, 157, 0.16);
-  --accent-orange: #F3A15B;
-  --accent-orange-light: rgba(243, 161, 91, 0.17);
-  --accent-red: #FF8A86;
-  --accent-red-light: rgba(255, 138, 134, 0.16);
-  --accent-purple: #B69CFF;
-  --accent-purple-light: rgba(182, 156, 255, 0.17);
-  --accent-yellow: #F2C86B;
-  --accent-yellow-light: rgba(242, 200, 107, 0.18);
-  --accent-teal: #64D1C8;
-  --accent-teal-light: rgba(100, 209, 200, 0.16);
-  --accent-pink: #F28AC3;
-  --accent-pink-light: rgba(242, 138, 195, 0.16);
-  --accent-gray: #A7B0BD;
-  --accent-gray-light: rgba(167, 176, 189, 0.14);
+  --accent-blue: var(--blue-400);
+  --accent-blue-bg: var(--blue-900);
+  --accent-blue-hover: var(--blue-300);
+  --accent-blue-light: var(--blue-900);
+  --accent-blue-text: var(--blue-300);
+  --accent-blue-light-hover: var(--blue-800);
+  --accent-green: var(--green-400);
+  --accent-green-light: var(--green-900);
+  --accent-green-text: var(--green-300);
+  --accent-orange: var(--orange-400);
+  --accent-orange-light: var(--orange-900);
+  --accent-orange-text: var(--orange-300);
+  --accent-red: var(--red-400);
+  --accent-red-light: var(--red-900);
+  --accent-red-text: var(--red-300);
+  --accent-purple: var(--purple-400);
+  --accent-purple-light: var(--purple-900);
+  --accent-purple-text: var(--purple-300);
+  --accent-yellow: var(--yellow-400);
+  --accent-yellow-light: var(--yellow-900);
+  --accent-yellow-text: var(--yellow-300);
+  --accent-teal: var(--teal-400);
+  --accent-teal-light: var(--teal-900);
+  --accent-teal-text: var(--teal-300);
+  --accent-pink: var(--pink-400);
+  --accent-pink-light: var(--pink-900);
+  --accent-pink-text: var(--pink-300);
+  --accent-gray: var(--gray-400);
+  --accent-gray-light: var(--gray-800);
+  --accent-gray-text: var(--gray-300);
+
+  /* --- Fills that carry white text (dark mode): same 600 fills as light --- */
+  --fill-primary: var(--blue-600);
+  --fill-primary-hover: var(--blue-700);
+  --fill-destructive: var(--red-600);
+  --fill-destructive-hover: var(--red-700);
+  --fill-success: var(--green-600);
+  --fill-success-hover: var(--green-700);
 
   /* --- Feedback roles (dark mode) --- */
-  --feedback-info-text: var(--accent-blue);
-  --feedback-info-bg: var(--accent-blue-light);
-  --feedback-success-text: var(--accent-green);
-  --feedback-success-bg: var(--accent-green-light);
-  --feedback-warning-text: #F5C36B;
-  --feedback-warning-bg: rgba(245, 195, 107, 0.16);
-  --feedback-warning-border: #D99B3D;
-  --feedback-error-text: var(--accent-red);
-  --feedback-error-bg: var(--accent-red-light);
+  --feedback-warning-text: var(--yellow-300);
+  --feedback-warning-bg: var(--yellow-900);
+  --feedback-warning-border: var(--yellow-400);
 
-  /* --- Syntax and diff roles (dark mode) --- */
-  --syntax-heading: #83B2FF;
-  --syntax-link: #83B2FF;
-  --syntax-monospace: #FFA6A3;
-  --syntax-monospace-bg: rgba(167, 176, 189, 0.16);
-  --syntax-muted: #9C9488;
-  --syntax-frontmatter-key: #FFA6A3;
-  --syntax-frontmatter-value: #8EDFAE;
-  --syntax-highlight-comment: #8E877D;
-  --syntax-highlight-keyword: #FF9BA0;
-  --syntax-highlight-string: #A9D6FF;
-  --syntax-highlight-number: #8BB7FF;
-  --syntax-highlight-title: #C2AAFF;
-  --syntax-highlight-type: #F3B175;
-  --syntax-highlight-deletion: #FF9C9A;
-  --syntax-highlight-deletion-bg: rgba(255, 138, 134, 0.16);
-  --diff-added-text: #79D89D;
-  --diff-added-bg: rgba(121, 216, 157, 0.14);
-  --diff-removed-text: #FF8A86;
-  --diff-removed-bg: rgba(255, 138, 134, 0.14);
-  --diff-hunk-bg: rgba(120, 164, 255, 0.13);
-  --editor-code-block-background: #161616;
-  --editor-code-block-border: transparent;
-  --editor-code-block-text: #FFFFFF;
-  --editor-code-block-language: rgba(255, 255, 255, 0.7);
+  /* --- Editor code blocks (dark mode) --- */
+  --editor-code-block-background: var(--gray-950);
+  --editor-code-block-border: var(--border-subtle);
+  --editor-code-block-text: var(--gray-100);
+  --editor-code-block-language: var(--gray-400);
   --editor-paragraph-spacing: 0.5em;
 
   /* --- Overlays and shadows (dark mode) --- */
-  --shadow-overlay: var(--surface-overlay);
-  --shadow-dialog: rgba(0, 0, 0, 0.42);
+  --shadow-dialog: var(--ink-heavy);
+  --shadow-soft: var(--ink-strong);
+  --shadow-medium: var(--ink-heavy);
+  --shadow-strong: var(--ink-scrim);
 
-  /* --- Scrollbars (dark mode) ---
-     Dim warm greys tuned for surfaces around #1F1E1B / #23221F / #191814.
-     Prefer border-strong as the warm-grey base (hue ~#46433B) at low alpha so
-     idle thumbs sit below --border-default and stop competing with content.
-     Hover/active step up for grab affordance (Obsidian/macOS-style progression). */
+  /* --- Scrollbars (dark mode) --- */
+  --scrollbar-thumb: var(--gray-800);
+  --scrollbar-thumb-hover: var(--gray-700);
+  --scrollbar-thumb-active: var(--gray-600);
+}
+
+/* Role aliases resolve per element, so they sit on every theme scope. */
+:root,
+[data-theme="light"],
+:root.dark,
+[data-theme="dark"] {
+  /* --- Feedback roles --- */
+  --feedback-info-text: var(--accent-blue-text);
+  --feedback-info-bg: var(--accent-blue-light);
+  --feedback-success-text: var(--accent-green-text);
+  --feedback-success-bg: var(--accent-green-light);
+  --feedback-error-text: var(--accent-red-text);
+  --feedback-error-bg: var(--accent-red-light);
+
+  --shadow-overlay: var(--surface-overlay);
   --scrollbar-size: 0.5rem;
-  --scrollbar-thumb: color-mix(in srgb, var(--border-strong) 42%, transparent);
-  --scrollbar-thumb-hover: color-mix(in srgb, var(--border-strong) 68%, transparent);
-  --scrollbar-thumb-active: color-mix(in srgb, var(--border-strong) 88%, transparent);
   --scrollbar-track: transparent;
 
-  /* --- shadcn theme aliases (dark mode) --- */
+  /* --- shadcn theme aliases --- */
+  --radius: 0.5rem;
   --background: var(--surface-app);
   --foreground: var(--text-primary);
   --card: var(--surface-card);
   --card-foreground: var(--text-primary);
   --popover: var(--surface-popover);
   --popover-foreground: var(--text-primary);
-  --primary: var(--accent-blue);
-  --primary-foreground: var(--text-inverse);
+  --primary: var(--fill-primary);
+  --primary-hover: var(--fill-primary-hover);
+  --primary-foreground: var(--text-on-fill);
   --secondary: var(--state-hover);
+  --secondary-hover: var(--state-hover-strong);
   --secondary-foreground: var(--text-primary);
   --muted: var(--state-hover-subtle);
   --muted-foreground: var(--text-secondary);
   --accent: var(--state-hover);
   --accent-foreground: var(--text-primary);
-  --destructive: var(--accent-red);
-  --destructive-foreground: var(--text-inverse);
+  --destructive: var(--fill-destructive);
+  --destructive-hover: var(--fill-destructive-hover);
+  --destructive-foreground: var(--text-on-fill);
   --border: var(--border-default);
   --input: var(--border-input);
   --ring: var(--state-focus-ring);
   --sidebar: var(--surface-sidebar);
   --sidebar-foreground: var(--text-primary);
-  --sidebar-primary: var(--accent-blue);
-  --sidebar-primary-foreground: var(--text-inverse);
+  --sidebar-primary: var(--fill-primary);
+  --sidebar-primary-foreground: var(--text-on-fill);
   --sidebar-accent: var(--state-hover);
   --sidebar-accent-foreground: var(--text-primary);
   --sidebar-border: var(--border-default);
@@ -398,6 +391,24 @@
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-text-on-fill: var(--text-on-fill);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-destructive-hover: var(--destructive-hover);
+  --color-state-hover-strong: var(--state-hover-strong);
+  --color-focus-halo: var(--state-focus-halo);
+  --color-destructive-halo: var(--state-destructive-halo);
+  --color-count-pill: var(--count-pill-bg);
+  --color-count-pill-text: var(--count-pill-text);
+  --color-count-pill-hover: var(--count-pill-bg-hover);
+  --color-count-pill-text-hover: var(--count-pill-text-hover);
+  --color-shadow-soft: var(--shadow-soft);
+  --color-inverse-subtle: var(--inverse-subtle);
+  --color-inverse-hover: var(--inverse-hover);
+  --color-inverse-muted: var(--inverse-muted);
+  --color-inverse-border: var(--inverse-border);
+  --color-shadow-medium: var(--shadow-medium);
   --color-scrollbar-thumb: var(--scrollbar-thumb);
   --color-scrollbar-thumb-hover: var(--scrollbar-thumb-hover);
   --color-scrollbar-thumb-active: var(--scrollbar-thumb-active);
@@ -540,11 +551,11 @@
     background: var(--background);
     border: 1px solid var(--border);
     border-radius: 12px;
-    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12), 0 1px 3px rgba(15, 23, 42, 0.10);
+    box-shadow: 0 8px 18px var(--shadow-soft), 0 1px 3px var(--shadow-soft);
   }
   html.ai-workspace-native-window.dark #root,
   html.ai-workspace-native-window[data-theme="dark"] #root {
-    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.30), 0 1px 4px rgba(0, 0, 0, 0.22);
+    box-shadow: 0 12px 26px var(--shadow-strong), 0 1px 4px var(--shadow-medium);
   }
   /* Interactive controls should advertise clickability unless disabled. */
   :where(
@@ -665,8 +676,8 @@
 
 .ai-markdown .chat-wikilink {
   display: inline;
-  color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--accent-blue-text);
+  background: var(--accent-blue-light);
   border-radius: 4px;
   padding: 0 4px;
   cursor: pointer;
@@ -675,7 +686,7 @@
   transition: background 0.15s ease;
 }
 .ai-markdown .chat-wikilink:hover {
-  background: color-mix(in srgb, var(--primary) 20%, transparent);
+  background: var(--accent-blue-light-hover);
   text-decoration: underline;
 }
 

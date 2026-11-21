@@ -14,7 +14,7 @@ describe('TagPill', () => {
     render(<TagPill tag="Unknown" />)
     const pill = screen.getByTitle('Unknown')
     expect(pill.style.backgroundColor).toMatch(/^var\(--accent-\w+-light\)$/)
-    expect(pill.style.color).toMatch(/^var\(--accent-\w+\)$/)
+    expect(pill.style.color).toMatch(/^var\(--accent-\w+-text\)$/)
   })
 
   it('applies truncate for long names', () => {
@@ -61,7 +61,7 @@ describe('TagsDropdown', () => {
   it('shows checkmark for selected tags', () => {
     render(<TagsDropdown {...defaultProps} />)
     // React and Tauri are selected — their check marks should show
-    const reactOption = screen.getByTestId('tag-option-React').closest('div')!
+    const reactOption = screen.getByTestId('tag-option-React').closest('div') as HTMLElement
     const checkSpans = reactOption.querySelectorAll('span')
     const hasCheck = Array.from(checkSpans).some(s => s.textContent === '\u2713')
     expect(hasCheck).toBe(true)

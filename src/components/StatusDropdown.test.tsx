@@ -9,14 +9,14 @@ describe('StatusPill', () => {
     expect(pill).toBeInTheDocument()
     expect(pill.textContent).toBe('Active')
     expect(pill.style.backgroundColor).toBe('var(--accent-green-light)')
-    expect(pill.style.color).toBe('var(--accent-green)')
+    expect(pill.style.color).toBe('var(--accent-green-text)')
   })
 
   it('renders with default style for unknown status', () => {
     render(<StatusPill status="Custom Thing" />)
     const pill = screen.getByTitle('Custom Thing')
-    expect(pill.style.backgroundColor).toBe('var(--accent-blue-light)')
-    expect(pill.style.color).toBe('var(--muted-foreground)')
+    expect(pill.style.backgroundColor).toBe('var(--accent-gray-light)')
+    expect(pill.style.color).toBe('var(--accent-gray-text)')
   })
 
   it('applies truncate class for long names', () => {

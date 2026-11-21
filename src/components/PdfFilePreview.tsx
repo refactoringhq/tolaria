@@ -131,7 +131,7 @@ function PdfPageCanvas({ availableWidth, document, onError, pageNumber, title }:
 
   return (
     <div ref={pageRef} className="flex min-h-32 justify-center" data-pdf-page={pageNumber}>
-      {visible && <canvas ref={canvasRef} aria-label={title} className="max-w-full bg-white shadow-sm" />}
+      {visible && <canvas ref={canvasRef} aria-label={title} className="max-w-full bg-[var(--white)] shadow-sm" />}
     </div>
   )
 }
@@ -192,7 +192,7 @@ export function PdfFilePreview({ fallback, onError, source, title }: PdfFilePrev
   return (
     <section
       ref={previewRef}
-      className="h-full min-h-[320px] overflow-auto bg-muted/20 py-6"
+      className="h-full min-h-[320px] overflow-auto bg-muted py-6"
       data-testid="pdf-file-preview"
       data-pdf-source={source}
       aria-busy={document === null}

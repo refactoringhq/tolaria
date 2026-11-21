@@ -153,7 +153,7 @@ export function AddRemoteModal(
           </p>
 
           {connectError && (
-            <p className="text-xs text-destructive" data-testid="add-remote-error">{connectError}</p>
+            <p className="text-xs text-[var(--accent-red)]" data-testid="add-remote-error">{connectError}</p>
           )}
 
           <DialogFooter className="flex-row items-center justify-end sm:justify-end">

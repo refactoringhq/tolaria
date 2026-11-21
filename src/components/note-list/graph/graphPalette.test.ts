@@ -1,9 +1,13 @@
 import { act, renderHook } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { makeEntry } from '../../../test-utils/noteListTestUtils'
 import { mixColors, readGraphPalette, rgbChannels, useThemeSignature, withAlpha } from './graphPalette'
 
 describe('graphPalette', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('turns resolved colors into rgba strings WebGL can read', () => {
     expect(rgbChannels('rgb(229, 62, 62)')).toEqual([229, 62, 62])
     expect(withAlpha('rgba(1, 2, 3, 0.2)', 0.5)).toBe('rgba(1, 2, 3, 0.5)')
@@ -33,6 +37,11 @@ describe('graphPalette', () => {
   it('colors a note by its first matching group, else by its type', () => {
     const host = document.createElement('div')
     document.body.appendChild(host)
+    const resolved: Record<string, string> = { 'var(--accent-red)': 'rgb(255, 0, 0)', 'var(--accent-blue)': 'rgb(0, 0, 255)' }
+    vi.spyOn(window, 'getComputedStyle').mockImplementation(
+      (element) => ({ color: resolved[(element as HTMLElement).style.color] ?? '' }) as CSSStyleDeclaration,
+    )
+    // Group colors snap to palette hues, like every other vault color (TOL-406).
     const groups = [
       { id: 'blank', query: ' ', color: '#00ff00' },
       { id: 'people', query: 'type:Person', color: '#ff0000' },

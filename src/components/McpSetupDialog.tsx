@@ -176,7 +176,7 @@ export function McpSetupDialog(options: McpSetupDialogProps) {
         >
           <p>{t('mcp.setup.runtimeRequirement')}</p>
           <p>{t('mcp.setup.writeEntryDescription', { entry: 'tolaria' })}</p>
-          <div className="rounded-md border border-border bg-muted/30 px-3 py-3 font-mono text-xs text-foreground">
+          <div className="rounded-md border border-border bg-muted px-3 py-3 font-mono text-xs text-foreground">
             <div>~/.claude.json</div>
             <div>~/.claude/mcp.json</div>
             <div>~/.gemini/config/mcp_config.json</div>

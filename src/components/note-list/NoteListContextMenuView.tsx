@@ -261,7 +261,7 @@ function NoteListContextMenuButton({ item }: { item: NoteListContextMenuItem }) 
     <Button
       type="button"
       variant="ghost"
-      className={`flex h-auto w-full cursor-default items-center justify-start gap-2 rounded-sm px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground ${item.destructive ? 'text-destructive hover:text-destructive' : ''}`}
+      className={`flex h-auto w-full cursor-default items-center justify-start gap-2 rounded-sm px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground ${item.destructive ? 'text-[var(--accent-red)] hover:text-[var(--accent-red)]' : ''}`}
       onClick={item.onSelect}
     >
       <IconComponent size={16} weight={item.iconWeight} className="shrink-0" />

@@ -75,7 +75,7 @@ function ViewMenuButton({
   destructive?: boolean
   onClick: () => void
 }) {
-  const className = `${VIEW_CONTEXT_MENU_BUTTON_CLASSNAME}${destructive ? ' text-destructive hover:text-destructive' : ''}`
+  const className = `${VIEW_CONTEXT_MENU_BUTTON_CLASSNAME}${destructive ? ' text-[var(--accent-red)] hover:text-[var(--accent-red)]' : ''}`
   return (
     <Button type="button" variant="ghost" size="sm" className={className} onClick={onClick}>
       {children}

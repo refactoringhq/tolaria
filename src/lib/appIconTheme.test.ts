@@ -52,12 +52,12 @@ describe('syncNativeWindowBackground', () => {
   it('uses the dark sidebar surface for Hybrid', async () => {
     mocks.isTauri.mockReturnValue(true)
     await syncNativeWindowBackground('hybrid')
-    expect(mocks.setBackgroundColor).toHaveBeenCalledWith('#191814')
+    expect(mocks.setBackgroundColor).toHaveBeenCalledWith('#191713')
   })
 
   it('uses the light surface for Light mode', async () => {
     mocks.isTauri.mockReturnValue(true)
     await syncNativeWindowBackground('light')
-    expect(mocks.setBackgroundColor).toHaveBeenCalledWith('#F7F6F3')
+    expect(mocks.setBackgroundColor).toHaveBeenCalledWith('#F8F7F4')
   })
 })

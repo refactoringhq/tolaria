@@ -19,7 +19,7 @@
   z-index: 40;
   width: min(760px, 72%);
   border-left: 1px solid var(--border);
-  box-shadow: -16px 0 40px -24px rgb(0 0 0 / 0.35);
+  box-shadow: -16px 0 40px -24px var(--shadow-strong);
   transform: translateX(calc(100% + 48px));
   visibility: hidden;
   transition:
@@ -70,7 +70,7 @@
 
 .kanban-card-slot:hover .kanban-card {
   border-color: var(--border-strong, var(--border));
-  box-shadow: 0 2px 6px -2px rgb(0 0 0 / 0.12);
+  box-shadow: 0 2px 6px -2px var(--shadow-soft);
 }
 
 /* Dark mode layers the board like Linear and GitHub Projects: a recessed board, raised lanes, and cards
@@ -89,11 +89,11 @@
 :where(.dark, [data-theme="dark"]) .kanban-card {
   background-color: var(--surface-button);
   border-color: var(--border-strong);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  box-shadow: 0 1px 2px var(--shadow-strong);
 }
 
 :where(.dark, [data-theme="dark"]) .kanban-card-slot:hover .kanban-card {
-  background-color: color-mix(in srgb, var(--surface-button) 92%, var(--text-primary));
+  background-color: var(--state-hover-strong);
   border-color: var(--text-faint);
 }
 
@@ -112,12 +112,12 @@
 }
 
 .kanban-column--target {
-  background-color: color-mix(in srgb, var(--primary) 9%, var(--muted));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 35%, transparent);
+  background-color: var(--state-selected);
+  box-shadow: inset 0 0 0 1px var(--border-focus);
 }
 
 .kanban-hidden-columns {
-  background-color: color-mix(in srgb, var(--muted) 50%, transparent);
+  background-color: var(--muted);
 }
 
 .kanban-column-strip__title {
@@ -140,7 +140,7 @@
 }
 
 .kanban-drag-lift .kanban-card {
-  box-shadow: 0 18px 36px -12px rgb(0 0 0 / 0.35), 0 4px 10px -4px rgb(0 0 0 / 0.18);
+  box-shadow: 0 18px 36px -12px var(--shadow-strong), 0 4px 10px -4px var(--shadow-medium);
 }
 
 .kanban-overlay--dropping .kanban-drag-lift {
@@ -160,7 +160,7 @@
 @keyframes kanban-drop {
   from {
     transform: rotate(3deg) scale(1.03);
-    box-shadow: 0 18px 36px -12px rgb(0 0 0 / 0.35);
+    box-shadow: 0 18px 36px -12px var(--shadow-strong);
   }
 }
 

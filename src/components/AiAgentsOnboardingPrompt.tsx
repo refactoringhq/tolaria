@@ -94,7 +94,7 @@ function InfoPanel({
 	const textAlignClass = textAlign === "center" ? "text-center" : "text-left";
 	return (
 		<div
-			className={`rounded-lg border border-border bg-muted/20 px-4 py-4 ${textAlignClass}`}
+			className={`rounded-lg border border-border bg-muted px-4 py-4 ${textAlignClass}`}
 			data-testid={testId}
 		>
 			<div className="text-sm font-medium text-foreground">{title}</div>
@@ -124,7 +124,7 @@ function DetectedAgentsList({
 				return (
 					<div
 						key={definition.id}
-						className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/20 px-4 py-3 text-sm"
+						className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted px-4 py-3 text-sm"
 					>
 						<div className="flex min-w-0 items-center gap-3 text-left">
 							<AiAgentIcon agent={definition.id} size={18} />

@@ -230,7 +230,7 @@ describe('FolderTree', () => {
   it('highlights the selected folder row', () => {
     const selection: SidebarSelection = { kind: 'folder', path: 'areas' }
     render(<FolderTree folders={mockFolders} selection={selection} onSelect={vi.fn()} />)
-    expect(screen.getByTestId('folder-row:areas').className).toContain('text-primary')
+    expect(screen.getByTestId('folder-row:areas').className).toContain('text-[var(--accent-blue)]')
   })
 
   it('opens the create-folder input from the header action', () => {

@@ -120,7 +120,7 @@ describe('NoteItem', () => {
 
     render(<NoteItem entry={textEntry} isSelected={false} typeEntryMap={{}} onClickNote={onClickNote} />)
 
-    const item = screen.getByText('config.yml').closest('div')!
+    const item = screen.getByText('config.yml').closest('div') as HTMLElement
     fireEvent.click(item)
     expect(onClickNote).toHaveBeenCalled()
   })
@@ -153,7 +153,7 @@ describe('NoteItem', () => {
       filename: 'idea.md',
       title: 'Idea',
       isA: 'Type',
-      color: 'cyan',
+      color: '#00ffff',
     })
     const ideaEntry = makeEntry({
       path: '/vault/ideas/native-cyan-idea.md',
@@ -171,7 +171,7 @@ describe('NoteItem', () => {
       />,
     )
 
-    expect(screen.getByTestId('type-icon')).toHaveStyle({ color: 'rgb(0, 255, 255)' })
+    expect(screen.getByTestId('type-icon')).toHaveStyle({ color: 'var(--accent-teal)' })
   })
 
   it('shows the title with filename metadata when a change status is present', () => {
@@ -350,7 +350,7 @@ describe('NoteItem', () => {
       filename: 'idea.md',
       title: 'Idea',
       isA: 'Type',
-      color: 'cyan',
+      color: '#00ffff',
       icon: 'wrench',
     })
     const sourceEntry = makeEntry({
@@ -377,8 +377,7 @@ describe('NoteItem', () => {
     const row = chip.closest('[data-note-path]')
     expect(chip).toHaveTextContent('Build App')
     expect(chip.className).toContain('cursor-pointer')
-    expect(chip).toHaveStyle({ color: 'rgb(0, 255, 255)' })
-    expect(chip.getAttribute('style')).toContain('background-color: color-mix(in srgb, cyan 14%, transparent)')
+    expect(chip).toHaveStyle({ color: 'var(--accent-teal-text)', backgroundColor: 'var(--accent-teal-light)' })
     expect(row?.tagName).toBe('DIV')
     expect(row).toHaveAttribute('role', 'option')
 
@@ -425,7 +424,7 @@ describe('NoteItem', () => {
 
     const chip = screen.getByTestId('property-chip-topics-0')
     expect(chip).toHaveTextContent('AI')
-    expect(chip).toHaveStyle({ color: 'var(--accent-green)', backgroundColor: 'var(--accent-green-light)' })
+    expect(chip).toHaveStyle({ color: 'var(--accent-green-text)', backgroundColor: 'var(--accent-green-light)' })
     expect(chip.querySelector('svg')).not.toBeNull()
   })
 
@@ -516,7 +515,7 @@ describe('NoteItem', () => {
     const chip = screen.getByTestId('property-chip-url-0')
     expect(chip).toHaveTextContent('example.com')
     expect(chip.className).toContain('cursor-pointer')
-    expect(chip).toHaveStyle({ color: 'var(--accent-blue)', backgroundColor: 'var(--accent-blue-light)' })
+    expect(chip).toHaveStyle({ color: 'var(--accent-blue-text)', backgroundColor: 'var(--accent-blue-light)' })
 
     fireEvent.click(chip)
     expect(openExternalUrl).not.toHaveBeenCalled()

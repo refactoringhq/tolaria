@@ -110,7 +110,7 @@ function ConflictFileRow({
       onFocus={onFocus}
       className={cn(
         'flex items-center justify-between gap-2 rounded-md border px-3 py-2 transition-colors',
-        focused ? 'border-ring bg-accent/50' : 'border-border bg-background',
+        focused ? 'border-ring bg-muted' : 'border-border bg-background',
         resolved && 'opacity-70',
       )}
       data-testid={`conflict-file-${state.file}`}
@@ -408,7 +408,7 @@ function ConflictResolverDialogContent(options: ConflictResolverModalProps) {
       />
 
       {error && (
-        <p className="text-xs text-destructive" data-testid="conflict-error">
+        <p className="text-xs text-[var(--accent-red)]" data-testid="conflict-error">
           {error}
         </p>
       )}

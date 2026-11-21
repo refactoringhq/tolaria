@@ -1,0 +1,71 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { describe, expect, it } from 'vitest'
+import { buildContrastReport, contrastRatio, formatContrastReport, resolveToken, themeTokens } from './contrast'
+
+const root = process.cwd()
+const sources = ['src/styles/palette.css', 'src/index.css'].map((path) => readFileSync(join(root, path), 'utf8'))
+
+const FIXTURE = `
+:root { --white: #FFFFFF; --ink: #111111; --blue: #155DFF; }
+:root,
+[data-theme="light"] { --surface: var(--white); --text: var(--ink); }
+:root.dark,
+[data-theme="dark"] { --surface: var(--ink); --text: var(--white); }
+:root, [data-theme="light"], :root.dark, [data-theme="dark"] { --fill: var(--blue); --on-fill: var(--white); --broken: var(--missing); }
+`
+
+describe('token contrast', () => {
+  it('computes WCAG ratios', () => {
+    expect(contrastRatio('#FFFFFF', '#000000')).toBeCloseTo(21, 5)
+    expect(contrastRatio('#FFFFFF', '#FFFFFF')).toBeCloseTo(1, 5)
+    expect(contrastRatio('#155DFF', '#FFFFFF')).toBeCloseTo(contrastRatio('#FFFFFF', '#155DFF'), 5)
+  })
+
+  it('resolves each theme through shared aliases to palette hex values', () => {
+    const light = themeTokens([FIXTURE], 'light')
+    const dark = themeTokens([FIXTURE], 'dark')
+    expect(resolveToken(light, '--text')).toBe('#111111')
+    expect(resolveToken(dark, '--text')).toBe('#FFFFFF')
+    expect(resolveToken(dark, '--fill')).toBe('#155DFF')
+    expect(resolveToken(light, '--broken')).toBeNull()
+    expect(resolveToken(light, '--unknown')).toBeNull()
+  })
+
+  it('fails a pairing whose tokens do not resolve or miss the floor', () => {
+    const report = buildContrastReport([FIXTURE], [
+      { label: 'text', foreground: '--text', background: '--surface', minimum: 4.5 },
+      { label: 'broken', foreground: '--broken', background: '--surface', minimum: 3 },
+      { label: 'same', foreground: '--surface', background: '--surface', minimum: 3 },
+    ])
+    expect(report.map((result) => `${result.theme} ${result.label} ${result.pass}`)).toEqual([
+      'light text true', 'light broken false', 'light same false',
+      'dark text true', 'dark broken false', 'dark same false',
+    ])
+    expect(formatContrastReport(report)).toContain('2/6 checks pass.')
+  })
+
+  it('meets every TOL-406 contrast promise in light and dark', () => {
+    const failures = buildContrastReport(sources)
+      .filter((result) => !result.pass)
+      .map((result) => `${result.theme}: ${result.label} ${result.ratio.toFixed(2)}`)
+    expect(failures).toEqual([])
+  })
+
+  it('keeps white text on the primary and destructive fills in both themes', () => {
+    for (const theme of ['light', 'dark'] as const) {
+      const tokens = themeTokens(sources, theme)
+      expect(resolveToken(tokens, '--primary-foreground')).toBe('#FFFFFF')
+      expect(resolveToken(tokens, '--destructive-foreground')).toBe('#FFFFFF')
+      expect(resolveToken(tokens, '--primary')).toBe('#155DFF')
+    }
+  })
+
+  it('makes the idle count pill the row hover fill', () => {
+    for (const theme of ['light', 'dark'] as const) {
+      const tokens = themeTokens(sources, theme)
+      expect(resolveToken(tokens, '--count-pill-bg')).toBe(resolveToken(tokens, '--state-hover'))
+      expect(resolveToken(tokens, '--count-pill-bg-hover')).not.toBe(resolveToken(tokens, '--state-hover'))
+    }
+  })
+})

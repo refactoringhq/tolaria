@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
+import { getTypeColor, getTypeLightColor, getTypeTextColor } from '../utils/typeColors'
 import { getTypeIcon } from './NoteItem'
 import { CreateTypeDialog } from './CreateTypeDialog'
 import { PROPERTY_CHIP_STYLE } from './propertyChipStyles'
@@ -218,7 +218,7 @@ function ReadOnlyType({
             style={{
               ...PROPERTY_CHIP_STYLE,
               background: getTypeLightColor(isA, customColorKey),
-              color: getTypeColor(isA, customColorKey),
+              color: getTypeTextColor(isA, customColorKey),
               display: 'inline-flex',
               alignItems: 'center',
             }}
@@ -283,7 +283,7 @@ function EditableTypeSelector(
   } = functionOptions
   const currentValue = isA ?? TYPE_NONE
   const currentTypeColorKey = typeMetadataValue({ type: isA, metadata: typeColorKeys }) ?? customColorKey
-  const typeColor = isA ? getTypeColor(isA, currentTypeColorKey) : undefined
+  const typeColor = isA ? getTypeTextColor(isA, currentTypeColorKey) : undefined
   const typeLightColor = isA ? getTypeLightColor(isA, currentTypeColorKey) : undefined
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -419,7 +419,7 @@ function EditableTypeSelector(
               aria-haspopup="listbox"
               className={cn(
                 'h-auto max-w-full justify-between gap-1 border-none px-2 shadow-none ring-inset [&_svg]:text-current',
-                isA ? 'hover:ring-1 hover:ring-current' : 'bg-muted hover:bg-muted/80',
+                isA ? 'hover:ring-1 hover:ring-current' : 'bg-muted hover:bg-accent',
               )}
               style={{
                 ...PROPERTY_CHIP_STYLE,

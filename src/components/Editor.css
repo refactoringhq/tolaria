@@ -397,8 +397,8 @@ body.mac-chrome
 	html:has([data-note-pdf-export-root="true"]),
 	body:has([data-note-pdf-export-root="true"]) {
 		color-scheme: light;
-		background: #fff;
-		color: #111;
+		background: var(--white);
+		color: var(--gray-950);
 		height: auto;
 		min-height: 0;
 		overflow: visible;
@@ -453,27 +453,27 @@ body.mac-chrome
 		.bn-container
 		.bn-editor
 		:not(svg, svg *) {
-		-webkit-text-fill-color: #111;
+		-webkit-text-fill-color: var(--gray-950);
 		background-color: transparent;
-		color: #111;
+		color: var(--gray-950);
 	}
 
 	body:has([data-note-pdf-export-root="true"])
 		[data-note-pdf-export-root="true"] {
-		--foreground: #111;
-		--muted-foreground: #444;
-		--editor-code-block-background: #f6f8fa;
-		--editor-code-block-text: #111;
-		--editor-code-block-border: #d0d7de;
-		--background: #fff;
+		--foreground: var(--gray-950);
+		--muted-foreground: var(--gray-700);
+		--editor-code-block-background: var(--gray-50);
+		--editor-code-block-text: var(--gray-950);
+		--editor-code-block-border: var(--gray-300);
+		--background: var(--white);
 		display: block;
 		width: 100%;
 		max-width: none;
 		min-height: auto;
 		margin: 0;
 		padding: 0;
-		background: #fff;
-		color: #111;
+		background: var(--white);
+		color: var(--gray-950);
 	}
 
 	body:has([data-note-pdf-export-root="true"]) .editor__blocknote-container,
@@ -482,8 +482,8 @@ body.mac-chrome
 		height: auto;
 		min-height: auto;
 		overflow: visible;
-		background: #fff;
-		color: #111;
+		background: var(--white);
+		color: var(--gray-950);
 		/* BlockNote marks its container .dark, which would print native controls
        such as task checkboxes with the dark palette. */
 		color-scheme: light;
@@ -514,8 +514,8 @@ body.mac-chrome
 		[data-content-type="bulletListItem"]::before {
 		content: "•";
 		background: none;
-		color: #111;
-		-webkit-text-fill-color: #111;
+		color: var(--gray-950);
+		-webkit-text-fill-color: var(--gray-950);
 		font-size: var(--editor-font-size);
 	}
 
@@ -543,15 +543,15 @@ body.mac-chrome
 	}
 
 	body:has([data-note-pdf-export-root="true"]) :is(a, .wikilink) {
-		color: #111;
+		color: var(--gray-950);
 		text-decoration: underline;
 	}
 
 	body:has([data-note-pdf-export-root="true"])
 		.bn-block-content[data-content-type="codeBlock"] {
-		border-color: #d0d7de;
-		background: #f6f8fa;
-		color: #111;
+		border-color: var(--gray-300);
+		background: var(--gray-50);
+		color: var(--gray-950);
 	}
 
 	body:has([data-note-pdf-export-root="true"])

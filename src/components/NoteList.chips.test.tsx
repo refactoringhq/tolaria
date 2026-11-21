@@ -32,7 +32,7 @@ describe('NoteList property chips', () => {
 
     const chip = screen.getByTestId('property-chip-status-0')
     expect(chip).toHaveTextContent('• Active')
-    expect(chip).toHaveStyle({ backgroundColor: 'var(--accent-green-light)', color: 'var(--accent-green)' })
+    expect(chip).toHaveStyle({ backgroundColor: 'var(--accent-green-light)', color: 'var(--accent-green-text)' })
   })
 
   it('auto-detects status-like property values in note-list chips', () => {
@@ -43,7 +43,7 @@ describe('NoteList property chips', () => {
 
     const chip = screen.getByTestId('property-chip-phase-0')
     expect(chip).toHaveTextContent('• Draft')
-    expect(chip).toHaveStyle({ backgroundColor: 'var(--accent-yellow-light)', color: 'var(--accent-yellow)' })
+    expect(chip).toHaveStyle({ backgroundColor: 'var(--accent-yellow-light)', color: 'var(--accent-yellow-text)' })
   })
 
   it('formats date properties in note-list chips with the selected display format', async () => {

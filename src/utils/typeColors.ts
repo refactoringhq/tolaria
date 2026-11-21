@@ -5,6 +5,7 @@
 
 import type { VaultEntry } from '../types'
 import { isValidCssColor } from './colorUtils'
+import { nearestPaletteHue } from './paletteHue'
 import { WORKSPACE_COLORS } from './workspaceColors'
 
 /** Builds a map from type name → Type document entry (for custom color/icon lookup).
@@ -22,42 +23,31 @@ export function buildTypeEntryMap(entries: VaultEntry[]): Record<string, VaultEn
   return map
 }
 
-const TYPE_COLOR_MAP: Record<string, string> = {
-  Project: 'var(--accent-red)',
-  Experiment: 'var(--accent-red)',
-  Responsibility: 'var(--accent-purple)',
-  Procedure: 'var(--accent-purple)',
-  Person: 'var(--accent-yellow)',
-  Event: 'var(--accent-yellow)',
-  Topic: 'var(--accent-green)',
-  Type: 'var(--accent-blue)',
+/** Built-in type → palette hue. Custom Type colors override these. */
+const TYPE_HUE_MAP: Record<string, string> = {
+  Project: 'red',
+  Experiment: 'red',
+  Responsibility: 'purple',
+  Procedure: 'purple',
+  Person: 'yellow',
+  Event: 'yellow',
+  Topic: 'green',
+  Type: 'blue',
 }
 
-const TYPE_LIGHT_COLOR_MAP: Record<string, string> = {
-  Project: 'var(--accent-red-light)',
-  Experiment: 'var(--accent-red-light)',
-  Responsibility: 'var(--accent-purple-light)',
-  Procedure: 'var(--accent-purple-light)',
-  Person: 'var(--accent-yellow-light)',
-  Event: 'var(--accent-yellow-light)',
-  Topic: 'var(--accent-green-light)',
-  Type: 'var(--accent-blue-light)',
-}
-
-const DEFAULT_COLOR = 'var(--muted-foreground)'
-const DEFAULT_LIGHT_COLOR = 'var(--muted)'
+const DEFAULT_HUE = 'gray'
 
 /** Color key → CSS variable mapping for the design system accent palette */
-export const ACCENT_COLORS: { key: string; label: string; css: string; cssLight: string }[] = [
-  { key: 'red', label: 'Red', css: 'var(--accent-red)', cssLight: 'var(--accent-red-light)' },
-  { key: 'orange', label: 'Orange', css: 'var(--accent-orange)', cssLight: 'var(--accent-orange-light)' },
-  { key: 'yellow', label: 'Yellow', css: 'var(--accent-yellow)', cssLight: 'var(--accent-yellow-light)' },
-  { key: 'green', label: 'Green', css: 'var(--accent-green)', cssLight: 'var(--accent-green-light)' },
-  { key: 'blue', label: 'Blue', css: 'var(--accent-blue)', cssLight: 'var(--accent-blue-light)' },
-  { key: 'purple', label: 'Purple', css: 'var(--accent-purple)', cssLight: 'var(--accent-purple-light)' },
-  { key: 'teal', label: 'Teal', css: 'var(--accent-teal)', cssLight: 'var(--accent-teal-light)' },
-  { key: 'pink', label: 'Pink', css: 'var(--accent-pink)', cssLight: 'var(--accent-pink-light)' },
-  { key: 'gray', label: 'Gray', css: 'var(--accent-gray)', cssLight: 'var(--accent-gray-light)' },
+export const ACCENT_COLORS: { key: string; label: string; css: string; cssLight: string; cssText: string }[] = [
+  { key: 'red', label: 'Red', css: 'var(--accent-red)', cssLight: 'var(--accent-red-light)', cssText: 'var(--accent-red-text)' },
+  { key: 'orange', label: 'Orange', css: 'var(--accent-orange)', cssLight: 'var(--accent-orange-light)', cssText: 'var(--accent-orange-text)' },
+  { key: 'yellow', label: 'Yellow', css: 'var(--accent-yellow)', cssLight: 'var(--accent-yellow-light)', cssText: 'var(--accent-yellow-text)' },
+  { key: 'green', label: 'Green', css: 'var(--accent-green)', cssLight: 'var(--accent-green-light)', cssText: 'var(--accent-green-text)' },
+  { key: 'blue', label: 'Blue', css: 'var(--accent-blue)', cssLight: 'var(--accent-blue-light)', cssText: 'var(--accent-blue-text)' },
+  { key: 'purple', label: 'Purple', css: 'var(--accent-purple)', cssLight: 'var(--accent-purple-light)', cssText: 'var(--accent-purple-text)' },
+  { key: 'teal', label: 'Teal', css: 'var(--accent-teal)', cssLight: 'var(--accent-teal-light)', cssText: 'var(--accent-teal-text)' },
+  { key: 'pink', label: 'Pink', css: 'var(--accent-pink)', cssLight: 'var(--accent-pink-light)', cssText: 'var(--accent-pink-text)' },
+  { key: 'gray', label: 'Gray', css: 'var(--accent-gray)', cssLight: 'var(--accent-gray-light)', cssText: 'var(--accent-gray-text)' },
 ]
 
 export const ACCENT_COLOR_PICKER_KEYS = WORKSPACE_COLORS
@@ -65,46 +55,42 @@ export const ACCENT_COLOR_PICKER_COLORS = ACCENT_COLOR_PICKER_KEYS
   .map((key) => ACCENT_COLORS.find((color) => color.key === key) ?? null)
   .filter((color): color is typeof ACCENT_COLORS[number] => color !== null)
 
-const COLOR_KEY_TO_CSS: Record<string, string> = Object.fromEntries(
-  ACCENT_COLORS.map((c) => [c.key, c.css]),
-)
-const COLOR_KEY_TO_CSS_LIGHT: Record<string, string> = Object.fromEntries(
-  ACCENT_COLORS.map((c) => [c.key, c.cssLight]),
-)
-const COLOR_KEY_TO_CSS_LOOKUP = new Map(Object.entries(COLOR_KEY_TO_CSS))
-const COLOR_KEY_TO_CSS_LIGHT_LOOKUP = new Map(Object.entries(COLOR_KEY_TO_CSS_LIGHT))
-const TYPE_COLOR_LOOKUP = new Map(Object.entries(TYPE_COLOR_MAP))
-const TYPE_LIGHT_COLOR_LOOKUP = new Map(Object.entries(TYPE_LIGHT_COLOR_MAP))
+type AccentColor = typeof ACCENT_COLORS[number]
 
-const CSS_COLOR_LIGHT_MIX = 14
+const ACCENT_LOOKUP = new Map(ACCENT_COLORS.map((color) => [color.key, color]))
+const TYPE_HUE_LOOKUP = new Map(Object.entries(TYPE_HUE_MAP))
 
-function resolveCustomColor(customColorKey?: string | null): string | null {
+/** Palette key for a custom color: a named hue, or a CSS color snapped to its nearest palette hue. */
+function resolvePaletteKey(customColorKey?: string | null): string | null {
   const color = customColorKey?.trim()
   if (!color) return null
 
   const paletteKey = color.toLowerCase()
-  return COLOR_KEY_TO_CSS_LOOKUP.get(paletteKey) ?? (isValidCssColor(color) ? color : null)
+  if (ACCENT_LOOKUP.has(paletteKey)) return paletteKey
+  return isValidCssColor(color) ? nearestPaletteHue(color) : null
 }
 
-function resolveCustomLightColor(customColorKey?: string | null): string | null {
-  const color = customColorKey?.trim()
-  if (!color) return null
-
-  const paletteKey = color.toLowerCase()
-  return COLOR_KEY_TO_CSS_LIGHT_LOOKUP.get(paletteKey)
-    ?? (isValidCssColor(color) ? `color-mix(in srgb, ${color} ${CSS_COLOR_LIGHT_MIX}%, transparent)` : null)
+function resolveTypeAccent(isA: string | null, customColorKey?: string | null): AccentColor {
+  const hue = resolvePaletteKey(customColorKey) ?? (isA && TYPE_HUE_LOOKUP.get(isA)) ?? DEFAULT_HUE
+  return ACCENT_LOOKUP.get(hue) ?? ACCENT_COLORS[ACCENT_COLORS.length - 1]
 }
 
-/** Returns the CSS variable for the accent color of a given note type, with optional custom override */
+/** Icon/accent color of a note type, with optional custom override */
 export function getTypeColor(isA: string | null, customColorKey?: string | null): string {
-  const customColor = resolveCustomColor(customColorKey)
-  if (customColor) return customColor
-  return (isA && TYPE_COLOR_LOOKUP.get(isA)) ?? DEFAULT_COLOR
+  return resolveTypeAccent(isA, customColorKey).css
 }
 
-/** Returns the CSS variable for the light/background variant of a given note type's color */
+/** Tinted fill (chips, active rows, calendar items) of a note type's color */
 export function getTypeLightColor(isA: string | null, customColorKey?: string | null): string {
-  const customLightColor = resolveCustomLightColor(customColorKey)
-  if (customLightColor) return customLightColor
-  return (isA && TYPE_LIGHT_COLOR_LOOKUP.get(isA)) ?? DEFAULT_LIGHT_COLOR
+  return resolveTypeAccent(isA, customColorKey).cssLight
+}
+
+/** Label color for text sitting on the type's tinted fill */
+export function getTypeTextColor(isA: string | null, customColorKey?: string | null): string {
+  return resolveTypeAccent(isA, customColorKey).cssText
+}
+
+/** True when the type or its custom color picks a hue (an explicit gray counts) */
+export function hasTypeHue(isA: string | null, customColorKey?: string | null): boolean {
+  return resolveTypeAccent(isA, customColorKey).key !== DEFAULT_HUE || resolvePaletteKey(customColorKey) === DEFAULT_HUE
 }

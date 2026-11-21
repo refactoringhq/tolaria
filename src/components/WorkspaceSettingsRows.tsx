@@ -102,7 +102,7 @@ function WorkspaceRowActions(
 					aria-label={removeLabel}
 					title={removeLabel}
 					data-testid={`settings-workspace-remove-${workspace.alias}`}
-					className="text-muted-foreground hover:text-destructive"
+					className="text-muted-foreground hover:text-[var(--accent-red)]"
 				>
 					<Trash2 size={15} />
 				</Button>
@@ -136,7 +136,7 @@ function WorkspaceRemovalConfirmation({
 	return (
 		<fieldset
 			aria-label={title}
-			className="rounded-md border border-destructive/40 bg-destructive/5 p-3"
+			className="rounded-md border border-[var(--accent-red)] bg-[var(--feedback-error-bg)] p-3"
 			data-testid={`settings-workspace-remove-confirm-${workspace.alias}`}
 			onKeyDown={(event) => {
 				if (event.key !== "Escape") return;
