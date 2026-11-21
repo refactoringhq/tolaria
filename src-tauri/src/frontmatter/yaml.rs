@@ -137,20 +137,7 @@ impl<'a> YamlText<'a> {
     fn quoted(self) -> String {
         let mut escaped = String::new();
         for ch in self.0.chars() {
-            match ch {
-                '\\' => escaped.push_str("\\\\"),
-                '"' => escaped.push_str("\\\""),
-                '\0' => escaped.push_str("\\0"),
-                '\u{feff}' => escaped.push_str("\\uFEFF"),
-                '\n' => escaped.push_str("\\n"),
-                '\r' => escaped.push_str("\\r"),
-                '\t' => escaped.push_str("\\t"),
-                '\u{85}' => escaped.push_str("\\N"),
-                '\u{2028}' => escaped.push_str("\\L"),
-                '\u{2029}' => escaped.push_str("\\P"),
-                c if c.is_control() => escaped.push_str(&format!("\\u{:04x}", c as u32)),
-                c => escaped.push(c),
-            }
+            push_yaml_escape(ch, &mut escaped);
         }
         format!("\"{}\"", escaped)
     }
@@ -170,6 +157,52 @@ impl<'a> YamlText<'a> {
         self.0
             .chars()
             .any(|c| !c.is_ascii_alphanumeric() && c != '_' && c != '-')
+    }
+}
+
+fn push_yaml_escape(character: char, escaped: &mut String) {
+    if let Some(escape) = basic_yaml_escape(character) {
+        escaped.push_str(escape);
+    } else if let Some(escape) = line_break_yaml_escape(character) {
+        escaped.push_str(escape);
+    } else if character.is_control() {
+        escaped.push_str(&format!("\\u{:04x}", character as u32));
+    } else {
+        escaped.push(character);
+    }
+}
+
+fn basic_yaml_escape(character: char) -> Option<&'static str> {
+    match character {
+        '\\' => Some("\\\\"),
+        '"' => Some("\\\""),
+        '\0' => Some("\\0"),
+        '\u{feff}' => Some("\\uFEFF"),
+        '\n' => Some("\\n"),
+        '\r' => Some("\\r"),
+        '\t' => Some("\\t"),
+        _ => None,
+    }
+}
+
+fn line_break_yaml_escape(character: char) -> Option<&'static str> {
+    match character {
+        '\u{85}' => Some("\\N"),
+        '\u{2028}' => Some("\\L"),
+        '\u{2029}' => Some("\\P"),
+        _ => None,
+    }
+}
+
+fn format_yaml_list(items: &[FrontmatterScalar]) -> String {
+    if items.is_empty() {
+        "[]".to_string()
+    } else {
+        items
+            .iter()
+            .map(FrontmatterScalar::to_yaml_list_item)
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 }
 
@@ -209,12 +242,7 @@ impl FrontmatterValue {
             }
             FrontmatterValue::Number(n) => format_yaml_number(*n),
             FrontmatterValue::Bool(b) => if *b { "true" } else { "false" }.to_string(),
-            FrontmatterValue::List(items) if items.is_empty() => "[]".to_string(),
-            FrontmatterValue::List(items) => items
-                .iter()
-                .map(FrontmatterScalar::to_yaml_list_item)
-                .collect::<Vec<_>>()
-                .join("\n"),
+            FrontmatterValue::List(items) => format_yaml_list(items),
             FrontmatterValue::Null => "null".to_string(),
         }
     }

@@ -9,11 +9,9 @@ import {
 	detectFrontmatterWarnings,
 	parseFrontmatter,
 } from "../utils/frontmatter";
-import { normalizeNotePathForIdentity } from "../utils/notePathIdentity";
-import { DynamicPropertiesPanel } from "./DynamicPropertiesPanel";
+import { ValidFrontmatterPanels } from "./InspectorFrontmatterPanels";
 import {
 	BacklinksPanel,
-	DynamicRelationshipsPanel,
 	GitHistoryPanel,
 	InstancesPanel,
 	NoteInfoPanel,
@@ -89,40 +87,6 @@ function supportsFrontmatter(entry: VaultEntry): boolean {
 	return entry.fileKind === undefined || entry.fileKind === "markdown";
 }
 
-function pathBelongsToWorkspace(
-	path: string,
-	workspace: WorkspaceIdentity,
-): boolean {
-	const normalizedPath = normalizeNotePathForIdentity(path);
-	const normalizedWorkspacePath = normalizeNotePathForIdentity(workspace.path);
-	if (!normalizedWorkspacePath) return false;
-	return (
-		normalizedPath === normalizedWorkspacePath ||
-		normalizedPath.startsWith(`${normalizedWorkspacePath}/`)
-	);
-}
-
-function inferEntryWorkspace(
-	entry: VaultEntry,
-	workspaces: WorkspaceIdentity[] | undefined,
-): WorkspaceIdentity | undefined {
-	if (entry.workspace) return entry.workspace;
-	return workspaces
-		?.filter((workspace) => pathBelongsToWorkspace(entry.path, workspace))
-		.sort((left, right) => right.path.length - left.path.length)
-		.at(0);
-}
-
-function entryWithInferredWorkspace(
-	entry: VaultEntry,
-	workspaces: WorkspaceIdentity[] | undefined,
-): VaultEntry {
-	const workspace = inferEntryWorkspace(entry, workspaces);
-	return workspace && workspace !== entry.workspace
-		? { ...entry, workspace }
-		: entry;
-}
-
 interface DeferredInspectorReferenceKey {
 	entries: VaultEntry[];
 	entry: VaultEntry;
@@ -162,89 +126,6 @@ function useDeferredInspectorReferences(
 	}, [entries, entry]);
 
 	return readyFor?.entry.path === entry.path ? readyFor : null;
-}
-
-function ValidFrontmatterPanels(options: {
-	entry: VaultEntry;
-	entries: VaultEntry[];
-	frontmatter: ReturnType<typeof parseFrontmatter>;
-	typeEntryMap: Record<string, VaultEntry>;
-	vaultPath?: string;
-	onNavigate: (target: string) => void;
-	onCreateAndOpenNote?: (title: string) => Promise<boolean>;
-	onUpdateProperty?: (key: string, value: FrontmatterValue) => void;
-	onUpdatePropertyAfterCreate?: (key: string, value: FrontmatterValue) => void;
-	onDeleteProperty?: (key: string) => void;
-	onAddProperty?: (key: string, value: FrontmatterValue) => void;
-	onAddPropertyAfterCreate?: (key: string, value: FrontmatterValue) => void;
-	onCreateMissingType?: (typeName: string) => Promise<boolean | undefined>;
-	onChangeWorkspace?: (
-		entry: VaultEntry,
-		workspace: WorkspaceIdentity,
-	) => Promise<void> | void;
-	workspaces?: WorkspaceIdentity[];
-	locale: AppLocale;
-}) {
-	const {
-		entry,
-		entries,
-		frontmatter,
-		typeEntryMap,
-		vaultPath,
-		onNavigate,
-		onCreateAndOpenNote,
-		onUpdateProperty,
-		onUpdatePropertyAfterCreate,
-		onDeleteProperty,
-		onAddProperty,
-		onAddPropertyAfterCreate,
-		onCreateMissingType,
-		onChangeWorkspace,
-		workspaces,
-		locale,
-	} = options;
-	const entryForWorkspaceActions = entryWithInferredWorkspace(
-		entry,
-		workspaces,
-	);
-	return (
-		<>
-			<DynamicPropertiesPanel
-				entry={entryForWorkspaceActions}
-				frontmatter={frontmatter}
-				entries={entries}
-				onUpdateProperty={onUpdateProperty}
-				onDeleteProperty={onDeleteProperty}
-				onAddProperty={onAddProperty}
-				onNavigate={onNavigate}
-				onCreateMissingType={onCreateMissingType}
-				onChangeWorkspace={
-					onChangeWorkspace
-						? (workspace) =>
-								onChangeWorkspace(entryForWorkspaceActions, workspace)
-						: undefined
-				}
-				workspaces={workspaces}
-				locale={locale}
-			/>
-			<Separator data-testid="inspector-properties-relationships-separator" />
-			<DynamicRelationshipsPanel
-				entry={entry}
-				frontmatter={frontmatter}
-				entries={entries}
-				typeEntryMap={typeEntryMap}
-				vaultPath={vaultPath}
-				onNavigate={onNavigate}
-				onAddProperty={onAddProperty}
-				onAddPropertyAfterCreate={onAddPropertyAfterCreate}
-				onUpdateProperty={onUpdateProperty}
-				onUpdatePropertyAfterCreate={onUpdatePropertyAfterCreate}
-				onDeleteProperty={onDeleteProperty}
-				onCreateAndOpenNote={onCreateAndOpenNote}
-				locale={locale}
-			/>
-		</>
-	);
 }
 
 function InspectorReferencePanels({
