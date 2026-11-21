@@ -298,6 +298,74 @@ mod tests {
     }
 
     #[test]
+    fn test_string_scalars_round_trip_without_changing_type() {
+        let cases = [
+            (r"C:\notes\new: path", r#""C:\\notes\\new: path""#),
+            (r"C:\notes\new", r#""C:\\notes\\new""#),
+            ("line one\nline two", r#""line one\nline two""#),
+            ("yes", "\"yes\""),
+            ("no", "\"no\""),
+            ("null", "\"null\""),
+            ("true", "\"true\""),
+            ("false", "\"false\""),
+            ("on", "\"on\""),
+            ("off", "\"off\""),
+            ("~", "\"~\""),
+            ("007", "\"007\""),
+            ("1.5", "\"1.5\""),
+            ("0x10", "\"0x10\""),
+            ("#tag", "\"#tag\""),
+            (":value", "\":value\""),
+            ("&anchor", "\"&anchor\""),
+            ("*alias", "\"*alias\""),
+            ("!tag", "\"!tag\""),
+            ("|literal", "\"|literal\""),
+            (">folded", "\">folded\""),
+            ("'quoted", "\"'quoted\""),
+            ("\"quoted", "\"\\\"quoted\""),
+            ("%directive", "\"%directive\""),
+            ("@value", "\"@value\""),
+            ("`value", "\"`value\""),
+            ("{flow}", "\"{flow}\""),
+            ("}flow", "\"}flow\""),
+            ("[flow]", "\"[flow]\""),
+            ("]flow", "\"]flow\""),
+            (",value", "\",value\""),
+            ("? key", "\"? key\""),
+            ("- item", "\"- item\""),
+        ];
+
+        for (input, expected_yaml) in cases {
+            let emitted = FrontmatterValue::String(input.to_string()).to_yaml_value();
+            let parsed: serde_yaml::Value = serde_yaml::from_str(&emitted).unwrap();
+            assert_eq!(
+                parsed,
+                serde_yaml::Value::String(input.to_string()),
+                "round-tripped {input:?}"
+            );
+            assert_eq!(emitted, expected_yaml, "serialized {input:?}");
+        }
+    }
+
+    #[test]
+    fn test_native_boolean_and_number_scalars_remain_unquoted() {
+        for (value, expected_yaml, expected_type) in [
+            (FrontmatterValue::Bool(true), "true", "boolean"),
+            (FrontmatterValue::Number(42.0), "42", "number"),
+        ] {
+            let emitted = value.to_yaml_value();
+            assert_eq!(emitted, expected_yaml);
+
+            let parsed: serde_yaml::Value = serde_yaml::from_str(&emitted).unwrap();
+            match expected_type {
+                "boolean" => assert!(parsed.is_bool(), "parsed {emitted:?} as {parsed:?}"),
+                "number" => assert!(parsed.is_number(), "parsed {emitted:?} as {parsed:?}"),
+                _ => unreachable!("test case has a known YAML type"),
+            }
+        }
+    }
+
+    #[test]
     fn test_to_yaml_value_quotes_only_valid_radix_numbers() {
         for input in ["0x10", "0X10", "0o17", "0O17"] {
             assert_string_yaml_value(input, &format!("\"{input}\""));
