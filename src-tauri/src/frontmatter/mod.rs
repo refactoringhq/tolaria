@@ -9,7 +9,7 @@ use std::path::Path;
 
 pub(crate) use ops::frontmatter_body;
 pub use ops::{extract_frontmatter_title, update_frontmatter_content};
-pub use yaml::{format_yaml_key, FrontmatterValue};
+pub use yaml::{format_yaml_key, FrontmatterScalar, FrontmatterValue};
 
 fn is_markdown_path(path: &Path) -> bool {
     path.extension()
@@ -126,8 +126,8 @@ mod tests {
             content,
             "aliases",
             Some(FrontmatterValue::List(vec![
-                "A".to_string(),
-                "B".to_string(),
+                FrontmatterScalar::String("A".to_string()),
+                FrontmatterScalar::String("B".to_string()),
             ])),
         )
         .unwrap();
@@ -181,13 +181,13 @@ mod tests {
             (
                 "---\ntype: Type\n---\n# Project\n",
                 "## Objective\n\n## Timeline",
-                &["template: |", "  ## Objective", "type: Type"][..],
+                &["template: \"## Objective\\n\\n## Timeline\"", "type: Type"][..],
                 &[][..],
             ),
             (
                 "---\ntype: Type\ntemplate: |\n  ## Old\n  \n  ## Stuff\ncolor: green\n---\n# Project\n",
                 "## New\n\n## Content",
-                &["  ## New", "color: green"][..],
+                &["template: \"## New\\n\\n## Content\"", "color: green"][..],
                 &["## Old"][..],
             ),
         ];
@@ -250,6 +250,120 @@ mod tests {
             assert!(roundtripped.contains("Describe the goal."));
         } else {
             panic!("Expected hash");
+        }
+    }
+
+    #[test]
+    fn test_desktop_yaml_reader_uses_yaml_12_scalar_types() {
+        let matter = gray_matter::Matter::<gray_matter::engine::YAML>::new();
+        let parsed = matter.parse(
+            "---\nyes_value: yes\nno_value: no\nhex_value: 0x10\noctal_value: 0o17\ntrue_value: true\n---\nBody",
+        );
+        let gray_matter::Pod::Hash(map) = parsed.data.unwrap() else {
+            panic!("Expected frontmatter mapping")
+        };
+
+        assert!(
+            matches!(map.get("yes_value"), Some(gray_matter::Pod::String(value)) if value == "yes")
+        );
+        assert!(
+            matches!(map.get("no_value"), Some(gray_matter::Pod::String(value)) if value == "no")
+        );
+        assert!(matches!(
+            map.get("hex_value"),
+            Some(gray_matter::Pod::Integer(16))
+        ));
+        assert!(matches!(
+            map.get("octal_value"),
+            Some(gray_matter::Pod::Integer(15))
+        ));
+        assert!(matches!(
+            map.get("true_value"),
+            Some(gray_matter::Pod::Boolean(true))
+        ));
+    }
+
+    #[test]
+    fn test_roundtrip_yaml_ambiguous_strings() {
+        let values = [
+            "C:\\notes\\new",
+            "line one\nline two",
+            "yes",
+            "no",
+            "null",
+            "true",
+            "false",
+            "on",
+            "off",
+            "~",
+            "007",
+            "1.5",
+            "0x10",
+            "#tag",
+            ":value",
+            "- item",
+            "\u{2028}",
+            "\u{2029}",
+            "\u{80}",
+            "\u{9f}",
+        ];
+        let matter = gray_matter::Matter::<gray_matter::engine::YAML>::new();
+        for value in values {
+            let updated = update_frontmatter_content(
+                "---\ntype: Type\n---\nBody\n",
+                "v",
+                Some(FrontmatterValue::String(value.to_string())),
+            )
+            .unwrap();
+            let parsed = matter.parse(&updated).data.unwrap();
+            let gray_matter::Pod::Hash(map) = parsed else {
+                panic!("Expected mapping")
+            };
+            assert_eq!(
+                map.get("v").unwrap().as_string().unwrap(),
+                value,
+                "{value:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_roundtrip_yaml_escape_sequences() {
+        let matter = gray_matter::Matter::<gray_matter::engine::YAML>::new();
+        for escape in [
+            "\\\\",
+            "\\\"",
+            "\\0",
+            "\\a",
+            "\\b",
+            "\\t",
+            "\\n",
+            "\\v",
+            "\\f",
+            "\\r",
+            "\\e",
+            "\\/",
+            "\\ ",
+            "\\N",
+            "\\_",
+            "\\L",
+            "\\P",
+            "\\x41",
+            "\\u0041",
+            "\\U00000041",
+        ] {
+            let value = format!("prefix {escape}: suffix");
+            let updated = update_frontmatter_content(
+                "---\ntype: Type\n---\nBody\n",
+                "v",
+                Some(FrontmatterValue::String(value.clone())),
+            )
+            .unwrap();
+            let parsed = matter.parse(&updated).data.unwrap();
+            let gray_matter::Pod::Hash(map) = parsed else {
+                panic!("Expected hash")
+            };
+            assert_eq!(map.get("v").unwrap().as_string().unwrap(), value);
         }
     }
 }

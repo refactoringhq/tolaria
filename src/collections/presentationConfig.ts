@@ -29,6 +29,14 @@ function stringArray(value: unknown): string[] {
 		: [];
 }
 
+function showPropertiesSetting(source: UnknownRecord): {
+	showProperties?: boolean;
+} {
+	return typeof source.showProperties === "boolean"
+		? { showProperties: source.showProperties }
+		: {};
+}
+
 function listPresentation(
 	source: UnknownRecord,
 	fallback: ListCollectionPresentationConfig,
@@ -48,6 +56,7 @@ function kanbanPresentation(
 		type: COLLECTION_PRESENTATION_KANBAN,
 		groupBy: nullableString(source.groupBy),
 		properties: stringArray(source.properties),
+		...showPropertiesSetting(source),
 		columnOrder: stringArray(source.columnOrder),
 		collapsedColumns: stringArray(source.collapsedColumns),
 		hiddenColumns: stringArray(source.hiddenColumns),
@@ -98,6 +107,7 @@ function calendarPresentation(
 		type: COLLECTION_PRESENTATION_CALENDAR,
 		...calendarSettingsFrom(source),
 		properties: stringArray(source.properties),
+		...showPropertiesSetting(source),
 	};
 }
 

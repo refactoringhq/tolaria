@@ -6,7 +6,6 @@ import {
   CREATED_DATE_PROPERTY,
   entryDateValue,
   itemsOnDay,
-  layoutWeek,
   movedDates,
   partitionEntries,
   rescheduleWrites,
@@ -68,16 +67,11 @@ describe('calendarModel', () => {
     expect(segments[0].continuesAfter).toBe(true)
   })
 
-  it('hides what does not fit behind "+N more" without leaving a bar half-shown', () => {
+  it('lists every note of a day for its "+N more" popover', () => {
     const busy = Array.from({ length: 5 }, (_, index) => makeEntry({ path: `/v/${index}.md`, title: `Busy ${index}`, properties: { start: '2026-11-18' } }))
     const { items } = partitionEntries([...busy, launch], sources, new Map())
-    const week = visibleWeeks('2026-11-19', 'week', 1)[0]
-    const layout = layoutWeek(weekSegments(items, week), week, 3)
-    expect(layout.visible.map((segment) => segment.item.entry.title)).toEqual(['Busy 0', 'Busy 1', 'Launch'])
-    expect(layout.hiddenCounts).toEqual([0, 0, 3, 0, 0, 0, 0])
-    expect(layout.overflow).toEqual([{ day: '2026-11-18', column: 2, count: 3 }])
-    expect(layoutWeek(weekSegments(items, week), week, 10).hiddenCounts.every((count) => count === 0)).toBe(true)
     expect(itemsOnDay(items, '2026-11-18')).toHaveLength(5)
+    expect(itemsOnDay(items, '2026-11-20').map((item) => item.entry.title)).toEqual(['Launch'])
   })
 
   it('moves a range by the drop offset and writes both of its dates', () => {

@@ -18,6 +18,7 @@ export default eslintConfig.defineConfig([
     'src-tauri/gen/',
     'tools/',
     'videos/',
+    '.verity/',
   ]),
   {
     files: ['**/*.{ts,tsx}'],

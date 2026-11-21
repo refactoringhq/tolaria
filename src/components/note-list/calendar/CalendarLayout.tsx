@@ -26,7 +26,6 @@ import {
 	visibleWeeks,
 	weekStartForLocale,
 } from "./calendarDates";
-import { laneHeightFor } from "./calendarLanes";
 import {
 	type CalendarItem,
 	type CalendarSources,
@@ -120,8 +119,7 @@ function useItemContext(props: CalendarBoardProps): CalendarItemContext {
 		calendar,
 	} = props;
 	const showIcons = calendar.settings.showIcons;
-	const showProperties =
-		calendar.settings.view === "month" || calendar.settings.view === "week";
+	const showProperties = props.showProperties !== false;
 	const onOpen = useLatestCallback(props.onOpen);
 	return useMemo(
 		() => ({
@@ -229,7 +227,6 @@ function CalendarBoard(props: CalendarBoardProps) {
 		[partition.items, weeks],
 	);
 	const context = useItemContext(props);
-	const laneHeight = laneHeightFor(visibleItems, context);
 	const latestWriter = useLatestDateWriter(props.allEntries, calendar);
 	const drag = useCalendarDrag({
 		setPending,
@@ -291,7 +288,6 @@ function CalendarBoard(props: CalendarBoardProps) {
 							items={visibleItems}
 							context={context}
 							state={gridState}
-							laneHeight={laneHeight}
 							locale={locale}
 						/>
 					)}

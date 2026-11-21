@@ -9,9 +9,9 @@ import { PropertyChips } from "../../note-item/PropertyChips";
 import { cardDisplayProperties } from "../kanbanModel";
 import type { CalendarItem } from "./calendarModel";
 
-/** A ghost Button reset to a block slot, so an item is one native, focusable control like a Kanban card. */
+/** A ghost Button reset to a block slot at its natural height, so an item is one native, focusable control like a Kanban card. */
 const CALENDAR_ITEM_SLOT_CLASSNAME =
-	"calendar-item-slot block h-full w-full min-w-0 whitespace-normal rounded-md p-0 text-left font-normal hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring [&_svg]:!size-[11px]";
+	"calendar-item-slot block h-auto w-full min-w-0 whitespace-normal rounded-md p-0 text-left font-normal hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring [&_svg]:!size-[11px]";
 
 export interface CalendarItemContext {
 	cardProperties: string[];
@@ -112,7 +112,7 @@ export function CalendarItemFace({
 	return (
 		<span
 			className={cn(
-				"calendar-item min-h-full min-w-0 flex flex-col justify-start gap-0.5 px-2 py-0.5",
+				"calendar-item min-w-0 flex flex-col justify-start gap-0.5 px-2 py-0.5",
 				continuesBefore && "calendar-item--continues-before",
 				continuesAfter && "calendar-item--continues-after",
 				className,
@@ -184,3 +184,31 @@ export const CalendarItemButton = memo(function CalendarItemButton(
 		</Button>
 	);
 });
+
+interface CalendarItemGhostProps {
+	item: CalendarItem;
+	context: CalendarItemContext;
+	style: CSSProperties;
+}
+
+/** An invisible copy of an item behind "+N more", laid out only so the row knows its natural height. */
+export function CalendarItemGhost({
+	item,
+	context,
+	style,
+}: CalendarItemGhostProps) {
+	return (
+		<Button
+			type="button"
+			variant="ghost"
+			tabIndex={-1}
+			aria-hidden="true"
+			className={cn(CALENDAR_ITEM_SLOT_CLASSNAME, "invisible")}
+			style={style}
+			data-path={item.entry.path}
+			data-testid="calendar-item-ghost"
+		>
+			<CalendarItemFace entry={item.entry} context={context} />
+		</Button>
+	);
+}
