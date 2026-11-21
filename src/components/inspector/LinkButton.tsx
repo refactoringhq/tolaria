@@ -56,7 +56,7 @@ export function LinkButton(options: {
             <X size={14} />
           </button>
         )}
-        <TypeIcon width={14} height={14} className="shrink-0" style={{ color, opacity: 0.5 }} />
+        <TypeIcon width={14} height={14} className="shrink-0" style={{ color, opacity: bgColor ? 1 : 0.5 }} />
       </span>
     </span>
   )

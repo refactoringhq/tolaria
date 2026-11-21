@@ -51,7 +51,7 @@
   display: block;
 }
 
-.sheet-editor--single-sheet .sheet-container [style*="cursor: crosshair"][style*="rgb(242, 153, 74)"] {
+.sheet-editor--single-sheet .sheet-container [style*="cursor: crosshair"][style*="(242, 153, 74)"] {
   visibility: hidden !important;
   pointer-events: none !important;
 }
@@ -80,10 +80,10 @@
   max-width: 420px;
   max-height: 260px;
   overflow: auto;
-  border: 1px solid var(--border, #d8d8d8);
+  border: 1px solid var(--border);
   border-radius: 6px;
-  background: var(--popover, #ffffff);
-  box-shadow: 0 10px 30px rgb(0 0 0 / 14%);
+  background: var(--popover);
+  box-shadow: 0 10px 30px var(--shadow-soft);
   color: var(--popover-foreground, var(--text-primary));
   font-size: 12px;
 }
@@ -104,7 +104,7 @@
 }
 
 .sheet-formula-autocomplete__item[aria-selected="true"] {
-  background: var(--accent, #f1f5f9);
+  background: var(--accent);
 }
 
 .sheet-formula-autocomplete__name {
@@ -146,10 +146,10 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  border: 1px solid var(--border, #d8d8d8);
+  border: 1px solid var(--border);
   border-radius: 6px;
-  background: var(--popover, #ffffff);
-  box-shadow: 0 12px 32px rgb(0 0 0 / 16%);
+  background: var(--popover);
+  box-shadow: 0 12px 32px var(--shadow-soft);
   color: var(--popover-foreground, var(--text-primary));
   padding: 4px;
 }
@@ -159,7 +159,7 @@
 }
 
 .sheet-context-menu__group + .sheet-context-menu__group {
-  border-top: 1px solid var(--border, #e5e5e5);
+  border-top: 1px solid var(--border);
 }
 
 .sheet-context-menu__item {

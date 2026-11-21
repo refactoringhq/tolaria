@@ -19,6 +19,10 @@ const SIDEBAR_COUNT_PILL_STYLE = {
   fontVariantNumeric: 'tabular-nums',
 } as const
 
+/** Idle count pill: the same fill as a hovered row; a hovered row lifts the pill one step so it stays distinct. */
+export const SIDEBAR_COUNT_PILL_IDLE_CLASS =
+  'bg-count-pill text-count-pill-text group-hover/sidebar-row:bg-count-pill-hover group-hover/sidebar-row:text-count-pill-text-hover'
+
 export interface SectionGroup {
   label: string
   type: string
@@ -253,7 +257,7 @@ function ClickableNavItem(options: {
       variant="ghost"
       size="sm"
       className={cn(
-        'h-auto w-full cursor-pointer select-none justify-start rounded text-left transition-colors',
+        'group/sidebar-row h-auto w-full cursor-pointer select-none justify-start rounded text-left transition-colors',
         isActive ? activeClassName : 'text-foreground hover:bg-accent',
       )}
       style={{ padding, borderRadius: 4 }}
@@ -296,7 +300,7 @@ export function NavItem(options: {
     count,
     countLoading,
     isActive,
-    activeClassName = 'bg-primary/10 text-primary',
+    activeClassName = 'bg-[var(--accent-blue-light)] text-[var(--accent-blue)]',
     badgeClassName,
     badgeStyle,
     activeBadgeClassName,
@@ -549,8 +553,8 @@ function SectionHeaderCountPill({
   return (
     <SidebarCountPill
       count={itemCount}
-      className={!isActive ? 'text-muted-foreground' : undefined}
-      style={isActive ? { background: sectionColor, color: 'var(--text-inverse)' } : { background: 'var(--muted)' }}
+      className={!isActive ? SIDEBAR_COUNT_PILL_IDLE_CLASS : undefined}
+      style={isActive ? { background: sectionColor, color: 'var(--text-inverse)' } : undefined}
     />
   )
 }
@@ -620,7 +624,7 @@ function SectionHeader(options: {
     <div
       ref={headerRef}
       className={cn(
-        'group/section flex cursor-pointer select-none items-center justify-between rounded transition-colors',
+        'group/section group/sidebar-row flex cursor-pointer select-none items-center justify-between rounded transition-colors',
         !isActive && 'hover:bg-accent',
       )}
       style={{

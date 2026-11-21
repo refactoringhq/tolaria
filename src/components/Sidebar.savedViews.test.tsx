@@ -69,11 +69,13 @@ describe("Sidebar saved views", () => {
 
 			expect(navItem).toHaveStyle({ padding: "6px 8px 6px 12px" });
 			expect(countChip).toHaveStyle({
-				background: "var(--muted)",
 				height: "20px",
 				padding: "0 6px",
 			});
-			expect(countChip.className).toContain("text-muted-foreground");
+			expect(countChip.className).toContain("bg-count-pill");
+			expect(countChip.className).toContain(
+				"group-hover/sidebar-row:bg-count-pill-hover",
+			);
 		});
 
 		it("aligns top-nav count pills to the same trailing column as view rows", () => {
@@ -91,15 +93,15 @@ describe("Sidebar saved views", () => {
 			expect(topNavItem).toHaveStyle({ padding: "6px 8px 6px 12px" });
 			expect(viewItem).toHaveStyle({ padding: "6px 8px 6px 12px" });
 			expect(topNavCount).toHaveStyle({
-				background: "var(--muted)",
 				height: "20px",
 				padding: "0 6px",
 			});
 			expect(viewCount).toHaveStyle({
-				background: "var(--muted)",
 				height: "20px",
 				padding: "0 6px",
 			});
+			expect(topNavCount.className).toContain("bg-count-pill");
+			expect(viewCount.className).toContain("bg-count-pill");
 		});
 
 		it("renders phosphor view icons without leaking the raw icon name", () => {
@@ -190,7 +192,7 @@ describe("Sidebar saved views", () => {
 				.getByText("Active Projects")
 				.closest('[class*="cursor-pointer"]');
 
-			expect(navItem.className).toContain("text-primary");
+			expect(navItem.className).toContain("text-[var(--accent-blue)]");
 			expect(navItem.getAttribute("style")).not.toContain("--accent-");
 		});
 

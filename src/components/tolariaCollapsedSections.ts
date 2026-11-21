@@ -328,8 +328,8 @@ function headingDotsCssDeclarations() {
     'margin-inline-start: 10px;',
     'padding: 0 8px;',
     'border-radius: 8px;',
-    'background: var(--bg-secondary, rgba(0, 0, 0, 0.08));',
-    'color: var(--colors-muted, rgba(0, 0, 0, 0.46));',
+    'background: var(--state-hover);',
+    'color: var(--text-muted);',
     'transition: background-color 120ms ease, color 120ms ease;',
     'font-size: 0.5em;',
     'font-weight: 700;',
@@ -342,8 +342,8 @@ function headingDotsCssDeclarations() {
 
 function headingDotsHoverCssDeclarations() {
   return [
-    'background: var(--bg-tertiary, rgba(0, 0, 0, 0.13));',
-    'color: var(--text-secondary, rgba(0, 0, 0, 0.62));',
+    'background: var(--state-hover-strong);',
+    'color: var(--text-secondary);',
   ].join('\n')
 }
 

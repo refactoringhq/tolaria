@@ -113,7 +113,7 @@ function CreateViewDialogForm(options: CreateViewDialogFormProps) {
         />
       </div>
       {saveError && (
-        <p role="alert" className="text-xs text-destructive">
+        <p role="alert" className="text-xs text-[var(--accent-red)]">
           {saveError}
         </p>
       )}

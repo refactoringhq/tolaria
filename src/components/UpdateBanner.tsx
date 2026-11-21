@@ -49,29 +49,29 @@ const bannerStyle = {
 	alignItems: "center",
 	gap: 10,
 	padding: "6px 12px",
-	background: "var(--accent-blue)",
+	background: "var(--fill-primary)",
 	borderBottom: "none",
 	fontSize: 13,
-	color: "var(--text-inverse)",
+	color: "var(--text-on-fill)",
 	flexShrink: 0,
 } satisfies CSSProperties;
 
 const iconStyle = {
-	color: "var(--text-inverse)",
+	color: "var(--text-on-fill)",
 	flexShrink: 0,
 } satisfies CSSProperties;
 
 const primaryActionStyle = {
 	marginLeft: "auto",
 	padding: "3px 10px",
-	background: "var(--text-inverse)",
-	color: "var(--accent-blue)",
+	background: "var(--text-on-fill)",
+	color: "var(--fill-primary)",
 	fontSize: 12,
 	fontWeight: 500,
 } satisfies CSSProperties;
 
 const dismissButtonStyle = {
-	color: "var(--text-inverse)",
+	color: "var(--text-on-fill)",
 	display: "flex",
 	padding: 2,
 } satisfies CSSProperties;
@@ -80,18 +80,18 @@ const progressTrackStyle = {
 	flex: 1,
 	maxWidth: 200,
 	height: 4,
-	background: "color-mix(in srgb, var(--text-inverse) 30%, transparent)",
+	background: "var(--fill-primary-hover)",
 	borderRadius: 2,
 	overflow: "hidden",
 } satisfies CSSProperties;
 
 const progressTextStyle = {
 	fontSize: 11,
-	color: "color-mix(in srgb, var(--text-inverse) 85%, transparent)",
+	color: "var(--text-on-fill)",
 } satisfies CSSProperties;
 
 const readyIconStyle = {
-	color: "var(--accent-green)",
+	color: "var(--text-on-fill)",
 	flexShrink: 0,
 } satisfies CSSProperties;
 
@@ -113,7 +113,7 @@ function renderAvailableContent(
 				size="xs"
 				data-testid="update-release-notes"
 				onClick={actions.openReleaseNotes}
-				style={{ color: "var(--text-inverse)", padding: 0, height: "auto" }}
+				style={{ color: "var(--text-on-fill)", padding: 0, height: "auto" }}
 			>
 				{translate(locale, "update.releaseNotes")} <ExternalLink size={11} />
 			</Button>
@@ -174,7 +174,7 @@ function renderDownloadingContent(
 					style={{
 						width: `${Math.round(status.progress * 100)}%`,
 						height: "100%",
-						background: "var(--text-inverse)",
+						background: "var(--text-on-fill)",
 						borderRadius: 2,
 						transition: "width 0.2s ease",
 					}}
@@ -205,8 +205,8 @@ function renderReadyContent(
 				onClick={restartApp}
 				style={{
 					...primaryActionStyle,
-					background: "var(--accent-green)",
-					color: "var(--text-inverse)",
+					background: "var(--fill-success)",
+					color: "var(--text-on-fill)",
 				}}
 			>
 				{translate(locale, "update.restartNow")}
@@ -235,7 +235,7 @@ function renderErrorContent(
 					variant="link"
 					size="xs"
 					onClick={() => openExternalUrl(RELEASE_NOTES_URL)}
-					style={{ color: "var(--text-inverse)", padding: 0, height: "auto" }}
+					style={{ color: "var(--text-on-fill)", padding: 0, height: "auto" }}
 				>
 					{translate(locale, "update.releaseNotes")} <ExternalLink size={11} />
 				</Button>
@@ -313,8 +313,8 @@ export function UpdateBanner({
 					data-testid="community-banner"
 					style={{
 						...bannerStyle,
-						background: "var(--accent-green)",
-						color: "#fff",
+						background: "var(--fill-success)",
+						color: "var(--text-on-fill)",
 						flexWrap: "wrap",
 					}}
 				>
@@ -334,8 +334,8 @@ export function UpdateBanner({
 						style={{
 							...primaryActionStyle,
 							marginLeft: "auto",
-							background: "#fff",
-							color: "#176B3A",
+							background: "var(--text-on-fill)",
+							color: "var(--fill-success-hover)",
 						}}
 					>
 						{translate(locale, "communityBanner.ios")}
@@ -353,8 +353,8 @@ export function UpdateBanner({
 						}}
 						style={{
 							...primaryActionStyle,
-							background: "#fff",
-							color: "#176B3A",
+							background: "var(--text-on-fill)",
+							color: "var(--fill-success-hover)",
 						}}
 					>
 						{translate(locale, "communityBanner.joinCommunity")}

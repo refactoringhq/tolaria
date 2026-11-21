@@ -48,7 +48,7 @@ function FolderMenuAction({
   testId?: string
 }) {
   const className = destructive
-    ? `${folderContextMenuButtonClass} text-destructive hover:text-destructive`
+    ? `${folderContextMenuButtonClass} text-[var(--accent-red)] hover:text-[var(--accent-red)]`
     : folderContextMenuButtonClass
   return (
     <Button type="button" variant="ghost" className={className} onClick={onClick} data-testid={testId}>

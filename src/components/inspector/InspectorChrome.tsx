@@ -103,8 +103,8 @@ export function InitializePropertiesPrompt({ locale = 'en', onClick }: { locale?
 
 export function InvalidFrontmatterNotice({ locale = 'en', onFix }: { locale?: AppLocale; onFix: () => void }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-destructive/40 bg-destructive/5 px-4 py-6">
-      <WarningCircle size={24} className="text-destructive" />
+    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-[var(--accent-red)] bg-[var(--feedback-error-bg)] px-4 py-6">
+      <WarningCircle size={24} className="text-[var(--accent-red)]" />
       <p className="m-0 text-center text-[13px] text-muted-foreground">{translate(locale, 'inspector.empty.invalidProperties')}</p>
       <Button type="button" variant="outline" size="sm" className="gap-1.5 text-[13px]" onClick={onFix}>
         <PencilSimple size={14} />

@@ -47,7 +47,7 @@ export function GitSetupDialog({ open, onInitGit, onDismiss, onNeverForVault }: 
           </DialogDescription>
         </DialogHeader>
         {error && (
-          <p className="m-0 rounded-md bg-destructive/10 px-3 py-2 text-[12px] text-destructive">
+          <p className="m-0 rounded-md bg-[var(--feedback-error-bg)] px-3 py-2 text-[12px] text-[var(--accent-red)]">
             {error}
           </p>
         )}

@@ -181,7 +181,7 @@ function FilePreviewImage({
 function FilePreviewMediaFrame({ children, video = false }: { children: ReactNode; video?: boolean }) {
   return (
     <div
-      className={`flex h-full items-center justify-center ${video ? 'min-h-[320px] bg-black p-4' : 'min-h-[260px] p-6'}`}
+      className={`flex h-full items-center justify-center ${video ? 'min-h-[320px] bg-[var(--gray-950)] p-4' : 'min-h-[260px] p-6'}`}
     >
       {children}
     </div>

@@ -118,7 +118,7 @@ function AppMenuButton({ locale, sections }: { locale: AppLocale; sections: Read
           variant="ghost"
           size="icon"
           aria-label={translate(locale, 'menu.application')}
-          className="h-full w-[38px] rounded-none text-foreground/70 hover:bg-foreground/10 hover:text-foreground"
+          className="h-full w-[38px] rounded-none text-muted-foreground hover:bg-state-hover-strong hover:text-foreground"
           data-no-drag
         >
           <HamburgerIcon />
@@ -151,7 +151,7 @@ function HorizontalMenuBar({ sections }: { sections: ReadonlyArray<MenuSection> 
               type="button"
               variant="ghost"
               size="sm"
-              className="h-full rounded-none px-3 text-[13px] font-normal text-foreground/75 hover:bg-foreground/10 hover:text-foreground"
+              className="h-full rounded-none px-3 text-[13px] font-normal text-muted-foreground hover:bg-state-hover-strong hover:text-foreground"
               data-no-drag
             >
               {section.label}

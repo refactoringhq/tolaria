@@ -22,7 +22,7 @@ function BacklinkEntry({ entry, context, onNavigate }: {
       title={entryStatusTitle(entry)}
     >
       <span
-        className="flex items-center gap-1 text-xs text-primary"
+        className="flex items-center gap-1 text-xs text-[var(--accent-blue)]"
         style={isDimmed ? { color: 'var(--muted-foreground)' } : undefined}
       >
         <NoteTitleIcon icon={entry.icon} size={14} />

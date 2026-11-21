@@ -1,16 +1,17 @@
 import { useState, useCallback, useEffect, useRef, type ComponentProps } from 'react'
-import { normalizeUrl, openExternalUrl } from '../utils/url'
+import { normalizeExternalUrl, normalizeUrl, openExternalUrl } from '../utils/url'
 import { getTagStyle } from '../utils/tagStyles'
 import { PROPERTY_CHIP_STYLE } from './propertyChipStyles'
 
-function AutoFocusInput(props: ComponentProps<'input'>) {
-  const ref = useRef<HTMLInputElement>(null)
+/** Opens a URL property value; normalizeExternalUrl only returns http(s) URLs, so other schemes never reach the opener. */
+function openHttpUrlValue(value: string) {
+  const httpUrl = normalizeExternalUrl(normalizeUrl(value))
+  if (!httpUrl) return
+  void openExternalUrl(httpUrl).catch(ignoreOpenerFailure)
+}
 
-  useEffect(() => {
-    ref.current?.focus()
-  }, [])
-
-  return <input ref={ref} {...props} />
+function ignoreOpenerFailure() {
+  // opener failed — ignore silently
 }
 
 export function UrlValue({
@@ -42,17 +43,8 @@ export function UrlValue({
     e.stopPropagation()
     if (openingRef.current) return
     openingRef.current = true
-    const normalized = normalizeUrl(value)
-    try {
-      new URL(normalized)
-      openExternalUrl(normalized).catch(() => {
-        // opener failed — ignore silently
-      })
-    } catch {
-      // malformed URL — do nothing
-    } finally {
-      setTimeout(() => { openingRef.current = false }, 500)
-    }
+    openHttpUrlValue(value)
+    setTimeout(() => { openingRef.current = false }, 500)
   }, [value])
 
   const handleEditClick = useCallback((e: React.MouseEvent) => {
@@ -77,7 +69,7 @@ export function UrlValue({
     <span className="group/url flex w-full min-w-0 items-center gap-1">
       <button
         type="button"
-        className="inline-flex h-6 min-w-0 flex-1 cursor-pointer items-center justify-start overflow-hidden rounded-md border-0 bg-transparent px-2 text-left text-[12px] text-[var(--accent-blue)] underline decoration-[var(--accent-blue)]/40 transition-colors hover:decoration-[var(--accent-blue)]"
+        className="inline-flex h-6 min-w-0 flex-1 cursor-pointer items-center justify-start overflow-hidden rounded-md border-0 bg-transparent px-2 text-left text-[12px] text-[var(--accent-blue)] underline decoration-[var(--accent-blue-light-hover)] transition-colors hover:decoration-[var(--accent-blue)]"
         onClick={handleOpen}
         title={value}
         data-testid="url-link"
@@ -277,4 +269,14 @@ export function TagPillList({
       )}
     </div>
   )
+}
+
+function AutoFocusInput(props: ComponentProps<'input'>) {
+  const ref = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    ref.current?.focus()
+  }, [])
+
+  return <input ref={ref} {...props} />
 }

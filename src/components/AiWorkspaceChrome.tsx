@@ -22,8 +22,8 @@ export function GuidanceWarning({
   if (!status || !vaultAiGuidanceNeedsRestore(status)) return null
 
   return (
-    <div className="flex shrink-0 items-center gap-2 border-y border-border bg-muted/50 px-3 py-2 text-[12px] text-muted-foreground">
-      <WarningCircle size={15} className="shrink-0 text-amber-600" />
+    <div className="flex shrink-0 items-center gap-2 border-y border-border bg-muted px-3 py-2 text-[12px] text-muted-foreground">
+      <WarningCircle size={15} className="shrink-0 text-[var(--accent-yellow)]" />
       <span className="min-w-0 flex-1">
         {translate(locale, 'ai.workspace.guidanceWarning', {
           summary: getVaultAiGuidanceSummary(status),

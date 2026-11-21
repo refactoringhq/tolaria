@@ -16,8 +16,8 @@ export async function syncNativeWindowBackground(themeMode: ThemeMode): Promise<
   if (!isTauri()) return
 
   const color = themeMode === 'hybrid'
-    ? '#191814'
-    : resolveThemeMode(themeMode) === 'dark' ? '#1F1E1B' : '#F7F6F3'
+    ? '#191713'
+    : resolveThemeMode(themeMode) === 'dark' ? '#25231F' : '#F8F7F4'
 
   try {
     const { getCurrentWindow } = await import('@tauri-apps/api/window')

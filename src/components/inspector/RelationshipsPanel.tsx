@@ -87,7 +87,7 @@ function RelationshipSectionRow({
 }) {
   const labelClassName = placeholder ? PROPERTY_PANEL_PLACEHOLDER_LABEL_CLASS_NAME : PROPERTY_PANEL_LABEL_CLASS_NAME
   const labelTextClassName = placeholder
-    ? `${RELATIONSHIP_SECTION_LABEL_TEXT_CLASS_NAME} text-muted-foreground/40`
+    ? `${RELATIONSHIP_SECTION_LABEL_TEXT_CLASS_NAME} text-text-muted`
     : RELATIONSHIP_SECTION_LABEL_TEXT_CLASS_NAME
 
   return (

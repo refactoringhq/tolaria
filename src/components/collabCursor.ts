@@ -14,7 +14,7 @@ interface CursorUser {
 
 const WORD_JOINER = "⁠";
 const LABEL_MAX_WIDTH = "9rem";
-const FALLBACK_COLOR = "#6b7280";
+const FALLBACK_COLOR = "var(--accent-gray)";
 
 function element(tag: string, className: string): HTMLElement {
 	const created = document.createElement(tag);
@@ -25,7 +25,7 @@ function element(tag: string, className: string): HTMLElement {
 function nameLabel(name: string, color: string): HTMLElement {
 	const label = element("span", "bn-collaboration-cursor__label");
 	label.style.backgroundColor = color;
-	label.style.color = "#ffffff";
+	label.style.color = "var(--text-on-fill)";
 	const shortened = element("span", "collab-cursor__name");
 	Object.assign(shortened.style, {
 		display: "inline-block",

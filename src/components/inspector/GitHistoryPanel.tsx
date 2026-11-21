@@ -24,7 +24,7 @@ export function GitHistoryPanel({ commits, onViewCommitDiff }: { commits: GitCom
         {commits.map((c) => (
           <div key={c.hash} style={{ borderLeft: '2px solid var(--border)', paddingLeft: 10 }}>
             <button type="button"
-              className="mb-0.5 w-full cursor-pointer truncate border-none bg-transparent p-0 text-left text-xs text-primary hover:underline"
+              className="mb-0.5 w-full cursor-pointer truncate border-none bg-transparent p-0 text-left text-xs text-[var(--accent-blue)] hover:underline"
               onClick={() => onViewCommitDiff?.(c.hash)}
               title={`View diff for ${c.shortHash}`}
             >

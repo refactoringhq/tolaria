@@ -117,10 +117,10 @@ describe("Sidebar.favorites", () => {
 
 			expect(favoritesHeader).toHaveStyle({ padding: "8px 8px 8px 12px" });
 			expect(countChip).toHaveStyle({
-				background: "var(--muted)",
 				height: "18px",
 				padding: "0 6px",
 			});
+			expect(countChip.className).toContain("bg-count-pill");
 		});
 
 		it("prefers a favorite note emoji icon over the type icon fallback", () => {
@@ -192,7 +192,7 @@ describe("Sidebar.favorites", () => {
 			const recipeIcon = recipeRow?.querySelector("svg");
 
 			expect(recipeIcon?.getAttribute("style")).toContain(
-				"var(--muted-foreground)",
+				"var(--accent-gray)",
 			);
 			expect(within(recipeRow).getByText("Sourdough")).toBeInTheDocument();
 		});

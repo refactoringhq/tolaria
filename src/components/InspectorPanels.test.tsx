@@ -88,17 +88,17 @@ describe('DynamicRelationshipsPanel', () => {
     {
       name: 'applies type color via typeEntryMap',
       entry: { path: '/vault/people/luca.md', filename: 'luca.md', title: 'Luca', isA: 'Person' as const },
-      ref: '[[Luca]]', key: 'Owner', tMap: typeEntryMap, expectedColor: 'var(--accent-yellow)',
+      ref: '[[Luca]]', key: 'Owner', tMap: typeEntryMap, expectedColor: 'var(--accent-yellow-text)',
     },
     {
       name: 'resolves by title when filename differs',
       entry: { path: '/vault/people/john-doe.md', filename: 'john-doe.md', title: 'John Doe', isA: 'Person' as const },
-      ref: '[[John Doe]]', key: 'Owner', tMap: typeEntryMap, expectedColor: 'var(--accent-yellow)',
+      ref: '[[John Doe]]', key: 'Owner', tMap: typeEntryMap, expectedColor: 'var(--accent-yellow-text)',
     },
     {
       name: 'shows neutral color for notes with no type',
       entry: { path: '/vault/misc/random.md', filename: 'random.md', title: 'Random', isA: null },
-      ref: '[[Random]]', key: 'Related to', tMap: {} as Record<string, VaultEntry>, expectedColor: 'var(--muted-foreground)',
+      ref: '[[Random]]', key: 'Related to', tMap: {} as Record<string, VaultEntry>, expectedColor: 'var(--accent-gray-text)',
     },
   ])('$name', ({ entry: overrides, ref, key, tMap, expectedColor }) => {
     const { container } = render(
@@ -161,7 +161,7 @@ describe('DynamicRelationshipsPanel', () => {
     })
 
     const placeholder = screen.getByTestId('type-derived-relationship')
-    expect(within(placeholder).getByText('Mentor')).toHaveClass('text-muted-foreground/40')
+    expect(within(placeholder).getByText('Mentor')).toHaveClass('text-text-muted')
     fireEvent.click(within(placeholder).getByTestId('add-relation-ref'))
     fireEvent.change(within(placeholder).getByTestId('add-relation-ref-input'), {
       target: { value: 'My Project' },
@@ -190,7 +190,7 @@ describe('DynamicRelationshipsPanel', () => {
     })
 
     const placeholder = screen.getByTestId('type-derived-relationship')
-    expect(within(placeholder).getByText('Has')).toHaveClass('text-muted-foreground/40')
+    expect(within(placeholder).getByText('Has')).toHaveClass('text-text-muted')
   })
 
   it('navigates when clicking a relationship link', () => {

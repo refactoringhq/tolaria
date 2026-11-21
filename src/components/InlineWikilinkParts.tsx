@@ -1,7 +1,7 @@
 import { Fragment, createElement, useEffect, useImperativeHandle, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import type { VaultEntry } from '../types'
-import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
+import { getTypeColor, getTypeLightColor, getTypeTextColor } from '../utils/typeColors'
 import { NoteTitleIcon } from './NoteTitleIcon'
 import { getTypeIcon } from './note-item/typeIcon'
 import type { InlineWikilinkChip, InlineWikilinkSegment } from './inlineWikilinkText'
@@ -27,7 +27,7 @@ export function InlineWikilinkChipView({
   typeEntryMap: Record<string, VaultEntry>
 }) {
   const typeEntry = chip.entry.isA ? typeEntryMap[chip.entry.isA] : undefined
-  const color = getTypeColor(chip.entry.isA, typeEntry?.color)
+  const color = getTypeTextColor(chip.entry.isA, typeEntry?.color)
   const backgroundColor = getTypeLightColor(chip.entry.isA, typeEntry?.color)
   const typeIcon = getTypeIcon(chip.entry.isA, typeEntry?.icon)
 
