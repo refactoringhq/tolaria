@@ -137,20 +137,7 @@ impl<'a> YamlText<'a> {
     fn quoted(self) -> String {
         let mut escaped = String::new();
         for ch in self.0.chars() {
-            match ch {
-                '\\' => escaped.push_str("\\\\"),
-                '"' => escaped.push_str("\\\""),
-                '\0' => escaped.push_str("\\0"),
-                '\u{feff}' => escaped.push_str("\\uFEFF"),
-                '\n' => escaped.push_str("\\n"),
-                '\r' => escaped.push_str("\\r"),
-                '\t' => escaped.push_str("\\t"),
-                '\u{85}' => escaped.push_str("\\N"),
-                '\u{2028}' => escaped.push_str("\\L"),
-                '\u{2029}' => escaped.push_str("\\P"),
-                c if c.is_control() => escaped.push_str(&format!("\\u{:04x}", c as u32)),
-                c => escaped.push(c),
-            }
+            push_yaml_escape(ch, &mut escaped);
         }
         format!("\"{}\"", escaped)
     }
@@ -170,6 +157,52 @@ impl<'a> YamlText<'a> {
         self.0
             .chars()
             .any(|c| !c.is_ascii_alphanumeric() && c != '_' && c != '-')
+    }
+}
+
+fn push_yaml_escape(character: char, escaped: &mut String) {
+    if let Some(escape) = basic_yaml_escape(character) {
+        escaped.push_str(escape);
+    } else if let Some(escape) = line_break_yaml_escape(character) {
+        escaped.push_str(escape);
+    } else if character.is_control() {
+        escaped.push_str(&format!("\\u{:04x}", character as u32));
+    } else {
+        escaped.push(character);
+    }
+}
+
+fn basic_yaml_escape(character: char) -> Option<&'static str> {
+    match character {
+        '\\' => Some("\\\\"),
+        '"' => Some("\\\""),
+        '\0' => Some("\\0"),
+        '\u{feff}' => Some("\\uFEFF"),
+        '\n' => Some("\\n"),
+        '\r' => Some("\\r"),
+        '\t' => Some("\\t"),
+        _ => None,
+    }
+}
+
+fn line_break_yaml_escape(character: char) -> Option<&'static str> {
+    match character {
+        '\u{85}' => Some("\\N"),
+        '\u{2028}' => Some("\\L"),
+        '\u{2029}' => Some("\\P"),
+        _ => None,
+    }
+}
+
+fn format_yaml_list(items: &[FrontmatterScalar]) -> String {
+    if items.is_empty() {
+        "[]".to_string()
+    } else {
+        items
+            .iter()
+            .map(FrontmatterScalar::to_yaml_list_item)
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 }
 
@@ -209,12 +242,7 @@ impl FrontmatterValue {
             }
             FrontmatterValue::Number(n) => format_yaml_number(*n),
             FrontmatterValue::Bool(b) => if *b { "true" } else { "false" }.to_string(),
-            FrontmatterValue::List(items) if items.is_empty() => "[]".to_string(),
-            FrontmatterValue::List(items) => items
-                .iter()
-                .map(FrontmatterScalar::to_yaml_list_item)
-                .collect::<Vec<_>>()
-                .join("\n"),
+            FrontmatterValue::List(items) => format_yaml_list(items),
             FrontmatterValue::Null => "null".to_string(),
         }
     }
@@ -266,6 +294,74 @@ mod tests {
             ("3.14", "\"3.14\""),
         ] {
             assert_string_yaml_value(input, expected);
+        }
+    }
+
+    #[test]
+    fn test_string_scalars_round_trip_without_changing_type() {
+        let cases = [
+            (r"C:\notes\new: path", r#""C:\\notes\\new: path""#),
+            (r"C:\notes\new", r#""C:\\notes\\new""#),
+            ("line one\nline two", r#""line one\nline two""#),
+            ("yes", "\"yes\""),
+            ("no", "\"no\""),
+            ("null", "\"null\""),
+            ("true", "\"true\""),
+            ("false", "\"false\""),
+            ("on", "\"on\""),
+            ("off", "\"off\""),
+            ("~", "\"~\""),
+            ("007", "\"007\""),
+            ("1.5", "\"1.5\""),
+            ("0x10", "\"0x10\""),
+            ("#tag", "\"#tag\""),
+            (":value", "\":value\""),
+            ("&anchor", "\"&anchor\""),
+            ("*alias", "\"*alias\""),
+            ("!tag", "\"!tag\""),
+            ("|literal", "\"|literal\""),
+            (">folded", "\">folded\""),
+            ("'quoted", "\"'quoted\""),
+            ("\"quoted", "\"\\\"quoted\""),
+            ("%directive", "\"%directive\""),
+            ("@value", "\"@value\""),
+            ("`value", "\"`value\""),
+            ("{flow}", "\"{flow}\""),
+            ("}flow", "\"}flow\""),
+            ("[flow]", "\"[flow]\""),
+            ("]flow", "\"]flow\""),
+            (",value", "\",value\""),
+            ("? key", "\"? key\""),
+            ("- item", "\"- item\""),
+        ];
+
+        for (input, expected_yaml) in cases {
+            let emitted = FrontmatterValue::String(input.to_string()).to_yaml_value();
+            let parsed: serde_yaml::Value = serde_yaml::from_str(&emitted).unwrap();
+            assert_eq!(
+                parsed,
+                serde_yaml::Value::String(input.to_string()),
+                "round-tripped {input:?}"
+            );
+            assert_eq!(emitted, expected_yaml, "serialized {input:?}");
+        }
+    }
+
+    #[test]
+    fn test_native_boolean_and_number_scalars_remain_unquoted() {
+        for (value, expected_yaml, expected_type) in [
+            (FrontmatterValue::Bool(true), "true", "boolean"),
+            (FrontmatterValue::Number(42.0), "42", "number"),
+        ] {
+            let emitted = value.to_yaml_value();
+            assert_eq!(emitted, expected_yaml);
+
+            let parsed: serde_yaml::Value = serde_yaml::from_str(&emitted).unwrap();
+            match expected_type {
+                "boolean" => assert!(parsed.is_bool(), "parsed {emitted:?} as {parsed:?}"),
+                "number" => assert!(parsed.is_number(), "parsed {emitted:?} as {parsed:?}"),
+                _ => unreachable!("test case has a known YAML type"),
+            }
         }
     }
 
