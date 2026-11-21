@@ -82,14 +82,7 @@ export type MobileAnalyticsEvent =
 			name: "mobile_editor_tool_opened";
 			tool: "find" | "replace" | "slash" | "filename";
 	  }
-	| {
-			name:
-				| "mobile_note_link_activated"
-				| "mobile_note_link_options_opened"
-				| "mobile_note_link_copied"
-				| "mobile_note_link_shared";
-			kind: "external" | "wikilink";
-	  }
+	| { name: "mobile_note_link_activated"; kind: "external" | "wikilink" }
 	| { name: "mobile_note_task_toggled"; state: "checked" | "unchecked" }
 	| {
 			name: "mobile_deep_link_opened";
@@ -167,7 +160,7 @@ export function createMobileAnalytics({
 function eventProperties(event: MobileAnalyticsEvent): Record<string, string> {
 	if (event.name === "mobile_deep_link_opened")
 		return { outcome: event.outcome };
-	if (isMobileNoteLinkEvent(event)) return { kind: event.kind };
+	if (event.name === "mobile_note_link_activated") return { kind: event.kind };
 	if (event.name === "mobile_note_task_toggled") return { state: event.state };
 	if (event.name === "mobile_editor_recovery_requested")
 		return { reason: event.reason };
@@ -176,12 +169,6 @@ function eventProperties(event: MobileAnalyticsEvent): Record<string, string> {
 		return { channel: event.channel, outcome: event.outcome };
 	if (isOnboardingEvent(event)) return onboardingEventProperties(event);
 	return workspaceEventProperties(event);
-}
-
-function isMobileNoteLinkEvent(
-	event: MobileAnalyticsEvent,
-): event is Extract<MobileAnalyticsEvent, { kind: "external" | "wikilink" }> {
-	return event.name.startsWith("mobile_note_link_");
 }
 
 type OnboardingEvent = Extract<

@@ -3,7 +3,6 @@ import type {
 	NativeEditorInputProps,
 	NativeEditorStyle,
 } from "./MobileWysiwygMarkdownEditor.native";
-import { mobileEditorLinkInteractionScript } from "./mobileEditorLinkInteraction.native";
 
 export function createNativeEditorWebViewProps(
 	props: NativeEditorInputProps,
@@ -15,12 +14,7 @@ export function createNativeEditorWebViewProps(
 		...probeProps(props.layoutProbe, "editor.wysiwyg.richText"),
 		style,
 		testID: "editor-wysiwyg-input",
-		onLoadEnd: () => {
-			props.injectEditorCss();
-			props.editor.webviewRef.current?.injectJavaScript(
-				mobileEditorLinkInteractionScript,
-			);
-		},
+		onLoadEnd: props.injectEditorCss,
 		onContentProcessDidTerminate: () =>
 			props.onProcessLoss("contentProcessTerminated"),
 		onRenderProcessGone: () => props.onProcessLoss("renderProcessGone"),
