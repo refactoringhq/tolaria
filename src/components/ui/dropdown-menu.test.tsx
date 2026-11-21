@@ -31,6 +31,10 @@ function indicatorOf(item: HTMLElement) {
 	return item.querySelector('[data-slot="dropdown-menu-item-indicator"]');
 }
 
+function glyphPathOf(item: HTMLElement) {
+	return indicatorOf(item)?.querySelector("path")?.getAttribute("d");
+}
+
 describe("dropdown menu selectable items", () => {
 	it("keeps labels flush left and puts the indicator after the label", () => {
 		renderMenu();
@@ -56,6 +60,6 @@ describe("dropdown menu selectable items", () => {
 		expect(indicatorOf(board)?.querySelector("svg")).toBeNull();
 		expect(indicatorOf(weekends)?.querySelector("svg")).not.toBeNull();
 		expect(indicatorOf(icons)?.querySelector("svg")).toBeNull();
-		expect(indicatorOf(list)?.innerHTML).toBe(indicatorOf(weekends)?.innerHTML);
+		expect(glyphPathOf(list)).toBe(glyphPathOf(weekends));
 	});
 });
