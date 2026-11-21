@@ -72,7 +72,24 @@ describe("NoteListHeader title space", () => {
 		);
 		fireEvent.click(propertiesButton);
 		expect(propertiesButton).toHaveAttribute("aria-expanded", "true");
-		expect(screen.getByRole("dialog")).toBeVisible();
+		const picker = screen.getByRole("dialog");
+		expect(picker).toBeVisible();
+		expect(propertiesButton).toHaveAttribute("aria-controls", picker.id);
+	});
+
+	it("uses the layout's field-picker label when card visibility has no toggle", () => {
+		renderHeader({
+			propertyPicker: {
+				scope: "view",
+				availableProperties: ["owner"],
+				currentDisplay: ["owner"],
+				onSave: vi.fn(),
+				triggerTitle: "Card fields",
+				usePickerTitle: true,
+			},
+		});
+
+		expect(screen.getByRole("button", { name: "Card fields" })).toBeVisible();
 	});
 
 	it("shows the sort action tooltip on keyboard focus", async () => {

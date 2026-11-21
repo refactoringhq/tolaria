@@ -26,7 +26,7 @@ export function layoutPropertyPicker(
 	layout: CardFieldsSource,
 	listPicker: NoteListPropertyPicker | null,
 	locale: AppLocale,
-): NoteListPropertyPicker | null {
+): (NoteListPropertyPicker & { usePickerTitle?: boolean }) | null {
 	if (layout.layout === COLLECTION_PRESENTATION_LIST) return listPicker;
 	if (layout.layout === "graph") return null;
 	const list = listPicker ?? EMPTY_LIST_PICKER;
@@ -39,5 +39,6 @@ export function layoutPropertyPicker(
 			layout.properties.length > 0 ? layout.properties : list.currentDisplay,
 		onSave: layout.changeCardProperties,
 		triggerTitle: translate(locale, "layout.cardFields"),
+		usePickerTitle: true,
 	};
 }

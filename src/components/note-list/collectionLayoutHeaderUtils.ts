@@ -11,8 +11,5 @@ export function layoutPropertyVisibility(
 				layout.changeGraph({ showLabels: !layout.graph.showLabels }),
 		};
 	}
-	return {
-		visible: layout.showProperties,
-		onToggle: () => layout.changeShowProperties(!layout.showProperties),
-	};
+	return undefined;
 }
