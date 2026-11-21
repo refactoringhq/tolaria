@@ -3,6 +3,9 @@ import type { LabelEmphasis } from './graphLabelRanking'
 import type { GraphNodeModel } from './graphModel'
 import type { GraphRenderer } from './graphRenderer'
 
+/** A label chip element. */
+export type LabelChip = HTMLElement
+
 /** Per-frame label placement: reads node positions from sigma, places chips, and writes only what changed. */
 
 export function labelOrder(ranked: readonly GraphNodeModel[], forced: readonly string[]): string[] {
@@ -11,7 +14,7 @@ export function labelOrder(ranked: readonly GraphNodeModel[], forced: readonly s
 }
 
 /** Label text never changes after mount, so each chip is measured once (kept in its dataset), not every frame. */
-function labelWidth(label: HTMLElement): number {
+function labelWidth(label: LabelChip): number {
   const known = Number(label.dataset.width)
   if (label.dataset.width !== undefined && Number.isFinite(known)) return known
   const width = label.offsetWidth
@@ -32,8 +35,8 @@ export interface ChipState {
 
 interface FrameSource {
   renderer: GraphRenderer
-  chips: Map<string, HTMLElement>
-  written: WeakMap<HTMLElement, ChipState | null>
+  chips: Map<string, LabelChip>
+  written: WeakMap<LabelChip, ChipState | null>
   order: readonly string[]
   forced: ReadonlySet<string>
 }
@@ -79,12 +82,12 @@ function frameCandidates(source: FrameSource, forcedOnly: boolean): LabelCandida
  * An unplaced chip leaves layout entirely (display: none), so a thousand hidden chips cost nothing per
  * frame. It is measured first: every chip mounts laid out but invisible, and its width is cached.
  */
-function hideChip(chip: HTMLElement, written: WeakMap<HTMLElement, ChipState | null>) {
+function hideChip(chip: LabelChip, written: WeakMap<LabelChip, ChipState | null>) {
   if (written.get(chip) !== null) chip.style.display = 'none'
   written.set(chip, null)
 }
 
-function showChip(chip: HTMLElement, next: ChipState, written: WeakMap<HTMLElement, ChipState | null>) {
+function showChip(chip: LabelChip, next: ChipState, written: WeakMap<LabelChip, ChipState | null>) {
   const previous = written.get(chip) ?? null
   if (!previous) {
     chip.style.display = ''
@@ -95,7 +98,7 @@ function showChip(chip: HTMLElement, next: ChipState, written: WeakMap<HTMLEleme
   written.set(chip, next)
 }
 
-function writeChip(chip: HTMLElement, box: LabelBox | undefined, opacity: number, written: WeakMap<HTMLElement, ChipState | null>) {
+function writeChip(chip: LabelChip, box: LabelBox | undefined, opacity: number, written: WeakMap<LabelChip, ChipState | null>) {
   if (box) showChip(chip, { transform: `translate(${box.left}px, ${box.top}px)`, opacity: String(opacity) }, written)
   else hideChip(chip, written)
 }
@@ -107,7 +110,7 @@ export interface PlaceSource extends FrameSource {
 }
 
 /** Reads every unmeasured chip's width in one pass, before any write, so the browser lays out once. */
-function measureChips(chips: Map<string, HTMLElement>) {
+function measureChips(chips: Map<string, LabelChip>) {
   for (const chip of chips.values()) if (chip.dataset.width === undefined && chip.style.display !== 'none') labelWidth(chip)
 }
 
@@ -121,15 +124,15 @@ export function placeFrame(source: PlaceSource) {
 }
 
 /** Hover grows a chip and dims the others through CSS transitions; set once per emphasis change, not per frame. */
-export function markEmphasis(chips: Map<string, HTMLElement>, emphasis: LabelEmphasis) {
+export function markEmphasis(chips: Map<string, LabelChip>, emphasis: LabelEmphasis) {
   for (const [id, chip] of chips) {
     const state = emphasisOf(id, emphasis)
     if ((chip.dataset.emphasis ?? '') !== state) chip.dataset.emphasis = state
   }
 }
 
-export function chipMap(container: HTMLElement): Map<string, HTMLElement> {
-  const chips = new Map<string, HTMLElement>()
+export function chipMap(container: Element): Map<string, LabelChip> {
+  const chips = new Map<string, LabelChip>()
   for (const child of container.children) if (child instanceof HTMLElement && child.dataset.node) chips.set(child.dataset.node, child)
   return chips
 }

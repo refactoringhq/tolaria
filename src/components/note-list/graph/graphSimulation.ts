@@ -37,23 +37,27 @@ function linkStrength(forces: GraphForces, degrees: readonly number[]) {
   return (link: LayoutLink) => forces.linkForce / Math.max(1, Math.min(degreeOf(link.source), degreeOf(link.target)))
 }
 
+function isUsableEdge(source: number, target: number, nodeCount: number): boolean {
+  return source !== target && source < nodeCount && target < nodeCount
+}
+
 function edgeLinks(snapshot: GraphLayoutSnapshot): LayoutLink[] {
   const links: LayoutLink[] = []
   for (let edge = 0; edge + 1 < snapshot.edges.length; edge += 2) {
-    const source = snapshot.edges[edge]
-    const target = snapshot.edges[edge + 1]
-    if (source !== target && source < snapshot.ids.length && target < snapshot.ids.length) links.push({ source, target })
+    const [source = 0, target = 0] = snapshot.edges.slice(edge, edge + 2)
+    if (isUsableEdge(source, target, snapshot.ids.length)) links.push({ source, target })
   }
   return links
 }
 
 function nodeDegrees(count: number, links: readonly LayoutLink[]): number[] {
-  const degrees = new Array<number>(count).fill(0)
+  const counts = new Map<number, number>()
+  const bump = (end: LayoutLink['source']) => counts.set(Number(end), (counts.get(Number(end)) ?? 0) + 1)
   for (const { source, target } of links) {
-    degrees[source as number] += 1
-    degrees[target as number] += 1
+    bump(source)
+    bump(target)
   }
-  return degrees
+  return Array.from({ length: count }, (_, index) => counts.get(index) ?? 0)
 }
 
 /**

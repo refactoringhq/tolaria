@@ -3,7 +3,7 @@ import type { VaultEntry } from '../../../types'
 import { getTypeColor } from '../../../utils/typeColors'
 import { NoteTitleIcon } from '../../NoteTitleIcon'
 import { getTypeIcon } from '../../note-item/typeIcon'
-import { chipMap, type ChipState, labelOrder, markEmphasis, type PlaceSource, placeFrame } from './graphLabelFrame'
+import { chipMap, type ChipState, type LabelChip, labelOrder, markEmphasis, type PlaceSource, placeFrame } from './graphLabelFrame'
 import type { LabelSide } from './graphLabelPlacement'
 import { forcedLabels, LABEL_DOM_LIMIT, type LabelEmphasis, labelledNodes, rankLabels } from './graphLabelRanking'
 import type { GraphNodeModel } from './graphModel'
@@ -42,7 +42,7 @@ const LabelIcon = memo(function LabelIcon({ icon, glyph }: { icon: string | null
  */
 export function GraphLabels({ renderer, nodes, typeEntryMap, selectedNotePath, emphasis, textFadeThreshold }: GraphLabelsProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const writtenRef = useRef(new WeakMap<HTMLElement, ChipState | null>())
+  const writtenRef = useRef(new WeakMap<LabelChip, ChipState | null>())
   const sidesRef = useRef(new Map<string, LabelSide>())
   const ranked = useMemo(() => rankLabels(nodes), [nodes])
   const forced = useMemo(() => forcedLabels(emphasis, selectedNotePath), [emphasis, selectedNotePath])

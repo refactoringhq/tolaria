@@ -45,6 +45,12 @@ export const GRAPH_DISPLAY_SETTINGS: readonly GraphNumberSetting[] = [
 ];
 
 const NUMBER_KEYS = Object.keys(GRAPH_NUMBER_RANGES) as GraphNumberSetting[];
+const RANGE_LOOKUP = new Map(Object.entries(GRAPH_NUMBER_RANGES));
+
+/** The slider range and default of a numeric graph setting. */
+export function graphNumberRange(key: GraphNumberSetting): GraphNumberRange {
+	return RANGE_LOOKUP.get(key) ?? GRAPH_NUMBER_RANGES.nodeSizeScale;
+}
 
 /** The legend filters alone: "Show everything" restores these and keeps forces, display and groups. */
 export const DEFAULT_GRAPH_FILTERS: Pick<
@@ -61,12 +67,12 @@ export const DEFAULT_GRAPH_FILTERS: Pick<
 /** Forces back to their defaults, for "Restore defaults". */
 export function defaultGraphForces(): Partial<GraphSettings> {
 	return Object.fromEntries(
-		GRAPH_FORCE_SETTINGS.map((key) => [key, GRAPH_NUMBER_RANGES[key].fallback]),
+		GRAPH_FORCE_SETTINGS.map((key) => [key, graphNumberRange(key).fallback]),
 	);
 }
 
 export function clampGraphNumber(key: GraphNumberSetting, value: unknown): number {
-	const { min, max, fallback } = GRAPH_NUMBER_RANGES[key];
+	const { min, max, fallback } = graphNumberRange(key);
 	if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
 	return Math.min(max, Math.max(min, value));
 }
@@ -97,7 +103,7 @@ export function colorGroupsFrom(value: unknown): GraphColorGroup[] {
 
 function numbersFrom(source: UnknownRecord): Record<GraphNumberSetting, number> {
 	return Object.fromEntries(
-		NUMBER_KEYS.map((key) => [key, clampGraphNumber(key, source[key])]),
+		NUMBER_KEYS.map((key) => [key, clampGraphNumber(key, Reflect.get(source, key))]),
 	) as Record<GraphNumberSetting, number>;
 }
 

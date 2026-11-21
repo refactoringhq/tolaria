@@ -27,7 +27,7 @@ function build(display: GraphDisplay) {
   })
   const options = constructed.at(-1)
   if (!options) throw new Error('No renderer')
-  const style = (kind: 'nodes' | 'edges', key: string) => options.styles[kind][key] as StyleFunction
+  const style = (kind: 'nodes' | 'edges', key: string) => Reflect.get(kind === 'nodes' ? options.styles.nodes : options.styles.edges, key) as StyleFunction
   return { options, style }
 }
 

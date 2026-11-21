@@ -49,11 +49,11 @@ describe("graph settings panel", () => {
 		const canvas = await openGraphSettings();
 		fireEvent.click(screen.getByTestId("graph-group-add"));
 		fireEvent.click(screen.getByTestId("graph-group-add"));
-		const queries = screen.getAllByTestId("graph-group-query");
-		for (const [index, query] of ["type:Person", "Launch"].entries()) {
-			fireEvent.change(queries[index], { target: { value: query } });
-			fireEvent.blur(queries[index]);
-		}
+		const [personQuery, launchQuery] = screen.getAllByTestId("graph-group-query");
+		fireEvent.change(personQuery, { target: { value: "type:Person" } });
+		fireEvent.blur(personQuery);
+		fireEvent.change(launchQuery, { target: { value: "Launch" } });
+		fireEvent.blur(launchQuery);
 		await waitFor(() =>
 			expect(canvas.dataset.groups).toMatch(/^type:Person:\w+\|Launch:\w+$/),
 		);

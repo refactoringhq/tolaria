@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 import type { GraphSettings } from '../../../collections/collectionTypes'
-import { defaultGraphForces, GRAPH_DISPLAY_SETTINGS, GRAPH_FORCE_SETTINGS, GRAPH_NUMBER_RANGES, type GraphNumberSetting } from '../../../collections/graphSettings'
+import { defaultGraphForces, GRAPH_DISPLAY_SETTINGS, GRAPH_FORCE_SETTINGS, type GraphNumberSetting, graphNumberRange } from '../../../collections/graphSettings'
 import { type AppLocale, type TranslationKey, translate } from '../../../lib/i18n'
 import { GraphGroupsSection } from './GraphGroupsSection'
 import { SettingsSection } from './GraphSettingsSection'
@@ -23,7 +23,7 @@ export interface GraphSettingsMenuProps {
   onPreview: (patch: Partial<GraphSettings>) => void
 }
 
-const SETTING_LABELS: Readonly<Record<GraphNumberSetting, TranslationKey>> = {
+const SETTING_LABELS = new Map<GraphNumberSetting, TranslationKey>(Object.entries({
   textFadeThreshold: 'graph.settings.textFadeThreshold',
   nodeSizeScale: 'graph.settings.nodeSizeScale',
   linkThickness: 'graph.settings.linkThickness',
@@ -31,16 +31,16 @@ const SETTING_LABELS: Readonly<Record<GraphNumberSetting, TranslationKey>> = {
   repelForce: 'graph.settings.repelForce',
   linkForce: 'graph.settings.linkForce',
   linkDistance: 'graph.settings.linkDistance',
-}
+}) as Array<[GraphNumberSetting, TranslationKey]>)
 
 function formatValue(value: number, step: number): string {
   return step >= 1 ? String(Math.round(value)) : value.toFixed(step >= 0.1 ? 1 : 2)
 }
 
 function SettingSlider({ setting, settings, locale, onChange, onPreview }: Omit<GraphSettingsMenuProps, 'triggerClassName'> & { setting: GraphNumberSetting }) {
-  const { min, max, step } = GRAPH_NUMBER_RANGES[setting]
-  const label = translate(locale, SETTING_LABELS[setting])
-  const value = settings[setting]
+  const { min, max, step } = graphNumberRange(setting)
+  const label = translate(locale, SETTING_LABELS.get(setting) ?? 'graph.settings.label')
+  const value = Number(Reflect.get(settings, setting))
   return (
     <div className="flex flex-col gap-1.5" data-testid={`graph-setting-${setting}`}>
       <div className="flex items-center justify-between text-[13px] text-foreground">

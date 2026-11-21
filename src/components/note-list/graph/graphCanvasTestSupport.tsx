@@ -83,7 +83,9 @@ export async function setTheme(theme: string | null) {
   })
 }
 
-export async function nextFrames(count = 20) {
-  for (let frame = 0; frame < count; frame += 1) await act(() => new Promise((resolve) => requestAnimationFrame(resolve)))
+/** Lets `count` animation frames pass, one after another. */
+export function nextFrames(count = 20): Promise<void> {
+  const frame = () => act(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())))
+  return Array.from({ length: count }).reduce<Promise<void>>((previous) => previous.then(frame), Promise.resolve())
 }
 
