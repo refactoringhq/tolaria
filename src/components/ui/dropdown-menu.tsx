@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { CaretRight as ChevronRightIcon, Check as CheckIcon, Circle as CircleIcon } from '@phosphor-icons/react'
+import { CaretRight as ChevronRightIcon, Check as CheckIcon } from '@phosphor-icons/react'
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
@@ -10,10 +10,12 @@ const dropdownMenuContentMotionClass =
   "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 origin-(--radix-dropdown-menu-content-transform-origin) rounded-md border p-1"
 
 const dropdownMenuCheckedItemClass =
-  "focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm py-1.5 pr-2 pl-8 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+  "focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+
+const dropdownMenuItemLabelClass = "flex min-w-0 flex-1 items-center gap-2"
 
 const dropdownMenuItemIndicatorClass =
-  "pointer-events-none absolute left-2 flex size-3.5 items-center justify-center"
+  "pointer-events-none flex size-4 shrink-0 items-center justify-center"
 
 function createDropdownMenuSlot<T extends React.ElementType>(
   Component: T,
@@ -28,15 +30,14 @@ function createDropdownMenuSlot<T extends React.ElementType>(
   return DropdownMenuSlot
 }
 
-function DropdownMenuItemIndicator({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+function DropdownMenuItemIndicator() {
   return (
-    <span className={dropdownMenuItemIndicatorClass}>
+    <span
+      data-slot="dropdown-menu-item-indicator"
+      className={dropdownMenuItemIndicatorClass}
+    >
       <DropdownMenuPrimitive.ItemIndicator>
-        {children}
+        <CheckIcon className="size-4" />
       </DropdownMenuPrimitive.ItemIndicator>
     </span>
   )
@@ -45,7 +46,6 @@ function DropdownMenuItemIndicator({
 function createDropdownMenuCheckedItem<T extends React.ElementType>(
   Component: T,
   slot: string,
-  indicator: React.ReactNode,
   displayName: string
 ) {
   type Props = React.ComponentProps<T> & {
@@ -62,8 +62,8 @@ function createDropdownMenuCheckedItem<T extends React.ElementType>(
         className: cn(dropdownMenuCheckedItemClass, className),
       },
       <>
-        <DropdownMenuItemIndicator>{indicator}</DropdownMenuItemIndicator>
-        {children}
+        <span className={dropdownMenuItemLabelClass}>{children}</span>
+        <DropdownMenuItemIndicator />
       </>
     )
   }
@@ -143,7 +143,6 @@ function DropdownMenuItem({
 const DropdownMenuCheckboxItem = createDropdownMenuCheckedItem(
   DropdownMenuPrimitive.CheckboxItem,
   "dropdown-menu-checkbox-item",
-  <CheckIcon className="size-4" />,
   "DropdownMenuCheckboxItem"
 )
 
@@ -156,7 +155,6 @@ const DropdownMenuRadioGroup = createDropdownMenuSlot(
 const DropdownMenuRadioItem = createDropdownMenuCheckedItem(
   DropdownMenuPrimitive.RadioItem,
   "dropdown-menu-radio-item",
-  <CircleIcon className="size-2 fill-current" />,
   "DropdownMenuRadioItem"
 )
 
