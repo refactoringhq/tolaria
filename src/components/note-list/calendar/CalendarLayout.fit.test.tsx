@@ -41,13 +41,19 @@ interface RowGeometry {
 	card: number;
 }
 
+/** The prototype that owns `offsetHeight` (the one every card element inherits it from). */
+function cardPrototype(): { readonly offsetHeight: number } {
+	const divPrototype = Object.getPrototypeOf(document.createElement("div"));
+	return Object.getPrototypeOf(divPrototype);
+}
+
 /** JSDOM has no layout: give a 600px month grid, its item areas and its cards real heights. */
 function stubGeometry({ lanes, card }: RowGeometry) {
-	vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(
-		function (this: HTMLElement) {
-			return this.dataset.path === undefined ? 0 : card;
-		},
-	);
+	vi.spyOn(cardPrototype(), "offsetHeight", "get").mockImplementation(function (
+		this: Element,
+	) {
+		return this.hasAttribute("data-path") ? card : 0;
+	});
 	vi.spyOn(Element.prototype, "clientHeight", "get").mockImplementation(
 		function (this: Element) {
 			return this.classList.contains("calendar-week__lanes") ? lanes : 0;
