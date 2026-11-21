@@ -5,7 +5,7 @@
  * Output: src-tauri/resources/mcp-server/{index.js,ws-bridge.js}
  */
 
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
@@ -31,25 +31,53 @@ const shared = {
 	logLevel: "warning",
 };
 
-await build({
+const indexBuild = await build({
 	...shared,
+	metafile: true,
 	entryPoints: [join(SRC, "index.js")],
 	outfile: join(OUT, "index.js"),
 });
-assertSdkIsBundled(join(OUT, "index.js"));
+assertSdkIsBundled(indexBuild.metafile, "index.js");
 
-await build({
+const bridgeBuild = await build({
 	...shared,
+	metafile: true,
 	entryPoints: [join(SRC, "ws-bridge.js")],
 	outfile: join(OUT, "ws-bridge.js"),
 });
-assertSdkIsBundled(join(OUT, "ws-bridge.js"));
+assertSdkIsBundled(bridgeBuild.metafile, "ws-bridge.js", false);
 
 console.log("mcp-server bundled → src-tauri/resources/mcp-server/");
 
-function assertSdkIsBundled(bundlePath) {
-	const bundle = readFileSync(bundlePath, "utf8");
-	if (/require\(["']@modelcontextprotocol\/sdk(?:\/|["'])/.test(bundle)) {
-		throw new Error(`${bundlePath} leaves @modelcontextprotocol/sdk external`);
+function assertSdkIsBundled(metafile, bundleName, requireSdk = true) {
+	const output = findBundleOutput(metafile, bundleName);
+	assertSdkInputIsBundled(output, bundleName, requireSdk);
+	assertSdkIsNotExternal(output, bundleName);
+}
+
+function findBundleOutput(metafile, bundleName) {
+	const output = Object.entries(metafile.outputs).find(([path]) =>
+		path.endsWith(`/${bundleName}`),
+	)?.[1];
+	if (output) return output;
+	throw new Error(`${bundleName} was not produced`);
+}
+
+function assertSdkInputIsBundled(output, bundleName, requireSdk) {
+	const sdkIsIncluded = Object.keys(output.inputs).some((path) =>
+		path.includes("@modelcontextprotocol/sdk"),
+	);
+	if (requireSdk && !sdkIsIncluded) {
+		throw new Error(`${bundleName} does not include @modelcontextprotocol/sdk`);
+	}
+}
+
+function assertSdkIsNotExternal(output, bundleName) {
+	const sdkExternal = output.imports.find(
+		({ path, external }) =>
+			external && path.startsWith("@modelcontextprotocol/sdk"),
+	);
+	if (sdkExternal) {
+		throw new Error(`${bundleName} leaves ${sdkExternal.path} external`);
 	}
 }
