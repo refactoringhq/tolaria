@@ -26,6 +26,12 @@ export function isCompositionKeyboardEvent(event: ReactKeyboardEvent<HTMLDivElem
   return isComposing || event.nativeEvent.isComposing || event.keyCode === 229
 }
 
+export const IME_KEYDOWN_SIGNAL_WINDOW_MS = 500
+
+export function isWindowsRuntime(): boolean {
+  return typeof navigator !== 'undefined' && /Windows/i.test(navigator.userAgent)
+}
+
 export function isLineBreakShortcut(event: ReactKeyboardEvent<HTMLDivElement>, isComposing: boolean) {
   return (
     event.key === 'Enter' &&
@@ -36,17 +42,35 @@ export function isLineBreakShortcut(event: ReactKeyboardEvent<HTMLDivElement>, i
   )
 }
 
+type CompositionBeforeInputLike = {
+  timeStamp?: unknown
+  isComposing?: unknown
+  inputType?: unknown
+}
+
+function isImeKeyDownSignalActive(
+  nativeEvent: CompositionBeforeInputLike,
+  lastImeKeyDownAt: number | null,
+): boolean {
+  if (lastImeKeyDownAt === null || typeof nativeEvent.timeStamp !== 'number') return false
+
+  const elapsed = nativeEvent.timeStamp - lastImeKeyDownAt
+  return elapsed >= 0 && elapsed <= IME_KEYDOWN_SIGNAL_WINDOW_MS
+}
+
 export function isNativeCompositionBeforeInput(
   nativeEvent: InputEvent,
   isComposing: boolean,
   hasPendingCompositionInput: boolean,
   isSettlingComposition: boolean,
+  lastImeKeyDownAt: number | null = null,
 ) {
   return (
     isComposing ||
     hasPendingCompositionInput ||
     nativeEvent.isComposing ||
     nativeEvent.inputType === 'insertCompositionText' ||
+    isImeKeyDownSignalActive(nativeEvent, lastImeKeyDownAt) ||
     (isSettlingComposition && nativeEvent.inputType === 'insertText' && typeof nativeEvent.data === 'string')
   )
 }

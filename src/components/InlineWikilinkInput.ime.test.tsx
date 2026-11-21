@@ -22,13 +22,30 @@ function ControlledComposer({ onDraftChange }: { onDraftChange: (value: string) 
   )
 }
 
+interface TextBoundary {
+  node: Node
+  nodeOffset: number
+}
+
+function textBoundaryAt(editor: HTMLElement, offset: number): TextBoundary {
+  const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT)
+  let remaining = offset
+  let node: Node | null = walker.nextNode()
+  while (node !== null) {
+    const length = node.textContent?.length ?? 0
+    if (remaining <= length) return { node, nodeOffset: remaining }
+    remaining -= length
+    node = walker.nextNode()
+  }
+  return { node: editor, nodeOffset: 0 }
+}
+
 function setSelection(editor: HTMLElement, offset: number) {
+  const { node, nodeOffset } = textBoundaryAt(editor, offset)
   const selection = window.getSelection()
   if (!selection) return
-
-  const targetNode = editor.firstChild ?? editor
   const range = document.createRange()
-  range.setStart(targetNode, Math.min(offset, targetNode.textContent?.length ?? 0))
+  range.setStart(node, nodeOffset)
   range.collapse(true)
   selection.removeAllRanges()
   selection.addRange(range)
@@ -47,6 +64,28 @@ function lateCompositionCommit(editor: HTMLElement, text: string) {
   fireEvent.input(editor)
   return event
 }
+
+describe('InlineWikilinkInput hidden Sogou composition selection', () => {
+  it('does not rewrite the DOM selection when the synced selection is unchanged', async () => {
+    const onDraftChange = vi.fn()
+    render(<ControlledComposer onDraftChange={onDraftChange} />)
+    const editorEl = screen.getByTestId('agent-input')
+    editorEl.focus()
+
+    // Sogou's hidden composition (#1329) inserts text natively with no
+    // composition events; the keyup selection sync must not destroy and
+    // rebuild the native selection when it already matches, or the TSF
+    // composition anchor dies and the candidate window closes.
+    editorEl.replaceChildren(document.createTextNode('n'))
+    setSelection(editorEl, 1)
+    const removeSpy = vi.spyOn(window.getSelection() as Selection, 'removeAllRanges')
+    fireEvent.keyUp(editorEl, { key: 'n' })
+
+    await act(async () => Promise.resolve())
+
+    expect(removeSpy).not.toHaveBeenCalled()
+  })
+})
 
 describe('InlineWikilinkInput Korean IME settlement', () => {
   it('hides the placeholder while composing and restores it after cancellation', () => {
