@@ -63,6 +63,10 @@ test.describe('Graph layout', () => {
     const moved = await nodePoint(page, 'Alpha Project')
     expect(Math.hypot(moved.x - start.x, moved.y - start.y)).toBeGreaterThan(40)
 
+    // Move off the node first: a hovered label may sit on another side of its node.
+    const box = await canvas.boundingBox()
+    if (!box) throw new Error('No graph canvas')
+    await page.mouse.move(box.x + 8, box.y + 8)
     await page.waitForTimeout(2_500)
     const settled = await nodePoint(page, 'Alpha Project')
     await page.mouse.click(settled.x, settled.y)
