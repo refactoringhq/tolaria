@@ -1,186 +1,15 @@
-import {
-	act,
-	fireEvent,
-	render,
-	screen,
-	waitFor,
-} from "@testing-library/react";
-import type { MouseEvent } from "react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SET_COLLECTION_LAYOUT_EVENT } from "../../../collections/collectionTypes";
 import { presentationFromViewDefinition } from "../../../collections/presentationConfig";
-import { makeEntry } from "../../../test-utils/noteListTestUtils";
-import type { SidebarSelection, VaultEntry, ViewFile } from "../../../types";
-import { CollectionLayoutBody } from "../CollectionLayoutBody";
-import { CollectionLayoutHeaderControls } from "../CollectionLayoutControls";
-import {
-	type CollectionLayoutSource,
-	useCollectionLayout,
-} from "../useCollectionLayout";
-import type { GraphCanvasProps } from "./GraphCanvas";
+import type { SidebarSelection, ViewFile } from "../../../types";
+import { invoke, trackEvent } from "./graphCollectionDoubles";
+import { project, person, guide, lonely, ENTRIES, openMenu, chooseMenuOption, savedLayouts, nodeTitles } from "./graphCollectionFixtures";
+import { Harness } from "./GraphCollectionHarness";
 
-const { invoke, trackEvent } = vi.hoisted(() => ({
-	invoke: vi.fn(),
-	trackEvent: vi.fn(),
-}));
-vi.mock("@tauri-apps/api/core", () => ({ invoke }));
-vi.mock("../../../lib/telemetry", () => ({ trackEvent }));
-// WebGL is not available in JSDOM: the canvas stub lists what it would draw and forwards clicks.
-vi.mock("./GraphCanvas", () => ({
-	default: ({
-		visible,
-		showLabels,
-		selectedNotePath,
-		onOpen,
-		onBackgroundClick,
-	}: GraphCanvasProps) => (
-		<div
-			data-testid="graph-canvas-stub"
-			data-labels={String(showLabels)}
-			data-selected={selectedNotePath ?? ""}
-		>
-			{visible.nodes.map((node) => (
-				<button
-					key={node.id}
-					type="button"
-					data-testid="graph-node"
-					onClick={(event: MouseEvent) => onOpen(node.entry, event)}
-				>
-					{node.entry.title}
-				</button>
-			))}
-			{visible.edges.map((edge) => (
-				<span key={edge.id} data-testid={`graph-edge-${edge.kind}`}>
-					{edge.labels.join("+")}
-				</span>
-			))}
-			<button
-				type="button"
-				data-testid="graph-background"
-				onClick={onBackgroundClick}
-			>
-				background
-			</button>
-		</div>
-	),
-}));
-
-const project = makeEntry({
-	path: "/vault/launch.md",
-	filename: "launch.md",
-	title: "Launch",
-	isA: "Project",
-	relationships: { owner: ["[[ada]]"] },
-	outgoingLinks: ["guide"],
-});
-const person = makeEntry({
-	path: "/vault/ada.md",
-	filename: "ada.md",
-	title: "Ada",
-	isA: "Person",
-});
-const guide = makeEntry({
-	path: "/vault/guide.md",
-	filename: "guide.md",
-	title: "Guide",
-	isA: "Note",
-});
-const lonely = makeEntry({
-	path: "/vault/lonely.md",
-	filename: "lonely.md",
-	title: "Lonely",
-	isA: "Note",
-});
-const ENTRIES = [project, person, guide, lonely];
-
-type HarnessProps = Partial<CollectionLayoutSource> & {
-	onOpen?: (entry: VaultEntry, event: MouseEvent) => void;
-};
-
-function Harness({ onOpen = vi.fn(), ...overrides }: HarnessProps) {
-	const source: CollectionLayoutSource = {
-		presentation: { type: "list", sort: null, properties: [] },
-		selection: { kind: "filter", filter: "all" },
-		visibleEntries: ENTRIES,
-		allEntries: ENTRIES,
-		views: [],
-		onUpdateViewDefinition: () => undefined,
-		vaultPath: "/vault",
-		selectedNotePath: null,
-		...overrides,
-	};
-	const layout = useCollectionLayout(source);
-	const graphData = layout.graphData;
-	return (
-		<div
-			data-testid="layout-root"
-			data-kanban-panel={layout.panel.open ? "open" : "closed"}
-		>
-			<CollectionLayoutHeaderControls
-				layout={layout.layout}
-				groupBy={layout.groupBy}
-				groups={layout.groups}
-				calendar={{
-					settings: layout.calendar,
-					dateProperty: layout.dateProperty,
-					dateOptions: layout.dateOptions,
-					onChange: layout.changeCalendar,
-				}}
-				graph={
-					graphData
-						? {
-								settings: layout.graph,
-								relationshipKeys: graphData.relationshipKeys,
-								typeKeys: graphData.typeKeys,
-								typeEntryMap: {},
-								onChange: layout.changeGraph,
-							}
-						: undefined
-				}
-				locale="en"
-				onLayoutChange={layout.changeLayout}
-				onGroupByChange={layout.changeGroupBy}
-			/>
-			<CollectionLayoutBody
-				layout={layout}
-				listContent={<div data-testid="classic-list">Classic list</div>}
-				entries={source.visibleEntries}
-				allEntries={source.allEntries ?? source.visibleEntries}
-				locale="en"
-				typeEntryMap={{}}
-				selectedNotePath={source.selectedNotePath}
-				onOpen={onOpen}
-				onMove={vi.fn()}
-			/>
-		</div>
-	);
-}
-
-function openMenu(testId: string) {
-	const trigger = screen.getByTestId(testId);
-	act(() => {
-		trigger.focus();
-		fireEvent.keyDown(trigger, { key: "ArrowDown" });
-	});
-}
-
-async function chooseMenuOption(triggerTestId: string, optionTestId: string) {
-	openMenu(triggerTestId);
-	fireEvent.click(await screen.findByTestId(optionTestId));
-	await waitFor(() =>
-		expect(screen.queryByRole("menu")).not.toBeInTheDocument(),
-	);
-}
-
-function savedLayouts() {
-	return invoke.mock.calls
-		.filter(([command]) => command === "save_collection_layout_cmd")
-		.map(([, args]) => args);
-}
-
-function nodeTitles() {
-	return screen.getAllByTestId("graph-node").map((node) => node.textContent);
-}
+vi.mock("@tauri-apps/api/core", async () => (await import("./graphCollectionDoubles")).tauriModule);
+vi.mock("../../../lib/telemetry", async () => (await import("./graphCollectionDoubles")).telemetryModule);
+vi.mock("./GraphCanvas", async () => (await import("./graphCollectionDoubles")).canvasModule);
 
 describe("graph collection layout", () => {
 	beforeEach(() => {
@@ -207,7 +36,6 @@ describe("graph collection layout", () => {
 			"Graph",
 		);
 	});
-
 	it("opens a saved graph config as List while the flag is off, without rewriting it", async () => {
 		localStorage.setItem("ff_graph_layout", "false");
 		invoke.mockResolvedValueOnce({
@@ -225,7 +53,6 @@ describe("graph collection layout", () => {
 		);
 		expect(savedLayouts()).toEqual([]);
 	});
-
 	it("switches to Graph, draws both edge kinds, and saves only once the user changes something", async () => {
 		render(<Harness />);
 		await chooseMenuOption("layout-menu-button", "layout-option-graph");
@@ -254,7 +81,6 @@ describe("graph collection layout", () => {
 			collection: "filter",
 		});
 	});
-
 	it("applies and persists every legend filter", async () => {
 		render(<Harness />);
 		act(() =>
@@ -307,7 +133,6 @@ describe("graph collection layout", () => {
 			filter: "showWikiLinks",
 		});
 	});
-
 	it("restores saved graph filters when the list opens again", async () => {
 		invoke.mockResolvedValueOnce({
 			"builtin:all": {
@@ -320,7 +145,6 @@ describe("graph collection layout", () => {
 		await screen.findByTestId("graph-canvas-stub");
 		expect(nodeTitles()).toEqual(["Launch", "Ada"]);
 	});
-
 	it("opens a clicked node in the editor panel, keeps it marked, and closes on an empty-canvas click", async () => {
 		const onOpen = vi.fn();
 		const { rerender } = render(<Harness onOpen={onOpen} />);
@@ -359,7 +183,6 @@ describe("graph collection layout", () => {
 			"open",
 		);
 	});
-
 	it("adds an edge when an external edit adds a relationship, without remounting", async () => {
 		const { rerender } = render(<Harness />);
 		act(() =>
@@ -382,7 +205,6 @@ describe("graph collection layout", () => {
 		).toEqual(["owner", "related_to"]);
 		expect(screen.getByTestId("graph-canvas-stub")).toBe(canvas);
 	});
-
 	it("explains a list without connections and offers List", async () => {
 		render(<Harness visibleEntries={[lonely, guide]} allEntries={ENTRIES} />);
 		act(() =>
@@ -396,7 +218,6 @@ describe("graph collection layout", () => {
 		fireEvent.click(screen.getByTestId("graph-empty-use-list"));
 		expect(screen.getByTestId("classic-list")).toBeInTheDocument();
 	});
-
 	it("explains filters that hide every note and resets them", async () => {
 		invoke.mockResolvedValueOnce({
 			"builtin:all": {
@@ -411,7 +232,6 @@ describe("graph collection layout", () => {
 		fireEvent.click(screen.getByTestId("graph-empty-reset"));
 		expect(await screen.findByTestId("graph-canvas-stub")).toBeInTheDocument();
 	});
-
 	it("keeps graph filters in a saved View across layout switches", async () => {
 		let currentView: ViewFile = {
 			filename: "map.yml",

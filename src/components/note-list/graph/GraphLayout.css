@@ -21,10 +21,6 @@
   cursor: grab;
 }
 
-.graph-stage:active {
-  cursor: grabbing;
-}
-
 .graph-labels {
   position: absolute;
   inset: 0;
@@ -38,6 +34,22 @@
   left: 0;
   display: flex;
   max-width: 180px;
+  visibility: hidden;
+  will-change: transform, opacity;
+}
+
+.graph-label[data-emphasis="hover"] {
+  z-index: 2;
+}
+
+.graph-label[data-selected="true"] {
+  z-index: 1;
+}
+
+/* Hover and dim ease on the inner chip, so per-frame positioning on the outer element never animates. */
+.graph-label__chip {
+  display: flex;
+  min-width: 0;
   align-items: center;
   gap: 4px;
   padding: 1px 6px;
@@ -47,14 +59,31 @@
   font-size: 11px;
   line-height: 16px;
   white-space: nowrap;
-  visibility: hidden;
-  will-change: transform;
+  transform-origin: 50% 0;
+  transition: transform 200ms ease-out, opacity 200ms ease-out, box-shadow 200ms ease-out;
 }
 
-.graph-label[data-selected="true"] {
+.graph-label[data-emphasis="hover"] .graph-label__chip {
+  background: var(--background);
+  box-shadow: 0 0 0 1px var(--border), 0 4px 12px -6px rgb(0 0 0 / 0.3);
+  font-weight: 600;
+  transform: scale(1.4);
+}
+
+.graph-label[data-emphasis="dim"] .graph-label__chip {
+  opacity: 0.15;
+}
+
+.graph-label[data-selected="true"] .graph-label__chip {
   background: var(--background);
   box-shadow: 0 0 0 1.5px var(--primary);
   font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .graph-label__chip {
+    transition: none;
+  }
 }
 
 .graph-label__icon {

@@ -234,14 +234,13 @@ function useLayoutActions({
 	resolvedDateProperty,
 }: LayoutActionSource) {
 	const enabled = supportsLayouts(source.selection);
+	const { show, save } = useLayoutWriters({ source, key, setOverrides });
 	const update = useCallback(
 		(patch: Partial<LayoutSettings>) => {
 			const next = { ...current, ...patch };
-			if (sameLayoutSettings(current, next)) return;
-			setOverrides((overrides) => new Map(overrides).set(key, next));
-			persistLayoutSettings(source, next);
+			if (!sameLayoutSettings(current, next)) save(next);
 		},
-		[current, key, setOverrides, source],
+		[current, save],
 	);
 	const changeLayout = useCallback(
 		(layout: CollectionPresentationType) => {
@@ -258,12 +257,6 @@ function useLayoutActions({
 	const changeShowProperties = (showProperties: boolean) => {
 		update({ showProperties });
 		trackPropertyVisibility(showProperties, source.selection.kind);
-	};
-	const changeGraph = (patch: Partial<GraphSettings>) => {
-		update({ graph: { ...current.graph, ...patch } });
-		trackEvent("graph_filter_changed", {
-			filter: Object.keys(patch).join(","),
-		});
 	};
 	return {
 		changeLayout,
@@ -292,8 +285,49 @@ function useLayoutActions({
 			update({
 				calendar: pinnedCalendar(current.calendar, resolvedDateProperty, patch),
 			}),
-		changeGraph,
+		...graphActions(current, { show, save }),
 	};
+}
+
+type LayoutWriters = ReturnType<typeof useLayoutWriters>;
+
+function graphActions(current: LayoutSettings, { show, save }: LayoutWriters) {
+	const withGraph = (patch: Partial<GraphSettings>): LayoutSettings => ({
+		...current,
+		graph: { ...current.graph, ...patch },
+	});
+	return {
+		// Saved even when a preview already shows the same values (a slider is previewed while dragged, saved on release).
+		changeGraph: (patch: Partial<GraphSettings>) => {
+			save(withGraph(patch));
+			trackEvent("graph_filter_changed", {
+				filter: Object.keys(patch).join(","),
+			});
+		},
+		previewGraph: (patch: Partial<GraphSettings>) => show(withGraph(patch)),
+	};
+}
+
+/** `show` updates the layout on screen only; `save` also writes it to the vault. */
+function useLayoutWriters({
+	source,
+	key,
+	setOverrides,
+}: Pick<LayoutActionSource, "source" | "key" | "setOverrides">) {
+	const show = useCallback(
+		(next: LayoutSettings) => {
+			setOverrides((overrides) => new Map(overrides).set(key, next));
+		},
+		[key, setOverrides],
+	);
+	const save = useCallback(
+		(next: LayoutSettings) => {
+			show(next);
+			persistLayoutSettings(source, next);
+		},
+		[show, source],
+	);
+	return { show, save };
 }
 
 function trackPropertyVisibility(visible: boolean, collection: string) {

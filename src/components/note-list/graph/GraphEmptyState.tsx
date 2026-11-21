@@ -1,7 +1,7 @@
 import { Graph } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import type { GraphLayoutBindings } from '../../../collections/layoutRegistry'
-import { DEFAULT_GRAPH_SETTINGS } from '../../../collections/presentationConfig'
+import { DEFAULT_GRAPH_FILTERS } from '../../../collections/graphSettings'
 import { type AppLocale, translate } from '../../../lib/i18n'
 
 interface GraphEmptyStateProps {
@@ -27,7 +27,7 @@ export function GraphEmptyState({ graph, locale, filtered }: GraphEmptyStateProp
         </p>
         <div className="flex flex-wrap justify-center gap-2 pt-1">
           {filtered && (
-            <Button type="button" variant="outline" size="sm" onClick={() => graph.onSettingsChange(DEFAULT_GRAPH_SETTINGS)} data-testid="graph-empty-reset">
+            <Button type="button" variant="outline" size="sm" onClick={() => graph.onSettingsChange(DEFAULT_GRAPH_FILTERS)} data-testid="graph-empty-reset">
               {translate(locale, 'graph.empty.resetFilters')}
             </Button>
           )}

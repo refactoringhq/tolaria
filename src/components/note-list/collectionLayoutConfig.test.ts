@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isWritableGroupKey, readStoredLayout } from "./collectionLayoutConfig";
+import { DEFAULT_GRAPH_SETTINGS } from "../../collections/graphSettings";
 
 describe("collectionLayoutConfig", () => {
 	it("only writes Kanban drops to single-line keys the board notes already carry", () => {
@@ -50,13 +51,7 @@ describe("collectionLayoutConfig", () => {
 			columnOrder: [],
 			collapsedColumns: [],
 			hiddenColumns: [],
-			graph: {
-				showWikiLinks: true,
-				hiddenRelationships: [],
-				hiddenTypes: [],
-				showOrphans: true,
-				showLabels: true,
-			},
+			graph: DEFAULT_GRAPH_SETTINGS,
 			calendar: {
 				dateProperty: null,
 				endDateProperty: null,

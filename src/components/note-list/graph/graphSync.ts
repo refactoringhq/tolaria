@@ -6,7 +6,7 @@ const RELATIONSHIP_EDGE_SIZE = 1.6
 const WIKI_LINK_EDGE_SIZE = 1.2
 /** Golden angle: new notes without a placed neighbor spiral out evenly instead of piling up. */
 const SPIRAL_ANGLE = 2.399963
-const SPIRAL_SPACING = 12
+const SPIRAL_SPACING = 30
 const NEIGHBOR_JITTER = 6
 
 type Position = { x: number; y: number }
@@ -53,11 +53,12 @@ function initialPosition(graph: Graph, id: string, neighbors: Neighbors): Positi
 }
 
 function edgeAttributes(edge: GraphEdgeModel, palette: GraphPalette) {
-  if (edge.kind === 'relationship') {
+  const { kind, direction } = edge
+  if (kind === 'relationship') {
     const color = palette.relationshipEdge
-    return { kind: edge.kind, color, gapColor: color, size: RELATIONSHIP_EDGE_SIZE, label: edge.labels.join(', ') }
+    return { kind, direction, color, gapColor: color, size: RELATIONSHIP_EDGE_SIZE, label: edge.labels.join(', ') }
   }
-  return { kind: edge.kind, color: palette.wikiLinkEdge, gapColor: palette.transparent, size: WIKI_LINK_EDGE_SIZE, label: '' }
+  return { kind, direction, color: palette.wikiLinkEdge, gapColor: palette.transparent, size: WIKI_LINK_EDGE_SIZE, label: '' }
 }
 
 function dropMissing(graph: Graph, visible: VisibleGraph): boolean {

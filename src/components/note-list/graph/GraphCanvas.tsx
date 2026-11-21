@@ -1,20 +1,24 @@
 import type Graph from 'graphology'
-import { type MouseEvent, type RefObject, useEffect, useRef, useState } from 'react'
+import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
+import type { GraphSettings } from '../../../collections/collectionTypes'
 import { type AppLocale, translate } from '../../../lib/i18n'
+import { trackEvent } from '../../../lib/telemetry'
 import type { VaultEntry } from '../../../types'
-import { canvasKeyHandler, useCanvasClicks, useRevealOpenNote } from './graphCanvasInput'
+import { fitGraph, zoomGraph } from './graphCamera'
+import { displayOf, forcesOf, useGraphEmphasis, useGraphRenderer, useGraphSync, useLiveLayout } from './graphCanvasHooks'
+import { canvasKeyHandler, useCanvasClicks, useEscapeLeavesFocus, useHoveredNode, useNodeDrag, useRevealOpenNote } from './graphCanvasInput'
+import { neighboursIn } from './graphEmphasis'
 import { GraphLabels } from './GraphLabels'
-import { settleGraph } from './graphLayoutClient'
-import { layoutIterations } from './graphLayoutSteps'
+import type { LabelEmphasis } from './graphLabelRanking'
 import type { VisibleGraph } from './graphModel'
-import { readGraphPalette, useThemeSignature } from './graphPalette'
-import { createGraphRenderer, fitGraph, type GraphRenderer, zoomGraph } from './graphRenderer'
-import { createGraphModel, highlightNode, syncGraph } from './graphSync'
+import { useThemeSignature } from './graphPalette'
+import type { GraphRenderer } from './graphRenderer'
+import { createGraphModel, highlightNode } from './graphSync'
 import { GraphZoomControls } from './GraphZoomControls'
 
 export interface GraphCanvasProps {
   visible: VisibleGraph
-  showLabels: boolean
+  settings: GraphSettings
   typeEntryMap: Record<string, VaultEntry>
   selectedNotePath: string | null
   /** True while the editor panel covers the right side of the canvas. */
@@ -24,65 +28,9 @@ export interface GraphCanvasProps {
   onBackgroundClick: () => void
 }
 
-interface GraphSyncSource {
-  stageRef: RefObject<HTMLDivElement | null>
-  graph: Graph
-  visible: VisibleGraph
-  typeEntryMap: Record<string, VaultEntry>
-  theme: string
-}
-
-type GraphOverlayProps = Pick<GraphCanvasProps, 'visible' | 'showLabels' | 'typeEntryMap' | 'selectedNotePath' | 'locale'> & { renderer: GraphRenderer }
-
-function readHighlight(stage: HTMLElement): string {
-  const palette = readGraphPalette(stage, {})
-  palette.dispose()
-  return palette.highlight
-}
-
-/**
- * One sigma renderer per mounted canvas. A theme switch only re-reads the highlight color and refreshes:
- * node and edge colors follow through the graph attributes, so the WebGL context is never rebuilt.
- */
-function useGraphRenderer(stageRef: RefObject<HTMLDivElement | null>, graph: Graph, theme: string) {
-  const [renderer, setRenderer] = useState<GraphRenderer | null>(null)
-  const highlightRef = useRef('')
-  useEffect(() => {
-    const stage = stageRef.current
-    if (!stage) return
-    highlightRef.current = readHighlight(stage)
-    const created = createGraphRenderer(graph, stage, () => highlightRef.current)
-    setRenderer(created)
-    return () => {
-      created.kill()
-      setRenderer(null)
-    }
-  }, [graph, stageRef])
-  useEffect(() => {
-    const stage = stageRef.current
-    if (!stage || !renderer) return
-    highlightRef.current = readHighlight(stage)
-    renderer.refresh()
-  }, [renderer, stageRef, theme])
-  return renderer
-}
-
-/** Mirrors the visible notes into the graph and re-settles the layout when notes or links come or go. */
-function useGraphSync({ stageRef, graph, visible, typeEntryMap, theme }: GraphSyncSource) {
-  const settled = useRef(false)
-  const cancelLayout = useRef<(() => void) | null>(null)
-  useEffect(() => {
-    const stage = stageRef.current
-    if (!stage) return
-    const palette = readGraphPalette(stage, typeEntryMap)
-    const changed = syncGraph(graph, visible, palette)
-    palette.dispose()
-    if (!changed) return
-    cancelLayout.current?.()
-    cancelLayout.current = settleGraph(graph, layoutIterations(graph.order, settled.current))
-    settled.current = true
-  }, [graph, stageRef, theme, typeEntryMap, visible])
-  useEffect(() => () => cancelLayout.current?.(), [])
+type GraphOverlayProps = Pick<GraphCanvasProps, 'visible' | 'settings' | 'typeEntryMap' | 'selectedNotePath' | 'locale'> & {
+  renderer: GraphRenderer
+  emphasis: LabelEmphasis
 }
 
 /**
@@ -99,11 +47,38 @@ function useOpenNoteHighlight(graph: Graph, renderer: GraphRenderer | null, sele
   }, [graph, renderer, selectedNotePath, visible])
 }
 
+/**
+ * The panel must stay closed (or the note unselected) this long to end a focus: opening another note can
+ * close and reopen the panel, or clear the selection, for a moment.
+ */
+const PANEL_CLOSED_GRACE_MS = 300
+
+/** The clicked note the graph focuses on; it ends with a background click, Escape, or the panel closing. */
+function useFocusedNode(selectedNotePath: string | null, panelOpen: boolean) {
+  const [focused, setFocused] = useState<string | null>(null)
+  const panelShowsNote = panelOpen && selectedNotePath !== null
+  useEffect(() => {
+    if (panelShowsNote || focused === null) return
+    const timer = setTimeout(() => setFocused(null), PANEL_CLOSED_GRACE_MS)
+    return () => clearTimeout(timer)
+  }, [focused, panelShowsNote])
+  return [focused, setFocused] as const
+}
+
 /** Labels and zoom controls, drawn over the WebGL canvas once the renderer exists. */
-function GraphOverlays({ renderer, visible, showLabels, typeEntryMap, selectedNotePath, locale }: GraphOverlayProps) {
+function GraphOverlays({ renderer, visible, settings, typeEntryMap, selectedNotePath, locale, emphasis }: GraphOverlayProps) {
   return (
     <>
-      {showLabels && <GraphLabels renderer={renderer} nodes={visible.nodes} typeEntryMap={typeEntryMap} selectedNotePath={selectedNotePath} />}
+      {settings.showLabels && (
+        <GraphLabels
+          renderer={renderer}
+          nodes={visible.nodes}
+          typeEntryMap={typeEntryMap}
+          selectedNotePath={selectedNotePath}
+          emphasis={emphasis}
+          textFadeThreshold={settings.textFadeThreshold}
+        />
+      )}
       <GraphZoomControls
         locale={locale}
         onZoomIn={() => zoomGraph(renderer, 'in')}
@@ -114,17 +89,53 @@ function GraphOverlays({ renderer, visible, showLabels, typeEntryMap, selectedNo
   )
 }
 
+interface FocusSource {
+  graph: Graph
+  renderer: GraphRenderer | null
+  visible: VisibleGraph
+  selectedNotePath: string | null
+  panelOpen: boolean
+  onOpen: GraphCanvasProps['onOpen']
+  onBackgroundClick: () => void
+}
+
+/** Hover and click focus: a node click opens and focuses the note; a background click or Escape leaves focus. */
+function useGraphFocus({ graph, renderer, visible, selectedNotePath, panelOpen, onOpen, onBackgroundClick }: FocusSource) {
+  const [focused, setFocused] = useFocusedNode(selectedNotePath, panelOpen)
+  const hovered = useHoveredNode(renderer)
+  const emphasis = useGraphEmphasis({ graph, hovered, focused, visible })
+  const leaveFocus = () => {
+    setFocused(null)
+    onBackgroundClick()
+  }
+  useEscapeLeavesFocus(focused !== null, leaveFocus)
+  const clicks = useCanvasClicks({
+    renderer,
+    visible,
+    onNodeClick: (entry, event) => {
+      setFocused(entry.path)
+      trackEvent('graph_node_focused', { neighbour_count: neighboursIn(visible.edges)(entry.path).length })
+      onOpen(entry, event)
+    },
+    onBackgroundClick: leaveFocus,
+  })
+  return { focused, emphasis, clicks, leaveFocus }
+}
+
 /** The WebGL graph: sigma draws nodes and edges, React draws labels and the zoom controls on top. */
 export default function GraphCanvas(props: GraphCanvasProps) {
-  const { visible, showLabels, typeEntryMap, selectedNotePath, panelOpen, locale, onOpen, onBackgroundClick } = props
+  const { visible, settings, typeEntryMap, selectedNotePath, panelOpen, locale } = props
   const stageRef = useRef<HTMLDivElement>(null)
   const [graph] = useState(createGraphModel)
   const theme = useThemeSignature()
-  const renderer = useGraphRenderer(stageRef, graph, theme)
-  useGraphSync({ stageRef, graph, visible, typeEntryMap, theme })
+  const renderer = useGraphRenderer(stageRef, graph, theme, displayOf(settings))
+  const { layout, stopAutoFit } = useLiveLayout({ graph, renderer, forces: forcesOf(settings) })
+  useGraphSync({ stageRef, graph, visible, typeEntryMap, groups: settings.colorGroups, theme, layout })
   useOpenNoteHighlight(graph, renderer, selectedNotePath, visible)
-  useRevealOpenNote({ renderer, stageRef, selectedNotePath, panelOpen })
-  const clicks = useCanvasClicks({ renderer, visible, onOpen, onBackgroundClick })
+  const { focused, emphasis, clicks, leaveFocus } = useGraphFocus({ ...props, graph, renderer })
+  const revealed = useMemo(() => (emphasis.focused ? [...emphasis.focused] : [selectedNotePath ?? '']), [emphasis.focused, selectedNotePath])
+  useRevealOpenNote({ renderer, stageRef, revealed, panelOpen })
+  useNodeDrag(renderer, layout, stopAutoFit)
   return (
     <div
       className="graph-canvas"
@@ -132,12 +143,18 @@ export default function GraphCanvas(props: GraphCanvasProps) {
       aria-label={translate(locale, 'graph.canvasLabel', { count: visible.nodes.length })}
       data-layout-panel-keep=""
       data-testid="graph-canvas"
-      onPointerDown={clicks.onPointerDown}
+      data-focused-node={focused ?? undefined}
+      data-hovered-node={emphasis.hovered ?? undefined}
+      onPointerDown={(event) => {
+        stopAutoFit()
+        clicks.onPointerDown(event)
+      }}
+      onWheel={stopAutoFit}
       onClick={clicks.onClick}
-      onKeyDown={canvasKeyHandler(renderer, onBackgroundClick)}
+      onKeyDown={canvasKeyHandler(renderer, leaveFocus)}
     >
       <div ref={stageRef} className="graph-stage" data-testid="graph-stage" />
-      {renderer && <GraphOverlays renderer={renderer} visible={visible} showLabels={showLabels} typeEntryMap={typeEntryMap} selectedNotePath={selectedNotePath} locale={locale} />}
+      {renderer && <GraphOverlays renderer={renderer} visible={visible} settings={settings} typeEntryMap={typeEntryMap} selectedNotePath={selectedNotePath} locale={locale} emphasis={emphasis} />}
     </div>
   )
 }

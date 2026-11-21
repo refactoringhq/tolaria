@@ -20,6 +20,7 @@ function graphHeaderControls(
 		typeKeys,
 		typeEntryMap,
 		onChange: layout.changeGraph,
+		onPreview: layout.previewGraph,
 	};
 }
 

@@ -4,6 +4,7 @@ import type { ViewDefinition, ViewFile } from "../types";
 import { collectionFromSelection } from "./collectionFromSelection";
 import { getCollectionLayout, getCollectionLayouts } from "./layoutRegistry";
 import { presentationFromViewDefinition } from "./presentationConfig";
+import { DEFAULT_GRAPH_SETTINGS } from "./graphSettings";
 
 function emptyFilters(): ViewDefinition["filters"] {
 	return { all: [] };
@@ -73,7 +74,7 @@ describe("collectionFromSelection", () => {
 			expect(getCollectionLayout("graph")).toMatchObject({
 				type: "graph",
 				labelKey: "layout.graph",
-				controls: ["graphFilters"],
+				controls: ["graphFilters", "graphSettings"],
 			});
 			expect(getCollectionLayout("graph").requiredProperties({})).toEqual([]);
 		});
@@ -94,12 +95,10 @@ describe("collectionFromSelection", () => {
 				},
 			}),
 		).toEqual({
+			...DEFAULT_GRAPH_SETTINGS,
 			type: "graph",
 			showWikiLinks: false,
-			hiddenRelationships: [],
 			hiddenTypes: ["Person"],
-			showOrphans: true,
-			showLabels: true,
 		});
 	});
 

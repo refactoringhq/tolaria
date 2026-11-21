@@ -78,6 +78,8 @@ export interface GraphLayoutBindings {
 	/** True while the editor panel covers the right side of the canvas. */
 	panelOpen: boolean;
 	onSettingsChange: (patch: Partial<GraphSettings>) => void;
+	/** Shows settings without saving them, e.g. while a slider is dragged. */
+	onSettingsPreview: (patch: Partial<GraphSettings>) => void;
 	/** A click on empty canvas: closes the editor panel like a click outside a board. */
 	onBackgroundClick: () => void;
 	onUseList: () => void;
@@ -98,7 +100,8 @@ export type LayoutRequirementConfig = Partial<
 export type CollectionLayoutControl =
 	| "groupBy"
 	| "dateProperty"
-	| "graphFilters";
+	| "graphFilters"
+	| "graphSettings";
 
 export interface CollectionLayoutRegistration {
 	type: CollectionPresentationType;
@@ -201,7 +204,7 @@ const registrations: CollectionLayoutRegistration[] = [
 		labelKey: "layout.graph",
 		descriptionKey: "command.view.showAsGraph",
 		icon: Graph,
-		controls: ["graphFilters"],
+		controls: ["graphFilters", "graphSettings"],
 		requiredProperties: () => [],
 		render: (props) => (
 			<GraphLayout {...sharedLayoutProps(props)} graph={props.graph} />
