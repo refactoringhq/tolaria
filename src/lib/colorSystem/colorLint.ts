@@ -23,10 +23,12 @@ interface ColorRule {
   pattern: RegExp
 }
 
-const COLOR_UTILITY =
-  '(?:bg|text|border(?:-[trblxy])?|ring|ring-offset|fill|stroke|outline|divide|shadow|decoration|from|to|via|placeholder|caret|accent)'
-const TAILWIND_HUES =
-  'slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose'
+// Color utilities: bg, text, border(-side), ring(-offset), fill, stroke, outline, divide, shadow,
+// decoration, gradient stops, placeholder, caret and accent.
+const OPACITY_MODIFIER =
+  /(?<![\w-])(?:bg|text|border|ring|fill|stroke|outline|divide|shadow|decoration|from|to|via|placeholder|caret|accent)-[a-z[][^\s/"'`]*\/\d+/g
+const RAW_TAILWIND_PALETTE =
+  /(?<![\w-])(?:bg|text|border(?:-[trblxy])?|ring(?:-offset)?|fill|stroke|outline|divide|shadow|decoration|from|to|via|placeholder|caret|accent)-(?:(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}|white|black)(?![\w-])/g
 const TEXT_SIZE_UTILITY = /^text-(?:xs|sm|base|lg|[2-9]?xl|\[\d+px\])\//
 
 const COLOR_RULES: ColorRule[] = [
@@ -35,11 +37,11 @@ const COLOR_RULES: ColorRule[] = [
   { id: 'color-mix', pattern: /\bcolor-mix\(/g },
   {
     id: 'tailwind-opacity-modifier',
-    pattern: new RegExp(`(?<![\\w-])${COLOR_UTILITY}-(?:[a-z][\\w-]*(?:\\[[^\\]\\s]*\\])?|\\[[^\\]\\s]*\\])\\/\\d+`, 'g'),
+    pattern: OPACITY_MODIFIER,
   },
   {
     id: 'tailwind-raw-palette',
-    pattern: new RegExp(`(?<![\\w-])${COLOR_UTILITY}-(?:(?:${TAILWIND_HUES})-\\d{2,3}|white|black)(?![\\w-])`, 'g'),
+    pattern: RAW_TAILWIND_PALETTE,
   },
 ]
 

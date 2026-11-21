@@ -39,7 +39,7 @@ describe('graphPalette', () => {
     document.body.appendChild(host)
     const resolved: Record<string, string> = { 'var(--accent-red)': 'rgb(255, 0, 0)', 'var(--accent-blue)': 'rgb(0, 0, 255)' }
     vi.spyOn(window, 'getComputedStyle').mockImplementation(
-      (element) => ({ color: resolved[(element as HTMLElement).style.color] ?? '' }) as CSSStyleDeclaration,
+      (element) => ({ color: resolved[String(Reflect.get(Reflect.get(element, 'style'), 'color'))] ?? '' }) as CSSStyleDeclaration,
     )
     // Group colors snap to palette hues, like every other vault color (TOL-406).
     const groups = [

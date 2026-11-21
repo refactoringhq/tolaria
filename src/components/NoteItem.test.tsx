@@ -120,7 +120,7 @@ describe('NoteItem', () => {
 
     render(<NoteItem entry={textEntry} isSelected={false} typeEntryMap={{}} onClickNote={onClickNote} />)
 
-    const item = screen.getByText('config.yml').closest('div') as HTMLElement
+    const item = screen.getByText('config.yml').closest('div')!
     fireEvent.click(item)
     expect(onClickNote).toHaveBeenCalled()
   })

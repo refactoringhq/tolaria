@@ -1,10 +1,9 @@
 import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { buildContrastReport, contrastRatio, formatContrastReport, resolveToken, themeTokens } from './contrast'
 
-const root = process.cwd()
-const sources = ['src/styles/palette.css', 'src/index.css'].map((path) => readFileSync(join(root, path), 'utf8'))
+// Vitest stubs CSS imports, so the theme files are read from disk (paths relative to the repo root).
+const sources = [readFileSync('src/styles/palette.css', 'utf8'), readFileSync('src/index.css', 'utf8')]
 
 const FIXTURE = `
 :root { --white: #FFFFFF; --ink: #111111; --blue: #155DFF; }

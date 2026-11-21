@@ -61,7 +61,7 @@ describe('TagsDropdown', () => {
   it('shows checkmark for selected tags', () => {
     render(<TagsDropdown {...defaultProps} />)
     // React and Tauri are selected — their check marks should show
-    const reactOption = screen.getByTestId('tag-option-React').closest('div') as HTMLElement
+    const reactOption = screen.getByTestId('tag-option-React').closest('div')!
     const checkSpans = reactOption.querySelectorAll('span')
     const hasCheck = Array.from(checkSpans).some(s => s.textContent === '\u2713')
     expect(hasCheck).toBe(true)

@@ -12,10 +12,8 @@ const DARK_SELECTOR = ':root.dark, [data-theme="dark"]'
 const SHARED_SELECTORS = new Set([':root', `${LIGHT_SELECTOR}, ${DARK_SELECTOR}`])
 const BLOCK_PATTERN = /([^{}]+)\{([^{}]*)\}/g
 const DECLARATION_PATTERN = /(--[\w-]+)\s*:\s*([^;]+);/g
-const VAR_PATTERN = /^var\((--[\w-]+)(?:,\s*(.+))?\)$/
+const VAR_PATTERN = /^var\((--[\w-]+)[,)]/
 const HEX_PATTERN = /^#([0-9a-fA-F]{6})$/
-
-const LUMINANCE_WEIGHTS = [0.2126, 0.7152, 0.0722]
 
 function blockSelector(block: RegExpMatchArray): string {
   return block[1].replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ').trim()
@@ -56,8 +54,8 @@ function linearChannel(value: number): number {
 }
 
 function relativeLuminance(hex: string): number {
-  const channels = [1, 3, 5].map((offset) => linearChannel(parseInt(hex.slice(offset, offset + 2), 16)))
-  return channels.reduce((sum, value, index) => sum + value * LUMINANCE_WEIGHTS[index], 0)
+  const [red, green, blue] = [1, 3, 5].map((offset) => linearChannel(parseInt(hex.slice(offset, offset + 2), 16)))
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue
 }
 
 /** WCAG contrast ratio of two #RRGGBB colors. */

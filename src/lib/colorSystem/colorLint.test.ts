@@ -1,19 +1,16 @@
-import { readdirSync, readFileSync } from 'node:fs'
-import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { COLOR_LINT_ALLOWLIST, findColorViolations, formatColorViolation, isColorLintTarget } from './colorLint'
 
-const root = process.cwd()
+/** Every desktop TS/TSX source as raw text, keyed by repo-relative path. Vitest stubs CSS imports, so
+ * CSS is covered by `pnpm lint:colors`, which walks the filesystem. */
+const sources = Object.fromEntries(
+  Object.entries(
+    import.meta.glob<string>('/src/**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true }),
+  ).map(([path, source]) => [path.slice(1), source]),
+)
 
 function rules(source: string): string[] {
   return findColorViolations('src/example.tsx', source).map((violation) => `${violation.rule}:${violation.match}`)
-}
-
-function listFiles(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name)
-    return entry.isDirectory() ? listFiles(path) : [relative(root, path)]
-  })
 }
 
 describe('color lint', () => {
@@ -70,14 +67,18 @@ describe('color lint', () => {
   it('gives every allowlisted file a reason and keeps it pointing at a real file', () => {
     for (const [path, reason] of COLOR_LINT_ALLOWLIST) {
       expect(reason.length).toBeGreaterThan(10)
-      expect(() => readFileSync(join(root, path), 'utf8')).not.toThrow()
+      expect(path.endsWith('.css') || path in sources).toBe(true)
     }
   })
 
+  it('reads real source text', () => {
+    expect(sources['src/lib/colorSystem/colorLint.ts']).toContain('COLOR_LINT_ALLOWLIST')
+  })
+
   it('passes on the shipped desktop source', () => {
-    const violations = listFiles(join(root, 'src'))
-      .filter(isColorLintTarget)
-      .flatMap((path) => findColorViolations(path, readFileSync(join(root, path), 'utf8')))
+    const violations = Object.entries(sources)
+      .filter(([path]) => isColorLintTarget(path))
+      .flatMap(([path, source]) => findColorViolations(path, source))
     expect(violations.map(formatColorViolation)).toEqual([])
   })
 })
