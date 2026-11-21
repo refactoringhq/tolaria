@@ -124,7 +124,7 @@ describe("CalendarLayout", () => {
 		expect(screen.getByRole("button", { name: "Oggi" })).toBeInTheDocument();
 	});
 
-	it("places notes with their icon, spans ranges across week rows, and selects the open note", () => {
+	it("places notes with their icon, spans ranges across week rows, and keeps selection subtle", () => {
 		renderCalendar();
 		const launchBars = screen.getAllByRole("button", { name: "Launch" });
 		expect(launchBars).toHaveLength(2);
@@ -137,6 +137,26 @@ describe("CalendarLayout", () => {
 			"data-selected",
 			"true",
 		);
+		expect(
+			screen
+				.getByRole("button", { name: "Review" })
+				.querySelector(".calendar-item"),
+		).toHaveClass("calendar-item--selected");
+		expect(screen.getByRole("button", { name: "Review" })).toHaveClass(
+			"focus-visible:ring-0",
+		);
+	});
+
+	it("renders plain Kanban-style cards without type-color accents", () => {
+		renderCalendar();
+		const card = screen.getAllByRole("button", { name: "Launch" })[0];
+		expect(card.querySelector(".calendar-item")).toHaveClass(
+			"rounded-lg",
+			"px-3",
+			"py-2.5",
+			"shadow-xs",
+		);
+		expect(card.querySelector(".calendar-item")).not.toHaveAttribute("style");
 	});
 
 	it("shows card fields chosen through the visible-properties control", () => {
