@@ -43,7 +43,7 @@ export function NoteListPropertyActions({
 				<ListPropertiesPopover
 					{...propertyPicker}
 					triggerTitle={
-						propertyVisibility
+						propertyVisibility || propertyPicker.usePickerTitle
 							? propertyPicker.triggerTitle
 							: translate(locale, "noteList.tooltip.properties")
 					}
