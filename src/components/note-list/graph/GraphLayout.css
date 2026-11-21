@@ -75,8 +75,6 @@
 }
 
 .graph-label[data-selected="true"] .graph-label__chip {
-  background: var(--background);
-  box-shadow: 0 0 0 1.5px var(--primary);
   font-weight: 600;
 }
 

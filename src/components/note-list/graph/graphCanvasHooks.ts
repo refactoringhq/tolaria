@@ -18,7 +18,7 @@ import type { LabelEmphasis } from './graphLabelRanking'
 function readColors(stage: HTMLElement): GraphRendererColors {
   const palette = readGraphPalette(stage, {})
   palette.dispose()
-  return { highlight: palette.highlight, accent: palette.accent }
+  return { accent: palette.accent }
 }
 
 export function displayOf(settings: GraphSettings): GraphDisplay {
@@ -35,7 +35,7 @@ export function forcesOf(settings: GraphSettings): GraphForces {
  */
 export function useGraphRenderer(stageRef: RefObject<HTMLDivElement | null>, graph: Graph, theme: string, display: GraphDisplay) {
   const [renderer, setRenderer] = useState<GraphRenderer | null>(null)
-  const colorsRef = useRef<GraphRendererColors>({ highlight: '', accent: '' })
+  const colorsRef = useRef<GraphRendererColors>({ accent: '' })
   const displayRef = useLatestRef(display)
   useEffect(() => {
     const stage = stageRef.current
