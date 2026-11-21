@@ -1,64 +1,80 @@
-import { useEffect } from 'react'
-import { isTauri } from '../mock-tauri'
-import { cleanupTauriEventListeners, type TauriUnlisten } from '../utils/tauriEventCleanup'
+import { useEffect, useRef } from "react";
+import { isTauri } from "../mock-tauri";
 import {
-  AI_WORKSPACE_FILE_CREATED_EVENT,
-  AI_WORKSPACE_FILE_MODIFIED_EVENT,
-  AI_WORKSPACE_OPEN_NOTE_REQUESTED_EVENT,
-  AI_WORKSPACE_VAULT_CHANGED_EVENT,
-} from '../utils/aiPromptBridge'
+	AI_WORKSPACE_FILE_CREATED_EVENT,
+	AI_WORKSPACE_FILE_MODIFIED_EVENT,
+	AI_WORKSPACE_OPEN_NOTE_REQUESTED_EVENT,
+	AI_WORKSPACE_VAULT_CHANGED_EVENT,
+} from "../utils/aiPromptBridge";
+import {
+	cleanupTauriEventListeners,
+	type TauriUnlisten,
+} from "../utils/tauriEventCleanup";
 
 interface AiWorkspaceWindowBridgeEvents {
-  onFileCreated: (path: string) => void
-  onFileModified: (path: string) => void
-  onOpenNote: (path: string) => void
-  onVaultChanged: () => void
+	onFileCreated: (path: string) => void;
+	onFileModified: (path: string) => void;
+	onOpenNote: (path: string) => void;
+	onVaultChanged: () => void;
 }
 
 export function useAiWorkspaceWindowBridgeEvents({
-  onFileCreated,
-  onFileModified,
-  onOpenNote,
-  onVaultChanged,
+	onFileCreated,
+	onFileModified,
+	onOpenNote,
+	onVaultChanged,
 }: AiWorkspaceWindowBridgeEvents) {
-  useEffect(() => {
-    if (!isTauri()) return
+	const handlersRef = useRef({
+		onFileCreated,
+		onFileModified,
+		onOpenNote,
+		onVaultChanged,
+	});
+	handlersRef.current = {
+		onFileCreated,
+		onFileModified,
+		onOpenNote,
+		onVaultChanged,
+	};
 
-    let disposed = false
-    let unlisteners: TauriUnlisten[] = []
+	useEffect(() => {
+		if (!isTauri()) return;
 
-    void import('@tauri-apps/api/event')
-      .then(({ listen }) => Promise.all([
-        listen<string>(AI_WORKSPACE_OPEN_NOTE_REQUESTED_EVENT, (event) => {
-          if (typeof event.payload === 'string') onOpenNote(event.payload)
-        }),
-        listen<string>(AI_WORKSPACE_FILE_CREATED_EVENT, (event) => {
-          if (typeof event.payload === 'string') onFileCreated(event.payload)
-        }),
-        listen<string>(AI_WORKSPACE_FILE_MODIFIED_EVENT, (event) => {
-          if (typeof event.payload === 'string') onFileModified(event.payload)
-        }),
-        listen(AI_WORKSPACE_VAULT_CHANGED_EVENT, () => {
-          onVaultChanged()
-        }),
-      ]))
-      .then((nextUnlisteners) => {
-        if (disposed) {
-          cleanupTauriEventListeners(nextUnlisteners)
-          return
-        }
-        unlisteners = nextUnlisteners
-      })
-      .catch(() => undefined)
+		let disposed = false;
+		let unlisteners: TauriUnlisten[] = [];
 
-    return () => {
-      disposed = true
-      cleanupTauriEventListeners(unlisteners)
-    }
-  }, [
-    onFileCreated,
-    onFileModified,
-    onOpenNote,
-    onVaultChanged,
-  ])
+		void import("@tauri-apps/api/event")
+			.then(({ listen }) =>
+				Promise.all([
+					listen<string>(AI_WORKSPACE_OPEN_NOTE_REQUESTED_EVENT, (event) => {
+						if (typeof event.payload === "string")
+							handlersRef.current.onOpenNote(event.payload);
+					}),
+					listen<string>(AI_WORKSPACE_FILE_CREATED_EVENT, (event) => {
+						if (typeof event.payload === "string")
+							handlersRef.current.onFileCreated(event.payload);
+					}),
+					listen<string>(AI_WORKSPACE_FILE_MODIFIED_EVENT, (event) => {
+						if (typeof event.payload === "string")
+							handlersRef.current.onFileModified(event.payload);
+					}),
+					listen(AI_WORKSPACE_VAULT_CHANGED_EVENT, () => {
+						handlersRef.current.onVaultChanged();
+					}),
+				]),
+			)
+			.then((nextUnlisteners) => {
+				if (disposed) {
+					cleanupTauriEventListeners(nextUnlisteners);
+					return;
+				}
+				unlisteners = nextUnlisteners;
+			})
+			.catch(() => undefined);
+
+		return () => {
+			disposed = true;
+			cleanupTauriEventListeners(unlisteners);
+		};
+	}, []);
 }
