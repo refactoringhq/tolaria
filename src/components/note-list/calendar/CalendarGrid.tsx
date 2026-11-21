@@ -1,13 +1,6 @@
 import { useDroppable } from "@dnd-kit/core";
 import { Plus } from "@phosphor-icons/react";
-import {
-	type CSSProperties,
-	memo,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
+import { type CSSProperties, memo, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Popover,
@@ -16,7 +9,11 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { type AppLocale, translate } from "../../../lib/i18n";
-import { CalendarItemButton, type CalendarItemContext } from "./CalendarItem";
+import {
+	CalendarItemButton,
+	type CalendarItemContext,
+	CalendarItemGhost,
+} from "./CalendarItem";
 import {
 	type DayKey,
 	dayOfMonth,
@@ -25,15 +22,15 @@ import {
 	monthDayLabel,
 	weekdayLabels,
 } from "./calendarDates";
-import { DAY_HEADER_PX, LANE_GAP_PX, lanesThatFit } from "./calendarLanes";
+import { DAY_HEADER_PX, measurableLanes, stackWeek } from "./calendarLanes";
 import {
 	type CalendarItem,
 	type CalendarSegment,
 	itemsOnDay,
-	layoutWeek,
 	weekSegments,
 } from "./calendarModel";
 import { dayDropId } from "./useCalendarDrag";
+import { useLaneMeasure } from "./useLaneMeasure";
 
 export interface CalendarGridState {
 	today: DayKey;
@@ -54,26 +51,7 @@ interface CalendarGridProps {
 	items: CalendarItem[];
 	context: CalendarItemContext;
 	state: CalendarGridState;
-	laneHeight: number;
 	locale: AppLocale;
-}
-
-/** Measures before the first paint, so the grid never flashes with a guessed number of lanes. */
-function useElementHeight() {
-	const ref = useRef<HTMLDivElement | null>(null);
-	const [height, setHeight] = useState(0);
-	useLayoutEffect(() => {
-		const element = ref.current;
-		if (!element) return;
-		setHeight(element.getBoundingClientRect().height);
-		if (typeof ResizeObserver === "undefined") return;
-		const observer = new ResizeObserver(([entry]) =>
-			setHeight(entry.contentRect.height),
-		);
-		observer.observe(element);
-		return () => observer.disconnect();
-	}, []);
-	return [ref, height] as const;
 }
 
 /** Per-row state as primitives, so a memoized row only re-renders when something it shows changes. */
@@ -301,10 +279,12 @@ function MoreOnDay({
 	);
 }
 
-function segmentStyle(segment: CalendarSegment): CSSProperties {
+/** Columns from the grid; every card shares one grid row and sits `top` pixels down its day's stack. */
+function segmentStyle(segment: CalendarSegment, top = 0): CSSProperties {
 	return {
 		gridColumn: `${segment.startColumn + 1} / span ${segment.span}`,
-		gridRow: segment.lane + 1,
+		gridRow: 1,
+		marginTop: top,
 	};
 }
 
@@ -312,35 +292,38 @@ interface WeekRowProps extends RowState {
 	week: DayKey[];
 	items: CalendarItem[];
 	context: CalendarItemContext;
-	laneHeight: number;
 	locale: AppLocale;
-	maxLanes: number;
+}
+
+/** Fits the row from its measured item area and the natural height of its cards (TOL-393). */
+function useWeekStack(segments: CalendarSegment[], week: DayKey[]) {
+	const [stackRef, measure] = useLaneMeasure();
+	const layout = useMemo(
+		() => stackWeek(segments, week, measure),
+		[measure, segments, week],
+	);
+	const lanes = measurableLanes(measure.available);
+	const measuredOnly = layout.hidden.filter((segment) => segment.lane < lanes);
+	return { stackRef, layout, measuredOnly };
+}
+
+function stackStyle(week: DayKey[]): CSSProperties {
+	return {
+		gridTemplateColumns: `repeat(${week.length}, minmax(0, 1fr))`,
+		top: DAY_HEADER_PX,
+	};
 }
 
 function WeekRowView(props: WeekRowProps) {
-	const {
-		week,
-		items,
-		context,
-		laneHeight,
-		locale,
-		maxLanes,
-		selectedNotePath,
-		droppedPath,
-	} = props;
+	const { week, items, context, locale, selectedNotePath, droppedPath } = props;
 	const segments = useMemo(() => weekSegments(items, week), [items, week]);
-	const { visible, overflow } = useMemo(
-		() => layoutWeek(segments, week, maxLanes),
-		[maxLanes, segments, week],
-	);
-	const lanes = {
-		gridTemplateColumns: `repeat(${week.length}, minmax(0, 1fr))`,
-		gridAutoRows: `${laneHeight}px`,
-		rowGap: LANE_GAP_PX,
-		top: DAY_HEADER_PX,
-	} as CSSProperties;
+	const { stackRef, layout, measuredOnly } = useWeekStack(segments, week);
 	return (
-		<div className="calendar-week" data-testid="calendar-week">
+		<div
+			className="calendar-week"
+			style={layout.minHeight > 0 ? { minHeight: layout.minHeight } : undefined}
+			data-testid="calendar-week"
+		>
 			<div
 				className="calendar-week__days"
 				style={{
@@ -351,8 +334,12 @@ function WeekRowView(props: WeekRowProps) {
 					<DayCell key={day} {...dayCellProps(day, props, locale)} />
 				))}
 			</div>
-			<div className="calendar-week__lanes" style={lanes}>
-				{visible.map((segment) => (
+			<div
+				ref={stackRef}
+				className="calendar-week__lanes"
+				style={stackStyle(week)}
+			>
+				{layout.visible.map(({ segment, top }) => (
 					<CalendarItemButton
 						key={segment.item.entry.path}
 						dragId={`calendar-item:${week[0]}:${segment.item.entry.path}`}
@@ -360,12 +347,20 @@ function WeekRowView(props: WeekRowProps) {
 						context={context}
 						selected={segment.item.entry.path === selectedNotePath}
 						justDropped={segment.item.entry.path === droppedPath}
-						style={segmentStyle(segment)}
+						style={segmentStyle(segment, top)}
 						continuesBefore={segment.continuesBefore}
 						continuesAfter={segment.continuesAfter}
 					/>
 				))}
-				{overflow.map(({ day, column, count }) => (
+				{measuredOnly.map((segment) => (
+					<CalendarItemGhost
+						key={segment.item.entry.path}
+						item={segment.item}
+						context={context}
+						style={segmentStyle(segment)}
+					/>
+				))}
+				{layout.overflow.map(({ day, column, count, top }) => (
 					<MoreOnDay
 						key={day}
 						day={day}
@@ -373,7 +368,7 @@ function WeekRowView(props: WeekRowProps) {
 						items={items}
 						context={context}
 						locale={locale}
-						style={{ gridColumn: column + 1, gridRow: maxLanes }}
+						style={{ gridColumn: column + 1, gridRow: 1, marginTop: top }}
 						selectedNotePath={selectedNotePath}
 					/>
 				))}
@@ -403,11 +398,8 @@ export function CalendarGrid({
 	items,
 	context,
 	state,
-	laneHeight,
 	locale,
 }: CalendarGridProps) {
-	const [gridRef, gridHeight] = useElementHeight();
-	const maxLanes = lanesThatFit(gridHeight, weeks.length, laneHeight);
 	const headers = useMemo(
 		() => weekdayLabels(weeks[0], locale),
 		[locale, weeks],
@@ -437,10 +429,9 @@ export function CalendarGrid({
 				))}
 			</div>
 			<div
-				ref={gridRef}
 				className="calendar-weeks calendar-scroll overflow-y-auto"
 				style={{
-					gridTemplateRows: `repeat(${weeks.length}, minmax(${DAY_HEADER_PX + maxLanes * (laneHeight + LANE_GAP_PX) + 4}px, 1fr))`,
+					gridTemplateRows: `repeat(${weeks.length}, minmax(auto, 1fr))`,
 				}}
 			>
 				{weeks.map((week) => (
@@ -449,9 +440,7 @@ export function CalendarGrid({
 						week={week}
 						items={items}
 						context={context}
-						laneHeight={laneHeight}
 						locale={locale}
-						maxLanes={maxLanes}
 						{...rowState}
 						{...previewForWeek(week, state.preview)}
 					/>
