@@ -65,7 +65,8 @@ function HarnessHeader({ layout }: { layout: HarnessLayout }) {
 	);
 }
 
-export function Harness({ onOpen = vi.fn(), ...overrides }: HarnessProps) {
+export function Harness(props: HarnessProps) {
+	const { onOpen = vi.fn(), ...overrides } = props;
 	const source = harnessSource(overrides);
 	const layout = useCollectionLayout(source);
 	return (
