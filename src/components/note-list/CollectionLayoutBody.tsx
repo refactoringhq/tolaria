@@ -64,6 +64,7 @@ function graphBindings(layout: CollectionLayoutState): GraphLayoutBindings {
 		data: layout.graphData,
 		panelOpen: layout.panel.open,
 		onSettingsChange: layout.changeGraph,
+		onSettingsPreview: layout.previewGraph,
 		onBackgroundClick: layout.panel.close,
 		onUseList: () => layout.changeLayout(COLLECTION_PRESENTATION_LIST),
 	};

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { GraphSettings } from '../../../collections/collectionTypes'
+import { DEFAULT_GRAPH_SETTINGS } from '../../../collections/graphSettings'
 import { makeEntry } from '../../../test-utils/noteListTestUtils'
 import {
   buildGraphData,
@@ -13,7 +14,7 @@ import {
   visibleGraph,
 } from './graphModel'
 
-const ALL: GraphSettings = { showWikiLinks: true, hiddenRelationships: [], hiddenTypes: [], showOrphans: true, showLabels: true }
+const ALL: GraphSettings = DEFAULT_GRAPH_SETTINGS
 
 const project = makeEntry({
   path: '/v/project.md', filename: 'project.md', title: 'Launch Project', isA: 'Project',
@@ -70,6 +71,26 @@ describe('graphModel', () => {
     expect(data.pairs.find((pair) => pair.source === guide.path && pair.target === project.path)?.wikiLink).toBe(true)
     const selfLinked = makeEntry({ path: '/v/self.md', filename: 'self.md', outgoingLinks: ['self'] })
     expect(buildGraphData([selfLinked], [selfLinked]).pairs).toEqual([])
+  })
+
+  it('remembers which way the links of each pair point, for arrowheads', () => {
+    const directions = Object.fromEntries(visibleGraph(buildGraphData(list, vault), ALL).edges
+      .map((edge) => [`${edge.source.slice(3, -3)}-${edge.target.slice(3, -3)}`, edge.direction]))
+    expect(directions).toEqual({
+      'guide-project': 'backward',
+      'guide-q4': 'forward',
+      'person-ada-project': 'both',
+      'project-q4': 'forward',
+    })
+  })
+
+  it('keeps only notes matching the search, with the links between them', () => {
+    const data = buildGraphData(list, vault)
+    const byType = visibleGraph(data, { ...ALL, search: 'type:project' })
+    expect(byType.nodes.map((node) => node.entry.title)).toEqual(['Launch Project'])
+    const byTitle = visibleGraph(data, { ...ALL, search: 'a', showOrphans: false })
+    expect(byTitle.nodes.map((node) => node.entry.title).sort()).toEqual(['Ada', 'Launch Project'])
+    expect(byTitle.edges).toHaveLength(1)
   })
 
   it('lists the relationship keys and types the legend can filter', () => {

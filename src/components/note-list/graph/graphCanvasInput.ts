@@ -1,16 +1,24 @@
-import { type KeyboardEvent, type MouseEvent, type PointerEvent, type RefObject, useEffect, useMemo, useRef } from 'react'
+import { type KeyboardEvent, type MouseEvent, type PointerEvent, type RefObject, useEffect, useMemo, useRef, useState } from 'react'
+import { trackEvent } from '../../../lib/telemetry'
+import { useLatestRef } from '../../../hooks/useLatestRef'
 import type { VaultEntry } from '../../../types'
+import { fitGraph, revealNodes, zoomGraph } from './graphCamera'
+import type { LayoutController } from './graphLayoutClient'
 import type { VisibleGraph } from './graphModel'
-import { fitGraph, type GraphRenderer, revealNode, zoomGraph } from './graphRenderer'
+import type { GraphRenderer } from './graphRenderer'
 
-/** A press that travels further than this pans the canvas and never opens a note. */
+/** A press that travels further than this pans (or drags) and never opens a note. */
 const MAX_CLICK_TRAVEL_PX = 4
+/** Leaving a node waits this long before un-hovering, so sliding to the next node never flickers. */
+const HOVER_LEAVE_DELAY_MS = 80
 const EDITOR_PANEL_SELECTOR = '.app__editor'
+/** Escape anywhere leaves neighbour focus, except while typing or inside the editor, a menu or a dialog. */
+const ESCAPE_EXEMPT_SELECTOR = `${EDITOR_PANEL_SELECTOR}, input, textarea, select, [contenteditable="true"], [role="dialog"], [role="menu"]`
 
 type CanvasKeyAction = 'zoomIn' | 'zoomOut' | 'fit' | 'close'
 type Point = { x: number; y: number }
 
-/** Keys the graph answers while focus is inside it: zoom with + / -, fit with 0, close the editor panel with Escape. */
+/** Keys the graph answers while focus is inside it: zoom with + / -, fit with 0, leave focus and close the panel with Escape. */
 const CANVAS_KEYS = new Map<string, CanvasKeyAction>([
   ['+', 'zoomIn'],
   ['=', 'zoomIn'],
@@ -22,15 +30,20 @@ const CANVAS_KEYS = new Map<string, CanvasKeyAction>([
 interface ClickTargets {
   renderer: GraphRenderer | null
   visible: VisibleGraph
-  onOpen: (entry: VaultEntry, event: MouseEvent) => void
+  onNodeClick: (entry: VaultEntry, event: MouseEvent) => void
   onBackgroundClick: () => void
 }
 
 interface RevealSource {
   renderer: GraphRenderer | null
   stageRef: RefObject<HTMLDivElement | null>
-  selectedNotePath: string | null
+  /** The open note, or the focused note and its neighbours. */
+  revealed: readonly string[]
   panelOpen: boolean
+}
+
+export function prefersReducedMotion(): boolean {
+  return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
 function runKeyAction(action: CanvasKeyAction, renderer: GraphRenderer, onBackgroundClick: () => void) {
@@ -49,7 +62,7 @@ export function canvasKeyHandler(renderer: GraphRenderer | null, onBackgroundCli
   }
 }
 
-/** A click on the canvas itself (not its buttons) that did not travel like a pan. */
+/** A click on the canvas itself (not its buttons) that did not travel like a pan or a drag. */
 function isCanvasClick(start: Point | null, event: MouseEvent): start is Point {
   if (event.target instanceof Element && event.target.closest('button')) return false
   return start !== null && Math.hypot(event.clientX - start.x, event.clientY - start.y) <= MAX_CLICK_TRAVEL_PX
@@ -72,8 +85,8 @@ function usePressedNode(renderer: GraphRenderer | null) {
   return pressedNodeRef
 }
 
-/** Node clicks open the note with the real click event (modifiers included); empty-canvas clicks close the panel. */
-export function useCanvasClicks({ renderer, visible, onOpen, onBackgroundClick }: ClickTargets) {
+/** Node clicks open (and focus) the note with the real click event; empty-canvas clicks leave focus. */
+export function useCanvasClicks({ renderer, visible, onNodeClick, onBackgroundClick }: ClickTargets) {
   const pressedNodeRef = usePressedNode(renderer)
   const pressStartRef = useRef<Point | null>(null)
   const entries = useMemo(() => new Map(visible.nodes.map((node) => [node.id, node.entry])), [visible.nodes])
@@ -85,10 +98,75 @@ export function useCanvasClicks({ renderer, visible, onOpen, onBackgroundClick }
       pressStartRef.current = null
       pressedNodeRef.current = null
       if (!isCanvasClick(start, event)) return
-      if (entry) onOpen(entry, event)
+      if (entry) onNodeClick(entry, event)
       else onBackgroundClick()
     },
   }
+}
+
+function nodePosition(renderer: GraphRenderer, node: string): Point | null {
+  const graph = renderer.getGraph()
+  return graph.hasNode(node) ? (graph.getNodeAttributes(node) as Point) : null
+}
+
+/**
+ * Sigma moves a dragged node under the pointer; the simulation holds it there so its neighbours follow
+ * and the rest of the graph reacts live, then lets it go on release (not pinned).
+ */
+export function useNodeDrag(renderer: GraphRenderer | null, layout: LayoutController | null, onDragStart: () => void) {
+  useEffect(() => {
+    if (!renderer || !layout) return
+    const hold = ({ node }: { node: string }) => {
+      const position = nodePosition(renderer, node)
+      if (position) layout.hold(node, position.x, position.y)
+    }
+    const start = (payload: { node: string }) => {
+      onDragStart()
+      hold(payload)
+    }
+    const release = ({ node }: { node: string }) => {
+      layout.release(node)
+      trackEvent('graph_node_dragged', { node_count: renderer.getGraph().order })
+    }
+    renderer.on('nodeDragStart', start)
+    renderer.on('nodeDrag', hold)
+    renderer.on('nodeDragEnd', release)
+    return () => {
+      renderer.off('nodeDragStart', start)
+      renderer.off('nodeDrag', hold)
+      renderer.off('nodeDragEnd', release)
+    }
+  }, [layout, onDragStart, renderer])
+}
+
+/** The hovered node, with a short grace period on leave so moving between neighbours doesn't flash. */
+export function useHoveredNode(renderer: GraphRenderer | null): string | null {
+  const [hovered, setHovered] = useState<string | null>(null)
+  useEffect(() => {
+    if (!renderer) return
+    let leaveTimer: ReturnType<typeof setTimeout> | null = null
+    const clearLeave = () => {
+      if (leaveTimer) clearTimeout(leaveTimer)
+      leaveTimer = null
+    }
+    const enter = ({ node }: { node: string }) => {
+      clearLeave()
+      setHovered(node)
+    }
+    const leave = () => {
+      clearLeave()
+      leaveTimer = setTimeout(() => setHovered(null), HOVER_LEAVE_DELAY_MS)
+    }
+    renderer.on('enterNode', enter)
+    renderer.on('leaveNode', leave)
+    return () => {
+      clearLeave()
+      renderer.off('enterNode', enter)
+      renderer.off('leaveNode', leave)
+      setHovered(null)
+    }
+  }, [renderer])
+  return hovered
 }
 
 /** Canvas pixels from the left edge that the slid-in editor panel leaves uncovered. */
@@ -100,11 +178,30 @@ function uncoveredCanvasWidth(stage: HTMLElement): number {
   return Math.min(stageRect.width, panelLeft - stageRect.left)
 }
 
-/** Keeps the open note visible: when the panel opens over it, the camera pans it into the uncovered part. */
-export function useRevealOpenNote({ renderer, stageRef, selectedNotePath, panelOpen }: RevealSource) {
+/** Keeps the open note (or the focused neighbourhood) in view: when the panel opens over it, the camera eases it into the uncovered part. */
+export function useRevealOpenNote({ renderer, stageRef, revealed, panelOpen }: RevealSource) {
+  const key = revealed.join('\n')
   useEffect(() => {
     const stage = stageRef.current
-    if (!renderer || !stage || !panelOpen || !selectedNotePath) return
-    revealNode(renderer, selectedNotePath, uncoveredCanvasWidth(stage))
-  }, [panelOpen, renderer, selectedNotePath, stageRef])
+    if (!renderer || !stage || !panelOpen || !key) return
+    revealNodes(renderer, key.split('\n'), uncoveredCanvasWidth(stage))
+  }, [key, panelOpen, renderer, stageRef])
+}
+
+function escapeIsForUs(event: globalThis.KeyboardEvent): boolean {
+  if (event.key !== 'Escape' || event.defaultPrevented) return false
+  return !(event.target instanceof Element && event.target.closest(ESCAPE_EXEMPT_SELECTOR))
+}
+
+/** While a note is focused, Escape leaves the focus even when keyboard focus is not on the canvas. */
+export function useEscapeLeavesFocus(active: boolean, leave: () => void) {
+  const leaveRef = useLatestRef(leave)
+  useEffect(() => {
+    if (!active) return
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (escapeIsForUs(event)) leaveRef.current()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [active, leaveRef])
 }

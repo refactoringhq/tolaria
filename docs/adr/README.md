@@ -296,3 +296,4 @@ proposed → active → superseded
 | [0299](0299-mobile-native-platform-chrome.md) | Mobile chrome follows native platform conventions while note content and type icons retain desktop parity | active |
 | [0300](0300-optimistic-mobile-workspace-writes-with-per-path-locks-and-rollback.md) | Optimistic mobile workspace writes use per-path locks and selective rollback (complements [0285](0285-mobile-disk-authoritative-note-editing-and-index-reconciliation.md)) | active |
 | [0305](0305-claude-power-user-inherits-user-mcp-servers.md) | Claude Code Power User inherits the user's MCP servers (complements [0103](0103-adapter-specific-ai-permission-semantics.md)) | proposed |
+| [0306](0306-live-graph-interaction-with-d3-force-in-a-worker.md) | Live graph interaction: d3-force in a worker, sigma node drag, animated emphasis and zoom-aware labels (supersedes the layout and label parts of [0304](0304-graph-collection-layout-behind-a-flag.md)) | active |
