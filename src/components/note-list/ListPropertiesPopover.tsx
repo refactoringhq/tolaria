@@ -27,7 +27,11 @@ import { ActionTooltip } from "@/components/ui/action-tooltip";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent } from "@/components/ui/popover";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { type AppLocale, translate } from "../../lib/i18n";
 import {
@@ -47,6 +51,7 @@ export interface ListPropertiesPopoverProps {
 	onSave: (value: NoteListPropertyKey[] | null) => void;
 	triggerTitle: string;
 	triggerClassName?: string;
+	usePickerTitle?: boolean;
 	locale?: AppLocale;
 }
 
@@ -462,19 +467,18 @@ export function ListPropertiesPopover({
 	return (
 		<Popover open={state.open} onOpenChange={state.handleOpenChange}>
 			<ActionTooltip copy={{ label: triggerTitle }}>
-				<Button
-					type="button"
-					variant="ghost"
-					size="icon-xs"
-					className={cn("h-7 w-7 text-muted-foreground", triggerClassName)}
-					aria-label={triggerTitle}
-					aria-expanded={state.open}
-					aria-haspopup="dialog"
-					data-testid="list-properties-btn"
-					onClick={() => state.handleOpenChange(!state.open)}
-				>
-					<SlidersHorizontal size={16} />
-				</Button>
+				<PopoverTrigger asChild>
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-xs"
+						className={cn("h-7 w-7 text-muted-foreground", triggerClassName)}
+						aria-label={triggerTitle}
+						data-testid="list-properties-btn"
+					>
+						<SlidersHorizontal size={16} />
+					</Button>
+				</PopoverTrigger>
 			</ActionTooltip>
 			<ListPropertiesPopoverPanel
 				inputRef={state.inputRef}
