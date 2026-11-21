@@ -99,15 +99,19 @@ fn frontmatter_value(value: &Value) -> Option<FrontmatterValue> {
         Value::Array(items) => Some(FrontmatterValue::List(
             items
                 .iter()
-                .map(|item| match item {
-                    Value::String(text) => Some(FrontmatterScalar::String(text.clone())),
-                    Value::Number(number) => Some(FrontmatterScalar::Number(number.as_f64()?)),
-                    Value::Bool(flag) => Some(FrontmatterScalar::Bool(*flag)),
-                    Value::Null => Some(FrontmatterScalar::Null),
-                    _ => None,
-                })
+                .map(frontmatter_list_scalar)
                 .collect::<Option<Vec<_>>>()?,
         )),
+        _ => None,
+    }
+}
+
+fn frontmatter_list_scalar(value: &Value) -> Option<FrontmatterScalar> {
+    match value {
+        Value::String(text) => Some(FrontmatterScalar::String(text.clone())),
+        Value::Number(number) => Some(FrontmatterScalar::Number(number.as_f64()?)),
+        Value::Bool(flag) => Some(FrontmatterScalar::Bool(*flag)),
+        Value::Null => Some(FrontmatterScalar::Null),
         _ => None,
     }
 }
