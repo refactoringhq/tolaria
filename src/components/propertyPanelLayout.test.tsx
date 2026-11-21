@@ -137,8 +137,8 @@ describe('property panel shared grid layout', () => {
       onAddProperty: vi.fn(),
     })
 
-    expect(screen.getByText('Status').parentElement).toHaveClass('text-muted-foreground/40')
-    expect(screen.getByText('Date').parentElement).toHaveClass('text-muted-foreground/40')
+    expect(screen.getByText('Status').parentElement).toHaveClass('text-text-muted')
+    expect(screen.getByText('Date').parentElement).toHaveClass('text-text-muted')
   })
 
   it('renders the add-property row in lighter placeholder text', () => {
@@ -148,7 +148,7 @@ describe('property panel shared grid layout', () => {
       onAddProperty: vi.fn(),
     })
 
-    expect(screen.getByText('Add property').parentElement).toHaveClass('text-muted-foreground/40')
+    expect(screen.getByText('Add property').parentElement).toHaveClass('text-text-muted')
   })
 
   it('renders plain text values flush with the shared value column', () => {

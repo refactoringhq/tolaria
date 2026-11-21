@@ -100,7 +100,7 @@ function TextValueInput({ value, onChange, regexEnabled, regexSupported, invalid
         <Input
           className={cn(
             'h-8 w-full min-w-0 text-sm',
-            invalidRegex && 'border-destructive pr-7 focus-visible:ring-destructive/20',
+            invalidRegex && 'border-destructive pr-7 focus-visible:ring-destructive-halo',
           )}
           placeholder="value"
           value={value}
@@ -111,7 +111,7 @@ function TextValueInput({ value, onChange, regexEnabled, regexSupported, invalid
         {invalidRegex && (
           <WarningCircle
             size={14}
-            className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-destructive"
+            className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[var(--accent-red)]"
             data-testid="filter-regex-invalid"
             aria-hidden="true"
           />

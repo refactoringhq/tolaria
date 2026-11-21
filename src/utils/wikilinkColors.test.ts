@@ -105,7 +105,7 @@ describe('lookupColorForEntry', () => {
   })
 
   it('returns neutral color for an entry with no type', () => {
-    expect(lookupColorForEntry(allEntries, untypedEntry)).toBe('var(--muted-foreground)')
+    expect(lookupColorForEntry(allEntries, untypedEntry)).toBe('var(--accent-gray)')
   })
 })
 
@@ -125,13 +125,13 @@ describe('resolveWikilinkColor', () => {
   it('returns neutral color for an untyped note', () => {
     const result = resolveWikilinkColor(allEntries, 'Random Thought')
     expect(result.isBroken).toBe(false)
-    expect(result.color).toBe('var(--muted-foreground)')
+    expect(result.color).toBe('var(--accent-gray)')
   })
 
   it('returns neutral color when entries list is empty', () => {
     const result = resolveWikilinkColor([], 'Anything')
     expect(result.isBroken).toBe(false)
-    expect(result.color).toBe('var(--muted-foreground)')
+    expect(result.color).toBe('var(--accent-gray)')
   })
 
   it('resolves alias-based wikilink target', () => {

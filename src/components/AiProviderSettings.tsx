@@ -126,7 +126,7 @@ function visibleProviders(providers: AiModelProvider[], mode: ProviderMode): AiM
 }
 
 function editableInputClassName(): string {
-  return 'border-border bg-background text-foreground placeholder:text-muted-foreground/65 shadow-xs'
+  return 'border-border bg-background text-foreground placeholder:text-text-tertiary shadow-xs'
 }
 
 function LabeledInput({
@@ -271,6 +271,24 @@ function ProviderList({
   )
 }
 
+function canSaveDraft(draft: ProviderDraft): boolean {
+  const hasKey = draft.apiKeyStorage !== 'local_file' || Boolean(draft.apiKey.trim())
+  return Boolean(draft.name.trim() && draft.modelId.trim()) && hasKey
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+function ProviderFeedback({ t, testState, error }: { t: Translate; testState: TestState; error: string | null }) {
+  return (
+    <>
+      {testState === 'success' ? <div className="text-xs text-[var(--feedback-success-text)]">{t('settings.aiProviders.testSuccess')}</div> : null}
+      {error ? <div className="text-xs text-[var(--accent-red)]">{error}</div> : null}
+    </>
+  )
+}
+
 export function AiProviderSettings({ t, mode, providers, onChange }: AiProviderSettingsProps) {
   const [draft, setDraft] = useState<ProviderDraft>(() => initialDraft(mode))
   const [error, setError] = useState<string | null>(null)
@@ -285,7 +303,7 @@ export function AiProviderSettings({ t, mode, providers, onChange }: AiProviderS
     updateDraft(patch)
   }
   const updateKind = (kind: AiModelProviderKind) => updateForm(providerPresetPatch(kind))
-  const canSave = draft.name.trim() && draft.modelId.trim() && (draft.apiKeyStorage !== 'local_file' || draft.apiKey.trim())
+  const canSave = canSaveDraft(draft)
   const apiKeyOverride = draft.apiKeyStorage === 'local_file' ? draft.apiKey : null
 
   const addProvider = async () => {
@@ -299,7 +317,7 @@ export function AiProviderSettings({ t, mode, providers, onChange }: AiProviderS
       setDraft((current) => ({ ...draftFromProviderKind(current.kind), name: current.name, baseUrl: current.baseUrl }))
       setTestState('idle')
     } catch (error) {
-      setError(error instanceof Error ? error.message : String(error))
+      setError(errorMessage(error))
     }
   }
   const testProvider = async () => {
@@ -310,7 +328,7 @@ export function AiProviderSettings({ t, mode, providers, onChange }: AiProviderS
       setTestState('success')
     } catch (error) {
       setTestState('idle')
-      setError(error instanceof Error ? error.message : String(error))
+      setError(errorMessage(error))
     }
   }
   const removeProvider = (providerId: string) => {
@@ -335,8 +353,7 @@ export function AiProviderSettings({ t, mode, providers, onChange }: AiProviderS
       <div className="text-xs leading-5 text-muted-foreground">
         {mode === 'local' ? t('settings.aiProviders.localSafety') : t('settings.aiProviders.keySafetyLocal')}
       </div>
-      {testState === 'success' ? <div className="text-xs text-emerald-700">{t('settings.aiProviders.testSuccess')}</div> : null}
-      {error ? <div className="text-xs text-destructive">{error}</div> : null}
+      <ProviderFeedback t={t} testState={testState} error={error} />
       <div className="flex items-center gap-3">
         <Button type="button" size="sm" onClick={() => void addProvider()} disabled={!canSave}>
           {mode === 'local' ? t('settings.aiProviders.addLocal') : t('settings.aiProviders.addApi')}

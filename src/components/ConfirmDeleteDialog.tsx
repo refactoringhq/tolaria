@@ -147,7 +147,7 @@ export const ConfirmDeleteDialog = memo(function ConfirmDeleteDialog({ open, tit
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Trash size={18} className="text-destructive" />
+            <Trash size={18} className="text-[var(--accent-red)]" />
             {title}
           </DialogTitle>
           <DialogDescription>{message}</DialogDescription>

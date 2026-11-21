@@ -90,7 +90,7 @@ const CommitAuthorIdentity = ({ identity, locale }: { identity: GitAuthorIdentit
         <span className="shrink-0 font-medium text-muted-foreground">{translate(locale, 'git.author.label')}</span>
         <span className="min-w-0 truncate text-right font-mono text-[11px]">{formatOptionalAuthorIdentity(identity)}</span>
       </div>
-      {warningText && <p className="text-[11px] leading-4 text-amber-700 dark:text-amber-300">{warningText}</p>}
+      {warningText && <p className="text-[11px] leading-4 text-[var(--feedback-warning-text)]">{warningText}</p>}
     </div>
   )
 }

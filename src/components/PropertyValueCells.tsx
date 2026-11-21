@@ -35,11 +35,21 @@ const DEFAULT_DATE_PICKER_START_YEAR = 1800
 const DEFAULT_DATE_PICKER_END_YEAR = 2200
 const DISPLAY_MODE_MENU_WIDTH = 140
 
-function localDate(year: number, monthIndex: number, day: number): Date {
+interface CalendarDay {
+  year: number
+  monthIndex: number
+  day: number
+}
+
+function localDate({ year, monthIndex, day }: CalendarDay): Date {
   const date = new Date(0)
   date.setFullYear(year, monthIndex, day)
   date.setHours(0, 0, 0, 0)
   return date
+}
+
+function calendarDayFromMatch(match: RegExpExecArray): CalendarDay {
+  return { year: Number(match[1]), monthIndex: Number(match[2]) - 1, day: Number(match[3]) }
 }
 
 function dateToISO(day: Date): string {
@@ -54,19 +64,16 @@ function parseDateInput(value: string): string | null {
   const match = ISO_DATE_INPUT_RE.exec(trimmed)
   if (!match) return null
 
-  const year = Number(match[1])
-  if (year < 1) return null
+  const calendarDay = calendarDayFromMatch(match)
+  if (calendarDay.year < 1) return null
 
-  const date = localDate(year, Number(match[2]) - 1, Number(match[3]))
-  return dateToISO(date) === trimmed ? trimmed : null
+  return dateToISO(localDate(calendarDay)) === trimmed ? trimmed : null
 }
 
 function dateFromISO(value: string): Date | undefined {
   const iso = parseDateInput(value)
-  if (!iso) return undefined
-  const match = ISO_DATE_INPUT_RE.exec(iso)
-  if (!match) return undefined
-  return localDate(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+  const match = iso ? ISO_DATE_INPUT_RE.exec(iso) : null
+  return match ? localDate(calendarDayFromMatch(match)) : undefined
 }
 
 function parseDateValue(value: string): Date | undefined {
@@ -74,19 +81,13 @@ function parseDateValue(value: string): Date | undefined {
 }
 
 function datePickerStartMonth(selectedDate: Date | undefined): Date {
-  const selectedYear = selectedDate?.getFullYear()
-  const year = selectedYear && selectedYear < DEFAULT_DATE_PICKER_START_YEAR
-    ? selectedYear
-    : DEFAULT_DATE_PICKER_START_YEAR
-  return localDate(year, 0, 1)
+  const year = Math.min(selectedDate?.getFullYear() || DEFAULT_DATE_PICKER_START_YEAR, DEFAULT_DATE_PICKER_START_YEAR)
+  return localDate({ year, monthIndex: 0, day: 1 })
 }
 
 function datePickerEndMonth(selectedDate: Date | undefined): Date {
-  const selectedYear = selectedDate?.getFullYear()
-  const year = selectedYear && selectedYear > DEFAULT_DATE_PICKER_END_YEAR
-    ? selectedYear
-    : DEFAULT_DATE_PICKER_END_YEAR
-  return localDate(year, 11, 31)
+  const year = Math.max(selectedDate?.getFullYear() || DEFAULT_DATE_PICKER_END_YEAR, DEFAULT_DATE_PICKER_END_YEAR)
+  return localDate({ year, monthIndex: 11, day: 31 })
 }
 
 function showsRelationshipPropertyIcon(propKey: string): boolean {
@@ -262,7 +263,7 @@ function NumberValue({
   return (
     <button
       type="button"
-      className="inline-flex h-6 w-full min-w-0 items-center justify-start overflow-hidden rounded-md border-none bg-muted/60 px-2 text-left font-mono text-[12px] tabular-nums text-foreground transition-colors hover:bg-muted"
+      className="inline-flex h-6 w-full min-w-0 items-center justify-start overflow-hidden rounded-md border-none bg-muted px-2 text-left font-mono text-[12px] tabular-nums text-foreground transition-colors hover:bg-muted"
       onClick={onStartEdit}
       title={value || 'Click to edit'}
       data-testid="number-display"

@@ -3,7 +3,7 @@ import type { VaultEntry } from '../../types'
 import { DEFAULT_DATE_DISPLAY_FORMAT, type DateDisplayFormat } from '../../utils/dateDisplay'
 import { detectPropertyType, formatDateValue } from '../../utils/propertyTypes'
 import { getMappedStatusStyle } from '../../utils/statusStyles'
-import { getTypeColor, getTypeLightColor } from '../../utils/typeColors'
+import { getTypeLightColor, getTypeTextColor, hasTypeHue } from '../../utils/typeColors'
 import { isUrlValue, normalizeUrl } from '../../utils/url'
 import { resolveEntry, wikilinkDisplay, wikilinkTarget } from '../../utils/wikilink'
 import { getTypeIcon } from './typeIcon'
@@ -25,7 +25,7 @@ export interface PropertyChipResolveContext {
 
 const URL_CHIP_STYLE: CSSProperties = {
   backgroundColor: 'var(--accent-blue-light)',
-  color: 'var(--accent-blue)',
+  color: 'var(--accent-blue-text)',
 }
 
 type ChipScalarValue = string | number | boolean | null
@@ -69,10 +69,11 @@ function findMatchingKey(values: Record<string, unknown>, propName: string): str
 
 function resolveRelationshipChipStyle(targetEntry: VaultEntry, typeEntryMap: Record<string, VaultEntry>): CSSProperties | undefined {
   const typeEntry = resolveTargetTypeEntry(targetEntry, typeEntryMap)
-  const color = getTypeColor(targetEntry.isA, typeEntry?.color)
-  const backgroundColor = getTypeLightColor(targetEntry.isA, typeEntry?.color)
-  if (color === 'var(--muted-foreground)' && backgroundColor === 'var(--muted)') return undefined
-  return { color, backgroundColor }
+  if (!hasTypeHue(targetEntry.isA, typeEntry?.color)) return undefined
+  return {
+    color: getTypeTextColor(targetEntry.isA, typeEntry?.color),
+    backgroundColor: getTypeLightColor(targetEntry.isA, typeEntry?.color),
+  }
 }
 
 function resolveRelationshipChip(

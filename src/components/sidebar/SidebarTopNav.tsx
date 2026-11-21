@@ -1,6 +1,6 @@
 import { Archive, FileText, Tray } from '@phosphor-icons/react'
 import type { SidebarSelection } from '../../types'
-import { isSelectionActive, NavItem } from '../SidebarParts'
+import { isSelectionActive, NavItem, SIDEBAR_COUNT_PILL_IDLE_CLASS } from '../SidebarParts'
 import { translate, type AppLocale } from '../../lib/i18n'
 
 interface SidebarTopNavProps {
@@ -28,8 +28,7 @@ export function SidebarTopNav(options: SidebarTopNavProps) {
             kind: 'filter',
             filter: 'inbox',
           })}
-          badgeClassName="text-muted-foreground"
-          badgeStyle={{ background: 'var(--muted)' }}
+          badgeClassName={SIDEBAR_COUNT_PILL_IDLE_CLASS}
           activeBadgeClassName="bg-primary text-primary-foreground"
           onClick={() => onSelect({ kind: 'filter', filter: 'inbox' })}
         />
@@ -43,8 +42,7 @@ export function SidebarTopNav(options: SidebarTopNavProps) {
           kind: 'filter',
           filter: 'all',
         })}
-        badgeClassName="text-muted-foreground"
-        badgeStyle={{ background: 'var(--muted)' }}
+        badgeClassName={SIDEBAR_COUNT_PILL_IDLE_CLASS}
         activeBadgeClassName="bg-primary text-primary-foreground"
         onClick={() => onSelect({ kind: 'filter', filter: 'all' })}
       />
@@ -57,8 +55,7 @@ export function SidebarTopNav(options: SidebarTopNavProps) {
           kind: 'filter',
           filter: 'archived',
         })}
-        badgeClassName="text-muted-foreground"
-        badgeStyle={{ background: 'var(--muted)' }}
+        badgeClassName={SIDEBAR_COUNT_PILL_IDLE_CLASS}
         activeBadgeClassName="bg-primary text-primary-foreground"
         onClick={() => onSelect({ kind: 'filter', filter: 'archived' })}
       />

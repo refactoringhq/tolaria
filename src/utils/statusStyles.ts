@@ -8,26 +8,26 @@ export interface StatusStyle {
 }
 
 export const STATUS_STYLES: Record<string, StatusStyle> = {
-  Active: { bg: 'var(--accent-green-light)', color: 'var(--accent-green)' },
-  Done: { bg: 'var(--accent-blue-light)', color: 'var(--accent-blue)' },
-  Paused: { bg: 'var(--accent-yellow-light)', color: 'var(--accent-yellow)' },
-  Archived: { bg: 'var(--accent-blue-light)', color: 'var(--muted-foreground)' },
-  Dropped: { bg: 'var(--accent-red-light)', color: 'var(--accent-red)' },
-  Open: { bg: 'var(--accent-green-light)', color: 'var(--accent-green)' },
-  Closed: { bg: 'var(--accent-blue-light)', color: 'var(--muted-foreground)' },
-  'Not started': { bg: 'var(--accent-blue-light)', color: 'var(--muted-foreground)' },
-  Draft: { bg: 'var(--accent-yellow-light)', color: 'var(--accent-yellow)' },
-  Mixed: { bg: 'var(--accent-yellow-light)', color: 'var(--accent-yellow)' },
-  Published: { bg: 'var(--accent-green-light)', color: 'var(--accent-green)' },
-  'In progress': { bg: 'var(--accent-purple-light)', color: 'var(--accent-purple)' },
-  Blocked: { bg: 'var(--accent-red-light)', color: 'var(--accent-red)' },
-  Cancelled: { bg: 'var(--accent-red-light)', color: 'var(--accent-red)' },
-  Pending: { bg: 'var(--accent-yellow-light)', color: 'var(--accent-yellow)' },
+  Active: { bg: 'var(--accent-green-light)', color: 'var(--accent-green-text)' },
+  Done: { bg: 'var(--accent-blue-light)', color: 'var(--accent-blue-text)' },
+  Paused: { bg: 'var(--accent-yellow-light)', color: 'var(--accent-yellow-text)' },
+  Archived: { bg: 'var(--accent-gray-light)', color: 'var(--accent-gray-text)' },
+  Dropped: { bg: 'var(--accent-red-light)', color: 'var(--accent-red-text)' },
+  Open: { bg: 'var(--accent-green-light)', color: 'var(--accent-green-text)' },
+  Closed: { bg: 'var(--accent-gray-light)', color: 'var(--accent-gray-text)' },
+  'Not started': { bg: 'var(--accent-gray-light)', color: 'var(--accent-gray-text)' },
+  Draft: { bg: 'var(--accent-yellow-light)', color: 'var(--accent-yellow-text)' },
+  Mixed: { bg: 'var(--accent-yellow-light)', color: 'var(--accent-yellow-text)' },
+  Published: { bg: 'var(--accent-green-light)', color: 'var(--accent-green-text)' },
+  'In progress': { bg: 'var(--accent-purple-light)', color: 'var(--accent-purple-text)' },
+  Blocked: { bg: 'var(--accent-red-light)', color: 'var(--accent-red-text)' },
+  Cancelled: { bg: 'var(--accent-red-light)', color: 'var(--accent-red-text)' },
+  Pending: { bg: 'var(--accent-yellow-light)', color: 'var(--accent-yellow-text)' },
 }
 
 export const DEFAULT_STATUS_STYLE: StatusStyle = {
-  bg: 'var(--accent-blue-light)',
-  color: 'var(--muted-foreground)',
+  bg: 'var(--accent-gray-light)',
+  color: 'var(--accent-gray-text)',
 }
 
 /** Default suggested statuses shown in the dropdown */
@@ -43,7 +43,7 @@ export const SUGGESTED_STATUSES = [
 ]
 
 const COLOR_KEY_TO_STYLE: Record<string, StatusStyle> = Object.fromEntries(
-  ACCENT_COLORS.map(c => [c.key, { bg: c.cssLight, color: c.css }]),
+  ACCENT_COLORS.map(c => [c.key, { bg: c.cssLight, color: c.cssText }]),
 )
 const COLOR_KEY_STYLE_LOOKUP = new Map(Object.entries(COLOR_KEY_TO_STYLE))
 const STATUS_STYLE_LOOKUP = new Map(Object.entries(STATUS_STYLES))

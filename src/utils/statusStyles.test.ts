@@ -22,7 +22,7 @@ describe('statusStyles — color overrides', () => {
   })
 
   it('returns built-in style when no override exists', () => {
-    expect(getStatusStyle('Active')).toEqual(STATUS_STYLES['Active'])
+    expect(getStatusStyle('Active')).toEqual(STATUS_STYLES.Active)
   })
 
   it('returns default style for unknown status without override', () => {
@@ -38,13 +38,13 @@ describe('statusStyles — color overrides', () => {
     expect(getStatusColorKey('Active')).toBe('red')
     const stored = getVaultConfig().status_colors as Record<string, string>
     expect(stored).toBeTruthy()
-    expect(stored['Active']).toBe('red')
+    expect(stored.Active).toBe('red')
   })
 
   it('getStatusStyle uses override when set', () => {
     setStatusColor('Active', 'pink')
     const style = getStatusStyle('Active')
-    expect(style.color).toBe('var(--accent-pink)')
+    expect(style.color).toBe('var(--accent-pink-text)')
     expect(style.bg).toBe('var(--accent-pink-light)')
   })
 
@@ -53,7 +53,7 @@ describe('statusStyles — color overrides', () => {
     expect(getStatusColorKey('Active')).toBe('red')
     setStatusColor('Active', null)
     expect(getStatusColorKey('Active')).toBeNull()
-    expect(getStatusStyle('Active')).toEqual(STATUS_STYLES['Active'])
+    expect(getStatusStyle('Active')).toEqual(STATUS_STYLES.Active)
   })
 
   it('getStatusColorOverrides returns a copy of all overrides', () => {
@@ -62,20 +62,20 @@ describe('statusStyles — color overrides', () => {
     const overrides = getStatusColorOverrides()
     expect(overrides).toEqual({ Draft: 'teal', Blocked: 'orange' })
     // Verify it's a copy, not a reference
-    overrides['Draft'] = 'blue'
+    overrides.Draft = 'blue'
     expect(getStatusColorKey('Draft')).toBe('teal')
   })
 
   it('applies override to unknown status (not in STATUS_STYLES)', () => {
     setStatusColor('Custom Status', 'purple')
     const style = getStatusStyle('Custom Status')
-    expect(style.color).toBe('var(--accent-purple)')
+    expect(style.color).toBe('var(--accent-purple-text)')
     expect(style.bg).toBe('var(--accent-purple-light)')
   })
 
   it('ignores invalid color key in override', () => {
     setStatusColor('Active', 'nonexistent-color')
     // Falls back to built-in since "nonexistent-color" isn't a valid ACCENT_COLOR key
-    expect(getStatusStyle('Active')).toEqual(STATUS_STYLES['Active'])
+    expect(getStatusStyle('Active')).toEqual(STATUS_STYLES.Active)
   })
 })

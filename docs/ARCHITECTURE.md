@@ -726,7 +726,7 @@ flowchart TD
 
 The app uses internal app-owned light and dark themes with an optional System preference (see [ADR-0081](adr/0081-internal-light-dark-theme-runtime.md) and [ADR-0112](adr/0112-system-theme-mode.md)). This is not the old vault-authored theming system from ADR-0013: users choose a mode, but themes are owned by the app.
 
-1. **Global CSS variables** (`src/index.css`): Semantic app colors, borders, surfaces, and interaction states. Bridged to Tailwind v4 via `@theme inline`.
+1. **Global CSS variables** (`src/index.css`): Semantic app colors, borders, surfaces, and interaction states, each mapped onto a step of the palette in `src/styles/palette.css` (one warm gray and a 50–950 scale per hue; see [ADR-0307](adr/0307-palette-scales-and-semantic-color-roles.md)). Bridged to Tailwind v4 via `@theme inline`. `pnpm lint:colors` rejects raw or opacity-invented colors outside the palette and checks token contrast for both themes.
 2. **Editor theme** (`src/theme.json`): BlockNote-specific typography. Flattened to CSS vars by `useEditorTheme`; editor colors resolve through the same semantic app variables.
 3. **Theme runtime**: Applies resolved `light` / `dark` values to `data-theme` and the shadcn-compatible `.dark` class before React consumers render, with a localStorage mirror to avoid startup flash when dark mode or System-on-dark is selected. Settings and command-palette theme actions both write the same installation-local `settings.theme_mode` value; `system` subscribes to `prefers-color-scheme` changes at runtime while explicit Light/Dark remain overrides.
 

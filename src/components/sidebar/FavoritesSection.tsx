@@ -64,7 +64,7 @@ function SortableFavoriteItem({
     >
       <button
         type="button"
-        className={`group/section flex cursor-pointer select-none items-center justify-between rounded transition-colors ${isActive ? '' : 'hover:bg-accent'} w-full`}
+        className={`group/section group/sidebar-row flex cursor-pointer select-none items-center justify-between rounded transition-colors ${isActive ? '' : 'hover:bg-accent'} w-full`}
         style={{
           padding: SIDEBAR_ITEM_PADDING.withCount,
           borderRadius: 4,

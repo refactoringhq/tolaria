@@ -89,7 +89,7 @@ export function FolderItemRow(options: FolderItemRowProps) {
     <div
       className={cn(
         'group relative flex items-center gap-1 rounded transition-colors',
-        isSelected ? 'bg-[var(--accent-blue-light)] text-primary' : 'text-foreground hover:bg-accent',
+        isSelected ? 'bg-[var(--accent-blue-light)] text-[var(--accent-blue)]' : 'text-foreground hover:bg-accent',
       )}
       style={{ paddingLeft: depthIndent, borderRadius: 4 }}
     >
@@ -146,7 +146,7 @@ function FolderSelectButton(options: {
       variant="ghost"
       className={cn(
         'h-auto flex-1 justify-start gap-2 rounded text-left text-[13px] font-medium hover:bg-transparent',
-        isSelected ? 'text-primary hover:text-primary' : 'text-foreground hover:text-foreground',
+        isSelected ? 'text-[var(--accent-blue)] hover:text-[var(--accent-blue)]' : 'text-foreground hover:text-foreground',
         'data-[note-drop-state=valid]:!bg-[var(--accent-blue-light)] data-[note-drop-state=valid]:ring-1 data-[note-drop-state=valid]:ring-[var(--accent-blue)]',
       )}
       style={{

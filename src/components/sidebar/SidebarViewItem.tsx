@@ -2,7 +2,7 @@ import { useMemo, type ButtonHTMLAttributes, type RefObject } from 'react'
 import type { VaultEntry, ViewDefinition, ViewFile } from '../../types'
 import { Funnel } from '@phosphor-icons/react'
 import { NoteTitleIcon } from '../NoteTitleIcon'
-import { SidebarCountPill } from '../SidebarParts'
+import { SIDEBAR_COUNT_PILL_IDLE_CLASS, SidebarCountPill } from '../SidebarParts'
 import { SIDEBAR_ITEM_PADDING } from './sidebarStyles'
 import type { AppLocale } from '../../lib/i18n'
 import { ACCENT_COLORS } from '../../utils/typeColors'
@@ -93,10 +93,8 @@ function ViewCountChip({ count, isActive, accent }: { count: number; isActive: b
   return (
     <SidebarCountPill
       count={count}
-      className="text-muted-foreground"
-      style={
-        isActive && accent ? { background: accent.color, color: 'var(--text-inverse)' } : { background: 'var(--muted)' }
-      }
+      className={isActive && accent ? undefined : SIDEBAR_COUNT_PILL_IDLE_CLASS}
+      style={isActive && accent ? { background: accent.color, color: 'var(--text-inverse)' } : undefined}
       testId="view-count-chip"
     />
   )
@@ -105,7 +103,7 @@ function ViewCountChip({ count, isActive, accent }: { count: number; isActive: b
 function SidebarViewRowAsHtml(options: SidebarViewRowProps) {
   const { view, isActive, onSelect, dragHandleProps, count, locale, accent, rowRef, isRenaming, setIsRenaming, handleRenameSubmit, handleContextMenu, startRename, handleRowKeyDown } = options
   const showCount = count > 0
-  const rowClassName = `flex cursor-pointer select-none items-center gap-2 rounded transition-colors ${isActive ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-accent'}`
+  const rowClassName = `group/sidebar-row flex cursor-pointer select-none items-center gap-2 rounded transition-colors ${isActive ? 'bg-[var(--accent-blue-light)] text-[var(--accent-blue)]' : 'text-foreground hover:bg-accent'}`
   const rowStyle = getViewRowStyle(showCount, isActive, accent)
   if (isRenaming) {
     return (

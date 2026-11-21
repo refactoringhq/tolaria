@@ -55,7 +55,7 @@ export function ChangesContextMenuNode({
       <Button
         type="button"
         variant="ghost"
-        className="flex h-auto w-full cursor-default items-center justify-start gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-destructive transition-colors hover:bg-accent hover:text-accent-foreground"
+        className="flex h-auto w-full cursor-default items-center justify-start gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-[var(--accent-red)] transition-colors hover:bg-accent hover:text-accent-foreground"
         onClick={onSelect}
         data-testid={actionTarget?.action === 'restore' ? 'restore-note-button' : 'discard-changes-button'}
       >

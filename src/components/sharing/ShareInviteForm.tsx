@@ -35,7 +35,7 @@ function FeedbackLine({ feedback }: { feedback: ShareFeedback | null }) {
     <p
       role={error ? 'alert' : 'status'}
       data-testid={error ? 'share-error' : 'share-success'}
-      className={error ? 'm-0 text-xs text-destructive' : 'm-0 text-xs text-muted-foreground'}
+      className={error ? 'm-0 text-xs text-[var(--accent-red)]' : 'm-0 text-xs text-muted-foreground'}
     >
       {feedback.text}
     </p>

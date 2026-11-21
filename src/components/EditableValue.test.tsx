@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { cleanup, render, screen, fireEvent } from '@testing-library/react'
 import { EditableValue, TagPillList, UrlValue } from './EditableValue'
 import { isUrlValue, normalizeUrl } from '../utils/url'
 
@@ -272,6 +272,15 @@ describe('UrlValue', () => {
     render(<UrlValue value="://broken" onSave={onSave} onCancel={onCancel} isEditing={false} onStartEdit={onStartEdit} />)
     fireEvent.click(screen.getByTestId('url-link'))
     expect(openExternalUrl).not.toHaveBeenCalled()
+  })
+
+  it('never hands a non-http scheme to the opener', () => {
+    for (const value of ['javascript:alert(1)', 'file:///etc/passwd', 'data:text/html,hi']) {
+      cleanup()
+      render(<UrlValue value={value} onSave={onSave} onCancel={onCancel} isEditing={false} onStartEdit={onStartEdit} />)
+      fireEvent.click(screen.getByTestId('url-link'))
+    }
+    expect(openExternalUrl).not.toHaveBeenCalledWith(expect.stringMatching(/^(javascript|file|data):/))
   })
 
   it('does not trigger edit mode when URL link is clicked', () => {

@@ -967,7 +967,7 @@ describe('Type-derived date placeholders', () => {
     })
 
     const placeholder = screen.getByTestId('type-derived-property')
-    expect(within(placeholder).getByText('Date')).toHaveClass('text-muted-foreground/40')
+    expect(within(placeholder).getByText('Date')).toHaveClass('text-text-muted')
     fireEvent.click(placeholder)
     const input = screen.getByTestId('date-picker-input')
     fireEvent.change(input, { target: { value: '2026-05-04' } })

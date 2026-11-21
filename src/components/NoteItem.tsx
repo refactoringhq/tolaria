@@ -414,7 +414,7 @@ function noteItemStyle(
   const base: CSSProperties = {
     padding: isSelected && !isMultiSelected ? '14px 16px 14px 13px' : '14px 16px',
   }
-  if (isMultiSelected) base.backgroundColor = 'color-mix(in srgb, var(--accent-blue) 10%, transparent)'
+  if (isMultiSelected) base.backgroundColor = 'var(--state-selected)'
   else if (isSelected) {
     base.borderLeftColor = typeColor
     base.backgroundColor = typeLightColor

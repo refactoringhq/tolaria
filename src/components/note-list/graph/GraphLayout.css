@@ -54,7 +54,7 @@
   gap: 4px;
   padding: 1px 6px;
   border-radius: 6px;
-  background: color-mix(in srgb, var(--background) 82%, transparent);
+  background: var(--background);
   color: var(--foreground);
   font-size: 11px;
   line-height: 16px;
@@ -65,7 +65,7 @@
 
 .graph-label[data-emphasis="hover"] .graph-label__chip {
   background: var(--background);
-  box-shadow: 0 0 0 1px var(--border), 0 4px 12px -6px rgb(0 0 0 / 0.3);
+  box-shadow: 0 0 0 1px var(--border), 0 4px 12px -6px var(--shadow-strong);
   font-weight: 600;
   transform: scale(1.4);
 }
@@ -106,7 +106,7 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--card);
-  box-shadow: 0 4px 12px -6px rgb(0 0 0 / 0.25);
+  box-shadow: 0 4px 12px -6px var(--shadow-medium);
 }
 
 .graph-legend-edge {
