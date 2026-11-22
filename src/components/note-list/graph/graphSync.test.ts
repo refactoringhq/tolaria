@@ -9,7 +9,6 @@ const palette: GraphPalette = {
   relationshipEdge: 'rgba(1, 1, 1, 0.7)',
   wikiLinkEdge: 'rgba(1, 1, 1, 0.4)',
   transparent: 'rgba(0, 0, 0, 0)',
-  highlight: 'rgba(0, 0, 255, 0.35)',
   nodeColor: (entry) => (entry.isA === 'Project' ? 'rgba(255, 0, 0, 1)' : 'rgba(128, 128, 128, 1)'),
   dispose: () => undefined,
 }

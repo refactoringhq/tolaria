@@ -22,7 +22,7 @@ vi.mock('sigma/rendering', () => ({ extremityArrow: () => ({ name: 'arrow' }), l
 
 function build(display: GraphDisplay) {
   createGraphRenderer(new Graph(), document.createElement('div'), {
-    colors: () => ({ highlight: 'rgba(0, 0, 255, 0.35)', accent: 'rgb(0, 0, 255)' }),
+    colors: () => ({ accent: 'rgb(0, 0, 255)' }),
     display: () => display,
   })
   const options = constructed.at(-1)
@@ -49,6 +49,12 @@ describe('graph renderer styles', () => {
     expect(style('nodes', 'opacity')({})).toBe(1)
     expect(style('nodes', 'depth')({ accent: 0.5 })).toBe('topNodes')
     expect(style('nodes', 'depth')({})).toBe('nodes')
+  })
+
+  it('draws no ring around the open note (TOL-385 QA)', () => {
+    const { options } = build({ nodeSizeScale: 1, linkThickness: 1, showArrows: false })
+    const visibility = Reflect.get(options.styles.nodes, 'backdropVisibility')
+    expect(visibility).toBe('hidden')
   })
 
   it('blends the hovered node toward the accent color', () => {
