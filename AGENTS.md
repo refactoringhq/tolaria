@@ -65,6 +65,7 @@ Move a card to In Review only when every job in the CircleCI `validation` workfl
 
 Every incident or revert adds a regression test. If it's a pattern, also add one line to this file.
 
+- Desktop color tokens feed the mobile app (ADR 0213): after editing `src/index.css` or `src/styles/*.css`, regenerate `apps/mobile/src/ui/theme/desktopThemes.generated.json` (`node apps/mobile/scripts/generate-desktop-themes.ts`) and run `pnpm mobile:test`, or mobile-ota-quality turns main red (TOL-406).
 - Web Playwright in WebKit (also the iPhone/iPad projects): the offline service worker can stall every later load of a page (a cancelled worker-served body, TOL-230; a navigation just as the new worker takes over, sharing.spec.ts). A spec that is not about offline read and hits such a stall blocks the worker (`serviceWorkers: "block"`, as sync-pill and sharing do) instead of retrying.
 
 ### Start working on a task

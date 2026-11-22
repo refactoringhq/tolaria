@@ -1,3 +1,4 @@
+import { mobileColors } from '../ui/tokens'
 import type { MobileMarkdownFormatAction } from '../workspace/mobileMarkdownFormatting'
 
 type ProbeLogText = string
@@ -35,7 +36,7 @@ type NativeWysiwygFormatEffectSpec = {
 }
 
 export const nativeWysiwygFormatCommandLogPrefix = 'TOLARIA_MOBILE_WYSIWYG_FORMAT_COMMAND_PROBE'
-export const nativeWysiwygFormatCommandHighlightColor = 'rgba(214, 158, 46, 0.1)'
+export const nativeWysiwygFormatCommandHighlightColor = mobileColors.yellowSoft
 export const nativeWysiwygFormatCommandEffectText = 'Format me'
 
 export const nativeWysiwygFormatCommandProbeActions = [

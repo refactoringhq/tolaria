@@ -1,17 +1,39 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { parseDesktopThemes } from './parseDesktopTheme'
+import { parseDesktopThemes, readDesktopThemeCss } from './parseDesktopTheme'
+
+const desktopCss = () => readDesktopThemeCss((path) => readFileSync(`../../${path}`, 'utf8'))
 
 describe('desktop theme export', () => {
   it('extracts both desktop palettes and resolves semantic aliases', () => {
-    const themes = parseDesktopThemes(readFileSync('../../src/index.css', 'utf8'))
+    const themes = parseDesktopThemes(desktopCss())
     expect(themes.light['--background']).toBe('#FFFFFF')
-    expect(themes.dark['--background']).toBe('#1F1E1B')
-    expect(themes.dark['--sidebar']).toBe('#191814')
-    expect(themes.dark['--foreground']).toBe('#E6E1D8')
-    expect(themes.dark['--primary-foreground']).toBe('#151411')
+    expect(themes.dark['--background']).toBe('#25231F')
+    expect(themes.dark['--sidebar']).toBe('#191713')
+    expect(themes.dark['--foreground']).toBe('#E1DFDB')
+    expect(themes.dark['--primary-foreground']).toBe('#FFFFFF')
     expect(Object.keys(themes.dark).sort()).toEqual(Object.keys(themes.light).sort())
     expect(Object.values(themes.dark).some((value) => value.includes('var('))).toBe(false)
+  })
+
+  it('resolves semantic roles through the shared :root palette in both themes', () => {
+    const sheet = `:root { --gray-50: #F8F7F4; --gray-950: #191713; }
+      :root, [data-theme="light"] { --background: var(--gray-50); }
+      [data-theme="dark"] { --background: var(--gray-950); }`
+    const themes = parseDesktopThemes(sheet)
+    expect(themes.light['--background']).toBe('#F8F7F4')
+    expect(themes.dark['--background']).toBe('#191713')
+    expect(themes.dark['--gray-50']).toBe('#F8F7F4')
+  })
+
+  it('inlines local stylesheet imports and leaves package imports alone', () => {
+    const files: Record<string, string> = {
+      'src/index.css': '@import "tailwindcss";\n@import "./styles/palette.css";\n[data-theme="light"] {}',
+      'src/styles/palette.css': ':root { --white: #FFFFFF; }',
+    }
+    expect(readDesktopThemeCss((path) => files[path])).toBe(
+      '@import "tailwindcss";\n:root { --white: #FFFFFF; }\n[data-theme="light"] {}',
+    )
   })
 
   it('rejects incomplete palettes instead of silently exporting light-only tokens', () => {
