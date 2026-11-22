@@ -796,7 +796,10 @@ desktop-derived palettes to both NativeWind/RNR and explicit native styles.
 `useMobileColors` supplies semantic roles; `useMobileStyles` memoizes a component's
 palette-dependent style factory. `useEditorAppearance` changes WebView CSS without
 resynchronizing the document. The generated palette is checked against desktop
-CSS in the scoped mobile unit suite; see ADR 0213.
+CSS (`src/index.css` with its local imports, including the `:root` palette in
+`src/styles/palette.css`) in the scoped mobile unit suite; regenerate it with
+`node apps/mobile/scripts/generate-desktop-themes.ts` after any desktop token
+change. See ADRs 0213 and 0307.
 
 `mobileMetrics` derives the fixed 120% mobile baseline from desktop parity
 tokens, retaining 100% metrics for canonical parity tests. Valid legacy density
