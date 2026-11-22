@@ -124,7 +124,10 @@ function evaluatePair(tokens: TokenMap, theme: ThemeName, pair: ContrastPair): C
   const foregroundHex = resolveToken(tokens, pair.foreground)
   const backgroundHex = resolveToken(tokens, pair.background)
   const ratio = foregroundHex && backgroundHex ? contrastRatio(foregroundHex, backgroundHex) : 0
-  const minimum = pair.themeMinimums?.[theme] ?? pair.minimum
+  const themeMinimum = theme === 'light'
+    ? pair.themeMinimums?.light
+    : pair.themeMinimums?.dark
+  const minimum = themeMinimum ?? pair.minimum
   return { ...pair, minimum, theme, foregroundHex, backgroundHex, ratio, pass: ratio >= minimum }
 }
 
