@@ -35,6 +35,36 @@
     visibility 0s;
 }
 
+/* The AI panel (TOL-409) lives inside the editor panel. With a note open, the panel widens so the note keeps its room
+   beside the AI panel. */
+.app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"], [data-collection-layout="graph"])):has(.app__editor [data-ai-workspace-mode="side"]) .app__editor {
+  width: min(1120px, 88%);
+}
+
+/* With no note open, only the AI panel shows: it docks beside the layout, which shrinks to keep every column usable,
+   like the List layout's AI panel. */
+.app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"], [data-collection-layout="graph"])):has(.app__editor [data-ai-workspace-mode="side"]):not(:has(.app__note-list [data-kanban-panel="open"])) .app__editor {
+  transform: none;
+  visibility: visible;
+  transition: none;
+}
+
+.app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"], [data-collection-layout="graph"])):has(.app__editor [data-ai-workspace-mode="side"][data-ai-workspace-expanded="false"]):not(:has(.app__note-list [data-kanban-panel="open"])) .app__editor {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  flex: none;
+  width: auto;
+  min-width: 0;
+  container-type: normal;
+  border-left: 0;
+  box-shadow: none;
+}
+
+.app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"], [data-collection-layout="graph"])):has(.app__editor [data-ai-workspace-mode="side"]):not(:has(.app__note-list [data-kanban-panel="open"])) .app__editor .editor > .relative > :not([data-ai-workspace-mode="side"]) {
+  display: none;
+}
+
 .app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"], [data-collection-layout="graph"])) .app__editor .breadcrumb-bar {
   --breadcrumb-bar-left-padding: 48px;
 }
