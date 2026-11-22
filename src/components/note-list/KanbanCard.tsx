@@ -49,16 +49,18 @@ export function KanbanCardFace({
 			)}
 		>
 			<span
-				className="block truncate text-[13px] font-medium text-foreground"
+				className="flex min-w-0 items-start gap-2 text-[13px] font-medium text-foreground"
 				data-testid="kanban-card-title"
 			>
 				<NoteTitleIcon
 					icon={entry.icon}
 					size={15}
-					className="mr-1"
+					className="mt-[1.5px]"
 					testId="kanban-card-title-icon"
 				/>
-				{entry.title}
+				<span className="line-clamp-2 min-w-0 leading-[18px]">
+					{entry.title}
+				</span>
 			</span>
 			{displayProps.length > 0 && context.showProperties && (
 				<PropertyChips

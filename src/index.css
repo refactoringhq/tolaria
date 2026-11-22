@@ -760,3 +760,7 @@
   0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
   30% { opacity: 1; transform: translateY(-2px); }
 }
+[data-testid="status-badge"] > span {
+  width: 0.5rem;
+  height: 0.5rem;
+}
