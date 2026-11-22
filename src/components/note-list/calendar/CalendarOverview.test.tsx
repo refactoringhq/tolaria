@@ -16,6 +16,24 @@ const item = (start: string, end = start): CalendarItem => ({
 });
 
 describe("CalendarOverview", () => {
+	it("formats month headings with the selected date display format", () => {
+		render(
+			<CalendarOverview
+				anchor="2026-11-19"
+				view="quarter"
+				items={[]}
+				locale="en"
+				dateDisplayFormat="iso"
+				showWeekends
+				today="2026-11-19"
+				onSelectMonth={vi.fn()}
+			/>,
+		);
+		expect(
+			screen.getByRole("region", { name: "2026-11-01" }),
+		).toBeInTheDocument();
+	});
+
 	it("renders compact year and quarter month collections and marks scheduled days", () => {
 		const { rerender } = render(
 			<CalendarOverview

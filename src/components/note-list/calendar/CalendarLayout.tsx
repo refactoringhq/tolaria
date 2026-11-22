@@ -7,11 +7,11 @@ import type {
 	CalendarLayoutBindings,
 	CollectionLayoutSharedProps,
 } from "../../../collections/layoutRegistry";
-import { type AppLocale, translate } from "../../../lib/i18n";
 import { useDateDisplayFormat } from "../../../hooks/useAppPreferences";
-import type { DateDisplayFormat } from "../../../utils/dateDisplay";
+import { type AppLocale, translate } from "../../../lib/i18n";
 import { trackEvent } from "../../../lib/telemetry";
 import type { VaultEntry } from "../../../types";
+import type { DateDisplayFormat } from "../../../utils/dateDisplay";
 import { useKanbanSensors } from "../useKanbanDrag";
 import { CalendarEmptyState } from "./CalendarEmptyState";
 import { CalendarGrid, type CalendarGridState } from "./CalendarGrid";
@@ -207,8 +207,103 @@ function DragPreview({
 	);
 }
 
+interface CalendarBoardContentProps {
+	props: CalendarBoardProps;
+	anchor: DayKey;
+	navigation: ReturnType<typeof useCalendarNavigation>["navigation"];
+	trayCount: number;
+	trayOpen: boolean;
+	setTrayOpen: React.Dispatch<React.SetStateAction<boolean>>;
+	weeks: DayKey[][];
+	visibleItems: CalendarItem[];
+	partition: ReturnType<typeof partitionEntries>;
+	context: ReturnType<typeof useItemContext>;
+	gridState: CalendarGridState;
+}
+
+function CalendarBoardContent({
+	props,
+	anchor,
+	navigation,
+	trayCount,
+	trayOpen,
+	setTrayOpen,
+	weeks,
+	visibleItems,
+	partition,
+	context,
+	gridState,
+}: CalendarBoardContentProps) {
+	const {
+		calendar,
+		dateProperty,
+		dateDisplayFormat,
+		locale,
+		selectedNotePath,
+	} = props;
+	const { settings } = calendar;
+	return (
+		<section
+			className="calendar-board flex min-h-0 flex-1 flex-col"
+			aria-label={translate(locale, "calendar.gridLabel", {
+				property: dateProperty,
+			})}
+			data-testid="calendar-board"
+		>
+			<CalendarToolbar
+				title={calendarTitle({
+					anchor,
+					shownWeek: weeks[0],
+					view: settings.view,
+					locale,
+					dateDisplayFormat,
+				})}
+				view={settings.view}
+				locale={locale}
+				navigation={navigation}
+				trayCount={trayCount}
+				trayOpen={trayOpen}
+				onToggleTray={() => setTrayOpen((open) => !open)}
+			/>
+			<div className="flex min-h-0 flex-1 gap-2 px-2 pb-2">
+				{settings.view === "quarter" || settings.view === "year" ? (
+					<CalendarOverview
+						anchor={anchor}
+						view={settings.view}
+						items={partition.items}
+						locale={locale}
+						dateDisplayFormat={dateDisplayFormat}
+						showWeekends={settings.showWeekends}
+						today={gridState.today}
+						onSelectMonth={navigation.selectMonth}
+					/>
+				) : (
+					<CalendarGrid
+						weeks={weeks}
+						items={visibleItems}
+						context={context}
+						state={gridState}
+						locale={locale}
+					/>
+				)}
+				{trayOpen && (
+					<CalendarTray
+						unscheduled={partition.unscheduled}
+						invalid={partition.invalid}
+						dateProperty={dateProperty}
+						context={context}
+						locale={locale}
+						selectedNotePath={selectedNotePath}
+						onClose={() => setTrayOpen(false)}
+					/>
+				)}
+			</div>
+		</section>
+	);
+}
+
 function CalendarBoard(props: CalendarBoardProps) {
-	const { entries, calendar, locale, dateProperty, selectedNotePath, dateDisplayFormat } = props;
+	const { entries, calendar, locale, dateProperty, selectedNotePath } = props;
 	const { settings } = calendar;
 	const sources = useMemo<CalendarSources>(
 		() => ({ dateProperty, endDateProperty: settings.endDateProperty }),
@@ -258,55 +353,19 @@ function CalendarBoard(props: CalendarBoardProps) {
 			onDragEnd={drag.onDragEnd}
 			onDragCancel={drag.onDragCancel}
 		>
-			<section
-				className="calendar-board flex min-h-0 flex-1 flex-col"
-				aria-label={translate(locale, "calendar.gridLabel", {
-					property: dateProperty,
-				})}
-				data-testid="calendar-board"
-			>
-				<CalendarToolbar
-					title={calendarTitle({ anchor, shownWeek: weeks[0], view: settings.view, locale, dateDisplayFormat })}
-					view={settings.view}
-					locale={locale}
-					navigation={navigation}
-					trayCount={trayCount}
-					trayOpen={trayOpen}
-					onToggleTray={() => setTrayOpen((open) => !open)}
-				/>
-				<div className="flex min-h-0 flex-1 gap-2 px-2 pb-2">
-					{settings.view === "quarter" || settings.view === "year" ? (
-						<CalendarOverview
-							anchor={anchor}
-							view={settings.view}
-							items={partition.items}
-							locale={locale}
-							showWeekends={settings.showWeekends}
-							today={gridState.today}
-							onSelectMonth={navigation.selectMonth}
-						/>
-					) : (
-						<CalendarGrid
-							weeks={weeks}
-							items={visibleItems}
-							context={context}
-							state={gridState}
-							locale={locale}
-						/>
-					)}
-					{trayOpen && (
-						<CalendarTray
-							unscheduled={partition.unscheduled}
-							invalid={partition.invalid}
-							dateProperty={dateProperty}
-							context={context}
-							locale={locale}
-							selectedNotePath={selectedNotePath}
-							onClose={() => setTrayOpen(false)}
-						/>
-					)}
-				</div>
-			</section>
+			<CalendarBoardContent
+				props={props}
+				anchor={anchor}
+				navigation={navigation}
+				trayCount={trayCount}
+				trayOpen={trayOpen}
+				setTrayOpen={setTrayOpen}
+				weeks={weeks}
+				visibleItems={visibleItems}
+				partition={partition}
+				context={context}
+				gridState={gridState}
+			/>
 			{createPortal(
 				<DragOverlay dropAnimation={null} zIndex={12000}>
 					<DragPreview active={drag.active} context={context} />
@@ -325,7 +384,13 @@ export function CalendarLayout(props: CalendarLayoutProps) {
 		return (
 			<CalendarEmptyState calendar={props.calendar} locale={props.locale} />
 		);
-	return <CalendarBoard {...props} dateProperty={dateProperty} dateDisplayFormat={dateDisplayFormat} />;
+	return (
+		<CalendarBoard
+			{...props}
+			dateProperty={dateProperty}
+			dateDisplayFormat={dateDisplayFormat}
+		/>
+	);
 }
 
 /** The configured date property has no values in this list. */
