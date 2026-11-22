@@ -2,9 +2,8 @@
    Tolaria color palette (TOL-406) — the only place raw colors live.
 
    One warm gray plus a 50–950 scale per hue. Every hue shares the same
-   OKLCH lightness ladder, so step N of any hue has the same contrast
-   relationships as step N of every other hue. Blue 600 is the brand
-   primary (#155DFF). Product code uses the semantic roles in
+   OKLCH lightness ladder, with the approved original brand colors anchored
+   at step 500 (blue is #155DFF). Product code uses semantic roles in
    src/index.css, never these steps directly; `pnpm lint:colors` fails on
    raw colors anywhere else.
    ============================================================ */
@@ -13,7 +12,7 @@
   --white: #FFFFFF;
 
   --gray-50: #F8F7F4;
-  --gray-100: #EEEDE9;
+  --gray-100: #F7F6F2;
   --gray-200: #E1DFDB;
   --gray-300: #CCCAC5;
   --gray-400: #AAA7A2;
@@ -24,97 +23,97 @@
   --gray-900: #25231F;
   --gray-950: #191713;
 
-  --red-50: #FEF4F3;
+  --red-50: #FCECEC;
   --red-100: #FFE6E4;
   --red-200: #FFCFCA;
   --red-300: #FFB0A8;
   --red-400: #FF7F76;
-  --red-500: #F14443;
-  --red-600: #CB1222;
+  --red-500: #E53E3E;
+  --red-600: #D4202B;
   --red-700: #A50116;
   --red-800: #741D1C;
   --red-900: #461D1B;
   --red-950: #2E1210;
 
-  --orange-50: #FEF5EE;
+  --orange-50: #FBF1E7;
   --orange-100: #FFE8D9;
   --orange-200: #FFD2B4;
   --orange-300: #FFB480;
   --orange-400: #FA8923;
-  --orange-500: #D26D01;
-  --orange-600: #A55501;
+  --orange-500: #D9730D;
+  --orange-600: #AB5802;
   --orange-700: #844300;
-  --orange-800: #643101;
+  --orange-800: #603000;
   --orange-900: #40230E;
   --orange-950: #2A1608;
 
-  --yellow-50: #FEF6E9;
+  --yellow-50: #FBF5E9;
   --yellow-100: #FDEACC;
   --yellow-200: #FAD79D;
   --yellow-300: #F2BE62;
   --yellow-400: #DC9E08;
-  --yellow-500: #B68103;
-  --yellow-600: #8E6503;
+  --yellow-500: #D69E2E;
+  --yellow-600: #926906;
   --yellow-700: #725000;
-  --yellow-800: #563B00;
+  --yellow-800: #543A00;
   --yellow-900: #38280C;
   --yellow-950: #241A07;
 
-  --green-50: #EDFBF1;
+  --green-50: #EBF6F0;
   --green-100: #D6F6E1;
   --green-200: #B0EEC6;
   --green-300: #7EE0A5;
   --green-400: #44C782;
-  --green-500: #03A763;
-  --green-600: #01824C;
+  --green-500: #38A169;
+  --green-600: #007F49;
   --green-700: #02683C;
   --green-800: #014F2C;
   --green-900: #153221;
   --green-950: #0D2115;
 
-  --blue-50: #F3F7FE;
+  --blue-50: #E8EFFF;
   --blue-100: #E4EDFF;
   --blue-200: #CBDDFE;
   --blue-300: #ABC8FF;
   --blue-400: #7EA9FF;
-  --blue-500: #4A85FF;
-  --blue-600: #155DFF;
-  --blue-700: #0041D3;
-  --blue-800: #13398C;
-  --blue-900: #172A50;
-  --blue-950: #0E1B35;
+  --blue-500: #155DFF;
+  --blue-600: #0041D3;
+  --blue-700: #13398C;
+  --blue-800: #172A50;
+  --blue-900: #0E1B35;
+  --blue-950: #091124;
 
-  --purple-50: #F7F5FF;
+  --purple-50: #F2EDFA;
   --purple-100: #EDEAFF;
   --purple-200: #DED6FF;
   --purple-300: #CABCFF;
   --purple-400: #B196FF;
-  --purple-500: #9767FF;
-  --purple-600: #7A42DD;
+  --purple-500: #805AD5;
+  --purple-600: #7D50D8;
   --purple-700: #622DB9;
   --purple-800: #472E7C;
   --purple-900: #2E2449;
   --purple-950: #1D1730;
 
-  --teal-50: #ECFAF9;
+  --teal-50: #EAF5F4;
   --teal-100: #D4F4F3;
   --teal-200: #ACEAE8;
   --teal-300: #78DBD8;
   --teal-400: #37C1BF;
-  --teal-500: #04A19E;
-  --teal-600: #037D7C;
+  --teal-500: #319795;
+  --teal-600: #027C7B;
   --teal-700: #026463;
   --teal-800: #024B4A;
   --teal-900: #133130;
   --teal-950: #0B201F;
 
-  --pink-50: #FFF3F7;
+  --pink-50: #FBECEF;
   --pink-100: #FFE5EE;
   --pink-200: #FFCCE0;
   --pink-300: #FFAACD;
   --pink-400: #FF73B4;
-  --pink-500: #E54497;
-  --pink-600: #BF1677;
+  --pink-500: #D53F8C;
+  --pink-600: #C8267F;
   --pink-700: #9C015F;
   --pink-800: #6E1D46;
   --pink-900: #431D2E;

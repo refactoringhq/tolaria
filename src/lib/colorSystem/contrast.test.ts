@@ -60,11 +60,43 @@ describe('token contrast', () => {
     }
   })
 
-  it('makes the idle count pill the row hover fill', () => {
+  it('keeps the count pill fill unchanged so it blends into a hovered row', () => {
     for (const theme of ['light', 'dark'] as const) {
       const tokens = themeTokens(sources, theme)
       expect(resolveToken(tokens, '--count-pill-bg')).toBe(resolveToken(tokens, '--state-hover'))
-      expect(resolveToken(tokens, '--count-pill-bg-hover')).not.toBe(resolveToken(tokens, '--state-hover'))
+      expect(resolveToken(tokens, '--count-pill-bg-hover')).toBe(resolveToken(tokens, '--count-pill-bg'))
     }
+  })
+
+  it('keeps the approved legacy brand colors as light-mode accent anchors', () => {
+    const anchors = {
+      red: '#E53E3E', orange: '#D9730D', yellow: '#D69E2E', green: '#38A169',
+      blue: '#155DFF', purple: '#805AD5', teal: '#319795', pink: '#D53F8C',
+    }
+    const tokens = themeTokens(sources, 'light')
+    for (const [hue, hex] of Object.entries(anchors)) {
+      expect(resolveToken(tokens, `--accent-${hue}`)).toBe(hex)
+    }
+  })
+
+  it('keeps dark chip labels close to the 4.5:1 floor with tinted fills', () => {
+    const report = buildContrastReport(sources).filter(
+      (result) => result.theme === 'dark' && result.label.endsWith('chip label'),
+    )
+    expect(report.length).toBeGreaterThan(0)
+    for (const pair of report) {
+      expect(pair.ratio, pair.label).toBeGreaterThanOrEqual(4.5)
+      expect(pair.ratio, pair.label).toBeLessThan(4.8)
+    }
+  })
+
+  it('limits the yellow icon exception to light mode and reports its measured ratio', () => {
+    const yellowRows = buildContrastReport(sources).filter((result) => result.label === 'yellow icon')
+    const lightHover = yellowRows.find((result) => result.theme === 'light' && result.background === '--state-hover')
+    const darkHover = yellowRows.find((result) => result.theme === 'dark' && result.background === '--state-hover')
+    expect(lightHover?.minimum).toBe(2.1)
+    expect(lightHover?.ratio).toBeCloseTo(2.21, 2)
+    expect(darkHover?.minimum).toBe(3)
+    expect(darkHover?.pass).toBe(true)
   })
 })
