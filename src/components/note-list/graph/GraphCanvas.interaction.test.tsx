@@ -24,6 +24,32 @@ describe('GraphCanvas interaction', () => {
     expect(screen.getByRole('application')).not.toHaveAttribute('data-focused-node')
   })
 
+  it('deselects the open note on an empty-canvas click or Escape, though the app keeps it open (TOL-385 QA)', () => {
+    const { rerender, props } = renderCanvas({ selectedNotePath: ada.path, panelOpen: true })
+    pressStage({ sigmaEvent: 'downNode', node: ada.path, release: { clientX: 10, clientY: 10 } })
+    const { graph } = lastRenderer()
+    expect(graph.getNodeAttribute(ada.path, 'highlighted')).toBe(true)
+    pressStage({ sigmaEvent: 'downStage', release: { clientX: 10, clientY: 10 } })
+    rerender(<GraphCanvas {...props} panelOpen={false} />)
+    expect(graph.getNodeAttribute(ada.path, 'highlighted')).toBe(false)
+    expect(label('Ada')).not.toHaveAttribute('data-selected')
+    expect(label('Ada')).not.toHaveAttribute('data-emphasis')
+    pressStage({ sigmaEvent: 'downNode', node: ada.path, release: { clientX: 10, clientY: 10 } })
+    expect(graph.getNodeAttribute(ada.path, 'highlighted')).toBe(true)
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+    expect(graph.getNodeAttribute(ada.path, 'highlighted')).toBe(false)
+  })
+
+  it('keeps the selection through a pan or a wheel zoom', () => {
+    const { props } = renderCanvas({ selectedNotePath: ada.path, panelOpen: true })
+    pressStage({ sigmaEvent: 'downNode', node: ada.path, release: { clientX: 10, clientY: 10 } })
+    pressStage({ sigmaEvent: 'downStage', release: { clientX: 60, clientY: 40 } })
+    fireEvent.wheel(screen.getByTestId('graph-stage'), { deltaY: 100 })
+    expect(props.onBackgroundClick).not.toHaveBeenCalled()
+    expect(lastRenderer().graph.getNodeAttribute(ada.path, 'highlighted')).toBe(true)
+    expect(label('Ada')).toHaveAttribute('data-selected', 'true')
+  })
+
   it('fades everything outside the focused neighbourhood and keeps its labels at any zoom', async () => {
     renderCanvas({ selectedNotePath: ada.path, panelOpen: true })
     pressStage({ sigmaEvent: 'downNode', node: ada.path, release: { clientX: 10, clientY: 10 } })

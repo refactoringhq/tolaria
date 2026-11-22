@@ -16,8 +16,6 @@ export interface GraphDisplay {
 
 /** Theme colors the styles read on every refresh, so a theme switch never rebuilds the renderer. */
 export interface GraphRendererColors {
-  /** Ring around the note open in the editor panel. */
-  highlight: string
   /** The hovered note's fill. */
   accent: string
 }
@@ -80,10 +78,8 @@ export function createGraphRenderer(graph: Graph, container: HTMLElement, option
         size: (attributes) => nodeSize(attributes, options.display()),
         opacity: (attributes) => numberAttribute(attributes, 'fade', 1),
         depth: (attributes) => (numberAttribute(attributes, 'accent', 0) > 0 || attributes.highlighted ? 'topNodes' : 'nodes'),
-        backdropVisibility: (attributes) => (attributes.highlighted ? 'visible' : 'hidden'),
-        backdropColor: () => options.colors().highlight,
-        backdropShadowBlur: 0,
-        backdropPadding: 3,
+        // The open note is drawn larger, with no ring around it.
+        backdropVisibility: 'hidden',
         labelVisibility: 'hidden',
         cursor: 'pointer',
       },

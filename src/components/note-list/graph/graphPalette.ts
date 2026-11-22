@@ -9,8 +9,6 @@ export interface GraphPalette {
   relationshipEdge: string
   wikiLinkEdge: string
   transparent: string
-  /** Ring around the note open in the editor panel. */
-  highlight: string
   /** Fill of the hovered note. */
   accent: string
   /** The first matching color group's color, else the type color. */
@@ -21,7 +19,6 @@ export interface GraphPalette {
 
 const RELATIONSHIP_EDGE_ALPHA = 0.7
 const WIKI_LINK_EDGE_ALPHA = 0.4
-const HIGHLIGHT_ALPHA = 0.35
 const FALLBACK_RGB: readonly number[] = [128, 128, 128]
 
 /** `rgb(1, 2, 3)` / `rgba(1, 2, 3, 0.5)` → `[1, 2, 3]`; anything else falls back to gray. */
@@ -103,7 +100,6 @@ export function readGraphPalette(host: HTMLElement, typeEntryMap: Record<string,
     relationshipEdge: withAlpha(edgeBase, RELATIONSHIP_EDGE_ALPHA),
     wikiLinkEdge: withAlpha(edgeBase, WIKI_LINK_EDGE_ALPHA),
     transparent: 'rgba(0, 0, 0, 0)',
-    highlight: withAlpha(resolve('var(--primary)'), HIGHLIGHT_ALPHA),
     accent: withAlpha(resolve('var(--primary)'), 1),
     nodeColor,
     dispose,
