@@ -1,5 +1,8 @@
 import { type AppLocale, getLocaleDateLocale } from "../../../lib/i18n";
-import { formatDateValueForDisplay, type DateDisplayFormat } from "../../../utils/dateDisplay";
+import {
+	type DateDisplayFormat,
+	formatDateValueForDisplay,
+} from "../../../utils/dateDisplay";
 import {
 	type DateParts,
 	parseDashDateParts,
@@ -172,7 +175,11 @@ function formatter(
 	});
 }
 
-function formatWeekRange(days: DayKey[], locale: AppLocale, dateDisplayFormat: DateDisplayFormat): string {
+function formatWeekRange(
+	days: DayKey[],
+	locale: AppLocale,
+	dateDisplayFormat: DateDisplayFormat,
+): string {
 	if (dateDisplayFormat !== "friendly")
 		return `${formatDateValueForDisplay(days[0], dateDisplayFormat, locale)} – ${formatDateValueForDisplay(days[days.length - 1], dateDisplayFormat, locale)}`;
 	const format = formatter(locale, {
@@ -207,7 +214,8 @@ export function calendarTitle({
 	locale,
 	dateDisplayFormat = "friendly",
 }: CalendarTitleOptions): string {
-	if (view === "week") return formatWeekRange(shownWeek, locale, dateDisplayFormat);
+	if (view === "week")
+		return formatWeekRange(shownWeek, locale, dateDisplayFormat);
 	if (view === "quarter") {
 		const { year, month } = partsFromKey(anchor);
 		const firstMonth = Math.floor((month - 1) / 3) * 3 + 1;
@@ -232,7 +240,7 @@ export function calendarTitle({
 	}
 	if (view === "year")
 		return formatter(locale, { year: "numeric" }).format(utcDate(anchor));
-	return formatter(locale, { month: "long", year: "numeric" }).format(
+	return formatter(locale, { month: "short", year: "numeric" }).format(
 		utcDate(anchor),
 	);
 }

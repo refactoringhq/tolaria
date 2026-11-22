@@ -57,10 +57,22 @@ describe("calendarDates", () => {
 		expect(visibleWeeks("2026-11-19", "year", 1)).toHaveLength(53);
 		expect(shiftAnchor("2026-11-19", "quarter", 1)).toBe("2027-02-01");
 		expect(shiftAnchor("2026-11-19", "year", -1)).toBe("2025-11-01");
-		expect(calendarTitle({ anchor: "2026-11-19", shownWeek: [], view: "quarter", locale: "en" })).toMatch(
-			/Oct 1.*Dec 31, 2026/,
-		);
-		expect(calendarTitle({ anchor: "2026-11-19", shownWeek: [], view: "year", locale: "en" })).toBe("2026");
+		expect(
+			calendarTitle({
+				anchor: "2026-11-19",
+				shownWeek: [],
+				view: "quarter",
+				locale: "en",
+			}),
+		).toMatch(/Oct 1.*Dec 31, 2026/);
+		expect(
+			calendarTitle({
+				anchor: "2026-11-19",
+				shownWeek: [],
+				view: "year",
+				locale: "en",
+			}),
+		).toBe("2026");
 	});
 
 	it("moves a month or a week at a time", () => {
@@ -69,23 +81,53 @@ describe("calendarDates", () => {
 		expect(shiftAnchor("2026-11-19", "week", -1)).toBe("2026-11-12");
 	});
 
-	it("titles the view and weekdays with Intl for the active locale", () => {
+	it("uses compact localized month headings", () => {
+		expect(
+			calendarTitle({
+				anchor: "2026-11-19",
+				shownWeek: [],
+				view: "month",
+				locale: "en",
+			}),
+		).toBe("Nov 2026");
+		expect(
+			calendarTitle({
+				anchor: "2026-11-19",
+				shownWeek: [],
+				view: "month",
+				locale: "it-IT",
+			}),
+		).toBe("nov 2026");
+	});
+
+	it("titles week and quarter views and weekdays for the active locale", () => {
 		const week = visibleWeeks("2026-11-19", "week", 1)[0];
-		expect(calendarTitle({ anchor: "2026-11-19", shownWeek: week, view: "month", locale: "en" })).toBe(
-			"November 2026",
-		);
-		expect(calendarTitle({ anchor: "2026-11-19", shownWeek: week, view: "month", locale: "it-IT" })).toBe(
-			"novembre 2026",
-		);
-		expect(calendarTitle({ anchor: "2026-11-19", shownWeek: week, view: "week", locale: "en" })).toMatch(
-			/^Nov 16\s*–\s*22, 2026$/,
-		);
-		expect(calendarTitle({ anchor: "2026-11-19", shownWeek: week, view: "week", locale: "en", dateDisplayFormat: "us" })).toBe(
-			"11/16/2026 – 11/22/2026",
-		);
-		expect(calendarTitle({ anchor: "2026-11-19", shownWeek: week, view: "week", locale: "en", dateDisplayFormat: "iso" })).toBe(
-			"2026-11-16 – 2026-11-22",
-		);
+		expect(
+			calendarTitle({
+				anchor: "2026-11-19",
+				shownWeek: week,
+				view: "week",
+				locale: "en",
+			}),
+		).toMatch(/^Nov 16\s*–\s*22, 2026$/);
+		expect(
+			calendarTitle({
+				anchor: "2026-11-19",
+				shownWeek: week,
+				view: "week",
+				locale: "en",
+				dateDisplayFormat: "us",
+			}),
+		).toBe("11/16/2026 – 11/22/2026");
+		expect(
+			calendarTitle({
+				anchor: "2026-11-19",
+				shownWeek: week,
+				view: "week",
+				locale: "en",
+				dateDisplayFormat: "iso",
+			}),
+		).toBe("2026-11-16 – 2026-11-22");
 		expect(
 			calendarTitle({
 				anchor: "2026-11-19",
