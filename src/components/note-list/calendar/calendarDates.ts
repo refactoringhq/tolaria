@@ -195,7 +195,7 @@ function formatWeekRange(
 }
 
 /**
- * The toolbar title: "November 2026" in month view, the shown days in week view ("Nov 16 – 22, 2026",
+ * The toolbar title: "Nov 2026" in month view, the shown days in week view ("Nov 16 – 22, 2026",
  * or "Nov 16 – 20, 2026" without weekends), localized.
  */
 

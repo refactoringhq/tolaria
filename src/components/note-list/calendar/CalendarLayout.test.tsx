@@ -101,9 +101,7 @@ describe("CalendarLayout", () => {
 
 	it("opens on the current month with today highlighted and neighbouring days muted", () => {
 		renderCalendar();
-		expect(screen.getByTestId("calendar-title")).toHaveTextContent(
-			"November 2026",
-		);
+		expect(screen.getByTestId("calendar-title")).toHaveTextContent("Nov 2026");
 		expect(screen.getAllByTestId("calendar-week")).toHaveLength(5);
 		expect(
 			day("2026-11-19").querySelector('[aria-current="date"]'),
@@ -115,9 +113,7 @@ describe("CalendarLayout", () => {
 
 	it("starts weeks on Monday with localized names in Italian", () => {
 		renderCalendar({ locale: "it-IT" });
-		expect(screen.getByTestId("calendar-title")).toHaveTextContent(
-			"novembre 2026",
-		);
+		expect(screen.getByTestId("calendar-title")).toHaveTextContent("nov 2026");
 		expect(screen.getAllByTestId("calendar-day")[0].dataset.day).toBe(
 			"2026-10-26",
 		);
@@ -196,23 +192,15 @@ describe("CalendarLayout", () => {
 	it("moves by month, week and back to today with buttons and keyboard shortcuts", () => {
 		const { calendar } = renderCalendar();
 		fireEvent.click(screen.getByTestId("calendar-next"));
-		expect(screen.getByTestId("calendar-title")).toHaveTextContent(
-			"December 2026",
-		);
+		expect(screen.getByTestId("calendar-title")).toHaveTextContent("Dec 2026");
 		fireEvent.keyDown(window, { key: "ArrowRight" });
-		expect(screen.getByTestId("calendar-title")).toHaveTextContent(
-			"January 2027",
-		);
+		expect(screen.getByTestId("calendar-title")).toHaveTextContent("Jan 2027");
 		fireEvent.keyDown(window, { key: "ArrowLeft" });
 		fireEvent.click(screen.getByTestId("calendar-previous"));
-		expect(screen.getByTestId("calendar-title")).toHaveTextContent(
-			"November 2026",
-		);
+		expect(screen.getByTestId("calendar-title")).toHaveTextContent("Nov 2026");
 		fireEvent.click(screen.getByTestId("calendar-next"));
 		fireEvent.keyDown(window, { key: "t" });
-		expect(screen.getByTestId("calendar-title")).toHaveTextContent(
-			"November 2026",
-		);
+		expect(screen.getByTestId("calendar-title")).toHaveTextContent("Nov 2026");
 		fireEvent.keyDown(window, { key: "w" });
 		expect(calendar.onSettingsChange).toHaveBeenCalledWith({ view: "week" });
 		expect(trackEvent).toHaveBeenCalledWith("calendar_view_changed", {
@@ -234,9 +222,7 @@ describe("CalendarLayout", () => {
 		document.body.appendChild(input);
 		fireEvent.keyDown(input, { key: "ArrowRight" });
 		fireEvent.keyDown(window, { key: "ArrowRight", metaKey: true });
-		expect(screen.getByTestId("calendar-title")).toHaveTextContent(
-			"November 2026",
-		);
+		expect(screen.getByTestId("calendar-title")).toHaveTextContent("Nov 2026");
 		input.remove();
 	});
 
