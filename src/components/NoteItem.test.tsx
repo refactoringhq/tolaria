@@ -2,6 +2,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NoteItem } from './NoteItem'
 import { makeEntry } from '../test-utils/noteListTestUtils'
+import type { WorkspaceIdentity } from '../types'
 
 vi.mock('../utils/url', async () => {
   const actual = await vi.importActual('../utils/url') as typeof import('../utils/url')
@@ -13,6 +14,12 @@ const { openExternalUrl } = await import('../utils/url') as typeof import('../ut
 }
 
 const NOW_SECONDS = 1_744_286_400
+
+type WorkspaceFixture = Pick<WorkspaceIdentity, 'id' | 'label' | 'shortLabel' | 'color' | 'defaultForNewNotes'>
+
+function makeWorkspace(fixture: WorkspaceFixture): WorkspaceIdentity {
+  return { ...fixture, alias: fixture.id, path: `/${fixture.id}`, icon: null, mounted: true, available: true }
+}
 
 describe('NoteItem', () => {
   beforeEach(() => {
@@ -120,8 +127,7 @@ describe('NoteItem', () => {
 
     render(<NoteItem entry={textEntry} isSelected={false} typeEntryMap={{}} onClickNote={onClickNote} />)
 
-    const item = screen.getByText('config.yml').closest('div')!
-    fireEvent.click(item)
+    fireEvent.click(screen.getByText('config.yml'))
     expect(onClickNote).toHaveBeenCalled()
   })
 
@@ -266,30 +272,8 @@ describe('NoteItem', () => {
   it('shows the workspace badge after the creation date as an outlined badge', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(NOW_SECONDS * 1000))
-    const personalWorkspace = {
-      id: 'personal',
-      label: 'Personal',
-      alias: 'personal',
-      path: '/personal',
-      shortLabel: 'PE',
-      color: 'blue',
-      icon: null,
-      mounted: true,
-      available: true,
-      defaultForNewNotes: true,
-    }
-    const launchWorkspace = {
-      id: 'launch',
-      label: 'Launch',
-      alias: 'launch',
-      path: '/launch',
-      shortLabel: 'LA',
-      color: 'red',
-      icon: null,
-      mounted: true,
-      available: true,
-      defaultForNewNotes: false,
-    }
+    const personalWorkspace = makeWorkspace({ id: 'personal', label: 'Personal', shortLabel: 'PE', color: 'blue', defaultForNewNotes: true })
+    const launchWorkspace = makeWorkspace({ id: 'launch', label: 'Launch', shortLabel: 'LA', color: 'red', defaultForNewNotes: false })
     const entry = makeEntry({
       title: 'Campaigns',
       createdAt: NOW_SECONDS - 600,
