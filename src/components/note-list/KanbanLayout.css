@@ -68,6 +68,10 @@
     transform 160ms ease;
 }
 
+.kanban-card [data-testid="property-chips"] {
+  margin-top: 0.5rem;
+}
+
 .kanban-card-slot:hover .kanban-card {
   border-color: var(--border-strong, var(--border));
   box-shadow: 0 2px 6px -2px var(--shadow-soft);
