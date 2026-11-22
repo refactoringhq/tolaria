@@ -36,9 +36,9 @@
 }
 
 /* The AI panel (TOL-409) lives inside the editor panel. With a note open, the panel widens so the note keeps its room
-   beside the AI panel. */
+   beside the AI panel, within the same 72% cap that keeps the sidebar uncovered. */
 .app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"], [data-collection-layout="graph"])):has(.app__editor [data-ai-workspace-mode="side"]) .app__editor {
-  width: min(1120px, 88%);
+  width: min(1120px, 72%);
 }
 
 /* With no note open, only the AI panel shows: it docks beside the layout, which shrinks to keep every column usable,
