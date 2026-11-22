@@ -6,10 +6,10 @@ import { injectMobileEditorAppearance } from './useEditorAppearance'
 describe('rich editor appearance', () => {
   it('uses desktop dark tokens in the actual WebView stylesheet', () => {
     const css = mobileTentapEditorCss(false, null, mobilePalettes.dark)
-    expect(css).toContain('background: #1F1E1B')
-    expect(css).toContain('color: #E6E1D8')
-    expect(css).toContain('caret-color: #78A4FF')
-    expect(css).toContain('1px solid #34322D')
+    expect(css).toContain('background: #25231F')
+    expect(css).toContain('color: #E1DFDB')
+    expect(css).toContain('caret-color: #7EA9FF')
+    expect(css).toContain('1px solid #32302B')
     expect(css).not.toContain('#FFFFFF')
   })
 

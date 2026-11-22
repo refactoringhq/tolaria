@@ -2,10 +2,21 @@ import postcss from 'postcss'
 
 type Variables = Record<string, string>
 
+// Desktop theme entry, relative to the repository root. Its local `@import`s (the raw
+// `:root` palette, syntax colors) are inlined so every role resolves.
+export const desktopThemeEntry = 'src/index.css'
+
+export function readDesktopThemeCss(read: (path: string) => string, path: string = desktopThemeEntry): string {
+  const directory = path.slice(0, path.lastIndexOf('/') + 1)
+  return read(path).replace(/@import\s+["']\.\/([^"']+\.css)["'];/g, (_match, file: string) =>
+    readDesktopThemeCss(read, `${directory}${file}`))
+}
+
 // Build/test only. The native runtime imports the generated JSON, never CSS parsers.
 export function parseDesktopThemes(css: string) {
   const root = postcss.parse(css)
-  const light = readTheme(root, 'light')
+  const palette = readPalette(root)
+  const light = new Map([...palette, ...readTheme(root, 'light')])
   const dark = new Map([...light, ...readTheme(root, 'dark')])
   return {
     light: resolveTheme(light),
@@ -13,15 +24,24 @@ export function parseDesktopThemes(css: string) {
   }
 }
 
+function readPalette(root: postcss.Root) {
+  return readVariables(root, (selectors) => selectors.length === 1 && selectors[0] === ':root')
+}
+
 function readTheme(root: postcss.Root, mode: 'light' | 'dark') {
+  const variables = readVariables(root, (selectors) => selectors.includes(`[data-theme="${mode}"]`))
+  if (variables.size === 0) throw new Error(`Missing desktop ${mode} theme`)
+  return variables
+}
+
+function readVariables(root: postcss.Root, matches: (selectors: string[]) => boolean) {
   const variables = new Map<string, string>()
   root.walkRules((rule) => {
-    if (!rule.selectors.includes(`[data-theme="${mode}"]`)) return
+    if (!matches(rule.selectors)) return
     rule.walkDecls((declaration) => {
       if (declaration.prop.startsWith('--')) variables.set(declaration.prop, declaration.value)
     })
   })
-  if (variables.size === 0) throw new Error(`Missing desktop ${mode} theme`)
   return variables
 }
 
