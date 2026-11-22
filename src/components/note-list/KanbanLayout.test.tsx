@@ -74,6 +74,26 @@ describe("KanbanLayout", () => {
 		).not.toBeInTheDocument();
 	});
 
+	it("renders shared status chips with a visible dot", () => {
+		const entry = makeEntry({
+			path: "/vault/status.md",
+			title: "Status note",
+			status: "Doing",
+		});
+		renderBoard({
+			entries: [entry],
+			allEntries: [entry],
+			properties: ["status"],
+		});
+
+		const card = screen.getByRole("button", { name: "Status note" });
+		const chip = within(card).getByTestId("property-chip-status-0");
+		expect(chip).toHaveTextContent("Doing");
+		expect(chip.querySelector('[data-testid="status-chip-dot"]')).toHaveClass(
+			"size-1.5",
+		);
+	});
+
 	it("shows the note icon before the title and keeps iconless titles unchanged", () => {
 		const withIcon = makeEntry({
 			path: "/vault/icon.md",
@@ -98,6 +118,9 @@ describe("KanbanLayout", () => {
 			iconCard.querySelector('[data-testid="kanban-card-title"]')
 				?.firstElementChild,
 		).toContainElement(icon);
+		const titleRow = within(iconCard).getByTestId("kanban-card-title");
+		expect(titleRow).toHaveClass("items-start", "gap-2");
+		expect(titleRow.lastElementChild).toHaveClass("line-clamp-2");
 		expect(
 			within(screen.getByRole("button", { name: "Plain note" })).queryByTestId(
 				"kanban-card-title-icon",
