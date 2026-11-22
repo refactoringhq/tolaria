@@ -1,4 +1,5 @@
 import { type AppLocale, getLocaleDateLocale } from "../../../lib/i18n";
+import { formatDateValueForDisplay, type DateDisplayFormat } from "../../../utils/dateDisplay";
 import {
 	type DateParts,
 	parseDashDateParts,
@@ -171,7 +172,9 @@ function formatter(
 	});
 }
 
-function formatWeekRange(days: DayKey[], locale: AppLocale): string {
+function formatWeekRange(days: DayKey[], locale: AppLocale, dateDisplayFormat: DateDisplayFormat): string {
+	if (dateDisplayFormat !== "friendly")
+		return `${formatDateValueForDisplay(days[0], dateDisplayFormat, locale)} – ${formatDateValueForDisplay(days[days.length - 1], dateDisplayFormat, locale)}`;
 	const format = formatter(locale, {
 		month: "short",
 		day: "numeric",
@@ -188,13 +191,23 @@ function formatWeekRange(days: DayKey[], locale: AppLocale): string {
  * The toolbar title: "November 2026" in month view, the shown days in week view ("Nov 16 – 22, 2026",
  * or "Nov 16 – 20, 2026" without weekends), localized.
  */
-export function calendarTitle(
-	anchor: DayKey,
-	shownWeek: DayKey[],
-	view: CalendarView,
-	locale: AppLocale,
-): string {
-	if (view === "week") return formatWeekRange(shownWeek, locale);
+
+interface CalendarTitleOptions {
+	anchor: DayKey;
+	shownWeek: DayKey[];
+	view: CalendarView;
+	locale: AppLocale;
+	dateDisplayFormat?: DateDisplayFormat;
+}
+
+export function calendarTitle({
+	anchor,
+	shownWeek,
+	view,
+	locale,
+	dateDisplayFormat = "friendly",
+}: CalendarTitleOptions): string {
+	if (view === "week") return formatWeekRange(shownWeek, locale, dateDisplayFormat);
 	if (view === "quarter") {
 		const { year, month } = partsFromKey(anchor);
 		const firstMonth = Math.floor((month - 1) / 3) * 3 + 1;
@@ -206,6 +219,8 @@ export function calendarTitle(
 				day: new Date(Date.UTC(year, firstMonth + 2, 0)).getUTCDate(),
 			}),
 		);
+		if (dateDisplayFormat !== "friendly")
+			return `${formatDateValueForDisplay(dayKeyFromParts({ year, month: firstMonth, day: 1 }), dateDisplayFormat, locale)} – ${formatDateValueForDisplay(dayKeyFromParts({ year, month: firstMonth + 3, day: 0 }), dateDisplayFormat, locale)}`;
 		const format = formatter(locale, {
 			month: "short",
 			day: "numeric",

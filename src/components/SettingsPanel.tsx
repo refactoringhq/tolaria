@@ -21,6 +21,7 @@ import {
   APP_LOCALES,
   SYSTEM_UI_LANGUAGE,
   createTranslator,
+  type TranslationKey,
   localeDisplayName,
   resolveEffectiveLocale,
   serializeUiLanguagePreference,
@@ -63,7 +64,7 @@ import {
   type AllNotesFileVisibility,
 } from '../utils/allNotesFileVisibility'
 import { DEFAULT_NOTE_WIDTH_MODE, normalizeNoteWidthMode } from '../utils/noteWidth'
-import { DEFAULT_DATE_DISPLAY_FORMAT, normalizeDateDisplayFormat, type DateDisplayFormat } from '../utils/dateDisplay'
+import { DATE_DISPLAY_FORMATS, DEFAULT_DATE_DISPLAY_FORMAT, normalizeDateDisplayFormat, type DateDisplayFormat } from '../utils/dateDisplay'
 import { Button } from './ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import type { NoteWidthMode } from '../types'
@@ -660,7 +661,7 @@ function SettingsBody(props: SettingsBodyProps) {
 }
 
 function SettingsSyncAndAppearanceSections(options: SettingsBodyProps) {
-  const { t, locale, systemLocale, multiWorkspaceEnabled, setMultiWorkspaceEnabled, vaults, defaultWorkspacePath, onRemoveVault, onReorderVaults, onSetDefaultWorkspace, onUpdateWorkspaceIdentity, themeMode, setThemeMode, uiLanguage, setUiLanguage } = options
+  const { t, locale, systemLocale, multiWorkspaceEnabled, setMultiWorkspaceEnabled, vaults, defaultWorkspacePath, onRemoveVault, onReorderVaults, onSetDefaultWorkspace, onUpdateWorkspaceIdentity, themeMode, setThemeMode, uiLanguage, setUiLanguage, dateDisplayFormat, setDateDisplayFormat } = options
   return (
     <>
       <SettingsSection id={SETTINGS_SECTION_IDS.sync} showDivider={false}>
@@ -691,7 +692,13 @@ function SettingsSyncAndAppearanceSections(options: SettingsBodyProps) {
       <SettingsSection id={SETTINGS_SECTION_IDS.appearance}>
         <SectionHeading title={t('settings.appearance.title')} />
         <SettingsGroup>
-          <AppearanceSettingsSection t={t} themeMode={themeMode} setThemeMode={setThemeMode} />
+          <AppearanceSettingsSection
+            t={t}
+            themeMode={themeMode}
+            setThemeMode={setThemeMode}
+            dateDisplayFormat={dateDisplayFormat}
+            setDateDisplayFormat={setDateDisplayFormat}
+          />
           <LanguageSettingsSection
             t={t}
             locale={locale}
@@ -706,13 +713,11 @@ function SettingsSyncAndAppearanceSections(options: SettingsBodyProps) {
 }
 
 function SettingsContentSections(options: SettingsBodyProps) {
-  const { t, dateDisplayFormat, setDateDisplayFormat, defaultNoteWidth, setDefaultNoteWidth, sidebarTypePluralizationEnabled, setSidebarTypePluralizationEnabled, initialH1AutoRename, setInitialH1AutoRename, hideGitignoredFiles, setHideGitignoredFiles, allNotesFileVisibility, setAllNotesFileVisibility } = options
+  const { t, defaultNoteWidth, setDefaultNoteWidth, sidebarTypePluralizationEnabled, setSidebarTypePluralizationEnabled, initialH1AutoRename, setInitialH1AutoRename, hideGitignoredFiles, setHideGitignoredFiles, allNotesFileVisibility, setAllNotesFileVisibility } = options
   return (
     <SettingsSection id={SETTINGS_SECTION_IDS.content}>
       <VaultContentSettingsSection
         t={t}
-        dateDisplayFormat={dateDisplayFormat}
-        setDateDisplayFormat={setDateDisplayFormat}
         defaultNoteWidth={defaultNoteWidth}
         setDefaultNoteWidth={setDefaultNoteWidth}
         sidebarTypePluralizationEnabled={sidebarTypePluralizationEnabled}
@@ -836,11 +841,30 @@ function AppearanceSettingsSection({
   t,
   themeMode,
   setThemeMode,
-}: Pick<SettingsBodyProps, 't' | 'themeMode' | 'setThemeMode'>) {
+  dateDisplayFormat,
+  setDateDisplayFormat,
+}: Pick<SettingsBodyProps, 't' | 'themeMode' | 'setThemeMode' | 'dateDisplayFormat' | 'setDateDisplayFormat'>) {
+  const dateFormatLabels: Record<DateDisplayFormat, TranslationKey> = {
+    us: 'settings.dateDisplay.us',
+    european: 'settings.dateDisplay.european',
+    friendly: 'settings.dateDisplay.friendly',
+    iso: 'settings.dateDisplay.iso',
+  }
   return (
-    <SettingsRow label={t('settings.theme.label')} description={t('settings.appearance.description')}>
-      <ThemeModeControl value={themeMode} onChange={setThemeMode} t={t} />
-    </SettingsRow>
+    <>
+      <SettingsRow label={t('settings.theme.label')} description={t('settings.appearance.description')}>
+        <ThemeModeControl value={themeMode} onChange={setThemeMode} t={t} />
+      </SettingsRow>
+      <SettingsRow label={t('settings.dateDisplay.default')} description={t('settings.dateDisplay.defaultDescription')}>
+        <SelectControl
+          ariaLabel={t('settings.dateDisplay.default')}
+          value={dateDisplayFormat}
+          onValueChange={(value) => setDateDisplayFormat(value as DateDisplayFormat)}
+          options={DATE_DISPLAY_FORMATS.map((value) => ({ value, label: t(dateFormatLabels[value]) }))}
+          testId="settings-date-display-format"
+        />
+      </SettingsRow>
+    </>
   )
 }
 

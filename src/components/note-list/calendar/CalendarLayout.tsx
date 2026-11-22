@@ -8,6 +8,8 @@ import type {
 	CollectionLayoutSharedProps,
 } from "../../../collections/layoutRegistry";
 import { type AppLocale, translate } from "../../../lib/i18n";
+import { useDateDisplayFormat } from "../../../hooks/useAppPreferences";
+import type { DateDisplayFormat } from "../../../utils/dateDisplay";
 import { trackEvent } from "../../../lib/telemetry";
 import type { VaultEntry } from "../../../types";
 import { useKanbanSensors } from "../useKanbanDrag";
@@ -55,6 +57,7 @@ export interface CalendarLayoutProps extends CollectionLayoutSharedProps {
 
 interface CalendarBoardProps extends CalendarLayoutProps {
 	dateProperty: string;
+	dateDisplayFormat: DateDisplayFormat;
 }
 
 function shownWeeks(
@@ -205,7 +208,7 @@ function DragPreview({
 }
 
 function CalendarBoard(props: CalendarBoardProps) {
-	const { entries, calendar, locale, dateProperty, selectedNotePath } = props;
+	const { entries, calendar, locale, dateProperty, selectedNotePath, dateDisplayFormat } = props;
 	const { settings } = calendar;
 	const sources = useMemo<CalendarSources>(
 		() => ({ dateProperty, endDateProperty: settings.endDateProperty }),
@@ -263,7 +266,7 @@ function CalendarBoard(props: CalendarBoardProps) {
 				data-testid="calendar-board"
 			>
 				<CalendarToolbar
-					title={calendarTitle(anchor, weeks[0], settings.view, locale)}
+					title={calendarTitle({ anchor, shownWeek: weeks[0], view: settings.view, locale, dateDisplayFormat })}
 					view={settings.view}
 					locale={locale}
 					navigation={navigation}
@@ -316,12 +319,13 @@ function CalendarBoard(props: CalendarBoardProps) {
 
 /** Notes placed on the days of a date property, in a month or week grid (TOL-381). */
 export function CalendarLayout(props: CalendarLayoutProps) {
+	const dateDisplayFormat = useDateDisplayFormat();
 	const { dateProperty } = props.calendar;
 	if (!dateProperty)
 		return (
 			<CalendarEmptyState calendar={props.calendar} locale={props.locale} />
 		);
-	return <CalendarBoard {...props} dateProperty={dateProperty} />;
+	return <CalendarBoard {...props} dateProperty={dateProperty} dateDisplayFormat={dateDisplayFormat} />;
 }
 
 /** The configured date property has no values in this list. */

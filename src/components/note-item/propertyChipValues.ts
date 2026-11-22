@@ -1,5 +1,6 @@
 import type { ComponentType, CSSProperties, SVGAttributes } from 'react'
 import type { VaultEntry } from '../../types'
+import type { AppLocale } from '../../lib/i18n'
 import { DEFAULT_DATE_DISPLAY_FORMAT, type DateDisplayFormat } from '../../utils/dateDisplay'
 import { detectPropertyType, formatDateValue } from '../../utils/propertyTypes'
 import { getMappedStatusStyle } from '../../utils/statusStyles'
@@ -21,6 +22,7 @@ export interface PropertyChipResolveContext {
   allEntries: VaultEntry[]
   typeEntryMap: Record<string, VaultEntry>
   dateDisplayFormat?: DateDisplayFormat
+  appLocale?: AppLocale
 }
 
 const URL_CHIP_STYLE: CSSProperties = {
@@ -134,8 +136,8 @@ function resolveScalarChip(value: unknown): PropertyChipValue | null {
   }
 }
 
-function resolveDateChip(value: ChipScalarValue, dateDisplayFormat: DateDisplayFormat): PropertyChipValue | null {
-  const label = truncateChipLabel(formatDateValue(String(value), dateDisplayFormat))
+function resolveDateChip(value: ChipScalarValue, dateDisplayFormat: DateDisplayFormat, appLocale?: AppLocale): PropertyChipValue | null {
+  const label = truncateChipLabel(formatDateValue(String(value), dateDisplayFormat, appLocale))
   if (!label) return null
 
   return {
@@ -165,11 +167,12 @@ function resolvePropertyValueChip(
   propName: string,
   value: ChipScalarValue | undefined,
   dateDisplayFormat: DateDisplayFormat,
+  appLocale?: AppLocale,
 ): PropertyChipValue | null {
   if (value === undefined) return null
   const displayMode = detectPropertyType(propName, value)
   if (displayMode === 'status') return resolveStatusChip(value)
-  if (displayMode === 'date') return resolveDateChip(value, dateDisplayFormat)
+  if (displayMode === 'date') return resolveDateChip(value, dateDisplayFormat, appLocale)
   return resolveScalarChip(value)
 }
 
@@ -191,6 +194,7 @@ function resolveScalarChipValues(
   entry: VaultEntry,
   propName: string,
   dateDisplayFormat: DateDisplayFormat,
+  appLocale?: AppLocale,
 ): PropertyChipValue[] {
   const propertyKey = findMatchingKey(entry.properties, propName)
   if (!propertyKey) return []
@@ -198,7 +202,7 @@ function resolveScalarChipValues(
   const rawValue = Reflect.get(entry.properties, propertyKey) as unknown
   const values = Array.isArray(rawValue) ? rawValue : [rawValue]
   return values
-    .map((value) => resolvePropertyValueChip(propertyKey, value, dateDisplayFormat))
+    .map((value) => resolvePropertyValueChip(propertyKey, value, dateDisplayFormat, appLocale))
     .filter((chip): chip is PropertyChipValue => chip !== null)
 }
 
@@ -208,13 +212,14 @@ export function resolvePropertyChipValues(
   context: PropertyChipResolveContext,
 ): PropertyChipValue[] {
   const dateDisplayFormat = context.dateDisplayFormat ?? DEFAULT_DATE_DISPLAY_FORMAT
+  const appLocale = context.appLocale
   if (propName.toLowerCase() === 'status') {
-    const statusChip = resolvePropertyValueChip(propName, entry.status, dateDisplayFormat)
+    const statusChip = resolvePropertyValueChip(propName, entry.status, dateDisplayFormat, appLocale)
     return statusChip ? [statusChip] : []
   }
 
   return resolveRelationshipChipValues(entry, propName, context.allEntries, context.typeEntryMap)
-    ?? resolveScalarChipValues(entry, propName, dateDisplayFormat)
+    ?? resolveScalarChipValues(entry, propName, dateDisplayFormat, appLocale)
 }
 
 export function resolvePropertyChipLabels(

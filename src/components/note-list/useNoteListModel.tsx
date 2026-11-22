@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react'
 import { collectionFromSelection } from '../../collections/collectionFromSelection'
-import { useDateDisplayFormat } from '../../hooks/useAppPreferences'
+import { useAppLocale, useDateDisplayFormat } from '../../hooks/useAppPreferences'
 import type { MultiSelectState } from '../../hooks/useMultiSelect'
 import type { ImmediateCreateOptions } from '../../hooks/useNoteCreation'
 import { prefetchNoteContent } from '../../hooks/useTabManagement'
@@ -129,15 +129,7 @@ interface UseNoteListContentParams {
   allNotesFileVisibility?: AllNotesFileVisibility
 }
 
-function useFilteredNoteListSearch({
-  entries,
-  sortedEntries,
-  sortedGroups,
-  query,
-  typeEntryMap,
-  displayPropsOverride,
-  dateDisplayFormat,
-}: {
+function useFilteredNoteListSearch(options: {
   entries: VaultEntry[]
   sortedEntries: VaultEntry[]
   sortedGroups: RelationshipGroup[]
@@ -145,7 +137,9 @@ function useFilteredNoteListSearch({
   typeEntryMap: Record<string, VaultEntry>
   displayPropsOverride?: string[] | null
   dateDisplayFormat: ReturnType<typeof useDateDisplayFormat>
+  appLocale: ReturnType<typeof useAppLocale>
 }) {
+  const { entries, sortedEntries, sortedGroups, query, typeEntryMap, displayPropsOverride, dateDisplayFormat, appLocale } = options
   const fullTextSearch = useNoteListFullTextSearch(entries, query)
   const searchContext = useMemo(
     () => ({
@@ -153,9 +147,10 @@ function useFilteredNoteListSearch({
     typeEntryMap,
     displayPropsOverride,
     dateDisplayFormat,
+    appLocale,
     fullTextResultPaths: fullTextSearch.resultPaths,
     }),
-    [dateDisplayFormat, displayPropsOverride, entries, fullTextSearch.resultPaths, typeEntryMap],
+    [appLocale, dateDisplayFormat, displayPropsOverride, entries, fullTextSearch.resultPaths, typeEntryMap],
   )
   const searched = useMemo(
     () => filterEntriesByNoteListQuery(sortedEntries, query, searchContext),
@@ -176,6 +171,7 @@ function useFilteredNoteListSearch({
 function useNoteListContent(options: UseNoteListContentParams) {
   const { entries, selection, noteListFilter, inboxPeriod, isInboxView, selectedNotePath, visibleNotesRef } = options
   const dateDisplayFormat = useDateDisplayFormat()
+  const appLocale = useAppLocale()
   const subFilter = selection.kind === 'sectionGroup' || selection.kind === 'folder' ? noteListFilter : undefined
   const scopedOptions = { ...options, subFilter, inboxPeriod: isInboxView ? inboxPeriod : undefined }
   const sort = useNoteListSort(scopedOptions)
@@ -191,6 +187,7 @@ function useNoteListContent(options: UseNoteListContentParams) {
     typeEntryMap,
     displayPropsOverride: properties.displayPropsOverride,
     dateDisplayFormat,
+    appLocale,
   })
   const visibleEntries = useVisibleNotesSync({
     visibleNotesRef,

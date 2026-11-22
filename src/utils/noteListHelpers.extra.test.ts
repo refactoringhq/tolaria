@@ -72,9 +72,9 @@ describe('noteListHelpers extra coverage', () => {
       outgoingLinks: [],
     })
 
-    expect(formatSubtitle(modifiedEntry)).toBe('April 21, 2026 · 1,200 words · 2 links')
+    expect(formatSubtitle(modifiedEntry)).toBe('Apr 21, 2026 · 1,200 words · 2 links')
     expect(formatSubtitle(emptyEntry)).toBe('Empty')
-    expect(formatSearchSubtitle(modifiedEntry)).toBe('April 21, 2026 · Created April 19, 2026 · 1,200 words · 2 links')
+    expect(formatSearchSubtitle(modifiedEntry)).toBe('Apr 21, 2026 · Created Apr 19, 2026 · 1,200 words · 2 links')
   })
 
   it('keeps note subtitle counts stable under non-English default number formatting', () => {
@@ -95,8 +95,8 @@ describe('noteListHelpers extra coverage', () => {
       outgoingLinks: ['alpha', 'beta'],
     })
 
-    expect(formatSubtitle(entry)).toBe('April 21, 2026 · 1,200 words · 2 links')
-    expect(formatSearchSubtitle(entry)).toBe('April 21, 2026 · Created April 19, 2026 · 1,200 words · 2 links')
+    expect(formatSubtitle(entry)).toBe('Apr 21, 2026 · 1,200 words · 2 links')
+    expect(formatSearchSubtitle(entry)).toBe('Apr 21, 2026 · Created Apr 19, 2026 · 1,200 words · 2 links')
     expect(formatSubtitle(entry, 'iso')).toBe('2026-04-21 · 1,200 words · 2 links')
     expect(formatSearchSubtitle(entry, 'european')).toBe('21/4/2026 · Created 19/4/2026 · 1,200 words · 2 links')
   })

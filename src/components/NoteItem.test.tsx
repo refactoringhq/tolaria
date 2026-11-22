@@ -265,8 +265,8 @@ describe('NoteItem', () => {
 
     const dateRow = screen.getByTestId('note-date-row')
     expect(dateRow.className).toContain('grid')
-    expect(dateRow).toHaveTextContent('April 8, 2025')
-    expect(dateRow).toHaveTextContent('Created April 5, 2025')
+    expect(dateRow).toHaveTextContent('Apr 8, 2025')
+    expect(dateRow).toHaveTextContent('Created Apr 5, 2025')
   })
 
   it('shows the workspace badge after the creation date as an outlined badge', () => {
@@ -300,7 +300,7 @@ describe('NoteItem', () => {
     const dateRow = screen.getByTestId('note-date-row')
     const badge = within(dateRow).getByTestId('workspace-badge')
     expect(screen.getByTestId('note-title-row')).not.toContainElement(badge)
-    expect(dateRow).toHaveTextContent('Created April 10, 2025')
+    expect(dateRow).toHaveTextContent('Created Apr 10, 2025')
     expect(badge).toHaveTextContent('LA')
     expect(badge).toHaveClass('-mr-1.5', 'border', 'bg-transparent', 'opacity-75')
     expect(badge.getAttribute('style')).toContain('border-color: var(--accent-red)')
@@ -318,7 +318,7 @@ describe('NoteItem', () => {
 
     render(<NoteItem entry={entry} isSelected={false} typeEntryMap={{}} onClickNote={vi.fn()} />)
 
-    expect(screen.getByTestId('note-date-row')).toHaveTextContent('April 10, 2025')
+    expect(screen.getByTestId('note-date-row')).toHaveTextContent('Apr 10, 2025')
     expect(screen.queryByText(/Created /)).not.toBeInTheDocument()
   })
 

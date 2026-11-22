@@ -4,11 +4,13 @@ import { cn } from '@/lib/utils'
 import { isTauri, mockInvoke } from '../mock-tauri'
 import { useDragRegion } from '../hooks/useDragRegion'
 import { useInitialPulseLoad } from '../hooks/useInitialPulseLoad'
+import { useDateDisplayFormat } from '../hooks/useAppPreferences'
 import type { PulseCommit, PulseFile } from '../types'
 import { relativeDate } from '../utils/noteListHelpers'
 import { openExternalUrl } from '../utils/url'
 import { isMac, MACOS_TRAFFIC_LIGHT_SAFE_PADDING } from '../utils/platform'
-import { getLocaleDateLocale, translate, type AppLocale } from '../lib/i18n'
+import { translate, type AppLocale } from '../lib/i18n'
+import { formatDateValueForDisplay, type DateDisplayFormat } from '../utils/dateDisplay'
 import { GitRepositorySelect } from './GitRepositorySelect'
 import type { GitRepositoryOption } from '../utils/gitRepositories'
 import {
@@ -66,18 +68,11 @@ function isYesterday(dateKey: string): boolean {
   return dateKey === formatDateKey(new Date(Date.now() - 86400000))
 }
 
-function formatDayLabel(dateKey: string, locale: AppLocale): string {
+function formatDayLabel(dateKey: string, locale: AppLocale, dateDisplayFormat: DateDisplayFormat): string {
   if (isToday(dateKey)) return translate(locale, 'pulse.today')
   if (isYesterday(dateKey)) return translate(locale, 'pulse.yesterday')
 
-  const date = new Date(`${dateKey}T00:00:00`)
-  const dateLocale = getLocaleDateLocale(locale)
-  return date.toLocaleDateString(dateLocale, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
+  return formatDateValueForDisplay(dateKey, dateDisplayFormat, locale)
 }
 
 const STATUS_ICON = {
@@ -400,11 +395,12 @@ function PulseFeed(options: {
   loadingMore: boolean
   error: string | null
   locale: AppLocale
+  dateDisplayFormat: DateDisplayFormat
   onOpenNote?: (path: string, commitHash?: string) => void
   onRetry: () => void
   sentinelRef: React.RefObject<HTMLDivElement | null>
 }) {
-  const { commits, dayGroups, loading, loadingMore, error, locale, onOpenNote, onRetry, sentinelRef } = options
+  const { commits, dayGroups, loading, loadingMore, error, locale, dateDisplayFormat, onOpenNote, onRetry, sentinelRef } = options
   if (loading) {
     return (
       <div className="flex items-center justify-center" style={{ padding: 32 }}>
@@ -426,7 +422,7 @@ function PulseFeed(options: {
       {Array.from(dayGroups.entries()).map(([day, dayCommits]) => (
         <DayGroup
           key={day}
-          label={formatDayLabel(day, locale)}
+          label={formatDayLabel(day, locale, dateDisplayFormat)}
           commits={dayCommits}
           locale={locale}
           onOpenNote={onOpenNote}
@@ -445,6 +441,7 @@ function PulseFeed(options: {
 const PAGE_SIZE = 20
 
 export const PulseView = memo(function PulseView(options: PulseViewProps) {
+  const dateDisplayFormat = useDateDisplayFormat()
   const {
     vaultPath,
     onOpenNote,
@@ -523,6 +520,7 @@ export const PulseView = memo(function PulseView(options: PulseViewProps) {
           loadingMore={loadingMore}
           error={error}
           locale={locale}
+          dateDisplayFormat={dateDisplayFormat}
           onOpenNote={onOpenNote}
           onRetry={retryLoad}
           sentinelRef={sentinelRef}
