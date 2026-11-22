@@ -844,12 +844,6 @@ function AppearanceSettingsSection({
   dateDisplayFormat,
   setDateDisplayFormat,
 }: Pick<SettingsBodyProps, 't' | 'themeMode' | 'setThemeMode' | 'dateDisplayFormat' | 'setDateDisplayFormat'>) {
-  const dateFormatLabels: Record<DateDisplayFormat, TranslationKey> = {
-    us: 'settings.dateDisplay.us',
-    european: 'settings.dateDisplay.european',
-    friendly: 'settings.dateDisplay.friendly',
-    iso: 'settings.dateDisplay.iso',
-  }
   return (
     <>
       <SettingsRow label={t('settings.theme.label')} description={t('settings.appearance.description')}>
@@ -860,12 +854,21 @@ function AppearanceSettingsSection({
           ariaLabel={t('settings.dateDisplay.default')}
           value={dateDisplayFormat}
           onValueChange={(value) => setDateDisplayFormat(value as DateDisplayFormat)}
-          options={DATE_DISPLAY_FORMATS.map((value) => ({ value, label: t(dateFormatLabels[value]) }))}
+          options={DATE_DISPLAY_FORMATS.map((value) => ({ value, label: t(dateDisplayFormatLabelKey(value)) }))}
           testId="settings-date-display-format"
         />
       </SettingsRow>
     </>
   )
+}
+
+function dateDisplayFormatLabelKey(format: DateDisplayFormat): TranslationKey {
+  switch (format) {
+    case 'us': return 'settings.dateDisplay.us'
+    case 'european': return 'settings.dateDisplay.european'
+    case 'friendly': return 'settings.dateDisplay.friendly'
+    case 'iso': return 'settings.dateDisplay.iso'
+  }
 }
 
 function ThemeModeControl({
