@@ -62,11 +62,13 @@
 }
 
 .calendar-week__days {
+	position: absolute;
+	inset: 0;
 	display: grid;
-	height: 100%;
 }
 
 .calendar-day {
+	position: relative;
 	min-width: 0;
 	min-height: 0;
 	border-right: 1px solid var(--border-subtle);
@@ -93,6 +95,10 @@
 }
 
 .calendar-day__header {
+	position: absolute;
+	top: 0;
+	right: 0;
+	left: 0;
 	display: flex;
 	height: 30px;
 	align-items: center;
@@ -192,7 +198,15 @@
 
 .calendar-item.calendar-item--selected {
 	border-color: var(--primary);
-	background-color: var(--state-hover-subtle);
+	background-color: var(--surface-card);
+}
+
+.calendar-more-popover__header {
+	position: sticky;
+	top: -0.5rem;
+	z-index: 1;
+	border-bottom: 1px solid var(--border-default);
+	background-color: var(--popover);
 }
 
 .calendar-item-slot--placeholder .calendar-item {

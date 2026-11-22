@@ -1,4 +1,4 @@
-import { useDroppable } from "@dnd-kit/core";
+import { useDndMonitor, useDroppable } from "@dnd-kit/core";
 import { Plus } from "@phosphor-icons/react";
 import { type CSSProperties, memo, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -229,11 +229,12 @@ function MoreOnDay({
 	selectedNotePath,
 }: MoreButtonProps) {
 	const [open, setOpen] = useState(false);
+	useDndMonitor({ onDragStart: () => setOpen(false) });
 	const dayItems = useMemo(() => itemsOnDay(items, day), [day, items]);
 	const popoverContext = useMemo<CalendarItemContext>(
 		() => ({
 			...context,
-			draggable: false,
+			draggable: context.draggable,
 			onOpen: (entry, event) => {
 				setOpen(false);
 				context.onOpen(entry, event);
@@ -260,7 +261,7 @@ function MoreOnDay({
 				className="calendar-more-popover w-64 p-2"
 				data-testid="calendar-more-popover"
 			>
-				<p className="m-0 mb-1.5 px-1 text-xs font-semibold text-muted-foreground">
+				<p className="calendar-more-popover__header m-0 px-1 py-1.5 text-xs font-semibold text-muted-foreground">
 					{fullDayLabel(day, locale)}
 				</p>
 				<div className="calendar-scroll flex max-h-72 flex-col gap-1 overflow-y-auto">

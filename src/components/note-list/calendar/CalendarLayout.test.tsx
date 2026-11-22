@@ -319,6 +319,10 @@ describe("CalendarLayout", () => {
 		const popover = await screen.findByTestId("calendar-more-popover");
 		const popoverItems = within(popover).getAllByTestId("calendar-item");
 		expect(popoverItems).toHaveLength(6);
+		expect(popoverItems[0]).toHaveAttribute("tabindex", "0");
+		expect(
+			popover.querySelector(".calendar-more-popover__header"),
+		).toBeInTheDocument();
 		for (const item of popoverItems) {
 			expect(item).toHaveClass("h-auto", "shrink-0");
 			expect(item.parentElement).toBe(
