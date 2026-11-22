@@ -46,12 +46,16 @@ async function toggleAiPanel(page: Page): Promise<void> {
 	await page.keyboard.press(macUserAgent ? "Meta+Shift+L" : "Control+Shift+L");
 }
 
-async function expectBesideLayout(page: Page): Promise<void> {
+// The panel can remount while it docks, so read its box until it settles beside the layout.
+async function isBesideLayout(page: Page): Promise<boolean> {
 	const panel = await aiPanel(page).boundingBox();
 	const noteList = await page.locator(".app__note-list").boundingBox();
-	if (!panel || !noteList) throw new Error("Missing AI panel or layout box");
-	expect(panel.width).toBeGreaterThanOrEqual(300);
-	expect(noteList.x + noteList.width).toBeLessThanOrEqual(panel.x + 1);
+	if (!panel || !noteList) return false;
+	return panel.width >= 300 && noteList.x + noteList.width <= panel.x + 1;
+}
+
+async function expectBesideLayout(page: Page): Promise<void> {
+	await expect.poll(() => isBesideLayout(page), { timeout: 5_000 }).toBe(true);
 }
 
 test.describe("AI panel in non-list layouts", () => {
@@ -96,11 +100,13 @@ test.describe("AI panel in non-list layouts", () => {
 		await page.getByTestId("kanban-card").first().click();
 		await expect(page.getByTestId("kanban-panel-close")).toBeVisible();
 		await expect(aiPanel(page)).toBeVisible();
-		const panel = await aiPanel(page).boundingBox();
-		const editor = await page.locator(".app__editor").boundingBox();
-		if (!panel || !editor)
-			throw new Error("Missing AI panel or note panel box");
-		expect(editor.width - panel.width).toBeGreaterThanOrEqual(400);
+		await expect
+			.poll(async () => {
+				const panel = await aiPanel(page).boundingBox();
+				const editor = await page.locator(".app__editor").boundingBox();
+				return panel && editor ? editor.width - panel.width : 0;
+			})
+			.toBeGreaterThanOrEqual(400);
 
 		await page.getByTestId("kanban-panel-close").click();
 		await expect(page.getByTestId("kanban-panel-close")).toHaveCount(0);
