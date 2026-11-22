@@ -228,5 +228,4 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Laputa demo server running on http://0.0.0.0:${PORT}`)
-  console.log(`   Tailscale: https://mac-mini.tail7cbc15.ts.net`)
 })
