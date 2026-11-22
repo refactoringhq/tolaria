@@ -8,6 +8,6 @@ describe('typed note display colors', () => {
     expect(noteTypeSoftColor('purple', mobilePalettes.dark)).toBe('#2E2449')
     expect(noteTypeColor('gray', mobilePalettes.dark)).toBe('#AAA7A2')
     expect(noteTypeSoftColor('gray', mobilePalettes.dark)).toBe('#32302B')
-    expect(noteTypeColor('purple')).toBe('#7A42DD')
+    expect(noteTypeColor('purple')).toBe('#805AD5')
   })
 })

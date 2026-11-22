@@ -32,8 +32,9 @@
 }
 
 /* Semantic roles map onto the palette in src/styles/palette.css.
-   Light uses step 600 for icons and accents, 100 for tinted fills and 700
-   for text on those fills. Dark uses 400, 900 and 300. Text on the blue
+   Light uses the approved 500 hue anchors for icons, 50 for pale chip fills
+   and the lightest passing step (usually 600) for chip text. Dark uses 400,
+   900 and 300. Text on the blue
    primary and red destructive fills is always white. */
 :root,
 [data-theme="light"] {
@@ -89,47 +90,47 @@
   --inverse-muted: var(--gray-400);
   --inverse-border: var(--gray-600);
 
-  /* --- Count pills (light mode): idle pill = row hover fill, hovered row lifts the pill --- */
+  /* --- Count pills (light mode): the idle fill blends into a hovered row --- */
   --count-pill-bg: var(--state-hover);
   --count-pill-text: var(--gray-600);
-  --count-pill-bg-hover: var(--gray-300);
-  --count-pill-text-hover: var(--gray-800);
+  --count-pill-bg-hover: var(--count-pill-bg);
+  --count-pill-text-hover: var(--gray-600);
 
   /* --- Accent roles (light mode): icon/accent, tinted fill, text on tinted fill --- */
-  --accent-blue: var(--blue-600);
-  --accent-blue-bg: var(--blue-100);
-  --accent-blue-hover: var(--blue-700);
-  --accent-blue-light: var(--blue-100);
-  --accent-blue-text: var(--blue-700);
+  --accent-blue: var(--blue-500);
+  --accent-blue-bg: var(--blue-50);
+  --accent-blue-hover: var(--blue-600);
+  --accent-blue-light: var(--blue-50);
+  --accent-blue-text: var(--blue-500);
   --accent-blue-light-hover: var(--blue-200);
-  --accent-green: var(--green-600);
-  --accent-green-light: var(--green-100);
-  --accent-green-text: var(--green-700);
-  --accent-orange: var(--orange-600);
-  --accent-orange-light: var(--orange-100);
-  --accent-orange-text: var(--orange-700);
-  --accent-red: var(--red-600);
-  --accent-red-light: var(--red-100);
-  --accent-red-text: var(--red-700);
-  --accent-purple: var(--purple-600);
-  --accent-purple-light: var(--purple-100);
-  --accent-purple-text: var(--purple-700);
-  --accent-yellow: var(--yellow-600);
-  --accent-yellow-light: var(--yellow-100);
-  --accent-yellow-text: var(--yellow-700);
-  --accent-teal: var(--teal-600);
-  --accent-teal-light: var(--teal-100);
-  --accent-teal-text: var(--teal-700);
-  --accent-pink: var(--pink-600);
-  --accent-pink-light: var(--pink-100);
-  --accent-pink-text: var(--pink-700);
+  --accent-green: var(--green-500);
+  --accent-green-light: var(--green-50);
+  --accent-green-text: var(--green-600);
+  --accent-orange: var(--orange-500);
+  --accent-orange-light: var(--orange-50);
+  --accent-orange-text: var(--orange-600);
+  --accent-red: var(--red-500);
+  --accent-red-light: var(--red-50);
+  --accent-red-text: var(--red-600);
+  --accent-purple: var(--purple-500);
+  --accent-purple-light: var(--purple-50);
+  --accent-purple-text: var(--purple-600);
+  --accent-yellow: var(--yellow-500);
+  --accent-yellow-light: var(--yellow-50);
+  --accent-yellow-text: var(--yellow-600);
+  --accent-teal: var(--teal-500);
+  --accent-teal-light: var(--teal-50);
+  --accent-teal-text: var(--teal-600);
+  --accent-pink: var(--pink-500);
+  --accent-pink-light: var(--pink-50);
+  --accent-pink-text: var(--pink-600);
   --accent-gray: var(--gray-600);
   --accent-gray-light: var(--gray-100);
   --accent-gray-text: var(--gray-700);
 
   /* --- Fills that carry white text (light mode) --- */
-  --fill-primary: var(--blue-600);
-  --fill-primary-hover: var(--blue-700);
+  --fill-primary: var(--blue-500);
+  --fill-primary-hover: var(--blue-600);
   --fill-destructive: var(--red-600);
   --fill-destructive-hover: var(--red-700);
   --fill-success: var(--green-600);
@@ -213,11 +214,11 @@
   --inverse-muted: var(--gray-600);
   --inverse-border: var(--gray-400);
 
-  /* --- Count pills (dark mode) --- */
+  /* --- Count pills (dark mode): hover never changes the pill fill --- */
   --count-pill-bg: var(--state-hover);
   --count-pill-text: var(--gray-400);
-  --count-pill-bg-hover: var(--state-hover-strong);
-  --count-pill-text-hover: var(--gray-200);
+  --count-pill-bg-hover: var(--count-pill-bg);
+  --count-pill-text-hover: var(--gray-400);
 
   /* --- Accent roles (dark mode) --- */
   --accent-blue: var(--blue-400);
@@ -252,8 +253,8 @@
   --accent-gray-text: var(--gray-300);
 
   /* --- Fills that carry white text (dark mode): same 600 fills as light --- */
-  --fill-primary: var(--blue-600);
-  --fill-primary-hover: var(--blue-700);
+  --fill-primary: var(--blue-500);
+  --fill-primary-hover: var(--blue-600);
   --fill-destructive: var(--red-600);
   --fill-destructive-hover: var(--red-700);
   --fill-success: var(--green-600);
