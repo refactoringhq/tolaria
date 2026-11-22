@@ -79,6 +79,17 @@ describe('token contrast', () => {
     }
   })
 
+  it('keeps dark chip labels close to the 4.5:1 floor with tinted fills', () => {
+    const report = buildContrastReport(sources).filter(
+      (result) => result.theme === 'dark' && result.label.endsWith('chip label'),
+    )
+    expect(report.length).toBeGreaterThan(0)
+    for (const pair of report) {
+      expect(pair.ratio, pair.label).toBeGreaterThanOrEqual(4.5)
+      expect(pair.ratio, pair.label).toBeLessThan(4.8)
+    }
+  })
+
   it('limits the yellow icon exception to light mode and reports its measured ratio', () => {
     const yellowRows = buildContrastReport(sources).filter((result) => result.label === 'yellow icon')
     const lightHover = yellowRows.find((result) => result.theme === 'light' && result.background === '--state-hover')
