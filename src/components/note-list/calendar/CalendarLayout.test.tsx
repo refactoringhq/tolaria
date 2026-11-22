@@ -168,6 +168,23 @@ describe("CalendarLayout", () => {
 		).toHaveClass("min-w-0", "whitespace-normal", "break-words");
 	});
 
+	it("renders all selected card properties and removes unchecked properties", () => {
+		const { unmount } = renderCalendar({ properties: ["due", "owner"] });
+		const card = within(screen.getAllByRole("button", { name: "Launch" })[0]);
+		expect(card.getByTestId("property-chips")).toHaveTextContent(
+			"November 19, 2026",
+		);
+		expect(card.getByTestId("property-chips")).toHaveTextContent("Ada");
+
+		unmount();
+		renderCalendar({ properties: ["owner"] });
+		const unchecked = within(
+			screen.getAllByRole("button", { name: "Launch" })[0],
+		).getByTestId("property-chips");
+		expect(unchecked).toHaveTextContent("Ada");
+		expect(unchecked).not.toHaveTextContent("November 19, 2026");
+	});
+
 	it("hides card fields when item properties are disabled", () => {
 		renderCalendar({ properties: ["owner"], showProperties: false });
 		expect(

@@ -71,7 +71,7 @@ function CalendarItemFields({
 	if (displayProps.length === 0 || context.showProperties === false)
 		return null;
 	return (
-		<span className="calendar-item__fields block min-w-0 whitespace-normal">
+		<div className="calendar-item__fields min-w-0 whitespace-normal">
 			<PropertyChips
 				entry={entry}
 				displayProps={displayProps}
@@ -79,7 +79,7 @@ function CalendarItemFields({
 				typeEntryMap={context.typeEntryMap}
 				onOpenNote={context.onOpen}
 			/>
-		</span>
+		</div>
 	);
 }
 

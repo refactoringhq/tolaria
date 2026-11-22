@@ -4,6 +4,11 @@
 	background-color: var(--muted);
 }
 
+/* Keep the controls in the note-list chrome; only the board below them is recessed. */
+.calendar-toolbar {
+	background-color: var(--background);
+}
+
 .calendar-scroll {
 	scrollbar-width: none;
 }
@@ -43,11 +48,12 @@
 	display: grid;
 	flex: 1 1 0;
 	min-height: 0;
+	grid-auto-rows: minmax(150px, auto);
 }
 
 .calendar-week {
 	position: relative;
-	min-height: 0;
+	min-height: 150px;
 	border-bottom: 1px solid var(--border-default);
 }
 

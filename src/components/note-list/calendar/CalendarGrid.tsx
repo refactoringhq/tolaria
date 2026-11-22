@@ -32,6 +32,8 @@ import {
 import { dayDropId } from "./useCalendarDrag";
 import { useLaneMeasure } from "./useLaneMeasure";
 
+const MIN_WEEK_ROW_PX = 150;
+
 export interface CalendarGridState {
 	today: DayKey;
 	/** Any day in the month being shown; days outside it are muted. */
@@ -321,7 +323,7 @@ function WeekRowView(props: WeekRowProps) {
 	return (
 		<div
 			className="calendar-week"
-			style={layout.minHeight > 0 ? { minHeight: layout.minHeight } : undefined}
+			style={{ minHeight: Math.max(MIN_WEEK_ROW_PX, layout.minHeight) }}
 			data-testid="calendar-week"
 		>
 			<div
@@ -430,9 +432,7 @@ export function CalendarGrid({
 			</div>
 			<div
 				className="calendar-weeks calendar-scroll overflow-y-auto"
-				style={{
-					gridTemplateRows: `repeat(${weeks.length}, minmax(auto, 1fr))`,
-				}}
+				data-testid="calendar-weeks"
 			>
 				{weeks.map((week) => (
 					<WeekRow
