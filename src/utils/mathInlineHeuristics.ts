@@ -62,9 +62,16 @@ function startsWithLikelyCurrencyAmount(candidate: MathCandidate): boolean {
 }
 
 function readLeadingAmount({ text }: MathCandidate): LeadingAmount | null {
-  const match = /^[\d,]+(?:\.\d+)?(?:[KMBT%])?/iu.exec(text)
-  if (!match) return null
-  return { end: match[0].length }
+  const amountEnd = scanAmountNumber({ text })
+  if (amountEnd === 0) return null
+  const suffix = text.charAt(amountEnd)
+  return { end: suffix && isFinancialSuffix({ char: suffix }) ? amountEnd + 1 : amountEnd }
+}
+
+function scanAmountNumber({ text }: MathCandidate): number {
+  let index = 0
+  while (isAsciiDigit(text.charAt(index)) || text.charAt(index) === ',') index += 1
+  return index === 0 ? 0 : scanDecimalAmount({ text, index })
 }
 
 function amountBoundaryLooksLikeCurrency({ text, index }: CandidatePosition): boolean {
@@ -82,7 +89,12 @@ function amountSpanLacksMathIntent(candidate: MathCandidate): boolean {
 }
 
 function hasCoefficientVariableSyntax({ text }: MathCandidate): boolean {
-  return /^[\d,]+(?:\.\d+)?[A-Za-z]{1,2}\d?(?:[_^][A-Za-z0-9{}]+)?$/u.test(text)
+  const amountEnd = scanAmountNumber({ text })
+  if (amountEnd === 0) return false
+  const variable = /^[A-Za-z]{1,2}\d?/u.exec(text.slice(amountEnd))
+  if (!variable) return false
+  const script = text.slice(amountEnd + variable[0].length)
+  return !script || /^[_^][A-Za-z0-9{}]+$/u.test(script)
 }
 
 function looksLikeFinancialProse(candidate: MathCandidate): boolean {
