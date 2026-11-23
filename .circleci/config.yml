@@ -120,8 +120,7 @@ commands:
           name: Install Tauri Linux dependencies and Rust toolchain
           command: |
             set -euo pipefail
-            sudo apt-get update
-            sudo apt-get install -y --no-install-recommends \
+            bash scripts/ci-apt-install.sh --no-install-recommends \
               build-essential \
               file \
               libayatana-appindicator3-dev \
@@ -410,7 +409,8 @@ jobs:
 
   # Validation runs as independent jobs so the slowest one, not their sum, sets the wall clock.
   # Job inputs, for skip_unless_changed: frontend jobs ignore Rust sources and docs/; Rust jobs
-  # need src-tauri/, the shared JSON contracts it embeds (src/shared/, mcp-server/), or CI config.
+  # need src-tauri/, the shared JSON contracts it embeds (src/shared/, mcp-server/), CI config or
+  # the CI apt install helper.
   static-gates:
     executor: node
     steps:
@@ -428,6 +428,9 @@ jobs:
             set -euo pipefail
             bash scripts/check-codescene-project-health.test.sh
             bash scripts/check-codescene-project-health.sh
+      - run:
+          name: CI apt install helper test
+          command: bash scripts/ci-apt-install.test.sh
       - run:
           name: Documentation build check
           command: |
@@ -522,7 +525,7 @@ jobs:
       - checkout
       - skip_unless_changed:
           scope: rust-coverage
-          paths: "^(src-tauri/|src/shared/|mcp-server/|\\.circleci/|rust-toolchain)"
+          paths: "^(src-tauri/|src/shared/|mcp-server/|\\.circleci/|rust-toolchain|scripts/ci-apt-install\\.sh)"
       - install_rust_ci_toolchain
       - install_node_runtime
       - restore_cache:
@@ -574,7 +577,7 @@ jobs:
       - checkout
       - skip_unless_changed:
           scope: rust-lint
-          paths: "^(src-tauri/|src/shared/|mcp-server/|\\.circleci/|rust-toolchain)"
+          paths: "^(src-tauri/|src/shared/|mcp-server/|\\.circleci/|rust-toolchain|scripts/ci-apt-install\\.sh)"
       - install_rust_ci_toolchain
       - restore_cache:
           keys:
@@ -909,10 +912,7 @@ jobs:
       - run:
           name: Install Linux build dependencies
           command: |
-            # Keep needrestart from opening an interactive prompt on machine images.
-            export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a
-            sudo -E apt-get update
-            sudo -E apt-get install -y \
+            bash scripts/ci-apt-install.sh \
               build-essential \
               libayatana-appindicator3-dev \
               librsvg2-dev \
