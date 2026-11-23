@@ -309,7 +309,7 @@ describe("CalendarLayout", () => {
 		expect(calendar.onCreate).toHaveBeenCalledWith("2026-11-25");
 		expect(
 			within(day("2026-11-25")).getByTestId("calendar-day-add"),
-		).toHaveAccessibleName("New note on Wednesday, November 25, 2026");
+		).toHaveAccessibleName("New note on Wednesday, Nov 25, 2026");
 	});
 
 	it("keeps read-only sources from creating or dragging", () => {

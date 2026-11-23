@@ -1,6 +1,7 @@
 import { type AppLocale, getLocaleDateLocale } from "../../../lib/i18n";
 import {
 	type DateDisplayFormat,
+	DEFAULT_DATE_DISPLAY_FORMAT,
 	formatDateValueForDisplay,
 } from "../../../utils/dateDisplay";
 import {
@@ -263,13 +264,13 @@ export function monthDayLabel(key: DayKey, locale: AppLocale): string {
 	);
 }
 
-export function fullDayLabel(key: DayKey, locale: AppLocale): string {
-	return formatter(locale, {
-		weekday: "long",
-		month: "long",
-		day: "numeric",
-		year: "numeric",
-	}).format(utcDate(key));
+export function fullDayLabel(
+	key: DayKey,
+	locale: AppLocale,
+	dateDisplayFormat: DateDisplayFormat = DEFAULT_DATE_DISPLAY_FORMAT,
+): string {
+	const weekday = formatter(locale, { weekday: "long" }).format(utcDate(key));
+	return `${weekday}, ${formatDateValueForDisplay(key, dateDisplayFormat, locale)}`;
 }
 
 /** What a property value means to the calendar: a day, nothing at all, or something that is not a date. */

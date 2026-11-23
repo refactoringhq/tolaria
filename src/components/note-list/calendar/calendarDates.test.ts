@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
 	addDays,
 	calendarTitle,
+	fullDayLabel,
 	isWeekend,
 	parseCalendarDate,
 	rescheduledValue,
@@ -13,6 +14,14 @@ import {
 } from "./calendarDates";
 
 describe("calendarDates", () => {
+	it("keeps Calendar full-day labels compact and follows the selected format", () => {
+		expect(fullDayLabel("2026-12-16", "en")).toBe("Wednesday, Dec 16, 2026");
+		expect(fullDayLabel("2026-12-16", "en", "iso")).toBe(
+			"Wednesday, 2026-12-16",
+		);
+		expect(fullDayLabel("2026-12-16", "it-IT")).toBe("mercoledì, 16 dic 2026");
+	});
+
 	it("does day arithmetic across month, year and daylight-saving boundaries", () => {
 		expect(addDays("2026-10-24", 2)).toBe("2026-10-26");
 		expect(addDays("2026-12-31", 1)).toBe("2027-01-01");
