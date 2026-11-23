@@ -47,6 +47,8 @@ Set `LAPUTA_PREPUSH_LOCAL=1` to force the old local path. Use `SIDECAR_FRONTEND_
 
 The lane launcher uses `chunk sidecar exec` only to start detached remote lane processes with `setsid -f`, then polls status files. Long foreground `exec` commands hit CircleCI's sidecar API deadline; plain background jobs are still tracked by `exec` and can time out.
 
+The frontend lane gives `pnpm build` a 4 GB Node heap (`--max-old-space-size=4096`) to accommodate the TypeScript project build and Vite bundle on the frontend sidecar. Lint and coverage keep their normal Node heap settings.
+
 ```bash
 bash .chunk/run-sidecar-gates-local.sh true
 ```
