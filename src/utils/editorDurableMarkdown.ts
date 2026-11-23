@@ -18,7 +18,7 @@ import {
 } from "./fileAttachmentMarkdown";
 import { htmlBlockMarkdownCodec } from "./htmlBlockMarkdown";
 import { restoreMarkdownHighlightsInBlocks } from "./markdownHighlightMarkdown";
-import { restoreMathInBlocks, serializeMathAwareBlocks } from "./mathMarkdown";
+import { serializeMathAwareBlocks } from "./mathMarkdown";
 import { mermaidMarkdownCodec } from "./mermaidMarkdown";
 import { tldrawMarkdownCodec } from "./tldrawMarkdown";
 
@@ -73,9 +73,7 @@ function serializeCalloutAndMathAwareBlocks(
 	for (const block of blocks) {
 		if (isCalloutBlock(block as Parameters<typeof isCalloutBlock>[0])) {
 			flushPending();
-			const [restoredCallout] = restoreMathInBlocks(
-				restoreMarkdownHighlightsInBlocks([block]),
-			);
+			const [restoredCallout] = restoreMarkdownHighlightsInBlocks([block]);
 			chunks.push(
 				serializeCalloutBlock(
 					editor,

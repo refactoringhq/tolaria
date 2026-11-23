@@ -36,7 +36,7 @@ function looksLikeIntentionalMath(candidate: MathCandidate): boolean {
 }
 
 function isSimpleVariable({ text }: MathCandidate): boolean {
-  return /^[A-Za-z]['’]?$/u.test(text)
+  return /^[A-Za-z][\u0027\u2019]?$/u.test(text)
 }
 
 function hasLatexCommand({ text }: MathCandidate): boolean {

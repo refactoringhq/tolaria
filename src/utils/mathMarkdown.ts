@@ -423,13 +423,19 @@ export function restoreMathInBlocks(blocks: unknown[]): unknown[] {
   return (blocks as BlockLike[]).map(restoreInlineMathInBlock)
 }
 
+// Math nodes go to the direct serializer as nodes so their LaTeX is never
+// Markdown-escaped; only the lossy fallback needs them flattened to text.
+export function serializeInlineMathAwareBlocks(editor: MarkdownSerializer, blocks: unknown[]): string {
+  return serializeBlockNoteMarkdown(editor, blocks, restoreMathInBlocks)
+}
+
 export function serializeMathAwareBlocks(editor: MarkdownSerializer, blocks: unknown[]): string {
   const chunks: string[] = []
   let pending: unknown[] = []
 
   const flushPending = () => {
     if (pending.length === 0) return
-    const markdown = serializeBlockNoteMarkdown(editor, restoreMathInBlocks(pending)).trimEnd()
+    const markdown = serializeInlineMathAwareBlocks(editor, pending).trimEnd()
     if (markdown) chunks.push(markdown)
     pending = []
   }
