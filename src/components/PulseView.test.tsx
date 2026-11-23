@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { PulseView } from './PulseView'
+import { AppPreferencesProvider } from '../hooks/useAppPreferences'
 import type { PulseCommit } from '../types'
 
 const openExternalUrl = vi.fn()
@@ -85,6 +86,19 @@ describe('PulseView', () => {
     })
 
     expect(screen.getByText('Remove old notes')).toBeInTheDocument()
+  })
+
+  it('shows older commit dates in the selected date format', async () => {
+    const olderCommit = { ...mockCommits[1], hash: 'older', message: 'Archive notes', date: Date.UTC(2026, 3, 11, 12) / 1000 }
+    mockInvokeFn.mockResolvedValue([olderCommit])
+    render(
+      <AppPreferencesProvider dateDisplayFormat="iso">
+        <PulseView vaultPath="/test/vault" />
+      </AppPreferencesProvider>,
+    )
+
+    const commitRow = await screen.findByRole('button', { name: /Archive notes/i })
+    expect(commitRow).toHaveTextContent('2026-04-11')
   })
 
   it('reloads commits when the refresh key changes after sync', async () => {
