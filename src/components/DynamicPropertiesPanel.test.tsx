@@ -685,7 +685,7 @@ describe('DynamicPropertiesPanel', () => {
     it('renders date property with friendly format', () => {
       renderEditablePanel({ deadline: '2026-03-31' })
       expect(screen.getByTestId('date-display')).toBeInTheDocument()
-      expect(screen.getByText('March 31, 2026')).toBeInTheDocument()
+      expect(screen.getByText('Mar 31, 2026')).toBeInTheDocument()
     })
 
     it('renders date trigger button', () => {

@@ -27,7 +27,7 @@ import { IconEditableValue } from './IconEditableValue'
 import { PROPERTY_CHIP_STYLE } from './propertyChipStyles'
 import { canonicalSystemMetadataKey } from '../utils/systemMetadata'
 import { relationshipKindForKey } from '../utils/relationshipKeys'
-import { useDateDisplayFormat } from '../hooks/useAppPreferences'
+import { useAppLocale, useDateDisplayFormat } from '../hooks/useAppPreferences'
 import { getAnchoredDropdownStyle, useAnchoredDropdownPosition } from './anchoredDropdown'
 
 const ISO_DATE_INPUT_RE = /^(\d{4})-(\d{2})-(\d{2})$/
@@ -281,8 +281,9 @@ function DateValue({ value, onSave, locale = 'en', autoOpen = false, onCancel }:
   onCancel?: () => void
 }) {
   const dateDisplayFormat = useDateDisplayFormat()
+  const appLocale = useAppLocale()
   const [open, setOpen] = useState(autoOpen)
-  const formatted = formatDateValue(value, dateDisplayFormat)
+  const formatted = formatDateValue(value, dateDisplayFormat, appLocale)
   const pickDateLabel = translate(locale, 'inspector.properties.pickDate')
   const selectedDate = parseDateValue(value)
   const selectedIso = selectedDate ? dateToISO(selectedDate) : ''

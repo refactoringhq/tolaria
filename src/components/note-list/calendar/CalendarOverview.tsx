@@ -1,6 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { type AppLocale, getLocaleDateLocale } from "../../../lib/i18n";
 import {
+	type DateDisplayFormat,
+	formatDateValueForDisplay,
+} from "../../../utils/dateDisplay";
+import {
 	addDays,
 	type DayKey,
 	dayKeyFromParts,
@@ -18,13 +22,14 @@ interface CalendarOverviewProps {
 	locale: AppLocale;
 	showWeekends: boolean;
 	today: DayKey;
+	dateDisplayFormat?: DateDisplayFormat;
 	onSelectMonth: (day: DayKey) => void;
 }
 
 function monthName(day: DayKey, locale: AppLocale): string {
 	const [year, month, date] = day.split("-").map(Number);
 	return new Intl.DateTimeFormat(getLocaleDateLocale(locale), {
-		month: "long",
+		month: "short",
 		year: "numeric",
 		timeZone: "UTC",
 	}).format(new Date(Date.UTC(year, month - 1, date)));
@@ -71,6 +76,7 @@ function MonthOverview({
 	month,
 	items,
 	locale,
+	dateDisplayFormat,
 	showWeekends,
 	today,
 	onSelectMonth,
@@ -127,6 +133,11 @@ function MonthOverview({
 			>
 				{monthDays(year, monthNumber, daysInMonth, showWeekends).map((day) => {
 					const count = countByDay.get(day) ?? 0;
+					const formattedDay = formatDateValueForDisplay(
+						day,
+						dateDisplayFormat ?? "friendly",
+						locale,
+					);
 					const column = weekdayColumn(
 						day,
 						locale,
@@ -141,9 +152,9 @@ function MonthOverview({
 							key={day}
 							style={{ gridColumn: column }}
 							className={`calendar-overview-day${day === today ? " calendar-overview-day--today" : ""}`}
-							title={`${day}: ${count}`}
+							title={`${formattedDay}: ${count}`}
 							onClick={() => onSelectMonth(day)}
-							aria-label={`${day}, ${count}`}
+							aria-label={`${formattedDay}, ${count}`}
 						>
 							<span>{dayOfMonth(day)}</span>
 							{count > 0 && (

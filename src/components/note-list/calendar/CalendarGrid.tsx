@@ -8,6 +8,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useDateDisplayFormat } from "../../../hooks/useAppPreferences";
 import { type AppLocale, translate } from "../../../lib/i18n";
 import {
 	CalendarItemButton,
@@ -146,9 +147,10 @@ function CreateOnDayButton({
 	onCreate,
 	locale,
 }: Pick<DayCellProps, "day" | "canCreate" | "onCreate" | "locale">) {
+	const dateDisplayFormat = useDateDisplayFormat();
 	if (!canCreate) return null;
 	const label = translate(locale, "calendar.addOnDay", {
-		date: fullDayLabel(day, locale),
+		date: fullDayLabel(day, locale, dateDisplayFormat),
 	});
 	return (
 		<Button
@@ -228,6 +230,7 @@ function MoreOnDay({
 	style,
 	selectedNotePath,
 }: MoreButtonProps) {
+	const dateDisplayFormat = useDateDisplayFormat();
 	const [open, setOpen] = useState(false);
 	useDndMonitor({
 		onDragEnd: () => setOpen(false),
@@ -264,8 +267,8 @@ function MoreOnDay({
 				className="calendar-more-popover w-64 p-2"
 				data-testid="calendar-more-popover"
 			>
-				<p className="calendar-more-popover__header m-0 px-1 py-1.5 text-xs font-semibold text-muted-foreground">
-					{fullDayLabel(day, locale)}
+				<p className="calendar-more-popover__header m-0 mb-1.5 px-1 py-1.5 text-xs font-semibold text-muted-foreground">
+					{fullDayLabel(day, locale, dateDisplayFormat)}
 				</p>
 				<div className="calendar-scroll flex max-h-72 flex-col gap-1 overflow-y-auto">
 					{dayItems.map((item) => (

@@ -9,7 +9,8 @@ import { scrollSelectedHTMLChildIntoView } from '../utils/domScroll'
 import { getTypeIcon } from './NoteItem'
 import { NoteTitleIcon } from './NoteTitleIcon'
 import { WorkspaceInitialsBadge } from './WorkspaceInitialsBadge'
-import { useDateDisplayFormat } from '../hooks/useAppPreferences'
+import { useAppLocale, useDateDisplayFormat } from '../hooks/useAppPreferences'
+import type { AppLocale } from '../lib/i18n'
 
 interface SearchPanelProps {
   open: boolean
@@ -319,6 +320,7 @@ function useSearchPanelController({ open, vaultPath, entries, onSelectNote, onCl
 
 export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }: SearchPanelProps) {
   const dateDisplayFormat = useDateDisplayFormat()
+  const appLocale = useAppLocale()
   const rootRef = useRef<HTMLDivElement>(null)
   const {
         elapsedMs,
@@ -383,6 +385,7 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
               typeEntryMap={typeEntryMap}
               showWorkspace={showWorkspace}
               dateDisplayFormat={dateDisplayFormat}
+              appLocale={appLocale}
               listRef={listRef}
               onSelect={handleSelect}
               onHover={handleResultHover}
@@ -449,6 +452,7 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
       typeEntryMap: Record<string, VaultEntry>
       showWorkspace: boolean
       dateDisplayFormat: DateDisplayFormat
+      appLocale: AppLocale
       listRef: React.RefObject<HTMLDivElement | null>
       onSelect: (result: SearchResult) => void
       onHover: (index: number, event: React.MouseEvent<HTMLDivElement>) => void
@@ -462,6 +466,7 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
       typeEntryMap: Record<string, VaultEntry>
       showWorkspace: boolean
       dateDisplayFormat: DateDisplayFormat
+      appLocale: AppLocale
       onSelect: (result: SearchResult) => void
       onHover: (index: number, event: React.MouseEvent<HTMLDivElement>) => void
     }
@@ -482,9 +487,10 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
       typeEntryMap,
       showWorkspace,
       dateDisplayFormat,
+      appLocale,
     }: Pick<
       SearchResultRowProps,
-      'result' | 'entry' | 'typeEntryMap' | 'showWorkspace' | 'dateDisplayFormat'
+      'result' | 'entry' | 'typeEntryMap' | 'showWorkspace' | 'dateDisplayFormat' | 'appLocale'
     >): SearchResultPresentation {
       const isA = entry?.isA ?? result.noteType
       const noteType = isA || null
@@ -494,7 +500,7 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
         TypeIcon: getTypeIcon(isA ?? null, typeEntry?.icon),
         icon: entry?.icon,
         noteType,
-        subtitle: entry ? formatSearchSubtitle(entry, dateDisplayFormat) : null,
+        subtitle: entry ? formatSearchSubtitle(entry, dateDisplayFormat, appLocale) : null,
         title: entry?.title ?? result.title,
         typeColor: resolveSearchResultTypeColor(noteType, isA, typeEntry),
         workspace: resolveSearchResultWorkspace(showWorkspace, entry),
@@ -517,13 +523,14 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
     }
 
     function SearchResultRow(options: SearchResultRowProps) {
-      const { result, entry, selected, index, typeEntryMap, showWorkspace, dateDisplayFormat, onSelect, onHover } = options
+      const { result, entry, selected, index, typeEntryMap, showWorkspace, dateDisplayFormat, appLocale, onSelect, onHover } = options
       const presentation = resolveSearchResultPresentation({
         result,
         entry,
         typeEntryMap,
         showWorkspace,
         dateDisplayFormat,
+        appLocale,
       })
 
       return (
@@ -617,6 +624,7 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
         typeEntryMap,
         showWorkspace,
         dateDisplayFormat,
+        appLocale,
         listRef,
         onSelect,
         onHover,
@@ -642,6 +650,7 @@ export function SearchPanel({ open, vaultPath, entries, onSelectNote, onClose }:
                 typeEntryMap={typeEntryMap}
                 showWorkspace={showWorkspace}
                 dateDisplayFormat={dateDisplayFormat}
+                appLocale={appLocale}
                 onSelect={onSelect}
                 onHover={onHover}
               />

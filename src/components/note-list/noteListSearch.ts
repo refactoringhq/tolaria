@@ -1,4 +1,5 @@
 import type { VaultEntry } from '../../types'
+import type { AppLocale } from '../../lib/i18n'
 import type { DateDisplayFormat } from '../../utils/dateDisplay'
 import type { RelationshipGroup } from '../../utils/noteListHelpers'
 import { resolvePropertyChipLabels } from '../note-item/propertyChipValues'
@@ -8,6 +9,7 @@ interface NoteListSearchContext {
   typeEntryMap: Record<string, VaultEntry>
   displayPropsOverride?: string[] | null
   dateDisplayFormat?: DateDisplayFormat
+  appLocale?: AppLocale
   fullTextResultPaths?: Set<string>
 }
 
@@ -39,6 +41,7 @@ function resolveSearchableText(entry: VaultEntry, context: NoteListSearchContext
         allEntries: context.allEntries,
         typeEntryMap: context.typeEntryMap,
         dateDisplayFormat: context.dateDisplayFormat,
+        appLocale: context.appLocale,
       },
     ),
   ]

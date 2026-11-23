@@ -8,7 +8,7 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import { useDateDisplayFormat } from "../../hooks/useAppPreferences";
+import { useAppLocale, useDateDisplayFormat } from "../../hooks/useAppPreferences";
 import type { VaultEntry } from "../../types";
 import { resolveNoteIcon } from "../../utils/noteIcon";
 import { openExternalUrl } from "../../utils/url";
@@ -141,6 +141,7 @@ export function PropertyChips({
 	onOpenNote: (entry: VaultEntry, event: MouseEvent) => void;
 }) {
 	const dateDisplayFormat = useDateDisplayFormat();
+	const appLocale = useAppLocale();
 	const chips = useMemo(() => {
 		const result: { key: string; values: PropertyChipValue[] }[] = [];
 		for (const prop of displayProps) {
@@ -148,11 +149,12 @@ export function PropertyChips({
 				allEntries,
 				typeEntryMap,
 				dateDisplayFormat,
+				appLocale,
 			});
 			if (values.length > 0) result.push({ key: prop, values });
 		}
 		return result;
-	}, [allEntries, dateDisplayFormat, displayProps, entry, typeEntryMap]);
+	}, [allEntries, appLocale, dateDisplayFormat, displayProps, entry, typeEntryMap]);
 
 	if (chips.length === 0) return null;
 

@@ -37,7 +37,7 @@ import { ChangeNoteContent } from './note-item/ChangeNoteContent'
 import { workspaceForEntry } from '../utils/workspaces'
 import { WorkspaceInitialsBadge } from './WorkspaceInitialsBadge'
 import { ConflictCopyBadge } from './ConflictCopyBadge'
-import { useDateDisplayFormat } from '../hooks/useAppPreferences'
+import { useAppLocale, useDateDisplayFormat } from '../hooks/useAppPreferences'
 import { writeNoteDragData } from '../utils/noteDragDrop'
 
 const TYPE_ICON_MAP: Record<string, ComponentType<SVGAttributes<SVGSVGElement>>> = {
@@ -384,9 +384,10 @@ function NoteTitleRow({
 
 function NoteDateRow({ entry, allEntries }: { entry: VaultEntry; allEntries: VaultEntry[] }) {
   const dateDisplayFormat = useDateDisplayFormat()
-  const modifiedLabel = formatTimestampForDateDisplay(getDisplayDate(entry), dateDisplayFormat)
+  const locale = useAppLocale()
+  const modifiedLabel = formatTimestampForDateDisplay(getDisplayDate(entry), dateDisplayFormat, locale)
   const createdLabel = entry.createdAt
-    ? `Created ${formatTimestampForDateDisplay(entry.createdAt, dateDisplayFormat)}`
+    ? `Created ${formatTimestampForDateDisplay(entry.createdAt, dateDisplayFormat, locale)}`
     : null
 
   if (!modifiedLabel && !createdLabel) return null

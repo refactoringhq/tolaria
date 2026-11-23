@@ -511,12 +511,13 @@ describe('SettingsPanel', () => {
     expect(screen.getByText('系统（简体中文）')).toBeInTheDocument()
   })
 
-  it('defaults date display to friendly, note width to normal, and sidebar type pluralization to enabled', () => {
+  it('defaults date display to friendly in Appearance, note width to normal, and sidebar type pluralization to enabled', () => {
     render(
       <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
     )
 
     expect(screen.getByTestId('settings-date-display-format')).toHaveAttribute('data-value', 'friendly')
+    expect(document.getElementById('settings-section-appearance')).toContainElement(screen.getByTestId('settings-date-display-format'))
     expect(screen.getByTestId('settings-default-note-width')).toHaveAttribute('data-value', 'normal')
     expect(
       within(screen.getByTestId('settings-sidebar-type-pluralization')).getByRole('switch')

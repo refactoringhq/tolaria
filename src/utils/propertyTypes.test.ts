@@ -153,17 +153,17 @@ describe('detectPropertyType', () => {
 describe('formatDateValue', () => {
   it('formats ISO date to friendly format', () => {
     const result = formatDateValue('2026-03-31')
-    expect(result).toBe('March 31, 2026')
+    expect(result).toBe('Mar 31, 2026')
   })
 
   it('formats ISO datetime', () => {
     const result = formatDateValue('2026-02-25T10:00')
-    expect(result).toBe('February 25, 2026')
+    expect(result).toBe('Feb 25, 2026')
   })
 
   it('formats MM/DD/YYYY', () => {
     const result = formatDateValue('02/25/2026')
-    expect(result).toBe('February 25, 2026')
+    expect(result).toBe('Feb 25, 2026')
   })
 
   it('formats dates with the selected display format', () => {
