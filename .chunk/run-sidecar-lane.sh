@@ -86,7 +86,7 @@ run_frontend_lane() {
   export VITEST_COVERAGE_MAX_WORKERS="${VITEST_COVERAGE_MAX_WORKERS:-2}"
   log_lane "vitest workers=${VITEST_COVERAGE_MAX_WORKERS}; coverage shards=${FRONTEND_COVERAGE_SHARDS:-1}"
   run_job frontend-lint pnpm lint
-  run_job frontend-build pnpm build
+  run_job frontend-build env NODE_OPTIONS="${FRONTEND_BUILD_NODE_OPTIONS:---max-old-space-size=4096}" pnpm build
 
   if ! wait_for_jobs; then
     return 1
