@@ -438,6 +438,7 @@ export function CalendarGrid({
 			</div>
 			<div
 				className="calendar-weeks calendar-scroll overflow-y-auto"
+				style={{ gridAutoRows: "max-content" }}
 				data-testid="calendar-weeks"
 			>
 				{weeks.map((week) => (

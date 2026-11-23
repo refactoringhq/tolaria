@@ -48,7 +48,6 @@
 	display: grid;
 	flex: 1 1 0;
 	min-height: 0;
-	grid-auto-rows: minmax(150px, auto);
 }
 
 .calendar-week {
