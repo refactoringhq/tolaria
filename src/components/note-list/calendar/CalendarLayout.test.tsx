@@ -171,7 +171,7 @@ describe("CalendarLayout", () => {
 	});
 
 	it.each(["quarter", "year"] as const)(
-		"passes the selected date format through the %s overview integration",
+		"keeps month/year headings while formatting days in the %s overview integration",
 		(view) => {
 			renderCalendar({
 				calendar: bindings({
@@ -186,10 +186,10 @@ describe("CalendarLayout", () => {
 			});
 
 			expect(
-				screen.getByRole("region", { name: "2026-10-01" }),
+				screen.getByRole("region", { name: "Oct 2026" }),
 			).toBeInTheDocument();
 			expect(
-				screen.getByRole("button", { name: "2026-10-01" }),
+				screen.getByRole("button", { name: "2026-10-01, 0" }),
 			).toBeInTheDocument();
 		},
 	);

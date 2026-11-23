@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import type { AppLocale } from "../../../lib/i18n";
+import { type AppLocale, getLocaleDateLocale } from "../../../lib/i18n";
 import {
 	type DateDisplayFormat,
 	formatDateValueForDisplay,
@@ -26,16 +26,13 @@ interface CalendarOverviewProps {
 	onSelectMonth: (day: DayKey) => void;
 }
 
-function monthName(
-	day: DayKey,
-	locale: AppLocale,
-	dateDisplayFormat?: DateDisplayFormat,
-): string {
-	return formatDateValueForDisplay(
-		day,
-		dateDisplayFormat ?? "friendly",
-		locale,
-	);
+function monthName(day: DayKey, locale: AppLocale): string {
+	const [year, month, date] = day.split("-").map(Number);
+	return new Intl.DateTimeFormat(getLocaleDateLocale(locale), {
+		month: "short",
+		year: "numeric",
+		timeZone: "UTC",
+	}).format(new Date(Date.UTC(year, month - 1, date)));
 }
 
 function monthItemCounts(
@@ -110,7 +107,7 @@ function MonthOverview({
 	return (
 		<section
 			className="calendar-overview-month"
-			aria-label={monthName(first, locale, dateDisplayFormat)}
+			aria-label={monthName(first, locale)}
 		>
 			<Button
 				type="button"
@@ -118,7 +115,7 @@ function MonthOverview({
 				className="calendar-overview-month__title"
 				onClick={() => onSelectMonth(first)}
 			>
-				{monthName(first, locale, dateDisplayFormat)}
+				{monthName(first, locale)}
 			</Button>
 			<div
 				className="calendar-overview-month__weekdays"
@@ -136,6 +133,11 @@ function MonthOverview({
 			>
 				{monthDays(year, monthNumber, daysInMonth, showWeekends).map((day) => {
 					const count = countByDay.get(day) ?? 0;
+					const formattedDay = formatDateValueForDisplay(
+						day,
+						dateDisplayFormat ?? "friendly",
+						locale,
+					);
 					const column = weekdayColumn(
 						day,
 						locale,
@@ -150,9 +152,9 @@ function MonthOverview({
 							key={day}
 							style={{ gridColumn: column }}
 							className={`calendar-overview-day${day === today ? " calendar-overview-day--today" : ""}`}
-							title={`${day}: ${count}`}
+							title={`${formattedDay}: ${count}`}
 							onClick={() => onSelectMonth(day)}
-							aria-label={`${day}, ${count}`}
+							aria-label={`${formattedDay}, ${count}`}
 						>
 							<span>{dayOfMonth(day)}</span>
 							{count > 0 && (
