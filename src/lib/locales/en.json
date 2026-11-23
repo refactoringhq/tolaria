@@ -686,6 +686,7 @@
   "sidebar.section.showInSidebar": "Show in sidebar",
   "sidebar.section.toggle": "Toggle {label}",
   "sidebar.disabled.comingSoon": "Coming soon",
+  "noteList.createdDate": "Created {date}",
   "noteList.title.archive": "Archive",
   "noteList.title.changes": "Changes",
   "noteList.title.inbox": "Inbox",

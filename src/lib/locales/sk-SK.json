@@ -686,6 +686,7 @@
   "sidebar.section.showInSidebar": "Zobraziť na bočnom paneli",
   "sidebar.section.toggle": "Prepnúť {label}",
   "sidebar.disabled.comingSoon": "Už čoskoro",
+  "noteList.createdDate": "Vytvorené {date}",
   "noteList.title.archive": "Archivovať",
   "noteList.title.changes": "Zmeny",
   "noteList.title.inbox": "Doručená pošta",

@@ -686,6 +686,7 @@
   "sidebar.section.showInSidebar": "Pokaż na pasku bocznym",
   "sidebar.section.toggle": "Przełącz {label}",
   "sidebar.disabled.comingSoon": "Wkrótce",
+  "noteList.createdDate": "Utworzono {date}",
   "noteList.title.archive": "Archiwum",
   "noteList.title.changes": "Zmiany",
   "noteList.title.inbox": "Skrzynka odbiorcza",

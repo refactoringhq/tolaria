@@ -686,6 +686,7 @@
   "sidebar.section.showInSidebar": "在側邊欄顯示",
   "sidebar.section.toggle": "切換{label}",
   "sidebar.disabled.comingSoon": "即將推出",
+  "noteList.createdDate": "建立日期：{date}",
   "noteList.title.archive": "歸檔",
   "noteList.title.changes": "更改",
   "noteList.title.inbox": "收件箱",

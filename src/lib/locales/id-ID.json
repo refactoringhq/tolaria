@@ -686,6 +686,7 @@
   "sidebar.section.showInSidebar": "Tampilkan di bilah sisi",
   "sidebar.section.toggle": "Alihkan {label}",
   "sidebar.disabled.comingSoon": "Segera hadir",
+  "noteList.createdDate": "Dibuat {date}",
   "noteList.title.archive": "Arsip",
   "noteList.title.changes": "Perubahan",
   "noteList.title.inbox": "Kotak Masuk",

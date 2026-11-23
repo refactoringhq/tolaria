@@ -686,6 +686,7 @@
   "sidebar.section.showInSidebar": "サイドバーに表示",
   "sidebar.section.toggle": "{label}を切り替える",
   "sidebar.disabled.comingSoon": "近日公開予定",
+  "noteList.createdDate": "{date}に作成",
   "noteList.title.archive": "アーカイブ",
   "noteList.title.changes": "変更点",
   "noteList.title.inbox": "受信トレイ",

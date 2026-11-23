@@ -688,6 +688,7 @@ files:
     sidebar.section.showInSidebar: e38d073926d6fb3dfc4d4347708e3cf5
     sidebar.section.toggle: 2992ffbc76e607a2dc0e99781f101637
     sidebar.disabled.comingSoon: 81151a1669ebd695e837f304a0d8ec79
+    noteList.createdDate: ff4997dacb5eb36fd1d6dae3f60a986f
     noteList.title.archive: e727b00944f81e1d0a95c12886ac4641
     noteList.title.changes: c112bb3542e98308d12d5ecb10a67abc
     noteList.title.inbox: 3882d32c66e7e768145ecd8f104b0c08
