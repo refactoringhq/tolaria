@@ -37,9 +37,11 @@ terminate_jobs() {
   local pids
   pids="$(jobs -pr || true)"
   if [[ -n "$pids" ]]; then
-    kill $pids 2>/dev/null || true
+    local -a pid_array=()
+    mapfile -t pid_array <<< "$pids"
+    kill "${pid_array[@]}" 2>/dev/null || true
     sleep 2
-    kill -KILL $pids 2>/dev/null || true
+    kill -KILL "${pid_array[@]}" 2>/dev/null || true
   fi
 }
 
