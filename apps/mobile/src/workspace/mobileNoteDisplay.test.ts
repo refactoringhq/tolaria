@@ -14,7 +14,7 @@ describe('mobile note display', () => {
     })
 
     expect(mobileNoteDisplayLabels(candidate, ['Due Date', 'URL', 'Published', 'Areas'])).toEqual([
-      'June 14, 2026',
+      'Jun 14, 2026',
       'tolaria.app',
       'false',
       'Design',
