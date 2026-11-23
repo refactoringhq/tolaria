@@ -63,11 +63,11 @@
   --text-on-fill: var(--white);
 
   /* --- Semantic borders (light mode) --- */
-  --border-default: var(--gray-200);
+  --border-default: var(--gray-150);
   --border-subtle: var(--gray-100);
   --border-strong: var(--gray-300);
   --border-input: var(--gray-500);
-  --border-dialog: var(--gray-200);
+  --border-dialog: var(--border-default);
   --border-focus: var(--blue-600);
 
   /* --- Interaction states (light mode) --- */
@@ -149,6 +149,7 @@
   --editor-paragraph-spacing: 0.5em;
 
   /* --- Overlays and shadows (light mode) --- */
+  --shadow-card-color: var(--ink-faint);
   --shadow-dialog: var(--ink-medium);
   --shadow-soft: var(--ink-soft);
   --shadow-medium: var(--ink-medium);
@@ -273,6 +274,7 @@
   --editor-paragraph-spacing: 0.5em;
 
   /* --- Overlays and shadows (dark mode) --- */
+  --shadow-card-color: var(--ink-soft);
   --shadow-dialog: var(--ink-heavy);
   --shadow-soft: var(--ink-strong);
   --shadow-medium: var(--ink-heavy);
@@ -298,6 +300,7 @@
   --feedback-error-bg: var(--accent-red-light);
 
   --shadow-overlay: var(--surface-overlay);
+  --shadow-card: 0 1px 2px -1px var(--shadow-card-color);
   --scrollbar-size: 0.5rem;
   --scrollbar-track: transparent;
 

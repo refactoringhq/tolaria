@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { FolderNode } from '../../types'
 import { readDraggedNotePath } from '../../utils/noteDragDrop'
+import { SIDEBAR_ITEM_HOVER_CLASS } from '../sidebar/sidebarStyles'
 import { useFolderRowInteractions } from './useFolderRowInteractions'
 
 interface FolderItemRowProps {
@@ -19,6 +20,19 @@ interface FolderItemRowProps {
   canOpenMenu?: boolean
   onCanDropNote?: (notePath: string, folderPath: string) => boolean
   onMoveNoteToFolder?: (notePath: string, folderPath: string) => Promise<unknown> | unknown
+}
+
+interface FolderSelectButtonOptions {
+  contentInset: number
+  hasChildren: boolean
+  isExpanded: boolean
+  isSelected: boolean
+  node: FolderNode
+  onClick: (clickDetail: number) => void
+  onContextMenu: MouseEventHandler<HTMLButtonElement>
+  onDoubleClick: () => void
+  onDragOver: DragEventHandler<HTMLButtonElement>
+  onDrop: DragEventHandler<HTMLButtonElement>
 }
 
 function useFolderNoteDropHandlers({
@@ -89,7 +103,8 @@ export function FolderItemRow(options: FolderItemRowProps) {
     <div
       className={cn(
         'group relative flex items-center gap-1 rounded transition-colors',
-        isSelected ? 'bg-[var(--accent-blue-light)] text-[var(--accent-blue)]' : 'text-foreground hover:bg-accent',
+        isSelected ? 'bg-[var(--accent-blue-light)] text-[var(--accent-blue)]' : 'text-foreground',
+        SIDEBAR_ITEM_HOVER_CLASS,
       )}
       style={{ paddingLeft: depthIndent, borderRadius: 4 }}
     >
@@ -116,18 +131,7 @@ export function FolderItemRow(options: FolderItemRowProps) {
   )
 }
 
-function FolderSelectButton(options: {
-  contentInset: number
-  hasChildren: boolean
-  isExpanded: boolean
-  isSelected: boolean
-  node: FolderNode
-  onClick: (clickDetail: number) => void
-  onContextMenu: MouseEventHandler<HTMLButtonElement>
-  onDoubleClick: () => void
-  onDragOver: DragEventHandler<HTMLButtonElement>
-  onDrop: DragEventHandler<HTMLButtonElement>
-}) {
+function FolderSelectButton(options: FolderSelectButtonOptions) {
   const {
     contentInset,
     hasChildren,
@@ -146,7 +150,8 @@ function FolderSelectButton(options: {
       variant="ghost"
       className={cn(
         'h-auto flex-1 justify-start gap-2 rounded text-left text-[13px] font-medium hover:bg-transparent',
-        isSelected ? 'text-[var(--accent-blue)] hover:text-[var(--accent-blue)]' : 'text-foreground hover:text-foreground',
+        isSelected ? 'text-[var(--accent-blue)]' : 'text-foreground',
+        'hover:text-[var(--accent-blue)] group-hover:text-[var(--accent-blue)]',
         'data-[note-drop-state=valid]:!bg-[var(--accent-blue-light)] data-[note-drop-state=valid]:ring-1 data-[note-drop-state=valid]:ring-[var(--accent-blue)]',
       )}
       style={{

@@ -2,8 +2,9 @@ import { useMemo, type ButtonHTMLAttributes, type RefObject } from 'react'
 import type { VaultEntry, ViewDefinition, ViewFile } from '../../types'
 import { Funnel } from '@phosphor-icons/react'
 import { NoteTitleIcon } from '../NoteTitleIcon'
+import { cn } from '@/lib/utils'
 import { SIDEBAR_COUNT_PILL_IDLE_CLASS, SidebarCountPill } from '../SidebarParts'
-import { SIDEBAR_ITEM_PADDING } from './sidebarStyles'
+import { SIDEBAR_COUNT_ACTIVE_CLASS, SIDEBAR_COUNT_HOVER_CLASS, SIDEBAR_ITEM_HOVER_CLASS, SIDEBAR_ITEM_PADDING, type SidebarItemStyle } from './sidebarStyles'
 import type { AppLocale } from '../../lib/i18n'
 import { ACCENT_COLORS } from '../../utils/typeColors'
 import { filterEntriesForViewFile } from '../../utils/noteListHelpers'
@@ -73,8 +74,10 @@ function resolveViewAccent(color: string | null): ViewAccent | null {
   }
 }
 
-function getViewRowStyle(showCount: boolean, isActive: boolean, accent: ViewAccent | null) {
+function getViewRowStyle(showCount: boolean, isActive: boolean, accent: ViewAccent | null): SidebarItemStyle {
   return {
+    '--sidebar-active-bg': accent?.background,
+    '--sidebar-active-fg': accent?.color,
     padding: showCount ? SIDEBAR_ITEM_PADDING.withCount : SIDEBAR_ITEM_PADDING.regular,
     borderRadius: 4,
     ...(isActive && accent ? { background: accent.background, color: accent.color } : {}),
@@ -88,13 +91,12 @@ function ViewIcon({ icon, isActive, accent }: { icon: string | null; isActive: b
   )
 }
 
-function ViewCountChip({ count, isActive, accent }: { count: number; isActive: boolean; accent: ViewAccent | null }) {
+function ViewCountChip({ count, isActive }: { count: number; isActive: boolean }) {
   if (count <= 0) return null
   return (
     <SidebarCountPill
       count={count}
-      className={isActive && accent ? undefined : SIDEBAR_COUNT_PILL_IDLE_CLASS}
-      style={isActive && accent ? { background: accent.color, color: 'var(--text-inverse)' } : undefined}
+      className={cn(isActive ? SIDEBAR_COUNT_ACTIVE_CLASS : SIDEBAR_COUNT_PILL_IDLE_CLASS, SIDEBAR_COUNT_HOVER_CLASS)}
       testId="view-count-chip"
     />
   )
@@ -103,7 +105,7 @@ function ViewCountChip({ count, isActive, accent }: { count: number; isActive: b
 function SidebarViewRowAsHtml(options: SidebarViewRowProps) {
   const { view, isActive, onSelect, dragHandleProps, count, locale, accent, rowRef, isRenaming, setIsRenaming, handleRenameSubmit, handleContextMenu, startRename, handleRowKeyDown } = options
   const showCount = count > 0
-  const rowClassName = `group/sidebar-row flex cursor-pointer select-none items-center gap-2 rounded transition-colors ${isActive ? 'bg-[var(--accent-blue-light)] text-[var(--accent-blue)]' : 'text-foreground hover:bg-accent'}`
+  const rowClassName = cn('group/sidebar-row flex cursor-pointer select-none items-center gap-2 rounded transition-colors', isActive ? 'bg-[var(--accent-blue-light)] text-[var(--accent-blue)]' : 'bg-transparent text-foreground', SIDEBAR_ITEM_HOVER_CLASS)
   const rowStyle = getViewRowStyle(showCount, isActive, accent)
   if (isRenaming) {
     return (
@@ -122,7 +124,7 @@ function SidebarViewRowAsHtml(options: SidebarViewRowProps) {
     <button
       ref={(node) => { rowRef.current = node }}
       type="button"
-      className={`${rowClassName} w-full border-0 bg-transparent text-left`}
+      className={`${rowClassName} w-full border-0 text-left`}
       style={rowStyle}
       {...dragHandleProps}
       onClick={onSelect}
@@ -132,7 +134,7 @@ function SidebarViewRowAsHtml(options: SidebarViewRowProps) {
     >
       <ViewIcon icon={view.definition.icon} isActive={isActive} accent={accent} />
       <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{view.definition.name}</span>
-      <ViewCountChip count={count} isActive={isActive} accent={accent} />
+      <ViewCountChip count={count} isActive={isActive} />
     </button>
   )
 }
