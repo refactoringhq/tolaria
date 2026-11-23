@@ -6,6 +6,7 @@ import type { VaultEntry } from "../../../types";
 import { NoteTitleIcon } from "../../NoteTitleIcon";
 import { PropertyChips } from "../../note-item/PropertyChips";
 import { cardDisplayProperties } from "../kanbanModel";
+import type { DayKey } from "./calendarDates";
 import type { CalendarItem } from "./calendarModel";
 
 /** A ghost Button reset to a block slot at its natural height, so an item is one native, focusable control like a Kanban card. */
@@ -126,6 +127,8 @@ export interface CalendarItemButtonProps {
 	style?: CSSProperties;
 	continuesBefore?: boolean;
 	continuesAfter?: boolean;
+	/** Day represented by a "+N more" popover when dragging from its list. */
+	anchor?: DayKey;
 }
 
 /** An item in the grid, the tray or a popover: click opens the note, drag reschedules it. */
@@ -135,7 +138,7 @@ export const CalendarItemButton = memo(function CalendarItemButton(
 	const { dragId, item, context, selected, justDropped, style } = props;
 	const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
 		id: dragId,
-		data: { item },
+		data: { item, anchor: props.anchor },
 		disabled: !context.draggable,
 	});
 	return (

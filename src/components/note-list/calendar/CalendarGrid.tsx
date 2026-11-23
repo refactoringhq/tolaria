@@ -229,7 +229,10 @@ function MoreOnDay({
 	selectedNotePath,
 }: MoreButtonProps) {
 	const [open, setOpen] = useState(false);
-	useDndMonitor({ onDragStart: () => setOpen(false) });
+	useDndMonitor({
+		onDragEnd: () => setOpen(false),
+		onDragCancel: () => setOpen(false),
+	});
 	const dayItems = useMemo(() => itemsOnDay(items, day), [day, items]);
 	const popoverContext = useMemo<CalendarItemContext>(
 		() => ({
@@ -273,6 +276,7 @@ function MoreOnDay({
 							context={popoverContext}
 							selected={item.entry.path === selectedNotePath}
 							justDropped={false}
+							anchor={day}
 							className="h-auto shrink-0"
 						/>
 					))}
@@ -314,6 +318,7 @@ function stackStyle(week: DayKey[]): CSSProperties {
 	return {
 		gridTemplateColumns: `repeat(${week.length}, minmax(0, 1fr))`,
 		top: DAY_HEADER_PX,
+		zIndex: 1,
 	};
 }
 

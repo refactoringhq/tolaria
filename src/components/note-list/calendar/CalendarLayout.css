@@ -359,6 +359,12 @@
 	border-color: var(--text-faint);
 }
 
+:where(.dark, [data-theme="dark"])
+	.calendar-item-slot:hover
+	.calendar-item.calendar-item--selected {
+	background-color: var(--surface-button);
+}
+
 @keyframes calendar-lift {
 	from {
 		transform: rotate(0deg) scale(1);
