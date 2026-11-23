@@ -29,9 +29,17 @@ export function parseCalloutMarker(line: string): CalloutMarker | null {
   }
 }
 
+const CALLOUT_TYPE = /^[a-z][a-z0-9_-]*$/u
+
+function serializableCalloutType(type: string): string {
+  const normalized = normalizedCalloutType(type)
+  return CALLOUT_TYPE.test(normalized) ? normalized : 'note'
+}
+
 export function formatCalloutMarker(marker: CalloutMarker): string {
-  const head = `[!${normalizedCalloutType(marker.type)}]`
-  return marker.title ? `${head} ${marker.title}` : head
+  const head = `[!${serializableCalloutType(marker.type)}]`
+  const title = marker.title.replace(/\s*[\r\n]+\s*/gu, ' ').trim()
+  return title ? `${head} ${title}` : head
 }
 
 export function calloutHeading(type: string, title: string, defaultHeading = 'Note'): string {
