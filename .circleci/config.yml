@@ -426,37 +426,8 @@ jobs:
           name: CodeScene project health gate
           command: |
             set -euo pipefail
-            if [[ -z "${CODESCENE_PAT:-}" || -z "${CODESCENE_PROJECT_ID:-}" ]]; then
-              echo "CODESCENE_PAT and CODESCENE_PROJECT_ID are required." >&2
-              exit 1
-            fi
-            hotspot_threshold="$(awk -F= '/^HOTSPOT_THRESHOLD=/{print $2}' .codescene-thresholds)"
-            average_threshold="$(awk -F= '/^AVERAGE_THRESHOLD=/{print $2}' .codescene-thresholds)"
-            response="$(curl -fsS \
-              -H "Authorization: Bearer ${CODESCENE_PAT}" \
-              -H "Accept: application/json" \
-              "https://api.codescene.io/v2/projects/${CODESCENE_PROJECT_ID}")"
-            HOTSPOT_SCORE="$(jq -r '.analysis.hotspot_code_health.now' \<<<"$response")" \
-            AVERAGE_SCORE="$(jq -r '.analysis.code_health.now' \<<<"$response")" \
-            HOTSPOT_THRESHOLD="$hotspot_threshold" \
-            AVERAGE_THRESHOLD="$average_threshold" \
-              node -e '
-                const read = (name) => {
-                  const value = Number.parseFloat(process.env[name] ?? "");
-                  if (!Number.isFinite(value)) throw new Error(`${name} is not numeric`);
-                  return value;
-                };
-                const hotspot = read("HOTSPOT_SCORE");
-                const average = read("AVERAGE_SCORE");
-                const hotspotThreshold = read("HOTSPOT_THRESHOLD");
-                const averageThreshold = read("AVERAGE_THRESHOLD");
-                console.log(`Hotspot Code Health: ${hotspot.toFixed(2)} (threshold ${hotspotThreshold.toFixed(2)})`);
-                console.log(`Average Code Health: ${average.toFixed(2)} (threshold ${averageThreshold.toFixed(2)})`);
-                if (hotspot < hotspotThreshold || average < averageThreshold) {
-                  console.error("CodeScene project health gate failed");
-                  process.exit(1);
-                }
-              '
+            bash scripts/check-codescene-project-health.test.sh
+            bash scripts/check-codescene-project-health.sh
       - run:
           name: Documentation build check
           command: |
