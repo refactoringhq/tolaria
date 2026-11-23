@@ -1,0 +1,15 @@
+--- a/tolaria-qa
++++ b/tolaria-qa
+@@ -44,4 +44,11 @@
+     req = urllib.request.Request(url, data=data, method=method, headers={"Content-Type": "application/json"})
++    sys.path.insert(0, os.path.join(repo_root(), "scripts"))
++    from tolaria_qa_smoke import retry_webdriver_request
+     try:
+-        r = urllib.request.urlopen(req, timeout=timeout); return json.load(r).get("value")
++        def read_response():
++            with urllib.request.urlopen(req, timeout=timeout) as response:
++                return json.load(response).get("value")
++        return retry_webdriver_request(read_response, f"WebDriver {method} {path}")
++    except RuntimeError as e:
++        die(str(e))
+     except urllib.error.HTTPError as e:
