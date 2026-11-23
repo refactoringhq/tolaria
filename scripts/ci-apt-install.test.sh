@@ -2,7 +2,9 @@
 # Regression guard for TOL-442: main's rust-lint job timed out after an hour
 # because `apt-get update` crawled on a slow Ubuntu mirror. The CI apt helper
 # must cap each apt-get call, retry on a fallback mirror, and still fail when
-# every attempt fails.
+# every attempt fails. It must also finish on a terminal: CircleCI steps run on a
+# pty, and sudo stalled restoring that terminal when `timeout` had moved it into
+# a background process group, so every Rust job hung after apt-get completed.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -15,7 +17,8 @@ pass() { echo "ok - $1"; }
 fail() { echo "not ok - $1" >&2; failures=$((failures + 1)); }
 
 # Fake apt-get: logs each call with the mirror currently in sources.list.
-# FAKE_APT_MODE: ok | hang (sleep past the timeout on the slow mirror) | broken.
+# FAKE_APT_MODE: ok | hang (sleep past the timeout on the slow mirror) | broken
+# | tty (restore the terminal settings on exit, as sudo does on CircleCI).
 mkdir -p "$work/bin"
 cat > "$work/bin/apt-get" <<'FAKE'
 #!/usr/bin/env bash
@@ -24,6 +27,7 @@ echo "$mirror $*" >> "$FAKE_APT_DIR/calls.log"
 case "$FAKE_APT_MODE" in
   hang) [[ "$mirror" == *archive.ubuntu.com* ]] && sleep 30 ;;
   broken) exit 100 ;;
+  tty) stty "$(stty -g)" ;;
 esac
 exit 0
 FAKE
@@ -46,6 +50,16 @@ run_helper() {
     CI_APT_ATTEMPTS=3 CI_APT_ATTEMPT_TIMEOUT=1 CI_APT_RETRY_DELAY=0 \
     CI_APT_FALLBACK_MIRROR=http://mirror.test/ubuntu \
     bash "$helper" "$@" > "$dir/out.log" 2>&1
+}
+
+# Runs the helper on a fresh pseudo-terminal, like a CircleCI step, with the
+# real attempt timeout so a stalled terminal shows up as a timeout.
+run_helper_on_tty() {
+  local dir="$1"
+  FAKE_APT_DIR="$dir" FAKE_APT_MODE=tty PATH="$work/bin:$PATH" \
+    CI_APT_SUDO="" CI_APT_SOURCES="$dir/sources.list" \
+    CI_APT_ATTEMPTS=1 CI_APT_ATTEMPT_TIMEOUT=5 CI_APT_RETRY_DELAY=0 \
+    script -qec "bash $helper pkg-a" /dev/null > "$dir/out.log" 2>&1
 }
 
 calls() { wc -l < "$1/calls.log" | tr -d ' '; }
@@ -77,6 +91,13 @@ if ! run_helper "$dir" broken pkg-a \
   pass "fails after the last attempt when apt keeps failing"
 else
   fail "fails after the last attempt when apt keeps failing"
+fi
+
+dir=$(stage terminal)
+if run_helper_on_tty "$dir" && [[ "$(calls "$dir")" == 2 ]]; then
+  pass "finishes when apt-get restores the terminal on a CI pty"
+else
+  fail "finishes when apt-get restores the terminal on a CI pty"
 fi
 
 dir=$(stage usage)

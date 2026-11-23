@@ -5,6 +5,9 @@
 # Each apt-get call is now capped; after a failed or timed-out attempt the remaining
 # attempts switch the Ubuntu archive to a fallback mirror. The install still
 # fails when no attempt succeeds.
+# `timeout --foreground` keeps sudo in the step's foreground process group: from a
+# background group, sudo stopped on SIGTTOU while restoring CircleCI's pty after
+# apt-get finished, and the job hung until the no-output limit.
 #
 # Usage: bash scripts/ci-apt-install.sh [apt-get install option]... <package>...
 set -euo pipefail
@@ -26,7 +29,7 @@ apt_options=(-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::http
 export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a
 
 apt_get() {
-  timeout "$attempt_timeout" "${sudo_args[@]}" apt-get "${apt_options[@]}" "$@"
+  timeout --foreground --kill-after=30 "$attempt_timeout" "${sudo_args[@]}" apt-get "${apt_options[@]}" "$@"
 }
 
 install_packages() {
