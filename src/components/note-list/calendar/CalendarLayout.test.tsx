@@ -242,7 +242,7 @@ describe("CalendarLayout", () => {
 		const { unmount } = renderCalendar({ properties: ["due", "owner"] });
 		const card = within(screen.getAllByRole("button", { name: "Launch" })[0]);
 		expect(card.getByTestId("property-chips")).toHaveTextContent(
-			"November 19, 2026",
+			"Nov 19, 2026",
 		);
 		expect(card.getByTestId("property-chips")).toHaveTextContent("Ada");
 
