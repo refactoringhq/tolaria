@@ -4,6 +4,11 @@
 	background-color: var(--muted);
 }
 
+/* Keep the controls in the note-list chrome; only the board below them is recessed. */
+.calendar-toolbar {
+	background-color: var(--background);
+}
+
 .calendar-scroll {
 	scrollbar-width: none;
 }
@@ -47,7 +52,7 @@
 
 .calendar-week {
 	position: relative;
-	min-height: 0;
+	min-height: 150px;
 	border-bottom: 1px solid var(--border-default);
 }
 
@@ -56,11 +61,13 @@
 }
 
 .calendar-week__days {
+	position: absolute;
+	inset: 0;
 	display: grid;
-	height: 100%;
 }
 
 .calendar-day {
+	position: relative;
 	min-width: 0;
 	min-height: 0;
 	border-right: 1px solid var(--border-subtle);
@@ -87,6 +94,10 @@
 }
 
 .calendar-day__header {
+	position: absolute;
+	top: 0;
+	right: 0;
+	left: 0;
 	display: flex;
 	height: 30px;
 	align-items: center;
@@ -186,7 +197,15 @@
 
 .calendar-item.calendar-item--selected {
 	border-color: var(--primary);
-	background-color: var(--state-hover-subtle);
+	background-color: var(--surface-card);
+}
+
+.calendar-more-popover__header {
+	position: sticky;
+	top: -0.5rem;
+	z-index: 1;
+	border-bottom: 1px solid var(--border-default);
+	background-color: var(--popover);
 }
 
 .calendar-item-slot--placeholder .calendar-item {
@@ -337,6 +356,12 @@
 :where(.dark, [data-theme="dark"]) .calendar-item-slot:hover .calendar-item {
 	background-color: var(--state-hover-strong);
 	border-color: var(--text-faint);
+}
+
+:where(.dark, [data-theme="dark"])
+	.calendar-item-slot:hover
+	.calendar-item.calendar-item--selected {
+	background-color: var(--surface-button);
 }
 
 @keyframes calendar-lift {
