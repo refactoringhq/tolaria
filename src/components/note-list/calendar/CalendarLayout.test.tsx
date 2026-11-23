@@ -14,8 +14,20 @@ import { makeEntry } from "../../../test-utils/noteListTestUtils";
 import type { VaultEntry } from "../../../types";
 import { CalendarLayout } from "./CalendarLayout";
 
-const { trackEvent } = vi.hoisted(() => ({ trackEvent: vi.fn() }));
+const { trackEvent, dndMonitor } = vi.hoisted(() => ({
+	trackEvent: vi.fn(),
+	dndMonitor: { current: null as unknown },
+}));
 vi.mock("../../../lib/telemetry", () => ({ trackEvent }));
+vi.mock("@dnd-kit/core", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@dnd-kit/core")>();
+	return {
+		...actual,
+		useDndMonitor: (...args: unknown[]) => {
+			dndMonitor.current = args[0];
+		},
+	};
+});
 
 const launch = makeEntry({
 	path: "/v/launch.md",
@@ -99,6 +111,28 @@ function day(key: string): HTMLElement {
 	return cell;
 }
 
+function busyEntries(prefix: string): VaultEntry[] {
+	return Array.from({ length: 6 }, (_, index) =>
+		makeEntry({
+			path: `/v/${prefix}-${index}.md`,
+			title: `${prefix} ${index}`,
+			properties: { due: "2026-11-10" },
+		}),
+	);
+}
+
+function emitDndMonitorEvent(name: "onDragStart" | "onDragEnd") {
+	const callbacks = dndMonitor.current as {
+		onDragStart?: unknown;
+		onDragEnd?: unknown;
+	} | null;
+	const callback =
+		name === "onDragStart" ? callbacks?.onDragStart : callbacks?.onDragEnd;
+	if (typeof callback === "function") {
+		act(() => (callback as (event: unknown) => void)({}));
+	}
+}
+
 describe("CalendarLayout", () => {
 	beforeEach(() => {
 		vi.useFakeTimers({ toFake: ["Date"] });
@@ -116,6 +150,15 @@ describe("CalendarLayout", () => {
 		expect(day("2026-12-01")).toHaveClass("calendar-day--outside");
 		expect(day("2026-11-21")).toHaveClass("calendar-day--weekend");
 		expect(day("2026-11-01")).toHaveTextContent("Nov 1");
+	});
+
+	it("keeps calendar items and overflow controls above day drop targets for mouse input", () => {
+		renderCalendar();
+		expect(
+			screen
+				.getAllByTestId("calendar-week")[0]
+				.querySelector(".calendar-week__lanes"),
+		).toHaveStyle({ zIndex: "1" });
 	});
 
 	it("starts weeks on Monday with localized names in Italian", () => {
@@ -193,6 +236,23 @@ describe("CalendarLayout", () => {
 		expect(
 			card.getByTestId("calendar-item-title").lastElementChild,
 		).toHaveClass("min-w-0", "whitespace-normal", "break-words");
+	});
+
+	it("renders all selected card properties and removes unchecked properties", () => {
+		const { unmount } = renderCalendar({ properties: ["due", "owner"] });
+		const card = within(screen.getAllByRole("button", { name: "Launch" })[0]);
+		expect(card.getByTestId("property-chips")).toHaveTextContent(
+			"November 19, 2026",
+		);
+		expect(card.getByTestId("property-chips")).toHaveTextContent("Ada");
+
+		unmount();
+		renderCalendar({ properties: ["owner"] });
+		const unchecked = within(
+			screen.getAllByRole("button", { name: "Launch" })[0],
+		).getByTestId("property-chips");
+		expect(unchecked).toHaveTextContent("Ada");
+		expect(unchecked).not.toHaveTextContent("November 19, 2026");
 	});
 
 	it("hides card fields when item properties are disabled", () => {
@@ -304,13 +364,7 @@ describe("CalendarLayout", () => {
 	});
 
 	it('collapses a busy day into "+N more" and lists every note in its popover', async () => {
-		const busy = Array.from({ length: 6 }, (_, index) =>
-			makeEntry({
-				path: `/v/busy-${index}.md`,
-				title: `Busy ${index}`,
-				properties: { due: "2026-11-10" },
-			}),
-		);
+		const busy = busyEntries("Busy");
 		const { onOpen } = renderCalendar({ items: busy });
 		const more = screen.getByTestId("calendar-more");
 		expect(more).toHaveTextContent("+3 more");
@@ -319,6 +373,10 @@ describe("CalendarLayout", () => {
 		const popover = await screen.findByTestId("calendar-more-popover");
 		const popoverItems = within(popover).getAllByTestId("calendar-item");
 		expect(popoverItems).toHaveLength(6);
+		expect(popoverItems[0]).toHaveAttribute("tabindex", "0");
+		expect(
+			popover.querySelector(".calendar-more-popover__header"),
+		).toBeInTheDocument();
 		for (const item of popoverItems) {
 			expect(item).toHaveClass("h-auto", "shrink-0");
 			expect(item.parentElement).toBe(
@@ -327,6 +385,23 @@ describe("CalendarLayout", () => {
 		}
 		fireEvent.click(within(popover).getByRole("button", { name: "Busy 4" }));
 		expect(onOpen).toHaveBeenCalledWith(busy[4], expect.anything());
+		await waitFor(() =>
+			expect(
+				screen.queryByTestId("calendar-more-popover"),
+			).not.toBeInTheDocument(),
+		);
+	});
+
+	it("keeps overflow items mounted during a drag, then closes the popover", async () => {
+		const busy = busyEntries("Drag");
+		renderCalendar({ items: busy });
+		fireEvent.click(screen.getByTestId("calendar-more"));
+		await screen.findByTestId("calendar-more-popover");
+		emitDndMonitorEvent("onDragStart");
+		await waitFor(() =>
+			expect(screen.getByTestId("calendar-more-popover")).toBeInTheDocument(),
+		);
+		emitDndMonitorEvent("onDragEnd");
 		await waitFor(() =>
 			expect(
 				screen.queryByTestId("calendar-more-popover"),

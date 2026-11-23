@@ -175,4 +175,24 @@ describe("calendar day cells fit cards at their natural height (TOL-393)", () =>
 		expect(screen.getByTestId("calendar-more")).toHaveTextContent("+5 more");
 		vi.unstubAllGlobals();
 	});
+
+	it("keeps every month week row at least 150px with many notes on one day", () => {
+		stubGeometry({ lanes: 20, card: 58 });
+		renderDay(15, ["date", "source"]);
+
+		const rows = screen.getAllByTestId("calendar-week");
+		expect(rows.length).toBeGreaterThanOrEqual(4);
+		expect(
+			getComputedStyle(screen.getByTestId("calendar-weeks")).gridAutoRows,
+		).toBe("max-content");
+		for (const row of rows) {
+			expect(Number.parseFloat(row.style.minHeight)).toBeGreaterThanOrEqual(
+				150,
+			);
+		}
+		const days = screen
+			.getAllByTestId("calendar-day")
+			.map((cell) => cell.dataset.day);
+		expect(new Set(days).size).toBe(days.length);
+	});
 });

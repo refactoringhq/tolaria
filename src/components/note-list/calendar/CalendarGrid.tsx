@@ -1,4 +1,4 @@
-import { useDroppable } from "@dnd-kit/core";
+import { useDndMonitor, useDroppable } from "@dnd-kit/core";
 import { Plus } from "@phosphor-icons/react";
 import { type CSSProperties, memo, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,8 @@ import {
 } from "./calendarModel";
 import { dayDropId } from "./useCalendarDrag";
 import { useLaneMeasure } from "./useLaneMeasure";
+
+const MIN_WEEK_ROW_PX = 150;
 
 export interface CalendarGridState {
 	today: DayKey;
@@ -230,11 +232,15 @@ function MoreOnDay({
 }: MoreButtonProps) {
 	const dateDisplayFormat = useDateDisplayFormat();
 	const [open, setOpen] = useState(false);
+	useDndMonitor({
+		onDragEnd: () => setOpen(false),
+		onDragCancel: () => setOpen(false),
+	});
 	const dayItems = useMemo(() => itemsOnDay(items, day), [day, items]);
 	const popoverContext = useMemo<CalendarItemContext>(
 		() => ({
 			...context,
-			draggable: false,
+			draggable: context.draggable,
 			onOpen: (entry, event) => {
 				setOpen(false);
 				context.onOpen(entry, event);
@@ -261,7 +267,7 @@ function MoreOnDay({
 				className="calendar-more-popover w-64 p-2"
 				data-testid="calendar-more-popover"
 			>
-				<p className="m-0 mb-1.5 px-1 text-xs font-semibold text-muted-foreground">
+				<p className="calendar-more-popover__header m-0 mb-1.5 px-1 py-1.5 text-xs font-semibold text-muted-foreground">
 					{fullDayLabel(day, locale, dateDisplayFormat)}
 				</p>
 				<div className="calendar-scroll flex max-h-72 flex-col gap-1 overflow-y-auto">
@@ -273,6 +279,7 @@ function MoreOnDay({
 							context={popoverContext}
 							selected={item.entry.path === selectedNotePath}
 							justDropped={false}
+							anchor={day}
 							className="h-auto shrink-0"
 						/>
 					))}
@@ -314,6 +321,7 @@ function stackStyle(week: DayKey[]): CSSProperties {
 	return {
 		gridTemplateColumns: `repeat(${week.length}, minmax(0, 1fr))`,
 		top: DAY_HEADER_PX,
+		zIndex: 1,
 	};
 }
 
@@ -324,7 +332,7 @@ function WeekRowView(props: WeekRowProps) {
 	return (
 		<div
 			className="calendar-week"
-			style={layout.minHeight > 0 ? { minHeight: layout.minHeight } : undefined}
+			style={{ minHeight: Math.max(MIN_WEEK_ROW_PX, layout.minHeight) }}
 			data-testid="calendar-week"
 		>
 			<div
@@ -433,9 +441,8 @@ export function CalendarGrid({
 			</div>
 			<div
 				className="calendar-weeks calendar-scroll overflow-y-auto"
-				style={{
-					gridTemplateRows: `repeat(${weeks.length}, minmax(auto, 1fr))`,
-				}}
+				style={{ gridAutoRows: "max-content" }}
+				data-testid="calendar-weeks"
 			>
 				{weeks.map((week) => (
 					<WeekRow

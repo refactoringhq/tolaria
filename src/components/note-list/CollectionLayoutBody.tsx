@@ -83,7 +83,7 @@ function rendererProps(
 		locale: props.locale,
 		typeEntryMap: props.typeEntryMap,
 		displayPropsOverride: props.displayPropsOverride,
-		selectedNotePath: props.selectedNotePath,
+		selectedNotePath: layout.panel.open ? props.selectedNotePath : null,
 		onOpen: (entry, event) => {
 			layout.panel.reopen();
 			props.onOpen(entry, event);
