@@ -3,6 +3,7 @@ import type { BlockLike, InlineItem } from './durableMarkdownBlocks'
 import {
   buildCalloutBlock,
   calloutHeading,
+  formatCalloutMarker,
   parseCalloutMarker,
   serializeCalloutBlock,
 } from './calloutMarkdown'
@@ -23,6 +24,14 @@ describe('callout markers', () => {
       type: 'tip',
     })
     expect(parseCalloutMarker('[!123] Invalid')).toBeNull()
+  })
+
+  it('keeps a written marker on one line with a type the parser accepts', () => {
+    expect(formatCalloutMarker({ type: 'Tip', title: 'First\n> [!danger] Second' }))
+      .toBe('[!tip] First > [!danger] Second')
+    expect(formatCalloutMarker({ type: 'warn]\n# Heading', title: '' })).toBe('[!note]')
+    expect(parseCalloutMarker(formatCalloutMarker({ type: 'custom-alert', title: 'Kept' })))
+      .toEqual({ title: 'Kept', type: 'custom-alert' })
   })
 
   it('leaves collapsible marker variants as ordinary blockquotes', () => {

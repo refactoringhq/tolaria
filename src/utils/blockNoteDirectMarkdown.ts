@@ -553,9 +553,11 @@ export function installBlockNoteDirectMarkdown(
 export function serializeBlockNoteMarkdown(
 	editor: DirectMarkdownCapableSerializer,
 	blocks: unknown[],
+	prepareLossyBlocks = (lossyBlocks: unknown[]) => lossyBlocks,
 ): string {
 	const direct = editor.blocksToMarkdownDirect?.(blocks);
 	if (direct?.supported) return direct.markdown;
-	const safeBlocks = normalizeUnsafeTableCardinalities(blocks);
+	const lossyBlocks = prepareLossyBlocks(blocks);
+	const safeBlocks = normalizeUnsafeTableCardinalities(lossyBlocks);
 	return editor.blocksToMarkdownLossy(restoreWikilinksInBlocks(safeBlocks));
 }
