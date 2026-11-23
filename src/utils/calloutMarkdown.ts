@@ -1,5 +1,5 @@
 import type { BlockLike, InlineItem, MarkdownSerializer } from './durableMarkdownBlocks'
-import { serializeBlockNoteMarkdown } from './blockNoteDirectMarkdown'
+import { serializeInlineMathAwareBlocks } from './mathMarkdown'
 
 export const CALLOUT_BLOCK_TYPE = 'calloutBlock'
 
@@ -29,9 +29,17 @@ export function parseCalloutMarker(line: string): CalloutMarker | null {
   }
 }
 
+const CALLOUT_TYPE = /^[a-z][a-z0-9_-]*$/u
+
+function serializableCalloutType(type: string): string {
+  const normalized = normalizedCalloutType(type)
+  return CALLOUT_TYPE.test(normalized) ? normalized : 'note'
+}
+
 export function formatCalloutMarker(marker: CalloutMarker): string {
-  const head = `[!${normalizedCalloutType(marker.type)}]`
-  return marker.title ? `${head} ${marker.title}` : head
+  const head = `[!${serializableCalloutType(marker.type)}]`
+  const title = marker.title.replace(/\s*[\r\n]+\s*/gu, ' ').trim()
+  return title ? `${head} ${title}` : head
 }
 
 export function calloutHeading(type: string, title: string, defaultHeading = 'Note'): string {
@@ -145,7 +153,7 @@ function quoteLine(line: string): string {
 
 function serializeCalloutBody(editor: MarkdownSerializer, block: BlockLike): string {
   if (!Array.isArray(block.content) || block.content.length === 0) return ''
-  const markdown = serializeBlockNoteMarkdown(editor, [{
+  const markdown = serializeInlineMathAwareBlocks(editor, [{
     content: block.content,
     props: {},
     type: 'paragraph',
