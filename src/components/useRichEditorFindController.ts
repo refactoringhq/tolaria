@@ -41,7 +41,7 @@ function useFindResults({
 		[doc, options, query],
 	);
 	const currentIndex = clampEditorFindIndex(activeIndex, result.matches.length);
-	const activeMatch = result.matches[currentIndex];
+	const activeMatch = result.matches.at(currentIndex);
 
 	useEffect(() => {
 		if (!open) return;

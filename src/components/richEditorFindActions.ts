@@ -38,7 +38,7 @@ export function useRichEditorFindActions({
 		(direction: 1 | -1) => {
 			const index = nextEditorFindIndex(activeIndex, matches.length, direction);
 			setActiveIndex(index);
-			const match = matches[index];
+			const match = matches.at(index);
 			if (match) selectMatch(match);
 		},
 		[activeIndex, matches, selectMatch, setActiveIndex],
