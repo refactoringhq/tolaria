@@ -19,4 +19,19 @@ describe("buildChangesEntries Windows paths", () => {
 			expect.objectContaining({ title: "Changed note" }),
 		]);
 	});
+
+	it("uses the filename for deleted notes with backslash separators", () => {
+		const deletedFile: ModifiedFile = {
+			path: String.raw`C:\vault\notes\nested\deleted-note.md`,
+			relativePath: String.raw`notes\nested\deleted-note.md`,
+			status: "deleted",
+		};
+
+		expect(buildChangesEntries([], [deletedFile])).toEqual([
+			expect.objectContaining({
+				filename: "deleted-note.md",
+				title: "Deleted Note",
+			}),
+		]);
+	});
 });

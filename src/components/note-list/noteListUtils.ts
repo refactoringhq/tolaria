@@ -223,7 +223,8 @@ function applyChangeStats<T extends VaultEntry>(
 }
 
 function createDeletedNoteEntry(file: ModifiedFile): DeletedNoteEntry {
-	const filename = file.relativePath.split("/").pop() ?? file.relativePath;
+	const relativePath = normalizeVaultRelativePath(file.relativePath);
+	const filename = relativePath.split("/").pop() ?? relativePath;
 	return {
 		path: file.path,
 		filename,
@@ -257,7 +258,7 @@ function createDeletedNoteEntry(file: ModifiedFile): DeletedNoteEntry {
 		hasH1: true,
 		fileKind: "markdown",
 		__deletedNotePreview: true,
-		__deletedRelativePath: file.relativePath,
+		__deletedRelativePath: relativePath,
 		__changeAddedLines: file.addedLines ?? null,
 		__changeDeletedLines: file.deletedLines ?? null,
 		__changeBinary: Boolean(file.binary),
