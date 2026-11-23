@@ -8,6 +8,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CalendarLayoutBindings } from "../../../collections/layoutRegistry";
+import { AppPreferencesProvider } from "../../../hooks/useAppPreferences";
 import type { AppLocale } from "../../../lib/i18n";
 import { makeEntry } from "../../../test-utils/noteListTestUtils";
 import type { VaultEntry } from "../../../types";
@@ -64,22 +65,28 @@ function renderCalendar({
 	calendar = bindings(),
 	items = entries,
 	locale = "en" as AppLocale,
+	dateDisplayFormat = "friendly" as const,
 	properties = [] as string[],
 	showProperties = true,
 } = {}) {
 	const onOpen = vi.fn();
 	const view = render(
-		<CalendarLayout
-			entries={items}
-			allEntries={items}
-			properties={properties}
-			showProperties={showProperties}
-			locale={locale}
-			typeEntryMap={{}}
-			selectedNotePath="/v/review.md"
-			onOpen={onOpen}
-			calendar={calendar}
-		/>,
+		<AppPreferencesProvider
+			appLocale={locale}
+			dateDisplayFormat={dateDisplayFormat}
+		>
+			<CalendarLayout
+				entries={items}
+				allEntries={items}
+				properties={properties}
+				showProperties={showProperties}
+				locale={locale}
+				typeEntryMap={{}}
+				selectedNotePath="/v/review.md"
+				onOpen={onOpen}
+				calendar={calendar}
+			/>
+		</AppPreferencesProvider>,
 	);
 	return { ...view, onOpen, calendar };
 }
@@ -119,6 +126,30 @@ describe("CalendarLayout", () => {
 		);
 		expect(screen.getByRole("button", { name: "Oggi" })).toBeInTheDocument();
 	});
+
+	it.each(["quarter", "year"] as const)(
+		"passes the selected date format through the %s overview integration",
+		(view) => {
+			renderCalendar({
+				calendar: bindings({
+					settings: {
+						dateProperty: "due",
+						endDateProperty: "end",
+						view,
+						showWeekends: true,
+					},
+				}),
+				dateDisplayFormat: "iso",
+			});
+
+			expect(
+				screen.getByRole("region", { name: "2026-10-01" }),
+			).toBeInTheDocument();
+			expect(
+				screen.getByRole("button", { name: "2026-10-01" }),
+			).toBeInTheDocument();
+		},
+	);
 
 	it("places notes with their icon, spans ranges across week rows, and keeps selection subtle", () => {
 		renderCalendar();
