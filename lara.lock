@@ -402,10 +402,10 @@ files:
     settings.vaultContent.title: f15c1cae7882448b3fb0404682e17e61
     settings.vaultContent.description: a53487bf1c7898a1459dc1510e216f7d
     settings.dateDisplay.default: 915e8ca934abe6625e17695ee7ae266a
-    settings.dateDisplay.defaultDescription: 502ed7ff7b9c0fe5971e8cb0576e91f6
+    settings.dateDisplay.defaultDescription: e286107c4a43a06a0a4fbb1ecd7c7a91
     settings.dateDisplay.us: abe1c573145c4419ba8bb158cf0068d6
     settings.dateDisplay.european: 0b4f509278b2919973c5d1ae906c162b
-    settings.dateDisplay.friendly: 81e56440280f6dfaef0eb503ca301578
+    settings.dateDisplay.friendly: 422ab130f4dcdb155094712e459a19eb
     settings.dateDisplay.iso: 89b4ef461b67eb141eadd0fc6caa8d8d
     settings.noteWidth.default: 66be0f882801fd19468181f31f58dc20
     settings.noteWidth.defaultDescription: 2b5fb6d7dfa2b1da1e47bcac30f58e8d

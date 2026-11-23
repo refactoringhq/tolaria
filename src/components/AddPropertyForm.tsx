@@ -65,7 +65,7 @@ function AddDateInput({
 }) {
   const dateDisplayFormat = useDateDisplayFormat()
   const selectedDate = value ? parseDateValue(value) : undefined
-  const formatted = value ? formatDateValue(value, dateDisplayFormat) : ''
+  const formatted = value ? formatDateValue(value, dateDisplayFormat, locale) : ''
   return (
     <Popover>
       <PopoverTrigger asChild>

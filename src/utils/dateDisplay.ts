@@ -1,24 +1,12 @@
 import { parseDashDateParts, parseSlashDateParts, type DateParts } from './dateStringParts'
+import { getLocaleDateLocale, type AppLocale } from '../lib/i18n'
 
 export type DateDisplayFormat = 'us' | 'european' | 'friendly' | 'iso'
 
 export const DEFAULT_DATE_DISPLAY_FORMAT: DateDisplayFormat = 'friendly'
 export const DATE_DISPLAY_FORMATS: readonly DateDisplayFormat[] = ['us', 'european', 'friendly', 'iso']
 
-const FRIENDLY_MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-] as const
+const DEFAULT_DATE_LOCALE: AppLocale = 'en'
 
 function isDateDisplayFormat(value: string): value is DateDisplayFormat {
   return DATE_DISPLAY_FORMATS.includes(value as DateDisplayFormat)
@@ -37,11 +25,17 @@ function twoDigit(value: number): string {
 export function formatDatePartsForDisplay(
   parts: DateParts,
   format: DateDisplayFormat = DEFAULT_DATE_DISPLAY_FORMAT,
+  locale: AppLocale = DEFAULT_DATE_LOCALE,
 ): string {
   if (format === 'us') return `${parts.month}/${parts.day}/${parts.year}`
   if (format === 'european') return `${parts.day}/${parts.month}/${parts.year}`
   if (format === 'iso') return `${parts.year}-${twoDigit(parts.month)}-${twoDigit(parts.day)}`
-  return `${FRIENDLY_MONTHS[parts.month - 1]} ${parts.day}, ${parts.year}`
+  return new Intl.DateTimeFormat(getLocaleDateLocale(locale), {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(parts.year, parts.month - 1, parts.day)))
 }
 
 function datePartsFromDate(date: Date): DateParts {
@@ -55,16 +49,18 @@ function datePartsFromDate(date: Date): DateParts {
 export function formatDateForDisplay(
   date: Date,
   format: DateDisplayFormat = DEFAULT_DATE_DISPLAY_FORMAT,
+  locale: AppLocale = DEFAULT_DATE_LOCALE,
 ): string {
-  return formatDatePartsForDisplay(datePartsFromDate(date), format)
+  return formatDatePartsForDisplay(datePartsFromDate(date), format, locale)
 }
 
 export function formatTimestampForDateDisplay(
   timestampSeconds: number | null | undefined,
   format: DateDisplayFormat = DEFAULT_DATE_DISPLAY_FORMAT,
+  locale: AppLocale = DEFAULT_DATE_LOCALE,
 ): string {
   if (!timestampSeconds) return ''
-  return formatDateForDisplay(new Date(timestampSeconds * 1000), format)
+  return formatDateForDisplay(new Date(timestampSeconds * 1000), format, locale)
 }
 
 export function parseDateDisplayParts(value: string): DateParts | null {
@@ -74,7 +70,8 @@ export function parseDateDisplayParts(value: string): DateParts | null {
 export function formatDateValueForDisplay(
   value: string,
   format: DateDisplayFormat = DEFAULT_DATE_DISPLAY_FORMAT,
+  locale: AppLocale = DEFAULT_DATE_LOCALE,
 ): string {
   const parts = parseDateDisplayParts(value)
-  return parts ? formatDatePartsForDisplay(parts, format) : value
+  return parts ? formatDatePartsForDisplay(parts, format, locale) : value
 }

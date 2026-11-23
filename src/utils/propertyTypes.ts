@@ -6,6 +6,7 @@ import { dateFromParts, parseDashDateParts, parseSlashDateParts, type DateParts 
 import { DEFAULT_DATE_DISPLAY_FORMAT, formatDateValueForDisplay, type DateDisplayFormat } from './dateDisplay'
 import { updateVaultConfigField } from './vaultConfigStore'
 import { canonicalSystemMetadataKey } from './systemMetadata'
+import type { AppLocale } from '../lib/i18n'
 
 export type PropertyDisplayMode = 'text' | 'number' | 'date' | 'boolean' | 'status' | 'url' | 'tags' | 'color'
 type PropertyKey = string
@@ -153,9 +154,10 @@ function resolveDateFromValue(value: PropertyValueText): Date | null {
 export function formatDateValue(
   value: PropertyValueText,
   dateDisplayFormat: DateDisplayFormat = DEFAULT_DATE_DISPLAY_FORMAT,
+  locale: AppLocale = 'en',
 ): PropertyValueText {
   return resolveDateFromValue(value)
-    ? formatDateValueForDisplay(value, dateDisplayFormat)
+    ? formatDateValueForDisplay(value, dateDisplayFormat, locale)
     : value
 }
 

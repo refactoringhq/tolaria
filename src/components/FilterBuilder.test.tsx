@@ -186,7 +186,7 @@ describe('FilterBuilder value inputs', () => {
       await vi.advanceTimersByTimeAsync(300)
     })
 
-    expect(screen.getByTestId('date-value-preview')).toHaveTextContent('Resolves to March 28, 2026')
+    expect(screen.getByTestId('date-value-preview')).toHaveTextContent('Resolves to Mar 28, 2026')
     expect(screen.getByTestId('filter-row')).toHaveClass('items-start')
   })
 

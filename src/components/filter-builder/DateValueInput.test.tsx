@@ -33,7 +33,7 @@ describe('DateValueInput', () => {
       vi.advanceTimersByTime(250)
     })
 
-    expect(screen.getByTestId('date-value-preview')).toHaveTextContent('Resolves to March 29, 2026')
+    expect(screen.getByTestId('date-value-preview')).toHaveTextContent('Resolves to Mar 29, 2026')
   })
 
   it('shows a neutral hint for unrecognized input and hides the preview on blur', async () => {

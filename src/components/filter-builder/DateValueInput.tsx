@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { parseDateFilterInput } from '@/utils/filterDates'
+import { formatDateForDisplay, type DateDisplayFormat } from '@/utils/dateDisplay'
+import { useAppLocale, useDateDisplayFormat } from '../../hooks/useAppPreferences'
+import type { AppLocale } from '../../lib/i18n'
 
 const DATE_PREVIEW_DEBOUNCE_MS = 250
 
@@ -25,12 +28,17 @@ function resolvedDate(value: string): Date | undefined {
   return value ? parseDateFilterInput(value) ?? undefined : undefined
 }
 
-function previewLabelForValue(previewValue: string, resolvedPreview: Date | null): string | null {
-  if (resolvedPreview) return format(resolvedPreview, 'MMMM d, yyyy')
+function previewLabelForValue(
+  previewValue: string,
+  resolvedPreview: Date | null,
+  dateDisplayFormat: DateDisplayFormat,
+  locale: AppLocale,
+): string | null {
+  if (resolvedPreview) return formatDateForDisplay(resolvedPreview, dateDisplayFormat, locale)
   return previewValue ? 'Not recognized' : null
 }
 
-function useDatePreview(value: string): DatePreviewState {
+function useDatePreview(value: string, dateDisplayFormat: DateDisplayFormat, locale: AppLocale): DatePreviewState {
   const [showPreview, setShowPreview] = useState(false)
   const [debouncedValue, setDebouncedValue] = useState(value)
 
@@ -42,7 +50,7 @@ function useDatePreview(value: string): DatePreviewState {
   const previewValue = showPreview ? debouncedValue.trim() : ''
   const resolvedPreview = previewValue ? parseDateFilterInput(previewValue) : null
   return {
-    previewLabel: previewLabelForValue(previewValue, resolvedPreview),
+    previewLabel: previewLabelForValue(previewValue, resolvedPreview, dateDisplayFormat, locale),
     resolvedPreview,
     selected: resolvedDate(value),
     setShowPreview,
@@ -63,12 +71,14 @@ function DatePreview({ label, resolved }: { label: string | null; resolved: Date
 }
 
 export function DateValueInput({ value, onChange }: DateValueInputProps) {
+  const dateDisplayFormat = useDateDisplayFormat()
+  const locale = useAppLocale()
   const {
     previewLabel,
     resolvedPreview,
     selected,
     setShowPreview,
-  } = useDatePreview(value)
+  } = useDatePreview(value, dateDisplayFormat, locale)
 
   return (
     <div className="flex flex-1 min-w-0 flex-col gap-1">
@@ -93,8 +103,8 @@ export function DateValueInput({ value, onChange }: DateValueInputProps) {
               size="sm"
               data-testid="date-picker-trigger"
               className="h-8 w-8 shrink-0 px-0"
-              title={selected ? format(selected, 'MMM d, yyyy') : 'Pick a date'}
-              aria-label={selected ? `Open date picker (${format(selected, 'MMM d, yyyy')})` : 'Open date picker'}
+              title={selected ? formatDateForDisplay(selected, dateDisplayFormat, locale) : 'Pick a date'}
+              aria-label={selected ? `Open date picker (${formatDateForDisplay(selected, dateDisplayFormat, locale)})` : 'Open date picker'}
             >
               <CalendarBlank size={14} className="shrink-0 text-muted-foreground" />
             </Button>

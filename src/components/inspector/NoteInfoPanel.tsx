@@ -7,9 +7,9 @@ import {
 } from '../../utils/dateDisplay'
 import { useDateDisplayFormat } from '../../hooks/useAppPreferences'
 
-function formatDate(timestamp: number | null, dateDisplayFormat: DateDisplayFormat): string {
+function formatDate(timestamp: number | null, dateDisplayFormat: DateDisplayFormat, locale: AppLocale): string {
   if (!timestamp) return '\u2014'
-  return formatTimestampForDateDisplay(timestamp, dateDisplayFormat)
+  return formatTimestampForDateDisplay(timestamp, dateDisplayFormat, locale)
 }
 
 function formatFileSize(bytes: number): string {
@@ -38,6 +38,7 @@ export function NoteInfoPanel({
   locale?: AppLocale
 }) {
   const dateDisplayFormat = useDateDisplayFormat()
+  const appLocale = locale ?? 'en'
   return (
     <div>
       <h4 className="font-mono-overline mb-2 flex items-center gap-1 text-muted-foreground">
@@ -45,8 +46,8 @@ export function NoteInfoPanel({
         {translate(locale, 'inspector.info.title')}
       </h4>
       <div className="flex flex-col gap-1.5">
-        <InfoRow label={translate(locale, 'inspector.info.modified')} value={formatDate(entry.modifiedAt, dateDisplayFormat)} />
-        <InfoRow label={translate(locale, 'inspector.info.created')} value={formatDate(entry.createdAt, dateDisplayFormat)} />
+        <InfoRow label={translate(locale, 'inspector.info.modified')} value={formatDate(entry.modifiedAt, dateDisplayFormat, appLocale)} />
+        <InfoRow label={translate(locale, 'inspector.info.created')} value={formatDate(entry.createdAt, dateDisplayFormat, appLocale)} />
         <InfoRow label={translate(locale, 'inspector.info.words')} value={String(entry.wordCount ?? 0)} />
         <InfoRow label={translate(locale, 'inspector.info.size')} value={formatFileSize(entry.fileSize)} />
       </div>

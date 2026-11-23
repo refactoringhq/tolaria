@@ -1,4 +1,5 @@
 import type { VaultEntry, SidebarSelection, InboxPeriod, ViewFile } from '../types'
+import type { AppLocale } from '../lib/i18n'
 import { APP_STORAGE_KEYS, LEGACY_APP_STORAGE_KEYS, getAppStorageItem } from '../constants/appStorage'
 import {
   orderInverseRelationshipLabels as sortInverseRelationshipLabels,
@@ -74,10 +75,11 @@ export function getDisplayDate(entry: VaultEntry): number | null {
 export function formatSubtitle(
   entry: VaultEntry,
   dateDisplayFormat: DateDisplayFormat = DEFAULT_DATE_DISPLAY_FORMAT,
+  appLocale: AppLocale = 'en',
 ): string {
   const parts: string[] = []
   const date = getDisplayDate(entry)
-  if (date) parts.push(formatTimestampForDateDisplay(date, dateDisplayFormat))
+  if (date) parts.push(formatTimestampForDateDisplay(date, dateDisplayFormat, appLocale))
   if (entry.wordCount > 0) {
     parts.push(`${entry.wordCount.toLocaleString('en-US')} words`)
   } else {
@@ -96,13 +98,14 @@ function wasCreatedBeforeLastModification(entry: VaultEntry): boolean {
 export function formatSearchSubtitle(
   entry: VaultEntry,
   dateDisplayFormat: DateDisplayFormat = DEFAULT_DATE_DISPLAY_FORMAT,
+  appLocale: AppLocale = 'en',
 ): string {
   const parts: string[] = []
   const modified = entry.modifiedAt ?? entry.createdAt
-  if (modified) parts.push(formatTimestampForDateDisplay(modified, dateDisplayFormat))
+  if (modified) parts.push(formatTimestampForDateDisplay(modified, dateDisplayFormat, appLocale))
   const created = entry.createdAt
   if (created && wasCreatedBeforeLastModification(entry)) {
-    parts.push(`Created ${formatTimestampForDateDisplay(created, dateDisplayFormat)}`)
+    parts.push(`Created ${formatTimestampForDateDisplay(created, dateDisplayFormat, appLocale)}`)
   }
   if (entry.wordCount > 0) {
     parts.push(`${entry.wordCount.toLocaleString('en-US')} words`)

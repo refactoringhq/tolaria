@@ -428,7 +428,7 @@ describe("calendar collection layout", () => {
 		);
 		fireEvent.click(
 			screen.getByRole("button", {
-				name: "New note on Tuesday, November 24, 2026",
+				name: "New note on Tuesday, Nov 24, 2026",
 			}),
 		);
 		expect(onCreate).toHaveBeenCalledWith({ start: "2026-11-24" });

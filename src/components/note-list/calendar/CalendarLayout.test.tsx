@@ -8,6 +8,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CalendarLayoutBindings } from "../../../collections/layoutRegistry";
+import { AppPreferencesProvider } from "../../../hooks/useAppPreferences";
 import type { AppLocale } from "../../../lib/i18n";
 import { makeEntry } from "../../../test-utils/noteListTestUtils";
 import type { VaultEntry } from "../../../types";
@@ -76,22 +77,28 @@ function renderCalendar({
 	calendar = bindings(),
 	items = entries,
 	locale = "en" as AppLocale,
+	dateDisplayFormat = "friendly" as const,
 	properties = [] as string[],
 	showProperties = true,
 } = {}) {
 	const onOpen = vi.fn();
 	const view = render(
-		<CalendarLayout
-			entries={items}
-			allEntries={items}
-			properties={properties}
-			showProperties={showProperties}
-			locale={locale}
-			typeEntryMap={{}}
-			selectedNotePath="/v/review.md"
-			onOpen={onOpen}
-			calendar={calendar}
-		/>,
+		<AppPreferencesProvider
+			appLocale={locale}
+			dateDisplayFormat={dateDisplayFormat}
+		>
+			<CalendarLayout
+				entries={items}
+				allEntries={items}
+				properties={properties}
+				showProperties={showProperties}
+				locale={locale}
+				typeEntryMap={{}}
+				selectedNotePath="/v/review.md"
+				onOpen={onOpen}
+				calendar={calendar}
+			/>
+		</AppPreferencesProvider>,
 	);
 	return { ...view, onOpen, calendar };
 }
@@ -135,9 +142,7 @@ describe("CalendarLayout", () => {
 
 	it("opens on the current month with today highlighted and neighbouring days muted", () => {
 		renderCalendar();
-		expect(screen.getByTestId("calendar-title")).toHaveTextContent(
-			"November 2026",
-		);
+		expect(screen.getByTestId("calendar-title")).toHaveTextContent("Nov 2026");
 		expect(screen.getAllByTestId("calendar-week")).toHaveLength(5);
 		expect(
 			day("2026-11-19").querySelector('[aria-current="date"]'),
@@ -158,14 +163,36 @@ describe("CalendarLayout", () => {
 
 	it("starts weeks on Monday with localized names in Italian", () => {
 		renderCalendar({ locale: "it-IT" });
-		expect(screen.getByTestId("calendar-title")).toHaveTextContent(
-			"novembre 2026",
-		);
+		expect(screen.getByTestId("calendar-title")).toHaveTextContent("nov 2026");
 		expect(screen.getAllByTestId("calendar-day")[0].dataset.day).toBe(
 			"2026-10-26",
 		);
 		expect(screen.getByRole("button", { name: "Oggi" })).toBeInTheDocument();
 	});
+
+	it.each(["quarter", "year"] as const)(
+		"keeps month/year headings while formatting days in the %s overview integration",
+		(view) => {
+			renderCalendar({
+				calendar: bindings({
+					settings: {
+						dateProperty: "due",
+						endDateProperty: "end",
+						view,
+						showWeekends: true,
+					},
+				}),
+				dateDisplayFormat: "iso",
+			});
+
+			expect(
+				screen.getByRole("region", { name: "Oct 2026" }),
+			).toBeInTheDocument();
+			expect(
+				screen.getByRole("button", { name: "2026-10-01, 0" }),
+			).toBeInTheDocument();
+		},
+	);
 
 	it("places notes with their icon, spans ranges across week rows, and keeps selection subtle", () => {
 		renderCalendar();
@@ -215,7 +242,7 @@ describe("CalendarLayout", () => {
 		const { unmount } = renderCalendar({ properties: ["due", "owner"] });
 		const card = within(screen.getAllByRole("button", { name: "Launch" })[0]);
 		expect(card.getByTestId("property-chips")).toHaveTextContent(
-			"November 19, 2026",
+			"Nov 19, 2026",
 		);
 		expect(card.getByTestId("property-chips")).toHaveTextContent("Ada");
 
@@ -256,23 +283,15 @@ describe("CalendarLayout", () => {
 	it("moves by month, week and back to today with buttons and keyboard shortcuts", () => {
 		const { calendar } = renderCalendar();
 		fireEvent.click(screen.getByTestId("calendar-next"));
-		expect(screen.getByTestId("calendar-title")).toHaveTextContent(
-			"December 2026",
-		);
+		expect(screen.getByTestId("calendar-title")).toHaveTextContent("Dec 2026");
 		fireEvent.keyDown(window, { key: "ArrowRight" });
-		expect(screen.getByTestId("calendar-title")).toHaveTextContent(
-			"January 2027",
-		);
+		expect(screen.getByTestId("calendar-title")).toHaveTextContent("Jan 2027");
 		fireEvent.keyDown(window, { key: "ArrowLeft" });
 		fireEvent.click(screen.getByTestId("calendar-previous"));
-		expect(screen.getByTestId("calendar-title")).toHaveTextContent(
-			"November 2026",
-		);
+		expect(screen.getByTestId("calendar-title")).toHaveTextContent("Nov 2026");
 		fireEvent.click(screen.getByTestId("calendar-next"));
 		fireEvent.keyDown(window, { key: "t" });
-		expect(screen.getByTestId("calendar-title")).toHaveTextContent(
-			"November 2026",
-		);
+		expect(screen.getByTestId("calendar-title")).toHaveTextContent("Nov 2026");
 		fireEvent.keyDown(window, { key: "w" });
 		expect(calendar.onSettingsChange).toHaveBeenCalledWith({ view: "week" });
 		expect(trackEvent).toHaveBeenCalledWith("calendar_view_changed", {
@@ -294,9 +313,7 @@ describe("CalendarLayout", () => {
 		document.body.appendChild(input);
 		fireEvent.keyDown(input, { key: "ArrowRight" });
 		fireEvent.keyDown(window, { key: "ArrowRight", metaKey: true });
-		expect(screen.getByTestId("calendar-title")).toHaveTextContent(
-			"November 2026",
-		);
+		expect(screen.getByTestId("calendar-title")).toHaveTextContent("Nov 2026");
 		input.remove();
 	});
 
@@ -398,7 +415,7 @@ describe("CalendarLayout", () => {
 		expect(calendar.onCreate).toHaveBeenCalledWith("2026-11-25");
 		expect(
 			within(day("2026-11-25")).getByTestId("calendar-day-add"),
-		).toHaveAccessibleName("New note on Wednesday, November 25, 2026");
+		).toHaveAccessibleName("New note on Wednesday, Nov 25, 2026");
 	});
 
 	it("keeps read-only sources from creating or dragging", () => {
