@@ -513,18 +513,45 @@ function resolveNoteItemTitle({
   return isUnavailableBinary ? 'Cannot open this file type' : undefined
 }
 
-function resolveNoteItemSurfaceProps(
-  options: NoteItemVisualState & {
-    entry: VaultEntry
-    previewKind: FilePreviewKind | null
-    onClickNote: NoteItemProps['onClickNote']
-    onPrefetch?: NoteItemProps['onPrefetch']
-    onContextMenu?: NoteItemProps['onContextMenu']
-    typeColor: string
-    typeLightColor: string
-    changeStatus?: NoteItemProps['changeStatus']
-  },
-): NoteItemSurfaceProps {
+function isNoteItemDraggable(
+  entry: VaultEntry,
+  isUnavailableBinary: boolean,
+  changeStatus?: NoteItemProps['changeStatus'],
+): boolean {
+  if (isUnavailableBinary || changeStatus === 'deleted') return false
+  return entry.fileKind === undefined || entry.fileKind === 'markdown'
+}
+
+function resolveNoteItemPointerHandlers({
+  entry,
+  draggable,
+  onPrefetch,
+  onContextMenu,
+}: {
+  entry: VaultEntry
+  draggable: boolean
+  onPrefetch?: NoteItemProps['onPrefetch']
+  onContextMenu?: NoteItemProps['onContextMenu']
+}): Pick<NoteItemSurfaceProps, 'onContextMenu' | 'onDragStart' | 'onMouseEnter'> {
+  return {
+    onContextMenu: onContextMenu ? (event) => onContextMenu(entry, event) : undefined,
+    onDragStart: draggable ? (event) => writeNoteDragData(event.dataTransfer, entry.path) : undefined,
+    onMouseEnter: entry.fileKind !== 'binary' && onPrefetch ? () => onPrefetch(entry) : undefined,
+  }
+}
+
+type NoteItemSurfaceOptions = NoteItemVisualState & {
+  entry: VaultEntry
+  previewKind: FilePreviewKind | null
+  onClickNote: NoteItemProps['onClickNote']
+  onPrefetch?: NoteItemProps['onPrefetch']
+  onContextMenu?: NoteItemProps['onContextMenu']
+  typeColor: string
+  typeLightColor: string
+  changeStatus?: NoteItemProps['changeStatus']
+}
+
+function resolveNoteItemSurfaceProps(options: NoteItemSurfaceOptions): NoteItemSurfaceProps {
   const {
     entry,
     isUnavailableBinary,
@@ -539,10 +566,7 @@ function resolveNoteItemSurfaceProps(
     typeLightColor,
     changeStatus,
   } = options
-  const draggable =
-    !isUnavailableBinary &&
-    (entry.fileKind === undefined || entry.fileKind === 'markdown') &&
-    changeStatus !== 'deleted'
+  const draggable = isNoteItemDraggable(entry, isUnavailableBinary, changeStatus)
 
   return {
     className: noteItemClassName({
@@ -560,9 +584,7 @@ function resolveNoteItemSurfaceProps(
       typeLightColor,
     }),
     onClick: createNoteItemClickHandler(entry, isUnavailableBinary, onClickNote),
-    onContextMenu: onContextMenu ? (event) => onContextMenu(entry, event) : undefined,
-    onDragStart: draggable ? (event) => writeNoteDragData(event.dataTransfer, entry.path) : undefined,
-    onMouseEnter: entry.fileKind !== 'binary' && onPrefetch ? () => onPrefetch(entry) : undefined,
+    ...resolveNoteItemPointerHandlers({ entry, draggable, onPrefetch, onContextMenu }),
     testId: resolveNoteItemTestId({
       isMultiSelected,
       previewKind,
