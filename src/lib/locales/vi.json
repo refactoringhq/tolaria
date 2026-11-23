@@ -686,6 +686,7 @@
   "sidebar.section.showInSidebar": "Hiển thị trong thanh bên",
   "sidebar.section.toggle": "Bật/tắt {label}",
   "sidebar.disabled.comingSoon": "Sắp ra mắt",
+  "noteList.createdDate": "Đã tạo {date}",
   "noteList.title.archive": "Kho lưu trữ",
   "noteList.title.changes": "Thay đổi",
   "noteList.title.inbox": "Hộp thư đến",

@@ -686,6 +686,7 @@
   "sidebar.section.showInSidebar": "In der Seitenleiste anzeigen",
   "sidebar.section.toggle": "{label} umschalten",
   "sidebar.disabled.comingSoon": "Demnächst verfügbar",
+  "noteList.createdDate": "Erstellt am {date}",
   "noteList.title.archive": "Archivieren",
   "noteList.title.changes": "Änderungen",
   "noteList.title.inbox": "Inbox",

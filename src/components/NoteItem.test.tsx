@@ -1,6 +1,8 @@
 import { render, screen, fireEvent, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NoteItem } from './NoteItem'
+import { AppPreferencesProvider } from '../hooks/useAppPreferences'
+import { translate } from '../lib/i18n'
 import { makeEntry } from '../test-utils/noteListTestUtils'
 import type { WorkspaceIdentity } from '../types'
 
@@ -267,6 +269,26 @@ describe('NoteItem', () => {
     expect(dateRow.className).toContain('grid')
     expect(dateRow).toHaveTextContent('Apr 8, 2025')
     expect(dateRow).toHaveTextContent('Created Apr 5, 2025')
+  })
+
+  it('labels the created date in the app language', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(NOW_SECONDS * 1000))
+    const entry = makeEntry({
+      title: 'Dated note',
+      createdAt: NOW_SECONDS - 86400 * 5,
+      modifiedAt: NOW_SECONDS - 86400 * 2,
+    })
+
+    render(
+      <AppPreferencesProvider appLocale="it-IT">
+        <NoteItem entry={entry} isSelected={false} typeEntryMap={{}} onClickNote={vi.fn()} />
+      </AppPreferencesProvider>,
+    )
+
+    const dateRow = screen.getByTestId('note-date-row')
+    expect(dateRow).toHaveTextContent(translate('it-IT', 'noteList.createdDate', { date: '5 apr 2025' }))
+    expect(dateRow).not.toHaveTextContent('Created')
   })
 
   it('shows the workspace badge after the creation date as an outlined badge', () => {

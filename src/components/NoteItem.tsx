@@ -39,6 +39,7 @@ import { WorkspaceInitialsBadge } from './WorkspaceInitialsBadge'
 import { ConflictCopyBadge } from './ConflictCopyBadge'
 import { useAppLocale, useDateDisplayFormat } from '../hooks/useAppPreferences'
 import { writeNoteDragData } from '../utils/noteDragDrop'
+import { translate } from '../lib/i18n'
 
 const TYPE_ICON_MAP: Record<string, ComponentType<SVGAttributes<SVGSVGElement>>> = {
   Project: Wrench,
@@ -387,7 +388,9 @@ function NoteDateRow({ entry, allEntries }: { entry: VaultEntry; allEntries: Vau
   const locale = useAppLocale()
   const modifiedLabel = formatTimestampForDateDisplay(getDisplayDate(entry), dateDisplayFormat, locale)
   const createdLabel = entry.createdAt
-    ? `Created ${formatTimestampForDateDisplay(entry.createdAt, dateDisplayFormat, locale)}`
+    ? translate(locale, 'noteList.createdDate', {
+        date: formatTimestampForDateDisplay(entry.createdAt, dateDisplayFormat, locale),
+      })
     : null
 
   if (!modifiedLabel && !createdLabel) return null
