@@ -686,6 +686,7 @@
   "sidebar.section.showInSidebar": "Показувати в бічній панелі",
   "sidebar.section.toggle": "Перемкнути {label}",
   "sidebar.disabled.comingSoon": "Незабаром",
+  "noteList.createdDate": "Створено {date}",
   "noteList.title.archive": "Архів",
   "noteList.title.changes": "Зміни",
   "noteList.title.inbox": "Вхідні",

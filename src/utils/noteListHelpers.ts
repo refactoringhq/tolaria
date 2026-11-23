@@ -52,20 +52,18 @@ export interface RelationshipGroup {
   entries: VaultEntry[]
 }
 
-export function relativeDate(ts: number | null): string {
+export function relativeDate(
+  ts: number | null,
+  dateDisplayFormat: DateDisplayFormat = DEFAULT_DATE_DISPLAY_FORMAT,
+  appLocale: AppLocale = 'en',
+): string {
   if (!ts) return ''
-  const now = Math.floor(Date.now() / 1000)
-  const diff = now - ts
-  if (diff < 0) {
-    const date = new Date(ts * 1000)
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  }
+  const diff = Math.floor(Date.now() / 1000) - ts
+  if (diff < 0 || diff >= 604800) return formatTimestampForDateDisplay(ts, dateDisplayFormat, appLocale)
   if (diff < 60) return 'just now'
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
-  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`
-  const date = new Date(ts * 1000)
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return `${Math.floor(diff / 86400)}d ago`
 }
 
 export function getDisplayDate(entry: VaultEntry): number | null {

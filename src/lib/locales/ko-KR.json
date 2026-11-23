@@ -686,6 +686,7 @@
   "sidebar.section.showInSidebar": "사이드바에 표시",
   "sidebar.section.toggle": "{label} 토글",
   "sidebar.disabled.comingSoon": "서비스 예정",
+  "noteList.createdDate": "{date}에 생성됨",
   "noteList.title.archive": "보관",
   "noteList.title.changes": "변경 사항",
   "noteList.title.inbox": "Inbox",

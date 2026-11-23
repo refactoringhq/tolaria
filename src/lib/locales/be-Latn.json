@@ -593,6 +593,7 @@
   "sidebar.section.showInSidebar": "Pakazvać u bakavoj paneli",
   "sidebar.section.toggle": "Pierakliučyć {label}",
   "sidebar.disabled.comingSoon": "Chutka zjavicca",
+  "noteList.createdDate": "Stvorana {date}",
   "noteList.title.archive": "Archiŭ",
   "noteList.title.changes": "Zmieny",
   "noteList.title.inbox": "Uvachodnyja",

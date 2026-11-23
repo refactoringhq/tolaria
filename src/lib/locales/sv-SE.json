@@ -686,6 +686,7 @@
   "sidebar.section.showInSidebar": "Visa i sidofältet",
   "sidebar.section.toggle": "Växla {label}",
   "sidebar.disabled.comingSoon": "Kommer snart",
+  "noteList.createdDate": "Skapad {date}",
   "noteList.title.archive": "Arkiv",
   "noteList.title.changes": "Ändringar",
   "noteList.title.inbox": "Inkorg",
