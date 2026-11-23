@@ -3,6 +3,7 @@ import {
   serializeBlockNoteMarkdown,
   type DirectMarkdownCapableSerializer,
 } from './blockNoteDirectMarkdown'
+import { isAsciiDigit, isAsciiLetter, isValidInlineLatex } from './mathInlineHeuristics'
 
 export const MATH_INLINE_TYPE = 'mathInline'
 export const MATH_BLOCK_TYPE = 'mathBlock'
@@ -72,10 +73,6 @@ interface TokenReadRequest {
 interface TextPosition {
   text: string
   index: number
-}
-
-interface LeadingAmount {
-  end: number
 }
 
 interface InlineMathMatch extends LatexPayload {
@@ -160,129 +157,6 @@ function findInlineMathEnd({ text, index: start }: TextPosition): number {
     }
   }
   return -1
-}
-
-function isValidInlineLatex({ latex }: LatexPayload): boolean {
-  return Boolean(latex.trim())
-    && !/^\s|\s$/.test(latex)
-    && !looksLikeFinancialProse({ latex })
-    && looksLikeIntentionalMath({ latex })
-}
-
-function looksLikeIntentionalMath({ latex }: LatexPayload): boolean {
-  const trimmed = latex.trim()
-  if (isSimpleVariable(trimmed)) return true
-  if (startsWithLikelyCurrencyAmount(trimmed)) return false
-  if (hasCoefficientVariableSyntax(trimmed)) return true
-  if (!hasMathSyntax(trimmed)) return false
-  if (hasLatexCommand(trimmed)) return true
-  return !hasPlainProseWord(trimmed)
-}
-
-function isSimpleVariable(text: string): boolean {
-  return /^[A-Za-z](?:['’])?$/u.test(text)
-}
-
-function hasLatexCommand(text: string): boolean {
-  return /\\[A-Za-z]+/u.test(text)
-}
-
-function hasMathSyntax(text: string): boolean {
-  return hasLatexCommand(text)
-    || /[-+*/=<>^_{}~]/u.test(text)
-}
-
-function hasPlainProseWord(text: string): boolean {
-  const withoutCommands = text.replace(/\\[A-Za-z]+/gu, '')
-  return /[A-Za-z]{3,}/u.test(withoutCommands)
-}
-
-function startsWithLikelyCurrencyAmount(text: string): boolean {
-  const amount = readLeadingAmount(text)
-  return amount !== null && (
-    amountBoundaryLooksLikeCurrency({ text, amount })
-    || amountSpanLacksMathIntent(text)
-  )
-}
-
-function readLeadingAmount(text: string): LeadingAmount | null {
-  const match = /^[\d,]+(?:\.\d+)?(?:[KMBT%])?/iu.exec(text)
-  if (!match) return null
-  return { end: match[0].length }
-}
-
-function amountBoundaryLooksLikeCurrency({ text, amount }: { text: string; amount: LeadingAmount }): boolean {
-  const nextChar = text.charAt(amount.end)
-  if (!nextChar) return true
-  return (nextChar === '/' && isAsciiLetter(text.charAt(amount.end + 1)))
-    || nextChar === ','
-    || nextChar === ')'
-    || /\s/u.test(nextChar)
-}
-
-function amountSpanLacksMathIntent(text: string): boolean {
-  if (hasCoefficientVariableSyntax(text)) return false
-  return !hasMathSyntax(text) || hasPlainProseWord(text)
-}
-
-function hasCoefficientVariableSyntax(text: string): boolean {
-  return /^[\d,]+(?:\.\d+)?[A-Za-z]{1,2}\d?(?:[_^][A-Za-z0-9{}]+)?$/u.test(text)
-}
-
-function looksLikeFinancialProse({ latex }: LatexPayload): boolean {
-  const trimmed = latex.trim()
-  return hasFinancialAmountPrefix(trimmed) && hasProseAfterAmount(trimmed)
-}
-
-function hasFinancialAmountPrefix(text: string): boolean {
-  const integerEnd = scanIntegerAmount(text)
-  if (integerEnd === 0) return false
-
-  const suffixIndex = scanDecimalAmount(text, integerEnd)
-  if (!isFinancialSuffix(text.charAt(suffixIndex))) return false
-
-  const nextChar = text.charAt(suffixIndex + 1)
-  return nextChar === ',' || nextChar === '.' || nextChar === ')' || /\s/.test(nextChar)
-}
-
-function scanIntegerAmount(text: string): number {
-  if (!isAsciiDigit(text.charAt(0))) return 0
-
-  let index = 0
-  while (isAsciiDigit(text.charAt(index)) || text.charAt(index) === ',') index += 1
-  return index
-}
-
-function scanDecimalAmount(text: string, index: number): number {
-  if (text.charAt(index) !== '.') return index
-
-  let nextIndex = index + 1
-  if (!isAsciiDigit(text.charAt(nextIndex))) return index
-  while (isAsciiDigit(text.charAt(nextIndex))) nextIndex += 1
-  return nextIndex
-}
-
-function isFinancialSuffix(char: string): boolean {
-  return 'KMBT%'.includes(char.toUpperCase())
-}
-
-function hasProseAfterAmount(text: string): boolean {
-  for (let index = 0; index < text.length - 2; index += 1) {
-    const current = text.charAt(index)
-    const next = text.charAt(index + 1)
-    if ((current === ',' || current === '.') && /\s/.test(next)) return true
-    if (/\s/.test(current) && isAsciiLetter(next) && isAsciiLetter(text.charAt(index + 2))) return true
-  }
-  return false
-}
-
-function isAsciiDigit(char: string): boolean {
-  return char >= '0' && char <= '9'
-}
-
-function isAsciiLetter(char: string): boolean {
-  const lowerChar = char.toLowerCase()
-  return lowerChar >= 'a' && lowerChar <= 'z'
 }
 
 function readInlineMath({ text, index }: TextPosition): InlineMathMatch | null {
