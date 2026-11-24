@@ -369,6 +369,24 @@ fn filter_visible_vault_entries(
     hide_gitignored: bool,
 ) -> Vec<VaultEntry> {
     vault::filter_gitignored_entries(vault_path, entries, hide_gitignored)
+        .into_iter()
+        .filter(|entry| !is_app_settings_file(entry))
+        .collect()
+}
+
+fn is_app_settings_file(entry: &VaultEntry) -> bool {
+    let path = Path::new(&entry.path);
+    let Some(parent) = path.parent().and_then(Path::file_name).and_then(|name| name.to_str()) else {
+        return false;
+    };
+    match parent {
+        "views" => path.extension().and_then(|extension| extension.to_str()) == Some("yml"),
+        "layouts" => path.extension().and_then(|extension| extension.to_str()) == Some("yml")
+            && path.file_stem().and_then(|stem| stem.to_str()).is_some_and(|stem| {
+                base64::Engine::decode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, stem).is_ok()
+            }),
+        _ => false,
+    }
 }
 
 fn scan_visible_vault_folders(vault_path: &Path) -> Result<Vec<FolderNode>, String> {
