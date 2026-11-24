@@ -166,3 +166,50 @@ describe('richEditorBlockTypeCommands', () => {
     })
   })
 })
+
+describe('multi-block selection', () => {
+  const bullet = { key: 'bullet', type: 'bulletListItem' } as never
+  function makeEditor(ids: string[], cursorId: string) {
+    const blocks = ids.map((id) => ({ id, type: 'checkListItem' }))
+    return {
+      getBlock: (id: string) => blocks.find((b) => b.id === id),
+      getSelection: () => ({ blocks }),
+      getTextCursorPosition: () => ({ block: blocks.find((b) => b.id === cursorId) }),
+      updateBlock: vi.fn(),
+    }
+  }
+
+  it('turns every selected block (including nested) via the command path', () => {
+    const editor = makeEditor(['a', 'b', 'c'], 'a')
+    turnCurrentBlockIntoType(editor, bullet, 'command_palette')
+    expect(editor.updateBlock.mock.calls.map((c) => c[0])).toEqual(['a', 'b', 'c'])
+  })
+
+  it('turns every selected block via the side menu when the clicked block is selected', () => {
+    const editor = makeEditor(['a', 'b', 'c'], 'a')
+    turnBlockIntoType(editor, 'b', bullet, 'block_menu')
+    expect(editor.updateBlock.mock.calls.map((c) => c[0])).toEqual(['a', 'b', 'c'])
+  })
+
+  it('turns only the clicked block when it is outside the selection', () => {
+    const editor = makeEditor(['a', 'b'], 'a')
+    turnBlockIntoType(editor, 'z', bullet, 'block_menu')
+    expect(editor.updateBlock).not.toHaveBeenCalled()
+  })
+
+  it('also turns nested list items of a converted list block, but not nested non-list blocks', () => {
+    const tree = {
+      id: 'p', type: 'checkListItem',
+      children: [
+        { id: 'c1', type: 'checkListItem', children: [{ id: 'g1', type: 'bulletListItem' }] },
+        { id: 'c2', type: 'paragraph' },
+      ],
+    }
+    const editor = {
+      getBlock: (id: string) => (id === 'p' ? tree : undefined),
+      updateBlock: vi.fn(),
+    }
+    turnBlockIntoType(editor as never, 'p', { key: 'numbered', type: 'numberedListItem' } as never, 'block_menu')
+    expect(editor.updateBlock.mock.calls.map((c) => c[0])).toEqual(['p', 'c1', 'g1'])
+  })
+})
