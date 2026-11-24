@@ -49,6 +49,11 @@ describe('git', () => {
     const result = await git(dir, ['ls-files', '--', ':(glob)*.md'])
     expect(result.stdout).toBe('')
   })
+
+  it('flushes commits to disk before reporting them, so an acknowledged save survives a crash', async () => {
+    expect((await git(dir, ['config', '--get', 'core.fsync'])).stdout.trim()).toBe('committed')
+    expect((await git(dir, ['config', '--get', 'core.fsyncMethod'])).stdout.trim()).toBe('batch')
+  })
 })
 
 describe('GitRepo.open', () => {

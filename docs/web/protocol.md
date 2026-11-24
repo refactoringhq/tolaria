@@ -212,7 +212,7 @@ The body is the complete new content of the file, as raw bytes. Exactly one prec
 | `If-Match: *` | "Overwrite whatever is there." Explicit last-write-wins. |
 | none | `428 precondition_required`. A missing header is more often a bug than a decision. |
 
-The server pulls from the git remote, decides, commits once, and pushes. The response is always a write result:
+The server decides, commits once (flushed to disk), and answers; the commit reaches the git remote in the background, a few seconds later (ADR 0308). A server started with no push debounce instead pulls before and pushes before it answers, as in ADR 0186. The response is always a write result:
 
 ```json
 { "outcome": "updated", "path": "welcome.md", "etag": "872e91ac…", "commit": "ddd19dd2…", "pushed": true, "docId": "bc1a7bc2-…" }
@@ -241,9 +241,9 @@ On `conflict`, `path` and `etag` describe the conflict copy and `current` descri
 ```
 
 - The copy is named `<name> (conflict <YYYY-MM-DD HHMM>)<ext>` in UTC, next to the original, with a counter appended (`… 1611 2`, `… 1611 3`) when the name is taken. It is an ordinary file with its own `docId`.
-- `pushed: false` means the commit is safe on the server but has not reached the git remote (the remote is unreachable, or pushing kept losing a race). The server pushes it with the next write or `POST /v1/sync`.
-- `Server-Timing: pull;dur=…, commit;dur=…, push;dur=…` reports the three phases in milliseconds.
-- If another device pushes the same file between the server's fetch and its push, the server keeps the pushed version and returns `conflict` with a conflict copy, exactly as above.
+- `pushed: false` means the commit is safe on the server but has not reached the git remote yet. That is the normal answer when pushes run in the background; the change feed's `push-success` says when it has. A push that fails (the remote is slow, unreachable or kept winning a race) is retried on its own, with a growing delay, until it lands.
+- `Server-Timing: pull;dur=…, commit;dur=…, push;dur=…` reports the three phases in milliseconds; with background pushes, `pull` and `push` are about zero.
+- If another device pushes the same file before the server's commit reaches the remote, the server keeps the pushed version under the path and moves its own to a conflict copy when it integrates the remote. A write answered before then said `updated`; the change feed's `pull` event and a fresh listing show the copy.
 
 ### `DELETE /v1/files/<path>`
 
