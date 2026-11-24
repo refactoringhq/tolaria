@@ -108,16 +108,32 @@ describe('editor callout schema', () => {
     expect(JSON.stringify(editor.document)).not.toContain('> Some text here')
   })
 
-  it('removes a duplicated quote marker from callout body lines during hydration', () => {
+  it('preserves leading quote characters in callout body content during hydration', () => {
     const hydrated = injectCalloutBlocks([{
       type: 'quote',
-      content: [{ type: 'text', text: '[!info]\n> Some text here\n> Another line' }],
+      content: [{ type: 'text', text: '[!info]\n> Some text here\n>> shift result' }],
     }])
 
     expect(hydrated[0]).toMatchObject({
       type: 'calloutBlock',
-      content: [{ type: 'text', text: 'Some text here\nAnother line' }],
+      content: [{ type: 'text', text: '> Some text here\n>> shift result' }],
     })
+  })
+
+  it('preserves an intentional nested quote marker in a callout body', () => {
+    const editor = BlockNoteEditor.create({ schema })
+    const markdown = '> [!info] Details\n> > This is an intentional nested quote.'
+    const hydrated = injectCalloutBlocks([{
+      type: 'quote',
+      content: [{ type: 'text', text: '[!info] Details\n> This is an intentional nested quote.' }],
+    }])
+    editor.replaceBlocks(editor.document, hydrated as Parameters<typeof editor.replaceBlocks>[1])
+
+    expect(hydrated[0]).toMatchObject({
+      type: 'calloutBlock',
+      content: [{ type: 'text', text: '> This is an intentional nested quote.' }],
+    })
+    expect(serializeDurableEditorBlocks(editor, editor.document).trim()).toBe(markdown)
   })
 
   it('leaves ordinary blockquotes unchanged', async () => {
