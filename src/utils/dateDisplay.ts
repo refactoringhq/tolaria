@@ -1,5 +1,5 @@
 import { parseDashDateParts, parseSlashDateParts, type DateParts } from './dateStringParts'
-import { getLocaleDateLocale, type AppLocale } from '../lib/i18n'
+import type { AppLocale } from '../lib/i18n'
 
 export type DateDisplayFormat = 'us' | 'european' | 'friendly' | 'iso'
 
@@ -7,6 +7,10 @@ export const DEFAULT_DATE_DISPLAY_FORMAT: DateDisplayFormat = 'friendly'
 export const DATE_DISPLAY_FORMATS: readonly DateDisplayFormat[] = ['us', 'european', 'friendly', 'iso']
 
 const DEFAULT_DATE_LOCALE: AppLocale = 'en'
+const DATE_LOCALE_OVERRIDES = new Map<AppLocale, string>([
+  ['en', 'en-US'],
+  ['vi', 'vi-VN'],
+])
 
 function isDateDisplayFormat(value: string): value is DateDisplayFormat {
   return DATE_DISPLAY_FORMATS.includes(value as DateDisplayFormat)
@@ -30,7 +34,7 @@ export function formatDatePartsForDisplay(
   if (format === 'us') return `${parts.month}/${parts.day}/${parts.year}`
   if (format === 'european') return `${parts.day}/${parts.month}/${parts.year}`
   if (format === 'iso') return `${parts.year}-${twoDigit(parts.month)}-${twoDigit(parts.day)}`
-  return new Intl.DateTimeFormat(getLocaleDateLocale(locale), {
+  return new Intl.DateTimeFormat(DATE_LOCALE_OVERRIDES.get(locale) ?? locale, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',

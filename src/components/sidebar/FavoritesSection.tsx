@@ -7,8 +7,19 @@ import { buildTypeEntryMap, getTypeColor, getTypeLightColor } from '../../utils/
 import { NoteTitleIcon } from '../NoteTitleIcon'
 import { isSelectionActive } from '../SidebarParts'
 import { SidebarGroupHeader } from './SidebarGroupHeader'
-import { SIDEBAR_ITEM_PADDING, SIDEBAR_SECTION_CONTENT_PADDING_BOTTOM } from './sidebarStyles'
+import { SIDEBAR_ITEM_HOVER_CLASS, SIDEBAR_ITEM_PADDING, SIDEBAR_SECTION_CONTENT_PADDING_BOTTOM, type SidebarItemStyle } from './sidebarStyles'
 import { translate, type AppLocale } from '../../lib/i18n'
+
+interface FavoritesSectionProps {
+  entries: VaultEntry[]
+  selection: SidebarSelection
+  onSelect: (selection: SidebarSelection) => void
+  onSelectNote?: (entry: VaultEntry) => void
+  onReorder?: (orderedPaths: string[]) => void
+  collapsed: boolean
+  locale?: AppLocale
+  onToggle: () => void
+}
 
 const FAVORITE_TYPE_ICON_MAP: Record<string, string> = {
   Project: 'wrench',
@@ -50,6 +61,14 @@ function SortableFavoriteItem({
   const icon = getFavoriteIcon(entry, typeEntryMap)
   const typeColor = getTypeColor(entry.isA ?? null, typeEntry?.color)
   const typeLightColor = getTypeLightColor(entry.isA ?? null, typeEntry?.color)
+  const rowStyle: SidebarItemStyle = {
+    '--sidebar-active-bg': typeLightColor,
+    '--sidebar-active-fg': typeColor,
+    padding: SIDEBAR_ITEM_PADDING.withCount,
+    borderRadius: 4,
+    gap: 4,
+    ...(isActive ? { background: typeLightColor } : {}),
+  }
 
   return (
     <div
@@ -64,13 +83,8 @@ function SortableFavoriteItem({
     >
       <button
         type="button"
-        className={`group/section group/sidebar-row flex cursor-pointer select-none items-center justify-between rounded transition-colors ${isActive ? '' : 'hover:bg-accent'} w-full`}
-        style={{
-          padding: SIDEBAR_ITEM_PADDING.withCount,
-          borderRadius: 4,
-          gap: 4,
-          ...(isActive ? { background: typeLightColor } : {}),
-        }}
+        className={`group/section group/sidebar-row flex cursor-pointer select-none items-center justify-between rounded transition-colors ${SIDEBAR_ITEM_HOVER_CLASS} w-full`}
+        style={rowStyle}
         onClick={onSelect}
       >
         <div className="flex min-w-0 flex-1 items-center" style={{ gap: 4 }}>
@@ -102,16 +116,6 @@ function reorderFavoriteIds(favoriteIds: string[], event: DragEndEvent) {
   return arrayMove(favoriteIds, oldIndex, newIndex)
 }
 
-interface FavoritesSectionProps {
-  entries: VaultEntry[]
-  selection: SidebarSelection
-  onSelect: (selection: SidebarSelection) => void
-  onSelectNote?: (entry: VaultEntry) => void
-  onReorder?: (orderedPaths: string[]) => void
-  collapsed: boolean
-  locale?: AppLocale
-  onToggle: () => void
-}
 
 export function FavoritesSection(options: FavoritesSectionProps) {
   const { entries, selection, onSelect, onSelectNote, onReorder, collapsed, locale = 'en', onToggle } = options

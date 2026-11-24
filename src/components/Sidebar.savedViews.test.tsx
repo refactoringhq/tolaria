@@ -72,9 +72,9 @@ describe("Sidebar saved views", () => {
 				height: "20px",
 				padding: "0 6px",
 			});
-			expect(countChip.className).toContain("bg-count-pill");
+			expect(countChip).toHaveClass("bg-transparent");
 			expect(countChip.className).toContain(
-				"group-hover/sidebar-row:bg-count-pill-hover",
+				"group-hover/sidebar-row:bg-transparent",
 			);
 		});
 
@@ -100,8 +100,8 @@ describe("Sidebar saved views", () => {
 				height: "20px",
 				padding: "0 6px",
 			});
-			expect(topNavCount.className).toContain("bg-count-pill");
-			expect(viewCount.className).toContain("bg-count-pill");
+			expect(topNavCount).toHaveClass("bg-transparent");
+			expect(viewCount).toHaveClass("bg-transparent");
 		});
 
 		it("renders phosphor view icons without leaking the raw icon name", () => {
@@ -161,10 +161,8 @@ describe("Sidebar saved views", () => {
 				color: "var(--accent-blue)",
 			});
 			expect(icon).toHaveStyle({ color: "var(--accent-blue)" });
-			expect(countChip).toHaveStyle({
-				background: "var(--accent-blue)",
-				color: "var(--text-inverse)",
-			});
+			expect(countChip).toHaveClass("bg-transparent", "font-medium");
+			expect(countChip.className).toContain("text-[var(--sidebar-active-fg,var(--accent-blue))]");
 		});
 
 		it("keeps the default active styling when a saved view color is invalid", () => {
