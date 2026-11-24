@@ -1556,8 +1556,10 @@ Conflict surfaces on the web (ADR 0290) add `ConflictCopyNotice` (rendered by `W
 
 In `apps/server`:
 
-- `Vault` (`src/vault.ts`) runs every mutation under one lock as pull, change, commit, push. `writeOutcome(current, incoming, precondition)` is the whole write decision.
-- `GitSync` (`src/gitSync.ts`) fetches, fast-forwards or replays unpushed commits onto the remote's history, and pushes with retry.
+- `Vault` (`src/vault.ts`) runs every mutation under one lock as change and commit; the commit is the save (ADR 0308). `writeOutcome(current, incoming, precondition)` is the whole write decision. With `pushDebounceMs: 0` every mutation also pulls before and pushes after, under the lock (ADR 0186).
+- `RemoteMirror` (`src/remoteMirror.ts`) keeps the git remote in step off the save path: debounced pushes (at most `maxPushDelayMs` after a commit while saves keep coming), retries with a growing delay, background fetches, and `POST /v1/sync`, all on one network queue that takes the vault lock only for local steps. It emits the change feed's `VaultEvent`s.
+- `GitSync` (`src/gitSync.ts`) fetches (`fetch`), fast-forwards or replays unpushed commits onto the remote's history (`integrate`), and pushes a given commit (`pushCommit`); `pull` and `push` combine them for the inline mode. `GitRepo.head()` remembers HEAD until a command that may move it runs.
+- `VaultIndex` and `SearchIndex` share `storedIndex.ts` (`readStoredIndex`, `writeIndex`, `DeferredWrite`) and `pathOrder.ts`: a save updates them in memory, and their stored copies are written at most every 30 s and on shutdown.
 - `VaultPath` (`src/paths.ts`) is a path that passed validation; only such paths reach the working clone.
 - `RateLimiter` (`src/rateLimit.ts`) keeps a token bucket per account (`accountOf`: the token's, or the anonymous one); `RateLimited` is its `429 rate_limited` with `Retry-After`. `ConnectionCounter` and `watchIdle` (`src/collab/connectionLimits.ts`) cap open websockets per account and per document and close idle ones with `4408` (ADR 0292).
 - `DocIndex` (`src/docIndex.ts`) gives each note a stable `docId` that follows renames, for the reserved collaboration channel.
