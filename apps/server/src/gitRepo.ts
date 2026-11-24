@@ -25,6 +25,8 @@ export const REMOTE = 'upstream'
 const UNREADABLE_AS_FILE = new Set(['ENOENT', 'EISDIR', 'ENOTDIR'])
 const PARENT_IS_A_FILE = new Set(['EEXIST', 'ENOTDIR'])
 const NOTHING_THERE = new Set(['ENOENT', 'ENOTDIR'])
+/** A full commit id (SHA-1 or SHA-256). */
+const COMMIT_ID = /^([0-9a-f]{40}|[0-9a-f]{64})$/
 /**
  * Commands that never move HEAD; any other one forgets the head `head()` remembered. A fetch
  * or a push only moves remote refs, and runs for seconds while saves go on.
@@ -112,9 +114,26 @@ export class GitRepo {
   async head(): Promise<string> {
     if (this.knownHead !== null) return this.knownHead
     const generation = this.generation
-    const head = (await this.run(['rev-parse', 'HEAD'])).stdout.trim()
+    const head = (await this.branchTip()) ?? (await this.run(['rev-parse', 'HEAD'])).stdout.trim()
     if (this.changing === 0 && generation === this.generation) this.knownHead = head
     return head
+  }
+
+  /**
+   * The commit of the checked-out branch, read from its ref file without starting git; null
+   * when HEAD is not a loose branch ref (a packed ref, a detached HEAD), for `rev-parse`.
+   * Git replaces a ref file by renaming a complete one over it, so a read sees a whole id.
+   */
+  private async branchTip(): Promise<string | null> {
+    try {
+      const head = await readFile(join(this.dir, '.git', 'HEAD'), 'utf8')
+      const ref = /^ref: (refs\/heads\/[^\s]+)\n?$/.exec(head)?.[1]
+      if (!ref) return null
+      const tip = (await readFile(join(this.dir, '.git', ref), 'utf8')).trim()
+      return COMMIT_ID.test(tip) ? tip : null
+    } catch {
+      return null
+    }
   }
 
   private async change(args: readonly string[], options: GitOptions): Promise<GitResult> {

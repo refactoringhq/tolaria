@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GitError, git } from '../src/git.ts'
 import { GitRepo } from '../src/gitRepo.ts'
+import type { VaultPath } from '../src/paths.ts'
 
 describe('git', () => {
   let dir: string
@@ -75,5 +76,24 @@ describe('GitRepo.open', () => {
     await expect(GitRepo.open({ dir: join(root, 'vault'), remoteUrl: remote })).rejects.toThrowError(
       /the remote has no commits/,
     )
+  })
+  it('knows its head after each commit, whether the branch ref is a file or packed', async () => {
+    const remote = join(root, 'remote.git')
+    const seed = join(root, 'seed')
+    await git(root, ['init', '-q', '--bare', '-b', 'main', remote])
+    await git(root, ['clone', '-q', remote, seed])
+    const author = { GIT_AUTHOR_NAME: 'T', GIT_AUTHOR_EMAIL: 't@x', GIT_COMMITTER_NAME: 'T', GIT_COMMITTER_EMAIL: 't@x' }
+    await git(seed, ['commit', '-q', '--allow-empty', '-m', 'seed'], { env: author })
+    await git(seed, ['push', '-q', 'origin', 'HEAD:main'])
+    const repo = await GitRepo.open({ dir: join(root, 'vault'), remoteUrl: remote })
+    const revParse = async () => (await git(repo.dir, ['rev-parse', 'HEAD'])).stdout.trim()
+
+    await repo.commitFile('note.md' as VaultPath, Buffer.from('one'), 'Create note.md')
+    expect(await repo.head()).toBe(await revParse())
+    await repo.run(['pack-refs', '--all'])
+    await repo.commitFile('note.md' as VaultPath, Buffer.from('two'), 'Update note.md')
+    expect(await repo.head()).toBe(await revParse())
+    await repo.run(['pack-refs', '--all'])
+    expect(await repo.head()).toBe(await revParse())
   })
 })
