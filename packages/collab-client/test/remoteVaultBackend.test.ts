@@ -8,9 +8,9 @@ import { LocalDiskStore } from '../../../apps/server/src/store.ts'
 import type { Vault } from '../../../apps/server/src/vault.ts'
 import { codec } from '../../../apps/server/test/collabHelpers.ts'
 import { createFixture, type Fixture, SEED_NOTES } from '../../../apps/server/test/helpers.ts'
+import type { VaultBackend, VaultCollabDoc } from '../../../src/lib/vaultBackend/types'
 import type { SocketLike } from '../src/collabProvider.ts'
 import { createRemoteVaultBackend, type RemoteBindings, RemoteError } from '../src/remoteVaultBackend.ts'
-import type { VaultBackend, VaultCollabDoc } from '../../../src/lib/vaultBackend/types'
 
 const TOKEN = 'test-token-0123456789'
 
@@ -135,6 +135,35 @@ describe('the remote vault backend', () => {
       ]),
     )
     expect(entries.length).toBe(3)
+  })
+
+  it('lists saved view definitions stored in the remote vault', async () => {
+    await fixture.desktop.commit('views/phone-projects.yml', [
+      'name: Phone Projects',
+      'icon: rocket',
+      'color: blue',
+      'sort: "modified:desc"',
+      'filters:',
+      '  all:',
+      '    - field: type',
+      '      op: equals',
+      '      value: Project',
+      '',
+    ].join('\n'))
+    await vault.syncNow()
+
+    const views = await backend.chrome.listViews()
+
+    expect(views).toEqual([expect.objectContaining({
+      filename: 'phone-projects.yml',
+      definition: expect.objectContaining({
+        name: 'Phone Projects',
+        icon: 'rocket',
+        color: 'blue',
+        sort: 'modified:desc',
+        filters: { all: [{ field: 'type', op: 'equals', value: 'Project' }] },
+      }),
+    })])
   })
 
   it('leaves dot files out of the entries, as the desktop does, so a new folder adds no note', async () => {

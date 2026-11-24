@@ -9,7 +9,7 @@ export const BACK_TO_NOTE_LIST_STATE_KEY = 'tolariaBackToNoteList'
 /** On `<html>` while the phone layout is active; App.css lays the panes out from it. */
 export const PHONE_PANE_ATTRIBUTE = 'data-phone-pane'
 
-export type PhonePane = 'list' | 'note'
+export type PhonePane = 'navigation' | 'list' | 'note'
 
 /** The phone web layout (TOL-193): the note list, then the note, one pane at a time. */
 export interface PhoneNoteStack {
@@ -17,6 +17,8 @@ export interface PhoneNoteStack {
   pane: PhonePane
   /** The in-app back control. */
   backToList: () => void
+  showNavigation: () => void
+  showList: () => void
   showNote: () => void
 }
 
@@ -70,16 +72,32 @@ function usePhonePaneAttribute(pane: PhonePane | null): void {
 }
 
 function usePublishedControls(stack: PhoneNoteStack): void {
-  const { active, backToList, showNote } = stack
+  const { active, pane, backToList, showNavigation, showList, showNote } = stack
   useLayoutEffect(() => {
     if (!active) return
-    publishPhoneNoteStack({ active, backToList, showNote })
+    publishPhoneNoteStack({ active, pane, backToList, showNavigation, showList, showNote })
     return () => { publishPhoneNoteStack(null) }
-  }, [active, backToList, showNote])
+  }, [active, pane, backToList, showNavigation, showList, showNote])
 }
 
 function noteListPaneFor(active: boolean, shown: boolean, show: (shown: boolean) => void): NoteListPane | undefined {
   return active ? { shown, show } : undefined
+}
+
+function visiblePhonePane(pane: PhonePane, shown: boolean): PhonePane {
+  return shown && pane === 'note' ? 'list' : pane
+}
+
+function usePhonePaneControls(initialRoute: WebRoute | null) {
+  const [pane, setPane] = useState<PhonePane>(() => initialRoute?.note ? 'note' : 'list')
+  const showNote = useCallback(() => { setPane('note') }, [])
+  const showNavigation = useCallback(() => { setPane('navigation') }, [])
+  const showList = useCallback(() => { setPane('list') }, [])
+  const backToList = useCallback(() => {
+    if (enteredFromNoteList()) window.history.back()
+    else setPane('list')
+  }, [])
+  return { pane, setPane, showNote, showNavigation, showList, backToList }
 }
 
 /**
@@ -92,20 +110,14 @@ export function usePhoneNoteStack({ activeNotePath, enabled, initialRoute, ready
   stack: PhoneNoteStack
 } {
   const active = usePhoneLayout(enabled)
-  const [listShown, setListShown] = useState(() => !initialRoute?.note)
-  const showNote = useCallback(() => { setListShown(false) }, [])
-  const backToList = useCallback(() => {
-    if (enteredFromNoteList()) window.history.back()
-    else setListShown(true)
-  }, [])
+  const { pane, setPane, showNote, showNavigation, showList, backToList } = usePhonePaneControls(initialRoute)
   useShowOpenedNote(activeNotePath, enabled && ready, showNote)
   useKeyboardAwareViewport(active)
 
-  const shown = listShown || !activeNotePath
-  const pane: PhonePane = shown ? 'list' : 'note'
-  const stack: PhoneNoteStack = { active, pane, backToList, showNote }
-  useBlurHiddenEditor(active && shown)
-  usePhonePaneAttribute(active ? pane : null)
+  const shown = pane !== 'note' || !activeNotePath
+  const stack: PhoneNoteStack = { active, pane: visiblePhonePane(pane, shown), backToList, showNavigation, showList, showNote }
+  useBlurHiddenEditor(active && pane !== 'note')
+  usePhonePaneAttribute(active ? stack.pane : null)
   usePublishedControls(stack)
-  return { noteListPane: noteListPaneFor(active, shown, setListShown), stack }
+  return { noteListPane: noteListPaneFor(active, pane === 'list' && shown, (isShown) => setPane(isShown ? 'list' : 'note')), stack }
 }

@@ -26,6 +26,8 @@ const WEB_FIELDS: Record<keyof Omit<VaultEntry, 'path' | 'filename'>, unknown> =
   aliases: [],
   belongsTo: [],
   status: null,
+  favorite: false,
+  favoriteIndex: null,
   fileSize: 0,
   snippet: '',
   relationships: {},
