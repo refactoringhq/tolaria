@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { GraphColorGroup } from '../../../collections/collectionTypes'
 import type { VaultEntry } from '../../../types'
 import { getTypeColor } from '../../../utils/typeColors'
-import { matchesGraphQuery, parseGraphQuery } from './graphQuery'
 
 /** WebGL needs concrete colors, so theme tokens are resolved once per theme into rgb(a) strings. */
 export interface GraphPalette {
@@ -11,7 +9,7 @@ export interface GraphPalette {
   transparent: string
   /** Fill of the hovered note. */
   accent: string
-  /** The first matching color group's color, else the type color. */
+  /** The note's type color. */
   nodeColor: (entry: VaultEntry) => string
   /** Removes the color probe; node colors resolve lazily until then. */
   dispose: () => void
@@ -71,22 +69,11 @@ function cssColorResolver(host: HTMLElement): { resolve: ColorResolver; dispose:
   return { resolve, dispose: () => probe.remove() }
 }
 
-type EntryColor = (entry: VaultEntry) => string | null
-
-/** Color groups in order: the first whose query matches the note wins. */
-function groupColorReader(groups: readonly GraphColorGroup[], resolve: ColorResolver): EntryColor {
-  const parsed = groups
-    .filter((group) => group.query.trim() && group.color)
-    .map((group) => ({ terms: parseGraphQuery(group.query), color: withAlpha(resolve(getTypeColor(null, group.color)), 1) }))
-  return (entry) => parsed.find((group) => matchesGraphQuery(entry, group.terms))?.color ?? null
-}
-
-export function readGraphPalette(host: HTMLElement, typeEntryMap: Record<string, VaultEntry>, groups: readonly GraphColorGroup[] = []): GraphPalette {
+export function readGraphPalette(host: HTMLElement, typeEntryMap: Record<string, VaultEntry>): GraphPalette {
   const { resolve, dispose } = cssColorResolver(host)
   const edgeBase = resolve('var(--muted-foreground)')
   const nodeColors = new Map<string, string>()
-  const groupColor = groupColorReader(groups, resolve)
-  const typeColor = (entry: VaultEntry) => {
+  const nodeColor = (entry: VaultEntry) => {
     const key = entry.isA ?? ''
     const cached = nodeColors.get(key)
     if (cached) return cached
@@ -95,7 +82,6 @@ export function readGraphPalette(host: HTMLElement, typeEntryMap: Record<string,
     nodeColors.set(key, color)
     return color
   }
-  const nodeColor = (entry: VaultEntry) => groupColor(entry) ?? typeColor(entry)
   return {
     relationshipEdge: withAlpha(edgeBase, RELATIONSHIP_EDGE_ALPHA),
     wikiLinkEdge: withAlpha(edgeBase, WIKI_LINK_EDGE_ALPHA),

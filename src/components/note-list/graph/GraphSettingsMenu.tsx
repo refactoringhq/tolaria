@@ -1,7 +1,6 @@
 import { SlidersHorizontal } from "@phosphor-icons/react";
 import { ActionTooltip } from "@/components/ui/action-tooltip";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
 	Popover,
 	PopoverContent,
@@ -23,9 +22,7 @@ import {
 	type TranslationKey,
 	translate,
 } from "../../../lib/i18n";
-import { GraphGroupsSection } from "./GraphGroupsSection";
 import { SettingsSection } from "./GraphSettingsSection";
-import { useDraftText } from "./useDraftText";
 
 export interface GraphSettingsMenuProps {
 	settings: GraphSettings;
@@ -33,7 +30,7 @@ export interface GraphSettingsMenuProps {
 	triggerClassName?: string;
 	/** Saves settings with the view. */
 	onChange: (patch: Partial<GraphSettings>) => void;
-	/** Shows settings live without saving (while a slider moves or a query is typed). */
+	/** Shows settings live without saving (while a slider moves). */
 	onPreview: (patch: Partial<GraphSettings>) => void;
 }
 
@@ -94,32 +91,6 @@ function SettingSlider({
 	);
 }
 
-function SearchSection({
-	settings,
-	locale,
-	onChange,
-	onPreview,
-}: Omit<GraphSettingsMenuProps, "triggerClassName">) {
-	const draft = useDraftText(
-		settings.search,
-		(search) => onPreview({ search }),
-		(search) => onChange({ search }),
-	);
-	return (
-		<SettingsSection title={translate(locale, "graph.settings.search")}>
-			<Input
-				value={draft.value}
-				placeholder={translate(locale, "graph.settings.searchPlaceholder")}
-				aria-label={translate(locale, "graph.settings.search")}
-				className="h-7 text-xs"
-				data-testid="graph-search-input"
-				onChange={(event) => draft.change(event.target.value)}
-				onBlur={draft.flush}
-			/>
-		</SettingsSection>
-	);
-}
-
 function DisplaySection(
 	props: Omit<GraphSettingsMenuProps, "triggerClassName">,
 ) {
@@ -171,7 +142,7 @@ function ForcesSection(
 	);
 }
 
-/** Obsidian-style graph settings: search, color groups, display and live forces, saved with the view. */
+/** Obsidian-style graph settings: display and live forces, saved with the view. */
 export function GraphSettingsMenu({
 	triggerClassName,
 	...props
@@ -201,10 +172,6 @@ export function GraphSettingsMenu({
 				className="graph-settings-menu flex max-h-[min(75vh,640px)] w-72 flex-col gap-2 overflow-y-auto p-2 text-xs"
 				data-testid="graph-settings-menu"
 			>
-				<SearchSection {...props} />
-				<Separator />
-				<GraphGroupsSection {...props} />
-				<Separator />
 				<DisplaySection {...props} />
 				<Separator />
 				<ForcesSection {...props} />
