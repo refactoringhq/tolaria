@@ -12,7 +12,7 @@ import type { SidebarSelection, VaultEntry, ViewDefinition, ViewFile } from '../
 import { MACOS_TRAFFIC_LIGHT_SAFE_PADDING } from '../../utils/platform'
 import { viewIdentityKey, viewSelectionForView } from '../../utils/viewIdentity'
 import { getContextMenuPositionStyle } from '../contextMenuPosition'
-import { isSelectionActive } from '../SidebarParts'
+import { isSelectionActive } from '../../utils/sidebarSelection'
 import { TypeCustomizePopover } from '../TypeCustomizePopover'
 import { SidebarGroupHeader } from './SidebarGroupHeader'
 import { SidebarViewItem } from './SidebarViewItem'
@@ -23,19 +23,7 @@ export { FavoritesSection } from './FavoritesSection'
 export { SidebarTopNav } from './SidebarTopNav'
 export { type SidebarSectionProps, TypesSection } from './SidebarTypesSection'
 
-const SIDEBAR_TITLE_BAR_ACTION_CLASSNAME =
-  '!h-auto !w-auto !min-w-0 !rounded-none !p-0 text-muted-foreground hover:!bg-transparent hover:text-foreground [&_svg]:!size-4'
-const SIDEBAR_TITLE_BAR_LEFT_PADDING = `var(--tolaria-macos-traffic-light-padding, ${MACOS_TRAFFIC_LIGHT_SAFE_PADDING}px)`
-
-const SIDEBAR_COLLAPSE_SHORTCUT = getAppCommandShortcutDisplay(APP_COMMAND_IDS.viewEditorList)
-const HISTORY_BACK_SHORTCUT = getAppCommandShortcutDisplay(APP_COMMAND_IDS.viewGoBack)
-const HISTORY_FORWARD_SHORTCUT = getAppCommandShortcutDisplay(APP_COMMAND_IDS.viewGoForward)
-const SIDEBAR_TYPE_CONTEXT_MENU_SURFACE_CLASSNAME =
-  'fixed z-50 inline-flex w-fit max-w-[calc(100vw-16px)] flex-col rounded-md border bg-popover p-1 shadow-md'
-const SIDEBAR_TYPE_CONTEXT_MENU_BUTTON_CLASSNAME =
-  'h-auto w-auto max-w-full justify-start gap-2 rounded-sm px-2 py-1.5 text-left text-sm font-normal'
-
-export function ViewsSection(options: {
+interface ViewsSectionProps {
   views: ViewFile[]
   selection: SidebarSelection
   onSelect: (selection: SidebarSelection) => void
@@ -49,7 +37,69 @@ export function ViewsSection(options: {
   sensors: ReturnType<typeof useSensors>
   entries: VaultEntry[]
   locale?: AppLocale
-}) {
+}
+
+interface SortableViewItemProps {
+  view: ViewFile
+  selection: SidebarSelection
+  onSelect: (selection: SidebarSelection) => void
+  onEditView?: (filename: string, rootPath?: string) => void
+  onDeleteView?: (filename: string, rootPath?: string) => void
+  onUpdateViewDefinition?: (filename: string, patch: Partial<ViewDefinition>, rootPath?: string) => void
+  entries: VaultEntry[]
+  locale?: AppLocale
+}
+
+interface SidebarTitleBarActionProps {
+  children: ReactNode
+  disabled?: boolean
+  label: string
+  onClick?: () => void
+  shortcut?: string
+}
+
+interface SidebarTitleBarProps {
+  locale?: AppLocale
+  onCollapse?: () => void
+  onGoBack?: () => void
+  onGoForward?: () => void
+  canGoBack?: boolean
+  canGoForward?: boolean
+}
+
+interface ContextMenuOverlayProps {
+  pos: { x: number; y: number } | null
+  type: string | null
+  innerRef: Ref<HTMLDivElement>
+  onOpenCustomize: (type: string) => void
+  onStartRename: (type: string) => void
+  onDelete: (type: string) => void
+  locale?: AppLocale
+}
+
+interface CustomizeOverlayProps {
+  target: string | null
+  typeEntryMap: Record<string, VaultEntry>
+  innerRef: Ref<HTMLDivElement>
+  onCustomize: (prop: 'icon' | 'color', value: string) => void
+  onChangeTemplate: (template: string) => void
+  onClose: () => void
+  locale?: AppLocale
+}
+
+const SIDEBAR_TITLE_BAR_ACTION_CLASSNAME =
+  '!h-auto !w-auto !min-w-0 !rounded-none !p-0 text-muted-foreground hover:!bg-transparent hover:text-foreground [&_svg]:!size-4'
+const SIDEBAR_TITLE_BAR_LEFT_PADDING = `var(--tolaria-macos-traffic-light-padding, ${MACOS_TRAFFIC_LIGHT_SAFE_PADDING}px)`
+
+const SIDEBAR_COLLAPSE_SHORTCUT = getAppCommandShortcutDisplay(APP_COMMAND_IDS.viewEditorList)
+const HISTORY_BACK_SHORTCUT = getAppCommandShortcutDisplay(APP_COMMAND_IDS.viewGoBack)
+const HISTORY_FORWARD_SHORTCUT = getAppCommandShortcutDisplay(APP_COMMAND_IDS.viewGoForward)
+const SIDEBAR_TYPE_CONTEXT_MENU_SURFACE_CLASSNAME =
+  'fixed z-50 inline-flex w-fit max-w-[calc(100vw-16px)] flex-col rounded-md border bg-popover p-1 shadow-md'
+const SIDEBAR_TYPE_CONTEXT_MENU_BUTTON_CLASSNAME =
+  'h-auto w-auto max-w-full justify-start gap-2 rounded-sm px-2 py-1.5 text-left text-sm font-normal'
+
+export function ViewsSection(options: ViewsSectionProps) {
   const {
     views,
     selection,
@@ -135,16 +185,7 @@ export function ViewsSection(options: {
   )
 }
 
-function SortableViewItem(options: {
-  view: ViewFile
-  selection: SidebarSelection
-  onSelect: (selection: SidebarSelection) => void
-  onEditView?: (filename: string, rootPath?: string) => void
-  onDeleteView?: (filename: string, rootPath?: string) => void
-  onUpdateViewDefinition?: (filename: string, patch: Partial<ViewDefinition>, rootPath?: string) => void
-  entries: VaultEntry[]
-  locale?: AppLocale
-}) {
+function SortableViewItem(options: SortableViewItemProps) {
   const { view, selection, onSelect, onEditView, onDeleteView, onUpdateViewDefinition, entries, locale } = options
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: view.filename })
 
@@ -181,13 +222,7 @@ const SidebarTitleBarAction = ({
   label,
   onClick,
   shortcut,
-}: {
-  children: ReactNode
-  disabled?: boolean
-  label: string
-  onClick?: () => void
-  shortcut?: string
-}) => {
+}: SidebarTitleBarActionProps) => {
   const title = titleWithShortcut(label, shortcut)
 
   return (
@@ -221,14 +256,7 @@ export const SidebarTitleBar = ({
   onGoForward,
   canGoBack = false,
   canGoForward = false,
-}: {
-  locale?: AppLocale
-  onCollapse?: () => void
-  onGoBack?: () => void
-  onGoForward?: () => void
-  canGoBack?: boolean
-  canGoForward?: boolean
-}) => {
+}: SidebarTitleBarProps) => {
   const { dragRegionRef } = useDragRegion<HTMLDivElement>()
   const collapseLabel = translate(locale, 'sidebar.action.collapse')
   const backLabel = translate(locale, 'command.navigation.goBack')
@@ -285,15 +313,7 @@ export const ContextMenuOverlay = ({
   onStartRename,
   onDelete,
   locale = 'en',
-}: {
-  pos: { x: number; y: number } | null
-  type: string | null
-  innerRef: Ref<HTMLDivElement>
-  onOpenCustomize: (type: string) => void
-  onStartRename: (type: string) => void
-  onDelete: (type: string) => void
-  locale?: AppLocale
-}) => {
+}: ContextMenuOverlayProps) => {
   if (!pos || !type) return null
 
   return (
@@ -338,32 +358,34 @@ export const ContextMenuOverlay = ({
   )
 }
 
-export const CustomizeOverlay = ({
-  target,
-  typeEntryMap,
-  innerRef,
-  onCustomize,
-  onChangeTemplate,
-  onClose,
-  locale = 'en',
-}: {
-  target: string | null
-  typeEntryMap: Record<string, VaultEntry>
-  innerRef: Ref<HTMLDivElement>
-  onCustomize: (prop: 'icon' | 'color', value: string) => void
-  onChangeTemplate: (template: string) => void
-  onClose: () => void
-  locale?: AppLocale
-}) => {
+function getTypeCustomizeValues(typeEntry: VaultEntry | undefined) {
+  return {
+    icon: typeEntry?.icon ?? null,
+    color: typeEntry?.color ?? null,
+    template: typeEntry?.template ?? null,
+  }
+}
+
+export const CustomizeOverlay = (options: CustomizeOverlayProps) => {
+  const {
+    target,
+    typeEntryMap,
+    innerRef,
+    onCustomize,
+    onChangeTemplate,
+    onClose,
+    locale = 'en',
+  } = options
   if (!target) return null
   const typeEntry = Reflect.get(typeEntryMap, target) as VaultEntry | undefined
+  const values = getTypeCustomizeValues(typeEntry)
 
   return (
     <div ref={innerRef} className="fixed z-50" style={{ left: 20, top: 100 }}>
       <TypeCustomizePopover
-        currentIcon={typeEntry?.icon ?? null}
-        currentColor={typeEntry?.color ?? null}
-        currentTemplate={typeEntry?.template ?? null}
+        currentIcon={values.icon}
+        currentColor={values.color}
+        currentTemplate={values.template}
         onChangeIcon={(icon) => onCustomize('icon', icon)}
         onChangeColor={(color) => onCustomize('color', color)}
         onChangeTemplate={onChangeTemplate}

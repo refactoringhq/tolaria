@@ -1,6 +1,7 @@
 import { Archive, FileText, Tray } from '@phosphor-icons/react'
 import type { SidebarSelection } from '../../types'
-import { isSelectionActive, NavItem, SIDEBAR_COUNT_PILL_IDLE_CLASS } from '../SidebarParts'
+import { NavItem, SIDEBAR_COUNT_PILL_IDLE_CLASS } from '../SidebarParts'
+import { isSelectionActive } from '../../utils/sidebarSelection'
 import { translate, type AppLocale } from '../../lib/i18n'
 
 interface SidebarTopNavProps {
