@@ -133,10 +133,12 @@ export class NoteSession {
 
   /**
    * The note's file changed. Called with the vault lock held, so it must not write to the
-   * vault; a conflict copy is written once the lock is free.
+   * vault; a conflict copy is written once the lock is free. `conflictCopy` names the copy a
+   * replay already saved of a version that crossed the file's (see `GitSync`).
    */
-  async fileChanged(): Promise<void> {
+  async fileChanged(conflictCopy?: VaultPath): Promise<void> {
     await this.takeIn(await this.services.vault.read(this.path))
+    if (conflictCopy) this.announceCopy(conflictCopy)
   }
 
   /**
@@ -280,13 +282,18 @@ export class NoteSession {
 
   /** Runs once the vault lock is free: the document takes the path, the incoming version a copy. */
   private async keepIncomingAsCopy(incoming: NoteVersion): Promise<void> {
-    const { vault, log } = this.services
+    const { vault } = this.services
     await this.flush()
     const copy = await vault.write(this.path, Buffer.from(incoming.markdown), { kind: 'match', etag: incoming.revision })
     if (copy.outcome !== 'conflict') return
-    log(`collab: ${this.path} changed on both sides; the incoming version is saved as ${copy.path}`)
-    this.conflictCopy = copy.path
-    this.doc.transact(() => this.meta.set(DOC_META.conflictCopy, copy.path), SERVER_ORIGIN)
+    this.announceCopy(copy.path)
+  }
+
+  /** Names the conflict copy of the note in `meta`, so editors are told. */
+  private announceCopy(path: string): void {
+    this.services.log(`collab: ${this.path} changed on both sides; the incoming version is saved as ${path}`)
+    this.conflictCopy = path
+    this.doc.transact(() => this.meta.set(DOC_META.conflictCopy, path), SERVER_ORIGIN)
   }
 
   private async rebase(version: NoteVersion): Promise<void> {

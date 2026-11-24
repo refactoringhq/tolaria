@@ -142,8 +142,8 @@ async function typeWhileTheDesktopPushes(
 		.locator(".bn-inline-content", { hasText: SECOND })
 		.first();
 	await expect(second).toBeVisible({ timeout: 15_000 });
-	// The server only sees the push when it pulls before writing the web edit: the e2e server
-	// does not pull on a timer (playwright.config.ts), which could adopt the push first (TOL-234).
+	// The server only sees the push when its own push of the web edit is rejected (ADR 0310):
+	// the e2e server does not pull on a timer (playwright.config.ts), which could adopt it first.
 	git(clone, ["push", "-q", "origin", "HEAD:main"]);
 	await second.click();
 	await page.keyboard.press("End");
