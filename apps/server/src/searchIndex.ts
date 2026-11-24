@@ -4,11 +4,9 @@ import type { BlobStore } from './store.ts'
 import type { Vault } from './vault.ts'
 import type { VaultChange } from './gitSync.ts'
 import type { VaultPath } from './paths.ts'
-import { putByPath, removeByPath, sortByPath } from './pathOrder.ts'
-import { DeferredWrite, INDEX_WRITE_DELAY_MS, type IndexFormat, type IndexParts, readStoredIndex, type StoredIndex, writeIndex } from './storedIndex.ts'
 
 export const INDEX_KEY = 'search-index.json'
-const FORMAT: IndexFormat = { key: INDEX_KEY, version: 1, name: 'search index', items: 'notes' }
+const INDEX_VERSION = 1
 /** Above this many changed files since the stored index, a rebuild is about as fast. */
 const CATCH_UP_LIMIT = 500
 const MAX_SNIPPET_CHARS = 300
@@ -23,6 +21,12 @@ interface IndexedNote {
   content: string
 }
 
+interface StoredIndex {
+  version: number
+  head: string
+  notes: IndexedNote[]
+}
+
 interface SearchHit {
   path: string
   title: string
@@ -31,40 +35,75 @@ interface SearchHit {
   score: number
 }
 
+function malformed(reason: string): Error {
+  return new Error(`search index is malformed: ${reason}`)
+}
+
+function parseJson(bytes: Uint8Array): unknown {
+  try {
+    return JSON.parse(Buffer.from(bytes).toString('utf8'))
+  } catch {
+    throw malformed('not valid JSON')
+  }
+}
+
+function storedFields(value: unknown): Partial<Record<keyof StoredIndex, unknown>> {
+  if (value instanceof Object && 'version' in value) return value
+  throw malformed('not an index object')
+}
+
+function parseIndex(bytes: Uint8Array | null): { head: string; notes: IndexedNote[] } | null {
+  if (!bytes) return null
+  const { version, head, notes } = storedFields(parseJson(bytes))
+  if (version !== INDEX_VERSION) throw new Error(`unsupported search index version: ${String(version)}`)
+  if (typeof head !== 'string' || head === '') throw malformed('no head commit')
+  if (!Array.isArray(notes)) throw malformed('no list of notes')
+  return { head, notes }
+}
+
+/** Reads the stored index; one that cannot be used is reported and rebuilt, not fatal. */
+async function readStored(store: BlobStore, log: (message: string) => void): Promise<{ head: string; notes: IndexedNote[] } | null> {
+  try {
+    return parseIndex(await store.get(INDEX_KEY))
+  } catch (error) {
+    log(`rebuilding the search index: ${error instanceof Error ? error.message : String(error)}`)
+    return null
+  }
+}
+
 function isMarkdownNote(path: string): boolean {
   return path.toLowerCase().endsWith('.md') && !path.split('/').some((seg) => seg.startsWith('.'))
 }
 
-const FENCE = /^```/
-
-/** Where a line of a note is, as the scan for searchable text goes down the note. */
-type Section = 'frontmatter' | 'code' | 'text'
-
-/** One line of a note, and whether it is the note's first. */
-interface NoteLine {
-  text: string
-  first: boolean
-}
-
-/** The section after `line`, which is itself searchable only when this returns null. */
-function nextSection(section: Section, line: NoteLine): Section | null {
-  const delimiter = line.text.trim() === '---'
-  if (section === 'frontmatter') return delimiter ? 'text' : 'frontmatter'
-  if (FENCE.test(line.text)) return section === 'code' ? 'text' : 'code'
-  if (section === 'code') return 'code'
-  return line.first && delimiter ? 'frontmatter' : null
-}
-
-/** The note's text without its frontmatter and fenced code blocks. */
 function extractSearchableContent(entry: Pick<VaultEntry, 'fileKind'>, content: string): string {
   if (entry.fileKind !== 'markdown') return content
-  let section: Section = 'text'
+  const lines = content.split(/\r?\n/)
+  let inFrontmatter = false
+  let inCodeBlock = false
   const searchable: string[] = []
-  for (const [index, text] of content.split(/\r?\n/).entries()) {
-    const next = nextSection(section, { text, first: index === 0 })
-    if (next === null) searchable.push(text)
-    else section = next
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    
+    if (i === 0 && line.trim() === '---') {
+      inFrontmatter = true
+      continue
+    }
+    if (inFrontmatter && line.trim() === '---') {
+      inFrontmatter = false
+      continue
+    }
+    if (inFrontmatter) continue
+    
+    if (line.match(/^```/)) {
+      inCodeBlock = !inCodeBlock
+      continue
+    }
+    if (inCodeBlock) continue
+    
+    searchable.push(line)
   }
+  
   return searchable.join('\n')
 }
 
@@ -86,7 +125,7 @@ function calculateScore(hit: SearchHit, queryLower: string): number {
   return score
 }
 
-function extractSnippet(content: string, matchPos: number): string {
+function extractSnippet(content: string, _queryLower: string, matchPos: number): string {
   const lines = content.split(/\r?\n/)
   let currentPos = 0
   
@@ -141,26 +180,23 @@ function findMatches(contentLower: string, queryLower: string): Array<{ pos: num
 export class SearchIndex {
   private readonly vault: Vault
   private readonly store: BlobStore
-  private readonly persist: DeferredWrite
   private head: string
   private notes: IndexedNote[]
   private dirty = false
 
-  private constructor({ vault, store, log }: IndexParts, { head, items }: StoredIndex<IndexedNote>) {
+  private constructor(vault: Vault, store: BlobStore, head: string, notes: IndexedNote[]) {
     this.vault = vault
     this.store = store
     this.head = head
-    this.notes = sortByPath(items)
-    this.persist = new DeferredWrite({ write: () => this.save(), delayMs: INDEX_WRITE_DELAY_MS, log })
+    this.notes = notes
   }
 
   /** Loads the stored index and brings it up to the vault's head, or builds it, as `VaultIndex.open` does. */
   static async open(vault: Vault, store: BlobStore, log: (message: string) => void = () => {}): Promise<SearchIndex> {
-    const parts = { vault, store, log }
-    const currentHead = await vault.head()
-    const stored = await readStoredIndex<IndexedNote>(store, FORMAT, log)
+    const currentHead = await vault.info().then((info) => info.head)
+    const stored = await readStored(store, log)
     if (stored) {
-      const index = new SearchIndex(parts, stored)
+      const index = new SearchIndex(vault, store, stored.head, stored.notes)
       if (stored.head === currentHead) return index
       const changes = await vault.changesSince(stored.head, CATCH_UP_LIMIT)
       if (changes) {
@@ -169,7 +205,7 @@ export class SearchIndex {
         return index
       }
     }
-    const index = new SearchIndex(parts, { head: currentHead, items: await SearchIndex.buildFromVault(vault) })
+    const index = new SearchIndex(vault, store, currentHead, await SearchIndex.buildFromVault(vault))
     index.dirty = true
     await index.save()
     return index
@@ -185,7 +221,7 @@ export class SearchIndex {
       try {
         const { bytes } = await vault.read(file.path as VaultPath)
         const content = bytes.toString('utf8')
-        const title = extractTitle({ content, path: file.path })
+        const title = extractTitle(content, file.path)
         const searchable = extractSearchableContent({ fileKind: 'markdown' } as Pick<VaultEntry, 'fileKind'>, content)
         
         notes.push({
@@ -199,7 +235,7 @@ export class SearchIndex {
       }
     }
     
-    return notes
+    return notes.sort((a, b) => a.path.localeCompare(b.path))
   }
 
   async search(query: string, limit: number): Promise<SearchResponse> {
@@ -233,7 +269,7 @@ export class SearchIndex {
       const matches = hit.contentMatches.slice(0, MATCHES_PER_FILE).map((match) => {
         const note = this.notes.find((n) => n.path === hit.path)
         if (!note) throw new Error(`Note not found: ${hit.path}`)
-        const snippet = extractSnippet(note.content, match.pos)
+        const snippet = extractSnippet(note.content, queryLower, match.pos)
         return { line: match.line, text: snippet }
       })
       
@@ -243,17 +279,11 @@ export class SearchIndex {
     return { results, truncated: hits.length > limit }
   }
 
-  /** Updates the index from vault changes; the store copy follows later. */
   async apply(changes: VaultChange[]): Promise<void> {
     if (changes.length === 0) return
-    this.head = await this.vault.head()
+    this.head = await this.vault.info().then((info) => info.head)
     await this.applyEach(changes)
-    if (this.dirty) this.persist.schedule()
-  }
-
-  /** Writes the index to the store now, if it changed since the last write. */
-  flush(): Promise<void> {
-    return this.persist.flush()
+    await this.save()
   }
 
   private async catchUp(head: string, changes: VaultChange[]): Promise<void> {
@@ -285,10 +315,18 @@ export class SearchIndex {
     try {
       const { bytes } = await this.vault.read(path)
       const content = bytes.toString('utf8')
-      const title = extractTitle({ content, path })
+      const title = extractTitle(content, path)
       const searchable = extractSearchableContent({ fileKind: 'markdown' } as Pick<VaultEntry, 'fileKind'>, content)
       
-      putByPath(this.notes, { path, title, contentLower: searchable.toLowerCase(), content })
+      this.notes = this.notes.filter((n) => n.path !== path)
+      this.notes.push({
+        path,
+        title,
+        contentLower: searchable.toLowerCase(),
+        content,
+      })
+      this.notes.sort((a, b) => a.path.localeCompare(b.path))
+      
       this.dirty = true
     } catch {
       this.removeNote(path)
@@ -296,20 +334,24 @@ export class SearchIndex {
   }
 
   private removeNote(path: VaultPath): void {
-    if (removeByPath(this.notes, path)) this.dirty = true
+    const before = this.notes.length
+    this.notes = this.notes.filter((n) => n.path !== path)
+    if (this.notes.length < before) this.dirty = true
   }
 
   private async save(): Promise<void> {
     if (!this.dirty) return
+    const stored: StoredIndex = {
+      version: INDEX_VERSION,
+      head: this.head,
+      notes: this.notes,
+    }
+    await this.store.put(INDEX_KEY, Buffer.from(JSON.stringify(stored)))
     this.dirty = false
-    await writeIndex(this.store, FORMAT, { head: this.head, items: this.notes }).catch((error: unknown) => {
-      this.dirty = true
-      throw error
-    })
   }
 }
 
-function extractTitle({ content, path }: { content: string; path: string }): string {
+function extractTitle(content: string, path: string): string {
   const lines = content.split(/\r?\n/)
   
   for (const line of lines) {
