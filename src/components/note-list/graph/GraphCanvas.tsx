@@ -143,7 +143,7 @@ export default function GraphCanvas(props: GraphCanvasProps) {
   const theme = useThemeSignature()
   const renderer = useGraphRenderer(stageRef, graph, theme, displayOf(settings))
   const { layout, stopAutoFit } = useLiveLayout({ graph, renderer, forces: forcesOf(settings) })
-  useGraphSync({ stageRef, graph, visible, typeEntryMap, groups: settings.colorGroups, theme, layout })
+  useGraphSync({ stageRef, graph, visible, typeEntryMap, theme, layout })
   const { focused, marked, emphasis, clicks, leaveFocus } = useGraphFocus({ ...props, graph, renderer })
   useOpenNoteHighlight(graph, renderer, marked, visible)
   const revealed = useMemo(() => (emphasis.focused ? [...emphasis.focused] : [marked ?? '']), [emphasis.focused, marked])

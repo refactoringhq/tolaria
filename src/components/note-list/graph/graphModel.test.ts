@@ -84,13 +84,12 @@ describe('graphModel', () => {
     })
   })
 
-  it('keeps only notes matching the search, with the links between them', () => {
+  it('ignores a saved search, which stays in the view file without a control to edit it', () => {
     const data = buildGraphData(list, vault)
-    const byType = visibleGraph(data, { ...ALL, search: 'type:project' })
-    expect(byType.nodes.map((node) => node.entry.title)).toEqual(['Launch Project'])
-    const byTitle = visibleGraph(data, { ...ALL, search: 'a', showOrphans: false })
-    expect(byTitle.nodes.map((node) => node.entry.title).sort()).toEqual(['Ada', 'Launch Project'])
-    expect(byTitle.edges).toHaveLength(1)
+    const all = visibleGraph(data, ALL)
+    const searched = visibleGraph(data, { ...ALL, search: 'type:project' })
+    expect(searched.nodes.map((node) => node.id)).toEqual(all.nodes.map((node) => node.id))
+    expect(searched.edges).toHaveLength(all.edges.length)
   })
 
   it('lists the relationship keys and types the legend can filter', () => {

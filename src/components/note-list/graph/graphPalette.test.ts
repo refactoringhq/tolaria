@@ -34,31 +34,20 @@ describe('graphPalette', () => {
     expect(mixColors('rgba(0, 0, 0, 0.4)', 'rgb(200, 100, 50)', 1)).toBe('rgba(200, 100, 50, 1)')
   })
 
-  it('colors a note by its first matching group, else by its type', () => {
+  it('colors a note by its type', () => {
     const host = document.createElement('div')
     document.body.appendChild(host)
     const resolved: Record<string, string> = { 'var(--accent-red)': 'rgb(255, 0, 0)', 'var(--accent-blue)': 'rgb(0, 0, 255)' }
     vi.spyOn(window, 'getComputedStyle').mockImplementation(
       (element) => ({ color: resolved[String(Reflect.get(Reflect.get(element, 'style'), 'color'))] ?? '' }) as CSSStyleDeclaration,
     )
-    // Group colors snap to palette hues, like every other vault color (TOL-406).
-    const groups = [
-      { id: 'blank', query: ' ', color: '#00ff00' },
-      { id: 'people', query: 'type:Person', color: '#ff0000' },
-      { id: 'ada', query: 'Ada', color: '#0000ff' },
-    ]
-    const palette = readGraphPalette(host, {}, groups)
-    const plain = readGraphPalette(host, {})
+    const palette = readGraphPalette(host, { Person: makeEntry({ title: 'Person', color: 'red' }) })
     const ada = makeEntry({ title: 'Ada', isA: 'Person' })
     const grace = makeEntry({ title: 'Grace', isA: 'Person', path: '/grace.md' })
-    const project = makeEntry({ title: 'Ada Project', isA: 'Project', path: '/p.md' })
     expect(palette.nodeColor(ada)).toBe('rgba(255, 0, 0, 1)')
-    expect(palette.nodeColor(grace)).toBe('rgba(255, 0, 0, 1)')
-    expect(palette.nodeColor(project)).toBe('rgba(0, 0, 255, 1)')
-    expect(palette.nodeColor(makeEntry({ title: 'Other', isA: 'Project', path: '/o.md' }))).toBe(plain.nodeColor(project))
+    expect(palette.nodeColor(grace)).toBe(palette.nodeColor(ada))
     expect(palette.accent).toMatch(/, 1\)$/)
     palette.dispose()
-    plain.dispose()
     host.remove()
   })
 

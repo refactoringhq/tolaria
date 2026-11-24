@@ -1,7 +1,6 @@
 import { BulkActionBar } from "../BulkActionBar";
 import { CollectionLayoutBody } from "./CollectionLayoutBody";
 import { LayoutHeaderControls } from "./CollectionLayoutHeader";
-import { layoutPropertyVisibility } from "./collectionLayoutHeaderUtils";
 import { FilterPills } from "./FilterPills";
 import { layoutPropertyPicker } from "./kanbanCardFieldsPicker";
 import { LayoutEditorPanelClose } from "./LayoutEditorPanel";
@@ -325,7 +324,6 @@ function NoteListLayoutHeader(
 		| "handleSearchKeyDown"
 	> & {
 		layoutControls?: React.ReactNode;
-		propertyVisibility?: { visible: boolean; onToggle: () => void };
 	},
 ) {
 	const {
@@ -347,7 +345,6 @@ function NoteListLayoutHeader(
 		isSearching,
 		searchInputRef,
 		propertyPicker,
-		propertyVisibility,
 		handleSortChange,
 		handleCreateNote,
 		onOpenType,
@@ -374,7 +371,6 @@ function NoteListLayoutHeader(
 			isSearching={isSearching}
 			searchInputRef={searchInputRef}
 			propertyPicker={propertyPicker}
-			propertyVisibility={propertyVisibility}
 			layoutControls={layoutControls}
 			onSortChange={handleSortChange}
 			onCreateNote={handleCreateNote}
@@ -477,7 +473,6 @@ function NoteListLayoutContents({
 					contentProps.propertyPicker,
 					locale,
 				)}
-				propertyVisibility={layoutPropertyVisibility(layout)}
 				layoutControls={
 					<LayoutHeaderControls
 						layout={layout}
