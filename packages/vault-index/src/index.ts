@@ -1,5 +1,6 @@
 import {
 	type Frontmatter,
+	frontmatterFlag,
 	frontmatterList,
 	frontmatterRelationships,
 	frontmatterScalar,
@@ -38,6 +39,8 @@ export type VaultEntry = {
 	outgoingLinks?: string[];
 	hasH1: boolean;
 	fileKind: FileKind;
+	favorite?: boolean;
+	favoriteIndex?: number;
 };
 
 export function buildVaultIndex(files: VaultFile[]): VaultEntry[] {
@@ -47,11 +50,13 @@ export function buildVaultIndex(files: VaultFile[]): VaultEntry[] {
 }
 
 function parseVaultEntry(file: VaultFile): VaultEntry {
-	const fileKind = determineFileKind(file.relativePath);
+	const fileKind = determineFileKind({ path: file.relativePath });
 	const filename = file.relativePath.split("/").at(-1) ?? file.relativePath;
 
 	if (fileKind !== "markdown") {
-		const title = extractYamlName(file.relativePath, file.content) || filename;
+		const title =
+			extractYamlName({ path: file.relativePath, content: file.content }) ||
+			filename;
 		return {
 			path: file.relativePath,
 			filename,
@@ -65,9 +70,21 @@ function parseVaultEntry(file: VaultFile): VaultEntry {
 	}
 
 	const document = parseDocument(file.content);
-	const type = cleanTypeName(
-		frontmatterScalar(document.frontmatter, ["type", "Is A", "is_a"]) ?? "Note",
-	);
+	return parseMarkdownEntry({ file, filename, fileKind, document });
+}
+
+function parseMarkdownEntry(input: {
+	file: VaultFile;
+	filename: string;
+	fileKind: FileKind;
+	document: ReturnType<typeof parseDocument>;
+}): VaultEntry {
+	const { file, filename, fileKind, document } = input;
+	const type = cleanTypeName({
+		value:
+			frontmatterScalar(document.frontmatter, ["type", "Is A", "is_a"]) ??
+			"Note",
+	});
 	const outgoingLinks = extractOutgoingLinks(document.body);
 	const title = deriveTitle({
 		body: document.body,
@@ -86,44 +103,59 @@ function parseVaultEntry(file: VaultFile): VaultEntry {
 		hasH1: hasH1(document.body),
 		fileKind,
 	};
+	return addFrontmatterMetadata({
+		entry,
+		frontmatter: document.frontmatter,
+		type,
+		outgoingLinks,
+	});
+}
 
-	const aliases = frontmatterList(document.frontmatter, ["aliases", "Aliases"]);
-	if (aliases.length > 0) {
-		entry.aliases = aliases;
-	}
-
-	const belongsTo = extractBelongsTo(document.frontmatter);
-	if (belongsTo.length > 0) {
-		entry.belongsTo = belongsTo;
-	}
-
-	const status = frontmatterScalar(document.frontmatter, ["Status", "status"]);
-	if (status) {
-		entry.status = status;
-	}
-
-	const relationships = frontmatterRelationships(document.frontmatter);
-
-	if (type !== "Type") {
-		const typeLink =
-			type.startsWith("[[") && type.endsWith("]]")
-				? type
-				: `[[${type.toLowerCase()}]]`;
-		relationships.Type = [typeLink];
-	}
-
-	if (Object.keys(relationships).length > 0) {
+function addFrontmatterMetadata(input: {
+	entry: VaultEntry;
+	frontmatter: Frontmatter;
+	type: string;
+	outgoingLinks: string[];
+}): VaultEntry {
+	const { entry, frontmatter, type, outgoingLinks } = input;
+	Object.assign(entry, readFavoriteMetadata(frontmatter));
+	const aliases = frontmatterList(frontmatter, ["aliases", "Aliases"]);
+	if (aliases.length > 0) entry.aliases = aliases;
+	const belongsTo = extractBelongsTo(frontmatter);
+	if (belongsTo.length > 0) entry.belongsTo = belongsTo;
+	const status = frontmatterScalar(frontmatter, ["Status", "status"]);
+	if (status) entry.status = status;
+	const relationships = frontmatterRelationships(frontmatter);
+	if (type !== "Type") relationships.Type = [formatTypeLink(type)];
+	if (Object.keys(relationships).length > 0)
 		entry.relationships = relationships;
-	}
-
-	if (outgoingLinks.length > 0) {
-		entry.outgoingLinks = outgoingLinks;
-	}
-
+	if (outgoingLinks.length > 0) entry.outgoingLinks = outgoingLinks;
 	return entry;
 }
 
-function determineFileKind(path: string): FileKind {
+function formatTypeLink(type: string): string {
+	return type.startsWith("[[") && type.endsWith("]]")
+		? type
+		: `[[${type.toLowerCase()}]]`;
+}
+
+function readFavoriteMetadata(
+	frontmatter: Frontmatter,
+): Pick<VaultEntry, "favorite" | "favoriteIndex"> {
+	const result: Pick<VaultEntry, "favorite" | "favoriteIndex"> = {};
+	if (frontmatterFlag(frontmatter, ["_favorite", "favorite"])) {
+		result.favorite = true;
+	}
+	const rawIndex = frontmatter._favorite_index;
+	const favoriteIndex =
+		typeof rawIndex === "number" ? rawIndex : Number(rawIndex);
+	if (rawIndex !== undefined && Number.isSafeInteger(favoriteIndex)) {
+		result.favoriteIndex = favoriteIndex;
+	}
+	return result;
+}
+
+function determineFileKind({ path }: { path: string }): FileKind {
 	const lower = path.toLowerCase();
 
 	if (lower.endsWith(".md")) return "markdown";
@@ -159,11 +191,11 @@ function determineFileKind(path: string): FileKind {
 	return "text";
 }
 
-function cleanTypeName(value: string): string {
-	return extractWikilinkTarget(value).replace(/\.md$/, "");
+function cleanTypeName({ value }: { value: string }): string {
+	return extractWikilinkTarget({ value }).replace(/\.md$/, "");
 }
 
-function extractWikilinkTarget(value: string): string {
+function extractWikilinkTarget({ value }: { value: string }): string {
 	const match = value.match(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/);
 	return match ? match[1].trim() : value.trim();
 }
@@ -176,7 +208,13 @@ function extractBelongsTo(frontmatter: Frontmatter): string[] {
 	]);
 }
 
-function extractYamlName(path: string, content: string): string | null {
+function extractYamlName({
+	path,
+	content,
+}: {
+	path: string;
+	content: string;
+}): string | null {
 	const lower = path.toLowerCase();
 	if (!lower.endsWith(".yml") && !lower.endsWith(".yaml")) {
 		return null;
