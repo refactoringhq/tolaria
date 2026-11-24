@@ -8,10 +8,7 @@ import type { VaultEntry } from '../types'
  */
 export interface PhoneNoteStackControls {
   active: boolean
-  pane: 'navigation' | 'list' | 'note'
   backToList: () => void
-  showNavigation: () => void
-  showList: () => void
   showNote: () => void
 }
 
@@ -21,14 +18,7 @@ function ignore(): void {
   // Nothing to do off the phone layout.
 }
 
-const INACTIVE: PhoneNoteStackControls = {
-  active: false,
-  pane: 'list',
-  backToList: ignore,
-  showNavigation: ignore,
-  showList: ignore,
-  showNote: ignore,
-}
+const INACTIVE: PhoneNoteStackControls = { active: false, backToList: ignore, showNote: ignore }
 
 let current = INACTIVE
 const listeners = new Set<() => void>()

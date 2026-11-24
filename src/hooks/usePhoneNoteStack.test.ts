@@ -4,8 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { APP_STORAGE_KEYS } from '../constants/appStorage'
 import { stubPhoneMedia } from '../test-utils/phoneLayout'
 import type { SidebarSelection, VaultEntry } from '../types'
-import { usePhoneNoteOpener } from './phoneNoteStackStore'
 import { useActiveNoteLocation } from './useActiveNoteLocation'
+import { usePhoneNoteOpener } from './phoneNoteStackStore'
 import { BACK_TO_NOTE_LIST_STATE_KEY, PHONE_PANE_ATTRIBUTE } from './usePhoneNoteStack'
 
 const VAULT_PATH = '/Users/mock/demo-vault-v2'
@@ -79,19 +79,6 @@ describe('usePhoneNoteStack', () => {
     expect(result.current.stack).toMatchObject({ active: true, pane: 'list' })
     expect(document.documentElement.getAttribute(PHONE_PANE_ATTRIBUTE)).toBe('list')
     await waitFor(() => { expect(window.location.search).toBe('?vault=demo-vault-v2') })
-  })
-
-  it('opens navigation from the list and returns to the list after a selection', async () => {
-    const { result } = renderAt('/')
-    await waitFor(() => { expect(result.current.stack.pane).toBe('list') })
-
-    act(() => { result.current.stack.showNavigation() })
-    expect(result.current.stack.pane).toBe('navigation')
-    expect(document.documentElement.getAttribute(PHONE_PANE_ATTRIBUTE)).toBe('navigation')
-
-    act(() => { result.current.stack.showList() })
-    expect(result.current.stack.pane).toBe('list')
-    expect(document.documentElement.getAttribute(PHONE_PANE_ATTRIBUTE)).toBe('list')
   })
 
   it('shows a tapped note, the open one included, and pushes its URL', async () => {

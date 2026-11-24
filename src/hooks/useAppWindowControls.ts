@@ -1,19 +1,18 @@
-import type { MutableRefObject } from 'react'
 import { useCallback, useRef } from 'react'
-import type { NotePdfExportSource } from '../utils/notePdfExport'
-import { isWindows } from '../utils/platform'
-import { isWebBuild } from '../utils/webBuild'
-import { useBuildNumber } from './useBuildNumber'
-import type { useLayoutPanels } from './useLayoutPanels'
+import type { MutableRefObject } from 'react'
 import {
   applyMainWindowSizeConstraints,
   getMainWindowMinWidth,
   useMainWindowSizeConstraints,
 } from './useMainWindowSizeConstraints'
-import { usePhoneLayout } from './usePhoneLayout'
 import { useTabletSidebar } from './useTabletSidebar'
 import { useViewMode, type ViewMode } from './useViewMode'
 import { useZoom } from './useZoom'
+import { useBuildNumber } from './useBuildNumber'
+import type { useLayoutPanels } from './useLayoutPanels'
+import type { NotePdfExportSource } from '../utils/notePdfExport'
+import { isWindows } from '../utils/platform'
+import { isWebBuild } from '../utils/webBuild'
 
 type FindInNoteHandler = (options?: { replace?: boolean }) => void
 type PdfExportHandler = (source?: NotePdfExportSource) => void
@@ -114,36 +113,6 @@ function useWindowViewMode(windowMode: boolean, updateMainWindowConstraints: Win
   return { handleCollapseSidebar, handleSetViewMode, noteListVisible, sidebarVisible }
 }
 
-function useInspectorToggler(
-  layout: ReturnType<typeof useLayoutPanels>,
-  updateMainWindowConstraints: WindowConstraintUpdater,
-  sidebarVisible: boolean,
-  noteListVisible: boolean,
-): () => void {
-  return useCallback(() => {
-    const nextInspectorCollapsed = !layout.inspectorCollapsed
-    layout.setInspectorCollapsed(nextInspectorCollapsed)
-    updateMainWindowConstraints(sidebarVisible, noteListVisible, nextInspectorCollapsed)
-  }, [layout, noteListVisible, sidebarVisible, updateMainWindowConstraints])
-}
-
-function useWindowSizeConstraints(
-  windowMode: boolean,
-  layout: ReturnType<typeof useLayoutPanels>,
-  sidebarVisible: boolean,
-  noteListVisible: boolean,
-): void {
-  useMainWindowSizeConstraints({
-    enabled: !windowMode,
-    sidebarVisible,
-    noteListVisible,
-    inspectorCollapsed: layout.inspectorCollapsed,
-    sidebarWidth: layout.sidebarWidth,
-    noteListWidth: layout.noteListWidth,
-    inspectorWidth: layout.inspectorWidth,
-  })
-}
-
 export function useAppWindowControls({
   layout,
   windowMode,
@@ -165,16 +134,27 @@ export function useAppWindowControls({
     noteListVisible,
     sidebarVisible,
   } = useWindowViewMode(windowMode, updateMainWindowConstraints)
-  const phoneNavigationEnabled = usePhoneLayout(!windowMode && isWebBuild())
 
-  const handleToggleInspector = useInspectorToggler(
+  const handleToggleInspector = useCallback(() => {
+    const nextInspectorCollapsed = !layout.inspectorCollapsed
+    layout.setInspectorCollapsed(nextInspectorCollapsed)
+    updateMainWindowConstraints(sidebarVisible, noteListVisible, nextInspectorCollapsed)
+  }, [
     layout,
+    noteListVisible,
+    sidebarVisible,
     updateMainWindowConstraints,
+  ])
+
+  useMainWindowSizeConstraints({
+    enabled: !windowMode,
     sidebarVisible,
     noteListVisible,
-  )
-
-  useWindowSizeConstraints(windowMode, layout, sidebarVisible, noteListVisible)
+    inspectorCollapsed: layout.inspectorCollapsed,
+    sidebarWidth: layout.sidebarWidth,
+    noteListWidth: layout.noteListWidth,
+    inspectorWidth: layout.inspectorWidth,
+  })
 
   return {
     buildNumber,
@@ -186,7 +166,7 @@ export function useAppWindowControls({
     noteListVisible,
     pdfExportRef,
     rawToggleRef,
-    sidebarVisible: sidebarVisible || phoneNavigationEnabled,
+    sidebarVisible,
     tableOfContentsToggleRef,
     zoom,
   }
