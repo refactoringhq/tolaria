@@ -67,7 +67,11 @@ function stubGeometry({ lanes, card }: RowGeometry) {
 	);
 }
 
-function renderDay(count: number, properties: string[] = ["source"]) {
+function renderDay(
+	count: number,
+	properties: string[] = ["source"],
+	view: "month" | "week" = "month",
+) {
 	const entries = notesOnDay(count);
 	render(
 		<CalendarLayout
@@ -77,7 +81,7 @@ function renderDay(count: number, properties: string[] = ["source"]) {
 			locale="en"
 			typeEntryMap={{}}
 			onOpen={vi.fn()}
-			calendar={calendar}
+			calendar={{ ...calendar, settings: { ...calendar.settings, view } }}
 		/>,
 	);
 }
@@ -94,6 +98,17 @@ describe("calendar day cells fit cards at their natural height (TOL-393)", () =>
 	afterEach(() => {
 		vi.useRealTimers();
 		vi.restoreAllMocks();
+	});
+
+	it("shows every weekly card and grows the day columns to contain the full stack", () => {
+		vi.setSystemTime(new Date(2026, 10, 4, 12));
+		stubGeometry({ lanes: 90, card: 58 });
+		renderDay(8, ["date", "source"], "week");
+		expect(shownCards()).toHaveLength(8);
+		expect(screen.queryByTestId("calendar-more")).not.toBeInTheDocument();
+		expect(
+			Number.parseFloat(screen.getByTestId("calendar-week").style.minHeight),
+		).toBeGreaterThan(8 * 58);
 	});
 
 	it('shows both cards of a two-note day instead of only "+2 more"', () => {

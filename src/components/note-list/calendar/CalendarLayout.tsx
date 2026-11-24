@@ -40,6 +40,7 @@ import {
 	type LatestDateWriterRef,
 	writeDatesInOrder,
 } from "./sequentialDateWrites";
+import { useBlockedCalendarDrag } from "./useBlockedCalendarDrag";
 import {
 	type CalendarActiveDrag,
 	type CalendarDrop,
@@ -234,6 +235,7 @@ function CalendarBoardContent({
 	context,
 	gridState,
 }: CalendarBoardContentProps) {
+	const blockedDrag = useBlockedCalendarDrag(!props.calendar.canReschedule);
 	const {
 		calendar,
 		dateProperty,
@@ -244,6 +246,7 @@ function CalendarBoardContent({
 	const { settings } = calendar;
 	return (
 		<section
+			{...blockedDrag}
 			className="calendar-board flex min-h-0 flex-1 flex-col"
 			aria-label={translate(locale, "calendar.gridLabel", {
 				property: dateProperty,
