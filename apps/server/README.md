@@ -2,7 +2,7 @@
 
 The Tolaria remote: a small service that hosts one vault as a git working clone and exposes the file API and the collaboration channel of the [Tolaria remote protocol](../../docs/web/protocol.md). Spikes S3 (TOL-5) and S4 (TOL-8); see the spike reports for [files](../../docs/web/s3-spike-report.md) and [collaboration](../../docs/web/s4-spike-report.md).
 
-Every save is one git commit, made after pulling from the vault's git remote and followed by a push. A write that is based on an outdated revision is saved as a conflict copy; nothing is overwritten silently.
+Every save is one git commit, flushed to disk before the save is answered. The commit reaches the vault's git remote in the background, within a few seconds, and a push that fails is retried until it lands, so a slow or unreachable GitHub never holds or fails a save (ADR 0308). A write that is based on an outdated revision is saved as a conflict copy; nothing is overwritten silently.
 
 A note can also be opened as a live Yjs document on `/v1/collab/docs/<docId>`. Edits are written to the note's markdown file on a cadence, with untouched lines byte-identical, and a commit pulled from git is merged into the live document or forked into a conflict copy.
 
@@ -66,6 +66,8 @@ TOLARIA_SERVER_TOKEN=local-dev-token-0123456789 TOLARIA_VAULT_REMOTE_URL=/tmp/te
 curl -H 'Authorization: Bearer local-dev-token-0123456789' http://127.0.0.1:8787/v1/files
 pnpm server:bench /tmp/test-vault.git 100   # latency of 100 saves; writes to that remote
 pnpm run server:collab-bench /tmp/test-vault.git 30   # commit cadence of collaborative editing
+BENCH_FETCH_DELAY_MS=500 BENCH_PUSH_DELAY_MS=1500 pnpm run server:save-bench /tmp/test-vault.git main 30 5
+  # save acknowledgement p95, time until each commit is on the remote, saves while it is unreachable
 ```
 
 Never point the seed, the benchmark or a test at a real vault.
