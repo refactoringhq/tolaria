@@ -196,6 +196,7 @@
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
+    "eslint-plugin-secure-coding": "^6.4.8",
     "eslint-plugin-security": "^4.0.1",
     "eslint-plugin-security-node": "^1.1.4",
     "eslint-plugin-xss": "^0.1.12",
