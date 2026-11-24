@@ -36,7 +36,6 @@
     "server": "node --experimental-strip-types apps/server/scripts/run.ts apps/server/src/main.ts",
     "server:seed": "node --experimental-strip-types apps/server/scripts/seed-test-remote.ts",
     "server:bench": "node --experimental-strip-types apps/server/scripts/run.ts apps/server/scripts/bench.ts",
-    "server:save-bench": "node --experimental-strip-types apps/server/scripts/run.ts apps/server/scripts/save-bench.ts",
     "server:collab-bench": "node --experimental-strip-types apps/server/scripts/run.ts apps/server/scripts/collab-bench.ts",
     "test:dev-mock": "node --experimental-strip-types --test scripts/vault-api-plugin.test.mjs",
     "test:watch": "vitest",

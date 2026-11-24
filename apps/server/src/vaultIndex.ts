@@ -2,15 +2,56 @@ import type { VaultEntry, VaultFile } from '../../../packages/vault-index/src/in
 import { buildVaultIndex } from '../../../packages/vault-index/src/index.ts'
 import type { VaultChange } from './gitSync.ts'
 import type { VaultPath } from './paths.ts'
-import { putByPath, removeByPath, sortByPath } from './pathOrder.ts'
 import type { BlobStore } from './store.ts'
-import { DeferredWrite, INDEX_WRITE_DELAY_MS, type IndexFormat, type IndexParts, readStoredIndex, type StoredIndex, writeIndex } from './storedIndex.ts'
 import type { Vault } from './vault.ts'
 
 export const INDEX_KEY = 'vault-index.json'
-const FORMAT: IndexFormat = { key: INDEX_KEY, version: 1, name: 'vault index', items: 'entries' }
+const INDEX_VERSION = 1
 /** Above this many changed files since the stored index, a rebuild is about as fast. */
 const CATCH_UP_LIMIT = 500
+
+interface StoredIndex {
+  version: number
+  head: string
+  entries: VaultEntry[]
+}
+
+function malformed(reason: string): Error {
+  return new Error(`vault index is malformed: ${reason}`)
+}
+
+function parseJson(bytes: Uint8Array): unknown {
+  try {
+    return JSON.parse(Buffer.from(bytes).toString('utf8'))
+  } catch {
+    throw malformed('not valid JSON')
+  }
+}
+
+function storedFields(value: unknown): Partial<Record<keyof StoredIndex, unknown>> {
+  if (value instanceof Object && 'version' in value) return value
+  throw malformed('not an index object')
+}
+
+/** The index is server state read back from storage: nothing in it is trusted unchecked. */
+function parseIndex(bytes: Uint8Array | null): { head: string; entries: VaultEntry[] } | null {
+  if (!bytes) return null
+  const { version, head, entries } = storedFields(parseJson(bytes))
+  if (version !== INDEX_VERSION) throw new Error(`unsupported vault index version: ${String(version)}`)
+  if (typeof head !== 'string' || head === '') throw malformed('no head commit')
+  if (!Array.isArray(entries)) throw malformed('no list of entries')
+  return { head, entries }
+}
+
+/** Reads the stored index; one that cannot be used is reported and rebuilt, not fatal. */
+async function readStored(store: BlobStore, log: (message: string) => void): Promise<{ head: string; entries: VaultEntry[] } | null> {
+  try {
+    return parseIndex(await store.get(INDEX_KEY))
+  } catch (error) {
+    log(`rebuilding the vault index: ${error instanceof Error ? error.message : String(error)}`)
+    return null
+  }
+}
 
 /**
  * Maintains an incremental index of vault entries. The index is rebuilt from git on startup
@@ -19,17 +60,15 @@ const CATCH_UP_LIMIT = 500
 export class VaultIndex {
   private readonly vault: Vault
   private readonly store: BlobStore
-  private readonly persist: DeferredWrite
   private head: string
   private entries: VaultEntry[]
   private dirty = false
 
-  private constructor({ vault, store, log }: IndexParts, { head, items }: StoredIndex<VaultEntry>) {
+  private constructor(vault: Vault, store: BlobStore, head: string, entries: VaultEntry[]) {
     this.vault = vault
     this.store = store
     this.head = head
-    this.entries = sortByPath(items)
-    this.persist = new DeferredWrite({ write: () => this.save(), delayMs: INDEX_WRITE_DELAY_MS, log })
+    this.entries = entries
   }
 
   /**
@@ -38,11 +77,10 @@ export class VaultIndex {
    * `CATCH_UP_LIMIT` files.
    */
   static async open(vault: Vault, store: BlobStore, log: (message: string) => void = () => {}): Promise<VaultIndex> {
-    const parts = { vault, store, log }
-    const currentHead = await vault.head()
-    const stored = await readStoredIndex<VaultEntry>(store, FORMAT, log)
+    const currentHead = await vault.info().then((info) => info.head)
+    const stored = await readStored(store, log)
     if (stored) {
-      const index = new VaultIndex(parts, stored)
+      const index = new VaultIndex(vault, store, stored.head, stored.entries)
       if (stored.head === currentHead) return index
       const changes = await vault.changesSince(stored.head, CATCH_UP_LIMIT)
       if (changes) {
@@ -51,7 +89,7 @@ export class VaultIndex {
         return index
       }
     }
-    const index = new VaultIndex(parts, { head: currentHead, items: await VaultIndex.buildFromVault(vault) })
+    const index = new VaultIndex(vault, store, currentHead, await VaultIndex.buildFromVault(vault))
     index.dirty = true
     await index.save()
     return index
@@ -102,17 +140,14 @@ export class VaultIndex {
     return { head: this.head, changed, deleted }
   }
 
-  /** Updates the index incrementally based on vault changes; the store copy follows later. */
+  /** Updates the index incrementally based on vault changes. */
   async apply(changes: VaultChange[]): Promise<void> {
     if (changes.length === 0) return
-    this.head = await this.vault.head()
+    
+    // Update head from vault
+    this.head = await this.vault.info().then((info) => info.head)
     await this.applyEach(changes)
-    if (this.dirty) this.persist.schedule()
-  }
-
-  /** Writes the index to the store now, if it changed since the last write. */
-  flush(): Promise<void> {
-    return this.persist.flush()
+    await this.save()
   }
 
   private async catchUp(head: string, changes: VaultChange[]): Promise<void> {
@@ -147,7 +182,14 @@ export class VaultIndex {
         modifiedAt: null,
       }
       const [newEntry] = buildVaultIndex([file])
-      putByPath(this.entries, newEntry)
+      
+      // Remove old entry if exists
+      this.entries = this.entries.filter(e => e.path !== path)
+      // Add new entry
+      this.entries.push(newEntry)
+      // Re-sort
+      this.entries.sort((a, b) => a.path.localeCompare(b.path))
+      
       this.dirty = true
     } catch {
       // File might have been deleted or is not readable, skip it
@@ -156,15 +198,19 @@ export class VaultIndex {
   }
 
   private removeEntry(path: VaultPath): void {
-    if (removeByPath(this.entries, path)) this.dirty = true
+    const before = this.entries.length
+    this.entries = this.entries.filter(e => e.path !== path)
+    if (this.entries.length < before) this.dirty = true
   }
 
   private async save(): Promise<void> {
     if (!this.dirty) return
+    const stored: StoredIndex = {
+      version: INDEX_VERSION,
+      head: this.head,
+      entries: this.entries,
+    }
+    await this.store.put(INDEX_KEY, Buffer.from(JSON.stringify(stored)))
     this.dirty = false
-    await writeIndex(this.store, FORMAT, { head: this.head, items: this.entries }).catch((error: unknown) => {
-      this.dirty = true
-      throw error
-    })
   }
 }

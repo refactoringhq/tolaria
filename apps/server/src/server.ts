@@ -148,25 +148,18 @@ export async function createVaultServer(options: ServerOptions): Promise<Server>
   })
   READY.set(server, true)
   options.onReady?.()
-  const indexes = [index, search]
   if (tickets) {
-    serveCollab(server, { options, docs, indexes, tickets, changes, limiter, log, credentials, revocations })
+    serveCollab(server, { options, docs, tickets, changes, limiter, log, credentials, revocations })
   } else {
     // Set up shutdown handler even without collab
-    setupShutdown(server, { vault, indexes, changes, log })
+    setupShutdown(server, { vault, changes, log })
   }
   return server
-}
-
-/** An index kept in the blob store, written some time after it changes. */
-interface StoredIndexHandle {
-  flush(): Promise<void>
 }
 
 interface CollabParts {
   options: ServerOptions
   docs: DocIndex
-  indexes: StoredIndexHandle[]
   tickets: TicketBook
   changes: ChangeEmitter
   limiter: RateLimiter
@@ -176,7 +169,7 @@ interface CollabParts {
 }
 
 function serveCollab(server: Server, parts: CollabParts): void {
-  const { options, docs, indexes, tickets, changes, limiter, log, credentials, revocations } = parts
+  const { options, docs, tickets, changes, limiter, log, credentials, revocations } = parts
   const { vault, store } = options
   const settings = options.collab || {}
   const hub = new CollabHub({
@@ -200,19 +193,13 @@ function serveCollab(server: Server, parts: CollabParts): void {
     connections: new ConnectionCounter(limits),
     idleTimeoutMs: limits.idleTimeoutMs,
   })
-  setupShutdown(server, { vault, indexes, hub, sockets, changes, log })
+  setupShutdown(server, { vault, hub, sockets, changes, log })
 }
 
-interface ShutdownParts {
-  vault: Vault
-  indexes: StoredIndexHandle[]
-  hub?: CollabHub
-  sockets?: { close(): void }
-  changes: ChangeEmitter
-  log: (msg: string) => void
-}
-
-function setupShutdown(server: Server, { vault, indexes, hub, sockets, changes, log }: ShutdownParts): void {
+function setupShutdown(
+  server: Server,
+  { vault, hub, sockets, changes, log }: { vault: Vault; hub?: CollabHub; sockets?: { close(): void }; changes: ChangeEmitter; log: (msg: string) => void }
+): void {
   SHUTDOWN.set(server, async () => {
     if (hub && sockets) {
       log('shutdown: flushing open documents')
@@ -223,8 +210,6 @@ function setupShutdown(server: Server, { vault, indexes, hub, sockets, changes, 
     changes.close()
     log('shutdown: committing and pushing')
     await vault.flushAndPush()
-    log('shutdown: saving indexes')
-    for (const index of indexes) await index.flush()
     log('shutdown: complete')
   })
 }
