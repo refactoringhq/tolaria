@@ -42,4 +42,20 @@ describe('a desktop push that crosses a saved live edit', () => {
     expect(ada.markdown()).toContain('Second paragraph. Web version.')
     expect(ada.markdown()).not.toContain('Desktop version.')
   })
+
+  it('does not tell editors of the same copy again when a later desktop push arrives', async () => {
+    const ada = await harness.client(NOTE)
+    ada.type('Second', ' Web version.')
+    await settle()
+    await (await harness.session(NOTE)).flush()
+    await harness.fixture.desktop.commit(NOTE, DESKTOP_VERSION)
+    await harness.vault.syncNow()
+    await (await harness.session(NOTE)).settled()
+
+    await harness.fixture.desktop.commit('later.md', '# Later\n')
+    expect(await harness.vault.syncNow()).toMatchObject({ pulled: true })
+    await settle()
+
+    expect(harness.logs.filter((line) => line.includes('changed on both sides'))).toHaveLength(1)
+  })
 })

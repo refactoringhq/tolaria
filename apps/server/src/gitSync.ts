@@ -94,6 +94,8 @@ export class GitSync {
   /** Brings what was last fetched into the working clone. Local only: no network. */
   async integrate(): Promise<void> {
     const { repo } = this
+    // Only a replay made by this call keeps local versions: a later fast-forward reports none.
+    this.keptLocal.clear()
     const before = await repo.head()
     const counts = await repo.run(['rev-list', '--left-right', '--count', `HEAD...${repo.upstream}`])
     const [ahead, behind] = counts.stdout.trim().split('\t').map(Number)
@@ -152,7 +154,8 @@ export class GitSync {
       return true
     } catch (error) {
       if (!(error instanceof GitError)) throw error
-      this.hooks.log(`${failure}: ${error.message}`)
+      // What the remote answered is not ours: quoted, it stays on one line and cannot steer a terminal.
+      this.hooks.log(`${failure}: ${JSON.stringify(error.message)}`)
       return false
     }
   }
@@ -173,7 +176,6 @@ export class GitSync {
     try {
       await repo.run(['reset', '-q', '--hard', repo.upstream])
       this.relocated.clear()
-      this.keptLocal.clear()
       for (const change of pending) await this.reapply(change, contested)
       await repo.run(['add', '-A', '-f'])
       await repo.commitStaged(`Replay ${pending.length} local change(s) onto upstream`, coAuthors)

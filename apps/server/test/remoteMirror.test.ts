@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { git } from '../src/git.ts'
+import type { VaultChange } from '../src/gitSync.ts'
 import type { VaultPath } from '../src/paths.ts'
 import type { VaultEvent } from '../src/remoteMirror.ts'
 import type { Vault, VaultOptions } from '../src/vault.ts'
@@ -155,6 +156,24 @@ describe('saves with a background git remote', () => {
     expect(await onRemote(copies[0])).toBe('# Welcome\n\nFrom the desktop.\n')
   })
 
+  it('reports the conflict copy of a kept save once, not again with later desktop pushes', async () => {
+    await openVault()
+    const changes: VaultChange[] = []
+    vault.onChange(async (batch) => {
+      changes.push(...batch)
+    })
+    await fixture.desktop.commit(NOTE, '# Welcome\n\nFrom the desktop.\n')
+    await vault.write(NOTE, text('# Welcome\n\nFrom the web.\n'), { kind: 'match', etag: await etagOf(NOTE) })
+    await vault.syncNow()
+    expect(changes.filter((change) => change.kind === 'upsert' && change.conflictCopy)).toHaveLength(1)
+
+    changes.length = 0
+    await fixture.desktop.commit(NOTE, null)
+    expect(await vault.syncNow()).toMatchObject({ pulled: true, pushed: true })
+
+    expect(changes).toEqual([{ kind: 'delete', path: NOTE }])
+  })
+
   it('syncs desktop pushes in through the background queue and reports the pull', async () => {
     await openVault()
     await fixture.desktop.commit('desktop.md', '# Desktop\n')
@@ -170,6 +189,20 @@ describe('saves with a background git remote', () => {
 
     await eventually(async () => events.some((event) => event.type === 'pull'))
     expect((await vault.read('fetched.md' as VaultPath)).bytes.toString()).toBe('# Fetched\n')
+  })
+
+  it('logs what an unreachable remote answered on one line, with its control characters escaped', async () => {
+    const lines: string[] = []
+    await openVault({ log: (line) => lines.push(line) })
+    await setRemoteUrl(`${MISSING_REMOTE}\u001b[31m`)
+
+    expect(await vault.syncNow()).toMatchObject({ pulled: false })
+
+    const failure = lines.find((line) => line.startsWith('fetch failed')) ?? ''
+    expect(failure).toContain('nonexistent')
+    const controls = [...failure].filter((char) => char.charCodeAt(0) < 0x20 || char.charCodeAt(0) === 0x7f)
+    expect(controls).toEqual([])
+    await setRemoteUrl(fixture.remote)
   })
 
   it('leaves commits local and says so when the remote is gone at shutdown', async () => {
