@@ -1,9 +1,11 @@
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GitError, git } from '../src/git.ts'
 import { GitRepo } from '../src/gitRepo.ts'
+import type { VaultPath } from '../src/paths.ts'
+import { createFixture } from './helpers.ts'
 
 describe('git', () => {
   let dir: string
@@ -49,6 +51,23 @@ describe('git', () => {
     const result = await git(dir, ['ls-files', '--', ':(glob)*.md'])
     expect(result.stdout).toBe('')
   })
+
+  it('flushes commits and the refs that name them to disk, so an acknowledged save survives a crash', async () => {
+    // git documents `committed` as objects only: the branch ref has to be named on its own.
+    const components = (await git(dir, ['config', '--get', 'core.fsync'])).stdout.trim().split(',')
+    expect(components).toEqual(expect.arrayContaining(['committed', 'reference']))
+    expect((await git(dir, ['config', '--get', 'core.fsyncMethod'])).stdout.trim()).toBe('batch')
+  })
+
+  it('flushes a branch ref to disk when only the ref moves', async () => {
+    await git(dir, ['-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '--allow-empty', '-m', 'one'])
+    const trace = join(dir, 'trace.json')
+    await git(dir, ['update-ref', 'refs/heads/other', 'HEAD'], { env: { GIT_TRACE2_EVENT: trace } })
+    const flushes = (await readFile(trace, 'utf8'))
+      .split('\n')
+      .filter((line) => line.includes('"category":"fsync"') && line.includes('"name":"hardware-flush"'))
+    expect(flushes).not.toHaveLength(0)
+  })
 })
 
 describe('GitRepo.open', () => {
@@ -70,5 +89,19 @@ describe('GitRepo.open', () => {
     await expect(GitRepo.open({ dir: join(root, 'vault'), remoteUrl: remote })).rejects.toThrowError(
       /the remote has no commits/,
     )
+  })
+  it('knows its head after each commit, whether the branch ref is a file or packed', async () => {
+    const fixture = await createFixture()
+    const repo = await GitRepo.open({ dir: fixture.vaultDir, remoteUrl: fixture.remote })
+    const revParse = async () => (await git(repo.dir, ['rev-parse', 'HEAD'])).stdout.trim()
+
+    await repo.commitFile('note.md' as VaultPath, Buffer.from('one'), 'Create note.md')
+    expect(await repo.head()).toBe(await revParse())
+    await repo.run(['pack-refs', '--all'])
+    await repo.commitFile('note.md' as VaultPath, Buffer.from('two'), 'Update note.md')
+    expect(await repo.head()).toBe(await revParse())
+    await repo.run(['pack-refs', '--all'])
+    expect(await repo.head()).toBe(await revParse())
+    await fixture.cleanup()
   })
 })
