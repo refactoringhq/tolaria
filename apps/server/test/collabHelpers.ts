@@ -9,7 +9,7 @@ import type { NoteSession } from '../src/collab/noteSession.ts'
 import { DocIndex } from '../src/docIndex.ts'
 import { isNote, type VaultPath } from '../src/paths.ts'
 import { LocalDiskStore } from '../src/store.ts'
-import type { Vault } from '../src/vault.ts'
+import type { Vault, VaultOptions } from '../src/vault.ts'
 import { createFixture, type Fixture } from './helpers.ts'
 
 /** Building the headless editor takes a moment; every test shares one. */
@@ -101,6 +101,8 @@ export interface Harness {
 export interface HarnessOptions {
   policy?: FlushPolicy
   lingerMs?: number
+  /** Vault settings, e.g. a push debounce for a vault that pushes in the background. */
+  vault?: Partial<VaultOptions>
 }
 
 async function openSocket(hub: CollabHub, docId: string, access: CollabAccess): Promise<MemorySocket> {
@@ -112,9 +114,9 @@ async function openSocket(hub: CollabHub, docId: string, access: CollabAccess): 
   return socket
 }
 
-export async function createHarness({ policy = DEFAULT_FLUSH_POLICY, lingerMs = 60_000 }: HarnessOptions = {}): Promise<Harness> {
+export async function createHarness({ policy = DEFAULT_FLUSH_POLICY, lingerMs = 60_000, vault: settings }: HarnessOptions = {}): Promise<Harness> {
   const fixture = await createFixture()
-  const vault = await fixture.openVault()
+  const vault = await fixture.openVault(settings)
   const store = new LocalDiskStore(join(fixture.root, 'server', 'state'))
   const docs = await DocIndex.open(store)
   const { files } = await vault.list()

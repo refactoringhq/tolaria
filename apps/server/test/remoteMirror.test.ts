@@ -140,19 +140,19 @@ describe('saves with a background git remote', () => {
     expect(await onRemote(NOTE)).toBe('# Welcome\n\nFrom the phone.\n')
   })
 
-  it('keeps a web save and a desktop push of the same note, made before the server fetched', async () => {
+  it('keeps an acknowledged web save at its path and the crossing desktop push as a conflict copy', async () => {
     await openVault()
     await fixture.desktop.commit(NOTE, '# Welcome\n\nFrom the desktop.\n')
 
     const result = await vault.write(NOTE, text('# Welcome\n\nFrom the web.\n'), { kind: 'match', etag: await etagOf(NOTE) })
-    expect(result.pushed).toBe(false)
+    expect(result).toMatchObject({ outcome: 'updated', path: NOTE, pushed: false })
 
     await eventually(async () => events.some((event) => event.type === 'push-success'))
     const files = (await git(fixture.remote, ['ls-tree', '-r', '--name-only', 'main'])).stdout.split('\n')
     const copies = files.filter((path) => path.startsWith('welcome') && path !== NOTE)
-    expect(await onRemote(NOTE)).toBe('# Welcome\n\nFrom the desktop.\n')
+    expect(await onRemote(NOTE)).toBe('# Welcome\n\nFrom the web.\n')
     expect(copies).toHaveLength(1)
-    expect(await onRemote(copies[0])).toBe('# Welcome\n\nFrom the web.\n')
+    expect(await onRemote(copies[0])).toBe('# Welcome\n\nFrom the desktop.\n')
   })
 
   it('syncs desktop pushes in through the background queue and reports the pull', async () => {

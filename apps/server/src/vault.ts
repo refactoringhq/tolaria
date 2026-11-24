@@ -174,13 +174,12 @@ export class Vault {
     this.repo = repo
     this.now = options.now ?? (() => new Date())
     this.log = options.log ?? (() => {})
-    this.sync = new GitSync(repo, {
-      log: this.log,
-      conflictPath: (path) => this.conflictPath(path),
-      onChanges: (changes) => this.emit(changes),
-    })
+    const timing = mirrorTiming(options)
+    const hooks = { log: this.log, conflictPath: (path: VaultPath) => this.conflictPath(path), onChanges: (changes: VaultChange[]) => this.emit(changes) }
+    // A save acknowledged before the remote heard of it keeps its path when the two cross.
+    this.sync = new GitSync(repo, hooks, { keepLocal: timing.pushDebounceMs > 0 })
     const context = { repo, sync: this.sync, locked: <T>(fn: () => Promise<T>) => this.locked(fn), log: this.log, onEvent: options.onVaultEvent }
-    this.mirror = new RemoteMirror(context, mirrorTiming(options))
+    this.mirror = new RemoteMirror(context, timing)
   }
 
   static async open(options: VaultOptions): Promise<Vault> {

@@ -6,8 +6,12 @@ import type { VaultPath } from './paths.ts'
 import type { LinkRewrites } from './renameLinks.ts'
 
 export type VaultChange =
-  /** `links` is set when a rename rewrote the wikilinks in the file, and nothing else. */
-  | { kind: 'upsert'; path: VaultPath; links?: LinkRewrites }
+  /**
+   * `links` is set when a rename rewrote the wikilinks in the file, and nothing else.
+   * `conflictCopy` is set when the file kept its local version and upstream's version of it
+   * was saved there instead.
+   */
+  | { kind: 'upsert'; path: VaultPath; links?: LinkRewrites; conflictCopy?: VaultPath }
   | { kind: 'delete'; path: VaultPath }
   | { kind: 'rename'; from: VaultPath; to: VaultPath }
 
@@ -17,6 +21,15 @@ export interface SyncHooks {
   conflictPath(path: VaultPath): VaultPath
   /** Files that changed because upstream moved (never the server's own writes). */
   onChanges(changes: VaultChange[]): Promise<void>
+}
+
+export interface SyncOptions {
+  /**
+   * Which version of a file both sides changed keeps its path in a replay. False: upstream's,
+   * the local one becomes a conflict copy (a write that pulls first is told so, ADR 0186).
+   * True: the local one, already acknowledged to whoever saved it (ADR 0309).
+   */
+  keepLocal: boolean
 }
 
 interface PendingChange {
@@ -59,12 +72,16 @@ function parseChanges(diff: GitResult): VaultChange[] {
 export class GitSync {
   /** Paths whose local version was moved to a conflict copy by the last replay. */
   readonly relocated = new Map<VaultPath, VaultPath>()
+  /** Paths that kept their local version in the last replay, with the copy of upstream's. */
+  private readonly keptLocal = new Map<VaultPath, VaultPath>()
   private readonly repo: GitRepo
   private readonly hooks: SyncHooks
+  private readonly options: SyncOptions
 
-  constructor(repo: GitRepo, hooks: SyncHooks) {
+  constructor(repo: GitRepo, hooks: SyncHooks, options: SyncOptions = { keepLocal: false }) {
     this.repo = repo
     this.hooks = hooks
+    this.options = options
   }
 
   /** Fetches and integrates upstream. Returns false when the remote is unreachable. */
@@ -84,7 +101,12 @@ export class GitSync {
     if (ahead > 0) await this.replay()
     else await repo.run(['reset', '-q', '--hard', repo.upstream])
     const diff = await repo.run(['diff', '--name-status', '-M', '-z', before, await repo.head()])
-    await this.hooks.onChanges(parseChanges(diff))
+    await this.hooks.onChanges([...parseChanges(diff), ...this.keptLocalChanges()])
+  }
+
+  /** A file that kept its local version did not change here, but a copy of it now exists. */
+  private keptLocalChanges(): VaultChange[] {
+    return [...this.keptLocal].map(([path, conflictCopy]) => ({ kind: 'upsert', path, conflictCopy }))
   }
 
   /** Pushes pending commits. Returns true when the remote has everything we have. */
@@ -151,6 +173,7 @@ export class GitSync {
     try {
       await repo.run(['reset', '-q', '--hard', repo.upstream])
       this.relocated.clear()
+      this.keptLocal.clear()
       for (const change of pending) await this.reapply(change, contested)
       await repo.run(['add', '-A', '-f'])
       await repo.commitStaged(`Replay ${pending.length} local change(s) onto upstream`, coAuthors)
@@ -188,9 +211,23 @@ export class GitSync {
     }
     const existing = await this.repo.readIfExists(path)
     if (existing?.equals(bytes)) return
-    const target = existing && contested.has(path) ? this.hooks.conflictPath(path) : await this.freePath(path)
+    if (existing && contested.has(path)) return this.splitContested(path, { local: bytes, upstream: existing })
+    const target = await this.freePath(path)
     if (target !== path) this.relocated.set(path, target)
     await this.repo.writeAtomic(target, bytes)
+  }
+
+  /** Both sides changed the file: one version keeps the path, the other becomes a conflict copy. */
+  private async splitContested(path: VaultPath, versions: { local: Buffer; upstream: Buffer }): Promise<void> {
+    const copy = this.hooks.conflictPath(path)
+    if (!this.options.keepLocal) {
+      this.relocated.set(path, copy)
+      await this.repo.writeAtomic(copy, versions.local)
+      return
+    }
+    this.keptLocal.set(path, copy)
+    await this.repo.writeAtomic(copy, versions.upstream)
+    await this.repo.writeAtomic(path, versions.local)
   }
 
   /**
