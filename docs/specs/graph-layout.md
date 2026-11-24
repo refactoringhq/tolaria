@@ -54,7 +54,7 @@ What step 1 built, and where it refines the decisions above (see ADR 0304):
 
 ## Obsidian-level interaction (TOL-394)
 
-TOL-394 sets the Obsidian-parity bar for drag, hover, neighbour focus, zoom-aware labels, forces, display, search and color groups (see ADR 0306). It covers the hover highlight, zoom-based label fade and drag-and-settle that step 2 (TOL-386) also lists; TOL-386 keeps its benchmark, transitions, keyboard and reduced-motion points.
+TOL-394 sets the Obsidian-parity bar for drag, hover, neighbour focus, zoom-aware labels, forces, display, search and color groups (see ADR 0306). TOL-434 later removed search and color groups from the settings panel, leaving Display and Forces; saved values stay in the view but no longer apply (ADR 0308). It covers the hover highlight, zoom-based label fade and drag-and-settle that step 2 (TOL-386) also lists; TOL-386 keeps its benchmark, transitions, keyboard and reduced-motion points.
 
 ### Reference behaviour (Obsidian graph view)
 

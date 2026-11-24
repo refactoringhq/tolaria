@@ -58,15 +58,6 @@ files:
     graph.empty.filteredBody: a2af0bd155b517f402099fa214b14e78
     graph.empty.resetFilters: 8bca92e006f955be7219f997638e7e63
     graph.settings.label: c86f4a28325d45ac0aa0a862556e4dc4
-    graph.settings.search: 13348442cc6a27032d2b4aa28b75a5d3
-    graph.settings.searchPlaceholder: bb86081e93d96cff56201108a6204c1a
-    graph.settings.groups: a37ede293936e29279ed543129451ec3
-    graph.settings.groupsHint: fa5a78a0ce0012790793558d5be4a76d
-    graph.settings.newGroup: 6124d758cdbddbfb7966fa23c8922e5c
-    graph.settings.groupQuery: 4edf488b76ab0585232fa8912b9eff41
-    graph.settings.moveUp: f77af7695f71323808f9b6e2795cde86
-    graph.settings.moveDown: dd9f0c7e1bb3b749bd423e3544b4a8e3
-    graph.settings.deleteGroup: 14d65465b75a0ec3382e3a92a4c07188
     graph.settings.display: b9987a246a537f4fe86f1f2e3d10dbdb
     graph.settings.textFadeThreshold: 7492a5d8eb10c0751f6006c64a436d0f
     graph.settings.nodeSizeScale: 576be828257fef81586078e09f023f12

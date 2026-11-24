@@ -52,16 +52,15 @@ export function graphNumberRange(key: GraphNumberSetting): GraphNumberRange {
 	return RANGE_LOOKUP.get(key) ?? GRAPH_NUMBER_RANGES.nodeSizeScale;
 }
 
-/** The legend filters alone: "Show everything" restores these and keeps forces, display and groups. */
+/** The legend filters alone: "Show everything" restores these and keeps forces, display and any saved search or groups. */
 export const DEFAULT_GRAPH_FILTERS: Pick<
 	GraphSettings,
-	"showWikiLinks" | "hiddenRelationships" | "hiddenTypes" | "showOrphans" | "search"
+	"showWikiLinks" | "hiddenRelationships" | "hiddenTypes" | "showOrphans"
 > = {
 	showWikiLinks: true,
 	hiddenRelationships: [],
 	hiddenTypes: [],
 	showOrphans: true,
-	search: "",
 };
 
 /** Forces back to their defaults, for "Restore defaults". */
