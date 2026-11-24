@@ -688,6 +688,8 @@ The `search_vault` Tauri command runs the scan in a blocking Tokio task and retu
 
 The note-list search field combines client-side scoped filtering with that same command: title, snippet, and visible-property matches resolve immediately, while backend body-content hits use `search_vault` with frontmatter excluded before adding matching paths for the currently visible workspace roots without displaying matched body text in the note row.
 
+Find/replace inside one open note is separate from vault and note-list search. Desktop note-level find keeps the current editor mode: CodeMirror owns raw-mode matching, and `RichEditorFindHost` adds ProseMirror match decorations and an in-editor find bar for rich mode. Both operate only on the active note; vault-wide search remains unchanged.
+
 ## Vault Cache System
 
 The vault cache (`src-tauri/src/vault/cache.rs`) accelerates vault scanning using git-based incremental updates.
