@@ -33,12 +33,6 @@ import {
 } from "../../protocol/src/index.ts";
 import { BROWSER_PRESENCE_PACING } from "./awarenessPacing.ts";
 import { CollabProvider, type SocketLike } from "./collabProvider.ts";
-import {
-	DEFAULT_CACHE_KEY,
-	entriesCacheKey,
-	writeCache,
-} from "./entriesCache.ts";
-import { takeCache } from "./entriesCachePrefetch.ts";
 import { type RemoteAttachments, remoteAttachments } from "./remoteAttachments.ts";
 import {
 	createFolder,
@@ -46,6 +40,12 @@ import {
 	listFolders,
 	renameFolder,
 } from "./remoteFolders.ts";
+import {
+	DEFAULT_CACHE_KEY,
+	entriesCacheKey,
+	writeCache,
+} from "./entriesCache.ts";
+import { takeCache } from "./entriesCachePrefetch.ts";
 import {
 	assertVaultPath,
 	encoded,
@@ -63,7 +63,6 @@ import {
 	trackCreate,
 	whenCreated,
 } from "./remoteNoteLifecycle.ts";
-import { listRemoteViews } from "./remoteViews.ts";
 
 export { RemoteError };
 
@@ -448,7 +447,7 @@ function fileOps(request: Request): VaultFileOps {
 function chromeOps(request: Request): VaultChromeOps {
 	return {
 		listFolders: () => listFolders(request),
-		listViews: () => listRemoteViews(request, (path) => readFile(request, path)),
+		listViews: unsupported("listing views"),
 	};
 }
 

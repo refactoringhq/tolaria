@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect } from "react";
-import { usePhoneNoteOpener } from "../hooks/phoneNoteStackStore";
 import { useNoteListPaintedMark } from "../hooks/useNoteListPaintedMark";
+import { usePhoneNoteOpener } from "../hooks/phoneNoteStackStore";
 import type { NoteListMultiSelectionCommands } from "./note-list/multiSelectionCommands";
 import { NoteListLayout } from "./note-list/NoteListLayout";
 import { useMultiSelectKeyboard } from "./note-list/useMultiSelectKeyboard";
@@ -9,7 +9,6 @@ import {
 	type NoteListProps,
 	useNoteListModel,
 } from "./note-list/useNoteListModel";
-import { PhoneNavigationBar } from "./phone/PhoneNavigationBar";
 
 type NoteListInnerProps = NoteListProps & {
 	onBulkOrganize?: (paths: string[]) => void;
@@ -74,13 +73,10 @@ function NoteListInner({
 	]);
 
 	return (
-		<>
-			<PhoneNavigationBar locale={props.locale ?? "en"} placement="list" />
-			<NoteListLayout
-				{...model}
-				handleBulkOrganize={onBulkOrganize ? handleBulkOrganize : undefined}
-			/>
-		</>
+		<NoteListLayout
+			{...model}
+			handleBulkOrganize={onBulkOrganize ? handleBulkOrganize : undefined}
+		/>
 	);
 }
 
