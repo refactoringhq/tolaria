@@ -92,8 +92,7 @@ html[data-phone-pane="navigation"] .app-shell .app__sidebar {
   inset: 0;
   z-index: 40;
   display: flex;
-  width: 100% !important;
-  min-width: 0;
+  min-width: 100vw;
   background: var(--surface-sidebar);
 }
 

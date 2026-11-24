@@ -73,8 +73,14 @@ function withKnownDrift(entry: Record<string, unknown>): Record<string, unknown>
   return { ...entry, isA: 'Note', relationships: { ...(entry.relationships as object), Type: ['[[note]]'] } }
 }
 
+// The desktop golden predates favorites; only these newly added fields need defaults.
+const MISSING_GOLDEN_DEFAULTS = { favorite: false, favoriteIndex: null }
+
 function desktopFields(reading: Map<string, Record<string, unknown>>): Reading {
-  const pick = (entry: Record<string, unknown>) => Object.fromEntries(Object.keys(WEB_FIELDS).map((key) => [key, entry[key]]))
+  const pick = (entry: Record<string, unknown>) => Object.fromEntries(Object.keys(WEB_FIELDS).map((key) => [
+    key,
+    Object.hasOwn(entry, key) ? entry[key] : MISSING_GOLDEN_DEFAULTS[key as keyof typeof MISSING_GOLDEN_DEFAULTS],
+  ]))
   return Object.fromEntries([...reading].map(([path, entry]) => [path, withKnownDrift(pick(entry))]))
 }
 

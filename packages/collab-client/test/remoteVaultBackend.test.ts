@@ -403,8 +403,8 @@ describe('the remote vault backend', () => {
     })
   })
 
-  it('chrome operations throw unsupported errors for listViews', async () => {
-    await expect(backend.chrome.listViews()).rejects.toThrow('listing views')
+  it('lists an empty collection when the remote vault has no saved views', async () => {
+    await expect(backend.chrome.listViews()).resolves.toEqual([])
   })
 
   it('has chrome operations on the backend interface', () => {
