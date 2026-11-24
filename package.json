@@ -217,7 +217,7 @@
     "overrides": {
       "@opentelemetry/core": "2.8.0",
       "@babel/core": "7.29.6",
-      "@hono/node-server": "2.0.12",
+      "@hono/node-server": "2.1.11",
       "body-parser": "2.4.0",
       "express-rate-limit": "8.2.2",
       "hono": "4.13.16",
