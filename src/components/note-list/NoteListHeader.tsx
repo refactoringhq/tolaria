@@ -50,7 +50,6 @@ interface NoteListHeaderProps {
 	isSearching: boolean;
 	searchInputRef: React.RefObject<HTMLInputElement | null>;
 	propertyPicker?: ListPropertiesPopoverProps | null;
-	propertyVisibility?: { visible: boolean; onToggle: () => void };
 	/** Layout menus (List/Kanban and layout-specific settings) shown before the sort control. */
 	layoutControls?: React.ReactNode;
 	gitRepositories?: GitRepositoryOption[];
@@ -290,7 +289,7 @@ function CreateNoteAction({ options }: { options: NoteListHeaderProps }) {
 }
 
 function HeaderActions(options: NoteListHeaderProps) {
-	const { propertyPicker, propertyVisibility, locale = "en" } = options;
+	const { propertyPicker, locale = "en" } = options;
 	return (
 		<div
 			className="ml-3 flex shrink-0 items-center justify-end gap-1 [html[data-touch-input]_&]:!ml-0 [html[data-touch-input]_&]:!w-full [html[data-touch-input]_&]:!justify-end"
@@ -300,7 +299,6 @@ function HeaderActions(options: NoteListHeaderProps) {
 			<SearchAction options={options} />
 			<NoteListPropertyActions
 				propertyPicker={propertyPicker}
-				propertyVisibility={propertyVisibility}
 				locale={locale}
 				triggerClassName={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
 			/>

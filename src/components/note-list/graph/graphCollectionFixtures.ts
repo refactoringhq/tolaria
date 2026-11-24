@@ -4,7 +4,7 @@ import { expect } from "vitest";
 import { SET_COLLECTION_LAYOUT_EVENT } from "../../../collections/collectionTypes";
 import { makeEntry } from "../../../test-utils/noteListTestUtils";
 import { invoke } from "./graphCollectionDoubles";
-import { Harness } from "./GraphCollectionHarness";
+import { Harness, type HarnessProps } from "./GraphCollectionHarness";
 
 /** Notes and helpers shared by the graph collection tests. */
 export const project = makeEntry({
@@ -64,8 +64,8 @@ export function lastSavedGraph() {
 }
 
 /** Shows the list as a graph and opens the graph settings panel; returns the canvas stub. */
-export async function openGraphSettings() {
-	render(createElement(Harness));
+export async function openGraphSettings(props: HarnessProps = {}) {
+	render(createElement(Harness, props));
 	act(() =>
 		window.dispatchEvent(
 			new CustomEvent(SET_COLLECTION_LAYOUT_EVENT, { detail: "graph" }),

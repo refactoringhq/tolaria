@@ -1,7 +1,6 @@
 import type { GraphSettings } from '../../../collections/collectionTypes'
 import type { VaultEntry } from '../../../types'
 import { resolveEntry } from '../../../utils/wikilink'
-import { matchesGraphQuery, parseGraphQuery } from './graphQuery'
 
 /** Type key for notes without a type, used by the type filter. */
 export const UNTYPED_GRAPH_KEY = ''
@@ -193,10 +192,12 @@ function countDegrees(edges: readonly GraphEdgeModel[]): Map<string, number> {
   return degrees
 }
 
-/** Applies the legend filters: the search and hidden types drop their notes, then edges, then (optionally) orphans. */
+/**
+ * Applies the legend filters: hidden types drop their notes, then edges, then (optionally) orphans.
+ * A saved `search` stays in the view file but no longer filters: the graph has no control to edit it (TOL-434).
+ */
 export function visibleGraph(data: GraphData, settings: GraphSettings): VisibleGraph {
-  const terms = parseGraphQuery(settings.search)
-  const shown = data.entries.filter((entry) => !settings.hiddenTypes.includes(graphTypeKey(entry)) && matchesGraphQuery(entry, terms))
+  const shown = data.entries.filter((entry) => !settings.hiddenTypes.includes(graphTypeKey(entry)))
   const shownPaths = new Set(shown.map((entry) => entry.path))
   const edges: GraphEdgeModel[] = []
   for (const pair of data.pairs) {

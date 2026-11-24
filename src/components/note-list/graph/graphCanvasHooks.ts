@@ -1,6 +1,6 @@
 import type Graph from 'graphology'
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { GraphColorGroup, GraphSettings } from '../../../collections/collectionTypes'
+import type { GraphSettings } from '../../../collections/collectionTypes'
 import { useLatestRef } from '../../../hooks/useLatestRef'
 import type { VaultEntry } from '../../../types'
 import { fitGraph } from './graphCamera'
@@ -98,25 +98,23 @@ interface GraphSyncSource {
   graph: Graph
   visible: VisibleGraph
   typeEntryMap: Record<string, VaultEntry>
-  groups: GraphColorGroup[]
   theme: string
   layout: LayoutController | null
 }
 
 /** Mirrors the visible notes into the graph and reheats the layout when notes or links come or go. */
-export function useGraphSync({ stageRef, graph, visible, typeEntryMap, groups, theme, layout }: GraphSyncSource) {
+export function useGraphSync({ stageRef, graph, visible, typeEntryMap, theme, layout }: GraphSyncSource) {
   const loaded = useRef(false)
-  const groupsKey = JSON.stringify(groups)
   useEffect(() => {
     const stage = stageRef.current
     if (!stage || !layout) return
-    const palette = readGraphPalette(stage, typeEntryMap, JSON.parse(groupsKey) as GraphColorGroup[])
+    const palette = readGraphPalette(stage, typeEntryMap)
     const changed = syncGraph(graph, visible, palette)
     palette.dispose()
     if (!changed && loaded.current) return
     layout.load(loaded.current ? RELAYOUT_ALPHA : FIRST_LAYOUT_ALPHA)
     loaded.current = true
-  }, [graph, groupsKey, layout, stageRef, theme, typeEntryMap, visible])
+  }, [graph, layout, stageRef, theme, typeEntryMap, visible])
 }
 
 interface EmphasisSource {
