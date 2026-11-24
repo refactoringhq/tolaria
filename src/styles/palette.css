@@ -13,6 +13,7 @@
 
   --gray-50: #F8F7F4;
   --gray-100: #F7F6F2;
+  --gray-150: #EAE8E4;
   --gray-200: #E1DFDB;
   --gray-300: #CCCAC5;
   --gray-400: #AAA7A2;
@@ -120,6 +121,7 @@
   --pink-950: #2C121D;
 
   /* Elevation ink: warm gray 950 at fixed strengths, for shadows and scrims only. */
+  --ink-faint: rgb(25 23 19 / 0.06);
   --ink-soft: rgb(25 23 19 / 0.12);
   --ink-medium: rgb(25 23 19 / 0.18);
   --ink-strong: rgb(25 23 19 / 0.3);

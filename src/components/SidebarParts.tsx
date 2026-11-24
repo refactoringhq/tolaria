@@ -1,9 +1,10 @@
 import { useEffect, useRef, type ComponentType, type MouseEvent as ReactMouseEvent } from 'react'
 import type { SidebarSelection, VaultEntry, WorkspaceIdentity } from '../types'
 import { cn } from '@/lib/utils'
+import { isSelectionActive as isSidebarSelectionActive } from '../utils/sidebarSelection'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
 import type { IconProps } from '@phosphor-icons/react'
-import { SIDEBAR_ITEM_PADDING } from './sidebar/sidebarStyles'
+import { SIDEBAR_COUNT_ACTIVE_CLASS, SIDEBAR_COUNT_HOVER_CLASS, SIDEBAR_ITEM_HOVER_CLASS, SIDEBAR_ITEM_PADDING, type SidebarItemStyle } from './sidebar/sidebarStyles'
 import { useSidebarInlineRenameInput } from './sidebar/sidebarHooks'
 import { Button } from './ui/button'
 import { Checkbox } from './ui/checkbox'
@@ -19,9 +20,8 @@ const SIDEBAR_COUNT_PILL_STYLE = {
   fontVariantNumeric: 'tabular-nums',
 } as const
 
-/** Idle count pill: the same fill as a hovered row; a hovered row lifts the pill one step so it stays distinct. */
-export const SIDEBAR_COUNT_PILL_IDLE_CLASS =
-  'bg-count-pill text-count-pill-text group-hover/sidebar-row:bg-count-pill-hover group-hover/sidebar-row:text-count-pill-text-hover'
+/** Count backgrounds stay transparent in every row state. */
+export const SIDEBAR_COUNT_PILL_IDLE_CLASS = 'bg-transparent text-count-pill-text'
 
 export interface SectionGroup {
   label: string
@@ -39,23 +39,7 @@ function resolveSectionColors(type: string, customColor?: string | null) {
 
 // eslint-disable-next-line react-refresh/only-export-components -- utility co-located with component
 export function isSelectionActive(current: SidebarSelection, check: SidebarSelection): boolean {
-  if (current.kind !== check.kind) return false
-  switch (check.kind) {
-    case 'filter':
-      return (current as typeof check).filter === check.filter
-    case 'sectionGroup':
-      return (current as typeof check).type === check.type
-    case 'folder':
-      return (current as typeof check).path === check.path
-    case 'entity':
-      return (current as typeof check).entry.path === check.entry.path
-    case 'view': {
-      const currentView = current as typeof check
-      return currentView.filename === check.filename && (currentView.rootPath ?? '') === (check.rootPath ?? '')
-    }
-    default:
-      return false
-  }
+  return isSidebarSelectionActive(current, check)
 }
 
 // --- NavItem ---
@@ -258,7 +242,8 @@ function ClickableNavItem(options: {
       size="sm"
       className={cn(
         'group/sidebar-row h-auto w-full cursor-pointer select-none justify-start rounded text-left transition-colors',
-        isActive ? activeClassName : 'text-foreground hover:bg-accent',
+        isActive ? activeClassName : 'text-foreground',
+        SIDEBAR_ITEM_HOVER_CLASS,
       )}
       style={{ padding, borderRadius: 4 }}
       onClick={onClick}
@@ -268,7 +253,7 @@ function ClickableNavItem(options: {
       <NavItemCount
         count={count}
         countLoading={countLoading}
-        className={resolveBadgeClassName(isActive, activeBadgeClassName, badgeClassName)}
+        className={cn(resolveBadgeClassName(isActive, activeBadgeClassName, badgeClassName), isActive && SIDEBAR_COUNT_ACTIVE_CLASS, SIDEBAR_COUNT_HOVER_CLASS)}
         style={resolveBadgeStyle(isActive, activeBadgeClassName, activeBadgeStyle, badgeStyle)}
         compact={compact}
       />
@@ -295,53 +280,16 @@ export function NavItem(options: {
 }) {
   const {
     icon: Icon,
-    emoji,
-    label,
-    count,
-    countLoading,
-    isActive,
-    activeClassName = 'bg-[var(--accent-blue-light)] text-[var(--accent-blue)]',
-    badgeClassName,
-    badgeStyle,
-    activeBadgeClassName,
-    activeBadgeStyle,
-    onClick,
     disabled,
     disabledTooltip,
-    compact,
+    activeClassName = 'bg-[var(--accent-blue-light)] text-[var(--accent-blue)]',
+    ...props
   } = options
-  const padding = getNavItemPadding(compact, countLoading || hasSidebarCount(count))
+  const padding = getNavItemPadding(props.compact, props.countLoading || hasSidebarCount(props.count))
   if (disabled) {
-    return (
-      <DisabledNavItem
-        Icon={Icon}
-        emoji={emoji}
-        label={label}
-        compact={compact}
-        disabledTooltip={disabledTooltip}
-        padding={padding}
-      />
-    )
+    return <DisabledNavItem {...props} Icon={Icon} disabledTooltip={disabledTooltip} padding={padding} />
   }
-
-  return (
-    <ClickableNavItem
-      Icon={Icon}
-      emoji={emoji}
-      label={label}
-      count={count}
-      countLoading={countLoading}
-      isActive={isActive}
-      activeClassName={activeClassName}
-      badgeClassName={badgeClassName}
-      badgeStyle={badgeStyle}
-      activeBadgeClassName={activeBadgeClassName}
-      activeBadgeStyle={activeBadgeStyle}
-      onClick={onClick}
-      compact={compact}
-      padding={padding}
-    />
-  )
+  return <ClickableNavItem {...props} Icon={Icon} activeClassName={activeClassName} padding={padding} />
 }
 
 // --- Section Content ---
@@ -543,18 +491,15 @@ function SectionHeaderLabel(options: {
 function SectionHeaderCountPill({
   itemCount,
   isActive,
-  sectionColor,
 }: {
   itemCount: number
   isActive: boolean
-  sectionColor: string
 }) {
   if (itemCount <= 0) return null
   return (
     <SidebarCountPill
       count={itemCount}
-      className={!isActive ? SIDEBAR_COUNT_PILL_IDLE_CLASS : undefined}
-      style={isActive ? { background: sectionColor, color: 'var(--text-inverse)' } : undefined}
+      className={cn(isActive ? SIDEBAR_COUNT_ACTIVE_CLASS : SIDEBAR_COUNT_PILL_IDLE_CLASS, SIDEBAR_COUNT_HOVER_CLASS)}
     />
   )
 }
@@ -601,6 +546,14 @@ function SectionHeader(options: {
   const selectHandler = getSectionSelectHandler(isRenaming, onSelect)
   const contextMenuHandler = getSectionContextMenuHandler(isRenaming, onContextMenu)
   const doubleClickHandler = !isRenaming ? onSelectTypeNote : undefined
+  const rowStyle: SidebarItemStyle = {
+    '--sidebar-active-bg': sectionLightColor,
+    '--sidebar-active-fg': sectionColor,
+    padding: SIDEBAR_ITEM_PADDING.withCount,
+    borderRadius: 4,
+    gap: 4,
+    ...getSectionHeaderBackground(isActive, sectionLightColor),
+  }
 
   useEffect(() => {
     const header = headerRef.current
@@ -625,14 +578,9 @@ function SectionHeader(options: {
       ref={headerRef}
       className={cn(
         'group/section group/sidebar-row flex cursor-pointer select-none items-center justify-between rounded transition-colors',
-        !isActive && 'hover:bg-accent',
+        SIDEBAR_ITEM_HOVER_CLASS,
       )}
-      style={{
-        padding: SIDEBAR_ITEM_PADDING.withCount,
-        borderRadius: 4,
-        gap: 4,
-        ...getSectionHeaderBackground(isActive, sectionLightColor),
-      }}
+      style={rowStyle}
       {...dragHandleProps}
     >
       <div className="flex min-w-0 flex-1 items-center" style={{ gap: 4 }}>
@@ -650,7 +598,7 @@ function SectionHeader(options: {
           locale={locale}
         />
       </div>
-      {!isRenaming && <SectionHeaderCountPill itemCount={itemCount} isActive={isActive} sectionColor={sectionColor} />}
+      {!isRenaming && <SectionHeaderCountPill itemCount={itemCount} isActive={isActive} />}
     </div>
   )
 }

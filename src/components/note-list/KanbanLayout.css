@@ -92,6 +92,7 @@
 }
 
 .kanban-card {
+  box-shadow: var(--shadow-card);
   transition:
     border-color 120ms ease,
     box-shadow 160ms ease,
@@ -104,7 +105,7 @@
 
 .kanban-card-slot:hover .kanban-card {
   border-color: var(--border-strong, var(--border));
-  box-shadow: 0 2px 6px -2px var(--shadow-soft);
+  box-shadow: var(--shadow-card);
 }
 
 /* Dark mode layers the board like Linear and GitHub Projects: a recessed board, raised lanes, and cards
@@ -123,7 +124,7 @@
 :where(.dark, [data-theme="dark"]) .kanban-card {
   background-color: var(--surface-button);
   border-color: var(--border-strong);
-  box-shadow: 0 1px 2px var(--shadow-strong);
+  box-shadow: var(--shadow-card);
 }
 
 :where(.dark, [data-theme="dark"]) .kanban-card-slot:hover .kanban-card {

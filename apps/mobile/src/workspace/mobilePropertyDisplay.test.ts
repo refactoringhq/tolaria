@@ -5,11 +5,11 @@ describe('mobile property display', () => {
   it('matches desktop friendly date rendering for date-like properties', () => {
     expect(mobilePropertyDisplay('Deadline', '2026-03-31')).toMatchObject({
       kind: 'date',
-      text: 'March 31, 2026',
+      text: 'Mar 31, 2026',
     })
     expect(mobilePropertyDisplay('Due', '02/25/2026')).toMatchObject({
       kind: 'date',
-      text: 'February 25, 2026',
+      text: 'Feb 25, 2026',
     })
   })
 
