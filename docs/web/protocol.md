@@ -243,7 +243,7 @@ On `conflict`, `path` and `etag` describe the conflict copy and `current` descri
 - The copy is named `<name> (conflict <YYYY-MM-DD HHMM>)<ext>` in UTC, next to the original, with a counter appended (`… 1611 2`, `… 1611 3`) when the name is taken. It is an ordinary file with its own `docId`.
 - `pushed: false` means the commit is safe on the server but has not reached the git remote yet. That is the normal answer when pushes run in the background; the change feed's `push-success` says when it has. A push that fails (the remote is slow, unreachable or kept winning a race) is retried on its own, with a growing delay, until it lands.
 - `Server-Timing: pull;dur=…, commit;dur=…, push;dur=…` reports the three phases in milliseconds; with background pushes, `pull` and `push` are about zero.
-- If another device pushes the same file before the server's commit reaches the remote, the server keeps the pushed version under the path and moves its own to a conflict copy when it integrates the remote. A write answered before then said `updated`; the change feed's `pull` event and a fresh listing show the copy.
+- If another device pushes the same file before the server's commit reaches the remote, the write keeps the path it was answered with, and the pushed version is saved next to it as a conflict copy when the server integrates the remote (ADR 0309). A live document of the note names that copy in `meta.conflictCopy`; the change feed's `pull` event and a fresh listing show it too.
 
 ### `DELETE /v1/files/<path>`
 
@@ -401,7 +401,7 @@ Every mutation runs alone: change files, commit (flushed to disk), answer. The r
 - **Push:** about 2 s after the last commit, and at most 5 s after the first commit still waiting, so a commit reaches the remote within a few seconds even while saves keep coming. A failed push is retried on its own, with a growing delay up to 30 s, until it lands; meanwhile writes go on and answer `pushed: false`.
 - **Fetch:** every 30 s (`TOLARIA_VAULT_FETCH_INTERVAL_MS`), on `POST /v1/sync`, and when a push is rejected. What it brings is integrated between two mutations:
   - **Remote ahead, nothing local pending:** fast-forward.
-  - **Local commits pending and the remote moved** (another device pushed first, or the server was offline): the remote's history wins. The server resets to it and re-applies its pending changes file by file in one commit. A pending change to a file the remote also changed becomes a conflict copy; a pending deletion of such a file is dropped.
+  - **Local commits pending and the remote moved** (another device pushed first, or the server was offline): the remote's history wins. The server resets to it and re-applies its pending changes file by file in one commit. For a file the remote also changed, the server's version keeps the path and the remote's version becomes a conflict copy, because the server has already answered that save (ADR 0309); with inline pushes (`pushDebounceMs: 0`) the remote's version keeps the path and the pending change becomes the copy. A pending deletion of such a file is dropped.
 - **Push rejected:** integrate and retry, up to three times, then retry later as above.
 
 A server started with no push debounce runs the older, inline order instead: fetch and integrate, change files, commit, push, then answer.
