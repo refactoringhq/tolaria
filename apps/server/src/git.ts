@@ -37,8 +37,9 @@ const FIXED_CONFIG = [
   'core.quotepath=false',
 ]
 // A save is acknowledged once its commit exists: git flushes the commit's objects and the refs
-// that name it to disk before it reports success, so a crash right after cannot lose it.
-const DURABLE_CONFIG = ['-c', 'core.fsync=committed', '-c', 'core.fsyncMethod=batch']
+// that name it to disk before it reports success, so a crash right after cannot lose it. git
+// documents `committed` as objects only, so `reference` is named for the branch ref.
+const DURABLE_CONFIG = ['-c', 'core.fsync=committed,reference', '-c', 'core.fsyncMethod=batch']
 const DEFAULT_TIMEOUT_MS = 30_000
 const MAX_OUTPUT_BYTES = 256 * 1024 * 1024
 // A hook or a parent git process must not redirect the vault's git commands to another repository.
