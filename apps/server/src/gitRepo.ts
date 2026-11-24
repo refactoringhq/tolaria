@@ -25,25 +25,6 @@ export const REMOTE = 'upstream'
 const UNREADABLE_AS_FILE = new Set(['ENOENT', 'EISDIR', 'ENOTDIR'])
 const PARENT_IS_A_FILE = new Set(['EEXIST', 'ENOTDIR'])
 const NOTHING_THERE = new Set(['ENOENT', 'ENOTDIR'])
-/** A full commit id (SHA-1 or SHA-256). */
-const COMMIT_ID = /^([0-9a-f]{40}|[0-9a-f]{64})$/
-/**
- * Commands that never move HEAD; any other one forgets the head `head()` remembered. A fetch
- * or a push only moves remote refs, and runs for seconds while saves go on.
- */
-const KEEP_HEAD = new Set(['rev-parse', 'rev-list', 'ls-tree', 'diff', 'log', 'merge-base', 'cat-file', 'show', 'fetch', 'push'])
-
-function messageArgs(message: string, coAuthors: readonly CoAuthor[]): string[] {
-  const trailers = coAuthorTrailers(coAuthors)
-  return ['-m', message, ...(trailers ? ['-m', trailers] : [])]
-}
-
-/** The git command in `args`, after any leading `-c <setting>` pairs. */
-function subcommand(args: readonly string[]): string | undefined {
-  let index = 0
-  while (args[index] === '-c') index += 2
-  return args[index]
-}
 
 type PathKind = 'file' | 'folder' | 'missing'
 
@@ -80,10 +61,6 @@ export class GitRepo {
   readonly branch: string
   private readonly env: Record<string, string>
   private tempFiles = 0
-  /** HEAD as last read, while no command that may move it has run or is running. */
-  private knownHead: string | null = null
-  private changing = 0
-  private generation = 0
 
   private constructor(dir: string, branch: string, committer: Committer) {
     this.dir = dir
@@ -106,46 +83,11 @@ export class GitRepo {
   }
 
   run(args: readonly string[], options: GitOptions = {}): Promise<GitResult> {
-    if (KEEP_HEAD.has(subcommand(args) ?? '')) return git(this.dir, args, { ...options, env: this.env })
-    return this.change(args, options)
+    return git(this.dir, args, { ...options, env: this.env })
   }
 
-  /** The current commit. Read once per change: a save asks for it several times. */
   async head(): Promise<string> {
-    if (this.knownHead !== null) return this.knownHead
-    const generation = this.generation
-    const head = (await this.branchTip()) ?? (await this.run(['rev-parse', 'HEAD'])).stdout.trim()
-    if (this.changing === 0 && generation === this.generation) this.knownHead = head
-    return head
-  }
-
-  /**
-   * The commit of the checked-out branch, read from its ref file without starting git; null
-   * when HEAD is not a loose branch ref (a packed ref, a detached HEAD), for `rev-parse`.
-   * Git replaces a ref file by renaming a complete one over it, so a read sees a whole id.
-   */
-  private async branchTip(): Promise<string | null> {
-    try {
-      const head = await readFile(join(this.dir, '.git', 'HEAD'), 'utf8')
-      const ref = /^ref: (refs\/heads\/[^\s]+)\n?$/.exec(head)?.[1]
-      if (!ref) return null
-      const tip = (await readFile(join(this.dir, '.git', ref), 'utf8')).trim()
-      return COMMIT_ID.test(tip) ? tip : null
-    } catch {
-      return null
-    }
-  }
-
-  private async change(args: readonly string[], options: GitOptions): Promise<GitResult> {
-    this.changing += 1
-    this.knownHead = null
-    try {
-      return await git(this.dir, args, { ...options, env: this.env })
-    } finally {
-      this.changing -= 1
-      this.generation += 1
-      this.knownHead = null
-    }
+    return (await this.run(['rev-parse', 'HEAD'])).stdout.trim()
   }
 
   abs(path: VaultPath): string {
@@ -209,11 +151,7 @@ export class GitRepo {
   }
 
   async commitFile(path: VaultPath, bytes: Uint8Array, message: string, coAuthors: readonly CoAuthor[] = []): Promise<void> {
-    const existed = this.exists(path)
     await this.writeAtomic(path, bytes)
-    // The usual save edits a file git tracks: one command stages and commits it. Git refuses
-    // (exit 1) a path it does not track, which is then added first.
-    if (existed && (await this.run(['commit', '-q', ...messageArgs(message, coAuthors), '--', path], { okCodes: [1] })).code === 0) return
     await this.run(['add', '-f', '--', path])
     await this.commitStaged(message, coAuthors)
   }
@@ -222,7 +160,8 @@ export class GitRepo {
   async commitStaged(message: string, coAuthors: readonly CoAuthor[] = []): Promise<void> {
     const staged = await this.run(['diff', '--cached', '--quiet'], { okCodes: [1] })
     if (staged.code !== 1) return
-    await this.run(['commit', '-q', ...messageArgs(message, coAuthors)])
+    const trailers = coAuthorTrailers(coAuthors)
+    await this.run(['commit', '-q', '-m', message, ...(trailers ? ['-m', trailers] : [])])
   }
 
   async restoreCleanTree(): Promise<void> {
