@@ -100,7 +100,7 @@ describe('the Share button of a note', () => {
     fireEvent.click(screen.getByTestId('share-invite'))
 
     expect(await screen.findByTestId('share-success')).toHaveTextContent('ana@example.com can now open it from Shared with me.')
-    expect(screen.getByTestId('share-person')).toHaveTextContent('@ana')
+    expect(await screen.findByTestId('share-person')).toHaveTextContent('@ana')
     const post = fetch.mock.calls.find(([, init]) => init?.method === 'POST')
     expect(JSON.parse(String(post?.[1]?.body))).toEqual({ email: 'ana@example.com', role: 'editor', vaultId: 'v_1', path: NOTE })
   })

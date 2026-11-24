@@ -3,6 +3,8 @@ import type { CalendarSegment } from "./calendarModel";
 
 /** Height of a day's number row, above the item stack. */
 export const DAY_HEADER_PX = 30;
+/** Space between the weekly header separator and the first card. */
+export const WEEK_CARD_TOP_GAP_PX = 4;
 export const LANE_GAP_PX = 3;
 /** The "+N more" button's height (`!h-5`). */
 export const MORE_BUTTON_PX = 20;
@@ -198,6 +200,29 @@ export function stackWeek(
 				top: bottom,
 			})),
 		minHeight: measured ? minHeightFor(input) : 0,
+	};
+}
+
+/** Weekly view scrolls the full stack instead of folding cards into overflow. */
+export function stackFullWeek(
+	segments: CalendarSegment[],
+	week: DayKey[],
+	measure: StackMeasure,
+): WeekStack {
+	const layout = stackWeek(segments, week, { ...measure, available: Infinity });
+	const bottom = layout.visible.reduce((maximum, { segment, top }) => {
+		const height =
+			measure.heights.get(segment.item.entry.path) || FALLBACK_CARD_PX;
+		return Math.max(maximum, top + height);
+	}, 0);
+	return {
+		...layout,
+		minHeight:
+			DAY_HEADER_PX +
+			WEEK_CARD_TOP_GAP_PX +
+			ROW_BORDER_PX +
+			bottom +
+			BOTTOM_GAP_PX,
 	};
 }
 
