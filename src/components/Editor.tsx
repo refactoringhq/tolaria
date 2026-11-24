@@ -1,4 +1,11 @@
-import { memo, type ReactNode, useCallback, useEffect, useState } from "react";
+import {
+	memo,
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import "@blocknote/mantine/style.css";
 import "katex/dist/katex.min.css";
 import type { RemoteBindings } from "../../packages/collab-client/src/remoteVaultBackend";
@@ -13,6 +20,7 @@ import {
 import type { AiTarget } from "../lib/aiTargets";
 import { type AppLocale, translate } from "../lib/i18n";
 import type { PlatformCapabilities } from "../lib/platformCapabilities";
+import { trackEvent } from "../lib/telemetry";
 import type { VaultBackend } from "../lib/vaultBackend/types";
 import type {
 	GitCommit,
@@ -33,6 +41,11 @@ import { EditorLayout } from "./EditorLayout";
 import { useRegisterEditorContentFlushes } from "./editorContentFlushRegistration";
 import type { FrontmatterValue } from "./Inspector";
 import type { RawEditorFindRequest } from "./RawEditorFindBar";
+import { RichEditorFindHost } from "./RichEditorFindHost";
+import {
+	shouldKeepFindInEditorMode,
+	shouldSwitchFindToRaw,
+} from "./richEditorFind";
 import { useEditorPdfExport } from "./useEditorPdfExport";
 import {
 	type ImageImportErrorHandler,
@@ -194,27 +207,42 @@ function useEditorFindCommand({
 	findInNoteRef,
 	handleToggleRawExclusive,
 	rawMode,
+	isDesktop,
 }: {
 	activeTab: Tab | null;
 	findInNoteRef?: EditorProps["findInNoteRef"];
 	handleToggleRawExclusive: () => void;
 	rawMode: boolean;
+	isDesktop: boolean;
 }): RawEditorFindRequest | null {
 	const [findRequest, setFindRequest] = useState<RawEditorFindRequest | null>(
 		null,
 	);
+	const requestIdRef = useRef(0);
 	const handleFindInNote = useCallback(
 		(options: { replace?: boolean } = {}) => {
 			if (!activeTab || activeTab.entry.fileKind === "binary") return;
-			if (!rawMode) handleToggleRawExclusive();
-
-			setFindRequest((current) => ({
-				id: (current?.id ?? 0) + 1,
+			if (shouldSwitchFindToRaw(isDesktop, rawMode)) handleToggleRawExclusive();
+			const request = {
+				id: requestIdRef.current + 1,
 				path: activeTab.entry.path,
 				replace: options.replace === true,
-			}));
+			};
+			requestIdRef.current = request.id;
+			trackEvent("note_find_used", {
+				mode: rawMode ? "raw" : "rich",
+				replace: request.replace ? 1 : 0,
+			});
+			if (shouldKeepFindInEditorMode(isDesktop, rawMode)) {
+				window.dispatchEvent(
+					new CustomEvent("laputa:rich-editor-find-request", {
+						detail: request,
+					}),
+				);
+			}
+			setFindRequest(request);
 		},
-		[activeTab, handleToggleRawExclusive, rawMode],
+		[activeTab, handleToggleRawExclusive, isDesktop, rawMode],
 	);
 
 	useEffect(() => {
@@ -308,6 +336,7 @@ function EditorInner(
 		findInNoteRef: props.findInNoteRef,
 		handleToggleRawExclusive: runtime.handleToggleRawExclusive,
 		rawMode: runtime.rawMode,
+		isDesktop: props.platformCapabilities?.perNoteEditors !== true,
 	});
 	useTurnCurrentBlockIntoCommand({
 		activeTab: runtime.activeTab,
@@ -345,17 +374,25 @@ function EditorInner(
 	}, [tableOfContentsToggleRef, rightPanel.handleToggleTableOfContents]);
 
 	return (
-		<EditorLayout
-			{...buildEditorLayoutProps(props, runtime, findRequest)}
-			onImageImportError={onImageImportError}
-			onToggleInspector={rightPanel.handleToggleInspectorPanel}
-			showAIChat={props.showAIChat}
-			onToggleAIChat={
-				props.onToggleAIChat ? rightPanel.handleToggleAIChatPanel : undefined
-			}
-			showTableOfContents={rightPanel.showTableOfContents}
-			onToggleTableOfContents={rightPanel.handleToggleTableOfContents}
-			onExportPdf={handleExportPdf}
-		/>
+		<>
+			<EditorLayout
+				{...buildEditorLayoutProps(props, runtime, findRequest)}
+				onImageImportError={onImageImportError}
+				onToggleInspector={rightPanel.handleToggleInspectorPanel}
+				showAIChat={props.showAIChat}
+				onToggleAIChat={
+					props.onToggleAIChat ? rightPanel.handleToggleAIChatPanel : undefined
+				}
+				showTableOfContents={rightPanel.showTableOfContents}
+				onToggleTableOfContents={rightPanel.handleToggleTableOfContents}
+				onExportPdf={handleExportPdf}
+			/>
+			<RichEditorFindHost
+				editor={runtime.editor}
+				locale={props.locale}
+				path={runtime.activeTab?.entry.path ?? null}
+				rawMode={runtime.rawMode}
+			/>
+		</>
 	);
 }
