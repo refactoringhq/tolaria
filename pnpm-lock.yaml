@@ -7,7 +7,7 @@ settings:
 overrides:
   '@opentelemetry/core': 2.8.0
   '@babel/core': 7.29.6
-  '@hono/node-server': 2.0.12
+  '@hono/node-server': 2.1.11
   body-parser: 2.4.0
   express-rate-limit: 8.2.2
   hono: 4.13.16
@@ -2001,8 +2001,8 @@ packages:
       prosemirror-state: 1.4.4
       prosemirror-view: 1.42.3
 
-  '@hono/node-server@2.0.12':
-    resolution: {integrity: sha512-eWpQYr67tqJLeaSUl0Q+TquuYfUdTibpOJlUMV2FfUP7+KqCC5TufnwnlXL6mobZBJbGAYRd7ZvEBDCbLInjhg==}
+  '@hono/node-server@2.1.11':
+    resolution: {integrity: sha512-KzKz9vl4vvr1vgLHamj+g5uonbrj5NwAdO3yzOS6cd2HjALVeOgTgeZOyAzNxejbkfOOPIcvuf/Tg8l1pEFLog==}
     engines: {node: '>=20'}
     peerDependencies:
       hono: 4.13.16
@@ -11964,7 +11964,7 @@ snapshots:
       prosemirror-transform: 1.12.2
       prosemirror-view: 1.42.3(patch_hash=ad873cf71e74409eef54c46fee61b24b053997b4be85cf3fcb14f091917749bc)
 
-  '@hono/node-server@2.0.12(hono@4.13.16)':
+  '@hono/node-server@2.1.11(hono@4.13.16)':
     dependencies:
       hono: 4.13.16
 
@@ -12280,7 +12280,7 @@ snapshots:
 
   '@modelcontextprotocol/sdk@1.32.1(zod@4.6.7)':
     dependencies:
-      '@hono/node-server': 2.0.12(hono@4.13.16)
+      '@hono/node-server': 2.1.11(hono@4.13.16)
       ajv: 8.18.0
       ajv-formats: 3.0.1(ajv@8.18.0)
       content-type: 1.0.5
