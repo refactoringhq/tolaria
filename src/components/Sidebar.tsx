@@ -1,7 +1,6 @@
 import { type DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
-import { memo, useCallback, useMemo } from 'react'
-import { usePhoneNoteStackControls } from '../hooks/phoneNoteStackStore'
+import { memo, useCallback } from 'react'
 import type { FolderFileActions } from '../hooks/useFileActions'
 import type { AppLocale } from '../lib/i18n'
 import type { FolderCreationParent, FolderNode, SidebarSelection, VaultEntry, ViewDefinition, ViewFile } from '../types'
@@ -9,6 +8,7 @@ import type { AllNotesFileVisibility } from '../utils/allNotesFileVisibility'
 import { isTypeSectionVisible } from '../utils/typeVisibility'
 import { FolderTree } from './FolderTree'
 import { PhoneNavigationBar } from './phone/PhoneNavigationBar'
+import { usePhoneSidebarSelection } from './phone/usePhoneSidebarSelection'
 import {
   SidebarCreatableLoadingSection,
   SidebarFavoritesLoadingSection,
@@ -688,23 +688,8 @@ function SidebarInteractionOverlays({
 
 export const Sidebar = memo(function Sidebar(props: SidebarProps) {
   const locale = props.locale ?? 'en'
-  const phone = usePhoneNoteStackControls()
-  const { onSelect: selectItem, onSelectFavorite: selectFavorite } = props
-  const { active, showList, showNote } = phone
-  const onSelect = useCallback((selection: SidebarSelection) => {
-    const phoneSelection = active && selection.kind === 'folder'
-      ? { ...selection, rootPath: undefined }
-      : selection
-    selectItem(phoneSelection)
-    if (active) showList()
-  }, [active, selectItem, showList])
-  const onSelectFavorite = useMemo(() => selectFavorite
-    ? (entry: VaultEntry) => {
-        selectFavorite(entry)
-        if (active) showNote()
-      }
-    : undefined, [active, selectFavorite, showNote])
-  const navigationProps = { ...props, onSelect, onSelectFavorite }
+  const phoneSelection = usePhoneSidebarSelection(props)
+  const navigationProps = { ...props, ...phoneSelection }
   const runtime = useSidebarRuntime(navigationProps)
 
   return (

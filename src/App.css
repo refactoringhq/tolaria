@@ -146,11 +146,6 @@ html[data-phone-pane="navigation"] .app-shell .app__sidebar > .app__phone-naviga
   flex: 0 0 48px;
 }
 
-html[data-touch-input][data-phone-pane="navigation"] .app-shell .app__sidebar :is(button, [role="button"]) {
-  min-width: 44px;
-  min-height: 44px;
-}
-
 /* Tablet web layout (TOL-194): the note list and the note, the sidebar collapsed until asked for. */
 html[data-tablet-layout] {
   --tolaria-macos-traffic-light-padding: 16px;
@@ -189,6 +184,12 @@ html[data-touch-input] [data-testid$="context-menu"] [data-slot="button"] {
 }
 
 html[data-touch-input] .app-shell .app__sidebar :is(button, [role="button"]) {
+  min-height: 44px;
+}
+
+/* The phone navigation pane (TOL-417) also gives every sidebar control a 44 px width. */
+html[data-touch-input][data-phone-pane="navigation"] .app-shell .app__sidebar :is(button, [role="button"]) {
+  min-width: 44px;
   min-height: 44px;
 }
 

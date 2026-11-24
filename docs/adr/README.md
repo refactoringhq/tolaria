@@ -300,3 +300,4 @@ proposed → active → superseded
 | [0307](0307-palette-scales-and-semantic-color-roles.md) | Color system: one warm gray and a 50–950 scale per hue, with semantic roles and a color lint (supersedes the color values in [0081](0081-internal-light-dark-theme-runtime.md)) | active |
 | [0309](0309-saves-never-wait-for-the-git-remote.md) | Saves never wait for the git remote: network off the vault lock, retried pushes, deferred index writes (supersedes the save-path parts of [0280](0280-debounced-push-and-background-fetch.md)) | active |
 | [0310](0310-acknowledged-saves-keep-their-path-in-a-replay.md) | Acknowledged saves keep their path when a background push meets a remote change (supersedes the replay rule in [0309](0309-saves-never-wait-for-the-git-remote.md)) | active |
+| [0311](0311-remote-saved-view-discovery.md) | Tolaria Web discovers saved views by reading `views/*.yml` files from the Tolaria remote | active |

@@ -14,6 +14,8 @@ import { COLLAB_TOKEN } from "../playwright.config";
  */
 
 const PHONE_PROJECTS = ["iphone-15"];
+/** The iPad layout keeps its sidebar collapsed until asked for (TOL-194). */
+const TABLET_PROJECTS = ["ipad", "ipad-landscape"];
 const AUTH = { authorization: `Bearer ${COLLAB_TOKEN}` };
 const NOTES = {
 	ada: { path: "people/ada.md", title: "Ada", body: "Works on" },
@@ -29,6 +31,10 @@ test.use({ video: "on" });
 
 function isPhone(testInfo: TestInfo): boolean {
 	return PHONE_PROJECTS.includes(testInfo.project.name);
+}
+
+function isTablet(testInfo: TestInfo): boolean {
+	return TABLET_PROJECTS.includes(testInfo.project.name);
 }
 
 async function openRemoteVault(page: Page, url = "/"): Promise<void> {
@@ -227,21 +233,25 @@ test.describe("phone navigation", () => {
 	}, testInfo) => {
 		test.skip(!isPhone(testInfo), "phone layout only");
 		const folderNote = await seedPhoneNavigationFixture(request);
-		await openRemoteVault(page);
-		await expectListPane(page);
-		await shot(page, testInfo, "phone-navigation-list");
-		await openPhoneNavigation(page);
-		await expect(page.getByText("FAVORITES", { exact: true })).toBeVisible();
-		await expectPhoneNavigationTargets(page);
-		await shot(page, testInfo, "phone-navigation-pane");
-		await selectPhoneNavigationType(page, testInfo);
-		await selectPhoneSavedView(page, testInfo);
-		await selectPhoneFolder(page, testInfo);
-		await openPhoneNavigationNote(page, testInfo, folderNote);
-		await request.delete(`/v1/files/${folderNote}`, { headers: AUTH });
-		await request.delete("/v1/files/views/phone-navigation.yml", {
-			headers: AUTH,
-		});
+		try {
+			await openRemoteVault(page);
+			await expectListPane(page);
+			await shot(page, testInfo, "phone-navigation-list");
+			await openPhoneNavigation(page);
+			await expect(page.getByText("FAVORITES", { exact: true })).toBeVisible();
+			await expectPhoneNavigationTargets(page);
+			await shot(page, testInfo, "phone-navigation-pane");
+			await selectPhoneNavigationType(page, testInfo);
+			await selectPhoneSavedView(page, testInfo);
+			await selectPhoneFolder(page, testInfo);
+			await openPhoneNavigationNote(page, testInfo, folderNote);
+		} finally {
+			// Later specs share this server's vault, so a failed run must not leave the fixture behind.
+			await request.delete(`/v1/files/${folderNote}`, { headers: AUTH });
+			await request.delete("/v1/files/views/phone-navigation.yml", {
+				headers: AUTH,
+			});
+		}
 	});
 });
 
@@ -341,8 +351,13 @@ test("wider layouts keep the note list beside the note", async ({
 
 	await expect(noteList(page)).toBeVisible();
 	await expect(page.locator(".app__editor")).toBeVisible();
-	await expect(page.locator(".app__sidebar")).toBeVisible();
 	await expect(page.getByTestId("phone-back-to-notes")).toHaveCount(0);
-	await expect(page.locator(".app-shell[data-phone-pane]")).toHaveCount(0);
-	await shot(page, testInfo, "desktop-sidebar");
+	await expect(page.getByTestId("phone-open-navigation")).toHaveCount(0);
+	await expect(page.locator("html[data-phone-pane]")).toHaveCount(0);
+	if (isTablet(testInfo)) {
+		await expect(page.locator(".app__sidebar")).toHaveCount(0);
+	} else {
+		await expect(page.locator(".app__sidebar")).toBeVisible();
+	}
+	await shot(page, testInfo, "wide-layout");
 });
