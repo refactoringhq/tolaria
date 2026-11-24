@@ -396,11 +396,15 @@ Attachments are read and written through the file routes with the bearer token l
 
 ## How the server keeps git consistent
 
-Every mutation runs alone, in this order: fetch and integrate the remote, change files, commit, push.
+Every mutation runs alone: change files, commit (flushed to disk), answer. The remote is kept in step separately, one operation at a time, and never while a mutation waits (ADR 0308):
 
-- **Remote ahead, nothing local pending:** fast-forward.
-- **Local commits pending and the remote moved** (the server was offline, or lost a push race): the remote's history wins. The server resets to it and re-applies its pending changes file by file in one commit. A pending change to a file the remote also changed becomes a conflict copy; a pending deletion of such a file is dropped.
-- **Push rejected:** integrate and retry, up to three times, then answer `pushed: false`.
+- **Push:** about 2 s after the last commit, and at most 5 s after the first commit still waiting, so a commit reaches the remote within a few seconds even while saves keep coming. A failed push is retried on its own, with a growing delay up to 30 s, until it lands; meanwhile writes go on and answer `pushed: false`.
+- **Fetch:** every 30 s (`TOLARIA_VAULT_FETCH_INTERVAL_MS`), on `POST /v1/sync`, and when a push is rejected. What it brings is integrated between two mutations:
+  - **Remote ahead, nothing local pending:** fast-forward.
+  - **Local commits pending and the remote moved** (another device pushed first, or the server was offline): the remote's history wins. The server resets to it and re-applies its pending changes file by file in one commit. A pending change to a file the remote also changed becomes a conflict copy; a pending deletion of such a file is dropped.
+- **Push rejected:** integrate and retry, up to three times, then retry later as above.
+
+A server started with no push debounce runs the older, inline order instead: fetch and integrate, change files, commit, push, then answer.
 
 The server never force-pushes and never rewrites commits that reached the remote.
 
