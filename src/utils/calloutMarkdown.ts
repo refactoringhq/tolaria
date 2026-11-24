@@ -102,6 +102,18 @@ function dropInlinePrefix(
   return { content: result, remaining }
 }
 
+function removeRepeatedQuoteMarkers(content: InlineItem[]): InlineItem[] {
+  return content.map((item) => {
+    if (item.type === 'text' && typeof item.text === 'string') {
+      return { ...item, text: item.text.replace(/(^|\n)>[ \t]?/gu, '$1') }
+    }
+    if (Array.isArray(item.content)) {
+      return { ...item, content: removeRepeatedQuoteMarkers(item.content as InlineItem[]) }
+    }
+    return item
+  })
+}
+
 function readQuoteCallout(block: BlockLike): { bodyOffset: number; marker: CalloutMarker } | null {
   if (block.type !== 'quote') return null
   const text = inlineContentText(block.content)
@@ -125,7 +137,9 @@ export function buildCalloutBlock(block: BlockLike): BlockLike {
     calloutType: parsed.marker.type,
     title: parsed.marker.title,
   }
-  const body = dropInlinePrefix(block.content ?? [], parsed.bodyOffset).content
+  const body = removeRepeatedQuoteMarkers(
+    dropInlinePrefix(block.content ?? [], parsed.bodyOffset).content,
+  )
   return {
     ...block,
     content: body,
