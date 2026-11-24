@@ -27,7 +27,7 @@ export interface SyncOptions {
   /**
    * Which version of a file both sides changed keeps its path in a replay. False: upstream's,
    * the local one becomes a conflict copy (a write that pulls first is told so, ADR 0186).
-   * True: the local one, already acknowledged to whoever saved it (ADR 0309).
+   * True: the local one, already acknowledged to whoever saved it (ADR 0310).
    */
   keepLocal: boolean
 }

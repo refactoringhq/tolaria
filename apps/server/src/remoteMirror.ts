@@ -49,7 +49,7 @@ function describe(error: unknown): string {
 
 /**
  * Keeps the vault's git remote (GitHub) in step with the working clone, off the save path
- * (ADR 0308). Remote operations run one at a time on their own queue and take the vault lock
+ * (ADR 0309). Remote operations run one at a time on their own queue and take the vault lock
  * only for their local steps, so a save never waits for the network: not for a fetch, not for
  * a push, and not for a remote that hangs until git's timeout. Failed pushes are retried with
  * a growing delay until they succeed. With no push debounce, everything runs inline under the

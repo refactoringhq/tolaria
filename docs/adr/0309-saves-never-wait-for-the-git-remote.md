@@ -1,6 +1,6 @@
 ---
 type: ADR
-id: "0308"
+id: "0309"
 title: "Saves never wait for the git remote: network off the vault lock, retried pushes, deferred index writes"
 status: active
 date: 2026-11-24

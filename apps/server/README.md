@@ -2,7 +2,7 @@
 
 The Tolaria remote: a small service that hosts one vault as a git working clone and exposes the file API and the collaboration channel of the [Tolaria remote protocol](../../docs/web/protocol.md). Spikes S3 (TOL-5) and S4 (TOL-8); see the spike reports for [files](../../docs/web/s3-spike-report.md) and [collaboration](../../docs/web/s4-spike-report.md).
 
-Every save is one git commit, flushed to disk before the save is answered. The commit reaches the vault's git remote in the background, within a few seconds, and a push that fails is retried until it lands, so a slow or unreachable GitHub never holds or fails a save (ADR 0308). A write that is based on an outdated revision is saved as a conflict copy; nothing is overwritten silently.
+Every save is one git commit, flushed to disk before the save is answered. The commit reaches the vault's git remote in the background, within a few seconds, and a push that fails is retried until it lands, so a slow or unreachable GitHub never holds or fails a save (ADR 0309). A write that is based on an outdated revision is saved as a conflict copy; nothing is overwritten silently.
 
 A note can also be opened as a live Yjs document on `/v1/collab/docs/<docId>`. Edits are written to the note's markdown file on a cadence, with untouched lines byte-identical, and a commit pulled from git is merged into the live document or forked into a conflict copy.
 
