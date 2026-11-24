@@ -298,3 +298,4 @@ proposed → active → superseded
 | [0305](0305-claude-power-user-inherits-user-mcp-servers.md) | Claude Code Power User inherits the user's MCP servers (complements [0103](0103-adapter-specific-ai-permission-semantics.md)) | proposed |
 | [0306](0306-live-graph-interaction-with-d3-force-in-a-worker.md) | Live graph interaction: d3-force in a worker, sigma node drag, animated emphasis and zoom-aware labels (supersedes the layout and label parts of [0304](0304-graph-collection-layout-behind-a-flag.md)) | active |
 | [0307](0307-palette-scales-and-semantic-color-roles.md) | Color system: one warm gray and a 50–950 scale per hue, with semantic roles and a color lint (supersedes the color values in [0081](0081-internal-light-dark-theme-runtime.md)) | active |
+| [0311](0311-remote-saved-view-discovery.md) | Tolaria Web discovers saved views by reading `views/*.yml` files from the Tolaria remote | active |
