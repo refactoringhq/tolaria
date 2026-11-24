@@ -1,9 +1,19 @@
-import { useCallback, memo } from 'react'
-import type { FolderCreationParent, FolderNode, SidebarSelection, VaultEntry, ViewDefinition, ViewFile } from '../types'
-import { KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
+import { type DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
+import { memo, useCallback } from 'react'
+import type { FolderFileActions } from '../hooks/useFileActions'
+import type { AppLocale } from '../lib/i18n'
+import type { FolderCreationParent, FolderNode, SidebarSelection, VaultEntry, ViewDefinition, ViewFile } from '../types'
+import type { AllNotesFileVisibility } from '../utils/allNotesFileVisibility'
+import { isTypeSectionVisible } from '../utils/typeVisibility'
 import { FolderTree } from './FolderTree'
-import { computeReorder, useEntryCounts, useSidebarCollapsed, useSidebarSections } from './sidebar/sidebarHooks'
+import { PhoneNavigationBar } from './phone/PhoneNavigationBar'
+import { usePhoneSidebarSelection } from './phone/usePhoneSidebarSelection'
+import {
+  SidebarCreatableLoadingSection,
+  SidebarFavoritesLoadingSection,
+  SidebarTypesLoadingSection,
+} from './sidebar/SidebarLoadingSections'
 import {
   ContextMenuOverlay,
   CustomizeOverlay,
@@ -14,16 +24,8 @@ import {
   TypesSection,
   ViewsSection,
 } from './sidebar/SidebarSections'
-import {
-  SidebarCreatableLoadingSection,
-  SidebarFavoritesLoadingSection,
-  SidebarTypesLoadingSection,
-} from './sidebar/SidebarLoadingSections'
+import { computeReorder, useEntryCounts, useSidebarCollapsed, useSidebarSections } from './sidebar/sidebarHooks'
 import { useSidebarTypeInteractions } from './sidebar/useSidebarTypeInteractions'
-import type { AppLocale } from '../lib/i18n'
-import type { FolderFileActions } from '../hooks/useFileActions'
-import type { AllNotesFileVisibility } from '../utils/allNotesFileVisibility'
-import { isTypeSectionVisible } from '../utils/typeVisibility'
 
 interface SidebarProps {
   entries: VaultEntry[]
@@ -349,14 +351,7 @@ function SidebarFoldersNavigation(options: SidebarFoldersNavigationProps) {
     locale,
   } = options
   if (loading) {
-    return (
-      <SidebarCreatableLoadingSection
-        collapsed={groupCollapsed.folders}
-        kind="folders"
-        locale={locale}
-        onToggle={() => toggleGroup('folders')}
-      />
-    )
+    return <SidebarFoldersLoading collapsed={groupCollapsed.folders} locale={locale} onToggle={() => toggleGroup('folders')} />
   }
 
   return (
@@ -379,6 +374,10 @@ function SidebarFoldersNavigation(options: SidebarFoldersNavigationProps) {
       vaultRootPath={vaultRootPath}
     />
   )
+}
+
+function SidebarFoldersLoading({ collapsed, locale, onToggle }: { collapsed: boolean; locale?: AppLocale; onToggle: () => void }) {
+  return <SidebarCreatableLoadingSection collapsed={collapsed} kind="folders" locale={locale} onToggle={onToggle} />
 }
 
 function SidebarTopNavigation(props: SidebarNavigationProps) {
@@ -689,10 +688,13 @@ function SidebarInteractionOverlays({
 
 export const Sidebar = memo(function Sidebar(props: SidebarProps) {
   const locale = props.locale ?? 'en'
-  const runtime = useSidebarRuntime(props)
+  const phoneSelection = usePhoneSidebarSelection(props)
+  const navigationProps = { ...props, ...phoneSelection }
+  const runtime = useSidebarRuntime(navigationProps)
 
   return (
     <aside className="flex h-full flex-col overflow-hidden border-r border-[var(--sidebar-border)] bg-sidebar text-sidebar-foreground">
+      <PhoneNavigationBar locale={locale} placement="navigation" />
       <SidebarTitleBar
         locale={locale}
         onCollapse={props.onCollapse}
@@ -701,7 +703,7 @@ export const Sidebar = memo(function Sidebar(props: SidebarProps) {
         canGoBack={props.canGoBack}
         canGoForward={props.canGoForward}
       />
-      <SidebarRuntimeNavigation props={props} runtime={runtime} />
+      <SidebarRuntimeNavigation props={navigationProps} runtime={runtime} />
       <SidebarInteractionOverlays locale={locale} runtime={runtime} />
     </aside>
   )

@@ -14,6 +14,8 @@ import { COLLAB_TOKEN } from "../playwright.config";
  */
 
 const PHONE_PROJECTS = ["iphone-15"];
+/** The iPad layout keeps its sidebar collapsed until asked for (TOL-194). */
+const TABLET_PROJECTS = ["ipad", "ipad-landscape"];
 const AUTH = { authorization: `Bearer ${COLLAB_TOKEN}` };
 const NOTES = {
 	ada: { path: "people/ada.md", title: "Ada", body: "Works on" },
@@ -25,9 +27,14 @@ const KEYBOARD_HEIGHT = 300;
 type SeededNote = (typeof NOTES)[keyof typeof NOTES];
 
 test.describe.configure({ retries: 0 });
+test.use({ video: "on" });
 
 function isPhone(testInfo: TestInfo): boolean {
 	return PHONE_PROJECTS.includes(testInfo.project.name);
+}
+
+function isTablet(testInfo: TestInfo): boolean {
+	return TABLET_PROJECTS.includes(testInfo.project.name);
 }
 
 async function openRemoteVault(page: Page, url = "/"): Promise<void> {
@@ -118,6 +125,134 @@ test("phone: a shared note URL opens the note, and back control shows the list",
 
 	await page.getByTestId("phone-back-to-notes").click();
 	await expectListPane(page);
+});
+
+async function seedPhoneNavigationFixture(
+	request: APIRequestContext,
+): Promise<string> {
+	const folderNote = "projects/phone-navigation-sample.md";
+	const created = await request.put(`/v1/files/${folderNote}`, {
+		headers: { ...AUTH, "if-none-match": "*" },
+		data: "---\ntype: Project\n_favorite: true\n_favorite_index: 0\n---\n# Phone navigation sample\n\nA phone folder fixture.\n",
+	});
+	expect(created.status()).toBe(201);
+	const savedView = await request.put("/v1/files/views/phone-navigation.yml", {
+		headers: { ...AUTH, "if-none-match": "*" },
+		data: 'name: Phone Projects\nicon: rocket\ncolor: blue\nsort: "modified:desc"\nfilters:\n  all:\n    - field: type\n      op: equals\n      value: Project\n',
+	});
+	expect(savedView.status()).toBe(201);
+	return folderNote;
+}
+
+async function openPhoneNavigation(page: Page): Promise<void> {
+	await page.getByTestId("phone-open-navigation").click();
+	await expect(page.locator("html")).toHaveAttribute(
+		"data-phone-pane",
+		"navigation",
+	);
+	await expect(page.getByTestId("phone-back-to-list")).toBeVisible();
+}
+
+async function expectPhoneNavigationTargets(page: Page): Promise<void> {
+	const targets = await page.locator(".app__sidebar").evaluate((sidebar) =>
+		[...sidebar.querySelectorAll("button, [role='button']")]
+			.filter((control) => control.getClientRects().length > 0)
+			.map((control) => ({
+				width: control.getBoundingClientRect().width,
+				height: control.getBoundingClientRect().height,
+			})),
+	);
+	expect(targets.length).toBeGreaterThan(0);
+	for (const target of targets) {
+		expect(target.width).toBeGreaterThanOrEqual(44);
+		expect(target.height).toBeGreaterThanOrEqual(44);
+	}
+}
+
+async function selectPhoneNavigationType(
+	page: Page,
+	testInfo: TestInfo,
+): Promise<void> {
+	await page.locator('[data-note-drop-type="Project"]').click();
+	await expect(page.locator("html")).toHaveAttribute("data-phone-pane", "list");
+	await shot(page, testInfo, "phone-navigation-type");
+}
+
+async function selectPhoneSavedView(
+	page: Page,
+	testInfo: TestInfo,
+): Promise<void> {
+	await openPhoneNavigation(page);
+	await page
+		.locator(".app__sidebar button")
+		.filter({ hasText: "Phone Projects" })
+		.last()
+		.click();
+	await expect(page.locator("html")).toHaveAttribute("data-phone-pane", "list");
+	await expect(noteList(page)).toContainText("Phone navigation sample");
+	await shot(page, testInfo, "phone-navigation-saved-view");
+}
+
+async function selectPhoneFolder(
+	page: Page,
+	testInfo: TestInfo,
+): Promise<void> {
+	await openPhoneNavigation(page);
+	await page.getByTestId("folder-row:projects").click();
+	await expect(page.locator("html")).toHaveAttribute("data-phone-pane", "list");
+	await expect(noteList(page)).toContainText("Phone navigation sample");
+	await shot(page, testInfo, "phone-navigation-folder");
+}
+
+async function openPhoneNavigationNote(
+	page: Page,
+	testInfo: TestInfo,
+	folderNote: string,
+): Promise<void> {
+	await tapNote(page, "Phone navigation sample");
+	await expectNotePane(page, {
+		path: folderNote,
+		title: "Phone navigation sample",
+		body: "A phone folder fixture.",
+	});
+	const editorOverflow = await page
+		.locator(".app__editor")
+		.evaluate((node) => node.scrollWidth - node.clientWidth);
+	expect(editorOverflow).toBeLessThanOrEqual(1);
+	const pageOverflow = await page.evaluate(
+		() => document.documentElement.scrollWidth - window.innerWidth,
+	);
+	expect(pageOverflow).toBeLessThanOrEqual(1);
+	await shot(page, testInfo, "phone-navigation-note");
+}
+
+test.describe("phone navigation", () => {
+	test("opens types, saved views, folders, and a note", async ({
+		page,
+		request,
+	}, testInfo) => {
+		test.skip(!isPhone(testInfo), "phone layout only");
+		const folderNote = await seedPhoneNavigationFixture(request);
+		try {
+			await openRemoteVault(page);
+			await expectListPane(page);
+			await shot(page, testInfo, "phone-navigation-list");
+			await openPhoneNavigation(page);
+			await expect(page.getByText("FAVORITES", { exact: true })).toBeVisible();
+			await expectPhoneNavigationTargets(page);
+			await shot(page, testInfo, "phone-navigation-pane");
+			await selectPhoneNavigationType(page, testInfo);
+			await selectPhoneSavedView(page, testInfo);
+			await selectPhoneFolder(page, testInfo);
+			await openPhoneNavigationNote(page, testInfo, folderNote);
+		} finally {
+			// Later specs share this server's vault, so a failed run must not leave the fixture behind.
+			await request.delete(`/v1/files/${folderNote}`, { headers: AUTH });
+			await request.delete("/v1/files/views/phone-navigation.yml", {
+				headers: AUTH,
+			});
+		}
+	});
 });
 
 async function createLongNote(
@@ -217,5 +352,12 @@ test("wider layouts keep the note list beside the note", async ({
 	await expect(noteList(page)).toBeVisible();
 	await expect(page.locator(".app__editor")).toBeVisible();
 	await expect(page.getByTestId("phone-back-to-notes")).toHaveCount(0);
-	await expect(page.locator(".app-shell[data-phone-pane]")).toHaveCount(0);
+	await expect(page.getByTestId("phone-open-navigation")).toHaveCount(0);
+	await expect(page.locator("html[data-phone-pane]")).toHaveCount(0);
+	if (isTablet(testInfo)) {
+		await expect(page.locator(".app__sidebar")).toHaveCount(0);
+	} else {
+		await expect(page.locator(".app__sidebar")).toBeVisible();
+	}
+	await shot(page, testInfo, "wide-layout");
 });

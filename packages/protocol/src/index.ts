@@ -368,6 +368,8 @@ export interface VaultEntry {
   outgoingLinks?: string[]
   hasH1: boolean
   fileKind: FileKind
+  favorite?: boolean
+  favoriteIndex?: number
 }
 
 export interface EntriesResponse {
