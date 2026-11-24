@@ -1,10 +1,10 @@
 /* Calendar layout (TOL-381): a month or week grid that, like Kanban, takes over the note-list and editor
    area. Theme tokens only, so light and dark mode follow the app palette. */
 .calendar-board {
-	background-color: var(--muted);
+	background-color: var(--background);
 }
 
-/* Keep the controls in the note-list chrome; only the board below them is recessed. */
+/* Keep the controls and the space around calendar panels on the app background. */
 .calendar-toolbar {
 	background-color: var(--background);
 }
@@ -33,7 +33,6 @@
 }
 
 .calendar-weekday {
-	padding: 6px 8px;
 	overflow: hidden;
 	color: var(--muted-foreground);
 	font-size: 11px;
@@ -44,8 +43,24 @@
 	white-space: nowrap;
 }
 
+.calendar-weekdays > .calendar-weekday {
+	padding: 6px 8px;
+}
+
+.calendar-weekdays > .calendar-weekday:not(:last-child) {
+	border-right: 1px solid var(--border-default);
+}
+
+.calendar-day__label {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	gap: 4px;
+}
+
 .calendar-weeks {
 	display: grid;
+	grid-auto-rows: max-content;
 	flex: 1 1 0;
 	min-height: 0;
 }
@@ -70,7 +85,7 @@
 	position: relative;
 	min-width: 0;
 	min-height: 0;
-	border-right: 1px solid var(--border-subtle);
+	border-right: 1px solid var(--border-default);
 	transition:
 		background-color 120ms ease,
 		box-shadow 120ms ease;
@@ -119,6 +134,10 @@
 	font-weight: 500;
 }
 
+.calendar-grid[data-view="week"] .calendar-day__header {
+	border-bottom: 1px solid var(--border-default);
+}
+
 .calendar-day--outside .calendar-day__number {
 	color: var(--text-faint);
 }
@@ -147,18 +166,23 @@
 	display: grid;
 	align-content: start;
 	align-items: start;
-	padding: 0 4px;
-	column-gap: 4px;
 	pointer-events: none;
 }
 
 .calendar-week__lanes > * {
+	width: calc(100% - 8px);
+	margin-inline: 4px;
 	pointer-events: auto;
 }
 
 .calendar-item-slot {
 	cursor: pointer;
 	touch-action: manipulation;
+}
+
+body.calendar-drag-forbidden,
+body.calendar-drag-forbidden * {
+	cursor: not-allowed;
 }
 
 .calendar-item-slot:focus-visible {
@@ -324,12 +348,8 @@
 	}
 }
 
-/* Dark mode layers the calendar like Linear: a recessed board, raised day cells, and items with a
+/* Dark mode layers the calendar with raised day cells and items with a
    stronger edge; weekends and outside days sink a step. `:where()` keeps the state rules above in charge. */
-:where(.dark, [data-theme="dark"]) .calendar-board {
-	background-color: var(--surface-sidebar);
-}
-
 :where(.dark, [data-theme="dark"]) .calendar-grid,
 :where(.dark, [data-theme="dark"]) .calendar-tray {
 	background-color: var(--surface-panel);

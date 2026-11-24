@@ -23,7 +23,13 @@ import {
 	monthDayLabel,
 	weekdayLabels,
 } from "./calendarDates";
-import { DAY_HEADER_PX, measurableLanes, stackWeek } from "./calendarLanes";
+import {
+	DAY_HEADER_PX,
+	measurableLanes,
+	stackFullWeek,
+	stackWeek,
+	WEEK_CARD_TOP_GAP_PX,
+} from "./calendarLanes";
 import {
 	type CalendarItem,
 	type CalendarSegment,
@@ -174,6 +180,7 @@ function DayCellView({
 	outside,
 	target,
 	monthView,
+	view,
 	canCreate,
 	onCreate,
 	locale,
@@ -192,12 +199,19 @@ function DayCellView({
 			data-testid="calendar-day"
 		>
 			<div className="calendar-day__header">
-				<DayNumber
-					day={day}
-					isToday={isToday}
-					monthView={monthView}
-					locale={locale}
-				/>
+				<span className="calendar-day__label">
+					{(view ?? (monthView ? "month" : "week")) === "week" && (
+						<span className="calendar-weekday">
+							{weekdayLabels([day], locale)[0].label}
+						</span>
+					)}
+					<DayNumber
+						day={day}
+						isToday={isToday}
+						monthView={monthView}
+						locale={locale}
+					/>
+				</span>
 				<CreateOnDayButton
 					day={day}
 					canCreate={canCreate}
@@ -306,21 +320,26 @@ interface WeekRowProps extends RowState {
 }
 
 /** Fits the row from its measured item area and the natural height of its cards (TOL-393). */
-function useWeekStack(segments: CalendarSegment[], week: DayKey[]) {
+function useWeekStack(
+	segments: CalendarSegment[],
+	week: DayKey[],
+	expanded: boolean,
+) {
 	const [stackRef, measure] = useLaneMeasure();
+	const stack = expanded ? stackFullWeek : stackWeek;
 	const layout = useMemo(
-		() => stackWeek(segments, week, measure),
-		[measure, segments, week],
+		() => stack(segments, week, measure),
+		[measure, segments, week, stack],
 	);
 	const lanes = measurableLanes(measure.available);
 	const measuredOnly = layout.hidden.filter((segment) => segment.lane < lanes);
 	return { stackRef, layout, measuredOnly };
 }
 
-function stackStyle(week: DayKey[]): CSSProperties {
+function stackStyle(week: DayKey[], expanded: boolean): CSSProperties {
 	return {
 		gridTemplateColumns: `repeat(${week.length}, minmax(0, 1fr))`,
-		top: DAY_HEADER_PX,
+		top: DAY_HEADER_PX + (expanded ? WEEK_CARD_TOP_GAP_PX : 0),
 		zIndex: 1,
 	};
 }
@@ -328,7 +347,13 @@ function stackStyle(week: DayKey[]): CSSProperties {
 function WeekRowView(props: WeekRowProps) {
 	const { week, items, context, locale, selectedNotePath, droppedPath } = props;
 	const segments = useMemo(() => weekSegments(items, week), [items, week]);
-	const { stackRef, layout, measuredOnly } = useWeekStack(segments, week);
+	const expanded =
+		props.view === "week" || (!props.view && props.month === null);
+	const { stackRef, layout, measuredOnly } = useWeekStack(
+		segments,
+		week,
+		expanded,
+	);
 	return (
 		<div
 			className="calendar-week"
@@ -348,7 +373,7 @@ function WeekRowView(props: WeekRowProps) {
 			<div
 				ref={stackRef}
 				className="calendar-week__lanes"
-				style={stackStyle(week)}
+				style={stackStyle(week, expanded)}
 			>
 				{layout.visible.map(({ segment, top }) => (
 					<CalendarItemButton
@@ -411,37 +436,33 @@ export function CalendarGrid({
 	state,
 	locale,
 }: CalendarGridProps) {
-	const headers = useMemo(
-		() => weekdayLabels(weeks[0], locale),
-		[locale, weeks],
-	);
 	const rowState = rowStateFor(state);
 	return (
 		<div
 			className="calendar-grid flex min-h-0 flex-1 flex-col"
 			data-view={state.view ?? (state.monthView ? "month" : "week")}
 		>
-			<div
-				className="calendar-weekdays"
-				style={{
-					gridTemplateColumns: `repeat(${weeks[0].length}, minmax(0, 1fr))`,
-				}}
-			>
-				{headers.map(({ day, label }) => (
-					<span
-						key={day}
-						className={cn(
-							"calendar-weekday",
-							isWeekend(day) && "calendar-weekday--weekend",
-						)}
-					>
-						{label}
-					</span>
-				))}
-			</div>
+			{state.monthView && (
+				<div
+					className="calendar-weekdays"
+					style={{
+						gridTemplateColumns: `repeat(${weeks[0].length}, minmax(0, 1fr))`,
+					}}
+				>
+					{weekdayLabels(weeks[0], locale).map(({ day, label }) => (
+						<span key={day} className="calendar-weekday">
+							{label}
+						</span>
+					))}
+				</div>
+			)}
 			<div
 				className="calendar-weeks calendar-scroll overflow-y-auto"
-				style={{ gridAutoRows: "max-content" }}
+				style={{
+					gridAutoRows: state.monthView
+						? "max-content"
+						: "minmax(100%, max-content)",
+				}}
 				data-testid="calendar-weeks"
 			>
 				{weeks.map((week) => (
