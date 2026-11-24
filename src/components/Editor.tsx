@@ -229,10 +229,7 @@ function useEditorFindCommand({
 				replace: options.replace === true,
 			};
 			requestIdRef.current = request.id;
-			trackEvent("note_find_used", {
-				mode: rawMode ? "raw" : "rich",
-				replace: request.replace ? 1 : 0,
-			});
+			trackNoteFindUsed(request, rawMode);
 			if (shouldKeepFindInEditorMode(isDesktop, rawMode)) {
 				window.dispatchEvent(
 					new CustomEvent("laputa:rich-editor-find-request", {
@@ -257,6 +254,16 @@ function useEditorFindCommand({
 	}, [findInNoteRef, handleFindInNote]);
 
 	return findRequest;
+}
+
+function trackNoteFindUsed(
+	request: RawEditorFindRequest,
+	rawMode: boolean,
+): void {
+	trackEvent("note_find_used", {
+		mode: rawMode ? "raw" : "rich",
+		replace: request.replace ? 1 : 0,
+	});
 }
 
 type EditorRuntime = ReturnType<typeof useEditorSetup>;
