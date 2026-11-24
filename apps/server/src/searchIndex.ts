@@ -40,16 +40,19 @@ const FENCE = /^```/
 /** Where a line of a note is, as the scan for searchable text goes down the note. */
 type Section = 'frontmatter' | 'code' | 'text'
 
-function isDelimiter(line: string): boolean {
-  return line.trim() === '---'
+/** One line of a note, and whether it is the note's first. */
+interface NoteLine {
+  text: string
+  first: boolean
 }
 
 /** The section after `line`, which is itself searchable only when this returns null. */
-function nextSection(section: Section, line: string, first: boolean): Section | null {
-  if (section === 'frontmatter') return isDelimiter(line) ? 'text' : 'frontmatter'
-  if (FENCE.test(line)) return section === 'code' ? 'text' : 'code'
+function nextSection(section: Section, line: NoteLine): Section | null {
+  const delimiter = line.text.trim() === '---'
+  if (section === 'frontmatter') return delimiter ? 'text' : 'frontmatter'
+  if (FENCE.test(line.text)) return section === 'code' ? 'text' : 'code'
   if (section === 'code') return 'code'
-  return first && isDelimiter(line) ? 'frontmatter' : null
+  return line.first && delimiter ? 'frontmatter' : null
 }
 
 /** The note's text without its frontmatter and fenced code blocks. */
@@ -57,9 +60,9 @@ function extractSearchableContent(entry: Pick<VaultEntry, 'fileKind'>, content: 
   if (entry.fileKind !== 'markdown') return content
   let section: Section = 'text'
   const searchable: string[] = []
-  for (const [index, line] of content.split(/\r?\n/).entries()) {
-    const next = nextSection(section, line, index === 0)
-    if (next === null) searchable.push(line)
+  for (const [index, text] of content.split(/\r?\n/).entries()) {
+    const next = nextSection(section, { text, first: index === 0 })
+    if (next === null) searchable.push(text)
     else section = next
   }
   return searchable.join('\n')
@@ -83,7 +86,7 @@ function calculateScore(hit: SearchHit, queryLower: string): number {
   return score
 }
 
-function extractSnippet(content: string, _queryLower: string, matchPos: number): string {
+function extractSnippet(content: string, matchPos: number): string {
   const lines = content.split(/\r?\n/)
   let currentPos = 0
   
@@ -182,7 +185,7 @@ export class SearchIndex {
       try {
         const { bytes } = await vault.read(file.path as VaultPath)
         const content = bytes.toString('utf8')
-        const title = extractTitle(content, file.path)
+        const title = extractTitle({ content, path: file.path })
         const searchable = extractSearchableContent({ fileKind: 'markdown' } as Pick<VaultEntry, 'fileKind'>, content)
         
         notes.push({
@@ -230,7 +233,7 @@ export class SearchIndex {
       const matches = hit.contentMatches.slice(0, MATCHES_PER_FILE).map((match) => {
         const note = this.notes.find((n) => n.path === hit.path)
         if (!note) throw new Error(`Note not found: ${hit.path}`)
-        const snippet = extractSnippet(note.content, queryLower, match.pos)
+        const snippet = extractSnippet(note.content, match.pos)
         return { line: match.line, text: snippet }
       })
       
@@ -282,7 +285,7 @@ export class SearchIndex {
     try {
       const { bytes } = await this.vault.read(path)
       const content = bytes.toString('utf8')
-      const title = extractTitle(content, path)
+      const title = extractTitle({ content, path })
       const searchable = extractSearchableContent({ fileKind: 'markdown' } as Pick<VaultEntry, 'fileKind'>, content)
       
       putByPath(this.notes, { path, title, contentLower: searchable.toLowerCase(), content })
@@ -306,7 +309,7 @@ export class SearchIndex {
   }
 }
 
-function extractTitle(content: string, path: string): string {
+function extractTitle({ content, path }: { content: string; path: string }): string {
   const lines = content.split(/\r?\n/)
   
   for (const line of lines) {
