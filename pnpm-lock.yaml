@@ -358,6 +358,9 @@ importers:
       y-protocols:
         specifier: 1.0.7
         version: 1.0.7(yjs@13.6.29)
+      yaml:
+        specifier: 2.8.3
+        version: 2.8.3
       yjs:
         specifier: 13.6.29
         version: 13.6.29

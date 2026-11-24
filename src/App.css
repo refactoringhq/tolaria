@@ -87,9 +87,24 @@ html[data-phone-pane] .app-shell .app > .cursor-col-resize {
   display: none;
 }
 
+html[data-phone-pane="navigation"] .app-shell .app__sidebar {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  min-width: 100vw;
+  background: var(--surface-sidebar);
+}
+
 /* The pane behind stays laid out: the list keeps its scroll, the editor is ready for a tap. */
 html[data-phone-pane="list"] .app-shell .app__editor,
 html[data-phone-pane="note"] .app-shell .app__note-list {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+}
+
+html[data-phone-pane="navigation"] .app-shell :is(.app__note-list, .app__editor) {
   position: absolute;
   inset: 0;
   visibility: hidden;
@@ -114,6 +129,26 @@ html[data-phone-pane] .app-shell .app__editor > .app__phone-back-bar {
   align-items: center;
   padding: 4px 8px;
   border-bottom: 1px solid var(--border-primary);
+}
+
+html[data-phone-pane] .app-shell .app__phone-navigation-bar {
+  position: relative;
+  z-index: 21;
+  display: flex;
+  flex: 0 0 48px;
+  align-items: center;
+  padding: 2px 8px;
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--surface-sidebar);
+}
+
+html[data-phone-pane="navigation"] .app-shell .app__sidebar > .app__phone-navigation-bar {
+  flex: 0 0 48px;
+}
+
+html[data-touch-input][data-phone-pane="navigation"] .app-shell .app__sidebar :is(button, [role="button"]) {
+  min-width: 44px;
+  min-height: 44px;
 }
 
 /* Tablet web layout (TOL-194): the note list and the note, the sidebar collapsed until asked for. */
@@ -162,6 +197,7 @@ html[data-touch-input] .app-shell .app__sidebar :is(button, [role="button"]) {
  * (src/lib/touchInput.ts) for their width; the sidebar's icon buttons get it from their flex basis.
  */
 html[data-touch-input] .app-shell .app__phone-back-bar [data-slot="button"],
+html[data-touch-input] .app-shell .app__phone-navigation-bar [data-slot="button"],
 html[data-touch-input] .app-shell .app__sidebar [data-slot="button"][data-size^="icon"],
 html[data-touch-input] .app-shell .app__note-list :is([data-slot="button"], [data-slot$="-trigger"], [data-testid^="sort-button"]):not(.absolute) {
   min-width: 44px;
