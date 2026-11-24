@@ -5,7 +5,7 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { CSS } from '@dnd-kit/utilities'
 import { buildTypeEntryMap, getTypeColor, getTypeLightColor } from '../../utils/typeColors'
 import { NoteTitleIcon } from '../NoteTitleIcon'
-import { isSelectionActive } from '../SidebarParts'
+import { isSelectionActive } from '../../utils/sidebarSelection'
 import { SidebarGroupHeader } from './SidebarGroupHeader'
 import { SIDEBAR_ITEM_HOVER_CLASS, SIDEBAR_ITEM_PADDING, SIDEBAR_SECTION_CONTENT_PADDING_BOTTOM, type SidebarItemStyle } from './sidebarStyles'
 import { translate, type AppLocale } from '../../lib/i18n'
