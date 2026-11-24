@@ -26,6 +26,11 @@ interface PendingChange {
 }
 
 const MAX_PUSH_ATTEMPTS = 3
+/**
+ * Fetches and pushes may run while a save commits (see `RemoteMirror`): they must not start
+ * git's automatic housekeeping, which repacks the refs that commit is updating.
+ */
+const NO_HOUSEKEEPING = ['-c', 'gc.auto=0', '-c', 'maintenance.auto=false']
 
 /** Splits NUL-separated git output, dropping the empty tail. Git only reports tracked paths. */
 function fields({ stdout }: GitResult): VaultPath[] {
@@ -64,42 +69,58 @@ export class GitSync {
 
   /** Fetches and integrates upstream. Returns false when the remote is unreachable. */
   async pull(): Promise<boolean> {
+    if (!(await this.fetch())) return false
+    await this.integrate()
+    return true
+  }
+
+  /** Brings what was last fetched into the working clone. Local only: no network. */
+  async integrate(): Promise<void> {
     const { repo } = this
     const before = await repo.head()
-    if (!(await this.fetch())) return false
     const counts = await repo.run(['rev-list', '--left-right', '--count', `HEAD...${repo.upstream}`])
     const [ahead, behind] = counts.stdout.trim().split('\t').map(Number)
-    if (behind === 0) return true
+    if (behind === 0) return
     if (ahead > 0) await this.replay()
     else await repo.run(['reset', '-q', '--hard', repo.upstream])
     const diff = await repo.run(['diff', '--name-status', '-M', '-z', before, await repo.head()])
     await this.hooks.onChanges(parseChanges(diff))
-    return true
   }
 
   /** Pushes pending commits. Returns true when the remote has everything we have. */
   async push(): Promise<boolean> {
-    const { repo } = this
     for (let attempt = 1; attempt <= MAX_PUSH_ATTEMPTS; attempt++) {
-      const ahead = await repo.run(['rev-list', '--count', `${repo.upstream}..HEAD`])
-      if (ahead.stdout.trim() === '0') return true
-      if (await this.tryPush(attempt)) return true
+      const commit = await this.unpushed()
+      if (commit === null) return true
+      if (await this.pushCommit(commit, attempt)) return true
       // Someone else pushed first: integrate their commits and try again.
       if (!(await this.pull())) return false
     }
     return false
   }
 
-  private fetch(): Promise<boolean> {
-    const { branch, upstream } = this.repo
-    return this.reach(['fetch', '-q', REMOTE, `+refs/heads/${branch}:${upstream}`], 'fetch failed, continuing on local state')
+  /** The head when it has commits the remote lacks, null when the remote has everything. */
+  async unpushed(): Promise<string | null> {
+    const { repo } = this
+    const ahead = await repo.run(['rev-list', '--count', `${repo.upstream}..HEAD`])
+    return ahead.stdout.trim() === '0' ? null : repo.head()
   }
 
-  private async tryPush(attempt: number): Promise<boolean> {
+  /**
+   * Pushes `commit` to the branch. Touches no working file, so writes may go on meanwhile;
+   * only the remote-tracking ref moves, and only on success. False when rejected or unreachable.
+   */
+  async pushCommit(commit: string, attempt = 1): Promise<boolean> {
     const { repo } = this
-    const pushed = await this.reach(['push', '-q', REMOTE, `HEAD:refs/heads/${repo.branch}`], `push failed (attempt ${attempt})`)
-    if (pushed) await repo.run(['update-ref', repo.upstream, 'HEAD'])
+    const pushed = await this.reach([...NO_HOUSEKEEPING, 'push', '-q', REMOTE, `${commit}:refs/heads/${repo.branch}`], `push failed (attempt ${attempt})`)
+    if (pushed) await repo.run(['update-ref', repo.upstream, commit])
     return pushed
+  }
+
+  /** Fetches upstream into its remote-tracking ref. Touches no working file. */
+  fetch(): Promise<boolean> {
+    const { branch, upstream } = this.repo
+    return this.reach([...NO_HOUSEKEEPING, 'fetch', '-q', REMOTE, `+refs/heads/${branch}:${upstream}`], 'fetch failed, continuing on local state')
   }
 
   /** Runs a command that talks to the remote. A git failure is logged and answered with false. */
