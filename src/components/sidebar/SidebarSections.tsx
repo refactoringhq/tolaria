@@ -39,6 +39,11 @@ interface ViewsSectionProps {
   locale?: AppLocale
 }
 
+interface CreateViewButtonProps {
+  onCreateView: () => void
+  locale: AppLocale
+}
+
 interface SortableViewItemProps {
   view: ViewFile
   selection: SidebarSelection
@@ -140,20 +145,7 @@ export function ViewsSection(options: ViewsSectionProps) {
     <div className="border-b border-border" style={{ padding: '0 6px' }}>
       <SidebarGroupHeader label={translate(locale, 'sidebar.group.views')} collapsed={collapsed} onToggle={onToggle}>
         {onCreateView && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            className="h-auto w-auto min-w-0 rounded-none p-0 text-muted-foreground hover:bg-transparent hover:text-foreground"
-            aria-label={translate(locale, 'sidebar.action.createView')}
-            title={translate(locale, 'sidebar.action.createView')}
-            onClick={(event) => {
-              event.stopPropagation()
-              onCreateView()
-            }}
-          >
-            <Plus size={12} className="text-muted-foreground hover:text-foreground" />
-          </Button>
+          <CreateViewButton onCreateView={onCreateView} locale={locale} />
         )}
       </SidebarGroupHeader>
       {!collapsed && (
@@ -182,6 +174,25 @@ export function ViewsSection(options: ViewsSectionProps) {
         </div>
       )}
     </div>
+  )
+}
+
+function CreateViewButton({ onCreateView, locale }: CreateViewButtonProps) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-xs"
+      className="h-auto w-auto min-w-0 rounded-none p-0 text-muted-foreground hover:bg-transparent hover:text-foreground"
+      aria-label={translate(locale, 'sidebar.action.createView')}
+      title={translate(locale, 'sidebar.action.createView')}
+      onClick={(event) => {
+        event.stopPropagation()
+        onCreateView()
+      }}
+    >
+      <Plus size={12} className="text-muted-foreground hover:text-foreground" />
+    </Button>
   )
 }
 
