@@ -23,10 +23,17 @@ const port = tcpPort(
 const baseURL = `http://127.0.0.1:${port}`;
 const remotePort = tcpPort(process.env.TOLARIA_E2E_REMOTE_PORT, 41781);
 const remoteDir = join(tmpdir(), `tolaria-web-bench-${remotePort}`);
-export const BENCH_TOKEN = "bench-token-not-a-secret-0123456789";
 /** The seed script adds four hand-written notes to its filler notes. */
 export const BENCH_NOTE_COUNT = 6000;
 const FILLER_NOTES = BENCH_NOTE_COUNT - 4;
+const stagingVaultPath = process.env.TOLARIA_BENCH_VAULT_PATH;
+const benchDataDir = stagingVaultPath
+	? join(remoteDir, `staging-data-${process.pid}`)
+	: join(remoteDir, "data");
+const seedRemote = stagingVaultPath
+	? ""
+	: `rm -rf "${remoteDir}" && pnpm server:seed "${remoteDir}/remote.git" ${FILLER_NOTES} && `;
+export const BENCH_TOKEN = "bench-token-not-a-secret-0123456789";
 
 export default defineConfig({
 	testDir: "./bench",
@@ -42,7 +49,7 @@ export default defineConfig({
 	},
 	webServer: [
 		{
-			command: `rm -rf "${remoteDir}" && pnpm server:seed "${remoteDir}/remote.git" ${FILLER_NOTES} && pnpm run server`,
+			command: `${seedRemote}pnpm run server`,
 			cwd: repoRoot,
 			url: `http://127.0.0.1:${remotePort}/healthz`,
 			reuseExistingServer: false,
@@ -52,8 +59,9 @@ export default defineConfig({
 			env: {
 				TOLARIA_SERVER_TOKEN: BENCH_TOKEN,
 				TOLARIA_SERVER_PORT: remotePort,
-				TOLARIA_SERVER_DATA_DIR: `${remoteDir}/data`,
-				TOLARIA_VAULT_REMOTE_URL: `${remoteDir}/remote.git`,
+				TOLARIA_SERVER_DATA_DIR: benchDataDir,
+				TOLARIA_VAULT_REMOTE_URL: stagingVaultPath ?? `${remoteDir}/remote.git`,
+				...(stagingVaultPath ? { TOLARIA_VAULT_BRANCH: "main" } : {}),
 			},
 		},
 		{
