@@ -106,7 +106,7 @@ impl<'a> YamlText<'a> {
 
     /// Check whether a YAML string value needs quoting to avoid ambiguity.
     fn needs_quoting(self) -> bool {
-        [
+        self.0.is_empty() || [
             self.has_special_chars(),
             self.starts_as_collection(),
             self.0.trim() != self.0,
@@ -283,6 +283,7 @@ mod tests {
     #[test]
     fn test_to_yaml_value_string_needs_quoting_cases() {
         for (input, expected) in [
+            ("", "\"\""),
             ("key: value", "\"key: value\""),
             ("has # comment", "\"has # comment\""),
             ("[array-like]", "\"[array-like]\""),
