@@ -11,6 +11,9 @@ import {
   type EntriesDeltaResponse,
   type EntriesResponse,
   FILE_CAPABILITIES,
+  HISTORY_CHECKPOINT_PARAM,
+  HISTORY_MAX_CHECKPOINTS,
+  type NoteHistoryResponse,
   PROTOCOL_VERSION,
   ROUTES,
   type VaultResponse,
@@ -22,8 +25,9 @@ import { grantsFrom } from './accessTickets.ts'
 import type { ChangeEmitter } from './changeEmitter.ts'
 import type { TicketBook } from './collab/tickets.ts'
 import type { DocIndex } from './docIndex.ts'
-import { VaultError } from './errors.ts'
+import { notFound, VaultError } from './errors.ts'
 import { entityTag, errorReply, quoted, type Reply, singleHeader } from './httpIo.ts'
+import { checkpointId, requireNote } from './noteHistory.ts'
 import { isNote, type VaultPath, vaultPath } from './paths.ts'
 import { type RemoteImageFetcher, remoteImageFetcher } from './remoteImage.ts'
 import type { RenameOptions } from './renameTransaction.ts'
@@ -155,6 +159,29 @@ async function deleteFile({ headers, access }: ApiRequest, { vault }: Services, 
     throw new VaultError(428, 'precondition_required', 'send If-Match with the etag of the file to delete')
   }
   return { status: 200, body: await vault.remove(path, ifMatch, access.coAuthors()) }
+}
+
+/** The checkpoints of a note, or with `?checkpoint=<id>` the note's content at one of them. */
+async function noteHistory({ url, access }: ApiRequest, { vault }: Services, path: VaultPath): Promise<Reply> {
+  access.requireRead(requireNote(path))
+  const checkpoint = url.searchParams.get(HISTORY_CHECKPOINT_PARAM)
+  if (checkpoint !== null) return checkpointContent(vault, path, checkpoint)
+  const body: NoteHistoryResponse = { path, checkpoints: await vault.history(path, HISTORY_MAX_CHECKPOINTS) }
+  return { status: 200, body }
+}
+
+async function checkpointContent(vault: Vault, path: VaultPath, checkpoint: string): Promise<Reply> {
+  const bytes = await vault.readAt(path, checkpointId(checkpoint))
+  if (!bytes) throw notFound(path)
+  return { status: 200, headers: { 'content-type': 'text/markdown; charset=utf-8' }, body: bytes }
+}
+
+/** Puts a checkpoint's content back into its note as a new commit; editors only. */
+async function restoreCheckpoint(request: ApiRequest, { vault, docs }: Services): Promise<Reply> {
+  const body = jsonObject(await request.body())
+  const path = requireNote(vaultPath(body.path))
+  request.access.requireWrite(path)
+  return writeReply(await vault.restore(path, checkpointId(body.checkpoint), request.access.coAuthors()), docs)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -349,6 +376,7 @@ const FILE_METHODS: Methods = new Map([
   ['DELETE', deleteFile],
 ])
 const COLLAB_METHODS: Methods = new Map([['GET', collabDocument]])
+const HISTORY_METHODS: Methods = new Map([['GET', noteHistory]])
 const EXACT_ROUTES = new Map<string, Methods>([
   [ROUTES.vault, new Map([['GET', describeVault]])],
   [ROUTES.files, new Map([['GET', listFiles]])],
@@ -363,7 +391,13 @@ const EXACT_ROUTES = new Map<string, Methods>([
   [ROUTES.collabTickets, new Map([['POST', issueTicket]])],
   [ROUTES.attachmentImports, new Map([['POST', importAttachment]])],
   [ROUTES.accessRevocations, new Map([['POST', revokeAccess]])],
+  [ROUTES.restore, new Map([['POST', restoreCheckpoint]])],
 ])
+/** Routes followed by a vault path. */
+const PATH_ROUTES: [string, Methods][] = [
+  [ROUTES.files, FILE_METHODS],
+  [ROUTES.history, HISTORY_METHODS],
+]
 
 function decodedPath(encoded: string): VaultPath {
   try {
@@ -376,7 +410,7 @@ function decodedPath(encoded: string): VaultPath {
 
 interface Resolved {
   methods: Methods
-  /** Set for file routes only. */
+  /** Set for routes followed by a vault path only. */
   path: VaultPath
 }
 
@@ -385,8 +419,8 @@ const NO_PATH = '' as VaultPath
 function resolveRoute(pathname: string): Resolved | null {
   const exact = EXACT_ROUTES.get(pathname)
   if (exact) return { methods: exact, path: NO_PATH }
-  if (pathname.startsWith(`${ROUTES.files}/`)) {
-    return { methods: FILE_METHODS, path: decodedPath(pathname.slice(ROUTES.files.length + 1)) }
+  for (const [prefix, methods] of PATH_ROUTES) {
+    if (pathname.startsWith(`${prefix}/`)) return { methods, path: decodedPath(pathname.slice(prefix.length + 1)) }
   }
   if (pathname.startsWith(`${ROUTES.collabDocs}/`)) return { methods: COLLAB_METHODS, path: NO_PATH }
   return null
