@@ -9,7 +9,10 @@ import {
 
 export { serializeInlineContent } from "./blockNoteDirectInline";
 
-import { normalizeUnsafeTableCardinalities } from "./blockNoteTableCardinality";
+import {
+	normalizeLossySerializerTableInput,
+	normalizeUnsafeTableCardinalities,
+} from "./blockNoteTableCardinality";
 import { restoreWikilinksInBlocks } from "./wikilinks";
 
 interface TableCellLike {
@@ -522,7 +525,6 @@ export function blocksToMarkdownDirect(
 		numberedStack: [],
 	};
 	const markdown = serializeBlockList(blocks as BlockLike[], 0, context);
-	const durationMs = now() - startedAt;
 	return {
 		markdown,
 		supported: context.fallbackReason === null,
@@ -530,7 +532,7 @@ export function blocksToMarkdownDirect(
 			blockCount: blocks.length,
 			cacheHits: context.cacheHits,
 			cacheMisses: context.cacheMisses,
-			durationMs,
+			durationMs: now() - startedAt,
 			fallbackReason: context.fallbackReason,
 		},
 	};
@@ -539,6 +541,7 @@ export function blocksToMarkdownDirect(
 export function installBlockNoteDirectMarkdown(
 	editor: DirectMarkdownCapableSerializer,
 ): void {
+	normalizeLossySerializerTableInput(editor, "schema" in editor);
 	if (typeof editor.blocksToMarkdownDirect === "function") return;
 
 	const cache = new WeakMap<object, Map<string, string>>();
