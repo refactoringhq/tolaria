@@ -1,5 +1,5 @@
 import { DiscordLogo } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 import { ActionTooltip } from "@/components/ui/action-tooltip";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +8,7 @@ import {
 	TOLARIA_DISCORD_INVITE_URL,
 } from "../constants/feedback";
 import type { McpStatus } from "../hooks/useMcpStatus";
+import { useTouchInput } from "../hooks/useTouchInput";
 import { type AppLocale, translate } from "../lib/i18n";
 import { trackEvent } from "../lib/telemetry";
 import type { ThemeMode } from "../lib/themeMode";
@@ -27,6 +28,24 @@ export type { VaultOption } from "./status-bar/types";
 
 const COMPACT_STATUS_BAR_MAX_WIDTH = 1000;
 const STATUS_BAR_STACKING_Z_INDEX = 30;
+
+const STACKED_FOOTER_LAYOUT: CSSProperties = {
+	height: "auto",
+	flexWrap: "wrap",
+	alignItems: "flex-start",
+	justifyContent: "flex-start",
+	rowGap: 4,
+	padding: "4px 8px",
+};
+
+const ROW_FOOTER_LAYOUT: CSSProperties = {
+	height: 30,
+	flexWrap: "nowrap",
+	alignItems: "center",
+	justifyContent: "space-between",
+	rowGap: 0,
+	padding: "0 8px",
+};
 
 function getWindowWidth() {
 	return typeof window === "undefined"
@@ -126,6 +145,8 @@ interface StatusBarFooterProps extends StatusBarProps {
 	stacked: boolean;
 	/** The web build: one sync pill stands in for the git controls. */
 	webSync: boolean;
+	/** A finger drives the web build: the bar grows around its 44 px targets (TOL-419). */
+	touchInput: boolean;
 }
 
 function webSyncPill({
@@ -157,6 +178,34 @@ function StatusBarPrimaryFromFooter(options: StatusBarFooterProps) {
 			}
 			syncPill={webSyncPill(options)}
 		/>
+	);
+}
+
+function StatusBarDiscordButton({ locale }: { locale: AppLocale }) {
+	return (
+		<ActionTooltip
+			copy={{ label: translate(locale, "feedback.community.title") }}
+			side="top"
+			align="end"
+		>
+			<Button
+				type="button"
+				variant="ghost"
+				size="icon-xs"
+				className="text-muted-foreground hover:bg-[var(--hover)] hover:text-foreground"
+				onClick={() => {
+					trackEvent(CONTRIBUTION_ANALYTICS_EVENT, {
+						action: "discord",
+						surface: "status_bar",
+					});
+					void openExternalUrl(TOLARIA_DISCORD_INVITE_URL);
+				}}
+				aria-label={translate(locale, "feedback.community.title")}
+				data-testid="status-discord"
+			>
+				<DiscordLogo size={14} weight="regular" />
+			</Button>
+		</ActionTooltip>
 	);
 }
 
@@ -199,52 +248,31 @@ function StatusBarSecondaryFromFooter(options: StatusBarFooterProps) {
 				stacked={stacked}
 				compact={compact}
 			/>
-			<ActionTooltip
-				copy={{ label: translate(locale, "feedback.community.title") }}
-				side="top"
-				align="end"
-			>
-				<Button
-					type="button"
-					variant="ghost"
-					size="icon-xs"
-					className="text-muted-foreground hover:bg-[var(--hover)] hover:text-foreground"
-					onClick={() => {
-						trackEvent(CONTRIBUTION_ANALYTICS_EVENT, {
-							action: "discord",
-							surface: "status_bar",
-						});
-						void openExternalUrl(TOLARIA_DISCORD_INVITE_URL);
-					}}
-					aria-label={translate(locale, "feedback.community.title")}
-					data-testid="status-discord"
-				>
-					<DiscordLogo size={14} weight="regular" />
-				</Button>
-			</ActionTooltip>
+			<StatusBarDiscordButton locale={locale} />
 		</div>
 	);
 }
 
-function StatusBarFooter(props: StatusBarFooterProps) {
-	const { compact, stacked } = props;
+function footerLayout({
+	stacked,
+	touchInput,
+}: Pick<StatusBarFooterProps, "stacked" | "touchInput">): CSSProperties {
+	const layout = stacked ? STACKED_FOOTER_LAYOUT : ROW_FOOTER_LAYOUT;
+	return touchInput ? { ...layout, height: "auto" } : layout;
+}
 
+function StatusBarFooter(props: StatusBarFooterProps) {
 	return (
 		<footer
 			data-testid="status-bar"
 			style={{
+				...footerLayout(props),
 				minHeight: 30,
-				height: stacked ? "auto" : 30,
 				flexShrink: 0,
 				display: "flex",
-				flexWrap: stacked ? "wrap" : "nowrap",
-				alignItems: stacked ? "flex-start" : "center",
-				justifyContent: stacked ? "flex-start" : "space-between",
-				rowGap: stacked ? 4 : 0,
-				columnGap: compact ? 8 : 12,
+				columnGap: props.compact ? 8 : 12,
 				background: "var(--sidebar)",
 				borderTop: "1px solid var(--border)",
-				padding: stacked ? "4px 8px" : "0 8px",
 				fontSize: 12,
 				color: "var(--muted-foreground)",
 				position: "relative",
@@ -261,6 +289,7 @@ export function StatusBar(props: StatusBarProps) {
 	useStatusBarTicker();
 	const { compact, stacked } = useStatusBarLayout();
 	const [webSync] = useState(isRemoteBrowserShell);
+	const touchInput = useTouchInput();
 
 	return (
 		<TooltipProvider>
@@ -269,6 +298,7 @@ export function StatusBar(props: StatusBarProps) {
 				compact={compact}
 				stacked={stacked}
 				webSync={webSync}
+				touchInput={touchInput}
 			/>
 		</TooltipProvider>
 	);

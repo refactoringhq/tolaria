@@ -157,6 +157,14 @@ html[data-tablet-layout] {
 	--tolaria-macos-traffic-light-padding: 16px;
 }
 
+/* Like the phone, the shell ends where the on-screen keyboard begins (TOL-419). */
+html[data-tablet-layout] .app-shell {
+	position: fixed;
+	top: var(--tolaria-visual-viewport-top, 0);
+	left: 0;
+	height: var(--tolaria-visual-viewport-height, 100%);
+}
+
 html[data-tablet-layout] .app-shell .app {
 	position: relative;
 }
@@ -241,6 +249,52 @@ html[data-touch-input]
 html[data-touch-input] .app-shell .app__note-list :has(> [data-slot="button"]) {
 	column-gap: 0;
 	min-width: 44px;
+}
+
+/*
+ * The editor's toolbars and the status bar (TOL-419) get the same 44 px targets. Their hit areas
+ * space the icons apart, so the rows drop their gaps; the status bar scrolls sideways on a phone.
+ */
+html[data-touch-input]
+	.app-shell
+	:is(.breadcrumb-bar__actions, [data-testid="status-bar"])
+	:is(button, [role="button"]),
+html[data-touch-input]
+	.bn-container
+	:is(.bn-formatting-toolbar, .bn-link-toolbar)
+	:is(button, [role="button"]) {
+	min-width: 44px;
+	min-height: 44px;
+}
+
+html[data-touch-input] .app-shell .breadcrumb-bar__actions,
+html[data-touch-input]
+	.app-shell
+	:is(.breadcrumb-bar__actions, [data-testid="status-bar"])
+	:has(> :is(button, [role="button"])),
+html[data-touch-input]
+	.bn-container
+	:is(.bn-formatting-toolbar, .bn-link-toolbar) {
+	column-gap: 0;
+}
+
+/* A formatting toolbar wider than a phone scrolls sideways instead of running off the screen. */
+html[data-touch-input]
+	.bn-container
+	:is(.bn-formatting-toolbar, .bn-link-toolbar) {
+	flex-wrap: nowrap;
+	max-width: calc(100vw - 16px);
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+html[data-touch-input] .app-shell [data-testid="status-bar"] {
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+html[data-touch-input] .app-shell [data-testid="status-bar"] > * {
+	flex-shrink: 0;
 }
 
 /* A browser has no window buttons to clear: the macOS traffic-light inset shrinks to the edge margin. */

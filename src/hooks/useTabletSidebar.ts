@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useKeyboardAwareViewport } from "./useKeyboardAwareViewport";
 import { useMediaQueryMatch } from "./useMediaQueryMatch";
 import type { ViewMode } from "./useViewMode";
 
@@ -86,6 +87,8 @@ export function useTabletSidebar({
 	const shown = active ? sidebarVisible && open : sidebarVisible;
 
 	useTabletLayoutAttribute(active);
+	// The status bar and the toolbars stay above the on-screen keyboard, as on the phone (TOL-419).
+	useKeyboardAwareViewport(active);
 	useCloseOnTapBeside(active && shown, close);
 	return { collapse, followViewMode, sidebarVisible: shown };
 }

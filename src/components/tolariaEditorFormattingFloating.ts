@@ -9,10 +9,22 @@ type TolariaFloatingMiddleware = NonNullable<
 	TolariaFloatingOptions["middleware"]
 >[number];
 
+interface ViewportClampState {
+	x: number;
+	rects: { floating: { width: number }; reference: { x: number } };
+	elements: { reference: { getBoundingClientRect: () => { x: number } } };
+}
+
+/**
+ * Keeps the toolbar 8 px inside the screen. Floating coordinates start at the editor's offset
+ * parent, not at the screen's edge, so the clamp converts them first (TOL-419).
+ */
 function viewportClampMiddleware(): TolariaFloatingMiddleware {
 	return {
 		name: "tolariaViewportClamp",
-		fn({ x, rects }: { rects: { floating: { width: number } }; x: number }) {
+		fn({ x, rects, elements }: ViewportClampState) {
+			const originX =
+				elements.reference.getBoundingClientRect().x - rects.reference.x;
 			const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
 			const minX = FORMATTER_VIEWPORT_PADDING_PX;
 			const maxX = Math.max(
@@ -21,7 +33,7 @@ function viewportClampMiddleware(): TolariaFloatingMiddleware {
 			);
 
 			return {
-				x: Math.min(Math.max(x, minX), maxX),
+				x: Math.min(Math.max(x + originX, minX), maxX) - originX,
 			};
 		},
 	};
