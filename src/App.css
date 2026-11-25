@@ -1,178 +1,192 @@
 /* App layout - minimal CSS, most styling via Tailwind */
 .app-shell {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-  box-shadow: inset 0 0 0 1px var(--border-primary);
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	width: 100%;
+	overflow: hidden;
+	box-shadow: inset 0 0 0 1px var(--border-primary);
 }
 
 .app {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
+	display: flex;
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
 }
 
 body.mac-chrome {
-  --tolaria-macos-traffic-light-padding: 90px;
+	--tolaria-macos-traffic-light-padding: 90px;
 }
 
 body.mac-chrome.mac-chrome-fullscreen {
-  --tolaria-macos-traffic-light-padding: 16px;
+	--tolaria-macos-traffic-light-padding: 16px;
 }
 
 .app__sidebar {
-  flex: 0 0 auto;
-  min-width: 220px;
-  display: flex;
-  flex-direction: column;
+	flex: 0 0 auto;
+	min-width: 220px;
+	display: flex;
+	flex-direction: column;
 }
 
 .app__sidebar > * {
-  flex: 1;
+	flex: 1;
 }
 
 .app:has(.app__note-list) .app__sidebar > * {
-  border-right-color: transparent;
+	border-right-color: transparent;
 }
 
 .app__note-list {
-  flex: 0 0 auto;
-  min-width: 220px;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  z-index: 20;
-  background: var(--surface-sidebar);
+	flex: 0 0 auto;
+	min-width: 220px;
+	display: flex;
+	flex-direction: column;
+	position: relative;
+	z-index: 20;
+	background: var(--surface-sidebar);
 }
 
 .app__note-list > * {
-  flex: 1;
-  border-left: 1px solid var(--sidebar-border);
+	flex: 1;
+	border-left: 1px solid var(--sidebar-border);
 }
 
 .app__editor {
-  flex: 1;
-  min-width: 480px;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  container-type: inline-size;
-  container-name: editor;
+	flex: 1;
+	min-width: 480px;
+	min-height: 0;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	container-type: inline-size;
+	container-name: editor;
 }
 
 .app__editor > * {
-  flex: 1;
+	flex: 1;
 }
 
 /* Phone web layout (TOL-193): one pane at a time, inside the safe area and above the keyboard. */
 html[data-phone-pane] .app-shell {
-  position: fixed;
-  top: var(--tolaria-visual-viewport-top, 0);
-  left: 0;
-  height: var(--tolaria-visual-viewport-height, 100%);
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-  box-shadow: none;
+	position: fixed;
+	top: var(--tolaria-visual-viewport-top, 0);
+	left: 0;
+	height: var(--tolaria-visual-viewport-height, 100%);
+	padding: env(safe-area-inset-top) env(safe-area-inset-right)
+		env(safe-area-inset-bottom) env(safe-area-inset-left);
+	box-shadow: none;
 }
 
 html[data-phone-pane] .app-shell .app {
-  position: relative;
+	position: relative;
 }
 
 html[data-phone-pane] .app-shell .app__sidebar,
 html[data-phone-pane] .app-shell .app > .cursor-col-resize {
-  display: none;
+	display: none;
 }
 
 html[data-phone-pane="navigation"] .app-shell .app__sidebar {
-  position: absolute;
-  inset: 0;
-  z-index: 40;
-  display: flex;
-  min-width: 100vw;
-  background: var(--surface-sidebar);
+	position: absolute;
+	inset: 0;
+	z-index: 40;
+	display: flex;
+	min-width: 100vw;
+	background: var(--surface-sidebar);
 }
 
 /* The pane behind stays laid out: the list keeps its scroll, the editor is ready for a tap. */
 html[data-phone-pane="list"] .app-shell .app__editor,
 html[data-phone-pane="note"] .app-shell .app__note-list {
-  position: absolute;
-  inset: 0;
-  visibility: hidden;
+	position: absolute;
+	inset: 0;
+	visibility: hidden;
 }
 
-html[data-phone-pane="navigation"] .app-shell :is(.app__note-list, .app__editor) {
-  position: absolute;
-  inset: 0;
-  visibility: hidden;
+html[data-phone-pane="navigation"]
+	.app-shell
+	:is(.app__note-list, .app__editor) {
+	position: absolute;
+	inset: 0;
+	visibility: hidden;
 }
 
 html[data-phone-pane] .app-shell .app__note-list {
-  flex: 1 1 0;
-  min-width: 0;
+	flex: 1 1 0;
+	min-width: 0;
 }
 
 html[data-phone-pane] .app-shell .app__note-list > * {
-  border-left: none;
+	border-left: none;
 }
 
 html[data-phone-pane] .app-shell .app__editor {
-  min-width: 0;
+	min-width: 0;
 }
 
 html[data-phone-pane] .app-shell .app__editor > .app__phone-back-bar {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  padding: 4px 8px;
-  border-bottom: 1px solid var(--border-primary);
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	padding: 4px 8px;
+	border-bottom: 1px solid var(--border-primary);
 }
 
 html[data-phone-pane] .app-shell .app__phone-navigation-bar {
-  position: relative;
-  z-index: 21;
-  display: flex;
-  flex: 0 0 48px;
-  align-items: center;
-  padding: 2px 8px;
-  border-bottom: 1px solid var(--border-primary);
-  background: var(--surface-sidebar);
+	position: relative;
+	z-index: 21;
+	display: flex;
+	flex: 0 0 48px;
+	align-items: center;
+	padding: 2px 8px;
+	border-bottom: 1px solid var(--border-primary);
+	background: var(--surface-sidebar);
 }
 
-html[data-phone-pane="navigation"] .app-shell .app__sidebar > .app__phone-navigation-bar {
-  flex: 0 0 48px;
+html[data-phone-pane="navigation"]
+	.app-shell
+	.app__sidebar
+	> .app__phone-navigation-bar {
+	flex: 0 0 48px;
 }
 
 /* Tablet web layout (TOL-194): the note list and the note, the sidebar collapsed until asked for. */
 html[data-tablet-layout] {
-  --tolaria-macos-traffic-light-padding: 16px;
+	--tolaria-macos-traffic-light-padding: 16px;
+}
+
+/* Like the phone, the shell ends where the on-screen keyboard begins (TOL-419). */
+html[data-tablet-layout] .app-shell {
+	position: fixed;
+	top: var(--tolaria-visual-viewport-top, 0);
+	left: 0;
+	height: var(--tolaria-visual-viewport-height, 100%);
 }
 
 html[data-tablet-layout] .app-shell .app {
-  position: relative;
+	position: relative;
 }
 
 html[data-tablet-layout] .app-shell .app__editor {
-  min-width: 0;
+	min-width: 0;
 }
 
 /* In portrait the sidebar floats over the note list, so the note keeps its width. */
 @media (orientation: portrait) {
-  html[data-tablet-layout] .app-shell .app__sidebar {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 30;
-    box-shadow: 0 8px 24px var(--shadow-dialog);
-  }
+	html[data-tablet-layout] .app-shell .app__sidebar {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		z-index: 30;
+		box-shadow: 0 8px 24px var(--shadow-dialog);
+	}
 
-  html[data-tablet-layout] .app-shell .app__sidebar + .cursor-col-resize {
-    display: none;
-  }
+	html[data-tablet-layout] .app-shell .app__sidebar + .cursor-col-resize {
+		display: none;
+	}
 }
 
 /*
@@ -180,17 +194,20 @@ html[data-tablet-layout] .app-shell .app__editor {
  * ask for. The visual design stays; buttons grow their hit area around the same icon.
  */
 html[data-touch-input] [data-testid$="context-menu"] [data-slot="button"] {
-  min-height: 44px;
+	min-height: 44px;
 }
 
 html[data-touch-input] .app-shell .app__sidebar :is(button, [role="button"]) {
-  min-height: 44px;
+	min-height: 44px;
 }
 
 /* The phone navigation pane (TOL-417) also gives every sidebar control a 44 px width. */
-html[data-touch-input][data-phone-pane="navigation"] .app-shell .app__sidebar :is(button, [role="button"]) {
-  min-width: 44px;
-  min-height: 44px;
+html[data-touch-input][data-phone-pane="navigation"]
+	.app-shell
+	.app__sidebar
+	:is(button, [role="button"]) {
+	min-width: 44px;
+	min-height: 44px;
 }
 
 /*
@@ -198,15 +215,31 @@ html[data-touch-input][data-phone-pane="navigation"] .app-shell .app__sidebar :i
  * (src/lib/touchInput.ts) for their width; the sidebar's icon buttons get it from their flex basis.
  */
 html[data-touch-input] .app-shell .app__phone-back-bar [data-slot="button"],
-html[data-touch-input] .app-shell .app__phone-navigation-bar [data-slot="button"],
-html[data-touch-input] .app-shell .app__sidebar [data-slot="button"][data-size^="icon"],
-html[data-touch-input] .app-shell .app__note-list :is([data-slot="button"], [data-slot$="-trigger"], [data-testid^="sort-button"]):not(.absolute) {
-  min-width: 44px;
-  min-height: 44px;
+html[data-touch-input]
+	.app-shell
+	.app__phone-navigation-bar
+	[data-slot="button"],
+html[data-touch-input]
+	.app-shell
+	.app__sidebar
+	[data-slot="button"][data-size^="icon"],
+html[data-touch-input]
+	.app-shell
+	.app__note-list
+	:is(
+		[data-slot="button"],
+		[data-slot$="-trigger"],
+		[data-testid^="sort-button"]
+	):not(.absolute) {
+	min-width: 44px;
+	min-height: 44px;
 }
 
-html[data-touch-input] .app-shell .app__sidebar [data-slot="button"][data-size^="icon"] {
-  flex: 0 0 44px;
+html[data-touch-input]
+	.app-shell
+	.app__sidebar
+	[data-slot="button"][data-size^="icon"] {
+	flex: 0 0 44px;
 }
 
 /*
@@ -214,48 +247,109 @@ html[data-touch-input] .app-shell .app__sidebar [data-slot="button"][data-size^=
  * of buttons never shrinks below them (they would overlap the controls beside it).
  */
 html[data-touch-input] .app-shell .app__note-list :has(> [data-slot="button"]) {
-  column-gap: 0;
-  min-width: 44px;
+	column-gap: 0;
+	min-width: 44px;
+}
+
+/*
+ * The editor's toolbars and the status bar (TOL-419) get the same 44 px targets. Their hit areas
+ * space the icons apart, so the rows drop their gaps; the status bar scrolls sideways on a phone.
+ */
+html[data-touch-input]
+	.app-shell
+	:is(.breadcrumb-bar__actions, [data-testid="status-bar"])
+	:is(button, [role="button"]),
+html[data-touch-input]
+	.bn-container
+	:is(.bn-formatting-toolbar, .bn-link-toolbar)
+	:is(button, [role="button"]) {
+	min-width: 44px;
+	min-height: 44px;
+}
+
+html[data-touch-input] .app-shell .breadcrumb-bar__actions,
+html[data-touch-input]
+	.app-shell
+	:is(.breadcrumb-bar__actions, [data-testid="status-bar"])
+	:has(> :is(button, [role="button"])),
+html[data-touch-input]
+	.bn-container
+	:is(.bn-formatting-toolbar, .bn-link-toolbar) {
+	column-gap: 0;
+}
+
+/* A formatting toolbar wider than a phone scrolls sideways instead of running off the screen. */
+html[data-touch-input]
+	.bn-container
+	:is(.bn-formatting-toolbar, .bn-link-toolbar) {
+	flex-wrap: nowrap;
+	max-width: calc(100vw - 16px);
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+html[data-touch-input] .app-shell [data-testid="status-bar"] {
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+html[data-touch-input] .app-shell [data-testid="status-bar"] > * {
+	flex-shrink: 0;
 }
 
 /* A browser has no window buttons to clear: the macOS traffic-light inset shrinks to the edge margin. */
 html[data-touch-input] body.mac-chrome {
-  --tolaria-macos-traffic-light-padding: 16px;
+	--tolaria-macos-traffic-light-padding: 16px;
 }
 
 /* A long press opens the context menu (src/lib/touchInput.ts), not text selection or a callout. */
 html[data-touch-input] .app-shell :is(.app__sidebar, .app__note-list) {
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	user-select: none;
 }
 
 html[data-touch-input] .app-shell .app__note-list :is(input, textarea) {
-  -webkit-user-select: text;
-  user-select: text;
+	-webkit-user-select: text;
+	user-select: text;
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
 }
 
 @keyframes tab-status-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.3;
+	}
 }
 
 .tab-status-pulse {
-  animation: tab-status-pulse 1.2s ease-in-out infinite;
+	animation: tab-status-pulse 1.2s ease-in-out infinite;
 }
 
 /* AI highlight animation — applied by useAiActivity when MCP calls ui_highlight */
 @keyframes ai-highlight-glow {
-  0% { box-shadow: inset 0 0 0 2px var(--accent-blue); }
-  50% { box-shadow: inset 0 0 8px 2px var(--state-focus-halo); }
-  100% { box-shadow: inset 0 0 0 2px transparent; }
+	0% {
+		box-shadow: inset 0 0 0 2px var(--accent-blue);
+	}
+	50% {
+		box-shadow: inset 0 0 8px 2px var(--state-focus-halo);
+	}
+	100% {
+		box-shadow: inset 0 0 0 2px transparent;
+	}
 }
 
 .ai-highlight {
-  animation: ai-highlight-glow 0.8s ease-out;
+	animation: ai-highlight-glow 0.8s ease-out;
 }
