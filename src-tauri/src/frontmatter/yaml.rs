@@ -106,22 +106,23 @@ impl<'a> YamlText<'a> {
 
     /// Check whether a YAML string value needs quoting to avoid ambiguity.
     fn needs_quoting(self) -> bool {
-        [
-            self.has_special_chars(),
-            self.starts_as_collection(),
-            self.0.trim() != self.0,
-            self.is_coercible_word(),
-            self.is_radix_number(),
-            self.is_special_float(),
-            self.0.parse::<f64>().is_ok(),
-            self.has_indicator_prefix(),
-            self.0.contains('\\'),
-            self.0.starts_with('\u{feff}'),
-            self.has_yaml_line_break(),
-            self.has_comment_indicator(),
-        ]
-        .into_iter()
-        .any(|needs_quote| needs_quote)
+        self.0.is_empty()
+            || [
+                self.has_special_chars(),
+                self.starts_as_collection(),
+                self.0.trim() != self.0,
+                self.is_coercible_word(),
+                self.is_radix_number(),
+                self.is_special_float(),
+                self.0.parse::<f64>().is_ok(),
+                self.has_indicator_prefix(),
+                self.0.contains('\\'),
+                self.0.starts_with('\u{feff}'),
+                self.has_yaml_line_break(),
+                self.has_comment_indicator(),
+            ]
+            .into_iter()
+            .any(|needs_quote| needs_quote)
     }
 
     fn has_comment_indicator(self) -> bool {
@@ -283,6 +284,7 @@ mod tests {
     #[test]
     fn test_to_yaml_value_string_needs_quoting_cases() {
         for (input, expected) in [
+            ("", "\"\""),
             ("key: value", "\"key: value\""),
             ("has # comment", "\"has # comment\""),
             ("[array-like]", "\"[array-like]\""),

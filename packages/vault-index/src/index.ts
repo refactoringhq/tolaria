@@ -124,7 +124,7 @@ function addFrontmatterMetadata(input: {
 	const belongsTo = extractBelongsTo(frontmatter);
 	if (belongsTo.length > 0) entry.belongsTo = belongsTo;
 	const status = frontmatterScalar(frontmatter, ["Status", "status"]);
-	if (status) entry.status = status;
+	if (status !== null) entry.status = status;
 	const relationships = frontmatterRelationships(frontmatter);
 	if (type !== "Type") relationships.Type = [formatTypeLink(type)];
 	if (Object.keys(relationships).length > 0)
