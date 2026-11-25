@@ -617,12 +617,12 @@
       "expected": "---\nv: +\n---\n"
     },
     {
-      "name": "quotes \"\" only if Rust reads it as a float",
+      "name": "quotes an empty string to preserve it as a string",
       "content": "",
       "key": "v",
       "op": "update",
       "value": "",
-      "expected": "---\nv: \n---\n"
+      "expected": "---\nv: \"\"\n---\n"
     },
     {
       "name": "leaves an alias-looking value unquoted",
@@ -713,12 +713,12 @@
       "expected": "---\nv: -flag\n---\n"
     },
     {
-      "name": "keeps an empty value unquoted",
+      "name": "quotes an empty string to preserve its value",
       "content": "",
       "key": "v",
       "op": "update",
       "value": "",
-      "expected": "---\nv: \n---\n"
+      "expected": "---\nv: \"\"\n---\n"
     },
     {
       "name": "quotes yes to preserve its string type",
