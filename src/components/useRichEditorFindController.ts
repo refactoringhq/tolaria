@@ -22,7 +22,7 @@ import { useRichEditorFindSession } from "./richEditorFindSession";
 
 type Editor = ReturnType<typeof useCreateBlockNote>["_tiptapEditor"];
 
-function useFindResults({
+export function useFindResults({
 	editor,
 	open,
 	query,
@@ -37,8 +37,11 @@ function useFindResults({
 }) {
 	const doc = editor.state.doc;
 	const result = useMemo(
-		() => findRichEditorMatches(doc, query, options),
-		[doc, options, query],
+		() =>
+			open
+				? findRichEditorMatches(doc, query, options)
+				: { matches: [], error: null },
+		[doc, open, options, query],
 	);
 	const currentIndex = clampEditorFindIndex(activeIndex, result.matches.length);
 	const activeMatch = result.matches.at(currentIndex);
@@ -57,9 +60,10 @@ function useFindResults({
 	};
 }
 
-function useDocumentRevision(editor: Editor): void {
+export function useDocumentRevision(editor: Editor, enabled: boolean): void {
 	const [, setRevision] = useState(0);
 	useEffect(() => {
+		if (!enabled) return;
 		const onTransaction = ({
 			transaction,
 		}: {
@@ -69,7 +73,7 @@ function useDocumentRevision(editor: Editor): void {
 		};
 		editor.on("transaction", onTransaction);
 		return () => editor.off("transaction", onTransaction);
-	}, [editor]);
+	}, [editor, enabled]);
 }
 
 function useFindOptions(
@@ -242,7 +246,7 @@ export function useRichEditorFindController({
 	const [activeIndex, setActiveIndex] = useState(0);
 	const options = useFindOptions(caseSensitive, regex);
 	const session = useRichEditorFindSession(tiptap, path, request);
-	useDocumentRevision(tiptap);
+	useDocumentRevision(tiptap, session.open);
 	const results = useFindResults({
 		editor: tiptap,
 		open: session.open,
