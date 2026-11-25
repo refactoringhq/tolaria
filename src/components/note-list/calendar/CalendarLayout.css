@@ -272,6 +272,20 @@ body.calendar-drag-forbidden * {
 	background-color: var(--state-hover-subtle);
 }
 
+@media (max-width: 820px) {
+	.calendar-tray__header {
+		height: 52px !important;
+	}
+
+	.calendar-tray__close {
+		width: 52px !important;
+		min-width: 52px !important;
+		height: 52px !important;
+		min-height: 52px !important;
+		flex-shrink: 0 !important;
+	}
+}
+
 .calendar-overview {
 	display: grid;
 	min-height: 0;
