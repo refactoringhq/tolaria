@@ -23,4 +23,10 @@ describe("web collection layout storage", () => {
 
 		expect(readWebLayout("builtin:all")).toBeUndefined();
 	});
+
+	it("stores collection identifiers without treating special object keys as prototypes", () => {
+		writeWebLayout("__proto__", { type: "graph" });
+
+		expect(readWebLayout("__proto__")).toEqual({ type: "graph" });
+	});
 });

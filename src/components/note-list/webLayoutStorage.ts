@@ -18,14 +18,23 @@ function readAllLayouts(): Record<string, LayoutRecord> {
 }
 
 export function readWebLayout(collection: string): LayoutRecord | undefined {
-	return readAllLayouts()[collection];
+	return Object.entries(readAllLayouts()).find(
+		([key]) => key === collection,
+	)?.[1];
 }
 
 export function writeWebLayout(collection: string, layout: LayoutRecord): void {
 	try {
 		window.localStorage.setItem(
 			STORAGE_KEY,
-			JSON.stringify({ ...readAllLayouts(), [collection]: layout }),
+			JSON.stringify(
+				Object.fromEntries([
+					...Object.entries(readAllLayouts()).filter(
+						([key]) => key !== collection,
+					),
+					[collection, layout],
+				]),
+			),
 		);
 	} catch {
 		// A browser storage quota or privacy setting should not interrupt changing views.

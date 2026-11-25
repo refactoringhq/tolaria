@@ -273,16 +273,16 @@ body.calendar-drag-forbidden * {
 }
 
 @media (max-width: 820px) {
-	.calendar-tray__header {
-		height: 52px !important;
+	.calendar-tray .calendar-tray__header {
+		height: 52px;
 	}
 
-	.calendar-tray__close {
-		width: 52px !important;
-		min-width: 52px !important;
-		height: 52px !important;
-		min-height: 52px !important;
-		flex-shrink: 0 !important;
+	.calendar-tray .calendar-tray__close {
+		width: 52px;
+		min-width: 52px;
+		height: 52px;
+		min-height: 52px;
+		flex-shrink: 0;
 	}
 }
 
