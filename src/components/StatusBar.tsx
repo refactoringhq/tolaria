@@ -1,5 +1,5 @@
 import { DiscordLogo } from "@phosphor-icons/react";
-import { type CSSProperties, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ActionTooltip } from "@/components/ui/action-tooltip";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +16,7 @@ import type { GitRemoteStatus, SyncStatus } from "../types";
 import type { GitRepositoryOption } from "../utils/gitRepositories";
 import { openExternalUrl } from "../utils/url";
 import { SharingStatusButton } from "./sharing/SharingStatusButton";
+import { statusBarFooterLayout } from "./status-bar/footerLayout";
 import {
 	StatusBarPrimarySection,
 	StatusBarSecondarySection,
@@ -28,24 +29,6 @@ export type { VaultOption } from "./status-bar/types";
 
 const COMPACT_STATUS_BAR_MAX_WIDTH = 1000;
 const STATUS_BAR_STACKING_Z_INDEX = 30;
-
-const STACKED_FOOTER_LAYOUT: CSSProperties = {
-	height: "auto",
-	flexWrap: "wrap",
-	alignItems: "flex-start",
-	justifyContent: "flex-start",
-	rowGap: 4,
-	padding: "4px 8px",
-};
-
-const ROW_FOOTER_LAYOUT: CSSProperties = {
-	height: 30,
-	flexWrap: "nowrap",
-	alignItems: "center",
-	justifyContent: "space-between",
-	rowGap: 0,
-	padding: "0 8px",
-};
 
 function getWindowWidth() {
 	return typeof window === "undefined"
@@ -253,20 +236,12 @@ function StatusBarSecondaryFromFooter(options: StatusBarFooterProps) {
 	);
 }
 
-function footerLayout({
-	stacked,
-	touchInput,
-}: Pick<StatusBarFooterProps, "stacked" | "touchInput">): CSSProperties {
-	const layout = stacked ? STACKED_FOOTER_LAYOUT : ROW_FOOTER_LAYOUT;
-	return touchInput ? { ...layout, height: "auto" } : layout;
-}
-
 function StatusBarFooter(props: StatusBarFooterProps) {
 	return (
 		<footer
 			data-testid="status-bar"
 			style={{
-				...footerLayout(props),
+				...statusBarFooterLayout(props),
 				minHeight: 30,
 				flexShrink: 0,
 				display: "flex",
