@@ -228,7 +228,7 @@ describe('REST edits of a shared note', () => {
   it('advertise that tickets may carry an author', async () => {
     const vaultInfo = (await (await as(TOKEN, '/v1/vault')).json()) as VaultResponse
 
-    expect(vaultInfo.protocolVersion).toBe('1.10')
+    expect(vaultInfo.protocolVersion).toBe('1.11')
     expect(vaultInfo.capabilities).toContain('access.authors')
   })
 })

@@ -301,3 +301,4 @@ proposed → active → superseded
 | [0309](0309-saves-never-wait-for-the-git-remote.md) | Saves never wait for the git remote: network off the vault lock, retried pushes, deferred index writes (supersedes the save-path parts of [0280](0280-debounced-push-and-background-fetch.md)) | active |
 | [0310](0310-acknowledged-saves-keep-their-path-in-a-replay.md) | Acknowledged saves keep their path when a background push meets a remote change (supersedes the replay rule in [0309](0309-saves-never-wait-for-the-git-remote.md)) | active |
 | [0311](0311-remote-saved-view-discovery.md) | Tolaria Web discovers saved views by reading `views/*.yml` files from the Tolaria remote | active |
+| [0312](0312-note-history-checkpoints-on-the-remote.md) | Tolaria Web lists, previews and restores a note's checkpoints through store-agnostic protocol routes (`GET /v1/history/<path>`, `POST /v1/restore`) | active |

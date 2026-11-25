@@ -246,6 +246,22 @@ test("an editor invited to a note by email edits it, and a revoke closes the ope
 	expect(front.ticketRequests.get(GRANTEE.userId) ?? 0).toBe(asked);
 });
 
+/** TOL-421: a viewer opens the note's history and previews a version, but cannot restore it. */
+async function expectHistoryWithoutRestore(
+	page: Page,
+	testInfo: TestInfo,
+): Promise<void> {
+	await page.getByTestId("breadcrumb-overflow-menu-trigger").click();
+	await page.getByTestId("note-history-menu-item").click();
+	const history = page.getByTestId("note-history-drawer");
+	await history.getByTestId("note-history-checkpoint").first().click();
+	await expect(history.getByTestId("note-history-view-only")).toBeVisible({
+		timeout: OPEN_MS,
+	});
+	await expect(history.getByTestId("note-history-restore")).toHaveCount(0);
+	await shot(page, testInfo, "viewer-history");
+}
+
 test("a viewer invited to the vault by GitHub handle reads it but cannot change it", async ({
 	browser,
 	request,
@@ -297,4 +313,5 @@ test("a viewer invited to the vault by GitHub handle reads it but cannot change 
 	await inviteePage.keyboard.type(" not allowed");
 	await inviteePage.waitForTimeout(1_500);
 	expect(await noteContent(request, note)).toBe(before);
+	await expectHistoryWithoutRestore(inviteePage, testInfo);
 });

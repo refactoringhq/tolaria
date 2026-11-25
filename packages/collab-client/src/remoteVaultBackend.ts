@@ -49,6 +49,7 @@ import {
 	listFolders,
 	renameFolder,
 } from "./remoteFolders.ts";
+import { type RemoteNoteHistory, remoteHistory } from "./remoteHistory.ts";
 import {
 	assertVaultPath,
 	encoded,
@@ -544,6 +545,11 @@ export function createRemoteAttachments(
 	options: RemoteOptions & { now?: () => number },
 ): RemoteAttachments {
 	return remoteAttachments(requester(options), options.now);
+}
+
+/** A note's checkpoints with the server's credentials, for the web history drawer (TOL-421). */
+export function createRemoteHistory(options: RemoteOptions): RemoteNoteHistory {
+	return remoteHistory(requester(options));
 }
 
 export function createRemoteVaultBackend(
