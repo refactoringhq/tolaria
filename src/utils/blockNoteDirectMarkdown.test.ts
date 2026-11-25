@@ -114,22 +114,21 @@ describe("BlockNote direct Markdown serialization", () => {
 			},
 		];
 
-		expect(blocksToMarkdownDirect(blocks).markdown).toBe(
-			[
-				"See [[Team/Beta|Beta]] and [docs](https://example.com).",
-				"",
-				"- **Bold item**",
-				"  - [x] Done",
-				"",
-				"```ts",
-				"const x = 1",
-				"```",
-				"",
-				"| Name | Status |",
-				"| --- | --- |",
-				"| Alpha | Ready |",
-			].join("\n"),
-		);
+		const expectedMarkdown = [
+			"See [[Team/Beta|Beta]] and [docs](https://example.com).",
+			"",
+			"- **Bold item**",
+			"  - [x] Done",
+			"",
+			"```ts",
+			"const x = 1",
+			"```",
+			"",
+			"| Name | Status |",
+			"| --- | --- |",
+			"| Alpha | Ready |",
+		].join("\n");
+		expect(blocksToMarkdownDirect(blocks).markdown).toBe(expectedMarkdown);
 	});
 
 	it("serializes saved attachment media blocks with portable Markdown labels and destinations", () => {
@@ -510,9 +509,9 @@ describe("BlockNote direct Markdown serialization", () => {
 			},
 		];
 
-		expect(blocksToMarkdownDirect(blocks).markdown).toBe(
-			"Use citations (Smith, 2024) and `inline_code(with_args)` with [report (final)](<attachments/report (final).pdf>).",
-		);
+		const expectedMarkdown =
+			"Use citations (Smith, 2024) and `inline_code(with_args)` with [report (final)](<attachments/report (final).pdf>).";
+		expect(blocksToMarkdownDirect(blocks).markdown).toBe(expectedMarkdown);
 	});
 
 	it("caches unchanged block objects across rich-editor body serialization", () => {
