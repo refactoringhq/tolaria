@@ -880,6 +880,29 @@ files:
     editor.toolbar.copyFilePath: 64c6cec5ca57efbb8c9c93ae5fbccd27
     editor.toolbar.copyNoteDeepLink: 0fff274a7c47e7c12457c0b7412e86ce
     editor.toolbar.copyNoteGitUrl: 04a732b98f7585e3c3b5474688e0baac
+    noteHistory.menuItem: f6a738f75f76f62a241636eca02cd87d
+    noteHistory.title: f6a738f75f76f62a241636eca02cd87d
+    noteHistory.description: 7d611e2039bf46ea82dcca31c95b71b2
+    noteHistory.loading: 225a26ccdbece383ff9e7dd2175bdc2b
+    noteHistory.loadFailed: 02bf096a893304a770e1c96b285efebe
+    noteHistory.empty: 2386702aab4bc6bcefef32bdfbb3c6a8
+    noteHistory.latest: cd118d21c3b0b4762c6e0063661e6e45
+    noteHistory.byAuthor: 2eb2975d32e9b5af6d5de36c82656a21
+    noteHistory.pickVersion: bab4e608c67c28a59392213c9ae6e9ae
+    noteHistory.previewLoading: bf283aee3105789764b843e9e89d2a0b
+    noteHistory.previewFailed: d9e4f29f39dbdd840e5744ee6285183a
+    noteHistory.previewHeading: 7955bb8b048ead21759d4c4cc433e505
+    noteHistory.legendRemoved: 38a230f50c7bf62cb6e0e0443093cb4b
+    noteHistory.legendAdded: 9f3353f2afb18cd71d190c21d8e6a6c1
+    noteHistory.sameAsNow: 48c83ecbd3d336330d1713cfc77a1c7e
+    noteHistory.tooLarge: a72d8a3f778bc77ed91dd752e3ba1e2c
+    noteHistory.unchangedLines: d99a513264708e7f2f8c8fb26b706c33
+    noteHistory.restore: 5b66e3c9d6ff3f461c58d8b198dbff66
+    noteHistory.restoring: b983279a728d2b9e7b96078c6ea58d28
+    noteHistory.restored: 9a78cc68ad5b2acf7560ea6276e89f45
+    noteHistory.unchanged: dcb5a86dd235af1801bc540540a0e1e2
+    noteHistory.restoreFailed: b6a4c794c910ff8516ed9c71e65447c3
+    noteHistory.viewOnly: 44018663db990b69d1b1a18454cc29bb
     editor.toolbar.exportPdf: 7a39acf8742a59d1a4f7ae064b6219a0
     editor.toolbar.moreActions: 89e19353176b94068dec4c768c25e70b
     editor.toolbar.openProperties: 948b90b60b8ce827f179e8c5b85b112e
