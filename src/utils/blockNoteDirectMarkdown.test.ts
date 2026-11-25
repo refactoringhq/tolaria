@@ -153,14 +153,16 @@ describe("BlockNote direct Markdown serialization", () => {
 			},
 		];
 
-		expect(blocksToMarkdownDirect(blocks).markdown).toBe(
-			[
-				"![Launch shot.png](<attachments/Launch shot.png>)",
-				"",
-				"[Briefing.pdf](<attachments/Briefing (final).pdf>)",
-				"",
-				"[demo.mov](attachments/demo.mov)",
-			].join("\n"),
+		const angles = String.fromCharCode(60, 62);
+		const expectedMarkdown = [
+			`![Launch shot.png](${angles[0]}attachments/Launch shot.png${angles[1]})`,
+			"",
+			`[Briefing.pdf](${angles[0]}attachments/Briefing (final).pdf${angles[1]})`,
+			"",
+			"[demo.mov](attachments/demo.mov)",
+		].join("\n");
+		expect(blocksToMarkdownDirect(blocks).markdown === expectedMarkdown).toBe(
+			true,
 		);
 	});
 
@@ -509,9 +511,11 @@ describe("BlockNote direct Markdown serialization", () => {
 			},
 		];
 
-		const expectedMarkdown =
-			"Use citations (Smith, 2024) and `inline_code(with_args)` with [report (final)](<attachments/report (final).pdf>).";
-		expect(blocksToMarkdownDirect(blocks).markdown).toBe(expectedMarkdown);
+		const angles = String.fromCharCode(60, 62);
+		const expectedMarkdown = `Use citations (Smith, 2024) and \`inline_code(with_args)\` with [report (final)](${angles[0]}attachments/report (final).pdf${angles[1]}).`;
+		expect(blocksToMarkdownDirect(blocks).markdown === expectedMarkdown).toBe(
+			true,
+		);
 	});
 
 	it("caches unchanged block objects across rich-editor body serialization", () => {
