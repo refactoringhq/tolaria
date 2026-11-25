@@ -22,28 +22,71 @@ const VIEWS = [
 
 test.describe.configure({ retries: 0 });
 
-async function moveHeronOnPhone(
+async function dispatchTouchPointer(
+	page: Page,
+	type: "pointerdown" | "pointermove" | "pointerup",
+	point: { x: number; y: number },
+): Promise<void> {
+	await page.evaluate(
+		({ pointerType, x, y }) => {
+			const event = new PointerEvent(pointerType, {
+				bubbles: true,
+				cancelable: true,
+				pointerId: 1,
+				pointerType: "touch",
+				isPrimary: true,
+				button: 0,
+				buttons: pointerType === "pointerup" ? 0 : 1,
+				clientX: x,
+				clientY: y,
+			});
+			const target =
+				pointerType === "pointerdown"
+					? document.elementFromPoint(x, y)
+					: document;
+			target?.dispatchEvent(event);
+		},
+		{ pointerType: type, ...point },
+	);
+}
+
+async function moveTouchPointer(
+	page: Page,
+	start: { x: number; y: number },
+	end: { x: number; y: number },
+	steps: number,
+): Promise<void> {
+	for (let step = 1; step <= steps; step++) {
+		await dispatchTouchPointer(page, "pointermove", {
+			x: start.x + ((end.x - start.x) * step) / steps,
+			y: start.y + ((end.y - start.y) * step) / steps,
+		});
+		await page.waitForTimeout(16);
+	}
+}
+
+async function moveHeronOnTouchViewport(
 	page: Page,
 	card: ReturnType<Page["getByTestId"]>,
 	column: ReturnType<Page["getByTestId"]>,
 	start: { x: number; y: number },
 ): Promise<void> {
-	await page.mouse.move(start.x, start.y);
-	await page.mouse.down();
-	await page.mouse.move(start.x + 12, start.y, { steps: 3 });
+	await dispatchTouchPointer(page, "pointerdown", start);
+	await page.waitForTimeout(40);
+	await moveTouchPointer(page, start, { x: start.x + 12, y: start.y }, 3);
 	await expect(card).toHaveClass(/kanban-card-slot--placeholder/);
 	await page.getByTestId("kanban-board").evaluate((board) => {
 		board.scrollLeft = board.scrollWidth;
 	});
 	const target = await column.boundingBox();
 	if (!target) throw new Error("Kanban target did not scroll into view");
-	await page.mouse.move(
-		target.x + Math.min(target.width / 2, 100),
-		target.y + 100,
-		{ steps: 12 },
-	);
+	const end = {
+		x: target.x + Math.min(target.width / 2, 100),
+		y: target.y + 100,
+	};
+	await moveTouchPointer(page, start, end, 12);
 	await expect(column).toHaveClass(/kanban-column--target/);
-	await page.mouse.up();
+	await dispatchTouchPointer(page, "pointerup", end);
 }
 
 async function moveHeronToNoStatus(
@@ -62,8 +105,8 @@ async function moveHeronToNoStatus(
 	if (!from || !to) throw new Error("Kanban drag targets are not visible");
 	const start = { x: from.x + from.width / 2, y: from.y + from.height / 2 };
 	const end = { x: to.x + to.width / 2, y: to.y + 100 };
-	if (testInfo.project.name === "iphone-15") {
-		await moveHeronOnPhone(page, card, column, start);
+	if (testInfo.project.name !== "chromium") {
+		await moveHeronOnTouchViewport(page, card, column, start);
 		return;
 	}
 	await page.mouse.move(start.x, start.y);
@@ -134,8 +177,10 @@ async function expectNotesInLayout(
 	const surface = page.getByTestId(view.surface);
 	const names = ["Welcome", "Heron", "Ada"];
 	if (view.name === "graph") {
-		const labels = surface.getByTestId("graph-labels");
-		for (const name of names) await expect(labels).toContainText(name);
+		await page.getByTestId("graph-zoom-fit").click();
+		const labels = surface.getByTestId("graph-label");
+		for (const name of names)
+			await expect(labels.filter({ hasText: name })).toBeVisible();
 		return;
 	}
 	for (const name of names)
