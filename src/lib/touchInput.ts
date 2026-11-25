@@ -58,6 +58,12 @@ function movedTooFar(press: Press, event: PointerEvent): boolean {
 	);
 }
 
+/** A pending press whose finger moved off: the user is scrolling, so no menu opens. */
+function isScrollingAway(press: Press, event: PointerEvent): boolean {
+	if (press.opened || press.pointerId !== event.pointerId) return false;
+	return movedTooFar(press, event);
+}
+
 function openContextMenu(press: Press): void {
 	const event = new MouseEvent("contextmenu", {
 		bubbles: true,
@@ -129,13 +135,7 @@ function installLongPress(win: Window, onOpen: LongPressListener): () => void {
 		};
 	};
 	const handlePointerMove = (event: PointerEvent) => {
-		if (
-			press &&
-			!press.opened &&
-			press.pointerId === event.pointerId &&
-			movedTooFar(press, event)
-		)
-			cancel();
+		if (press && isScrollingAway(press, event)) cancel();
 	};
 	const handlePointerEnd = (event: PointerEvent) => {
 		if (press?.pointerId !== event.pointerId) return;
