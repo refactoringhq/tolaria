@@ -29,6 +29,8 @@ const UNREACHABLE_URL = 'https://10.255.255.1/unreachable.git'
 const POLL_MS = 250
 const VISIBLE_TIMEOUT_MS = 120_000
 const PAUSE_BETWEEN_SAVES_MS = 300
+/** The bench only ever sends saves to its own server, which listens on loopback. */
+const LOOPBACK_HOSTS = new Set(['127.0.0.1', '[::1]', 'localhost'])
 
 interface BenchTarget {
   remoteUrl: string
@@ -62,14 +64,18 @@ interface Edit {
   etag: string | null
 }
 
+/** Sends `edit` to `url`, refusing anything but the bench's own server on loopback. */
+async function putNote(url: URL, { body, etag }: Edit): Promise<Response> {
+  if (LOOPBACK_HOSTS.has(url.hostname)) {
+    return fetch(url, { method: 'PUT', body, headers: { authorization: `Bearer ${TOKEN}`, 'if-match': etag ?? '*' } })
+  }
+  throw new Error(`the bench saves only to its own server on loopback, not ${url.host}`)
+}
+
 /** One PUT of the note, to the bench's own server on loopback. */
 async function save({ session, edit: { body, etag } }: { session: Session; edit: Edit }): Promise<Ack> {
   const started = performance.now()
-  const response = await fetch(new URL(`${ROUTES.files}/${NOTE}`, session.base), {
-    method: 'PUT',
-    body,
-    headers: { authorization: `Bearer ${TOKEN}`, 'if-match': etag ?? '*' },
-  })
+  const response = await putNote(new URL(`${ROUTES.files}/${NOTE}`, session.base), { body, etag })
   const reply = (await response.json()) as { commit?: string }
   const ms = performance.now() - started
   const serverMs = [...(response.headers.get('server-timing') ?? '').matchAll(/dur=([\d.]+)/g)].reduce((sum, match) => sum + Number(match[1]), 0)
