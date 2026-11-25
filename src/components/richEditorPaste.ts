@@ -1,5 +1,6 @@
 import { trackEvent } from '../lib/telemetry'
 import { injectLinkedCodeInBlocks, preProcessLinkedCodeMarkdown } from '../utils/linkedCodeMarkdown'
+import { bareHttpUrl, pastedUrlLinkContent } from '../utils/pastedUrlLink'
 import { clipboardRemoteImages, type RemoteImageImportResult } from '../utils/remoteImagePaste'
 import { createTolariaCodeBlockOptions } from './codeBlockOptions'
 import {
@@ -92,7 +93,6 @@ const SUFFIX_GLOB_ASTERISK_RE = /(?:^|\s)[\w./-]+\*(?=\s|$)/u
 const MARKDOWN_BLOCK_SIGNAL_RE = /^(?: {0,3}#{1,6}| {0,3}>| {0,3}(?:[-+*]|\d+[.)]))[ \t]+\S/mu
 const MARKDOWN_REFERENCE_LINK_RE = /\[[^\]\n]+\]\[[^\]\n]+\]/u
 const LONG_MARKDOWN_STRONG_RE = /(\*\*|__)(?!\s)[\s\S]{1,2000}?\S\1/u
-const LINK_PASTE_PROTOCOLS = new Set(['http:', 'https:'])
 
 type RichPasteHandlerOptions = {
   canApply?: () => boolean
@@ -391,14 +391,7 @@ function insertLinkedCodeMarkdown(
 function plainHttpLinkUrl(clipboardData: DataTransfer): string | null {
   if (hasExplicitMarkdownPayload(clipboardData) || clipboardWebMarkup(clipboardData).value) return null
 
-  const plainText = clipboardData.getData('text/plain')
-  if (!plainText || plainText !== plainText.trim()) return null
-
-  try {
-    return LINK_PASTE_PROTOCOLS.has(new URL(plainText).protocol) ? plainText : null
-  } catch {
-    return null
-  }
+  return bareHttpUrl({ text: clipboardData.getData('text/plain') })
 }
 
 function editorHasSelectedText(editor: RichPasteEditor): boolean {
@@ -424,12 +417,31 @@ function linkSelectedTextFromPaste(
   return true
 }
 
+function insertPastedUrlAsLink(
+  clipboardData: DataTransfer | null,
+  editor: RichPasteEditor,
+): boolean {
+  if (!clipboardData || !editor.insertInlineContent || editorHasSelectedText(editor)) return false
+  if (editor.getTextCursorPosition?.().block?.type === 'codeBlock') return false
+
+  const url = plainHttpLinkUrl(clipboardData)
+  if (!url) return false
+
+  const insertInlineContent = editor.insertInlineContent as unknown as (
+    content: unknown[],
+    options?: { updateSelection?: boolean },
+  ) => void
+  insertInlineContent.call(editor, pastedUrlLinkContent(url), { updateSelection: true })
+  return true
+}
+
 export function handleRichEditorPaste({
   defaultPasteHandler,
   editor,
   event,
 }: RichEditorPasteContext): boolean | undefined {
   if (linkSelectedTextFromPaste(event.clipboardData, editor)) return true
+  if (insertPastedUrlAsLink(event.clipboardData, editor)) return true
   if (pasteCodeBlocks(editor, event.clipboardData)) return true
 
   if (insertLinkedCodeMarkdown(editor, event.clipboardData)) return true

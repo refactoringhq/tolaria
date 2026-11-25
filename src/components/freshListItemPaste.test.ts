@@ -59,6 +59,30 @@ describe("handleFreshListItemPlainTextPaste", () => {
 		document.body.innerHTML = "";
 	});
 
+	it.each(["bulletListItem", "checkListItem"])(
+		"inserts a pasted bare URL as a link in an empty %s",
+		(targetType) => {
+			const url = "https://example.com/docs?a=1&b=2";
+			const { editor, event, runEditorAction } = makePasteFixture({
+				text: url,
+				targetType,
+			});
+
+			expect(
+				handleFreshListItemPlainTextPaste({
+					editable: true,
+					editor,
+					event,
+					runEditorAction,
+				}),
+			).toBe(true);
+			expect(editor.insertInlineContent).toHaveBeenCalledWith(
+				[{ type: "link", href: url, content: url }],
+				{ updateSelection: true },
+			);
+		},
+	);
+
 	it("builds the editor paste handler without unsupported Safari lookbehind", async () => {
 		const BrowserUint8Array = globalThis.Uint8Array;
 		globalThis.Uint8Array = new TextEncoder().encode("")
