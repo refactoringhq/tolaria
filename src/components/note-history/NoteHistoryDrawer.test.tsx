@@ -19,7 +19,7 @@ const RESTORED: NoteCheckpoint = { id: 'c'.repeat(40), time: '2026-11-25T20:41:0
 interface ServerState {
   checkpoints: NoteCheckpoint[]
   content: string
-  versions: Record<string, string>
+  versions: Map<string, string>
   failList?: boolean
   failRestore?: boolean
 }
@@ -36,21 +36,21 @@ function answer(url: string, init: RequestInit = {}): Response {
 }
 
 function historyAnswer(checkpoint: string | null): Response {
-  if (checkpoint) return new Response(server.versions[checkpoint])
+  if (checkpoint) return new Response(server.versions.get(checkpoint))
   if (server.failList) return Response.json({ error: { code: 'internal' } }, { status: 500 })
   return Response.json({ path: NOTE, checkpoints: server.checkpoints })
 }
 
 function restoreAnswer({ checkpoint }: { checkpoint: string }): Response {
   if (server.failRestore) return Response.json({ error: { code: 'internal' } }, { status: 500 })
-  const content = server.versions[checkpoint]
+  const content = server.versions.get(checkpoint) ?? ''
   if (content === server.content) return Response.json({ outcome: 'unchanged', path: NOTE })
-  server = { ...server, content, checkpoints: [RESTORED, ...server.checkpoints], versions: { ...server.versions, [RESTORED.id]: content } }
+  server = { ...server, content, checkpoints: [RESTORED, ...server.checkpoints], versions: new Map([...server.versions, [RESTORED.id, content]]) }
   return Response.json({ outcome: 'updated', path: NOTE })
 }
 
 beforeEach(() => {
-  server = { checkpoints: [LATEST, EARLIER], content: NOW, versions: { [LATEST.id]: NOW, [EARLIER.id]: FIRST } }
+  server = { checkpoints: [LATEST, EARLIER], content: NOW, versions: new Map([[LATEST.id, NOW], [EARLIER.id, FIRST]]) }
   Object.assign(window as RemoteWindow, { TOLARIA_REMOTE_URL: 'https://vault.test', TOLARIA_REMOTE_TOKEN: 'token' })
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => answer(String(input), init)))
   resetVaultAccessForTests()
@@ -119,7 +119,7 @@ describe('NoteHistoryDrawer', () => {
   })
 
   it('tells the user when the note already had that content', async () => {
-    server.versions[EARLIER.id] = NOW
+    server.versions.set(EARLIER.id, NOW)
     openDrawer()
     fireEvent.click((await checkpointRows())[1])
     await screen.findByText('This version is the same as the note now.')
@@ -130,7 +130,7 @@ describe('NoteHistoryDrawer', () => {
   })
 
   it('does not compare a version too large to show, but still restores it', async () => {
-    server.versions[EARLIER.id] = `${'x'.repeat(400_001)}\n`
+    server.versions.set(EARLIER.id, `${'x'.repeat(400_001)}\n`)
     openDrawer()
     fireEvent.click((await checkpointRows())[1])
 

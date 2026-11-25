@@ -60,7 +60,7 @@ export function isComparable({ from, to }: NoteVersions): boolean {
 function linesOf(text: string): string[] {
   if (text === '') return []
   const lines = text.replace(/\r\n/g, '\n').split('\n')
-  if (lines[lines.length - 1] === '') lines.pop()
+  if (lines.at(-1) === '') lines.pop()
   return lines
 }
 
@@ -70,26 +70,59 @@ const added = (text: string): DiffLine => ({ kind: 'added', text })
 
 function sharedPrefixLength({ from, to }: Sides): number {
   let length = 0
-  while (length < from.length && length < to.length && from[length] === to[length]) length += 1
+  while (length < from.length && length < to.length && from.at(length) === to.at(length)) length += 1
   return length
 }
 
 function sharedSuffixLength({ from, to }: Sides, prefix: number): number {
   let length = 0
   const fits = () => from.length - length > prefix && to.length - length > prefix
-  while (fits() && from[from.length - 1 - length] === to[to.length - 1 - length]) length += 1
+  while (fits() && from.at(-1 - length) === to.at(-1 - length)) length += 1
   return length
 }
 
-/** `table[i][j]`: length of the longest common subsequence of `from[i..]` and `to[j..]`. */
-function commonSubsequenceTable({ from, to }: Sides): Uint32Array[] {
+type Table = Uint32Array[]
+
+/** A position in both versions: line `i` of `from` and line `j` of `to`. */
+interface Cursor {
+  i: number
+  j: number
+}
+
+/** Length of the longest common subsequence of `from[i..]` and `to[j..]`. */
+function lcsLength(table: Table, { i, j }: Cursor): number {
+  return table.at(i)?.at(j) ?? 0
+}
+
+function commonSubsequenceTable({ from, to }: Sides): Table {
   const table = Array.from({ length: from.length + 1 }, () => new Uint32Array(to.length + 1))
   for (let i = from.length - 1; i >= 0; i -= 1) {
+    const row = table.at(i)
     for (let j = to.length - 1; j >= 0; j -= 1) {
-      table[i][j] = from[i] === to[j] ? table[i + 1][j + 1] + 1 : Math.max(table[i + 1][j], table[i][j + 1])
+      const length = from.at(i) === to.at(j)
+        ? lcsLength(table, { i: i + 1, j: j + 1 }) + 1
+        : Math.max(lcsLength(table, { i: i + 1, j }), lcsLength(table, { i, j: j + 1 }))
+      row?.fill(length, j, j + 1)
     }
   }
   return table
+}
+
+/** The diff line at `at`, moving `at` past it. */
+function nextLine(sides: Sides, table: Table, at: Cursor): DiffLine {
+  const fromLine = sides.from.at(at.i) ?? ''
+  const toLine = sides.to.at(at.j) ?? ''
+  if (fromLine === toLine) {
+    at.i += 1
+    at.j += 1
+    return same(fromLine)
+  }
+  if (lcsLength(table, { i: at.i + 1, j: at.j }) >= lcsLength(table, { i: at.i, j: at.j + 1 })) {
+    at.i += 1
+    return removed(fromLine)
+  }
+  at.j += 1
+  return added(toLine)
 }
 
 function middleDiff(sides: Sides): DiffLine[] {
@@ -97,22 +130,9 @@ function middleDiff(sides: Sides): DiffLine[] {
   if ((from.length + 1) * (to.length + 1) > MAX_TABLE_CELLS) return [...from.map(removed), ...to.map(added)]
   const table = commonSubsequenceTable(sides)
   const result: DiffLine[] = []
-  let i = 0
-  let j = 0
-  while (i < from.length && j < to.length) {
-    if (from[i] === to[j]) {
-      result.push(same(from[i]))
-      i += 1
-      j += 1
-    } else if (table[i + 1][j] >= table[i][j + 1]) {
-      result.push(removed(from[i]))
-      i += 1
-    } else {
-      result.push(added(to[j]))
-      j += 1
-    }
-  }
-  return [...result, ...from.slice(i).map(removed), ...to.slice(j).map(added)]
+  const at: Cursor = { i: 0, j: 0 }
+  while (at.i < from.length && at.j < to.length) result.push(nextLine(sides, table, at))
+  return [...result, ...from.slice(at.i).map(removed), ...to.slice(at.j).map(added)]
 }
 
 /** The lines of both versions in order, each marked as in both, only removed, or only added. */
@@ -134,8 +154,7 @@ function visibleSame(diff: DiffLine[], context: number): boolean[] {
   const visible = diff.map((line) => line.kind !== 'same')
   diff.forEach((line, index) => {
     if (line.kind === 'same') return
-    const start = Math.max(0, index - context)
-    for (let near = start; near <= Math.min(diff.length - 1, index + context); near += 1) visible[near] = true
+    visible.fill(true, Math.max(0, index - context), index + context + 1)
   })
   return visible
 }
@@ -153,7 +172,7 @@ export function diffRows(diff: DiffLine[], context = DEFAULT_CONTEXT_LINES): Dif
   const rows: DiffRow[] = []
   let hidden: DiffLine[] = []
   diff.forEach((line, index) => {
-    if (!visible[index]) {
+    if (!visible.at(index)) {
       hidden.push(line)
       return
     }
