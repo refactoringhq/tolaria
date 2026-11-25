@@ -2,7 +2,7 @@
 // No runtime dependencies and no Node or DOM APIs: the server and the web client import it as-is.
 
 /** `major.minor`. Minor versions only add; a different major is a different protocol. */
-export const PROTOCOL_VERSION = '1.10'
+export const PROTOCOL_VERSION = '1.11'
 export const PROTOCOL_MAJOR = 1
 /** Sent by the server on every response; clients may send it to assert the major they speak. */
 export const PROTOCOL_HEADER = 'tolaria-protocol-version'
@@ -35,6 +35,10 @@ export const ROUTES = {
   attachmentImports: `${API_PREFIX}/attachments/imports`,
   /** Withdraws access a subject's access tickets gave, open connections included; owner only (since 1.9). */
   accessRevocations: `${API_PREFIX}/access/revocations`,
+  /** `${history}/<path>`: the checkpoints of one note, or one checkpoint's content (since 1.11). */
+  history: `${API_PREFIX}/history`,
+  /** Puts a checkpoint's content back into its note as a new checkpoint (since 1.11). */
+  restore: `${API_PREFIX}/restore`,
 } as const
 
 /**
@@ -172,6 +176,37 @@ export interface AccessRevocationResult {
   closed: number
 }
 
+/** Query parameter of `GET /v1/history/<path>` that asks for one checkpoint's content (since 1.11). */
+export const HISTORY_CHECKPOINT_PARAM = 'checkpoint'
+
+/**
+ * One saved version of a note (since 1.11). `id` is opaque: a git commit id today, whatever
+ * the store names a version tomorrow. Clients never parse it, only send it back.
+ */
+export interface NoteCheckpoint {
+  id: string
+  /** ISO 8601 time the checkpoint was made. */
+  time: string
+  /** Who made it: the co-author named in the change, else the committer's name. */
+  author: string
+  /** What the store says the change was, for example `Update notes/a.md`. */
+  message: string
+}
+
+/** `GET /v1/history/<path>`: newest first, at most `HISTORY_MAX_CHECKPOINTS`. */
+export interface NoteHistoryResponse {
+  path: string
+  checkpoints: NoteCheckpoint[]
+}
+
+export const HISTORY_MAX_CHECKPOINTS = 100
+
+/** Body of `POST /v1/restore`; the answer is a `WriteResult`. */
+export interface RestoreRequest {
+  path: string
+  checkpoint: string
+}
+
 export const FILE_CAPABILITIES = [
   'files.read',
   'files.write',
@@ -191,6 +226,8 @@ export const FILE_CAPABILITIES = [
   'folders.delete',
   'access.tickets',
   'access.authors',
+  'history.read',
+  'history.restore',
 ] as const
 /** Advertised only by servers that serve the collaboration channel. */
 export const COLLAB_CAPABILITIES = ['collab.yjs', 'collab.awareness', 'collab.tickets'] as const

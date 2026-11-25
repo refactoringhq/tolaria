@@ -1,8 +1,8 @@
-# Tolaria remote protocol, version 1.9
+# Tolaria remote protocol, version 1.11
 
 The HTTP protocol between a Tolaria client and a server that hosts one vault as a git repository. It is written so that anyone can implement a compatible server (self-hosting) or client. The reference implementation is `apps/server`; the wire types are in `packages/protocol/src/index.ts` and are the source of truth when this document and the code disagree.
 
-Status: spikes S3 (TOL-5) and S4 (TOL-8). The file API and the collaboration channel below are implemented and tested. Version 1.1 added the collaboration channel; it changed nothing in the file API of 1.0. Version 1.2 added the change feed (`GET /v1/changes`); it changed nothing in 1.1's file or collaboration API. Version 1.3 added remote image import (`POST /v1/attachments/imports`) and the `remote_unavailable` error code; it changed nothing else. Version 1.4 added the wikilink rewrite of `POST /v1/rename` (`rewriteLinks`, `title`, `oldTitle`); a rename without them works as in 1.0. Version 1.5 changed which side of a collaboration fork becomes the conflict copy: the live document keeps its edits and `meta.conflictCopy` names the copy of the incoming file (see "What the server does with a document"); nothing else changed. Version 1.6 added rate limits and websocket limits: the `rate_limited` error code with `Retry-After`, the `429` refusal of a websocket upgrade, and the `4408` close code of an idle connection (see "Limits"); a client within the limits sees no change. Version 1.7 added folder renames (`POST /v1/folders/rename`, capability `folders.rename`); nothing else changed. Version 1.8 added creating and deleting folders (`POST /v1/folders`, capability `folders.create`; `POST /v1/folders/delete`, capability `folders.delete`); nothing else changed. Version 1.9 added access tickets (capability `access.tickets`, see "Access tickets"): a front end that holds the token gives other users a role on the vault or on single notes, the `forbidden` error code, `POST /v1/access/revocations`, the `4403` close code, and `access` in `GET /v1/vault`; a client with the token sees no change. Version 1.10 added the optional `author` of an access ticket (capability `access.authors`): the commits a subject's changes cause name it in a `Co-authored-by` trailer; a ticket without it, and the token, see no change.
+Status: spikes S3 (TOL-5) and S4 (TOL-8). The file API and the collaboration channel below are implemented and tested. Version 1.1 added the collaboration channel; it changed nothing in the file API of 1.0. Version 1.2 added the change feed (`GET /v1/changes`); it changed nothing in 1.1's file or collaboration API. Version 1.3 added remote image import (`POST /v1/attachments/imports`) and the `remote_unavailable` error code; it changed nothing else. Version 1.4 added the wikilink rewrite of `POST /v1/rename` (`rewriteLinks`, `title`, `oldTitle`); a rename without them works as in 1.0. Version 1.5 changed which side of a collaboration fork becomes the conflict copy: the live document keeps its edits and `meta.conflictCopy` names the copy of the incoming file (see "What the server does with a document"); nothing else changed. Version 1.6 added rate limits and websocket limits: the `rate_limited` error code with `Retry-After`, the `429` refusal of a websocket upgrade, and the `4408` close code of an idle connection (see "Limits"); a client within the limits sees no change. Version 1.7 added folder renames (`POST /v1/folders/rename`, capability `folders.rename`); nothing else changed. Version 1.8 added creating and deleting folders (`POST /v1/folders`, capability `folders.create`; `POST /v1/folders/delete`, capability `folders.delete`); nothing else changed. Version 1.9 added access tickets (capability `access.tickets`, see "Access tickets"): a front end that holds the token gives other users a role on the vault or on single notes, the `forbidden` error code, `POST /v1/access/revocations`, the `4403` close code, and `access` in `GET /v1/vault`; a client with the token sees no change. Version 1.10 added the optional `author` of an access ticket (capability `access.authors`): the commits a subject's changes cause name it in a `Co-authored-by` trailer; a ticket without it, and the token, see no change. Version 1.11 added note history (capabilities `history.read` and `history.restore`, `GET /v1/history/<path>` and `POST /v1/restore`); nothing else changed.
 
 ## Design rules
 
@@ -43,6 +43,8 @@ Capabilities:
 | `collab.tickets` | `POST /v1/collab/tickets` issues websocket tickets (since 1.1). |
 | `access.tickets` | Access tickets are accepted as the bearer credential and `POST /v1/access/revocations` is served (since 1.9). |
 | `access.authors` | The `author` of an access ticket is named in the commits its subject's changes cause (since 1.10). |
+| `history.read` | `GET /v1/history/<path>` lists a note's checkpoints and serves one checkpoint's content (since 1.11). |
+| `history.restore` | `POST /v1/restore` puts a checkpoint's content back into its note as a new checkpoint (since 1.11). |
 
 ## Authentication and transport
 
@@ -393,6 +395,38 @@ The URL comes from a client, so the server refuses anything that is not a public
 - At most 15 MB (`413 payload_too_large`) and 15 seconds in total (`502 remote_unavailable`).
 
 Attachments are read and written through the file routes with the bearer token like every other file. The web client shows them through object URLs, because an `<img>` cannot send the token.
+
+### `GET /v1/history/<path>` (since 1.11)
+
+The checkpoints of a note, newest first, at most 100. A checkpoint is a saved version of the note; on a git-backed server it is a commit that changed the note's file. Only notes (`.md`) have a history (`400 invalid_request` otherwise). The caller needs read access to the note.
+
+```json
+{
+  "path": "projects/alpha.md",
+  "checkpoints": [
+    { "id": "4f1c…", "time": "2026-11-25T20:42:19+00:00", "author": "Ana", "message": "Update projects/alpha.md" }
+  ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `id` | Opaque. Clients never parse it; they send it back to read or restore the checkpoint. A git-backed server uses the full commit id; another store may use anything else. |
+| `time` | ISO 8601 time the checkpoint was made. |
+| `author` | Who made it: the first co-author the change names (see "Attribution in git"), else the committer's name. |
+| `message` | What the store says the change was. |
+
+`GET /v1/history/<path>?checkpoint=<id>` answers the note's bytes at that checkpoint (`200`, `text/markdown`), `404 not_found` where the note did not exist then, and `400 invalid_request` for an id that is not one of this server's checkpoint ids.
+
+### `POST /v1/restore` (since 1.11)
+
+Puts a checkpoint's content back into its note. Nothing is reset: the restore is a new checkpoint on top of the history, so every later checkpoint stays listed and readable, and a note deleted since comes back. It overwrites whatever the note holds (like `If-Match: *`), which the history keeps. The caller needs write access to the note (`403 forbidden` for a viewer).
+
+```json
+{ "path": "projects/alpha.md", "checkpoint": "4f1c…" }
+```
+
+The answer is the `WriteResult` of the note: `200` with `outcome: "updated"`, `201` with `"created"` for a note that had been deleted, and `200` with `"unchanged"` (no new checkpoint) when the note already had that content. An open collaborative document of the note takes the restored content the way it takes any commit (see "What the server does with a document").
 
 ## How the server keeps git consistent
 

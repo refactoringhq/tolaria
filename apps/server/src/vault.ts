@@ -6,6 +6,7 @@ import type {
   FolderDeleteResult,
   FolderRenameResult,
   ListResponse,
+  NoteCheckpoint,
   RenameResult,
   SearchResponse,
   SyncResult,
@@ -19,6 +20,7 @@ import { GitSync, type VaultChange } from './gitSync.ts'
 import { blobEtag, conflictCopyPath, type VaultPath } from './paths.ts'
 import { type StagedFolderChange, stageFolderCreate, stageFolderDelete } from './folderLifecycle.ts'
 import { FolderRenameTransaction } from './folderRenameTransaction.ts'
+import { checkpointsOf, contentAt, restoreMessage } from './noteHistory.ts'
 import { type RenameOptions, RenameTransaction } from './renameTransaction.ts'
 import { searchVault } from './search.ts'
 import { type MirrorTiming, RemoteMirror, type VaultEvent } from './remoteMirror.ts'
@@ -80,6 +82,8 @@ interface PendingWrite {
   bytes: Uint8Array
   precondition: WritePrecondition
   coAuthors: readonly CoAuthor[]
+  /** The commit message, instead of the one the outcome gives. */
+  message?: string
 }
 
 interface PullClock {
@@ -122,9 +126,9 @@ export function writeOutcome(
   return current === null ? createOutcome(precondition) : overwriteOutcome(current, precondition)
 }
 
-function commitMessage(outcome: WriteOutcome, path: VaultPath): string {
+function commitMessage(outcome: WriteOutcome, { path, message }: PendingWrite): string {
   if (outcome === 'conflict') return `Conflict copy of ${path}`
-  return `${outcome === 'updated' ? 'Update' : 'Create'} ${path}`
+  return message ?? `${outcome === 'updated' ? 'Update' : 'Create'} ${path}`
 }
 
 /** The paths a change touches, for the change feed. */
@@ -221,11 +225,36 @@ export class Vault {
   }
 
   write(path: VaultPath, bytes: Uint8Array, precondition: WritePrecondition, coAuthors: CommitCoAuthors = []): Promise<TimedWriteResult> {
+    return this.writePending({ path, bytes, precondition, coAuthors })
+  }
+
+  private writePending(pending: PendingWrite): Promise<TimedWriteResult> {
     return this.locked(async () => {
       const started = performance.now()
       await this.catchUp()
-      return this.storeAndPush({ path, bytes, precondition, coAuthors }, { started, pulled: performance.now() })
+      return this.storeAndPush(pending, { started, pulled: performance.now() })
     })
+  }
+
+  /** The checkpoints of a note, newest first (see `noteHistory.ts`). */
+  history(path: VaultPath, limit: number): Promise<NoteCheckpoint[]> {
+    return checkpointsOf(this.repo, path, limit)
+  }
+
+  /** A note's content at one of its checkpoints; null where the note did not exist then. */
+  readAt(path: VaultPath, checkpoint: string): Promise<Buffer | null> {
+    return contentAt(this.repo, path, checkpoint)
+  }
+
+  /**
+   * Puts a checkpoint's content back into the note as a new commit. Nothing is reset: the
+   * checkpoints after it stay in the history, and a deleted note comes back.
+   */
+  async restore(path: VaultPath, checkpoint: string, coAuthors: CommitCoAuthors = []): Promise<TimedWriteResult> {
+    const bytes = await this.readAt(path, checkpoint)
+    if (!bytes) throw notFound(path)
+    const message = restoreMessage(path, checkpoint)
+    return this.writePending({ path, bytes, precondition: { kind: 'any' }, coAuthors, message })
   }
 
   /**
@@ -405,13 +434,14 @@ export class Vault {
   }
 
   /** Writes and commits the bytes where the precondition allows: the path or a conflict copy. */
-  private async store({ path, bytes, precondition, coAuthors }: PendingWrite): Promise<Placement> {
+  private async store(pending: PendingWrite): Promise<Placement> {
+    const { path, bytes, precondition, coAuthors } = pending
     const current = await this.repo.readIfExists(path)
     if (!current && this.repo.exists(path)) throw new VaultError(409, 'destination_exists', `${path} is a folder`)
     const outcome = writeOutcome(current ? blobEtag(current) : null, blobEtag(bytes), precondition)
     if (outcome === 'unchanged') return { outcome, path }
     const target = outcome === 'conflict' ? this.conflictPath(path) : path
-    await this.repo.commitFile(target, bytes, commitMessage(outcome, path), coAuthors)
+    await this.repo.commitFile(target, bytes, commitMessage(outcome, pending), coAuthors)
     await this.emit([{ kind: 'upsert', path: target }])
     return { outcome, path: target }
   }
