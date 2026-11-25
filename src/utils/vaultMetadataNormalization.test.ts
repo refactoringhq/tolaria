@@ -18,6 +18,22 @@ describe("normalizeVaultEntries", () => {
 		expect(entries[0]?.status).toBe("");
 	});
 
+	it("preserves intentional whitespace in status values", () => {
+		const entries = normalizeVaultEntries(
+			[
+				{
+					path: "/vault/spaced-status.md",
+					filename: "spaced-status.md",
+					title: "Spaced status",
+					status: "  In progress ",
+				},
+			],
+			"/vault",
+		);
+
+		expect(entries[0]?.status).toBe("  In progress ");
+	});
+
 	it("repairs missing string metadata when the entry path is present", () => {
 		const entries = normalizeVaultEntries(
 			[

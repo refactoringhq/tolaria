@@ -178,7 +178,7 @@ function normalizeEntryMetadata(source: UnknownRecord): Partial<VaultEntry> {
 		aliases: stringArrayFrom(source.aliases),
 		belongsTo: stringArrayFrom(source.belongsTo),
 		relatedTo: stringArrayFrom(source.relatedTo),
-		status: typeof source.status === "string" ? source.status.trim() : null,
+		status: typeof source.status === "string" ? source.status : null,
 		archived: booleanFrom(source.archived),
 		modifiedAt: nullableNumberFrom(source.modifiedAt),
 		createdAt: nullableNumberFrom(source.createdAt),
