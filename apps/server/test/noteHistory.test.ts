@@ -43,9 +43,25 @@ afterEach(async () => {
   await fixture.cleanup()
 })
 
+interface Call {
+  path: string
+  init: RequestInit
+}
+
+/** The only host these tests may call: the server they started on loopback. */
+const LOOPBACK_HOSTS = new Set(['127.0.0.1'])
+
+function call({ path, init }: Call): Promise<Response> {
+  const url = new URL(path, base)
+  if (LOOPBACK_HOSTS.has(url.hostname)) {
+    return fetch(url, init)
+  }
+  throw new Error(`the history tests only call the local test server, not ${url.host}`)
+}
+
 function as(credential: string, path: string, init: RequestInit = {}): Promise<Response> {
   const headers = { ...bearer(credential), ...(init.headers as Record<string, string>) }
-  return fetch(new URL(path, base), { ...init, headers })
+  return call({ path, init: { ...init, headers } })
 }
 
 interface Edit {
