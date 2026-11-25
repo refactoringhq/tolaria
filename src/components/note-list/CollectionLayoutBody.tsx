@@ -98,7 +98,7 @@ function rendererProps(
 			onToggleColumnHidden: layout.toggleColumnHidden,
 			onMove: (entry, value) => {
 				if (isWritableGroupKey(layout.groupBy, layout.groups))
-					onMove(entry, layout.groupBy, value);
+					onMove(entry, layout.groupBy, value ?? "");
 			},
 		},
 		calendar: calendarBindings({

@@ -57,6 +57,13 @@ describe("updateFrontmatterContent matches the desktop writer byte for byte", ()
 });
 
 describe("updateFrontmatterContent beyond the golden cases", () => {
+	it("round-trips an explicit empty string instead of YAML null", () => {
+		const written = updateFrontmatterContent("", "status", "");
+
+		expect(written).toBe('---\nstatus: ""\n---\n');
+		expect(parseFrontmatter(written).status).toBe("");
+	});
+
 	it("round-trips escaped list items through the frontmatter parser", () => {
 		const backslash = String.fromCharCode(92);
 		const value = [
