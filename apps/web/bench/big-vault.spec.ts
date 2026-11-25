@@ -21,6 +21,7 @@ const TYPED_TEXT = " the quick brown fox jumps over the lazy dog";
 const SEARCH_QUERY = "4321";
 const SEARCH_TITLE = "Filler 4321";
 const WARM_OPENS = 3;
+const STARTUP_ONLY = process.env.TOLARIA_BENCH_STARTUP_ONLY === "1";
 
 interface LongTask {
 	start: number;
@@ -89,33 +90,72 @@ async function noteListPaintedAt(page: Page): Promise<number> {
 	);
 }
 
-/** Waits until the cache snapshot holds every note (and the attachment), so the reload is warm. */
-async function waitForFullCacheSnapshot(page: Page): Promise<void> {
+async function cacheSnapshotCount(page: Page): Promise<number> {
+	return page.evaluate(async () => {
+		const db = await new Promise<IDBDatabase | null>((resolve) => {
+			const request = indexedDB.open("tolaria-entries", 1);
+			request.onsuccess = () => resolve(request.result);
+			request.onerror = () => resolve(null);
+		});
+		if (!db) return 0;
+		const count = await new Promise<number>((resolve) => {
+			const request = db
+				.transaction("entries", "readonly")
+				.objectStore("entries")
+				.get("snapshot");
+			request.onsuccess = () => resolve(request.result?.entries?.length ?? 0);
+			request.onerror = () => resolve(0);
+		});
+		db.close();
+		return count;
+	});
+}
+
+/** Waits until the cache snapshot holds every note, so the reload is warm. */
+async function waitForFullCacheSnapshot(page: Page): Promise<number> {
 	await expect
-		.poll(
-			() =>
-				page.evaluate(async () => {
-					const db = await new Promise<IDBDatabase | null>((resolve) => {
-						const request = indexedDB.open("tolaria-entries", 1);
-						request.onsuccess = () => resolve(request.result);
-						request.onerror = () => resolve(null);
-					});
-					if (!db) return 0;
-					const count = await new Promise<number>((resolve) => {
-						const request = db
-							.transaction("entries", "readonly")
-							.objectStore("entries")
-							.get("snapshot");
-						request.onsuccess = () =>
-							resolve(request.result?.entries?.length ?? 0);
-						request.onerror = () => resolve(0);
-					});
-					db.close();
-					return count;
-				}),
-			{ timeout: 60_000 },
-		)
+		.poll(() => cacheSnapshotCount(page), { timeout: 60_000 })
 		.toBeGreaterThanOrEqual(BENCH_NOTE_COUNT);
+	return cacheSnapshotCount(page);
+}
+
+/** Confirms the first rendered row title exists in the cached vault snapshot. */
+async function expectFirstRowFromCache(page: Page): Promise<void> {
+	const row = page
+		.getByTestId("note-list-container")
+		.locator("[data-note-path]")
+		.first();
+	const path = await row.getAttribute("data-note-path");
+	expect(path).toBeTruthy();
+	const title = await page.evaluate(async (notePath) => {
+		const db = await new Promise<IDBDatabase | null>((resolve) => {
+			const request = indexedDB.open("tolaria-entries", 1);
+			request.onsuccess = () => resolve(request.result);
+			request.onerror = () => resolve(null);
+		});
+		if (!db) return null;
+		const cachedTitle = await new Promise<string | null>((resolve) => {
+			const request = db
+				.transaction("entries", "readonly")
+				.objectStore("entries")
+				.get("snapshot");
+			request.onsuccess = () => {
+				const entry = request.result?.entries?.find(
+					(candidate: { path: string }) => candidate.path === notePath,
+				);
+				resolve(typeof entry?.title === "string" ? entry.title : null);
+			};
+			request.onerror = () => resolve(null);
+		});
+		db.close();
+		return cachedTitle;
+	}, path);
+	expect(title).toBeTruthy();
+	await expect(
+		page
+			.getByTestId("note-list-container")
+			.getByText(title as string, { exact: true }),
+	).toBeVisible();
 }
 
 /** The longest main-thread task and the total blocking time (time over 50 ms) so far. */
@@ -146,6 +186,19 @@ async function usedHeapMb(
 
 async function pageNow(page: Page): Promise<number> {
 	return page.evaluate(() => performance.now());
+}
+
+/** Fast 4G profile shared with the cache-first startup acceptance test. */
+async function applyFast4G(context: BrowserContext, page: Page): Promise<void> {
+	if (context.browser()?.browserType().name() !== "chromium") return;
+	const client = await context.newCDPSession(page);
+	await client.send("Network.emulateNetworkConditions", {
+		offline: false,
+		downloadThroughput: (4 * 1024 * 1024) / 8,
+		uploadThroughput: (3 * 1024 * 1024) / 8,
+		latency: 20,
+	});
+	await client.detach();
 }
 
 /** From the click on a note row to its body on screen in the editor. */
@@ -231,20 +284,45 @@ type OpenMeasurements = Pick<
 	| "heapMb"
 >;
 
+interface OpenBenchResult extends OpenMeasurements {
+	cacheEntryCount: number;
+}
+
 /** Cold open with an empty cache, then warm opens from the cache it wrote. */
 async function measureOpens(
 	context: BrowserContext,
 	page: Page,
-): Promise<OpenMeasurements> {
+): Promise<OpenBenchResult> {
 	await page.goto("/");
 	const coldOpenMs = await noteListPaintedAt(page);
-	await waitForFullCacheSnapshot(page);
+	const cacheEntryCount = await waitForFullCacheSnapshot(page);
+	// A returning user has completed the first visit: both the entry snapshot and the
+	// service worker's versioned shell precache are ready before Fast 4G is applied.
+	await page.waitForLoadState("networkidle");
+	await page.evaluate(async () => {
+		if ("serviceWorker" in navigator) await navigator.serviceWorker.ready;
+	});
 	const cold = await longTaskSummary(page);
 
 	const warmOpens: number[] = [];
+	await page.setViewportSize({ width: 390, height: 844 });
+	await applyFast4G(context, page);
 	for (let open = 0; open < WARM_OPENS; open++) {
 		await page.reload();
 		warmOpens.push(await noteListPaintedAt(page));
+	}
+	await expectFirstRowFromCache(page);
+	const proofDir = process.env.TOLARIA_BENCH_PROOF_DIR;
+	if (proofDir) {
+		await mkdir(proofDir, { recursive: true });
+		await page.screenshot({
+			path: join(proofDir, "cached-note-list.png"),
+			fullPage: false,
+		});
+		await writeFile(
+			join(proofDir, "warm-paint-ms.txt"),
+			`${warmOpens.join(" ms, ")} ms\n`,
+		);
 	}
 	await page.waitForTimeout(SETTLE_MS);
 	const warm = await longTaskSummary(page);
@@ -255,7 +333,29 @@ async function measureOpens(
 		warmMaxLongTaskMs: warm.maxMs,
 		warmBlockingMs: warm.blockingMs,
 		heapMb: await usedHeapMb(context, page),
+		cacheEntryCount,
 	};
+}
+
+async function writeStartupReport(
+	measurements: OpenBenchResult,
+): Promise<string> {
+	const report = [
+		`### Cached note-list paint (${measurements.cacheEntryCount} cached entries)`,
+		"",
+		"| Metric | Measured | Budget | Result |",
+		"| --- | --- | --- | --- |",
+		`| Cold open: note list painted | ${Math.round(measurements.coldOpenMs)} ms | no cap | recorded |`,
+		`| Warm open: cached note list painted, median of 3 | ${Math.round(measurements.warmOpenMs)} ms | 1,000 ms | ${measurements.warmOpenMs <= 1000 ? "ok" : "OVER BUDGET"} |`,
+		`| Warm open + background reload: longest task | ${Math.round(measurements.warmMaxLongTaskMs)} ms | 400 ms | recorded |`,
+		"",
+		"Browser: Chromium, 390 × 844 CSS px mobile viewport.",
+		"Network: Fast 4G profile, 4 Mbit/s down, 3 Mbit/s up, 20 ms latency.",
+		"Warm reload began after the full IndexedDB entry snapshot and service-worker shell cache were ready.",
+	].join("\n");
+	await mkdir(REPORT_DIR, { recursive: true });
+	await writeFile(join(REPORT_DIR, "startup.md"), `${report}\n`);
+	return report;
 }
 
 async function measureInteractions(
@@ -277,8 +377,15 @@ test("a 6,000-note vault opens, searches and types within budget", async ({
 	page,
 }) => {
 	await preparePage(page);
+	const opens = await measureOpens(context, page);
+	if (STARTUP_ONLY) {
+		const report = await writeStartupReport(opens);
+		process.stdout.write(`\n${report}\n\n`);
+		expect(opens.warmOpenMs).toBeLessThanOrEqual(1000);
+		return;
+	}
 	const measurements: BigVaultMeasurements = {
-		...(await measureOpens(context, page)),
+		...opens,
 		...(await measureInteractions(page)),
 	};
 	const results = evaluateBudgets(measurements);

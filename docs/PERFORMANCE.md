@@ -82,6 +82,25 @@ the cold open wrote (TOL-173), five seconds for the background reload, a note op
 the list, 44 keystrokes typed into it, and a global search for a token that matches one note.
 Each budget is a single sample except warm open (median of three) and typing (median and p95).
 
+The cached-mobile startup measurement uses a 390 × 844 CSS-pixel Chromium viewport. It
+waits for the full entry snapshot and the service worker's shell precache to finish before
+applying the same Fast 4G profile as `apps/web/tests/cache-startup.spec.ts`: 4 Mbit/s down,
+3 Mbit/s up, and 20 ms latency. This measures a returning visit with both caches ready.
+The test also checks that the first visible row title exists in the cached entry snapshot.
+
+To repeat only the cached startup measurement against a read-only local clone of the
+dedicated staging vault (without attaching its note content):
+
+```bash
+TOLARIA_BENCH_VAULT_PATH=/path/to/staging-clone \
+TOLARIA_BENCH_STARTUP_ONLY=1 \
+pnpm exec playwright test --config apps/web/playwright.bench.config.ts --trace off
+```
+
+Use `TOLARIA_BENCH_PROOF_DIR=/path/to/proof` with the generated fixture to save its
+screenshot and individual warm timings. Do not attach screenshots or traces from a staging
+vault that contains curated or personal note content.
+
 | Metric | What is measured | Budget |
 |---|---|---|
 | Cold open | `tolaria:note_list_painted` mark, empty cache | 2,500 ms |
