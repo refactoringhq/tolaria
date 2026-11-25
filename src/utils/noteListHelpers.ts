@@ -1,595 +1,798 @@
-import type { VaultEntry, SidebarSelection, InboxPeriod, ViewFile } from '../types'
-import type { AppLocale } from '../lib/i18n'
-import { APP_STORAGE_KEYS, LEGACY_APP_STORAGE_KEYS, getAppStorageItem } from '../constants/appStorage'
 import {
-  orderInverseRelationshipLabels as sortInverseRelationshipLabels,
-  resolveInverseRelationshipLabel,
-} from './inverseRelationshipLabels'
+	APP_STORAGE_KEYS,
+	getAppStorageItem,
+	LEGACY_APP_STORAGE_KEYS,
+} from "../constants/appStorage";
+import type { AppLocale } from "../lib/i18n";
+import type {
+	InboxPeriod,
+	SidebarSelection,
+	VaultEntry,
+	ViewFile,
+} from "../types";
 import {
-  DEFAULT_ALL_NOTES_FILE_VISIBILITY,
-  isOptionalAllNotesFileVisible,
-  type AllNotesFileVisibility,
-} from './allNotesFileVisibility'
+	type AllNotesFileVisibility,
+	DEFAULT_ALL_NOTES_FILE_VISIBILITY,
+	isOptionalAllNotesFileVisible,
+} from "./allNotesFileVisibility";
 import {
-  DEFAULT_DATE_DISPLAY_FORMAT,
-  formatTimestampForDateDisplay,
-  type DateDisplayFormat,
-} from './dateDisplay'
-import { evaluateView } from './viewFilters'
-import { viewMatchesSelection } from './viewIdentity'
-import { wikilinkTarget, resolveEntry } from './wikilink'
-import { buildTypeVisibilityLookup, isSectionEntryVisibleForType } from './typeVisibility'
+	type DateDisplayFormat,
+	DEFAULT_DATE_DISPLAY_FORMAT,
+	formatTimestampForDateDisplay,
+} from "./dateDisplay";
 import {
-  compareSortableValues,
-  getDefaultDirection,
-  statusSortRank,
-  type SortConfig,
-  type SortDirection,
-  type SortOption,
-} from './noteSort'
-export {
-  DEFAULT_SORT_OPTIONS,
-  getDefaultDirection,
-  getSortOptionLabel,
-  parseSortConfig,
-  serializeSortConfig,
-  SORT_OPTIONS,
-  type SortConfig,
-  type SortDirection,
-  type SortOption,
-} from './noteSort'
+	resolveInverseRelationshipLabel,
+	orderInverseRelationshipLabels as sortInverseRelationshipLabels,
+} from "./inverseRelationshipLabels";
+import {
+	compareSortableValues,
+	getDefaultDirection,
+	type SortConfig,
+	type SortDirection,
+	type SortOption,
+	statusSortRank,
+} from "./noteSort";
+import {
+	buildTypeVisibilityLookup,
+	isSectionEntryVisibleForType,
+} from "./typeVisibility";
+import { evaluateView } from "./viewFilters";
+import { viewMatchesSelection } from "./viewIdentity";
+import { resolveEntry, wikilinkTarget } from "./wikilink";
 
-export type NoteListFilter = 'open' | 'archived'
+export {
+	DEFAULT_SORT_OPTIONS,
+	getDefaultDirection,
+	getSortOptionLabel,
+	parseSortConfig,
+	SORT_OPTIONS,
+	type SortConfig,
+	type SortDirection,
+	type SortOption,
+	serializeSortConfig,
+} from "./noteSort";
+
+export type NoteListFilter = "open" | "archived";
 
 export interface FilterEntriesOptions {
-  subFilter?: NoteListFilter
-  views?: ViewFile[]
-  allNotesFileVisibility?: AllNotesFileVisibility
+	subFilter?: NoteListFilter;
+	views?: ViewFile[];
+	allNotesFileVisibility?: AllNotesFileVisibility;
 }
 
 export interface RelationshipGroup {
-  label: string
-  entries: VaultEntry[]
+	label: string;
+	entries: VaultEntry[];
 }
 
 export function relativeDate(
-  ts: number | null,
-  dateDisplayFormat: DateDisplayFormat = DEFAULT_DATE_DISPLAY_FORMAT,
-  appLocale: AppLocale = 'en',
+	ts: number | null,
+	dateDisplayFormat: DateDisplayFormat = DEFAULT_DATE_DISPLAY_FORMAT,
+	appLocale: AppLocale = "en",
 ): string {
-  if (!ts) return ''
-  const diff = Math.floor(Date.now() / 1000) - ts
-  if (diff < 0 || diff >= 604800) return formatTimestampForDateDisplay(ts, dateDisplayFormat, appLocale)
-  if (diff < 60) return 'just now'
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
-  return `${Math.floor(diff / 86400)}d ago`
+	if (!ts) return "";
+	const diff = Math.floor(Date.now() / 1000) - ts;
+	if (diff < 0 || diff >= 604800)
+		return formatTimestampForDateDisplay(ts, dateDisplayFormat, appLocale);
+	if (diff < 60) return "just now";
+	if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+	if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+	return `${Math.floor(diff / 86400)}d ago`;
 }
 
 export function getDisplayDate(entry: VaultEntry): number | null {
-  return entry.modifiedAt ?? entry.createdAt
+	return entry.modifiedAt ?? entry.createdAt;
 }
 
 export function formatSubtitle(
-  entry: VaultEntry,
-  dateDisplayFormat: DateDisplayFormat = DEFAULT_DATE_DISPLAY_FORMAT,
-  appLocale: AppLocale = 'en',
+	entry: VaultEntry,
+	dateDisplayFormat: DateDisplayFormat = DEFAULT_DATE_DISPLAY_FORMAT,
+	appLocale: AppLocale = "en",
 ): string {
-  const parts: string[] = []
-  const date = getDisplayDate(entry)
-  if (date) parts.push(formatTimestampForDateDisplay(date, dateDisplayFormat, appLocale))
-  if (entry.wordCount > 0) {
-    parts.push(`${entry.wordCount.toLocaleString('en-US')} words`)
-  } else {
-    parts.push('Empty')
-  }
-  if (entry.outgoingLinks.length > 0) {
-    parts.push(`${entry.outgoingLinks.length} ${entry.outgoingLinks.length === 1 ? 'link' : 'links'}`)
-  }
-  return parts.join(' \u00b7 ')
+	const parts: string[] = [];
+	const date = getDisplayDate(entry);
+	if (date)
+		parts.push(
+			formatTimestampForDateDisplay(date, dateDisplayFormat, appLocale),
+		);
+	if (entry.wordCount > 0) {
+		parts.push(`${entry.wordCount.toLocaleString("en-US")} words`);
+	} else {
+		parts.push("Empty");
+	}
+	if (entry.outgoingLinks.length > 0) {
+		parts.push(
+			`${entry.outgoingLinks.length} ${entry.outgoingLinks.length === 1 ? "link" : "links"}`,
+		);
+	}
+	return parts.join(" \u00b7 ");
 }
 
 function wasCreatedBeforeLastModification(entry: VaultEntry): boolean {
-  return !!(entry.createdAt && entry.modifiedAt && entry.createdAt !== entry.modifiedAt)
+	return !!(
+		entry.createdAt &&
+		entry.modifiedAt &&
+		entry.createdAt !== entry.modifiedAt
+	);
 }
 
 export function formatSearchSubtitle(
-  entry: VaultEntry,
-  dateDisplayFormat: DateDisplayFormat = DEFAULT_DATE_DISPLAY_FORMAT,
-  appLocale: AppLocale = 'en',
+	entry: VaultEntry,
+	dateDisplayFormat: DateDisplayFormat = DEFAULT_DATE_DISPLAY_FORMAT,
+	appLocale: AppLocale = "en",
 ): string {
-  const parts: string[] = []
-  const modified = entry.modifiedAt ?? entry.createdAt
-  if (modified) parts.push(formatTimestampForDateDisplay(modified, dateDisplayFormat, appLocale))
-  const created = entry.createdAt
-  if (created && wasCreatedBeforeLastModification(entry)) {
-    parts.push(`Created ${formatTimestampForDateDisplay(created, dateDisplayFormat, appLocale)}`)
-  }
-  if (entry.wordCount > 0) {
-    parts.push(`${entry.wordCount.toLocaleString('en-US')} words`)
-  } else {
-    parts.push('Empty')
-  }
-  if (entry.outgoingLinks.length > 0) {
-    parts.push(`${entry.outgoingLinks.length} ${entry.outgoingLinks.length === 1 ? 'link' : 'links'}`)
-  }
-  return parts.join(' \u00b7 ')
+	const parts: string[] = [];
+	const modified = entry.modifiedAt ?? entry.createdAt;
+	if (modified)
+		parts.push(
+			formatTimestampForDateDisplay(modified, dateDisplayFormat, appLocale),
+		);
+	const created = entry.createdAt;
+	if (created && wasCreatedBeforeLastModification(entry)) {
+		parts.push(
+			`Created ${formatTimestampForDateDisplay(created, dateDisplayFormat, appLocale)}`,
+		);
+	}
+	if (entry.wordCount > 0) {
+		parts.push(`${entry.wordCount.toLocaleString("en-US")} words`);
+	} else {
+		parts.push("Empty");
+	}
+	if (entry.outgoingLinks.length > 0) {
+		parts.push(
+			`${entry.outgoingLinks.length} ${entry.outgoingLinks.length === 1 ? "link" : "links"}`,
+		);
+	}
+	return parts.join(" \u00b7 ");
 }
 
 function refMatchesEntry(ref: string, entry: VaultEntry): boolean {
-  const target = wikilinkTarget(ref).trim()
-  if (!target) return false
+	const target = wikilinkTarget(ref).trim();
+	if (!target) return false;
 
-  if (target.includes('/')) {
-    const normalizedTarget = target.replace(/^\/+/, '').replace(/\.md$/, '').toLowerCase()
-    return entry.path.toLowerCase().endsWith(`/${normalizedTarget}.md`)
-  }
+	if (target.includes("/")) {
+		const normalizedTarget = target
+			.replace(/^\/+/, "")
+			.replace(/\.md$/, "")
+			.toLowerCase();
+		return entry.path.toLowerCase().endsWith(`/${normalizedTarget}.md`);
+	}
 
-  return resolveEntry([entry], target) !== undefined
+	return resolveEntry([entry], target) !== undefined;
 }
 
 function refsMatch(refs: string[], entry: VaultEntry): boolean {
-  return refs.some((ref) => refMatchesEntry(ref, entry))
+	return refs.some((ref) => refMatchesEntry(ref, entry));
 }
 
 function resolveRefs(refs: string[], entries: VaultEntry[]): VaultEntry[] {
-  return refs
-    .map((ref) => resolveEntry(entries, wikilinkTarget(ref)))
-    .filter((e): e is VaultEntry => e !== undefined)
+	return refs
+		.map((ref) => resolveEntry(entries, wikilinkTarget(ref)))
+		.filter((e): e is VaultEntry => e !== undefined);
 }
 
 export function sortByModified(a: VaultEntry, b: VaultEntry): number {
-  return (getDisplayDate(b) ?? 0) - (getDisplayDate(a) ?? 0)
+	return (getDisplayDate(b) ?? 0) - (getDisplayDate(a) ?? 0);
 }
 
 /** Extract sortable custom property keys from a list of entries. */
 export function extractSortableProperties(entries: VaultEntry[]): string[] {
-  const keys = new Set<string>()
-  for (const entry of entries) {
-    for (const key of Object.keys(entry.properties)) keys.add(key)
-  }
-  return [...keys].sort((a, b) => a.localeCompare(b))
+	const keys = new Set<string>();
+	for (const entry of entries) {
+		for (const key of Object.keys(entry.properties)) keys.add(key);
+	}
+	return [...keys].sort((a, b) => a.localeCompare(b));
 }
 
 function compareNullishValues(a: unknown, b: unknown): number | null {
-  if (a == null && b == null) return 0
-  if (a == null) return 1
-  if (b == null) return -1
-  return null
+	if (a == null && b == null) return 0;
+	if (a == null) return 1;
+	if (b == null) return -1;
+	return null;
 }
 
-function makePropertyComparator(key: string, flip: number): (a: VaultEntry, b: VaultEntry) => number {
-  return (a, b) => {
-    const va = Reflect.get(a.properties, key) ?? null
-    const vb = Reflect.get(b.properties, key) ?? null
-    const nullishComparison = compareNullishValues(va, vb)
-    if (nullishComparison !== null) return nullishComparison
-    return flip * compareSortableValues(va, vb)
-  }
+function makePropertyComparator(
+	key: string,
+	flip: number,
+): (a: VaultEntry, b: VaultEntry) => number {
+	return (a, b) => {
+		const va = Reflect.get(a.properties, key) ?? null;
+		const vb = Reflect.get(b.properties, key) ?? null;
+		const nullishComparison = compareNullishValues(va, vb);
+		if (nullishComparison !== null) return nullishComparison;
+		return flip * compareSortableValues(va, vb);
+	};
 }
 
-function makeBuiltinComparator(option: string, flip: number): (a: VaultEntry, b: VaultEntry) => number {
-  if (option === 'title') return (a, b) => flip * stringField(a.title).localeCompare(stringField(b.title))
-  if (option === 'created') return (a, b) => flip * (creationTimestamp(a) - creationTimestamp(b))
-  if (option === 'status') return (a, b) => compareEntryStatuses(a, b, flip)
-  return (a, b) => flip * ((getDisplayDate(a) ?? 0) - (getDisplayDate(b) ?? 0))
+function makeBuiltinComparator(
+	option: string,
+	flip: number,
+): (a: VaultEntry, b: VaultEntry) => number {
+	if (option === "title")
+		return (a, b) =>
+			flip * stringField(a.title).localeCompare(stringField(b.title));
+	if (option === "created")
+		return (a, b) => flip * (creationTimestamp(a) - creationTimestamp(b));
+	if (option === "status") return (a, b) => compareEntryStatuses(a, b, flip);
+	return (a, b) => flip * ((getDisplayDate(a) ?? 0) - (getDisplayDate(b) ?? 0));
 }
 
 function creationTimestamp(entry: VaultEntry) {
-  return entry.createdAt ?? entry.modifiedAt ?? 0
+	return entry.createdAt ?? entry.modifiedAt ?? 0;
 }
 
 function compareEntryStatuses(a: VaultEntry, b: VaultEntry, flip: number) {
-  const left = statusSortRank(a.status), right = statusSortRank(b.status)
-  if (left !== right) return flip * (left - right)
-  return (getDisplayDate(b) ?? 0) - (getDisplayDate(a) ?? 0)
+	const left = statusSortRank(a.status),
+		right = statusSortRank(b.status);
+	if (left !== right) return flip * (left - right);
+	return (getDisplayDate(b) ?? 0) - (getDisplayDate(a) ?? 0);
 }
 
-export function getSortComparator(option: SortOption, direction?: SortDirection): (a: VaultEntry, b: VaultEntry) => number {
-  const flip = (direction ?? getDefaultDirection(option)) === 'asc' ? 1 : -1
-  if (option.startsWith('property:')) return makePropertyComparator(option.slice('property:'.length), flip)
-  return makeBuiltinComparator(option, flip)
+export function getSortComparator(
+	option: SortOption,
+	direction?: SortDirection,
+): (a: VaultEntry, b: VaultEntry) => number {
+	const flip = (direction ?? getDefaultDirection(option)) === "asc" ? 1 : -1;
+	if (option.startsWith("property:"))
+		return makePropertyComparator(option.slice("property:".length), flip);
+	return makeBuiltinComparator(option, flip);
 }
 
 export function loadSortPreferences(): Record<string, SortConfig> {
-  try {
-    const raw = getAppStorageItem('sortPreferences')
-    if (!raw) return {}
-    const parsed = JSON.parse(raw)
-    const result: Record<string, SortConfig> = {}
-    for (const [key, value] of Object.entries(parsed)) {
-      if (typeof value === 'string') {
-        // Migrate old format: bare SortOption string → SortConfig
-        const opt = value as SortOption
-        Reflect.set(result, key, { option: opt, direction: getDefaultDirection(opt) })
-      } else {
-        Reflect.set(result, key, value as SortConfig)
-      }
-    }
-    return result
-  } catch {
-    return {}
-  }
+	try {
+		const raw = getAppStorageItem("sortPreferences");
+		if (!raw) return {};
+		const parsed = JSON.parse(raw);
+		const result: Record<string, SortConfig> = {};
+		for (const [key, value] of Object.entries(parsed)) {
+			if (typeof value === "string") {
+				// Migrate old format: bare SortOption string → SortConfig
+				const opt = value as SortOption;
+				Reflect.set(result, key, {
+					option: opt,
+					direction: getDefaultDirection(opt),
+				});
+			} else {
+				Reflect.set(result, key, value as SortConfig);
+			}
+		}
+		return result;
+	} catch {
+		return {};
+	}
 }
 
 export function saveSortPreferences(prefs: Record<string, SortConfig>) {
-  try {
-    localStorage.setItem(APP_STORAGE_KEYS.sortPreferences, JSON.stringify(prefs))
-    localStorage.removeItem(LEGACY_APP_STORAGE_KEYS.sortPreferences)
-  } catch { /* ignore */ }
+	try {
+		localStorage.setItem(
+			APP_STORAGE_KEYS.sortPreferences,
+			JSON.stringify(prefs),
+		);
+		localStorage.removeItem(LEGACY_APP_STORAGE_KEYS.sortPreferences);
+	} catch {
+		/* ignore */
+	}
 }
 
 /** Remove the `__list__` key from localStorage sort preferences (used during migration). */
 export function clearListSortFromLocalStorage(): void {
-  try {
-    const raw = getAppStorageItem('sortPreferences')
-    if (!raw) return
-    const parsed = JSON.parse(raw)
-    delete parsed.__list__
-    if (Object.keys(parsed).length === 0) {
-      localStorage.removeItem(APP_STORAGE_KEYS.sortPreferences)
-      localStorage.removeItem(LEGACY_APP_STORAGE_KEYS.sortPreferences)
-    } else {
-      localStorage.setItem(APP_STORAGE_KEYS.sortPreferences, JSON.stringify(parsed))
-      localStorage.removeItem(LEGACY_APP_STORAGE_KEYS.sortPreferences)
-    }
-  } catch { /* ignore */ }
+	try {
+		const raw = getAppStorageItem("sortPreferences");
+		if (!raw) return;
+		const parsed = JSON.parse(raw);
+		delete parsed.__list__;
+		if (Object.keys(parsed).length === 0) {
+			localStorage.removeItem(APP_STORAGE_KEYS.sortPreferences);
+			localStorage.removeItem(LEGACY_APP_STORAGE_KEYS.sortPreferences);
+		} else {
+			localStorage.setItem(
+				APP_STORAGE_KEYS.sortPreferences,
+				JSON.stringify(parsed),
+			);
+			localStorage.removeItem(LEGACY_APP_STORAGE_KEYS.sortPreferences);
+		}
+	} catch {
+		/* ignore */
+	}
 }
 
 function stringField(value: unknown): string {
-  return typeof value === 'string' ? value : ''
+	return typeof value === "string" ? value : "";
 }
 
 function filenameStemFromEntry(entry: VaultEntry): string {
-  const filename = stringField(entry.filename)
-  if (filename) return filename.replace(/\.md$/, '')
+	const filename = stringField(entry.filename);
+	if (filename) return filename.replace(/\.md$/, "");
 
-  const pathLeaf = stringField(entry.path).split(/[\\/]/u).pop() ?? ''
-  return pathLeaf.replace(/\.md$/, '')
+	const pathLeaf = stringField(entry.path).split(/[\\/]/u).pop() ?? "";
+	return pathLeaf.replace(/\.md$/, "");
 }
 
 function relativePathStemFromEntry(entry: VaultEntry): string {
-  const normalizedPath = stringField(entry.path).replaceAll('\\', '/')
-  return normalizedPath.replace(/^.*\/Laputa\//, '').replace(/\.md$/, '')
+	const normalizedPath = stringField(entry.path).replaceAll("\\", "/");
+	return normalizedPath.replace(/^.*\/Laputa\//, "").replace(/\.md$/, "");
 }
 
 function linkTargetsForEntry(entry: VaultEntry): Set<string> {
-  const title = stringField(entry.title)
-  const aliases = Array.isArray(entry.aliases) ? entry.aliases : []
-  return new Set([title, ...aliases, filenameStemFromEntry(entry), relativePathStemFromEntry(entry)].filter(Boolean))
+	const title = stringField(entry.title);
+	const aliases = Array.isArray(entry.aliases) ? entry.aliases : [];
+	return new Set(
+		[
+			title,
+			...aliases,
+			filenameStemFromEntry(entry),
+			relativePathStemFromEntry(entry),
+		].filter(Boolean),
+	);
 }
 
-function findBacklinks(entity: VaultEntry, allEntries: VaultEntry[]): VaultEntry[] {
-  const targets = linkTargetsForEntry(entity)
+function findBacklinks(
+	entity: VaultEntry,
+	allEntries: VaultEntry[],
+): VaultEntry[] {
+	const targets = linkTargetsForEntry(entity);
 
-  return allEntries.filter((e) => {
-    if (e.path === entity.path) return false
-    return e.outgoingLinks.some((link) =>
-      targets.has(link) || targets.has(link.split('/').pop() ?? ''),
-    )
-  })
+	return allEntries.filter((e) => {
+		if (e.path === entity.path) return false;
+		return e.outgoingLinks.some(
+			(link) => targets.has(link) || targets.has(link.split("/").pop() ?? ""),
+		);
+	});
 }
 
 class GroupBuilder {
-  readonly groups: RelationshipGroup[] = []
-  private readonly entityPath: string
-  private readonly allEntries: VaultEntry[]
+	readonly groups: RelationshipGroup[] = [];
+	private readonly entityPath: string;
+	private readonly allEntries: VaultEntry[];
 
-  constructor(entityPath: string, allEntries: VaultEntry[]) {
-    this.entityPath = entityPath
-    this.allEntries = allEntries
-  }
+	constructor(entityPath: string, allEntries: VaultEntry[]) {
+		this.entityPath = entityPath;
+		this.allEntries = allEntries;
+	}
 
-  add(label: string, entries: VaultEntry[]) {
-    const deduped = new Map<string, VaultEntry>()
-    for (const entry of entries) {
-      if (entry.path === this.entityPath || deduped.has(entry.path)) continue
-      deduped.set(entry.path, entry)
-    }
+	add(label: string, entries: VaultEntry[]) {
+		const deduped = new Map<string, VaultEntry>();
+		for (const entry of entries) {
+			if (entry.path === this.entityPath || deduped.has(entry.path)) continue;
+			deduped.set(entry.path, entry);
+		}
 
-    if (deduped.size === 0) return
-    this.groups.push({ label, entries: [...deduped.values()] })
-  }
+		if (deduped.size === 0) return;
+		this.groups.push({ label, entries: [...deduped.values()] });
+	}
 
-  addFromRefs(label: string, refs: string[]) {
-    this.add(label, resolveRefs(refs, this.allEntries).sort(sortByModified))
-  }
+	addFromRefs(label: string, refs: string[]) {
+		this.add(label, resolveRefs(refs, this.allEntries).sort(sortByModified));
+	}
 
-  filterAndAdd(label: string, predicate: (e: VaultEntry) => boolean) {
-    this.add(label, this.allEntries.filter(predicate).sort(sortByModified))
-  }
+	filterAndAdd(label: string, predicate: (e: VaultEntry) => boolean) {
+		this.add(label, this.allEntries.filter(predicate).sort(sortByModified));
+	}
 }
 
 function appendInverseRelationshipEntries(
-  inverseGroups: Map<string, VaultEntry[]>,
-  label: string,
-  entry: VaultEntry,
+	inverseGroups: Map<string, VaultEntry[]>,
+	label: string,
+	entry: VaultEntry,
 ) {
-  const existing = inverseGroups.get(label)
-  if (existing) {
-    existing.push(entry)
-    return
-  }
+	const existing = inverseGroups.get(label);
+	if (existing) {
+		existing.push(entry);
+		return;
+	}
 
-  inverseGroups.set(label, [entry])
+	inverseGroups.set(label, [entry]);
 }
 
 function appendLegacyInverseRelationshipEntries(
-  inverseGroups: Map<string, VaultEntry[]>,
-  entity: VaultEntry,
-  entry: VaultEntry,
+	inverseGroups: Map<string, VaultEntry[]>,
+	entity: VaultEntry,
+	entry: VaultEntry,
 ) {
-  if (refsMatch(entry.belongsTo, entity)) {
-    appendInverseRelationshipEntries(inverseGroups, resolveInverseRelationshipLabel('Belongs to', entry), entry)
-  }
+	if (refsMatch(entry.belongsTo, entity)) {
+		appendInverseRelationshipEntries(
+			inverseGroups,
+			resolveInverseRelationshipLabel("Belongs to", entry),
+			entry,
+		);
+	}
 
-  if (refsMatch(entry.relatedTo, entity)) {
-    appendInverseRelationshipEntries(inverseGroups, resolveInverseRelationshipLabel('Related to', entry), entry)
-  }
+	if (refsMatch(entry.relatedTo, entity)) {
+		appendInverseRelationshipEntries(
+			inverseGroups,
+			resolveInverseRelationshipLabel("Related to", entry),
+			entry,
+		);
+	}
 }
 
 function appendDynamicInverseRelationshipEntries(
-  inverseGroups: Map<string, VaultEntry[]>,
-  entity: VaultEntry,
-  entry: VaultEntry,
+	inverseGroups: Map<string, VaultEntry[]>,
+	entity: VaultEntry,
+	entry: VaultEntry,
 ) {
-  for (const [key, refs] of Object.entries(entry.relationships)) {
-    if (key === 'Type' || !refsMatch(refs, entity)) continue
-    appendInverseRelationshipEntries(inverseGroups, resolveInverseRelationshipLabel(key, entry), entry)
-  }
+	for (const [key, refs] of Object.entries(entry.relationships)) {
+		if (key === "Type" || !refsMatch(refs, entity)) continue;
+		appendInverseRelationshipEntries(
+			inverseGroups,
+			resolveInverseRelationshipLabel(key, entry),
+			entry,
+		);
+	}
 }
 
-function orderInverseRelationshipLabels(inverseGroups: Map<string, VaultEntry[]>): string[] {
-  return sortInverseRelationshipLabels(inverseGroups.keys())
+function orderInverseRelationshipLabels(
+	inverseGroups: Map<string, VaultEntry[]>,
+): string[] {
+	return sortInverseRelationshipLabels(inverseGroups.keys());
 }
 
 function collectInverseRelationshipGroups(
-  entity: VaultEntry,
-  allEntries: VaultEntry[],
+	entity: VaultEntry,
+	allEntries: VaultEntry[],
 ): RelationshipGroup[] {
-  const inverseGroups = new Map<string, VaultEntry[]>()
+	const inverseGroups = new Map<string, VaultEntry[]>();
 
-  for (const other of allEntries) {
-    if (other.path === entity.path) continue
-    appendLegacyInverseRelationshipEntries(inverseGroups, entity, other)
-    appendDynamicInverseRelationshipEntries(inverseGroups, entity, other)
-  }
+	for (const other of allEntries) {
+		if (other.path === entity.path) continue;
+		appendLegacyInverseRelationshipEntries(inverseGroups, entity, other);
+		appendDynamicInverseRelationshipEntries(inverseGroups, entity, other);
+	}
 
-  return orderInverseRelationshipLabels(inverseGroups)
-    .map((label) => {
-      const entries = inverseGroups.get(label)
-      if (!entries) return null
-      return { label, entries: [...entries].sort(sortByModified) }
-    })
-    .filter((group): group is RelationshipGroup => group !== null)
+	return orderInverseRelationshipLabels(inverseGroups)
+		.map((label) => {
+			const entries = inverseGroups.get(label);
+			if (!entries) return null;
+			return { label, entries: [...entries].sort(sortByModified) };
+		})
+		.filter((group): group is RelationshipGroup => group !== null);
 }
 
 export function buildRelationshipGroups(
-  entity: VaultEntry,
-  allEntries: VaultEntry[],
+	entity: VaultEntry,
+	allEntries: VaultEntry[],
 ): RelationshipGroup[] {
-  const b = new GroupBuilder(entity.path, allEntries)
-  const rels = entity.relationships
+	const b = new GroupBuilder(entity.path, allEntries);
+	const rels = entity.relationships;
 
-  if (entity.isA === 'Type') {
-    b.filterAndAdd('Instances', (e) => e.isA === entity.title)
-  }
+	if (entity.isA === "Type") {
+		b.filterAndAdd("Instances", (e) => e.isA === entity.title);
+	}
 
-  // Direct relationships first — all keys from entity.relationships take
-  // priority so that reverse/computed groups (Children, Events, Referenced by)
-  // only show *additional* entries not already covered by a direct property.
-  Object.keys(rels)
-    .filter((k) => k.toLowerCase() !== 'type')
-    .sort((a, b) => a.localeCompare(b))
-    .forEach((key) => {
-      b.addFromRefs(key, (Reflect.get(rels, key) as string[] | undefined) ?? [])
-    })
+	// Direct relationships first — all keys from entity.relationships take
+	// priority so that reverse/computed groups (Children, Events, Referenced by)
+	// only show *additional* entries not already covered by a direct property.
+	Object.keys(rels)
+		.filter((k) => k.toLowerCase() !== "type")
+		.sort((a, b) => a.localeCompare(b))
+		.forEach((key) => {
+			b.addFromRefs(
+				key,
+				(Reflect.get(rels, key) as string[] | undefined) ?? [],
+			);
+		});
 
-  for (const group of collectInverseRelationshipGroups(entity, allEntries)) {
-    b.add(group.label, group.entries)
-  }
-  b.add('Backlinks', findBacklinks(entity, allEntries).sort(sortByModified))
+	for (const group of collectInverseRelationshipGroups(entity, allEntries)) {
+		b.add(group.label, group.entries);
+	}
+	b.add("Backlinks", findBacklinks(entity, allEntries).sort(sortByModified));
 
-  return b.groups
+	return b.groups;
 }
 
-const isActive = (e: VaultEntry) => !e.archived
-const isMarkdown = (e: VaultEntry) => e.fileKind === 'markdown' || !e.fileKind
-const ATTACHMENTS_FOLDER = 'attachments'
+const isActive = (e: VaultEntry) => !e.archived;
+const isMarkdown = (e: VaultEntry) => e.fileKind === "markdown" || !e.fileKind;
+const ATTACHMENTS_FOLDER = "attachments";
 
-function applySubFilter(entries: VaultEntry[], subFilter: NoteListFilter): VaultEntry[] {
-  if (subFilter === 'archived') return entries.filter((e) => e.archived)
-  return entries.filter(isActive)
+function applySubFilter(
+	entries: VaultEntry[],
+	subFilter: NoteListFilter,
+): VaultEntry[] {
+	if (subFilter === "archived") return entries.filter((e) => e.archived);
+	return entries.filter(isActive);
 }
 
 function isInFolder(entryPath: string, folderRelPath: string): boolean {
-  const folderPath = normalizeFolderPath(folderRelPath)
-  if (!folderPath) return false
-  const normalizedEntryPath = normalizeFolderPath(entryPath)
-  return normalizedEntryPath.includes(`/${folderPath}/`) || normalizedEntryPath.startsWith(`${folderPath}/`)
+	const folderPath = normalizeFolderPath(folderRelPath);
+	if (!folderPath) return false;
+	const normalizedEntryPath = normalizeFolderPath(entryPath);
+	return (
+		normalizedEntryPath.includes(`/${folderPath}/`) ||
+		normalizedEntryPath.startsWith(`${folderPath}/`)
+	);
 }
 
 function normalizeFolderPath(path: string): string {
-  return path.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '')
+	return path.replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
 }
 
 function isVisibleMarkdownNote(entry: VaultEntry): boolean {
-  return isMarkdown(entry) && !isInFolder(entry.path, ATTACHMENTS_FOLDER)
+	return isMarkdown(entry) && !isInFolder(entry.path, ATTACHMENTS_FOLDER);
 }
 
 export function isAllNotesEntry(
-  entry: VaultEntry,
-  allNotesFileVisibility: AllNotesFileVisibility = DEFAULT_ALL_NOTES_FILE_VISIBILITY,
+	entry: VaultEntry,
+	allNotesFileVisibility: AllNotesFileVisibility = DEFAULT_ALL_NOTES_FILE_VISIBILITY,
 ): boolean {
-  if (isMarkdown(entry)) return isVisibleMarkdownNote(entry)
-  return isOptionalAllNotesFileVisible(entry, allNotesFileVisibility)
+	if (isMarkdown(entry)) return isVisibleMarkdownNote(entry);
+	return isOptionalAllNotesFileVisible(entry, allNotesFileVisibility);
 }
 
-export function filterEntriesForViewFile(entries: VaultEntry[], view: ViewFile): VaultEntry[] {
-  return evaluateView(view.definition, entries.filter(isMarkdown))
+export function filterEntriesForViewFile(
+	entries: VaultEntry[],
+	view: ViewFile,
+): VaultEntry[] {
+	return evaluateView(view.definition, entries.filter(isMarkdown));
 }
 
-function filterViewEntries(entries: VaultEntry[], selection: Extract<SidebarSelection, { kind: 'view' }>, views?: ViewFile[]): VaultEntry[] {
-  const view = views?.find((candidate) => viewMatchesSelection(candidate, selection))
-  if (!view) return []
-  return filterEntriesForViewFile(entries, view)
+function filterViewEntries(
+	entries: VaultEntry[],
+	selection: Extract<SidebarSelection, { kind: "view" }>,
+	views?: ViewFile[],
+): VaultEntry[] {
+	const view = views?.find((candidate) =>
+		viewMatchesSelection(candidate, selection),
+	);
+	if (!view) return [];
+	return filterEntriesForViewFile(entries, view);
 }
 
 function isDirectRootEntry(entryPath: string, rootPath?: string): boolean {
-  const normalizedEntryPath = normalizeFolderPath(entryPath)
-  const normalizedRootPath = rootPath ? normalizeFolderPath(rootPath) : ''
-  if (!normalizedRootPath) return !normalizedEntryPath.includes('/')
-  if (!normalizedEntryPath.startsWith(`${normalizedRootPath}/`)) return false
-  const relativePath = normalizedEntryPath.slice(normalizedRootPath.length + 1)
-  return relativePath.length > 0 && !relativePath.includes('/')
+	const normalizedEntryPath = normalizeFolderPath(entryPath);
+	const normalizedRootPath = rootPath ? normalizeFolderPath(rootPath) : "";
+	if (!normalizedRootPath) return !normalizedEntryPath.includes("/");
+	if (!normalizedEntryPath.startsWith(`${normalizedRootPath}/`)) return false;
+	const relativePath = normalizedEntryPath.slice(normalizedRootPath.length + 1);
+	return relativePath.length > 0 && !relativePath.includes("/");
 }
 
-function pathRelativeToRoot(entryPath: string, rootPath?: string): string | null {
-  const normalizedRootPath = rootPath ? normalizeFolderPath(rootPath) : ''
-  if (!normalizedRootPath) return normalizeFolderPath(entryPath)
+function pathRelativeToRoot(
+	entryPath: string,
+	rootPath?: string,
+): string | null {
+	const normalizedRootPath = rootPath ? normalizeFolderPath(rootPath) : "";
+	if (!normalizedRootPath) return normalizeFolderPath(entryPath);
 
-  const normalizedEntryPath = normalizeFolderPath(entryPath)
-  if (!normalizedEntryPath.startsWith(`${normalizedRootPath}/`)) return null
-  return normalizedEntryPath.slice(normalizedRootPath.length + 1)
+	const normalizedEntryPath = normalizeFolderPath(entryPath);
+	if (!normalizedEntryPath.startsWith(`${normalizedRootPath}/`)) return null;
+	return normalizedEntryPath.slice(normalizedRootPath.length + 1);
 }
 
-function isEntryInSelectedFolder(entryPath: string, folderRelPath: string, rootPath?: string): boolean {
-  const relativeEntryPath = pathRelativeToRoot(entryPath, rootPath)
-  return relativeEntryPath ? isInFolder(relativeEntryPath, folderRelPath) : false
+function isEntryInSelectedFolder(
+	entryPath: string,
+	folderRelPath: string,
+	rootPath?: string,
+): boolean {
+	const relativeEntryPath = pathRelativeToRoot(entryPath, rootPath);
+	if (!relativeEntryPath) return false;
+	if (!rootPath) return isInFolder(relativeEntryPath, folderRelPath);
+	const folderPath = normalizeFolderPath(folderRelPath);
+	return Boolean(folderPath && relativeEntryPath.startsWith(`${folderPath}/`));
 }
 
-function filterRootEntries(entries: VaultEntry[], rootPath: string | undefined, subFilter?: NoteListFilter): VaultEntry[] {
-  const rootEntries = entries.filter((entry) => isDirectRootEntry(entry.path, rootPath))
-  return subFilter ? applySubFilter(rootEntries, subFilter) : rootEntries.filter(isActive)
+function isAppSettingsEntry(entryPath: string, rootPath?: string): boolean {
+	if (!rootPath) return false;
+	const relativePath = pathRelativeToRoot(entryPath, rootPath);
+	if (!relativePath) return false;
+	const [folder, filename, ...rest] =
+		normalizeFolderPath(relativePath).split("/");
+	if (rest.length > 0 || !filename?.endsWith(".yml")) return false;
+	if (folder === "views") return true;
+	return folder === "layouts" && isEncodedLayoutFilename(filename);
 }
 
-function filterFolderEntries(entries: VaultEntry[], selection: Extract<SidebarSelection, { kind: 'folder' }>, subFilter?: NoteListFilter): VaultEntry[] {
-  if (!selection.path) return filterRootEntries(entries, selection.rootPath, subFilter)
-  // Folder view shows ALL files (text + binary), not just markdown
-  const folderEntries = entries.filter((entry) => isEntryInSelectedFolder(entry.path, selection.path, selection.rootPath))
-  return subFilter ? applySubFilter(folderEntries, subFilter) : folderEntries.filter(isActive)
+function isEncodedLayoutFilename(filename: string): boolean {
+	const stem = filename.slice(0, -".yml".length);
+	if (!isValidBase64UrlStem(stem)) return false;
+	try {
+		const base64 = stem.replace(/-/g, "+").replace(/_/g, "/");
+		return atob(base64 + "=".repeat((4 - (base64.length % 4)) % 4)).length > 0;
+	} catch {
+		return false;
+	}
 }
 
-function filterSectionGroupEntries(entries: VaultEntry[], type: string, subFilter?: NoteListFilter): VaultEntry[] {
-  const typeVisibility = buildTypeVisibilityLookup(entries)
-  const typeEntries = entries.filter((entry) => isSectionEntryVisibleForType(entry, type, typeVisibility))
-  return subFilter ? applySubFilter(typeEntries, subFilter) : typeEntries.filter(isActive)
+function isValidBase64UrlStem(stem: string): boolean {
+	return (
+		Boolean(stem) && /^[A-Za-z0-9_-]+$/.test(stem) && stem.length % 4 !== 1
+	);
+}
+
+function filterRootEntries(
+	entries: VaultEntry[],
+	rootPath: string | undefined,
+	subFilter?: NoteListFilter,
+): VaultEntry[] {
+	const rootEntries = entries.filter((entry) =>
+		isDirectRootEntry(entry.path, rootPath),
+	);
+	return subFilter
+		? applySubFilter(rootEntries, subFilter)
+		: rootEntries.filter(isActive);
+}
+
+function filterFolderEntries(
+	entries: VaultEntry[],
+	selection: Extract<SidebarSelection, { kind: "folder" }>,
+	subFilter?: NoteListFilter,
+): VaultEntry[] {
+	if (!selection.path)
+		return filterRootEntries(entries, selection.rootPath, subFilter);
+	// Folder view shows ALL files (text + binary), not just markdown
+	const folderEntries = entries.filter(
+		(entry) =>
+			isEntryInSelectedFolder(entry.path, selection.path, selection.rootPath) &&
+			!isAppSettingsEntry(entry.path, selection.rootPath),
+	);
+	return subFilter
+		? applySubFilter(folderEntries, subFilter)
+		: folderEntries.filter(isActive);
+}
+
+function filterSectionGroupEntries(
+	entries: VaultEntry[],
+	type: string,
+	subFilter?: NoteListFilter,
+): VaultEntry[] {
+	const typeVisibility = buildTypeVisibilityLookup(entries);
+	const typeEntries = entries.filter((entry) =>
+		isSectionEntryVisibleForType(entry, type, typeVisibility),
+	);
+	return subFilter
+		? applySubFilter(typeEntries, subFilter)
+		: typeEntries.filter(isActive);
 }
 
 function filterTopLevelEntries(
-  entries: VaultEntry[],
-  selection: Extract<SidebarSelection, { kind: 'filter' }>,
-  options: FilterEntriesOptions,
+	entries: VaultEntry[],
+	selection: Extract<SidebarSelection, { kind: "filter" }>,
+	options: FilterEntriesOptions,
 ): VaultEntry[] {
-  const filterableEntries = selection.filter === 'all'
-    ? entries.filter((entry) => isAllNotesEntry(entry, options.allNotesFileVisibility))
-    : entries.filter(isMarkdown)
-  if (selection.filter === 'all' && options.subFilter) return applySubFilter(filterableEntries, options.subFilter)
-  return filterByFilterType(filterableEntries, selection.filter)
+	const filterableEntries =
+		selection.filter === "all"
+			? entries.filter((entry) =>
+					isAllNotesEntry(entry, options.allNotesFileVisibility),
+				)
+			: entries.filter(isMarkdown);
+	if (selection.filter === "all" && options.subFilter)
+		return applySubFilter(filterableEntries, options.subFilter);
+	return filterByFilterType(filterableEntries, selection.filter);
 }
 
 function filterByKind(
-  entries: VaultEntry[],
-  selection: SidebarSelection,
-  options: FilterEntriesOptions,
+	entries: VaultEntry[],
+	selection: SidebarSelection,
+	options: FilterEntriesOptions,
 ): VaultEntry[] {
-  if (selection.kind === 'entity') return []
-  if (selection.kind === 'view') return filterViewEntries(entries, selection, options.views)
-  if (selection.kind === 'folder') return filterFolderEntries(entries, selection, options.subFilter)
-  if (selection.kind === 'sectionGroup') return filterSectionGroupEntries(entries, selection.type, options.subFilter)
-  return filterTopLevelEntries(entries, selection, options)
+	if (selection.kind === "entity") return [];
+	if (selection.kind === "view")
+		return filterViewEntries(entries, selection, options.views);
+	if (selection.kind === "folder")
+		return filterFolderEntries(entries, selection, options.subFilter);
+	if (selection.kind === "sectionGroup")
+		return filterSectionGroupEntries(
+			entries,
+			selection.type,
+			options.subFilter,
+		);
+	return filterTopLevelEntries(entries, selection, options);
 }
 
-function filterByFilterType(entries: VaultEntry[], filter: string): VaultEntry[] {
-  if (filter === 'all') return entries.filter(isActive)
-  if (filter === 'archived') return entries.filter((e) => e.archived)
-  if (filter === 'favorites') return entries.filter((e) => e.favorite && !e.archived)
-  if (filter === 'pulse') return []
-  return []
+function filterByFilterType(
+	entries: VaultEntry[],
+	filter: string,
+): VaultEntry[] {
+	if (filter === "all") return entries.filter(isActive);
+	if (filter === "archived") return entries.filter((e) => e.archived);
+	if (filter === "favorites")
+		return entries.filter((e) => e.favorite && !e.archived);
+	if (filter === "pulse") return [];
+	return [];
 }
 
 export function filterEntries(
-  entries: VaultEntry[],
-  selection: SidebarSelection,
-  options: FilterEntriesOptions = {},
+	entries: VaultEntry[],
+	selection: SidebarSelection,
+	options: FilterEntriesOptions = {},
 ): VaultEntry[] {
-  return filterByKind(entries, selection, options)
+	return filterByKind(entries, selection, options);
 }
 
 /** Count notes per sub-filter for a given type. */
-export function countByFilter(entries: VaultEntry[], type: string): Record<NoteListFilter, number> {
-  const typeVisibility = buildTypeVisibilityLookup(entries)
-  let open = 0, archived = 0
-  for (const e of entries) {
-    if (!isSectionEntryVisibleForType(e, type, typeVisibility)) continue
-    if (e.archived) archived++
-    else open++
-  }
-  return { open, archived }
+export function countByFilter(
+	entries: VaultEntry[],
+	type: string,
+): Record<NoteListFilter, number> {
+	const typeVisibility = buildTypeVisibilityLookup(entries);
+	let open = 0,
+		archived = 0;
+	for (const e of entries) {
+		if (!isSectionEntryVisibleForType(e, type, typeVisibility)) continue;
+		if (e.archived) archived++;
+		else open++;
+	}
+	return { open, archived };
 }
 
-function countEntriesByArchiveStatus(entries: VaultEntry[]): Record<NoteListFilter, number> {
-  let open = 0, archived = 0
-  for (const entry of entries) {
-    if (entry.archived) archived++
-    else open++
-  }
-  return { open, archived }
+function countEntriesByArchiveStatus(
+	entries: VaultEntry[],
+): Record<NoteListFilter, number> {
+	let open = 0,
+		archived = 0;
+	for (const entry of entries) {
+		if (entry.archived) archived++;
+		else open++;
+	}
+	return { open, archived };
 }
 
 /** Count notes per sub-filter across all entries (no type filter). */
-export function countAllByFilter(entries: VaultEntry[]): Record<NoteListFilter, number> {
-  return countEntriesByArchiveStatus(entries.filter(isMarkdown))
+export function countAllByFilter(
+	entries: VaultEntry[],
+): Record<NoteListFilter, number> {
+	return countEntriesByArchiveStatus(entries.filter(isMarkdown));
 }
 
 /** Count All Notes-eligible documents per sub-filter using the current file visibility policy. */
 export function countAllNotesByFilter(
-  entries: VaultEntry[],
-  allNotesFileVisibility?: AllNotesFileVisibility,
+	entries: VaultEntry[],
+	allNotesFileVisibility?: AllNotesFileVisibility,
 ): Record<NoteListFilter, number> {
-  return countEntriesByArchiveStatus(
-    entries.filter((entry) => isAllNotesEntry(entry, allNotesFileVisibility)),
-  )
+	return countEntriesByArchiveStatus(
+		entries.filter((entry) => isAllNotesEntry(entry, allNotesFileVisibility)),
+	);
 }
 
 // --- Inbox ---
 
 /** Check if entry belongs in the Inbox (markdown only, not organized, not archived, not a Type). */
 export function isInboxEntry(entry: VaultEntry): boolean {
-  if (!isVisibleMarkdownNote(entry)) return false
-  if (entry.archived) return false
-  if (entry.isA === 'Type') return false
-  return !entry.organized
+	if (!isVisibleMarkdownNote(entry)) return false;
+	if (entry.archived) return false;
+	if (entry.isA === "Type") return false;
+	return !entry.organized;
 }
 
 const INBOX_PERIOD_DAYS: Record<InboxPeriod, number> = {
-  week: 7, month: 30, quarter: 90, all: Infinity,
-}
-const INBOX_PERIOD_DAYS_LOOKUP = new Map(Object.entries(INBOX_PERIOD_DAYS) as Array<[InboxPeriod, number]>)
+	week: 7,
+	month: 30,
+	quarter: 90,
+	all: Infinity,
+};
+const INBOX_PERIOD_DAYS_LOOKUP = new Map(
+	Object.entries(INBOX_PERIOD_DAYS) as Array<[InboxPeriod, number]>,
+);
 
 /** Filter entries for the Inbox view: not organized, within the given time period, sorted by createdAt desc. */
-export function filterInboxEntries(entries: VaultEntry[], period: InboxPeriod): VaultEntry[] {
-  const now = Math.floor(Date.now() / 1000)
-  const periodDays = INBOX_PERIOD_DAYS_LOOKUP.get(period) ?? Infinity
-  const cutoff = period === 'all' ? 0 : now - periodDays * 86400
+export function filterInboxEntries(
+	entries: VaultEntry[],
+	period: InboxPeriod,
+): VaultEntry[] {
+	const now = Math.floor(Date.now() / 1000);
+	const periodDays = INBOX_PERIOD_DAYS_LOOKUP.get(period) ?? Infinity;
+	const cutoff = period === "all" ? 0 : now - periodDays * 86400;
 
-  return entries
-    .filter((e) => isInboxEntry(e) && (e.createdAt ?? 0) >= cutoff)
-    .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+	return entries
+		.filter((e) => isInboxEntry(e) && (e.createdAt ?? 0) >= cutoff)
+		.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
 }
 
 /** Count inbox entries per period. */
-export function countInboxByPeriod(entries: VaultEntry[]): Record<InboxPeriod, number> {
-  const inbox = entries.filter((e) => isInboxEntry(e))
-  const now = Math.floor(Date.now() / 1000)
+export function countInboxByPeriod(
+	entries: VaultEntry[],
+): Record<InboxPeriod, number> {
+	const inbox = entries.filter((e) => isInboxEntry(e));
+	const now = Math.floor(Date.now() / 1000);
 
-  let week = 0, month = 0, quarter = 0
-  for (const e of inbox) {
-    const age = now - (e.createdAt ?? 0)
-    if (age <= 7 * 86400) week++
-    if (age <= 30 * 86400) month++
-    if (age <= 90 * 86400) quarter++
-  }
+	let week = 0,
+		month = 0,
+		quarter = 0;
+	for (const e of inbox) {
+		const age = now - (e.createdAt ?? 0);
+		if (age <= 7 * 86400) week++;
+		if (age <= 30 * 86400) month++;
+		if (age <= 90 * 86400) quarter++;
+	}
 
-  return { week, month, quarter, all: inbox.length }
+	return { week, month, quarter, all: inbox.length };
 }
