@@ -3,6 +3,7 @@ import {
 	type MediaQueriesStub,
 	stubMediaQueries,
 } from "../test-utils/mediaQueries";
+import { tooltipMayOpen } from "./tooltipTouchGate";
 import {
 	installTouchInput,
 	LONG_PRESS_MS,
@@ -231,4 +232,15 @@ it("reports a long-press menu to product analytics by default", async () => {
 			{ surface: "note_list" },
 		);
 	});
+});
+
+it("keeps tooltips closed after a tap until it is uninstalled (TOL-419)", () => {
+	stubMediaQueries({ [TOUCH_INPUT_QUERY]: true });
+	const uninstall = installTouchInput(window, () => {});
+	const { item } = mountShell();
+	pointer(item, "pointerdown");
+	expect(tooltipMayOpen()).toBe(false);
+	uninstall();
+	expect(tooltipMayOpen()).toBe(true);
+	vi.unstubAllGlobals();
 });

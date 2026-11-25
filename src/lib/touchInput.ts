@@ -1,8 +1,11 @@
 /**
  * Web only (TOL-24): touch-first input. While the primary pointer is a finger, `<html>` carries
  * `data-touch-input` (App.css sizes key targets to 44 px from it), and a long press on the
- * sidebar or the note list opens the context menu a right click opens with a mouse.
+ * sidebar or the note list opens the context menu a right click opens with a mouse, and a tap
+ * never opens a tooltip (TOL-419, src/lib/tooltipTouchGate.ts).
  */
+import { installTooltipTouchGate } from "./tooltipTouchGate";
+
 export const TOUCH_INPUT_QUERY = "(pointer: coarse)";
 export const TOUCH_INPUT_ATTRIBUTE = "data-touch-input";
 /**
@@ -195,8 +198,10 @@ export function installTouchInput(
 	if (typeof win.matchMedia !== "function") return () => {};
 	const stopFollowing = followTouchInput(win);
 	const stopLongPress = installLongPress(win, onOpen);
+	const stopTooltipGate = installTooltipTouchGate(win);
 	return () => {
 		stopFollowing();
 		stopLongPress();
+		stopTooltipGate();
 	};
 }
