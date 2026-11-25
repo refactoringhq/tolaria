@@ -142,20 +142,18 @@ function appEntryDefaults(): AppEntryDefaults {
 	};
 }
 
-/** The fields that are set: an index entry omits what a note does not have. */
-function definedFields<T extends object>(value: T): Partial<T> {
-	return Object.fromEntries(
-		Object.entries(value).filter(([, field]) => field !== undefined),
-	) as Partial<T>;
-}
-
 /** The desktop's vault scan leaves dot files out (`is_visible_vault_file`), a folder's `.keep` among them. */
 function visibleEntries(entries: AppVaultEntry[]): AppVaultEntry[] {
 	return entries.filter((entry) => !entry.filename.startsWith("."));
 }
 
 function mapProtocolEntryToApp(entry: ProtocolVaultEntry): AppVaultEntry {
-	return { ...appEntryDefaults(), ...definedFields(entry) } as AppVaultEntry;
+	const mapped = appEntryDefaults() as AppVaultEntry;
+	for (const key of Object.keys(entry)) {
+		const value = entry[key as keyof ProtocolVaultEntry];
+		if (value !== undefined) Reflect.set(mapped, key, value);
+	}
+	return mapped;
 }
 
 /** Empty lists, maps and nulls are left out of the cached index, as the server does. */

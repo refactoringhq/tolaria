@@ -3,6 +3,7 @@
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import * as React from "react";
 
+import { tooltipMayOpen } from "@/lib/tooltipTouchGate";
 import { cn } from "@/lib/utils";
 
 function TooltipProvider({
@@ -18,10 +19,45 @@ function TooltipProvider({
 	);
 }
 
+/**
+ * A tap never opens a tooltip (TOL-419): only a mouse, a trackpad or keyboard focus do. Decided
+ * once per opening, so it also covers tooltips their owner opens itself.
+ */
+function useTouchSafeOpen(requested: boolean): boolean {
+	const [opening, setOpening] = React.useState({
+		requested: false,
+		allowed: false,
+	});
+	if (opening.requested !== requested) {
+		setOpening({ requested, allowed: requested && tooltipMayOpen() });
+	}
+	return requested && opening.allowed;
+}
+
 function Tooltip({
+	open,
+	defaultOpen = false,
+	onOpenChange,
 	...props
 }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
-	return <TooltipPrimitive.Root data-slot="tooltip" {...props} />;
+	const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen);
+	const handleOpenChange = React.useCallback(
+		(next: boolean) => {
+			if (next && !tooltipMayOpen()) return;
+			setUncontrolledOpen(next);
+			onOpenChange?.(next);
+		},
+		[onOpenChange],
+	);
+	const shown = useTouchSafeOpen(open ?? uncontrolledOpen);
+	return (
+		<TooltipPrimitive.Root
+			data-slot="tooltip"
+			open={shown}
+			onOpenChange={handleOpenChange}
+			{...props}
+		/>
+	);
 }
 
 function TooltipTrigger({
