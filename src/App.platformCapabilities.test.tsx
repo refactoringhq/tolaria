@@ -110,6 +110,7 @@ describe("App platform capabilities", () => {
 	});
 
 	test("keeps the git status in the status bar without a remote server", async () => {
+		window.localStorage.setItem("tolaria:ai-agents-onboarding-dismissed", "1");
 		render(<App />);
 
 		const statusBar = await screen.findByTestId("status-bar");

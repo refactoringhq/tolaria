@@ -123,7 +123,7 @@ function isYamlControlCode(code: number): boolean {
 
 /** True when the desktop writes this single-line string value in double quotes. */
 export function needsQuoting(text: PlainText): boolean {
-	return QUOTING_RULES.some((rule) => rule(text));
+	return text === "" || QUOTING_RULES.some((rule) => rule(text));
 }
 
 function quoted(text: PlainText): YamlText {

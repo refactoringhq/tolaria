@@ -17,6 +17,7 @@ import {
 } from "../../collections/layoutRegistry";
 import { trackEvent } from "../../lib/telemetry";
 import type { SidebarSelection, VaultEntry } from "../../types";
+import { isWebBuild } from "../../utils/webBuild";
 import {
 	availableDateProperties,
 	resolveDateProperty,
@@ -35,6 +36,7 @@ import {
 } from "./collectionLayoutConfig";
 import { buildGraphData } from "./graph/graphModel";
 import { toggleColumnValue } from "./kanbanModel";
+import { readWebLayout } from "./webLayoutStorage";
 
 export interface CollectionLayoutSource extends LayoutPersistenceTarget {
 	visibleEntries: VaultEntry[];
@@ -46,14 +48,31 @@ export interface CollectionLayoutSource extends LayoutPersistenceTarget {
 type SettingsMap = Map<string, LayoutSettings>;
 type SetSettingsMap = React.Dispatch<React.SetStateAction<SettingsMap>>;
 
+function initialWebLayouts(
+	source: CollectionLayoutSource,
+	key: string,
+): SettingsMap {
+	if (!isWebBuild() || !canUseVaultLayoutFile(source.selection))
+		return new Map();
+	const stored = readStoredLayout(readWebLayout(key));
+	return stored ? new Map([[key, stored]]) : new Map();
+}
+
+function shouldLoadNativeLayout(
+	vaultPath: string | undefined,
+	canLoad: boolean,
+) {
+	return !isWebBuild() && Boolean(vaultPath) && canLoad;
+}
+
 function usePersistedLayout(source: CollectionLayoutSource, key: string) {
-	const [storedConfigs, setStoredConfigs] = useState<SettingsMap>(
-		() => new Map(),
+	const [storedConfigs, setStoredConfigs] = useState<SettingsMap>(() =>
+		initialWebLayouts(source, key),
 	);
 	const vaultPath = configVaultPath(source);
 	const canLoad = canUseVaultLayoutFile(source.selection);
 	useEffect(() => {
-		if (!vaultPath || !canLoad) return;
+		if (!shouldLoadNativeLayout(vaultPath, canLoad)) return;
 		let current = true;
 		void invoke<Record<string, unknown>>("list_collection_layouts", {
 			vaultPath,

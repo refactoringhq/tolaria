@@ -24,6 +24,8 @@ import type {
 	ViewDefinition,
 	ViewFile,
 } from "../../types";
+import { isWebBuild } from "../../utils/webBuild";
+import { writeWebLayout } from "./webLayoutStorage";
 
 export interface LayoutSettings {
 	layout: CollectionPresentationType;
@@ -216,6 +218,17 @@ export function persistLayoutSettings(
 	target: LayoutPersistenceTarget,
 	settings: LayoutSettings,
 ) {
+	if (isWebBuild() && canUseVaultLayoutFile(target.selection)) {
+		writeWebLayout(collectionLayoutKey(target.selection), {
+			type: settings.layout,
+			groupBy: settings.groupBy,
+			showProperties: settings.showProperties,
+			...kanbanColumnSettings(settings),
+			...settings.calendar,
+			...settings.graph,
+		});
+		return;
+	}
 	const view = viewFor(target);
 	if (view)
 		saveViewPresentation(target, view, viewPresentationFor(view, settings));
@@ -356,7 +369,7 @@ function addEntryKeys(
 	entry: VaultEntry,
 	accept: (value: unknown) => boolean,
 ) {
-	if (entry.status) keys.add("status");
+	if (entry.status !== null && entry.status !== undefined) keys.add("status");
 	Object.entries(entry.properties).forEach(([key, value]) => {
 		if (key.trim() && accept(value)) keys.add(key);
 	});

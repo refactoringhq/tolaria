@@ -480,7 +480,7 @@ describe("collection layouts", () => {
 		expect(screen.getByTestId("classic-list")).toBeInTheDocument();
 	});
 
-	it("moves a card through the frontmatter writer without changing the rest of the note", () => {
+	it("moves a card into No value and persists an explicit empty string", () => {
 		const original =
 			"---\ntitle: Alpha\nstatus: Doing\nowner: Ada\ntags:\n  - project\n---\n\nSee [[Roadmap|the roadmap]].\n";
 		let persistedContent = original;
@@ -522,11 +522,11 @@ describe("collection layouts", () => {
 			expect(invoke).toHaveBeenCalledWith("update_frontmatter", {
 				path: "/vault/a.md",
 				key: "status",
-				value: null,
+				value: "",
 			});
-			expect(updateEntry).toHaveBeenCalledWith("/vault/a.md", { status: null });
+			expect(updateEntry).toHaveBeenCalledWith("/vault/a.md", { status: "" });
 			expect(persistedContent).toBe(
-				"---\ntitle: Alpha\nstatus: null\nowner: Ada\ntags:\n  - project\n---\n\nSee [[Roadmap|the roadmap]].\n",
+				'---\ntitle: Alpha\nstatus: ""\nowner: Ada\ntags:\n  - project\n---\n\nSee [[Roadmap|the roadmap]].\n',
 			);
 		});
 	});

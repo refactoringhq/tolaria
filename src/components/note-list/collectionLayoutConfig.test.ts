@@ -1,8 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { isWritableGroupKey, readStoredLayout } from "./collectionLayoutConfig";
 import { DEFAULT_GRAPH_SETTINGS } from "../../collections/graphSettings";
+import { makeEntry } from "../../test-utils/noteListTestUtils";
+import {
+	availableGroupProperties,
+	isWritableGroupKey,
+	readStoredLayout,
+} from "./collectionLayoutConfig";
 
 describe("collectionLayoutConfig", () => {
+	it("keeps status available when its value is the empty string", () => {
+		expect(availableGroupProperties([makeEntry({ status: "" })])).toContain(
+			"status",
+		);
+	});
+
 	it("only writes Kanban drops to single-line keys the board notes already carry", () => {
 		expect(isWritableGroupKey("status", ["status", "owner"])).toBe(true);
 		expect(isWritableGroupKey("priority", ["status"])).toBe(false);
