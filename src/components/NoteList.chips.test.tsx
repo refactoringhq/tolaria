@@ -58,6 +58,9 @@ describe("NoteList property chips", () => {
 			backgroundColor: "var(--accent-green-light)",
 			color: "var(--accent-green-text)",
 		});
+		expect(chip.querySelector('[data-testid="status-chip-dot"]')).toHaveClass(
+			"size-[7px]",
+		);
 	});
 
 	it("auto-detects status-like property values in note-list chips", () => {
