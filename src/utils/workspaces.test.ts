@@ -79,6 +79,15 @@ describe('workspaceIdentityFromVault', () => {
     expect(workspace.shortLabel).toBe('LA')
   })
 
+  it('uses the final folder name when a Windows vault label contains its full path', () => {
+    const workspace = workspaceIdentityFromVault({
+      label: String.raw`C:\Users\mabachan\Documents\My Vault`,
+      path: String.raw`C:\Users\mabachan\Documents\My Vault`,
+    } as VaultOption)
+
+    expect(workspace.label).toBe('My Vault')
+  })
+
   it('keeps the slug path-derived when the display name changes', () => {
     const workspace = workspaceIdentityFromVault({
       label: 'Personal Main',
