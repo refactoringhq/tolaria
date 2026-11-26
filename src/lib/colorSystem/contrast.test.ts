@@ -68,6 +68,16 @@ describe('token contrast', () => {
     }
   })
 
+  it('keeps sidebar hover and gray row fills visible on the sidebar surface', () => {
+    for (const theme of ['light', 'dark'] as const) {
+      const tokens = themeTokens(sources, theme)
+      const sidebar = resolveToken(tokens, '--surface-sidebar') ?? ''
+      for (const fill of ['--sidebar-hover', '--sidebar-gray-fill']) {
+        expect(contrastRatio(resolveToken(tokens, fill) ?? sidebar, sidebar), `${theme} ${fill}`).toBeGreaterThanOrEqual(1.1)
+      }
+    }
+  })
+
   it('keeps the approved legacy brand colors as light-mode accent anchors', () => {
     const anchors = {
       red: '#E53E3E', orange: '#D9730D', yellow: '#D69E2E', green: '#38A169',
