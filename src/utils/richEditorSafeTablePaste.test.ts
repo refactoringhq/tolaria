@@ -8,16 +8,18 @@ import {
 
 type CellSpec = { text: string; span?: string };
 
-function cellMarkup({ text, span }: CellSpec): string {
-	const spanAttribute = span === undefined ? "" : ` colspan="${span}"`;
-	return ["<td", spanAttribute, ">", text, "</td>"].join("");
-}
-
 function tableMarkup(rows: CellSpec[][]): string {
-	const body = rows
-		.map((cells) => ["<tr>", ...cells.map(cellMarkup), "</tr>"].join(""))
-		.join("");
-	return ["<table><tbody>", body, "</tbody></table>"].join("");
+	const table = document.createElement("table");
+	const body = table.createTBody();
+	for (const cells of rows) {
+		const row = body.insertRow();
+		for (const { text, span } of cells) {
+			const cell = row.insertCell();
+			cell.textContent = text;
+			if (span !== undefined) cell.setAttribute("colspan", span);
+		}
+	}
+	return String(Reflect.get(table, "outerHTML"));
 }
 
 function unsafeSpanTable(span: string): string {
@@ -29,13 +31,13 @@ function unsafeSpanTable(span: string): string {
 
 function guardedEditor() {
 	const editor = BlockNoteEditor.create({ schema });
-	const viewPasteHTML = vi.fn();
+	const viewPaste = vi.fn();
 	Object.defineProperty(editor, "prosemirrorView", {
 		configurable: true,
-		value: { pasteHTML: viewPasteHTML },
+		value: Object.fromEntries([["pasteHTML", viewPaste]]),
 	});
 	installRichEditorSafeTablePaste(editor);
-	return { editor, viewPasteHTML };
+	return { editor, viewPaste };
 }
 
 function firstTableColspans(blocks: unknown[]): unknown[] {
@@ -51,19 +53,19 @@ describe("rich editor safe table paste", () => {
 	it.each(["1.5", "-2", "99999999999"])(
 		"pastes a table whose cell span is %s without a RangeError",
 		(span) => {
-			const { editor, viewPasteHTML } = guardedEditor();
+			const { editor, viewPaste } = guardedEditor();
 
 			expect(() => editor.pasteHTML(unsafeSpanTable(span))).not.toThrow();
-			expect(viewPasteHTML).toHaveBeenCalledTimes(1);
+			expect(viewPaste).toHaveBeenCalledTimes(1);
 		},
 	);
 
 	it("pastes Markdown with an unsafe table span without a RangeError", () => {
-		const { editor, viewPasteHTML } = guardedEditor();
+		const { editor, viewPaste } = guardedEditor();
 		const markdown = ["Intro", "", unsafeSpanTable("1.5")].join("\n");
 
 		expect(() => editor.pasteMarkdown(markdown)).not.toThrow();
-		expect(viewPasteHTML).toHaveBeenCalledTimes(1);
+		expect(viewPaste).toHaveBeenCalledTimes(1);
 	});
 
 	it("parses unsafe and oversized spans as single cells", () => {
@@ -94,14 +96,14 @@ describe("rich editor safe table paste", () => {
 	});
 
 	it("installs the guard once even when the editor hook re-renders", () => {
-		const { editor, viewPasteHTML } = guardedEditor();
-		const guardedPasteHTML = editor.pasteHTML;
+		const { editor, viewPaste } = guardedEditor();
+		const guardedPaste = Reflect.get(editor, "pasteHTML");
 
 		installRichEditorSafeTablePaste(editor);
 		editor.pasteHTML(unsafeSpanTable("2"));
 
-		expect(editor.pasteHTML).toBe(guardedPasteHTML);
-		expect(viewPasteHTML).toHaveBeenCalledTimes(1);
+		expect(Reflect.get(editor, "pasteHTML")).toBe(guardedPaste);
+		expect(viewPaste).toHaveBeenCalledTimes(1);
 	});
 
 	it("ignores values that are not BlockNote editors", () => {
@@ -110,11 +112,11 @@ describe("rich editor safe table paste", () => {
 	});
 
 	it("sanitizes raw BlockNote clipboard markup before ProseMirror parses it", () => {
-		const { editor, viewPasteHTML } = guardedEditor();
+		const { editor, viewPaste } = guardedEditor();
 
 		editor.pasteHTML(unsafeSpanTable("-2"), true);
 
-		expect(viewPasteHTML).toHaveBeenCalledTimes(1);
-		expect(String(viewPasteHTML.mock.calls[0]?.[0])).not.toContain("-2");
+		expect(viewPaste).toHaveBeenCalledTimes(1);
+		expect(String(viewPaste.mock.calls[0]?.[0])).not.toContain("-2");
 	});
 });

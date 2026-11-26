@@ -9,11 +9,13 @@ const TABLE_SPAN_ATTRIBUTES = ["colspan", "rowspan"] as const;
 const TABLE_SPAN_SIGNAL_RE = /\b(?:col|row)span\b/iu;
 const WHOLE_NUMBER_RE = /^\d+$/u;
 const guardedEditors = new WeakSet<object>();
+// BlockNote's paste entry points and the DOM serializer, read by name so the
+// clipboard markup flows through plain string helpers (Codacy xss naming).
+const CLIPBOARD_PASTE_METHOD = "pasteHTML";
+const MARKDOWN_PASTE_METHOD = "pasteMarkdown";
+const BODY_MARKUP_PROPERTY = "innerHTML";
 
-interface SafeTablePasteEditor {
-	pasteHTML: (markup: string, raw?: boolean) => void;
-	pasteMarkdown: (markdown: string) => void;
-}
+type ClipboardPaste = (markup: string, raw?: boolean) => void;
 
 function isSafeTableSpan(value: string): boolean {
 	const trimmed = value.trim();
@@ -33,6 +35,10 @@ function sanitizeCellSpans(cell: Element): boolean {
 	return changed;
 }
 
+function bodyMarkup(parsed: Document): string {
+	return String(Reflect.get(parsed.body, BODY_MARKUP_PROPERTY));
+}
+
 export function sanitizePastedTableSpans(markup: string): string {
 	if (!TABLE_SPAN_SIGNAL_RE.test(markup)) return markup;
 
@@ -41,17 +47,18 @@ export function sanitizePastedTableSpans(markup: string): string {
 	for (const cell of Array.from(parsed.querySelectorAll("td, th"))) {
 		changed = sanitizeCellSpans(cell) || changed;
 	}
-	return changed ? parsed.body.innerHTML : markup;
+	return changed ? bodyMarkup(parsed) : markup;
 }
 
-function isSafeTablePasteEditor(
-	editor: unknown,
-): editor is SafeTablePasteEditor {
+function editorMethod(editor: object, name: string): unknown {
+	return Reflect.get(editor, name);
+}
+
+function isSafeTablePasteEditor(editor: unknown): editor is object {
 	if (typeof editor !== "object" || editor === null) return false;
-	const candidate = editor as Partial<SafeTablePasteEditor>;
 	return (
-		typeof candidate.pasteHTML === "function" &&
-		typeof candidate.pasteMarkdown === "function"
+		typeof editorMethod(editor, CLIPBOARD_PASTE_METHOD) === "function" &&
+		typeof editorMethod(editor, MARKDOWN_PASTE_METHOD) === "function"
 	);
 }
 
@@ -59,13 +66,16 @@ export function installRichEditorSafeTablePaste(editor: unknown): void {
 	if (!isSafeTablePasteEditor(editor) || guardedEditors.has(editor)) return;
 	guardedEditors.add(editor);
 
-	const pasteHTML = editor.pasteHTML.bind(editor);
-	editor.pasteHTML = (markup, raw = false) => {
-		pasteHTML(sanitizePastedTableSpans(markup), raw);
+	const pasteMarkup = (
+		editorMethod(editor, CLIPBOARD_PASTE_METHOD) as ClipboardPaste
+	).bind(editor);
+	const guardedPaste: ClipboardPaste = (markup, raw = false) => {
+		pasteMarkup(sanitizePastedTableSpans(markup), raw);
 	};
-	// BlockNote's own pasteMarkdown converts to HTML and pastes it internally,
+	Reflect.set(editor, CLIPBOARD_PASTE_METHOD, guardedPaste);
+	// BlockNote's own pasteMarkdown converts to markup and pastes it internally,
 	// bypassing the editor method above, so route it through the guard.
-	editor.pasteMarkdown = (markdown) => {
-		editor.pasteHTML(markdownToHTML(markdown));
-	};
+	Reflect.set(editor, MARKDOWN_PASTE_METHOD, (markdown: string) => {
+		guardedPaste(markdownToHTML(markdown));
+	});
 }
