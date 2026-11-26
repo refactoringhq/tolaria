@@ -110,6 +110,8 @@ export const CONTRAST_PAIRS: ContrastPair[] = [
   ...pairs({ label: 'link text', foreground: '--accent-blue', minimum: TEXT }, ['--surface-app', '--surface-sidebar']),
   ...pairs({ label: 'count pill label', foreground: '--count-pill-text', minimum: TEXT }, ['--count-pill-bg']),
   ...pairs({ label: 'hovered count pill label', foreground: '--count-pill-text-hover', minimum: TEXT }, ['--count-pill-bg-hover']),
+  ...pairs({ label: 'hovered sidebar header label', foreground: '--sidebar-hover-text', minimum: TEXT }, ['--sidebar-hover']),
+  ...pairs({ label: 'gray sidebar row label', foreground: '--sidebar-gray-text', minimum: TEXT }, ['--sidebar-gray-fill']),
   ...pairs({ label: 'primary button text', foreground: '--primary-foreground', minimum: TEXT }, ['--primary', '--primary-hover']),
   ...pairs({ label: 'destructive button text', foreground: '--destructive-foreground', minimum: TEXT }, ['--destructive', '--destructive-hover']),
   ...pairs({ label: 'success button text', foreground: '--text-on-fill', minimum: TEXT }, ['--fill-success', '--fill-success-hover']),
