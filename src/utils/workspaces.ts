@@ -68,7 +68,11 @@ export function workspaceAliasFromOption(vault: Pick<VaultOption, 'alias' | 'lab
 }
 
 export function workspaceLabelFromVault(vault: Pick<VaultOption, 'label' | 'path'>): string {
-  return workspaceStringValue(vault.label).trim() || labelFromWorkspacePath(vault.path)
+  const label = workspaceStringValue(vault.label).trim()
+  if (!label) return labelFromWorkspacePath(vault.path)
+
+  const isAbsolutePath = /^[\\/]/.test(label) || /^[a-z]:[\\/]/i.test(label)
+  return isAbsolutePath ? labelFromWorkspacePath(label) : label
 }
 
 export function workspaceIdentityFromVault(
