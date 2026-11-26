@@ -1,8 +1,7 @@
 /**
  * Tooltips under a finger (TOL-419). iOS Safari focuses a tapped button only once the finger has
- * lifted, and a tooltip opens on a focus that no press preceded: it then stayed on screen after
- * the tap. While the last pointer was a finger, a tooltip opens only for keyboard focus. A mouse
- * or a trackpad keeps its hover tooltips, and a desktop that never sees a finger is unchanged.
+ * lifted, and can mark that focus as keyboard-visible. After touch, require a real keydown before
+ * treating focus as keyboard intent. A mouse or trackpad keeps hover tooltips.
  */
 /** `pointerover` arrives before `pointerenter`, which opens the editor toolbar's tooltips. */
 const TRACKED_POINTER_EVENTS = [
@@ -11,9 +10,15 @@ const TRACKED_POINTER_EVENTS = [
 	"pointermove",
 ] as const;
 let lastPointerType: string | null = null;
+let keyboardInputSincePointer = false;
 
 function rememberPointer(event: PointerEvent): void {
 	lastPointerType = event.pointerType;
+	keyboardInputSincePointer = false;
+}
+
+function rememberKeyboardInput(): void {
+	keyboardInputSincePointer = true;
 }
 
 function hasKeyboardFocus(doc: Document): boolean {
@@ -26,18 +31,24 @@ function hasKeyboardFocus(doc: Document): boolean {
 	}
 }
 
-/** Whether a tooltip may open now: always with a mouse, only for keyboard focus after a tap. */
+/** Whether a tooltip may open now: always with a mouse, or after keyboard input following a tap. */
 export function tooltipMayOpen(doc: Document = document): boolean {
-	return lastPointerType !== "touch" || hasKeyboardFocus(doc);
+	return (
+		lastPointerType !== "touch" ||
+		(keyboardInputSincePointer && hasKeyboardFocus(doc))
+	);
 }
 
 /** Follows which pointer the user last used; returns the uninstaller. */
 export function installTooltipTouchGate(win: Window = window): () => void {
 	for (const type of TRACKED_POINTER_EVENTS)
 		win.addEventListener(type, rememberPointer, true);
+	win.addEventListener("keydown", rememberKeyboardInput, true);
 	return () => {
 		for (const type of TRACKED_POINTER_EVENTS)
 			win.removeEventListener(type, rememberPointer, true);
+		win.removeEventListener("keydown", rememberKeyboardInput, true);
 		lastPointerType = null;
+		keyboardInputSincePointer = false;
 	};
 }
