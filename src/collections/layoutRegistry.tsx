@@ -37,7 +37,6 @@ export interface CollectionLayoutSharedProps {
 	/** Every vault entry, so card property chips resolve links exactly like list rows. */
 	allEntries: VaultEntry[];
 	properties: string[];
-	showProperties?: boolean;
 	locale: AppLocale;
 	typeEntryMap: Record<string, VaultEntry>;
 	displayPropsOverride?: string[] | null;
@@ -129,7 +128,6 @@ function sharedLayoutProps(
 		entries,
 		allEntries,
 		properties,
-		showProperties,
 		locale,
 		typeEntryMap,
 		displayPropsOverride,
@@ -140,7 +138,6 @@ function sharedLayoutProps(
 		entries,
 		allEntries,
 		properties,
-		showProperties,
 		locale,
 		typeEntryMap,
 		displayPropsOverride,

@@ -79,7 +79,6 @@ function rendererProps(
 		entries: props.entries,
 		allEntries: props.allEntries,
 		properties: layout.properties,
-		showProperties: layout.showProperties,
 		locale: props.locale,
 		typeEntryMap: props.typeEntryMap,
 		displayPropsOverride: props.displayPropsOverride,

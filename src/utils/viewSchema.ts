@@ -34,6 +34,7 @@ export interface ViewDefinition {
 		sort?: string | null;
 		groupBy?: string | null;
 		properties?: string[];
+		/** Legacy "hide all properties" flag; ignored, and dropped on the next save. */
 		showProperties?: boolean;
 		columnOrder?: string[];
 		collapsedColumns?: string[];
