@@ -123,7 +123,6 @@ function useItemContext(props: CalendarBoardProps): CalendarItemContext {
 		calendar,
 	} = props;
 	const showIcons = calendar.settings.showIcons;
-	const showProperties = props.showProperties !== false;
 	const onOpen = useLatestCallback(props.onOpen);
 	return useMemo(
 		() => ({
@@ -134,7 +133,6 @@ function useItemContext(props: CalendarBoardProps): CalendarItemContext {
 			itemRole: translate(locale, "layout.cardRole"),
 			draggable: calendar.canReschedule,
 			showIcons,
-			showProperties,
 			onOpen,
 		}),
 		[
@@ -145,7 +143,6 @@ function useItemContext(props: CalendarBoardProps): CalendarItemContext {
 			onOpen,
 			properties,
 			showIcons,
-			showProperties,
 			typeEntryMap,
 		],
 	);

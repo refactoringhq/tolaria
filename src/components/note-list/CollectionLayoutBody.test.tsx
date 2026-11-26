@@ -159,7 +159,6 @@ const savedColumnSettings = {
 	groupBy: "status",
 	columnOrder: [],
 	properties: [],
-	showProperties: true,
 	collapsedColumns: ["Done", "Doing"],
 	hiddenColumns: [""],
 };
@@ -302,7 +301,6 @@ describe("collection layouts", () => {
 					groupBy: "priority",
 					columnOrder: [],
 					properties: ["owner"],
-					showProperties: true,
 					collapsedColumns: [],
 					hiddenColumns: [],
 				},
