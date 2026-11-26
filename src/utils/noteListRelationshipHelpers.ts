@@ -89,15 +89,22 @@ function makeBuiltinComparator(
 	option: string,
 	flip: number,
 ): (a: VaultEntry, b: VaultEntry) => number {
-	const comparators: Record<string, (a: VaultEntry, b: VaultEntry) => number> =
-		{
-			title: (a, b) =>
-				flip * stringField(a.title).localeCompare(stringField(b.title)),
-			created: (a, b) => flip * (creationTimestamp(a) - creationTimestamp(b)),
-			status: (a, b) => compareEntryStatuses(a, b, flip),
-		};
+	const comparators = new Map<string, (a: VaultEntry, b: VaultEntry) => number>(
+		[
+			[
+				"title",
+				(a, b) =>
+					flip * stringField(a.title).localeCompare(stringField(b.title)),
+			],
+			[
+				"created",
+				(a, b) => flip * (creationTimestamp(a) - creationTimestamp(b)),
+			],
+			["status", (a, b) => compareEntryStatuses(a, b, flip)],
+		],
+	);
 	return (
-		comparators[option] ??
+		comparators.get(option) ??
 		((a, b) => flip * (modifiedTimestamp(a) - modifiedTimestamp(b)))
 	);
 }
