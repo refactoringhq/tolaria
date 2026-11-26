@@ -96,6 +96,13 @@
   --count-pill-bg-hover: var(--count-pill-bg);
   --count-pill-text-hover: var(--gray-600);
 
+  /* --- Sidebar rows (light mode): gray-100 vanishes on the gray-50 sidebar, so
+     hover, header count pills and gray type rows step up to gray-150 --- */
+  --sidebar-hover: var(--gray-150);
+  --sidebar-hover-text: var(--gray-700);
+  --sidebar-gray-fill: var(--gray-150);
+  --sidebar-gray-text: var(--gray-700);
+
   /* --- Accent roles (light mode): icon/accent, tinted fill, text on tinted fill --- */
   --accent-blue: var(--blue-500);
   --accent-blue-bg: var(--blue-50);
@@ -221,6 +228,12 @@
   --count-pill-bg-hover: var(--count-pill-bg);
   --count-pill-text-hover: var(--gray-400);
 
+  /* --- Sidebar rows (dark mode) --- */
+  --sidebar-hover: var(--gray-800);
+  --sidebar-hover-text: var(--gray-400);
+  --sidebar-gray-fill: var(--gray-700);
+  --sidebar-gray-text: var(--gray-300);
+
   /* --- Accent roles (dark mode) --- */
   --accent-blue: var(--blue-400);
   --accent-blue-bg: var(--blue-900);
@@ -332,7 +345,7 @@
   --sidebar-foreground: var(--text-primary);
   --sidebar-primary: var(--fill-primary);
   --sidebar-primary-foreground: var(--text-on-fill);
-  --sidebar-accent: var(--state-hover);
+  --sidebar-accent: var(--sidebar-hover);
   --sidebar-accent-foreground: var(--text-primary);
   --sidebar-border: var(--border-default);
   --sidebar-ring: var(--state-focus-ring);
@@ -588,6 +601,13 @@
   font-size: 10px;
   font-weight: 400;
   letter-spacing: 0.02em;
+}
+
+/* Sidebar rows: gray type rows use the sidebar's own gray step so their hover
+   and active fill stay visible on the tinted sidebar (TOL-438). */
+.sidebar-row {
+  --accent-gray: var(--sidebar-gray-text);
+  --accent-gray-light: var(--sidebar-gray-fill);
 }
 
 .referenced-by-panel button:hover {
