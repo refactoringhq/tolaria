@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import type { NoteWidthMode } from '../../types'
 import { cn } from '@/lib/utils'
 import { translate, type AppLocale } from '../../lib/i18n'
 import { isHtmlFileEntry } from '../../utils/filePreview'
@@ -76,11 +75,6 @@ function RawToggleButton({ rawMode, locale = 'en', onToggleRaw }: { rawMode?: bo
   return <ConfiguredToggleAction active={!!rawMode} config={TOGGLE_ACTION_CONFIGS.raw} locale={locale} onClick={onToggleRaw} />
 }
 
-const NOTE_WIDTH_ICONS = {
-  normal: ArrowsOutLineHorizontal,
-  wide: ArrowsInLineHorizontal,
-} satisfies Record<NoteWidthMode, typeof ArrowsOutLineHorizontal>
-
 function NoteWidthAction({
   noteWidth = 'normal',
   locale = 'en',
@@ -89,7 +83,7 @@ function NoteWidthAction({
   if (!onToggleNoteWidth) return null
 
   const isWide = noteWidth === 'wide'
-  const NoteWidthIcon = NOTE_WIDTH_ICONS[noteWidth]
+  const NoteWidthIcon = isWide ? ArrowsInLineHorizontal : ArrowsOutLineHorizontal
   return (
     <IconActionButton
       copy={{ label: translate(locale, isWide ? 'editor.toolbar.noteWidthNormal' : 'editor.toolbar.noteWidthWide') }}
