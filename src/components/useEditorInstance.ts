@@ -10,6 +10,7 @@ import type { AppLocale } from "../lib/i18n";
 import { localPresenceUser } from "../lib/presenceIdentity";
 import { RUNTIME_STYLE_NONCE } from "../lib/runtimeStyleNonce";
 import { installRichEditorMarkdownSerializer } from "../utils/richEditorMarkdown";
+import { installRichEditorSafeTablePaste } from "../utils/richEditorSafeTablePaste";
 import { renderCollabCursor } from "./collabCursor";
 import type { CollabEditorBinding } from "./collabEditorBinding";
 import {
@@ -123,6 +124,7 @@ export function useEditorInstance({
 	});
 	applyBlockNoteLocale(editor, locale);
 	installRichEditorMarkdownSerializer(editor);
+	installRichEditorSafeTablePaste(editor);
 	useEffect(() => {
 		installRichEditorDispatchPerformanceProbe(
 			editor,
