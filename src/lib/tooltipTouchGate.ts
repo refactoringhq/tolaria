@@ -11,14 +11,36 @@ const TRACKED_POINTER_EVENTS = [
 ] as const;
 let lastPointerType: string | null = null;
 let keyboardInputSincePointer = false;
+const inputListeners = new Set<() => void>();
+
+function notifyInputListeners(): void {
+	for (const listener of inputListeners) listener();
+}
+
+function isCompatibilityMouseHover(event: PointerEvent): boolean {
+	// iPadOS can emit compatibility mouse pointerover events after a finger tap. A real mouse or
+	// trackpad produces pointermove as it enters, so keep the touch gate until that movement.
+	if (event.pointerType !== "mouse") return false;
+	if (event.type !== "pointerover") return false;
+	return lastPointerType === "touch";
+}
 
 function rememberPointer(event: PointerEvent): void {
+	if (isCompatibilityMouseHover(event)) return;
 	lastPointerType = event.pointerType;
 	keyboardInputSincePointer = false;
+	notifyInputListeners();
 }
 
 function rememberKeyboardInput(): void {
 	keyboardInputSincePointer = true;
+	notifyInputListeners();
+}
+
+/** Lets an already-open tooltip respond when the user's input changes. */
+export function subscribeTooltipInput(listener: () => void): () => void {
+	inputListeners.add(listener);
+	return () => inputListeners.delete(listener);
 }
 
 function hasKeyboardFocus(doc: Document): boolean {

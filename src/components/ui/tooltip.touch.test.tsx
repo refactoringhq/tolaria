@@ -66,6 +66,13 @@ describe("Tooltip under a finger (TOL-419)", () => {
 		expect(onOpenChange).not.toHaveBeenCalled();
 	});
 
+	it("closes an already open tooltip when a touch begins", () => {
+		render(<FavoriteAction defaultOpen />);
+		expect(screen.getByRole("tooltip")).toBeInTheDocument();
+		act(() => touchDown());
+		expect(document.querySelector('[data-slot="tooltip-content"]')).toBeNull();
+	});
+
 	it("still closes a tooltip that was open", () => {
 		const onOpenChange = vi.fn();
 		render(<FavoriteAction onOpenChange={onOpenChange} defaultOpen />);
