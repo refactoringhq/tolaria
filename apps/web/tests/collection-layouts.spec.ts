@@ -346,5 +346,6 @@ test("collection layouts switch, filter, and persist on touch-sized web viewport
 
 	await page.getByTestId("layout-menu-button").click();
 	await page.getByTestId("layout-option-kanban").click();
+	await expect(page.getByTestId("layout-option-kanban")).toHaveCount(0);
 	await expectStatusMovePersists(page, request, testInfo);
 });
