@@ -31,7 +31,6 @@ export interface KanbanCollectionPresentationConfig {
 	type: typeof COLLECTION_PRESENTATION_KANBAN;
 	groupBy: string | null;
 	properties: string[];
-	showProperties?: boolean;
 	columnOrder: string[];
 	/** Column values shown as a narrow vertical strip. */
 	collapsedColumns: string[];
@@ -53,7 +52,6 @@ export interface CalendarSettings {
 export interface CalendarCollectionPresentationConfig extends CalendarSettings {
 	type: typeof COLLECTION_PRESENTATION_CALENDAR;
 	properties: string[];
-	showProperties?: boolean;
 }
 
 /** The graph legend filters a list keeps, even while it shows another layout. */
