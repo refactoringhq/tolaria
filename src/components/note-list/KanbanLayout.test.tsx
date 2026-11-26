@@ -81,7 +81,7 @@ describe("KanbanLayout", () => {
 		const chip = within(card).getByTestId("property-chip-status-0");
 		expect(chip).toHaveTextContent("Doing");
 		expect(chip.querySelector('[data-testid="status-chip-dot"]')).toHaveClass(
-			"size-1.5",
+			"size-[7px]",
 		);
 	});
 

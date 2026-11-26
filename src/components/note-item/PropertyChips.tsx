@@ -173,7 +173,7 @@ export function PropertyChips({
 								<>
 									<span
 										aria-hidden="true"
-										className="size-1.5 shrink-0 rounded-full bg-current"
+										className="size-[7px] shrink-0 rounded-full bg-current"
 										data-testid="status-chip-dot"
 									/>
 									<span className="truncate whitespace-nowrap">
