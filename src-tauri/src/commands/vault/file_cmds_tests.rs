@@ -124,6 +124,52 @@ async fn folder_and_listing_commands_use_expanded_vault_root() {
 }
 
 #[test]
+fn app_layout_and_view_yaml_are_hidden_but_user_yaml_remains_a_note() {
+    let dir = TempDir::new().unwrap();
+    for relative in [
+        "layouts/YnVpbHRpbjphbGw.yml",
+        "layouts/dHlwZTpFc3NheQ.yml",
+        "views/active-projects.yml",
+        "notes/my-config.yml",
+        "layouts/my-config.yml",
+        "notes/layouts/user-config.yml",
+        "notes/views/user-view.yml",
+    ] {
+        let path = dir.path().join(relative);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, "name: Settings\n").unwrap();
+    }
+    let entries = vault::scan_vault(dir.path(), &std::collections::HashMap::new()).unwrap();
+    let visible = filter_visible_vault_entries(dir.path(), entries, false);
+    for path in [
+        "layouts/YnVpbHRpbjphbGw.yml",
+        "layouts/dHlwZTpFc3NheQ.yml",
+        "views/active-projects.yml",
+    ] {
+        assert!(
+            dir.path().join(path).is_file(),
+            "settings file was removed: {path}"
+        );
+    }
+
+    let visible_paths = visible
+        .iter()
+        .map(|entry| {
+            Path::new(&entry.path)
+                .strip_prefix(dir.path())
+                .unwrap()
+                .to_str()
+                .unwrap()
+        })
+        .collect::<std::collections::HashSet<_>>();
+    assert_eq!(visible_paths.len(), 4);
+    assert!(visible_paths.contains("notes/my-config.yml"));
+    assert!(visible_paths.contains("layouts/my-config.yml"));
+    assert!(visible_paths.contains("notes/layouts/user-config.yml"));
+    assert!(visible_paths.contains("notes/views/user-view.yml"));
+}
+
+#[test]
 fn startup_snapshot_visibility_keeps_snapshot_and_filters_ignored_entries() {
     let dir = TempDir::new().unwrap();
     fs::write(dir.path().join("visible.md"), "# Visible\n").unwrap();
