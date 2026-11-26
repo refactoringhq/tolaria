@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   classifyRichEditorRecoveryError,
+  type RichEditorSharedRecoveryReason,
   richEditorRecoveryErrorNeedsDocumentRepair,
   SHARED_RICH_EDITOR_RECOVERY_REASONS,
-  type RichEditorSharedRecoveryReason,
 } from './richEditorRecoveryClassifier'
 
 function transformError(message = 'Invalid transform') {
@@ -77,6 +77,11 @@ const sharedRecoveryCases: SharedRecoveryCase[] = [
     error: new RangeError(tableRootIndexMessage()),
     needsDocumentRepair: true,
     reason: 'table_row_index_out_of_range',
+  },
+  {
+    error: new RangeError(nodeIndexMessage('"daily/2026-11-26.md"')),
+    needsDocumentRepair: true,
+    reason: 'text_index_out_of_range',
   },
   {
     error: new TypeError("Cannot read properties of undefined (reading 'type')"),
