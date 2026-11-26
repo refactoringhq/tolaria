@@ -146,7 +146,10 @@ fn app_layout_and_view_yaml_are_hidden_but_user_yaml_remains_a_note() {
         "layouts/dHlwZTpFc3NheQ.yml",
         "views/active-projects.yml",
     ] {
-        assert!(dir.path().join(path).is_file(), "settings file was removed: {path}");
+        assert!(
+            dir.path().join(path).is_file(),
+            "settings file was removed: {path}"
+        );
     }
 
     let visible_paths = visible

@@ -131,7 +131,7 @@ pub async fn reload_vault(
     crate::commands::blocking::run_blocking(move || {
         let vault_path = Path::new(&path);
         let entries = vault::refresh_vault_cache(vault_path)?;
-        Ok(vault::filter_gitignored_entries(
+        Ok(super::file_cmds::filter_visible_vault_entries(
             vault_path,
             entries,
             crate::settings::hide_gitignored_files_enabled(),

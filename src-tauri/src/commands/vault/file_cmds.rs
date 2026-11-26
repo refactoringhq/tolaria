@@ -363,7 +363,7 @@ fn scan_visible_vault_entries(vault_path: &Path) -> Result<Vec<VaultEntry>, Stri
     ))
 }
 
-fn filter_visible_vault_entries(
+pub(crate) fn filter_visible_vault_entries(
     vault_path: &Path,
     entries: Vec<VaultEntry>,
     hide_gitignored: bool,
