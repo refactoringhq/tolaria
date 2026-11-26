@@ -22,7 +22,6 @@ export interface CalendarItemContext {
 	itemRole: string;
 	draggable: boolean;
 	showIcons?: boolean;
-	showProperties?: boolean;
 	onOpen: (entry: VaultEntry, event: MouseEvent) => void;
 }
 
@@ -69,8 +68,7 @@ function CalendarItemFields({
 	context: CalendarItemContext;
 	displayProps: string[];
 }) {
-	if (displayProps.length === 0 || context.showProperties === false)
-		return null;
+	if (displayProps.length === 0) return null;
 	return (
 		<div className="calendar-item__fields min-w-0 whitespace-normal">
 			<PropertyChips

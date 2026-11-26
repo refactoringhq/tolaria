@@ -305,7 +305,6 @@ function useKanbanCardContext(props: KanbanLayoutProps): KanbanCardContext {
 			allEntries,
 			typeEntryMap,
 			displayPropsOverride,
-			showProperties: props.showProperties !== false,
 			cardRole: translate(locale, "layout.cardRole"),
 			onOpen,
 		}),
@@ -315,7 +314,6 @@ function useKanbanCardContext(props: KanbanLayoutProps): KanbanCardContext {
 			locale,
 			onOpen,
 			properties,
-			props.showProperties,
 			typeEntryMap,
 		],
 	);
