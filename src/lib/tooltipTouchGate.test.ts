@@ -65,6 +65,14 @@ describe("tooltipTouchGate", () => {
 		expect(tooltipMayOpen()).toBe(true);
 	});
 
+	it("ignores a compatibility mouse hover after a tap until the pointer moves", () => {
+		pointer("pointerdown", "touch");
+		pointer("pointerover", "mouse");
+		expect(tooltipMayOpen()).toBe(false);
+		pointer("pointermove", "mouse");
+		expect(tooltipMayOpen()).toBe(true);
+	});
+
 	it("stays closed after a tap with nothing focused, and forgets the finger once uninstalled", () => {
 		pointer("pointerdown", "touch");
 		expect(tooltipMayOpen()).toBe(false);
