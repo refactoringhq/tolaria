@@ -16,6 +16,8 @@ Each collection layout has a stable `type`, a renderer, a configuration shape, a
 
 Saved View YAML stores non-default layout settings in an optional `presentation` mapping. The desktop view model preserves that mapping through reads and writes. Existing files without it remain List and are not rewritten. Other durable collections store one YAML file per collection under the vault-root `layouts/` directory; a record contains the stable collection key and its presentation config. Files are keyed independently inside each vault, so absolute machine paths are not serialized. Writes validate the vault boundary, replace files atomically, and skip byte-identical updates. Kanban consumes resolved collection entries and changes only the configured note property through the ordinary frontmatter update path; it owns no board data store.
 
+The Web build keeps non-View collection layouts in `localStorage` under `tolaria:web-collection-layouts`. `collectionLayoutStorage.ts` selects that store or the desktop vault commands once, and both use the same layout record shape. Saved Views continue to use their YAML files on both platforms.
+
 Future plugin registration can adapt the same registration contract after the host's lifecycle, permissions, and compatibility boundaries are designed. Plugins are not loaded by this registry.
 
 ## Consequences

@@ -1,4 +1,3 @@
-import { invoke } from "@tauri-apps/api/core";
 import { collectionLayoutKey } from "../../collections/collectionLayoutKey";
 import {
 	type CalendarSettings,
@@ -24,8 +23,7 @@ import type {
 	ViewDefinition,
 	ViewFile,
 } from "../../types";
-import { isWebBuild } from "../../utils/webBuild";
-import { writeWebLayout } from "./webLayoutStorage";
+import { writeLayout } from "./collectionLayoutStorage";
 
 export interface LayoutSettings {
 	layout: CollectionPresentationType;
@@ -144,18 +142,22 @@ function saveVaultLayoutFile(
 ) {
 	const vaultPath = configVaultPath(target);
 	if (!vaultPath || !canUseVaultLayoutFile(target.selection)) return;
-	void invoke("save_collection_layout_cmd", {
+	void writeLayout(
 		vaultPath,
-		collection: collectionLayoutKey(target.selection),
-		presentation: {
-			type: settings.layout,
-			groupBy: settings.groupBy,
-			showProperties: settings.showProperties,
-			...kanbanColumnSettings(settings),
-			...storedCalendarSettings(settings),
-			...storedGraphSettings(settings),
-		},
-	}).catch(() => undefined);
+		collectionLayoutKey(target.selection),
+		storedLayoutRecord(settings),
+	).catch(() => undefined);
+}
+
+function storedLayoutRecord(settings: LayoutSettings) {
+	return {
+		type: settings.layout,
+		groupBy: settings.groupBy,
+		showProperties: settings.showProperties,
+		...kanbanColumnSettings(settings),
+		...storedCalendarSettings(settings),
+		...storedGraphSettings(settings),
+	};
 }
 
 function sameSettings<T>(left: T, right: T): boolean {
@@ -218,17 +220,6 @@ export function persistLayoutSettings(
 	target: LayoutPersistenceTarget,
 	settings: LayoutSettings,
 ) {
-	if (isWebBuild() && canUseVaultLayoutFile(target.selection)) {
-		writeWebLayout(collectionLayoutKey(target.selection), {
-			type: settings.layout,
-			groupBy: settings.groupBy,
-			showProperties: settings.showProperties,
-			...kanbanColumnSettings(settings),
-			...settings.calendar,
-			...settings.graph,
-		});
-		return;
-	}
 	const view = viewFor(target);
 	if (view)
 		saveViewPresentation(target, view, viewPresentationFor(view, settings));
