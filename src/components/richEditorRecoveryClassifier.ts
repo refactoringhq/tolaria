@@ -4,6 +4,7 @@ const BLOCKNOTE_MISSING_BLOCK_CONTENT_ERROR = 'blockContainer node does not cont
 const BLOCKNOTE_EMPTY_FRAGMENT_INDEX_ERROR = /^Index \d+ out of range for <>$/
 const BLOCKNOTE_TABLE_INDEX_ERROR = /^Index \d+ out of range for <table(?:Row)?\(/
 const BLOCKNOTE_PARAGRAPH_INDEX_ERROR = /^Index \d+ out of range for <paragraph\(/
+const BLOCKNOTE_TEXT_INDEX_ERROR = /^Index \d+ out of range for <"[\s\S]*">$/
 const PROSEMIRROR_POSITION_OUT_OF_RANGE_ERROR = /^Position \d+ out of range$/
 const PROSEMIRROR_SELECTION_OUTSIDE_DOCUMENT_ERROR = 'Selection points outside of document'
 const PROSEMIRROR_SELECTION_CURRENT_DOCUMENT_ERROR = 'Selection passed to setSelection must point at the current document'
@@ -28,6 +29,7 @@ export const SHARED_RICH_EDITOR_RECOVERY_REASONS = [
   'prosemirror_position_out_of_range',
   'stale_block_reference',
   'table_row_index_out_of_range',
+  'text_index_out_of_range',
   'undefined_node_type',
 ] as const
 
@@ -175,6 +177,12 @@ const RECOVERY_ERROR_MATCHERS: RecoveryErrorMatcher[] = [
   {
     matches: (error) => messageMatches(error, BLOCKNOTE_PARAGRAPH_INDEX_ERROR),
     reason: 'paragraph_index_out_of_range',
+    repairsDocument: true,
+    surfaces: ['render', 'transform'],
+  },
+  {
+    matches: (error) => messageMatches(error, BLOCKNOTE_TEXT_INDEX_ERROR),
+    reason: 'text_index_out_of_range',
     repairsDocument: true,
     surfaces: ['render', 'transform'],
   },
