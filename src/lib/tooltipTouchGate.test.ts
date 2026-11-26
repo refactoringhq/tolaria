@@ -16,6 +16,12 @@ function focusButton(keyboard: boolean): HTMLButtonElement {
 	return button;
 }
 
+function pressKey(key: string): void {
+	document.body.dispatchEvent(
+		new KeyboardEvent("keydown", { bubbles: true, key }),
+	);
+}
+
 describe("tooltipTouchGate", () => {
 	let uninstall: () => void;
 
@@ -42,8 +48,15 @@ describe("tooltipTouchGate", () => {
 
 	it("opens for keyboard focus after a tap", () => {
 		pointer("pointerdown", "touch");
+		pressKey("Tab");
 		focusButton(true);
 		expect(tooltipMayOpen()).toBe(true);
+	});
+
+	it("does not treat focus restored after a touch as keyboard input", () => {
+		pointer("pointerdown", "touch");
+		focusButton(true);
+		expect(tooltipMayOpen()).toBe(false);
 	});
 
 	it("opens again once a trackpad pointer moves after a tap", () => {
