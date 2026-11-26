@@ -3,7 +3,8 @@ import { createElement, useMemo, useRef, useState } from 'react'
 import { ActionTooltip } from '@/components/ui/action-tooltip'
 import { Button } from '@/components/ui/button'
 import { ConfirmDeleteDialog } from '../ConfirmDeleteDialog'
-import { translate } from '../../lib/i18n'
+import { type AppLocale, translate } from '../../lib/i18n'
+import { workspaceLabelFromVault } from '../../utils/workspaces'
 import type { VaultOption } from './types'
 import { useDismissibleLayer } from './useDismissibleLayer'
 import { buildVaultActions } from './vaultMenuActions'
@@ -18,6 +19,12 @@ import type {
   VaultMenuWorkspaceSectionProps,
 } from './vaultMenuComponentTypes'
 import type { VaultAction, VaultMenuProps } from './vaultMenuTypes'
+
+function activeVaultDisplayLabel(vault: VaultOption | undefined, locale: AppLocale): string {
+  return vault?.label
+    ? workspaceLabelFromVault(vault)
+    : translate(locale, 'status.vault.default')
+}
 
 function VaultMenuHeader(props: VaultMenuHeaderProps) {
   const { locale, onOpenVaultSettings } = props
@@ -211,7 +218,7 @@ export function VaultMenu(props: VaultMenuProps) {
   const canRemove = !!onRemoveVault && vaults.length > 1
   const triggerClassName = getVaultTriggerClassName(open, compact)
   const triggerSize = compact ? 'icon-xs' : 'xs'
-  const activeVaultLabel = activeVault?.label ?? translate(locale, 'status.vault.default')
+  const activeVaultLabel = activeVaultDisplayLabel(activeVault, locale)
   const menuMinWidth = multiWorkspaceEnabled ? 340 : 220
   const includedVaults = useIncludedVaults(vaults, defaultPath)
   const { disableMountToggleForPath, handleMountedChange, handleSelectVault } = useVaultMenuInteractions({
