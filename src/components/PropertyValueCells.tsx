@@ -109,7 +109,7 @@ function StatusValue({ propKey, value, isEditing, vaultStatuses, onSave, onStart
         onClick={() => onStartEdit(propKey)}
         data-testid="status-badge"
       >
-        <span className="inline-block size-1.5 shrink-0 rounded-full" style={{ backgroundColor: style.color }} />
+        <span className="inline-block size-[7px] shrink-0 rounded-full" style={{ backgroundColor: style.color }} />
         {statusStr}
       </button>
       {isEditing && (
