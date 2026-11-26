@@ -141,8 +141,11 @@ test("touch: a tap leaves no tooltip on screen", async ({ page }, testInfo) => {
 	await page.getByRole("menuitem", { name: "Copy note deeplink" }).tap();
 	await page.waitForTimeout(300);
 	await expect(tooltips(page), "after choosing a menu item").toHaveCount(0);
-	await page.screenshot({
-		path: testInfo.outputPath("touch-no-sticky-tooltip.png"),
+	const screenshot = testInfo.outputPath("touch-no-sticky-tooltip.png");
+	await page.screenshot({ path: screenshot });
+	await testInfo.attach("touch-no-sticky-tooltip", {
+		path: screenshot,
+		contentType: "image/png",
 	});
 });
 
