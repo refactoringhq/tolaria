@@ -32,7 +32,6 @@ describe("collectionLayoutConfig", () => {
 				layout: "calendar",
 				groupBy: "status",
 				properties: [],
-				showProperties: true,
 				columnOrder: [],
 				collapsedColumns: [],
 				hiddenColumns: [],
@@ -44,7 +43,6 @@ describe("collectionLayoutConfig", () => {
 		expect((await readLayouts())["builtin:all"]).toEqual({
 			type: "calendar",
 			groupBy: "status",
-			showProperties: true,
 			properties: [],
 			columnOrder: [],
 			collapsedColumns: [],
@@ -97,7 +95,6 @@ describe("collectionLayoutConfig", () => {
 			layout: "kanban",
 			groupBy: "status",
 			properties: ["owner"],
-			showProperties: true,
 			columnOrder: [],
 			collapsedColumns: [],
 			hiddenColumns: [],
@@ -162,19 +159,12 @@ describe("collectionLayoutConfig", () => {
 		});
 	});
 
-	it("keeps per-collection item-property visibility when loading saved layouts", () => {
-		expect(
-			readStoredLayout({ type: "kanban", showProperties: false }),
-		).toMatchObject({
-			layout: "kanban",
-			showProperties: false,
-		});
-		expect(
-			readStoredLayout({ type: "calendar", showProperties: false }),
-		).toMatchObject({
-			layout: "calendar",
-			showProperties: false,
-		});
+	it("ignores the leftover hide-all properties flag in saved layouts (TOL-436)", () => {
+		for (const type of ["kanban", "calendar"]) {
+			expect(
+				readStoredLayout({ type, showProperties: false }),
+			).not.toHaveProperty("showProperties");
+		}
 	});
 
 	it("sanitizes graph filters from stored layouts", () => {
