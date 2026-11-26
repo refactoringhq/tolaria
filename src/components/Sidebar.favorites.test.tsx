@@ -108,7 +108,7 @@ describe("Sidebar.favorites", () => {
 			expectFavoriteRowToMatchTypeRow();
 		});
 
-		it("aligns the favorites header count pill with the shared sidebar count column", () => {
+		it("aligns the favorites header count pill with the shared sidebar count column, filled with the header hover gray", () => {
 			renderSidebar({ entries: [...mockEntries, favEntry] });
 
 			const favoritesHeader = screen.getByText("FAVORITES").closest("div");
@@ -120,7 +120,7 @@ describe("Sidebar.favorites", () => {
 				height: "18px",
 				padding: "0 6px",
 			});
-			expect(countChip).toHaveClass("bg-transparent");
+			expect(countChip).toHaveClass("bg-[var(--sidebar-hover)]");
 		});
 
 		it("prefers a favorite note emoji icon over the type icon fallback", () => {

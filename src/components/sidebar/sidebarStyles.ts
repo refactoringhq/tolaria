@@ -6,7 +6,7 @@ export type SidebarItemStyle = CSSProperties & {
 }
 
 export const SIDEBAR_ITEM_HOVER_CLASS =
-  'hover:bg-[var(--sidebar-active-bg,var(--accent-blue-light))] hover:text-[var(--sidebar-active-fg,var(--accent-blue))]'
+  'sidebar-row hover:bg-[var(--sidebar-active-bg,var(--accent-blue-light))] hover:text-[var(--sidebar-active-fg,var(--accent-blue))]'
 
 export const SIDEBAR_COUNT_ACTIVE_CLASS =
   'bg-transparent text-[var(--sidebar-active-fg,var(--accent-blue))] font-medium'
@@ -20,6 +20,11 @@ export const SIDEBAR_ITEM_PADDING = {
   compact: '4px 16px 4px 12px',
   compactWithCount: '4px 8px 4px 12px',
 } as const
+
+/** Section headers: one gray for the hover fill and the count pill, so the pill never changes on hover. */
+export const SIDEBAR_GROUP_HEADER_HOVER_CLASS = 'rounded hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-hover-text)]'
+
+export const SIDEBAR_GROUP_HEADER_COUNT_CLASS = 'bg-[var(--sidebar-hover)] text-[var(--sidebar-hover-text)]'
 
 export const SIDEBAR_GROUP_HEADER_PADDING = {
   regular: '8px 14px 8px 12px',
