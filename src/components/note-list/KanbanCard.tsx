@@ -17,7 +17,6 @@ export interface KanbanCardContext {
 	allEntries: VaultEntry[];
 	typeEntryMap: Record<string, VaultEntry>;
 	displayPropsOverride?: string[] | null;
-	showProperties: boolean;
 	/** Localized screen-reader role description for a card. */
 	cardRole: string;
 	onOpen: (entry: VaultEntry, event: MouseEvent) => void;
@@ -62,7 +61,7 @@ export function KanbanCardFace({
 					{entry.title}
 				</span>
 			</span>
-			{displayProps.length > 0 && context.showProperties && (
+			{displayProps.length > 0 && (
 				<PropertyChips
 					entry={entry}
 					displayProps={displayProps}

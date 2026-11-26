@@ -273,16 +273,11 @@ function useLayoutActions({
 		[current, resolvedDateProperty, source.selection.kind, update],
 	);
 	useLayoutShortcut(enabled, current.layout, changeLayout);
-	const changeShowProperties = (showProperties: boolean) => {
-		update({ showProperties });
-		trackPropertyVisibility(showProperties, source.selection.kind);
-	};
 	return {
 		changeLayout,
 		changeGroupBy: (groupBy: string) => update({ groupBy }),
 		changeCardProperties: (properties: string[] | null) =>
 			update({ properties: properties ?? [] }),
-		changeShowProperties,
 		changeColumnOrder: (columnOrder: string[]) => update({ columnOrder }),
 		toggleColumnCollapsed: (group: string) =>
 			update({
@@ -347,13 +342,6 @@ function useLayoutWriters({
 		[show, source],
 	);
 	return { show, save };
-}
-
-function trackPropertyVisibility(visible: boolean, collection: string) {
-	trackEvent("collection_item_properties_visibility_changed", {
-		visible: visible ? 1 : 0,
-		collection,
-	});
 }
 
 /** The calendar's date property: the configured one, or the best date property the list's notes carry. */

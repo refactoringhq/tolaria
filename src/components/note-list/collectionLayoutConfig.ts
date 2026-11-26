@@ -31,7 +31,6 @@ export interface LayoutSettings {
 	layout: CollectionPresentationType;
 	groupBy: string;
 	properties: string[];
-	showProperties: boolean;
 	columnOrder: string[];
 	collapsedColumns: string[];
 	hiddenColumns: string[];
@@ -99,6 +98,8 @@ function mergedViewPresentation(
 	next: ViewDefinition["presentation"],
 ): ViewPresentation {
 	const merged = { ...existing, ...next } as ViewPresentation;
+	// The removed "hide all properties" toggle left this flag behind; drop it so the View file recovers.
+	delete merged.showProperties;
 	if (
 		next?.type !== COLLECTION_PRESENTATION_KANBAN &&
 		existing?.type === COLLECTION_PRESENTATION_KANBAN
@@ -150,7 +151,6 @@ function saveVaultLayoutFile(
 		presentation: {
 			type: settings.layout,
 			groupBy: settings.groupBy,
-			showProperties: settings.showProperties,
 			...kanbanColumnSettings(settings),
 			...storedCalendarSettings(settings),
 			...storedGraphSettings(settings),
@@ -192,7 +192,6 @@ function viewPresentationFor(
 		return {
 			type: COLLECTION_PRESENTATION_KANBAN,
 			groupBy: settings.groupBy,
-			showProperties: settings.showProperties,
 			...kanbanColumnSettings(settings),
 		};
 	}
@@ -201,7 +200,6 @@ function viewPresentationFor(
 			type: COLLECTION_PRESENTATION_CALENDAR,
 			...settings.calendar,
 			properties: settings.properties,
-			showProperties: settings.showProperties,
 		};
 	}
 	if (settings.layout === COLLECTION_PRESENTATION_GRAPH)
@@ -222,7 +220,6 @@ export function persistLayoutSettings(
 		writeWebLayout(collectionLayoutKey(target.selection), {
 			type: settings.layout,
 			groupBy: settings.groupBy,
-			showProperties: settings.showProperties,
 			...kanbanColumnSettings(settings),
 			...settings.calendar,
 			...settings.graph,
@@ -263,7 +260,6 @@ export function readStoredLayout(value: unknown): LayoutSettings | undefined {
 		groupBy:
 			typeof value.groupBy === "string" ? value.groupBy : DEFAULT_GROUP_BY,
 		...kanbanColumnSettings(value),
-		showProperties: value.showProperties !== false,
 		calendar: calendarSettingsFrom(value),
 		graph: graphSettingsFrom(value),
 	};
@@ -289,14 +285,10 @@ function viewCardProperties(
 
 function hasStoredViewSettings(
 	config: StoredKanbanConfig | undefined,
-	presentation: ViewPresentation | undefined,
 	record: Record<string, unknown>,
 ): boolean {
 	return (
-		Boolean(config) ||
-		hasCalendarSettings(record) ||
-		hasGraphSettings(record) ||
-		presentation?.showProperties !== undefined
+		Boolean(config) || hasCalendarSettings(record) || hasGraphSettings(record)
 	);
 }
 
@@ -308,12 +300,11 @@ export function persistedViewLayout(
 		| undefined;
 	const config = viewKanbanConfig(presentation);
 	const record: Record<string, unknown> = { ...presentation };
-	if (!hasStoredViewSettings(config, presentation, record)) return undefined;
+	if (!hasStoredViewSettings(config, record)) return undefined;
 	return {
 		layout: target.presentation.type,
 		groupBy: config?.groupBy ?? DEFAULT_GROUP_BY,
 		...kanbanColumnSettings(config ?? {}),
-		showProperties: presentation?.showProperties !== false,
 		properties: viewCardProperties(presentation, config),
 		calendar: calendarSettingsFrom(record),
 		graph: graphSettingsFrom(record),
@@ -327,7 +318,6 @@ function presentationLayout(
 		layout: presentation.type,
 		groupBy: DEFAULT_GROUP_BY,
 		...kanbanColumnSettings({}),
-		showProperties: true,
 		calendar: DEFAULT_CALENDAR_SETTINGS,
 		graph: DEFAULT_GRAPH_SETTINGS,
 	};
@@ -335,7 +325,6 @@ function presentationLayout(
 		return {
 			...base,
 			properties: presentation.properties,
-			showProperties: presentation.showProperties !== false,
 			calendar: calendarSettingsFrom({ ...presentation }),
 		};
 	}
