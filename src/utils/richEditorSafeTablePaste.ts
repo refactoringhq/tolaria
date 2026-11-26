@@ -2,7 +2,8 @@ import { markdownToHTML } from "@blocknote/core";
 
 // BlockNote sizes arrays from pasted table spans, so a fractional, negative
 // or huge colspan/rowspan throws "Invalid array length" mid-paste (TOL-452).
-// Browsers clamp spans to the same HTML-spec ceiling.
+// Spans past the HTML-spec ceiling are dropped rather than clamped, because
+// BlockNote materializes one empty cell per spanned column.
 const MAX_PASTED_TABLE_SPAN = 1000;
 const TABLE_SPAN_ATTRIBUTES = ["colspan", "rowspan"] as const;
 const TABLE_SPAN_SIGNAL_RE = /\b(?:col|row)span\b/iu;
@@ -14,24 +15,20 @@ interface SafeTablePasteEditor {
 	pasteMarkdown: (markdown: string) => void;
 }
 
-function safeTableSpan(value: string): string | null {
+function isSafeTableSpan(value: string): boolean {
 	const trimmed = value.trim();
-	if (!WHOLE_NUMBER_RE.test(trimmed)) return null;
+	if (!WHOLE_NUMBER_RE.test(trimmed)) return false;
 	const span = Number(trimmed);
-	if (span < 1) return null;
-	return String(Math.min(span, MAX_PASTED_TABLE_SPAN));
+	return span >= 1 && span <= MAX_PASTED_TABLE_SPAN;
 }
 
 function sanitizeCellSpans(cell: Element): boolean {
 	let changed = false;
 	for (const attribute of TABLE_SPAN_ATTRIBUTES) {
 		const value = cell.getAttribute(attribute);
-		if (value === null) continue;
-		const safeValue = safeTableSpan(value);
-		if (safeValue === value) continue;
+		if (value === null || isSafeTableSpan(value)) continue;
+		cell.removeAttribute(attribute);
 		changed = true;
-		if (safeValue === null) cell.removeAttribute(attribute);
-		else cell.setAttribute(attribute, safeValue);
 	}
 	return changed;
 }

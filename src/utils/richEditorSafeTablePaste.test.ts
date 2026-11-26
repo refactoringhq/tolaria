@@ -66,7 +66,7 @@ describe("rich editor safe table paste", () => {
 		expect(viewPasteHTML).toHaveBeenCalledTimes(1);
 	});
 
-	it("parses unsafe spans as single cells and caps oversized spans", () => {
+	it("parses unsafe and oversized spans as single cells", () => {
 		const editor = BlockNoteEditor.create({ schema });
 		const markup = tableMarkup([
 			[
@@ -83,7 +83,7 @@ describe("rich editor safe table paste", () => {
 			sanitizePastedTableSpans(markup),
 		);
 
-		expect(firstTableColspans(blocks)).toEqual([1, 1000, 2, 1]);
+		expect(firstTableColspans(blocks)).toEqual([1, 1, 2, 1]);
 	});
 
 	it("leaves markup without unsafe spans untouched", () => {
