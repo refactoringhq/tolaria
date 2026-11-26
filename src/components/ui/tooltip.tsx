@@ -3,7 +3,7 @@
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import * as React from "react";
 
-import { tooltipMayOpen } from "@/lib/tooltipTouchGate";
+import { subscribeTooltipInput, tooltipMayOpen } from "@/lib/tooltipTouchGate";
 import { cn } from "@/lib/utils";
 
 function TooltipProvider({
@@ -31,6 +31,16 @@ function useTouchSafeOpen(requested: boolean): boolean {
 	if (opening.requested !== requested) {
 		setOpening({ requested, allowed: requested && tooltipMayOpen() });
 	}
+	React.useEffect(
+		() =>
+			subscribeTooltipInput(() => {
+				setOpening({
+					requested,
+					allowed: requested && tooltipMayOpen(),
+				});
+			}),
+		[requested],
+	);
 	return requested && opening.allowed;
 }
 

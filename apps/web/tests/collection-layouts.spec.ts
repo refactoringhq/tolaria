@@ -21,6 +21,7 @@ const VIEWS = [
 ] as const;
 
 test.describe.configure({ retries: 0 });
+test.use({ serviceWorkers: "block" });
 
 async function dispatchTouchPointer(
 	page: Page,
