@@ -243,6 +243,7 @@ tolaria/
 │   │   ├── StatusBar.tsx         # Bottom bar: vault picker + sync
 │   │   ├── CommandPalette.tsx    # Cmd+K command launcher
 │   │   ├── BreadcrumbBar.tsx     # Breadcrumb + word count + actions
+│   │   ├── breadcrumb-bar/       # BreadcrumbBar parts: toolbar actions, overflow menu, filename crumb, overflow measurement
 │   │   ├── WelcomeScreen.tsx     # Onboarding screen
 │   │   ├── LinuxTitlebar.tsx     # Linux/Windows custom window chrome + controls
 │   │   ├── LinuxMenuButton.tsx   # Linux titlebar menu mirroring app commands
