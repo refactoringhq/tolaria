@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ActiveVault } from './useManagedVaultCatalog'
 import { prepareNativeWorkspace } from '../prepareNativeWorkspace'
+import { optionalNativeWorkspaceAccessModule } from '../nativeWorkspaceAccess'
 import { hasPreparedWorkspaceSnapshot } from '../preparedWorkspaceSnapshot'
 import { refreshedVault } from './mobileVaultSelection'
 
@@ -27,6 +28,8 @@ async function prepareRefresh(next: ActiveVault): Promise<ActiveVault> {
   // A consumed launch index predates checkout. Re-read through the native queue,
   // then cooperatively parse before React can mount the replacement workspace.
   const selection = await prepareNativeWorkspace({ ...next.selection, index: undefined })
-  if (!selection || !hasPreparedWorkspaceSnapshot(selection.index)) throw new Error('workspacePreparationMissing')
+  if (!selection) throw new Error('workspacePreparationMissing')
+  // shortcut: Android has no TolariaWorkspaceAccess module, hence no native index; keep the selection and let the JS filesystem path load it. Upgrade when an Android module exists.
+  if (!hasPreparedWorkspaceSnapshot(selection.index) && optionalNativeWorkspaceAccessModule()) throw new Error('workspacePreparationMissing')
   return { ...next, selection }
 }

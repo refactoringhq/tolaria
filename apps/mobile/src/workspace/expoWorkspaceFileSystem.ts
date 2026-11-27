@@ -162,7 +162,8 @@ function moveWorkspaceEntry(
 	if (destination.exists) throw new Error("workspaceMoveDestinationExists");
 
 	destination.parentDirectory.create({ idempotent: true, intermediates: true });
-	source.move(destination);
+	// move() is async on Android: hand the promise to the write queue so it only retires the write once the move landed.
+	return source.move(destination);
 }
 
 function deleteWorkspaceEntry(
