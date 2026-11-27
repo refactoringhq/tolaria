@@ -10,12 +10,18 @@
 
 :root {
   --white: #FFFFFF;
+  --white-glass: rgb(255 255 255 / 0.14);
+  --sidebar-highlight-light-glass: rgb(250 249 247 / 0.62);
+  --sidebar-highlight-dark-glass: rgb(50 48 43 / 0.62);
+  --black-tint-soft: rgb(0 0 0 / 0.09);
+  --black-tint-medium: rgb(0 0 0 / 0.24);
 
-  --gray-50: #F8F7F4;
-  --gray-100: #F7F6F2;
-  --gray-150: #EAE8E4;
-  --gray-200: #E1DFDB;
-  --gray-300: #CCCAC5;
+  --gray-50: #FAF9F7;
+  --gray-100: #F9F9F6;
+  --gray-150: #F0EFEC;
+  --gray-200: #EAE9E6;
+  --gray-300: #DBDAD6;
+  --gray-350: #B6B4AF;
   --gray-400: #AAA7A2;
   --gray-500: #8A8782;
   --gray-600: #6E6B66;
@@ -23,6 +29,7 @@
   --gray-800: #32302B;
   --gray-900: #25231F;
   --gray-950: #191713;
+  --gray-975: #12110F;
 
   --red-50: #FCECEC;
   --red-100: #FFE6E4;
@@ -42,7 +49,7 @@
   --orange-300: #FFB480;
   --orange-400: #FA8923;
   --orange-500: #D9730D;
-  --orange-600: #AB5802;
+  --orange-600: #AC5902;
   --orange-700: #844300;
   --orange-800: #603000;
   --orange-900: #40230E;
@@ -54,7 +61,7 @@
   --yellow-300: #F2BE62;
   --yellow-400: #DC9E08;
   --yellow-500: #D69E2E;
-  --yellow-600: #926906;
+  --yellow-600: #946906;
   --yellow-700: #725000;
   --yellow-800: #543A00;
   --yellow-900: #38280C;
@@ -127,4 +134,15 @@
   --ink-strong: rgb(25 23 19 / 0.3);
   --ink-heavy: rgb(25 23 19 / 0.42);
   --ink-scrim: rgb(25 23 19 / 0.58);
+  --ink-glass-dark: rgb(18 17 15 / 0.96);
+}
+
+/* Keep the established dark-mode ink steps while lifting light-mode surfaces. */
+:root.dark,
+[data-theme="dark"] {
+  --gray-50: #F8F7F4;
+  --gray-100: #F7F6F2;
+  --gray-150: #EAE8E4;
+  --gray-200: #E1DFDB;
+  --gray-300: #CCCAC5;
 }

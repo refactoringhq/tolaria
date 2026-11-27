@@ -1,12 +1,62 @@
-/* Calendar layout (TOL-381): a month or week grid that, like Kanban, takes over the note-list and editor
-   area. Theme tokens only, so light and dark mode follow the app palette. */
-.calendar-board {
-	background-color: var(--background);
+.app .app__note-list:has(> [data-collection-layout="calendar"]),
+.app .app__note-list > [data-collection-layout="calendar"] {
+	background: transparent;
+	box-shadow: none;
 }
 
-/* Keep the controls and the space around calendar panels on the app background. */
-.calendar-toolbar {
-	background-color: var(--background);
+.app[data-desktop-sidebar-chrome] > .app__note-list:has(> [data-collection-layout="calendar"]) {
+	margin-block-start: 0;
+}
+
+.app[data-desktop-sidebar-chrome] [data-collection-layout="calendar"] {
+	container-type: inline-size;
+}
+
+@container (min-width: 660px) {
+	[data-collection-layout="calendar"]:has(.calendar-tray) .calendar-header-slot:not(:empty) + .note-list-general-actions {
+		/* The tray and board gap occupy this space, less the header padding and action gap. */
+		min-inline-size: calc(var(--board-column-width) + 0.75rem - 1rem - 0.25rem);
+	}
+}
+
+.app[data-desktop-sidebar-chrome] .calendar-board {
+	margin-block-start: -0.25rem;
+	padding: 0;
+}
+
+.app .app__note-list > [data-collection-layout="calendar"] > .flex-col > .border-b:first-child {
+	border-bottom-width: 0;
+	border-image-source: none;
+}
+
+.calendar-surface,
+.calendar-tray {
+	overflow: hidden;
+	border: 1px solid var(--border-default);
+	border-radius: var(--radius-xl);
+	background: var(--surface-note-list);
+	box-shadow: var(--shadow-card);
+}
+
+.calendar-toolbar,
+.calendar-weekdays,
+.calendar-week {
+	border-bottom: 1px solid var(--panel-divider, var(--border-default));
+}
+
+.calendar-controls .calendar-view-tabs {
+	height: 2rem;
+	background-color: var(--black-tint-soft);
+	box-shadow: none;
+}
+
+:root.dark .calendar-controls .calendar-view-tabs {
+	background-color: var(--black-tint-medium);
+}
+
+.calendar-controls .calendar-view-tabs [data-state="active"] {
+	background-color: var(--floating-pane-fill, var(--surface-editor));
+	box-shadow: 0 1px 4px var(--shadow-soft), 0 1px 2px var(--shadow-card-color);
 }
 
 .calendar-scroll {
@@ -21,15 +71,11 @@
 
 .calendar-grid {
 	overflow: hidden;
-	border: 1px solid var(--border-default);
-	border-radius: 10px;
-	background-color: var(--muted);
 }
 
 .calendar-weekdays {
 	display: grid;
 	flex-shrink: 0;
-	border-bottom: 1px solid var(--border-default);
 }
 
 .calendar-weekday {
@@ -47,8 +93,9 @@
 	padding: 6px 8px;
 }
 
-.calendar-weekdays > .calendar-weekday:not(:last-child) {
-	border-right: 1px solid var(--border-default);
+.calendar-weekdays > .calendar-weekday:not(:last-child),
+.calendar-day:not(:last-child) {
+	border-right: 1px solid var(--panel-divider, var(--border-default));
 }
 
 .calendar-day__label {
@@ -59,16 +106,24 @@
 }
 
 .calendar-weeks {
-	display: grid;
-	grid-auto-rows: max-content;
+	position: relative;
 	flex: 1 1 0;
 	min-height: 0;
+	overflow-anchor: none;
+	overscroll-behavior-y: contain;
+}
+
+.calendar-scroll-buffer {
+	height: 150px;
+}
+
+.calendar-grid[data-view="week"] .calendar-week {
+	height: 100%;
 }
 
 .calendar-week {
 	position: relative;
 	min-height: 150px;
-	border-bottom: 1px solid var(--border-default);
 }
 
 .calendar-week:last-child {
@@ -85,21 +140,14 @@
 	position: relative;
 	min-width: 0;
 	min-height: 0;
-	border-right: 1px solid var(--border-default);
-	transition:
-		background-color 120ms ease,
-		box-shadow 120ms ease;
-}
-
-.calendar-day:last-child {
-	border-right: none;
+	transition: box-shadow 120ms ease;
 }
 
 .calendar-day--weekend {
 	background-color: var(--surface-sidebar);
 }
 
-.calendar-day--outside {
+.calendar-day--outside:where(:not(.calendar-day--weekend)) {
 	background-color: var(--state-hover-subtle);
 }
 
@@ -191,20 +239,18 @@ body.calendar-drag-forbidden * {
 }
 
 .calendar-item {
+	--calendar-card-border: var(--board-card-hover-edge, var(--border-default));
 	overflow: visible;
-	border: 1px solid var(--border-default);
+	border: 1px solid var(--calendar-card-border);
 	border-radius: 0.5rem;
 	background-color: var(--surface-card);
-	box-shadow: var(--shadow-card);
+	box-shadow: var(--board-card-hover-shadow, var(--shadow-card));
+	transform: var(--board-card-hover-transform, none);
 	transition:
 		border-color 120ms ease,
+		outline-color 120ms ease,
 		box-shadow 160ms ease,
 		transform 160ms ease;
-}
-
-.calendar-item-slot:hover .calendar-item {
-	border-color: var(--border-strong, var(--border));
-	box-shadow: var(--shadow-card);
 }
 
 .calendar-item--continues-before {
@@ -220,7 +266,7 @@ body.calendar-drag-forbidden * {
 }
 
 .calendar-item.calendar-item--selected {
-	border-color: var(--primary);
+	--calendar-card-border: var(--primary);
 	background-color: var(--surface-card);
 }
 
@@ -266,10 +312,14 @@ body.calendar-drag-forbidden * {
 }
 
 .calendar-tray {
-	overflow: hidden;
-	border: 1px solid var(--border-default);
-	border-radius: 10px;
-	background-color: var(--state-hover-subtle);
+	width: min(var(--board-column-width), 40%);
+}
+
+/* Paint the tray stroke inside the card so the scroll viewport cannot clip it at fractional zoom. */
+.calendar-tray__note:where(:not(.calendar-item-slot--placeholder)) .calendar-item {
+	border-color: transparent;
+	outline: 1px solid var(--calendar-card-border);
+	outline-offset: -1px;
 }
 
 @media (max-width: 820px) {
@@ -364,9 +414,8 @@ body.calendar-drag-forbidden * {
 
 /* Dark mode layers the calendar with raised day cells and items with a
    stronger edge; weekends and outside days sink a step. `:where()` keeps the state rules above in charge. */
-:where(.dark, [data-theme="dark"]) .calendar-grid,
+:where(.dark, [data-theme="dark"]) .calendar-surface,
 :where(.dark, [data-theme="dark"]) .calendar-tray {
-	background-color: var(--surface-panel);
 	border-color: var(--border-strong);
 }
 
@@ -376,20 +425,17 @@ body.calendar-drag-forbidden * {
 	border-color: var(--border-default);
 }
 
-:where(.dark, [data-theme="dark"]) .calendar-day--weekend,
-:where(.dark, [data-theme="dark"]) .calendar-day--outside {
+:where(.dark, [data-theme="dark"]) .calendar-day--outside:where(:not(.calendar-day--weekend)) {
 	background-color: var(--surface-sidebar);
 }
 
 :where(.dark, [data-theme="dark"]) .calendar-item {
-	border-color: var(--border-strong);
+	--calendar-card-border: var(--board-card-hover-edge, var(--border-strong));
 	background-color: var(--surface-button);
-	box-shadow: var(--shadow-card);
 }
 
 :where(.dark, [data-theme="dark"]) .calendar-item-slot:hover .calendar-item {
 	background-color: var(--state-hover-strong);
-	border-color: var(--text-faint);
 }
 
 :where(.dark, [data-theme="dark"])
@@ -413,6 +459,7 @@ body.calendar-drag-forbidden * {
 
 @media (prefers-reduced-motion: reduce) {
 	.calendar-drag-lift,
+	.calendar-item,
 	.calendar-item--dropped {
 		animation: none;
 		transition: none;

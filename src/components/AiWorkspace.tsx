@@ -223,9 +223,10 @@ function useGeneratedConversationTitle(options: {
     if (!conversation.usesDefaultTitle) return
 
     const firstMessage = firstCompletedAssistantMessage(messages)
-    const prompt = firstMessage?.userMessage.trim()
-    const assistantResponse = firstMessage?.response?.trim()
-    if (!firstMessage || !prompt || !assistantResponse) return
+    if (!firstMessage) return
+    const prompt = firstMessage.userMessage.trim()
+    const assistantResponse = firstMessage.response?.trim()
+    if (!prompt || !assistantResponse) return
 
     const titleKey = `${conversation.id}:${firstMessage.id ?? prompt}`
     if (requestedTitleKeysRef.current.has(titleKey)) return
@@ -721,7 +722,7 @@ function SideAiWorkspaceLayout({
       data-ai-workspace-expanded={expanded ? 'true' : 'false'}
       aria-label={translate(workspace.locale, 'ai.workspace.title')}
     >
-      {!expanded && <WorkspaceResizeHandles mode="side" onResize={sizing.onWorkspaceResize} />}
+      {!expanded && <WorkspaceResizeHandles mode="side" onClose={workspace.onClose} onResize={sizing.onWorkspaceResize} />}
       <div className="flex min-w-0 flex-1 flex-col">
         <SideWorkspaceHeader
           activeId={model.activeId}
@@ -988,7 +989,7 @@ function AiWorkspaceLayout({ model, workspace }: { model: AiWorkspaceModel; work
       role="dialog"
       aria-label={translate(workspace.locale, 'ai.workspace.title')}
     >
-      <WorkspaceResizeHandles mode={workspace.mode} onResize={sizing.onWorkspaceResize} />
+      <WorkspaceResizeHandles mode={workspace.mode} onClose={workspace.onClose} onResize={sizing.onWorkspaceResize} />
       <ConversationSidebar
         activeId={model.activeId}
         collapsed={model.sidebarCollapsed}
