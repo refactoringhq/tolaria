@@ -74,19 +74,19 @@ interface SidebarSyncMenuProps {
   onViewHistory: () => void
 }
 
-const SYNC_STATUS_LABELS: Partial<Record<SyncStatus, TranslationKey>> = {
-  syncing: 'status.sync.syncing',
-  conflict: 'status.sync.conflict',
-  error: 'status.sync.failed',
-  pull_required: 'status.sync.pullRequired',
-}
+const SYNC_STATUS_LABELS = new Map<SyncStatus, TranslationKey>([
+  ['syncing', 'status.sync.syncing'],
+  ['conflict', 'status.sync.conflict'],
+  ['error', 'status.sync.failed'],
+  ['pull_required', 'status.sync.pullRequired'],
+])
 
 function syncStatusLabel(
   { locale, lastSyncTime, status, offline }: SidebarSyncMenuProps,
   now: number,
 ): string {
   if (offline) return translate(locale, 'status.offline.label')
-  const statusKey = SYNC_STATUS_LABELS[status]
+  const statusKey = SYNC_STATUS_LABELS.get(status)
   if (statusKey) return translate(locale, statusKey)
   if (!lastSyncTime) return translate(locale, 'sidebar.chrome.noSync')
   const minutes = Math.floor((now - lastSyncTime) / 60_000)

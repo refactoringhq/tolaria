@@ -73,7 +73,7 @@ function measureColumnSlots(
 	const positions = columns.map((column) => {
 		const width = column.offsetWidth;
 		const visibleStart = Math.max(left, Math.min(start, right - width));
-		const position = { start, end: start + width, width, visibleStart };
+		const position = { column, start, end: start + width, width, visibleStart };
 		start = position.end + gap;
 		return position;
 	});
@@ -109,11 +109,10 @@ function updateColumnStack(
 		return;
 	}
 
-	columns.forEach((column, index) => {
-		const slot = positions[index];
-		const { start, end, width } = slot;
-		const previous = positions[index - 1];
-		const next = positions[index + 1];
+	let previous: ColumnSlot | undefined;
+	positions.forEach((slot, index) => {
+		const { column, start, end, width } = slot;
+		const next = positions.at(index + 1);
 		const overlap = Math.max(
 			0,
 			overlapWidth(slot, previous),
@@ -144,6 +143,7 @@ function updateColumnStack(
 		} else {
 			positionColumn(column, "moving", 0, columns.length + 1, columnHeight);
 		}
+		previous = slot;
 	});
 }
 

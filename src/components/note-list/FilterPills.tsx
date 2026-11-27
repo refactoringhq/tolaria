@@ -31,7 +31,7 @@ function FilterPillsInner({ active, counts, onChange, onCreate, locale = 'en' }:
               data-testid={`filter-pill-${value}`}
             >
               <span className="truncate">{translate(locale, labelKey)}</span>
-              <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">{counts[value]}</span>
+              <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">{value === 'open' ? counts.open : counts.archived}</span>
             </TabsTrigger>
           ))}
         </TabsList>

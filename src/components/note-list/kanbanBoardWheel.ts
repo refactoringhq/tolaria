@@ -1,6 +1,6 @@
 function horizontalWheelDelta(event: WheelEvent, width: number) {
 	const { deltaX, deltaY, deltaMode, shiftKey } = event;
-	const unit = [1, 16, width][deltaMode];
+	const unit = deltaMode === 2 ? width : deltaMode === 1 ? 16 : 1;
 	if (Math.abs(deltaX) > Math.abs(deltaY)) return deltaX * unit;
 	return shiftKey ? (deltaX || deltaY) * unit : 0;
 }

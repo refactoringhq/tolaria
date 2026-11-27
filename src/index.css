@@ -846,22 +846,22 @@
 }
 
 /* Dark workspace panels step from charcoal chrome through browsing to the document. */
-:root.dark .app {
+:where(:root.dark) .app {
   --surface-editor: var(--gray-800);
 }
 
-:root.dark .app[data-desktop-sidebar-chrome] {
+:where(:root.dark) .app[data-desktop-sidebar-chrome] {
   --surface-note-list: var(--gray-900);
 }
 
-:root.dark .app[data-desktop-sidebar-chrome],
-.app[data-desktop-sidebar-chrome] .app__sidebar[data-theme="dark"] {
+:where(:root.dark) .app[data-desktop-sidebar-chrome],
+:where(.app[data-desktop-sidebar-chrome]) .app__sidebar[data-theme="dark"] {
   --surface-sidebar: var(--gray-975);
   --sidebar: var(--surface-sidebar);
 }
 
-:root.dark .app[data-desktop-sidebar-chrome],
-.app[data-desktop-sidebar-chrome] .app__sidebar[data-theme="dark"] {
+:where(:root.dark) .app[data-desktop-sidebar-chrome],
+:where(.app[data-desktop-sidebar-chrome]) .app__sidebar[data-theme="dark"] {
   --floating-pane-fill: var(--gray-800);
   --floating-pane-hover: var(--gray-700);
   --floating-pane-edge: var(--gray-700);
@@ -1088,17 +1088,17 @@
   --selection-edge-height: 1px;
 }
 
-.app__note-list {
+.app .app__note-list {
   --selection-edge: var(--border-strong);
+}
+
+.app :is(.app__sidebar, .app__note-list) {
+  --selection-edge-gradient: linear-gradient(to right, transparent, var(--selection-edge) 45% 55%, transparent);
 }
 
 :root.dark .app :is(.app__sidebar, .app__note-list),
 .app__sidebar[data-theme="dark"] {
   --selection-edge: var(--gray-700);
-}
-
-.app :is(.app__sidebar, .app__note-list) {
-  --selection-edge-gradient: linear-gradient(to right, transparent, var(--selection-edge) 45% 55%, transparent);
 }
 
 @media (min-resolution: 2dppx) {
@@ -1315,19 +1315,19 @@ html:not([data-touch-input]) .app[data-desktop-sidebar-chrome] .note-list-search
   min-width: calc(480px - 2 * var(--workspace-inset));
 }
 
+.app__note-list ~ .app__editor > .editor {
+  border-top-left-radius: var(--radius-xl);
+  border-bottom-left-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sidebar);
+}
+
 .app[data-desktop-sidebar-chrome]:not(:has(> .app__sidebar)) > .app__note-list,
-.app[data-desktop-sidebar-chrome]:not(:has(> .app__note-list)) > .app__editor > .editor {
+.app[data-desktop-sidebar-chrome]:where(:not(:has(> .app__note-list))) > .app__editor > .editor {
   border-start-start-radius: var(--radius-xl);
   border-end-start-radius: var(--radius-xl);
 }
 
 .app[data-desktop-sidebar-chrome]:not(:has(> .app__sidebar)) > .app__note-list {
-  overflow: hidden;
-}
-
-.app[data-desktop-sidebar-chrome] > .app__editor > .editor {
-  border-start-end-radius: var(--radius-xl);
-  border-end-end-radius: var(--radius-xl);
   overflow: hidden;
 }
 
@@ -1348,10 +1348,10 @@ html:not([data-touch-input]) .app[data-desktop-sidebar-chrome] .note-list-search
   background: var(--surface-note-list);
 }
 
-.app__note-list ~ .app__editor > .editor {
-  border-top-left-radius: var(--radius-xl);
-  border-bottom-left-radius: var(--radius-xl);
-  box-shadow: var(--shadow-sidebar);
+.app[data-desktop-sidebar-chrome] > .app__editor > .editor {
+  border-start-end-radius: var(--radius-xl);
+  border-end-end-radius: var(--radius-xl);
+  overflow: hidden;
 }
 
 .app__sidebar ~ .app__note-list,
