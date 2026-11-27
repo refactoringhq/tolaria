@@ -42,9 +42,6 @@ interface AppCommandsConfig {
   onSave: () => void
   onOpenSettings: () => void
   onOpenFeedback?: () => void
-  onOpenDiscord?: () => void
-  onOpenWorkspacePicker?: () => void
-  onSyncNow?: () => void
   onDeleteNote: (path: string) => void
   onArchiveNote: (path: string) => void
   onUnarchiveNote: (path: string) => void
@@ -325,10 +322,6 @@ function createMenuEventHandlers(
     ...createMenuEventActionHandlers(config, selectFilter),
     ...createMenuEventVaultHandlers(config, viewChanges),
     ...createMenuEventState(config),
-    onOpenFeedback: config.onOpenFeedback,
-    onOpenDiscord: config.onOpenDiscord,
-    onOpenWorkspacePicker: config.onOpenWorkspacePicker,
-    onSyncNow: config.onSyncNow,
   }
 }
 
@@ -629,6 +622,7 @@ export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
     const entry = entriesRef.current.find(e => e.path === path)
     ;(entry?.archived ? config.onUnarchiveNote : config.onArchiveNote)(path)
   }, [config.onArchiveNote, config.onUnarchiveNote])
+
 
   const { onSelect } = config
 

@@ -44,9 +44,6 @@
 /* With no note open, only the AI panel shows: it docks beside the layout, which shrinks to keep every column usable,
    like the List layout's AI panel. */
 .app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"], [data-collection-layout="graph"])):has(.app__editor [data-ai-workspace-mode="side"]):not(:has(.app__note-list [data-kanban-panel="open"])) .app__editor {
-  background: transparent;
-  border-left: 0;
-  box-shadow: none;
   transform: none;
   visibility: visible;
   transition: none;
@@ -60,10 +57,7 @@
   width: auto;
   min-width: 0;
   container-type: normal;
-}
-
-.app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"], [data-collection-layout="graph"])):has(.app__editor [data-ai-workspace-mode="side"]):not(:has(.app__note-list [data-kanban-panel="open"])) .app__editor > .editor {
-  background: transparent;
+  border-left: 0;
   box-shadow: none;
 }
 
@@ -75,145 +69,11 @@
   --breadcrumb-bar-left-padding: 48px;
 }
 
-.app[data-desktop-sidebar-chrome]:has(> .app__note-list > :is([data-collection-layout="kanban"], [data-collection-layout="calendar"])) > .app__editor:has([data-ai-workspace-mode="side"]) {
-  margin-block-start: 0;
-}
-
-[data-ai-workspace-mode="side"] .rounded-xl.bg-background:has([data-testid="ai-workspace-composer-controls"]) {
-  position: relative;
-  z-index: 1;
-  box-shadow: 0 3px 16px -3px var(--shadow-medium), var(--shadow-card);
-}
-
-.app:has(.app__note-list > [data-collection-layout="kanban"]) {
-  overflow: visible;
-}
-
-.app .app__note-list:has(> [data-collection-layout="kanban"]) {
-  background: transparent;
-  box-shadow: none;
-  overflow: visible;
-}
-
-.app[data-desktop-sidebar-chrome]:has(> .app__note-list > [data-collection-layout="kanban"]) {
-  padding-inline-start: 0;
-}
-
-.app[data-desktop-sidebar-chrome] > .app__note-list:has(> [data-collection-layout="kanban"]) {
-  margin-block-start: 0;
-}
-
-.app[data-desktop-sidebar-chrome]:not(:has(> .app__sidebar)) > .app__note-list:has(> [data-collection-layout="kanban"]) {
-  border-radius: 0;
-  overflow: visible;
-}
-
-.app .app__note-list > [data-collection-layout="kanban"] {
-  background: transparent;
-  border: 0;
-  overflow: visible;
-}
-
-.app .app__note-list > [data-collection-layout="kanban"] > .flex-col {
-  overflow: visible;
-}
-
-.app .app__note-list > [data-collection-layout="kanban"] > .flex-col > .border-b:first-child {
-  border-bottom-width: 0;
-  border-image-source: none;
-}
-
-.app:has(.app__note-list [data-kanban-panel="open"]:is([data-collection-layout="kanban"], [data-collection-layout="calendar"])) > .app__editor {
-  --kanban-editor-default-width: 760px;
-  width: clamp(min(420px, 72%), var(--kanban-editor-width, var(--kanban-editor-default-width)), 72%);
-  min-width: 0;
-  border-left: 0;
-  border-start-start-radius: var(--radius-xl);
-  border-end-start-radius: var(--radius-xl);
-  background: transparent;
-}
-
-.app:has(.app__note-list [data-kanban-panel="open"]:is([data-collection-layout="kanban"], [data-collection-layout="calendar"])) > .app__editor:has([data-ai-workspace-mode="side"]) {
-  --kanban-editor-default-width: 1120px;
-}
-
-.app [data-testid="kanban-editor-resize"]::after {
-  right: auto;
-  left: 0;
-}
-
-.kanban-board {
-  --kanban-board-inset: 0.75rem;
-  --kanban-deck-gutter: 2.5rem;
-  --kanban-deck-bottom: 1.5rem;
-  position: relative;
-  isolation: isolate;
-  overflow-anchor: none;
-  overscroll-behavior-x: none;
-  margin-inline: calc(-1 * var(--kanban-deck-gutter));
-  margin-bottom: calc(-1 * var(--kanban-deck-bottom));
-  padding: var(--kanban-board-inset) calc(var(--kanban-board-inset) + var(--kanban-deck-gutter))
-    calc(var(--kanban-board-inset) + var(--kanban-deck-bottom));
-  pointer-events: none;
-}
-
-.app[data-desktop-sidebar-chrome] .kanban-board {
-  --kanban-deck-gutter: 3.5rem;
-  /* Center the 2.75rem column header against the 2.25rem vault control. */
-  margin-block-start: calc(-1 * (var(--kanban-board-inset) + 0.25rem));
-  padding-block-start: var(--kanban-board-inset);
-  padding-inline-end: var(--kanban-deck-gutter);
-  padding-block-end: var(--kanban-deck-bottom);
-}
-
-.kanban-track {
-  /* The in-flow track preserves the scroll range even with both decks pinned. */
-  min-width: 100%;
-}
-
-.kanban-column {
-  pointer-events: auto;
-}
-
-.app .app__note-list :is(.kanban-column-cards, .calendar-tray-cards) [data-virtuoso-scroller] {
-  margin-left: 0;
-}
-
-.app .app__note-list :is(.kanban-column-cards, .calendar-tray-cards) [data-virtuoso-scroller] > [data-viewport-type="element"] {
-  left: 0;
-  max-width: none;
-}
-
-.app .app__note-list :is(.kanban-column-cards, .calendar-tray-cards) [data-virtuoso-scroller]::before,
-.app .app__note-list :is(.kanban-column-cards, .calendar-tray-cards) [data-virtuoso-scroller]::after {
-  content: none;
-}
-
-:is(.kanban-column-cards, .calendar-tray-cards)::before,
-:is(.kanban-column-cards, .calendar-tray-cards)[data-scrolled]::after {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: 1;
-  mask-image: linear-gradient(to right, transparent, black 35%, black 65%, transparent);
-  pointer-events: none;
-}
-
-:is(.kanban-column-cards, .calendar-tray-cards)::before {
-  height: 1px;
-  background: var(--panel-divider, var(--border-default));
-}
-
-:is(.kanban-column-cards, .calendar-tray-cards)[data-scrolled]::after {
-  height: 6px;
-  background: linear-gradient(var(--shadow-soft), transparent);
-}
-
 .kanban-panel-close {
   position: absolute;
   top: 14px;
   left: 14px;
-  z-index: 30;
+  z-index: 5;
 }
 
 .kanban-scroll {
@@ -232,9 +92,7 @@
 }
 
 .kanban-card {
-  border-color: var(--board-card-hover-edge, var(--border-default));
-  box-shadow: var(--board-card-hover-shadow, var(--shadow-card));
-  transform: var(--board-card-hover-transform, none);
+  box-shadow: var(--shadow-card);
   transition:
     border-color 120ms ease,
     box-shadow 160ms ease,
@@ -245,32 +103,33 @@
   margin-top: 0.5rem;
 }
 
-:is(.kanban-column-cards, .calendar-tray-cards) [data-item-index] {
-  padding-inline: 2px;
+.kanban-card-slot:hover .kanban-card {
+  border-color: var(--border-strong, var(--border));
+  box-shadow: var(--shadow-card);
 }
 
-@media (hover: hover) {
-  :is(.kanban-card-slot, .calendar-item-slot):where(:not(.kanban-card-slot--placeholder, .calendar-item-slot--placeholder)):hover {
-    position: relative;
-    z-index: 2;
-    --board-card-hover-edge: var(--board-card-hover-border, var(--border-input));
-    --board-card-hover-shadow: 0 6px 14px -4px var(--shadow-medium), var(--shadow-card);
-  }
+/* Dark mode layers the board like Linear and GitHub Projects: a recessed board, raised lanes, and cards
+   lifted above their lane with a stronger edge. `:where()` keeps these at class specificity so the
+   selected, target and drag states below still win. Light mode keeps its utility classes. */
+:where(.dark, [data-theme="dark"]) .kanban-board {
+  background-color: var(--surface-sidebar);
 }
 
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  :is(.kanban-card-slot, .calendar-item-slot):where(:not(.kanban-card-slot--placeholder, .calendar-item-slot--placeholder)):hover {
-    --board-card-hover-transform: translateY(-1px) scale(1.012);
-  }
+:where(.dark, [data-theme="dark"]) .kanban-column,
+:where(.dark, [data-theme="dark"]) .kanban-hidden-columns {
+  background-color: var(--surface-panel);
+  box-shadow: inset 0 0 0 1px var(--border-default);
 }
 
 :where(.dark, [data-theme="dark"]) .kanban-card {
   background-color: var(--surface-button);
-  border-color: var(--board-card-hover-edge, var(--border-strong));
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-card);
 }
 
 :where(.dark, [data-theme="dark"]) .kanban-card-slot:hover .kanban-card {
   background-color: var(--state-hover-strong);
+  border-color: var(--text-faint);
 }
 
 .kanban-card.kanban-card--selected {
@@ -284,72 +143,16 @@
 }
 
 .kanban-column {
-  --kanban-column-edge: var(--border-default);
-  --kanban-side-shadow: var(--shadow-soft);
-  position: relative;
-  z-index: var(--kanban-stack-layer, auto);
-  translate: var(--kanban-stack-shift, none);
-  rotate: var(--kanban-stack-angle, none);
-  transform-origin: center top;
-  background-color: var(--surface-note-list);
-  box-shadow: var(--shadow-card);
   transition: background-color 140ms ease, box-shadow 140ms ease;
 }
 
-.kanban-column::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border: 1px solid var(--kanban-column-edge);
-  border-radius: inherit;
-  pointer-events: none;
-}
-
-.kanban-board[data-kanban-stacking] .kanban-column::after {
-  content: "";
-  position: absolute;
-  inset: 0 -22px;
-  z-index: -1;
-  background:
-    conic-gradient(from 180deg at right top, var(--kanban-side-shadow), transparent 1.5deg) left / 22px 100% no-repeat,
-    conic-gradient(from 180deg at left top, transparent 0deg 358.5deg, var(--kanban-side-shadow) 360deg) right / 22px 100% no-repeat;
-  mask-image: linear-gradient(transparent 8%, black 82%, black 94%, transparent);
-  opacity: calc(0.22 * var(--kanban-side-shadow-opacity, 0));
-  pointer-events: none;
-}
-
-.kanban-column:not(.kanban-column--collapsed),
-.kanban-column-drag-preview {
-  width: var(--board-column-width);
-  min-width: var(--board-column-width);
-}
-
-:root {
-  --board-column-width: 248px;
-}
-
-.kanban-board[data-kanban-stacking] .kanban-column {
-  position: sticky;
-  left: 0;
-  right: 0;
-}
-
-.kanban-board[data-kanban-stacking] .kanban-column:where(:not(.kanban-column--target)) {
-  --kanban-column-edge: var(--border-strong);
-  box-shadow: 0 8px 16px -10px var(--shadow-soft), var(--shadow-card);
-}
-
-.kanban-board[data-kanban-stacking] .kanban-column:where([data-kanban-stack="moving"]:not(.kanban-column--target)) {
-  box-shadow: 0 13px 21px -10px var(--shadow-medium), var(--shadow-card);
-}
-
-.kanban-column:has(:focus-visible) {
-  z-index: var(--kanban-stack-top);
-}
-
 .kanban-column--target {
-  --kanban-column-edge: var(--border-focus);
   background-color: var(--state-selected);
+  box-shadow: inset 0 0 0 1px var(--border-focus);
+}
+
+.kanban-hidden-columns {
+  background-color: var(--muted);
 }
 
 .kanban-column-strip__title {
@@ -397,14 +200,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kanban-column {
-    translate: none;
-    rotate: none;
-  }
-
   .app:has(.app__note-list :is([data-collection-layout="kanban"], [data-collection-layout="calendar"], [data-collection-layout="graph"])) .app__editor,
   .kanban-drag-lift,
-  .kanban-card,
   .kanban-card--dropped {
     animation: none;
     transition: none;

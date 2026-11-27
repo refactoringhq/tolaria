@@ -1,8 +1,8 @@
+import { memo, type ReactNode } from 'react'
+import { ArrowLineLeft, EyeSlash } from '@phosphor-icons/react'
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ArrowLineLeft, EyeSlash } from '@phosphor-icons/react'
-import { memo, type ReactNode, useState } from 'react'
 import { Virtuoso } from 'react-virtuoso'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -61,7 +61,7 @@ function ColumnActionButton({ label, testId, onClick, children }: { label: strin
 
 function ExpandedColumnHeader({ group, title, count, locale, actions, activatorRef, dragAttributes, dragListeners }: ColumnPartProps) {
   return (
-    <div className="flex h-11 shrink-0 items-center gap-1 px-4">
+    <div className="flex h-10 shrink-0 items-center gap-1 pr-2">
       <Button
         ref={activatorRef}
         type="button"
@@ -70,7 +70,7 @@ function ExpandedColumnHeader({ group, title, count, locale, actions, activatorR
         {...dragListeners}
         aria-roledescription={translate(locale, 'layout.columnRole')}
         aria-label={title}
-        className="h-full min-w-0 flex-1 cursor-grab justify-start rounded-tl-xl rounded-tr-none rounded-b-none px-0 hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
+        className="h-10 min-w-0 flex-1 cursor-grab justify-start rounded-tl-xl rounded-tr-none rounded-b-none px-3 hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
       >
         <KanbanColumnHeader title={title} count={count} />
       </Button>
@@ -108,17 +108,15 @@ function CollapsedColumnStrip({ group, title, count, locale, actions, activatorR
 }
 
 function ColumnCards({ cards, context, selectedNotePath, droppedPath }: Pick<KanbanColumnProps, 'cards' | 'context' | 'selectedNotePath' | 'droppedPath'>) {
-  const [atTop, setAtTop] = useState(true)
   return (
-    <div className="kanban-column-cards relative min-h-0 flex-1 px-2 pb-2" data-scrolled={atTop ? undefined : ''}>
+    <div className="min-h-0 flex-1 px-2 pb-2">
       <Virtuoso
         data={cards}
         className="kanban-scroll"
         style={{ height: '100%' }}
-        atTopStateChange={setAtTop}
         computeItemKey={(_, entry) => entry.path}
-        itemContent={(index, entry) => (
-          <div className={cn('pb-2', index === 0 && 'pt-2')}>
+        itemContent={(_, entry) => (
+          <div className="pb-2">
             <KanbanCard entry={entry} context={context} selected={entry.path === selectedNotePath} justDropped={entry.path === droppedPath} />
           </div>
         )}
@@ -143,7 +141,7 @@ export const KanbanColumn = memo(function KanbanColumn(props: KanbanColumnProps)
       style={{ transform: CSS.Translate.toString(transform), transition }}
       className={cn(
         'kanban-column flex min-h-0 shrink-0 flex-col rounded-xl bg-muted',
-        collapsed && 'kanban-column--collapsed w-10 min-w-10',
+        collapsed ? 'kanban-column--collapsed w-10 min-w-10' : 'w-[272px] min-w-[272px]',
         isCardTarget && 'kanban-column--target',
         isDragging && 'kanban-column--placeholder',
       )}
