@@ -25,7 +25,14 @@ const vaultRootPath = '/Users/luca/Laputa'
 
 function renderTree(props: Partial<ComponentProps<typeof FolderTree>> = {}) {
   const onSelect = props.onSelect ?? vi.fn()
-  render(<FolderTree folders={mockFolders} selection={defaultSelection} onSelect={onSelect} {...props} />)
+  render(
+    <FolderTree
+      folders={mockFolders}
+      selection={defaultSelection}
+      onSelect={onSelect}
+      {...props}
+    />,
+  )
   return { onSelect }
 }
 
@@ -223,7 +230,7 @@ describe('FolderTree', () => {
   it('highlights the selected folder row', () => {
     const selection: SidebarSelection = { kind: 'folder', path: 'areas' }
     render(<FolderTree folders={mockFolders} selection={selection} onSelect={vi.fn()} />)
-    expect(screen.getByTestId('folder-row:areas')).toHaveClass('text-foreground')
+    expect(screen.getByTestId('folder-row:areas').className).toContain('text-[var(--accent-blue)]')
   })
 
   it('opens the create-folder input from the header action', () => {

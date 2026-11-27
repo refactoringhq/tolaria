@@ -8,7 +8,6 @@ import { PropertyChips } from "../../note-item/PropertyChips";
 import { cardDisplayProperties } from "../kanbanModel";
 import type { DayKey } from "./calendarDates";
 import type { CalendarItem } from "./calendarModel";
-import { useBlockedCalendarDrag } from "./useBlockedCalendarDrag";
 
 /** A ghost Button reset to a block slot at its natural height, so an item is one native, focusable control like a Kanban card. */
 const CALENDAR_ITEM_SLOT_CLASSNAME =
@@ -135,7 +134,6 @@ export const CalendarItemButton = memo(function CalendarItemButton(
 	props: CalendarItemButtonProps,
 ) {
 	const { dragId, item, context, selected, justDropped, style } = props;
-	const blockedDrag = useBlockedCalendarDrag(!context.draggable);
 	const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
 		id: dragId,
 		data: { item, anchor: props.anchor },
@@ -148,7 +146,6 @@ export const CalendarItemButton = memo(function CalendarItemButton(
 			variant="ghost"
 			{...attributes}
 			{...listeners}
-			{...blockedDrag}
 			aria-roledescription={context.itemRole}
 			aria-label={item.entry.title}
 			className={cn(
