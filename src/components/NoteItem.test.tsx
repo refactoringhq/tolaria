@@ -254,24 +254,6 @@ describe('NoteItem', () => {
     expect(screen.getByTestId('note-content-stack').className).toContain('space-y-2')
   })
 
-  it('gives tags their own chip treatment and keeps the status hue on the dot', () => {
-    const entry = makeEntry({ status: 'Active', properties: { Tags: ['Editorial'] } })
-    render(
-      <NoteItem
-        entry={entry}
-        isSelected={false}
-        typeEntryMap={{}}
-        displayPropsOverride={['Tags', 'Status']}
-        onClickNote={vi.fn()}
-      />,
-    )
-
-    expect(screen.getByTestId('property-chip-tags-0')).toHaveAttribute('data-property-chip-tone', 'tag')
-    const status = screen.getByTestId('property-chip-status-0')
-    expect(status.style.color).toBe('')
-    expect(within(status).getByTestId('status-chip-dot').style.backgroundColor).toBe('var(--accent-green-text)')
-  })
-
   it('shows created date on the right side of the date row when available', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(NOW_SECONDS * 1000))

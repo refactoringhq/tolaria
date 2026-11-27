@@ -357,7 +357,6 @@ macro_rules! app_invoke_handler {
             commands::open_vault_in_new_window,
             commands::trigger_menu_command,
             commands::update_current_window_min_size,
-            commands::update_macos_traffic_light_position,
             commands::perform_current_window_titlebar_double_click,
             commands::save_settings,
             commands::save_ai_workspace_sessions,

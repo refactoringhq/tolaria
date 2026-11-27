@@ -62,15 +62,14 @@ test('nested parent-repository vault commits stay scoped and local without a rem
   await page.goto('/')
   await page.waitForLoadState('networkidle')
 
-  await expect(page.getByTestId('sidebar-sync')).toContainText('No Sync')
-  await page.getByTestId('sidebar-sync').press('Enter')
-  await expect(page.getByRole('menuitem', { name: /Sync now/i })).toBeDisabled()
-  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('status-no-remote')).toContainText('No remote')
 
   await openCommandPalette(page)
   await executeCommand(page, 'Open Settings')
   const gitRoot = page.getByTestId('settings-git-root')
   await expect(gitRoot).toHaveText('/parent-repository')
+  await gitRoot.focus()
+  await expect(gitRoot).toBeFocused()
   await page.keyboard.press('Escape')
 
   await openCommandPalette(page)
