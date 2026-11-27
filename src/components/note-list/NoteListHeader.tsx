@@ -6,6 +6,7 @@ import {
 	X,
 } from "@phosphor-icons/react";
 import {
+	createElement,
 	useCallback,
 	useEffect,
 	useLayoutEffect,
@@ -50,6 +51,7 @@ interface NoteListHeaderProps {
 	isSearching: boolean;
 	searchInputRef: React.RefObject<HTMLInputElement | null>;
 	propertyPicker?: ListPropertiesPopoverProps | null;
+	leadingActions?: React.ReactNode;
 	/** Layout menus (List/Kanban and layout-specific settings) shown before the sort control. */
 	layoutControls?: React.ReactNode;
 	gitRepositories?: GitRepositoryOption[];
@@ -60,7 +62,7 @@ interface NoteListHeaderProps {
 		option: SortOption,
 		direction: SortDirection,
 	) => void;
-	onCreateNote: () => void;
+	onCreateNote?: () => void;
 	onOpenType: (entry: VaultEntry) => void;
 	onToggleSearch: () => void;
 	onSearchChange: (value: string) => void;
@@ -77,72 +79,23 @@ function dispatchExpandSidebarFromHeader() {
 	);
 }
 
-function ExpandSidebarButton({ locale }: { locale: AppLocale }) {
-	const expandSidebarLabel = translate(locale, "sidebar.action.expand");
-
-	return (
-		<ActionTooltip copy={{ label: expandSidebarLabel }}>
-			<Button
-				type="button"
-				variant="ghost"
-				size="icon-xs"
-				className={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
-				onClick={dispatchExpandSidebarFromHeader}
-				aria-label={expandSidebarLabel}
-				data-no-drag
-			>
-				<SidebarSimple size={16} weight="regular" />
-			</Button>
-		</ActionTooltip>
-	);
-}
-
-function HeaderTitle({
-	title,
-	typeDocument,
-	onOpenType,
-}: Pick<NoteListHeaderProps, "title" | "typeDocument" | "onOpenType">) {
-	const handleClick = typeDocument ? () => onOpenType(typeDocument) : undefined;
-
-	if (typeDocument && handleClick) {
-		return (
-			<button
-				type="button"
-				className="m-0 min-w-0 flex-1 truncate border-0 bg-transparent p-0 text-left text-[14px] font-semibold"
-				onClick={handleClick}
-				data-testid="type-header-link"
-			>
-				{title}
-			</button>
-		);
-	}
-
-	return (
-		<h3 className="m-0 min-w-0 flex-1 truncate text-[14px] font-semibold">
-			{title}
-		</h3>
-	);
-}
-
-function HeaderLeading({
-	title,
-	typeDocument,
-	sidebarCollapsed,
-	locale,
-	onOpenType,
-}: Pick<
+type HeaderTitleProps = Pick<
 	NoteListHeaderProps,
-	"title" | "typeDocument" | "sidebarCollapsed" | "locale" | "onOpenType"
-> & { locale: AppLocale }) {
-	return (
-		<div className="flex min-w-0 flex-1 items-center gap-2 [html[data-touch-input]_&]:!basis-full">
-			{sidebarCollapsed && <ExpandSidebarButton locale={locale} />}
-			<HeaderTitle
-				title={title}
-				typeDocument={typeDocument}
-				onOpenType={onOpenType}
-			/>
-		</div>
+	"title" | "typeDocument" | "onOpenType"
+>;
+
+function HeaderTitle({ title, typeDocument, onOpenType }: HeaderTitleProps) {
+	const className = "m-0 min-w-0 flex-1 truncate text-[14px] font-semibold";
+	if (!typeDocument) return createElement("h3", { className }, title);
+	return createElement(
+		"button",
+		{
+			type: "button",
+			className: `${className} border-0 bg-transparent p-0 text-left`,
+			onClick: () => onOpenType(typeDocument),
+			"data-testid": "type-header-link",
+		},
+		title,
 	);
 }
 
@@ -235,7 +188,7 @@ function SearchAction({ options }: { options: NoteListHeaderProps }) {
 				type="button"
 				variant="ghost"
 				size="icon-xs"
-				className={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
+				className={`note-list-search-action ${NOTE_LIST_ACTION_BUTTON_CLASSNAME}`}
 				onClick={onToggleSearch}
 				aria-label={translate(locale, "noteList.tooltip.search")}
 			>
@@ -245,8 +198,15 @@ function SearchAction({ options }: { options: NoteListHeaderProps }) {
 	);
 }
 
-function CreateNoteAction({ options }: { options: NoteListHeaderProps }) {
-	const { locale = "en", onCreateNote } = options;
+export function CreateNoteAction({
+	onCreateNote,
+	locale = "en",
+	floating = false,
+}: {
+	onCreateNote: () => void;
+	locale?: AppLocale;
+	floating?: boolean;
+}) {
 	const createNoteRef = useRef(onCreateNote);
 	const deferCreateRef = useRef(false);
 	useLayoutEffect(() => {
@@ -276,8 +236,13 @@ function CreateNoteAction({ options }: { options: NoteListHeaderProps }) {
 			<Button
 				type="button"
 				variant="ghost"
-				size="icon-xs"
-				className={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
+				size={floating ? "icon-sm" : "icon-xs"}
+				className={
+					floating
+						? "floating-pane-control pointer-events-auto w-8 shrink-0 rounded-full"
+						: NOTE_LIST_ACTION_BUTTON_CLASSNAME
+				}
+				data-testid={floating ? "note-list-bottom-create" : undefined}
 				onMouseDown={captureCreateOrigin}
 				onClick={handleCreateNote}
 				aria-label={translate(locale, "noteList.createNote")}
@@ -288,21 +253,52 @@ function CreateNoteAction({ options }: { options: NoteListHeaderProps }) {
 	);
 }
 
+function ExpandSidebarButton({ locale }: { locale: AppLocale }) {
+	const expandSidebarLabel = translate(locale, "sidebar.action.expand");
+
+	return (
+		<ActionTooltip copy={{ label: expandSidebarLabel }}>
+			<Button
+				type="button"
+				variant="ghost"
+				size="icon-xs"
+				className={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
+				onClick={dispatchExpandSidebarFromHeader}
+				aria-label={expandSidebarLabel}
+				data-no-drag
+			>
+				<SidebarSimple size={16} weight="regular" />
+			</Button>
+		</ActionTooltip>
+	);
+}
+
 function HeaderActions(options: NoteListHeaderProps) {
-	const { propertyPicker, locale = "en" } = options;
+	const {
+		propertyPicker,
+		sidebarCollapsed,
+		onCreateNote,
+		locale = "en",
+	} = options;
 	return (
 		<div
 			className="ml-3 flex shrink-0 items-center justify-end gap-1 [html[data-touch-input]_&]:!ml-0 [html[data-touch-input]_&]:!w-full [html[data-touch-input]_&]:!justify-end"
 			style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
 		>
-			<LayoutSortActions options={options} />
-			<SearchAction options={options} />
-			<NoteListPropertyActions
-				propertyPicker={propertyPicker}
-				locale={locale}
-				triggerClassName={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
-			/>
-			<CreateNoteAction options={options} />
+			{options.leadingActions}
+			<div className="note-list-general-actions flex shrink-0 items-center justify-end gap-1">
+				{sidebarCollapsed && <ExpandSidebarButton locale={locale} />}
+				<LayoutSortActions options={options} />
+				<SearchAction options={options} />
+				<NoteListPropertyActions
+					propertyPicker={propertyPicker}
+					locale={locale}
+					triggerClassName={NOTE_LIST_ACTION_BUTTON_CLASSNAME}
+				/>
+				{onCreateNote && (
+					<CreateNoteAction onCreateNote={onCreateNote} locale={locale} />
+				)}
+			</div>
 		</div>
 	);
 }
@@ -423,13 +419,7 @@ function HeaderPrimaryRow({
 	options: NoteListHeaderProps;
 	collapsedSidebarPadding: string | undefined;
 }) {
-	const {
-		title,
-		typeDocument,
-		sidebarCollapsed,
-		locale = "en",
-		onOpenType,
-	} = options;
+	const { title, typeDocument, onOpenType } = options;
 	const { dragRegionRef } = useDragRegion<HTMLDivElement>();
 
 	return (
@@ -438,13 +428,13 @@ function HeaderPrimaryRow({
 			className="flex h-[52px] shrink-0 items-center justify-between border-b border-border px-4 [html[data-touch-input]_&]:!h-auto [html[data-touch-input]_&]:!min-h-[92px] [html[data-touch-input]_&]:!flex-wrap [html[data-touch-input]_&]:!justify-start [html[data-touch-input]_&]:!content-center [html[data-touch-input]_&]:!gap-0 [html[data-touch-input]_&]:!px-1.5"
 			style={{ cursor: "default", paddingLeft: collapsedSidebarPadding }}
 		>
-			<HeaderLeading
-				title={title}
-				typeDocument={typeDocument}
-				sidebarCollapsed={sidebarCollapsed}
-				locale={locale}
-				onOpenType={onOpenType}
-			/>
+			<div className="flex min-w-0 flex-1 items-center [html[data-touch-input]_&]:!basis-full">
+				<HeaderTitle
+					title={title}
+					typeDocument={typeDocument}
+					onOpenType={onOpenType}
+				/>
+			</div>
 			<HeaderActions {...options} />
 		</div>
 	);

@@ -27,6 +27,7 @@ export interface VaultMenuRemoveConfirmDialogProps {
 export type VaultMenuPopoverProps = VaultMenuListProps & {
   actions: VaultAction[]
   menuMinWidth: number
+  sidebar?: boolean
   onOpenVaultSettings?: () => void
   setOpen: (open: boolean) => void
 }

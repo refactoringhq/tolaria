@@ -10,7 +10,7 @@ import {
   type UiLanguagePreference,
   type AppLocale,
 } from '../lib/i18n'
-import { DEFAULT_DATE_DISPLAY_FORMAT, normalizeDateDisplayFormat, type DateDisplayFormat } from '../utils/dateDisplay'
+import { DEFAULT_DATE_DISPLAY_FORMAT, isShortDateDisplayFormat, normalizeDateDisplayFormat, type DateDisplayFormat } from '../utils/dateDisplay'
 import { resolveAllNotesFileVisibility } from '../utils/allNotesFileVisibility'
 import { useAiAgentPreferences } from './useAiAgentPreferences'
 import type { AiAgentsStatus } from '../lib/aiAgents'
@@ -56,8 +56,11 @@ export function useAppLocale(): AppLocale {
   return useContext(AppPreferencesContext).appLocale
 }
 
-export function useDateDisplayFormat(): DateDisplayFormat {
-  return useContext(AppPreferencesContext).dateDisplayFormat
+export function useDateDisplayFormat(scope?: 'note-list'): DateDisplayFormat {
+  const { dateDisplayFormat } = useContext(AppPreferencesContext)
+  return scope !== 'note-list' && isShortDateDisplayFormat(dateDisplayFormat)
+    ? DEFAULT_DATE_DISPLAY_FORMAT
+    : dateDisplayFormat
 }
 
 export function useAppPreferences({

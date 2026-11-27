@@ -1,11 +1,12 @@
 import { useDraggable } from "@dnd-kit/core";
 import { X } from "@phosphor-icons/react";
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
 import { Virtuoso } from "react-virtuoso";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { type AppLocale, translate } from "../../../lib/i18n";
 import type { VaultEntry } from "../../../types";
+import { KanbanColumnHeader } from "../KanbanColumn";
 import { type CalendarItemContext, CalendarItemFace } from "./CalendarItem";
 import { type CalendarItem, entryDateValue } from "./calendarModel";
 
@@ -62,7 +63,7 @@ const TrayNote = memo(function TrayNote({
 			<CalendarItemFace
 				entry={entry}
 				context={context}
-				className={cn("min-h-7 py-1", selected && "calendar-item--selected")}
+				className={cn(selected && "calendar-item--selected")}
 			/>
 			{hint && (
 				<span
@@ -109,6 +110,44 @@ function trayRows({
 	];
 }
 
+function TrayHeader({
+	title,
+	count,
+	locale,
+	onClose,
+}: Pick<CalendarTrayProps, "locale" | "onClose"> & {
+	title: string;
+	count: number;
+}) {
+	const closeLabel = translate(locale, "calendar.tray.close");
+	return (
+		<>
+			<div className="flex h-11 shrink-0 items-center justify-between gap-1 px-4">
+				<span className="min-w-0" data-testid="calendar-tray-count">
+					<KanbanColumnHeader title={title} count={count} />
+				</span>
+				<Button
+					type="button"
+					variant="ghost"
+					size="icon-xs"
+					className="!h-6 !w-6 !min-w-0 !p-0 text-muted-foreground hover:!bg-accent hover:!text-foreground [&_svg]:!size-3.5"
+					title={closeLabel}
+					aria-label={closeLabel}
+					onClick={onClose}
+				>
+					<X size={14} />
+				</Button>
+			</div>
+			<p className="mx-0 mb-0 -mt-2.5 px-4 pb-2 text-[11px] text-muted-foreground">
+				{translate(
+					locale,
+					count > 0 ? "calendar.tray.dragHint" : "calendar.tray.empty",
+				)}
+			</p>
+		</>
+	);
+}
+
 /** Notes the calendar cannot place: no date yet, or a value that is not a date. Never silently dropped. */
 export function CalendarTray({
 	unscheduled,
@@ -123,50 +162,32 @@ export function CalendarTray({
 		() => trayRows({ unscheduled, invalid, dateProperty, locale }),
 		[dateProperty, invalid, locale, unscheduled],
 	);
-	const count = rows.length;
-	const closeLabel = translate(locale, "calendar.tray.close");
+	const [atTop, setAtTop] = useState(true);
+	const title = translate(locale, "calendar.tray.title");
 	return (
 		<aside
-			className="calendar-tray flex w-60 shrink-0 flex-col"
-			aria-label={translate(locale, "calendar.tray.title")}
+			className="calendar-tray flex min-h-0 shrink-0 flex-col"
+			aria-label={title}
 			data-testid="calendar-tray"
 		>
-			<div className="calendar-tray__header flex h-9 shrink-0 items-center gap-2 pl-3 pr-1.5">
-				<span className="flex-1 text-[13px] font-semibold text-foreground">
-					{translate(locale, "calendar.tray.title")}
-				</span>
-				<span
-					className="text-xs font-medium tabular-nums text-muted-foreground"
-					data-testid="calendar-tray-count"
-				>
-					{count}
-				</span>
-				<Button
-					type="button"
-					variant="ghost"
-					size="icon-xs"
-					className="calendar-tray__close !p-0 text-muted-foreground hover:!bg-accent hover:!text-foreground [&_svg]:!size-3.5"
-					title={closeLabel}
-					aria-label={closeLabel}
-					onClick={onClose}
-				>
-					<X size={14} />
-				</Button>
-			</div>
-			<p className="m-0 px-3 pb-2 text-[11px] text-muted-foreground">
-				{translate(
-					locale,
-					count > 0 ? "calendar.tray.dragHint" : "calendar.tray.empty",
-				)}
-			</p>
-			<div className="min-h-0 flex-1 px-2 pb-2">
+			<TrayHeader
+				title={title}
+				count={rows.length}
+				locale={locale}
+				onClose={onClose}
+			/>
+			<div
+				className="calendar-tray-cards relative min-h-0 flex-1 px-2 pb-2"
+				data-scrolled={atTop ? undefined : ""}
+			>
 				<Virtuoso
 					data={rows}
 					className="calendar-scroll"
 					style={{ height: "100%" }}
+					atTopStateChange={setAtTop}
 					computeItemKey={(_, row) => row.entry.path}
-					itemContent={(_, row) => (
-						<div className="pb-1.5">
+					itemContent={(index, row) => (
+						<div className={cn("pb-2", index === 0 && "pt-2")}>
 							<TrayNote
 								entry={row.entry}
 								context={context}
