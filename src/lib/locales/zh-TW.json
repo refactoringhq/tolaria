@@ -28,7 +28,7 @@
   "calendar.tray.toggle": "沒有日期的筆記（{count}）",
   "calendar.tray.close": "隱藏沒有日期的筆記",
   "calendar.tray.empty": "此清單中的每則筆記都有日期。",
-  "calendar.tray.dragHint": "拖曳記事以排程",
+  "calendar.tray.dragHint": "將筆記拖曳到某一天，即可排程。",
   "calendar.tray.invalid": "不是日期：{value}",
   "calendar.empty.title": "目前尚無可放入行事曆的內容",
   "calendar.empty.noDateProperty": "行事曆會根據每則筆記的其中一個日期屬性（例如「到期」或「開始」）將其安排在相應的日期。此清單中的所有筆記都還沒有日期屬性。",
@@ -1507,17 +1507,5 @@
   "mobile.workspace.actionFailure.multiple": "無法儲存這些變更。您的筆記未變更。",
   "calendar.quarter": "季度",
   "calendar.year": "年",
-  "calendar.showIcons": "顯示筆記圖示",
-  "layout.dragToResize": "<strong>拖曳</strong>以調整大小",
-  "layout.clickToCollapse": "<strong>點擊</strong>以摺疊",
-  "settings.dateDisplay.short": "筆記清單中的簡短格式（2026 年 11 月 21 日）",
-  "settings.dateDisplay.shortCurrentYear": "在備註清單中縮寫，省略當年（11月21日）",
-  "sidebar.chrome.sync": "同步",
-  "sidebar.chrome.noSync": "未同步",
-  "sidebar.chrome.syncJustNow": "剛剛",
-  "sidebar.chrome.syncMinutesAgo": "{minutes} 分鐘前",
-  "sidebar.chrome.syncRepository": "儲存庫",
-  "sidebar.chrome.viewChanges": "檢視變更",
-  "sidebar.chrome.viewHistory": "檢視歷史紀錄",
-  "noteList.properties.computed": "運算欄位"
+  "calendar.showIcons": "顯示筆記圖示"
 }
