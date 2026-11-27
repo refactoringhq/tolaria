@@ -170,7 +170,7 @@ function useFilteredNoteListSearch(options: {
 
 function useNoteListContent(options: UseNoteListContentParams) {
   const { entries, selection, noteListFilter, inboxPeriod, isInboxView, selectedNotePath, visibleNotesRef } = options
-  const dateDisplayFormat = useDateDisplayFormat('note-list')
+  const dateDisplayFormat = useDateDisplayFormat()
   const appLocale = useAppLocale()
   const subFilter = selection.kind === 'sectionGroup' || selection.kind === 'folder' ? noteListFilter : undefined
   const scopedOptions = { ...options, subFilter, inboxPeriod: isInboxView ? inboxPeriod : undefined }

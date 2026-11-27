@@ -335,14 +335,7 @@ export function EditorLayout(options: {
 					/>
 				)}
 				{(showTableOfContents || !inspectorCollapsed) && (
-					<ResizeHandle
-						onResize={onInspectorResize}
-						collapse={
-							showTableOfContents
-								? undefined
-								: { label: "inspector.title.closePropertiesShortcut", action: onToggleInspector }
-						}
-					/>
+					<ResizeHandle onResize={onInspectorResize} />
 				)}
 				<EditorRightPanel
 					showAIChat={false}

@@ -1,12 +1,12 @@
 import { Archive, ArrowSquareIn, ArrowSquareOut, GearSix, WarningCircle, X } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { useDragRegion } from '../hooks/useDragRegion'
-import { type AppLocale, translate } from '../lib/i18n'
 import {
   getVaultAiGuidanceSummary,
-  type VaultAiGuidanceStatus,
   vaultAiGuidanceNeedsRestore,
+  type VaultAiGuidanceStatus,
 } from '../lib/vaultAiGuidance'
+import { translate, type AppLocale } from '../lib/i18n'
 import type { AiConversation } from './aiWorkspaceConversations'
 import type { AiWorkspaceMode } from './aiWorkspaceSizing'
 
@@ -22,7 +22,7 @@ export function GuidanceWarning({
   if (!status || !vaultAiGuidanceNeedsRestore(status)) return null
 
   return (
-    <div className="mx-3 my-1 flex shrink-0 items-center gap-2 rounded-xl border-x border-y border-border bg-[var(--surface-button)] px-3 py-2 text-[12px] text-muted-foreground shadow-[var(--shadow-card)]">
+    <div className="flex shrink-0 items-center gap-2 border-y border-border bg-muted px-3 py-2 text-[12px] text-muted-foreground">
       <WarningCircle size={15} className="shrink-0 text-[var(--accent-yellow)]" />
       <span className="min-w-0 flex-1">
         {translate(locale, 'ai.workspace.guidanceWarning', {
