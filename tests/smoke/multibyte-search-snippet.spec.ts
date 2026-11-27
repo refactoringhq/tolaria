@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import path from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import {
 	createFixtureVaultCopy,
@@ -10,32 +9,15 @@ import {
 let tempVaultDir: string;
 
 async function showNoteListSearch(page: Page) {
-	await page.getByRole("button", { name: "Search notes" }).click();
+	await page.getByTestId("note-list-container").focus();
+	await page.keyboard.press("ControlOrMeta+f");
 	await expect(page.getByPlaceholder("Search notes...")).toBeVisible();
 }
 
 test.describe("Multibyte note-list search", () => {
 	test.beforeEach(async ({ page }) => {
 		tempVaultDir = createFixtureVaultCopy();
-		const noteDir = path.join(tempVaultDir, "note");
-		fs.mkdirSync(noteDir, { recursive: true });
-		fs.writeFileSync(
-			path.join(noteDir, "multibyte-search-boundary.md"),
-			[
-				"---",
-				"Is A: Note",
-				"---",
-				"# Multibyte Search Boundary",
-				"",
-				`${"한".repeat(21)}aneedle after multibyte prefix`,
-			].join("\n"),
-			"utf-8",
-		);
-		fs.writeFileSync(
-			path.join(noteDir, "chinese-crlf-table.md"),
-			"\r\n\r\n# 上海复盘\r\n\r\n| 指标 | 值 |\r\n| --- | --- |\r\n| 收入 | 增长 |\r\n\r\n正文包含中文字符。",
-			"utf-8",
-		);
+		fs.cpSync(new URL("../fixtures/multibyte-search", import.meta.url), tempVaultDir, { recursive: true });
 		await openFixtureVaultDesktopHarness(page, tempVaultDir, {
 			expectedReadyTitle: "Multibyte Search Boundary",
 		});

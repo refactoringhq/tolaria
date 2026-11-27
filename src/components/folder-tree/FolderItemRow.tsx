@@ -102,11 +102,11 @@ export function FolderItemRow(options: FolderItemRowProps) {
   return (
     <div
       className={cn(
-        'group relative flex items-center gap-1 rounded transition-colors',
-        isSelected ? 'bg-[var(--accent-blue-light)] text-[var(--accent-blue)]' : 'text-foreground',
+        'group relative flex items-center gap-1 rounded text-foreground transition-colors',
+        isSelected && 'bg-[var(--sidebar-item-highlight)] shadow-[var(--shadow-sidebar)]',
         SIDEBAR_ITEM_HOVER_CLASS,
       )}
-      style={{ paddingLeft: depthIndent, borderRadius: 4 }}
+      style={{ paddingLeft: depthIndent, borderRadius: 'var(--radius-xl)' }}
     >
       <FolderSelectButton
         contentInset={contentInset}
@@ -150,8 +150,7 @@ function FolderSelectButton(options: FolderSelectButtonOptions) {
       variant="ghost"
       className={cn(
         'h-auto flex-1 justify-start gap-2 rounded text-left text-[13px] font-medium hover:bg-transparent',
-        isSelected ? 'text-[var(--accent-blue)]' : 'text-foreground',
-        'hover:text-[var(--accent-blue)] group-hover:text-[var(--accent-blue)]',
+        'text-foreground hover:text-foreground group-hover:text-foreground',
         'data-[note-drop-state=valid]:!bg-[var(--accent-blue-light)] data-[note-drop-state=valid]:ring-1 data-[note-drop-state=valid]:ring-[var(--accent-blue)]',
       )}
       style={{
