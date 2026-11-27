@@ -1,4 +1,4 @@
-import { CalendarBlank, Link } from "@phosphor-icons/react";
+import { Link } from "@phosphor-icons/react";
 import {
 	type ComponentType,
 	createElement,
@@ -99,16 +99,6 @@ function PropertyChipIcon({
 			<Link aria-hidden="true" width={11} height={11} className="shrink-0" />
 		);
 	}
-	if (tone === "date") {
-		return (
-			<CalendarBlank
-				aria-hidden="true"
-				width={11}
-				height={11}
-				className="shrink-0"
-			/>
-		);
-	}
 
 	const noteIconElement = renderResolvedNoteIcon(noteIcon, imageFailed, () =>
 		setImageFailed(true),
@@ -150,7 +140,7 @@ export function PropertyChips({
 	typeEntryMap: Record<string, VaultEntry>;
 	onOpenNote: (entry: VaultEntry, event: MouseEvent) => void;
 }) {
-	const dateDisplayFormat = useDateDisplayFormat("note-list");
+	const dateDisplayFormat = useDateDisplayFormat();
 	const appLocale = useAppLocale();
 	const chips = useMemo(() => {
 		const result: { key: string; values: PropertyChipValue[] }[] = [];
@@ -183,8 +173,7 @@ export function PropertyChips({
 								<>
 									<span
 										aria-hidden="true"
-										className="status-chip-dot size-[7px] shrink-0 rounded-full"
-										style={{ backgroundColor: chip.dotColor }}
+										className="size-[7px] shrink-0 rounded-full bg-current"
 										data-testid="status-chip-dot"
 									/>
 									<span className="truncate whitespace-nowrap">
@@ -206,7 +195,6 @@ export function PropertyChips({
 								style={chip.style}
 								data-testid={testId}
 								data-property-chip="true"
-								data-property-chip-tone={chip.tone}
 							>
 								{content}
 							</span>
@@ -224,7 +212,6 @@ export function PropertyChips({
 							}}
 							data-testid={testId}
 							data-property-chip="true"
-							data-property-chip-tone={chip.tone}
 						>
 							{content}
 						</button>

@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import type { AgentStatus } from '../hooks/useCliAiAgent'
-import { useDragRegion } from '../hooks/useDragRegion'
 import { translate, type AppLocale } from '../lib/i18n'
 import type { AiConversation } from './aiWorkspaceConversations'
 
@@ -165,20 +164,23 @@ function useHorizontalScrollFades(dependencyKey: string) {
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const [fades, setFades] = useState({ left: false, right: false })
 
-  useEffect(function observeScrollFades() {
-    void dependencyKey
+  const updateFades = useCallback(() => {
     const element = scrollRef.current
     if (!element) return
 
-    const updateFades = () => {
-      const maxScrollLeft = element.scrollWidth - element.clientWidth
-      setFades({
-        left: element.scrollLeft > 1,
-        right: maxScrollLeft > 1 && maxScrollLeft - 1 > element.scrollLeft,
-      })
-    }
+    const maxScrollLeft = element.scrollWidth - element.clientWidth
+    setFades({
+      left: element.scrollLeft > 1,
+      right: maxScrollLeft > 1 && element.scrollLeft < maxScrollLeft - 1,
+    })
+  }, [])
 
+  useEffect(() => {
+    void dependencyKey
+    const element = scrollRef.current
     updateFades()
+    if (!element) return
+
     element.addEventListener('scroll', updateFades, { passive: true })
     const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateFades)
     resizeObserver?.observe(element)
@@ -188,7 +190,7 @@ function useHorizontalScrollFades(dependencyKey: string) {
       element.removeEventListener('scroll', updateFades)
       resizeObserver?.disconnect()
     }
-  }, [dependencyKey])
+  }, [dependencyKey, updateFades])
 
   return {
     scrollRef,
@@ -315,12 +317,10 @@ export function SideWorkspaceHeader(options: {
     separated,
     statuses,
   } = options
-  const { dragRegionRef } = useDragRegion<HTMLDivElement>()
   const expandLabel = translate(locale, expanded ? 'ai.workspace.restorePanel' : 'ai.workspace.expandPanel')
 
   return (
     <div
-      ref={dragRegionRef}
       className={cn('flex h-[52px] shrink-0 items-center gap-2 px-2', separated && 'border-b border-border')}
       data-testid="ai-workspace-side-header"
     >

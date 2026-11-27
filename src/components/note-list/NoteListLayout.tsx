@@ -1,8 +1,6 @@
-import { useState } from "react";
 import { BulkActionBar } from "../BulkActionBar";
 import { CollectionLayoutBody } from "./CollectionLayoutBody";
 import { LayoutHeaderControls } from "./CollectionLayoutHeader";
-import { CalendarHeaderSlot } from "./calendar/useCalendarNavigation";
 import { FilterPills } from "./FilterPills";
 import { layoutPropertyPicker } from "./kanbanCardFieldsPicker";
 import { LayoutEditorPanelClose } from "./LayoutEditorPanel";
@@ -222,7 +220,6 @@ export function NoteListBody(
 		| "noteListFilter"
 		| "filterCounts"
 		| "onNoteListFilterChange"
-		| "handleCreateNote"
 		| "loading"
 	>,
 ) {
@@ -251,7 +248,6 @@ export function NoteListBody(
 		noteListFilter,
 		filterCounts,
 		onNoteListFilterChange,
-		handleCreateNote,
 		loading,
 	} = options;
 	return (
@@ -292,7 +288,7 @@ export function NoteListBody(
 					active={noteListFilter}
 					counts={filterCounts}
 					onChange={onNoteListFilterChange}
-					onCreate={handleCreateNote}
+					position="bottom"
 					locale={locale}
 				/>
 			)}
@@ -328,24 +324,57 @@ function NoteListLayoutHeader(
 		| "handleSearchKeyDown"
 	> & {
 		layoutControls?: React.ReactNode;
-		leadingActions?: React.ReactNode;
-		hasBottomCreate: boolean;
 	},
 ) {
 	const {
-		hasBottomCreate,
+		layoutControls,
+		title,
+		typeDocument,
+		isEntityView,
+		isChangesView,
+		listSort,
+		listDirection,
+		customProperties,
+		gitRepositories,
+		selectedGitRepositoryPath,
+		onGitRepositoryChange,
+		locale,
+		sidebarCollapsed,
+		searchVisible,
+		search,
+		isSearching,
+		searchInputRef,
+		propertyPicker,
 		handleSortChange,
 		handleCreateNote,
+		onOpenType,
 		toggleSearch,
 		setSearch,
 		handleSearchKeyDown,
-		...headerProps
 	} = options;
 	return (
 		<NoteListHeader
-			{...headerProps}
+			title={title}
+			typeDocument={typeDocument}
+			isEntityView={isEntityView}
+			isChangesView={isChangesView}
+			listSort={listSort}
+			listDirection={listDirection}
+			customProperties={customProperties}
+			gitRepositories={gitRepositories}
+			selectedGitRepositoryPath={selectedGitRepositoryPath}
+			onGitRepositoryChange={onGitRepositoryChange}
+			locale={locale}
+			sidebarCollapsed={sidebarCollapsed}
+			searchVisible={searchVisible}
+			search={search}
+			isSearching={isSearching}
+			searchInputRef={searchInputRef}
+			propertyPicker={propertyPicker}
+			layoutControls={layoutControls}
 			onSortChange={handleSortChange}
-			onCreateNote={hasBottomCreate ? undefined : handleCreateNote}
+			onCreateNote={handleCreateNote}
+			onOpenType={onOpenType}
 			onToggleSearch={toggleSearch}
 			onSearchChange={setSearch}
 			onSearchKeyDown={handleSearchKeyDown}
@@ -419,7 +448,6 @@ export function NoteListLayout({
 			<NoteListFooter {...contentProps} />
 			<LayoutEditorPanelClose
 				open={layout.panel.open}
-				resizable={layout.layout === "kanban" || layout.layout === "calendar"}
 				locale={locale}
 				onClose={layout.panel.close}
 			/>
@@ -427,74 +455,47 @@ export function NoteListLayout({
 	);
 }
 
-interface NoteListLayoutContentsProps {
-	layout: CollectionLayoutState;
-	contentProps: NoteListContentProps;
-	locale: NoteListLayoutProps["locale"];
-}
-
-function CollectionContent({
-	layout,
-	contentProps,
-	locale,
-}: NoteListLayoutContentsProps) {
-	return (
-		<CollectionLayoutBody
-			layout={layout}
-			listContent={<NoteListBody {...contentProps} />}
-			entries={contentProps.visibleEntries}
-			allEntries={contentProps.allEntries}
-			locale={locale}
-			typeEntryMap={contentProps.typeEntryMap}
-			displayPropsOverride={contentProps.displayPropsOverride}
-			selectedNotePath={contentProps.selectedNotePath}
-			onOpen={contentProps.handleClickNote}
-			onMove={(entry, property, value) =>
-				contentProps.onUpdateTypeSort?.(entry.path, property, value)
-			}
-			onCreate={contentProps.handleCreateNote}
-		/>
-	);
-}
-
 function NoteListLayoutContents({
 	layout,
 	contentProps,
 	locale,
-}: NoteListLayoutContentsProps) {
-	const [calendarHeaderSlot, setCalendarHeaderSlot] =
-		useState<HTMLDivElement | null>(null);
-	const calendarHeader = layout.layout === "calendar" && (
-		<div ref={setCalendarHeaderSlot} className="calendar-header-slot" />
-	);
-	const hasBottomCreate =
-		layout.layout === "list" && contentProps.showFilterPills;
+}: {
+	layout: CollectionLayoutState;
+	contentProps: NoteListContentProps;
+	locale: NoteListLayoutProps["locale"];
+}) {
 	return (
-		<CalendarHeaderSlot.Provider value={calendarHeaderSlot}>
-			<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-				<NoteListLayoutHeader
-					{...contentProps}
-					hasBottomCreate={hasBottomCreate}
-					propertyPicker={layoutPropertyPicker(
-						layout,
-						contentProps.propertyPicker,
-						locale,
-					)}
-					leadingActions={calendarHeader}
-					layoutControls={
-						<LayoutHeaderControls
-							layout={layout}
-							locale={locale}
-							typeEntryMap={contentProps.typeEntryMap}
-						/>
-					}
-				/>
-				<CollectionContent
-					layout={layout}
-					contentProps={contentProps}
-					locale={locale}
-				/>
-			</div>
-		</CalendarHeaderSlot.Provider>
+		<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+			<NoteListLayoutHeader
+				{...contentProps}
+				propertyPicker={layoutPropertyPicker(
+					layout,
+					contentProps.propertyPicker,
+					locale,
+				)}
+				layoutControls={
+					<LayoutHeaderControls
+						layout={layout}
+						locale={locale}
+						typeEntryMap={contentProps.typeEntryMap}
+					/>
+				}
+			/>
+			<CollectionLayoutBody
+				layout={layout}
+				listContent={<NoteListBody {...contentProps} />}
+				entries={contentProps.visibleEntries}
+				allEntries={contentProps.allEntries}
+				locale={locale}
+				typeEntryMap={contentProps.typeEntryMap}
+				displayPropsOverride={contentProps.displayPropsOverride}
+				selectedNotePath={contentProps.selectedNotePath}
+				onOpen={contentProps.handleClickNote}
+				onMove={(entry, property, value) =>
+					contentProps.onUpdateTypeSort?.(entry.path, property, value)
+				}
+				onCreate={contentProps.handleCreateNote}
+			/>
+		</div>
 	);
 }
