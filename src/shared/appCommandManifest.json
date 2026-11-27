@@ -17,6 +17,16 @@
       "route": { "kind": "handler", "handler": "onCheckForUpdates" },
       "menuOwned": true
     },
+    "appContribute": {
+      "id": "app-contribute",
+      "route": { "kind": "handler", "handler": "onOpenFeedback" },
+      "menuOwned": true
+    },
+    "appDiscord": {
+      "id": "app-discord",
+      "route": { "kind": "handler", "handler": "onOpenDiscord" },
+      "menuOwned": true
+    },
     "fileNewNote": {
       "id": "file-new-note",
       "route": { "kind": "handler", "handler": "onCreateNote" },
@@ -399,6 +409,11 @@
       "route": { "kind": "handler", "handler": "onOpenVault" },
       "menuOwned": true
     },
+    "vaultSwitchWorkspace": {
+      "id": "vault-switch-workspace",
+      "route": { "kind": "handler", "handler": "onOpenWorkspacePicker" },
+      "menuOwned": true
+    },
     "vaultRemove": {
       "id": "vault-remove",
       "route": { "kind": "handler", "handler": "onRemoveActiveVault" },
@@ -424,6 +439,11 @@
       "route": { "kind": "handler", "handler": "onPull" },
       "menuOwned": true
     },
+    "vaultSyncNow": {
+      "id": "vault-sync-now",
+      "route": { "kind": "handler", "handler": "onSyncNow" },
+      "menuOwned": true
+    },
     "vaultResolveConflicts": {
       "id": "vault-resolve-conflicts",
       "route": { "kind": "handler", "handler": "onResolveConflicts" },
@@ -432,6 +452,11 @@
     "vaultViewChanges": {
       "id": "vault-view-changes",
       "route": { "kind": "handler", "handler": "onViewChanges" },
+      "menuOwned": true
+    },
+    "vaultViewHistory": {
+      "id": "vault-view-history",
+      "route": { "kind": "filter", "value": "pulse" },
       "menuOwned": true
     },
     "vaultInstallMcp": {
@@ -543,14 +568,17 @@
       "label": "Vault",
       "items": [
         { "kind": "command", "command": "vaultOpen", "label": "Open Vault…" },
+        { "kind": "command", "command": "vaultSwitchWorkspace", "label": "Switch Workspace…" },
         { "kind": "command", "command": "vaultRemove", "label": "Remove Vault from List" },
         { "kind": "command", "command": "vaultRestoreGettingStarted", "label": "Restore Getting Started" },
         { "kind": "separator" },
         { "kind": "command", "command": "vaultAddRemote", "label": "Add Remote…", "enabled": false },
         { "kind": "command", "command": "vaultCommitPush", "label": "Commit & Push" },
+        { "kind": "command", "command": "vaultSyncNow", "label": "Sync Now" },
         { "kind": "command", "command": "vaultPull", "label": "Pull from Remote" },
         { "kind": "command", "command": "vaultResolveConflicts", "label": "Resolve Conflicts", "enabled": false },
-        { "kind": "command", "command": "vaultViewChanges", "label": "View Pending Changes" },
+        { "kind": "command", "command": "vaultViewChanges", "label": "View Changes" },
+        { "kind": "command", "command": "vaultViewHistory", "label": "View History" },
         { "kind": "separator" },
         { "kind": "command", "command": "vaultReload", "label": "Reload Vault" },
         { "kind": "command", "command": "vaultRepair", "label": "Repair Vault" },
@@ -561,7 +589,10 @@
   "appMenu": [
     { "kind": "command", "command": "appCheckForUpdates", "label": "Check for Updates..." },
     { "kind": "separator" },
-    { "kind": "command", "command": "appSettings", "label": "Settings..." }
+    { "kind": "command", "command": "appSettings", "label": "Settings..." },
+    { "kind": "separator" },
+    { "kind": "command", "command": "appContribute", "label": "Contribute…" },
+    { "kind": "command", "command": "appDiscord", "label": "Join Discord" }
   ],
   "menuStateGroups": {
     "noteDependent": [
