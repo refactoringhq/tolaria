@@ -16,7 +16,6 @@ import { CSS } from "@dnd-kit/utilities";
 import { DotsSixVertical, SlidersHorizontal } from "@phosphor-icons/react";
 import {
 	type KeyboardEvent,
-	type ReactNode,
 	type RefObject,
 	useCallback,
 	useId,
@@ -35,7 +34,6 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { type AppLocale, translate } from "../../lib/i18n";
-import { renderComputedProperties } from "./computedListProperties";
 import {
 	type NoteListPropertiesScope,
 	usePopoverEscapeHandlers,
@@ -98,9 +96,10 @@ function filterOrderedItems(
 
 function toggleDisplayProperty(
 	currentDisplay: NoteListPropertyKey[],
+	selectedSet: Set<NoteListPropertyKey>,
 	key: NoteListPropertyKey,
 ) {
-	if (currentDisplay.includes(key)) {
+	if (selectedSet.has(key)) {
 		const filtered = currentDisplay.filter((property) => property !== key);
 		return filtered.length > 0 ? filtered : null;
 	}
@@ -121,10 +120,7 @@ function reorderDisplayProperties(
 	const newIndex = selected.indexOf(String(over.id) as NoteListPropertyKey);
 	if (oldIndex === -1 || newIndex === -1) return undefined;
 
-	const hiddenFields = currentDisplay.filter(
-		(property) => !availableProperties.includes(property),
-	);
-	return [...arrayMove(selected, oldIndex, newIndex), ...hiddenFields];
+	return arrayMove(selected, oldIndex, newIndex);
 }
 
 function SortablePropertyItem({
@@ -221,32 +217,40 @@ function ListPropertiesOptionsList({
 	listboxId,
 	filteredItems,
 	selectedSet,
-	drag,
+	sensors,
 	locale = "en",
+	onDragEnd,
 	onToggle,
-	computed,
 }: {
 	listboxId: string;
 	filteredItems: NoteListPropertyKey[];
 	selectedSet: Set<NoteListPropertyKey>;
-	drag: { sensors: ReturnType<typeof useSensors>; onDragEnd: (event: DragEndEvent) => void };
+	sensors: ReturnType<typeof useSensors>;
 	locale?: AppLocale;
+	onDragEnd: (event: DragEndEvent) => void;
 	onToggle: (key: string) => void;
-	computed: ReactNode;
 }) {
 	return (
 		<div
 			className="max-h-60 overflow-y-auto"
 			data-testid="list-properties-scroll-area"
 		>
-			{computed}
-			{filteredItems.length > 0 ? (
+			{filteredItems.length === 0 ? (
+				<div className="px-1 py-2 text-[12px] text-muted-foreground">
+					{translate(locale, "noteList.properties.noMatches")}
+				</div>
+			) : (
 				<DndContext
-					sensors={drag.sensors}
+					sensors={sensors}
 					collisionDetection={closestCenter}
-					onDragEnd={drag.onDragEnd}
+					onDragEnd={onDragEnd}
 				>
-					<div id={listboxId} role="listbox" aria-multiselectable="true">
+					<div
+						id={listboxId}
+						role="listbox"
+						aria-multiselectable="true"
+						className="pr-3"
+					>
 						<SortableContext
 							items={filteredItems}
 							strategy={verticalListSortingStrategy}
@@ -263,12 +267,6 @@ function ListPropertiesOptionsList({
 						</SortableContext>
 					</div>
 				</DndContext>
-			) : (
-				!computed && (
-					<div className="px-1 py-2 text-[12px] text-muted-foreground">
-						{translate(locale, "noteList.properties.noMatches")}
-					</div>
-				)
 			)}
 		</div>
 	);
@@ -277,7 +275,6 @@ function ListPropertiesOptionsList({
 function ListPropertiesPopoverPanel(options: {
 	inputRef: RefObject<HTMLInputElement | null>;
 	query: string;
-	currentDisplay: string[];
 	open: boolean;
 	listboxId: string;
 	filteredItems: NoteListPropertyKey[];
@@ -293,7 +290,6 @@ function ListPropertiesPopoverPanel(options: {
 	const {
 		inputRef,
 		query,
-		currentDisplay,
 		open,
 		listboxId,
 		filteredItems,
@@ -327,17 +323,12 @@ function ListPropertiesPopoverPanel(options: {
 					onKeyDown={onSearchKeyDown}
 				/>
 				<ListPropertiesOptionsList
-					computed={renderComputedProperties(
-						currentDisplay,
-						normalizePropertyQuery(query),
-						locale,
-						onToggle,
-					)}
 					listboxId={listboxId}
 					filteredItems={filteredItems}
 					selectedSet={selectedSet}
-					drag={{ sensors, onDragEnd }}
+					sensors={sensors}
 					locale={locale}
+					onDragEnd={onDragEnd}
 					onToggle={onToggle}
 				/>
 			</div>
@@ -375,11 +366,13 @@ function usePropertiesPopoverItems(
 function usePopoverActions(
 	currentDisplay: string[],
 	availableProperties: string[],
+	selectedSet: Set<string>,
 	onSave: ListPropertiesPopoverProps["onSave"],
 ) {
 	const handleToggle = useCallback(
-		(key: string) => onSave(toggleDisplayProperty(currentDisplay, key)),
-		[currentDisplay, onSave],
+		(key: string) =>
+			onSave(toggleDisplayProperty(currentDisplay, selectedSet, key)),
+		[currentDisplay, onSave, selectedSet],
 	);
 	const handleDragEnd = useCallback(
 		(event: DragEndEvent) => {
@@ -429,6 +422,7 @@ function useListPropertiesPopoverState({
 	const { handleToggle, handleDragEnd } = usePopoverActions(
 		currentDisplay,
 		availableProperties,
+		selectedSet,
 		onSave,
 	);
 
@@ -489,7 +483,6 @@ export function ListPropertiesPopover({
 			<ListPropertiesPopoverPanel
 				inputRef={state.inputRef}
 				query={state.query}
-				currentDisplay={currentDisplay}
 				open={state.open}
 				listboxId={state.listboxId}
 				filteredItems={state.filteredItems}

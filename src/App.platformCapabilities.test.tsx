@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import App from "./App";
 
@@ -109,15 +109,13 @@ describe("App platform capabilities", () => {
 		expect(statusBar).not.toHaveTextContent(/changes|commit|not synced/i);
 	});
 
-		test("keeps local Git actions available in the sidebar without a remote server", async () => {
+	test("keeps the git status in the status bar without a remote server", async () => {
 		window.localStorage.setItem("tolaria:ai-agents-onboarding-dismissed", "1");
 		render(<App />);
 
-		const sync = await screen.findByTestId("sidebar-sync");
-		expect(sync).toHaveTextContent("No Sync");
-		fireEvent.keyDown(sync, { key: "ArrowDown" });
-		const menu = within(await screen.findByTestId("sidebar-sync-menu"));
-		expect(menu.getByRole("menuitem", { name: "View changes" })).not.toHaveAttribute("data-disabled");
-		expect(menu.getByRole("menuitem", { name: "View history" })).not.toHaveAttribute("data-disabled");
+		const statusBar = await screen.findByTestId("status-bar");
+		await waitFor(() => expect(statusBar).toHaveTextContent("Contribute"));
+		expect(statusBar).toHaveTextContent(/Changes/);
+		expect(statusBar).toHaveTextContent(/Commit/);
 	});
 });

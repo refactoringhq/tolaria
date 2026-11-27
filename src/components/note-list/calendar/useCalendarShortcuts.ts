@@ -16,6 +16,7 @@ type NavigationAction =
 	| "today"
 	| "month"
 	| "week"
+	| "quarter"
 	| "year";
 
 const NAVIGATION_KEYS = new Map<string, NavigationAction>([
@@ -24,6 +25,7 @@ const NAVIGATION_KEYS = new Map<string, NavigationAction>([
 	["t", "today"],
 	["m", "month"],
 	["w", "week"],
+	["q", "quarter"],
 	["y", "year"],
 ]);
 
@@ -61,13 +63,14 @@ function runNavigation(
 			break;
 		case "month":
 		case "week":
+		case "quarter":
 		case "year":
 			navigation.setView(action);
 			break;
 	}
 }
 
-/** ←/→ move a period, T jumps to today, and M/W/Y switch views. */
+/** ←/→ move a month or week, T jumps to today, M/W/Q/Y switch Month, Week, Quarter and Year. */
 export function useCalendarShortcuts(navigation: CalendarNavigation) {
 	const latest = useRef(navigation);
 	useEffect(() => {
