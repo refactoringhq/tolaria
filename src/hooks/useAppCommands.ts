@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useLayoutEffect, useRef } from 'react'
 import type { AiAgentId, AiAgentsStatus } from '../lib/aiAgents'
 import type { AppLocale, UiLanguagePreference } from '../lib/i18n'
 import type { ThemeMode } from '../lib/themeMode'
@@ -42,6 +42,9 @@ interface AppCommandsConfig {
   onSave: () => void
   onOpenSettings: () => void
   onOpenFeedback?: () => void
+  onOpenDiscord?: () => void
+  onOpenWorkspacePicker?: () => void
+  onSyncNow?: () => void
   onDeleteNote: (path: string) => void
   onArchiveNote: (path: string) => void
   onUnarchiveNote: (path: string) => void
@@ -322,6 +325,10 @@ function createMenuEventHandlers(
     ...createMenuEventActionHandlers(config, selectFilter),
     ...createMenuEventVaultHandlers(config, viewChanges),
     ...createMenuEventState(config),
+    onOpenFeedback: config.onOpenFeedback,
+    onOpenDiscord: config.onOpenDiscord,
+    onOpenWorkspacePicker: config.onOpenWorkspacePicker,
+    onSyncNow: config.onSyncNow,
   }
 }
 
@@ -614,14 +621,14 @@ function createCommandRegistryConfig(config: AppCommandsConfig): CommandRegistry
 /** Sets up keyboard shortcuts, command registry, menu events, and keyboard navigation. */
 export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
   const entriesRef = useRef(config.entries)
-  // eslint-disable-next-line react-hooks/refs
-  entriesRef.current = config.entries
+  useLayoutEffect(() => {
+    entriesRef.current = config.entries
+  }, [config.entries])
 
   const toggleArchive = useCallback((path: string) => {
     const entry = entriesRef.current.find(e => e.path === path)
     ;(entry?.archived ? config.onUnarchiveNote : config.onArchiveNote)(path)
   }, [config.onArchiveNote, config.onUnarchiveNote])
-
 
   const { onSelect } = config
 

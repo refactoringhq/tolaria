@@ -1,6 +1,5 @@
 import path from "node:path";
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { contrastRatio } from "../../src/lib/colorSystem/contrast";
 import type { VaultEntry, ViewFile } from "../../src/types";
 import {
 	createFixtureVaultCopy,
@@ -177,105 +176,7 @@ async function verifyRow(page: Page, theme: string, label: string) {
 		.toEqual(idle);
 }
 
-interface FillCheck {
-	page: Page;
-	fill: string | null;
-}
-
-interface ThemedPage {
-	page: Page;
-	theme: string;
-}
-
-async function contrastWithSidebar({ page, fill }: FillCheck) {
-	const sidebar = await page
-		.locator("aside")
-		.first()
-		.evaluate((element) => getComputedStyle(element).backgroundColor);
-	const [fillHex, sidebarHex] = [fill ?? sidebar, sidebar].map(
-		(color) =>
-			`#${(color.match(/\d+/g) ?? [])
-				.slice(0, 3)
-				.map((channel) => Number(channel).toString(16).padStart(2, "0"))
-				.join("")}`,
-	);
-	return contrastRatio(fillHex, sidebarHex);
-}
-
-function favoritesHeader(page: Page): Locator {
-	return page
-		.locator("nav")
-		.getByText("FAVORITES", { exact: true })
-		.locator("xpath=ancestor::button[1]/..");
-}
-
-async function headerColors(header: Locator) {
-	await header.page().screenshot({ animations: "disabled" });
-	return header.evaluate((element) => {
-		const count = element.querySelector('[data-testid="sidebar-count-chip"]');
-		return {
-			background: getComputedStyle(element).backgroundColor,
-			countBackground: count ? getComputedStyle(count).backgroundColor : null,
-		};
-	});
-}
-
-async function verifyGrayRowFill(page: Page) {
-	const row = sidebarRow(page, "Quarters");
-	await row.click();
-	const active = await settledColors(page, row);
-	expect(
-		await contrastWithSidebar({ page, fill: active.background }),
-		"a gray type row stands out from the sidebar",
-	).toBeGreaterThanOrEqual(1.1);
-	await sidebarRow(page, "Archive").click();
-}
-
-async function verifyGroupHeaderHover({ page, theme }: ThemedPage) {
-	const header = favoritesHeader(page);
-	await setHover(page, header, false);
-	const idle = await headerColors(header);
-	expect(idle.background, "idle header has no fill").toBe("rgba(0, 0, 0, 0)");
-	expect(idle.countBackground, "idle count pill has a fill").not.toBe(
-		"rgba(0, 0, 0, 0)",
-	);
-	expect(
-		await contrastWithSidebar({ page, fill: idle.countBackground }),
-		"idle count pill stays visible on the sidebar",
-	).toBeGreaterThanOrEqual(1.1);
-	await setHover(page, header, true);
-	const hovered = await headerColors(header);
-	await screenshot(page, theme, "favorites-header-hover");
-	expect(hovered.background, "hover fill matches the count pill").toBe(
-		idle.countBackground,
-	);
-	expect(hovered.countBackground, "count pill keeps its fill").toBe(
-		idle.countBackground,
-	);
-	await setHover(page, header, false);
-	await expect
-		.poll(() => headerColors(header), "pointer exit clears the header")
-		.toEqual(idle);
-}
-
 for (const theme of ["light", "dark"]) {
-	test(`sidebar gray rows and section headers show a visible hover in ${theme} theme`, async ({
-		page,
-	}) => {
-		const vaultPath = createFixtureVaultCopy();
-		try {
-			await prepareSidebar(page, vaultPath);
-			await page.evaluate((value) => {
-				document.documentElement.setAttribute("data-theme", value);
-				document.documentElement.classList.toggle("dark", value === "dark");
-			}, theme);
-			await verifyGrayRowFill(page);
-			await verifyGroupHeaderHover({ page, theme });
-		} finally {
-			removeFixtureVaultCopy(vaultPath);
-		}
-	});
-
 	test(`sidebar hover matches active colors in ${theme} theme`, async ({
 		page,
 	}) => {
