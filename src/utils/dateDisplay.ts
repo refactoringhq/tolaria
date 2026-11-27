@@ -1,10 +1,14 @@
 import { parseDashDateParts, parseSlashDateParts, type DateParts } from './dateStringParts'
 import type { AppLocale } from '../lib/i18n'
 
-export type DateDisplayFormat = 'us' | 'european' | 'friendly' | 'iso'
+export type DateDisplayFormat = 'us' | 'european' | 'friendly' | 'iso' | 'short' | 'short-current-year'
 
 export const DEFAULT_DATE_DISPLAY_FORMAT: DateDisplayFormat = 'friendly'
-export const DATE_DISPLAY_FORMATS: readonly DateDisplayFormat[] = ['us', 'european', 'friendly', 'iso']
+export const DATE_DISPLAY_FORMATS: readonly DateDisplayFormat[] = ['us', 'european', 'friendly', 'short', 'short-current-year', 'iso']
+
+export function isShortDateDisplayFormat(format: DateDisplayFormat): boolean {
+  return format === 'short' || format === 'short-current-year'
+}
 
 const DEFAULT_DATE_LOCALE: AppLocale = 'en'
 const DATE_LOCALE_OVERRIDES = new Map<AppLocale, string>([
@@ -37,7 +41,7 @@ export function formatDatePartsForDisplay(
   return new Intl.DateTimeFormat(DATE_LOCALE_OVERRIDES.get(locale) ?? locale, {
     day: 'numeric',
     month: 'short',
-    year: 'numeric',
+    year: format === 'short-current-year' && parts.year === new Date().getFullYear() ? undefined : 'numeric',
     timeZone: 'UTC',
   }).format(new Date(Date.UTC(parts.year, parts.month - 1, parts.day)))
 }

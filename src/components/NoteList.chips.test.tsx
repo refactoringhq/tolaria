@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { AppPreferencesProvider } from "../hooks/useAppPreferences";
 import {
@@ -54,10 +54,13 @@ describe("NoteList property chips", () => {
 			"property-chip-status-0",
 			"Active",
 		);
-		expect(chip).toHaveStyle({
-			backgroundColor: "var(--accent-green-light)",
-			color: "var(--accent-green-text)",
-		});
+		expect(chip).toHaveAttribute("data-property-chip-tone", "status");
+		expect(within(chip).getByTestId("status-chip-dot").style.backgroundColor).toBe(
+			"var(--accent-green-text)",
+		);
+		expect(chip.querySelector('[data-testid="status-chip-dot"]')).toHaveClass(
+			"size-[7px]",
+		);
 	});
 
 	it("auto-detects status-like property values in note-list chips", () => {
@@ -67,10 +70,10 @@ describe("NoteList property chips", () => {
 			"property-chip-phase-0",
 			"Draft",
 		);
-		expect(chip).toHaveStyle({
-			backgroundColor: "var(--accent-yellow-light)",
-			color: "var(--accent-yellow-text)",
-		});
+		expect(chip).toHaveAttribute("data-property-chip-tone", "status");
+		expect(within(chip).getByTestId("status-chip-dot").style.backgroundColor).toBe(
+			"var(--accent-yellow-text)",
+		);
 	});
 
 	it("formats date properties in note-list chips with the selected display format", async () => {

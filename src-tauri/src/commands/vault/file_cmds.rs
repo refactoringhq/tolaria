@@ -363,12 +363,40 @@ fn scan_visible_vault_entries(vault_path: &Path) -> Result<Vec<VaultEntry>, Stri
     ))
 }
 
-fn filter_visible_vault_entries(
+pub(crate) fn filter_visible_vault_entries(
     vault_path: &Path,
     entries: Vec<VaultEntry>,
     hide_gitignored: bool,
 ) -> Vec<VaultEntry> {
     vault::filter_gitignored_entries(vault_path, entries, hide_gitignored)
+        .into_iter()
+        .filter(|entry| !is_app_settings_file(vault_path, entry))
+        .collect()
+}
+
+fn is_app_settings_file(vault_path: &Path, entry: &VaultEntry) -> bool {
+    let path = Path::new(&entry.path)
+        .strip_prefix(vault_path)
+        .unwrap_or_else(|_| Path::new(&entry.path));
+    match path.parent() {
+        Some(parent) if parent == Path::new("views") => {
+            path.extension().and_then(|extension| extension.to_str()) == Some("yml")
+        }
+        Some(parent) if parent == Path::new("layouts") => {
+            path.extension().and_then(|extension| extension.to_str()) == Some("yml")
+                && path
+                    .file_stem()
+                    .and_then(|stem| stem.to_str())
+                    .is_some_and(|stem| {
+                        base64::Engine::decode(
+                            &base64::engine::general_purpose::URL_SAFE_NO_PAD,
+                            stem,
+                        )
+                        .is_ok()
+                    })
+        }
+        _ => false,
+    }
 }
 
 fn scan_visible_vault_folders(vault_path: &Path) -> Result<Vec<FolderNode>, String> {

@@ -42,7 +42,9 @@
 
   /* --- Semantic surfaces (light mode) --- */
   --surface-app: var(--white);
-  --surface-sidebar: var(--gray-50);
+  --surface-sidebar: var(--gray-150);
+  --sidebar-item-highlight-color: var(--gray-50);
+  --sidebar-item-highlight: var(--sidebar-item-highlight-color);
   --surface-panel: var(--white);
   --surface-card: var(--white);
   --surface-popover: var(--white);
@@ -50,6 +52,9 @@
   --surface-button: var(--gray-100);
   --surface-dialog: var(--white);
   --surface-editor: var(--white);
+  --surface-note-list: var(--gray-50);
+  --note-item-hover: var(--white);
+  --board-card-hover-border: var(--gray-350);
   --surface-overlay: var(--ink-strong);
 
   /* --- Semantic text (light mode) --- */
@@ -63,8 +68,8 @@
   --text-on-fill: var(--white);
 
   /* --- Semantic borders (light mode) --- */
-  --border-default: var(--gray-150);
-  --border-subtle: var(--gray-100);
+  --border-default: var(--gray-200);
+  --border-subtle: var(--gray-150);
   --border-strong: var(--gray-300);
   --border-input: var(--gray-500);
   --border-dialog: var(--border-default);
@@ -96,6 +101,13 @@
   --count-pill-bg-hover: var(--count-pill-bg);
   --count-pill-text-hover: var(--gray-600);
 
+  /* --- Sidebar rows (light mode): gray-100 vanishes on the gray-50 sidebar, so
+     hover, header count pills and gray type rows step up to gray-150 --- */
+  --sidebar-hover: var(--gray-300);
+  --sidebar-hover-text: var(--gray-700);
+  --sidebar-gray-fill: var(--gray-300);
+  --sidebar-gray-text: var(--gray-700);
+
   /* --- Accent roles (light mode): icon/accent, tinted fill, text on tinted fill --- */
   --accent-blue: var(--blue-500);
   --accent-blue-bg: var(--blue-50);
@@ -103,10 +115,10 @@
   --accent-blue-light: var(--blue-50);
   --accent-blue-text: var(--blue-500);
   --accent-blue-light-hover: var(--blue-200);
-  --accent-green: var(--green-500);
+  --accent-green: var(--green-600);
   --accent-green-light: var(--green-50);
   --accent-green-text: var(--green-600);
-  --accent-orange: var(--orange-500);
+  --accent-orange: var(--orange-600);
   --accent-orange-light: var(--orange-50);
   --accent-orange-text: var(--orange-600);
   --accent-red: var(--red-500);
@@ -115,7 +127,7 @@
   --accent-purple: var(--purple-500);
   --accent-purple-light: var(--purple-50);
   --accent-purple-text: var(--purple-600);
-  --accent-yellow: var(--yellow-500);
+  --accent-yellow: var(--yellow-600);
   --accent-yellow-light: var(--yellow-50);
   --accent-yellow-text: var(--yellow-600);
   --accent-teal: var(--teal-500);
@@ -168,6 +180,8 @@
   /* --- Semantic surfaces (dark mode) --- */
   --surface-app: var(--gray-900);
   --surface-sidebar: var(--gray-950);
+  --sidebar-item-highlight-color: var(--gray-800);
+  --sidebar-item-highlight: var(--sidebar-item-highlight-color);
   --surface-panel: var(--gray-900);
   --surface-card: var(--gray-900);
   --surface-popover: var(--gray-900);
@@ -175,6 +189,9 @@
   --surface-button: var(--gray-800);
   --surface-dialog: var(--gray-900);
   --surface-editor: var(--gray-900);
+  --surface-note-list: var(--gray-900);
+  --note-item-hover: var(--state-hover-subtle);
+  --board-card-hover-border: var(--gray-600);
   --surface-overlay: var(--ink-scrim);
 
   /* --- Semantic text (dark mode) --- */
@@ -221,6 +238,12 @@
   --count-pill-bg-hover: var(--count-pill-bg);
   --count-pill-text-hover: var(--gray-400);
 
+  /* --- Sidebar rows (dark mode) --- */
+  --sidebar-hover: var(--gray-800);
+  --sidebar-hover-text: var(--gray-400);
+  --sidebar-gray-fill: var(--gray-700);
+  --sidebar-gray-text: var(--gray-300);
+
   /* --- Accent roles (dark mode) --- */
   --accent-blue: var(--blue-400);
   --accent-blue-bg: var(--blue-900);
@@ -233,7 +256,7 @@
   --accent-green-text: var(--green-400);
   --accent-orange: var(--orange-400);
   --accent-orange-light: var(--orange-800);
-  --accent-orange-text: var(--orange-400);
+  --accent-orange-text: var(--orange-300);
   --accent-red: var(--red-400);
   --accent-red-light: var(--red-700);
   --accent-red-text: var(--red-300);
@@ -242,7 +265,7 @@
   --accent-purple-text: var(--purple-300);
   --accent-yellow: var(--yellow-400);
   --accent-yellow-light: var(--yellow-800);
-  --accent-yellow-text: var(--yellow-400);
+  --accent-yellow-text: var(--yellow-300);
   --accent-teal: var(--teal-400);
   --accent-teal-light: var(--teal-800);
   --accent-teal-text: var(--teal-400);
@@ -301,6 +324,7 @@
 
   --shadow-overlay: var(--surface-overlay);
   --shadow-card: 0 1px 2px -1px var(--shadow-card-color);
+  --shadow-sidebar: -2px 0 5px -3px var(--shadow-soft);
   --scrollbar-size: 0.5rem;
   --scrollbar-track: transparent;
 
@@ -332,7 +356,7 @@
   --sidebar-foreground: var(--text-primary);
   --sidebar-primary: var(--fill-primary);
   --sidebar-primary-foreground: var(--text-on-fill);
-  --sidebar-accent: var(--state-hover);
+  --sidebar-accent: var(--sidebar-hover);
   --sidebar-accent-foreground: var(--text-primary);
   --sidebar-border: var(--border-default);
   --sidebar-ring: var(--state-focus-ring);
@@ -423,45 +447,20 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+[data-slot="scroll-area-scrollbar"] {
+  display: none;
+}
+
 /* --- Base layer --- */
 @layer base {
   * {
     @apply border-border;
     box-sizing: border-box;
-  }
-
-  /* Native scrollbars (editor panes, overflow lists) — match Radix ScrollArea */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+    scrollbar-width: none;
   }
 
   *::-webkit-scrollbar {
-    width: var(--scrollbar-size);
-    height: var(--scrollbar-size);
-  }
-
-  *::-webkit-scrollbar-track {
-    background: var(--scrollbar-track);
-  }
-
-  *::-webkit-scrollbar-thumb {
-    background-color: var(--scrollbar-thumb);
-    border-radius: 9999px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-  }
-
-  *::-webkit-scrollbar-thumb:hover {
-    background-color: var(--scrollbar-thumb-hover);
-  }
-
-  *::-webkit-scrollbar-thumb:active {
-    background-color: var(--scrollbar-thumb-active);
-  }
-
-  *::-webkit-scrollbar-corner {
-    background: transparent;
+    display: none;
   }
 
   body {
@@ -588,6 +587,13 @@
   font-size: 10px;
   font-weight: 400;
   letter-spacing: 0.02em;
+}
+
+/* Sidebar rows: gray type rows use the sidebar's own gray step so their hover
+   and active fill stay visible on the tinted sidebar (TOL-438). */
+.sidebar-row {
+  --accent-gray: var(--sidebar-gray-text);
+  --accent-gray-light: var(--sidebar-gray-fill);
 }
 
 .referenced-by-panel button:hover {
@@ -766,4 +772,888 @@
 [data-testid="status-badge"] > span {
   width: 0.5rem;
   height: 0.5rem;
+}
+
+/* --- Sidebar and panel chrome --- */
+.app .cursor-col-resize,
+[data-testid="ai-workspace-left-resize"],
+[data-testid="ai-workspace-top-resize"] {
+  background-color: transparent;
+}
+
+:where(.app .cursor-col-resize, [data-testid="ai-workspace-left-resize"], [data-testid="ai-workspace-top-resize"])::after {
+  --resize-line-width: 1px;
+  content: "";
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: var(--resize-line-width);
+  background: linear-gradient(transparent, var(--text-secondary) 45% 55%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease-out;
+}
+
+@media (min-resolution: 2dppx) {
+  :where(.app .cursor-col-resize, [data-testid="ai-workspace-left-resize"], [data-testid="ai-workspace-top-resize"])::after {
+    --resize-line-width: 0.5px;
+  }
+}
+
+[data-testid="ai-workspace-left-resize"]::after {
+  right: auto;
+  left: 0;
+}
+
+[data-testid="ai-workspace-top-resize"]::after {
+  inset: 0 0 auto;
+  width: auto;
+  height: var(--resize-line-width);
+  background: linear-gradient(to right, transparent, var(--text-secondary) 45% 55%, transparent);
+}
+
+/* WebKit snaps a fractional border to one device pixel, including at webview zoom. */
+@supports (-webkit-hyphens: none) {
+  :where(.app .cursor-col-resize, [data-testid="ai-workspace-left-resize"], [data-testid="ai-workspace-top-resize"])::after {
+    box-sizing: content-box;
+    width: 0;
+    border-right: 0.1px solid var(--text-secondary);
+    background: none;
+    mask-image: linear-gradient(transparent, black 45% 55%, transparent);
+  }
+
+  [data-testid="ai-workspace-top-resize"]::after {
+    width: auto;
+    height: 0;
+    border-right: 0;
+    border-top: 0.1px solid var(--text-secondary);
+    background: none;
+    mask-image: linear-gradient(to right, transparent, black 45% 55%, transparent);
+  }
+}
+
+.app .cursor-col-resize:is(:hover, :active, :focus-visible)::after,
+:is([data-testid="ai-workspace-left-resize"], [data-testid="ai-workspace-top-resize"]):is(:hover, :active, :focus-visible)::after {
+  opacity: 1;
+}
+
+[data-panel-resize-tooltip] > span {
+  display: none;
+}
+
+/* The active note can project over either divider beside the list. */
+.app > :is(.app__sidebar, .app__note-list) + .cursor-col-resize {
+  z-index: 20;
+}
+
+/* Dark workspace panels step from charcoal chrome through browsing to the document. */
+:where(:root.dark) .app {
+  --surface-editor: var(--gray-800);
+}
+
+:where(:root.dark) .app[data-desktop-sidebar-chrome] {
+  --surface-note-list: var(--gray-900);
+}
+
+:where(:root.dark) .app[data-desktop-sidebar-chrome],
+:where(.app[data-desktop-sidebar-chrome]) .app__sidebar[data-theme="dark"] {
+  --surface-sidebar: var(--gray-975);
+  --sidebar: var(--surface-sidebar);
+}
+
+:where(:root.dark) .app[data-desktop-sidebar-chrome],
+:where(.app[data-desktop-sidebar-chrome]) .app__sidebar[data-theme="dark"] {
+  --floating-pane-fill: var(--gray-800);
+  --floating-pane-hover: var(--gray-700);
+  --floating-pane-edge: var(--gray-700);
+}
+
+:root.dark .app__editor .breadcrumb-bar {
+  --panel-divider: var(--gray-700);
+}
+
+.app__editor aside:has(> .border-b [data-testid="properties-panel-icon"]) {
+  --background: var(--surface-note-list);
+  --bg-primary: var(--surface-note-list);
+  border-left-width: 0;
+}
+
+.app__editor .border-b > [data-testid="properties-panel-icon"] {
+  display: none;
+}
+
+@media screen {
+  .app__editor .editor-scroll-area:not(.editor-scroll-area--sheet),
+  .app__note-list [data-virtuoso-scroller],
+  .app__editor aside:where(:has(> .border-b [data-testid="properties-panel-icon"])) > .overflow-y-auto {
+    --scroll-shadow-height: 6px;
+    position: relative;
+  }
+
+  /* The cover scrolls away while the shadow stays at the top of the pane. */
+  .app__editor .editor-scroll-area:not(.editor-scroll-area--sheet)::before,
+  .app__note-list [data-virtuoso-scroller]::before,
+  .app__editor aside:where(:has(> .border-b [data-testid="properties-panel-icon"])) > .overflow-y-auto::before {
+    content: "";
+    position: sticky;
+    top: 0;
+    z-index: 23;
+    display: block;
+    flex: none;
+    height: var(--scroll-shadow-height);
+    margin-bottom: calc(-1 * var(--scroll-shadow-height));
+    background: linear-gradient(var(--shadow-soft), transparent);
+    mask-image: linear-gradient(to right, transparent, black 35%, black 65%, transparent);
+    pointer-events: none;
+  }
+
+  .app__editor .editor-scroll-area:not(.editor-scroll-area--sheet)::after,
+  .app__note-list [data-virtuoso-scroller]::after,
+  .app__editor aside:where(:has(> .border-b [data-testid="properties-panel-icon"])) > .overflow-y-auto::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 24;
+    height: var(--scroll-shadow-height);
+    background: var(--background);
+    pointer-events: none;
+  }
+
+  /* Move the top padding below the sticky shadow so the cover meets it at rest. */
+  .app__editor aside:has(> .border-b [data-testid="properties-panel-icon"]) > .overflow-y-auto {
+    padding-top: 0;
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+  }
+
+  .app__editor aside:has(> .border-b [data-testid="properties-panel-icon"]) > .overflow-y-auto::before {
+    margin: 0 -0.75rem calc(0.75rem - 1rem - var(--scroll-shadow-height));
+  }
+
+  /* Keep the fallback shadow and cover inside each pane's vertical seam. */
+  @supports not ((animation-timeline: scroll(nearest block)) and (animation-range: 0px 6px)) {
+    .app__note-list:has(~ .app__editor) [data-virtuoso-scroller]::before {
+      margin-right: 8px;
+    }
+
+    .app__note-list:has(~ .app__editor) [data-virtuoso-scroller]::after {
+      right: 8px;
+    }
+
+    .app__editor aside:has(> .border-b [data-testid="properties-panel-icon"]) > .overflow-y-auto::before {
+      margin-left: calc(8px - 0.75rem);
+    }
+
+    .app__editor aside:has(> .border-b [data-testid="properties-panel-icon"]) > .overflow-y-auto::after {
+      left: 8px;
+    }
+  }
+
+  /* At the top, the cover should blend into the first row's current fill. */
+  .app__note-list [data-virtuoso-scroller]:has([data-item-index="0"] [data-note-path][aria-selected="true"])::after {
+    background: var(--surface-editor);
+  }
+
+  .app__note-list [data-virtuoso-scroller]:has([data-item-index="0"] [data-note-path][aria-selected="true"]:not([data-testid="multi-selected-item"]))::after {
+    background:
+      var(--selection-edge-gradient) top center /
+        calc(100% - 2 * var(--radius-xl)) var(--selection-edge-height) no-repeat,
+      var(--surface-editor);
+  }
+
+  .app__note-list [data-virtuoso-scroller]:has([data-item-index="0"] [data-note-path].cursor-pointer[aria-selected="false"]:hover)::after {
+    background: var(--note-item-hover);
+  }
+
+  @supports (animation-timeline: scroll(nearest block)) and (animation-range: 0px 6px) {
+    .app__editor .editor-scroll-area:not(.editor-scroll-area--sheet)::before,
+    .app__note-list [data-virtuoso-scroller]::before,
+    .app__editor aside:where(:has(> .border-b [data-testid="properties-panel-icon"])) > .overflow-y-auto::before {
+      opacity: 0;
+      animation: pane-scroll-shadow linear both;
+      animation-timeline: scroll(nearest block);
+      animation-range: 0px var(--scroll-shadow-height);
+    }
+
+    /* Scroll-linked opacity replaces the cover, so the first row stays exposed. */
+    .app__editor .editor-scroll-area:not(.editor-scroll-area--sheet)::after,
+    .app__note-list [data-virtuoso-scroller]::after,
+    .app__editor aside:where(:has(> .border-b [data-testid="properties-panel-icon"])) > .overflow-y-auto::after {
+      content: none;
+    }
+  }
+}
+
+@keyframes pane-scroll-shadow {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.app .app__note-list {
+  --background: var(--surface-note-list);
+  --bg-primary: var(--surface-note-list);
+  --neutral-chip-fill: var(--surface-card);
+  --neutral-chip-outline: var(--border-default);
+  /* Let the raised row cover the editor shadow at their shared edge. */
+  z-index: auto;
+}
+
+.app__note-list [data-testid$="filter-pills"] {
+  z-index: 23;
+}
+
+.app__editor {
+  --background: var(--surface-editor);
+  --bg-primary: var(--surface-editor);
+  --editor-right-shadow: 2px 0 5px -3px var(--shadow-soft);
+}
+
+.app__note-list [role="option"].cursor-pointer[aria-selected="false"]:hover {
+  background-color: var(--note-item-hover);
+}
+
+.app__note-list [data-testid="note-date-row"] > span:first-child,
+.app__note-list [data-testid="note-date-row"] > span:nth-child(2) > span:first-child:not([data-testid]) {
+  opacity: 0.88;
+}
+
+.app__note-list [role="option"][data-note-path]:is([aria-selected="true"], :hover) {
+  --neutral-chip-fill: var(--surface-note-list);
+  --neutral-chip-outline: var(--gray-300);
+}
+
+:root.dark .app[data-desktop-sidebar-chrome] .app__note-list [role="option"][data-note-path]:is([aria-selected="true"], :hover) {
+  --neutral-chip-outline: var(--border-strong);
+}
+
+.app__note-list [data-property-chip="true"]:is(:not([style*="background-color"]), [style*="--accent-gray-light"]) {
+  --muted: var(--neutral-chip-fill);
+  --accent-gray-light: var(--neutral-chip-fill);
+  --chip-outline: var(--neutral-chip-outline);
+  --chip-outline-opacity: 1;
+}
+
+.app__note-list [data-property-chip="true"][data-property-chip-tone="date"],
+.app :is(.app__note-list, .app__editor) :is([data-property-chip-tone="status"], [data-property-chip-tone="tag"]) {
+  --chip-outline: var(--gray-400);
+  --chip-outline-opacity: 0.65;
+
+  color: var(--foreground);
+}
+
+:root.dark .app :is(.app__note-list, .app__editor) :is(
+  [data-property-chip-tone="date"], [data-property-chip-tone="status"], [data-property-chip-tone="tag"]
+) {
+  --chip-outline: var(--gray-600);
+  --chip-outline-opacity: 1;
+}
+
+.status-chip-dot {
+  background-color: var(--text-secondary);
+  opacity: 0.65;
+}
+
+.app__note-list [data-property-chip="true"],
+[data-testid="relationships-panel-grid"] [class~="group/link"][class~="ring-inset"],
+.app__editor :is(
+  [data-testid="type-selector"] button[role="combobox"],
+  [data-testid="workspace-selector"] button[role="combobox"],
+  [data-testid="format-selector"] button[role="combobox"],
+  [data-testid="editable-property"] [data-testid="status-badge"],
+  [data-testid="editable-property"] [data-testid="date-display"].bg-muted
+) {
+  position: relative;
+}
+
+.app__note-list [data-property-chip="true"],
+[data-testid="relationships-panel-grid"] [class~="group/link"][class~="ring-inset"],
+.app__editor :is(
+  [data-testid="type-selector"] button[role="combobox"],
+  [data-testid="workspace-selector"] button[role="combobox"],
+  [data-testid="format-selector"] button[role="combobox"],
+  [data-testid="editable-property"] [data-testid="status-badge"],
+  [data-testid="editable-property"] [data-testid="date-display"].bg-muted,
+  [class~="group/tag"],
+  [class~="group/pill"]
+) {
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 transparent), var(--tw-ring-shadow, 0 0 transparent), var(--shadow-card);
+}
+
+/* Sidebar groups and title bar flow without horizontal dividers. */
+.app__sidebar {
+  --shadow-sidebar: -2px 0 10px -3px var(--shadow-soft);
+}
+
+.app {
+  --selection-edge: var(--white);
+  --selection-edge-height: 1px;
+}
+
+.app .app__note-list {
+  --selection-edge: var(--border-strong);
+}
+
+.app :is(.app__sidebar, .app__note-list) {
+  --selection-edge-gradient: linear-gradient(to right, transparent, var(--selection-edge) 45% 55%, transparent);
+}
+
+:root.dark .app :is(.app__sidebar, .app__note-list),
+.app__sidebar[data-theme="dark"] {
+  --selection-edge: var(--gray-700);
+}
+
+@media (min-resolution: 2dppx) {
+  .app {
+    --selection-edge-height: 0.5px;
+  }
+}
+
+.app__sidebar :is([class~="shadow-[var(--shadow-sidebar)]"], [style*="box-shadow: var(--shadow-sidebar)"]),
+.app__note-list [role="option"][data-note-path][aria-selected="true"]:not([data-testid="multi-selected-item"]) {
+  position: relative;
+}
+
+.app__sidebar :is([class~="shadow-[var(--shadow-sidebar)]"], [style*="box-shadow: var(--shadow-sidebar)"])::after,
+.app__note-list [role="option"][data-note-path][aria-selected="true"]:not([data-testid="multi-selected-item"])::after {
+  content: "";
+  position: absolute;
+  inset: 0 var(--radius-xl);
+  background:
+    var(--selection-edge-gradient) top / 100% var(--selection-edge-height) no-repeat,
+    var(--selection-edge-gradient) bottom / 100% var(--selection-edge-height) no-repeat;
+  pointer-events: none;
+}
+
+.app__note-list [data-property-chip="true"]::after,
+[data-testid="relationships-panel-grid"] [class~="group/link"][class~="ring-inset"]::after,
+.app__editor :is(
+  [data-testid="type-selector"] button[role="combobox"],
+  [data-testid="workspace-selector"] button[role="combobox"],
+  [data-testid="format-selector"] button[role="combobox"],
+  [data-testid="editable-property"] [data-testid="status-badge"],
+  [data-testid="editable-property"] [data-testid="date-display"].bg-muted,
+  [class~="group/tag"],
+  [class~="group/pill"]
+)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 0.1px solid var(--chip-outline, currentColor);
+  border-radius: inherit;
+  opacity: var(--chip-outline-opacity, 0.3);
+  pointer-events: none;
+}
+
+.app__sidebar .border-b {
+  border-bottom-width: 0;
+}
+
+.app__sidebar aside:has(> .sidebar-utilities) > nav {
+  padding-bottom: calc(2.5rem + 2 * var(--workspace-inset, 0.75rem));
+  scroll-padding-bottom: calc(2.5rem + 2 * var(--workspace-inset, 0.75rem));
+}
+
+@media (hover: hover) {
+  [data-testid="vault-menu-popover"] [data-testid^="vault-menu-item-"]:hover button:is(
+    [data-testid^="vault-menu-open-window-"], [data-testid^="vault-menu-remove-"]
+  ) {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.sidebar-utilities {
+  padding-bottom: calc(2 * var(--workspace-inset, 0.75rem));
+}
+
+.note-list-bottom-controls {
+  display: grid;
+  grid-template-columns: minmax(2rem, 1fr) minmax(0, max-content) minmax(2rem, 1fr);
+  inset: auto var(--workspace-inset, 0.75rem) var(--workspace-inset, 0.75rem);
+}
+
+.note-list-bottom-controls > [data-testid="filter-pills"] {
+  grid-column: 2;
+}
+
+.note-list-bottom-controls > [data-testid="note-list-bottom-create"] {
+  grid-column: 3;
+  justify-self: end;
+}
+
+:is(.floating-pane-control, .app[data-desktop-sidebar-chrome] > [data-testid="ai-workspace-floating-button"]) {
+  height: 2rem;
+  background-color: var(--floating-pane-fill, var(--surface-popover));
+  box-shadow:
+    0 4px 14px -2px var(--shadow-soft),
+    0 1px 3px var(--shadow-card-color),
+    inset 0 0 0 1px var(--floating-pane-edge, transparent);
+}
+
+button:is(.floating-pane-control, .app[data-desktop-sidebar-chrome] > [data-testid="ai-workspace-floating-button"]):hover {
+  background-color: var(--floating-pane-hover, var(--surface-card));
+}
+
+.note-list-bottom-controls [data-testid="filter-pills"] [data-slot="tabs-list"] {
+  background-color: var(--state-hover-strong);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 3px 9px -2px var(--shadow-soft), 0 1px 2px var(--shadow-card-color);
+}
+
+:root.dark .note-list-bottom-controls [data-testid="filter-pills"] [data-slot="tabs-list"] {
+  background-color: var(--surface-sidebar);
+}
+
+.note-list-bottom-controls [data-testid="filter-pills"] [role="tab"][data-state="active"] {
+  background-color: var(--floating-pane-fill, var(--surface-popover));
+  box-shadow: 0 1px 4px var(--shadow-soft), 0 1px 2px var(--shadow-card-color);
+}
+
+.app[data-desktop-sidebar-chrome] > [data-testid="ai-workspace-floating-button"] {
+  --ai-workspace-floating-button-bottom: calc(2 * var(--workspace-inset));
+
+  position: absolute;
+  inset-inline-end: calc(2 * var(--workspace-inset));
+  width: 2rem;
+  border: 0;
+}
+
+.app[data-desktop-sidebar-chrome] > [data-testid="ai-workspace-floating-button"] :is(img, svg) {
+  max-width: 16px;
+  max-height: 16px;
+}
+
+.app__sidebar aside:has(> nav[data-scrolled]) > .sidebar-heading {
+  position: relative;
+  z-index: 23;
+}
+
+.app__sidebar aside:has(> nav[data-scrolled]) > .sidebar-heading::after {
+  content: "";
+  position: absolute;
+  inset: 100% 0 auto;
+  height: 6px;
+  background:
+    linear-gradient(var(--border-default), var(--border-default)) top / 100% 1px no-repeat,
+    linear-gradient(var(--shadow-soft), transparent);
+  mask-image: linear-gradient(to right, transparent, black 35%, black 65%, transparent);
+  pointer-events: none;
+}
+
+.app__note-list > * > .flex-col > .border-b,
+.app__editor .breadcrumb-bar[data-title-hidden],
+.app__editor aside:has(> .border-b [data-testid="properties-panel-icon"]) > .border-b,
+.app__note-list [role="option"][data-note-path] {
+  border-image: linear-gradient(
+    to right,
+    transparent,
+    var(--panel-divider, var(--border-default)) 35% 65%,
+    transparent
+  ) 1;
+  border-image-width: 0 0 1 0;
+  /* The bookmark animates separately from the row's inline selection color. */
+  transition-property: color;
+}
+
+.app__note-list [role="option"][data-note-path][aria-selected="true"] {
+  background-image: linear-gradient(var(--surface-editor), var(--surface-editor));
+  border-image-source: linear-gradient(transparent, transparent);
+  z-index: 22;
+  box-shadow: 0 -5px 10px -5px var(--shadow-soft), 0 5px 10px -5px var(--shadow-soft);
+  clip-path: inset(-12px 0);
+}
+
+/* Phosphor uses filled 256-unit paths; a small outline adds an intermediate weight. */
+svg[viewBox="0 0 256 256"][fill="currentColor"] {
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+}
+
+aside.bg-sidebar {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch' seed='7'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='.05'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
+}
+
+.app__editor aside.bg-sidebar {
+  --background: var(--surface-card);
+  --bg-primary: var(--surface-card);
+}
+
+[role="option"][aria-selected="true"] [data-testid="note-snippet"] {
+  color: var(--text-primary);
+}
+
+.app:has(.app__sidebar) {
+  background: var(--surface-sidebar);
+}
+
+.app[data-desktop-sidebar-chrome] {
+  --workspace-inset: 0.75rem;
+
+  position: relative;
+  padding-inline-end: var(--workspace-inset);
+  background: var(--surface-sidebar);
+}
+
+.app[data-desktop-sidebar-chrome]:has([data-ai-workspace-mode="side"]) {
+  padding-inline-end: 0;
+}
+
+html:not([data-touch-input]) .app[data-desktop-sidebar-chrome] .note-list-search-action {
+  display: none;
+}
+
+.app[data-desktop-sidebar-chrome]:not(:has(> .app__sidebar)) {
+  padding-inline-start: var(--workspace-inset);
+}
+
+.app[data-desktop-sidebar-chrome] > :is(.app__note-list, .app__editor, .cursor-col-resize) {
+  margin-block: var(--workspace-inset);
+}
+
+.app[data-desktop-sidebar-chrome] > .app__editor {
+  min-width: calc(480px - 2 * var(--workspace-inset));
+}
+
+.app__note-list ~ .app__editor > .editor {
+  border-top-left-radius: var(--radius-xl);
+  border-bottom-left-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sidebar);
+}
+
+.app[data-desktop-sidebar-chrome]:not(:has(> .app__sidebar)) > .app__note-list,
+.app[data-desktop-sidebar-chrome]:where(:not(:has(> .app__note-list))) > .app__editor > .editor {
+  border-start-start-radius: var(--radius-xl);
+  border-end-start-radius: var(--radius-xl);
+}
+
+.app[data-desktop-sidebar-chrome]:not(:has(> .app__sidebar)) > .app__note-list {
+  overflow: hidden;
+}
+
+.app[data-desktop-sidebar-chrome] > .app__note-list ~ .app__editor {
+  background: linear-gradient(to right, var(--surface-note-list) var(--radius-xl), transparent var(--radius-xl));
+}
+
+.app .app__note-list > * {
+  border-left-width: 0;
+  border-right-width: 0;
+  background-color: var(--surface-note-list);
+}
+
+.app__note-list ~ .app__editor {
+  position: relative;
+  z-index: 21;
+  overflow: visible;
+  background: var(--surface-note-list);
+}
+
+.app[data-desktop-sidebar-chrome] > .app__editor > .editor {
+  border-start-end-radius: var(--radius-xl);
+  border-end-end-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.app__sidebar ~ .app__note-list,
+.app:has(.app__sidebar):not(:has(.app__note-list)) .app__editor {
+  border-top-left-radius: var(--radius-xl);
+  border-bottom-left-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-sidebar);
+}
+
+@media screen and (pointer: fine) {
+  /* Keep the sidebar clickable through the empty part of the shadow gutter. */
+  .app__sidebar:has(~ .app__note-list [data-virtuoso-scroller]) > aside > nav {
+    position: relative;
+    z-index: 1;
+  }
+
+  .app__sidebar ~ .app__note-list:has([data-virtuoso-scroller]) {
+    --note-bookmark-overhang: 8px;
+    --note-bookmark-gutter: 20px;
+    overflow: visible;
+  }
+
+  .app__sidebar ~ .app__note-list:has([data-virtuoso-scroller]) > * {
+    border-radius: inherit;
+  }
+
+  .app__sidebar ~ .app__note-list .overflow-hidden:has([data-virtuoso-scroller]) {
+    overflow: visible;
+  }
+
+  /* Widen the scroll viewport for the tab and its shadow. */
+  .app__sidebar ~ .app__note-list [data-virtuoso-scroller] {
+    margin-left: calc(-1 * var(--note-bookmark-gutter));
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+  }
+
+  .app__sidebar ~ .app__note-list [data-virtuoso-scroller] > [data-viewport-type="element"] {
+    left: var(--note-bookmark-gutter);
+    max-width: calc(100% - var(--note-bookmark-gutter));
+  }
+
+  .app__sidebar ~ .app__note-list [data-virtuoso-scroller]::before {
+    margin-left: var(--note-bookmark-gutter);
+  }
+
+  .app__sidebar ~ .app__note-list [data-virtuoso-scroller]::after {
+    left: var(--note-bookmark-gutter);
+  }
+
+  .app__sidebar ~ .app__note-list [data-virtuoso-scroller] [data-note-path]:not([data-testid="multi-selected-item"]) {
+    isolation: isolate;
+  }
+
+  .app__sidebar ~ .app__note-list [data-virtuoso-scroller] [data-note-path][aria-selected="true"]:not([data-testid="multi-selected-item"]) {
+    box-shadow: none;
+    clip-path: inset(-12px 0 -12px calc(-1 * var(--note-bookmark-gutter) * var(--note-bookmark-progress, 0)));
+  }
+
+  .app__sidebar ~ .app__note-list [data-virtuoso-scroller] [data-note-path]:not([data-testid="multi-selected-item"])::before {
+    --note-bookmark-extension: calc(var(--note-bookmark-overhang) * var(--note-bookmark-progress, 0));
+    content: "";
+    position: absolute;
+    inset: 0 0 0 calc(-1 * (var(--note-bookmark-extension) + 3px));
+    z-index: -1;
+    border-radius: var(--note-bookmark-extension) 0 0 var(--note-bookmark-extension);
+    background: var(--surface-editor);
+    box-shadow:
+      calc(-6px * var(--note-bookmark-progress, 0)) 0
+      calc(12px * var(--note-bookmark-progress, 0))
+      calc(-4px * var(--note-bookmark-progress, 0)) var(--shadow-soft),
+      0 -5px 10px -5px var(--shadow-soft),
+      0 5px 10px -5px var(--shadow-soft);
+    opacity: 0;
+    scale: 0.975 1;
+    transform-origin: right;
+    pointer-events: none;
+  }
+
+  .app__sidebar ~ .app__note-list [data-virtuoso-scroller] [data-note-path][aria-selected="true"]:not([data-testid="multi-selected-item"])::before {
+    opacity: 1;
+    scale: 1;
+  }
+
+  .app__sidebar ~ .app__note-list [data-virtuoso-scroller] [data-note-path]:where([aria-selected="true"]:not([data-testid="multi-selected-item"])) > [data-testid="note-content-stack"] {
+    translate: calc(-4px * var(--note-bookmark-progress, 0));
+  }
+}
+
+@media screen and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .app__sidebar ~ .app__note-list [data-virtuoso-scroller] [data-note-path]:not([data-testid="multi-selected-item"])::before {
+    transition: opacity 160ms ease-out, scale 160ms ease-out, left 160ms ease-out;
+  }
+
+  .app__sidebar ~ .app__note-list [data-virtuoso-scroller] [data-note-path][aria-selected="true"]:not([data-testid="multi-selected-item"])::before {
+    transition-property: opacity, scale;
+  }
+
+  .app__sidebar ~ .app__note-list [data-virtuoso-scroller] [data-note-path]:where(:not([aria-selected="true"])) > [data-testid="note-content-stack"] {
+    transition: translate 160ms ease-out;
+  }
+}
+
+.editor > div > div:has(> aside > .border-b [data-testid="properties-panel-icon"]) {
+  position: relative;
+}
+
+/* Extend Properties under the editor's rounded corners without shifting either pane. */
+.editor > div > div:has(> aside > .border-b [data-testid="properties-panel-icon"])::before {
+  content: "";
+  position: absolute;
+  inset: 0 100% 0 auto;
+  width: var(--radius-xl);
+  background: var(--surface-note-list);
+  pointer-events: none;
+}
+
+.editor > div:has(> :where([data-ai-workspace-mode="side"])) {
+  background: var(--surface-sidebar);
+}
+
+.editor > div:has(> [data-ai-workspace-mode="side"][data-ai-workspace-expanded="false"], > div > aside > .border-b [data-testid="properties-panel-icon"]) > :first-child {
+  background: var(--surface-editor);
+}
+
+.editor > div > :has(+ .cursor-col-resize + div > aside > .border-b [data-testid="properties-panel-icon"]),
+.editor > div > :has(+ [data-ai-workspace-mode="side"][data-ai-workspace-expanded="false"]) {
+  position: relative;
+  z-index: 21;
+  border-top-right-radius: var(--radius-xl);
+  border-bottom-right-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--editor-right-shadow);
+}
+
+.editor > div > :has(+ .cursor-col-resize + div > aside > .border-b [data-testid="properties-panel-icon"]) {
+  z-index: 22;
+}
+
+.editor > div > div:has(> aside > .border-b [data-testid="properties-panel-icon"]):has(+ [data-ai-workspace-mode="side"][data-ai-workspace-expanded="false"]) {
+  overflow: visible;
+  background: transparent;
+}
+
+.editor > div > div:has(+ [data-ai-workspace-mode="side"][data-ai-workspace-expanded="false"]) > aside:where(:has(> .border-b [data-testid="properties-panel-icon"])) {
+  border-radius: inherit;
+}
+
+[data-ai-workspace-mode="side"] {
+  border-left-width: 0;
+}
+
+[data-ai-workspace-mode="side"][data-ai-workspace-expanded="true"] {
+  z-index: 31;
+}
+
+/* Expanded AI replaces the editor visually while keeping the editor mounted. */
+.editor > div:has(> [data-ai-workspace-mode="side"][data-ai-workspace-expanded="true"]) > :not([data-ai-workspace-mode]) {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.app:has(.app__editor [data-ai-workspace-expanded="true"]) {
+  background: var(--surface-sidebar);
+}
+
+.app:where([data-collection-layout="list"]) .app__editor:has([data-ai-workspace-mode="side"][data-ai-workspace-expanded="true"]),
+.app:where([data-collection-layout="list"]) .app__note-list ~ .app__editor:has([data-ai-workspace-expanded="true"]) > .editor {
+  z-index: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  box-shadow: none;
+}
+
+.app:where([data-collection-layout="list"]) .app__note-list:has(~ .app__editor [data-ai-workspace-expanded="true"]) {
+  z-index: 1;
+  border-top-right-radius: var(--radius-xl);
+  border-bottom-right-radius: var(--radius-xl);
+  box-shadow: 2px 0 5px -3px var(--shadow-soft);
+}
+
+.app:where([data-collection-layout="list"]) .app__note-list:has(~ .app__editor [data-ai-workspace-expanded="true"]) > * {
+  border-top-right-radius: inherit;
+  border-bottom-right-radius: inherit;
+}
+
+[data-ai-workspace-mode="side"] [data-testid="ai-panel"] {
+  background: transparent;
+}
+
+[data-testid="ai-workspace-side-header"] {
+  border-bottom-width: 0;
+  --state-hover: var(--sidebar-item-highlight);
+}
+
+[data-testid="ai-workspace-side-header"] button[aria-pressed] {
+  border-radius: var(--radius-xl);
+}
+
+[data-testid="ai-workspace-side-header"] button[aria-pressed]:is([aria-pressed="true"], :hover) {
+  box-shadow: var(--shadow-card);
+}
+
+/* AppKit supplies the material behind the transparent main WebView. */
+:root:has(body.mac-sidebar-vibrancy :is(.app__sidebar, [data-desktop-sidebar-chrome], [data-testid="status-bar"], [data-ai-workspace-mode="side"])),
+body.mac-sidebar-vibrancy:has(:is(.app__sidebar, [data-desktop-sidebar-chrome], [data-testid="status-bar"], [data-ai-workspace-mode="side"])),
+.mac-sidebar-vibrancy .app:not([data-desktop-sidebar-chrome]):has(:is(.app__sidebar, [data-ai-workspace-mode="side"])),
+.mac-sidebar-vibrancy .app__note-list,
+.mac-sidebar-vibrancy :is(.app__editor, .editor, .editor > div):has([data-ai-workspace-mode="side"]) {
+  background: transparent;
+}
+
+.mac-sidebar-vibrancy {
+  --mac-frosted-surface: var(--ink-glass-dark);
+}
+
+.mac-sidebar-vibrancy .app__note-list ~ .app__editor:has([data-ai-workspace-mode="side"][data-ai-workspace-expanded="false"]) {
+  background: linear-gradient(to right, var(--surface-note-list) var(--radius-xl), transparent var(--radius-xl));
+}
+
+.mac-sidebar-vibrancy .app-shell,
+.mac-sidebar-vibrancy .app__sidebar ~ .app__note-list,
+.mac-sidebar-vibrancy .app:has(.app__sidebar):not(:has(.app__note-list)) .app__editor,
+.mac-sidebar-vibrancy .editor > div > :has(+ [data-ai-workspace-mode="side"][data-ai-workspace-expanded="false"]) {
+  box-shadow: none;
+}
+
+:root:not(.dark) .mac-sidebar-vibrancy {
+  --mac-frosted-surface: var(--white-glass);
+  --mac-sidebar-highlight: var(--sidebar-highlight-light-glass);
+}
+
+.mac-sidebar-vibrancy .app__sidebar[data-theme="dark"] {
+  --mac-frosted-surface: var(--ink-glass-dark);
+  --mac-sidebar-highlight: var(--sidebar-highlight-dark-glass);
+}
+
+.mac-sidebar-vibrancy .app__sidebar > aside.bg-sidebar,
+.mac-sidebar-vibrancy [data-ai-workspace-mode="side"] {
+  background: var(--mac-frosted-surface);
+  --sidebar-item-highlight: var(--mac-sidebar-highlight, var(--sidebar-highlight-dark-glass));
+}
+
+.mac-sidebar-vibrancy .app:where([data-collection-layout="list"]) .app__note-list:has(~ .app__editor [data-ai-workspace-expanded="true"]) {
+  background: var(--mac-frosted-surface);
+}
+
+.mac-sidebar-vibrancy .app:has(.app__note-list [data-kanban-panel="open"]) .app__editor {
+  --mac-frosted-surface: var(--surface-sidebar);
+}
+
+/* Tint the exposed desktop glass once so the channels and outer insets share a base. */
+.mac-sidebar-vibrancy .app[data-desktop-sidebar-chrome] {
+  background: var(--mac-frosted-surface);
+}
+
+.mac-sidebar-vibrancy .app[data-desktop-sidebar-chrome] :is(
+  .app__sidebar:not([data-theme="dark"]) > aside.bg-sidebar,
+  [data-ai-workspace-mode="side"],
+  .app__note-list:has(~ .app__editor [data-ai-workspace-expanded="true"])
+) {
+  background: transparent;
+}
+
+/* Windows without shared glass carry the AI tint underneath the rounded seam. */
+.mac-sidebar-vibrancy .app:not([data-desktop-sidebar-chrome]) [data-ai-workspace-mode="side"][data-ai-workspace-expanded="false"] {
+  box-shadow: calc(-1 * var(--radius-xl)) 0 var(--mac-frosted-surface);
+}
+
+.mac-sidebar-vibrancy [data-testid="status-bar"] {
+  --sidebar: var(--mac-frosted-surface);
+  border-image: linear-gradient(transparent, transparent) 1;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .mac-sidebar-vibrancy .app[data-desktop-sidebar-chrome] {
+    background: var(--surface-sidebar);
+  }
+
+  .mac-sidebar-vibrancy .app__sidebar > aside.bg-sidebar,
+  .mac-sidebar-vibrancy [data-ai-workspace-mode="side"] {
+    --sidebar-item-highlight: inherit;
+  }
+
+  .mac-sidebar-vibrancy .app__sidebar > aside.bg-sidebar,
+  .mac-sidebar-vibrancy [data-ai-workspace-mode="side"],
+  .mac-sidebar-vibrancy .app:where([data-collection-layout="list"]) .app__note-list:has(~ .app__editor [data-ai-workspace-expanded="true"]),
+  .mac-sidebar-vibrancy [data-testid="status-bar"] {
+    --mac-frosted-surface: var(--surface-sidebar);
+  }
+}
+
+@media (hover: hover) {
+  .sidebar-group-actions {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .sidebar-group-header:hover .sidebar-group-actions,
+  .sidebar-group-header:focus-within .sidebar-group-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }

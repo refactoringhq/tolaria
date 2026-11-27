@@ -33,10 +33,12 @@ import {
 import {
 	type CalendarItem,
 	type CalendarSegment,
+	itemsInRange,
 	itemsOnDay,
 	weekSegments,
 } from "./calendarModel";
 import { dayDropId } from "./useCalendarDrag";
+import { useCalendarWeekWindow } from "./useCalendarWeekWindow";
 import { useLaneMeasure } from "./useLaneMeasure";
 
 const MIN_WEEK_ROW_PX = 150;
@@ -61,6 +63,7 @@ interface CalendarGridProps {
 	context: CalendarItemContext;
 	state: CalendarGridState;
 	locale: AppLocale;
+	onVisibleWeek: (week: DayKey[]) => void;
 }
 
 /** Per-row state as primitives, so a memoized row only re-renders when something it shows changes. */
@@ -174,17 +177,18 @@ function CreateOnDayButton({
 	);
 }
 
-function DayCellView({
-	day,
-	isToday,
-	outside,
-	target,
-	monthView,
-	view,
-	canCreate,
-	onCreate,
-	locale,
-}: DayCellProps) {
+function DayCellView(props: DayCellProps) {
+	const {
+		day,
+		isToday,
+		outside,
+		target,
+		monthView,
+		view,
+		canCreate,
+		onCreate,
+		locale,
+	} = props;
 	const { setNodeRef } = useDroppable({ id: dayDropId(day) });
 	return (
 		<div
@@ -359,6 +363,7 @@ function WeekRowView(props: WeekRowProps) {
 			className="calendar-week"
 			style={{ minHeight: Math.max(MIN_WEEK_ROW_PX, layout.minHeight) }}
 			data-testid="calendar-week"
+			data-week-start={week[0]}
 		>
 			<div
 				className="calendar-week__days"
@@ -430,12 +435,22 @@ function rowStateFor(
 }
 
 export function CalendarGrid({
-	weeks,
+	weeks: initialWeeks,
 	items,
 	context,
 	state,
 	locale,
+	onVisibleWeek,
 }: CalendarGridProps) {
+	const { weeks, scrollerRef, onScroll } = useCalendarWeekWindow(
+		initialWeeks,
+		!state.monthView,
+		onVisibleWeek,
+	);
+	const visibleItems = useMemo(
+		() => itemsInRange(items, weeks[0][0], weeks.at(-1)?.at(-1) ?? weeks[0][0]),
+		[items, weeks],
+	);
 	const rowState = rowStateFor(state);
 	return (
 		<div
@@ -457,25 +472,24 @@ export function CalendarGrid({
 				</div>
 			)}
 			<div
+				ref={scrollerRef}
 				className="calendar-weeks calendar-scroll overflow-y-auto"
-				style={{
-					gridAutoRows: state.monthView
-						? "max-content"
-						: "minmax(100%, max-content)",
-				}}
 				data-testid="calendar-weeks"
+				onScroll={onScroll}
 			>
+				<div className="calendar-scroll-buffer" aria-hidden="true" />
 				{weeks.map((week) => (
 					<WeekRow
 						key={week[0]}
 						week={week}
-						items={items}
+						items={visibleItems}
 						context={context}
 						locale={locale}
 						{...rowState}
 						{...previewForWeek(week, state.preview)}
 					/>
 				))}
+				<div className="calendar-scroll-buffer" aria-hidden="true" />
 			</div>
 		</div>
 	);

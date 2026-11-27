@@ -1,4 +1,3 @@
-import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { collectionLayoutKey } from "../../collections/collectionLayoutKey";
 import {
@@ -17,7 +16,6 @@ import {
 } from "../../collections/layoutRegistry";
 import { trackEvent } from "../../lib/telemetry";
 import type { SidebarSelection, VaultEntry } from "../../types";
-import { isWebBuild } from "../../utils/webBuild";
 import {
 	availableDateProperties,
 	resolveDateProperty,
@@ -25,7 +23,6 @@ import {
 import {
 	availableCardProperties,
 	availableGroupProperties,
-	canUseVaultLayoutFile,
 	configVaultPath,
 	effectiveLayout,
 	type LayoutPersistenceTarget,
@@ -34,9 +31,9 @@ import {
 	persistLayoutSettings,
 	readStoredLayout,
 } from "./collectionLayoutConfig";
+import { readLayouts } from "./collectionLayoutStorage";
 import { buildGraphData } from "./graph/graphModel";
 import { toggleColumnValue } from "./kanbanModel";
-import { readWebLayout } from "./webLayoutStorage";
 
 export interface CollectionLayoutSource extends LayoutPersistenceTarget {
 	visibleEntries: VaultEntry[];
@@ -48,41 +45,21 @@ export interface CollectionLayoutSource extends LayoutPersistenceTarget {
 type SettingsMap = Map<string, LayoutSettings>;
 type SetSettingsMap = React.Dispatch<React.SetStateAction<SettingsMap>>;
 
-function initialWebLayouts(
-	source: CollectionLayoutSource,
-	key: string,
-): SettingsMap {
-	if (!isWebBuild() || !canUseVaultLayoutFile(source.selection))
-		return new Map();
-	const stored = readStoredLayout(readWebLayout(key));
-	return stored ? new Map([[key, stored]]) : new Map();
-}
-
-function shouldLoadNativeLayout(
-	vaultPath: string | undefined,
-	canLoad: boolean,
-) {
-	return !isWebBuild() && Boolean(vaultPath) && canLoad;
-}
-
 function usePersistedLayout(source: CollectionLayoutSource, key: string) {
-	const [storedConfigs, setStoredConfigs] = useState<SettingsMap>(() =>
-		initialWebLayouts(source, key),
+	const [storedConfigs, setStoredConfigs] = useState<SettingsMap>(
+		() => new Map(),
 	);
 	const vaultPath = configVaultPath(source);
-	const canLoad = canUseVaultLayoutFile(source.selection);
 	useEffect(() => {
-		if (!shouldLoadNativeLayout(vaultPath, canLoad)) return;
+		if (source.selection.kind === "view" || source.selection.kind === "entity")
+			return;
 		let current = true;
-		void invoke<Record<string, unknown>>("list_collection_layouts", {
-			vaultPath,
-		})
-			.then((configs) => {
-				const saved = readStoredLayout(
-					Object.entries(configs).find(
-						([collection]) => collection === key,
-					)?.[1],
-				);
+		void readLayouts(vaultPath)
+			.then((layouts) => {
+				const stored = Object.entries(layouts).find(
+					([layoutKey]) => layoutKey === key,
+				)?.[1];
+				const saved = readStoredLayout(stored);
 				if (current && saved)
 					setStoredConfigs((previous) => new Map(previous).set(key, saved));
 			})
@@ -90,7 +67,7 @@ function usePersistedLayout(source: CollectionLayoutSource, key: string) {
 		return () => {
 			current = false;
 		};
-	}, [canLoad, key, vaultPath]);
+	}, [key, source.selection.kind, vaultPath]);
 	return storedConfigs.get(key) ?? persistedViewLayout(source);
 }
 
@@ -273,16 +250,11 @@ function useLayoutActions({
 		[current, resolvedDateProperty, source.selection.kind, update],
 	);
 	useLayoutShortcut(enabled, current.layout, changeLayout);
-	const changeShowProperties = (showProperties: boolean) => {
-		update({ showProperties });
-		trackPropertyVisibility(showProperties, source.selection.kind);
-	};
 	return {
 		changeLayout,
 		changeGroupBy: (groupBy: string) => update({ groupBy }),
 		changeCardProperties: (properties: string[] | null) =>
 			update({ properties: properties ?? [] }),
-		changeShowProperties,
 		changeColumnOrder: (columnOrder: string[]) => update({ columnOrder }),
 		toggleColumnCollapsed: (group: string) =>
 			update({
@@ -347,13 +319,6 @@ function useLayoutWriters({
 		[show, source],
 	);
 	return { show, save };
-}
-
-function trackPropertyVisibility(visible: boolean, collection: string) {
-	trackEvent("collection_item_properties_visibility_changed", {
-		visible: visible ? 1 : 0,
-		collection,
-	});
 }
 
 /** The calendar's date property: the configured one, or the best date property the list's notes carry. */

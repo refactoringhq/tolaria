@@ -302,3 +302,5 @@ proposed → active → superseded
 | [0310](0310-acknowledged-saves-keep-their-path-in-a-replay.md) | Acknowledged saves keep their path when a background push meets a remote change (supersedes the replay rule in [0309](0309-saves-never-wait-for-the-git-remote.md)) | active |
 | [0311](0311-remote-saved-view-discovery.md) | Tolaria Web discovers saved views by reading `views/*.yml` files from the Tolaria remote | active |
 | [0312](0312-note-history-checkpoints-on-the-remote.md) | Tolaria Web lists, previews and restores a note's checkpoints through store-agnostic protocol routes (`GET /v1/history/<path>`, `POST /v1/restore`) | active |
+| [0313](0313-desktop-panel-altitude.md) | Three levels of desktop workspace panels | active |
+| [0314](0314-desktop-workspace-motion.md) | Fast, local motion for the desktop workspace | proposed |

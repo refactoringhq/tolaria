@@ -1,17 +1,54 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_GRAPH_SETTINGS } from "../../collections/graphSettings";
+import { DEFAULT_CALENDAR_SETTINGS } from "../../collections/presentationConfig";
 import { makeEntry } from "../../test-utils/noteListTestUtils";
 import {
 	availableGroupProperties,
 	isWritableGroupKey,
+	persistLayoutSettings,
 	readStoredLayout,
 } from "./collectionLayoutConfig";
+import { readLayouts } from "./collectionLayoutStorage";
+
+vi.mock("../../utils/webBuild", () => ({ isWebBuild: () => true }));
 
 describe("collectionLayoutConfig", () => {
+	afterEach(() => window.localStorage.clear());
+
 	it("keeps status available when its value is the empty string", () => {
 		expect(availableGroupProperties([makeEntry({ status: "" })])).toContain(
 			"status",
 		);
+	});
+
+	it("persists the same conditional layout record used by both stores", async () => {
+		persistLayoutSettings(
+			{
+				selection: { kind: "filter", filter: "all" },
+				vaultPath: "/vault",
+				presentation: { type: "list", sort: null, properties: [] },
+			},
+			{
+				layout: "calendar",
+				groupBy: "status",
+				properties: [],
+				columnOrder: [],
+				collapsedColumns: [],
+				hiddenColumns: [],
+				calendar: DEFAULT_CALENDAR_SETTINGS,
+				graph: DEFAULT_GRAPH_SETTINGS,
+			},
+		);
+
+		expect((await readLayouts())["builtin:all"]).toEqual({
+			type: "calendar",
+			groupBy: "status",
+			properties: [],
+			columnOrder: [],
+			collapsedColumns: [],
+			hiddenColumns: [],
+			...DEFAULT_CALENDAR_SETTINGS,
+		});
 	});
 
 	it("only writes Kanban drops to single-line keys the board notes already carry", () => {
@@ -58,7 +95,6 @@ describe("collectionLayoutConfig", () => {
 			layout: "kanban",
 			groupBy: "status",
 			properties: ["owner"],
-			showProperties: true,
 			columnOrder: [],
 			collapsedColumns: [],
 			hiddenColumns: [],
@@ -123,19 +159,12 @@ describe("collectionLayoutConfig", () => {
 		});
 	});
 
-	it("keeps per-collection item-property visibility when loading saved layouts", () => {
-		expect(
-			readStoredLayout({ type: "kanban", showProperties: false }),
-		).toMatchObject({
-			layout: "kanban",
-			showProperties: false,
-		});
-		expect(
-			readStoredLayout({ type: "calendar", showProperties: false }),
-		).toMatchObject({
-			layout: "calendar",
-			showProperties: false,
-		});
+	it("ignores the leftover hide-all properties flag in saved layouts (TOL-436)", () => {
+		for (const type of ["kanban", "calendar"]) {
+			expect(
+				readStoredLayout({ type, showProperties: false }),
+			).not.toHaveProperty("showProperties");
+		}
 	});
 
 	it("sanitizes graph filters from stored layouts", () => {

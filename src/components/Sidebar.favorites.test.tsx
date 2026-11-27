@@ -108,7 +108,7 @@ describe("Sidebar.favorites", () => {
 			expectFavoriteRowToMatchTypeRow();
 		});
 
-		it("aligns the favorites header count pill with the shared sidebar count column", () => {
+		it("aligns the favorites header count pill with the shared sidebar count column, filled with the header hover gray", () => {
 			renderSidebar({ entries: [...mockEntries, favEntry] });
 
 			const favoritesHeader = screen.getByText("FAVORITES").closest("div");

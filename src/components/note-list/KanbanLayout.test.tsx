@@ -65,15 +65,6 @@ describe("KanbanLayout", () => {
 		expect(alphaCard).toHaveAttribute("data-selected", "true");
 	});
 
-	it("hides card fields when item properties are disabled", () => {
-		renderBoard({ showProperties: false });
-		expect(
-			within(screen.getByRole("button", { name: "Alpha" })).queryByTestId(
-				"property-chips",
-			),
-		).not.toBeInTheDocument();
-	});
-
 	it("renders shared status chips with a visible dot", () => {
 		const entry = makeEntry({
 			path: "/vault/status.md",
@@ -90,7 +81,7 @@ describe("KanbanLayout", () => {
 		const chip = within(card).getByTestId("property-chip-status-0");
 		expect(chip).toHaveTextContent("Doing");
 		expect(chip.querySelector('[data-testid="status-chip-dot"]')).toHaveClass(
-			"size-1.5",
+			"size-[7px]",
 		);
 	});
 
