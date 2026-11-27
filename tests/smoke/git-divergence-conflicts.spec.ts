@@ -10,7 +10,9 @@ test.describe('Git divergence, conflicts, and manual pull', () => {
   test('push rejection sets pull_required status in bottom bar', async ({ page }) => {
     // Override git_push mock to return rejected
     await page.evaluate(() => {
-      window.__mockHandlers!.git_push = () => ({
+      const handlers = window.__mockHandlers
+      if (!handlers) throw new Error('Expected the Git mock handlers')
+      handlers.git_push = () => ({
         status: 'rejected',
         message: 'Push rejected: remote has new commits. Pull first, then push.',
       })
@@ -48,7 +50,9 @@ test.describe('Git divergence, conflicts, and manual pull', () => {
   test('git status popup shows branch and sync info when clicking sync badge', async ({ page }) => {
     // Override git_remote_status to return data with ahead/behind
     await page.evaluate(() => {
-      window.__mockHandlers!.git_remote_status = () => ({
+      const handlers = window.__mockHandlers
+      if (!handlers) throw new Error('Expected the Git mock handlers')
+      handlers.git_remote_status = () => ({
         branch: 'main',
         ahead: 3,
         behind: 1,
@@ -69,13 +73,15 @@ test.describe('Git divergence, conflicts, and manual pull', () => {
   test('conflict badge shows count when conflicts exist', async ({ page }) => {
     // Override git_pull to return conflicts
     await page.evaluate(() => {
-      window.__mockHandlers!.git_pull = () => ({
+      const handlers = window.__mockHandlers
+      if (!handlers) throw new Error('Expected the Git mock handlers')
+      handlers.git_pull = () => ({
         status: 'conflict',
         message: 'Merge conflict in 2 file(s)',
         updatedFiles: [],
         conflictFiles: ['note-a.md', 'note-b.md'],
       })
-      window.__mockHandlers!.get_conflict_files = () => ['note-a.md', 'note-b.md']
+      handlers.get_conflict_files = () => ['note-a.md', 'note-b.md']
     })
 
     // Trigger a sync

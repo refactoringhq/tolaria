@@ -228,12 +228,11 @@ test('missing Getting Started vault stays hidden while remove actions still work
   const itemBounds = await personalVaultItem.boundingBox()
   const removeBounds = await removeButton.boundingBox()
 
-  expect(itemBounds).not.toBeNull()
-  expect(removeBounds).not.toBeNull()
-  expect(removeBounds!.x).toBeGreaterThanOrEqual(itemBounds!.x - 1)
-  expect(removeBounds!.y).toBeGreaterThanOrEqual(itemBounds!.y - 1)
-  expect(removeBounds!.x + removeBounds!.width).toBeLessThanOrEqual(itemBounds!.x + itemBounds!.width + 1)
-  expect(removeBounds!.y + removeBounds!.height).toBeLessThanOrEqual(itemBounds!.y + itemBounds!.height + 1)
+  if (!itemBounds || !removeBounds) throw new Error('Expected visible vault row and remove button')
+  expect(removeBounds.x).toBeGreaterThanOrEqual(itemBounds.x - 1)
+  expect(removeBounds.y).toBeGreaterThanOrEqual(itemBounds.y - 1)
+  expect(removeBounds.x + removeBounds.width).toBeLessThanOrEqual(itemBounds.x + itemBounds.width + 1)
+  expect(removeBounds.y + removeBounds.height).toBeLessThanOrEqual(itemBounds.y + itemBounds.height + 1)
 
   await removeButton.click()
   await page.getByRole('button', { name: 'Remove vault', exact: true }).click()

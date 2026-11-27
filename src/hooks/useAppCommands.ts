@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useLayoutEffect, useRef } from 'react'
 import type { AiAgentId, AiAgentsStatus } from '../lib/aiAgents'
 import type { AppLocale, UiLanguagePreference } from '../lib/i18n'
 import type { ThemeMode } from '../lib/themeMode'
@@ -614,8 +614,9 @@ function createCommandRegistryConfig(config: AppCommandsConfig): CommandRegistry
 /** Sets up keyboard shortcuts, command registry, menu events, and keyboard navigation. */
 export function useAppCommands(config: AppCommandsConfig): CommandAction[] {
   const entriesRef = useRef(config.entries)
-  // eslint-disable-next-line react-hooks/refs
-  entriesRef.current = config.entries
+  useLayoutEffect(() => {
+    entriesRef.current = config.entries
+  }, [config.entries])
 
   const toggleArchive = useCallback((path: string) => {
     const entry = entriesRef.current.find(e => e.path === path)
