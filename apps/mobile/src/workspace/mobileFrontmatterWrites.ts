@@ -12,13 +12,15 @@ type FrontmatterKey = string
 
 type CanonicalFrontmatterWriteRule = {
   aliases: readonly FrontmatterKey[]
+  /** Keep an existing alias key as it is cased in the note; `writeKey` applies only to new keys (TOL-466). */
+  keepsExistingKey?: boolean
   writeKey: FrontmatterKey
 }
 
 const canonicalFrontmatterWriteRules: readonly CanonicalFrontmatterWriteRule[] = [
   { aliases: ['type', 'is_a', 'Is A'], writeKey: 'type' },
-  { aliases: ['status', 'Status'], writeKey: 'status' },
-  { aliases: ['tags', 'Tags'], writeKey: 'tags' },
+  { aliases: ['status', 'Status'], keepsExistingKey: true, writeKey: 'status' },
+  { aliases: ['tags', 'Tags'], keepsExistingKey: true, writeKey: 'tags' },
   { aliases: ['title', 'Title'], writeKey: 'title' },
   { aliases: ['_archived', 'Archived', 'archived'], writeKey: '_archived' },
   { aliases: ['_favorite', 'favorite'], writeKey: '_favorite' },
@@ -36,9 +38,9 @@ export const writeMobileFrontmatterValue = (
   value: LocalVaultFrontmatterValue | undefined,
 ): LocalVaultFrontmatter => {
   const rule = canonicalFrontmatterWriteRule(key)
-  const writeKey = rule?.writeKey ?? key
+  const writeKey = rule ? ruleWriteKey(frontmatter, rule) : key
   const frontmatterWithoutAliases = rule
-    ? deleteFrontmatterAliases(frontmatter, rule)
+    ? deleteFrontmatterAliases(frontmatter, rule, writeKey)
     : { ...frontmatter }
 
   const nextFrontmatter = { ...frontmatterWithoutAliases }
@@ -82,13 +84,23 @@ function canonicalFrontmatterWriteRule(
   }) ?? null
 }
 
+function matchesRuleAlias(rule: CanonicalFrontmatterWriteRule, key: FrontmatterKey): boolean {
+  return rule.aliases.some((alias) => normalizedFrontmatterKey(alias) === normalizedFrontmatterKey(key))
+}
+
+function ruleWriteKey(frontmatter: LocalVaultFrontmatter, rule: CanonicalFrontmatterWriteRule): FrontmatterKey {
+  if (!rule.keepsExistingKey) return rule.writeKey
+  return Object.keys(frontmatter).find((key) => matchesRuleAlias(rule, key)) ?? rule.writeKey
+}
+
 function deleteFrontmatterAliases(
   frontmatter: LocalVaultFrontmatter,
   rule: CanonicalFrontmatterWriteRule,
+  keptKey: FrontmatterKey,
 ): LocalVaultFrontmatter {
   const nextFrontmatter = { ...frontmatter }
   for (const key of Object.keys(frontmatter)) {
-    if (rule.aliases.some((alias) => normalizedFrontmatterKey(alias) === normalizedFrontmatterKey(key))) {
+    if (key !== keptKey && matchesRuleAlias(rule, key)) {
       Reflect.deleteProperty(nextFrontmatter, key)
     }
   }

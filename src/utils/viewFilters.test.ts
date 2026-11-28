@@ -344,3 +344,23 @@ describe('evaluateView', () => {
     expectFilterTitles({ field: 'title', op: 'contains', value: '(', regex: true }, entries, [], 'Broken regex')
   })
 })
+
+describe('status filters ignore value case (TOL-466)', () => {
+  const entries = [
+    makeEntry({ title: 'Title-cased', status: 'Active' }),
+    makeEntry({ title: 'Lowercase', status: 'active' }),
+    makeEntry({ title: 'Other', status: 'done' }),
+  ]
+
+  it('includes Active notes in a filter for active', () => {
+    expectFilterTitles({ field: 'status', op: 'equals', value: 'active' }, entries, ['Title-cased', 'Lowercase'])
+  })
+
+  it('matches any_of status values regardless of case', () => {
+    expectFilterTitles({ field: 'status', op: 'any_of', value: ['ACTIVE'] }, entries, ['Title-cased', 'Lowercase'])
+  })
+
+  it('excludes both casings from not_equals active', () => {
+    expectFilterTitles({ field: 'status', op: 'not_equals', value: 'Active' }, entries, ['Other'])
+  })
+})

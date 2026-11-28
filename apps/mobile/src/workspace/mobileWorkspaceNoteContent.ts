@@ -67,7 +67,7 @@ export function mergeFrontmatter(target: LocalVaultFrontmatter, source: LocalVau
 export function fallbackMetadataFrontmatter(note: MobileNote): LocalVaultFrontmatter {
   const frontmatter: LocalVaultFrontmatter = {}
   addFrontmatterValue(frontmatter, 'type', fallbackTypeValue(note))
-  addFrontmatterValue(frontmatter, 'Status', note.status)
+  addFrontmatterValue(frontmatter, 'status', note.status)
   addFrontmatterValue(frontmatter, 'aliases', nonEmptyStringList(note.aliases))
   addFrontmatterValue(frontmatter, 'tags', nonEmptyStringList(note.tags))
   addFrontmatterValue(frontmatter, '_favorite', trueFlagValue(note.favorite))

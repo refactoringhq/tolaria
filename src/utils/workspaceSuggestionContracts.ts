@@ -1,8 +1,9 @@
+/** Suggested keys use the vault's lowercase snake_case naming, for keys and labels alike (TOL-466). */
 export const SUGGESTED_PROPERTY_SLOTS = [
-  { key: 'Status', label: 'Status' },
-  { key: 'Date', label: 'Date' },
-  { key: 'URL', label: 'URL' },
-  { key: 'icon', label: 'Icon' },
+  { key: 'status', label: 'status' },
+  { key: 'date', label: 'date' },
+  { key: 'url', label: 'url' },
+  { key: 'icon', label: 'icon' },
 ] as const
 
 export const SUGGESTED_PROPERTY_KEYS = SUGGESTED_PROPERTY_SLOTS.map((slot) => slot.key)
