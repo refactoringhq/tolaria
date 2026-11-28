@@ -170,7 +170,7 @@ function useFilteredNoteListSearch(options: {
 
 function useNoteListContent(options: UseNoteListContentParams) {
   const { entries, selection, noteListFilter, inboxPeriod, isInboxView, selectedNotePath, visibleNotesRef } = options
-  const dateDisplayFormat = useDateDisplayFormat('note-list')
+  const dateDisplayFormat = useDateDisplayFormat()
   const appLocale = useAppLocale()
   const subFilter = selection.kind === 'sectionGroup' || selection.kind === 'folder' ? noteListFilter : undefined
   const scopedOptions = { ...options, subFilter, inboxPeriod: isInboxView ? inboxPeriod : undefined }
@@ -415,24 +415,18 @@ function noteListHeaderModel(params: NoteListLayoutModelParams) {
   }
 }
 
-function noteListKeyboardBindings(keyboard: NoteListLayoutModelParams['interaction']['noteListKeyboard']) {
-  return {
-    noteListPanelRef: keyboard.panelRef,
-    handleNoteListPanelBlurCapture: keyboard.handlePanelBlurCapture,
-    handleNoteListPanelFocusCapture: keyboard.handlePanelFocusCapture,
-    noteListContainerRef: keyboard.containerRef,
-    handleNoteListBlur: keyboard.handleBlur,
-    handleNoteListFocus: keyboard.handleFocus,
-    focusNoteList: keyboard.focusList,
-    noteListVirtuosoRef: keyboard.virtuosoRef,
-  }
-}
-
 function noteListInteractionModel(params: NoteListLayoutModelParams) {
   const { gitRepositories = [], selectedGitRepositoryPath = '' } = params
   return {
     handleListKeyDown: params.interaction.handleListKeyDown,
-    ...noteListKeyboardBindings(params.interaction.noteListKeyboard),
+    noteListPanelRef: params.interaction.noteListKeyboard.panelRef,
+    handleNoteListPanelBlurCapture: params.interaction.noteListKeyboard.handlePanelBlurCapture,
+    handleNoteListPanelFocusCapture: params.interaction.noteListKeyboard.handlePanelFocusCapture,
+    noteListContainerRef: params.interaction.noteListKeyboard.containerRef,
+    handleNoteListBlur: params.interaction.noteListKeyboard.handleBlur,
+    handleNoteListFocus: params.interaction.noteListKeyboard.handleFocus,
+    focusNoteList: params.interaction.noteListKeyboard.focusList,
+    noteListVirtuosoRef: params.interaction.noteListKeyboard.virtuosoRef,
     entitySelection: params.interaction.entitySelection,
     searchedGroups: params.content.searchedGroups,
     collapsedGroups: params.interaction.collapsedGroups,

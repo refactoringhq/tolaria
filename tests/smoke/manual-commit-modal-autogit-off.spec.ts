@@ -1,6 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
 import { executeCommand, openCommandPalette } from './helpers'
-import { triggerMenuCommand } from './testBridge'
 import { seedAutoGitSavedChange } from './testBridge'
 
 type MockHandler = (args?: Record<string, unknown>) => unknown
@@ -114,7 +113,7 @@ async function setAutoGitEnabled(page: Page, enabled: boolean) {
   const settingsPanel = page.getByTestId('settings-panel')
   await expect(settingsPanel).toBeVisible({ timeout: 5_000 })
 
-  const toggle = page.getByRole('switch', { name: 'Enable AutoGit', exact: true })
+  const toggle = page.getByRole('switch', { name: 'AutoGit' })
   const isEnabled = (await toggle.getAttribute('aria-checked')) === 'true'
   if (isEnabled !== enabled) {
     await toggle.click()
@@ -124,8 +123,11 @@ async function setAutoGitEnabled(page: Page, enabled: boolean) {
   await expect(settingsPanel).not.toBeVisible({ timeout: 5_000 })
 }
 
-async function triggerCommit(page: Page) {
-  await triggerMenuCommand(page, 'vault-commit-push')
+async function triggerCommitButton(page: Page) {
+  const commitButton = page.getByTestId('status-commit-push')
+  await commitButton.focus()
+  await expect(commitButton).toBeFocused()
+  await page.keyboard.press('Enter')
 }
 
 async function delayNextModifiedFilesRequest(page: Page) {
@@ -161,8 +163,13 @@ test('@smoke commit entry opens the manual modal when AutoGit is off and switche
   await setAutoGitEnabled(page, false)
   await seedAutoGitSavedChange(page)
   await delayNextModifiedFilesRequest(page)
-  await triggerCommit(page)
-  await triggerCommit(page)
+  await triggerCommitButton(page)
+  const commitButton = page.getByTestId('status-commit-push')
+
+  await expect(commitButton).toHaveAttribute('aria-busy', 'true')
+  await expect(commitButton).toHaveAttribute('aria-disabled', 'true')
+  await expect(commitButton.locator('svg.animate-spin')).toBeVisible()
+  await page.keyboard.press('Enter')
 
   await expect(page.getByRole('heading', { name: 'Commit & Push' })).toBeVisible()
   const messageInput = page.locator('textarea[placeholder="Commit message..."]')
@@ -177,7 +184,7 @@ test('@smoke commit entry opens the manual modal when AutoGit is off and switche
 
   await setAutoGitEnabled(page, true)
   await seedAutoGitSavedChange(page)
-  await triggerCommit(page)
+  await triggerCommitButton(page)
 
   await expect(messageInput).not.toBeVisible()
   await expectCommitMessage(page, 1, 'Updated 1 note')

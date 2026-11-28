@@ -7,11 +7,11 @@ test.describe('Git divergence, conflicts, and manual pull', () => {
     await page.waitForLoadState('networkidle')
   })
 
-  test('push rejection shows Pull required on the sidebar sync pill', async ({ page }) => {
+  test('push rejection sets pull_required status in bottom bar', async ({ page }) => {
     // Override git_push mock to return rejected
     await page.evaluate(() => {
       const handlers = window.__mockHandlers
-      if (!handlers) throw new Error('Git mocks were not installed')
+      if (!handlers) throw new Error('Expected the Git mock handlers')
       handlers.git_push = () => ({
         status: 'rejected',
         message: 'Push rejected: remote has new commits. Pull first, then push.',
@@ -31,8 +31,8 @@ test.describe('Git divergence, conflicts, and manual pull', () => {
     const toast = page.locator('.fixed.bottom-8')
     await expect(toast).toContainText('push rejected', { timeout: 5000 })
 
-    // Verify the sync pill exposes the pull-required state.
-    const syncBadge = page.getByTestId('sidebar-sync')
+    // Verify "Pull required" label appears in the status bar
+    const syncBadge = page.getByTestId('status-sync')
     await expect(syncBadge).toContainText('Pull required', { timeout: 5000 })
   })
 
@@ -47,21 +47,34 @@ test.describe('Git divergence, conflicts, and manual pull', () => {
     await expect(match).toContainText('Pull from Remote', { timeout: 3000 })
   })
 
-  test('the sidebar sync menu opens vault history', async ({ page }) => {
-    await page.getByTestId('sidebar-sync').click()
-    const menu = page.getByTestId('sidebar-sync-menu')
-    await expect(menu.getByRole('menuitem', { name: 'View changes' })).toBeVisible()
-    await expect(menu.getByRole('menuitem', { name: /Sync now/ })).toBeVisible()
+  test('git status popup shows branch and sync info when clicking sync badge', async ({ page }) => {
+    // Override git_remote_status to return data with ahead/behind
+    await page.evaluate(() => {
+      const handlers = window.__mockHandlers
+      if (!handlers) throw new Error('Expected the Git mock handlers')
+      handlers.git_remote_status = () => ({
+        branch: 'main',
+        ahead: 3,
+        behind: 1,
+        hasRemote: true,
+      })
+    })
 
-    await menu.getByRole('menuitem', { name: 'View history' }).click()
-    await expect(page.getByTestId('pulse-header')).toBeVisible()
+    // Trigger a sync so the remote status gets fetched
+    const syncBadge = page.getByTestId('status-sync')
+    await syncBadge.click()
+
+    // The popup should appear
+    const popup = page.getByTestId('git-status-popup')
+    await expect(popup).toBeVisible({ timeout: 3000 })
+    await expect(popup).toContainText('main')
   })
 
   test('conflict badge shows count when conflicts exist', async ({ page }) => {
     // Override git_pull to return conflicts
     await page.evaluate(() => {
       const handlers = window.__mockHandlers
-      if (!handlers) throw new Error('Git mocks were not installed')
+      if (!handlers) throw new Error('Expected the Git mock handlers')
       handlers.git_pull = () => ({
         status: 'conflict',
         message: 'Merge conflict in 2 file(s)',
@@ -75,9 +88,9 @@ test.describe('Git divergence, conflicts, and manual pull', () => {
     await openCommandPalette(page)
     await executeCommand(page, 'Pull from Remote')
 
-    const syncPill = page.getByTestId('sidebar-sync')
-    await expect(syncPill).toContainText('2 conflicts')
-    await syncPill.click()
-    await expect(page.getByRole('menuitem', { name: /Resolve merge conflicts/ })).toBeEnabled()
+    // Verify conflict count badge appears
+    const conflictBadge = page.getByTestId('status-conflict-count')
+    await expect(conflictBadge).toBeVisible({ timeout: 5000 })
+    await expect(conflictBadge).toContainText('2 conflicts')
   })
 })

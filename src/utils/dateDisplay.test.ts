@@ -32,15 +32,4 @@ describe('dateDisplay', () => {
     expect(formatDateValueForDisplay('05/11/2026', 'friendly')).toBe('May 11, 2026')
     expect(formatDateValueForDisplay('next Monday', 'iso')).toBe('next Monday')
   })
-
-  it('abbreviates the month and omits only the current year when requested', () => {
-    const year = new Date().getFullYear()
-    const today = { year, month: 11, day: 21 }
-    expect(normalizeDateDisplayFormat('short')).toBe('short')
-    expect(normalizeDateDisplayFormat('short-current-year')).toBe('short-current-year')
-    expect(formatDatePartsForDisplay(today, 'short')).toBe(`Nov 21, ${year}`)
-    expect(formatDatePartsForDisplay(today, 'short-current-year')).toBe('Nov 21')
-    expect(formatDatePartsForDisplay({ ...today, year: year - 1 }, 'short-current-year')).toBe(`Nov 21, ${year - 1}`)
-    expect(formatDatePartsForDisplay({ ...today, year: year + 1 }, 'short-current-year')).toBe(`Nov 21, ${year + 1}`)
-  })
 })

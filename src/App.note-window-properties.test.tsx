@@ -230,8 +230,8 @@ describe('App note windows', () => {
         path: activeEntry.path,
         vaultPath: '/vault',
       })
-      expect(commandResults.list_vault).toHaveBeenCalled()
     })
+    expect(commandResults.list_vault).toHaveBeenCalled()
 
     await waitFor(() => {
       expect(screen.getByTestId('mock-editor-entry-titles')).toHaveTextContent(
@@ -280,9 +280,7 @@ describe('App note windows', () => {
       })
     })
     expect(commandResults.reload_vault_entry).toHaveBeenCalledTimes(2)
-    await waitFor(() => {
-      expect(vi.mocked(commandResults.list_vault).mock.calls.length).toBeGreaterThanOrEqual(2)
-    })
+    expect(vi.mocked(commandResults.list_vault).mock.calls.length).toBeGreaterThanOrEqual(2)
   })
 
   it('keeps automatic Git work out of secondary note windows', async () => {

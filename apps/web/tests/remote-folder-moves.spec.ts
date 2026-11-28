@@ -226,8 +226,7 @@ test("names Windows cannot hold are refused before anything moves", async ({ pag
 		await page.getByTestId("breadcrumb-filename-trigger").dblclick();
 		await page.getByTestId("breadcrumb-filename-input").fill("quarterly:plan");
 		await page.getByTestId("breadcrumb-filename-input").press("Enter");
-		await expect(page.getByTestId("breadcrumb-filename-input")).toHaveCount(0);
-		await expect(page.getByTestId("breadcrumb-filename-trigger")).toHaveText("plan");
+		await expect(page.getByText("Invalid filename", { exact: true })).toBeVisible({ timeout: 10_000 });
 
 		await renameFolderTo(page, folder, "LPT1");
 		await expect(page.getByText("Failed to rename folder: Invalid folder name")).toBeVisible({ timeout: 10_000 });
