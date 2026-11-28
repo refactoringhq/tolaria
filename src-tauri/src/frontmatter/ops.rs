@@ -361,4 +361,44 @@ mod tests {
         assert!(organized.contains("_width: wide\r\n"));
         assert!(organized.contains("_organized: true\r\n"));
     }
+
+    #[test]
+    fn editing_an_old_cased_status_changes_only_that_value() {
+        // TOL-466: the existing key keeps its casing and the other lines stay byte-for-byte.
+        let content = "---\ntype: Project\nStatus: Active\nBelongs to: \"[[Q1]]\"\nURL: https://x.test\n---\n# Note\n";
+
+        let updated = update_frontmatter_content(content, "Status", Some(string_value("done")))
+            .expect("status update should succeed");
+
+        assert_eq!(
+            updated,
+            "---\ntype: Project\nStatus: done\nBelongs to: \"[[Q1]]\"\nURL: https://x.test\n---\n# Note\n"
+        );
+    }
+
+    #[test]
+    fn new_standard_keys_are_written_lowercase_with_values_as_given() {
+        // TOL-466: keys the app creates use lowercase snake_case; values are never title-cased.
+        let mut content = "---\ntype: Project\n---\n# Note\n".to_string();
+        for (key, value) in [
+            ("status", "active"),
+            ("belongs_to", "[[q1]]"),
+            ("related_to", "[[growth]]"),
+            ("date", "2026-11-28"),
+            ("url", "https://x.test"),
+            ("created", "2026-11-28"),
+            ("has_notes", "[[first]]"),
+        ] {
+            content = update_frontmatter_content(&content, key, Some(string_value(value)))
+                .expect("new key write should succeed");
+            assert!(
+                content.contains(&format!("\n{key}: ")),
+                "{key} missing in {content}"
+            );
+        }
+
+        assert!(content.contains("status: active\n"));
+        assert!(!content.contains("Status:"));
+        assert!(!content.contains("URL:"));
+    }
 }
