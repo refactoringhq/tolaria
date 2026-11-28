@@ -45,6 +45,7 @@ export function WorkspaceSidebarUtilities({
           onSelect({ kind: 'filter', filter: 'changes' })
         },
         onSyncNow: sidebarSync.handleSyncNow,
+        onManageConflicts: sidebarSync.handleManageConflicts,
         onViewHistory: () => {
           repositoryActions.setHistoryRepositoryPath(syncRepositoryPath)
           onSelect({ kind: 'filter', filter: 'pulse' })

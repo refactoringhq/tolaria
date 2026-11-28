@@ -156,11 +156,12 @@ function resolveStatusChip(value: ChipScalarValue): PropertyChipValue | null {
 
   const status = String(value)
   const style = getMappedStatusStyle(status)
+  const chipStyle = style ? { backgroundColor: style.bg, '--status-chip-text': style.color } : undefined
   return {
     label: `• ${label}`,
     noteIcon: null,
     typeIcon: null,
-    style: style ? { backgroundColor: style.bg } : undefined,
+    style: chipStyle,
     dotColor: style?.color,
     tone: 'status',
   }
