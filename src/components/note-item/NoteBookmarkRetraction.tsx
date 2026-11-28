@@ -23,7 +23,7 @@ function bookmarkProgress(
 	return Math.min(1, Math.max(0, distance / RETRACTION_DISTANCE));
 }
 
-const seamOwners = new WeakMap<HTMLElement, symbol>();
+const seamOwners: WeakMap<HTMLElement, symbol> = new WeakMap();
 
 function visibleSeam(row: HTMLElement, scroller: HTMLElement, editor: HTMLElement) {
 	const note = row.getBoundingClientRect();
