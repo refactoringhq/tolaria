@@ -17,6 +17,7 @@ import {
 	zhTW,
 } from "@blocknote/core/locales";
 import { type AppLocale, translate } from "../lib/i18n";
+import { BLOCKNOTE_TR_DICTIONARY } from "./blockNoteTrDictionary";
 
 const BLOCKNOTE_DICTIONARIES: Partial<Record<AppLocale, Dictionary>> = {
 	"de-DE": de,
@@ -31,6 +32,7 @@ const BLOCKNOTE_DICTIONARIES: Partial<Record<AppLocale, Dictionary>> = {
 	"pt-PT": pt,
 	"ru-RU": ru,
 	"sk-SK": sk,
+	"tr-TR": BLOCKNOTE_TR_DICTIONARY,
 	"uk-UA": uk,
 	vi,
 	"zh-CN": zh,

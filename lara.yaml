@@ -28,6 +28,7 @@ locales:
     - uk-UA
     - sv-SE
     - sk-SK
+    - tr-TR
 
 files:
   json:

@@ -8,7 +8,7 @@ import { COLLAB_TOKEN } from "../playwright.config";
  */
 
 const CATALOG_REQUEST =
-	/\/assets\/(be-BY|be-Latn|de-DE|es-419|es-ES|fr-FR|id-ID|it-IT|ja-JP|ko-KR|pl-PL|pt-BR|pt-PT|ru-RU|sk-SK|sv-SE|uk-UA|vi|zh-CN|zh-TW)-[\w-]{8}\.js$/;
+	/\/assets\/(be-BY|be-Latn|de-DE|es-419|es-ES|fr-FR|id-ID|it-IT|ja-JP|ko-KR|pl-PL|pt-BR|pt-PT|ru-RU|sk-SK|sv-SE|tr-TR|uk-UA|vi|zh-CN|zh-TW)-[\w-]{8}\.js$/;
 
 async function openRemoteVault(page: import("@playwright/test").Page) {
 	const catalogs: string[] = [];

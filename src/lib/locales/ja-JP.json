@@ -1194,6 +1194,7 @@
   "locale.ukUA": "ウクライナ語",
   "locale.svSE": "スウェーデン語",
   "locale.skSK": "スロバキア語",
+  "locale.trTR": "トルコ語",
   "telemetryConsent.saveError": "Tolariaはこの選択を保存できませんでした。アカウントがアプリの設定を書き込めることを確認してから、もう一度お試しください。",
   "collab.connect.title": "共有ノートを開く",
   "collab.connect.token": "サーバー トークン",

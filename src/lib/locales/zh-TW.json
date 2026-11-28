@@ -1194,6 +1194,7 @@
   "locale.ukUA": "烏克蘭語",
   "locale.svSE": "瑞典語",
   "locale.skSK": "斯洛伐克語",
+  "locale.trTR": "土耳其語",
   "telemetryConsent.saveError": "Tolaria 無法儲存此選項。請檢查您的帳戶是否可以寫入其應用程式設定，然後再試一次。",
   "collab.connect.title": "開啟共用記事",
   "collab.connect.token": "伺服器權杖",

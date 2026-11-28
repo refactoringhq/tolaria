@@ -33,6 +33,7 @@ describe("calendarDates", () => {
 		expect(weekStartForLocale("ja-JP")).toBe(0);
 		expect(weekStartForLocale("it-IT")).toBe(1);
 		expect(weekStartForLocale("de-DE")).toBe(1);
+		expect(weekStartForLocale("tr-TR")).toBe(1);
 		expect(startOfWeek("2026-11-19", 0)).toBe("2026-11-15");
 		expect(startOfWeek("2026-11-19", 1)).toBe("2026-11-16");
 	});

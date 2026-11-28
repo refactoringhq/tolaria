@@ -1194,6 +1194,7 @@
   "locale.ukUA": "Ucraniano",
   "locale.svSE": "Sueco",
   "locale.skSK": "Eslovaco",
+  "locale.trTR": "Turco",
   "telemetryConsent.saveError": "A Tolaria não conseguiu guardar esta escolha. Verifique se a sua conta pode gravar as definições da aplicação e tente novamente.",
   "collab.connect.title": "Abrir uma nota partilhada",
   "collab.connect.token": "Token do servidor",
