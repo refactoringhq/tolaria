@@ -33,6 +33,57 @@ function buildNoteWidthOptions(t: Translate): Array<{ value: NoteWidthMode; labe
   }))
 }
 
+function AllNotesFileVisibilitySettings({ t, visibility, onChange }: {
+  t: Translate
+  visibility: AllNotesFileVisibility
+  onChange: (value: AllNotesFileVisibility) => void
+}) {
+  const updateVisibility = (patch: Partial<AllNotesFileVisibility>) => onChange({ ...visibility, ...patch })
+  return (
+    <>
+      <SettingsSwitchRow
+        label={t('settings.allNotesVisibility.pdfs')}
+        description={t('settings.allNotesVisibility.pdfsDescription')}
+        checked={visibility.pdfs}
+        onChange={(checked) => updateVisibility({ pdfs: checked })}
+        testId="settings-all-notes-show-pdfs"
+      />
+
+      <SettingsSwitchRow
+        label={t('settings.allNotesVisibility.images')}
+        description={t('settings.allNotesVisibility.imagesDescription')}
+        checked={visibility.images}
+        onChange={(checked) => updateVisibility({ images: checked })}
+        testId="settings-all-notes-show-images"
+      />
+
+      <SettingsSwitchRow
+        label={t('settings.allNotesVisibility.unsupported')}
+        description={t('settings.allNotesVisibility.unsupportedDescription')}
+        checked={visibility.unsupported}
+        onChange={(checked) => updateVisibility({ unsupported: checked })}
+        testId="settings-all-notes-show-unsupported"
+      />
+    </>
+  )
+}
+
+function DefaultNoteWidthSetting({ t, defaultNoteWidth, setDefaultNoteWidth }: Pick<
+  VaultContentSettingsSectionProps, 't' | 'defaultNoteWidth' | 'setDefaultNoteWidth'
+>) {
+  return (
+    <SettingsRow label={t('settings.noteWidth.default')} description={t('settings.noteWidth.defaultDescription')}>
+      <SelectControl
+        ariaLabel={t('settings.noteWidth.default')}
+        value={defaultNoteWidth}
+        onValueChange={(value) => setDefaultNoteWidth(value as NoteWidthMode)}
+        options={buildNoteWidthOptions(t)}
+        testId="settings-default-note-width"
+      />
+    </SettingsRow>
+  )
+}
+
 export function VaultContentSettingsSection(functionOptions: VaultContentSettingsSectionProps) {
   const {
     t,
@@ -47,24 +98,13 @@ export function VaultContentSettingsSection(functionOptions: VaultContentSetting
     allNotesFileVisibility,
     setAllNotesFileVisibility,
   } = functionOptions
-  const updateAllNotesFileVisibility = (patch: Partial<AllNotesFileVisibility>) => {
-    setAllNotesFileVisibility({ ...allNotesFileVisibility, ...patch })
-  }
 
   return (
     <>
       <SectionHeading icon={<Article size={16} aria-hidden="true" />} title={t('settings.vaultContent.title')} />
 
       <SettingsGroup>
-        <SettingsRow label={t('settings.noteWidth.default')} description={t('settings.noteWidth.defaultDescription')}>
-          <SelectControl
-            ariaLabel={t('settings.noteWidth.default')}
-            value={defaultNoteWidth}
-            onValueChange={(value) => setDefaultNoteWidth(value as NoteWidthMode)}
-            options={buildNoteWidthOptions(t)}
-            testId="settings-default-note-width"
-          />
-        </SettingsRow>
+        <DefaultNoteWidthSetting t={t} defaultNoteWidth={defaultNoteWidth} setDefaultNoteWidth={setDefaultNoteWidth} />
 
         <SettingsSwitchRow
           label={t('settings.sidebarTypePluralization.label')}
@@ -90,29 +130,7 @@ export function VaultContentSettingsSection(functionOptions: VaultContentSetting
           testId="settings-hide-gitignored-files"
         />
 
-        <SettingsSwitchRow
-          label={t('settings.allNotesVisibility.pdfs')}
-          description={t('settings.allNotesVisibility.pdfsDescription')}
-          checked={allNotesFileVisibility.pdfs}
-          onChange={(checked) => updateAllNotesFileVisibility({ pdfs: checked })}
-          testId="settings-all-notes-show-pdfs"
-        />
-
-        <SettingsSwitchRow
-          label={t('settings.allNotesVisibility.images')}
-          description={t('settings.allNotesVisibility.imagesDescription')}
-          checked={allNotesFileVisibility.images}
-          onChange={(checked) => updateAllNotesFileVisibility({ images: checked })}
-          testId="settings-all-notes-show-images"
-        />
-
-        <SettingsSwitchRow
-          label={t('settings.allNotesVisibility.unsupported')}
-          description={t('settings.allNotesVisibility.unsupportedDescription')}
-          checked={allNotesFileVisibility.unsupported}
-          onChange={(checked) => updateAllNotesFileVisibility({ unsupported: checked })}
-          testId="settings-all-notes-show-unsupported"
-        />
+        <AllNotesFileVisibilitySettings t={t} visibility={allNotesFileVisibility} onChange={setAllNotesFileVisibility} />
       </SettingsGroup>
     </>
   )

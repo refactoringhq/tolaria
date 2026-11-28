@@ -216,7 +216,7 @@ function DisabledNavItem({
   return (
     <div
       className="flex select-none items-center gap-2 rounded text-foreground"
-      style={{ padding, borderRadius: 4, opacity: 0.4, cursor: 'not-allowed' }}
+      style={{ padding, borderRadius: 'var(--radius-xl)', opacity: 0.4, cursor: 'not-allowed' }}
       title={disabledTooltip ?? 'Coming soon'}
     >
       <SidebarNavIcon Icon={Icon} emoji={emoji} iconSize={getNavItemIconSize(compact)} />
@@ -250,9 +250,10 @@ function ClickableNavItem(options: ClickableNavItemProps) {
       className={cn(
         'group/sidebar-row h-auto w-full cursor-pointer select-none justify-start rounded text-left transition-colors',
         isActive ? activeClassName : 'text-foreground',
+        isActive && 'shadow-[var(--shadow-sidebar)]',
         SIDEBAR_ITEM_HOVER_CLASS,
       )}
-      style={{ padding, borderRadius: 4 }}
+      style={{ padding, borderRadius: 'var(--radius-xl)' }}
       onClick={onClick}
     >
       <SidebarNavIcon Icon={Icon} emoji={emoji} iconSize={getNavItemIconSize(compact)} isActive={isActive} />
@@ -273,7 +274,7 @@ export function NavItem(options: NavItemProps) {
     icon: Icon,
     disabled,
     disabledTooltip,
-    activeClassName = 'bg-[var(--accent-blue-light)] text-[var(--accent-blue)]',
+    activeClassName = 'bg-[var(--sidebar-item-highlight)] text-foreground',
     ...props
   } = options
   const padding = getNavItemPadding(props.compact, props.countLoading || hasSidebarCount(props.count))

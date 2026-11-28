@@ -14,8 +14,9 @@ export interface PropertyChipValue {
   noteIcon: string | null
   typeIcon: ComponentType<SVGAttributes<SVGSVGElement>> | null
   style?: CSSProperties
+  dotColor?: string
   action?: { kind: 'note'; entry: VaultEntry } | { kind: 'url'; url: string }
-  tone: 'neutral' | 'relationship' | 'status' | 'url'
+  tone: 'neutral' | 'date' | 'relationship' | 'status' | 'tag' | 'url'
 }
 
 export interface PropertyChipResolveContext {
@@ -112,7 +113,7 @@ function relationshipChipLabel({ displayLabel, ref, targetEntry }: RelationshipC
   return targetEntry?.title ?? displayLabel
 }
 
-function resolveScalarChip(value: unknown): PropertyChipValue | null {
+function resolveScalarChip(value: unknown, tone: 'neutral' | 'tag'): PropertyChipValue | null {
   const label = formatChipLabel(value)
   if (!label) return null
 
@@ -132,7 +133,7 @@ function resolveScalarChip(value: unknown): PropertyChipValue | null {
     label,
     noteIcon: null,
     typeIcon: null,
-    tone: 'neutral',
+    tone,
   }
 }
 
@@ -144,7 +145,8 @@ function resolveDateChip(value: ChipScalarValue, dateDisplayFormat: DateDisplayF
     label,
     noteIcon: null,
     typeIcon: null,
-    tone: 'neutral',
+    style: { color: 'var(--foreground)' },
+    tone: 'date',
   }
 }
 
@@ -158,7 +160,8 @@ function resolveStatusChip(value: ChipScalarValue): PropertyChipValue | null {
     label: `• ${label}`,
     noteIcon: null,
     typeIcon: null,
-    style: style ? { backgroundColor: style.bg, color: style.color } : undefined,
+    style: style ? { backgroundColor: style.bg } : undefined,
+    dotColor: style?.color,
     tone: 'status',
   }
 }
@@ -173,7 +176,7 @@ function resolvePropertyValueChip(
   const displayMode = detectPropertyType(propName, value)
   if (displayMode === 'status') return resolveStatusChip(value)
   if (displayMode === 'date') return resolveDateChip(value, dateDisplayFormat, appLocale)
-  return resolveScalarChip(value)
+  return resolveScalarChip(value, displayMode === 'tags' ? 'tag' : 'neutral')
 }
 
 function resolveRelationshipChipValues(

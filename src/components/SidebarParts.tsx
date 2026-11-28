@@ -2,7 +2,7 @@ import { useEffect, useRef, type ComponentType, type MouseEvent as ReactMouseEve
 import type { SidebarSelection } from '../types'
 import { cn } from '@/lib/utils'
 import { isSelectionActive } from '../utils/sidebarSelection'
-import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
+import { getTypeColor } from '../utils/typeColors'
 import type { IconProps } from '@phosphor-icons/react'
 import { SIDEBAR_COUNT_ACTIVE_CLASS, SIDEBAR_COUNT_HOVER_CLASS, SIDEBAR_ITEM_HOVER_CLASS, SIDEBAR_ITEM_PADDING, type SidebarItemStyle } from './sidebar/sidebarStyles'
 import { useSidebarInlineRenameInput } from './sidebar/sidebarHooks'
@@ -46,8 +46,6 @@ interface InlineRenameInputProps {
 interface SectionHeaderLabelProps {
   type: string
   label: string
-  isActive: boolean
-  sectionColor: string
   isRenaming?: boolean
   renameInitialValue?: string
   onRenameSubmit?: (value: string) => void
@@ -66,7 +64,6 @@ interface SectionHeaderProps {
   type: string
   Icon: ComponentType<IconProps>
   sectionColor: string
-  sectionLightColor: string
   itemCount: number
   isActive: boolean
   onSelect: () => void
@@ -92,13 +89,6 @@ interface InlineRenameHandlers {
   onRenameSubmit: (value: string) => void
 }
 
-function resolveSectionColors(type: string, customColor?: string | null) {
-  return {
-    sectionColor: getTypeColor(type, customColor),
-    sectionLightColor: getTypeLightColor(type, customColor),
-  }
-}
-
 // --- Section Content ---
 
 export function SectionContent(options: SectionContentProps) {
@@ -118,7 +108,7 @@ export function SectionContent(options: SectionContentProps) {
     onSelectTypeNote,
   } = options
   const { label, type, Icon, customColor } = group
-  const { sectionColor, sectionLightColor } = resolveSectionColors(type, customColor)
+  const sectionColor = getTypeColor(type, customColor)
 
   return (
     <SectionHeader
@@ -126,7 +116,6 @@ export function SectionContent(options: SectionContentProps) {
       type={type}
       Icon={Icon}
       sectionColor={sectionColor}
-      sectionLightColor={sectionLightColor}
       itemCount={itemCount}
       isActive={isSelectionActive(selection, { kind: 'sectionGroup', type })}
       onSelect={() => onSelect({ kind: 'sectionGroup', type })}
@@ -143,18 +132,18 @@ export function SectionContent(options: SectionContentProps) {
   )
 }
 
-function getSectionHeaderBackground(isActive: boolean, sectionLightColor: string) {
-  if (!isActive) return undefined
-  return { background: sectionLightColor }
+function getSectionHeaderStyle(isActive: boolean): SidebarItemStyle {
+  return {
+    padding: SIDEBAR_ITEM_PADDING.withCount,
+    borderRadius: 'var(--radius-xl)',
+    gap: 4,
+    background: isActive ? 'var(--sidebar-item-highlight)' : undefined,
+    boxShadow: isActive ? 'var(--shadow-sidebar)' : undefined,
+  }
 }
 
 function getSectionHeaderIconWeight(isActive: boolean): IconProps['weight'] {
   return isActive ? 'fill' : 'regular'
-}
-
-function getSectionHeaderTitleColor(isActive: boolean, sectionColor: string) {
-  if (!isActive) return undefined
-  return sectionColor
 }
 
 function getSectionSelectHandler(isRenaming: boolean | undefined, onSelect: () => void) {
@@ -180,8 +169,6 @@ function SectionHeaderLabel(options: SectionHeaderLabelProps) {
   const {
     type,
     label,
-    isActive,
-    sectionColor,
     isRenaming,
     renameInitialValue,
     onRenameSubmit,
@@ -210,10 +197,9 @@ function SectionHeaderLabel(options: SectionHeaderLabelProps) {
   return (
     <button
       type="button"
-      className="min-w-0 truncate border-0 bg-transparent p-0 text-left text-[13px] font-medium"
+      className="min-w-0 truncate border-0 bg-transparent p-0 text-left text-[13px] font-medium text-foreground"
       style={{
         marginLeft: 4,
-        color: getSectionHeaderTitleColor(isActive, sectionColor),
       }}
       onDoubleClick={(event) => {
         event.stopPropagation()
@@ -244,7 +230,6 @@ function SectionHeader(options: SectionHeaderProps) {
     type,
     Icon,
     sectionColor,
-    sectionLightColor,
     itemCount,
     isActive,
     onSelect,
@@ -262,14 +247,6 @@ function SectionHeader(options: SectionHeaderProps) {
   const selectHandler = getSectionSelectHandler(isRenaming, onSelect)
   const contextMenuHandler = getSectionContextMenuHandler(isRenaming, onContextMenu)
   const doubleClickHandler = !isRenaming ? onSelectTypeNote : undefined
-  const rowStyle: SidebarItemStyle = {
-    '--sidebar-active-bg': sectionLightColor,
-    '--sidebar-active-fg': sectionColor,
-    padding: SIDEBAR_ITEM_PADDING.withCount,
-    borderRadius: 4,
-    gap: 4,
-    ...getSectionHeaderBackground(isActive, sectionLightColor),
-  }
 
   useEffect(() => {
     const header = headerRef.current
@@ -296,7 +273,7 @@ function SectionHeader(options: SectionHeaderProps) {
         'group/section group/sidebar-row flex cursor-pointer select-none items-center justify-between rounded transition-colors',
         SIDEBAR_ITEM_HOVER_CLASS,
       )}
-      style={rowStyle}
+      style={getSectionHeaderStyle(isActive)}
       {...dragHandleProps}
     >
       <div className="flex min-w-0 flex-1 items-center" style={{ gap: 4 }}>
@@ -304,8 +281,6 @@ function SectionHeader(options: SectionHeaderProps) {
         <SectionHeaderLabel
           type={type}
           label={label}
-          isActive={isActive}
-          sectionColor={sectionColor}
           isRenaming={isRenaming}
           renameInitialValue={renameInitialValue}
           onRenameSubmit={onRenameSubmit}
