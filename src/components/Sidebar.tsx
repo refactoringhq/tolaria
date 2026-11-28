@@ -1,6 +1,6 @@
 import { type DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
-import { memo, useCallback } from 'react'
+import { memo, useCallback, type ReactNode } from 'react'
 import type { FolderFileActions } from '../hooks/useFileActions'
 import type { AppLocale } from '../lib/i18n'
 import type { FolderCreationParent, FolderNode, SidebarSelection, VaultEntry, ViewDefinition, ViewFile } from '../types'
@@ -28,6 +28,8 @@ import { computeReorder, useEntryCounts, useSidebarCollapsed, useSidebarSections
 import { useSidebarTypeInteractions } from './sidebar/useSidebarTypeInteractions'
 
 interface SidebarProps {
+  workspaceHeader?: ReactNode
+  utilities?: ReactNode
   entries: VaultEntry[]
   selection: SidebarSelection
   onSelect: (selection: SidebarSelection) => void
@@ -333,7 +335,7 @@ function SidebarTypesNavigation(options: SidebarTypesNavigationProps) {
 function SidebarFoldersNavigation(options: SidebarFoldersNavigationProps) {
   const {
     loading,
-    folders,
+    folders = [],
     selection,
     onSelect,
     onCreateFolder,
@@ -356,7 +358,7 @@ function SidebarFoldersNavigation(options: SidebarFoldersNavigationProps) {
 
   return (
     <FolderTree
-      folders={folders ?? []}
+      folders={folders}
       selection={selection}
       onSelect={onSelect}
       onCreateFolder={onCreateFolder}
@@ -381,17 +383,18 @@ function SidebarFoldersLoading({ collapsed, locale, onToggle }: { collapsed: boo
 }
 
 function SidebarTopNavigation(props: SidebarNavigationProps) {
+  const { showInbox = true, inboxCount = 0, locale = "en", loading = false } = props
   return (
     <>
       <SidebarTopNav
         selection={props.selection}
         onSelect={props.onSelect}
-        showInbox={props.showInbox ?? true}
-        inboxCount={props.inboxCount ?? 0}
+        showInbox={showInbox}
+        inboxCount={inboxCount}
         activeCount={props.activeCount}
         archivedCount={props.archivedCount}
-        locale={props.locale ?? 'en'}
-        loading={props.loading ?? false}
+        locale={locale}
+        loading={loading}
       />
       {(props.loading || props.entries.some((entry) => entry.favorite && !entry.archived)) && (
         <SidebarFavoritesNavigation
@@ -458,7 +461,10 @@ function SidebarViewAndTypeNavigation(props: SidebarNavigationProps) {
 
 function SidebarNavigation(props: SidebarNavigationProps) {
   return (
-    <nav className="flex-1 overflow-y-auto">
+    <nav
+      className="flex-1 overflow-y-auto"
+      onScroll={({ currentTarget }) => currentTarget.toggleAttribute('data-scrolled', currentTarget.scrollTop > 0)}
+    >
       <SidebarTopNavigation {...props} />
       <SidebarViewAndTypeNavigation {...props} />
       <SidebarFoldersNavigation
@@ -601,13 +607,12 @@ function useSidebarRuntime(options: SidebarProps) {
   }
 }
 
-function SidebarRuntimeNavigation({
-  props,
-  runtime,
-}: {
+interface SidebarRuntimeNavigationProps {
   props: SidebarProps
   runtime: ReturnType<typeof useSidebarRuntime>
-}) {
+}
+
+function SidebarRuntimeNavigation({ props, runtime }: SidebarRuntimeNavigationProps) {
   return (
     <SidebarNavigation
       entries={props.entries}
@@ -693,17 +698,21 @@ export const Sidebar = memo(function Sidebar(props: SidebarProps) {
   const runtime = useSidebarRuntime(navigationProps)
 
   return (
-    <aside className="flex h-full flex-col overflow-hidden border-r border-[var(--sidebar-border)] bg-sidebar text-sidebar-foreground">
+    <aside className="relative flex h-full flex-col overflow-hidden border-r border-[var(--sidebar-border)] bg-sidebar text-sidebar-foreground">
       <PhoneNavigationBar locale={locale} placement="navigation" />
-      <SidebarTitleBar
-        locale={locale}
-        onCollapse={props.onCollapse}
-        onGoBack={props.onGoBack}
-        onGoForward={props.onGoForward}
-        canGoBack={props.canGoBack}
-        canGoForward={props.canGoForward}
-      />
+      <div className="sidebar-heading shrink-0">
+        <SidebarTitleBar
+          locale={locale}
+          onCollapse={props.onCollapse}
+          onGoBack={props.onGoBack}
+          onGoForward={props.onGoForward}
+          canGoBack={props.canGoBack}
+          canGoForward={props.canGoForward}
+        />
+        {props.workspaceHeader}
+      </div>
       <SidebarRuntimeNavigation props={navigationProps} runtime={runtime} />
+      {props.utilities}
       <SidebarInteractionOverlays locale={locale} runtime={runtime} />
     </aside>
   )
