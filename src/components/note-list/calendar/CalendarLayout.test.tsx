@@ -430,7 +430,9 @@ describe("CalendarLayout", () => {
 		expect(within(tray).getByTestId("calendar-tray-hint")).toHaveTextContent(
 			"Not a date: soon",
 		);
-		fireEvent.click(screen.getByTestId("calendar-tray-toggle"));
+		fireEvent.click(
+			within(tray).getByRole("button", { name: "Hide notes without a date" }),
+		);
 		expect(screen.queryByTestId("calendar-tray")).not.toBeInTheDocument();
 		expect(screen.getByTestId("calendar-tray-toggle")).toHaveTextContent("2");
 	});

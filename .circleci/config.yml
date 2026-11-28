@@ -549,7 +549,6 @@ jobs:
             mkdir -p "$HOME/Documents" coverage
             cargo llvm-cov \
               --manifest-path src-tauri/Cargo.toml \
-              --no-clean \
               --ignore-filename-regex "lib\\.rs|main\\.rs|menu\\.rs" \
               --fail-under-lines 85 \
               --lcov \
