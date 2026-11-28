@@ -18,7 +18,6 @@
   inset: 0 0 0 auto;
   z-index: 40;
   width: min(760px, 72%);
-  border-left: 1px solid var(--border);
   box-shadow: -16px 0 40px -24px var(--shadow-strong);
   transform: translateX(calc(100% + 48px));
   visibility: hidden;
@@ -284,7 +283,7 @@
 }
 
 .kanban-column {
-  --kanban-column-edge: var(--border-default);
+  --kanban-column-edge: var(--collection-panel-edge, var(--border-default));
   --kanban-side-shadow: var(--shadow-soft);
   position: relative;
   z-index: var(--kanban-stack-layer, auto);
@@ -292,7 +291,7 @@
   rotate: var(--kanban-stack-angle, none);
   transform-origin: center top;
   background-color: var(--surface-note-list);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--collection-panel-shadow, var(--shadow-card));
   transition: background-color 140ms ease, box-shadow 140ms ease;
 }
 
@@ -300,7 +299,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  border: 1px solid var(--kanban-column-edge);
+  border: var(--collection-panel-edge-width, 1px) solid var(--kanban-column-edge);
   border-radius: inherit;
   pointer-events: none;
 }
@@ -335,8 +334,8 @@
 }
 
 .kanban-board[data-kanban-stacking] .kanban-column:where(:not(.kanban-column--target)) {
-  --kanban-column-edge: var(--border-strong);
-  box-shadow: 0 8px 16px -10px var(--shadow-soft), var(--shadow-card);
+  --kanban-column-edge: var(--collection-panel-edge, var(--border-strong));
+  box-shadow: var(--collection-panel-shadow, 0 8px 16px -10px var(--shadow-soft), var(--shadow-card));
 }
 
 .kanban-board[data-kanban-stacking] .kanban-column:where([data-kanban-stack="moving"]:not(.kanban-column--target)) {
