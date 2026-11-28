@@ -5,10 +5,12 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { usePreparedVaultRefresh } from './usePreparedVaultRefresh'
 import type { ActiveVault } from './useManagedVaultCatalog'
 import { prepareNativeWorkspace } from '../prepareNativeWorkspace'
+import { optionalNativeWorkspaceAccessModule } from '../nativeWorkspaceAccess'
 import { rememberPreparedWorkspaceSnapshot, takePreparedWorkspaceSnapshot } from '../preparedWorkspaceSnapshot'
 import { buildLocalVaultWorkspaceSnapshot } from '../localVaultSnapshot'
 
 vi.mock('../prepareNativeWorkspace', () => ({ prepareNativeWorkspace: vi.fn() }))
+vi.mock('../nativeWorkspaceAccess', () => ({ optionalNativeWorkspaceAccessModule: vi.fn() }))
 const roots: ReturnType<typeof createRoot>[] = []
 
 beforeEach(() => {
@@ -70,11 +72,32 @@ it('keeps recovery visible during retry and never publishes failed or unprepared
 })
 
 it.each([null, fixture().vault.selection])('fails closed if preparation returns no authoritative handoff', async selection => {
+  vi.mocked(optionalNativeWorkspaceAccessModule).mockReturnValue({} as never)
   vi.mocked(prepareNativeWorkspace).mockResolvedValue(selection)
   const next = fixture().vault
   const probe = await mountRefresh()
   await act(async () => { await expect(probe.current.refresh(next, next)).rejects.toThrow('workspacePreparationMissing') })
   expect(probe.current.failed).toBe(true)
+  expect(probe.publish).not.toHaveBeenCalled()
+})
+
+it('keeps the selection without a native index when no native workspace module exists (Android)', async () => {
+  vi.mocked(optionalNativeWorkspaceAccessModule).mockReturnValue(null)
+  const next = fixture().vault
+  vi.mocked(prepareNativeWorkspace).mockResolvedValue(next.selection)
+  const probe = await mountRefresh()
+  await act(async () => probe.current.refresh(next, next))
+  expect(probe.publish).toHaveBeenCalledOnce()
+  expect(probe.publish.mock.calls[0][0].selection).toMatchObject({ vaultRootUri: next.selection?.vaultRootUri, index: undefined })
+  expect(probe.current.failed).toBe(false)
+})
+
+it('still rejects a missing selection without a native module', async () => {
+  vi.mocked(optionalNativeWorkspaceAccessModule).mockReturnValue(null)
+  vi.mocked(prepareNativeWorkspace).mockResolvedValue(null)
+  const next = fixture().vault
+  const probe = await mountRefresh()
+  await act(async () => { await expect(probe.current.refresh(next, next)).rejects.toThrow('workspacePreparationMissing') })
   expect(probe.publish).not.toHaveBeenCalled()
 })
 

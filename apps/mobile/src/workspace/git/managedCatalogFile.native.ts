@@ -26,7 +26,7 @@ export async function writeManagedCatalogFile(catalog: ManagedGitVaultCatalog) {
   pending.write(JSON.stringify(catalog))
   parseManagedGitVaultCatalog(await pending.text())
   if (current.exists) await preserveCurrentCatalog(current)
-  pending.move(catalogFile())
+  await pending.move(catalogFile())
 }
 
 async function preserveCurrentCatalog(current: File) {
@@ -40,5 +40,5 @@ async function preserveCurrentCatalog(current: File) {
     return
   }
   if (backup.exists) backup.delete()
-  current.move(backup)
+  await current.move(backup)
 }

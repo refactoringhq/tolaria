@@ -29,7 +29,7 @@ export async function writeSyncLedger(content: string) {
   pending.write(content)
   await validated(pending)
   if (current.exists) await preserveCurrent(current)
-  pending.move(ledgerFile())
+  await pending.move(ledgerFile())
 }
 
 async function preserveCurrent(current: File) {
@@ -38,5 +38,5 @@ async function preserveCurrent(current: File) {
   try { await validated(current); valid = true } catch { /* Retain the last readable history. */ }
   if (!valid) { await validated(backup); current.delete(); return }
   if (backup.exists) backup.delete()
-  current.move(backup)
+  await current.move(backup)
 }

@@ -39,7 +39,7 @@ async function publishPreparedDirectory(template: StarterTemplate, staging: Dire
   destination.parentDirectory.create({ intermediates: true, idempotent: true })
   if (destination.exists) throw new Error('starterVaultRecoveryRequired')
   // Publish the complete tree once. Catalog retries must never recopy user files.
-  staging.move(destination)
+  await staging.move(destination)
 }
 
 async function preparationRecord(template: StarterTemplate): Promise<Preparation | null> {
@@ -54,14 +54,14 @@ async function preparationRecord(template: StarterTemplate): Promise<Preparation
   pending.parentDirectory.create({ intermediates: true, idempotent: true })
   pending.write(JSON.stringify(record))
   const verified = parsePreparation(await pending.text())
-  pending.move(marker)
+  await pending.move(marker)
   return verified
 }
 
 async function recoverPendingMarker(pending: File, marker: File) {
   if (hasPriorCatalog() || hasVaultDirectories() || stagingDirectory().exists) throw new Error('starterVaultRecoveryRequired')
   const record = parsePreparation(await pending.text())
-  pending.move(marker)
+  await pending.move(marker)
   return record
 }
 
