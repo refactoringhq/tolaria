@@ -13,6 +13,7 @@ import {
 import { usePhoneLayout } from './usePhoneLayout'
 import { useTabletSidebar } from './useTabletSidebar'
 import { useViewMode, type ViewMode } from './useViewMode'
+import { transitionWorkspacePanes } from './transitionWorkspacePanes'
 import { useZoom } from './useZoom'
 
 type FindInNoteHandler = (options?: { replace?: boolean }) => void
@@ -102,9 +103,11 @@ function useWindowViewMode(windowMode: boolean, updateMainWindowConstraints: Win
   })
 
   const handleSetViewMode = useCallback((mode: ViewMode) => {
-    setViewMode(mode)
-    followViewMode(mode)
-    updateMainWindowConstraints(mode === 'all', mode !== 'editor-only')
+    transitionWorkspacePanes('left', () => {
+      setViewMode(mode)
+      followViewMode(mode)
+      updateMainWindowConstraints(mode === 'all', mode !== 'editor-only')
+    })
   }, [followViewMode, setViewMode, updateMainWindowConstraints])
 
   const handleCollapseSidebar = useCallback(() => {
@@ -114,17 +117,12 @@ function useWindowViewMode(windowMode: boolean, updateMainWindowConstraints: Win
   return { handleCollapseSidebar, handleSetViewMode, noteListVisible, sidebarVisible }
 }
 
-function useInspectorToggler(
-  layout: ReturnType<typeof useLayoutPanels>,
-  updateMainWindowConstraints: WindowConstraintUpdater,
-  sidebarVisible: boolean,
-  noteListVisible: boolean,
-): () => void {
+function useInspectorToggler(setInspectorCollapsed: ReturnType<typeof useLayoutPanels>['setInspectorCollapsed']) {
   return useCallback(() => {
-    const nextInspectorCollapsed = !layout.inspectorCollapsed
-    layout.setInspectorCollapsed(nextInspectorCollapsed)
-    updateMainWindowConstraints(sidebarVisible, noteListVisible, nextInspectorCollapsed)
-  }, [layout, noteListVisible, sidebarVisible, updateMainWindowConstraints])
+    transitionWorkspacePanes('properties', () => {
+      setInspectorCollapsed((collapsed) => !collapsed)
+    })
+  }, [setInspectorCollapsed])
 }
 
 function useWindowSizeConstraints(
@@ -167,12 +165,7 @@ export function useAppWindowControls({
   } = useWindowViewMode(windowMode, updateMainWindowConstraints)
   const phoneNavigationEnabled = usePhoneLayout(!windowMode && isWebBuild())
 
-  const handleToggleInspector = useInspectorToggler(
-    layout,
-    updateMainWindowConstraints,
-    sidebarVisible,
-    noteListVisible,
-  )
+  const handleToggleInspector = useInspectorToggler(layout.setInspectorCollapsed)
 
   useWindowSizeConstraints(windowMode, layout, sidebarVisible, noteListVisible)
 

@@ -1,6 +1,7 @@
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import type { AiWorkspaceMode } from './aiWorkspaceSizing'
+import { ResizeHandle } from './ResizeHandle'
 
 function startResizeDrag(
   event: ReactMouseEvent,
@@ -37,22 +38,22 @@ function startResizeDrag(
 
 export function WorkspaceResizeHandles({
   mode,
+  onClose,
   onResize,
 }: {
   mode: AiWorkspaceMode
+  onClose: () => void
   onResize: (deltaWidth: number, deltaHeight: number) => void
 }) {
   if (mode === 'window') return null
 
   return (
     <>
-      <Button
-        type="button"
-        variant="ghost"
-        aria-label="Resize AI workspace horizontally"
-        className="absolute inset-y-0 left-0 z-30 h-auto min-h-0 w-2 cursor-col-resize rounded-none bg-transparent p-0 transition-colors hover:bg-border"
-        data-testid="ai-workspace-left-resize"
-        onMouseDown={(event) => startResizeDrag(event, 'col-resize', (deltaX) => onResize(-deltaX, 0))}
+      <ResizeHandle
+        overlay
+        testId="ai-workspace-left-resize"
+        collapse={{ label: 'editor.toolbar.closeAi', action: onClose }}
+        onResize={(delta) => onResize(-delta, 0)}
       />
       {mode === 'docked' && (
         <Button

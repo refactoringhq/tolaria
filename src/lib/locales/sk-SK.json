@@ -28,7 +28,7 @@
   "calendar.tray.toggle": "Poznámky bez dátumu ({count})",
   "calendar.tray.close": "Skryť poznámky bez dátumu",
   "calendar.tray.empty": "Každá poznámka v tomto zozname má dátum.",
-  "calendar.tray.dragHint": "Potiahnite poznámku na deň a naplánujte ju.",
+  "calendar.tray.dragHint": "Potiahnite poznámku a naplánujte ju",
   "calendar.tray.invalid": "Nie je to dátum: {value}",
   "calendar.empty.title": "Zatiaľ nie je nič, čo by sa dalo umiestniť do kalendára",
   "calendar.empty.noDateProperty": "Kalendár umiestni každú poznámku na deň podľa jednej z jej vlastností týkajúcich sa dátumu, ako je termín splnenia alebo dátum začiatku. Žiadna poznámka v tomto zozname zatiaľ nemá vlastnosť dátumu.",
@@ -1508,5 +1508,17 @@
   "mobile.workspace.actionFailure.multiple": "Tieto zmeny sa nepodarilo uložiť. Vaše poznámky zostali nezmenené.",
   "calendar.quarter": "Štvrťrok",
   "calendar.year": "Rok",
-  "calendar.showIcons": "Zobraziť ikony poznámok"
+  "calendar.showIcons": "Zobraziť ikony poznámok",
+  "layout.dragToResize": "<strong>Potiahnutím</strong> zmeňte veľkosť",
+  "layout.clickToCollapse": "<strong>Kliknutím zbalíte</strong>",
+  "settings.dateDisplay.short": "Skrátené v zozname poznámok (21. novembra 2026)",
+  "settings.dateDisplay.shortCurrentYear": "Skrátené v zozname poznámok, bez aktuálneho roka (21. nov.)",
+  "sidebar.chrome.sync": "Synchronizovať",
+  "sidebar.chrome.noSync": "Bez synchronizácie",
+  "sidebar.chrome.syncJustNow": "Práve teraz",
+  "sidebar.chrome.syncMinutesAgo": "Pred {minutes} min.",
+  "sidebar.chrome.syncRepository": "Úložisko",
+  "sidebar.chrome.viewChanges": "Zobraziť zmeny",
+  "sidebar.chrome.viewHistory": "Zobraziť históriu",
+  "noteList.properties.computed": "Vypočítavané polia"
 }
