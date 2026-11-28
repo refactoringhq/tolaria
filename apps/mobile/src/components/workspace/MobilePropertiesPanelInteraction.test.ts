@@ -133,9 +133,9 @@ it.each(["phone", "tablet"])(
 		const placeholder = host.querySelector<HTMLButtonElement>(
 			'[data-testid="property-placeholder-suggested-status"]',
 		);
-		expect(placeholder?.textContent).toBe("Status+");
+		expect(placeholder?.textContent).toBe("status+");
 		await act(async () => placeholder?.click());
-		expect(onAddProperty).toHaveBeenCalledExactlyOnceWith("Status");
+		expect(onAddProperty).toHaveBeenCalledExactlyOnceWith("status");
 	},
 );
 
