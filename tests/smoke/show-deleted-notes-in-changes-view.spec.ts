@@ -8,12 +8,6 @@ async function navigateToChanges(page: Page) {
   await page.waitForTimeout(500)
 }
 
-async function expectDeletedNotePreview(page: Page) {
-  const editor = page.locator('.app__editor')
-  await expect(editor.getByRole('heading', { name: 'Old Draft' })).toBeVisible({ timeout: 5_000 })
-  await expect(editor.getByText('This note was deleted.')).toBeVisible()
-}
-
 test.describe('Show deleted notes in Changes view', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
@@ -30,14 +24,10 @@ test.describe('Show deleted notes in Changes view', () => {
 
     const noteList = page.getByTestId('note-list-container')
     await noteList.focus()
-    const rowCount = await noteList.getByRole('option').count()
-    for (let step = 0; step < rowCount; step++) {
-      if (await deletedRow.getAttribute('aria-selected') === 'true') break
-      await noteList.press('ArrowDown')
-    }
-    await expect(deletedRow).toHaveAttribute('aria-selected', 'true')
-    await noteList.press('Enter')
-    await expectDeletedNotePreview(page)
+    await page.keyboard.press('Enter')
+
+    await expect(page.getByText('Back to editor')).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByText('This note was deleted.')).toBeVisible({ timeout: 5_000 })
   })
 
   test('changes view shows deleted notes as rows instead of a banner', async ({ page }) => {
@@ -47,10 +37,11 @@ test.describe('Show deleted notes in Changes view', () => {
     await expect(page.locator('[data-testid="deleted-notes-banner"]')).toHaveCount(0)
   })
 
-  test('clicking a deleted row opens its deleted note preview', async ({ page }) => {
+  test('clicking a deleted row opens its deleted diff preview', async ({ page }) => {
     await navigateToChanges(page)
     await page.getByText('old-draft.md').click()
-    await expectDeletedNotePreview(page)
+    await expect(page.getByText('Back to editor')).toBeVisible({ timeout: 5000 })
+    await expect(page.getByText('This note was deleted.')).toBeVisible({ timeout: 5000 })
   })
 
   test('deleted rows expose a restore action from the context menu', async ({ page }) => {

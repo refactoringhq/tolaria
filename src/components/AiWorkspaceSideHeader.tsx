@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import type { AgentStatus } from '../hooks/useCliAiAgent'
-import { useDragRegion } from '../hooks/useDragRegion'
 import { translate, type AppLocale } from '../lib/i18n'
 import type { AiConversation } from './aiWorkspaceConversations'
 
@@ -59,7 +58,7 @@ function SideWorkspaceTitleEditor({
   )
 }
 
-interface SideWorkspaceTabProps {
+function SideWorkspaceTab(options: {
   active: boolean
   conversation: AiConversation
   editing: boolean
@@ -70,53 +69,12 @@ interface SideWorkspaceTabProps {
   onSelect: (id: string) => void
   onStartRename: (id: string) => void
   status: AgentStatus | undefined
-}
-
-function SideWorkspaceTabClose({ active, locale, title, onClose }: {
-  active: boolean
-  locale: AppLocale
-  title: string
-  onClose: () => void
 }) {
-  const closeLabel = translate(locale, 'ai.workspace.closeChat', { title })
-  return (
-    <>
-      <div
-        className={cn(
-          'pointer-events-none absolute inset-y-1 right-0 w-9 rounded-r-lg opacity-0 transition-opacity',
-          active
-            ? 'bg-gradient-to-l from-[var(--state-hover)] via-[var(--state-hover)] to-transparent'
-            : 'bg-gradient-to-l from-sidebar via-sidebar to-transparent group-hover:from-[var(--state-hover)] group-hover:via-[var(--state-hover)]',
-          'group-hover:opacity-100 group-focus-within:opacity-100',
-        )}
-        aria-hidden
-      />
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-xs"
-        className={cn(
-          'pointer-events-none absolute top-1/2 right-1.5 z-10 h-6 w-6 -translate-y-1/2 rounded-md p-0 opacity-0 shadow-none transition-opacity',
-          'bg-transparent text-foreground hover:bg-transparent hover:text-foreground',
-          'group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100',
-        )}
-        aria-label={closeLabel}
-        title={closeLabel}
-        onPointerDown={(event) => event.stopPropagation()}
-        onClick={(event) => {
-          event.stopPropagation()
-          onClose()
-        }}
-      >
-        <X size={13} weight="bold" />
-      </Button>
-    </>
-  )
-}
-
-function SideWorkspaceTab(options: SideWorkspaceTabProps) {
   const { active, conversation, editing, locale, onClose, onCancelRename, onRename, onSelect, onStartRename, status } =
     options
+  const closeLabel = translate(locale, 'ai.workspace.closeChat', {
+    title: conversation.title,
+  })
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: conversation.id,
     disabled: editing,
@@ -166,12 +124,37 @@ function SideWorkspaceTab(options: SideWorkspaceTabProps) {
         </Button>
       )}
       {!editing && (
-        <SideWorkspaceTabClose
-          active={active}
-          locale={locale}
-          title={conversation.title}
-          onClose={() => onClose(conversation.id)}
-        />
+        <>
+          <div
+            className={cn(
+              'pointer-events-none absolute inset-y-1 right-0 w-9 rounded-r-lg opacity-0 transition-opacity',
+              active
+                ? 'bg-gradient-to-l from-[var(--state-hover)] via-[var(--state-hover)] to-transparent'
+                : 'bg-gradient-to-l from-sidebar via-sidebar to-transparent group-hover:from-[var(--state-hover)] group-hover:via-[var(--state-hover)]',
+              'group-hover:opacity-100 group-focus-within:opacity-100',
+            )}
+            aria-hidden
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            className={cn(
+              'pointer-events-none absolute top-1/2 right-1.5 z-10 h-6 w-6 -translate-y-1/2 rounded-md p-0 opacity-0 shadow-none transition-opacity',
+              'bg-transparent text-foreground hover:bg-transparent hover:text-foreground',
+              'group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100',
+            )}
+            aria-label={closeLabel}
+            title={closeLabel}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation()
+              onClose(conversation.id)
+            }}
+          >
+            <X size={13} weight="bold" />
+          </Button>
+        </>
       )}
     </div>
   )
@@ -181,20 +164,23 @@ function useHorizontalScrollFades(dependencyKey: string) {
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const [fades, setFades] = useState({ left: false, right: false })
 
-  useEffect(function observeScrollFades() {
-    void dependencyKey
+  const updateFades = useCallback(() => {
     const element = scrollRef.current
     if (!element) return
 
-    const updateFades = () => {
-      const maxScrollLeft = element.scrollWidth - element.clientWidth
-      setFades({
-        left: element.scrollLeft > 1,
-        right: maxScrollLeft > 1 && maxScrollLeft - 1 > element.scrollLeft,
-      })
-    }
+    const maxScrollLeft = element.scrollWidth - element.clientWidth
+    setFades({
+      left: element.scrollLeft > 1,
+      right: maxScrollLeft > 1 && element.scrollLeft < maxScrollLeft - 1,
+    })
+  }, [])
 
+  useEffect(() => {
+    void dependencyKey
+    const element = scrollRef.current
     updateFades()
+    if (!element) return
+
     element.addEventListener('scroll', updateFades, { passive: true })
     const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateFades)
     resizeObserver?.observe(element)
@@ -204,7 +190,7 @@ function useHorizontalScrollFades(dependencyKey: string) {
       element.removeEventListener('scroll', updateFades)
       resizeObserver?.disconnect()
     }
-  }, [dependencyKey])
+  }, [dependencyKey, updateFades])
 
   return {
     scrollRef,
@@ -301,7 +287,7 @@ function SideWorkspaceTabs(options: {
   )
 }
 
-interface SideWorkspaceHeaderProps {
+export function SideWorkspaceHeader(options: {
   activeId: string
   conversations: AiConversation[]
   expanded: boolean
@@ -315,9 +301,7 @@ interface SideWorkspaceHeaderProps {
   onToggleExpanded: () => void
   separated: boolean
   statuses: Record<string, AgentStatus>
-}
-
-export function SideWorkspaceHeader(options: SideWorkspaceHeaderProps) {
+}) {
   const {
     activeId,
     conversations,
@@ -333,12 +317,10 @@ export function SideWorkspaceHeader(options: SideWorkspaceHeaderProps) {
     separated,
     statuses,
   } = options
-  const { dragRegionRef } = useDragRegion<HTMLDivElement>()
   const expandLabel = translate(locale, expanded ? 'ai.workspace.restorePanel' : 'ai.workspace.expandPanel')
 
   return (
     <div
-      ref={dragRegionRef}
       className={cn('flex h-[52px] shrink-0 items-center gap-2 px-2', separated && 'border-b border-border')}
       data-testid="ai-workspace-side-header"
     >

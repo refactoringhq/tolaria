@@ -1,16 +1,14 @@
-import { X } from "@phosphor-icons/react";
-import { createPortal } from "react-dom";
-import { Button } from "@/components/ui/button";
-import { type AppLocale, translate } from "../../lib/i18n";
-import { ResizeHandle } from "../ResizeHandle";
+import { X } from '@phosphor-icons/react'
+import { createPortal } from 'react-dom'
+import { Button } from '@/components/ui/button'
+import { type AppLocale, translate } from '../../lib/i18n'
 
-const EDITOR_PANEL_SELECTOR = ".app__editor";
+const EDITOR_PANEL_SELECTOR = '.app__editor'
 
 interface LayoutEditorPanelCloseProps {
-	open: boolean;
-	resizable?: boolean;
-	locale: AppLocale;
-	onClose: () => void;
+  open: boolean
+  locale: AppLocale
+  onClose: () => void
 }
 
 /**
@@ -18,46 +16,14 @@ interface LayoutEditorPanelCloseProps {
  * panel's breadcrumb row, before the first crumb, so the board owns the panel without the editor
  * knowing about layouts.
  */
-export function LayoutEditorPanelClose({
-	open,
-	resizable,
-	locale,
-	onClose,
-}: LayoutEditorPanelCloseProps) {
-	const panel = open
-		? document.querySelector<HTMLElement>(EDITOR_PANEL_SELECTOR)
-		: null;
-	if (!panel) return null;
-	const label = translate(locale, "layout.closePanel");
-	return createPortal(
-		<>
-			{resizable && (
-				<ResizeHandle
-					overlay
-					testId="kanban-editor-resize"
-					onResize={(delta) => {
-						const width = panel.getBoundingClientRect().width;
-						const scale = width / panel.offsetWidth || 1;
-						panel.style.setProperty(
-							"--kanban-editor-width",
-							`${Math.max(0, panel.offsetWidth - delta / scale)}px`,
-						);
-					}}
-				/>
-			)}
-			<Button
-				type="button"
-				variant="ghost"
-				size="icon-xs"
-				className="kanban-panel-close text-muted-foreground"
-				onClick={onClose}
-				title={label}
-				aria-label={label}
-				data-testid="kanban-panel-close"
-			>
-				<X size={16} />
-			</Button>
-		</>,
-		panel,
-	);
+export function LayoutEditorPanelClose({ open, locale, onClose }: LayoutEditorPanelCloseProps) {
+  const panel = open ? document.querySelector<HTMLElement>(EDITOR_PANEL_SELECTOR) : null
+  if (!panel) return null
+  const label = translate(locale, 'layout.closePanel')
+  return createPortal(
+    <Button type="button" variant="ghost" size="icon-xs" className="kanban-panel-close text-muted-foreground" onClick={onClose} title={label} aria-label={label} data-testid="kanban-panel-close">
+      <X size={16} />
+    </Button>,
+    panel,
+  )
 }
