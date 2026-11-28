@@ -209,39 +209,8 @@ function TypeDerivedPropertySlot(options: {
   onDisplayModeChange: (key: string, mode: PropertyDisplayMode | null) => void
   locale: AppLocale
 }) {
-  const {
-    propKey,
-    editingKey,
-    displayMode,
-    autoMode,
-    vaultStatuses,
-    vaultTags,
-    onStartEdit,
-    onSave,
-    onSaveList,
-    onUpdate,
-    onDisplayModeChange,
-    locale,
-  } = options
-  if (editingKey === propKey) {
-    return (
-      <PropertyRow
-        propKey={propKey}
-        value=""
-        editingKey={editingKey}
-        displayMode={displayMode}
-        autoMode={autoMode}
-        vaultStatuses={vaultStatuses}
-        vaultTags={vaultTags}
-        onStartEdit={onStartEdit}
-        onSave={onSave}
-        onSaveList={onSaveList}
-        onUpdate={onUpdate}
-        onDisplayModeChange={onDisplayModeChange}
-        locale={locale}
-      />
-    )
-  }
+  const { propKey, editingKey, displayMode, onStartEdit, onUpdate } = options
+  if (editingKey === propKey) return <PropertyRow {...options} value="" />
 
   const PlaceholderIcon = Reflect.get(DISPLAY_MODE_ICONS, displayMode) as typeof Plus
 

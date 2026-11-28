@@ -1,11 +1,10 @@
-import fs from "node:fs";
-import path from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import {
 	createFixtureVaultCopy,
 	openFixtureVaultDesktopHarness,
 	removeFixtureVaultCopy,
 } from "../helpers/fixtureVault";
+import { triggerMenuCommand } from "./testBridge";
 
 const NO_STATUS_NOTE = "note/no-status-note.md";
 const NO_STATUS_CONTENT =
@@ -14,8 +13,15 @@ const ALPHA_PROJECT = "project/alpha-project.md";
 
 let tempVaultDir: string;
 
-function readVaultFile(relativePath: string): string {
-	return fs.readFileSync(path.join(tempVaultDir, relativePath), "utf8");
+async function readVaultFile(
+	page: Page,
+	relativePath: string,
+): Promise<string> {
+	const notePath = `${tempVaultDir}/${relativePath}`;
+	const response = await page.request.get(
+		`/api/vault/content?path=${encodeURIComponent(notePath)}`,
+	);
+	return ((await response.json()) as { content: string }).content;
 }
 
 function linesWithout(content: string, key: RegExp): string[] {
@@ -40,8 +46,15 @@ async function pickStatus(page: Page, status: string): Promise<void> {
 test.beforeEach(async ({ page }, testInfo) => {
 	testInfo.setTimeout(60_000);
 	tempVaultDir = createFixtureVaultCopy();
-	fs.writeFileSync(path.join(tempVaultDir, NO_STATUS_NOTE), NO_STATUS_CONTENT);
 	await openFixtureVaultDesktopHarness(page, tempVaultDir);
+	const response = await page.request.post("/api/vault/save", {
+		data: {
+			content: NO_STATUS_CONTENT,
+			path: `${tempVaultDir}/${NO_STATUS_NOTE}`,
+		},
+	});
+	expect(response.ok()).toBe(true);
+	await triggerMenuCommand(page, "vault-reload");
 });
 
 test.afterEach(() => {
@@ -64,25 +77,25 @@ test("adding a status to a note without one writes a lowercase key and value", a
 	await pickStatus(page, "in progress");
 
 	await expect
-		.poll(() => readVaultFile(NO_STATUS_NOTE))
+		.poll(() => readVaultFile(page, NO_STATUS_NOTE))
 		.toMatch(/^status: "?in progress"?$/mu);
-	expect(readVaultFile(NO_STATUS_NOTE)).not.toContain("Status:");
+	expect(await readVaultFile(page, NO_STATUS_NOTE)).not.toContain("Status:");
 	await expect(page.getByTestId("status-badge")).toHaveText("in progress");
 });
 
 test("editing an old-cased Status value keeps the key and the rest of the file", async ({
 	page,
 }) => {
-	const before = readVaultFile(ALPHA_PROJECT);
+	const before = await readVaultFile(page, ALPHA_PROJECT);
 	await openNote(page, "Alpha Project");
 
 	await page.getByTestId("status-badge").click();
 	await pickStatus(page, "done");
 
 	await expect
-		.poll(() => readVaultFile(ALPHA_PROJECT))
+		.poll(() => readVaultFile(page, ALPHA_PROJECT))
 		.toMatch(/^Status: "?done"?$/mu);
-	const after = readVaultFile(ALPHA_PROJECT);
+	const after = await readVaultFile(page, ALPHA_PROJECT);
 	expect(after).not.toMatch(/^status:/mu);
 	expect(linesWithout(after, /^Status:/u)).toEqual(
 		linesWithout(before, /^Status:/u),
