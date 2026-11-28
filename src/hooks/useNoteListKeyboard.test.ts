@@ -67,7 +67,7 @@ function installAnimationFrameStub() {
 describe('useNoteListKeyboard', () => {
   const items = [makeEntry('/a.md', 'A'), makeEntry('/b.md', 'B'), makeEntry('/c.md', 'C')]
   const onOpen = vi.fn()
-  let flushAnimationFrame
+  let flushAnimationFrame: () => void
 
   function renderKeyboard(options = {}) {
     const open = options.onOpen ?? vi.fn()
@@ -244,6 +244,31 @@ describe('useNoteListKeyboard', () => {
     )
     act(() => result.current.handleFocus())
     expect(result.current.highlightedPath).toBe('/b.md')
+  })
+
+  it('navigates from the replacement note when it opens after list focus is restored', () => {
+    const list = document.createElement('div')
+    list.tabIndex = 0
+    document.body.append(list)
+    const visibleItems = [items[0], items[2]]
+    try {
+      const { result, rerender } = renderHook(
+        ({ selectedNotePath }: { selectedNotePath: string | null }) =>
+          useNoteListKeyboard({ items: visibleItems, selectedNotePath, onOpen, enabled: true }),
+        { initialProps: { selectedNotePath: null } },
+      )
+      result.current.containerRef.current = list
+      act(() => result.current.focusList())
+      act(() => flushAnimationFrame())
+      expect(list).toHaveFocus()
+      expect(result.current.highlightedPath).toBe('/a.md')
+
+      rerender({ selectedNotePath: '/c.md' })
+      pressKey(result, 'ArrowUp')
+      expectDeferredOpen(onOpen, items[0])
+    } finally {
+      list.remove()
+    }
   })
 
   it('handleFocus defaults to first item when no selected note', () => {

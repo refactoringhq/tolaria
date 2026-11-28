@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { BulkActionBar } from "../BulkActionBar";
 import { CollectionLayoutBody } from "./CollectionLayoutBody";
 import { LayoutHeaderControls } from "./CollectionLayoutHeader";
+import { CalendarHeaderSlot } from "./calendar/useCalendarNavigation";
 import { FilterPills } from "./FilterPills";
 import { layoutPropertyPicker } from "./kanbanCardFieldsPicker";
 import { LayoutEditorPanelClose } from "./LayoutEditorPanel";
@@ -118,28 +120,28 @@ function MultiSelectBar({
 	);
 }
 
-function NoteListContent(
-	options: Pick<
-		NoteListLayoutProps,
-		| "entitySelection"
-		| "searchedGroups"
-		| "query"
-		| "collapsedGroups"
-		| "sortPrefs"
-		| "toggleGroup"
-		| "handleSortChange"
-		| "renderItem"
-		| "isArchivedView"
-		| "isChangesView"
-		| "isInboxView"
-		| "modifiedFilesError"
-		| "searched"
-		| "noteListVirtuosoRef"
-		| "locale"
-		| "loading"
-		| "showFilterPills"
-	>,
-) {
+type NoteListEntriesProps = Pick<
+	NoteListLayoutProps,
+	| "entitySelection"
+	| "searchedGroups"
+	| "query"
+	| "collapsedGroups"
+	| "sortPrefs"
+	| "toggleGroup"
+	| "handleSortChange"
+	| "renderItem"
+	| "isArchivedView"
+	| "isChangesView"
+	| "isInboxView"
+	| "modifiedFilesError"
+	| "searched"
+	| "noteListVirtuosoRef"
+	| "locale"
+	| "loading"
+	| "showFilterPills"
+>;
+
+function NoteListContent({ options }: { options: NoteListEntriesProps }) {
 	const {
 		entitySelection,
 		searchedGroups,
@@ -156,12 +158,10 @@ function NoteListContent(
 		searched,
 		noteListVirtuosoRef,
 		locale,
-		loading,
-		showFilterPills,
 	} = options;
 	return (
 		<div className="flex-1 overflow-hidden" style={{ minHeight: 0 }}>
-			{loading ? (
+			{options.loading ? (
 				<NoteListLoadingSkeleton />
 			) : entitySelection ? (
 				<EntityView
@@ -186,69 +186,56 @@ function NoteListContent(
 					renderItem={renderItem}
 					virtuosoRef={noteListVirtuosoRef}
 					locale={locale}
-					hasBottomOverlay={showFilterPills}
+					hasBottomOverlay={options.showFilterPills}
 				/>
 			)}
 		</div>
 	);
 }
 
-export function NoteListBody(
-	options: Pick<
-		NoteListLayoutProps,
-		| "handleListKeyDown"
-		| "noteListContainerRef"
-		| "handleNoteListBlur"
-		| "handleNoteListFocus"
-		| "focusNoteList"
-		| "noteListVirtuosoRef"
-		| "entitySelection"
-		| "searchedGroups"
-		| "query"
-		| "collapsedGroups"
-		| "sortPrefs"
-		| "toggleGroup"
-		| "handleSortChange"
-		| "renderItem"
-		| "isArchivedView"
-		| "isChangesView"
-		| "isInboxView"
-		| "modifiedFilesError"
-		| "searched"
-		| "locale"
-		| "showFilterPills"
-		| "noteListFilter"
-		| "filterCounts"
-		| "onNoteListFilterChange"
-		| "loading"
-	>,
-) {
+type NoteListBodyProps = Pick<
+	NoteListLayoutProps,
+	| "handleListKeyDown"
+	| "noteListContainerRef"
+	| "handleNoteListBlur"
+	| "handleNoteListFocus"
+	| "focusNoteList"
+	| "noteListVirtuosoRef"
+	| "entitySelection"
+	| "searchedGroups"
+	| "query"
+	| "collapsedGroups"
+	| "sortPrefs"
+	| "toggleGroup"
+	| "handleSortChange"
+	| "renderItem"
+	| "isArchivedView"
+	| "isChangesView"
+	| "isInboxView"
+	| "modifiedFilesError"
+	| "searched"
+	| "locale"
+	| "showFilterPills"
+	| "noteListFilter"
+	| "filterCounts"
+	| "onNoteListFilterChange"
+	| "handleCreateNote"
+	| "loading"
+>;
+
+export function NoteListBody(options: NoteListBodyProps) {
 	const {
 		handleListKeyDown,
 		noteListContainerRef,
 		handleNoteListBlur,
 		handleNoteListFocus,
 		focusNoteList,
-		noteListVirtuosoRef,
-		entitySelection,
-		searchedGroups,
-		query,
-		collapsedGroups,
-		sortPrefs,
-		toggleGroup,
-		handleSortChange,
-		renderItem,
-		isArchivedView,
-		isChangesView,
-		isInboxView,
-		modifiedFilesError,
-		searched,
 		locale,
 		showFilterPills,
 		noteListFilter,
 		filterCounts,
 		onNoteListFilterChange,
-		loading,
+		handleCreateNote,
 	} = options;
 	return (
 		<div
@@ -264,31 +251,13 @@ export function NoteListBody(
 			onClickCapture={focusNoteList}
 			data-testid="note-list-container"
 		>
-			<NoteListContent
-				entitySelection={entitySelection}
-				searchedGroups={searchedGroups}
-				query={query}
-				collapsedGroups={collapsedGroups}
-				sortPrefs={sortPrefs}
-				toggleGroup={toggleGroup}
-				handleSortChange={handleSortChange}
-				renderItem={renderItem}
-				isArchivedView={isArchivedView}
-				isChangesView={isChangesView}
-				isInboxView={isInboxView}
-				modifiedFilesError={modifiedFilesError}
-				searched={searched}
-				noteListVirtuosoRef={noteListVirtuosoRef}
-				locale={locale}
-				loading={loading}
-				showFilterPills={showFilterPills}
-			/>
+			<NoteListContent options={options} />
 			{showFilterPills && (
 				<FilterPills
 					active={noteListFilter}
 					counts={filterCounts}
 					onChange={onNoteListFilterChange}
-					position="bottom"
+					onCreate={handleCreateNote}
 					locale={locale}
 				/>
 			)}
@@ -296,85 +265,52 @@ export function NoteListBody(
 	);
 }
 
-function NoteListLayoutHeader(
-	options: Pick<
-		NoteListLayoutProps,
-		| "title"
-		| "typeDocument"
-		| "isEntityView"
-		| "isChangesView"
-		| "listSort"
-		| "listDirection"
-		| "customProperties"
-		| "gitRepositories"
-		| "selectedGitRepositoryPath"
-		| "onGitRepositoryChange"
-		| "locale"
-		| "sidebarCollapsed"
-		| "searchVisible"
-		| "search"
-		| "isSearching"
-		| "searchInputRef"
-		| "propertyPicker"
-		| "handleSortChange"
-		| "handleCreateNote"
-		| "onOpenType"
-		| "toggleSearch"
-		| "setSearch"
-		| "handleSearchKeyDown"
-	> & {
-		layoutControls?: React.ReactNode;
-	},
-) {
+type NoteListLayoutHeaderProps = Pick<
+	NoteListLayoutProps,
+	| "title"
+	| "typeDocument"
+	| "isEntityView"
+	| "isChangesView"
+	| "listSort"
+	| "listDirection"
+	| "customProperties"
+	| "gitRepositories"
+	| "selectedGitRepositoryPath"
+	| "onGitRepositoryChange"
+	| "locale"
+	| "sidebarCollapsed"
+	| "searchVisible"
+	| "search"
+	| "isSearching"
+	| "searchInputRef"
+	| "propertyPicker"
+	| "handleSortChange"
+	| "handleCreateNote"
+	| "onOpenType"
+	| "toggleSearch"
+	| "setSearch"
+	| "handleSearchKeyDown"
+> & {
+	layoutControls?: React.ReactNode;
+	leadingActions?: React.ReactNode;
+	hasBottomCreate: boolean;
+};
+
+function NoteListLayoutHeader(options: NoteListLayoutHeaderProps) {
 	const {
-		layoutControls,
-		title,
-		typeDocument,
-		isEntityView,
-		isChangesView,
-		listSort,
-		listDirection,
-		customProperties,
-		gitRepositories,
-		selectedGitRepositoryPath,
-		onGitRepositoryChange,
-		locale,
-		sidebarCollapsed,
-		searchVisible,
-		search,
-		isSearching,
-		searchInputRef,
-		propertyPicker,
+		hasBottomCreate,
 		handleSortChange,
 		handleCreateNote,
-		onOpenType,
 		toggleSearch,
 		setSearch,
 		handleSearchKeyDown,
+		...headerProps
 	} = options;
 	return (
 		<NoteListHeader
-			title={title}
-			typeDocument={typeDocument}
-			isEntityView={isEntityView}
-			isChangesView={isChangesView}
-			listSort={listSort}
-			listDirection={listDirection}
-			customProperties={customProperties}
-			gitRepositories={gitRepositories}
-			selectedGitRepositoryPath={selectedGitRepositoryPath}
-			onGitRepositoryChange={onGitRepositoryChange}
-			locale={locale}
-			sidebarCollapsed={sidebarCollapsed}
-			searchVisible={searchVisible}
-			search={search}
-			isSearching={isSearching}
-			searchInputRef={searchInputRef}
-			propertyPicker={propertyPicker}
-			layoutControls={layoutControls}
+			{...headerProps}
 			onSortChange={handleSortChange}
-			onCreateNote={handleCreateNote}
-			onOpenType={onOpenType}
+			onCreateNote={hasBottomCreate ? undefined : handleCreateNote}
 			onToggleSearch={toggleSearch}
 			onSearchChange={setSearch}
 			onSearchKeyDown={handleSearchKeyDown}
@@ -448,6 +384,7 @@ export function NoteListLayout({
 			<NoteListFooter {...contentProps} />
 			<LayoutEditorPanelClose
 				open={layout.panel.open}
+				resizable={layout.layout === "kanban" || layout.layout === "calendar"}
 				locale={locale}
 				onClose={layout.panel.close}
 			/>
@@ -455,47 +392,74 @@ export function NoteListLayout({
 	);
 }
 
+interface NoteListLayoutContentsProps {
+	layout: CollectionLayoutState;
+	contentProps: NoteListContentProps;
+	locale: NoteListLayoutProps["locale"];
+}
+
+function CollectionContent({
+	layout,
+	contentProps,
+	locale,
+}: NoteListLayoutContentsProps) {
+	return (
+		<CollectionLayoutBody
+			layout={layout}
+			listContent={<NoteListBody {...contentProps} />}
+			entries={contentProps.visibleEntries}
+			allEntries={contentProps.allEntries}
+			locale={locale}
+			typeEntryMap={contentProps.typeEntryMap}
+			displayPropsOverride={contentProps.displayPropsOverride}
+			selectedNotePath={contentProps.selectedNotePath}
+			onOpen={contentProps.handleClickNote}
+			onMove={(entry, property, value) =>
+				contentProps.onUpdateTypeSort?.(entry.path, property, value)
+			}
+			onCreate={contentProps.handleCreateNote}
+		/>
+	);
+}
+
 function NoteListLayoutContents({
 	layout,
 	contentProps,
 	locale,
-}: {
-	layout: CollectionLayoutState;
-	contentProps: NoteListContentProps;
-	locale: NoteListLayoutProps["locale"];
-}) {
+}: NoteListLayoutContentsProps) {
+	const [calendarHeaderSlot, setCalendarHeaderSlot] =
+		useState<HTMLDivElement | null>(null);
+	const calendarHeader = layout.layout === "calendar" && (
+		<div ref={setCalendarHeaderSlot} className="calendar-header-slot" />
+	);
+	const hasBottomCreate =
+		layout.layout === "list" && contentProps.showFilterPills;
 	return (
-		<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-			<NoteListLayoutHeader
-				{...contentProps}
-				propertyPicker={layoutPropertyPicker(
-					layout,
-					contentProps.propertyPicker,
-					locale,
-				)}
-				layoutControls={
-					<LayoutHeaderControls
-						layout={layout}
-						locale={locale}
-						typeEntryMap={contentProps.typeEntryMap}
-					/>
-				}
-			/>
-			<CollectionLayoutBody
-				layout={layout}
-				listContent={<NoteListBody {...contentProps} />}
-				entries={contentProps.visibleEntries}
-				allEntries={contentProps.allEntries}
-				locale={locale}
-				typeEntryMap={contentProps.typeEntryMap}
-				displayPropsOverride={contentProps.displayPropsOverride}
-				selectedNotePath={contentProps.selectedNotePath}
-				onOpen={contentProps.handleClickNote}
-				onMove={(entry, property, value) =>
-					contentProps.onUpdateTypeSort?.(entry.path, property, value)
-				}
-				onCreate={contentProps.handleCreateNote}
-			/>
-		</div>
+		<CalendarHeaderSlot.Provider value={calendarHeaderSlot}>
+			<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+				<NoteListLayoutHeader
+					{...contentProps}
+					hasBottomCreate={hasBottomCreate}
+					propertyPicker={layoutPropertyPicker(
+						layout,
+						contentProps.propertyPicker,
+						locale,
+					)}
+					leadingActions={calendarHeader}
+					layoutControls={
+						<LayoutHeaderControls
+							layout={layout}
+							locale={locale}
+							typeEntryMap={contentProps.typeEntryMap}
+						/>
+					}
+				/>
+				<CollectionContent
+					layout={layout}
+					contentProps={contentProps}
+					locale={locale}
+				/>
+			</div>
+		</CalendarHeaderSlot.Provider>
 	);
 }
