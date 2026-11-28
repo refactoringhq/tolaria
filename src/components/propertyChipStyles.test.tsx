@@ -5,54 +5,81 @@ import { SmartPropertyValueCell } from './PropertyValueCells'
 import { TypeSelector } from './TypeSelector'
 
 function expectSharedChipSize(element: HTMLElement | null) {
-  expect(element).toHaveStyle({
-    height: '24px',
-    borderRadius: '6px',
-    padding: '0px 8px',
-    fontSize: '12px',
-    fontWeight: '500',
-  })
-}
-
-function renderPropertyChips() {
-  const edit = { isEditing: false, onStartEdit: vi.fn(), onSave: vi.fn(), onSaveList: vi.fn() }
-  render(
-    <>
-      <TypeSelector isA="Project" customColorKey={null} availableTypes={['Project']}
-        typeColorKeys={{ Project: null }} typeIconKeys={{ Project: null }} onUpdateProperty={vi.fn()} />
-      <SmartPropertyValueCell {...edit} propKey="Status" value="Active" displayMode="status"
-        vaultStatuses={['Active']} vaultTags={[]} />
-      <SmartPropertyValueCell {...edit} propKey="Tags" value={['Very long property tag']} displayMode="tags"
-        vaultStatuses={[]} vaultTags={['Very long property tag']} />
-      <SmartPropertyValueCell {...edit} propKey="Due" value="2026-04-14" displayMode="date"
-        vaultStatuses={[]} vaultTags={[]} />
-      <TagPillList items={['Alpha']} onSave={vi.fn()} label="People" />
-    </>
-  )
+  expect(element).not.toBeNull()
+  expect(element?.style.height).toBe('24px')
+  expect(element?.style.borderRadius).toBe('6px')
+  expect(element?.style.paddingTop).toBe('0px')
+  expect(element?.style.paddingRight).toBe('8px')
+  expect(element?.style.paddingBottom).toBe('0px')
+  expect(element?.style.paddingLeft).toBe('8px')
+  expect(element?.style.fontSize).toBe('12px')
+  expect(element?.style.fontWeight).toBe('500')
 }
 
 describe('property chip sizing', () => {
   it('keeps type, status, tag, date, and generic pills on the same size system', () => {
-    renderPropertyChips()
+    render(
+      <>
+        <TypeSelector
+          isA="Project"
+          customColorKey={null}
+          availableTypes={['Project']}
+          typeColorKeys={{ Project: null }}
+          typeIconKeys={{ Project: null }}
+          onUpdateProperty={vi.fn()}
+        />
+        <SmartPropertyValueCell
+          propKey="Status"
+          value="Active"
+          displayMode="status"
+          isEditing={false}
+          vaultStatuses={['Active']}
+          vaultTags={[]}
+          onStartEdit={vi.fn()}
+          onSave={vi.fn()}
+          onSaveList={vi.fn()}
+        />
+        <SmartPropertyValueCell
+          propKey="Tags"
+          value={['Very long property tag']}
+          displayMode="tags"
+          isEditing={false}
+          vaultStatuses={[]}
+          vaultTags={['Very long property tag']}
+          onStartEdit={vi.fn()}
+          onSave={vi.fn()}
+          onSaveList={vi.fn()}
+        />
+        <SmartPropertyValueCell
+          propKey="Due"
+          value="2026-04-14"
+          displayMode="date"
+          isEditing={false}
+          vaultStatuses={[]}
+          vaultTags={[]}
+          onStartEdit={vi.fn()}
+          onSave={vi.fn()}
+          onSaveList={vi.fn()}
+        />
+        <TagPillList items={['Alpha']} onSave={vi.fn()} label="People" />
+      </>
+    )
 
     const typeChip = within(screen.getByTestId('type-selector')).getByRole('combobox')
     const statusChip = screen.getByTestId('status-badge')
     const tagChip = screen.getByText('Very long property tag').parentElement
     const dateChip = screen.getByTestId('date-display')
-    const elements = [
-      typeChip,
-      statusChip,
-      tagChip,
-      dateChip,
-      screen.getByText('Alpha').parentElement,
-      screen.getByTestId('tags-add-button'),
-      screen.getByTitle('Add people'),
-    ]
-    elements.forEach(expectSharedChipSize)
-    expect(statusChip).toHaveAttribute('data-property-chip-tone', 'status')
-    expect(statusChip.style.color).toBe('')
-    expect(statusChip.querySelector<HTMLElement>('.status-chip-dot')?.style.backgroundColor).toBe('var(--accent-green-text)')
-    expect(tagChip).toHaveAttribute('data-property-chip-tone', 'tag')
+    const genericChip = screen.getByText('Alpha').parentElement
+    const tagsAddButton = screen.getByTestId('tags-add-button')
+    const genericAddButton = screen.getByTitle('Add people')
+
+    expectSharedChipSize(typeChip)
+    expectSharedChipSize(statusChip)
+    expectSharedChipSize(tagChip)
+    expectSharedChipSize(dateChip)
+    expectSharedChipSize(genericChip)
+    expectSharedChipSize(tagsAddButton)
+    expectSharedChipSize(genericAddButton)
     expect(tagChip?.style.maxWidth).toBe('120px')
   })
 })

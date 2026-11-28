@@ -1,13 +1,10 @@
 import { CaretLeft, CaretRight, Tray } from "@phosphor-icons/react";
-import { useContext } from "react";
-import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import type { CalendarViewMode } from "../../../collections/collectionTypes";
-import { useDragRegion } from "../../../hooks/useDragRegion";
 import { type AppLocale, translate } from "../../../lib/i18n";
 import { NOTE_LIST_ACTION_BUTTON_CLASSNAME } from "../NoteListHeader";
-import { CalendarHeaderSlot } from "./useCalendarNavigation";
 import type { CalendarNavigation } from "./useCalendarShortcuts";
 
 interface CalendarToolbarProps {
@@ -15,6 +12,9 @@ interface CalendarToolbarProps {
 	view: CalendarViewMode;
 	locale: AppLocale;
 	navigation: CalendarNavigation;
+	trayCount: number;
+	trayOpen: boolean;
+	onToggleTray: () => void;
 }
 
 function navigationLabels(view: CalendarViewMode, locale: AppLocale) {
@@ -42,9 +42,9 @@ function TodayButton({
 	return (
 		<Button
 			type="button"
-			variant="ghost"
+			variant="outline"
 			size="xs"
-			className="floating-pane-control h-8 rounded-full px-3 text-xs"
+			className="h-6 px-2 text-xs"
 			title={withShortcut(translate(locale, "calendar.todayHint"), "T")}
 			onClick={onToday}
 			data-testid="calendar-today"
@@ -119,26 +119,29 @@ function CalendarViewTabs({
 			value={view}
 			onValueChange={(value) =>
 				navigation.setView(
-					value === "week" || value === "year" ? value : "month",
+					value === "week" || value === "quarter" || value === "year"
+						? value
+						: "month",
 				)
 			}
 			className="gap-0"
 		>
 			<TabsList
-				className="calendar-view-tabs rounded-full p-0.5"
+				className="!h-7 p-0.5"
 				aria-label={translate(locale, "calendar.viewLabel")}
 			>
 				{(
 					Object.entries({
-						week: "W",
 						month: "M",
+						week: "W",
+						quarter: "Q",
 						year: "Y",
 					}) as [CalendarViewMode, string][]
 				).map(([period, shortcut]) => (
 					<TabsTrigger
 						key={period}
 						value={period}
-						className="min-w-0 flex-initial rounded-full px-2 py-0 text-xs !text-foreground"
+						className="h-6 px-2.5 text-xs"
 						title={withShortcut(
 							translate(locale, `calendar.${period}`),
 							shortcut,
@@ -153,26 +156,30 @@ function CalendarViewTabs({
 	);
 }
 
-export function CalendarTrayToggle({
+function TrayButton({
 	count,
-	locale,
-	onOpen,
+	label,
+	onToggle,
+	open,
 }: {
 	count: number;
-	locale: AppLocale;
-	onOpen: () => void;
+	label: string;
+	onToggle: () => void;
+	open: boolean;
 }) {
-	const label = translate(locale, "calendar.tray.toggle", { count });
 	return (
 		<Button
 			type="button"
 			variant="ghost"
 			size="xs"
-			className="self-start gap-1 rounded-full bg-[var(--surface-note-list)] px-2 text-xs shadow-[var(--shadow-card)]"
+			className={cn(
+				"h-6 gap-1 px-1.5 text-xs text-muted-foreground hover:!bg-accent hover:!text-foreground",
+				open && "!bg-accent !text-foreground",
+			)}
 			title={label}
 			aria-label={label}
-			aria-expanded={false}
-			onClick={onOpen}
+			aria-pressed={open}
+			onClick={onToggle}
 			data-testid="calendar-tray-toggle"
 		>
 			<Tray size={16} />
@@ -181,32 +188,22 @@ export function CalendarTrayToggle({
 	);
 }
 
-function CalendarHeaderControls({
+export function CalendarToolbar({
+	title,
 	view,
 	locale,
 	navigation,
-}: Omit<CalendarToolbarProps, "title">) {
-	const slot = useContext(CalendarHeaderSlot);
+	trayCount,
+	trayOpen,
+	onToggleTray,
+}: CalendarToolbarProps) {
 	const labels = navigationLabels(view, locale);
-	const content = (
-		<div
-			className="calendar-controls flex shrink-0 items-center gap-2"
-			data-testid="calendar-controls"
-		>
-			<TodayButton locale={locale} onToday={navigation.today} />
-			<PeriodButtons labels={labels} navigation={navigation} />
-			<CalendarViewTabs locale={locale} navigation={navigation} view={view} />
-		</div>
-	);
-	return slot ? createPortal(content, slot) : content;
-}
-
-export function CalendarToolbar({ title, ...controls }: CalendarToolbarProps) {
-	const { dragRegionRef } = useDragRegion<HTMLDivElement>();
+	const trayLabel = translate(locale, "calendar.tray.toggle", {
+		count: trayCount,
+	});
 	return (
 		<div
-			className="calendar-toolbar flex h-11 shrink-0 items-center gap-2 px-4"
-			ref={dragRegionRef}
+			className="calendar-toolbar flex h-11 shrink-0 items-center gap-2 px-3"
 			data-testid="calendar-toolbar"
 		>
 			<h2
@@ -216,7 +213,15 @@ export function CalendarToolbar({ title, ...controls }: CalendarToolbarProps) {
 			>
 				{title}
 			</h2>
-			<CalendarHeaderControls {...controls} />
+			<TodayButton locale={locale} onToday={navigation.today} />
+			<PeriodButtons labels={labels} navigation={navigation} />
+			<CalendarViewTabs locale={locale} navigation={navigation} view={view} />
+			<TrayButton
+				count={trayCount}
+				label={trayLabel}
+				onToggle={onToggleTray}
+				open={trayOpen}
+			/>
 		</div>
 	);
 }

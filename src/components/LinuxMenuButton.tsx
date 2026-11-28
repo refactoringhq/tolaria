@@ -34,15 +34,6 @@ type MenuSection = {
 function menuSections(locale: AppLocale): ReadonlyArray<MenuSection> {
   const t = createTranslator(locale)
   return [
-    {
-      label: 'Tolaria',
-      items: [{
-        kind: 'command',
-        commandId: 'app-check-for-updates',
-        label: t('command.checkUpdates'),
-        menuItemId: 'app-check-for-updates',
-      }],
-    },
     ...getAppCommandMenuSections(t),
     {
       label: t('menu.window'),

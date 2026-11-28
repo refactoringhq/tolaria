@@ -51,18 +51,6 @@ function mockUpdaterWithStatus(
 }
 
 describe("App.integrations", () => {
-	it("opens the Add Remote dialog from a desktop menu command", async () => {
-		mockCommandResults.git_remote_status = { hasRemote: false };
-		render(<App />);
-		await screen.findByTestId("sidebar-sync");
-
-		act(() => {
-			window.__laputaTest?.dispatchBrowserMenuCommand?.("vault-add-remote");
-		});
-
-		expect(await screen.findByTestId("add-remote-modal")).toBeVisible();
-	});
-
 	it("shows visible feedback when a manual update check finds an update", async () => {
 		mockUpdaterWithStatus(async () => ({
 			kind: "available",
@@ -76,9 +64,7 @@ describe("App.integrations", () => {
 			expect(screen.getByText("All Notes")).toBeInTheDocument();
 		});
 
-		act(() => {
-			window.__laputaTest?.dispatchBrowserMenuCommand?.("app-check-for-updates");
-		});
+		fireEvent.click(screen.getByTestId("status-build-number"));
 
 		await waitFor(() => {
 			const bottomStack = screen.getByTestId("app-bottom-banner-stack");

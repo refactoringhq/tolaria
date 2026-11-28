@@ -34,12 +34,10 @@ import { filePreviewKind, type FilePreviewKind } from '../utils/filePreview'
 import { NoteTitleIcon } from './NoteTitleIcon'
 import { PropertyChips } from './note-item/PropertyChips'
 import { ChangeNoteContent } from './note-item/ChangeNoteContent'
-import { NoteBookmarkRetraction } from './note-item/NoteBookmarkRetraction'
 import { workspaceForEntry } from '../utils/workspaces'
 import { WorkspaceInitialsBadge } from './WorkspaceInitialsBadge'
 import { ConflictCopyBadge } from './ConflictCopyBadge'
 import { useAppLocale, useDateDisplayFormat } from '../hooks/useAppPreferences'
-import { HIDE_CREATED_TIME, HIDE_MODIFIED_TIME } from './note-list/noteListMetadata'
 import { writeNoteDragData } from '../utils/noteDragDrop'
 import { translate } from '../lib/i18n'
 
@@ -137,7 +135,7 @@ function StateBadge({ archived }: { archived: boolean }) {
   return null
 }
 
-function renderWorkspaceBadge(entry: VaultEntry, allEntries: VaultEntry[]) {
+function WorkspaceBadge({ entry, allEntries }: { entry: VaultEntry; allEntries: VaultEntry[] }) {
   const workspace = workspaceForEntry(entry)
   const hasMultipleWorkspaces =
     new Set(allEntries.map((candidate) => candidate.workspace?.alias).filter(Boolean)).size > 1
@@ -288,7 +286,7 @@ function InteractiveNoteDetails({
         typeEntryMap={typeEntryMap}
         onClickNote={onClickNote}
       />
-      <NoteDateRow entry={entry} allEntries={allEntries} displayProps={displayProps} />
+      <NoteDateRow entry={entry} allEntries={allEntries} />
     </>
   )
 }
@@ -385,20 +383,17 @@ function NoteTitleRow({
   )
 }
 
-function NoteDateRow({ entry, allEntries, displayProps }: {
-  entry: VaultEntry; allEntries: VaultEntry[]; displayProps: string[]
-}) {
-  const dateDisplayFormat = useDateDisplayFormat('note-list')
+function NoteDateRow({ entry, allEntries }: { entry: VaultEntry; allEntries: VaultEntry[] }) {
+  const dateDisplayFormat = useDateDisplayFormat()
   const locale = useAppLocale()
-  const modifiedLabel = displayProps.includes(HIDE_MODIFIED_TIME)
-    ? ''
-    : formatTimestampForDateDisplay(getDisplayDate(entry), dateDisplayFormat, locale)
-  const createdLabel = entry.createdAt && !displayProps.includes(HIDE_CREATED_TIME)
-    ? translate(locale, 'noteList.createdDate', { date: formatTimestampForDateDisplay(entry.createdAt, dateDisplayFormat, locale) })
+  const modifiedLabel = formatTimestampForDateDisplay(getDisplayDate(entry), dateDisplayFormat, locale)
+  const createdLabel = entry.createdAt
+    ? translate(locale, 'noteList.createdDate', {
+        date: formatTimestampForDateDisplay(entry.createdAt, dateDisplayFormat, locale),
+      })
     : null
-  const workspaceBadge = renderWorkspaceBadge(entry, allEntries)
 
-  if (!modifiedLabel && !createdLabel && !workspaceBadge) return null
+  if (!modifiedLabel && !createdLabel) return null
 
   return (
     <div
@@ -408,7 +403,7 @@ function NoteDateRow({ entry, allEntries, displayProps }: {
       <span>{modifiedLabel}</span>
       <span className="flex min-w-0 items-center justify-end gap-1.5 text-right">
         {createdLabel && <span>{createdLabel}</span>}
-        {workspaceBadge}
+        <WorkspaceBadge entry={entry} allEntries={allEntries} />
       </span>
     </div>
   )
@@ -673,20 +668,6 @@ function NoteItemContent(options: {
   return <StandardNoteContent {...standard} />
 }
 
-function noteItemAppearance(entry: VaultEntry, typeEntryMap: Record<string, VaultEntry>) {
-  const isBinary = entry.fileKind === 'binary'
-  const previewKind = filePreviewKind(entry)
-  const isUnavailableBinary = isBinary && previewKind === null
-  const te = typeEntryMap[entry.isA ?? '']
-  const typeColor = previewKind !== null
-    ? 'var(--accent-blue)'
-    : isBinary
-      ? 'var(--muted-foreground)'
-      : getTypeColor(entry.isA ?? 'Note', te?.color)
-  const typeLightColor = getTypeLightColor(entry.isA ?? 'Note', te?.color)
-  return { isBinary, previewKind, isUnavailableBinary, typeColor, typeLightColor }
-}
-
 export function NoteItem(options: NoteItemProps) {
   const {
     entry,
@@ -699,18 +680,34 @@ export function NoteItem(options: NoteItemProps) {
     allEntries,
     displayPropsOverride,
     onClickNote,
+    onPrefetch,
+    onContextMenu,
   } = options
-  const { isBinary, previewKind, isUnavailableBinary, typeColor, typeLightColor } = noteItemAppearance(entry, typeEntryMap)
+  const isBinary = entry.fileKind === 'binary'
+  const previewKind = filePreviewKind(entry)
+  const isPreviewableFile = previewKind !== null
+  const isUnavailableBinary = isBinary && !isPreviewableFile
+  const te = typeEntryMap[entry.isA ?? '']
   const displayProps = resolveDisplayProps(entry, typeEntryMap, displayPropsOverride)
+  const typeColor = isPreviewableFile
+    ? 'var(--accent-blue)'
+    : isBinary
+      ? 'var(--muted-foreground)'
+      : getTypeColor(entry.isA ?? 'Note', te?.color)
+  const typeLightColor = getTypeLightColor(entry.isA ?? 'Note', te?.color)
   const surfaceProps = resolveNoteItemSurfaceProps({
-    ...options,
+    entry,
     isUnavailableBinary,
     previewKind,
     isSelected,
     isMultiSelected,
     isHighlighted,
+    onClickNote,
+    onPrefetch,
+    onContextMenu,
     typeColor,
     typeLightColor,
+    changeStatus,
   })
 
   return (
@@ -722,7 +719,6 @@ export function NoteItem(options: NoteItemProps) {
       isHighlighted={isHighlighted}
       changeStatus={changeStatus}
     >
-      {isSelected && !isMultiSelected && <NoteBookmarkRetraction />}
       <NoteItemContent
         entry={entry}
         isBinary={isBinary}

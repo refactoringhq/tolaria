@@ -10,7 +10,7 @@ import {
   type UiLanguagePreference,
   type AppLocale,
 } from '../lib/i18n'
-import { DEFAULT_DATE_DISPLAY_FORMAT, isShortDateDisplayFormat, normalizeDateDisplayFormat, type DateDisplayFormat } from '../utils/dateDisplay'
+import { DEFAULT_DATE_DISPLAY_FORMAT, normalizeDateDisplayFormat, type DateDisplayFormat } from '../utils/dateDisplay'
 import { resolveAllNotesFileVisibility } from '../utils/allNotesFileVisibility'
 import { useAiAgentPreferences } from './useAiAgentPreferences'
 import type { AiAgentsStatus } from '../lib/aiAgents'
@@ -56,27 +56,8 @@ export function useAppLocale(): AppLocale {
   return useContext(AppPreferencesContext).appLocale
 }
 
-export function useDateDisplayFormat(scope?: 'note-list'): DateDisplayFormat {
-  const { dateDisplayFormat } = useContext(AppPreferencesContext)
-  return scope !== 'note-list' && isShortDateDisplayFormat(dateDisplayFormat)
-    ? DEFAULT_DATE_DISPLAY_FORMAT
-    : dateDisplayFormat
-}
-
-function useAppLanguage(language: Settings['ui_language']) {
-  const systemLocale = useMemo(
-    () => resolveEffectiveLocale(SYSTEM_UI_LANGUAGE, getBrowserLanguagePreferences()),
-    [],
-  )
-  const appLocale = useLoadedLocale(useMemo(
-    () => resolveEffectiveLocale(language, [systemLocale]),
-    [language, systemLocale],
-  ))
-  useEffect(() => {
-    document.documentElement.lang = appLocale
-  }, [appLocale])
-
-  return { appLocale, systemLocale }
+export function useDateDisplayFormat(): DateDisplayFormat {
+  return useContext(AppPreferencesContext).dateDisplayFormat
 }
 
 export function useAppPreferences({
@@ -86,7 +67,14 @@ export function useAppPreferences({
   settings,
   settingsLoaded,
 }: AppPreferencesConfig) {
-  const { appLocale, systemLocale } = useAppLanguage(settings.ui_language)
+  const systemLocale = useMemo(
+    () => resolveEffectiveLocale(SYSTEM_UI_LANGUAGE, getBrowserLanguagePreferences()),
+    [],
+  )
+  const appLocale = useLoadedLocale(useMemo(
+    () => resolveEffectiveLocale(settings.ui_language, [systemLocale]),
+    [settings.ui_language, systemLocale],
+  ))
   const dateDisplayFormat = useMemo(
     () => normalizeDateDisplayFormat(settings.date_display_format) ?? DEFAULT_DATE_DISPLAY_FORMAT,
     [settings.date_display_format],
@@ -96,6 +84,10 @@ export function useAppPreferences({
     [settings],
   )
   const selectedUiLanguage: UiLanguagePreference = settings.ui_language ?? SYSTEM_UI_LANGUAGE
+
+  useEffect(() => {
+    document.documentElement.lang = appLocale
+  }, [appLocale])
 
   useThemeMode(settings.theme_mode, settingsLoaded)
   const documentThemeMode = useDocumentThemeMode()

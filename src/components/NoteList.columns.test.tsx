@@ -178,7 +178,7 @@ describe("NoteList columns and chips", () => {
 		expect(screen.getByText("Luca")).toBeInTheDocument();
 	});
 
-	it("keeps computed timestamps available for views with no matching notes", () => {
+	it("shows an empty-state picker for views with no matching properties", () => {
 		renderManagedViewNoteList({
 			entries: makeBookTypeEntries(),
 			view: makeViewDefinition({
@@ -196,7 +196,7 @@ describe("NoteList columns and chips", () => {
 
 		expect(screen.getByTestId("list-properties-popover")).toBeInTheDocument();
 		expect(
-			screen.getByRole("group", { name: "Computed fields" }),
+			screen.getByText("No properties match this search."),
 		).toBeInTheDocument();
 	});
 

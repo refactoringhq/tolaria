@@ -51,11 +51,11 @@ test("deletion follows visible order and preserves keyboard navigation @smoke", 
 		.getByTestId("sidebar-top-nav")
 		.getByText("All Notes", { exact: true })
 		.click();
-	const noteList = page.getByTestId("note-list-container");
-	await noteList.focus();
-	await page.keyboard.press("ControlOrMeta+f");
+	await page.getByRole("button", { name: "Search notes", exact: true }).click();
 	await page.getByPlaceholder("Search notes...").fill("Focus");
-	const rows = noteList.locator("[data-note-path]");
+	const rows = page
+		.getByTestId("note-list-container")
+		.locator("[data-note-path]");
 	await expect(rows).toHaveCount(3);
 	const titles = await rows
 		.locator('[data-testid="note-title-row"]')
@@ -74,7 +74,7 @@ test("deletion follows visible order and preserves keyboard navigation @smoke", 
 	await page.getByTestId("confirm-delete-btn").click();
 	await expect(rows).toHaveCount(2);
 	await expect(heading(2)).toBeVisible();
-	await expect(noteList).toBeFocused();
+	await expect(page.getByTestId("note-list-container")).toBeFocused();
 	await page.keyboard.press("ArrowUp");
 	await expect(heading(0)).toBeVisible();
 	await page.keyboard.press("ArrowDown");
@@ -84,7 +84,7 @@ test("deletion follows visible order and preserves keyboard navigation @smoke", 
 	await page.getByTestId("confirm-delete-btn").press("Enter");
 	await expect(rows).toHaveCount(1);
 	await expect(heading(0)).toBeVisible();
-	await expect(noteList).toBeFocused();
+	await expect(page.getByTestId("note-list-container")).toBeFocused();
 
 	await triggerShortcutCommand(page, APP_COMMAND_IDS.noteDelete);
 	await page.getByTestId("confirm-delete-btn").press("Enter");
