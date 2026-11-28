@@ -119,8 +119,8 @@
   --accent-green-light: var(--green-50);
   --accent-green-text: var(--green-600);
   --accent-orange: var(--orange-600);
-  --accent-orange-light: var(--orange-50);
-  --accent-orange-text: var(--orange-600);
+  --accent-orange-light: var(--orange-25);
+  --accent-orange-text: var(--orange-575);
   --accent-red: var(--red-500);
   --accent-red-light: var(--red-50);
   --accent-red-text: var(--red-600);
@@ -128,8 +128,8 @@
   --accent-purple-light: var(--purple-50);
   --accent-purple-text: var(--purple-600);
   --accent-yellow: var(--yellow-600);
-  --accent-yellow-light: var(--yellow-50);
-  --accent-yellow-text: var(--yellow-600);
+  --accent-yellow-light: var(--yellow-25);
+  --accent-yellow-text: var(--yellow-575);
   --accent-teal: var(--teal-500);
   --accent-teal-light: var(--teal-50);
   --accent-teal-text: var(--teal-600);
@@ -256,7 +256,7 @@
   --accent-green-text: var(--green-400);
   --accent-orange: var(--orange-400);
   --accent-orange-light: var(--orange-800);
-  --accent-orange-text: var(--orange-300);
+  --accent-orange-text: var(--orange-200);
   --accent-red: var(--red-400);
   --accent-red-light: var(--red-700);
   --accent-red-text: var(--red-300);
@@ -265,7 +265,7 @@
   --accent-purple-text: var(--purple-300);
   --accent-yellow: var(--yellow-400);
   --accent-yellow-light: var(--yellow-800);
-  --accent-yellow-text: var(--yellow-300);
+  --accent-yellow-text: var(--yellow-200);
   --accent-teal: var(--teal-400);
   --accent-teal-light: var(--teal-800);
   --accent-teal-text: var(--teal-400);
@@ -992,7 +992,6 @@
   --background: var(--surface-note-list);
   --bg-primary: var(--surface-note-list);
   --neutral-chip-fill: var(--surface-card);
-  --neutral-chip-outline: var(--border-default);
   /* Let the raised row cover the editor shadow at their shared edge. */
   z-index: auto;
 }
@@ -1018,33 +1017,41 @@
 
 .app__note-list [role="option"][data-note-path]:is([aria-selected="true"], :hover) {
   --neutral-chip-fill: var(--surface-note-list);
-  --neutral-chip-outline: var(--gray-300);
 }
 
-:root.dark .app[data-desktop-sidebar-chrome] .app__note-list [role="option"][data-note-path]:is([aria-selected="true"], :hover) {
-  --neutral-chip-outline: var(--border-strong);
+/* Neutral chips share one text and outline across workspace panels. */
+.app {
+  --neutral-chip-outline: var(--gray-400);
+}
+
+:root.dark .app {
+  --neutral-chip-outline: var(--gray-500);
 }
 
 .app__note-list [data-property-chip="true"]:is(:not([style*="background-color"]), [style*="--accent-gray-light"]) {
   --muted: var(--neutral-chip-fill);
   --accent-gray-light: var(--neutral-chip-fill);
-  --chip-outline: var(--neutral-chip-outline);
-  --chip-outline-opacity: 1;
 }
 
-.app__note-list [data-property-chip="true"][data-property-chip-tone="date"],
-.app :is(.app__note-list, .app__editor) :is([data-property-chip-tone="status"], [data-property-chip-tone="tag"]) {
-  --chip-outline: var(--gray-400);
+.app :is(
+  .app__note-list [data-property-chip="true"]:is(:not([style*="background-color"]), [style*="--accent-gray-light"]),
+  .app__editor :is([data-property-chip-tone], [role="combobox"], [class~="group/pill"])[style*="--accent-gray-light"],
+  .app__editor [data-testid="date-display"].bg-muted,
+  [data-testid="relationships-panel-grid"] [class~="group/link"][style*="--accent-gray-light"]
+) {
+  --accent-gray-text: var(--foreground);
+  --chip-outline: var(--neutral-chip-outline);
   --chip-outline-opacity: 0.65;
 
   color: var(--foreground);
 }
 
-:root.dark .app :is(.app__note-list, .app__editor) :is(
-  [data-property-chip-tone="date"], [data-property-chip-tone="status"], [data-property-chip-tone="tag"]
-) {
-  --chip-outline: var(--gray-600);
-  --chip-outline-opacity: 1;
+.app :is(.app__note-list, .app__editor) [data-property-chip-tone="status"] {
+  color: var(--status-chip-text, var(--foreground));
+}
+
+.app :is(.app__note-list, .app__editor) [data-property-chip-tone="tag"] {
+  color: var(--foreground);
 }
 
 .status-chip-dot {
@@ -1531,7 +1538,7 @@ html:not([data-touch-input]) .app[data-desktop-sidebar-chrome] .note-list-search
   z-index: 1;
   border-top-right-radius: var(--radius-xl);
   border-bottom-right-radius: var(--radius-xl);
-  box-shadow: 2px 0 5px -3px var(--shadow-soft);
+  box-shadow: var(--shadow-sidebar), 2px 0 5px -3px var(--shadow-soft);
 }
 
 .app:where([data-collection-layout="list"]) .app__note-list:has(~ .app__editor [data-ai-workspace-expanded="true"]) > * {
@@ -1627,23 +1634,102 @@ body.mac-sidebar-vibrancy:has(:is(.app__sidebar, [data-desktop-sidebar-chrome], 
   border-image: linear-gradient(transparent, transparent) 1;
 }
 
+.app[data-desktop-sidebar-chrome] {
+  --collection-panel-edge: var(--border-strong);
+  --collection-panel-shadow: 0 8px 16px -10px var(--shadow-soft), var(--shadow-card);
+}
+
 /* Elevate the collection surfaces without taking space from their contents. */
 .calendar-surface,
-.calendar-tray,
-.app[data-desktop-sidebar-chrome] > .app__note-list:where(:has(> [data-collection-layout="list"])) {
+.calendar-tray {
   position: relative;
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--collection-panel-shadow, var(--shadow-card));
+}
+
+.app[data-desktop-sidebar-chrome] > .app__note-list:where(:not(:has(> [data-collection-layout]:not([data-collection-layout="list"])))) {
+  position: relative;
+  box-shadow: var(--collection-panel-shadow, var(--shadow-card));
+}
+
+:where(.app[data-desktop-sidebar-chrome] .editor) > .relative {
+  border-radius: inherit;
+}
+
+:where(.app[data-desktop-sidebar-chrome] .editor) > .relative > :first-child {
+  position: relative;
+  border-start-start-radius: inherit;
+  border-end-start-radius: inherit;
+}
+
+:where(.app[data-desktop-sidebar-chrome] .editor) > .relative > :last-child:not([data-ai-workspace-mode]) {
+  border-start-end-radius: inherit;
+  border-end-end-radius: inherit;
+}
+
+:where(.app[data-desktop-sidebar-chrome] .editor > .relative > div) > aside:where(:has(> .border-b [data-testid="properties-panel-icon"], > [data-testid="table-of-contents-panel"])) {
+  position: relative;
+  border-left-width: 0;
+  border-start-end-radius: inherit;
+  border-end-end-radius: inherit;
+}
+
+.app[data-desktop-sidebar-chrome] .editor > .relative > div:where(:has(> aside > .border-b [data-testid="properties-panel-icon"], > aside > [data-testid="table-of-contents-panel"])) {
+  position: relative;
+  z-index: 0;
 }
 
 .calendar-surface::after,
-.calendar-tray::after {
+.calendar-tray::after,
+.app[data-desktop-sidebar-chrome] .graph-layout::after,
+.app[data-desktop-sidebar-chrome] > .app__note-list:where(:not(:has(> [data-collection-layout]:not([data-collection-layout="list"]))))::after,
+.app[data-desktop-sidebar-chrome] .editor > .relative > :first-child::after,
+.app[data-desktop-sidebar-chrome] .editor > .relative > div:where(:has(> aside > .border-b [data-testid="properties-panel-icon"], > aside > [data-testid="table-of-contents-panel"]))::after {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 1;
-  border: 1px solid var(--border-default);
+  z-index: 25;
+  border: 1px solid var(--collection-panel-edge, var(--border-default));
   border-radius: inherit;
   pointer-events: none;
+}
+
+/* Let the bookmark cover the outer frame while keeping the header's cover inside it. */
+.app[data-desktop-sidebar-chrome] > .app__note-list:where(:not(:has(> [data-collection-layout]:not([data-collection-layout="list"]))))::after {
+  z-index: 21;
+}
+
+.app[data-desktop-sidebar-chrome] > .app__note-list [data-virtuoso-scroller]::after {
+  clip-path: inset(0 1px);
+}
+
+/* The editor owns the shared edge of the note list and Properties. */
+.app[data-desktop-sidebar-chrome] > .app__note-list:where(:has(~ .app__editor):not(:has(~ .app__editor [data-ai-workspace-expanded="true"])))::after {
+  border-inline-end-width: 0;
+}
+
+.app[data-desktop-sidebar-chrome] > .app__note-list:where(:has(> [data-collection-layout="list"])) ~ .app__editor:where(:not(:has([data-ai-workspace-expanded="true"])))::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: var(--radius-xl);
+  border-block: 1px solid var(--collection-panel-edge, var(--border-default));
+  pointer-events: none;
+}
+
+.app[data-desktop-sidebar-chrome] > .app__note-list:where(:has(> [data-collection-layout="list"])) ~ .app__editor > .editor > .relative > :first-child::after {
+  clip-path: polygon(
+    0 0, 100% 0, 100% 100%, 0 100%,
+    0 var(--active-note-seam-end, 0px),
+    2px var(--active-note-seam-end, 0px),
+    2px var(--active-note-seam-start, 0px),
+    0 var(--active-note-seam-start, 0px)
+  );
+}
+
+.app[data-desktop-sidebar-chrome] .editor > .relative > div:where(:has(> aside > .border-b [data-testid="properties-panel-icon"], > aside > [data-testid="table-of-contents-panel"]))::after {
+  inset-inline-start: calc(-1 * var(--radius-xl));
+  border-inline-start-width: 0;
 }
 
 @media (prefers-reduced-transparency: reduce) {

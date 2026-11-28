@@ -23,6 +23,41 @@ function bookmarkProgress(
 	return Math.min(1, Math.max(0, distance / RETRACTION_DISTANCE));
 }
 
+const seamOwners = new WeakMap<HTMLElement, symbol>();
+
+function visibleSeam(row: HTMLElement, scroller: HTMLElement, editor: HTMLElement) {
+	const note = row.getBoundingClientRect();
+	const viewport = scroller.getBoundingClientRect();
+	const frame = editor.getBoundingClientRect();
+	const start = Math.min(frame.height, Math.max(0, Math.max(note.top, viewport.top) - frame.top));
+	const end = Math.max(start, Math.min(frame.height, Math.min(note.bottom, viewport.bottom) - frame.top));
+	return { start, end };
+}
+
+function trackEditorSeam(row: HTMLElement, scroller: HTMLElement) {
+	const app = row.closest<HTMLElement>(".app[data-desktop-sidebar-chrome]");
+	const editor = app?.querySelector<HTMLElement>(":scope > .app__editor");
+	if (!editor) return null;
+
+	const owner = Symbol();
+	seamOwners.set(editor, owner);
+	return {
+		editor,
+		update() {
+			if (seamOwners.get(editor) !== owner) return;
+			const { start, end } = visibleSeam(row, scroller, editor);
+			editor.style.setProperty("--active-note-seam-start", `${start}px`);
+			editor.style.setProperty("--active-note-seam-end", `${end}px`);
+		},
+		dispose() {
+			if (seamOwners.get(editor) !== owner) return;
+			seamOwners.delete(editor);
+			editor.style.removeProperty("--active-note-seam-start");
+			editor.style.removeProperty("--active-note-seam-end");
+		},
+	};
+}
+
 function trackBookmark(marker: HTMLSpanElement | null) {
 	const row = marker?.closest<HTMLElement>("[data-note-path]");
 	if (!row) return;
@@ -33,8 +68,10 @@ function trackBookmark(marker: HTMLSpanElement | null) {
 	);
 	if (!list) return;
 
+	const seam = trackEditorSeam(row, scroller);
 	let previousProgress = -1;
 	const update = () => {
+		seam?.update();
 		const progress = bookmarkProgress(row, scroller, list);
 		if (progress === previousProgress) return;
 		previousProgress = progress;
@@ -44,11 +81,13 @@ function trackBookmark(marker: HTMLSpanElement | null) {
 	const observer = new ResizeObserver(update);
 	observer.observe(row);
 	observer.observe(list);
+	if (seam) observer.observe(seam.editor);
 	scroller.addEventListener("scroll", update, { passive: true });
 	update();
 
 	return () => {
 		observer.disconnect();
+		seam?.dispose();
 		scroller.removeEventListener("scroll", update);
 		row.style.removeProperty(PROGRESS_PROPERTY);
 	};
