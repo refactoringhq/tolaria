@@ -16,7 +16,7 @@ vi.mock('../utils/url', () => ({
 }))
 
 function makeEntry(path: string): VaultEntry {
-  return { path, title: 'Test', filename: path.split('/').pop()! } as unknown as VaultEntry
+  return { path, title: 'Test', filename: path.slice(path.lastIndexOf('/') + 1) } as unknown as VaultEntry
 }
 
 describe('useConflictFlow', () => {
@@ -52,7 +52,7 @@ describe('useConflictFlow', () => {
     await act(async () => { await result.current.handleOpenConflictResolver() })
 
     expect(deps.pausePull).toHaveBeenCalled()
-    expect(deps.initConflictFiles).toHaveBeenCalledWith(['note.md'])
+    expect(deps.initConflictFiles).toHaveBeenCalledWith(['note.md'], '/vault')
     expect(deps.openConflictResolver).toHaveBeenCalled()
   })
 
@@ -63,7 +63,27 @@ describe('useConflictFlow', () => {
     await act(async () => { await result.current.handleOpenConflictResolver() })
 
     expect(mockInvokeFn).toHaveBeenCalledWith('get_conflict_files', { vaultPath: '/vault' })
-    expect(deps.initConflictFiles).toHaveBeenCalledWith(['other.md'])
+    expect(deps.initConflictFiles).toHaveBeenCalledWith(['other.md'], '/vault')
+  })
+
+  it('checks the requested repository instead of using cached files from the default vault', async () => {
+    mockInvokeFn.mockResolvedValueOnce(['nested.md'])
+    const { result } = renderFlow()
+
+    await act(async () => { await result.current.handleOpenConflictResolver('/vault/nested') })
+
+    expect(mockInvokeFn).toHaveBeenCalledWith('get_conflict_files', { vaultPath: '/vault/nested' })
+    expect(deps.initConflictFiles).toHaveBeenCalledWith(['nested.md'], '/vault/nested')
+  })
+
+  it('checks the live index when explicitly asked to manage conflicts in the default vault', async () => {
+    mockInvokeFn.mockResolvedValueOnce([])
+    const { result } = renderFlow()
+
+    await act(async () => { await result.current.handleOpenConflictResolver('/vault') })
+
+    expect(mockInvokeFn).toHaveBeenCalledWith('get_conflict_files', { vaultPath: '/vault' })
+    expect(deps.initConflictFiles).not.toHaveBeenCalled()
   })
 
   it('shows toast when no conflicts found', async () => {

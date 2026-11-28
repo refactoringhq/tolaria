@@ -59,6 +59,23 @@ describe('useConflictResolver', () => {
     expect(result.current.fileStates[index].resolution).toBe(strategy)
   })
 
+  it('ignores a previous repository result after opening a new conflict dialog', async () => {
+    let finishResolution = () => {}
+    const resolution = new Promise<void>((resolve) => { finishResolution = resolve })
+    mockInvokeFn.mockReturnValueOnce(resolution)
+    const { result } = renderResolver(['note.md'])
+
+    act(() => { void result.current.resolveFile('note.md', 'ours') })
+    act(() => { result.current.initFiles(['note.md'], '/other-vault') })
+    await act(async () => { finishResolution(); await resolution })
+
+    expect(result.current.fileStates[0].resolution).toBeNull()
+    await act(async () => { await result.current.resolveFile('note.md', 'theirs') })
+    expect(mockInvokeFn).toHaveBeenLastCalledWith('git_resolve_conflict', {
+      vaultPath: '/other-vault', file: 'note.md', strategy: 'theirs',
+    })
+  })
+
   it('marks allResolved when all files are resolved', async () => {
     const { result } = renderResolver()
 

@@ -57,6 +57,36 @@ test.describe('Git divergence, conflicts, and manual pull', () => {
     await expect(page.getByTestId('pulse-header')).toBeVisible()
   })
 
+  test('failed sync offers conflict management alongside retry @smoke', async ({ page }) => {
+    await page.evaluate(() => {
+      const handlers = window.__mockHandlers
+      if (!handlers) throw new Error('Git mocks were not installed')
+      handlers.git_pull = () => ({
+        status: 'error',
+        message: 'Pull failed',
+        updatedFiles: [],
+        conflictFiles: [],
+      })
+      handlers.get_conflict_files = () => []
+    })
+
+    const sync = page.getByTestId('sidebar-sync')
+    await sync.click()
+    await page.getByRole('menuitem', { name: /Sync now/ }).click()
+    await expect(sync).toContainText('Sync failed')
+
+    await page.evaluate(() => {
+      const handlers = window.__mockHandlers
+      if (!handlers) throw new Error('Git mocks were not installed')
+      handlers.get_conflict_files = () => ['note-a.md']
+    })
+
+    await sync.click()
+    await expect(page.getByRole('menuitem', { name: /Sync now/ })).toBeEnabled()
+    await page.getByRole('menuitem', { name: 'Resolve merge conflicts' }).click()
+    await expect(page.getByTestId('conflict-file-note-a.md')).toBeVisible()
+  })
+
   test('conflict badge shows count when conflicts exist', async ({ page }) => {
     // Override git_pull to return conflicts
     await page.evaluate(() => {
