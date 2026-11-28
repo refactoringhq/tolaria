@@ -1,4 +1,4 @@
-import { useCallback, useState, type Dispatch, type SetStateAction } from 'react'
+import { useCallback, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { isTauri, mockInvoke } from '../mock-tauri'
 
@@ -39,21 +39,25 @@ function updateConflictFile(
 
 function useResolveConflictFile(
   vaultPath: string,
+  dialogSessionRef: RefObject<number>,
   setFileStates: SetConflictFileStates,
   setError: SetConflictError,
 ): (file: string, strategy: ConflictStrategy) => Promise<void> {
   return useCallback(async (file: string, strategy: ConflictStrategy) => {
+    const session = dialogSessionRef.current
     setFileStates((prev) => updateConflictFile(prev, file, { resolving: true }))
     setError(null)
 
     try {
       await tauriCall<void>('git_resolve_conflict', { vaultPath, file, strategy })
+      if (session !== dialogSessionRef.current) return
       setFileStates((prev) => updateConflictFile(prev, file, { resolution: strategy, resolving: false }))
     } catch (err) {
+      if (session !== dialogSessionRef.current) return
       setFileStates((prev) => updateConflictFile(prev, file, { resolving: false }))
       setError(`Failed to resolve ${file}: ${err}`)
     }
-  }, [setError, setFileStates, vaultPath])
+  }, [dialogSessionRef, setError, setFileStates, vaultPath])
 }
 
 function useOpenConflictFile(
@@ -69,6 +73,7 @@ function useOpenConflictFile(
 function useCommitConflictResolution({
   allResolved,
   committing,
+  dialogSessionRef,
   onResolved,
   onToast,
   setCommitting,
@@ -77,6 +82,7 @@ function useCommitConflictResolution({
 }: {
   allResolved: boolean
   committing: boolean
+  dialogSessionRef: RefObject<number>
   onResolved: UseConflictResolverConfig['onResolved']
   onToast: UseConflictResolverConfig['onToast']
   setCommitting: Dispatch<SetStateAction<boolean>>
@@ -85,19 +91,21 @@ function useCommitConflictResolution({
 }): () => Promise<void> {
   return useCallback(async () => {
     if (!allResolved || committing) return
+    const session = dialogSessionRef.current
     setCommitting(true)
     setError(null)
 
     try {
       await tauriCall<string>('git_commit_conflict_resolution', { vaultPath })
+      if (session !== dialogSessionRef.current) return
       onResolved()
       onToast('Conflicts resolved — sync resumed')
     } catch (err) {
-      setError(`Commit failed: ${err}`)
+      if (session === dialogSessionRef.current) setError(`Commit failed: ${err}`)
     } finally {
-      setCommitting(false)
+      if (session === dialogSessionRef.current) setCommitting(false)
     }
-  }, [allResolved, committing, onResolved, onToast, setCommitting, setError, vaultPath])
+  }, [allResolved, committing, dialogSessionRef, onResolved, onToast, setCommitting, setError, vaultPath])
 }
 
 export function useConflictResolver({
@@ -106,17 +114,21 @@ export function useConflictResolver({
   onToast,
   onOpenFile,
 }: UseConflictResolverConfig) {
+  const dialogSessionRef = useRef(0)
+  const [repositoryPath, setRepositoryPath] = useState(vaultPath)
   const [fileStates, setFileStates] = useState<ConflictFileState[]>([])
   const [committing, setCommitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const initFiles = useCallback((files: string[]) => {
+  const initFiles = useCallback((files: string[], selectedPath = vaultPath) => {
+    dialogSessionRef.current++
+    setRepositoryPath(selectedPath)
     setFileStates(files.map(initialConflictFileState))
     setError(null)
     setCommitting(false)
-  }, [])
+  }, [vaultPath])
 
-  const resolveFile = useResolveConflictFile(vaultPath, setFileStates, setError)
+  const resolveFile = useResolveConflictFile(repositoryPath, dialogSessionRef, setFileStates, setError)
   const openInEditor = useOpenConflictFile(onOpenFile, setFileStates)
 
   const allResolved = fileStates.length > 0 && fileStates.every(f => f.resolution !== null)
@@ -124,11 +136,12 @@ export function useConflictResolver({
   const commitResolution = useCommitConflictResolution({
     allResolved,
     committing,
+    dialogSessionRef,
     onResolved,
     onToast,
     setCommitting,
     setError,
-    vaultPath,
+    vaultPath: repositoryPath,
   })
 
   return {

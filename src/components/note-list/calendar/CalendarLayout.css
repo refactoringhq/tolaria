@@ -39,7 +39,9 @@
 .calendar-toolbar,
 .calendar-weekdays,
 .calendar-week {
-	border-bottom: 1px solid var(--panel-divider, var(--border-default));
+	--calendar-divider: var(--panel-divider, var(--border-default));
+	border-bottom: 1px solid var(--calendar-divider);
+	border-image: linear-gradient(to right, transparent, var(--calendar-divider) 8% 92%, transparent) 1;
 }
 
 .calendar-controls .calendar-view-tabs {
@@ -182,6 +184,14 @@
 
 .calendar-grid[data-view="week"] .calendar-day__header {
 	border-bottom: 1px solid var(--border-default);
+}
+
+.calendar-grid[data-view="week"] .calendar-day:first-child .calendar-day__header {
+	border-image: linear-gradient(to right, transparent, var(--border-default) 40%) 1;
+}
+
+.calendar-grid[data-view="week"] .calendar-day:last-child .calendar-day__header {
+	border-image: linear-gradient(to left, transparent, var(--border-default) 40%) 1;
 }
 
 .calendar-day--outside .calendar-day__number {
