@@ -336,7 +336,10 @@ function useWeekStack(
 		[measure, segments, week, stack],
 	);
 	const lanes = measurableLanes(measure.available);
-	const measuredOnly = layout.hidden.filter((segment) => segment.lane < lanes);
+	// A card that turns out too tall still needs measuring; forgetting its height makes it eligible again.
+	const measuredOnly = layout.hidden.filter(
+		({ item, lane }) => lane < lanes || measure.heights.has(item.entry.path),
+	);
 	return { stackRef, layout, measuredOnly };
 }
 

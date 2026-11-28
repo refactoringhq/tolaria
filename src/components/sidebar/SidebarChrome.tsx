@@ -71,6 +71,7 @@ interface SidebarSyncMenuProps {
   onRepositoryChange: (path: string) => void
   onViewChanges: () => void
   onSyncNow: () => void
+  onManageConflicts: () => void
   onViewHistory: () => void
 }
 
@@ -123,7 +124,7 @@ function SidebarSyncCount({ count }: { count: number }) {
 function SidebarSyncMenu(props: SidebarSyncMenuProps) {
   const {
     locale, count, status, canViewGit, canSync, repositories,
-    selectedRepositoryPath, onRepositoryChange, onViewChanges, onSyncNow, onViewHistory,
+    selectedRepositoryPath, onRepositoryChange, onViewChanges, onSyncNow, onManageConflicts, onViewHistory,
   } = props
   const now = useSyncClock(props.lastSyncTime)
   const label = translate(locale, 'sidebar.chrome.sync')
@@ -161,6 +162,11 @@ function SidebarSyncMenu(props: SidebarSyncMenuProps) {
             )}
           </span>
         </DropdownMenuItem>
+        {status === 'error' && canViewGit && (
+          <DropdownMenuItem onSelect={onManageConflicts}>
+            {translate(locale, 'status.sync.resolveConflicts')}
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onSelect={onViewHistory} disabled={!canViewGit}>{translate(locale, 'sidebar.chrome.viewHistory')}</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

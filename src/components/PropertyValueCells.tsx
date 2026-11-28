@@ -35,12 +35,13 @@ function StatusValue({ propKey, value, isEditing, vaultStatuses, onSave, onStart
 }) {
   const statusStr = String(value)
   const style = getStatusStyle(statusStr)
+  const chipStyle = { ...PROPERTY_CHIP_STYLE, backgroundColor: style.bg, '--status-chip-text': style.color }
   return (
     <span className="relative inline-flex min-w-0 items-center">
       <button
         type="button"
         className="inline-flex cursor-pointer items-center gap-1.5 border-0 transition-opacity hover:opacity-80"
-        style={{ ...PROPERTY_CHIP_STYLE, backgroundColor: style.bg }}
+        style={chipStyle}
         onClick={() => onStartEdit(propKey)}
         data-testid="status-badge"
         data-property-chip-tone="status"

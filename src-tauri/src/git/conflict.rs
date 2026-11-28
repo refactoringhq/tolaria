@@ -87,17 +87,31 @@ pub fn git_resolve_conflict(
         }
     };
 
+    let pathspec = format!(":(literal){repo_relative_file}");
+    ensure_unmerged_path(workspace.git_root(), &pathspec)?;
     run_git(
         workspace.git_root(),
-        &[
-            "checkout",
-            strategy.checkout_flag(),
-            "--",
-            &repo_relative_file,
-        ],
+        &["checkout", strategy.checkout_flag(), "--", &pathspec],
     )?;
-    run_git(workspace.git_root(), &["add", "--", &repo_relative_file])?;
+    run_git(workspace.git_root(), &["add", "--", &pathspec])?;
 
+    Ok(())
+}
+
+fn ensure_unmerged_path(git_root: &Path, pathspec: &str) -> Result<(), String> {
+    let output = git_command_at(git_root)
+        .and_then(|mut command| {
+            command
+                .args(["ls-files", "--unmerged", "--", pathspec])
+                .output()
+        })
+        .map_err(|error| format!("Failed to check conflict: {error}"))?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+    }
+    if output.stdout.is_empty() {
+        return Err("The file is no longer in conflict".to_string());
+    }
     Ok(())
 }
 
@@ -228,6 +242,10 @@ fn conflict_resolution_failure(output: &std::process::Output, mode: &str) -> Str
     };
     format!("{command} failed: {}", detail.trim())
 }
+
+#[cfg(test)]
+#[path = "conflict_path_tests.rs"]
+mod path_tests;
 
 #[cfg(test)]
 mod tests {
