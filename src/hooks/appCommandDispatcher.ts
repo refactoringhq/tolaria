@@ -34,6 +34,10 @@ export interface AppCommandHandlers {
   onQuickOpen: () => void
   onSave: () => void
   onOpenSettings: () => void
+  onOpenFeedback?: () => void
+  onOpenDiscord?: () => void
+  onOpenWorkspacePicker?: () => void
+  onSyncNow?: () => void
   onToggleInspector: () => void
   onCommandPalette: () => void
   onZoomIn: () => void
@@ -78,6 +82,10 @@ export interface AppCommandHandlers {
 type SimpleHandlerKey = keyof Pick<
   AppCommandHandlers,
   | 'onOpenSettings'
+  | 'onOpenFeedback'
+  | 'onOpenDiscord'
+  | 'onOpenWorkspacePicker'
+  | 'onSyncNow'
   | 'onCheckForUpdates'
   | 'onCreateNote'
   | 'onCreateType'
@@ -126,6 +134,10 @@ type ActiveTabHandlerExecutor = (handlers: AppCommandHandlers, path: string) => 
 
 const SIMPLE_HANDLER_EXECUTORS: readonly [SimpleHandlerKey, SimpleHandlerExecutor][] = [
   ['onOpenSettings', (handlers) => handlers.onOpenSettings()],
+  ['onOpenFeedback', (handlers) => handlers.onOpenFeedback?.()],
+  ['onOpenDiscord', (handlers) => handlers.onOpenDiscord?.()],
+  ['onOpenWorkspacePicker', (handlers) => handlers.onOpenWorkspacePicker?.()],
+  ['onSyncNow', (handlers) => handlers.onSyncNow?.()],
   ['onCheckForUpdates', (handlers) => handlers.onCheckForUpdates?.()],
   ['onCreateNote', (handlers) => handlers.onCreateNote()],
   ['onCreateType', (handlers) => handlers.onCreateType?.()],

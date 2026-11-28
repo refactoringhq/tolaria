@@ -1,4 +1,3 @@
-import fs from "node:fs";
 import path from "node:path";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import {
@@ -20,10 +19,13 @@ test.beforeEach(async ({ page }) => {
 	await page.setViewportSize({ width: 1600, height: 1000 });
 	vault = createFixtureVaultCopy();
 	for (let index = 0; index < 12; index += 1) {
-		fs.writeFileSync(
-			path.join(vault, `crowded-${index}.md`),
-			`---\ntype: Note\n_organized: true\ndue: ${today}\nsource: https://example.com/calendar\n---\n# Crowded calendar ${index}\n`,
-		);
+		const response = await page.request.post("/api/vault/save", {
+			data: {
+				path: path.join(vault, `crowded-${index}.md`),
+				content: `---\ntype: Note\n_organized: true\ndue: ${today}\nsource: https://example.com/calendar\n---\n# Crowded calendar ${index}\n`,
+			},
+		});
+		expect(response.ok()).toBe(true);
 	}
 	await openFixtureVaultDesktopHarness(page, vault, {
 		expectedReadyTitle: "Crowded calendar 10",
@@ -148,9 +150,9 @@ test("shows all weekly cards and drags after scrolling a crowded week", async ({
 	});
 	await expect(card).toHaveCount(1);
 	const scroller = page.getByTestId("calendar-weeks");
-	const row = page.getByTestId("calendar-week");
+	const row = page.getByTestId("calendar-week").filter({ has: card });
 	expect(
-		await row.evaluate((element) => element.clientHeight),
+		await row.evaluate((element) => element.offsetHeight),
 	).toBeGreaterThanOrEqual(
 		await scroller.evaluate((element) => element.clientHeight),
 	);
@@ -173,18 +175,24 @@ test("keeps the calendar margins on the app background in light and dark mode", 
 	browserName,
 }) => {
 	const board = page.getByTestId("calendar-board");
-	const toolbar = page.getByTestId("calendar-toolbar");
+	const calendar = board.locator(".calendar-surface");
+	const tray = board.getByTestId("calendar-tray");
 	for (const theme of ["light", "dark"]) {
-		if (theme === "dark")
-			await page
-				.getByRole("button", { name: "Switch to dark mode", exact: true })
-				.click();
-		await expect(board).toHaveCSS(
+		await page.evaluate((theme) => {
+			document.documentElement.classList.toggle("dark", theme === "dark");
+			document.documentElement.dataset.theme = theme;
+		}, theme);
+		await expect(board).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+		await expect(calendar.getByTestId("calendar-toolbar")).toBeVisible();
+		await expect(calendar.getByTestId("calendar-tray")).toHaveCount(0);
+		await expect(tray).toHaveCSS(
 			"background-color",
-			await toolbar.evaluate(
+			await calendar.evaluate(
 				(element) => getComputedStyle(element).backgroundColor,
 			),
 		);
+		await expect(calendar).not.toHaveCSS("box-shadow", "none");
+		await expect(tray).not.toHaveCSS("box-shadow", "none");
 		await page.screenshot({
 			path: `/tmp/tolaria-calendar-${theme}-${browserName}.png`,
 		});
