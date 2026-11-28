@@ -171,7 +171,7 @@ describe("DynamicPropertiesPanel slots", () => {
 	});
 
 	describe("suggested property slots", () => {
-		function findSuggestedSlot(label: string): HTMLElement {
+		function findSuggestedSlotHtml(label: string): HTMLElement {
 			const slot = screen
 				.getAllByTestId("suggested-property")
 				.find((node) => node.textContent?.includes(label));
@@ -195,22 +195,22 @@ describe("DynamicPropertiesPanel slots", () => {
 			renderPanel({ onAddProperty });
 
 			expect(
-				within(findSuggestedSlot("status")).getByTestId(
+				within(findSuggestedSlotHtml("status")).getByTestId(
 					"suggested-property-icon-status",
 				),
 			).toBeInTheDocument();
 			expect(
-				within(findSuggestedSlot("date")).getByTestId(
+				within(findSuggestedSlotHtml("date")).getByTestId(
 					"suggested-property-icon-date",
 				),
 			).toBeInTheDocument();
 			expect(
-				within(findSuggestedSlot("url")).getByTestId(
+				within(findSuggestedSlotHtml("url")).getByTestId(
 					"suggested-property-icon-url",
 				),
 			).toBeInTheDocument();
 			expect(
-				within(findSuggestedSlot("icon")).getByTestId(
+				within(findSuggestedSlotHtml("icon")).getByTestId(
 					"suggested-property-icon-text",
 				),
 			).toBeInTheDocument();
@@ -256,7 +256,7 @@ describe("DynamicPropertiesPanel slots", () => {
 
 		it("opens the status editor without writing an empty property when clicking a suggested slot", async () => {
 			renderPanel({ onAddProperty });
-			fireEvent.click(findSuggestedSlot("status"));
+			fireEvent.click(findSuggestedSlotHtml("status"));
 			expect(onAddProperty).not.toHaveBeenCalled();
 			await waitFor(() => {
 				expect(
@@ -267,7 +267,7 @@ describe("DynamicPropertiesPanel slots", () => {
 
 		it("writes the suggested status only after the user picks a value", async () => {
 			renderPanel({ onAddProperty, onUpdateProperty });
-			fireEvent.click(findSuggestedSlot("status"));
+			fireEvent.click(findSuggestedSlotHtml("status"));
 
 			await waitFor(() => {
 				expect(
@@ -303,7 +303,7 @@ describe("DynamicPropertiesPanel slots", () => {
 
 		it("cancels a suggested status edit without writing frontmatter", async () => {
 			renderPanel({ onAddProperty });
-			fireEvent.click(findSuggestedSlot("status"));
+			fireEvent.click(findSuggestedSlotHtml("status"));
 
 			await waitFor(() => {
 				expect(
@@ -318,12 +318,12 @@ describe("DynamicPropertiesPanel slots", () => {
 			);
 
 			expect(onAddProperty).not.toHaveBeenCalled();
-			expect(findSuggestedSlot("status")).toBeInTheDocument();
+			expect(findSuggestedSlotHtml("status")).toBeInTheDocument();
 		});
 
 		it("opens the date picker without writing an empty property when clicking the Date slot", async () => {
 			renderPanel({ onAddProperty });
-			fireEvent.click(findSuggestedSlot("date"));
+			fireEvent.click(findSuggestedSlotHtml("date"));
 
 			expect(onAddProperty).not.toHaveBeenCalled();
 			await waitFor(() => {
@@ -333,7 +333,7 @@ describe("DynamicPropertiesPanel slots", () => {
 
 		it("writes the suggested date with the documented lowercase key", async () => {
 			renderPanel({ onAddProperty });
-			fireEvent.click(findSuggestedSlot("date"));
+			fireEvent.click(findSuggestedSlotHtml("date"));
 
 			const input = await screen.findByTestId("date-picker-input");
 			fireEvent.change(input, { target: { value: "2026-06-25" } });
@@ -345,7 +345,7 @@ describe("DynamicPropertiesPanel slots", () => {
 
 		it("writes the suggested url with the lowercase key (TOL-466)", async () => {
 			renderPanel({ onAddProperty });
-			fireEvent.click(findSuggestedSlot("url"));
+			fireEvent.click(findSuggestedSlotHtml("url"));
 
 			const input = await screen.findByRole("textbox");
 			fireEvent.change(input, { target: { value: "https://example.com" } });
