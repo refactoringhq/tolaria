@@ -30,7 +30,7 @@ files:
     calendar.tray.toggle: 6b4961d04b2519eac8714b9b48b6bd67
     calendar.tray.close: f989ab665501b9a35cc3acd742c1d4d0
     calendar.tray.empty: dc89daf1475c0faf7210b8893941ddd4
-    calendar.tray.dragHint: 9ac50d7bd62bb309bf3ab84e2dc802fc
+    calendar.tray.dragHint: 349d99f56e37e1d9910c5701fe2b1b73
     calendar.tray.invalid: 6f19f4e4ecdcdb0a236cdca6b5fb1042
     calendar.empty.title: 2e17af2cd235361485646fb860493d68
     calendar.empty.noDateProperty: 47d404b072de21c45e9b8c06b0c80a76
@@ -85,8 +85,6 @@ files:
     layout.collapseColumn: 14dec9a2113cfd0fd6c9f6528ad25c90
     layout.expandColumn: fbc2f6aa211e2eebe6927688b39dafd1
     layout.hideColumn: a6a275268775b705be350b64a85089c6
-    layout.dragToResize: f6d76dbbd2919ceec7d9ce66747fdd29
-    layout.clickToCollapse: 681f0e0ac587680f1dd679f1005a49d9
     layout.showColumn: 0824b42050584f99fb755b9c2595976c
     layout.hiddenColumns: f354a31c1adce1922564e25c077c828c
     command.palettePlaceholder: 6d6b61b4c08ed382ad7ba406a9ba395d
@@ -398,9 +396,7 @@ files:
     settings.dateDisplay.defaultDescription: e286107c4a43a06a0a4fbb1ecd7c7a91
     settings.dateDisplay.us: abe1c573145c4419ba8bb158cf0068d6
     settings.dateDisplay.european: 0b4f509278b2919973c5d1ae906c162b
-    settings.dateDisplay.friendly: 81e56440280f6dfaef0eb503ca301578
-    settings.dateDisplay.short: 38a5e50b590c43f85cff738808958317
-    settings.dateDisplay.shortCurrentYear: 75d6e7b83391de9c6bdf8720439ee155
+    settings.dateDisplay.friendly: 422ab130f4dcdb155094712e459a19eb
     settings.dateDisplay.iso: 89b4ef461b67eb141eadd0fc6caa8d8d
     settings.noteWidth.default: 66be0f882801fd19468181f31f58dc20
     settings.noteWidth.defaultDescription: 2b5fb6d7dfa2b1da1e47bcac30f58e8d
@@ -642,13 +638,6 @@ files:
     sidebar.nav.inbox: 3882d32c66e7e768145ecd8f104b0c08
     sidebar.nav.allNotes: cd76cf851b08a9d2feafaf255bc1f4d5
     sidebar.nav.archive: e727b00944f81e1d0a95c12886ac4641
-    sidebar.chrome.sync: d8e87c0927539672f54462c837be0b7f
-    sidebar.chrome.noSync: 9a942ab8f25cc25181a61c28e7ad4389
-    sidebar.chrome.syncJustNow: 58038ee4a4e2d0e2f764aa223fbecfae
-    sidebar.chrome.syncMinutesAgo: 879bddc5ef95d8cd2d3d0d94d60daca0
-    sidebar.chrome.syncRepository: 33fcf2b3ec4686d9cd06051c726d0ba2
-    sidebar.chrome.viewChanges: c72561c9203a41e4596a9d4b76c919a1
-    sidebar.chrome.viewHistory: dbda87480bc504af285e7ed4b775df61
     sidebar.group.favorites: 953bf4d5e8a1807c15dec4e255384b1d
     sidebar.group.views: 8f56a72923a6ca8ff53462533d89e567
     sidebar.group.types: 6b20155008db90cf7589c07baa7334e9
@@ -744,7 +733,6 @@ files:
     noteList.properties.customizeInboxColumns: e7cf53b914ce1079801eeee603875660
     noteList.properties.customizeViewColumns: a5612e5d2aa2e86941d536a85b27c8b4
     noteList.properties.showInNoteList: f22a57c5fc14ff477000cc66d837c344
-    noteList.properties.computed: 0cb1e143177c235742c288f5a895e8ea
     noteList.properties.searchPlaceholder: 9c7569eb531ff041b2b7cf4de1e5a619
     noteList.properties.searchLabel: de1bc9695d5e79a75296abf74dc25056
     noteList.properties.noMatches: 1627ecc53b9e97c94b2b6b1b93a58721
