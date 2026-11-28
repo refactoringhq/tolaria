@@ -1194,6 +1194,7 @@
   "locale.ukUA": "Ukrajinčina",
   "locale.svSE": "Švédčina",
   "locale.skSK": "Slovenčina",
+  "locale.trTR": "Turečtina",
   "telemetryConsent.saveError": "Tolaria nemohla uložiť tento výber. Skontrolujte, či váš účet môže zapisovať nastavenia aplikácie, a potom to skúste znova.",
   "collab.connect.title": "Otvoriť zdieľanú poznámku",
   "collab.connect.token": "Token servera",

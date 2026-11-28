@@ -1194,6 +1194,7 @@
   "locale.ukUA": "Ukrainska",
   "locale.svSE": "Svenska",
   "locale.skSK": "Slovakiska",
+  "locale.trTR": "Turkiska",
   "telemetryConsent.saveError": "Tolaria kunde inte spara det här valet. Kontrollera att ditt konto kan skriva sina appinställningar och försök sedan igen.",
   "collab.connect.title": "Öppna en delad anteckning",
   "collab.connect.token": "Servertoken",

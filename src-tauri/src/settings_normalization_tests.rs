@@ -343,6 +343,7 @@ fn test_supported_ui_languages_are_saved_and_reloaded() {
         ("be-Latn", "be-Latn"),
         ("id-ID", "id-ID"),
         ("sk-SK", "sk-SK"),
+        ("tr-TR", "tr-TR"),
     ];
 
     for (input, expected) in expected_languages {
@@ -373,4 +374,9 @@ fn test_ui_language_aliases_are_canonicalized() {
     );
     assert_eq!(normalize_ui_language(Some("id")).as_deref(), Some("id-ID"));
     assert_eq!(normalize_ui_language(Some("sk")).as_deref(), Some("sk-SK"));
+    assert_eq!(normalize_ui_language(Some("tr")).as_deref(), Some("tr-TR"));
+    assert_eq!(
+        normalize_ui_language(Some("tr_TR")).as_deref(),
+        Some("tr-TR")
+    );
 }

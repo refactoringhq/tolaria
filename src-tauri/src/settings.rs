@@ -78,6 +78,8 @@ const SUPPORTED_UI_LANGUAGE_ALIASES: &[(&str, &str)] = &[
     ("id-id", "id-ID"),
     ("sk", "sk-SK"),
     ("sk-sk", "sk-SK"),
+    ("tr", "tr-TR"),
+    ("tr-tr", "tr-TR"),
 ];
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]

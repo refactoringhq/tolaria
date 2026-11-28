@@ -16,6 +16,8 @@ describe('i18n', () => {
     expect(resolveEffectiveLocale(null, ['zh-TW'])).toBe('zh-TW')
     expect(resolveEffectiveLocale(null, ['es-MX'])).toBe('es-419')
     expect(resolveEffectiveLocale('system', ['fr-FR'])).toBe('fr-FR')
+    expect(resolveEffectiveLocale('system', ['tr-TR'])).toBe('tr-TR')
+    expect(resolveEffectiveLocale('system', ['tr'])).toBe('tr-TR')
     expect(resolveEffectiveLocale('system', ['xx-ZZ'])).toBe('en')
   })
 
@@ -51,6 +53,7 @@ describe('i18n', () => {
     expect(localeDisplayName('uk-UA', 'uk-UA')).toBe('Українська')
     expect(localeDisplayName('sv-SE', 'sv-SE')).toBe('Svenska')
     expect(localeDisplayName('sk-SK', 'sk-SK')).toBe('Slovenčina')
+    expect(localeDisplayName('tr-TR', 'tr-TR')).toBe('Türkçe')
   })
 
   it('keeps locale label keys present in English', () => {
@@ -60,6 +63,7 @@ describe('i18n', () => {
     expect(EN_TRANSLATIONS['locale.ukUA']).toBe('Ukrainian')
     expect(EN_TRANSLATIONS['locale.svSE']).toBe('Swedish')
     expect(EN_TRANSLATIONS['locale.skSK']).toBe('Slovak')
+    expect(EN_TRANSLATIONS['locale.trTR']).toBe('Turkish')
   })
 
   it('loads a translation catalog for every configured locale', () => {
@@ -75,6 +79,7 @@ describe('i18n', () => {
     expect(translate('en', 'status.conflict.count', { count: 2, plural: 's' })).toBe('2 conflicts')
     expect(translate('zh-CN', 'status.conflict.count', { count: 2, plural: 's' })).toBe('2 个冲突')
     expect(translate('zh-TW', 'status.conflict.count', { count: 2, plural: 's' })).toBe('2 個衝突')
+    expect(translate('tr-TR', 'status.conflict.count', { count: 2, plural: 's' })).toBe('2 çakışma')
   })
 
   it('uses platform-neutral Chinese labels for revealing files and folders', () => {

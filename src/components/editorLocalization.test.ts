@@ -51,4 +51,26 @@ describe("createBlockNoteDictionary", () => {
 				?.textContent,
 		).toContain('[data-content-type="heading"]:not([data-level])');
 	});
+
+	it("provides full Turkish (tr-TR) BlockNote localization", () => {
+		const dictionary = createBlockNoteDictionary("tr-TR");
+
+		expect(dictionary.slash_menu.heading.title).toBe("Başlık 1");
+		expect(dictionary.slash_menu.toggle_heading.title).toBe("Açılır Başlık 1");
+		expect(dictionary.slash_menu.divider.title).toBe("Ayırıcı");
+		expect(dictionary.slash_menu.page_break.title).toBe("Sayfa Sonu");
+		expect(dictionary.file_blocks.add_button_text.image).toBe("Görsel ekle");
+		expect(dictionary.toggle_blocks.add_block_button).toBe(
+			"Boş açılır blok. Blok eklemek için tıklayın.",
+		);
+		expect(dictionary.suggestion_menu.no_items_title).toBe("Öğe bulunamadı");
+		expect(dictionary.formatting_toolbar.file_download.tooltip.file).toBe(
+			"Dosyayı indir",
+		);
+		expect(dictionary.comments.actions.resolve).toBe("Çözüldü olarak işaretle");
+		expect(dictionary.comments.sidebar.more_replies(3)).toBe("3 yanıt daha");
+		expect(dictionary.placeholders.default).toBe(
+			"Metin girin veya komutlar için '/' yazın",
+		);
+	});
 });
