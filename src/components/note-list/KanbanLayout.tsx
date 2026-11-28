@@ -32,8 +32,11 @@ import {
 	visibleColumns,
 } from "./kanbanModel";
 import {
+	stackedKanbanCollisionDetection,
+	useKanbanColumnStack,
+} from "./useKanbanColumnStack";
+import {
 	type KanbanActiveItem,
-	kanbanCollisionDetection,
 	useKanbanDrag,
 	useKanbanSensors,
 	usePendingMoves,
@@ -74,7 +77,7 @@ function KanbanDragPreview({
 	}
 	if (active?.kind === "column") {
 		return (
-			<div className="kanban-drag-lift flex h-10 w-[272px] items-center rounded-xl bg-muted px-3 shadow-lg">
+			<div className="kanban-drag-lift kanban-column-drag-preview flex h-11 items-center rounded-xl bg-muted px-4 shadow-lg">
 				<KanbanColumnHeader
 					title={columnTitle(active.group, locale)}
 					count={cardCount}
@@ -171,38 +174,44 @@ function KanbanBoard(props: KanbanBoardProps) {
 		collapsedColumns,
 		actions,
 	} = props;
+	const boardRef = useRef<HTMLElement>(null);
+	const trackRef = useRef<HTMLDivElement>(null);
+	useKanbanColumnStack(boardRef, trackRef, shownColumns);
 	return (
 		<section
-			className="kanban-board kanban-scroll flex min-h-0 flex-1 gap-3 overflow-x-auto overflow-y-hidden p-3"
+			ref={boardRef}
+			className="kanban-board kanban-scroll flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden"
 			data-testid="kanban-board"
 			aria-label={translate(locale, "layout.boardLabel", {
 				property: groupBy,
 			})}
 		>
-			<SortableContext
-				items={shownColumns.map(columnId)}
-				strategy={horizontalListSortingStrategy}
-			>
-				{shownColumns.map((group) => (
-					<KanbanColumn
-						key={group || "__empty"}
-						group={group}
-						cards={grouped.get(group) ?? []}
-						context={context}
-						locale={locale}
-						selectedNotePath={selectedNotePath}
-						droppedPath={droppedPath}
-						isCardTarget={cardTarget === group}
-						collapsed={collapsedColumns.includes(group)}
-						actions={actions}
-					/>
-				))}
-			</SortableContext>
-			<KanbanHiddenColumns
-				hidden={hiddenColumnSummaries(columns, hiddenColumns, grouped)}
-				locale={locale}
-				onShow={actions.onToggleHidden}
-			/>
+			<div ref={trackRef} className="kanban-track flex w-max shrink-0 gap-3">
+				<SortableContext
+					items={shownColumns.map(columnId)}
+					strategy={horizontalListSortingStrategy}
+				>
+					{shownColumns.map((group) => (
+						<KanbanColumn
+							key={group || "__empty"}
+							group={group}
+							cards={grouped.get(group) ?? []}
+							context={context}
+							locale={locale}
+							selectedNotePath={selectedNotePath}
+							droppedPath={droppedPath}
+							isCardTarget={cardTarget === group}
+							collapsed={collapsedColumns.includes(group)}
+							actions={actions}
+						/>
+					))}
+				</SortableContext>
+				<KanbanHiddenColumns
+					hidden={hiddenColumnSummaries(columns, hiddenColumns, grouped)}
+					locale={locale}
+					onShow={actions.onToggleHidden}
+				/>
+			</div>
 		</section>
 	);
 }
@@ -265,7 +274,7 @@ export function KanbanLayout(props: KanbanLayoutProps) {
 	return (
 		<DndContext
 			sensors={sensors}
-			collisionDetection={kanbanCollisionDetection}
+			collisionDetection={stackedKanbanCollisionDetection}
 			onDragStart={drag.onDragStart}
 			onDragOver={drag.onDragOver}
 			onDragEnd={drag.onDragEnd}
@@ -276,6 +285,7 @@ export function KanbanLayout(props: KanbanLayoutProps) {
 				<DragOverlay
 					dropAnimation={drag.crossColumnDrop ? null : SETTLE_DROP_ANIMATION}
 					zIndex={12000}
+					style={{ pointerEvents: "none" }}
 				>
 					<KanbanDragPreview
 						active={drag.active}

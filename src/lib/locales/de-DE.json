@@ -28,7 +28,7 @@
   "calendar.tray.toggle": "Notizen ohne Datum ({count})",
   "calendar.tray.close": "Notizen ohne Datum ausblenden",
   "calendar.tray.empty": "Jede Notiz in dieser Liste hat ein Datum.",
-  "calendar.tray.dragHint": "Ziehen Sie eine Notiz auf einen Tag, um sie zu planen.",
+  "calendar.tray.dragHint": "Ziehen Sie eine Notiz, um sie zu planen",
   "calendar.tray.invalid": "Kein Datum: {value}",
   "calendar.empty.title": "Noch nichts, was im Kalender platziert werden könnte",
   "calendar.empty.noDateProperty": "Der Kalender ordnet jede Notiz dem Tag zu, der in einer ihrer Datumseigenschaften angegeben ist, z. B. „due“ oder „start“. Keine Notiz in dieser Liste hat bisher eine Datumseigenschaft.",
@@ -1508,5 +1508,17 @@
   "mobile.workspace.actionFailure.multiple": "Diese Änderungen konnten nicht gespeichert werden. Ihre Notizen bleiben unverändert.",
   "calendar.quarter": "Quartal",
   "calendar.year": "Jahr",
-  "calendar.showIcons": "Notizsymbole anzeigen"
+  "calendar.showIcons": "Notizsymbole anzeigen",
+  "layout.dragToResize": "Zum <strong>Ändern</strong> der Größe ziehen",
+  "layout.clickToCollapse": "Zum Einklappen<strong> klicken</strong>",
+  "settings.dateDisplay.short": "Kurzform in der Notizenliste (21. Nov. 2026)",
+  "settings.dateDisplay.shortCurrentYear": "Kurzform in der Notizenliste, aktuelles Jahr weglassen (21. Nov.)",
+  "sidebar.chrome.sync": "Synchronisieren",
+  "sidebar.chrome.noSync": "Keine Synchronisierung",
+  "sidebar.chrome.syncJustNow": "Gerade eben",
+  "sidebar.chrome.syncMinutesAgo": "Vor {minutes} Min.",
+  "sidebar.chrome.syncRepository": "Repository",
+  "sidebar.chrome.viewChanges": "Änderungen anzeigen",
+  "sidebar.chrome.viewHistory": "Verlauf anzeigen",
+  "noteList.properties.computed": "Berechnete Felder"
 }

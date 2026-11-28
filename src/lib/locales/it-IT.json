@@ -28,7 +28,7 @@
   "calendar.tray.toggle": "Note senza data ({count})",
   "calendar.tray.close": "Nascondi le note senza data",
   "calendar.tray.empty": "Ogni nota in questo elenco ha una data.",
-  "calendar.tray.dragHint": "Trascina una nota su un giorno per programmarla.",
+  "calendar.tray.dragHint": "Trascina una nota per programmarla",
   "calendar.tray.invalid": "Non è una data: {value}",
   "calendar.empty.title": "Ancora nulla da inserire nel calendario",
   "calendar.empty.noDateProperty": "Il calendario colloca ogni nota nel giorno corrispondente a una delle sue proprietà di data, come \"due\" o \"start\". Nessuna nota in questo elenco ha ancora una proprietà data.",
@@ -1508,5 +1508,17 @@
   "mobile.workspace.actionFailure.multiple": "Impossibile salvare queste modifiche. Le tue note sono rimaste invariate.",
   "calendar.quarter": "Trimestre",
   "calendar.year": "Anno",
-  "calendar.showIcons": "Mostra icone delle note"
+  "calendar.showIcons": "Mostra icone delle note",
+  "layout.dragToResize": "<strong>Trascina</strong> per ridimensionare",
+  "layout.clickToCollapse": "<strong>Clicca</strong> per comprimere",
+  "settings.dateDisplay.short": "Formato breve nell'elenco delle note (21 nov. 2026)",
+  "settings.dateDisplay.shortCurrentYear": "Formato breve nell'elenco delle note, senza l'anno corrente (21 nov)",
+  "sidebar.chrome.sync": "Sincronizza",
+  "sidebar.chrome.noSync": "Nessuna sincronizzazione",
+  "sidebar.chrome.syncJustNow": "Appena ora",
+  "sidebar.chrome.syncMinutesAgo": "{minutes} min fa",
+  "sidebar.chrome.syncRepository": "Repository",
+  "sidebar.chrome.viewChanges": "Visualizza le modifiche",
+  "sidebar.chrome.viewHistory": "Visualizza cronologia",
+  "noteList.properties.computed": "Campi calcolati"
 }

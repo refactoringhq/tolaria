@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import { isTauri } from '../mock-tauri'
+import { isMac } from '../utils/platform'
 import { resolveThemeMode, type ResolvedThemeMode, type ThemeMode } from './themeMode'
 
 export async function syncAppIconThemeMode(themeMode: ResolvedThemeMode): Promise<void> {
@@ -21,7 +22,12 @@ export async function syncNativeWindowBackground(themeMode: ThemeMode): Promise<
 
   try {
     const { getCurrentWindow } = await import('@tauri-apps/api/window')
-    await getCurrentWindow().setBackgroundColor(color)
+    const appWindow = getCurrentWindow()
+    if (isMac() && appWindow.label === 'main') {
+      document.body.classList.add('mac-sidebar-vibrancy')
+      return
+    }
+    await appWindow.setBackgroundColor(color)
   } catch (error) {
     console.warn('Failed to update native window background for theme mode', error)
   }

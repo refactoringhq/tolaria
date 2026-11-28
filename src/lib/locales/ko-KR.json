@@ -28,7 +28,7 @@
   "calendar.tray.toggle": "날짜가 없는 노트({count}개)",
   "calendar.tray.close": "날짜가 없는 노트 숨기기",
   "calendar.tray.empty": "이 목록의 모든 노트에는 날짜가 있습니다.",
-  "calendar.tray.dragHint": "노트를 특정 날짜로 드래그하여 일정을 잡으세요.",
+  "calendar.tray.dragHint": "노트를 끌어다 놓아 일정을 잡으세요",
   "calendar.tray.invalid": "날짜가 아님: {value}",
   "calendar.empty.title": "아직 캘린더에 추가할 항목이 없습니다",
   "calendar.empty.noDateProperty": "캘린더는 각 노트를 마감일(due)이나 시작일(start)과 같은 날짜 속성 중 하나에 따라 해당 날짜에 배치합니다. 이 목록의 노트 중 아직 날짜 속성이 있는 노트가 없습니다.",
@@ -1508,5 +1508,17 @@
   "mobile.workspace.actionFailure.multiple": "이 변경 사항을 저장할 수 없습니다. 노트가 변경되지 않았습니다.",
   "calendar.quarter": "분기",
   "calendar.year": "년",
-  "calendar.showIcons": "노트 아이콘 표시"
+  "calendar.showIcons": "노트 아이콘 표시",
+  "layout.dragToResize": "<strong>드래그하여 크기</strong> 조정",
+  "layout.clickToCollapse": "<strong>클릭하여</strong> 접기",
+  "settings.dateDisplay.short": "노트 목록에서 짧게 표시(2026년 11월 21일)",
+  "settings.dateDisplay.shortCurrentYear": "노트 목록에서 짧게 표시, 올해 연도 생략(11월 21일)",
+  "sidebar.chrome.sync": "동기화",
+  "sidebar.chrome.noSync": "동기화 없음",
+  "sidebar.chrome.syncJustNow": "방금 전",
+  "sidebar.chrome.syncMinutesAgo": "{minutes}분 전",
+  "sidebar.chrome.syncRepository": "리포지토리",
+  "sidebar.chrome.viewChanges": "변경 사항 보기",
+  "sidebar.chrome.viewHistory": "히스토리 보기",
+  "noteList.properties.computed": "계산 필드"
 }
