@@ -12,6 +12,7 @@ import { HeroBg, heroBgFromUrl } from "@/components/landing/HeroBg"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AiDemo, EditorDemo, GitDemo, RelationsDemo, ThemeDemo } from "@/components/landing/Demos"
 import { DOCS, DOWNLOADS, LINKS, TESTFLIGHT_URL, NEWSLETTER_SUBSCRIBERS, QUOTES, RELEASE, SPONSORS, STARS } from "./content"
+import { alsoOnPlatforms, detectDesktopPlatform, formatPlatformList, type DesktopPlatform } from "./hero-platform"
 import { startMotion } from "./motion"
 
 // Tolaria landing page on the Refactoring brand. Polish rules adapted from elayadesign/ai-design-skills (MIT).
@@ -71,17 +72,10 @@ function TopBar() {
   )
 }
 
-function platform() {
-  const ua = navigator.userAgent
-  if (/Windows/i.test(ua)) return "Windows"
-  if (/iPhone|iPad|Android/i.test(ua)) return null
-  if (/Linux/i.test(ua)) return "Linux"
-  return "macOS"
-}
-
 function Hero() {
-  const [os, setOs] = useState<string | null>("macOS")
-  useEffect(() => setOs(platform()), [])
+  const [os, setOs] = useState<DesktopPlatform | null>("macOS")
+  useEffect(() => setOs(detectDesktopPlatform(navigator.userAgent)), [])
+  const otherPlatforms = alsoOnPlatforms(os)
   const OsIcon = os === "Windows" ? WindowsLogoIcon : os === "Linux" ? LinuxLogoIcon : AppleLogoIcon
   const [bg] = useState(heroBgFromUrl)
   return (
@@ -114,7 +108,7 @@ function Hero() {
             </a>
           </div>
           <p className="rise mt-4 text-sm text-primary-foreground/80" style={{ ["--i" as string]: 4 }}>
-            Also on <a href="#download" className="font-semibold underline underline-offset-4">Windows and Linux</a> (early support). Open source, no account.
+            Also on <a href="#download" className="font-semibold underline underline-offset-4">{formatPlatformList(otherPlatforms)}</a>. Open source, no account.
           </p>
         </div>
     </header>
