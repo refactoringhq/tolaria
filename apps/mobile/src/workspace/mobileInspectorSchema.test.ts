@@ -24,9 +24,9 @@ describe("mobile inspector schema slots", () => {
 
 		expect(mobileInspectorPropertySlots(note, typeDefinitions)).toEqual([
 			{ key: "Priority", label: "Priority", source: "typeDerived" },
-			{ key: "Status", label: "Status", source: "suggested" },
-			{ key: "Date", label: "Date", source: "suggested" },
-			{ key: "icon", label: "Icon", source: "suggested" },
+			{ key: "status", label: "status", source: "suggested" },
+			{ key: "date", label: "date", source: "suggested" },
+			{ key: "icon", label: "icon", source: "suggested" },
 		]);
 	});
 
@@ -34,10 +34,10 @@ describe("mobile inspector schema slots", () => {
 		expect(
 			mobileInspectorPropertySlots(noteFixture({ status: "" }), undefined),
 		).toEqual([
-			{ key: "Status", label: "Status", source: "suggested" },
-			{ key: "Date", label: "Date", source: "suggested" },
-			{ key: "URL", label: "URL", source: "suggested" },
-			{ key: "icon", label: "Icon", source: "suggested" },
+			{ key: "status", label: "status", source: "suggested" },
+			{ key: "date", label: "date", source: "suggested" },
+			{ key: "url", label: "url", source: "suggested" },
+			{ key: "icon", label: "icon", source: "suggested" },
 		]);
 	});
 
@@ -48,9 +48,9 @@ describe("mobile inspector schema slots", () => {
 				undefined,
 			),
 		).toEqual([
-			{ key: "Status", label: "Status", source: "suggested" },
-			{ key: "Date", label: "Date", source: "suggested" },
-			{ key: "URL", label: "URL", source: "suggested" },
+			{ key: "status", label: "status", source: "suggested" },
+			{ key: "date", label: "date", source: "suggested" },
+			{ key: "url", label: "url", source: "suggested" },
 		]);
 	});
 

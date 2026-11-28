@@ -137,8 +137,8 @@ describe('property panel shared grid layout', () => {
       onAddProperty: vi.fn(),
     })
 
-    expect(screen.getByText('Status').parentElement).toHaveClass('text-text-muted')
-    expect(screen.getByText('Date').parentElement).toHaveClass('text-text-muted')
+    expect(screen.getByText('status').parentElement).toHaveClass('text-text-muted')
+    expect(screen.getByText('date').parentElement).toHaveClass('text-text-muted')
   })
 
   it('renders the add-property row in lighter placeholder text', () => {
