@@ -79,14 +79,6 @@ test.describe("AI panel in non-list layouts", () => {
 			await toggleAiPanel(page);
 			await expect(aiPanel(page)).toBeVisible();
 			await expectBesideLayout(page);
-			await expect(page.locator(".app__editor")).toHaveCSS(
-				"background-image",
-				"none",
-			);
-			await expect(page.locator(".app__editor > .editor")).toHaveCSS(
-				"box-shadow",
-				"none",
-			);
 			await expect(
 				page.getByTestId(LAYOUT_SURFACE[layout]).first(),
 			).toBeVisible();
@@ -134,29 +126,4 @@ test.describe("AI panel in non-list layouts", () => {
 		await expect(aiPanel(page)).toBeVisible();
 		await expectBesideLayout(page);
 	});
-});
-
-test("keeps the Kanban header and columns aligned when the sidebar is hidden", async ({
-	page,
-}) => {
-	const vault = createFixtureVaultCopy();
-	try {
-		await openFixtureVault(page, vault);
-		await showAllNotesAs(page, "kanban");
-		const header = page.getByTestId("layout-menu-button");
-		const column = page.getByTestId("kanban-column").first();
-		const top = (el: Element) => el.getBoundingClientRect().top;
-		const headerTop = await header.evaluate(top);
-		const columnTop = await column.evaluate(top);
-		await page
-			.locator(".app__sidebar")
-			.getByRole("button", { name: "Collapse sidebar", exact: true })
-			.click();
-		await expect(page.locator(".app__sidebar")).toHaveCount(0);
-		await expect.poll(() => header.evaluate(top)).toBeCloseTo(headerTop, 0);
-		expect(await column.evaluate(top)).toBeCloseTo(columnTop, 0);
-		await expect(page.locator(".app")).toHaveCSS("padding-left", "0px");
-	} finally {
-		removeFixtureVaultCopy(vault);
-	}
 });

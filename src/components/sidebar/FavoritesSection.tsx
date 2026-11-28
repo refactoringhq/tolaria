@@ -3,7 +3,7 @@ import type { VaultEntry, SidebarSelection } from '../../types'
 import { DndContext, PointerSensor, closestCenter, type DragEndEvent, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { buildTypeEntryMap, getTypeColor } from '../../utils/typeColors'
+import { buildTypeEntryMap, getTypeColor, getTypeLightColor } from '../../utils/typeColors'
 import { NoteTitleIcon } from '../NoteTitleIcon'
 import { isSelectionActive } from '../../utils/sidebarSelection'
 import { SidebarGroupHeader } from './SidebarGroupHeader'
@@ -60,11 +60,14 @@ function SortableFavoriteItem({
   const typeEntry = entry.isA ? typeEntryMap[entry.isA] : undefined
   const icon = getFavoriteIcon(entry, typeEntryMap)
   const typeColor = getTypeColor(entry.isA ?? null, typeEntry?.color)
+  const typeLightColor = getTypeLightColor(entry.isA ?? null, typeEntry?.color)
   const rowStyle: SidebarItemStyle = {
+    '--sidebar-active-bg': typeLightColor,
+    '--sidebar-active-fg': typeColor,
     padding: SIDEBAR_ITEM_PADDING.withCount,
-    borderRadius: 'var(--radius-xl)',
+    borderRadius: 4,
     gap: 4,
-    ...(isActive ? { background: 'var(--sidebar-item-highlight)', boxShadow: 'var(--shadow-sidebar)' } : {}),
+    ...(isActive ? { background: typeLightColor } : {}),
   }
 
   return (
@@ -87,8 +90,8 @@ function SortableFavoriteItem({
         <div className="flex min-w-0 flex-1 items-center" style={{ gap: 4 }}>
           <NoteTitleIcon icon={icon} size={16} color={typeColor} />
           <span
-            className="min-w-0 truncate border-0 bg-transparent p-0 text-left text-[13px] font-medium text-foreground"
-            style={{ marginLeft: 4 }}
+            className="min-w-0 truncate border-0 bg-transparent p-0 text-left text-[13px] font-medium"
+            style={{ marginLeft: 4, color: isActive ? typeColor : undefined }}
           >
             {entry.title}
           </span>
