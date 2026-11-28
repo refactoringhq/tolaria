@@ -87,6 +87,14 @@ export function useInlineWikilinkSelection({
     void value
     const editor = getActiveSelectionEditor(editorRef.current, isComposingRef)
     if (!editor) return
+    // Rewriting the DOM selection destroys and rebuilds the TSF composition
+    // anchor, which closes a Sogou Pinyin candidate window mid-composition on
+    // Windows (its hidden composition sends no DOM composition events, so the
+    // isComposing guard above never trips). Skip the rewrite when the DOM
+    // selection already matches: a redundant removeAllRanges is the kill.
+    const currentSelection = readSelectionRange(editor)
+    if (currentSelection.start === selectionRange.start
+      && currentSelection.end === selectionRange.end) return
     applySelectionRange(editor, selectionRange)
   }, [isComposingRef, selectionRange, value])
 

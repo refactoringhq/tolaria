@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react'
 import type { VaultEntry } from '../types'
 import type { NoteReference } from '../utils/ai-context'
 import { buildTypeEntryMap } from '../utils/typeColors'
@@ -30,12 +30,23 @@ import {
   isLineBreakShortcut,
   isNativeCompositionBeforeInput,
   isSelectAllShortcut,
+  isWindowsRuntime,
 } from './inlineWikilinkInputEvents'
+import {
+  commitEditorValueBeforeSubmit,
+  publishEditorValue,
+  recordImeKeyDownSignal,
+  shieldNativeBeforeInput,
+  submitEditorValue,
+  useCanonicalRemountGuard,
+  usePostCompositionTextInputSettle,
+  useRenderedEditorValue,
+  useShieldedBeforeInput,
+} from './inlineWikilinkComposition'
 import {
   containsUnsupportedInlineContent,
   deleteToLineStart,
   hasUnsupportedClipboardPayload,
-  submitInlineValue,
 } from './inlineWikilinkInputOperations'
 import { restorePendingRemountState } from './inlineWikilinkRemountState'
 import { useNativePathDrop } from './useNativePathDrop'
@@ -62,40 +73,6 @@ interface InlineWikilinkInputProps {
 }
 
 export const UNSUPPORTED_INLINE_PASTE_MESSAGE = 'Only text paste is supported in the AI composer right now.'
-const POST_COMPOSITION_TEXT_INPUT_SETTLE_MS = 120
-
-function usePostCompositionTextInputSettle() {
-  const isSettlingCompositionRef = useRef(false)
-  const compositionSettleTimerRef = useRef<number | null>(null)
-  const clearCompositionSettleWindow = useCallback(() => {
-    isSettlingCompositionRef.current = false
-    if (compositionSettleTimerRef.current === null) return
-
-    window.clearTimeout(compositionSettleTimerRef.current)
-    compositionSettleTimerRef.current = null
-  }, [])
-  const startCompositionSettleWindow = useCallback(
-    (onSettled: () => void) => {
-      clearCompositionSettleWindow()
-      isSettlingCompositionRef.current = true
-      compositionSettleTimerRef.current = window.setTimeout(() => {
-        compositionSettleTimerRef.current = null
-        onSettled()
-      }, POST_COMPOSITION_TEXT_INPUT_SETTLE_MS)
-    },
-    [clearCompositionSettleWindow],
-  )
-
-  useLayoutEffect(() => () => clearCompositionSettleWindow(), [clearCompositionSettleWindow])
-
-  return {
-    clearCompositionSettleWindow,
-    hasPendingCompositionFlush: () => compositionSettleTimerRef.current !== null,
-    isSettlingCompositionRef,
-    startCompositionSettleWindow,
-  }
-}
-
 export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
   const {
     entries,
@@ -117,9 +94,19 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
     paletteEmptyState,
     paletteFooter,
   } = options
-  const [renderVersion, forceRender] = useState(0)
+  const { lastPublishedValueRef, pendingCompositionInputRef, publishValue, renderState, remountWith, suppressEchoRemountRef } =
+    useRenderedEditorValue(value, onChange)
+  const renderVersion = renderState.version
   const isComposingRef = useRef(false)
+  const lastImeKeyDownAtRef = useRef<number | null>(null)
+  // performance.now() twin of lastImeKeyDownAtRef: event.timeStamp is only
+  // comparable with other event timeStamps, not with performance.now().
+  const lastImeKeyDownPerfAtRef = useRef<number | null>(null)
   const segments = useMemo(() => buildInlineWikilinkSegments(value, entries), [entries, value])
+  const renderedSegments = useMemo(
+    () => buildInlineWikilinkSegments(renderState.value, entries),
+    [entries, renderState.value],
+  )
   const typeEntryMap = useMemo(() => buildTypeEntryMap(entries), [entries])
   const {
     editorRef,
@@ -131,12 +118,11 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
     focusSelectionRange,
   } = useInlineWikilinkSelection({
     value,
-    onChange,
+    onChange: publishValue,
     inputRef,
     isComposingRef,
   })
   const pendingPasteRef = useRef<PendingPasteState | null>(null)
-  const pendingCompositionInputRef = useRef(false)
   const handledFileDropRef = useRef(false)
   const pendingFocusAfterRemountRef = useRef<InlineSelectionRange | null>(null)
   const pendingScrollTopAfterRemountRef = useRef<number | null>(null)
@@ -155,6 +141,17 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
       pendingScrollTopAfterRemountRef,
     )
   }, [editorRef, focusSelectionRange, renderVersion])
+  useCanonicalRemountGuard({
+    editorRef,
+    isComposingRef,
+    lastPublishedValueRef,
+    remountWith,
+    pendingFocusAfterRemountRef,
+    renderedValue: renderState.value,
+    selectionRange,
+    suppressEchoRemountRef,
+    value,
+  })
   const activeQuery = useMemo(
     () => (selectionRange.start === selectionRange.end ? findActiveWikilinkQuery(value, selectionIndex) : null),
     [selectionIndex, selectionRange.end, selectionRange.start, value],
@@ -167,10 +164,27 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
       query: activeQuery?.query ?? null,
       value,
       selectionIndex,
-      onChange,
+      onChange: publishValue,
       onSelectionIndexChange: (nextSelectionIndex) => setSelectionRange(collapseSelectionRange(nextSelectionIndex)),
       focusSelectionAt: (nextSelectionIndex) => focusSelectionRange(collapseSelectionRange(nextSelectionIndex)),
     })
+  // A pick is an explicit user action outside the IME pipeline, so it always
+  // commits canonically instead of leaning on the (Windows-suppressed) guard.
+  const selectSuggestionAndRemount = (index: number) => {
+    selectSuggestion(index)
+    remountWith(lastPublishedValueRef.current)
+  }
+  const commitCanonicalEdit = useCallback(
+    (nextState: { selection: InlineSelectionRange; value: string }, shouldFocus = true) => {
+      publishValue(nextState.value)
+      setSelectionRange(nextState.selection)
+      pendingFocusAfterRemountRef.current = shouldFocus
+        ? nextState.selection
+        : null
+      remountWith(nextState.value)
+    },
+    [publishValue, remountWith, setSelectionRange],
+  )
   const insertTransferText = useCallback(
     (text: string, focusAfterInsert = false) => {
       const editor = editorRef.current
@@ -178,24 +192,18 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
       const nextState = replaceInlineSelection(value, currentSelectionRange, text)
       const shouldRestoreFocus = focusAfterInsert || document.activeElement === editor
 
-      onChange(nextState.value)
-      setSelectionRange(nextState.selection)
-      pendingFocusAfterRemountRef.current = shouldRestoreFocus ? nextState.selection : null
       pendingScrollTopAfterRemountRef.current = editor?.scrollTop ?? null
-      forceRender((current) => current + 1)
+      commitCanonicalEdit(nextState, shouldRestoreFocus)
     },
-    [editorRef, onChange, selectionRange, setSelectionRange, value],
+    [commitCanonicalEdit, editorRef, selectionRange, value],
   )
-  const insertNativePathDrop = (paths: string[]) => {
-    const droppedPathText = formatDroppedPathList(paths)
-    if (!droppedPathText) return
-
-    insertTransferText(droppedPathText, true)
-  }
   useNativePathDrop({
     targetRef: editorRef,
     disabled,
-    onPathDrop: insertNativePathDrop,
+    onPathDrop: (paths) => {
+      const droppedPathText = formatDroppedPathList(paths)
+      if (droppedPathText) insertTransferText(droppedPathText, true)
+    },
   })
   const notifyUnsupportedPaste = useCallback(
     () => onUnsupportedPaste?.(UNSUPPORTED_INLINE_PASTE_MESSAGE),
@@ -205,14 +213,21 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
     pendingCompositionInputRef.current = false
     pendingPasteRef.current = null
     notifyUnsupportedPaste()
-    forceRender((current) => current + 1)
+    remountWith(value)
     setSelectionRange({ ...selectionRange })
+  }
+  const editorPublishCallbacks = {
+    onChange: publishValue,
+    onUnsupportedMutation: recoverUnsupportedMutation,
+    remount: remountWith,
+    setPendingFocusAfterRemount: (selection: InlineSelectionRange | null) => {
+      pendingFocusAfterRemountRef.current = selection
+    },
+    setSelectionRange,
   }
   const deleteContent = (direction: 'backward' | 'forward') => {
     const nextState = deleteInlineSelection(value, selectionRange, segments, direction)
-    if (!nextState) return
-    onChange(nextState.value)
-    setSelectionRange(nextState.selection)
+    if (nextState) commitCanonicalEdit(nextState)
   }
   const deleteContentToLineStart = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (!isCommandBackspaceShortcut(event)) return false
@@ -225,18 +240,8 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
     event.preventDefault()
     event.stopPropagation()
 
-    if (!nextState) return true
-
-    onChange(nextState.value)
-    setSelectionRange(nextState.selection)
-    pendingFocusAfterRemountRef.current = nextState.selection
-    forceRender((current) => current + 1)
+    if (nextState) commitCanonicalEdit(nextState)
     return true
-  }
-  const selectAllContent = () => {
-    const nextSelection = fullSelectionRange(value)
-    setSelectionRange(nextSelection)
-    focusSelectionRange(nextSelection)
   }
   const cutSelectedContent = (event: React.ClipboardEvent<HTMLDivElement>) => {
     if (disabled) return
@@ -250,12 +255,7 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
     event.clipboardData.setData('text/plain', normalizeInlineWikilinkValue(selectedText))
 
     const nextState = deleteInlineSelection(value, currentSelectionRange, segments, 'backward')
-    if (!nextState) return
-
-    onChange(nextState.value)
-    setSelectionRange(nextState.selection)
-    pendingFocusAfterRemountRef.current = nextState.selection
-    forceRender((current) => current + 1)
+    if (nextState) commitCanonicalEdit(nextState)
   }
   const handleBeforeInput = useCallback(
     (nativeEvent: InputEvent) => {
@@ -269,9 +269,12 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
           isComposingRef.current,
           pendingCompositionInputRef.current,
           isSettlingCompositionRef.current,
+          lastImeKeyDownAtRef.current,
         )
-      )
+      ) {
+        shieldNativeBeforeInput(nativeEvent)
         return
+      }
 
       if (nativeEvent.inputType === 'insertLineBreak') {
         nativeEvent.preventDefault()
@@ -280,6 +283,18 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
       }
 
       if (isPlainTextBeforeInput(nativeEvent)) {
+        if (isWindowsRuntime()) {
+          // Windows IMEs such as Sogou Pinyin can start a composition right
+          // after this bare insertText (GitHub #1329); manually inserting and
+          // remounting here would destroy that starting composition. Let the
+          // browser insert the text natively; the following input event
+          // schedules the deferred value sync (see handleInput). The shield
+          // keeps the injected WebView2 helper from canceling this insertion
+          // and forcing the IME to roll the text back.
+          shieldNativeBeforeInput(nativeEvent)
+          return
+        }
+
         nativeEvent.preventDefault()
         insertTransferText(nativeEvent.data)
         return
@@ -306,16 +321,9 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
       nativeEvent.preventDefault()
       notifyUnsupportedPaste()
     },
-    [disabled, insertTransferText, isSettlingCompositionRef, notifyUnsupportedPaste],
+    [disabled, insertTransferText, isSettlingCompositionRef, notifyUnsupportedPaste, pendingCompositionInputRef],
   )
-  useLayoutEffect(() => {
-    void renderVersion
-    const editor = editorRef.current
-    if (!editor) return
-
-    editor.addEventListener('beforeinput', handleBeforeInput as EventListener)
-    return () => editor.removeEventListener('beforeinput', handleBeforeInput as EventListener)
-  }, [editorRef, handleBeforeInput, renderVersion])
+  useShieldedBeforeInput(editorRef, handleBeforeInput, renderVersion)
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     if (disabled) return
     if (!hasUnsupportedClipboardPayload(event.dataTransfer)) return
@@ -347,8 +355,11 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
     pendingPasteRef.current = buildPendingPasteState(value, selectionRange, pastedText)
 
     event.preventDefault()
-    onChange(nextState.value)
-    setSelectionRange(nextState.selection)
+
+    const editor = editorRef.current
+    const shouldRestoreFocus = document.activeElement === editor
+    pendingScrollTopAfterRemountRef.current = editor?.scrollTop ?? null
+    commitCanonicalEdit(nextState, shouldRestoreFocus)
   }
   const syncValueFromEditor = () => {
     const editor = editorRef.current
@@ -363,65 +374,40 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
       pendingPasteRef.current = null
 
       if (shouldRecoverPendingPaste(nextValue, pendingPaste)) {
-        onChange(pendingPaste.expectedValue)
-        forceRender((current) => current + 1)
+        publishValue(pendingPaste.expectedValue)
+        remountWith(pendingPaste.expectedValue)
         setSelectionRange({ ...pendingPaste.expectedSelection })
         return
       }
     }
 
-    if (!editor) return
-
-    const nextValue = normalizeInlineWikilinkValue(serializeInlineNode(editor))
-    const nextSelection = readSelectionRange(editor)
-    const clampedSelection: InlineSelectionRange = {
-      start: Math.min(nextSelection.start, nextValue.length),
-      end: Math.min(nextSelection.end, nextValue.length),
-    }
-
-    const shouldRestoreFocus = document.activeElement === editor
-    pendingFocusAfterRemountRef.current = shouldRestoreFocus ? clampedSelection : null
-    onChange(nextValue)
-    setSelectionRange(clampedSelection)
-    forceRender((current) => current + 1)
+    publishEditorValue({ ...editorPublishCallbacks, currentValue: value, editor, hadPendingInput: true })
   }
-  const flushPendingCompositionInput = (compositionEditor?: HTMLDivElement | null) => {
+  // The flush always serializes the live editor node: a node captured at
+  // compositionend may have been replaced by an explicit canonical remount
+  // (delete, paste, pick) before the settle timer fires.
+  const flushPendingCompositionInput = () => {
     if (isComposingRef.current) return
+    const editor = editorRef.current
     const hadPendingInput = pendingCompositionInputRef.current
     pendingCompositionInputRef.current = false
+    publishEditorValue({ ...editorPublishCallbacks, currentValue: value, editor, hadPendingInput })
+  }
+  // Blur ends any hidden composition for good, so it is the safe moment to
+  // rebuild the canonical segment DOM from the published value.
+  const handleEditorBlur = () => {
+    if (isComposingRef.current) return
 
-    const editor = compositionEditor ?? editorRef.current
-    if (!editor) return
-
-    if (containsUnsupportedInlineContent(editor)) {
-      recoverUnsupportedMutation()
-      return
-    }
-
-    const nextValue = normalizeInlineWikilinkValue(serializeInlineNode(editor))
-    if (!hadPendingInput && nextValue === value) return
-
-    const nextSelection = readSelectionRange(editor)
-    const clampedSelection: InlineSelectionRange = {
-      start: Math.min(nextSelection.start, nextValue.length),
-      end: Math.min(nextSelection.end, nextValue.length),
-    }
-    const shouldRestoreFocus = document.activeElement === editor || document.activeElement === editorRef.current
-    pendingFocusAfterRemountRef.current = shouldRestoreFocus ? clampedSelection : null
-    onChange(nextValue)
-    setSelectionRange(clampedSelection)
-    forceRender((current) => current + 1)
+    clearCompositionSettleWindow()
+    flushPendingCompositionInput()
   }
   const handleCompositionStart = () => {
     clearCompositionSettleWindow()
     isComposingRef.current = true
   }
-  const handleCompositionUpdate = () => {
-    isComposingRef.current = true
-  }
-  const handleCompositionEnd = (compositionEditor: HTMLDivElement) => {
+  const handleCompositionEnd = () => {
     isComposingRef.current = false
-    startCompositionSettleWindow(() => flushPendingCompositionInput(compositionEditor))
+    startCompositionSettleWindow(flushPendingCompositionInput)
   }
   const handleInput = () => {
     if (disabled) return
@@ -438,23 +424,50 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
 
     clearCompositionSettleWindow()
     pendingCompositionInputRef.current = false
+
+    if (isWindowsRuntime()) {
+      pendingCompositionInputRef.current = true
+      // Non-destructive publish (#1329): the value follows the DOM immediately
+      // while the editor node stays untouched, so the sync can never
+      // interrupt a live hidden composition mid-keystroke.
+      suppressEchoRemountRef.current = true
+      publishEditorValue({
+        ...editorPublishCallbacks,
+        currentValue: value,
+        editor: editorRef.current,
+        hadPendingInput: true,
+        remount: () => undefined,
+        setPendingFocusAfterRemount: () => undefined,
+      })
+      return
+    }
+
     syncValueFromEditor()
   }
   const submitValue = () => {
-    const currentValue = editorRef.current
-      ? normalizeInlineWikilinkValue(serializeInlineNode(editorRef.current))
-      : value
-    const currentReferences =
-      currentValue === value ? references : extractInlineWikilinkReferences(currentValue, entries)
-
-    submitInlineValue({
+    commitEditorValueBeforeSubmit({
+      clearSettleWindow: clearCompositionSettleWindow,
+      editor: editorRef.current,
+      fallbackValue: value,
+      pendingCompositionInputRef,
+      publishValue,
+      remountWith,
+      renderedValue: renderState.value,
+      pendingFocusAfterRemountRef,
+      setSelectionRange,
+    })
+    submitEditorValue({
+      editor: editorRef.current,
+      entries,
       onSubmit,
+      references,
       submitOnEmpty,
-      value: currentValue,
-      references: currentReferences,
+      value,
     })
   }
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    recordImeKeyDownSignal(event, lastImeKeyDownAtRef, lastImeKeyDownPerfAtRef)
+
     if (!disabled && isLineBreakShortcut(event, isComposingRef.current)) {
       event.preventDefault()
       insertTransferText('\n')
@@ -463,7 +476,9 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
 
     if (isSelectAllShortcut(event)) {
       event.preventDefault()
-      selectAllContent()
+      const nextSelection = fullSelectionRange(value)
+      setSelectionRange(nextSelection)
+      focusSelectionRange(nextSelection)
       return
     }
 
@@ -477,7 +492,7 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
       isComposing: isComposingRef.current,
       suggestionsOpen: suggestions.length > 0,
       onCycleSuggestions: cycleSuggestions,
-      onSelectSuggestion: () => selectSuggestion(selectedSuggestionIndex),
+      onSelectSuggestion: () => selectSuggestionAndRemount(selectedSuggestionIndex),
       onDeleteContent: deleteContent,
       canSubmit: onSubmit !== undefined,
       onSubmit: submitValue,
@@ -486,7 +501,9 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
   const editor = (
     <InlineWikilinkEditorField
       key={renderVersion}
-      value={value}
+      value={renderState.value}
+      liveValueEmpty={value.length === 0}
+      onBlur={handleEditorBlur}
       placeholder={placeholder}
       disabled={disabled}
       inputRef={setCombinedRef}
@@ -496,14 +513,16 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
       editorStyle={editorStyle}
       onCompositionEnd={handleCompositionEnd}
       onCompositionStart={handleCompositionStart}
-      onCompositionUpdate={handleCompositionUpdate}
+      onCompositionUpdate={() => {
+        isComposingRef.current = true
+      }}
       onInput={handleInput}
       onKeyDown={handleKeyDown}
       onCut={cutSelectedContent}
       onDrop={handleDrop}
       onPaste={handlePaste}
       onSelectionChange={syncSelectionRange}
-      segments={segments}
+      segments={renderedSegments}
       typeEntryMap={typeEntryMap}
     />
   )
@@ -512,7 +531,7 @@ export function InlineWikilinkInput(options: InlineWikilinkInputProps) {
       suggestions={suggestions}
       selectedSuggestionIndex={selectedSuggestionIndex}
       setSuggestionIndex={setSuggestionIndex}
-      selectSuggestion={selectSuggestion}
+      selectSuggestion={selectSuggestionAndRemount}
       typeEntryMap={typeEntryMap}
       suggestionListVariant={suggestionListVariant}
       suggestionEmptyLabel={suggestionEmptyLabel}

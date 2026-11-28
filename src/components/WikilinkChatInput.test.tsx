@@ -105,17 +105,30 @@ function Controlled({
   )
 }
 
+interface TextBoundary {
+  node: Node
+  nodeOffset: number
+}
+
+function textBoundaryAt(editor: HTMLElement, offset: number): TextBoundary {
+  const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT)
+  let remaining = offset
+  let node: Node | null = walker.nextNode()
+  while (node !== null) {
+    const length = node.textContent?.length ?? 0
+    if (remaining <= length) return { node, nodeOffset: remaining }
+    remaining -= length
+    node = walker.nextNode()
+  }
+  return { node: editor, nodeOffset: 0 }
+}
+
 function setSelection(editor: HTMLElement, offset: number) {
+  const { node, nodeOffset } = textBoundaryAt(editor, offset)
   const selection = window.getSelection()
   if (!selection) return
-
-  const targetNode = editor.firstChild ?? editor
-  const safeOffset = targetNode.nodeType === Node.TEXT_NODE
-    ? Math.min(offset, targetNode.textContent?.length ?? 0)
-    : Math.min(offset, targetNode.childNodes.length)
-
   const range = document.createRange()
-  range.setStart(targetNode, safeOffset)
+  range.setStart(node, nodeOffset)
   range.collapse(true)
   selection.removeAllRanges()
   selection.addRange(range)
@@ -155,6 +168,55 @@ function fireComposingKeyDown(editor: HTMLElement, key: string) {
   })
 
   fireEvent(editor, event)
+}
+
+// Chromium fires the first keydown of an IME composition with keyCode 229 and
+// key 'Process' while isComposing is still false: compositionstart has not
+// been dispatched yet (GitHub issue #1329, Sogou Pinyin on Windows).
+function fireImePendingKeyDown(editor: HTMLElement) {
+  const event = createEvent.keyDown(editor, {
+    key: 'Process',
+    keyCode: 229,
+    which: 229,
+  })
+
+  Object.defineProperty(event, 'isComposing', {
+    configurable: true,
+    value: false,
+  })
+
+  fireEvent(editor, event)
+}
+
+function fireBareInsertBeforeInput(editor: HTMLElement, data: string) {
+  const event = new Event('beforeinput', {
+    bubbles: true,
+    cancelable: true,
+  })
+  Object.defineProperties(event, {
+    data: { value: data },
+    inputType: { value: 'insertText' },
+    isComposing: { value: false },
+  })
+
+  fireEvent(editor, event)
+  return event
+}
+
+const WINDOWS_USER_AGENT
+  = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
+
+async function withUserAgent<T>(userAgent: string, callback: () => T | Promise<T>): Promise<T> {
+  const originalUserAgent = navigator.userAgent
+  Object.defineProperty(window.navigator, 'userAgent', { value: userAgent, configurable: true })
+  try {
+    const result = await callback()
+    Object.defineProperty(window.navigator, 'userAgent', { value: originalUserAgent, configurable: true })
+    return result
+  } catch (error) {
+    Object.defineProperty(window.navigator, 'userAgent', { value: originalUserAgent, configurable: true })
+    throw error
+  }
 }
 
 function createFileLikeDataTransfer({
@@ -860,5 +922,392 @@ describe('WikilinkChatInput', () => {
 
     updateEditorText('still works')
     expect(screen.getByTestId('agent-input').textContent).toContain('still works')
+  })
+})
+
+describe('WikilinkChatInput IME composition start timing', () => {
+  it('keeps the native pipeline alive when an IME keydown precedes a bare insertText before compositionstart', async () => {
+    const onDraftChange = vi.fn()
+    render(<Controlled onDraftChange={onDraftChange} />)
+    const editor = screen.getByTestId('agent-input')
+    editor.focus()
+
+    fireImePendingKeyDown(editor)
+    const bareInsert = fireBareInsertBeforeInput(editor, 'n')
+
+    expect(bareInsert.defaultPrevented).toBe(false)
+    expect(onDraftChange).not.toHaveBeenCalled()
+    expect(screen.getByTestId('agent-input')).toBe(editor)
+
+    fireEvent.compositionStart(editor)
+    editor.textContent = 'ni'
+    setSelection(editor, 2)
+    fireEvent.input(editor)
+
+    editor.textContent = '你'
+    setSelection(editor, 1)
+    fireEvent.compositionEnd(editor)
+
+    await waitFor(() => {
+      expect(onDraftChange).toHaveBeenLastCalledWith('你')
+    })
+    expect(screen.getByTestId('agent-input').textContent).toBe('你')
+  })
+
+  it('keeps Sogou-style Windows compositions alive when compositionstart lands after a bare insertText', async () => {
+    await withUserAgent(WINDOWS_USER_AGENT, async () => {
+      const onDraftChange = vi.fn()
+      render(<Controlled onDraftChange={onDraftChange} />)
+      const editor = screen.getByTestId('agent-input')
+      editor.focus()
+
+      fireEvent.keyDown(editor, { key: 'n', keyCode: 78, which: 78 })
+      const bareInsert = fireBareInsertBeforeInput(editor, 'n')
+      expect(bareInsert.defaultPrevented).toBe(false)
+
+      editor.textContent = 'n'
+      setSelection(editor, 1)
+      fireEvent.input(editor)
+
+      // v6 (#1329): the value sync is immediate and non-destructive, so the
+      // DOM insert is published right away without remounting the editor.
+      expect(onDraftChange).toHaveBeenCalledWith('n')
+      expect(screen.getByTestId('agent-input')).toBe(editor)
+
+      fireEvent.compositionStart(editor)
+      editor.textContent = 'ni'
+      setSelection(editor, 2)
+      fireEvent.input(editor)
+
+      editor.textContent = '你'
+      setSelection(editor, 1)
+      fireEvent.compositionEnd(editor)
+
+      await waitFor(() => {
+        expect(onDraftChange).toHaveBeenLastCalledWith('你')
+      })
+      expect(screen.getByTestId('agent-input').textContent).toBe('你')
+    })
+  })
+
+  it('publishes Windows native text input immediately without remounting', async () => {
+    await withUserAgent(WINDOWS_USER_AGENT, async () => {
+      const onDraftChange = vi.fn()
+      render(<Controlled onDraftChange={onDraftChange} />)
+      const editor = screen.getByTestId('agent-input')
+      editor.focus()
+
+      fireEvent.keyDown(editor, { key: 'h', keyCode: 72, which: 72 })
+      const firstInsert = fireBareInsertBeforeInput(editor, 'h')
+      expect(firstInsert.defaultPrevented).toBe(false)
+
+      editor.textContent = 'h'
+      setSelection(editor, 1)
+      fireEvent.input(editor)
+
+      // v6 (#1329): the value is published non-destructively — no quiet
+      // window, no remount — so fast typing never lands on a dead node.
+      expect(onDraftChange).toHaveBeenLastCalledWith('h')
+      expect(screen.getByTestId('agent-input')).toBe(editor)
+
+      editor.textContent = 'hi'
+      setSelection(editor, 2)
+      fireEvent.input(editor)
+
+      expect(onDraftChange).toHaveBeenLastCalledWith('hi')
+      expect(screen.getByTestId('agent-input')).toBe(editor)
+      expect(screen.getByTestId('agent-input').textContent).toBe('hi')
+    })
+  })
+
+  it('keeps the manual plain-text pipeline on non-Windows runtimes', () => {
+    const onDraftChange = vi.fn()
+    render(<Controlled onDraftChange={onDraftChange} />)
+    const editor = screen.getByTestId('agent-input')
+    editor.focus()
+
+    const bareInsert = fireBareInsertBeforeInput(editor, 'h')
+
+    expect(bareInsert.defaultPrevented).toBe(true)
+    expect(onDraftChange).toHaveBeenCalledWith('h')
+  })
+
+  it('shields the native beforeinput from later cancelers on Windows runtimes', async () => {
+    await withUserAgent(WINDOWS_USER_AGENT, async () => {
+      const onDraftChange = vi.fn()
+      render(<Controlled onDraftChange={onDraftChange} />)
+      const editor = screen.getByTestId('agent-input')
+      editor.focus()
+
+      const lateCanceler = vi.fn((event: Event) => event.preventDefault())
+      document.addEventListener('beforeinput', lateCanceler)
+
+      try {
+        const bareInsert = fireBareInsertBeforeInput(editor, 'n')
+
+        expect(bareInsert.defaultPrevented).toBe(false)
+        expect(lateCanceler).not.toHaveBeenCalled()
+      } finally {
+        document.removeEventListener('beforeinput', lateCanceler)
+      }
+    })
+  })
+
+  it('publishes every fast Windows IME keystroke without swallowing any', async () => {
+    await withUserAgent(WINDOWS_USER_AGENT, async () => {
+      const onDraftChange = vi.fn()
+      render(<Controlled onDraftChange={onDraftChange} />)
+      const editor = screen.getByTestId('agent-input')
+      editor.focus()
+
+      const typeImeKey = (data: string) => {
+        fireEvent.keyDown(editor, { key: 'Process', keyCode: 229, which: 229 })
+        const bareInsert = fireBareInsertBeforeInput(editor, data)
+        expect(bareInsert.defaultPrevented).toBe(false)
+        editor.textContent = (editor.textContent ?? '') + data
+        setSelection(editor, (editor.textContent ?? '').length)
+        fireEvent.input(editor)
+      }
+
+      // A fast Sogou burst: every keystroke publishes immediately, nothing
+      // remounts mid-burst, and no character is dropped (#1329 regression).
+      for (const letter of 'nihao') typeImeKey(letter)
+
+      expect(onDraftChange).toHaveBeenCalledTimes(5)
+      expect(onDraftChange).toHaveBeenLastCalledWith('nihao')
+      expect(screen.getByTestId('agent-input')).toBe(editor)
+      expect(screen.getByTestId('agent-input').textContent).toBe('nihao')
+    })
+  })
+
+  it('canonicalizes the editor on blur after a hidden-composition session', async () => {
+    await withUserAgent(WINDOWS_USER_AGENT, async () => {
+      const onDraftChange = vi.fn()
+      render(<Controlled onDraftChange={onDraftChange} />)
+      const editor = screen.getByTestId('agent-input')
+      editor.focus()
+
+      editor.textContent = 'nihao'
+      setSelection(editor, 5)
+      fireEvent.input(editor)
+      expect(onDraftChange).toHaveBeenLastCalledWith('nihao')
+
+      fireEvent.blur(editor)
+
+      // Blur ends any hidden composition, so the canonical segment DOM is
+      // rebuilt from the published value without losing a character.
+      await waitFor(() => {
+        expect(screen.getByTestId('agent-input')).not.toBe(editor)
+      })
+      expect(screen.getByTestId('agent-input').textContent).toBe('nihao')
+      expect(onDraftChange).toHaveBeenLastCalledWith('nihao')
+    })
+  })
+
+  it('rebuilds the editor when the draft value changes externally', async () => {
+    const onDraftChange = vi.fn()
+    const view = render(
+      <WikilinkChatInput
+        entries={[] as VaultEntry[]}
+        value="你好"
+        onChange={onDraftChange}
+        onSend={vi.fn()}
+        placeholder="Ask Tolaria"
+      />,
+    )
+    expect(screen.getByTestId('agent-input').textContent).toBe('你好')
+
+    view.rerender(
+      <WikilinkChatInput
+        entries={[] as VaultEntry[]}
+        value=""
+        onChange={onDraftChange}
+        onSend={vi.fn()}
+        placeholder="Ask Tolaria"
+      />,
+    )
+
+    // An external draft change (e.g. cleared after send) remounts the
+    // canonical segments instead of reconciling natively mutated content.
+    await waitFor(() => {
+      expect(screen.getByTestId('agent-input').textContent).toBe('')
+    })
+  })
+
+  it('clears the composer after send on Windows without resurrecting the sent text', async () => {
+    await withUserAgent(WINDOWS_USER_AGENT, async () => {
+      const onDraftChange = vi.fn()
+      const onSend = vi.fn()
+      function ClearingOnSend() {
+        const [value, setValue] = useState('')
+        return (
+          <WikilinkChatInput
+            entries={entries}
+            value={value}
+            onChange={(nextValue) => {
+              onDraftChange(nextValue)
+              setValue(nextValue)
+            }}
+            onSend={(text) => {
+              onSend(text)
+              setValue('')
+            }}
+            placeholder="Ask Tolaria"
+          />
+        )
+      }
+      render(<ClearingOnSend />)
+      const editor = screen.getByTestId('agent-input')
+      editor.focus()
+
+      editor.textContent = 'nihao'
+      setSelection(editor, 5)
+      fireEvent.input(editor)
+      expect(onDraftChange).toHaveBeenLastCalledWith('nihao')
+
+      fireEvent.keyDown(editor, { key: 'Enter' })
+
+      expect(onSend).toHaveBeenCalledTimes(1)
+      expect(onSend.mock.calls[0][0]).toBe('nihao')
+
+      // The clear-after-send must rebuild the frozen (still empty) render so
+      // the sent text leaves the DOM instead of lingering under the placeholder.
+      await waitFor(() => {
+        expect(screen.getByTestId('agent-input').textContent).toBe('')
+      })
+      expect(screen.getByTestId('agent-input')).not.toBe(editor)
+
+      const clearedEditor = screen.getByTestId('agent-input')
+      clearedEditor.focus()
+      clearedEditor.textContent = 'h'
+      setSelection(clearedEditor, 1)
+      fireEvent.input(clearedEditor)
+      await waitFor(() => {
+        expect(onDraftChange).toHaveBeenLastCalledWith('h')
+      })
+    })
+  })
+
+  it('commits a picked suggestion on Windows after native typing', async () => {
+    await withUserAgent(WINDOWS_USER_AGENT, async () => {
+      render(<Controlled />)
+      const editor = screen.getByTestId('agent-input')
+      editor.focus()
+
+      editor.textContent = '[[alp'
+      setSelection(editor, 5)
+      fireEvent.input(editor)
+
+      clickFirstSuggestion()
+
+      // The pick is an explicit user action: it must land in the canonical
+      // segment DOM immediately instead of being swallowed by the Windows
+      // echo suppression.
+      await waitFor(() => {
+        expect(screen.getByTestId('inline-wikilink-chip')).toBeInTheDocument()
+      })
+      expect(screen.getByTestId('agent-input').textContent).toContain('Alpha')
+      expect(screen.getByTestId('agent-input')).not.toBe(editor)
+    })
+  })
+
+  it('commits pasted text on Windows after native typing', async () => {
+    await withUserAgent(WINDOWS_USER_AGENT, async () => {
+      render(<Controlled />)
+      const editor = screen.getByTestId('agent-input')
+      editor.focus()
+
+      editor.textContent = 'h'
+      setSelection(editor, 1)
+      fireEvent.input(editor)
+
+      const clipboardData = { getData: vi.fn(() => 'world'), files: [], items: [] }
+      fireEvent.paste(editor, { clipboardData })
+
+      await waitFor(() => {
+        expect(screen.getByTestId('agent-input').textContent).toBe('hworld')
+      })
+      expect(screen.getByTestId('agent-input')).not.toBe(editor)
+    })
+  })
+
+  it('keeps committed IME text alive when a keyup follows composition end on Windows', async () => {
+    await withUserAgent(WINDOWS_USER_AGENT, async () => {
+      const onDraftChange = vi.fn()
+      render(<Controlled onSend={vi.fn()} onDraftChange={onDraftChange} />)
+      const editor = screen.getByTestId('agent-input')
+      editor.focus()
+
+      // Standard IME flow (Microsoft Pinyin): the composition commits, then
+      // compositionend fires, then the committing key's keyup arrives and
+      // syncs the selection — which re-renders the component while the
+      // composition settle flush is still pending.
+      fireEvent.compositionStart(editor)
+      editor.textContent = '你好'
+      setSelection(editor, 2)
+      fireEvent.input(editor)
+      fireEvent.compositionEnd(editor)
+      fireEvent.keyUp(editor, { key: ' ' })
+
+      expect(screen.getByTestId('agent-input').textContent).toBe('你好')
+
+      await waitFor(() => {
+        expect(onDraftChange).toHaveBeenLastCalledWith('你好')
+      })
+      expect(screen.getByTestId('agent-input').textContent).toBe('你好')
+    })
+  })
+
+  it('clears the composer when sending immediately after an IME commit on Windows', async () => {
+    await withUserAgent(WINDOWS_USER_AGENT, async () => {
+      const onDraftChange = vi.fn()
+      const onSend = vi.fn()
+      function ClearingOnSend() {
+        const [value, setValue] = useState('')
+        return (
+          <WikilinkChatInput
+            entries={entries}
+            value={value}
+            onChange={(nextValue) => {
+              onDraftChange(nextValue)
+              setValue(nextValue)
+            }}
+            onSend={(text) => {
+              onSend(text)
+              setValue('')
+            }}
+            placeholder="Ask Tolaria"
+          />
+        )
+      }
+      render(<ClearingOnSend />)
+      const editor = screen.getByTestId('agent-input')
+      editor.focus()
+
+      // The whole composition is committed by the IME without any publish
+      // landing in React state, and Enter is pressed before the composition
+      // settle flush could run.
+      fireEvent.compositionStart(editor)
+      editor.textContent = '你好'
+      setSelection(editor, 2)
+      fireEvent.input(editor)
+      fireEvent.compositionEnd(editor)
+      fireEvent.keyDown(editor, { key: 'Enter', keyCode: 13 })
+
+      expect(onSend).toHaveBeenCalledTimes(1)
+      expect(onSend.mock.calls[0][0]).toBe('你好')
+
+      await waitFor(() => {
+        expect(screen.getByTestId('agent-input').textContent).toBe('')
+      })
+
+      // The cancelled settle flush must not resurrect the sent text.
+      const callsAfterClear = onDraftChange.mock.calls.length
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 160))
+      })
+      expect(onDraftChange.mock.calls.length).toBe(callsAfterClear)
+      expect(screen.getByTestId('agent-input').textContent).toBe('')
+    })
   })
 })
