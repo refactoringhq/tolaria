@@ -18,6 +18,9 @@ export interface VaultMenuProps {
   multiWorkspaceEnabled?: boolean
   onUpdateWorkspaceIdentity?: (path: string, patch: Partial<VaultOption>) => void
   compact?: boolean
+  sidebar?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   locale?: AppLocale
 }
 

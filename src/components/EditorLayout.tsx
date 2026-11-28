@@ -81,7 +81,7 @@ function EditorEmptyState({ locale = "en" }: { locale?: AppLocale }) {
 	);
 }
 
-export function EditorLayout(options: {
+interface EditorLayoutProps {
 	tabs: Tab[];
 	activeTabPath: string | null;
 	activeTab: Tab | null;
@@ -181,207 +181,181 @@ export function EditorLayout(options: {
 	onImageImportError?: ImageImportErrorHandler;
 	locale?: AppLocale;
 	onExportPdf?: (source?: NotePdfExportSource) => void;
-}) {
-	const {
-		tabs,
-		activeTabPath,
-		activeTab,
-		isLoadingNewTab,
-		isVaultLoading,
-		entries,
-		editor,
-		diffMode,
-		diffContent,
-		diffLoading,
-		richEditorContentReady,
-		handleToggleDiffExclusive,
-		rawMode,
-		handleToggleRawExclusive,
-		rawContentChange,
-		onSave,
-		activeStatus,
-		showDiffToggle,
-		showAIChat,
-		onToggleAIChat,
-		aiWorkspaceSurface,
-		showTableOfContents,
-		onToggleTableOfContents,
-		inspectorCollapsed,
-		onToggleInspector,
-		onNavigateWikilink,
-		handleEditorChange,
-		onToggleFavorite,
-		onToggleOrganized,
-		onEnterNeighborhood,
-		onRevealFile,
-		onCopyFilePath,
-		onCopyDeepLink,
-		onCopyGitUrl,
-		onExportPdf,
-		onOpenExternalFile,
-		onDeleteNote,
-		onArchiveNote,
-		onUnarchiveNote,
-		vaultPath,
-		vaultPaths,
-		rawModeContent,
-		findRequest,
-		rawLatestContentRef,
-		sheetFlushRef,
-		onRenameFilename,
-		noteWidth,
-		onToggleNoteWidth,
-		isConflicted,
-		onKeepMine,
-		onKeepTheirs,
-		onInspectorResize,
-		inspectorWidth,
-		defaultAiAgent,
-		defaultAiTarget,
-		defaultAiAgentReadiness,
-		defaultAiAgentReady,
-		inspectorEntry,
-		inspectorContent,
-		gitHistory,
-		noteList,
-		noteListFilter,
-		handleViewCommitDiff,
-		onUpdateFrontmatter,
-		onDeleteProperty,
-		onAddProperty,
-		onCreateMissingType,
-		onCreateAndOpenNote,
-		onChangeWorkspace,
-		onInitializeProperties,
-		onFileCreated,
-		onFileModified,
-		onVaultChanged,
-		workspaces,
-		onUnsupportedAiPaste,
-		onImageImportError,
-		locale,
-	} = options;
-	const activeBinaryTab =
-		activeTab?.entry.fileKind === "binary" ? activeTab : null;
-	const showEmptyState =
-		tabs.length === 0 && activeTabPath === null && !isVaultLoading;
+}
 
+type EditorPanelResizeProps = Pick<
+	EditorLayoutProps,
+	| "showTableOfContents"
+	| "inspectorCollapsed"
+	| "onInspectorResize"
+	| "onToggleInspector"
+>;
+
+function EditorPanelResize({
+	showTableOfContents,
+	inspectorCollapsed,
+	onInspectorResize,
+	onToggleInspector,
+}: EditorPanelResizeProps) {
+	if (!showTableOfContents && inspectorCollapsed) return null;
+
+	return (
+		<ResizeHandle
+			onResize={onInspectorResize}
+			collapse={
+				showTableOfContents
+					? undefined
+					: { label: "inspector.title.closePropertiesShortcut", action: onToggleInspector }
+			}
+		/>
+	);
+}
+
+function editorNoteActions(options: EditorLayoutProps) {
+	return {
+		onSave: options.onSave,
+		onNavigateWikilink: options.onNavigateWikilink,
+		onEditorChange: options.handleEditorChange,
+		onToggleFavorite: options.onToggleFavorite,
+		onToggleOrganized: options.onToggleOrganized,
+		onEnterNeighborhood: options.onEnterNeighborhood,
+		onRevealFile: options.onRevealFile,
+		onCopyFilePath: options.onCopyFilePath,
+		onCopyDeepLink: options.onCopyDeepLink,
+		onCopyGitUrl: options.onCopyGitUrl,
+		onExportPdf: () => options.onExportPdf?.("breadcrumb"),
+		onDeleteNote: options.onDeleteNote,
+		onArchiveNote: options.onArchiveNote,
+		onUnarchiveNote: options.onUnarchiveNote,
+		onRenameFilename: options.onRenameFilename,
+		onToggleNoteWidth: options.onToggleNoteWidth,
+		onKeepMine: options.onKeepMine,
+		onKeepTheirs: options.onKeepTheirs,
+		onImageImportError: options.onImageImportError,
+	};
+}
+
+function EditorMainSurface({ options }: { options: EditorLayoutProps }) {
+	const { activeTab, activeTabPath, isVaultLoading, locale, tabs } = options;
+	const showEmptyState = tabs.length === 0 && activeTabPath === null && !isVaultLoading;
+	if (showEmptyState) return <EditorEmptyState locale={locale} />;
+
+	if (activeTab?.entry.fileKind === "binary") {
+		return (
+			<FilePreview
+				key={activeTab.entry.path}
+				entry={activeTab.entry}
+				locale={locale}
+				onCopyFilePath={options.onCopyFilePath}
+				onCopyDeepLink={options.onCopyDeepLink}
+				onOpenExternalFile={options.onOpenExternalFile}
+				onRevealFile={options.onRevealFile}
+			/>
+		);
+	}
+	return <EditorNoteSurface options={options} />;
+}
+
+function EditorNoteSurface({ options }: { options: EditorLayoutProps }) {
+	return (
+		<EditorContent
+			activeTab={options.activeTab}
+			activeTabPath={options.activeTabPath}
+			isLoadingNewTab={options.isLoadingNewTab}
+			isVaultLoading={options.isVaultLoading}
+			entries={options.entries}
+			editor={options.editor}
+			diffMode={options.diffMode}
+			diffContent={options.diffContent}
+			diffLoading={options.diffLoading}
+			richEditorContentReady={options.richEditorContentReady}
+			onToggleDiff={options.handleToggleDiffExclusive}
+			rawMode={options.rawMode}
+			onToggleRaw={options.handleToggleRawExclusive}
+			onRawContentChange={options.rawContentChange}
+			activeStatus={options.activeStatus}
+			showDiffToggle={options.showDiffToggle}
+			showAIChat={options.showAIChat}
+			onToggleAIChat={options.onToggleAIChat}
+			showTableOfContents={options.showTableOfContents}
+			onToggleTableOfContents={options.onToggleTableOfContents}
+			inspectorCollapsed={options.inspectorCollapsed}
+			onToggleInspector={options.onToggleInspector}
+			vaultPath={options.vaultPath}
+			rawModeContent={options.rawModeContent}
+			findRequest={options.findRequest}
+			rawLatestContentRef={options.rawLatestContentRef}
+			sheetFlushRef={options.sheetFlushRef}
+			noteWidth={options.noteWidth}
+			isConflicted={options.isConflicted}
+			locale={options.locale}
+			{...editorNoteActions(options)}
+		/>
+	);
+}
+
+function EditorInspector({ options }: { options: EditorLayoutProps }) {
+	return (
+		<EditorRightPanel
+			showAIChat={false}
+			showTableOfContents={options.showTableOfContents}
+			inspectorCollapsed={options.inspectorCollapsed}
+			inspectorWidth={options.inspectorWidth}
+			editor={options.editor}
+			defaultAiAgent={options.defaultAiAgent}
+			defaultAiTarget={options.defaultAiTarget}
+			defaultAiAgentReadiness={options.defaultAiAgentReadiness}
+			defaultAiAgentReady={options.defaultAiAgentReady}
+			onUnsupportedAiPaste={options.onUnsupportedAiPaste}
+			inspectorEntry={options.inspectorEntry}
+			inspectorContent={options.inspectorContent}
+			entries={options.entries}
+			gitHistory={options.gitHistory}
+			vaultPath={options.vaultPath ?? ""}
+			vaultPaths={options.vaultPaths}
+			noteList={options.noteList}
+			noteListFilter={options.noteListFilter}
+			onToggleInspector={options.onToggleInspector}
+			onToggleAIChat={options.onToggleAIChat}
+			onToggleTableOfContents={options.onToggleTableOfContents}
+			onNavigateWikilink={options.onNavigateWikilink}
+			onViewCommitDiff={options.handleViewCommitDiff}
+			onUpdateFrontmatter={options.onUpdateFrontmatter}
+			onDeleteProperty={options.onDeleteProperty}
+			onAddProperty={options.onAddProperty}
+			onCreateMissingType={options.onCreateMissingType}
+			onCreateAndOpenNote={options.onCreateAndOpenNote}
+			onChangeWorkspace={options.onChangeWorkspace}
+			onInitializeProperties={options.onInitializeProperties}
+			onToggleRawEditor={options.handleToggleRawExclusive}
+			onOpenNote={options.onNavigateWikilink}
+			onFileCreated={options.onFileCreated}
+			onFileModified={options.onFileModified}
+			onVaultChanged={options.onVaultChanged}
+			workspaces={options.workspaces}
+			locale={options.locale}
+		/>
+	);
+}
+
+export function EditorLayout(options: EditorLayoutProps) {
 	return (
 		<div className="editor flex flex-col min-h-0 overflow-hidden bg-background text-foreground">
 			<div className="relative flex flex-1 min-h-0">
-				{showEmptyState ? (
-					<EditorEmptyState locale={locale} />
-				) : activeBinaryTab ? (
-					<FilePreview
-						key={activeBinaryTab.entry.path}
-						entry={activeBinaryTab.entry}
-						locale={locale}
-						onCopyFilePath={onCopyFilePath}
-						onCopyDeepLink={onCopyDeepLink}
-						onOpenExternalFile={onOpenExternalFile}
-						onRevealFile={onRevealFile}
-					/>
-				) : (
-					<EditorContent
-						activeTab={activeTab}
-						activeTabPath={activeTabPath}
-						isLoadingNewTab={isLoadingNewTab}
-						isVaultLoading={isVaultLoading}
-						entries={entries}
-						editor={editor}
-						diffMode={diffMode}
-						diffContent={diffContent}
-						diffLoading={diffLoading}
-						richEditorContentReady={richEditorContentReady}
-						onToggleDiff={handleToggleDiffExclusive}
-						rawMode={rawMode}
-						onToggleRaw={handleToggleRawExclusive}
-						onRawContentChange={rawContentChange}
-						onSave={onSave}
-						activeStatus={activeStatus}
-						showDiffToggle={showDiffToggle}
-						showAIChat={showAIChat}
-						onToggleAIChat={onToggleAIChat}
-						showTableOfContents={showTableOfContents}
-						onToggleTableOfContents={onToggleTableOfContents}
-						inspectorCollapsed={inspectorCollapsed}
-						onToggleInspector={onToggleInspector}
-						onNavigateWikilink={onNavigateWikilink}
-						onEditorChange={handleEditorChange}
-						onToggleFavorite={onToggleFavorite}
-						onToggleOrganized={onToggleOrganized}
-						onEnterNeighborhood={onEnterNeighborhood}
-						onRevealFile={onRevealFile}
-						onCopyFilePath={onCopyFilePath}
-						onCopyDeepLink={onCopyDeepLink}
-						onCopyGitUrl={onCopyGitUrl}
-						onExportPdf={() => onExportPdf?.("breadcrumb")}
-						onDeleteNote={onDeleteNote}
-						onArchiveNote={onArchiveNote}
-						onUnarchiveNote={onUnarchiveNote}
-						vaultPath={vaultPath}
-						rawModeContent={rawModeContent}
-						findRequest={findRequest}
-						rawLatestContentRef={rawLatestContentRef}
-						sheetFlushRef={sheetFlushRef}
-						onRenameFilename={onRenameFilename}
-						noteWidth={noteWidth}
-						onToggleNoteWidth={onToggleNoteWidth}
-						isConflicted={isConflicted}
-						onKeepMine={onKeepMine}
-						onKeepTheirs={onKeepTheirs}
-						onImageImportError={onImageImportError}
-						locale={locale}
-					/>
-				)}
-				{(showTableOfContents || !inspectorCollapsed) && (
-					<ResizeHandle onResize={onInspectorResize} />
-				)}
-				<EditorRightPanel
-					showAIChat={false}
-					showTableOfContents={showTableOfContents}
-					inspectorCollapsed={inspectorCollapsed}
-					inspectorWidth={inspectorWidth}
-					editor={editor}
-					defaultAiAgent={defaultAiAgent}
-					defaultAiTarget={defaultAiTarget}
-					defaultAiAgentReadiness={defaultAiAgentReadiness}
-					defaultAiAgentReady={defaultAiAgentReady}
-					onUnsupportedAiPaste={onUnsupportedAiPaste}
-					inspectorEntry={inspectorEntry}
-					inspectorContent={inspectorContent}
-					entries={entries}
-					gitHistory={gitHistory}
-					vaultPath={vaultPath ?? ""}
-					vaultPaths={vaultPaths}
-					noteList={noteList}
-					noteListFilter={noteListFilter}
-					onToggleInspector={onToggleInspector}
-					onToggleAIChat={onToggleAIChat}
-					onToggleTableOfContents={onToggleTableOfContents}
-					onNavigateWikilink={onNavigateWikilink}
-					onViewCommitDiff={handleViewCommitDiff}
-					onUpdateFrontmatter={onUpdateFrontmatter}
-					onDeleteProperty={onDeleteProperty}
-					onAddProperty={onAddProperty}
-					onCreateMissingType={onCreateMissingType}
-					onCreateAndOpenNote={onCreateAndOpenNote}
-					onChangeWorkspace={onChangeWorkspace}
-					onInitializeProperties={onInitializeProperties}
-					onToggleRawEditor={handleToggleRawExclusive}
-					onOpenNote={onNavigateWikilink}
-					onFileCreated={onFileCreated}
-					onFileModified={onFileModified}
-					onVaultChanged={onVaultChanged}
-					workspaces={workspaces}
-					locale={locale}
+				<EditorMainSurface options={options} />
+				<EditorPanelResize
+					showTableOfContents={options.showTableOfContents}
+					inspectorCollapsed={options.inspectorCollapsed}
+					onInspectorResize={options.onInspectorResize}
+					onToggleInspector={options.onToggleInspector}
 				/>
-				{showAIChat && aiWorkspaceSurface}
+				<EditorInspector options={options} />
+				{options.showAIChat && options.aiWorkspaceSurface}
 			</div>
 			<EditorMemoryProbe
-				entries={entries}
-				vaultPath={vaultPath}
-				locale={locale}
+				entries={options.entries}
+				vaultPath={options.vaultPath}
+				locale={options.locale}
 			/>
 		</div>
 	);
