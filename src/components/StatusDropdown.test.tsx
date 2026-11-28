@@ -49,11 +49,12 @@ describe('StatusDropdown', () => {
 
   it('shows suggested statuses', () => {
     render(<StatusDropdown {...defaultProps} />)
-    expect(screen.getByTestId('status-option-Not started')).toBeInTheDocument()
-    expect(screen.getByTestId('status-option-In progress')).toBeInTheDocument()
-    expect(screen.getByTestId('status-option-Active')).toBeInTheDocument()
-    expect(screen.getByTestId('status-option-Done')).toBeInTheDocument()
-    expect(screen.getByTestId('status-option-Blocked')).toBeInTheDocument()
+    expect(screen.getByTestId('status-option-not started')).toBeInTheDocument()
+    expect(screen.getByTestId('status-option-in progress')).toBeInTheDocument()
+    expect(screen.getByTestId('status-option-active')).toBeInTheDocument()
+    expect(screen.getByTestId('status-option-done')).toBeInTheDocument()
+    expect(screen.getByTestId('status-option-blocked')).toBeInTheDocument()
+    expect(screen.queryByTestId('status-option-Active')).not.toBeInTheDocument()
   })
 
   it('shows vault statuses separately from suggested', () => {
@@ -67,14 +68,14 @@ describe('StatusDropdown', () => {
   it('does not duplicate vault statuses in suggested list', () => {
     render(<StatusDropdown {...defaultProps} vaultStatuses={['Active', 'Draft']} />)
     // Active should appear in vault section, not suggested
-    const activeOptions = screen.getAllByTestId('status-option-Active')
-    expect(activeOptions).toHaveLength(1)
+    expect(screen.getAllByTestId('status-option-Active')).toHaveLength(1)
+    expect(screen.queryByTestId('status-option-active')).not.toBeInTheDocument()
   })
 
   it('calls onSave when a status option is clicked', () => {
     render(<StatusDropdown {...defaultProps} />)
-    fireEvent.click(screen.getByTestId('status-option-Done'))
-    expect(onSave).toHaveBeenCalledWith('Done')
+    fireEvent.click(screen.getByTestId('status-option-done'))
+    expect(onSave).toHaveBeenCalledWith('done')
   })
 
   it('calls onCancel when backdrop is clicked', () => {
@@ -93,8 +94,8 @@ describe('StatusDropdown', () => {
     render(<StatusDropdown {...defaultProps} />)
     const input = screen.getByTestId('status-search-input')
     fireEvent.change(input, { target: { value: 'blo' } })
-    expect(screen.getByTestId('status-option-Blocked')).toBeInTheDocument()
-    expect(screen.queryByTestId('status-option-Done')).not.toBeInTheDocument()
+    expect(screen.getByTestId('status-option-blocked')).toBeInTheDocument()
+    expect(screen.queryByTestId('status-option-done')).not.toBeInTheDocument()
   })
 
   it('shows create option when typing a new status name', () => {
@@ -126,9 +127,9 @@ describe('StatusDropdown', () => {
     fireEvent.keyDown(input, { key: 'ArrowDown' })
     // Arrow down again to second option
     fireEvent.keyDown(input, { key: 'ArrowDown' })
-    // Press Enter to select second option (In progress)
+    // Press Enter to select second option (in progress)
     fireEvent.keyDown(input, { key: 'Enter' })
-    expect(onSave).toHaveBeenCalledWith('In progress')
+    expect(onSave).toHaveBeenCalledWith('in progress')
   })
 
   it('shows no statuses message when filter yields no results and no create option', () => {
@@ -141,14 +142,14 @@ describe('StatusDropdown', () => {
     // But query is not empty so the filter runs... let's use something truly no-match
     fireEvent.change(input, { target: { value: '' } })
     // With empty query, all options are shown - this verifies the fallback
-    expect(screen.getByTestId('status-option-Active')).toBeInTheDocument()
+    expect(screen.getByTestId('status-option-active')).toBeInTheDocument()
   })
 
   it('shows only default suggestions when vault has no statuses', () => {
     render(<StatusDropdown {...defaultProps} vaultStatuses={[]} />)
     expect(screen.queryByText('From vault')).not.toBeInTheDocument()
     expect(screen.getByText('Suggested')).toBeInTheDocument()
-    expect(screen.getByTestId('status-option-Active')).toBeInTheDocument()
+    expect(screen.getByTestId('status-option-active')).toBeInTheDocument()
   })
 
   it('preserves user input case — no title-casing', () => {
@@ -157,5 +158,13 @@ describe('StatusDropdown', () => {
     fireEvent.change(input, { target: { value: 'wIP' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     expect(onSave).toHaveBeenCalledWith('wIP')
+  })
+
+  it('writes a typed lowercase status as lowercase (TOL-466)', () => {
+    render(<StatusDropdown {...defaultProps} vaultStatuses={[]} />)
+    const input = screen.getByTestId('status-search-input')
+    fireEvent.change(input, { target: { value: 'needs review' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(onSave).toHaveBeenCalledWith('needs review')
   })
 })

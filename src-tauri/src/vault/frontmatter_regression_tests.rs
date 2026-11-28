@@ -210,3 +210,19 @@ fn test_alias_collisions_keep_frontmatter_with_last_value_winning() {
     assert_eq!(entry.is_a, Some("Note".to_string()));
     assert_eq!(entry.status, Some("Evergreened".to_string()));
 }
+
+#[test]
+fn test_status_reads_old_and_new_key_casing_without_changing_the_value() {
+    // TOL-466: older vaults keep `Status:`, cleaned-up vaults use lowercase `status:` and values.
+    let cases = [
+        ("---\nStatus: active\n---\n# Test\n", "active"),
+        ("---\nStatus: Active\n---\n# Test\n", "Active"),
+        ("---\nstatus: active\n---\n# Test\n", "active"),
+    ];
+
+    for (content, expected) in cases {
+        let dir = TempDir::new().unwrap();
+        let entry = parse_test_entry(&dir, "test.md", content);
+        assert_eq!(entry.status, Some(expected.to_string()), "{content}");
+    }
+}

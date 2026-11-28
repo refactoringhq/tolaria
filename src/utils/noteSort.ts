@@ -9,10 +9,10 @@ export interface SortConfig {
 export const DEFAULT_SORT_OPTIONS: SortOption[] = ['modified', 'created', 'title', 'status']
 const BUILT_IN_SORT_OPTIONS = new Set<string>(DEFAULT_SORT_OPTIONS)
 const STATUS_SORT_ORDER: Record<string, number> = {
-  Active: 0,
-  Paused: 1,
-  Done: 2,
-  Finished: 3,
+  active: 0,
+  paused: 1,
+  done: 2,
+  finished: 3,
 }
 const STATUS_SORT_ORDER_LOOKUP = new Map(Object.entries(STATUS_SORT_ORDER))
 const UNKNOWN_STATUS_SORT_ORDER = 999
@@ -40,7 +40,7 @@ export function getSortOptionLabel(option: SortOption): string {
 }
 
 export function statusSortRank(status: string | null | undefined): number {
-  return STATUS_SORT_ORDER_LOOKUP.get(status ?? '') ?? UNKNOWN_STATUS_SORT_ORDER
+  return STATUS_SORT_ORDER_LOOKUP.get((status ?? '').trim().toLowerCase()) ?? UNKNOWN_STATUS_SORT_ORDER
 }
 
 export function compareSortableValues(left: unknown, right: unknown): number {
