@@ -28,7 +28,7 @@
   "calendar.tray.toggle": "Заметки без даты ({count})",
   "calendar.tray.close": "Скрыть заметки без даты",
   "calendar.tray.empty": "Каждая заметка в этом списке имеет дату.",
-  "calendar.tray.dragHint": "Перетащите заметку, чтобы запланировать её",
+  "calendar.tray.dragHint": "Перетащите заметку на день, чтобы запланировать её.",
   "calendar.tray.invalid": "Не является датой: {value}",
   "calendar.empty.title": "Пока нечего добавить в календарь",
   "calendar.empty.noDateProperty": "Календарь размещает каждую заметку в день, указанный в одном из ее свойств даты, например «due» или «start». Ни одна заметка в этом списке пока не имеет свойства даты.",
@@ -1507,17 +1507,5 @@
   "mobile.workspace.actionFailure.multiple": "Не удалось сохранить эти изменения. Ваши заметки остались без изменений.",
   "calendar.quarter": "Квартал",
   "calendar.year": "Год",
-  "calendar.showIcons": "Показывать значки заметок",
-  "layout.dragToResize": "<strong>Перетащите</strong>, чтобы изменить размер",
-  "layout.clickToCollapse": "<strong>Нажмите</strong>, чтобы свернуть",
-  "settings.dateDisplay.short": "Краткая форма в списке заметок (21 ноября 2026 г.)",
-  "settings.dateDisplay.shortCurrentYear": "Краткая форма в списке заметок, без указания текущего года (21 нояб.)",
-  "sidebar.chrome.sync": "Синхронизация",
-  "sidebar.chrome.noSync": "Без синхронизации",
-  "sidebar.chrome.syncJustNow": "Только что",
-  "sidebar.chrome.syncMinutesAgo": "{minutes} мин. назад",
-  "sidebar.chrome.syncRepository": "Репозиторий",
-  "sidebar.chrome.viewChanges": "Просмотреть изменения",
-  "sidebar.chrome.viewHistory": "Просмотреть историю",
-  "noteList.properties.computed": "Вычисляемые поля"
+  "calendar.showIcons": "Показывать значки заметок"
 }
