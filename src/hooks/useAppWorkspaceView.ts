@@ -1,6 +1,7 @@
 import { vaultPathForEntry } from '../utils/workspaces'
 import { useLayoutPanels } from './useLayoutPanels'
 import { useMacosTrafficLights } from './useMacosTrafficLights'
+import { useNativeWindowTheme } from './useNativeWindowTheme'
 import { useNoteListPdfExport } from './useNoteListPdfExport'
 import { useNoteWidthMode } from './useNoteWidthMode'
 import { useStartupScreenState } from './useStartupScreenState'
@@ -33,6 +34,7 @@ export function useAppWorkspaceStartupState(
   const state = useStartupScreenState(startup)
   const { isVaultContentLoading, shouldShowStartupScreen } = state
   useMacosTrafficLights({ ...trafficLights, ready: !isVaultContentLoading && !shouldShowStartupScreen })
+  useNativeWindowTheme()
   useStartupStateMilestones({
     isVaultContentLoading,
     onboardingStatus: startup.onboardingState.status,

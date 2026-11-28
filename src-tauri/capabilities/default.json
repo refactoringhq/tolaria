@@ -20,6 +20,7 @@
     "core:window:allow-unminimize",
     "core:window:allow-close",
     "core:window:allow-set-title",
+    "core:window:allow-set-theme",
     "core:webview:allow-create-webview-window",
     "core:webview:allow-print",
     "core:webview:allow-set-webview-zoom",
