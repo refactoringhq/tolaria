@@ -26,6 +26,7 @@ import { humanizePropertyKey } from '../utils/propertyLabels'
 import { translate, type AppLocale } from '../lib/i18n'
 import { canonicalSystemMetadataKey, hasSystemMetadataKey } from '../utils/systemMetadata'
 import { noteFormatFromFrontmatter, type NoteFormat } from '../utils/noteFormat'
+import { SUGGESTED_PROPERTY_SLOTS } from '../utils/workspaceSuggestionContracts'
 
 // eslint-disable-next-line react-refresh/only-export-components -- utility co-located with component
 export function containsWikilinks(value: FrontmatterValue): boolean {
@@ -140,17 +141,12 @@ function AddPropertyButton({
   )
 }
 
-const SUGGESTED_PROPERTIES = [
-  { key: 'Status', label: 'Status' },
-  { key: 'date', label: 'Date' },
-  { key: 'URL', label: 'URL' },
-  { key: 'icon', label: 'Icon' },
-] as const
+const SUGGESTED_PROPERTIES = SUGGESTED_PROPERTY_SLOTS
 
 const SUGGESTED_PROPERTY_MODES: Record<string, PropertyDisplayMode> = {
-  Status: 'status',
+  status: 'status',
   date: 'date',
-  URL: 'url',
+  url: 'url',
   icon: 'text',
 }
 

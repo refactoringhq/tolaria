@@ -445,8 +445,9 @@ describe('DynamicPropertiesPanel', () => {
     expect(screen.getByTestId('status-dropdown')).toBeInTheDocument()
     expect(screen.getByTestId('status-search-input')).toBeInTheDocument()
     // Click on "Done" option in the suggested list
-    fireEvent.click(screen.getByTestId('status-option-Done'))
-    expect(onUpdateProperty).toHaveBeenCalledWith('Status', 'Done')
+    fireEvent.click(screen.getByTestId('status-option-done'))
+    // Editing an existing key keeps that key's own casing (TOL-466)
+    expect(onUpdateProperty).toHaveBeenCalledWith('Status', 'done')
   })
 
   it('deletes property when delete button clicked', () => {
@@ -546,19 +547,21 @@ describe('DynamicPropertiesPanel', () => {
       renderPanel({ onAddProperty })
       const slots = screen.getAllByTestId('suggested-property')
       expect(slots.length).toBe(4)
-      expect(screen.getByText('Status')).toBeInTheDocument()
-      expect(screen.getByText('Date')).toBeInTheDocument()
-      expect(screen.getByText('URL')).toBeInTheDocument()
-      expect(screen.getByText('Icon')).toBeInTheDocument()
+      expect(screen.getByText('status')).toBeInTheDocument()
+      expect(screen.getByText('date')).toBeInTheDocument()
+      expect(screen.getByText('url')).toBeInTheDocument()
+      expect(screen.getByText('icon')).toBeInTheDocument()
+      expect(screen.queryByText('Status')).not.toBeInTheDocument()
+      expect(screen.queryByText('URL')).not.toBeInTheDocument()
     })
 
     it('shows a property-kind icon for each suggested slot', () => {
       renderPanel({ onAddProperty })
 
-      expect(within(findSuggestedSlot('Status')).getByTestId('suggested-property-icon-status')).toBeInTheDocument()
-      expect(within(findSuggestedSlot('Date')).getByTestId('suggested-property-icon-date')).toBeInTheDocument()
-      expect(within(findSuggestedSlot('URL')).getByTestId('suggested-property-icon-url')).toBeInTheDocument()
-      expect(within(findSuggestedSlot('Icon')).getByTestId('suggested-property-icon-text')).toBeInTheDocument()
+      expect(within(findSuggestedSlot('status')).getByTestId('suggested-property-icon-status')).toBeInTheDocument()
+      expect(within(findSuggestedSlot('date')).getByTestId('suggested-property-icon-date')).toBeInTheDocument()
+      expect(within(findSuggestedSlot('url')).getByTestId('suggested-property-icon-url')).toBeInTheDocument()
+      expect(within(findSuggestedSlot('icon')).getByTestId('suggested-property-icon-text')).toBeInTheDocument()
     })
 
     it('hides Status slot when Status property already exists', () => {
@@ -569,7 +572,7 @@ describe('DynamicPropertiesPanel', () => {
       })
       const slots = screen.getAllByTestId('suggested-property')
       expect(slots.length).toBe(3)
-      expect(screen.queryAllByText('Status').some(el => el.closest('[data-testid="suggested-property"]'))).toBe(false)
+      expect(screen.queryAllByText('status').some(el => el.closest('[data-testid="suggested-property"]'))).toBe(false)
     })
 
     it('hides all slots when all suggested properties exist', () => {
@@ -588,7 +591,7 @@ describe('DynamicPropertiesPanel', () => {
 
     it('opens the status editor without writing an empty property when clicking a suggested slot', async () => {
       renderPanel({ onAddProperty })
-      fireEvent.click(findSuggestedSlot('Status'))
+      fireEvent.click(findSuggestedSlot('status'))
       expect(onAddProperty).not.toHaveBeenCalled()
       await waitFor(() => {
         expect(document.querySelector('[data-testid="status-dropdown-popover"]')).toBeInTheDocument()
@@ -597,19 +600,26 @@ describe('DynamicPropertiesPanel', () => {
 
     it('writes the suggested status only after the user picks a value', async () => {
       renderPanel({ onAddProperty, onUpdateProperty })
-      fireEvent.click(findSuggestedSlot('Status'))
+      fireEvent.click(findSuggestedSlot('status'))
 
       await waitFor(() => {
-        expect(document.querySelector('[data-testid="status-option-Active"]')).toBeInTheDocument()
+        expect(document.querySelector('[data-testid="status-option-active"]')).toBeInTheDocument()
       })
-      fireEvent.click(document.querySelector('[data-testid="status-option-Active"]') as Element)
+      fireEvent.click(document.querySelector('[data-testid="status-option-active"]') as Element)
 
-      expect(onAddProperty).toHaveBeenCalledWith('Status', 'Active')
+      // A note with no status key gets the lowercase key and the lowercase value (TOL-466)
+      expect(onAddProperty).toHaveBeenCalledWith('status', 'active')
+      expect(onAddProperty).not.toHaveBeenCalledWith('Status', expect.anything())
+    })
+
+    it('hides the lowercase status slot when an old-cased Status key exists', () => {
+      renderPanel({ frontmatter: { Status: 'active' }, onAddProperty, onUpdateProperty })
+      expect(screen.getAllByTestId('suggested-property').some((node) => node.textContent?.includes('status'))).toBe(false)
     })
 
     it('cancels a suggested status edit without writing frontmatter', async () => {
       renderPanel({ onAddProperty })
-      fireEvent.click(findSuggestedSlot('Status'))
+      fireEvent.click(findSuggestedSlot('status'))
 
       await waitFor(() => {
         expect(document.querySelector('[data-testid="status-search-input"]')).toBeInTheDocument()
@@ -617,12 +627,12 @@ describe('DynamicPropertiesPanel', () => {
       fireEvent.keyDown(document.querySelector('[data-testid="status-search-input"]') as Element, { key: 'Escape' })
 
       expect(onAddProperty).not.toHaveBeenCalled()
-      expect(findSuggestedSlot('Status')).toBeInTheDocument()
+      expect(findSuggestedSlot('status')).toBeInTheDocument()
     })
 
     it('opens the date picker without writing an empty property when clicking the Date slot', async () => {
       renderPanel({ onAddProperty })
-      fireEvent.click(findSuggestedSlot('Date'))
+      fireEvent.click(findSuggestedSlot('date'))
 
       expect(onAddProperty).not.toHaveBeenCalled()
       await waitFor(() => {
@@ -632,7 +642,7 @@ describe('DynamicPropertiesPanel', () => {
 
     it('writes the suggested date with the documented lowercase key', async () => {
       renderPanel({ onAddProperty })
-      fireEvent.click(findSuggestedSlot('Date'))
+      fireEvent.click(findSuggestedSlot('date'))
 
       const input = await screen.findByTestId('date-picker-input')
       fireEvent.change(input, { target: { value: '2026-06-25' } })
@@ -640,6 +650,18 @@ describe('DynamicPropertiesPanel', () => {
 
       expect(onAddProperty).toHaveBeenCalledWith('date', '2026-06-25')
       expect(onAddProperty).not.toHaveBeenCalledWith('Date', '2026-06-25')
+    })
+
+    it('writes the suggested url with the lowercase key (TOL-466)', async () => {
+      renderPanel({ onAddProperty })
+      fireEvent.click(findSuggestedSlot('url'))
+
+      const input = await screen.findByRole('textbox')
+      fireEvent.change(input, { target: { value: 'https://example.com' } })
+      fireEvent.keyDown(input, { key: 'Enter' })
+
+      expect(onAddProperty).toHaveBeenCalledWith('url', 'https://example.com')
+      expect(onAddProperty).not.toHaveBeenCalledWith('URL', expect.anything())
     })
   })
 

@@ -1,6 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { mobileNoteDisplayLabels, mobileNoteRowChips } from './mobileNoteDisplay'
+import { mobileNoteDisplayLabels, mobileNoteRowChips, statusTone } from './mobileNoteDisplay'
 import type { MobileNote } from './mobileWorkspaceModel'
+
+describe('mobile status tone (TOL-466)', () => {
+  it.each([
+    ['active', 'Active'],
+    ['shipped', 'Shipped'],
+    ['ACTIVE', 'Active'],
+  ])('gives %s the same tone as %s', (lower, cased) => {
+    expect(statusTone(lower)).toBe(statusTone(cased))
+  })
+
+  it('keeps the existing known tones', () => {
+    expect(statusTone('active')).toBe('blue')
+    expect(statusTone('shipped')).toBe('green')
+    expect(statusTone('draft')).toBe('orange')
+  })
+})
 
 describe('mobile note display', () => {
   it('formats configured custom property chips with desktop note-list semantics', () => {
