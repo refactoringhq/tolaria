@@ -53,8 +53,9 @@ export function chipTone(tone: MobileTone) {
 }
 
 export function statusTone(status: StatusLabel): 'blue' | 'green' | 'orange' {
-  if (status === 'Shipped') return 'green'
-  if (status === 'Active') return 'blue'
+  const normalized = status.trim().toLowerCase()
+  if (normalized === 'shipped') return 'green'
+  if (normalized === 'active') return 'blue'
   return 'orange'
 }
 

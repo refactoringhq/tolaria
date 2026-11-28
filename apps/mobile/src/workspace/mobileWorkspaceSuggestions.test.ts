@@ -29,10 +29,12 @@ describe('mobile workspace suggestions', () => {
     const selectedNote = withPriority.notes.find((note) => note.id === 'workflow-orchestration') ?? null
 
     expect(mobilePropertyKeySuggestions(withPriority.notes, selectedNote, '')).toEqual(
-      expect.arrayContaining(['Date', 'URL', 'icon', 'Priority']),
+      expect.arrayContaining(['date', 'url', 'icon', 'Priority']),
     )
     expect(mobilePropertyKeySuggestions(withPriority.notes, selectedNote, 'prio')).toEqual(['Priority'])
     expect(mobilePropertyKeySuggestions(withPriority.notes, selectedNote, '')).not.toContain('Status')
+    expect(mobilePropertyKeySuggestions(withPriority.notes, selectedNote, '')).not.toContain('status')
+    expect(mobilePropertyKeySuggestions(withPriority.notes, selectedNote, '')).not.toContain('URL')
   })
 
   it('does not suggest the desktop icon property when the selected note already has one', () => {
