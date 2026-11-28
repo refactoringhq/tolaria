@@ -72,7 +72,7 @@ test("tablet: two panes, and the sidebar expands and collapses", async ({ page }
 		expect(listLeft).toBeLessThanOrEqual(1);
 		await page.locator(".bn-editor").first().click();
 	} else {
-		await page.getByRole("button", { name: "Collapse sidebar" }).click();
+		await sidebar.getByRole("button", { name: "Collapse sidebar" }).click();
 	}
 	await expectTwoPanes(page);
 });

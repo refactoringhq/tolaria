@@ -567,37 +567,35 @@ function createGlobalKeyDownHandler(
   }
 }
 
-function useCancelScheduledOpenOnSelectionChange(selectedNotePath: string | null, cancelOpen: () => void): void {
-  useEffect(() => {
-    void selectedNotePath
-    cancelOpen()
-  }, [cancelOpen, selectedNotePath])
-}
-
-export function useNoteListKeyboard(options: NoteListKeyboardOptions) {
-  const { items, selectedNotePath, onOpen, onEnterNeighborhood, onPrefetch, searchVisible = false, toggleSearch, enabled } = options
-  const virtuosoRef = useRef<VirtuosoHandle>(null)
+function useKeyboardFocus(options: NoteListKeyboardOptions, syncHighlightedPath: (path: string | null) => void) {
+  const { items, selectedNotePath, searchVisible = false, toggleSearch } = options
   const panelRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const { itemsRef, selectedNotePathRef } = useKeyboardItemRefs(items, selectedNotePath)
-  const { highlightedPathRef, highlightedPathState, syncHighlightedPath } = useHighlightedPath()
   const syncToCurrentSelection = useSelectionSync(itemsRef, selectedNotePathRef, syncHighlightedPath)
+  const handlers = useFocusHandlers({ containerRef, syncToCurrentSelection, syncHighlightedPath })
+  const panelFocus = usePanelFocusState(panelRef)
+  const toggleSearchShortcut = useSearchToggleShortcut({ focusList: handlers.focusList, searchVisible, toggleSearch })
+  return { panelRef, containerRef, syncToCurrentSelection, handlers, panelFocus, toggleSearchShortcut }
+}
+
+function useSyncKeyboardSelection(
+  selectedNotePath: string | null,
+  cancelOpen: () => void,
+  { containerRef, syncToCurrentSelection }: ReturnType<typeof useKeyboardFocus>,
+): void {
+  useEffect(() => {
+    cancelOpen()
+    if (selectedNotePath && isListActive(containerRef.current)) syncToCurrentSelection()
+  }, [cancelOpen, containerRef, selectedNotePath, syncToCurrentSelection])
+}
+
+export function useNoteListKeyboard(options: NoteListKeyboardOptions) {
+  const { items, selectedNotePath, onOpen, onEnterNeighborhood, onPrefetch, enabled } = options
+  const virtuosoRef = useRef<VirtuosoHandle>(null)
+  const { highlightedPathRef, highlightedPathState, syncHighlightedPath } = useHighlightedPath()
+  const focus = useKeyboardFocus(options, syncHighlightedPath)
   const { cancelOpen, flushOpen, scheduleOpen } = useScheduledOpen(onOpen, enabled)
-  const { focusList, handleBlur, handleFocus } = useFocusHandlers({
-    containerRef,
-    syncToCurrentSelection,
-    syncHighlightedPath,
-  })
-  const {
-    handlePanelBlurCapture,
-    handlePanelFocusCapture,
-    isPanelActive: isPanelActiveState,
-  } = usePanelFocusState(panelRef)
-  const handleToggleSearchShortcut = useSearchToggleShortcut({
-    focusList,
-    searchVisible,
-    toggleSearch,
-  })
   const moveHighlight = useMoveHighlight({
     items,
     selectedNotePath,
@@ -615,31 +613,21 @@ export function useNoteListKeyboard(options: NoteListKeyboardOptions) {
     flushOpen,
     cancelOpen,
     onEnterNeighborhood,
-    onToggleSearchShortcut: handleToggleSearchShortcut,
+    onToggleSearchShortcut: focus.toggleSearchShortcut,
   })
   const handleKeyDown = useDirectKeyDownHandler(processKeyDown)
-  useGlobalKeyboardHandling({
-    enabled,
-    panelRef,
-    containerRef,
-    processKeyDown,
-  })
-  useCancelScheduledOpenOnSelectionChange(selectedNotePath, cancelOpen)
-
-  const highlightedPath = resolveStableHighlightedPath(items, highlightedPathState)
+  const { panelRef, containerRef, handlers, panelFocus, toggleSearchShortcut } = focus
+  useGlobalKeyboardHandling({ enabled, panelRef, containerRef, processKeyDown })
+  useSyncKeyboardSelection(selectedNotePath, cancelOpen, focus)
 
   return {
+    ...handlers,
+    ...panelFocus,
     containerRef,
-    focusList,
-    handlePanelBlurCapture,
-    handlePanelFocusCapture,
-    highlightedPath,
-    handleBlur,
+    highlightedPath: resolveStableHighlightedPath(items, highlightedPathState),
     handleKeyDown,
-    handleFocus,
-    isPanelActive: isPanelActiveState,
     panelRef,
-    toggleSearchShortcut: handleToggleSearchShortcut,
+    toggleSearchShortcut,
     virtuosoRef,
   }
 }

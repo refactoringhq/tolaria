@@ -129,7 +129,7 @@ describe("Sidebar saved views", () => {
 			expect(screen.queryByText("rocket")).not.toBeInTheDocument();
 		});
 
-		it("uses saved view color metadata for sidebar accents", () => {
+		it("uses saved view color metadata for icons while keeping labels neutral", () => {
 			const coloredViews = [
 				{
 					filename: "active-projects.yml",
@@ -156,13 +156,10 @@ describe("Sidebar saved views", () => {
 			const icon = navItem.querySelector("svg");
 			const countChip = within(navItem).getByTestId("view-count-chip");
 
-			expect(navItem).toHaveStyle({
-				background: "var(--accent-blue-light)",
-				color: "var(--accent-blue)",
-			});
+			expect(navItem).toHaveClass("bg-[var(--sidebar-item-highlight)]", "text-foreground");
 			expect(icon).toHaveStyle({ color: "var(--accent-blue)" });
 			expect(countChip).toHaveClass("bg-transparent", "font-medium");
-			expect(countChip.className).toContain("text-[var(--sidebar-active-fg,var(--accent-blue))]");
+			expect(countChip).toHaveClass("text-foreground");
 		});
 
 		it("keeps the default active styling when a saved view color is invalid", () => {
@@ -190,7 +187,7 @@ describe("Sidebar saved views", () => {
 				.getByText("Active Projects")
 				.closest('[class*="cursor-pointer"]');
 
-			expect(navItem.className).toContain("text-[var(--accent-blue)]");
+			expect(navItem).toHaveClass("text-foreground");
 			expect(navItem.getAttribute("style")).not.toContain("--accent-");
 		});
 
