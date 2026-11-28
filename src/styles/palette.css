@@ -43,24 +43,28 @@
   --red-900: #461D1B;
   --red-950: #2E1210;
 
+  --orange-25: #FDF8F3;
   --orange-50: #FBF1E7;
   --orange-100: #FFE8D9;
   --orange-200: #FFD2B4;
   --orange-300: #FFB480;
   --orange-400: #FA8923;
   --orange-500: #D9730D;
+  --orange-575: #B05B03;
   --orange-600: #AC5902;
   --orange-700: #844300;
   --orange-800: #603000;
   --orange-900: #40230E;
   --orange-950: #2A1608;
 
+  --yellow-25: #FDFAF4;
   --yellow-50: #FBF5E9;
   --yellow-100: #FDEACC;
   --yellow-200: #FAD79D;
   --yellow-300: #F2BE62;
   --yellow-400: #DC9E08;
   --yellow-500: #D69E2E;
+  --yellow-575: #966B07;
   --yellow-600: #946906;
   --yellow-700: #725000;
   --yellow-800: #543A00;

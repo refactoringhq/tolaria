@@ -10,7 +10,7 @@ interface AppSidebarSyncOptions {
   gitFeaturesEnabled: boolean
   isGitVault: boolean
   offline: boolean
-  openConflictResolver: () => void
+  openConflictResolver: (repositoryPath?: string) => void
 }
 
 function canSyncRepository({ gitFeaturesEnabled, isGitVault, offline, autoSync }: AppSidebarSyncOptions, {
@@ -46,5 +46,9 @@ export function useAppSidebarSync(options: AppSidebarSyncOptions) {
     void pullAndPush(syncRepositoryPath)
   }, [canSyncFromSidebar, openConflictResolver, pullAndPush, selectedRepositoryHasConflict, sidebarSyncStatus, syncRepositoryPath])
 
-  return { syncRepositoryPath, selectedSyncRemote, selectedRepositoryHasConflict, sidebarSyncStatus, canSyncFromSidebar, handleSyncNow }
+  const handleManageConflicts = useCallback(() => {
+    openConflictResolver(syncRepositoryPath)
+  }, [openConflictResolver, syncRepositoryPath])
+
+  return { handleManageConflicts, syncRepositoryPath, selectedSyncRemote, selectedRepositoryHasConflict, sidebarSyncStatus, canSyncFromSidebar, handleSyncNow }
 }
