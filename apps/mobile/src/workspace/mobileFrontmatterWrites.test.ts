@@ -67,26 +67,42 @@ describe('mobile frontmatter writes', () => {
     })
   })
 
-  it('canonicalizes status aliases during direct writes', () => {
+  it('keeps an existing old-cased Status key when only its value changes (TOL-466)', () => {
     const content = writeMobileFrontmatterContentValue(
-      '---\nStatus: Draft\n---\n# Note\n',
+      '---\ntype: Project\nStatus: Draft\nBelongs to: "[[Q1]]"\n---\n# Note\n',
       'status',
-      'Active',
+      'active',
     )
 
-    expect(content).toContain('\nstatus: Active')
-    expect(content).not.toContain('\nStatus:')
+    expect(content).toBe('---\ntype: Project\nStatus: active\nBelongs to: "[[Q1]]"\n---\n# Note\n')
   })
 
-  it('canonicalizes tag aliases during direct writes', () => {
+  it('writes a lowercase status key when the note has none (TOL-466)', () => {
+    const content = writeMobileFrontmatterContentValue('---\ntype: Note\n---\n# Note\n', 'Status', 'done')
+
+    expect(content).toContain('\nstatus: done')
+    expect(content).not.toContain('Status:')
+  })
+
+  it('keeps an existing Tags key and lowercase tag values (TOL-466)', () => {
     const content = writeMobileFrontmatterContentValue(
-      '---\nTags:\n  - Old\n---\n# Note\n',
-      'Tags',
-      ['Design', 'AI'],
+      '---\nTags:\n  - old\n---\n# Note\n',
+      'tags',
+      ['design', 'ai'],
     )
 
-    expect(content).toContain('\ntags:\n  - Design\n  - AI')
-    expect(content).not.toContain('\nTags:')
+    expect(content).toContain('\nTags:\n  - design\n  - ai')
+    expect(content).not.toContain('\ntags:')
+  })
+
+  it('leaves a single status key when the note has duplicate status aliases', () => {
+    const content = writeMobileFrontmatterContentValue(
+      '---\nStatus: Draft\nstatus: draft\n---\n# Note\n',
+      'status',
+      'done',
+    )
+
+    expect(content.match(/^status: done$/gimu)).toHaveLength(1)
   })
 
   it('canonicalizes title aliases during direct writes', () => {
