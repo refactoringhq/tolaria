@@ -28,12 +28,16 @@ type ExpoFileSystemModule = {
 type DirectoryName = string;
 type RelativeVaultPath = string;
 type RootUri = string;
+type WorkspaceFileIndex = { directories: string[]; files: LocalVaultFile[] };
+type ExpoWorkspaceFileSystem = WorkspaceFileSystem & {
+	readVaultIndex: (rootUri: string) => WorkspaceFileIndex;
+};
 
 declare const require: (moduleName: string) => ExpoFileSystemModule;
 
 let expoFileSystemModule: ExpoFileSystemModule | null = null;
 
-export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
+export const expoWorkspaceFileSystem: ExpoWorkspaceFileSystem = {
 	get writeTextBatch() {
 		return nativeWorkspaceTextBatchWriter();
 	},
@@ -92,6 +96,8 @@ export const expoWorkspaceFileSystem: WorkspaceFileSystem = {
 
 		return readDirectoryPaths(module, root, "");
 	},
+	readVaultIndex: (rootUri) =>
+		readWorkspaceFileIndex(expoFileSystem(), rootUri),
 	writeTextFile: (rootUri, relativePath, content) => {
 		const normalizedPath = requireWorkspaceWritePath(relativePath);
 
@@ -201,6 +207,37 @@ function readDirectoryFiles(
 	}
 
 	return files;
+}
+
+export function readWorkspaceFileIndex(
+	module: ExpoFileSystemModule,
+	rootUri: RootUri,
+): WorkspaceFileIndex {
+	assertGitCheckoutComplete(module, rootUri);
+	recoverNativeWorkspaceText(rootUri);
+	const root = new module.Directory(rootUri);
+	if (!root.exists) throw new Error("workspaceRootMissing");
+	return readDirectoryIndex(module, root, "");
+}
+
+function readDirectoryIndex(
+	module: ExpoFileSystemModule,
+	directory: Directory,
+	currentRelativePath: RelativeVaultPath,
+): WorkspaceFileIndex {
+	const index: WorkspaceFileIndex = { directories: [], files: [] };
+	for (const entry of directory.list()) {
+		const relativePath = joinedRelativePath(currentRelativePath, entry.name);
+		if (entry instanceof module.Directory && shouldReadDirectory(entry.name)) {
+			index.directories.push(relativePath);
+			const nested = readDirectoryIndex(module, entry, relativePath);
+			index.directories.push(...nested.directories);
+			index.files.push(...nested.files);
+		} else if (entry instanceof module.File && shouldReadFile(relativePath)) {
+			index.files.push(localVaultFile(entry, relativePath));
+		}
+	}
+	return index;
 }
 
 function readDirectoryPaths(
