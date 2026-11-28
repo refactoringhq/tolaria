@@ -328,17 +328,13 @@ describe("App.navigation", () => {
 
 		render(<App />);
 
-		expect(
-			await screen.findByTestId(
-				"status-missing-git",
-				{},
-				{ timeout: SLOW_APP_READY_TIMEOUT_MS },
-			),
-		).toBeInTheDocument();
-		fireEvent.click(screen.getByTestId("status-missing-git"));
-		expect(
-			await screen.findByText("Enable Git for this vault?"),
-		).toBeInTheDocument();
+		await screen.findByTestId("sidebar-sync", {}, { timeout: SLOW_APP_READY_TIMEOUT_MS });
+		fireEvent.keyDown(window, { key: "k", metaKey: true });
+		fireEvent.change(await screen.findByPlaceholderText("Type a command..."), {
+			target: { value: "Initialize Git" },
+		});
+		fireEvent.click(await screen.findByText("Initialize Git for Current Vault"));
+		expect(await screen.findByText("Enable Git for this vault?")).toBeInTheDocument();
 
 		fireEvent.click(screen.getByTestId("status-vault-trigger"));
 		fireEvent.click(screen.getByTestId("vault-menu-item-Git Vault"));

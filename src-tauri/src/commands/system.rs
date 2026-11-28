@@ -352,6 +352,17 @@ pub fn update_current_window_min_size(
     apply_window_min_size_update(&window, min_width, min_height, grow_to_fit)
 }
 
+#[cfg(target_os = "macos")]
+#[path = "macos_traffic_lights.rs"]
+mod macos_traffic_lights;
+#[cfg(target_os = "macos")]
+pub use macos_traffic_lights::*;
+
+#[cfg(not(target_os = "macos"))]
+#[tauri::command]
+pub fn update_macos_traffic_light_position(_window: tauri::Window, _header: serde::de::IgnoredAny) {
+}
+
 #[cfg(desktop)]
 #[tauri::command]
 pub fn perform_current_window_titlebar_double_click(window: Window) -> Result<(), String> {
