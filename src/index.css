@@ -1639,6 +1639,12 @@ body.mac-sidebar-vibrancy:has(:is(.app__sidebar, [data-desktop-sidebar-chrome], 
   --collection-panel-shadow: 0 8px 16px -10px var(--shadow-soft), var(--shadow-card);
 }
 
+@media (min-resolution: 2dppx) {
+  .app {
+    --collection-panel-edge-width: 0.5px;
+  }
+}
+
 /* Elevate the collection surfaces without taking space from their contents. */
 .calendar-surface,
 .calendar-tray {
@@ -1688,7 +1694,7 @@ body.mac-sidebar-vibrancy:has(:is(.app__sidebar, [data-desktop-sidebar-chrome], 
   position: absolute;
   inset: 0;
   z-index: 25;
-  border: 1px solid var(--collection-panel-edge, var(--border-default));
+  border: var(--collection-panel-edge-width, 1px) solid var(--collection-panel-edge, var(--border-default));
   border-radius: inherit;
   pointer-events: none;
 }
@@ -1699,7 +1705,7 @@ body.mac-sidebar-vibrancy:has(:is(.app__sidebar, [data-desktop-sidebar-chrome], 
 }
 
 .app[data-desktop-sidebar-chrome] > .app__note-list [data-virtuoso-scroller]::after {
-  clip-path: inset(0 1px);
+  clip-path: inset(0 var(--collection-panel-edge-width, 1px));
 }
 
 /* The editor owns the shared edge of the note list and Properties. */
@@ -1713,7 +1719,7 @@ body.mac-sidebar-vibrancy:has(:is(.app__sidebar, [data-desktop-sidebar-chrome], 
   inset-block: 0;
   inset-inline-start: 0;
   width: var(--radius-xl);
-  border-block: 1px solid var(--collection-panel-edge, var(--border-default));
+  border-block: var(--collection-panel-edge-width, 1px) solid var(--collection-panel-edge, var(--border-default));
   pointer-events: none;
 }
 

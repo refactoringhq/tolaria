@@ -299,7 +299,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  border: 1px solid var(--kanban-column-edge);
+  border: var(--collection-panel-edge-width, 1px) solid var(--kanban-column-edge);
   border-radius: inherit;
   pointer-events: none;
 }
