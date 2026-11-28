@@ -23,6 +23,7 @@ vi.mock("./mobileVaultConfig", () => ({
 
 import {
 	localVaultFile,
+	readWorkspaceFileIndex,
 	readWorkspaceTextFileAsync,
 } from "./expoWorkspaceFileSystem";
 
@@ -85,4 +86,95 @@ it("reads note bytes without synchronously replaying native recovery", async () 
 	).resolves.toBe("# Disk content");
 	expect(recovery).not.toHaveBeenCalled();
 	expect(file.text).toHaveBeenCalledOnce();
+});
+
+function createFakeVaultFileSystem(
+	files: Map<string, string>,
+	children: Map<string, object[]>,
+) {
+	class FakeDirectory {
+		name: string;
+		uri: string;
+		exists = true;
+
+		constructor(root: string, ...segments: string[]) {
+			this.uri = [root, ...segments].join("/");
+			this.name = segments.at(-1) ?? root.split("/").at(-1) ?? "";
+		}
+
+		list(): object[] {
+			return children.get(this.uri) ?? [];
+		}
+	}
+	class FakeFile {
+		name: string;
+		uri: string;
+		exists: boolean;
+
+		constructor(root: string, ...segments: string[]) {
+			this.uri = [root, ...segments].join("/");
+			this.name = segments.at(-1) ?? root.split("/").at(-1) ?? "";
+			this.exists = files.has(this.uri);
+		}
+
+		info() {
+			return {
+				creationTime: 1,
+				modificationTime: 2,
+				size: this.bytesSync().length,
+			};
+		}
+
+		bytesSync() {
+			return new TextEncoder().encode(files.get(this.uri) ?? "");
+		}
+	}
+	return {
+		Directory: FakeDirectory,
+		File: FakeFile,
+		Paths: { document: "file:///" },
+	};
+}
+
+it("indexes ordinary Markdown files in nested folders and skips hidden Git data", () => {
+	const files = new Map<string, string>([
+		[
+			"file:///vault/Projects/Field Notes.md",
+			"---\ntype: Note\n---\n# Field notes",
+		],
+		["file:///vault/Projects/Launch/Checklist.md", "# Checklist"],
+		["file:///vault/.git/config", "[core]"],
+	]);
+	const children = new Map<string, object[]>();
+	const fakeFileSystem = createFakeVaultFileSystem(files, children);
+	const project = new fakeFileSystem.Directory("file:///vault", "Projects");
+	const launch = new fakeFileSystem.Directory(
+		"file:///vault",
+		"Projects",
+		"Launch",
+	);
+	children.set("file:///vault", [project]);
+	children.set("file:///vault/Projects", [
+		new fakeFileSystem.File("file:///vault/Projects/Field Notes.md"),
+		launch,
+	]);
+	children.set("file:///vault/Projects/Launch", [
+		new fakeFileSystem.File("file:///vault/Projects/Launch/Checklist.md"),
+	]);
+	children.set("file:///vault/.git", [
+		new fakeFileSystem.File("file:///vault/.git/config"),
+	]);
+
+	const index = readWorkspaceFileIndex(
+		fakeFileSystem as never,
+		"file:///vault",
+	);
+
+	expect(index.directories).toEqual(["Projects", "Projects/Launch"]);
+	expect(
+		index.files.map(({ relativePath, content }) => [relativePath, content]),
+	).toEqual([
+		["Projects/Field Notes.md", "---\ntype: Note\n---\n# Field notes"],
+		["Projects/Launch/Checklist.md", "# Checklist"],
+	]);
 });
