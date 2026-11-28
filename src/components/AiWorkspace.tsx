@@ -101,12 +101,15 @@ function PermissionPicker({
   targetKind: AiTarget['kind']
   onChange: (mode: AiAgentPermissionMode) => void
 }) {
+  const variant = compact ? 'ghost' : 'outline'
+  const size = compact ? 'xs' : 'sm'
+
   if (targetKind === 'api_model') {
     return (
       <Button
         type="button"
-        variant={compact ? 'ghost' : 'outline'}
-        size={compact ? 'xs' : 'sm'}
+        variant={variant}
+        size={size}
         disabled
         className="rounded-full px-2 text-[12px] text-muted-foreground"
       >
@@ -120,8 +123,8 @@ function PermissionPicker({
       <DropdownMenuTrigger asChild>
         <Button
           type="button"
-          variant={compact ? 'ghost' : 'outline'}
-          size={compact ? 'xs' : 'sm'}
+          variant={variant}
+          size={size}
           className={cn(
             'justify-between text-muted-foreground hover:text-foreground',
             compact ? 'rounded-full px-2 text-[12px]' : 'gap-2',
@@ -223,9 +226,10 @@ function useGeneratedConversationTitle(options: {
     if (!conversation.usesDefaultTitle) return
 
     const firstMessage = firstCompletedAssistantMessage(messages)
-    const prompt = firstMessage?.userMessage.trim()
-    const assistantResponse = firstMessage?.response?.trim()
-    if (!firstMessage || !prompt || !assistantResponse) return
+    if (!firstMessage) return
+    const prompt = firstMessage.userMessage.trim()
+    const assistantResponse = firstMessage.response?.trim()
+    if (!prompt || !assistantResponse) return
 
     const titleKey = `${conversation.id}:${firstMessage.id ?? prompt}`
     if (requestedTitleKeysRef.current.has(titleKey)) return
@@ -297,7 +301,7 @@ function activeContextForSession({
   }
 }
 
-function ConversationComposerControls(options: {
+interface ConversationComposerControlsProps {
   catalog: AiAgentModelCatalog
   catalogReady: boolean
   disabled: boolean
@@ -312,7 +316,9 @@ function ConversationComposerControls(options: {
   target: AiTarget
   modelOptions: ReturnType<typeof modelOptionsForAgent>
   selectedModelId: string
-}) {
+}
+
+function ConversationComposerControls(options: ConversationComposerControlsProps) {
   const {
     catalog,
     catalogReady,
@@ -721,7 +727,7 @@ function SideAiWorkspaceLayout({
       data-ai-workspace-expanded={expanded ? 'true' : 'false'}
       aria-label={translate(workspace.locale, 'ai.workspace.title')}
     >
-      {!expanded && <WorkspaceResizeHandles mode="side" onResize={sizing.onWorkspaceResize} />}
+      {!expanded && <WorkspaceResizeHandles mode="side" onClose={workspace.onClose} onResize={sizing.onWorkspaceResize} />}
       <div className="flex min-w-0 flex-1 flex-col">
         <SideWorkspaceHeader
           activeId={model.activeId}
@@ -988,7 +994,7 @@ function AiWorkspaceLayout({ model, workspace }: { model: AiWorkspaceModel; work
       role="dialog"
       aria-label={translate(workspace.locale, 'ai.workspace.title')}
     >
-      <WorkspaceResizeHandles mode={workspace.mode} onResize={sizing.onWorkspaceResize} />
+      <WorkspaceResizeHandles mode={workspace.mode} onClose={workspace.onClose} onResize={sizing.onWorkspaceResize} />
       <ConversationSidebar
         activeId={model.activeId}
         collapsed={model.sidebarCollapsed}
