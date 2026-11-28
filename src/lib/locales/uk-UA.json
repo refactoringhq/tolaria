@@ -28,7 +28,7 @@
   "calendar.tray.toggle": "Нотатки без дати ({count})",
   "calendar.tray.close": "Приховати нотатки без дати",
   "calendar.tray.empty": "Кожна нотатка в цьому списку має дату.",
-  "calendar.tray.dragHint": "Перетягніть нотатку, щоб запланувати її",
+  "calendar.tray.dragHint": "Перетягніть нотатку на день, щоб запланувати її.",
   "calendar.tray.invalid": "Не є датою: {value}",
   "calendar.empty.title": "Поки що немає чого розміщувати в календарі",
   "calendar.empty.noDateProperty": "Календар розміщує кожну нотатку на день відповідно до однієї з її властивостей дати, як-от «термін виконання» або «початок». Жодна нотатка в цьому списку ще не має властивості дати.",
@@ -1508,17 +1508,5 @@
   "mobile.workspace.actionFailure.multiple": "Не вдалося зберегти ці зміни. Ваші нотатки залишилися без змін.",
   "calendar.quarter": "Квартал",
   "calendar.year": "Рік",
-  "calendar.showIcons": "Показувати значки нотаток",
-  "layout.dragToResize": "<strong>Перетягніть</strong>, щоб змінити розмір",
-  "layout.clickToCollapse": "<strong>Натисніть</strong>, щоб згорнути",
-  "settings.dateDisplay.short": "Скорочено в списку нотаток (21 листопада 2026 р.)",
-  "settings.dateDisplay.shortCurrentYear": "Скорочено в списку нотаток, без зазначення поточного року (21 листопада)",
-  "sidebar.chrome.sync": "Синхронізація",
-  "sidebar.chrome.noSync": "Синхронізація відсутня",
-  "sidebar.chrome.syncJustNow": "Щойно",
-  "sidebar.chrome.syncMinutesAgo": "{minutes} хв тому",
-  "sidebar.chrome.syncRepository": "Репозиторій",
-  "sidebar.chrome.viewChanges": "Переглянути зміни",
-  "sidebar.chrome.viewHistory": "Переглянути історію",
-  "noteList.properties.computed": "Обчислювані поля"
+  "calendar.showIcons": "Показувати значки нотаток"
 }

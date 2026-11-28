@@ -16,14 +16,7 @@ const SUPPORTED_DEFAULT_AI_AGENTS: &[&str] = &[
 ];
 pub const DEFAULT_HIDE_GITIGNORED_FILES: bool = true;
 const SUPPORTED_NOTE_WIDTH_MODES: &[&str] = &["normal", "wide"];
-const SUPPORTED_DATE_DISPLAY_FORMATS: &[&str] = &[
-    "us",
-    "european",
-    "friendly",
-    "iso",
-    "short",
-    "short-current-year",
-];
+const SUPPORTED_DATE_DISPLAY_FORMATS: &[&str] = &["us", "european", "friendly", "iso"];
 const SUPPORTED_UI_LANGUAGE_ALIASES: &[(&str, &str)] = &[
     ("en", "en"),
     ("en-us", "en"),

@@ -28,7 +28,7 @@
   "calendar.tray.toggle": "Anteckningar utan datum ({count})",
   "calendar.tray.close": "Dölj anteckningar utan datum",
   "calendar.tray.empty": "Varje anteckning i den här listan har ett datum.",
-  "calendar.tray.dragHint": "Dra en anteckning för att schemalägga den",
+  "calendar.tray.dragHint": "Dra en anteckning till en dag för att schemalägga den.",
   "calendar.tray.invalid": "Inte ett datum: {value}",
   "calendar.empty.title": "Inget att placera i kalendern än",
   "calendar.empty.noDateProperty": "Kalendern placerar varje anteckning på den dag som anges i en av dess datumegenskaper, till exempel due eller start. Ingen anteckning i den här listan har någon datumegenskap än.",
@@ -1508,17 +1508,5 @@
   "mobile.workspace.actionFailure.multiple": "Det gick inte att spara dessa ändringar. Dina anteckningar är oförändrade.",
   "calendar.quarter": "Kvartal",
   "calendar.year": "År",
-  "calendar.showIcons": "Visa anteckningsikoner",
-  "layout.dragToResize": "<strong>Dra</strong> för att ändra storlek",
-  "layout.clickToCollapse": "<strong>Klicka för att fälla</strong> ihop",
-  "settings.dateDisplay.short": "Förkortat i anteckningslistan (21 nov 2026)",
-  "settings.dateDisplay.shortCurrentYear": "Förkortat i anteckningslistan, utelämnar innevarande år (21 nov)",
-  "sidebar.chrome.sync": "Synkronisera",
-  "sidebar.chrome.noSync": "Ingen synkronisering",
-  "sidebar.chrome.syncJustNow": "Alldeles nyss",
-  "sidebar.chrome.syncMinutesAgo": "För {minutes} minuter sedan",
-  "sidebar.chrome.syncRepository": "Lagringsplats",
-  "sidebar.chrome.viewChanges": "Visa ändringar",
-  "sidebar.chrome.viewHistory": "Visa historik",
-  "noteList.properties.computed": "Beräknade fält"
+  "calendar.showIcons": "Visa anteckningsikoner"
 }

@@ -28,7 +28,7 @@
   "calendar.tray.toggle": "Notatki bez daty ({count})",
   "calendar.tray.close": "Ukryj notatki bez daty",
   "calendar.tray.empty": "Każda notatka na tej liście ma datę.",
-  "calendar.tray.dragHint": "Przeciągnij notatkę, aby ją zaplanować",
+  "calendar.tray.dragHint": "Przeciągnij notatkę na wybrany dzień, aby ją zaplanować.",
   "calendar.tray.invalid": "To nie jest data: {value}",
   "calendar.empty.title": "Na razie nie ma nic do umieszczenia w kalendarzu",
   "calendar.empty.noDateProperty": "Kalendarz umieszcza każdą notatkę w dniu odpowiadającym jednej z jej właściwości daty, takiej jak due czy start. Żadna notatka na tej liście nie ma jeszcze właściwości daty.",
@@ -1508,17 +1508,5 @@
   "mobile.workspace.actionFailure.multiple": "Nie udało się zapisać tych zmian. Twoje notatki pozostają bez zmian.",
   "calendar.quarter": "Kwartał",
   "calendar.year": "Rok",
-  "calendar.showIcons": "Pokaż ikony notatek",
-  "layout.dragToResize": "<strong>Przeciągnij</strong>, aby zmienić rozmiar",
-  "layout.clickToCollapse": "<strong>Kliknij</strong>, aby zwinąć",
-  "settings.dateDisplay.short": "Skrócona forma na liście notatek (21 listopada 2026 r.)",
-  "settings.dateDisplay.shortCurrentYear": "Skrócona forma na liście notatek, bez podawania bieżącego roku (21 listopada)",
-  "sidebar.chrome.sync": "Synchronizuj",
-  "sidebar.chrome.noSync": "Brak synchronizacji",
-  "sidebar.chrome.syncJustNow": "Właśnie teraz",
-  "sidebar.chrome.syncMinutesAgo": "{minutes} min temu",
-  "sidebar.chrome.syncRepository": "Repozytorium",
-  "sidebar.chrome.viewChanges": "Wyświetl zmiany",
-  "sidebar.chrome.viewHistory": "Wyświetl historię",
-  "noteList.properties.computed": "Pola obliczane"
+  "calendar.showIcons": "Pokaż ikony notatek"
 }

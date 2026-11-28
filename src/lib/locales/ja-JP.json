@@ -28,7 +28,7 @@
   "calendar.tray.toggle": "日付のないノート（{count}件）",
   "calendar.tray.close": "日付のないノートを非表示にする",
   "calendar.tray.empty": "このリストのすべてのノートには日付がついています。",
-  "calendar.tray.dragHint": "ノートをドラッグしてスケジュールを設定します",
+  "calendar.tray.dragHint": "メモを日付の上にドラッグして、スケジュールを設定します。",
   "calendar.tray.invalid": "日付ではありません：{value}",
   "calendar.empty.title": "まだカレンダーに配置するものがありません",
   "calendar.empty.noDateProperty": "カレンダーは、各ノートを「期日」や「開始日」などの日付プロパティのいずれかに基づいて該当する日に配置します。このリストのどのノートにも、まだ日付プロパティがありません。",
@@ -1508,17 +1508,5 @@
   "mobile.workspace.actionFailure.multiple": "これらの変更を保存できませんでした。ノートは変更されていません。",
   "calendar.quarter": "四半期",
   "calendar.year": "年",
-  "calendar.showIcons": "ノートアイコンを表示",
-  "layout.dragToResize": "<strong>ドラッグ</strong>してサイズを変更",
-  "layout.clickToCollapse": "<strong>クリック</strong>して折りたたむ",
-  "settings.dateDisplay.short": "ノートリストの短縮形（2026年11月21日）",
-  "settings.dateDisplay.shortCurrentYear": "ノートリストでは短縮表記、現在の年は省略（11月21日）",
-  "sidebar.chrome.sync": "同期",
-  "sidebar.chrome.noSync": "同期なし",
-  "sidebar.chrome.syncJustNow": "たった今",
-  "sidebar.chrome.syncMinutesAgo": "{minutes}分前",
-  "sidebar.chrome.syncRepository": "リポジトリ",
-  "sidebar.chrome.viewChanges": "変更を表示",
-  "sidebar.chrome.viewHistory": "履歴を表示",
-  "noteList.properties.computed": "計算フィールド"
+  "calendar.showIcons": "ノートアイコンを表示"
 }

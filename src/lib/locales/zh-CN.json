@@ -28,7 +28,7 @@
   "calendar.tray.toggle": "未标注日期的笔记（{count}）",
   "calendar.tray.close": "隐藏未标注日期的笔记",
   "calendar.tray.empty": "此列表中的每条笔记都有日期。",
-  "calendar.tray.dragHint": "拖动笔记以安排时间",
+  "calendar.tray.dragHint": "将笔记拖到某一天上即可安排。",
   "calendar.tray.invalid": "不是日期：{value}",
   "calendar.empty.title": "目前尚无内容可放置在日历上",
   "calendar.empty.noDateProperty": "日历会根据每条笔记的某个日期属性（如 due 或 start）将其安排在相应日期。此列表中的所有笔记都尚无日期属性。",
@@ -1508,17 +1508,5 @@
   "mobile.workspace.actionFailure.multiple": "无法保存这些更改。您的笔记未发生变化。",
   "calendar.quarter": "季度",
   "calendar.year": "年",
-  "calendar.showIcons": "显示笔记图标",
-  "layout.dragToResize": "<strong>拖动</strong>以调整大小",
-  "layout.clickToCollapse": "<strong>点击</strong>以折叠",
-  "settings.dateDisplay.short": "笔记列表中的简短形式（2026年11月21日）",
-  "settings.dateDisplay.shortCurrentYear": "在笔记列表中使用简写形式，省略当前年份（11月21日）",
-  "sidebar.chrome.sync": "同步",
-  "sidebar.chrome.noSync": "未同步",
-  "sidebar.chrome.syncJustNow": "刚刚",
-  "sidebar.chrome.syncMinutesAgo": "{minutes} 分钟前",
-  "sidebar.chrome.syncRepository": "仓库",
-  "sidebar.chrome.viewChanges": "查看更改",
-  "sidebar.chrome.viewHistory": "查看历史记录",
-  "noteList.properties.computed": "计算字段"
+  "calendar.showIcons": "显示笔记图标"
 }

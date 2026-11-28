@@ -28,7 +28,7 @@
   "calendar.tray.toggle": "Нататкі без даты ({count})",
   "calendar.tray.close": "Схаваць нататкі без даты",
   "calendar.tray.empty": "Кожная нататка ў гэтым спісе мае дату.",
-  "calendar.tray.dragHint": "Перацягніце нататку, каб запланаваць яе",
+  "calendar.tray.dragHint": "Перацягніце нататку на дзень, каб запланаваць яе.",
   "calendar.tray.invalid": "Не з'яўляецца датай: {value}",
   "calendar.empty.title": "Пакуль няма чаго размясціць у календары",
   "calendar.empty.noDateProperty": "Каляндар размяшчае кожную нататку на дзень у адной з яе ўласцівасцяў даты, напрыклад «тэрмін выканання» або «пачатак». Ніводная нататка ў гэтым спісе пакуль не мае ўласцівасці даты.",
@@ -1508,17 +1508,5 @@
   "mobile.workspace.actionFailure.multiple": "Не ўдалося захаваць гэтыя змены. Вашы нататкі засталіся без зменаў.",
   "calendar.quarter": "Квартал",
   "calendar.year": "Год",
-  "calendar.showIcons": "Паказваць значкі нататак",
-  "layout.dragToResize": "<strong>Перацягніце</strong>, каб змяніць памер",
-  "layout.clickToCollapse": "<strong>Націсніце</strong>, каб згарнуць",
-  "settings.dateDisplay.short": "Скарочана ў спісе нататак (21 лістапада 2026 г.)",
-  "settings.dateDisplay.shortCurrentYear": "Скарочана ў спісе нататак, без указвання бягучага года (21 лістапада)",
-  "sidebar.chrome.sync": "Сінхранізацыя",
-  "sidebar.chrome.noSync": "Няма сінхранізацыі",
-  "sidebar.chrome.syncJustNow": "Толькі што",
-  "sidebar.chrome.syncMinutesAgo": "{minutes} хв. таму",
-  "sidebar.chrome.syncRepository": "Сховішча",
-  "sidebar.chrome.viewChanges": "Прагляд змяненняў",
-  "sidebar.chrome.viewHistory": "Прагляд гісторыі",
-  "noteList.properties.computed": "Вылічаныя палі"
+  "calendar.showIcons": "Паказваць значкі нататак"
 }

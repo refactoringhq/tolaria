@@ -28,7 +28,7 @@
   "calendar.tray.toggle": "Catatan tanpa tanggal ({count})",
   "calendar.tray.close": "Sembunyikan catatan tanpa tanggal",
   "calendar.tray.empty": "Setiap catatan dalam daftar ini memiliki tanggal.",
-  "calendar.tray.dragHint": "Seret catatan untuk menjadwalkannya",
+  "calendar.tray.dragHint": "Seret catatan ke hari tertentu untuk menjadwalkannya.",
   "calendar.tray.invalid": "Bukan tanggal: {value}",
   "calendar.empty.title": "Belum ada yang bisa ditempatkan di kalender",
   "calendar.empty.noDateProperty": "Kalender menempatkan setiap catatan pada hari yang sesuai dengan salah satu properti tanggalnya, seperti due atau start. Belum ada catatan dalam daftar ini yang memiliki properti tanggal.",
@@ -1508,17 +1508,5 @@
   "mobile.workspace.actionFailure.multiple": "Tidak dapat menyimpan perubahan ini. Catatan Anda tidak berubah.",
   "calendar.quarter": "Kuartal",
   "calendar.year": "Tahun",
-  "calendar.showIcons": "Tampilkan ikon catatan",
-  "layout.dragToResize": "<strong>Seret</strong> untuk mengubah ukuran",
-  "layout.clickToCollapse": "<strong>Klik</strong> untuk menciutkan",
-  "settings.dateDisplay.short": "Singkat dalam daftar catatan (21 Nov 2026)",
-  "settings.dateDisplay.shortCurrentYear": "Singkat di daftar catatan, hilangkan tahun berjalan (21 Nov)",
-  "sidebar.chrome.sync": "Sinkronkan",
-  "sidebar.chrome.noSync": "Tidak Ada Sinkronisasi",
-  "sidebar.chrome.syncJustNow": "Baru saja",
-  "sidebar.chrome.syncMinutesAgo": "{minutes} menit yang lalu",
-  "sidebar.chrome.syncRepository": "Repositori",
-  "sidebar.chrome.viewChanges": "Lihat perubahan",
-  "sidebar.chrome.viewHistory": "Lihat riwayat",
-  "noteList.properties.computed": "Field terhitung"
+  "calendar.showIcons": "Tampilkan ikon catatan"
 }

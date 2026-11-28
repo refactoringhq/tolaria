@@ -28,7 +28,7 @@
   "calendar.tray.toggle": "Notes without a date ({count})",
   "calendar.tray.close": "Hide notes without a date",
   "calendar.tray.empty": "Every note in this list has a date.",
-  "calendar.tray.dragHint": "Drag a note to schedule it",
+  "calendar.tray.dragHint": "Drag a note onto a day to schedule it.",
   "calendar.tray.invalid": "Not a date: {value}",
   "calendar.empty.title": "Nothing to place on the calendar yet",
   "calendar.empty.noDateProperty": "The calendar places each note on the day in one of its date properties, like due or start. No note in this list has a date property yet.",
@@ -1508,17 +1508,5 @@
   "mobile.workspace.actionFailure.multiple": "Could not save these changes. Your notes are unchanged.",
   "calendar.quarter": "Quarter",
   "calendar.year": "Year",
-  "calendar.showIcons": "Show note icons",
-  "layout.dragToResize": "<strong>Drag</strong> to resize",
-  "layout.clickToCollapse": "<strong>Click</strong> to collapse",
-  "settings.dateDisplay.short": "Short in note list (Nov 21, 2026)",
-  "settings.dateDisplay.shortCurrentYear": "Short in note list, omit current year (Nov 21)",
-  "sidebar.chrome.sync": "Sync",
-  "sidebar.chrome.noSync": "No Sync",
-  "sidebar.chrome.syncJustNow": "Just now",
-  "sidebar.chrome.syncMinutesAgo": "{minutes} mins ago",
-  "sidebar.chrome.syncRepository": "Repository",
-  "sidebar.chrome.viewChanges": "View changes",
-  "sidebar.chrome.viewHistory": "View history",
-  "noteList.properties.computed": "Computed fields"
+  "calendar.showIcons": "Show note icons"
 }
