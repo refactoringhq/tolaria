@@ -120,7 +120,7 @@ describe("Sidebar.favorites", () => {
 				height: "18px",
 				padding: "0 6px",
 			});
-			expect(countChip).toHaveClass("bg-[var(--sidebar-hover)]");
+			expect(countChip).toHaveClass("bg-transparent");
 		});
 
 		it("prefers a favorite note emoji icon over the type icon fallback", () => {

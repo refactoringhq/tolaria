@@ -13,7 +13,6 @@ import { useSidebarViewItemInteractions } from './useSidebarViewItemInteractions
 
 interface ViewAccent {
   color: string
-  background: string
 }
 
 interface SidebarViewItemProps {
@@ -70,17 +69,13 @@ function resolveViewAccent(color: string | null): ViewAccent | null {
   if (!accent) return null
   return {
     color: accent.css,
-    background: accent.cssLight,
   }
 }
 
-function getViewRowStyle(showCount: boolean, isActive: boolean, accent: ViewAccent | null): SidebarItemStyle {
+function getViewRowStyle(showCount: boolean): SidebarItemStyle {
   return {
-    '--sidebar-active-bg': accent?.background,
-    '--sidebar-active-fg': accent?.color,
     padding: showCount ? SIDEBAR_ITEM_PADDING.withCount : SIDEBAR_ITEM_PADDING.regular,
-    borderRadius: 4,
-    ...(isActive && accent ? { background: accent.background, color: accent.color } : {}),
+    borderRadius: 'var(--radius-xl)',
   }
 }
 
@@ -105,8 +100,8 @@ function ViewCountChip({ count, isActive }: { count: number; isActive: boolean }
 function SidebarViewRowAsHtml(options: SidebarViewRowProps) {
   const { view, isActive, onSelect, dragHandleProps, count, locale, accent, rowRef, isRenaming, setIsRenaming, handleRenameSubmit, handleContextMenu, startRename, handleRowKeyDown } = options
   const showCount = count > 0
-  const rowClassName = cn('group/sidebar-row flex cursor-pointer select-none items-center gap-2 rounded transition-colors', isActive ? 'bg-[var(--accent-blue-light)] text-[var(--accent-blue)]' : 'bg-transparent text-foreground', SIDEBAR_ITEM_HOVER_CLASS)
-  const rowStyle = getViewRowStyle(showCount, isActive, accent)
+  const rowClassName = cn('group/sidebar-row flex cursor-pointer select-none items-center gap-2 rounded text-foreground transition-colors', isActive ? 'bg-[var(--sidebar-item-highlight)] shadow-[var(--shadow-sidebar)]' : 'bg-transparent', SIDEBAR_ITEM_HOVER_CLASS)
+  const rowStyle = getViewRowStyle(showCount)
   if (isRenaming) {
     return (
       <div ref={rowRef as RefObject<HTMLDivElement>} className={rowClassName} style={rowStyle}>
