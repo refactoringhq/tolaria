@@ -26,6 +26,7 @@ import { humanizePropertyKey } from '../utils/propertyLabels'
 import { translate, type AppLocale } from '../lib/i18n'
 import { canonicalSystemMetadataKey, hasSystemMetadataKey } from '../utils/systemMetadata'
 import { noteFormatFromFrontmatter, type NoteFormat } from '../utils/noteFormat'
+import { SUGGESTED_PROPERTY_SLOTS } from '../utils/workspaceSuggestionContracts'
 
 // eslint-disable-next-line react-refresh/only-export-components -- utility co-located with component
 export function containsWikilinks(value: FrontmatterValue): boolean {
@@ -140,17 +141,12 @@ function AddPropertyButton({
   )
 }
 
-const SUGGESTED_PROPERTIES = [
-  { key: 'Status', label: 'Status' },
-  { key: 'date', label: 'Date' },
-  { key: 'URL', label: 'URL' },
-  { key: 'icon', label: 'Icon' },
-] as const
+const SUGGESTED_PROPERTIES = SUGGESTED_PROPERTY_SLOTS
 
 const SUGGESTED_PROPERTY_MODES: Record<string, PropertyDisplayMode> = {
-  Status: 'status',
+  status: 'status',
   date: 'date',
-  URL: 'url',
+  url: 'url',
   icon: 'text',
 }
 
@@ -213,39 +209,8 @@ function TypeDerivedPropertySlot(options: {
   onDisplayModeChange: (key: string, mode: PropertyDisplayMode | null) => void
   locale: AppLocale
 }) {
-  const {
-    propKey,
-    editingKey,
-    displayMode,
-    autoMode,
-    vaultStatuses,
-    vaultTags,
-    onStartEdit,
-    onSave,
-    onSaveList,
-    onUpdate,
-    onDisplayModeChange,
-    locale,
-  } = options
-  if (editingKey === propKey) {
-    return (
-      <PropertyRow
-        propKey={propKey}
-        value=""
-        editingKey={editingKey}
-        displayMode={displayMode}
-        autoMode={autoMode}
-        vaultStatuses={vaultStatuses}
-        vaultTags={vaultTags}
-        onStartEdit={onStartEdit}
-        onSave={onSave}
-        onSaveList={onSaveList}
-        onUpdate={onUpdate}
-        onDisplayModeChange={onDisplayModeChange}
-        locale={locale}
-      />
-    )
-  }
+  const { propKey, editingKey, displayMode, onStartEdit, onUpdate } = options
+  if (editingKey === propKey) return <PropertyRow {...options} value="" />
 
   const PlaceholderIcon = Reflect.get(DISPLAY_MODE_ICONS, displayMode) as typeof Plus
 
