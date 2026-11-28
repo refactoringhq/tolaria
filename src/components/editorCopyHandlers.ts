@@ -1,5 +1,6 @@
 import type { ClipboardEvent } from 'react'
 import type { useCreateBlockNote } from '@blocknote/react'
+import { CellSelection } from '@tiptap/pm/tables'
 import {
   richEditorClipboardPayload,
   selectedCodeBlockText,
@@ -25,11 +26,16 @@ function handleSelectedEditorCopy(
   event: ClipboardEvent<HTMLDivElement>,
   editor: ReturnType<typeof useCreateBlockNote>,
 ) {
-  const selection = window.getSelection()
-  const range = selectedEditorRange(selection, event.currentTarget)
-  if (!selection || !range) return
+  // A multi-cell range only maps to the head cell in the DOM selection, so the
+  // DOM text below would copy one cell. BlockNote serializes the whole range.
+  const selection = editor.prosemirrorState?.selection
+  if (selection instanceof CellSelection && selection.$anchorCell.pos !== selection.$headCell.pos) return
 
-  const plainText = selectedEditorPlainText(selection, range)
+  const domSelection = window.getSelection()
+  const range = selectedEditorRange(domSelection, event.currentTarget)
+  if (!domSelection || !range) return
+
+  const plainText = selectedEditorPlainText(domSelection, range)
   if (plainText === null) return
 
   event.clipboardData.setData('text/plain', plainText)
