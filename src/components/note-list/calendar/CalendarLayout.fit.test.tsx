@@ -154,6 +154,20 @@ describe("calendar day cells fit cards at their natural height (TOL-393)", () =>
 		);
 	});
 
+	it("keeps oversized cards in overflow on a crowded day", () => {
+		stubGeometry({ lanes: 150, card: 26 });
+		vi.spyOn(cardPrototype(), "offsetHeight", "get").mockImplementation(
+			function (this: Element) {
+				const path = this.getAttribute("data-path");
+				if (!path) return 0;
+				return path === "/v/essay-0.md" || path === "/v/essay-1.md" ? 26 : 180;
+			},
+		);
+		renderDay(10);
+		expect(shownCards()).toHaveLength(2);
+		expect(screen.getByTestId("calendar-more")).toHaveTextContent("+8 more");
+	});
+
 	it("recounts the cards that fit when the app zoom changes", async () => {
 		stubGeometry({ lanes: 90, card: 26 });
 		renderDay(6);
