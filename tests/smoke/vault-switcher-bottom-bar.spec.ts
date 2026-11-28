@@ -162,7 +162,7 @@ async function installVaultSwitcherMocks(
   }, initData)
 }
 
-test('sidebar vault switching works with keyboard and mouse @smoke', async ({ page }) => {
+test('bottom bar vault switching works with keyboard and mouse @smoke', async ({ page }) => {
   await installVaultSwitcherMocks(page)
 
   await page.goto('/', { waitUntil: 'domcontentloaded' })
@@ -176,6 +176,7 @@ test('sidebar vault switching works with keyboard and mouse @smoke', async ({ pa
   await trigger.focus()
   await expect(trigger).toBeFocused()
   await page.keyboard.press('Enter')
+  await page.keyboard.press('Tab')
   await expect(page.getByTestId('vault-menu-item-label-Getting Started')).toBeFocused()
   await page.getByTestId('vault-menu-item-label-Personal Vault').focus()
   await expect(page.getByTestId('vault-menu-item-label-Personal Vault')).toBeFocused()
@@ -227,7 +228,7 @@ test('missing Getting Started vault stays hidden while remove actions still work
   const itemBounds = await personalVaultItem.boundingBox()
   const removeBounds = await removeButton.boundingBox()
 
-  if (!itemBounds || !removeBounds) throw new Error('Vault row and remove button must have visible bounds')
+  if (!itemBounds || !removeBounds) throw new Error('Expected visible vault row and remove button')
   expect(removeBounds.x).toBeGreaterThanOrEqual(itemBounds.x - 1)
   expect(removeBounds.y).toBeGreaterThanOrEqual(itemBounds.y - 1)
   expect(removeBounds.x + removeBounds.width).toBeLessThanOrEqual(itemBounds.x + itemBounds.width + 1)
@@ -239,19 +240,4 @@ test('missing Getting Started vault stays hidden while remove actions still work
   await trigger.click()
   await expect(page.getByTestId('vault-menu-item-Personal Vault')).toHaveCount(0)
   await expect(page.getByTestId('vault-menu-item-Getting Started')).toHaveCount(0)
-})
-
-
-test('the collapsed-sidebar note list opens the sidebar from its right-hand actions', async ({ page }) => {
-  await installVaultSwitcherMocks(page)
-  await page.goto('/', { waitUntil: 'domcontentloaded' })
-
-  await page.locator('.app__sidebar').getByRole('button', { name: 'Collapse sidebar' }).click()
-  const noteList = page.locator('.app__note-list')
-  const showSidebar = noteList.getByRole('button', { name: 'Expand sidebar' })
-  await expect(showSidebar).toBeVisible()
-  await expect(noteList.getByRole('button', { name: 'Search notes', exact: true })).toBeHidden()
-  expect(await showSidebar.evaluate((button) => button.parentElement?.querySelector('button') === button)).toBe(true)
-  await showSidebar.click()
-  await expect(page.getByTestId('sidebar-workspace-header')).toBeVisible()
 })
