@@ -1,4 +1,5 @@
 import type { ClipboardEvent } from "react";
+import { bareHttpUrl, pastedUrlLinkContent } from "../utils/pastedUrlLink";
 
 export type InlineContentEditor = {
 	focus: () => void;
@@ -65,6 +66,9 @@ function parsedInlineContent(
 		event.clipboardData.getData("blocknote/html") ||
 		event.clipboardData.getData("text/html");
 	if (html.length > 0) return null;
+
+	const url = bareHttpUrl({ text: plainText });
+	if (url) return pastedUrlLinkContent(url);
 
 	const markdown = markdownPasteText(event, plainText);
 	return markdown === null ? plainText : markdownPasteContent(markdown, editor);

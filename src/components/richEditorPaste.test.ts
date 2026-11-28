@@ -55,6 +55,38 @@ function htmlCodeBlock(markup: string): string {
 }
 
 describe('handleRichEditorPaste', () => {
+  it('inserts a pasted bare URL as a link immediately when nothing is selected', () => {
+    const insertInlineContent = vi.fn()
+    const context = pasteContext({ 'text/plain': 'https://example.com/docs?a=1&b=2' })
+    context.editor = {
+      ...context.editor,
+      getSelectedText: vi.fn(() => ''),
+      insertInlineContent,
+    }
+
+    expect(handleRichEditorPaste(context)).toBe(true)
+    expect(insertInlineContent).toHaveBeenCalledWith(
+      [{ type: 'link', href: 'https://example.com/docs?a=1&b=2', content: 'https://example.com/docs?a=1&b=2' }],
+      { updateSelection: true },
+    )
+    expect(context.defaultPasteHandler).not.toHaveBeenCalled()
+  })
+
+  it('leaves non-URL text and rich clipboards to the default paste when nothing is selected', () => {
+    const insertInlineContent = vi.fn()
+    const plain = pasteContext({ 'text/plain': 'see https://example.com' })
+    const rich = pasteContext({
+      'text/plain': 'https://example.com',
+      [`text/${String.fromCharCode(104, 116, 109, 108)}`]: '<a href="https://example.com">x</a>',
+    })
+    for (const context of [plain, rich]) {
+      context.editor = { ...context.editor, getSelectedText: vi.fn(() => ''), insertInlineContent }
+      handleRichEditorPaste(context)
+    }
+
+    expect(insertInlineContent).not.toHaveBeenCalled()
+  })
+
   it('turns a selected label into a link when a URL is pasted', () => {
     const createLink = vi.fn()
     const context = pasteContext({
