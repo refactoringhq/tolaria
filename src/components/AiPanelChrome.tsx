@@ -502,11 +502,15 @@ export function AiPanelComposer(options: AiPanelComposerProps) {
     <ComposerStopButton label={t('ai.panel.stop')} onStop={onStop} />
   ) : (
     <ComposerSendButton canSend={canSend} entries={entries} input={input} label={t('ai.panel.send')} onSend={onSend} />
-  )
+      )
 
   return (
-    <div className="flex shrink-0 flex-col" style={{ padding: '6px 10px 0' }}>
-      <div className={hasControls ? 'rounded-xl bg-background px-2 py-1.5 shadow-xs' : 'flex items-end gap-2'}>
+    <div className="flex shrink-0 flex-col" style={{ padding: '6px 10px' }}>
+    <div
+        className={cn(
+        hasControls ? 'rounded-xl border border-border bg-background px-2 py-1.5 shadow-xs' : 'flex items-end gap-2',
+        )}
+      >
         <div className={cn('min-w-0 flex-1', hasControls && 'w-full')}>
           <ComposerInput
             disabled={composerDisabled}

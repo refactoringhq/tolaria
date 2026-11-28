@@ -28,7 +28,7 @@
   "calendar.tray.toggle": "Ghi chú không có ngày ({count})",
   "calendar.tray.close": "Ẩn các ghi chú không có ngày",
   "calendar.tray.empty": "Mỗi ghi chú trong danh sách này đều có ngày.",
-  "calendar.tray.dragHint": "Kéo ghi chú để lên lịch",
+  "calendar.tray.dragHint": "Kéo một ghi chú vào một ngày để lên lịch cho ghi chú đó.",
   "calendar.tray.invalid": "Không phải là ngày tháng: {value}",
   "calendar.empty.title": "Chưa có gì để đưa vào lịch",
   "calendar.empty.noDateProperty": "Lịch đặt mỗi ghi chú vào ngày tương ứng dựa trên một trong các thuộc tính ngày của ghi chú, như due hoặc start. Chưa có ghi chú nào trong danh sách này có thuộc tính ngày.",
@@ -1507,17 +1507,5 @@
   "mobile.workspace.actionFailure.multiple": "Không thể lưu các thay đổi này. Các ghi chú của bạn không có gì thay đổi.",
   "calendar.quarter": "Quý",
   "calendar.year": "Năm",
-  "calendar.showIcons": "Hiện biểu tượng ghi chú",
-  "layout.dragToResize": "<strong>Kéo</strong> để thay đổi kích thước",
-  "layout.clickToCollapse": "<strong>Nhấp</strong> để thu gọn",
-  "settings.dateDisplay.short": "Rút gọn trong danh sách ghi chú (21/11/2026)",
-  "settings.dateDisplay.shortCurrentYear": "Rút gọn trong danh sách ghi chú, bỏ qua năm hiện tại (21/11)",
-  "sidebar.chrome.sync": "Đồng bộ",
-  "sidebar.chrome.noSync": "Không đồng bộ",
-  "sidebar.chrome.syncJustNow": "Ngay bây giờ",
-  "sidebar.chrome.syncMinutesAgo": "{minutes} phút trước",
-  "sidebar.chrome.syncRepository": "Kho lưu trữ",
-  "sidebar.chrome.viewChanges": "Xem các thay đổi",
-  "sidebar.chrome.viewHistory": "Xem lịch sử",
-  "noteList.properties.computed": "Các trường được tính toán"
+  "calendar.showIcons": "Hiện biểu tượng ghi chú"
 }

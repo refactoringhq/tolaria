@@ -92,7 +92,6 @@ async function openNote(page: Page, { path, title }: SeededNote): Promise<void> 
 }
 
 async function createFolder(page: Page, name: string): Promise<void> {
-	await page.getByRole("button", { name: "FOLDERS", exact: true }).hover();
 	await page.getByTestId("create-folder-btn").click();
 	const input = page.getByTestId("new-folder-input");
 	await input.fill(name);
