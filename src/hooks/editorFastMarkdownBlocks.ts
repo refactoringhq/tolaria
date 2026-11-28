@@ -76,7 +76,9 @@ interface SingleLineParseInput {
   line: MarkdownLine
 }
 
-const HEADING_RE = /^(#{1,6})[ \t]+(.+?)\s*#*\s*$/u
+const HEADING_PREFIX_RE = /^(#{1,6})([ \t]+)/u
+const WHITESPACE_RE = /\s/u
+const LINE_TERMINATOR_RE = /[\n\r\u2028\u2029]/u
 const ORDERED_LIST_RE = /^([ \t]*)(\d+)[.)][ \t]+(.+)$/u
 const UNORDERED_LIST_RE = /^([ \t]*)([-*+])[ \t]+(.+)$/u
 const CHECK_LIST_PREFIX_RE = /^([ \t]*)([-*+])[ \t]+\[([ xX])\]/u
@@ -129,18 +131,42 @@ function unsupportedLine(line: MarkdownLine): string | null {
   return null
 }
 
+function trimmedEnd(text: string, end: number, isTrimmed: (char: string) => boolean): number {
+  let next = end
+  while (next > 0 && isTrimmed(text.charAt(next - 1))) next--
+  return next
+}
+
+// Same result as /^(#{1,6})[ \t]+(.+?)\s*#*\s*$/u, in linear time. That regex backtracks
+// cubically on a heading followed by a long run of spaces: 3,000 spaces took seconds.
+function headingParts(line: MarkdownLine): [string, string] | null {
+  const prefix = HEADING_PREFIX_RE.exec(line)
+  if (!prefix) return null
+  const rest = line.slice(prefix[0].length)
+  const isWhitespace = (char: string) => WHITESPACE_RE.test(char)
+  let end = trimmedEnd(rest, rest.length, isWhitespace)
+  end = trimmedEnd(rest, end, char => char === '#')
+  end = trimmedEnd(rest, end, isWhitespace)
+  if (end === 0) {
+    if (rest !== '' && !LINE_TERMINATOR_RE.test(rest.charAt(0))) return [prefix[1], rest.charAt(0)]
+    return prefix[2].length > 1 ? [prefix[1], prefix[2].slice(-1)] : null
+  }
+  const text = rest.slice(0, end)
+  return LINE_TERMINATOR_RE.test(text) ? null : [prefix[1], text]
+}
+
 function headingBlock(line: MarkdownLine): BlockLike | null {
-  const match = HEADING_RE.exec(line)
+  const match = headingParts(line)
   if (!match) return null
   return {
     type: 'heading',
     props: {
-      level: match[1].length,
+      level: match[0].length,
       textColor: 'default',
       backgroundColor: 'default',
       textAlignment: 'left',
     },
-    content: parseInline(match[2]),
+    content: parseInline(match[1]),
     children: [],
   }
 }

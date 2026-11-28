@@ -31,6 +31,24 @@ function commonLongNoteMarkdown(): string {
 }
 
 describe('tryParseFastMarkdownBlocks', () => {
+  it('parses a heading followed by a long run of spaces in linear time', () => {
+    const startedAt = performance.now()
+    const result = tryParseFastMarkdownBlocks(`# Title${' '.repeat(3_000)}x`)
+
+    expect(performance.now() - startedAt).toBeLessThan(500)
+    expect(result.blocks?.[0]).toEqual(expect.objectContaining({ type: 'heading' }))
+  })
+
+  it('keeps closing hashes and trailing spaces out of heading text', () => {
+    const result = tryParseFastMarkdownBlocks('## Title ##  ')
+
+    expect(result.blocks?.[0]).toEqual(expect.objectContaining({
+      type: 'heading',
+      props: expect.objectContaining({ level: 2 }),
+      content: [expect.objectContaining({ text: 'Title' })],
+    }))
+  })
+
   it('parses common long-note Markdown blocks directly', () => {
     const result = tryParseFastMarkdownBlocks(commonLongNoteMarkdown())
 
