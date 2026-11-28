@@ -1,8 +1,7 @@
 import { CaretDown, CaretRight } from '@phosphor-icons/react'
 import type { ReactNode } from 'react'
-import { cn } from '@/lib/utils'
 import { SidebarCountPill } from '../SidebarParts'
-import { SIDEBAR_GROUP_HEADER_COUNT_CLASS, SIDEBAR_GROUP_HEADER_HOVER_CLASS, SIDEBAR_GROUP_HEADER_PADDING } from './sidebarStyles'
+import { SIDEBAR_GROUP_HEADER_PADDING } from './sidebarStyles'
 
 interface SidebarGroupHeaderProps {
   label: string
@@ -21,19 +20,22 @@ export function SidebarGroupHeader({
 }: SidebarGroupHeaderProps) {
   return (
     <div
-      className={cn('flex w-full items-center justify-between text-muted-foreground transition-colors', SIDEBAR_GROUP_HEADER_HOVER_CLASS)}
+      className="sidebar-group-header flex w-full items-center justify-between text-muted-foreground"
       style={{ padding: count != null ? SIDEBAR_GROUP_HEADER_PADDING.withCount : SIDEBAR_GROUP_HEADER_PADDING.regular }}
     >
       <button
         type="button"
-        className="flex min-w-0 flex-1 cursor-pointer select-none items-center gap-1 border-none bg-transparent p-0 text-inherit"
+        className="flex min-w-0 flex-1 cursor-pointer select-none items-center gap-1 border-none bg-transparent p-0 text-muted-foreground"
+        aria-expanded={!collapsed}
         onClick={onToggle}
       >
-        {collapsed ? <CaretRight size={12} /> : <CaretDown size={12} />}
         <span className="text-[10px] font-semibold" style={{ letterSpacing: 0.5 }}>{label}</span>
+        {collapsed ? <CaretRight size={12} aria-hidden="true" /> : <CaretDown size={12} aria-hidden="true" />}
       </button>
-      {children ?? (count != null && (
-        <SidebarCountPill count={count} className={SIDEBAR_GROUP_HEADER_COUNT_CLASS} compact />
+      {children != null ? (
+        <div className="sidebar-group-actions flex items-center">{children}</div>
+      ) : (count != null && (
+        <SidebarCountPill count={count} className="bg-transparent text-muted-foreground" compact />
       ))}
     </div>
   )

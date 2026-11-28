@@ -14,7 +14,11 @@ test('opens a non-git vault and initializes Git later from the keyboard @smoke',
 
     await page.keyboard.press('Escape')
     await expect(page.getByRole('heading', { name: 'Enable Git for this vault?' })).not.toBeVisible()
-    await expect(page.getByTestId('status-missing-git')).toContainText('Git disabled')
+    const sync = page.getByTestId('sidebar-sync')
+    const history = page.getByRole('menuitem', { name: 'View history' })
+    await sync.press('Enter')
+    await expect(history).toBeDisabled()
+    await page.keyboard.press('Escape')
 
     await openCommandPalette(page)
     await executeCommand(page, 'Initialize Git')
@@ -24,8 +28,8 @@ test('opens a non-git vault and initializes Git later from the keyboard @smoke',
     await page.keyboard.press('Enter')
 
     await expect(page.getByRole('heading', { name: 'Enable Git for this vault?' })).not.toBeVisible()
-    await expect(page.getByTestId('status-missing-git')).not.toBeVisible()
-    await expect(page.getByTestId('status-pulse')).toBeVisible()
+    await sync.press('Enter')
+    await expect(history).toBeEnabled()
   } finally {
     removeFixtureVaultCopy(tempVaultDir)
   }

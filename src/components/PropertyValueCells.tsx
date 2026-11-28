@@ -1,18 +1,10 @@
-import { ArrowUpRight, X as XIcon } from '@phosphor-icons/react'
-import { useState, useCallback, useRef, type ReactNode, type RefObject } from 'react'
+import { ArrowUpRight } from '@phosphor-icons/react'
+import { useState, useCallback, useRef, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
 import { Input } from '@/components/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { trackDatePropertyDirectEntrySaved } from '../lib/productAnalytics'
-import { translate, type AppLocale } from '../lib/i18n'
-import { isValidCssColor } from '../utils/colorUtils'
-import { isUrlValue } from '../utils/url'
 import {
   type PropertyDisplayMode,
-  formatDateValue,
-  toISODate,
   DISPLAY_MODE_OPTIONS,
   DISPLAY_MODE_ICONS,
 } from '../utils/propertyTypes'
@@ -27,68 +19,11 @@ import { IconEditableValue } from './IconEditableValue'
 import { PROPERTY_CHIP_STYLE } from './propertyChipStyles'
 import { canonicalSystemMetadataKey } from '../utils/systemMetadata'
 import { relationshipKindForKey } from '../utils/relationshipKeys'
-import { useAppLocale, useDateDisplayFormat } from '../hooks/useAppPreferences'
+import { DateValue } from './DatePropertyValue'
+import { autoDetectFromValue, createScalarEditProps, type ScalarEditProps, type ScalarRendererProps, type SmartCellProps } from './propertyValueCellModel'
 import { getAnchoredDropdownStyle, useAnchoredDropdownPosition } from './anchoredDropdown'
 
-const ISO_DATE_INPUT_RE = /^(\d{4})-(\d{2})-(\d{2})$/
-const DEFAULT_DATE_PICKER_START_YEAR = 1800
-const DEFAULT_DATE_PICKER_END_YEAR = 2200
 const DISPLAY_MODE_MENU_WIDTH = 140
-
-interface CalendarDay {
-  year: number
-  monthIndex: number
-  day: number
-}
-
-function localDate({ year, monthIndex, day }: CalendarDay): Date {
-  const date = new Date(0)
-  date.setFullYear(year, monthIndex, day)
-  date.setHours(0, 0, 0, 0)
-  return date
-}
-
-function calendarDayFromMatch(match: RegExpExecArray): CalendarDay {
-  return { year: Number(match[1]), monthIndex: Number(match[2]) - 1, day: Number(match[3]) }
-}
-
-function dateToISO(day: Date): string {
-  const yyyy = String(day.getFullYear()).padStart(4, '0')
-  const mm = String(day.getMonth() + 1).padStart(2, '0')
-  const dd = String(day.getDate()).padStart(2, '0')
-  return `${yyyy}-${mm}-${dd}`
-}
-
-function parseDateInput(value: string): string | null {
-  const trimmed = value.trim()
-  const match = ISO_DATE_INPUT_RE.exec(trimmed)
-  if (!match) return null
-
-  const calendarDay = calendarDayFromMatch(match)
-  if (calendarDay.year < 1) return null
-
-  return dateToISO(localDate(calendarDay)) === trimmed ? trimmed : null
-}
-
-function dateFromISO(value: string): Date | undefined {
-  const iso = parseDateInput(value)
-  const match = iso ? ISO_DATE_INPUT_RE.exec(iso) : null
-  return match ? localDate(calendarDayFromMatch(match)) : undefined
-}
-
-function parseDateValue(value: string): Date | undefined {
-  return dateFromISO(toISODate(value))
-}
-
-function datePickerStartMonth(selectedDate: Date | undefined): Date {
-  const year = Math.min(selectedDate?.getFullYear() || DEFAULT_DATE_PICKER_START_YEAR, DEFAULT_DATE_PICKER_START_YEAR)
-  return localDate({ year, monthIndex: 0, day: 1 })
-}
-
-function datePickerEndMonth(selectedDate: Date | undefined): Date {
-  const year = Math.max(selectedDate?.getFullYear() || DEFAULT_DATE_PICKER_END_YEAR, DEFAULT_DATE_PICKER_END_YEAR)
-  return localDate({ year, monthIndex: 11, day: 31 })
-}
 
 function showsRelationshipPropertyIcon(propKey: string): boolean {
   return relationshipKindForKey(propKey) !== 'custom'
@@ -105,11 +40,12 @@ function StatusValue({ propKey, value, isEditing, vaultStatuses, onSave, onStart
       <button
         type="button"
         className="inline-flex cursor-pointer items-center gap-1.5 border-0 transition-opacity hover:opacity-80"
-        style={{ ...PROPERTY_CHIP_STYLE, backgroundColor: style.bg, color: style.color }}
+        style={{ ...PROPERTY_CHIP_STYLE, backgroundColor: style.bg }}
         onClick={() => onStartEdit(propKey)}
         data-testid="status-badge"
+        data-property-chip-tone="status"
       >
-        <span className="inline-block size-[7px] shrink-0 rounded-full" style={{ backgroundColor: style.color }} />
+        <span aria-hidden="true" className="status-chip-dot inline-block size-[7px] shrink-0 rounded-full" style={{ backgroundColor: style.color }} />
         {statusStr}
       </button>
       {isEditing && (
@@ -146,12 +82,12 @@ function TagsValue({ propKey, value, isEditing, vaultTags, onSave, onStartEdit }
           <span
             key={tag}
             className="group/tag relative inline-flex items-center overflow-hidden"
+            data-property-chip-tone="tag"
             style={{ ...PROPERTY_CHIP_STYLE, backgroundColor: style.bg, maxWidth: 120 }}
           >
             <span
               className="transition-[max-width] duration-150 group-hover/tag:[mask-image:linear-gradient(to_right,black_60%,transparent_100%)]"
               style={{
-                color: style.color,
                 overflow: 'hidden',
                 whiteSpace: 'nowrap' as const,
               }}
@@ -160,7 +96,7 @@ function TagsValue({ propKey, value, isEditing, vaultTags, onSave, onStartEdit }
             </span>
             <button type="button"
               className="ml-0.5 max-w-0 overflow-hidden border-none bg-transparent p-0 leading-none opacity-0 transition-all duration-150 group-hover/tag:max-w-[14px] group-hover/tag:opacity-100"
-              style={{ color: style.color, fontSize: 11, flexShrink: 0 }}
+              style={{ fontSize: 11, flexShrink: 0 }}
               onClick={() => handleRemove(tag)}
               title={`Remove ${tag}`}
             >
@@ -202,64 +138,52 @@ function BooleanToggle({ value, onToggle }: { value: boolean; onToggle: () => vo
   )
 }
 
-function NumberValue({
-  value,
-  onSave,
-  onCancel,
-  isEditing,
-  onStartEdit,
-}: ScalarEditProps) {
+function useNumberValueEdit({ value, onSave, onCancel }: ScalarEditProps) {
   const [editValue, setEditValue] = useState(value)
 
-  const restoreValue = useCallback(() => {
+  function cancel() {
     setEditValue(value)
-  }, [value])
-
-  const commitValue = useCallback(() => {
-    const trimmed = editValue.trim()
-    if (trimmed === '') {
-      onSave('')
-      return
-    }
-
-    const parsed = Number(trimmed)
-    if (Number.isFinite(parsed)) {
-      onSave(trimmed)
-      return
-    }
-
-    restoreValue()
     onCancel()
-  }, [editValue, onCancel, onSave, restoreValue])
-
-  const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      commitValue()
-      return
-    }
-
-    if (event.key === 'Escape') {
-      restoreValue()
-      onCancel()
-    }
-  }, [commitValue, onCancel, restoreValue])
-
-  if (isEditing) {
-    return (
-      <Input
-        className="h-7 w-full border-ring bg-muted px-2 py-1 text-left font-mono text-[12px] tabular-nums"
-        type="text"
-        inputMode="decimal"
-        value={editValue}
-        onChange={(event) => setEditValue(event.target.value)}
-        onKeyDown={handleKeyDown}
-        onBlur={commitValue}
-        autoFocus
-        data-testid="number-input"
-      />
-    )
   }
 
+  function commit() {
+    const trimmed = editValue.trim()
+    if (Number.isFinite(Number(trimmed))) {
+      onSave(trimmed)
+    } else {
+      cancel()
+    }
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Enter') commit()
+    if (event.key === 'Escape') cancel()
+  }
+
+  return { editValue, setEditValue, commit, handleKeyDown }
+}
+
+function NumberValueInput({ editValue, setEditValue, commit, handleKeyDown }: ReturnType<typeof useNumberValueEdit>) {
+  return (
+    <Input
+      className="h-7 w-full border-ring bg-muted px-2 py-1 text-left font-mono text-[12px] tabular-nums"
+      type="text"
+      inputMode="decimal"
+      value={editValue}
+      onChange={(event) => setEditValue(event.target.value)}
+      onKeyDown={handleKeyDown}
+      onBlur={commit}
+      autoFocus
+      data-testid="number-input"
+    />
+  )
+}
+
+function NumberValue(props: ScalarEditProps) {
+  const edit = useNumberValueEdit(props)
+  if (props.isEditing) return <NumberValueInput {...edit} />
+
+  const { value, onStartEdit } = props
   return (
     <button
       type="button"
@@ -270,154 +194,6 @@ function NumberValue({
     >
       <span className="min-w-0 truncate">{value || '\u2014'}</span>
     </button>
-  )
-}
-
-function DateValue({ value, onSave, locale = 'en', autoOpen = false, onCancel }: {
-  value: string
-  onSave: (newValue: string) => void
-  locale?: AppLocale
-  autoOpen?: boolean
-  onCancel?: () => void
-}) {
-  const dateDisplayFormat = useDateDisplayFormat()
-  const appLocale = useAppLocale()
-  const [open, setOpen] = useState(autoOpen)
-  const formatted = formatDateValue(value, dateDisplayFormat, appLocale)
-  const pickDateLabel = translate(locale, 'inspector.properties.pickDate')
-  const selectedDate = parseDateValue(value)
-  const selectedIso = selectedDate ? dateToISO(selectedDate) : ''
-  const [draftValue, setDraftValue] = useState(selectedIso)
-  const [invalidDraft, setInvalidDraft] = useState(false)
-
-  const resetDraft = () => {
-    setDraftValue(selectedIso)
-    setInvalidDraft(false)
-  }
-
-  const closeWithoutSave = () => {
-    resetDraft()
-    setOpen(false)
-    onCancel?.()
-  }
-
-  const commitDraftValue = () => {
-    if (draftValue.trim() === '') {
-      if (value) onSave('')
-      else closeWithoutSave()
-      setOpen(false)
-      return
-    }
-
-    const parsed = parseDateInput(draftValue)
-    if (!parsed) {
-      setInvalidDraft(true)
-      return
-    }
-
-    onSave(parsed)
-    trackDatePropertyDirectEntrySaved()
-    setOpen(false)
-  }
-
-  const handleSelect = (day: Date | undefined) => {
-    if (day) onSave(dateToISO(day))
-    setOpen(false)
-  }
-
-  const handleClear = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation()
-    onSave('')
-    setOpen(false)
-  }
-
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setDraftValue(event.target.value)
-    if (invalidDraft) setInvalidDraft(false)
-  }
-
-  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      event.preventDefault()
-      commitDraftValue()
-      return
-    }
-
-    if (event.key === 'Escape') {
-      event.preventDefault()
-      closeWithoutSave()
-    }
-  }
-
-  return (
-    <Popover
-      open={open}
-      onOpenChange={(nextOpen) => {
-        if (nextOpen) resetDraft()
-        setOpen(nextOpen)
-        if (!nextOpen) onCancel?.()
-      }}
-    >
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="xs"
-          className={`min-w-0 justify-start border-none text-left transition-colors hover:opacity-80${formatted ? ' bg-muted text-accent-foreground' : ' bg-transparent text-muted-foreground'}`}
-          style={PROPERTY_CHIP_STYLE}
-          title={value}
-          data-testid="date-display"
-        >
-          <span className={`min-w-0 truncate${!formatted ? ' text-muted-foreground' : ''}`}>{formatted || pickDateLabel}</span>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto overflow-hidden p-0" align="end" side="bottom" data-testid="date-picker-popover">
-        <div className="border-b p-2">
-          <Input
-            className="h-8 w-full min-w-[8.75rem] border-ring bg-background px-2 py-1 text-left font-mono text-[13px] tabular-nums"
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}"
-            placeholder="YYYY-MM-DD"
-            aria-label={pickDateLabel}
-            aria-invalid={invalidDraft ? 'true' : undefined}
-            value={draftValue}
-            onChange={handleInputChange}
-            onKeyDown={handleInputKeyDown}
-            autoFocus
-            data-testid="date-picker-input"
-          />
-        </div>
-        <div className="pb-8">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={handleSelect}
-            defaultMonth={selectedDate}
-            captionLayout="dropdown"
-            navLayout="after"
-            startMonth={datePickerStartMonth(selectedDate)}
-            endMonth={datePickerEndMonth(selectedDate)}
-            data-testid="date-picker-calendar"
-          />
-        </div>
-        {selectedDate && (
-          <div className="relative bg-popover border-t px-3 py-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              className="h-7 px-2 text-xs text-muted-foreground hover:bg-transparent hover:text-foreground"
-              onClick={handleClear}
-              data-testid="date-picker-clear"
-            >
-              <XIcon className="size-3" />
-              Clear date
-            </Button>
-          </div>
-        )}
-      </PopoverContent>
-    </Popover>
   )
 }
 
@@ -552,123 +328,55 @@ function toBooleanValue(value: FrontmatterValue): boolean {
   return false
 }
 
-function autoDetectStringValue(value: string): PropertyDisplayMode {
-  if (isUrlValue(value)) return 'url'
-  if (isValidCssColor(value) && value.startsWith('#')) return 'color'
-  return 'text'
+function StatusScalarValue(props: SmartCellProps) {
+  return <StatusValue {...props} value={props.value ?? ''} />
 }
 
-function autoDetectFromValue(propKey: string, value: FrontmatterValue): PropertyDisplayMode {
-  if (canonicalSystemMetadataKey(propKey) === '_icon') return 'text'
-  if (typeof value === 'boolean') return 'boolean'
-  return typeof value === 'string' ? autoDetectStringValue(value) : 'text'
+function TagsScalarValue(props: SmartCellProps) {
+  return <TagsValue {...props} value={props.value ? [String(props.value)] : []} onSave={props.onSaveList} />
 }
 
-type SmartCellProps = {
-  propKey: string; value: FrontmatterValue; displayMode: PropertyDisplayMode; isEditing: boolean
-  locale?: AppLocale
-  vaultStatuses: string[]; vaultTags: string[]
-  onStartEdit: (key: string | null) => void; onSave: (key: string, value: string) => void
-  onSaveList: (key: string, items: string[]) => void; onUpdate?: (key: string, value: FrontmatterValue) => void
+function DateScalarValue({ propKey, value, locale, isEditing, onSave, onStartEdit }: SmartCellProps) {
+  return (
+    <DateValue
+      key={`${propKey}:${isEditing ? 'editing' : 'view'}`}
+      value={String(value ?? '')}
+      locale={locale}
+      onSave={(nextValue) => onSave(propKey, nextValue)}
+      autoOpen={isEditing}
+      onCancel={() => onStartEdit(null)}
+    />
+  )
 }
 
-interface ScalarEditProps {
-  value: string
-  isEditing: boolean
-  onStartEdit: () => void
-  onSave: (nextValue: string) => void
-  onCancel: () => void
+function BooleanScalarValue({ value, onUpdate, propKey }: SmartCellProps) {
+  const checked = toBooleanValue(value)
+  return <BooleanToggle value={checked} onToggle={() => onUpdate?.(propKey, !checked)} />
 }
 
-function createScalarEditProps({
-  propKey,
-  value,
-  isEditing,
-  onStartEdit,
-  onSave,
-}: {
-  propKey: string
-  value: FrontmatterValue
-  isEditing: boolean
-  onStartEdit: (key: string | null) => void
-  onSave: (key: string, value: string) => void
-}): ScalarEditProps {
-  return {
-    value: String(value ?? ''),
-    isEditing,
-    onStartEdit: () => onStartEdit(propKey),
-    onSave: (nextValue: string) => onSave(propKey, nextValue),
-    onCancel: () => onStartEdit(null),
+function renderScalarDisplayMode(props: ScalarRendererProps, mode: PropertyDisplayMode) {
+  switch (mode) {
+    case 'status': return <StatusScalarValue {...props} />
+    case 'tags': return <TagsScalarValue {...props} />
+    case 'date': return <DateScalarValue {...props} />
+    case 'number': return <NumberValue {...props.editProps} />
+    case 'boolean': return <BooleanScalarValue {...props} />
+    case 'url': return <UrlValue {...props.editProps} />
+    case 'color': return <ColorEditableValue {...props.editProps} />
+    default: return <EditableValue {...props.editProps} />
   }
 }
 
-type ScalarRendererProps = SmartCellProps & {
-  editProps: ScalarEditProps
-}
-
-type ScalarDisplayRenderer = (props: ScalarRendererProps & { resolvedMode: PropertyDisplayMode }) => ReactNode
-
-const SCALAR_DISPLAY_RENDERERS: readonly [PropertyDisplayMode, ScalarDisplayRenderer][] = [
-  ['status', (props) => (
-    <StatusValue
-      propKey={props.propKey}
-      value={props.value ?? ''}
-      isEditing={props.isEditing}
-      vaultStatuses={props.vaultStatuses}
-      onSave={props.onSave}
-      onStartEdit={props.onStartEdit}
-    />
-  )],
-  ['tags', (props) => (
-    <TagsValue
-      propKey={props.propKey}
-      value={props.value ? [String(props.value)] : []}
-      isEditing={props.isEditing}
-      vaultTags={props.vaultTags}
-      onSave={props.onSaveList}
-      onStartEdit={props.onStartEdit}
-    />
-  )],
-  ['date', (props) => (
-    <DateValue
-      key={`${props.propKey}:${props.isEditing ? 'editing' : 'view'}`}
-      value={String(props.value ?? '')}
-      locale={props.locale}
-      onSave={(nextValue) => props.onSave(props.propKey, nextValue)}
-      autoOpen={props.isEditing}
-      onCancel={() => props.onStartEdit(null)}
-    />
-  )],
-  ['number', (props) => <NumberValue {...props.editProps} />],
-  ['boolean', (props) => {
-    const boolVal = toBooleanValue(props.value)
-    return <BooleanToggle value={boolVal} onToggle={() => props.onUpdate?.(props.propKey, !boolVal)} />
-  }],
-  ['url', (props) => <UrlValue {...props.editProps} />],
-  ['color', (props) => <ColorEditableValue {...props.editProps} />],
-]
-
-function renderScalarDisplayMode(props: ScalarRendererProps & { resolvedMode: PropertyDisplayMode }) {
-  const renderer = SCALAR_DISPLAY_RENDERERS.find(([mode]) => mode === props.resolvedMode)?.[1]
-  return renderer ? renderer(props) : <EditableValue {...props.editProps} />
-}
-
 function ScalarValueCell(props: SmartCellProps) {
-  const { propKey, value, displayMode, isEditing, onStartEdit, onSave } = props
-  const editProps = createScalarEditProps({
-    propKey,
-    value,
-    isEditing,
-    onStartEdit,
-    onSave,
-  })
+  const { propKey, value, displayMode } = props
+  const editProps = createScalarEditProps(props)
 
   if (canonicalSystemMetadataKey(propKey) === '_icon') {
     return <IconEditableValue {...editProps} />
   }
 
   const resolvedMode = displayMode === 'text' ? autoDetectFromValue(propKey, value) : displayMode
-  return renderScalarDisplayMode({ ...props, resolvedMode, editProps })
+  return renderScalarDisplayMode({ ...props, editProps }, resolvedMode)
 }
 
 export function SmartPropertyValueCell(props: SmartCellProps) {

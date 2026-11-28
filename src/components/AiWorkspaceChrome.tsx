@@ -1,12 +1,12 @@
 import { Archive, ArrowSquareIn, ArrowSquareOut, GearSix, WarningCircle, X } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { useDragRegion } from '../hooks/useDragRegion'
+import { type AppLocale, translate } from '../lib/i18n'
 import {
   getVaultAiGuidanceSummary,
-  vaultAiGuidanceNeedsRestore,
   type VaultAiGuidanceStatus,
+  vaultAiGuidanceNeedsRestore,
 } from '../lib/vaultAiGuidance'
-import { translate, type AppLocale } from '../lib/i18n'
 import type { AiConversation } from './aiWorkspaceConversations'
 import type { AiWorkspaceMode } from './aiWorkspaceSizing'
 
@@ -22,7 +22,7 @@ export function GuidanceWarning({
   if (!status || !vaultAiGuidanceNeedsRestore(status)) return null
 
   return (
-    <div className="flex shrink-0 items-center gap-2 border-y border-border bg-muted px-3 py-2 text-[12px] text-muted-foreground">
+    <div className="mx-3 my-1 flex shrink-0 items-center gap-2 rounded-xl border-x border-y border-border bg-[var(--surface-button)] px-3 py-2 text-[12px] text-muted-foreground shadow-[var(--shadow-card)]">
       <WarningCircle size={15} className="shrink-0 text-[var(--accent-yellow)]" />
       <span className="min-w-0 flex-1">
         {translate(locale, 'ai.workspace.guidanceWarning', {
@@ -38,7 +38,7 @@ export function GuidanceWarning({
   )
 }
 
-export function WorkspaceHeader(options: {
+interface WorkspaceHeaderProps {
   conversation: AiConversation
   archiveDisabled: boolean
   locale: AppLocale
@@ -48,10 +48,15 @@ export function WorkspaceHeader(options: {
   onDock?: () => void
   onOpenAiSettings?: () => void
   onPopOut?: (context?: { activeConversationId?: string }) => void
-}) {
+}
+
+export function WorkspaceHeader(options: WorkspaceHeaderProps) {
   const { conversation, archiveDisabled, locale, mode, onArchive, onClose, onDock, onOpenAiSettings, onPopOut } =
     options
   const { dragRegionRef } = useDragRegion<HTMLDivElement>()
+  const isDocked = mode === 'docked'
+  const placementLabel = translate(locale, isDocked ? 'ai.workspace.popOut' : 'ai.workspace.dock')
+  const handlePlacement = isDocked ? () => onPopOut?.({ activeConversationId: conversation.id }) : onDock
 
   return (
     <div
@@ -88,29 +93,16 @@ export function WorkspaceHeader(options: {
         >
           <Archive size={16} />
         </Button>
-        {mode === 'docked' ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            aria-label={translate(locale, 'ai.workspace.popOut')}
-            title={translate(locale, 'ai.workspace.popOut')}
-            onClick={() => onPopOut?.({ activeConversationId: conversation.id })}
-          >
-            <ArrowSquareOut size={16} />
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            aria-label={translate(locale, 'ai.workspace.dock')}
-            title={translate(locale, 'ai.workspace.dock')}
-            onClick={onDock}
-          >
-            <ArrowSquareIn size={16} />
-          </Button>
-        )}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          aria-label={placementLabel}
+          title={placementLabel}
+          onClick={handlePlacement}
+        >
+          {isDocked ? <ArrowSquareOut size={16} /> : <ArrowSquareIn size={16} />}
+        </Button>
         <Button
           type="button"
           variant="ghost"

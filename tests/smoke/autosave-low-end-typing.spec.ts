@@ -136,21 +136,20 @@ test.beforeAll(async ({ browser }, testInfo) => {
 	}
 });
 
-test.beforeEach(async ({ page }, testInfo) => {
-	testInfo.setTimeout(60_000);
+test.beforeEach(() => {
 	tempVaultDir = createFixtureVaultCopy();
-	await openFixtureVaultAfterTransientReload(page, tempVaultDir);
-	await page.waitForLoadState("networkidle");
-	await installAutosaveProbe(page);
 });
 
 test.afterEach(() => {
 	removeFixtureVaultCopy(tempVaultDir);
 });
 
-test("@smoke autosave waits for idle typing and persists the latest draft only", async ({
-	page,
-}) => {
+test("@smoke autosave waits for idle typing and persists the latest draft only", async ({ page }, testInfo) => {
+	testInfo.setTimeout(60_000);
+	await openFixtureVaultAfterTransientReload(page, tempVaultDir);
+	await page.waitForLoadState("networkidle");
+	await installAutosaveProbe(page);
+
 	const notePath = path.join(tempVaultDir, "note", "note-b.md");
 	const firstDraft = `# Note B\n\nLow-end autosave first draft ${Date.now()}`;
 	const latestDraft = `${firstDraft}\n\nLatest draft after continued typing`;
@@ -176,9 +175,10 @@ test("@smoke autosave waits for idle typing and persists the latest draft only",
 	expect(await persisted.json()).toEqual({ content: latestDraft });
 });
 
-test("@smoke rich autosave preserves a large imported CRLF note across typing pauses", async ({
-	page,
-}) => {
+test("@smoke rich autosave preserves a large imported CRLF note across typing pauses", async ({ page }, testInfo) => {
+	// Opening and rendering the large fixture needs its own budget in shared CI.
+	// Each save still has to persist the exact content within ten seconds.
+	testInfo.setTimeout(120_000);
 	const file = path.join(tempVaultDir, "note", "imported-autosave.md");
 	const source =
 		"# Imported Autosave\r\n\r\n" +
