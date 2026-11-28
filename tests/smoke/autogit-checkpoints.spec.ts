@@ -195,12 +195,11 @@ async function setMockGitCommitFailure(page: Page, message: string | null) {
 }
 
 async function triggerQuickCommit(page: Page) {
-  const commitButton = page.getByTestId('status-commit-push')
-  await expect(commitButton).toBeEnabled({ timeout: 5_000 })
-  await commitButton.click()
+  await openCommandPalette(page)
+  await executeCommand(page, 'Commit & Push')
 }
 
-test('@smoke AutoGit checkpoints on idle, and the bottom bar reuses the same message', async ({ page }) => {
+test('@smoke AutoGit checkpoints on idle, and a manual sync reuses the same message', async ({ page }) => {
   await page.addInitScript(installAutoGitMocks)
   await page.goto('/')
   await page.waitForLoadState('networkidle')

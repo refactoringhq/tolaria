@@ -207,13 +207,13 @@ function isSaveShortcut(event: { ctrlKey: boolean; key: string; metaKey: boolean
   return event.key === 'Enter' && (event.metaKey || event.ctrlKey)
 }
 
-function createSettingsDraft(settings: Settings, explicitOrganizationEnabled: boolean): SettingsDraft {
+function createSyncDraft(settings: Settings) {
   return {
     pullInterval: settings.auto_pull_interval_minutes ?? 5,
     gitFeaturesEnabled: areGitFeaturesEnabled(settings),
     gitProvider: normalizeSettingsGitProvider(settings.git_provider),
     gitWslDistro: settings.git_wsl_distro?.trim() || null,
-    autoGitEnabled: settings.autogit_enabled ?? false,
+    autoGitEnabled: settings.autogit_enabled === true,
     autoGitAiCommitMessagesEnabled: settings.autogit_use_ai_commit_messages ?? false,
     autoGitIdleThresholdSeconds: sanitizePositiveInteger(
       settings.autogit_idle_threshold_seconds,
@@ -223,24 +223,48 @@ function createSettingsDraft(settings: Settings, explicitOrganizationEnabled: bo
       settings.autogit_inactive_threshold_seconds,
       DEFAULT_AUTOGIT_INACTIVE_THRESHOLD_SECONDS,
     ),
-    autoAdvanceInboxAfterOrganize: settings.auto_advance_inbox_after_organize ?? false,
+  }
+}
+
+function createAgentAndUpdateDraft(settings: Settings) {
+  return {
     aiFeaturesEnabled: areAiFeaturesEnabled(settings),
     defaultAiAgent: resolveDefaultAiAgent(settings.default_ai_agent),
     defaultAiTarget: resolveAiTarget(settings).id,
     aiModelProviders: normalizeAiModelProviders(settings.ai_model_providers),
     releaseChannel: normalizeReleaseChannel(settings.release_channel),
     automaticUpdateChecksEnabled: areAutomaticUpdateChecksEnabled(settings),
+  }
+}
+
+function createAppearanceDraft(settings: Settings): Pick<SettingsDraft, 'themeMode' | 'uiLanguage' | 'dateDisplayFormat' | 'defaultNoteWidth'> {
+  return {
     themeMode: resolveSettingsDraftThemeMode(settings.theme_mode),
     uiLanguage: settings.ui_language ?? SYSTEM_UI_LANGUAGE,
     dateDisplayFormat: normalizeDateDisplayFormat(settings.date_display_format) ?? DEFAULT_DATE_DISPLAY_FORMAT,
     defaultNoteWidth: normalizeNoteWidthMode(settings.note_width_mode) ?? DEFAULT_NOTE_WIDTH_MODE,
+  }
+}
+
+function createVaultContentDraft(settings: Settings) {
+  return {
     sidebarTypePluralizationEnabled: settings.sidebar_type_pluralization_enabled ?? true,
     initialH1AutoRename: settings.initial_h1_auto_rename_enabled ?? true,
     hideGitignoredFiles: shouldHideGitignoredFiles(settings),
     allNotesFileVisibility: resolveAllNotesFileVisibility(settings),
     multiWorkspaceEnabled: settings.multi_workspace_enabled === true,
-    crashReporting: settings.crash_reporting_enabled ?? false,
+    crashReporting: settings.crash_reporting_enabled === true,
     analytics: settings.analytics_enabled ?? false,
+  }
+}
+
+function createSettingsDraft(settings: Settings, explicitOrganizationEnabled: boolean): SettingsDraft {
+  return {
+    ...createSyncDraft(settings),
+    ...createAgentAndUpdateDraft(settings),
+    ...createAppearanceDraft(settings),
+    ...createVaultContentDraft(settings),
+    autoAdvanceInboxAfterOrganize: settings.auto_advance_inbox_after_organize ?? false,
     explicitOrganization: explicitOrganizationEnabled,
   }
 }
@@ -867,6 +891,8 @@ function dateDisplayFormatLabelKey(format: DateDisplayFormat): TranslationKey {
     case 'us': return 'settings.dateDisplay.us'
     case 'european': return 'settings.dateDisplay.european'
     case 'friendly': return 'settings.dateDisplay.friendly'
+    case 'short': return 'settings.dateDisplay.short'
+    case 'short-current-year': return 'settings.dateDisplay.shortCurrentYear'
     case 'iso': return 'settings.dateDisplay.iso'
   }
 }
