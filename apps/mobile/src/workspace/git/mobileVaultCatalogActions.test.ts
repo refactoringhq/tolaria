@@ -22,6 +22,9 @@ import type { ActiveVault } from "./useManagedVaultCatalog";
 vi.mock("../nativeWorkspacePicker", () => ({
 	pickNativeWorkspaceDirectory: vi.fn(),
 }));
+vi.mock("../prepareNativeWorkspace", () => ({
+	prepareNativeWorkspace: vi.fn(async (selection) => selection),
+}));
 vi.mock("./managedGitStorage", () => ({
 	activateManagedGitVault: vi.fn(),
 	cloneManagedGitVault: vi.fn(),

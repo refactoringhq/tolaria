@@ -111,8 +111,18 @@ async function openLocalFolder<Result>(context: CatalogActionsContext<Result>) {
 }
 
 async function activateGit(vault: ManagedGitVault): Promise<ActiveVault> {
+	return activateGitWithProgress(vault);
+}
+
+async function activateGitWithProgress(
+	vault: ManagedGitVault,
+	onStage?: (stage: string) => void,
+): Promise<ActiveVault> {
+	onStage?.("selection");
 	const selection = await managedGitSelection(vault);
+	onStage?.("catalog-activation");
 	await activateManagedGitVault(vault.id);
+	onStage?.("workspace-preparation");
 	return { git: vault, selection: await prepareNativeWorkspace(selection) };
 }
 
@@ -122,18 +132,24 @@ async function cloneVault<Result>(
 	control: GitCloneControl,
 ) {
 	const startedAt = Date.now();
+	let stage = "github-session";
 	context.startClone();
 	try {
 		const session = await context.currentSession();
 		requireActiveSync(control.signal);
+		stage = "repository-clone";
 		const vault = await cloneManagedGitVault(
 			url,
 			nativeGitHttp,
 			session?.accessToken,
 			control,
 		);
+		stage = "catalog-reload";
 		await context.catalog.reload();
-		const active = await activateGit(vault);
+		stage = "vault-activation";
+		const active = await activateGitWithProgress(vault, (nextStage) => {
+			stage = nextStage;
+		});
 		context.capture({
 			name: "mobile_vault_catalog_used",
 			action: "add",
@@ -147,6 +163,7 @@ async function cloneVault<Result>(
 		});
 		return active;
 	} catch (failure) {
+		logCloneFailure(stage, failure);
 		const duration_bucket = cloneDurationBucket(Date.now() - startedAt);
 		if (control.signal.aborted) {
 			context.capture({
@@ -164,6 +181,22 @@ async function cloneVault<Result>(
 		});
 		throw failure;
 	}
+}
+
+function logCloneFailure(stage: string, failure: unknown) {
+	if (typeof __DEV__ !== "undefined" && !__DEV__) return;
+	const error = failure instanceof Error ? failure : new Error(typeof failure);
+	const code =
+		"code" in error && typeof error.code === "string" ? error.code : undefined;
+	const message = error.message
+		.replace(/https?:\/\/\S+/gu, "[url]")
+		.slice(0, 180);
+	console.error("[TOL-363] GitHub clone failed", {
+		stage,
+		name: error.name,
+		code,
+		message,
+	});
 }
 
 function cloneDurationBucket(
