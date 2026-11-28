@@ -67,7 +67,7 @@ function installAnimationFrameStub() {
 describe('useNoteListKeyboard', () => {
   const items = [makeEntry('/a.md', 'A'), makeEntry('/b.md', 'B'), makeEntry('/c.md', 'C')]
   const onOpen = vi.fn()
-  let flushAnimationFrame
+  let flushAnimationFrame: () => void
 
   function renderKeyboard(options = {}) {
     const open = options.onOpen ?? vi.fn()
