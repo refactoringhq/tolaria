@@ -8,6 +8,7 @@ import {
 export type RichEditorBlockTypeCommandSource = 'block_menu' | 'command_palette' | 'keyboard_shortcut'
 
 type RichEditorBlock = {
+  children?: RichEditorBlock[]
   id: string
   props?: Record<string, unknown>
   type: string
@@ -28,6 +29,7 @@ type TurnBlocksIntoTypeOptions = {
 export type RichEditorBlockTypeCommandEditor = {
   focus?: () => void
   getBlock?: (id: string) => RichEditorBlock | undefined
+  getSelection?: () => { blocks?: RichEditorBlock[] } | undefined
   getTextCursorPosition?: () => { block?: RichEditorBlock | null }
   transact?: (callback: () => void) => void
   updateBlock: (blockId: string, update: RichEditorBlockTypeUpdate) => unknown
@@ -66,6 +68,37 @@ function resolveCurrentBlock(editor: RichEditorBlockTypeCommandEditor): RichEdit
   }
 }
 
+function resolveSelectedBlocks(editor: RichEditorBlockTypeCommandEditor): RichEditorBlock[] {
+  try {
+    return (editor.getSelection?.()?.blocks ?? []).filter((block) => Boolean(block?.id))
+  } catch {
+    return []
+  }
+}
+
+const LIST_BLOCK_TYPES = new Set(['bulletListItem', 'numberedListItem', 'checkListItem'])
+
+function collectNestedListBlocks(block: RichEditorBlock, into: Map<string, RichEditorBlock>) {
+  for (const child of block.children ?? []) {
+    if (LIST_BLOCK_TYPES.has(child.type)) into.set(child.id, child)
+    collectNestedListBlocks(child, into)
+  }
+}
+
+function withNestedListBlocks(
+  blocks: RichEditorBlock[],
+  target: RichEditorBlockTypeDefinition,
+): RichEditorBlock[] {
+  if (!LIST_BLOCK_TYPES.has(target.type)) return blocks
+
+  const expanded = new Map<string, RichEditorBlock>()
+  for (const block of blocks) {
+    expanded.set(block.id, block)
+    if (LIST_BLOCK_TYPES.has(block.type)) collectNestedListBlocks(block, expanded)
+  }
+  return [...expanded.values()]
+}
+
 function applyBlockTypeUpdates(
   editor: RichEditorBlockTypeCommandEditor,
   blocks: RichEditorBlock[],
@@ -77,7 +110,7 @@ function applyBlockTypeUpdates(
     props: target.props as never,
   }
   const runUpdate = () => {
-    for (const block of blocks) {
+    for (const block of withNestedListBlocks(blocks, target)) {
       editor.updateBlock(block.id, update)
     }
   }
@@ -125,6 +158,9 @@ export function turnCurrentBlockIntoType(
   target: RichEditorBlockTypeDefinition,
   source: RichEditorBlockTypeCommandSource,
 ): boolean {
+  const selected = resolveSelectedBlocks(editor)
+  if (selected.length > 1) return applyResolvedBlockTypeUpdates(editor, selected, target, source)
+
   const block = resolveCurrentBlock(editor)
   return applyResolvedBlockTypeUpdates(editor, block ? [block] : [], target, source)
 }
@@ -148,8 +184,10 @@ export function turnBlockIntoType(
   target: RichEditorBlockTypeDefinition,
   source: RichEditorBlockTypeCommandSource,
 ): boolean {
+  const selectedIds = resolveSelectedBlocks(editor).map((block) => block.id)
+  const blockIds = selectedIds.length > 1 && selectedIds.includes(blockId) ? selectedIds : [blockId]
   return turnBlocksIntoType({
-    blockIds: [blockId],
+    blockIds,
     editor,
     source,
     target,
